@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2GUCWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:22:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22835 "EHLO
+	id S1753871Ab2GUCWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:22:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28689 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab2GUCVI (ORCPT
+	with ESMTP id S1751850Ab2GUCVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:21:08 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=q2qhuQaDOAIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=egbXytTyCphF2Q8p3_gA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=WIoExMB8uMVIVIVXXz0A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Fri, 20 Jul 2012 22:21:09 -0400
+X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=RtrjfuT1VeMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=JlgA9AP9t_NFkFkWN1EA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=xaBpIW-8P1UapBGU:21 a=CRjxjTtBEz4kpb-h:21 a=UR2aRDguoSPfuf2qvYAA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721022105.584384124@goodmis.org>
+Message-Id: <20120721022107.598880189@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:19:44 -0400
+Date: Fri, 20 Jul 2012 22:19:48 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 01/19] ftrace: Pass ftrace_ops as third parameter to function trace
- callback
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>
+Subject: [PATCH 05/19] ftrace/x86: Add separate function to save regs
 References: <20120721021943.274162381@goodmis.org>
-Content-Disposition: inline; filename=0001-ftrace-Pass-ftrace_ops-as-third-parameter-to-functio.patch
+Content-Disposition: inline; filename=0005-ftrace-x86-Add-separate-function-to-save-regs.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,507 +34,754 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Currently the function trace callback receives only the ip and parent_ip
-of the function that it traced. It would be more powerful to also return
-the ops that registered the function as well. This allows the same function
-to act differently depending on what ftrace_ops registered it.
+Add a way to have different functions calling different trampolines.
+If a ftrace_ops wants regs saved on the return, then have only the
+functions with ops registered to save regs. Functions registered by
+other ops would not be affected, unless the functions overlap.
 
-Link: http://lkml.kernel.org/r/20120612225424.267254552@goodmis.org
+If one ftrace_ops registered functions A, B and C and another ops
+registered fucntions to save regs on A, and D, then only functions
+A and D would be saving regs. Function B and C would work as normal.
+Although A is registered by both ops: normal and saves regs; this is fine
+as saving the regs is needed to satisfy one of the ops that calls it
+but the regs are ignored by the other ops function.
 
+x86_64 implements the full regs saving, and i386 just passes a NULL
+for regs to satisfy the ftrace_ops passing. Where an arch must supply
+both regs and ftrace_ops parameters, even if regs is just NULL.
+
+It is OK for an arch to pass NULL regs. All function trace users that
+require regs passing must add the flag FTRACE_OPS_FL_SAVE_REGS when
+registering the ftrace_ops. If the arch does not support saving regs
+then the ftrace_ops will fail to register. The flag
+FTRACE_OPS_FL_SAVE_REGS_IF_SUPPORTED may be set that will prevent the
+ftrace_ops from failing to register. In this case, the handler may
+either check if regs is not NULL or check if ARCH_SUPPORTS_FTRACE_SAVE_REGS.
+If the arch supports passing regs it will set this macro and pass regs
+for ops that request them. All other archs will just pass NULL.
+
+Link: Link: http://lkml.kernel.org/r/20120711195745.107705970@goodmis.org
+
+Cc: Alexander van Heukelum <heukelum@fastmail.fm>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/ftrace.h     |    4 ++
- arch/x86/kernel/entry_64.S        |    1 +
- include/linux/ftrace.h            |   16 +++++-
- kernel/trace/ftrace.c             |  101 +++++++++++++++++++++++++--------=
-----
- kernel/trace/trace_event_perf.c   |    3 +-
- kernel/trace/trace_events.c       |    3 +-
- kernel/trace/trace_functions.c    |    9 ++--
- kernel/trace/trace_irqsoff.c      |    3 +-
- kernel/trace/trace_sched_wakeup.c |    2 +-
- kernel/trace/trace_selftest.c     |   15 ++++--
- kernel/trace/trace_stack.c        |    2 +-
- 11 files changed, 113 insertions(+), 46 deletions(-)
+ arch/x86/include/asm/ftrace.h |   47 ++++++++++--------
+ arch/x86/kernel/entry_32.S    |    4 +-
+ arch/x86/kernel/entry_64.S    |   94 +++++++++++++++++++++++++++++++++---
+ arch/x86/kernel/ftrace.c      |   77 +++++++++++++++++++++++++++--
+ include/linux/ftrace.h        |  107 +++++++++++++++++++++++++++++++++++++=
++---
+ kernel/trace/ftrace.c         |   91 ++++++++++++++++++++++++++++++++---
+ 6 files changed, 373 insertions(+), 47 deletions(-)
 
 diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index b0767bc..783b107 100644
+index b3bb1f3..a847501 100644
 --- a/arch/x86/include/asm/ftrace.h
 +++ b/arch/x86/include/asm/ftrace.h
-@@ -32,6 +32,10 @@
- #define MCOUNT_ADDR		((long)(mcount))
- #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
+@@ -3,27 +3,33 @@
 =20
-+#if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_X86_64)
-+#define ARCH_SUPPORTS_FTRACE_OPS 1
+ #ifdef __ASSEMBLY__
+=20
+-	.macro MCOUNT_SAVE_FRAME
+-	/* taken from glibc */
+-	subq $0x38, %rsp
+-	movq %rax, (%rsp)
+-	movq %rcx, 8(%rsp)
+-	movq %rdx, 16(%rsp)
+-	movq %rsi, 24(%rsp)
+-	movq %rdi, 32(%rsp)
+-	movq %r8, 40(%rsp)
+-	movq %r9, 48(%rsp)
++	/* skip is set if the stack was already partially adjusted */
++	.macro MCOUNT_SAVE_FRAME skip=3D0
++	 /*
++	  * We add enough stack to save all regs.
++	  */
++	subq $(SS+8-\skip), %rsp
++	movq %rax, RAX(%rsp)
++	movq %rcx, RCX(%rsp)
++	movq %rdx, RDX(%rsp)
++	movq %rsi, RSI(%rsp)
++	movq %rdi, RDI(%rsp)
++	movq %r8, R8(%rsp)
++	movq %r9, R9(%rsp)
++	 /* Move RIP to its proper location */
++	movq SS+8(%rsp), %rdx
++	movq %rdx, RIP(%rsp)
+ 	.endm
+=20
+-	.macro MCOUNT_RESTORE_FRAME
+-	movq 48(%rsp), %r9
+-	movq 40(%rsp), %r8
+-	movq 32(%rsp), %rdi
+-	movq 24(%rsp), %rsi
+-	movq 16(%rsp), %rdx
+-	movq 8(%rsp), %rcx
+-	movq (%rsp), %rax
+-	addq $0x38, %rsp
++	.macro MCOUNT_RESTORE_FRAME skip=3D0
++	movq R9(%rsp), %r9
++	movq R8(%rsp), %r8
++	movq RDI(%rsp), %rdi
++	movq RSI(%rsp), %rsi
++	movq RDX(%rsp), %rdx
++	movq RCX(%rsp), %rcx
++	movq RAX(%rsp), %rax
++	addq $(SS+8-\skip), %rsp
+ 	.endm
+=20
+ #endif
+@@ -34,6 +40,9 @@
+=20
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ #define ARCH_SUPPORTS_FTRACE_OPS 1
++#ifdef CONFIG_X86_64
++#define ARCH_SUPPORTS_FTRACE_SAVE_REGS
 +#endif
-+
- #ifndef __ASSEMBLY__
- extern void mcount(void);
- extern atomic_t modifying_ftrace_code;
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 7d65133..2b4f94c 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -79,6 +79,7 @@ ENTRY(ftrace_caller)
-=20
- 	MCOUNT_SAVE_FRAME
-=20
-+	leaq function_trace_op, %rdx
- 	movq 0x38(%rsp), %rdi
- 	movq 8(%rbp), %rsi
- 	subq $MCOUNT_INSN_SIZE, %rdi
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 55e6d63..2d59641 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -18,6 +18,15 @@
-=20
- #include <asm/ftrace.h>
-=20
-+/*
-+ * If the arch supports passing the variable contents of
-+ * function_trace_op as the third parameter back from the
-+ * mcount call, then the arch should define this as 1.
-+ */
-+#ifndef ARCH_SUPPORTS_FTRACE_OPS
-+#define ARCH_SUPPORTS_FTRACE_OPS 0
-+#endif
-+
- struct module;
- struct ftrace_hash;
-=20
-@@ -29,7 +38,10 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
- 		     void __user *buffer, size_t *lenp,
- 		     loff_t *ppos);
-=20
--typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip);
-+struct ftrace_ops;
-+
-+typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
-+			      struct ftrace_ops *op);
-=20
- /*
-  * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
-@@ -163,7 +175,7 @@ static inline int ftrace_function_local_disabled(struct=
- ftrace_ops *ops)
- 	return *this_cpu_ptr(ops->disabled);
- }
-=20
--extern void ftrace_stub(unsigned long a0, unsigned long a1);
-+extern void ftrace_stub(unsigned long a0, unsigned long a1, struct ftrace_=
-ops *op);
-=20
- #else /* !CONFIG_FUNCTION_TRACER */
- /*
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index b4f20fb..4f2ab93 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -64,12 +64,19 @@
-=20
- #define FL_GLOBAL_CONTROL_MASK (FTRACE_OPS_FL_GLOBAL | FTRACE_OPS_FL_CONTR=
-OL)
-=20
-+static struct ftrace_ops ftrace_list_end __read_mostly =3D {
-+	.func		=3D ftrace_stub,
-+};
-+
- /* ftrace_enabled is a method to turn ftrace on or off */
- int ftrace_enabled __read_mostly;
- static int last_ftrace_enabled;
-=20
- /* Quick disabling of function tracer. */
--int function_trace_stop;
-+int function_trace_stop __read_mostly;
-+
-+/* Current function tracing op */
-+struct ftrace_ops *function_trace_op __read_mostly =3D &ftrace_list_end;
-=20
- /* List for set_ftrace_pid's pids. */
- LIST_HEAD(ftrace_pids);
-@@ -86,10 +93,6 @@ static int ftrace_disabled __read_mostly;
-=20
- static DEFINE_MUTEX(ftrace_lock);
-=20
--static struct ftrace_ops ftrace_list_end __read_mostly =3D {
--	.func		=3D ftrace_stub,
--};
--
- static struct ftrace_ops *ftrace_global_list __read_mostly =3D &ftrace_lis=
-t_end;
- static struct ftrace_ops *ftrace_control_list __read_mostly =3D &ftrace_li=
-st_end;
- static struct ftrace_ops *ftrace_ops_list __read_mostly =3D &ftrace_list_e=
-nd;
-@@ -100,8 +103,14 @@ ftrace_func_t ftrace_pid_function __read_mostly =3D ft=
-race_stub;
- static struct ftrace_ops global_ops;
- static struct ftrace_ops control_ops;
-=20
--static void
--ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
-+#if ARCH_SUPPORTS_FTRACE_OPS
-+static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
-+				 struct ftrace_ops *op);
-+#else
-+/* See comment below, where ftrace_ops_list_func is defined */
-+static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip);
-+#define ftrace_ops_list_func ((ftrace_func_t)ftrace_ops_no_ops)
-+#endif
-=20
- /*
-  * Traverse the ftrace_global_list, invoking all entries.  The reason that=
- we
-@@ -112,29 +121,29 @@ ftrace_ops_list_func(unsigned long ip, unsigned long =
-parent_ip);
-  *
-  * Silly Alpha and silly pointer-speculation compiler optimizations!
-  */
--static void ftrace_global_list_func(unsigned long ip,
--				    unsigned long parent_ip)
-+static void
-+ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
-+			struct ftrace_ops *op)
- {
--	struct ftrace_ops *op;
--
- 	if (unlikely(trace_recursion_test(TRACE_GLOBAL_BIT)))
- 		return;
-=20
- 	trace_recursion_set(TRACE_GLOBAL_BIT);
- 	op =3D rcu_dereference_raw(ftrace_global_list); /*see above*/
- 	while (op !=3D &ftrace_list_end) {
--		op->func(ip, parent_ip);
-+		op->func(ip, parent_ip, op);
- 		op =3D rcu_dereference_raw(op->next); /*see above*/
- 	};
- 	trace_recursion_clear(TRACE_GLOBAL_BIT);
- }
-=20
--static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip)
-+static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip,
-+			    struct ftrace_ops *op)
- {
- 	if (!test_tsk_trace_trace(current))
- 		return;
-=20
--	ftrace_pid_function(ip, parent_ip);
-+	ftrace_pid_function(ip, parent_ip, op);
- }
-=20
- static void set_ftrace_pid_function(ftrace_func_t func)
-@@ -163,12 +172,13 @@ void clear_ftrace_function(void)
-  * For those archs that do not test ftrace_trace_stop in their
-  * mcount call site, we need to do it from C.
-  */
--static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_i=
-p)
-+static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_i=
-p,
-+				  struct ftrace_ops *op)
- {
- 	if (function_trace_stop)
- 		return;
-=20
--	__ftrace_trace_function(ip, parent_ip);
-+	__ftrace_trace_function(ip, parent_ip, op);
- }
  #endif
 =20
-@@ -230,15 +240,24 @@ static void update_ftrace_function(void)
+ #ifndef __ASSEMBLY__
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index e3e17a0..5da11d1 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1109,7 +1109,8 @@ ENTRY(ftrace_caller)
+ 	pushl %eax
+ 	pushl %ecx
+ 	pushl %edx
+-	movl 0xc(%esp), %eax
++	pushl $0	/* Pass NULL as regs pointer */
++	movl 4*4(%esp), %eax
+ 	movl 0x4(%ebp), %edx
+ 	leal function_trace_op, %ecx
+ 	subl $MCOUNT_INSN_SIZE, %eax
+@@ -1118,6 +1119,7 @@ ENTRY(ftrace_caller)
+ ftrace_call:
+ 	call ftrace_stub
 =20
- 	/*
- 	 * If we are at the end of the list and this ops is
--	 * not dynamic, then have the mcount trampoline call
--	 * the function directly
-+	 * not dynamic and the arch supports passing ops, then have the
-+	 * mcount trampoline call the function directly.
- 	 */
- 	if (ftrace_ops_list =3D=3D &ftrace_list_end ||
- 	    (ftrace_ops_list->next =3D=3D &ftrace_list_end &&
--	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC)))
-+	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
-+	     ARCH_SUPPORTS_FTRACE_OPS)) {
-+		/* Set the ftrace_ops that the arch callback uses */
-+		if (ftrace_ops_list =3D=3D &global_ops)
-+			function_trace_op =3D ftrace_global_list;
-+		else
-+			function_trace_op =3D ftrace_ops_list;
- 		func =3D ftrace_ops_list->func;
--	else
-+	} else {
-+		/* Just use the default ftrace_ops */
-+		function_trace_op =3D &ftrace_list_end;
- 		func =3D ftrace_ops_list_func;
-+	}
++	addl $4,%esp	/* skip NULL pointer */
+ 	popl %edx
+ 	popl %ecx
+ 	popl %eax
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 2b4f94c..52bda2e 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -73,21 +73,34 @@ ENTRY(mcount)
+ 	retq
+ END(mcount)
 =20
- #ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	ftrace_trace_function =3D func;
-@@ -773,7 +792,8 @@ ftrace_profile_alloc(struct ftrace_profile_stat *stat, =
-unsigned long ip)
- }
++/* skip is set if stack has been adjusted */
++.macro ftrace_caller_setup skip=3D0
++	MCOUNT_SAVE_FRAME \skip
++
++	/* Load the ftrace_ops into the 3rd parameter */
++	leaq function_trace_op, %rdx
++
++	/* Load ip into the first parameter */
++	movq RIP(%rsp), %rdi
++	subq $MCOUNT_INSN_SIZE, %rdi
++	/* Load the parent_ip into the second parameter */
++	movq 8(%rbp), %rsi
++.endm
++
+ ENTRY(ftrace_caller)
++	/* Check if tracing was disabled (quick check) */
+ 	cmpl $0, function_trace_stop
+ 	jne  ftrace_stub
 =20
- static void
--function_profile_call(unsigned long ip, unsigned long parent_ip)
-+function_profile_call(unsigned long ip, unsigned long parent_ip,
-+		      struct ftrace_ops *ops)
- {
- 	struct ftrace_profile_stat *stat;
- 	struct ftrace_profile *rec;
-@@ -803,7 +823,7 @@ function_profile_call(unsigned long ip, unsigned long p=
-arent_ip)
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- static int profile_graph_entry(struct ftrace_graph_ent *trace)
- {
--	function_profile_call(trace->func, 0);
-+	function_profile_call(trace->func, 0, NULL);
- 	return 1;
- }
-=20
-@@ -2790,8 +2810,8 @@ static int __init ftrace_mod_cmd_init(void)
- }
- device_initcall(ftrace_mod_cmd_init);
-=20
--static void
--function_trace_probe_call(unsigned long ip, unsigned long parent_ip)
-+static void function_trace_probe_call(unsigned long ip, unsigned long pare=
-nt_ip,
-+				      struct ftrace_ops *op)
- {
- 	struct ftrace_func_probe *entry;
- 	struct hlist_head *hhd;
-@@ -3942,10 +3962,9 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned lon=
-g ip)
- #endif /* CONFIG_DYNAMIC_FTRACE */
-=20
- static void
--ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip)
-+ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
-+			struct ftrace_ops *op)
- {
--	struct ftrace_ops *op;
+-	MCOUNT_SAVE_FRAME
 -
- 	if (unlikely(trace_recursion_test(TRACE_CONTROL_BIT)))
- 		return;
+-	leaq function_trace_op, %rdx
+-	movq 0x38(%rsp), %rdi
+-	movq 8(%rbp), %rsi
+-	subq $MCOUNT_INSN_SIZE, %rdi
++	ftrace_caller_setup
++	/* regs go into 4th parameter (but make it NULL) */
++	movq $0, %rcx
 =20
-@@ -3959,7 +3978,7 @@ ftrace_ops_control_func(unsigned long ip, unsigned lo=
-ng parent_ip)
- 	while (op !=3D &ftrace_list_end) {
- 		if (!ftrace_function_local_disabled(op) &&
- 		    ftrace_ops_test(op, ip))
--			op->func(ip, parent_ip);
-+			op->func(ip, parent_ip, op);
+ GLOBAL(ftrace_call)
+ 	call ftrace_stub
 =20
- 		op =3D rcu_dereference_raw(op->next);
- 	};
-@@ -3971,8 +3990,9 @@ static struct ftrace_ops control_ops =3D {
- 	.func =3D ftrace_ops_control_func,
- };
+ 	MCOUNT_RESTORE_FRAME
++ftrace_return:
 =20
--static void
--ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
-+static inline void
-+__ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
-+		       struct ftrace_ops *ignored)
- {
- 	struct ftrace_ops *op;
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ GLOBAL(ftrace_graph_call)
+@@ -98,6 +111,71 @@ GLOBAL(ftrace_stub)
+ 	retq
+ END(ftrace_caller)
 =20
-@@ -3988,13 +4008,32 @@ ftrace_ops_list_func(unsigned long ip, unsigned lon=
-g parent_ip)
- 	op =3D rcu_dereference_raw(ftrace_ops_list);
- 	while (op !=3D &ftrace_list_end) {
- 		if (ftrace_ops_test(op, ip))
--			op->func(ip, parent_ip);
-+			op->func(ip, parent_ip, op);
- 		op =3D rcu_dereference_raw(op->next);
- 	};
- 	preempt_enable_notrace();
- 	trace_recursion_clear(TRACE_INTERNAL_BIT);
- }
++ENTRY(ftrace_regs_caller)
++	/* Save the current flags before compare (in SS location)*/
++	pushfq
++
++	/* Check if tracing was disabled (quick check) */
++	cmpl $0, function_trace_stop
++	jne  ftrace_restore_flags
++
++	/* skip=3D8 to skip flags saved in SS */
++	ftrace_caller_setup 8
++
++	/* Save the rest of pt_regs */
++	movq %r15, R15(%rsp)
++	movq %r14, R14(%rsp)
++	movq %r13, R13(%rsp)
++	movq %r12, R12(%rsp)
++	movq %r11, R11(%rsp)
++	movq %r10, R10(%rsp)
++	movq %rbp, RBP(%rsp)
++	movq %rbx, RBX(%rsp)
++	/* Copy saved flags */
++	movq SS(%rsp), %rcx
++	movq %rcx, EFLAGS(%rsp)
++	/* Kernel segments */
++	movq $__KERNEL_DS, %rcx
++	movq %rcx, SS(%rsp)
++	movq $__KERNEL_CS, %rcx
++	movq %rcx, CS(%rsp)
++	/* Stack - skipping return address */
++	leaq SS+16(%rsp), %rcx
++	movq %rcx, RSP(%rsp)
++
++	/* regs go into 4th parameter */
++	leaq (%rsp), %rcx
++
++GLOBAL(ftrace_regs_call)
++	call ftrace_stub
++
++	/* Copy flags back to SS, to restore them */
++	movq EFLAGS(%rsp), %rax
++	movq %rax, SS(%rsp)
++
++	/* restore the rest of pt_regs */
++	movq R15(%rsp), %r15
++	movq R14(%rsp), %r14
++	movq R13(%rsp), %r13
++	movq R12(%rsp), %r12
++	movq R10(%rsp), %r10
++	movq RBP(%rsp), %rbp
++	movq RBX(%rsp), %rbx
++
++	/* skip=3D8 to skip flags saved in SS */
++	MCOUNT_RESTORE_FRAME 8
++
++	/* Restore flags */
++	popfq
++
++	jmp ftrace_return
++ftrace_restore_flags:
++	popfq
++	jmp  ftrace_stub
++
++END(ftrace_regs_caller)
++
++
+ #else /* ! CONFIG_DYNAMIC_FTRACE */
+ ENTRY(mcount)
+ 	cmpl $0, function_trace_stop
+@@ -120,7 +198,7 @@ GLOBAL(ftrace_stub)
+ trace:
+ 	MCOUNT_SAVE_FRAME
 =20
+-	movq 0x38(%rsp), %rdi
++	movq RIP(%rsp), %rdi
+ 	movq 8(%rbp), %rsi
+ 	subq $MCOUNT_INSN_SIZE, %rdi
+=20
+@@ -141,7 +219,7 @@ ENTRY(ftrace_graph_caller)
+ 	MCOUNT_SAVE_FRAME
+=20
+ 	leaq 8(%rbp), %rdi
+-	movq 0x38(%rsp), %rsi
++	movq RIP(%rsp), %rsi
+ 	movq (%rbp), %rdx
+ 	subq $MCOUNT_INSN_SIZE, %rsi
+=20
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index c3a7cb4..b90eb1a 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -206,6 +206,23 @@ static int
+ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
+ 		   unsigned const char *new_code);
+=20
++#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
 +/*
-+ * Some archs only support passing ip and parent_ip. Even though
-+ * the list function ignores the op parameter, we do not want any
-+ * C side effects, where a function is called without the caller
-+ * sending a third parameter.
++ * Should never be called:
++ *  As it is only called by __ftrace_replace_code() which is called by
++ *  ftrace_replace_code() that x86 overrides, and by ftrace_update_code()
++ *  which is called to turn mcount into nops or nops into function calls
++ *  but not to convert a function from not using regs to one that uses
++ *  regs, which ftrace_modify_call() is for.
 + */
-+#if ARCH_SUPPORTS_FTRACE_OPS
-+static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
-+				 struct ftrace_ops *op)
++int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
++				 unsigned long addr)
 +{
-+	__ftrace_ops_list_func(ip, parent_ip, NULL);
-+}
-+#else
-+static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip)
-+{
-+	__ftrace_ops_list_func(ip, parent_ip, NULL);
++	WARN_ON(1);
++	return -EINVAL;
 +}
 +#endif
 +
- static void clear_ftrace_swapper(void)
+ int ftrace_update_ftrace_func(ftrace_func_t func)
  {
- 	struct task_struct *p;
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_per=
-f.c
-index fee3752..a872a9a 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -258,7 +258,8 @@ EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
+ 	unsigned long ip =3D (unsigned long)(&ftrace_call);
+@@ -220,6 +237,16 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
 =20
- #ifdef CONFIG_FUNCTION_TRACER
- static void
--perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
-+perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
-+			  struct ftrace_ops *ops)
- {
- 	struct ftrace_entry *entry;
- 	struct hlist_head *head;
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 29111da..88daa51 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1681,7 +1681,8 @@ static __init void event_trace_self_tests(void)
- static DEFINE_PER_CPU(atomic_t, ftrace_test_event_disable);
+ 	ret =3D ftrace_modify_code(ip, old, new);
 =20
- static void
--function_test_events_call(unsigned long ip, unsigned long parent_ip)
-+function_test_events_call(unsigned long ip, unsigned long parent_ip,
-+			  struct ftrace_ops *op)
- {
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index c7b0c6a..fceb7a9 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -48,7 +48,8 @@ static void function_trace_start(struct trace_array *tr)
++#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
++	/* Also update the regs callback function */
++	if (!ret) {
++		ip =3D (unsigned long)(&ftrace_regs_call);
++		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
++		new =3D ftrace_call_replace(ip, (unsigned long)func);
++		ret =3D ftrace_modify_code(ip, old, new);
++	}
++#endif
++
+ 	atomic_dec(&modifying_ftrace_code);
+=20
+ 	return ret;
+@@ -299,6 +326,32 @@ static int add_brk_on_nop(struct dyn_ftrace *rec)
+ 	return add_break(rec->ip, old);
  }
 =20
- static void
--function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip)
-+function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip,
-+				 struct ftrace_ops *op)
++/*
++ * If the record has the FTRACE_FL_REGS set, that means that it
++ * wants to convert to a callback that saves all regs. If FTRACE_FL_REGS
++ * is not not set, then it wants to convert to the normal callback.
++ */
++static unsigned long get_ftrace_addr(struct dyn_ftrace *rec)
++{
++	if (rec->flags & FTRACE_FL_REGS)
++		return (unsigned long)FTRACE_REGS_ADDR;
++	else
++		return (unsigned long)FTRACE_ADDR;
++}
++
++/*
++ * The FTRACE_FL_REGS_EN is set when the record already points to
++ * a function that saves all the regs. Basically the '_EN' version
++ * represents the current state of the function.
++ */
++static unsigned long get_ftrace_old_addr(struct dyn_ftrace *rec)
++{
++	if (rec->flags & FTRACE_FL_REGS_EN)
++		return (unsigned long)FTRACE_REGS_ADDR;
++	else
++		return (unsigned long)FTRACE_ADDR;
++}
++
+ static int add_breakpoints(struct dyn_ftrace *rec, int enable)
  {
- 	struct trace_array *tr =3D func_trace;
- 	struct trace_array_cpu *data;
-@@ -75,7 +76,8 @@ function_trace_call_preempt_only(unsigned long ip, unsign=
-ed long parent_ip)
+ 	unsigned long ftrace_addr;
+@@ -306,7 +359,7 @@ static int add_breakpoints(struct dyn_ftrace *rec, int =
+enable)
+=20
+ 	ret =3D ftrace_test_record(rec, enable);
+=20
+-	ftrace_addr =3D (unsigned long)FTRACE_ADDR;
++	ftrace_addr =3D get_ftrace_addr(rec);
+=20
+ 	switch (ret) {
+ 	case FTRACE_UPDATE_IGNORE:
+@@ -316,6 +369,10 @@ static int add_breakpoints(struct dyn_ftrace *rec, int=
+ enable)
+ 		/* converting nop to call */
+ 		return add_brk_on_nop(rec);
+=20
++	case FTRACE_UPDATE_MODIFY_CALL_REGS:
++	case FTRACE_UPDATE_MODIFY_CALL:
++		ftrace_addr =3D get_ftrace_old_addr(rec);
++		/* fall through */
+ 	case FTRACE_UPDATE_MAKE_NOP:
+ 		/* converting a call to a nop */
+ 		return add_brk_on_call(rec, ftrace_addr);
+@@ -360,13 +417,21 @@ static int remove_breakpoint(struct dyn_ftrace *rec)
+ 		 * If not, don't touch the breakpoint, we make just create
+ 		 * a disaster.
+ 		 */
+-		ftrace_addr =3D (unsigned long)FTRACE_ADDR;
++		ftrace_addr =3D get_ftrace_addr(rec);
++		nop =3D ftrace_call_replace(ip, ftrace_addr);
++
++		if (memcmp(&ins[1], &nop[1], MCOUNT_INSN_SIZE - 1) =3D=3D 0)
++			goto update;
++
++		/* Check both ftrace_addr and ftrace_old_addr */
++		ftrace_addr =3D get_ftrace_old_addr(rec);
+ 		nop =3D ftrace_call_replace(ip, ftrace_addr);
+=20
+ 		if (memcmp(&ins[1], &nop[1], MCOUNT_INSN_SIZE - 1) !=3D 0)
+ 			return -EINVAL;
+ 	}
+=20
++ update:
+ 	return probe_kernel_write((void *)ip, &nop[0], 1);
  }
 =20
- static void
--function_trace_call(unsigned long ip, unsigned long parent_ip)
-+function_trace_call(unsigned long ip, unsigned long parent_ip,
-+		    struct ftrace_ops *op)
- {
- 	struct trace_array *tr =3D func_trace;
- 	struct trace_array_cpu *data;
-@@ -106,7 +108,8 @@ function_trace_call(unsigned long ip, unsigned long par=
-ent_ip)
- }
+@@ -405,12 +470,14 @@ static int add_update(struct dyn_ftrace *rec, int ena=
+ble)
 =20
- static void
--function_stack_trace_call(unsigned long ip, unsigned long parent_ip)
-+function_stack_trace_call(unsigned long ip, unsigned long parent_ip,
-+			  struct ftrace_ops *op)
- {
- 	struct trace_array *tr =3D func_trace;
- 	struct trace_array_cpu *data;
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 99d20e9..2862c77 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -136,7 +136,8 @@ static int func_prolog_dec(struct trace_array *tr,
-  * irqsoff uses its own tracer function to keep the overhead down:
+ 	ret =3D ftrace_test_record(rec, enable);
+=20
+-	ftrace_addr =3D (unsigned long)FTRACE_ADDR;
++	ftrace_addr  =3D get_ftrace_addr(rec);
+=20
+ 	switch (ret) {
+ 	case FTRACE_UPDATE_IGNORE:
+ 		return 0;
+=20
++	case FTRACE_UPDATE_MODIFY_CALL_REGS:
++	case FTRACE_UPDATE_MODIFY_CALL:
+ 	case FTRACE_UPDATE_MAKE_CALL:
+ 		/* converting nop to call */
+ 		return add_update_call(rec, ftrace_addr);
+@@ -455,12 +522,14 @@ static int finish_update(struct dyn_ftrace *rec, int =
+enable)
+=20
+ 	ret =3D ftrace_update_record(rec, enable);
+=20
+-	ftrace_addr =3D (unsigned long)FTRACE_ADDR;
++	ftrace_addr =3D get_ftrace_addr(rec);
+=20
+ 	switch (ret) {
+ 	case FTRACE_UPDATE_IGNORE:
+ 		return 0;
+=20
++	case FTRACE_UPDATE_MODIFY_CALL_REGS:
++	case FTRACE_UPDATE_MODIFY_CALL:
+ 	case FTRACE_UPDATE_MAKE_CALL:
+ 		/* converting nop to call */
+ 		return finish_update_call(rec, ftrace_addr);
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index e420288..ab39990 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -71,12 +71,28 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigne=
+d long parent_ip,
+  *           could be controled by following calls:
+  *             ftrace_function_local_enable
+  *             ftrace_function_local_disable
++ * SAVE_REGS - The ftrace_ops wants regs saved at each function called
++ *            and passed to the callback. If this flag is set, but the
++ *            architecture does not support passing regs
++ *            (ARCH_SUPPORTS_FTRACE_SAVE_REGS is not defined), then the
++ *            ftrace_ops will fail to register, unless the next flag
++ *            is set.
++ * SAVE_REGS_IF_SUPPORTED - This is the same as SAVE_REGS, but if the
++ *            handler can handle an arch that does not save regs
++ *            (the handler tests if regs =3D=3D NULL), then it can set
++ *            this flag instead. It will not fail registering the ftrace_o=
+ps
++ *            but, the regs field will be NULL if the arch does not support
++ *            passing regs to the handler.
++ *            Note, if this flag is set, the SAVE_REGS flag will automatic=
+ally
++ *            get set upon registering the ftrace_ops, if the arch support=
+s it.
   */
- static void
--irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip)
-+irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip,
-+		    struct ftrace_ops *op)
- {
- 	struct trace_array *tr =3D irqsoff_trace;
- 	struct trace_array_cpu *data;
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_w=
-akeup.c
-index ff791ea..0caf4f5 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -108,7 +108,7 @@ out_enable:
-  * wakeup uses its own tracer function to keep the overhead down:
+ enum {
+-	FTRACE_OPS_FL_ENABLED		=3D 1 << 0,
+-	FTRACE_OPS_FL_GLOBAL		=3D 1 << 1,
+-	FTRACE_OPS_FL_DYNAMIC		=3D 1 << 2,
+-	FTRACE_OPS_FL_CONTROL		=3D 1 << 3,
++	FTRACE_OPS_FL_ENABLED			=3D 1 << 0,
++	FTRACE_OPS_FL_GLOBAL			=3D 1 << 1,
++	FTRACE_OPS_FL_DYNAMIC			=3D 1 << 2,
++	FTRACE_OPS_FL_CONTROL			=3D 1 << 3,
++	FTRACE_OPS_FL_SAVE_REGS			=3D 1 << 4,
++	FTRACE_OPS_FL_SAVE_REGS_IF_SUPPORTED	=3D 1 << 5,
+ };
+=20
+ struct ftrace_ops {
+@@ -254,12 +270,31 @@ extern void unregister_ftrace_function_probe_all(char=
+ *glob);
+=20
+ extern int ftrace_text_reserved(void *start, void *end);
+=20
++/*
++ * The dyn_ftrace record's flags field is split into two parts.
++ * the first part which is '0-FTRACE_REF_MAX' is a counter of
++ * the number of callbacks that have registered the function that
++ * the dyn_ftrace descriptor represents.
++ *
++ * The second part is a mask:
++ *  ENABLED - the function is being traced
++ *  REGS    - the record wants the function to save regs
++ *  REGS_EN - the function is set up to save regs.
++ *
++ * When a new ftrace_ops is registered and wants a function to save
++ * pt_regs, the rec->flag REGS is set. When the function has been
++ * set up to save regs, the REG_EN flag is set. Once a function
++ * starts saving regs it will do so until all ftrace_ops are removed
++ * from tracing that function.
++ */
+ enum {
+-	FTRACE_FL_ENABLED	=3D (1 << 30),
++	FTRACE_FL_ENABLED	=3D (1UL << 29),
++	FTRACE_FL_REGS		=3D (1UL << 30),
++	FTRACE_FL_REGS_EN	=3D (1UL << 31)
+ };
+=20
+-#define FTRACE_FL_MASK		(0x3UL << 30)
+-#define FTRACE_REF_MAX		((1 << 30) - 1)
++#define FTRACE_FL_MASK		(0x7UL << 29)
++#define FTRACE_REF_MAX		((1UL << 29) - 1)
+=20
+ struct dyn_ftrace {
+ 	union {
+@@ -290,9 +325,23 @@ enum {
+ 	FTRACE_STOP_FUNC_RET		=3D (1 << 4),
+ };
+=20
++/*
++ * The FTRACE_UPDATE_* enum is used to pass information back
++ * from the ftrace_update_record() and ftrace_test_record()
++ * functions. These are called by the code update routines
++ * to find out what is to be done for a given function.
++ *
++ *  IGNORE           - The function is already what we want it to be
++ *  MAKE_CALL        - Start tracing the function
++ *  MODIFY_CALL      - Stop saving regs for the function
++ *  MODIFY_CALL_REGS - Start saving regs for the function
++ *  MAKE_NOP         - Stop tracing the function
++ */
+ enum {
+ 	FTRACE_UPDATE_IGNORE,
+ 	FTRACE_UPDATE_MAKE_CALL,
++	FTRACE_UPDATE_MODIFY_CALL,
++	FTRACE_UPDATE_MODIFY_CALL_REGS,
+ 	FTRACE_UPDATE_MAKE_NOP,
+ };
+=20
+@@ -344,7 +393,9 @@ extern int ftrace_dyn_arch_init(void *data);
+ extern void ftrace_replace_code(int enable);
+ extern int ftrace_update_ftrace_func(ftrace_func_t func);
+ extern void ftrace_caller(void);
++extern void ftrace_regs_caller(void);
+ extern void ftrace_call(void);
++extern void ftrace_regs_call(void);
+ extern void mcount_call(void);
+=20
+ void ftrace_modify_all_code(int command);
+@@ -352,6 +403,15 @@ void ftrace_modify_all_code(int command);
+ #ifndef FTRACE_ADDR
+ #define FTRACE_ADDR ((unsigned long)ftrace_caller)
+ #endif
++
++#ifndef FTRACE_REGS_ADDR
++#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
++# define FTRACE_REGS_ADDR ((unsigned long)ftrace_regs_caller)
++#else
++# define FTRACE_REGS_ADDR FTRACE_ADDR
++#endif
++#endif
++
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ extern void ftrace_graph_caller(void);
+ extern int ftrace_enable_ftrace_graph_caller(void);
+@@ -407,6 +467,39 @@ extern int ftrace_make_nop(struct module *mod,
   */
- static void
--wakeup_tracer_call(unsigned long ip, unsigned long parent_ip)
-+wakeup_tracer_call(unsigned long ip, unsigned long parent_ip, struct ftrac=
-e_ops *op)
- {
- 	struct trace_array *tr =3D wakeup_trace;
- 	struct trace_array_cpu *data;
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 288541f..9ae40c8 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -103,35 +103,40 @@ static inline void warn_failed_init_tracer(struct tra=
-cer *trace, int init_ret)
+ extern int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr);
 =20
- static int trace_selftest_test_probe1_cnt;
- static void trace_selftest_test_probe1_func(unsigned long ip,
--					    unsigned long pip)
-+					    unsigned long pip,
-+					    struct ftrace_ops *op)
- {
- 	trace_selftest_test_probe1_cnt++;
++#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
++/**
++ * ftrace_modify_call - convert from one addr to another (no nop)
++ * @rec: the mcount call site record
++ * @old_addr: the address expected to be currently called to
++ * @addr: the address to change to
++ *
++ * This is a very sensitive operation and great care needs
++ * to be taken by the arch.  The operation should carefully
++ * read the location, check to see if what is read is indeed
++ * what we expect it to be, and then on success of the compare,
++ * it should write to the location.
++ *
++ * The code segment at @rec->ip should be a caller to @old_addr
++ *
++ * Return must be:
++ *  0 on success
++ *  -EFAULT on error reading the location
++ *  -EINVAL on a failed compare of the contents
++ *  -EPERM  on error writing to the location
++ * Any other value will be considered a failure.
++ */
++extern int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_ad=
+dr,
++			      unsigned long addr);
++#else
++/* Should never be called */
++static inline int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long=
+ old_addr,
++				     unsigned long addr)
++{
++	return -EINVAL;
++}
++#endif
++
+ /* May be defined in arch */
+ extern int ftrace_arch_read_dyn_info(char *buf, int size);
+=20
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 6ff07ad..c55f7e2 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -314,6 +314,20 @@ static int __register_ftrace_function(struct ftrace_op=
+s *ops)
+ 	if ((ops->flags & FL_GLOBAL_CONTROL_MASK) =3D=3D FL_GLOBAL_CONTROL_MASK)
+ 		return -EINVAL;
+=20
++#ifndef ARCH_SUPPORTS_FTRACE_SAVE_REGS
++	/*
++	 * If the ftrace_ops specifies SAVE_REGS, then it only can be used
++	 * if the arch supports it, or SAVE_REGS_IF_SUPPORTED is also set.
++	 * Setting SAVE_REGS_IF_SUPPORTED makes SAVE_REGS irrelevant.
++	 */
++	if (ops->flags & FTRACE_OPS_FL_SAVE_REGS &&
++	    !(ops->flags & FTRACE_OPS_FL_SAVE_REGS_IF_SUPPORTED))
++		return -EINVAL;
++
++	if (ops->flags & FTRACE_OPS_FL_SAVE_REGS_IF_SUPPORTED)
++		ops->flags |=3D FTRACE_OPS_FL_SAVE_REGS;
++#endif
++
+ 	if (!core_kernel_data((unsigned long)ops))
+ 		ops->flags |=3D FTRACE_OPS_FL_DYNAMIC;
+=20
+@@ -1515,6 +1529,12 @@ static void __ftrace_hash_rec_update(struct ftrace_o=
+ps *ops,
+ 			rec->flags++;
+ 			if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) =3D=3D FTRACE_REF_MAX=
+))
+ 				return;
++			/*
++			 * If any ops wants regs saved for this function
++			 * then all ops will get saved regs.
++			 */
++			if (ops->flags & FTRACE_OPS_FL_SAVE_REGS)
++				rec->flags |=3D FTRACE_FL_REGS;
+ 		} else {
+ 			if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) =3D=3D 0))
+ 				return;
+@@ -1606,18 +1626,59 @@ static int ftrace_check_record(struct dyn_ftrace *r=
+ec, int enable, int update)
+ 	if (enable && (rec->flags & ~FTRACE_FL_MASK))
+ 		flag =3D FTRACE_FL_ENABLED;
+=20
++	/*
++	 * If enabling and the REGS flag does not match the REGS_EN, then
++	 * do not ignore this record. Set flags to fail the compare against
++	 * ENABLED.
++	 */
++	if (flag &&
++	    (!(rec->flags & FTRACE_FL_REGS) !=3D !(rec->flags & FTRACE_FL_REGS_EN=
+)))
++		flag |=3D FTRACE_FL_REGS;
++
+ 	/* If the state of this record hasn't changed, then do nothing */
+ 	if ((rec->flags & FTRACE_FL_ENABLED) =3D=3D flag)
+ 		return FTRACE_UPDATE_IGNORE;
+=20
+ 	if (flag) {
+-		if (update)
++		/* Save off if rec is being enabled (for return value) */
++		flag ^=3D rec->flags & FTRACE_FL_ENABLED;
++
++		if (update) {
+ 			rec->flags |=3D FTRACE_FL_ENABLED;
+-		return FTRACE_UPDATE_MAKE_CALL;
++			if (flag & FTRACE_FL_REGS) {
++				if (rec->flags & FTRACE_FL_REGS)
++					rec->flags |=3D FTRACE_FL_REGS_EN;
++				else
++					rec->flags &=3D ~FTRACE_FL_REGS_EN;
++			}
++		}
++
++		/*
++		 * If this record is being updated from a nop, then
++		 *   return UPDATE_MAKE_CALL.
++		 * Otherwise, if the EN flag is set, then return
++		 *   UPDATE_MODIFY_CALL_REGS to tell the caller to convert
++		 *   from the non-save regs, to a save regs function.
++		 * Otherwise,
++		 *   return UPDATE_MODIFY_CALL to tell the caller to convert
++		 *   from the save regs, to a non-save regs function.
++		 */
++		if (flag & FTRACE_FL_ENABLED)
++			return FTRACE_UPDATE_MAKE_CALL;
++		else if (rec->flags & FTRACE_FL_REGS_EN)
++			return FTRACE_UPDATE_MODIFY_CALL_REGS;
++		else
++			return FTRACE_UPDATE_MODIFY_CALL;
+ 	}
+=20
+-	if (update)
+-		rec->flags &=3D ~FTRACE_FL_ENABLED;
++	if (update) {
++		/* If there's no more users, clear all flags */
++		if (!(rec->flags & ~FTRACE_FL_MASK))
++			rec->flags =3D 0;
++		else
++			/* Just disable the record (keep REGS state) */
++			rec->flags &=3D ~FTRACE_FL_ENABLED;
++	}
+=20
+ 	return FTRACE_UPDATE_MAKE_NOP;
  }
-=20
- static int trace_selftest_test_probe2_cnt;
- static void trace_selftest_test_probe2_func(unsigned long ip,
--					    unsigned long pip)
-+					    unsigned long pip,
-+					    struct ftrace_ops *op)
+@@ -1652,13 +1713,17 @@ int ftrace_test_record(struct dyn_ftrace *rec, int =
+enable)
+ static int
+ __ftrace_replace_code(struct dyn_ftrace *rec, int enable)
  {
- 	trace_selftest_test_probe2_cnt++;
- }
++	unsigned long ftrace_old_addr;
+ 	unsigned long ftrace_addr;
+ 	int ret;
 =20
- static int trace_selftest_test_probe3_cnt;
- static void trace_selftest_test_probe3_func(unsigned long ip,
--					    unsigned long pip)
-+					    unsigned long pip,
-+					    struct ftrace_ops *op)
- {
- 	trace_selftest_test_probe3_cnt++;
- }
+-	ftrace_addr =3D (unsigned long)FTRACE_ADDR;
+-
+ 	ret =3D ftrace_update_record(rec, enable);
 =20
- static int trace_selftest_test_global_cnt;
- static void trace_selftest_test_global_func(unsigned long ip,
--					    unsigned long pip)
-+					    unsigned long pip,
-+					    struct ftrace_ops *op)
- {
- 	trace_selftest_test_global_cnt++;
- }
++	if (rec->flags & FTRACE_FL_REGS)
++		ftrace_addr =3D (unsigned long)FTRACE_REGS_ADDR;
++	else
++		ftrace_addr =3D (unsigned long)FTRACE_ADDR;
++
+ 	switch (ret) {
+ 	case FTRACE_UPDATE_IGNORE:
+ 		return 0;
+@@ -1668,6 +1733,15 @@ __ftrace_replace_code(struct dyn_ftrace *rec, int en=
+able)
 =20
- static int trace_selftest_test_dyn_cnt;
- static void trace_selftest_test_dyn_func(unsigned long ip,
--					 unsigned long pip)
-+					 unsigned long pip,
-+					 struct ftrace_ops *op)
- {
- 	trace_selftest_test_dyn_cnt++;
- }
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index d4545f4..e20006d 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -111,7 +111,7 @@ static inline void check_stack(void)
- }
+ 	case FTRACE_UPDATE_MAKE_NOP:
+ 		return ftrace_make_nop(NULL, rec, ftrace_addr);
++
++	case FTRACE_UPDATE_MODIFY_CALL_REGS:
++	case FTRACE_UPDATE_MODIFY_CALL:
++		if (rec->flags & FTRACE_FL_REGS)
++			ftrace_old_addr =3D (unsigned long)FTRACE_ADDR;
++		else
++			ftrace_old_addr =3D (unsigned long)FTRACE_REGS_ADDR;
++
++		return ftrace_modify_call(rec, ftrace_old_addr, ftrace_addr);
+ 	}
 =20
- static void
--stack_trace_call(unsigned long ip, unsigned long parent_ip)
-+stack_trace_call(unsigned long ip, unsigned long parent_ip, struct ftrace_=
-ops *op)
- {
- 	int cpu;
+ 	return -1; /* unknow ftrace bug */
+@@ -2421,8 +2495,9 @@ static int t_show(struct seq_file *m, void *v)
 =20
+ 	seq_printf(m, "%ps", (void *)rec->ip);
+ 	if (iter->flags & FTRACE_ITER_ENABLED)
+-		seq_printf(m, " (%ld)",
+-			   rec->flags & ~FTRACE_FL_MASK);
++		seq_printf(m, " (%ld)%s",
++			   rec->flags & ~FTRACE_FL_MASK,
++			   rec->flags & FTRACE_FL_REGS ? " R" : "");
+ 	seq_printf(m, "\n");
+=20
+ 	return 0;
 --=20
 1.7.10.4
 
@@ -547,19 +794,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChIRAAoJEIy3vGnGbaoA5r8QAKphZqRTZUxtkma6gFYN4k7L
-ay44ZVwIhsczMfYG5uR3kME78D+qRNvY2ANmFDadCa1bAvi9ByIE+eTced7Xb1+s
-WBe3ENIzrhWDgm3gjbKlCdoQpWMZkM4FqVzBiBDGPiJhOlKM2Ryvk78NZ+O4p8/y
-jvj40te95QdZzPZ55f5ZxrOFkYj/bvI3cKCIOe2xmzRhThfu4LATe/KMPjUe2CYI
-3HQb02hvmJ/gyOckQ+W2EuHfVXgfQmUfo+hWI1lnoBRXLLI8Q4Am/gJzcnmYtxb4
-4aKt4Rm66EaWOQ6r724LjS40+0N1lm3YvKXX2h8PEF65pCDpaw4++6Gl2WZBrNZ0
-yYzNsMI/sNdEtc8dcFkHFIMjR+RxXVAqcKQUPXR1uZdDwYHRflN4O6mwx7lo7hbB
-FNsy/dlmkbnuDiVcgUaOHHdz53H4/XGParPMrge+ncGR2GpFGzTqbYgp3zTbVNHy
-2t0KQM1CvA4D6cbieqXkDsEqoCjN7IE960iJJU9Uq5AVsRbFe0WSFMc/keI+4xH4
-V/+lOHpIfeaI0sA53p1VRuOhizs6O7OujsE0YKzNBoib2cp6u7fSi1fBDSH+uGc6
-asNf3QzyWIJDDO7sArrm35PUGJyxq4pVX7FGc5+03G2xikj1MWDnowK/w5kcDy6/
-SAv75abOSe3EgWx6GxZ2
-=SOrW
+iQIcBAABAgAGBQJQChITAAoJEIy3vGnGbaoAiI0QAKg7SoryFImnvCcKfKVLmVEs
+vd96Gkfqk96NcYGaZmz82JPdC+U4fggiWP/AHx0P+PWnGDlGT8/sYBvLOD3uNupk
+9GZu2iizUc+5NkZ/mJk6Lv2Ct+lKEDCWbPFchlIO6Aaiy7M0sfQdo5Ohz53nEODz
+XzPm5Lglga9jO59Z6ss1Rp/nDGpUrJ5pNYIPuJYjDIIm/Rb8aqLhqfbRnmk009yA
+dYl+YoDXwImPLZMSvDCjGDGZDclL5DH64BPkQxkWp/JALT26WqfMx+7NC76BREQX
+nNHHCEekfVJTGmln9myBE93wBIrrpTqvir5/qMoOa8YBdxXVfD0p2ny+HVDVlVWK
+djXdjtSi2POOqQKqzfY7zfRwXVJO3XVoEIM1AplPwVKTrCspaX9h48n3BBXPpCcb
+48uXDGJnVYmRcOXq0OS5VAcBQOgZEkf42zU/NNDrYM4+9v3gKGWZdiGgdOr1j7HD
+jTDMLE9lmsVJIfF5MSGJetBaJpQ5RHQ2scffoZ4ECRsivF15UatXV+X+5605IWB+
+Vw9wB5IPb+g4g35TACM+fVUHb0007bgMqIOW6YYs3lwn2AHtr6uzqxqMauQSyzaI
+fqrs16OhkwtjGeHtMwvb/+t1auqmKjQ/GHPg7v8PWQcKbX2Y5UJ01CWuRuJqqU6F
+phQtptHf6m2x//dS9ssr
+=f1zm
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
