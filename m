@@ -1,101 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab2GURbm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 13:31:42 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37104 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab2GURbk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 13:31:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
-References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 21 Jul 2012 10:31:17 -0700
-X-Google-Sender-Auth: nmEpbpzz_EypuJUczZCQzkCwC38
-Message-ID: <CA+55aFwZRvtpE2e3zNqvtobpPROqw_bOwNt+=DBzmScV0_rq=w@mail.gmail.com>
-Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
+	id S1752164Ab2GURne (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 13:43:34 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:50827 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401Ab2GURnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 13:43:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
+Date: Sat, 21 Jul 2012 19:49:13 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
+        "linux-usb" <linux-usb@vger.kernel.org>,
         Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oneukum@suse.de>
+References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+In-Reply-To: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207211949.13944.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 5:33 AM, Ming Lei <tom.leiming@gmail.com> wrote:
+On Friday, July 20, 2012, Ming Lei wrote:
 > The RFC patch is just for discussing if the idea of deferring
 > request_firmware is doable for addressing the issue of
 > request_firmware in resume path, which is caused by driver
 > unbind/rebind during resume.
+> 
+> At least usb bus is involved in such things, one driver may be
+> unbound and rebound in resume path at several situations, and
+> request_firmware is often called inside probe().
+> 
+> Also the idea should be helpful for other hotplug buses too,
+> at least there was the similar problem report on pcmcia bus.
+> 
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> index 6cd2c6c..fb02eff 100644
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -123,7 +123,7 @@ static bool driver_deferred_probe_enable = false;
+>   * list and schedules the deferred probe workqueue to process them.  It
+>   * should be called anytime a driver is successfully bound to a device.
+>   */
+> -static void driver_deferred_probe_trigger(void)
+> +void driver_deferred_probe_trigger(void)
+>  {
+>  	if (!driver_deferred_probe_enable)
+>  		return;
+> @@ -144,6 +144,7 @@ static void driver_deferred_probe_trigger(void)
+>  	 */
+>  	queue_work(deferred_wq, &deferred_probe_work);
+>  }
+> +EXPORT_SYMBOL_GPL(driver_deferred_probe_trigger);
+> 
+>  /**
+>   * deferred_probe_initcall() - Enable probing of deferred devices
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 5401814..4fe742f 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -593,6 +593,9 @@ request_firmware(const struct firmware
+> **firmware_p, const char *name,
+>  	if (IS_ERR_OR_NULL(fw_priv))
+>  		return PTR_RET(fw_priv);
+> 
+> +	if (system_state != SYSTEM_RUNNING)
+> +		return -EPROBE_DEFER;
 
-NAK.
+You can't just return here, _request_firmware_cleanup() has to be done still.
 
-It really *has* to be handled some other way.
+> +
+>  	ret = usermodehelper_read_trylock();
 
-This whole approach seems to actively try to *silently* fix up broken
-drivers. And it's wrong.
+So why don't you do this here, actually, like:
 
-There's a reason we warn, and there's a reason we *have* to warn: to
-let driver writers know that what they are attempting to do MAY NOT
-WORK.
+ 	if (ret) {
+ 	 	ret = -EPROBE_DEFER;
+ 	} else {
 
-Really.
+instead of the WARN_ON()?
 
-Sure, for a lot of devices it's fine to load the firmware later. But
-some devices may be part of the resume sequence in very critical ways,
-and deferring the firmware loading will just mean that the resume will
-fail.
+Arguably, all cases in which usermodehelper_read_trylock() returns error
+codes will require deferred probing.
 
-This we *need* the WARN_ON() - so that even in the case where it
-happens to work, people are very much told that "sure, your
-suspend/resume may have worked, but it was doing fundamentally wrong
-things that may mean that for other people it *won't* work".
+>  	if (WARN_ON(ret)) {
+>  		dev_err(device, "firmware: %s will not be loaded\n", name);
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index d0e4d99..a63d3171 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -244,7 +244,7 @@ extern struct device_driver *driver_find(const char *name,
+>  					 struct bus_type *bus);
+>  extern int driver_probe_done(void);
+>  extern void wait_for_device_probe(void);
+> -
+> +extern void driver_deferred_probe_trigger(void);
+> 
+>  /* sysfs interface for exporting driver attributes */
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index e07f5e0..c8d74c6 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -378,6 +378,7 @@ extern enum system_states {
+>  	SYSTEM_POWER_OFF,
+>  	SYSTEM_RESTART,
+>  	SYSTEM_SUSPEND_DISK,
+> +	SYSTEM_SUSPEND,
 
-For example, maybe it's a USB network dongle, and for *YOU* it is
-perfectly fine to defer the firmware loading, so that the network
-comes back up a few seconds after the system is up and running.
+First off, SYSTEM_SUSPEND_DISK is not used and probably should be removed.
+Second, both SYSTEM_SUSPEND and SYSTEM_SUSPEND_DISK would require the same
+kind of handling in the respect of device probing, so it is not sufficient
+to change the state in suspend_devices_and_enter().
 
-But in another machine, that exact same USB network dongle may
-actually be hardwired on the motherboard (it's fairly common to use
-USB as a "system bus" in some laptop and embedded devices), and maybe
-that other machine actually is a thin client that has some tiny rdinit
-thing, and then everything else is NFS-mounted, and if you resume
-without networking, the machine is simply *dead*.
+Moreover, there are other situations in which tasks are frozen and
+request_firmware() won't work just as well, so I don't think using
+system_state for that is going to work in general.
 
-Ok, so that was a completely made-up example, but we have actually had
-situations kind of like that, where a device is just not that
-important for lots of people, but in other situations it's critical
-for the rest of the suspend/resume to succeed.
+>  } system_state;
+> 
+>  #define TAINT_PROPRIETARY_MODULE	0
+> diff --git a/init/main.c b/init/main.c
+> index e60679d..237eae1 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -809,6 +809,8 @@ static noinline int init_post(void)
+>  	current->signal->flags |= SIGNAL_UNKILLABLE;
+>  	flush_delayed_fput();
+> 
+> +	driver_deferred_probe_trigger();
+> +
+>  	if (ramdisk_execute_command) {
+>  		run_init_process(ramdisk_execute_command);
+>  		printk(KERN_WARNING "Failed to execute %s\n",
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index 1da39ea..dbf6ffb 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -224,6 +224,9 @@ int suspend_devices_and_enter(suspend_state_t state)
+>  		goto Recover_platform;
+>  	}
+>  	suspend_test_finish("suspend devices");
+> +
+> +	system_state = SYSTEM_SUSPEND;
+> +
+>  	if (suspend_test(TEST_DEVICES))
+>  		goto Recover_platform;
+> 
+> @@ -301,6 +304,10 @@ static int enter_state(suspend_state_t state)
+>   Finish:
+>  	pr_debug("PM: Finishing wakeup.\n");
+>  	suspend_finish();
+> +
+> +	system_state = SYSTEM_RUNNING;
+> +	driver_deferred_probe_trigger();
+> +
+>   Unlock:
+>  	mutex_unlock(&pm_mutex);
+>  	return error;
 
-This is why I'm so vehemently against silently "hiding" these issues.
-
-If you have a driver that has problems, make THAT ONE PARTICULAR
-driver do the deferral explicitly. Don't make some generic "silently
-defer if there are problems" patch.
-
-See what I'm saying? You're solving things in exactly the wrong place,
-and in exactly the wrong way. You're papering things over, and making
-the generic code silently just make broken cases work. That's really
-really bad, because it makes it *easier* for driver writers to do the
-wrong thing without even thinking about it, and without ever seeing
-the problem. And then when people say "suspend/resume doesn't work",
-the driver author says "it works for me" and ignores the problem.
-Because you've systemically made it easy to ignore the problem, and
-made it easy to do the wrong thing by default.
-
-So we should make driver writers do the right thing by default, and if
-they cannot do the right thing (and the "isight" camera always comes
-up, and f*ck it, just fix that driver) then they should do extra work.
-
-Seriously. People should load their firmware *before* the
-suspend/resume cycle. And if that isn't possible, then the system
-should ABSOLUTELY NOT silently say "whatever" and defer it until
-later.  We should have that big failure and the big noisy warning, and
-drivers that need to defer need to do so themselves, so that we never
-*ever* have that silent automatic defer situation.
-
-                          Linus
+Thanks,
+Rafael
