@@ -1,55 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab2GUXXt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 19:23:49 -0400
-Received: from void.printf.net ([89.145.121.20]:41832 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab2GUXXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 19:23:48 -0400
-From: Chris Ball <cjb@laptop.org>
-To: "S\, Venkatraman" <svenkatr@ti.com>
-Cc: Kevin Hilman <khilman@ti.com>, linux-mmc@vger.kernel.org,
-        linux-omap@vger.kernel.org, Balaji T K <balajitk@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: omap_hsmmc: ensure probe returns error upon resource failure
-References: <1341963658-20896-1-git-send-email-khilman@ti.com>
-	<CANfBPZ8afVFt8UFr2Bi1M=NYbr_W0oH5ZOy90EXdQ9zaVm63dQ@mail.gmail.com>
-Date: Sat, 21 Jul 2012 19:23:35 -0400
-In-Reply-To: <CANfBPZ8afVFt8UFr2Bi1M=NYbr_W0oH5ZOy90EXdQ9zaVm63dQ@mail.gmail.com>
-	(Venkatraman S.'s message of "Thu, 12 Jul 2012 11:49:13 +0530")
-Message-ID: <87k3xw3dhk.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	id S1752194Ab2GUXYV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 19:24:21 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40490 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705Ab2GUXYT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 19:24:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CA+55aFwte5bc-4FC758pBN3FbrtKQfwm_Mv_banekhL=kSF8kg@mail.gmail.com>
+References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+	<CA+55aFwZRvtpE2e3zNqvtobpPROqw_bOwNt+=DBzmScV0_rq=w@mail.gmail.com>
+	<CACVXFVPupumYqeBwTwgK3C04VQBxOjkFMbaKQ-Gsz3teCWqQ=w@mail.gmail.com>
+	<CA+55aFwte5bc-4FC758pBN3FbrtKQfwm_Mv_banekhL=kSF8kg@mail.gmail.com>
+Date: Sun, 22 Jul 2012 07:24:18 +0800
+Message-ID: <CACVXFVPSaNMzux3Ay4fj0dfb55p9c5eR+y-=MvuoNjp=aDSnqg@mail.gmail.com>
+Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
+From: Ming Lei <tom.leiming@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jul 12 2012, S, Venkatraman wrote:
-> On Wed, Jul 11, 2012 at 5:10 AM, Kevin Hilman <khilman@ti.com> wrote:
->> If platform_get_resource_by_name() fails, driver probe is aborted an
->> should return an error so the driver is not bound to the device.
->>
->> However, in the current error path of platform_get_resource_by_name(),
->> probe returns zero since the return value (ret) is not properly set.
->> With a zero return value, the driver core assumes probe was successful
->> and will bind the driver to the device.
->>
->> Fix this by ensuring that probe returns an error code in this failure
->> path.
->>
->> Signed-off-by: Kevin Hilman <khilman@ti.com>
+On Sun, Jul 22, 2012 at 4:38 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Good catch.
-> Acked-by: Venkatraman S <svenkatr@ti.com>
+> I agree that this is a problem. At the same time, early boot has some
+> of the exact same problems as resume has, and I do wish that people
+> would ask themselves: "why do I try to load the firmware at early boot
+> time"?
+>
+> There is really only *one* real reason to load firmware at device
+> probe time, and that's because the device is needed for the boot. But
+> in that case, deferral is wrong, isn't it?
 
-Thanks, pushed to mmc-next for 3.6.
+Linus, sorry for forget sending all, :-(
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Maybe not, I know some usb devices, if no firmware is downloaded
+into device, you can't use them at all. For example, the isight camera,
+only downloading firmware can make the device look like a UVC
+camera device.  Also there are some usb BT devices alike, such as
+ath3k.
+
+For this kind of devices, deferral should be correct, IMO.
+
+>
+> And if the device isn't needed for boot, then why is it loading so
+> early? For network devices, for example (and this is a *common*
+> issue), firmware should be loaded not at device init, but at device
+> *open* time, exactly because we don't want to load it too early when
+> it might not even be available yet.
+
+Yes, I agree, we should load firmware just before the device is used in
+theory. Also this may be helpful to deal with the caching firmware before
+suspend, see below.
+
+But, is one device capable of being downloaded firmware more
+than one times? It is still a question and only can be replied by its
+vendors. Because one device is only powered on one time and it
+is probably or reasonable that the device only supports to be
+downloaded firmware just one time. Also, suppose the firmware is
+based on linux kernel and application, it is not easy to update the
+system online.
+
+Also some devices may have not 'open' interfaces and it is just
+accessed by sysfs or other kernel built-in interfaces.
+
+>
+> So I would prefer if people basically just understood that "if you're
+> trying to load firmware at module init time, you are almost certainly
+> doing something wrong".
+>
+> Delaying the firmware load as much as possible (and here "delaying"
+> does *not* mean your kind of "deferred" load, but explicitly doing it
+> only when really needed) allows things like "boot the system, copy the
+> new firmware from a USB stick in single-user mode, then bring up
+> networking". It also simply avoids the whole module load ordering
+> issue.
+>
+> So I really think you are looking (again) too much at working around
+> the symptoms, rather than fixing the deeper issue.
+
+OK, I will take time to look at more request_firmware uses in drivers/
+and study the related problems above.
+
+>
+>> It is a good idea to let the driver defer request explicitly, but still need
+>> some changes in generic code to support it.
+>
+> That's fine. I am not arguing against making core driver core changes,
+> I'm just arguing against making them so that you facilitate bad
+> behavior and work around the symptoms of bad choices.
+>
+> In fact, I'd actually want to argue for *bigger* core device layer
+> changes to make it easier to do the right thing. Right now, one of the
+> reasons why driver writers load the firmware at init time is that it's
+> often _easiest_ for them to do it there, even if it's the wrong point
+> to do it. And that is partly because I think the device layer doesn't
+> help enough in making it really convenient to do later.
+>
+>> In my opinion,  we should cache firmware data for all hotplug
+>> devices or devices which may experience power loss automatically
+>> in kernel during suspend-resume cycle because all such devices may be
+>> disconnected and connected again during suspend-resume cycle.
+>
+> Yes. *THAT* is absolutely the kind of change I'd love to see. The core
+
+OK, I'd like to volunteer to improve firmware loading with caching fw
+during suspend/resume cycle.
+
+> device layer doesn't really make it easy to handle firmware sanely
+> over suspend/resume, which is kind of sad. Why does every driver have
+> to have its own "let me remember my firmware over the suspend/resume
+> event" and have extra code in suspend/resume, when it's really a
+> pretty generic situation: if the device has firmware, wouldn't it be
+> really nice if the core driver layer just knew about that and kept
+> track of it?
+>
+>> Looks it is not difficult to cache firmware data by kernel, for example, just
+>> call the
+>>
+>>            cache_firmware(fw_name)
+>>
+>> for each device which need firmware before suspending,
+>> then call the below to uncache firmware after resume:
+>>
+>>            uncache_firmware(fw_name)
+>
+> Exactly. But we should make it automatic, and we should only do it if
+
+Yes, I mean the cache/uncache firmware should be done automatically
+before suspend and after resume, and it will be implemented inside
+driver core.
+
+> the device is actually *active*. If nobody is using the device over
+
+As you said above, suppose devices are active just after its firmware
+has been downloaded, we can decide one device if it is active by
+observing having downloaded firmware into it or not.
+
+But I know, some drivers needed to be fixed to delay request/download
+firmware until it is used actively.
+
+> the suspend-resume event, the firmware shouldn't be loaded in the
+> first place, and resume obviously shouldn't need to re-load it.
+> Wouldn't it be nice if something like the PCI layer (or the USB layer)
+> just knew to do the rigth thing for the device on its own?
+>
+> I would also suggest that the firmware caching have some internal
+> timeout, so that for the (fairly common) case where a suspend/resume
+> event might look like a unplug/replug event, the caching would
+> actually still remember the firmware despite the fact that it looked
+> (for a short while) like the device went away.
+>
+> So *this* is where I think we could improve on the generic code. Make
+> it really easy for devices to do the right thing. Make sure that
+> firmware caches work, even if it looks like devices disappeared
+> momentarily. Maybe add a few callbacks from generic code to say "you
+> can load your firmware now, because the system is up".
+
+IMO, if firmware cache is related with device or driver lifetime, the
+problem will become a bit complicated:
+
+     Firmware data lifetime may be longer than driver/device's lifetime.
+
+So I will start the work by just caching firmware before suspend
+and uncaching firmware after resume or some time later after resume
+for actively used devices, and not related with device/driver's lifetime
+first. It should be the simplest and the most reliable approach.
+
+
+> So I really think the rules should always be:
+>
+>  - firmware should NEVER be loaded at module init time, because it's
+> the wrong time to do it - the device may never be needed at all.
+
+OK, but maybe some devices described above need to load firmware
+at probe().
+
+> Slowing down the init sequence is just stupid.
+
+Deferring request_firmware doesn't slow down the init sequence.
+
+>
+>  - If firmware is needed for resume, it should be loaded by the
+> suspend logic and cached in memory.
+
+Agree, some special device(isight) may choose to defer loading
+firmware by themselves.
+
+
+Thanks,
