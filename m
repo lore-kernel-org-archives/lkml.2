@@ -1,202 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab2GUW1M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 18:27:12 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60689 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab2GUW1K (ORCPT
+	id S1751917Ab2GUWiH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 18:38:07 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43145 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab2GUWiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 18:27:10 -0400
-Subject: [GIT PULL] target updates for v3.6-rc1 (round 1)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>, Andy Grover <agrover@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
+	Sat, 21 Jul 2012 18:38:06 -0400
+Date: Sat, 21 Jul 2012 23:41:45 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 21 Jul 2012 15:27:07 -0700
-Message-ID: <1342909627.25472.203.camel@haakon2.linux-iscsi.org>
+Subject: Re: Oops after merge of tty-next
+Message-ID: <20120721234145.354e6ee9@pyramind.ukuu.org.uk>
+In-Reply-To: <5009D68A.3050301@mev.co.uk>
+References: <5009D68A.3050301@mev.co.uk>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Fri, 20 Jul 2012 23:07:06 +0100
+Ian Abbott <abbotti@mev.co.uk> wrote:
 
-The following is the first round of target core + fabric driver updates
-for the freshly opened v3.6 merge window.  Please go ahead and pull
-from:
+> I'm getting an Oops in the linux-next tree today after the merge of the 
+> remote-tracking branch 'tty/tty-next'.  I bisected it down to commit 
+> 36b3c070d2346c890d690d71f6eab02f8c511137 in 
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git :
+> 
+>    tty: Move the handling of the tty release logic
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+Ok that's not improbable, I thought I had them all nailed.
 
-This series is based on target-pending/master commit 1765fe5edcb83f53f
+> Sorry, I don't have a copy of the Oops right now, but it's failing 
+> somewhere in tty_open() or check_tty_count() during system boot, 
+> probably when getty opens one of the vc tty devices.
 
-So I ended up needing to rebase for-next last week to pick up fixes
-in master that for-next ended up conflicting with, but the bulk of the
-series has been in linux-next a number of weeks and has getting a good
-amount of testing.
+That would be more surprising as its a path I tested a lot but strange
+things occur. What may also be very important is to know what distro you
+are using.
 
-There have been lots of work in a number of areas this past round.  The
-highlights include:
-
-*) Break out target_core_cdb.c emulation into SPC/SBC ops (hch)
-*) Add a parse_cdb method to target backend drivers (hch)
-*) Move sync_cache + write_same + unmap into spc_ops (hch)
-*) Use target_execute_cmd for WRITEs in iscsi_target + srpt (hch)
-*) Offload WRITE I/O backend submission in tcm_qla2xxx + tcm_fc (hch + nab)
-*) Refactor core_update_device_list_for_node() into enable/disable funcs (agrover)
-*) Replace the TCM processing thread with a TMR work queue (hch)
-*) Fix regression in transport_add_device_to_core_hba from TMR conversion (DanC)
-*) Remove racy, now-redundant check of sess_tearing_down with qla2xxx (roland)
-*) Add range checking, fix reading of data len + possible underflow in UNMAP (roland)
-*) Allow for target_submit_cmd() returning errors + convert fabrics (roland + nab)
-*) Drop bogus struct file usage for iSCSI/SCTP (viro)
-
-Thanks again to everyone who has contributed!
-
-On the new target fabric module front for-3.6, tcm_vhost is currently in
-RFC-v4 on the lists + queued up + waiting for ACKs from MST & Co here:
-
-http://marc.info/?l=kvm&m=134285417314176&w=2
-
-At this point I think the vhost folks are pretty agreeable for an
-initial merge of this kernel code, but the vhost-scsi bits in upstream
-QEMU userspace code will still need to be shorted out.  So because of
-this fact, MST has requested to mark this driver as STAGING o indicate
-the userspace ABI is not (yet) set in stone.
-
-Currently the last item being discussed for initial merge is if this
-code can just be marked as STAGING + live in drivers/vhost/, or if it
-should actually reside under drivers/staging/ and go upstream via the
-staging tree.  The last -v4 series of the code keeps the initial merge
-in drivers/vhost/, which is easier than getting staging to depending on
-vhost + target-pending..
-
-So the current plan is to send a [GIT PULL] next weekend, in order to
-give MST a chance to review + ACK as he returns from holiday.  Otherwise
-if folks object, I'll move this code to drivers/staginig/tcm_vhost/ and
-let Greg-KH decide if he's OK to take it via staging for this round.
-
-Thank you!
-
---nab
-
-Al Viro (1):
-  iscsi-target: Drop bogus struct file usage for iSCSI/SCTP
-
-Andy Grover (7):
-  target: Do not special-case loop and iscsi fabric module loads
-  target/iblock: Add parameter to specify read-only devices
-  target: Remove unneeded double parentheses
-  target: Remove hba param from core_dev_add_lun
-  target: Misc retval cleanups
-  target: Eliminate else using boolean logic
-  target: refactor core_update_device_list_for_node()
-
-Christoph Hellwig (26):
-  target: move unrelated code out of transport_generic_cmd_sequencer
-  target: remove control CDB flags
-  target: split overflow and underflow checks into a helper
-  target: split parsing of SPC commands into a separate helper
-  target: add a parse_cdb method to the backend drivers
-  target: move code for CDB emulation
-  target: move transport_generic_prepare_cdb into pscsi
-  target: remove the execute list
-  target: move ref_cmd from the generic se_tmr_req into iscsi code
-  target: remove dead SCF_ flags
-  target: add struct spc_ops + initial ->execute_rw pointer usage
-  target: move sync_cache to struct spc_ops
-  target: move write_same to struct spc_ops
-  target: move unmap to struct spc_ops
-  target: split transport_cmd_check_stop
-  target: remove transport_generic_process_write
-  target: call transport_check_aborted_status from target_execute_cmd
-  target: merge transport_generic_write_pending into
-    transport_generic_new_cmd
-  iscsit: use target_execute_cmd for WRITEs
-  srpt: use target_execute_cmd for WRITEs in srpt_handle_rdma_comp
-  tcm_qla2xxx: Offload WRITE I/O backend submission to tcm_qla2xxx wq
-  tcm_fc: Offload WRITE I/O backend submission to tpg workqueue
-  target: remove transport_generic_handle_data
-  target: simply fabric driver queue full processing
-  target: remove transport_generic_handle_cdb_map
-  target: replace the processing thread with a TMR work queue
-
-Dan Carpenter (1):
-  target: NULL dereference on error path
-
-Nicholas Bellinger (4):
-  target: Move MAINTENANCE_[IN,OUT] from pscsi_parse_cdb ->
-    spc_parse_cdb
-  target/pscsi: Only emulate REPORT_LUNS for passthrough
-  Revert "target: Do not special-case loop and iscsi fabric module
-    loads"
-  target: Make core_disable_device_list_for_node use pre-refactoring
-    lock ordering
-
-Roland Dreier (14):
-  target/iscsi: Remove dead code in lio_get_tpg_from_tpg_item()
-  qla2xxx: Get rid of redundant qla_tgt_sess.tearing_down
-  target: Un-export target_get_sess_cmd()
-  sbp-target: Consolidate duplicated error path code in
-    sbp_handle_command()
-  target: Check sess_tearing_down in target_get_sess_cmd()
-  qla2xxx: Remove racy, now-redundant check of sess_tearing_down
-  target: Remove se_session.sess_wait_list
-  target: Make unnecessarily global se_dev_align_max_sectors() static
-  target: Add generation of LOGICAL BLOCK ADDRESS OUT OF RANGE
-  target: Add range checking to UNMAP emulation
-  target: Fix reading of data length fields for UNMAP commands
-  target: Fix possible integer underflow in UNMAP emulation
-  target: Check number of unmap descriptors against our limit
-  target: Allow for target_submit_cmd() returning errors
-
-Sachin Kamat (1):
-  tcm_qla2xxx: Remove duplicate header file inclusion
-
- drivers/infiniband/ulp/srpt/ib_srpt.c              |   15 +-
- drivers/scsi/qla2xxx/qla_target.c                  |   16 +-
- drivers/scsi/qla2xxx/qla_target.h                  |    3 +-
- drivers/scsi/qla2xxx/tcm_qla2xxx.c                 |   55 +-
- drivers/target/Makefile                            |    3 +-
- drivers/target/iscsi/iscsi_target.c                |   30 +-
- drivers/target/iscsi/iscsi_target_configfs.c       |   22 -
- drivers/target/iscsi/iscsi_target_core.h           |    3 +-
- drivers/target/iscsi/iscsi_target_erl1.c           |    4 +-
- drivers/target/iscsi/iscsi_target_login.c          |   66 +-
- drivers/target/iscsi/iscsi_target_parameters.c     |    2 +-
- drivers/target/iscsi/iscsi_target_tmr.c            |   46 +-
- drivers/target/iscsi/iscsi_target_tpg.c            |   27 +-
- drivers/target/loopback/tcm_loop.c                 |   11 +-
- drivers/target/sbp/sbp_target.c                    |   39 +-
- drivers/target/target_core_device.c                |  170 +-
- drivers/target/target_core_fabric_configfs.c       |    3 +-
- drivers/target/target_core_file.c                  |   25 +-
- drivers/target/target_core_iblock.c                |  142 ++-
- drivers/target/target_core_iblock.h                |    1 +
- drivers/target/target_core_internal.h              |   22 +-
- drivers/target/target_core_pr.c                    |    6 +-
- drivers/target/target_core_pscsi.c                 |   84 +-
- drivers/target/target_core_rd.c                    |   17 +-
- drivers/target/target_core_sbc.c                   |  581 ++++++
- .../{target_core_cdb.c => target_core_spc.c}       |  434 ++---
- drivers/target/target_core_tmr.c                   |   57 +-
- drivers/target/target_core_tpg.c                   |   14 +-
- drivers/target/target_core_transport.c             | 2088 ++++----------------
- drivers/target/tcm_fc/tfc_cmd.c                    |   10 +-
- drivers/target/tcm_fc/tfc_io.c                     |   13 +-
- drivers/usb/gadget/tcm_usb_gadget.c                |   54 +-
- include/target/target_core_backend.h               |   17 +-
- include/target/target_core_base.h                  |   56 +-
- include/target/target_core_fabric.h                |   15 +-
- 35 files changed, 1718 insertions(+), 2433 deletions(-)
- create mode 100644 drivers/target/target_core_sbc.c
- rename drivers/target/{target_core_cdb.c => target_core_spc.c} (76%)
-
+Alan
