@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab2GUWFI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 18:05:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab2GUWFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 18:05:06 -0400
-Date: Sun, 22 Jul 2012 01:05:34 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: jasowang@redhat.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCHv3 0/6] tun zerocopy support
-Message-ID: <20120721220534.GA22912@redhat.com>
-References: <cover.1342812067.git.mst@redhat.com>
- <20120720.174902.2055189237500355771.davem@davemloft.net>
+	id S1751747Ab2GUWL1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 18:11:27 -0400
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:48159 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751255Ab2GUWLZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 18:11:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720.174902.2055189237500355771.davem@davemloft.net>
+In-Reply-To: <50079125.3020007@wpkg.org>
+References: <50079125.3020007@wpkg.org>
+From: Roland Dreier <roland@purestorage.com>
+Date: Sat, 21 Jul 2012 15:11:03 -0700
+Message-ID: <CAL1RGDU8TVBkZ4yP=kjwqvGUsrnQcBGpLa_x-7c=Gu54piVwyw@mail.gmail.com>
+Subject: Re: 3.5-rc7 - can no longer wake up from suspend to RAM
+To: Tomasz Chmielewski <tch@wpkg.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 05:49:02PM -0700, David Miller wrote:
-> From: "Michael S. Tsirkin" <mst@redhat.com>
-> Date: Fri, 20 Jul 2012 22:23:03 +0300
-> 
-> > Same as with macvtap, I get single-percentage wins in CPU utilization
-> > on guest to external from this patchset, and a performance regression on
-> > guest to host, so more work is needed until this feature can move out of
-> > experimental status, but I think it's useful for some people already.
-> > 
-> > Pls review and consider for 3.6.
-> 
-> It doesn't improve performance in one case, and hurts performance in
-> another.
-> 
-> You'll have to give me a more compelling argument than that.  You've
-> just given me every reason not to include these patches in 3.6
+On Wed, Jul 18, 2012 at 9:46 PM, Tomasz Chmielewski <tch@wpkg.org> wrote:
+> After upgrading to 3.5-rc7, my laptop no longer wakes up reliable from suspend to RAM. 3.4.x worked fine.
 
-OK let me clarify a bit, I think this wasn't explained well:
-it's not true that this makes users suffer :)
+FWIW, I've been having similar problems with 3.5-rc7.  With 3.5-rc6 my
+laptop resumed fine, but since updating to -rc7, it often seems to just
+sit there after opening the lid -- the moon/sleep LED stays on, and the
+power LED smoothly cycles on and off, as if it's fast asleep.  Even pressing
+the power button doesn't have any effect (until I hold down the power
+button long enough to turn off).
 
-This patch has no effect unless experimental zero copy mode in vhost-net
-is enabled, and it is very clearly marked as experimental.
+I guess I'll start a bisection, but it's slow going because it takes multiple
+tries to know for sure if a kernel is bad.
 
-I agree a small win in CPU use is nothing to write home about,
-I don't yet understand why the win is so small - macvtap has zero copy
-supported for a while and it has exactly same issues.
-I hope adding tun zerocopy support upstream will help us
-make progress faster and find the bottleneck, so far not many people use
-macvtap so zero copy mode there didn't make progress.
+The only commit between rc6 and rc7 that looks like it might be related
+is dc332fdf9f373a87b1e2f423b5b004b2a3c37e1a ("ACPI / PM: Leave
+Bus Master Arbitration enabled for suspend/resume"), which apparently
+fixes some other laptops.  But perhaps I'll try reverting that and see how
+it goes.
 
-I do know why local performance regresses with zero copy enabled:
-instead of plain copy to user we got get user pages and then memcpy.
-We'll need some logic here to detect this and turn off zero copy.
-
-The core patches will also be helpful for Ian's more ambitious work.
-
-Overall I think it's a step in the right direction and it's easier to
-work if core parts are upstream, but if you think we need to wait
-until the gains are more significant, I understand that too.
-
--- 
-MST
+ - R.
