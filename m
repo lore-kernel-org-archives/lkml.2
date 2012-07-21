@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab2GUGmn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 02:42:43 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:41311 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750954Ab2GUGmm (ORCPT
+	id S1751392Ab2GUGpx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 02:45:53 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59566 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab2GUGpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 02:42:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <201207202144.05154.rjw@sisk.pl>
-References: <1342545149-3515-1-git-send-email-tj@kernel.org>
- <1342808550.2583.48.camel@twins> <20120720183400.GL32763@google.com> <201207202144.05154.rjw@sisk.pl>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Sat, 21 Jul 2012 12:12:13 +0530
-Message-ID: <CAMQu2gy0OtMaYZzPwJqO+VbVbd_y-cCE8sXowrhmqWWxzimu=g@mail.gmail.com>
-Subject: Re: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle workers
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 21 Jul 2012 02:45:51 -0400
+From: Denis Efremov <yefremov.denis@gmail.com>
+To: Kurt Garloff <garloff@suse.de>
+Cc: Denis Efremov <yefremov.denis@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] tmscsim: spin_unlock_irq in interrupt handler fix
+Date: Sat, 21 Jul 2012 10:48:03 +0400
+Message-Id: <1342853283-32549-1-git-send-email-yefremov.denis@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
+The replacement of spin_lock_irq/spin_unlock_irq pair in interrupt
+handler by spin_lock_irqsave/spin_lock_irqrestore pair.
 
-On Sat, Jul 21, 2012 at 1:14 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, July 20, 2012, Tejun Heo wrote:
->> Hello,
->>
->> On Fri, Jul 20, 2012 at 08:22:30PM +0200, Peter Zijlstra wrote:
->> > I really think people who use hotplug at high frequencies are on drugs
->> > and doing it wrong.
->>
->> I don't know.  It does make some sense.  It's not like we have any
->> other mechanism to keep some processors completely quiesient, which
->> could make a noticeable difference from powersaving POV compared to
->> mostly idle.  Rafael, can you please chime in and explain how / where
->> / how freqeuntly / etc CPU hotplug is used for powersaving?
->
-> Well, there are use cases I'm not really familiar with.
->
-> Pretty much the only use case I'm sufficiently familiar with is
-> suspend/hibernate where we unplug all of the nonboot CPUs at one point.
->
-> The other use cases, which I don't really think are entirely valid,
-> are on some ARM platforms where CPUs are unplugged instead of being put into
-> C-states or equivalent (because we don't have a good mechanism for handling
-> multiprocessor C-states; there's a set of patches for that waiting for
-> the merge window in the Len's tree).  I'm hoping to get rid of those
-> use cases in future entirely.
->
-Not sure if you are talking about couple idle series waiting in Len's tree for
-the merge.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-That series actually trying add infrastructure for the hardwares
-where CPU's need co-ordination which is needed on few ARM hardwares
-to get into deeper CPU cluster C-states. It is indeed true that without
-that approach, cpu-hotplug was used to overcome the ordering issue
-I guess Exynos, Tegra and OMAP are the few ARM architectures I
-know who has been using the couple cpuidle infrastructure.
+Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+---
+ drivers/scsi/tmscsim.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Regards
-Santosh
-Regards
-Santosh
+diff --git a/drivers/scsi/tmscsim.c b/drivers/scsi/tmscsim.c
+index a1baccc..0b9d68a 100644
+--- a/drivers/scsi/tmscsim.c
++++ b/drivers/scsi/tmscsim.c
+@@ -654,6 +654,7 @@ DC390_Interrupt(void *dev_id)
+     u8  phase;
+     void   (*stateV)( struct dc390_acb*, struct dc390_srb*, u8 *);
+     u8  istate, istatus;
++    unsigned long flags;
+ 
+     sstatus = DC390_read8 (Scsi_Status);
+     if( !(sstatus & INTERRUPT) )
+@@ -665,7 +666,7 @@ DC390_Interrupt(void *dev_id)
+     //dstatus = DC390_read8 (DMA_Status);
+     //DC390_write32 (DMA_ScsiBusCtrl, EN_INT_ON_PCI_ABORT);
+ 
+-    spin_lock_irq(pACB->pScsiHost->host_lock);
++    spin_lock_irqsave(pACB->pScsiHost->host_lock, flags);
+ 
+     istate = DC390_read8 (Intern_State);
+     istatus = DC390_read8 (INT_Status); /* This clears Scsi_Status, Intern_State and INT_Status ! */
+@@ -736,7 +737,7 @@ DC390_Interrupt(void *dev_id)
+     }
+ 
+  unlock:
+-    spin_unlock_irq(pACB->pScsiHost->host_lock);
++    spin_unlock_irqrestore(pACB->pScsiHost->host_lock, flags);
+     return IRQ_HANDLED;
+ }
+ 
+-- 
+1.7.7
+
