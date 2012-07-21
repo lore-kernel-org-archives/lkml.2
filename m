@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab2GUCWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:22:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22835 "EHLO
+	id S1753899Ab2GUCW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:22:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28027 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab2GUCVL (ORCPT
+	with ESMTP id S1751682Ab2GUCVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:21:11 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=IImo4rozYMIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=z7YO4etHjzEZLZASiGsA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=zlK5tBA_pVY3p8FievcA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Fri, 20 Jul 2012 22:21:08 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=hesiUNpQ6tkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=H2Ikemq88ygFUPIfS08A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=-cVKv70JwAqeUK5npF0A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721022108.261804403@goodmis.org>
+Message-Id: <20120721022106.343532049@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:19:50 -0400
+Date: Fri, 20 Jul 2012 22:19:46 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Uros Bizjak <ubizjak@gmail.com>
-Subject: [PATCH 07/19] ftrace/x86_32: Simplify parameter setup for ftrace_regs_caller
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 03/19] ftrace: Return pt_regs to function trace callback
 References: <20120721021943.274162381@goodmis.org>
-Content-Disposition: inline; filename=0007-ftrace-x86_32-Simplify-parameter-setup-for-ftrace_re.patch
+Content-Disposition: inline; filename=0003-ftrace-Return-pt_regs-to-function-trace-callback.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,38 +31,378 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Uros Bizjak <ubizjak@gmail.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-The final position of the stack after saving regs and setting up
-the parameters for ftrace_regs_call, is the position of the pt_regs
-needed for the 4th parameter. Instead of saving it into a temporary
-reg and pushing the reg, simply push the stack pointer.
+Return as the 4th paramater to the function tracer callback the pt_regs.
 
-Link: http://lkml.kernel.org/r/1342702344.12353.16.camel@gandalf.stny.rr.com
+Later patches that implement regs passing for the architectures will require
+having the ftrace_ops set the SAVE_REGS flag, which will tell the arch
+to take the time to pass a full set of pt_regs to the ftrace_ops callback
+function. If the arch does not support it then it should pass NULL.
 
-Signed-off-by: Uros Bizjak <ubizjak@gmail.com>
+If an arch can pass full regs, then it should define:
+ ARCH_SUPPORTS_FTRACE_SAVE_REGS to 1
+
+Link: http://lkml.kernel.org/r/20120702201821.019966811@goodmis.org
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/entry_32.S |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ include/linux/ftrace.h            |    6 ++++--
+ kernel/trace/ftrace.c             |   37 ++++++++++++++++++++++-----------=
+----
+ kernel/trace/trace_event_perf.c   |    2 +-
+ kernel/trace/trace_events.c       |    2 +-
+ kernel/trace/trace_functions.c    |    7 ++++---
+ kernel/trace/trace_irqsoff.c      |    2 +-
+ kernel/trace/trace_sched_wakeup.c |    3 ++-
+ kernel/trace/trace_selftest.c     |   15 ++++++++++-----
+ kernel/trace/trace_stack.c        |    3 ++-
+ 9 files changed, 47 insertions(+), 30 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 46caa56..4dc3017 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1169,10 +1169,9 @@ ENTRY(ftrace_regs_caller)
- 	movl $__KERNEL_CS,13*4(%esp)
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 3651fdc..e420288 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -10,6 +10,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/linkage.h>
+ #include <linux/bitops.h>
++#include <linux/ptrace.h>
+ #include <linux/ktime.h>
+ #include <linux/sched.h>
+ #include <linux/types.h>
+@@ -54,7 +55,7 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
+ struct ftrace_ops;
 =20
- 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
--	movl 0x4(%ebp), %edx	/* Load parent ip (2cd parameter) */
--	lea  (%esp), %ecx
--	pushl %ecx		/* Save pt_regs as 4th parameter */
-+	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
- 	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
-+	pushl %esp		/* Save pt_regs as 4th parameter */
+ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
+-			      struct ftrace_ops *op);
++			      struct ftrace_ops *op, struct pt_regs *regs);
 =20
- GLOBAL(ftrace_regs_call)
- 	call ftrace_stub
+ /*
+  * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
+@@ -188,7 +189,8 @@ static inline int ftrace_function_local_disabled(struct=
+ ftrace_ops *ops)
+ 	return *this_cpu_ptr(ops->disabled);
+ }
+=20
+-extern void ftrace_stub(unsigned long a0, unsigned long a1, struct ftrace_=
+ops *op);
++extern void ftrace_stub(unsigned long a0, unsigned long a1,
++			struct ftrace_ops *op, struct pt_regs *regs);
+=20
+ #else /* !CONFIG_FUNCTION_TRACER */
+ /*
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 4cbca2e..6ff07ad 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -103,7 +103,7 @@ static struct ftrace_ops control_ops;
+=20
+ #if ARCH_SUPPORTS_FTRACE_OPS
+ static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+-				 struct ftrace_ops *op);
++				 struct ftrace_ops *op, struct pt_regs *regs);
+ #else
+ /* See comment below, where ftrace_ops_list_func is defined */
+ static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip);
+@@ -121,7 +121,7 @@ static void ftrace_ops_no_ops(unsigned long ip, unsigne=
+d long parent_ip);
+  */
+ static void
+ ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
+-			struct ftrace_ops *op)
++			struct ftrace_ops *op, struct pt_regs *regs)
+ {
+ 	if (unlikely(trace_recursion_test(TRACE_GLOBAL_BIT)))
+ 		return;
+@@ -129,19 +129,19 @@ ftrace_global_list_func(unsigned long ip, unsigned lo=
+ng parent_ip,
+ 	trace_recursion_set(TRACE_GLOBAL_BIT);
+ 	op =3D rcu_dereference_raw(ftrace_global_list); /*see above*/
+ 	while (op !=3D &ftrace_list_end) {
+-		op->func(ip, parent_ip, op);
++		op->func(ip, parent_ip, op, regs);
+ 		op =3D rcu_dereference_raw(op->next); /*see above*/
+ 	};
+ 	trace_recursion_clear(TRACE_GLOBAL_BIT);
+ }
+=20
+ static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip,
+-			    struct ftrace_ops *op)
++			    struct ftrace_ops *op, struct pt_regs *regs)
+ {
+ 	if (!test_tsk_trace_trace(current))
+ 		return;
+=20
+-	ftrace_pid_function(ip, parent_ip, op);
++	ftrace_pid_function(ip, parent_ip, op, regs);
+ }
+=20
+ static void set_ftrace_pid_function(ftrace_func_t func)
+@@ -763,7 +763,7 @@ ftrace_profile_alloc(struct ftrace_profile_stat *stat, =
+unsigned long ip)
+=20
+ static void
+ function_profile_call(unsigned long ip, unsigned long parent_ip,
+-		      struct ftrace_ops *ops)
++		      struct ftrace_ops *ops, struct pt_regs *regs)
+ {
+ 	struct ftrace_profile_stat *stat;
+ 	struct ftrace_profile *rec;
+@@ -793,7 +793,7 @@ function_profile_call(unsigned long ip, unsigned long p=
+arent_ip,
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ static int profile_graph_entry(struct ftrace_graph_ent *trace)
+ {
+-	function_profile_call(trace->func, 0, NULL);
++	function_profile_call(trace->func, 0, NULL, NULL);
+ 	return 1;
+ }
+=20
+@@ -2771,7 +2771,7 @@ static int __init ftrace_mod_cmd_init(void)
+ device_initcall(ftrace_mod_cmd_init);
+=20
+ static void function_trace_probe_call(unsigned long ip, unsigned long pare=
+nt_ip,
+-				      struct ftrace_ops *op)
++				      struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
+ 	struct ftrace_func_probe *entry;
+ 	struct hlist_head *hhd;
+@@ -3923,7 +3923,7 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long=
+ ip)
+=20
+ static void
+ ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
+-			struct ftrace_ops *op)
++			struct ftrace_ops *op, struct pt_regs *regs)
+ {
+ 	if (unlikely(trace_recursion_test(TRACE_CONTROL_BIT)))
+ 		return;
+@@ -3938,7 +3938,7 @@ ftrace_ops_control_func(unsigned long ip, unsigned lo=
+ng parent_ip,
+ 	while (op !=3D &ftrace_list_end) {
+ 		if (!ftrace_function_local_disabled(op) &&
+ 		    ftrace_ops_test(op, ip))
+-			op->func(ip, parent_ip, op);
++			op->func(ip, parent_ip, op, regs);
+=20
+ 		op =3D rcu_dereference_raw(op->next);
+ 	};
+@@ -3952,7 +3952,7 @@ static struct ftrace_ops control_ops =3D {
+=20
+ static inline void
+ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+-		       struct ftrace_ops *ignored)
++		       struct ftrace_ops *ignored, struct pt_regs *regs)
+ {
+ 	struct ftrace_ops *op;
+=20
+@@ -3971,7 +3971,7 @@ __ftrace_ops_list_func(unsigned long ip, unsigned lon=
+g parent_ip,
+ 	op =3D rcu_dereference_raw(ftrace_ops_list);
+ 	while (op !=3D &ftrace_list_end) {
+ 		if (ftrace_ops_test(op, ip))
+-			op->func(ip, parent_ip, op);
++			op->func(ip, parent_ip, op, regs);
+ 		op =3D rcu_dereference_raw(op->next);
+ 	};
+ 	preempt_enable_notrace();
+@@ -3983,17 +3983,24 @@ __ftrace_ops_list_func(unsigned long ip, unsigned l=
+ong parent_ip,
+  * the list function ignores the op parameter, we do not want any
+  * C side effects, where a function is called without the caller
+  * sending a third parameter.
++ * Archs are to support both the regs and ftrace_ops at the same time.
++ * If they support ftrace_ops, it is assumed they support regs.
++ * If call backs want to use regs, they must either check for regs
++ * being NULL, or ARCH_SUPPORTS_FTRACE_SAVE_REGS.
++ * Note, ARCH_SUPPORT_SAVE_REGS expects a full regs to be saved.
++ * An architecture can pass partial regs with ftrace_ops and still
++ * set the ARCH_SUPPORT_FTARCE_OPS.
+  */
+ #if ARCH_SUPPORTS_FTRACE_OPS
+ static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+-				 struct ftrace_ops *op)
++				 struct ftrace_ops *op, struct pt_regs *regs)
+ {
+-	__ftrace_ops_list_func(ip, parent_ip, NULL);
++	__ftrace_ops_list_func(ip, parent_ip, NULL, regs);
+ }
+ #else
+ static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip)
+ {
+-	__ftrace_ops_list_func(ip, parent_ip, NULL);
++	__ftrace_ops_list_func(ip, parent_ip, NULL, NULL);
+ }
+ #endif
+=20
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_per=
+f.c
+index a872a9a..9824419 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -259,7 +259,7 @@ EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
+ #ifdef CONFIG_FUNCTION_TRACER
+ static void
+ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
+-			  struct ftrace_ops *ops)
++			  struct ftrace_ops *ops, struct pt_regs *pt_regs)
+ {
+ 	struct ftrace_entry *entry;
+ 	struct hlist_head *head;
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 88daa51..8c66968 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1682,7 +1682,7 @@ static DEFINE_PER_CPU(atomic_t, ftrace_test_event_dis=
+able);
+=20
+ static void
+ function_test_events_call(unsigned long ip, unsigned long parent_ip,
+-			  struct ftrace_ops *op)
++			  struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index fceb7a9..5675ebd 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -49,7 +49,7 @@ static void function_trace_start(struct trace_array *tr)
+=20
+ static void
+ function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip,
+-				 struct ftrace_ops *op)
++				 struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
+ 	struct trace_array *tr =3D func_trace;
+ 	struct trace_array_cpu *data;
+@@ -77,7 +77,8 @@ function_trace_call_preempt_only(unsigned long ip, unsign=
+ed long parent_ip,
+=20
+ static void
+ function_trace_call(unsigned long ip, unsigned long parent_ip,
+-		    struct ftrace_ops *op)
++		    struct ftrace_ops *op, struct pt_regs *pt_regs)
++
+ {
+ 	struct trace_array *tr =3D func_trace;
+ 	struct trace_array_cpu *data;
+@@ -109,7 +110,7 @@ function_trace_call(unsigned long ip, unsigned long par=
+ent_ip,
+=20
+ static void
+ function_stack_trace_call(unsigned long ip, unsigned long parent_ip,
+-			  struct ftrace_ops *op)
++			  struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
+ 	struct trace_array *tr =3D func_trace;
+ 	struct trace_array_cpu *data;
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index 2862c77..c7a9ba9 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -137,7 +137,7 @@ static int func_prolog_dec(struct trace_array *tr,
+  */
+ static void
+ irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip,
+-		    struct ftrace_ops *op)
++		    struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
+ 	struct trace_array *tr =3D irqsoff_trace;
+ 	struct trace_array_cpu *data;
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_w=
+akeup.c
+index 0caf4f5..7547e36 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -108,7 +108,8 @@ out_enable:
+  * wakeup uses its own tracer function to keep the overhead down:
+  */
+ static void
+-wakeup_tracer_call(unsigned long ip, unsigned long parent_ip, struct ftrac=
+e_ops *op)
++wakeup_tracer_call(unsigned long ip, unsigned long parent_ip,
++		   struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
+ 	struct trace_array *tr =3D wakeup_trace;
+ 	struct trace_array_cpu *data;
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 9ae40c8..add37e0 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -104,7 +104,8 @@ static inline void warn_failed_init_tracer(struct trace=
+r *trace, int init_ret)
+ static int trace_selftest_test_probe1_cnt;
+ static void trace_selftest_test_probe1_func(unsigned long ip,
+ 					    unsigned long pip,
+-					    struct ftrace_ops *op)
++					    struct ftrace_ops *op,
++					    struct pt_regs *pt_regs)
+ {
+ 	trace_selftest_test_probe1_cnt++;
+ }
+@@ -112,7 +113,8 @@ static void trace_selftest_test_probe1_func(unsigned lo=
+ng ip,
+ static int trace_selftest_test_probe2_cnt;
+ static void trace_selftest_test_probe2_func(unsigned long ip,
+ 					    unsigned long pip,
+-					    struct ftrace_ops *op)
++					    struct ftrace_ops *op,
++					    struct pt_regs *pt_regs)
+ {
+ 	trace_selftest_test_probe2_cnt++;
+ }
+@@ -120,7 +122,8 @@ static void trace_selftest_test_probe2_func(unsigned lo=
+ng ip,
+ static int trace_selftest_test_probe3_cnt;
+ static void trace_selftest_test_probe3_func(unsigned long ip,
+ 					    unsigned long pip,
+-					    struct ftrace_ops *op)
++					    struct ftrace_ops *op,
++					    struct pt_regs *pt_regs)
+ {
+ 	trace_selftest_test_probe3_cnt++;
+ }
+@@ -128,7 +131,8 @@ static void trace_selftest_test_probe3_func(unsigned lo=
+ng ip,
+ static int trace_selftest_test_global_cnt;
+ static void trace_selftest_test_global_func(unsigned long ip,
+ 					    unsigned long pip,
+-					    struct ftrace_ops *op)
++					    struct ftrace_ops *op,
++					    struct pt_regs *pt_regs)
+ {
+ 	trace_selftest_test_global_cnt++;
+ }
+@@ -136,7 +140,8 @@ static void trace_selftest_test_global_func(unsigned lo=
+ng ip,
+ static int trace_selftest_test_dyn_cnt;
+ static void trace_selftest_test_dyn_func(unsigned long ip,
+ 					 unsigned long pip,
+-					 struct ftrace_ops *op)
++					 struct ftrace_ops *op,
++					 struct pt_regs *pt_regs)
+ {
+ 	trace_selftest_test_dyn_cnt++;
+ }
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index e20006d..2fa5328 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -111,7 +111,8 @@ static inline void check_stack(void)
+ }
+=20
+ static void
+-stack_trace_call(unsigned long ip, unsigned long parent_ip, struct ftrace_=
+ops *op)
++stack_trace_call(unsigned long ip, unsigned long parent_ip,
++		 struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
+ 	int cpu;
+=20
 --=20
 1.7.10.4
 
@@ -76,19 +415,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChIUAAoJEIy3vGnGbaoAYwkP/je7c+cFqIQlupk0hkXsvrMW
-Ue2tBkbXf8PVeosVTArgF32kM8AAlyUeMOZ7kkHKgGQR7T9YeblUpRB1iz6ZAJB4
-mu8+TswM88NoqhtmlL6w60cGiF1SP/SbbJiOfVwEIf+z3BiK+O0B5Tmn1CoDUL6x
-yD1f2+V6xF9SfbuuSRsH3044kmw1CRd/1oInxpAeC+Bme4GIkf0F7sacalKxuyr0
-/MeMZidF77M3OnrwgOI+hpr0lsbmvu4HpZvjqkIc2mOC3q+wfC/nwOE8MAuC43jt
-T9CaaglV89i0k4RnvM9c8klbWKpAtgiU2sNpfqocvNexDnIXMA69WdTFM85EGk6M
-ljbAsNcQQ9fEyHaV1pTIvCQ4kLDRXVkPREFRyTMBhENxF9VZN3XssDMel2/I3Own
-T+YXpSqPS+88UyV6zxW75r6zTn8elVmeiR1Jwnhwrn+W6trhqisAhODo8jQHYqlx
-C1o6YPDdd08VEu4Es9D2Ne4mDL87CEtp+79r9ejv5GgyXTqe2hUBGRBJwspJTA1K
-bNlEvf/kZInkGWBUS8VikSy6n5RKJpQQ8KAR29HNTnMCuWHqdHkhTfIoSz9BUMT/
-+Z/v1ipDRY7tHOWGHR8hTh8Oc5GUWNrWuUaGPoVWamOVE1P9VM70hJTsc8erR1EY
-0yjlEe+IJUrItYP2rtap
-=KQ8D
+iQIcBAABAgAGBQJQChISAAoJEIy3vGnGbaoA2j8P/1uX0zltSG+yeRCkxo4a+neq
+/336GtA1jpjFMZdTUfcwhcrnbaJygZIlfSbmMa0VSBXDgAkgCzzkqZIyFTD7tM5Z
+p6eDf3UTHKiUD+DPb94wDKyquau5L6Y96ByqQr+9G+8AvqIU6bO7ZzhZa1pA+OQQ
+g9ALWfz7RmWZPNToQaYEGZoQ2OCDrIykU/uMW00jUg1/AAk7Fwd9D23DovUa7XEh
+QEoBSeia4wwhCwbAcx1Y77sqI8aZPqHcqxVHVq1ro8/axfIga4dvNzRo1p9XaDd0
+imys+lIPb3ySha3GIh/AspD+2AxnXfj3Gw1OYvJcxHhKfGlt2pE6pPBm66nlUS49
+YyJ9Sn3eAWR1cKSbYRPRS/Nk3n/W0SiLLlN+s6mifTQU2U8Ndkr2nw9F+ItaOsA/
+gy9g1icr2s3c+45sLdXPlV1D96KfAmoBvrnO2hdRoaxA6sXKXdCgBuM661KX45fN
+7ODDFXeqrg+u726ZGljR9/YuqdEs44fNxn61WlK4g/A2iWz+T6PWowMXKTRQ9nxs
+rfoRqUTygJ4+be5Id7gPSVcnFhvKT8q9gfskwN4dTk6FLncIoHEqukzuFXMhsDMX
+DE2k9RL96dGzFEPjnA5HoJihXePuysX3LL+xjyj1R59VvBjbRqRoOcD3KXLSWC/P
+uU7pOiARaOzpBlMQHnq4
+=DS96
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
