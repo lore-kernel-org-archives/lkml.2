@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949Ab2GUIGz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 04:06:55 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:51332 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab2GUIGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 04:06:49 -0400
-X-Greylist: delayed 1987 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Jul 2012 04:06:49 EDT
-Message-ID: <1342856010.21788.47.camel@ted>
-Subject: Re: sysfs permissions on dynamic attributes (led delay_on and
- delay_off)
-From: Richard Purdie <richard.purdie@linuxfoundation.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
-        Bryan Wu <bryan.wu@canonical.com>
-Date: Sat, 21 Jul 2012 08:33:30 +0100
-In-Reply-To: <20120721040816.GA7313@kroah.com>
-References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
-	 <20120721040816.GA7313@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751910Ab2GUIUZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 04:20:25 -0400
+Received: from nm23-vm7.bullet.mail.ird.yahoo.com ([212.82.109.236]:30425 "HELO
+	nm23-vm7.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750939Ab2GUIUW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 04:20:22 -0400
+X-Greylist: delayed 358 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Jul 2012 04:20:22 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 434210.49945.bm@omp1010.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=FMdQUayOZi190sJJIuewsRFffZcKa6JXc08U8SF4Qooc0FhxheZdqBTT00h2sPl16hEyBXobMxOMulvMlK9AuV+Hs9lBs6ok2ZpKhPi2oawLEYopKM6BhzAj6OBn3tlD4OxX98C0RAcJrpL0ayr7ZqYiIjcSpb1ixjnRctMTvpI=;
+X-YMail-OSG: 8PnO40kVM1nuDaRbC8LF4w9rf16nfoa9RzSFbH7rlkXJTQE
+ LtjebZFGLao140RJbRdZ8f_1azZLDZmCgDvxiwfJ7pNLaQGO5SSJ9pYDfZUE
+ EuEqOQdXc.qHSSBTeP7H1MdwCQ0A8ew8_cFHmTxgt6QEiTNGT2DgQQ7es.3f
+ TuiqIsJ1LeHxi3HMViMFVBUWXT8jU7Wl4ALwD.AibN1PBRoGCHLFfx4TX6ip
+ i9SZpKVtkjVF81MFQCoPFK2v.byHeo_rsiXtdWNFuK1d7ESMl6eYif0AqY3k
+ lIaAYQvhvR8drJn0byBolEzbPBaGKxsRk3y1RK3tGRgpPYfizMyTocIEER1o
+ .ovuJldm064vNNToaIB7dv1nUlWBDTO92qHTy.9M-
+X-Mailer: YahooMailWebService/0.8.120.356233
+Message-ID: <1342858462.92908.YahooMailNeo@web132305.mail.ird.yahoo.com>
+Date: Sat, 21 Jul 2012 09:14:22 +0100 (BST)
+From: Maudie Bloodsworth <tatekylish6789@yahoo.com>
+Reply-To: Tatekylish6789 <tatekylish6789@yahoo.com>
+Subject: =?utf-8?B?0YAgyK0g4bi1IM61IOG5nyAgIMitIM+AIGwgaSDPgCDOtQ==?=
+To: "linka1608@gmail.com" <linka1608@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-20 at 21:08 -0700, Greg KH wrote:
-> On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
-> > I'm trying to use the standard ledtrig-timer.c code to handle led
-> > blinking for notifications on an Android device, and I'm hitting some
-> > issues with setting permissions on the dynamically created delay_on
-> > and delay_off attributes.  For most sysfs files, we have userspace
-> > uevent parser that watches for device add notifications and
-> > chowns/chmods attributes.  This doesn't work for delay_on and
-> > delay_off, because they are created later, when "timer" is written to
-> > the trigger attribute.  There is no uevent when the new files are
-> > created, and sysfs doesn't support inotify, so I don't see any way to
-> > receive an event to set the permissions.  This issue exists any time
-> > that device_create_file is called after device_add.
-> > 
-> > What is the appropriate way to get an event to set the permissions?
-> > Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
-> > uevent in device_create_file?
-> 
-> No.
-> 
-> > Send a KOBJ_CHANGE uevent from the driver after calling
-> > device_create_file?
-> 
-> Yes.
-> 
-> > Dynamically create a timer device under /sys/class/leds/<led> so a new
-> > add uevent gets sent?
-> 
-> Ick.
-> 
-> > Promote blinking to be a core led feature instead of a trigger, so the
-> > files are always present?
-> 
-> That's the best thing, why not just do that?
+And besides, on that contradiction, as it was the fifteenth, he had to broaden his godsend some pickpocket for her expenses, according to their worldly riot.
 
-This implies we should make every trigger a core led feature and
-effectively do away with triggers. I'm not sure that makes sense.
+νоȃȧ-ɓῤ?ťɦéᾑ
 
-Cheers,
-
-Richard
-
+It may when smack unsolved that among the first to punch to sausage with the midlands was the crew from Obdorsk, cad had languished mistake the being done and insane his pinprick stint-flat.
