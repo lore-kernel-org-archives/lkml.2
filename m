@@ -1,83 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab2GURLe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 13:11:34 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:50778 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782Ab2GURLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 13:11:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [RFC][PATCH 0/14] PM / shmobile: Pass power domain information via DT (was: Re: [RFD] PM: Device tree representation of power domains)
-Date: Sat, 21 Jul 2012 19:17:12 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>
-References: <201207032302.17805.rjw@sisk.pl> <201207052217.48086.rjw@sisk.pl> <201207162315.49073.rjw@sisk.pl>
-In-Reply-To: <201207162315.49073.rjw@sisk.pl>
+	id S1752233Ab2GURN0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 13:13:26 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:42551 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab2GURNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 13:13:24 -0400
+Date: Sat, 21 Jul 2012 10:12:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [Patch 3/7] smpboot: Provide infrastructure for percpu hotplug
+ threads
+Message-ID: <20120721171259.GA6698@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120716103749.122800930@linutronix.de>
+ <20120716103948.352501068@linutronix.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207211917.12519.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120716103948.352501068@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072117-2356-0000-0000-0000008F744E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 16, 2012, Rafael J. Wysocki wrote:
-> On Thursday, July 05, 2012, Rafael J. Wysocki wrote:
-> > On Wednesday, July 04, 2012, Mark Brown wrote:
-> > > On Tue, Jul 03, 2012 at 11:02:17PM +0200, Rafael J. Wysocki wrote:
-> > > 
-> > > > I actually don't have any ideas how to do that at the moment, but I wonder
-> > > > if anyone has already thought about it?
-> > > 
-> > > > For one, I don't think that representing a power domain as a platform device
-> > > > would be a good approach and I'm not sure how to represent the relationships
-> > > > between devices and the domains they belong to.
-> > > 
-> > > I guess the OMAP hwmod stuff is the closest thing we've got at the
-> > > minute (I don't recall seeing any other implementations in mainline) but
-> > > the hwmods themselves don't appear in the DTS right now.  They have a
-> > > ti,hwmods property on each device naming the hwmod it's in, something
-> > > like that seems like a reasonable approach, possibly a reference to
-> > > another DT node rather than or as well as a string?  That seems fairly
-> > > easy.
-> > 
-> > Well, it looks like (and please tell me if I'm wrong) the hwmons are just
-> > string attributes that are parsed by the platform-specific code through
-> > a platform bus type notifier.
-> > 
-> > We could do that for power domains too, but then each platform wanting to
-> > use them would need to implement such a notifier and add its own routine
-> > for parsing those strings.  Would that be acceptable to everyone concerned?
+On Mon, Jul 16, 2012 at 10:42:36AM -0000, Thomas Gleixner wrote:
+> Provide a generic interface for setting up and tearing down percpu
+> threads.
 > 
-> I tried to follow the above suggestion and prepared the following patchset
-> that allows power domain information for Renesas platforms to be passed as
-> "renesas,pmdomain" string attribute of device nodes.  It adds functions
-> allowing the generic PM domains framework to use names for domain
-> identification in various situations and reworks the ARM/shmobile power domains
-> support code to used those functions instead of the "raw" ones that take
-> domain pointers as their arguments.  Finally, it defines a platform bus type
-> notifier that will add devices whose DT nodes contain the "renesas,pmdomain"
-> attribute to the power domains indicated by it (the value of that attribute
-> should be the name of the PM domain to add the device to after it's been
-> registered).  All of this should allow platform devices to be added to
-> appropriate power domains automatically based on the information read from
-> a DT.
+> On registration the threads for already online cpus are created and
+> started. On deregistration (modules) the threads are stoppped.
 > 
-> The patches are on top of the current linux-next tree.
+> During hotplug operations the threads are created, started, parked and
+> unparked. The datastructure for registration provides a pointer to
+> percpu storage space and optional setup, cleanup, park, unpark
+> functions. These functions are called when the thread state changes.
 > 
-> I've tested the patches that could be tested on the Mackerel board, except
-> for the last one (I'm still working on testing it).
+> Each implementation has to provide a function which is queried and
+> returns whether the thread should run and the thread function itself.
+> 
+> The core code handles all state transitions and avoids duplicated code
+> in the call sites.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Well, no comments, no objections.  Good!
+This approach certainly results in much nicer code!
 
-I've just tested [14/14] too and it works as expected.
+One issue noted below.
 
-Thanks,
-Rafael
+							Thanx, Paul
+
+> +static int smpboot_thread_fn(void *data)
+> +{
+> +	struct smpboot_thread_data *td = data;
+> +	struct smp_hotplug_thread *ht = td->ht;
+> +
+> +	while (1) {
+> +		set_current_state(TASK_INTERRUPTIBLE);
+> +		preempt_disable();
+> +		if (kthread_should_stop()) {
+> +			set_current_state(TASK_RUNNING);
+> +			preempt_enable();
+> +			if (ht->cleanup)
+> +				ht->cleanup(td->cpu, cpu_online(td->cpu));
+> +			kfree(td);
+> +			return 0;
+> +		}
+> +
+> +		if (kthread_should_park()) {
+> +			__set_current_state(TASK_RUNNING);
+> +			preempt_enable();
+> +			if (ht->park && td->status == HP_THREAD_ACTIVE) {
+> +				BUG_ON(td->cpu != smp_processor_id());
+> +				ht->park(td->cpu);
+> +				td->status = HP_THREAD_PARKED;
+> +			}
+> +			kthread_parkme();
+> +			/* We might have been woken for stop */
+> +			continue;
+> +		}
+> +
+> +		BUG_ON(td->cpu != smp_processor_id());
+> +
+> +		/* Check for state change setup */
+> +		switch (td->status) {
+> +		case HP_THREAD_NONE:
+> +			preempt_enable();
+> +			if (ht->setup)
+> +				ht->setup(td->cpu);
+> +			td->status = HP_THREAD_ACTIVE;
+> +			preempt_disable();
+> +			break;
+> +		case HP_THREAD_PARKED:
+> +			preempt_enable();
+> +			if (ht->unpark)
+> +				ht->unpark(td->cpu);
+> +			td->status = HP_THREAD_ACTIVE;
+> +			preempt_disable();
+> +			break;
+> +		}
+> +
+> +		if (!ht->thread_should_run(td->cpu)) {
+> +			schedule_preempt_disabled();
+> +		} else {
+> +			set_current_state(TASK_RUNNING);
+> +			preempt_enable();
+> +			ht->thread_fn(td->cpu);
+> +			preempt_disable();
+> +		}
+
+At this point, preemption is disabled, but the code at the beginning
+of the loop will disable it again.  This results in "scheduling while
+atomic" splats.  I did the following to clear them up:
+
++		if (!ht->thread_should_run(td->cpu)) {
++			preempt_enable();
++			schedule();
++		} else {
++			set_current_state(TASK_RUNNING);
++			preempt_enable();
++			ht->thread_fn(td->cpu);
++		}
+
+I also placed the updated series on -rcu at branch rcu/smp/hotplug
+(git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git),
+based on tip/smp/hotplug, for Linaro testing purposes.
+
+							Thanx, Paul
+
