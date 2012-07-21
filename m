@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab2GUQWX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 12:22:23 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50134 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab2GUQWW (ORCPT
+	id S1752001Ab2GUQYA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 12:24:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:32888 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab2GUQX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 12:22:22 -0400
+	Sat, 21 Jul 2012 12:23:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120721161337.GA22896@kroah.com>
+In-Reply-To: <20120721161523.GB22896@kroah.com>
 References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
 	<20120721040816.GA7313@kroah.com>
 	<1342856010.21788.47.camel@ted>
 	<CAMbhsRREVcqf+pnamY62wGcd2mBif8W8_CRXdJQCQvL14Dy3Eg@mail.gmail.com>
 	<1342869707.21788.50.camel@ted>
 	<CAMbhsRQ2EPEW+=0bhE6N9-dr44H8G_gzQ7h5LqOp7Lntr2RhTg@mail.gmail.com>
-	<20120721161337.GA22896@kroah.com>
-Date: Sat, 21 Jul 2012 09:22:20 -0700
-X-Google-Sender-Auth: EVgVtP_NUmDg54DiqrSNLMPnnks
-Message-ID: <CAMbhsRTNmfd7EgGGv3TU=qzBO0k81TLcKtgT57CAhvwPKCUWfw@mail.gmail.com>
+	<20120721160855.GB7565@khazad-dum.debian.net>
+	<20120721161523.GB22896@kroah.com>
+Date: Sat, 21 Jul 2012 09:23:58 -0700
+X-Google-Sender-Auth: 6IS9GBXPOrZmSEU5ArR0Yuw6k3A
+Message-ID: <CAMbhsRSAX3mt0nEnfOC3ydFG5WfMNihAGXDJuBWQyrS2DcKS=g@mail.gmail.com>
 Subject: Re: sysfs permissions on dynamic attributes (led delay_on and delay_off)
 From: Colin Cross <ccross@android.com>
 To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Richard Purdie <richard.purdie@linuxfoundation.org>,
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>,
         lkml <linux-kernel@vger.kernel.org>, Bryan Wu <bryan.wu@canonical.com>
 Content-Type: text/plain; charset=ISO-8859-1
 X-System-Of-Record: true
@@ -30,82 +32,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 21, 2012 at 9:13 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sat, Jul 21, 2012 at 08:42:12AM -0700, Colin Cross wrote:
->> On Sat, Jul 21, 2012 at 4:21 AM, Richard Purdie
->> <richard.purdie@linuxfoundation.org> wrote:
->> > On Sat, 2012-07-21 at 01:26 -0700, Colin Cross wrote:
->> >> On Sat, Jul 21, 2012 at 12:33 AM, Richard Purdie
->> >> <richard.purdie@linuxfoundation.org> wrote:
->> >> > On Fri, 2012-07-20 at 21:08 -0700, Greg KH wrote:
->> >> >> On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
->> >> >> > I'm trying to use the standard ledtrig-timer.c code to handle led
->> >> >> > blinking for notifications on an Android device, and I'm hitting some
->> >> >> > issues with setting permissions on the dynamically created delay_on
->> >> >> > and delay_off attributes.  For most sysfs files, we have userspace
->> >> >> > uevent parser that watches for device add notifications and
->> >> >> > chowns/chmods attributes.  This doesn't work for delay_on and
->> >> >> > delay_off, because they are created later, when "timer" is written to
->> >> >> > the trigger attribute.  There is no uevent when the new files are
->> >> >> > created, and sysfs doesn't support inotify, so I don't see any way to
->> >> >> > receive an event to set the permissions.  This issue exists any time
->> >> >> > that device_create_file is called after device_add.
->> >> >> >
->> >> >> > What is the appropriate way to get an event to set the permissions?
->> >> >> > Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
->> >> >> > uevent in device_create_file?
->> >> >>
->> >> >> No.
->> >> >>
->> >> >> > Send a KOBJ_CHANGE uevent from the driver after calling
->> >> >> > device_create_file?
->> >> >>
->> >> >> Yes.
->> >> >>
->> >> >> > Dynamically create a timer device under /sys/class/leds/<led> so a new
->> >> >> > add uevent gets sent?
->> >> >>
->> >> >> Ick.
->> >> >>
->> >> >> > Promote blinking to be a core led feature instead of a trigger, so the
->> >> >> > files are always present?
->> >> >>
->> >> >> That's the best thing, why not just do that?
->> >> >
->> >> > This implies we should make every trigger a core led feature and
->> >> > effectively do away with triggers. I'm not sure that makes sense.
->> >>
->> >> Blinking is already effectively a core feature.  It is implemented in
->> >> led-core.c so it can be used by other triggers besides timer, it's
->> >> state is stored in the led_classdev structure, not in the trigger
->> >> data, and the only thing left in ledtrig-timer.c is the sysfs files.
+On Sat, Jul 21, 2012 at 9:15 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sat, Jul 21, 2012 at 01:08:55PM -0300, Henrique de Moraes Holschuh wrote:
+>> On Sat, 21 Jul 2012, Colin Cross wrote:
+>> > The delay_on and delay_off files could easily override the values from
+>> > the trigger.
 >> >
->> > Having the attributes present all the time leads to some nasty questions
->> > like how the on/off delays interact with things like say a network
->> > activity trigger. Not all triggers are going to respect these delay
->> > values and I can imagine a whole new set of nasty bug reports with no
->> > easy solutions if this change is made...
+>> > Sending a KOBJ_CHANGE uevent is not a great solution, it's still
+>> > horribly racy in userspace.  This script would never work reliably:
+>> > echo timer > trigger
+>> > echo 1000 > delay_on
+>> > echo 1000 > delay_off
+>> > echo 255 > brightness
 >>
->> The delay_on and delay_off files could easily override the values from
->> the trigger.
+>> Yes, and the proper fix is to instead use a fully async userspace based on
+>> uevent callbacks.  Nasty as all hell.  Or the quick fix, which is to wait
+>> for the system to settle after every sysfs operation that could create new
+>> sysfs nodes.
 >>
->> Sending a KOBJ_CHANGE uevent is not a great solution, it's still
->> horribly racy in userspace.  This script would never work reliably:
->> echo timer > trigger
+>> You could make sure that (1) no sysfs operation will return control to
+>> userspace until it is complete, so you'd have all new sysfs nodes available
+>> at the time the first echo returns [I believe it already works like that],
 >
-> When this returned, the sysfs files would then be there, right?
-
-Yes, but they would owned by root and not writable.  udev would be
-triggered by the KOBJ_CHANGE event and eventually chown/chmod them,
-but possibly too late.
-
->> echo 1000 > delay_on
->> echo 1000 > delay_off
->> echo 255 > brightness
+> Yes it does, what's the problem here?
 >
-> So this would work.
+>> and (2) either enhance sysfs to create nodes with the desired ownership and
+>> permissions
 >
-> What is racy here?
+> From the kernel, you can also do this today, if you know it's "safe" for
+> users to read/write them.
 
-It's racy if the script is run as non-root, assuming udev has already
-chowned/chmoded the trigger and brightness files.
+You can set the permissions, but I don't know of any way to set the
+owner.  For my case, I need them to be writable by the "system" user
+but not by all users.
