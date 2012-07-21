@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab2GUIzK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 04:55:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33342 "EHLO
+	id S1752416Ab2GUI4L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 04:56:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49984 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab2GUIzD (ORCPT
+	with ESMTP id S1751894Ab2GUI4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 04:55:03 -0400
+	Sat, 21 Jul 2012 04:56:09 -0400
 From: Devendra Naga <develkernel412222@gmail.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>,
+To: Omar Ramirez Luna <omar.ramirez@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+        =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
+	<vjaquez@igalia.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Cc: Devendra Naga <develkernel412222@gmail.com>
-Subject: [PATCH 1/2] staging/iio: use module_platform_driver macro
-Date: Sat, 21 Jul 2012 14:39:55 +0545
-Message-Id: <1342860895-19401-1-git-send-email-develkernel412222@gmail.com>
+Subject: [PATCH 2/2] staging/tidspbridge: use module_platform_driver
+Date: Sat, 21 Jul 2012 14:41:00 +0545
+Message-Id: <1342860960-19463-1-git-send-email-develkernel412222@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the code which under _init and _exit does only the platform_driver_register
-and platform_driver_unregister, and nothing else,
-so its better to use the module_platform_driver macro rather duplicating
-its implementation
+the code under _init and _exit does platform_driver_register and
+platform_driver_unregister respectively only,
+
+so its better to use the module_platform_driver than just replicating
+the module_platform_driver's implementation
 
 Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
 ---
 
- drivers/staging/iio/iio_hwmon.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ drivers/staging/tidspbridge/rmgr/drv_interface.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/staging/iio/iio_hwmon.c b/drivers/staging/iio/iio_hwmon.c
-index 27d27ec..4bb017a 100644
---- a/drivers/staging/iio/iio_hwmon.c
-+++ b/drivers/staging/iio/iio_hwmon.c
-@@ -215,17 +215,7 @@ static struct platform_driver __refdata iio_hwmon_driver = {
- 	.remove = __devexit_p(iio_hwmon_remove),
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index 3cac014..6acea2b 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -613,16 +613,6 @@ static struct platform_driver bridge_driver = {
+ #endif
  };
  
--static int iio_inkern_init(void)
+-static int __init bridge_init(void)
 -{
--	return platform_driver_register(&iio_hwmon_driver);
+-	return platform_driver_register(&bridge_driver);
 -}
--module_init(iio_inkern_init);
 -
--static void iio_inkern_exit(void)
+-static void __exit bridge_exit(void)
 -{
--	platform_driver_unregister(&iio_hwmon_driver);
+-	platform_driver_unregister(&bridge_driver);
 -}
--module_exit(iio_inkern_exit);
-+module_platform_driver(iio_hwmon_driver);
+-
+ /* To remove all process resources before removing the process from the
+  * process context list */
+ int drv_remove_all_resources(void *process_ctxt)
+@@ -636,6 +626,4 @@ int drv_remove_all_resources(void *process_ctxt)
+ 	return status;
+ }
  
- MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
- MODULE_DESCRIPTION("IIO to hwmon driver");
+-/* Bridge driver initialization and de-initialization functions */
+-module_init(bridge_init);
+-module_exit(bridge_exit);
++module_platform_driver(bridge_driver);
 -- 
 1.7.9.5
 
