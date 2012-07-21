@@ -1,95 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab2GULWU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 07:22:20 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:40983 "EHLO mta02.xtra.co.nz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751850Ab2GULWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 07:22:18 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Tony Prisk <linux@prisktech.co.nz>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        VT8500 mailing list 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org
-Subject: [PATCHv2 2/2] ARM: vt8500: Minor update to vt8500-uart for devicetree support
-Date: Sat, 21 Jul 2012 23:22:12 +1200
-Message-Id: <1342869732-11232-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.2.5
+	id S1751916Ab2GUMCe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 08:02:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62148 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab2GUMCb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 08:02:31 -0400
+Message-ID: <500A9A72.20507@gmail.com>
+Date: Sat, 21 Jul 2012 14:02:58 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>, mashirle@us.ibm.com, krkumar2@in.ibm.com,
+        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, edumazet@google.com,
+        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
+        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
+Subject: Re: [net-next RFC V5 4/5] virtio_net: multiqueue support
+References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-5-git-send-email-jasowang@redhat.com> <20120720134014.GD16550@redhat.com>
+In-Reply-To: <20120720134014.GD16550@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
-v2:
-Split single patch into seperate patches.
- .../devicetree/bindings/tty/serial/vt8500-uart.txt |   14 ++++++++++++++
- drivers/tty/serial/vt8500_serial.c                 |    8 ++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
+On 07/20/2012 03:40 PM, Michael S. Tsirkin wrote:
+>> -	err = init_vqs(vi);
+>> > +	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+>> > +		vi->has_cvq = true;
+>> > +
+> How about we disable multiqueue if there's no cvq?
+> Will make logic a bit simpler, won't it?
 
-diff --git a/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt b/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
-new file mode 100644
-index 0000000..745070a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
-@@ -0,0 +1,14 @@
-+* VIA/Wondermedia Universal Asynchronous Receiver/Transmitter (UART)
-+
-+Required properties:
-+- compatible: Should be "via,vt8500-uart"
-+- reg: Should contain registers location and length
-+- interrupts: Should contain interrupt
-+
-+Example:
-+	uart0: serial@d8200000 {
-+		compatible = "via,vt8500-uart";
-+		reg = <0xd8200000 0x1040>;
-+		interrupts = <32>;
-+	};
-+
-diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
-index 2be006f..b9ea0b9 100644
---- a/drivers/tty/serial/vt8500_serial.c
-+++ b/drivers/tty/serial/vt8500_serial.c
-@@ -34,6 +34,7 @@
- #include <linux/slab.h>
- #include <linux/clk.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
- 
- /*
-  * UART Register offsets
-@@ -603,12 +604,18 @@ static int __devexit vt8500_serial_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id vt8500_uart_ids[] = {
-+	{ .compatible = "via,vt8500-uart", },
-+	{}
-+};
-+
- static struct platform_driver vt8500_platform_driver = {
- 	.probe  = vt8500_serial_probe,
- 	.remove = __devexit_p(vt8500_serial_remove),
- 	.driver = {
- 		.name = "vt8500_serial",
- 		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(vt8500_uart_ids),
- 	},
- };
- 
-@@ -643,3 +650,4 @@ module_exit(vt8500_serial_exit);
- MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
- MODULE_DESCRIPTION("Driver for vt8500 serial device");
- MODULE_LICENSE("GPL");
-+MODULE_DEVICE_TABLE(of, vt8500_uart_ids);
--- 
-1.7.2.5
+multiqueues don't really depend on cvq. Does this added complexity really justifies adding an artificial limit?
+
 
