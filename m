@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab2GVMQK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 08:16:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29186 "EHLO mx1.redhat.com"
+	id S1752129Ab2GVMQq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 08:16:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11895 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942Ab2GVMQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 08:16:04 -0400
+	id S1752056Ab2GVMQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 08:16:07 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,243 +14,276 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 15/17] perf, tool: Support for dwarf mode callchain on perf record
-Date: Sun, 22 Jul 2012 14:14:38 +0200
-Message-Id: <1342959280-5361-16-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 16/17] perf, tool: Add dso data caching
+Date: Sun, 22 Jul 2012 14:14:39 +0200
+Message-Id: <1342959280-5361-17-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables perf to use the dwarf unwind code.
+Adding dso data caching so we don't need to open/read/close,
+each time we want dso data.
 
-It extends the perf record '-g' option with following arguments:
-  'fp'           - provides framepointer based user
-                   stack backtrace
-  'dwarf[,size]' - provides dwarf (libunwind) based user stack
-                   backtrace. The size specifies the size of the
-                   user stack dump. If omitted it is 8192 by default.
+The DSO data caching affects following functions:
+  dso__data_read_offset
+  dso__data_read_addr
 
-If libunwind is found during the perf build, then the 'dwarf'
-argument becomes available for record command. The 'fp' stays as
-default option in any case.
+Each DSO read tries to find the data (based on offset) inside
+the cache. If it's not present it fills the cache from file,
+and returns the data. If it is present, data are returned
+with no file read.
 
-Examples: (perf compiled with libunwind)
-
-   perf record -g dwarf ls
-      - provides dwarf unwind with 8192 as stack dump size
-
-   perf record -g dwarf,4096 ls
-      - provides dwarf unwind with 4096 as stack dump size
-
-   perf record -g -- ls
-   perf record -g fp ls
-      - provides frame pointer unwind
+Each data read is cached by reading cache page sized/aligned
+amount of DSO data. The cache page size is hardcoded to 4096.
+The cache is using RB tree with file offset as a sort key.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/builtin-record.c |  108 ++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/perf.h           |    9 +++-
- tools/perf/util/evsel.c     |   13 +++++-
- 3 files changed, 126 insertions(+), 4 deletions(-)
+ tools/perf/util/symbol.c |  154 ++++++++++++++++++++++++++++++++++++++++------
+ tools/perf/util/symbol.h |   11 +++
+ 2 files changed, 147 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f5a6452..fff130b 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -31,6 +31,15 @@
- #include <sched.h>
- #include <sys/mman.h>
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index ff4d603..d60490f 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -29,6 +29,7 @@
+ #define NT_GNU_BUILD_ID 3
+ #endif
  
-+#define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
-+
-+#ifdef NO_LIBUNWIND_SUPPORT
-+static char callchain_help[] = CALLCHAIN_HELP "[fp]";
-+#else
-+static unsigned long default_stack_dump_size = 8192;
-+static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
-+#endif
-+
- enum write_mode_t {
- 	WRITE_FORCE,
- 	WRITE_APPEND
-@@ -732,6 +741,100 @@ error:
- 	return ret;
++static void dso_cache__free(struct rb_root *root);
+ static bool dso__build_id_equal(const struct dso *dso, u8 *build_id);
+ static int elf_read_build_id(Elf *elf, void *bf, size_t size);
+ static void dsos__add(struct list_head *head, struct dso *dso);
+@@ -343,6 +344,7 @@ struct dso *dso__new(const char *name)
+ 		dso__set_short_name(dso, dso->name);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
++		dso->cache = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+@@ -378,6 +380,7 @@ void dso__delete(struct dso *dso)
+ 		free((char *)dso->short_name);
+ 	if (dso->lname_alloc)
+ 		free(dso->long_name);
++	dso_cache__free(&dso->cache);
+ 	free(dso);
  }
  
-+#ifndef NO_LIBUNWIND_SUPPORT
-+static int get_stack_size(char *str, unsigned long *_size)
-+{
-+	char *endptr;
-+	unsigned long size;
-+	unsigned long max_size = round_down(USHRT_MAX, sizeof(u64));
+@@ -3001,22 +3004,87 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 	return -EINVAL;
+ }
+ 
+-static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
+-			      u8 *data __used, ssize_t size __used)
++static void
++dso_cache__free(struct rb_root *root)
+ {
+-	return -EINVAL;
++	struct rb_node *next = rb_first(root);
 +
-+	size = strtoul(str, &endptr, 0);
++	while (next) {
++		struct dso_cache *cache;
 +
-+	do {
-+		if (*endptr)
-+			break;
++		cache = rb_entry(next, struct dso_cache, rb_node);
++		next = rb_next(&cache->rb_node);
++		rb_erase(&cache->rb_node, root);
++		free(cache);
++	}
+ }
+ 
+-static int dso_cache_add(struct dso *dso __used, u64 offset __used,
+-			 u8 *data __used, ssize_t size __used)
++static struct dso_cache*
++dso_cache__find(struct rb_root *root, u64 offset)
+ {
+-	return 0;
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct dso_cache *cache;
 +
-+		size = round_up(size, sizeof(u64));
-+		if (!size || size > max_size)
-+			break;
++	while (*p != NULL) {
++		u64 end;
 +
-+		*_size = size;
-+		return 0;
++		parent = *p;
++		cache = rb_entry(parent, struct dso_cache, rb_node);
++		end = cache->offset + DSO__DATA_CACHE_SIZE;
 +
-+	} while (0);
-+
-+	pr_err("callchain: Incorrect stack dump size (max %ld): %s\n",
-+	       max_size, str);
-+	return -1;
++		if (offset < cache->offset)
++			p = &(*p)->rb_left;
++		else if (offset >= end)
++			p = &(*p)->rb_right;
++		else
++			return cache;
++	}
++	return NULL;
 +}
-+#endif /* !NO_LIBUNWIND_SUPPORT */
 +
-+static int
-+parse_callchain_opt(const struct option *opt __used, const char *arg,
-+		    int unset)
++static void
++dso_cache__insert(struct rb_root *root, struct dso_cache *new)
 +{
-+	struct perf_record *rec = (struct perf_record *)opt->value;
-+	char *tok, *name, *saveptr = NULL;
-+	char buf[20];
-+	int ret = -1;
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct dso_cache *cache;
++	u64 offset = new->offset;
 +
-+	/* --no-call-graph */
-+	if (unset)
-+		return 0;
++	while (*p != NULL) {
++		u64 end;
 +
-+	/* We specified default option if none is provided. */
-+	BUG_ON(!arg);
++		parent = *p;
++		cache = rb_entry(parent, struct dso_cache, rb_node);
++		end = cache->offset + DSO__DATA_CACHE_SIZE;
 +
-+	/* We need buffer that we know we can write to. */
-+	snprintf(buf, 20, "%s", arg);
++		if (offset < cache->offset)
++			p = &(*p)->rb_left;
++		else if (offset >= end)
++			p = &(*p)->rb_right;
++	}
 +
-+	tok = strtok_r((char *)buf, ",", &saveptr);
-+	name = tok ? : (char *)buf;
++	rb_link_node(&new->rb_node, parent, p);
++	rb_insert_color(&new->rb_node, root);
++}
 +
-+	do {
-+		/* Framepointer style */
-+		if (!strncmp(name, "fp", sizeof("fp"))) {
-+			if (!strtok_r(NULL, ",", &saveptr)) {
-+				rec->opts.call_graph = CALLCHAIN_FP;
-+				ret = 0;
-+			} else
-+				pr_err("callchain: No more arguments "
-+				       "needed for -g fp\n");
++static ssize_t
++dso_cache__memcpy(struct dso_cache *cache, u64 offset,
++		  u8 *data, u64 size)
++{
++	u64 cache_offset = offset - cache->offset;
++	u64 cache_size   = min(cache->size - cache_offset, size);
++
++	memcpy(data, cache->data + cache_offset, cache_size);
++	return cache_size;
+ }
+ 
+-static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
+-		     u64 offset, u8 *data, ssize_t size)
++static ssize_t
++dso_cache__read(struct dso *dso, struct machine *machine,
++		 u64 offset, u8 *data, ssize_t size)
+ {
+-	ssize_t rsize = -1;
++	struct dso_cache *cache;
++	ssize_t ret;
+ 	int fd;
+ 
+ 	fd = dso__data_fd(dso, machine);
+@@ -3024,28 +3092,78 @@ static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
+ 		return -1;
+ 
+ 	do {
+-		if (-1 == lseek(fd, offset, SEEK_SET))
++		u64 cache_offset;
++
++		ret = -ENOMEM;
++
++		cache = zalloc(sizeof(*cache) + DSO__DATA_CACHE_SIZE);
++		if (!cache)
+ 			break;
+ 
+-		rsize = read(fd, data, size);
+-		if (-1 == rsize)
++		cache_offset = offset & DSO__DATA_CACHE_MASK;
++		ret = -EINVAL;
++
++		if (-1 == lseek(fd, cache_offset, SEEK_SET))
+ 			break;
+ 
+-		if (dso_cache_add(dso, offset, data, size))
+-			pr_err("Failed to add data int dso cache.");
++		ret = read(fd, cache->data, DSO__DATA_CACHE_SIZE);
++		if (ret <= 0)
 +			break;
 +
-+#ifndef NO_LIBUNWIND_SUPPORT
-+		/* Dwarf style */
-+		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
-+			ret = 0;
-+			rec->opts.call_graph = CALLCHAIN_DWARF;
-+			rec->opts.stack_dump_size = default_stack_dump_size;
++		cache->offset = cache_offset;
++		cache->size   = ret;
++		dso_cache__insert(&dso->cache, cache);
 +
-+			tok = strtok_r(NULL, ",", &saveptr);
-+			if (tok) {
-+				unsigned long size = 0;
++		ret = dso_cache__memcpy(cache, offset, data, size);
+ 
+ 	} while (0);
+ 
++	if (ret <= 0)
++		free(cache);
 +
-+				ret = get_stack_size(tok, &size);
-+				rec->opts.stack_dump_size = size;
-+			}
-+
-+			if (!ret)
-+				pr_debug("callchain: stack dump size %d\n",
-+					 rec->opts.stack_dump_size);
-+#endif /* !NO_LIBUNWIND_SUPPORT */
-+		} else {
-+			pr_err("callchain: Unknown -g option "
-+			       "value: %s\n", name);
-+			break;
-+		}
-+
-+	} while (0);
-+
-+	if (!ret)
-+		pr_debug("callchain: type %d\n", rec->opts.call_graph);
-+
+ 	close(fd);
+-	return rsize;
 +	return ret;
 +}
 +
- static const char * const record_usage[] = {
- 	"perf record [<options>] [<command>]",
- 	"perf record [<options>] -- <command> [<options>]",
-@@ -803,8 +906,9 @@ const struct option record_options[] = {
- 		     "number of mmap data pages"),
- 	OPT_BOOLEAN(0, "group", &record.opts.group,
- 		    "put the counters into a counter group"),
--	OPT_BOOLEAN('g', "call-graph", &record.opts.call_graph,
--		    "do call-graph (stack chain/backtrace) recording"),
-+	OPT_CALLBACK_DEFAULT('g', "call-graph", &record, "mode[,dump_size]",
-+			     callchain_help, &parse_callchain_opt,
-+			     "fp"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index f960ccb..87f4ec6 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -209,9 +209,15 @@ void pthread__unblock_sigwinch(void);
- 
- #include "util/target.h"
- 
-+enum perf_call_graph_mode {
-+	CALLCHAIN_NONE,
-+	CALLCHAIN_FP,
-+	CALLCHAIN_DWARF
-+};
++static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size)
++{
++	struct dso_cache *cache;
 +
- struct perf_record_opts {
- 	struct perf_target target;
--	bool	     call_graph;
-+	int	     call_graph;
- 	bool	     group;
- 	bool	     inherit_stat;
- 	bool	     no_delay;
-@@ -230,6 +236,7 @@ struct perf_record_opts {
- 	u64          branch_stack;
- 	u64	     default_interval;
- 	u64	     user_interval;
-+	u16	     stack_dump_size;
++	cache = dso_cache__find(&dso->cache, offset);
++	if (cache)
++		return dso_cache__memcpy(cache, offset, data, size);
++	else
++		return dso_cache__read(dso, machine, offset, data, size);
+ }
+ 
+ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 			      u64 offset, u8 *data, ssize_t size)
+ {
+-	if (dso_cache_read(dso, offset, data, size))
+-		return read_dso_data(dso, machine, offset, data, size);
+-	return 0;
++	ssize_t r = 0;
++	u8 *p = data;
++
++	do {
++		ssize_t ret;
++
++		ret = dso_cache_read(dso, machine, offset, p, size);
++		if (ret < 0)
++			return ret;
++
++		/* Reached EOF, return what we have. */
++		if (!ret)
++			break;
++
++		BUG_ON(ret > size);
++
++		r      += ret;
++		p      += ret;
++		offset += ret;
++		size   -= ret;
++
++	} while (size);
++
++	return r;
+ }
+ 
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 9b9ea00..980d5f5 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -182,10 +182,21 @@ enum dso_swap_type {
+ 	DSO_SWAP__YES,
  };
  
- #endif
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 3a284b1..4ae977e 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -17,6 +17,8 @@
- #include "thread_map.h"
- #include "target.h"
- #include "../../../include/linux/hw_breakpoint.h"
-+#include "../../include/linux/perf_event.h"
-+#include "perf_regs.h"
- 
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
-@@ -367,9 +369,18 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 		attr->mmap_data = track;
- 	}
- 
--	if (opts->call_graph)
-+	if (opts->call_graph) {
- 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
- 
-+		if (opts->call_graph == CALLCHAIN_DWARF) {
-+			attr->sample_type |= PERF_SAMPLE_REGS_USER |
-+					     PERF_SAMPLE_STACK_USER;
-+			attr->sample_regs_user = PERF_REGS_MASK;
-+			attr->sample_stack_user = opts->stack_dump_size;
-+			attr->exclude_callchain_user = 1;
-+		}
-+	}
++#define DSO__DATA_CACHE_SIZE 4096
++#define DSO__DATA_CACHE_MASK ~(DSO__DATA_CACHE_SIZE - 1)
 +
- 	if (perf_target__has_cpu(&opts->target))
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 
++struct dso_cache {
++	struct rb_node	rb_node;
++	u64 offset;
++	u64 size;
++	char data[0];
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
++	struct rb_root	 cache;
+ 	enum dso_kernel_type	kernel;
+ 	enum dso_swap_type	needs_swap;
+ 	enum dso_binary_type	symtab_type;
 -- 
 1.7.7.6
 
