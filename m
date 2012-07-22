@@ -1,143 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab2GVV1d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 17:27:33 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:65348 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab2GVV1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 17:27:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=Di7IlwbZ0TWqTagM3AW+m3b/MS/1gu0TQNej2kituFF0r6QzvFvPx96c
-	RgQnR4wXOOtkpyLYNAZqnpID2BshC1yEmVNxqt5DOm9XbwuUbczmePUB9K5iIlgp
-	A/BevVBbQhUmoPMhIS/i7F3TuMaQsmzEKjGcj1WvoON3dUAmyAU=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.7.11.3
-Date: Sun, 22 Jul 2012 14:27:26 -0700
-Message-ID: <7vk3xvpjup.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1752706Ab2GVVhX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 17:37:23 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:27501 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab2GVVhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 17:37:22 -0400
+Date: Sun, 22 Jul 2012 23:37:20 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "David S. Miller" <davem@davemloft.net>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: Fix references to out-of-scope variables in
+ put_cmsg_compat()
+Message-ID: <alpine.LNX.2.00.1207222335200.31033@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 0970CBD2-D444-11E1-B91A-01B42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.7.11.3 is now available at
-the usual places.
+In net/compat.c::put_cmsg_compat() we may assign 'data' the address of
+either the 'ctv' or 'cts' local variables inside the 'if
+(!COMPAT_USE_64BIT_TIME)' branch.
 
-The release tarballs are found at:
+Those variables go out of scope at the end of the 'if' statement, so
+when we use 'data' further down in 'copy_to_user(CMSG_COMPAT_DATA(cm),
+data, cmlen - sizeof(struct compat_cmsghdr))' there's no telling what
+it may be refering to - not good.
 
-    http://code.google.com/p/git-core/downloads/list
+Fix the problem by simply giving 'ctv' and 'cts' function scope.
 
-and their SHA-1 checksums are:
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ net/compat.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-a10c420e4d9152d6059f41825904cfac3062b135  git-1.7.11.3.tar.gz
-41500708e87787d6139de413c4da91629aa79fa8  git-htmldocs-1.7.11.3.tar.gz
-10151406ace1da92a70d203a7eb1c86024fdd919  git-manpages-1.7.11.3.tar.gz
+diff --git a/net/compat.c b/net/compat.c
+index 1b96281..74ed1d7 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -221,6 +221,8 @@ int put_cmsg_compat(struct msghdr *kmsg, int level, int type, int len, void *dat
+ {
+ 	struct compat_cmsghdr __user *cm = (struct compat_cmsghdr __user *) kmsg->msg_control;
+ 	struct compat_cmsghdr cmhdr;
++	struct compat_timeval ctv;
++	struct compat_timespec cts[3];
+ 	int cmlen;
+ 
+ 	if (cm == NULL || kmsg->msg_controllen < sizeof(*cm)) {
+@@ -229,8 +231,6 @@ int put_cmsg_compat(struct msghdr *kmsg, int level, int type, int len, void *dat
+ 	}
+ 
+ 	if (!COMPAT_USE_64BIT_TIME) {
+-		struct compat_timeval ctv;
+-		struct compat_timespec cts[3];
+ 		if (level == SOL_SOCKET && type == SCM_TIMESTAMP) {
+ 			struct timeval *tv = (struct timeval *)data;
+ 			ctv.tv_sec = tv->tv_sec;
+-- 
+1.7.11.2
 
-Also the following public repositories all have a copy of the v1.7.11.3
-tag and the maint branch that the tag points at:
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v1.7.11.3 Release Notes
-===========================
-
-Fixes since v1.7.11.3
----------------------
-
- * The error message from "git push $there :bogo" (and its equivalent
-   "git push $there --delete bogo") mentioned that we tried and failed
-   to guess what ref is being deleted based on the LHS of the refspec,
-   which we don't.
-
- * A handful of files and directories we create had tighter than
-   necessary permission bits when the user wanted to have group
-   writability (e.g. by setting "umask 002").
-
- * "commit --amend" used to refuse amending a commit with an empty log
-   message, with or without "--allow-empty-message".
-
- * "git commit --amend --only --" was meant to allow "Clever" people to
-   rewrite the commit message without making any change even when they
-   have already changes for the next commit added to their index, but
-   it never worked as advertised since it was introduced in 1.3.0 era.
-
- * Even though the index can record pathnames longer than 1<<12 bytes,
-   in some places we were not comparing them in full, potentially
-   replacing index entries instead of adding.
-
- * "git show"'s auto-walking behaviour was an unreliable and
-   unpredictable hack; it now behaves just like "git log" does when it
-   walks.
-
- * "git diff", "git status" and anything that internally uses the
-   comparison machinery was utterly broken when the difference
-   involved a file with "-" as its name.  This was due to the way "git
-   diff --no-index" was incorrectly bolted on to the system, making
-   any comparison that involves a file "-" at the root level
-   incorrectly read from the standard input.
-
- * We did not have test to make sure "git rebase" without extra options
-   filters out an empty commit in the original history.
-
- * "git fast-export" produced an input stream for fast-import without
-   properly quoting pathnames when they contain SPs in them.
-
- * "git checkout --detach", when you are still on an unborn branch,
-   should be forbidden, but it wasn't.
-
- * Some implementations of Perl terminates "lines" with CRLF even when
-   the script is operating on just a sequence of bytes.  Make sure to
-   use "$PERL_PATH", the version of Perl the user told Git to use, in
-   our tests to avoid unnecessary breakages in tests.
-
-Also contains minor typofixes and documentation updates.
-
-----------------------------------------------------------------
-
-Changes since v1.7.11.2 are as follows:
-
-Alex Riesen (1):
-      Restore umasks influence on the permissions of work tree created by clone
-
-Chris Webb (2):
-      git-checkout: disallow --detach on unborn branch
-      Allow edit of empty message with commit --amend
-
-Jay Soffian (1):
-      fast-export: quote paths with spaces
-
-Jeff King (3):
-      push: don't guess at qualifying remote refs on deletion
-      add: create ADD_EDIT.patch with mode 0666
-      commit: fix "--amend --only" with no pathspec
-
-Junio C Hamano (10):
-      show: fix "range implies walking"
-      t/test-lib.sh: export PERL_PATH for use in scripts
-      tests: enclose $PERL_PATH in double quotes
-      t/README: add a bit more Don'ts
-      diff-index.c: do not pretend paths are pathspecs
-      diff-index.c: unify handling of command line paths
-      diff-index.c: "git diff" has no need to read blob from the standard input
-      rerere: make rr-cache fanout directory honor umask
-      cache_name_compare(): do not truncate while comparing paths
-      Git 1.7.11.3
-
-Martin von Zweigbergk (1):
-      add test case for rebase of empty commit
-
-Thomas Rast (1):
-      Demonstrate git-show is broken with ranges
-
-Vincent van Ravesteijn (1):
-      t: Replace 'perl' by $PERL_PATH
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
