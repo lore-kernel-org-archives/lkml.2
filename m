@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab2GVMPu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 08:15:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52416 "EHLO mx1.redhat.com"
+	id S1751850Ab2GVMPj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 08:15:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2774 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751958Ab2GVMPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 08:15:46 -0400
+	id S1751804Ab2GVMP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 08:15:27 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,190 +14,249 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 11/17] perf, tool: Add interface to arch registers sets
-Date: Sun, 22 Jul 2012 14:14:34 +0200
-Message-Id: <1342959280-5361-12-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 06/17] perf: Add ability to attach user stack dump to sample
+Date: Sun, 22 Jul 2012 14:14:29 +0200
+Message-Id: <1342959280-5361-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding header files to access unified API for arch registers.
-  util/perf_regs.h - global perf_reg declarations
-  arch/x86/include/perf_regs.h - x86 arch specific
+Introducing PERF_SAMPLE_STACK_USER sample type bit to trigger
+the dump of the user level stack on sample. The size of the
+dump is specified by sample_stack_user value.
 
-Adding perf_reg_name function to obtain register name based
-on the reg ID value, and PERF_REGS_MASK macro with mask
-definition of all current arch registers (will be used in
-unwind patches).
+Being able to dump parts of the user stack, starting from the
+stack pointer, will be useful to make a post mortem dwarf CFI
+based stack unwinding.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/Makefile                     |   13 +++++-
- tools/perf/arch/x86/include/perf_regs.h |   80 +++++++++++++++++++++++++++++++
- tools/perf/util/perf_regs.h             |   14 +++++
- 3 files changed, 106 insertions(+), 1 deletions(-)
- create mode 100644 tools/perf/arch/x86/include/perf_regs.h
- create mode 100644 tools/perf/util/perf_regs.h
+ include/linux/perf_event.h |   18 ++++++-
+ kernel/events/core.c       |  121 +++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 137 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 75d74e5..576db7e 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -50,13 +50,15 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
- 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
- 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
- 				  -e s/sh[234].*/sh/ )
-+NO_PERF_REGS := 1
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index a4c53da..b4663b3 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -131,8 +131,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_RAW				= 1U << 10,
+ 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
++	PERF_SAMPLE_STACK_USER			= 1U << 13,
  
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
+-	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
+ };
  
- # Additional ARCH settings for x86
- ifeq ($(ARCH),i386)
--        ARCH := x86
-+	ARCH := x86
-+	NO_PERF_REGS := 0
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -69,6 +71,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_CFLAGS := -DARCH_X86_64
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
-+	NO_PERF_REGS := 0
- endif
+ /*
+@@ -196,6 +197,7 @@ enum perf_event_read_format {
+ #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
+ #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
+ #define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
++#define PERF_ATTR_SIZE_VER4	96	/* add: sample_stack_user */
  
- # Treat warnings as errors unless directed not to
-@@ -319,6 +322,7 @@ LIB_H += $(ARCH_INCLUDE)
- LIB_H += util/cgroup.h
- LIB_H += $(TRACE_EVENT_DIR)event-parse.h
- LIB_H += util/target.h
-+LIB_H += util/perf_regs.h
- 
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -669,6 +673,13 @@ else
- 	endif
- endif
- 
-+ifeq ($(NO_PERF_REGS),0)
-+	ifeq ($(ARCH),x86)
-+		LIB_H += arch/x86/include/perf_regs.h
-+	endif
-+else
-+	BASIC_CFLAGS += -DNO_PERF_REGS
-+endif
- 
- ifdef NO_STRLCPY
- 	BASIC_CFLAGS += -DNO_STRLCPY
-diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
-new file mode 100644
-index 0000000..46fc9f1
---- /dev/null
-+++ b/tools/perf/arch/x86/include/perf_regs.h
-@@ -0,0 +1,80 @@
-+#ifndef ARCH_PERF_REGS_H
-+#define ARCH_PERF_REGS_H
+ /*
+  * Hardware event_id to monitor via a performance monitoring event:
+@@ -280,6 +282,14 @@ struct perf_event_attr {
+ 	 * See asm/perf_regs.h for details.
+ 	 */
+ 	__u64	sample_regs_user;
 +
-+#include <stdlib.h>
-+#include "../../util/types.h"
-+#include "../../../../../arch/x86/include/asm/perf_regs.h"
++	/*
++	 * Defines size of the user stack to dump on samples.
++	 */
++	__u32	sample_stack_user;
 +
-+#ifndef ARCH_X86_64
-+#define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
-+#else
-+#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
-+		       (1ULL << PERF_REG_X86_ES) | \
-+		       (1ULL << PERF_REG_X86_FS) | \
-+		       (1ULL << PERF_REG_X86_GS))
-+#define PERF_REGS_MASK (((1ULL << PERF_REG_X86_64_MAX) - 1) & ~REG_NOSUPPORT)
-+#endif
-+#define PERF_REG_IP PERF_REG_X86_IP
-+#define PERF_REG_SP PERF_REG_X86_SP
-+
-+static inline const char *perf_reg_name(int id)
++	/* Align to u64. */
++	__u32	__reserved_2;
+ };
+ 
+ /*
+@@ -559,6 +569,10 @@ enum perf_event_type {
+ 	 *
+ 	 * 	{ u64			available;
+ 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
++	 *
++	 * 	{ u64			size;
++	 * 	  char			data[size];
++	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+@@ -1146,6 +1160,7 @@ struct perf_sample_data {
+ 	struct perf_raw_record		*raw;
+ 	struct perf_branch_stack	*br_stack;
+ 	struct pt_regs			*regs_user;
++	u64				stack_user_size;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -1157,6 +1172,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->br_stack = NULL;
+ 	data->period = period;
+ 	data->regs_user = NULL;
++	data->stack_user_size = 0;
+ }
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index e817e32..8a9cf80 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3771,6 +3771,45 @@ perf_output_sample_regs(struct perf_output_handle *handle,
+ 	}
+ }
+ 
++static void
++perf_output_sample_ustack(struct perf_output_handle *handle, u64 dump_size,
++			  struct pt_regs *regs)
 +{
-+	switch (id) {
-+	case PERF_REG_X86_AX:
-+		return "AX";
-+	case PERF_REG_X86_BX:
-+		return "BX";
-+	case PERF_REG_X86_CX:
-+		return "CX";
-+	case PERF_REG_X86_DX:
-+		return "DX";
-+	case PERF_REG_X86_SI:
-+		return "SI";
-+	case PERF_REG_X86_DI:
-+		return "DI";
-+	case PERF_REG_X86_BP:
-+		return "BP";
-+	case PERF_REG_X86_SP:
-+		return "SP";
-+	case PERF_REG_X86_IP:
-+		return "IP";
-+	case PERF_REG_X86_FLAGS:
-+		return "FLAGS";
-+	case PERF_REG_X86_CS:
-+		return "CS";
-+	case PERF_REG_X86_SS:
-+		return "SS";
-+	case PERF_REG_X86_DS:
-+		return "DS";
-+	case PERF_REG_X86_ES:
-+		return "ES";
-+	case PERF_REG_X86_FS:
-+		return "FS";
-+	case PERF_REG_X86_GS:
-+		return "GS";
-+#ifdef ARCH_X86_64
-+	case PERF_REG_X86_R8:
-+		return "R8";
-+	case PERF_REG_X86_R9:
-+		return "R9";
-+	case PERF_REG_X86_R10:
-+		return "R10";
-+	case PERF_REG_X86_R11:
-+		return "R11";
-+	case PERF_REG_X86_R12:
-+		return "R12";
-+	case PERF_REG_X86_R13:
-+		return "R13";
-+	case PERF_REG_X86_R14:
-+		return "R14";
-+	case PERF_REG_X86_R15:
-+		return "R15";
-+#endif /* ARCH_X86_64 */
-+	default:
-+		return NULL;
++	/* Case of a kernel thread, nothing to dump */
++	if (!regs) {
++		u64 size = 0;
++		perf_output_put(handle, size);
++	} else {
++		unsigned long sp;
++		unsigned int rem;
++		u64 dyn_size;
++
++		/*
++		 * We dump:
++		 * static size
++		 *   - the size requested by user or the best one we can fit
++		 *     in to the sample max size
++		 * data
++		 *   - user stack dump data
++		 * dynamic size
++		 *   - the actual dumped size
++		 */
++
++		/* Static size. */
++		perf_output_put(handle, dump_size);
++
++		/* Data. */
++		sp = user_stack_pointer(regs);
++		rem = __output_copy_user(handle, (void *) sp, dump_size);
++		dyn_size = dump_size - rem;
++
++		perf_output_skip(handle, rem);
++
++		/* Dynamic size. */
++		perf_output_put(handle, dyn_size);
++	}
++}
++
+ static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
+ {
+ 	if (!user_mode(regs)) {
+@@ -4060,6 +4099,11 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 						mask);
+ 		}
+ 	}
++
++	if (sample_type & PERF_SAMPLE_STACK_USER)
++		perf_output_sample_ustack(handle,
++					  data->stack_user_size,
++					  data->regs_user);
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -4124,6 +4168,66 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 
+ 		header->size += size;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_STACK_USER) {
++		/*
++		 * A first field that tells the _static_ size of the
++		 * dump. 0 if there is nothing to dump (ie: we are in
++		 * a kernel thread) otherwise the requested size.
++		 */
++		u16 size = sizeof(u64);
++		u16 stack_size = 0;
++
++		if (!data->regs_user)
++			data->regs_user = perf_sample_regs_user(regs);
++
++		/*
++		 * If there is something to dump, add space for the
++		 * dump itself and for the field that tells the
++		 * dynamic size, which is how many have been actually
++		 * dumped.
++		 */
++		if (data->regs_user) {
++			/*
++			 * XXX We need to check if we fit in with the
++			 * requested stack size into the sample. If we
++			 * don't, we customize the stack size to fit in.
++			 *
++			 * Either we need PERF_SAMPLE_STACK_USER bit to
++			 * be allways processed as the last one or have
++			 * additional check added in case new sample type
++			 * is added, because we could eat up the rest of
++			 * the sample size.
++			 */
++
++			u16 header_size = header->size;
++
++			stack_size = (u16) event->attr.sample_stack_user;
++
++			/*
++			 * Current header size plus static size and
++			 * dynamic size.
++			 */
++			header_size += 2 * sizeof(u64);
++
++			/* Do we fit in with the current stack dump size? */
++			if ((u16) (header_size + stack_size) < header_size) {
++				/*
++				 * If we overflow the maximum size for the
++				 * sample, we customize the stack dump size
++				 * to fit in.
++				 */
++				stack_size = USHRT_MAX - header_size
++					     - sizeof(u64);
++				stack_size = round_up(stack_size, sizeof(u64));
++			}
++
++			size += sizeof(u64) + stack_size;
++		}
++
++		data->stack_user_size = stack_size;
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event,
+@@ -6174,8 +6278,23 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 		}
+ 	}
+ 
+-	if (attr->sample_type & PERF_SAMPLE_REGS_USER)
++	if (attr->sample_type & PERF_SAMPLE_REGS_USER) {
+ 		ret = perf_reg_validate(attr->sample_regs_user);
++		if (ret)
++			return ret;
 +	}
 +
-+	return NULL;
-+}
-+
-+#endif /* ARCH_PERF_REGS_H */
-diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
-new file mode 100644
-index 0000000..3efb79a
---- /dev/null
-+++ b/tools/perf/util/perf_regs.h
-@@ -0,0 +1,14 @@
-+#ifndef __PERF_REGS_H
-+#define __PERF_REGS_H
-+
-+#ifndef NO_PERF_REGS_DEFS
-+#include <perf_regs.h>
-+#else
-+#define PERF_REGS_MASK	0
-+
-+static inline const char *perf_reg_name(int id __used)
-+{
-+	return NULL;
-+}
-+#endif /* NO_PERF_REGS_DEFS */
-+#endif /* __PERF_REGS_H */
++	if (attr->sample_type & PERF_SAMPLE_STACK_USER) {
++		/*
++		 * We have __u32 type for the size, but so far
++		 * we can only use __u16 as maximum due to the
++		 * __u16 sample size limit.
++		 */
++		if (attr->sample_stack_user >= USHRT_MAX)
++			ret = -EINVAL;
++		else if (!IS_ALIGNED(attr->sample_stack_user, sizeof(u64)))
++			ret = -EINVAL;
++	}
+ 
+ out:
+ 	return ret;
 -- 
 1.7.7.6
 
