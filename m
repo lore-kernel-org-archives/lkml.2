@@ -1,28 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab2GVQSk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 12:18:40 -0400
-Received: from mailrelay.embarq.synacor.com ([208.47.184.3]:59402 "EHLO
-	mailrelay.embarq.synacor.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752001Ab2GVQSj (ORCPT
+	id S1752109Ab2GVQX7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 12:23:59 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:51534 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab2GVQX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 12:18:39 -0400
-X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jul 2012 12:18:39 EDT
-X_CMAE_Category: 0,0 Undefined,Undefined
-X-CNFS-Analysis: v=2.0 cv=IOaA+3TG c=1 sm=0 a=2rrlmSmeztwA:10 a=FKkrIqjQGGEA:10 a=1poGYrevpj8A:10 a=IkcTkHD0fZMA:10 a=1oqGTYSLAAAA:8 a=K-v-2zaBAAAA:8 a=fpnzz_IF0pjF4QYdPd0A:9 a=QEXdDO2ut3YA:10 a=8RHsfxpF5pY5km4b:21 a=Hhc/OnKmOS1xKI2oHPQhqg==:117
-X-CM-Score: 0
-Date: Sun, 22 Jul 2012 11:58:37 -0400 (EDT)
-From: Bruce Moshman <brucem784@embarqmail.com>
-Message-ID: <1744397877.173270.1342972717125.JavaMail.root@md08.embarq.synacor.com>
-Subject: RE
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Sun, 22 Jul 2012 12:23:58 -0400
+Message-ID: <1342974235.6692.20.camel@vlad>
+Subject: [RFC] optimize the locking in the rebalance_domains()
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Date: Sun, 22 Jul 2012 19:23:55 +0300
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.245.64.157]
-X-Mailer: Zimbra 6.0.5_GA_2328.RHEL5_64 (ZimbraWebClient - FF3.0 (Win)/6.0.15_GA_2995)
-To: unlisted-recipients:; (no To-header on input)
+Mime-Version: 1.0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An ATM Card Donation of $4Million US Dollars
+Ingo, we've noticed that rebalance_domains() will try to take a lock
+every time it's called (every jiffy) if SD_SERIALIZE is set (which is a
+default configuration). This is done regardless the fact that maybe
+there hasn't passed enough time since the last rebalancing in which case
+there is no need to take a lock the first place.
+
+The above creates a heavy false sharing problem on the "balancing"
+spin-lock on large SMP systems: try_lock() is implemented with an
+(atomic) xchng instruction which invalidates the cache line "balancing"
+belongs to and therefore creates an intensive cross-NUMA-nodes traffic.
+
+The below patch will minimize the above phenomena to the time slots it's
+really needed, namely when the "interval" has really passed.
+
+Pls., comment.
+
+thanks,
+vlad
+
+---
+ kernel/sched/fair.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c099cc6..6777d38 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4689,6 +4689,9 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 		interval = msecs_to_jiffies(interval);
+ 		interval = clamp(interval, 1UL, max_load_balance_interval);
+ 
++                if (!time_after_eq(jiffies, sd->last_balance + interval))
++			goto out;
++
+ 		need_serialize = sd->flags & SD_SERIALIZE;
+ 
+ 		if (need_serialize) {
+@@ -4696,16 +4699,15 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 				goto out;
+ 		}
+ 
+-		if (time_after_eq(jiffies, sd->last_balance + interval)) {
+-			if (load_balance(cpu, rq, sd, idle, &balance)) {
+-				/*
+-				 * We've pulled tasks over so either we're no
+-				 * longer idle.
+-				 */
+-				idle = CPU_NOT_IDLE;
+-			}
+-			sd->last_balance = jiffies;
++		if (load_balance(cpu, rq, sd, idle, &balance)) {
++			/*
++			 * We've pulled tasks over so either we're no
++			 * longer idle.
++			 */
++			idle = CPU_NOT_IDLE;
+ 		}
++		sd->last_balance = jiffies;
++
+ 		if (need_serialize)
+ 			spin_unlock(&balancing);
+ out:
+-- 
+1.7.9.5
+
+
+
