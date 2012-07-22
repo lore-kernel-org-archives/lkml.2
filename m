@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab2GVSJF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 14:09:05 -0400
-Received: from smtp.multi.fi ([85.134.37.151]:43744 "EHLO smtp.multi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752219Ab2GVSJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 14:09:04 -0400
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jul 2012 14:09:04 EDT
-Message-ID: <500C4013.2080101@mageia.org>
-Date: Sun, 22 Jul 2012 21:01:55 +0300
-From: Thomas Backlund <tmb@mageia.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120718 Thunderbird/14.0
+	id S1752348Ab2GVSUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 14:20:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47505 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752278Ab2GVST7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 14:19:59 -0400
+Date: Sun, 22 Jul 2012 19:19:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] leds: add new lp8788 led driver
+Message-ID: <20120722181956.GA4557@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+ <1342799346.5138.7.camel@lorien2>
+ <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexandre Ferrando <alferpal@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Build fails in 3.4.6
-References: <CALELsEM07z6BckpSvEUrdJU5T3715uED=9g=K3OicnjRP=O6nw@mail.gmail.com>
-In-Reply-To: <CALELsEM07z6BckpSvEUrdJU5T3715uED=9g=K3OicnjRP=O6nw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
+Content-Disposition: inline
+In-Reply-To: <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
+X-Cookie: You will forget that you ever knew me.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-22.07.2012 18:02, Alexandre Ferrando skrev:
-> Summary: Linux kernel 3.4.6 fails to build in some cases when
-> CONFIG_NO_HZ is set
-> 
-> Full description: Kernel build using configurations [ 0 ] (mine,
-> trying to build the zen kernel) and [ 1 ] (from someone using
-> slackware) fail to build with this error message when CONFIG_NO_HZ is
-> set:
-> 
-> kernel/built-in.o: In function `tick_nohz_stop_sched_tick.isra.9':
-> tick-sched.c:(.text+0x4a3e9): undefined reference to `calc_load_enter_idle'
-> kernel/built-in.o: In function `tick_nohz_idle_exit':
-> (.text+0x4a767): undefined reference to `calc_load_exit_idle'
-> 
-> Unsetting CONFIG_NO_HZ solves the issue.
-> 
-> However, CONFIG_NO_HZ seems not to be the root of the problem because
-> this configuration [ 2 ] of the zen kernel and Arch's stock kernel [ 3
-> ] both build with CONFIG_NO_HZ set
 
-This fallout comes from the BFS scheduler patch in zen kernel that is
-not updated/adapted for the:
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-sched-nohz-rewrite-and-fix-load-avg-computation-again.patch
+On Sat, Jul 21, 2012 at 02:48:49AM +0800, Bryan Wu wrote:
 
-that went into 3.4.6
+> Actually cancel_work_sync() is quite similar to flush_work_sync()
+> here. For the timer thing, in fact it is NULL when cancel_work_sync()
+> call __cancel_work_timer().
 
+> And Mark, do you have any advice about the flush_work_sync() and
+> cancel_work_sync(). I saw you use flush in the
+> drivers/leds/leds-wm8350.c.
 
---
-Thomas
+If the work is flushed then the state that userspace thought was set
+when the driver is removed will actually be set before the driver is
+removed.  This is fairly minor but might be useful.
 
+--BOKacYhQ+x31HxR3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQDERFAAoJEBus8iNuMP3dCD8P/1S/uIyV7qSmFVWs8AlfHkc3
+l9PKuCW3qv5dvA/VLPN/V7MmTN/kty0k9MNMUOyfidn8sVYDSiczDOFu47s+upOM
+saI+rG4Mc1WArVhoOqD/MQjMpHFlSttC94tG6o+qwXz86MUy53EEK1+ExouRo9DL
+xwSg6RKirSEHvSU3aYyX+8ESXAb2B0EbxmOe5jhF9lHwLLpvygXSRKsgFyYJ5abG
+6NLwhip0+86WvnzCPUIrQM3SpXgA346RinfusCrHX0GK4ddB1psyfzcqKpDOmHG3
+k0S72qoT+NxmWFXrW34fGr2dLVHLfiNIzRgfIPWFdejXPkvb5yThKkAbpDUycjw7
+xfd37JWQyP6YU57ir0swJqZfcCFr5Azq/pVDP6vL9vHabn0E8Y3Map8EaRf9NTEf
+T1M+MCZ7b1AR3zTkSkUXZQqF1SqlUTRYw11ryywb8E85Z7y1KFwOEKPjnaKa8KyW
+Vevb4Wi0DgKg55B30+KsnXdKvGLFb8d7QOZ+fJNWAxiZfe/3XIVJPVRH6mNAy64o
+cwGR5eujyASStYXmyz3qEbqQ3Ew5gE6+SaOlcwcXvgB9maWYdMmTI+zYfT0LbvJc
+IIsVcPbjSguP8vmWSgHWB6BsUnI9/GynsoMvw04ZnvCSFy2Yrp92ITWlFORENw2E
+7Y9q8iHFPFcv8ggnd++d
+=w9em
+-----END PGP SIGNATURE-----
+
+--BOKacYhQ+x31HxR3--
