@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab2GVQdf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 12:33:35 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:51841 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab2GVQde (ORCPT
+	id S1752164Ab2GVQnf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 12:43:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63465 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab2GVQnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 12:33:34 -0400
-Message-ID: <1342974812.6692.21.camel@vlad>
-Subject: Re: [RFC] optimize the locking in the rebalance_domains()
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Date: Sun, 22 Jul 2012 19:33:32 +0300
-In-Reply-To: <1342974235.6692.20.camel@vlad>
-References: <1342974235.6692.20.camel@vlad>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+	Sun, 22 Jul 2012 12:43:33 -0400
+Date: Sun, 22 Jul 2012 09:43:27 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de, linux-pm@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [PATCH] workqueue: fix spurious CPU locality WARN from
+ process_one_work()
+Message-ID: <20120722164327.GA5144@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1342545149-3515-1-git-send-email-tj@kernel.org>
+ <1342545149-3515-2-git-send-email-tj@kernel.org>
+ <20120720215207.GA18841@linux.vnet.ibm.com>
+ <20120720215835.GB6823@google.com>
+ <20120721213656.GA7783@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120721213656.GA7783@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-22 at 19:23 +0300, Vlad Zolotarov wrote:
-> Ingo, we've noticed that rebalance_domains() will try to take a lock
-> every time it's called (every jiffy) 
+25511a4776 "workqueue: reimplement CPU online rebinding to handle idle
+workers" added CPU locality sanity check in process_one_work().  It
+triggers if a worker is executing on a different CPU without UNBOUND
+or REBIND set.
 
-This is of course when NOHZ is off... ;)
+This works for all normal workers but rescuers can trigger this
+spuriously when they're serving the unbound or a disassociated
+global_cwq - rescuers don't have either flag set and thus its
+gcwq->cpu can be a different value including %WORK_CPU_UNBOUND.
 
-> if SD_SERIALIZE is set (which is a
-> default configuration). This is done regardless the fact that maybe
-> there hasn't passed enough time since the last rebalancing in which case
-> there is no need to take a lock the first place.
-> 
-> The above creates a heavy false sharing problem on the "balancing"
-> spin-lock on large SMP systems: try_lock() is implemented with an
-> (atomic) xchng instruction which invalidates the cache line "balancing"
-> belongs to and therefore creates an intensive cross-NUMA-nodes traffic.
-> 
-> The below patch will minimize the above phenomena to the time slots it's
-> really needed, namely when the "interval" has really passed.
-> 
-> Pls., comment.
-> thanks,
-> vlad
-> 
-> ---
->  kernel/sched/fair.c |   20 +++++++++++---------
->  1 file changed, 11 insertions(+), 9 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index c099cc6..6777d38 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4689,6 +4689,9 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
->  		interval = msecs_to_jiffies(interval);
->  		interval = clamp(interval, 1UL, max_load_balance_interval);
->  
-> +                if (!time_after_eq(jiffies, sd->last_balance + interval))
-> +			goto out;
-> +
->  		need_serialize = sd->flags & SD_SERIALIZE;
->  
->  		if (need_serialize) {
-> @@ -4696,16 +4699,15 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
->  				goto out;
->  		}
->  
-> -		if (time_after_eq(jiffies, sd->last_balance + interval)) {
-> -			if (load_balance(cpu, rq, sd, idle, &balance)) {
-> -				/*
-> -				 * We've pulled tasks over so either we're no
-> -				 * longer idle.
-> -				 */
-> -				idle = CPU_NOT_IDLE;
-> -			}
-> -			sd->last_balance = jiffies;
-> +		if (load_balance(cpu, rq, sd, idle, &balance)) {
-> +			/*
-> +			 * We've pulled tasks over so either we're no
-> +			 * longer idle.
-> +			 */
-> +			idle = CPU_NOT_IDLE;
->  		}
-> +		sd->last_balance = jiffies;
-> +
->  		if (need_serialize)
->  			spin_unlock(&balancing);
->  out:
+Fix it by additionally testing %GCWQ_DISASSOCIATED.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+LKML-Refence: <20120721213656.GA7783@linux.vnet.ibm.com>
+---
+This should fix it.  Will queue it on wq/for-3.6.
 
+Thanks!
+
+ kernel/workqueue.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1949,7 +1949,13 @@ __acquires(&gcwq->lock)
+ 
+ 	lockdep_copy_map(&lockdep_map, &work->lockdep_map);
+ #endif
++	/*
++	 * Ensure we're on the correct CPU.  DISASSOCIATED test is
++	 * necessary to avoid spurious warnings from rescuers servicing the
++	 * unbound or a disassociated gcwq.
++	 */
+ 	WARN_ON_ONCE(!(worker->flags & (WORKER_UNBOUND | WORKER_REBIND)) &&
++		     !(gcwq->flags & GCWQ_DISASSOCIATED) &&
+ 		     raw_smp_processor_id() != gcwq->cpu);
+ 
+ 	/*
