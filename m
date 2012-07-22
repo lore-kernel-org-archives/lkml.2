@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab2GVT0A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 15:26:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54453 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab2GVTZ6 (ORCPT
+	id S1752532Ab2GVT2Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 15:28:16 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42226 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab2GVT2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 15:25:58 -0400
-Date: Sun, 22 Jul 2012 12:25:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Stable <stable@vger.kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 21/34] kswapd: assign new_order and new_classzone_idx
- after wakeup in sleeping
-In-Reply-To: <1342708604-26540-22-git-send-email-mgorman@suse.de>
-Message-ID: <alpine.LSU.2.00.1207221213100.1896@eggly.anvils>
-References: <1342708604-26540-1-git-send-email-mgorman@suse.de> <1342708604-26540-22-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sun, 22 Jul 2012 15:28:15 -0400
+Message-ID: <500C5445.3090900@kernel.org>
+Date: Sun, 22 Jul 2012 20:28:05 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-2068519065-1342985120=:1896"
+To: Devendra Naga <develkernel412222@gmail.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging/iio: use module_platform_driver macro
+References: <1342860895-19401-1-git-send-email-develkernel412222@gmail.com>
+In-Reply-To: <1342860895-19401-1-git-send-email-develkernel412222@gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 07/21/2012 09:54 AM, Devendra Naga wrote:
+> the code which under _init and _exit does only the platform_driver_register
+> and platform_driver_unregister, and nothing else,
+> so its better to use the module_platform_driver macro rather duplicating
+> its implementation
+> 
+> Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
+Thanks.
 
---8323584-2068519065-1342985120=:1896
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-On Thu, 19 Jul 2012, Mel Gorman wrote:
-> From: "Alex,Shi" <alex.shi@intel.com>
->=20
-> commit d2ebd0f6b89567eb93ead4e2ca0cbe03021f344b upstream.
-
-Thanks for assembling these, Mel: I was checking through to see if
-I was missing any, and noticed that this one has the wrong upstream
-SHA1: the one you give here is the same as in 20/34, but it should be
-
-commit f0dfcde099453aa4c0dc42473828d15a6d492936 upstream.
-
-I got quite confused by 30/34 too: interesting definition of "partial
-backport" :) I've no objection, but "substitute" might be clearer there.
-
-Hugh
-
->=20
-> Stable note: Fixes https://bugzilla.redhat.com/show_bug.cgi?id=3D712019. =
-This
-> =09patch reduces kswapd CPU usage.
->=20
-> There 2 places to read pgdat in kswapd.  One is return from a successful
-> balance, another is waked up from kswapd sleeping.  The new_order and
-> new_classzone_idx represent the balance input order and classzone_idx.
->=20
-> But current new_order and new_classzone_idx are not assigned after
-> kswapd_try_to_sleep(), that will cause a bug in the following scenario.
->=20
-> 1: after a successful balance, kswapd goes to sleep, and new_order =3D 0;
->    new_classzone_idx =3D __MAX_NR_ZONES - 1;
->=20
-> 2: kswapd waked up with order =3D 3 and classzone_idx =3D ZONE_NORMAL
->=20
-> 3: in the balance_pgdat() running, a new balance wakeup happened with
->    order =3D 5, and classzone_idx =3D ZONE_NORMAL
->=20
-> 4: the first wakeup(order =3D 3) finished successufly, return order =3D 3
->    but, the new_order is still 0, so, this balancing will be treated as a
->    failed balance.  And then the second tighter balancing will be missed.
->=20
-> So, to avoid the above problem, the new_order and new_classzone_idx need
-> to be assigned for later successful comparison.
->=20
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Tested-by: P=C3=A1draig Brady <P@draigBrady.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Queued this up for when I resume sending pull requests to Greg
+post merge window.
 > ---
->  mm/vmscan.c |    2 ++
->  1 file changed, 2 insertions(+)
->=20
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index bf85e4d..b8c1fc0 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2905,6 +2905,8 @@ static int kswapd(void *p)
->  =09=09=09=09=09=09balanced_classzone_idx);
->  =09=09=09order =3D pgdat->kswapd_max_order;
->  =09=09=09classzone_idx =3D pgdat->classzone_idx;
-> +=09=09=09new_order =3D order;
-> +=09=09=09new_classzone_idx =3D classzone_idx;
->  =09=09=09pgdat->kswapd_max_order =3D 0;
->  =09=09=09pgdat->classzone_idx =3D pgdat->nr_zones - 1;
->  =09=09}
-> --=20
-> 1.7.9.2
->=20
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=3Dmailto:"dont@kvack.org"> email@kvack.org </a>
->=20
---8323584-2068519065-1342985120=:1896--
+> 
+>  drivers/staging/iio/iio_hwmon.c |   12 +-----------
+>  1 file changed, 1 insertion(+), 11 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/iio_hwmon.c b/drivers/staging/iio/iio_hwmon.c
+> index 27d27ec..4bb017a 100644
+> --- a/drivers/staging/iio/iio_hwmon.c
+> +++ b/drivers/staging/iio/iio_hwmon.c
+> @@ -215,17 +215,7 @@ static struct platform_driver __refdata iio_hwmon_driver = {
+>  	.remove = __devexit_p(iio_hwmon_remove),
+>  };
+>  
+> -static int iio_inkern_init(void)
+> -{
+> -	return platform_driver_register(&iio_hwmon_driver);
+> -}
+> -module_init(iio_inkern_init);
+> -
+> -static void iio_inkern_exit(void)
+> -{
+> -	platform_driver_unregister(&iio_hwmon_driver);
+> -}
+> -module_exit(iio_inkern_exit);
+> +module_platform_driver(iio_hwmon_driver);
+>  
+>  MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
+>  MODULE_DESCRIPTION("IIO to hwmon driver");
+> 
