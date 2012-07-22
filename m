@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab2GVQqd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 12:46:33 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:50961 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab2GVQqb (ORCPT
+	id S1752209Ab2GVQuA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 12:50:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53064 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab2GVQt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 12:46:31 -0400
-X-Greylist: delayed 576 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jul 2012 12:46:31 EDT
-From: Djalal Harouni <tixxdz@opendz.org>
-To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>
-Cc: Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH] proc: do not allow negative offsets on /proc/<pid>/environ
-Date: Sun, 22 Jul 2012 17:35:58 +0100
-Message-Id: <1342974959-2748-1-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.1
+	Sun, 22 Jul 2012 12:49:58 -0400
+Date: Sun, 22 Jul 2012 09:49:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] kthread_worker: reimplement flush_kthread_work()
+ to allow freeing the work item being executed
+Message-ID: <20120722164953.GC5144@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120719211510.GA32763@google.com>
+ <20120719211629.GC32763@google.com>
+ <1342894814.2504.31.camel@palomino.walls.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342894814.2504.31.camel@palomino.walls.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__mem_open() which is called by both /proc/<pid>/environ and
-/proc/<pid>/mem ->open() handlers will allow the use of negative offsets.
-/proc/<pid>/mem has negative offsets but not /proc/<pid>/environ.
+Hello,
 
-Allowing negative offsets on /proc/<pid>/environ can turn it to act like
-/proc/<pid>/mem. A negative offset will pass the
-fs/read_write.c:lseek_execute() and the environ_read() checks and will
-point to another VMA.
+On Sat, Jul 21, 2012 at 02:20:06PM -0400, Andy Walls wrote:
+> > +	worker->current_work = work;
+> >  	spin_unlock_irq(&worker->lock);
+> >  
+> >  	if (work) {
+> >  		__set_current_state(TASK_RUNNING);
+> >  		work->func(work);
+> 
+> If the call to 'work->func(work);' frees the memory pointed to by
+> 'work', 'worker->current_work' points to deallocated memory.
+> So 'worker->current_work' will only ever used as a unique 'work'
+> identifier to handle, correct?
 
-Fix this by moving the 'force FMODE_UNSIGNED_OFFSET flag' to mem_open()
-to allow negative offsets only on /proc/<pid>/mem.
+Yeah.  flush_kthread_work(@work) which can only be called if @work is
+known to be alive looks at the pointer to determine whether it's the
+current work item on the worker.
 
-You must be able to ptrace the target to open /proc/<pid>/environ ,so
-this is not a security issue, but we should not be able to abuse it.
+> >  void flush_kthread_work(struct kthread_work *work)
+> >  {
+> > -	int seq = work->queue_seq;
+> > +	struct kthread_flush_work fwork = {
+> > +		KTHREAD_WORK_INIT(fwork.work, kthread_flush_work_fn),
+> > +		COMPLETION_INITIALIZER_ONSTACK(fwork.done),
+> > +	};
+> > +	struct kthread_worker *worker;
+> > +	bool noop = false;
+> > +
+> 
+> You might want a check for 'work == NULL' here, to gracefully handle
+> code like the following:
+> 
+> void driver_work_handler(struct kthread_work *work)
+> {
+> 	...
+> 	kfree(work);
+> }
+> 
+> struct kthread_work *driver_queue_batch(void)
+> {
+> 	struct kthread_work *work = NULL;
+> 	...
+> 	while (driver_more_stuff_todo()) {
+> 		work = kzalloc(sizeof(struct kthread work), GFP_WHATEVER);
+> 		...
+> 		queue_kthread_work(&driver_worker, work);
+> 	}
+> 	return work;
+> }
+> 
+> void driver_foobar(void)
+> {
+> 	...
+> 	flush_kthread_work(driver_queue_batch());
+> 	...
+> }
 
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
-New kernels include mm->env_start in /proc/<pid>/stat
-To dump .text area: lseek() to 0x00400000 - mm->env_start
+workqueue's flush_work() doesn't allow %NULL pointer.  I don't want to
+make the behaviors deviate and don't see much point in changing
+workqueue's behavior at this point.
 
- fs/proc/base.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+Thanks.
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 2772208..9623a18 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -695,8 +695,6 @@ static int __mem_open(struct inode *inode, struct file *file, unsigned int mode)
- 		mmput(mm);
- 	}
- 
--	/* OK to pass negative loff_t, we can catch out-of-range */
--	file->f_mode |= FMODE_UNSIGNED_OFFSET;
- 	file->private_data = mm;
- 
- 	return 0;
-@@ -704,7 +702,12 @@ static int __mem_open(struct inode *inode, struct file *file, unsigned int mode)
- 
- static int mem_open(struct inode *inode, struct file *file)
- {
--	return __mem_open(inode, file, PTRACE_MODE_ATTACH);
-+	int ret = __mem_open(inode, file, PTRACE_MODE_ATTACH);
-+	if (!ret)
-+		/* OK to pass negative loff_t, we can catch out-of-range */
-+		file->f_mode |= FMODE_UNSIGNED_OFFSET;
-+
-+	return ret;
- }
- 
- static ssize_t mem_rw(struct file *file, char __user *buf,
 -- 
-1.7.1
-
+tejun
