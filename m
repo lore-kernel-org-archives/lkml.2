@@ -1,219 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab2GVWPQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 18:15:16 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33542 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab2GVWPM (ORCPT
+	id S1752756Ab2GVWU4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 18:20:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35775 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab2GVWUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 18:15:12 -0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: mtk.manpages@gmail.com
-Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH 2/2] prctl.2: Add PR_SET_MM option description
-Date: Mon, 23 Jul 2012 02:15:07 +0400
-Message-Id: <1342995307-884-3-git-send-email-gorcunov@openvz.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1342995307-884-1-git-send-email-gorcunov@openvz.org>
-References: <1342995307-884-1-git-send-email-gorcunov@openvz.org>
+	Sun, 22 Jul 2012 18:20:54 -0400
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v7] kvm: notify host when the guest is panicked
+In-Reply-To: <500C604B.3080800@gmail.com>
+References: <500A565A.8080403@cn.fujitsu.com> <500A8969.1040300@gmail.com> <87txwzwqgt.fsf@codemonkey.ws> <500C604B.3080800@gmail.com>
+User-Agent: Notmuch/0.13.2+60~g7ecf77d (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Sun, 22 Jul 2012 17:20:48 -0500
+Message-ID: <87zk6rcu9r.fsf@codemonkey.ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- man2/prctl.2 |  161 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 160 insertions(+), 1 deletions(-)
+Sasha Levin <levinsasha928@gmail.com> writes:
 
-diff --git a/man2/prctl.2 b/man2/prctl.2
-index effad2a..2e1b27c 100644
---- a/man2/prctl.2
-+++ b/man2/prctl.2
-@@ -378,6 +378,121 @@ Return the current per-process machine check kill policy.
- All unused
- .BR prctl ()
- arguments must be zero.
-+.TP
-+.BR PR_SET_MM " (since Linux 3.3)"
-+Allows a user to modify certain kernel memory map descriptor fields
-+of the calling process.
-+Usually these fields are set by the kernel and dynamic loader (see
-+.BR ld.so (8)
-+for more information) and a regular application should not use this feature.
-+Still there are cases such as self-modifying programs, where a program might
-+find it useful to change its own memory map.
-+The kernel must be built with
-+.BR CONFIG_CHECKPOINT_RESTORE
-+option turned on, otherwise this feature will not be accessible
-+from a user space level.
-+The calling process must have
-+.BR CAP_SYS_RESOURCE
-+(see
-+.BR capabilities (7)
-+for details) capability granted.
-+The value in
-+.I arg2
-+is one of the options below, while
-+.I arg3
-+provides a new value for this option.
-+
-+.BR PR_SET_MM_START_CODE
-+to set the address above which program text can run.
-+
-+.BR PR_SET_MM_END_CODE
-+to set the address below which program text can run.
-+
-+.BR PR_SET_MM_START_DATA
-+to set the address above which program data+bss is placed.
-+
-+.B PR_SET_MM_END_DATA
-+to set the address below which program data+bss is placed.
-+
-+.BR PR_SET_MM_START_STACK
-+to set the start address of the stack.
-+
-+.BR PR_SET_MM_START_BRK
-+to set the address above which program heap can be expanded with
-+.BR brk (2)
-+call.
-+The address must not be greater than ending address of
-+the current program data segment, neither it may exceed
-+resource limit for data (see
-+.BR setrlimit (2)
-+for more information).
-+
-+.BR PR_SET_MM_BRK
-+to set the current
-+.BR brk (2)
-+value.
-+The requirements for address are the same as for
-+.BR PR_SET_MM_START_BRK
-+option.
-+
-+.BR PR_SET_MM_ARG_START
-+to set the address above which program command line is placed.
-+
-+.BR PR_SET_MM_ARG_END
-+to set the address below which program command line is placed.
-+
-+.BR PR_SET_MM_ENV_START
-+to set the address above which program environment is placed.
-+
-+.BR PR_SET_MM_ENV_END
-+to set the address below which program environment is placed.
-+
-+The address passed with
-+.BR PR_SET_MM_ARG_START ,
-+.BR PR_SET_MM_ARG_END ,
-+.BR PR_SET_MM_ENV_START ,
-+.BR PR_SET_MM_ENV_END ,
-+should belong to a process stack area, thus corresponding memory area
-+must be readable, writable and (depending on the kernel
-+configuration) has
-+.BR MAP_GROWSDOWN
-+attribute set (see
-+.BR mmap (2)
-+for details).
-+
-+.BR PR_SET_MM_AUXV
-+to set a new auxiliary vector.
-+The
-+.I arg3
-+argument should provide the address of the vector.
-+The
-+.I arg4
-+is the size of the vector.
-+
-+.BR PR_SET_MM_EXE_FILE
-+to supersede
-+.IR /proc/pid/exe
-+symbolic link with a new one pointing to a new executable file
-+which descriptor is provided provided in the
-+.I arg3
-+argument.
-+The file descriptor should be obtaned with a regular
-+.BR open (2)
-+call.
-+
-+To change the symlink, one needs to unmap all existing
-+executable memory areas being created by the kernel itself
-+(for example the kernel usually creates at least one executable
-+memory area for Elf file
-+.IR \.text
-+section).
-+
-+The second limitation is that such transition can be done once
-+in a process life time.
-+Any furter attempts will be rejected.
-+This should help system administrators to monitor the unusual
-+symlinks transitions over all process running in a system.
-+.\"
- .SH "RETURN VALUE"
- On success,
- .BR PR_GET_DUMPABLE ,
-@@ -411,7 +526,9 @@ is not recognized.
- is
- .BR PR_MCE_KILL
- or
--.BR PR_MCE_KILL_GET ,
-+.BR PR_MCE_KILL_GET
-+or
-+.BR PR_SET_MM ,
- and unused
- .BR prctl ()
- arguments were not specified as zero.
-@@ -459,6 +576,48 @@ is
- and the caller does not have the
- .B CAP_SETPCAP
- capability.
-+.TP
-+.B EPERM
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the caller does not have the
-+.B CAP_SYS_RESOURCE
-+capability.
-+.TP
-+.B EACCES
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the file is not executable one.
-+.TP
-+.B EBUSY
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the second attempt to change
-+.I /proc/pid/exe
-+symlink is prohibited.
-+.TP
-+.B EBADF
-+.I option
-+is
-+.BR PR_SET_MM ,
-+and the
-+.I arg3
-+is
-+.BR PR_SET_MM_EXE_FILE ,
-+the file descriptor passed in
-+.I arg4
-+is not found.
- .\" The following can't actually happen, because prctl() in
- .\" seccomp mode will cause SIGKILL.
- .\" .TP
--- 
-1.7.7.6
+> On 07/22/2012 09:22 PM, Anthony Liguori wrote:
+>> Sasha Levin <levinsasha928@gmail.com> writes:
+>> 
+>>> On 07/21/2012 09:12 AM, Wen Congyang wrote:
+>>>> +#define KVM_PV_PORT	(0x505UL)
+>>>> +
+>>>>  #ifdef __KERNEL__
+>>>>  #include <asm/processor.h>
+>>>>  
+>>>> @@ -221,6 +223,11 @@ static inline void kvm_disable_steal_time(void)
+>>>>  }
+>>>>  #endif
+>>>>  
+>>>> +static inline unsigned int kvm_arch_pv_features(void)
+>>>> +{
+>>>> +	return inl(KVM_PV_PORT);
+>>>> +}
+>>>> +
+>>>
+>>> Why is this safe?
+>>>
+>>> I'm not sure you can just pick any ioport you'd like and use it.
+>> 
+>> There are three ways I/O ports get used on a PC:
+>> 
+>> 1) Platform devices
+>>  - This is well defined since the vast majority of platform devices are
+>>    implemented within a single chip.  If you're emulating an i440fx
+>>    chipset, the PIIX4 spec has an exhaustive list.
+>> 
+>> 2) PCI devices
+>>  - Typically, PCI only allocates ports starting at 0x0d00 to avoid
+>>    conflicts with ISA devices.
+>> 
+>> 3) ISA devices
+>>  - ISA uses subtractive decoding so any ISA device can access.  In
+>>    theory, an ISA device could attempt to use port 0x0505 but it's
+>>    unlikely.  In a modern guest, there aren't really any ISA devices being
+>>    added either.
+>> 
+>> So yes, picking port 0x0505 is safe for something like this (as long as
+>> you check to make sure that you really are under KVM).
+>
+> Is there anything that actually prevents me from using PCI ports lower
+> than 0x0d00? As you said in (3), ISA isn't really used anymore (nor is
+> implemented by lkvm for example), so placing PCI below 0x0d00 might
+> even make sense in that case.
 
+On modern systems, the OS goes by whatever is in the ACPI table
+describing the PCI bus.  In QEMU, we have:
+
+    WordIO (ResourceProducer, MinFixed, MaxFixed, PosDecode, EntireRange,
+          0x0000,             // Address Space Granularity
+          0x0D00,             // Address Range Minimum
+          0xFFFF,             // Address Range Maximum
+          0x0000,             // Address Translation Offset
+          0xF300,             // Address Length
+          ,, , TypeStatic)
+
+So Linux will always use 0x0D00 -> 0xFFFF for the valid
+range. Practically speaking, you can't use anything below 0x0D00 because
+the PCI bus configuration registers live at 0xCF8-0xCFF.  If you tried
+to create the region starting at 0x0500 you'd have to limit it to 0xCF8
+to avoid conflicting with the PCI host controller.
+
+That's not a useful amount of space for I/O ports so that would be a
+pretty dumb thing to do.
+
+> Furthermore, I can place one of these brand new virtio-mmio devices
+> which got introduced recently wherever I want right now - Having a
+> device that uses 0x505 would cause a pretty non-obvious failure mode.
+
+I think you're confusing PIO with MMIO.  They are separate address
+spaces.
+
+You could certainly argue that relying on PIO is way too architecture
+specific since that's only available on x86.  That's a good argument but
+the counter is that other architectures have their own interfaces for
+this sort of thing.
+
+> Either way, If we are going to grab an ioport, then:
+>
+>  - It should be documented well somewhere in Documentation/virt/kvm
+>  - It should go through request_region() to actually claim those ioports.
+>  - It should fail gracefully if that port is taken for some reason,
+>  instead of not even checking it.
+
+I agree with the above.
+
+Regards,
+
+Anthony Liguori
