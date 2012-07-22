@@ -1,775 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab2GVCnT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 22:43:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30125 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751857Ab2GVCnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 22:43:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="182776857"
-Date: Sun, 22 Jul 2012 10:43:13 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
-Subject: arm-allnoconfig error: '__LINUX_ARM_ARCH__' undeclared
-Message-ID: <20120722024313.GD8279@localhost>
+	id S1752162Ab2GVCr5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 22:47:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:32992 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab2GVCr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 22:47:56 -0400
+Date: Sat, 21 Jul 2012 19:47:13 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: next/mmotm unbootable on G5: irqdomain
+Message-ID: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="7qSK/uQB79J36Y4o"
-Content-Disposition: inline
-User-Agent: Heirloom mailx 12.5 6/20/10
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---7qSK/uQB79J36Y4o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Russell,
-
-Kernel build failed on arm-allnoconfig:
-
-include/linux/math64.h:55:15: error: '__LINUX_ARM_ARCH__' undeclared (first use in this function)
-arch/arm/include/asm/glue-cache.h:129:2: error: #error Unknown cache maintenance model
-arch/arm/include/asm/glue-df.h:99:2: error: #error Unknown data abort handler type
-arch/arm/include/asm/glue-pf.h:54:2: error: #error Unknown prefetch abort handler type
-
-Do you think this allnoconfig test meaningful at all?
-
-Thanks,
-Fengguang
-
---7qSK/uQB79J36Y4o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=".config"
-
-#
-# Automatically generated file; DO NOT EDIT.
-# Linux/arm 3.5.0-rc7 Kernel Configuration
-#
-CONFIG_ARM=y
-CONFIG_SYS_SUPPORTS_APM_EMULATION=y
-CONFIG_STACKTRACE_SUPPORT=y
-CONFIG_HAVE_LATENCYTOP_SUPPORT=y
-CONFIG_LOCKDEP_SUPPORT=y
-CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-CONFIG_RWSEM_GENERIC_SPINLOCK=y
-CONFIG_GENERIC_HWEIGHT=y
-CONFIG_GENERIC_CALIBRATE_DELAY=y
-CONFIG_NEED_DMA_MAP_STATE=y
-CONFIG_VECTORS_BASE=0x00000000
-CONFIG_PHYS_OFFSET=0x00800000
-CONFIG_GENERIC_BUG=y
-CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
-CONFIG_HAVE_IRQ_WORK=y
-
-#
-# General setup
-#
-# CONFIG_EXPERIMENTAL is not set
-CONFIG_BROKEN_ON_SMP=y
-CONFIG_INIT_ENV_ARG_LIMIT=32
-CONFIG_CROSS_COMPILE=""
-CONFIG_LOCALVERSION=""
-# CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_HAVE_KERNEL_GZIP=y
-CONFIG_HAVE_KERNEL_LZMA=y
-CONFIG_HAVE_KERNEL_XZ=y
-CONFIG_HAVE_KERNEL_LZO=y
-CONFIG_KERNEL_GZIP=y
-# CONFIG_KERNEL_LZMA is not set
-# CONFIG_KERNEL_XZ is not set
-# CONFIG_KERNEL_LZO is not set
-CONFIG_DEFAULT_HOSTNAME="(none)"
-# CONFIG_SYSVIPC is not set
-# CONFIG_BSD_PROCESS_ACCT is not set
-# CONFIG_FHANDLE is not set
-CONFIG_HAVE_GENERIC_HARDIRQS=y
-
-#
-# IRQ subsystem
-#
-CONFIG_GENERIC_HARDIRQS=y
-CONFIG_GENERIC_IRQ_PROBE=y
-CONFIG_GENERIC_IRQ_SHOW=y
-CONFIG_HARDIRQS_SW_RESEND=y
-CONFIG_IRQ_DOMAIN=y
-CONFIG_KTIME_SCALAR=y
-CONFIG_GENERIC_CLOCKEVENTS=y
-CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-
-#
-# Timers subsystem
-#
-# CONFIG_NO_HZ is not set
-# CONFIG_HIGH_RES_TIMERS is not set
-
-#
-# RCU Subsystem
-#
-CONFIG_TINY_RCU=y
-# CONFIG_PREEMPT_RCU is not set
-# CONFIG_TREE_RCU_TRACE is not set
-# CONFIG_IKCONFIG is not set
-CONFIG_LOG_BUF_SHIFT=17
-# CONFIG_CGROUPS is not set
-# CONFIG_CHECKPOINT_RESTORE is not set
-CONFIG_NAMESPACES=y
-# CONFIG_UTS_NS is not set
-# CONFIG_PID_NS is not set
-# CONFIG_SCHED_AUTOGROUP is not set
-# CONFIG_SYSFS_DEPRECATED is not set
-# CONFIG_RELAY is not set
-# CONFIG_BLK_DEV_INITRD is not set
-# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
-CONFIG_SYSCTL=y
-CONFIG_ANON_INODES=y
-# CONFIG_EXPERT is not set
-CONFIG_UID16=y
-# CONFIG_SYSCTL_SYSCALL is not set
-CONFIG_KALLSYMS=y
-CONFIG_HOTPLUG=y
-CONFIG_PRINTK=y
-CONFIG_BUG=y
-CONFIG_ELF_CORE=y
-CONFIG_BASE_FULL=y
-CONFIG_FUTEX=y
-CONFIG_EPOLL=y
-CONFIG_SIGNALFD=y
-CONFIG_TIMERFD=y
-CONFIG_EVENTFD=y
-CONFIG_AIO=y
-# CONFIG_EMBEDDED is not set
-CONFIG_HAVE_PERF_EVENTS=y
-CONFIG_PERF_USE_VMALLOC=y
-
-#
-# Kernel Performance Events And Counters
-#
-# CONFIG_PERF_EVENTS is not set
-CONFIG_VM_EVENT_COUNTERS=y
-CONFIG_SLUB_DEBUG=y
-# CONFIG_COMPAT_BRK is not set
-# CONFIG_SLAB is not set
-CONFIG_SLUB=y
-# CONFIG_PROFILING is not set
-CONFIG_HAVE_OPROFILE=y
-# CONFIG_JUMP_LABEL is not set
-CONFIG_HAVE_KPROBES=y
-CONFIG_HAVE_KRETPROBES=y
-CONFIG_HAVE_ARCH_TRACEHOOK=y
-CONFIG_HAVE_DMA_ATTRS=y
-CONFIG_GENERIC_SMP_IDLE_THREAD=y
-CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
-CONFIG_HAVE_CLK=y
-CONFIG_HAVE_DMA_API_DEBUG=y
-CONFIG_HAVE_ARCH_JUMP_LABEL=y
-
-#
-# GCOV-based kernel profiling
-#
-CONFIG_HAVE_GENERIC_DMA_COHERENT=y
-CONFIG_SLABINFO=y
-CONFIG_RT_MUTEXES=y
-CONFIG_BASE_SMALL=0
-# CONFIG_MODULES is not set
-CONFIG_BLOCK=y
-# CONFIG_LBDAF is not set
-# CONFIG_BLK_DEV_BSG is not set
-# CONFIG_BLK_DEV_BSGLIB is not set
-# CONFIG_BLK_DEV_INTEGRITY is not set
-
-#
-# Partition Types
-#
-# CONFIG_PARTITION_ADVANCED is not set
-CONFIG_MSDOS_PARTITION=y
-
-#
-# IO Schedulers
-#
-CONFIG_IOSCHED_NOOP=y
-# CONFIG_IOSCHED_DEADLINE is not set
-# CONFIG_IOSCHED_CFQ is not set
-CONFIG_DEFAULT_NOOP=y
-CONFIG_DEFAULT_IOSCHED="noop"
-# CONFIG_INLINE_SPIN_TRYLOCK is not set
-# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
-# CONFIG_INLINE_SPIN_LOCK is not set
-# CONFIG_INLINE_SPIN_LOCK_BH is not set
-# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
-# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
-# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
-CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
-# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
-# CONFIG_INLINE_READ_TRYLOCK is not set
-# CONFIG_INLINE_READ_LOCK is not set
-# CONFIG_INLINE_READ_LOCK_BH is not set
-# CONFIG_INLINE_READ_LOCK_IRQ is not set
-# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
-CONFIG_INLINE_READ_UNLOCK=y
-# CONFIG_INLINE_READ_UNLOCK_BH is not set
-CONFIG_INLINE_READ_UNLOCK_IRQ=y
-# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
-# CONFIG_INLINE_WRITE_TRYLOCK is not set
-# CONFIG_INLINE_WRITE_LOCK is not set
-# CONFIG_INLINE_WRITE_LOCK_BH is not set
-# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
-# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
-CONFIG_INLINE_WRITE_UNLOCK=y
-# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
-CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
-# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
-# CONFIG_MUTEX_SPIN_ON_OWNER is not set
-# CONFIG_FREEZER is not set
-
-#
-# System Type
-#
-# CONFIG_MMU is not set
-# CONFIG_ARCH_INTEGRATOR is not set
-# CONFIG_ARCH_REALVIEW is not set
-CONFIG_ARCH_VERSATILE=y
-# CONFIG_ARCH_VEXPRESS is not set
-# CONFIG_ARCH_AT91 is not set
-# CONFIG_ARCH_HIGHBANK is not set
-# CONFIG_ARCH_CLPS711X is not set
-# CONFIG_ARCH_CNS3XXX is not set
-# CONFIG_ARCH_GEMINI is not set
-# CONFIG_ARCH_PRIMA2 is not set
-# CONFIG_ARCH_EBSA110 is not set
-# CONFIG_ARCH_EP93XX is not set
-# CONFIG_ARCH_FOOTBRIDGE is not set
-# CONFIG_ARCH_MXC is not set
-# CONFIG_ARCH_MXS is not set
-# CONFIG_ARCH_NETX is not set
-# CONFIG_ARCH_H720X is not set
-# CONFIG_ARCH_DOVE is not set
-# CONFIG_ARCH_KIRKWOOD is not set
-# CONFIG_ARCH_LPC32XX is not set
-# CONFIG_ARCH_MV78XX0 is not set
-# CONFIG_ARCH_KS8695 is not set
-# CONFIG_ARCH_W90X900 is not set
-# CONFIG_ARCH_TEGRA is not set
-# CONFIG_ARCH_PICOXCELL is not set
-# CONFIG_ARCH_PNX4008 is not set
-# CONFIG_ARCH_MSM is not set
-# CONFIG_ARCH_SHMOBILE is not set
-# CONFIG_ARCH_RPC is not set
-# CONFIG_ARCH_SA1100 is not set
-# CONFIG_ARCH_S3C24XX is not set
-# CONFIG_ARCH_S3C64XX is not set
-# CONFIG_ARCH_S5P64X0 is not set
-# CONFIG_ARCH_S5PC100 is not set
-# CONFIG_ARCH_S5PV210 is not set
-# CONFIG_ARCH_EXYNOS is not set
-# CONFIG_ARCH_SHARK is not set
-# CONFIG_ARCH_NOMADIK is not set
-# CONFIG_ARCH_DAVINCI is not set
-# CONFIG_ARCH_OMAP is not set
-# CONFIG_PLAT_SPEAR is not set
-# CONFIG_ARCH_VT8500 is not set
-# CONFIG_ARCH_ZYNQ is not set
-
-#
-# Versatile platform type
-#
-# CONFIG_ARCH_VERSATILE_PB is not set
-# CONFIG_MACH_VERSATILE_AB is not set
-# CONFIG_MACH_VERSATILE_DT is not set
-CONFIG_PLAT_VERSATILE_CLCD=y
-CONFIG_PLAT_VERSATILE_FPGA_IRQ=y
-CONFIG_PLAT_VERSATILE_FPGA_IRQ_NR=4
-CONFIG_PLAT_VERSATILE_SCHED_CLOCK=y
-CONFIG_PLAT_VERSATILE=y
-CONFIG_ARM_TIMER_SP804=y
-
-#
-# Processor Type
-#
-# CONFIG_CPU_ARM7TDMI is not set
-# CONFIG_CPU_ARM9TDMI is not set
-
-#
-# Processor Features
-#
-# CONFIG_ARCH_PHYS_ADDR_T_64BIT is not set
-# CONFIG_CACHE_L2X0 is not set
-CONFIG_ARM_L1_CACHE_SHIFT=5
-CONFIG_ARM_NR_BANKS=8
-CONFIG_MULTI_IRQ_HANDLER=y
-# CONFIG_SET_MEM_PARAM is not set
-CONFIG_DRAM_BASE=0x00800000
-CONFIG_DRAM_SIZE=0x00800000
-CONFIG_FLASH_MEM_BASE=0x00400000
-CONFIG_FLASH_SIZE=0x00400000
-CONFIG_PROCESSOR_ID=0x00007700
-CONFIG_ARM_VIC=y
-CONFIG_ARM_VIC_NR=2
-CONFIG_ICST=y
-
-#
-# Bus support
-#
-CONFIG_ARM_AMBA=y
-# CONFIG_PCI_SYSCALL is not set
-# CONFIG_ARCH_SUPPORTS_MSI is not set
-# CONFIG_PCCARD is not set
-
-#
-# Kernel Features
-#
-CONFIG_VMSPLIT_3G=y
-# CONFIG_VMSPLIT_2G is not set
-# CONFIG_VMSPLIT_1G is not set
-CONFIG_PAGE_OFFSET=0xC0000000
-CONFIG_ARCH_NR_GPIO=0
-CONFIG_PREEMPT_NONE=y
-# CONFIG_PREEMPT_VOLUNTARY is not set
-# CONFIG_PREEMPT is not set
-CONFIG_HZ=100
-# CONFIG_AEABI is not set
-# CONFIG_ARCH_SPARSEMEM_DEFAULT is not set
-# CONFIG_ARCH_SELECT_MEMORY_MODEL is not set
-CONFIG_HAVE_ARCH_PFN_VALID=y
-CONFIG_FLATMEM=y
-CONFIG_FLAT_NODE_MEM_MAP=y
-CONFIG_HAVE_MEMBLOCK=y
-CONFIG_PAGEFLAGS_EXTENDED=y
-CONFIG_SPLIT_PTLOCK_CPUS=999999
-# CONFIG_PHYS_ADDR_T_64BIT is not set
-CONFIG_ZONE_DMA_FLAG=0
-CONFIG_VIRT_TO_BUS=y
-CONFIG_NOMMU_INITIAL_TRIM_EXCESS=1
-CONFIG_NEED_PER_CPU_KM=y
-# CONFIG_CLEANCACHE is not set
-CONFIG_FORCE_MAX_ZONEORDER=11
-# CONFIG_LEDS is not set
-# CONFIG_SECCOMP is not set
-# CONFIG_DEPRECATED_PARAM_STRUCT is not set
-
-#
-# Boot options
-#
-# CONFIG_USE_OF is not set
-CONFIG_ZBOOT_ROM_TEXT=0
-CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE=""
-# CONFIG_XIP_KERNEL is not set
-# CONFIG_AUTO_ZRELADDR is not set
-
-#
-# CPU Power Management
-#
-# CONFIG_CPU_IDLE is not set
-
-#
-# Floating point emulation
-#
-
-#
-# At least one emulation must be selected
-#
-# CONFIG_FPE_NWFPE is not set
-
-#
-# Userspace binary formats
-#
-CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE=y
-# CONFIG_BINFMT_FLAT is not set
-CONFIG_HAVE_AOUT=y
-# CONFIG_BINFMT_AOUT is not set
-# CONFIG_BINFMT_MISC is not set
-# CONFIG_ARTHUR is not set
-
-#
-# Power management options
-#
-# CONFIG_PM_RUNTIME is not set
-# CONFIG_ARM_CPU_SUSPEND is not set
-# CONFIG_NET is not set
-CONFIG_HAVE_BPF_JIT=y
-
-#
-# Device Drivers
-#
-
-#
-# Generic Driver Options
-#
-CONFIG_UEVENT_HELPER_PATH=""
-# CONFIG_DEVTMPFS is not set
-CONFIG_STANDALONE=y
-# CONFIG_PREVENT_FIRMWARE_BUILD is not set
-CONFIG_FW_LOADER=y
-# CONFIG_FIRMWARE_IN_KERNEL is not set
-CONFIG_EXTRA_FIRMWARE=""
-# CONFIG_SYS_HYPERVISOR is not set
-# CONFIG_GENERIC_CPU_DEVICES is not set
-# CONFIG_MTD is not set
-# CONFIG_PARPORT is not set
-# CONFIG_BLK_DEV is not set
-
-#
-# Misc devices
-#
-# CONFIG_SENSORS_LIS3LV02D is not set
-# CONFIG_ATMEL_PWM is not set
-# CONFIG_ENCLOSURE_SERVICES is not set
-# CONFIG_ARM_CHARLCD is not set
-
-#
-# EEPROM support
-#
-# CONFIG_EEPROM_93CX6 is not set
-
-#
-# Texas Instruments shared transport line discipline
-#
-
-#
-# Altera FPGA firmware download module
-#
-
-#
-# SCSI device support
-#
-CONFIG_SCSI_MOD=y
-# CONFIG_RAID_ATTRS is not set
-# CONFIG_SCSI is not set
-# CONFIG_SCSI_DMA is not set
-# CONFIG_SCSI_NETLINK is not set
-# CONFIG_ATA is not set
-# CONFIG_MD is not set
-
-#
-# Input device support
-#
-CONFIG_INPUT=y
-# CONFIG_INPUT_FF_MEMLESS is not set
-# CONFIG_INPUT_POLLDEV is not set
-# CONFIG_INPUT_SPARSEKMAP is not set
-# CONFIG_INPUT_MATRIXKMAP is not set
-
-#
-# Userland interfaces
-#
-CONFIG_INPUT_MOUSEDEV=y
-# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
-CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
-CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
-# CONFIG_INPUT_JOYDEV is not set
-# CONFIG_INPUT_EVDEV is not set
-# CONFIG_INPUT_EVBUG is not set
-
-#
-# Input Device Drivers
-#
-# CONFIG_INPUT_KEYBOARD is not set
-# CONFIG_INPUT_MOUSE is not set
-# CONFIG_INPUT_JOYSTICK is not set
-# CONFIG_INPUT_TABLET is not set
-# CONFIG_INPUT_TOUCHSCREEN is not set
-# CONFIG_INPUT_MISC is not set
-
-#
-# Hardware I/O ports
-#
-# CONFIG_SERIO is not set
-# CONFIG_GAMEPORT is not set
-
-#
-# Character devices
-#
-CONFIG_VT=y
-CONFIG_CONSOLE_TRANSLATIONS=y
-CONFIG_VT_CONSOLE=y
-CONFIG_HW_CONSOLE=y
-# CONFIG_VT_HW_CONSOLE_BINDING is not set
-CONFIG_UNIX98_PTYS=y
-# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
-# CONFIG_LEGACY_PTYS is not set
-# CONFIG_SERIAL_NONSTANDARD is not set
-# CONFIG_TRACE_SINK is not set
-# CONFIG_DEVKMEM is not set
-
-#
-# Serial drivers
-#
-# CONFIG_SERIAL_8250 is not set
-
-#
-# Non-8250 serial port support
-#
-# CONFIG_SERIAL_AMBA_PL011 is not set
-# CONFIG_SERIAL_TIMBERDALE is not set
-# CONFIG_SERIAL_ALTERA_JTAGUART is not set
-# CONFIG_SERIAL_ALTERA_UART is not set
-# CONFIG_SERIAL_XILINX_PS_UART is not set
-# CONFIG_HVC_DCC is not set
-# CONFIG_IPMI_HANDLER is not set
-# CONFIG_HW_RANDOM is not set
-# CONFIG_R3964 is not set
-# CONFIG_RAW_DRIVER is not set
-# CONFIG_TCG_TPM is not set
-# CONFIG_I2C is not set
-# CONFIG_SPI is not set
-# CONFIG_HSI is not set
-
-#
-# PPS support
-#
-
-#
-# PPS generators support
-#
-
-#
-# PTP clock support
-#
-
-#
-# Enable Device Drivers -> PPS to see the PTP clock options.
-#
-CONFIG_ARCH_HAVE_CUSTOM_GPIO_H=y
-CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
-# CONFIG_GPIOLIB is not set
-# CONFIG_W1 is not set
-# CONFIG_POWER_SUPPLY is not set
-# CONFIG_HWMON is not set
-# CONFIG_THERMAL is not set
-# CONFIG_WATCHDOG is not set
-CONFIG_SSB_POSSIBLE=y
-
-#
-# Sonics Silicon Backplane
-#
-# CONFIG_SSB is not set
-CONFIG_BCMA_POSSIBLE=y
-
-#
-# Broadcom specific AMBA
-#
-# CONFIG_BCMA is not set
-
-#
-# Multifunction device drivers
-#
-# CONFIG_MFD_CORE is not set
-# CONFIG_MFD_SM501 is not set
-# CONFIG_HTC_PASIC3 is not set
-# CONFIG_MFD_TMIO is not set
-# CONFIG_MFD_T7L66XB is not set
-# CONFIG_MFD_TC6387XB is not set
-# CONFIG_ABX500_CORE is not set
-# CONFIG_REGULATOR is not set
-# CONFIG_MEDIA_SUPPORT is not set
-
-#
-# Graphics support
-#
-# CONFIG_VGASTATE is not set
-# CONFIG_VIDEO_OUTPUT_CONTROL is not set
-# CONFIG_FB is not set
-# CONFIG_EXYNOS_VIDEO is not set
-# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
-
-#
-# Console display driver support
-#
-CONFIG_DUMMY_CONSOLE=y
-# CONFIG_SOUND is not set
-
-#
-# HID support
-#
-CONFIG_HID=y
-# CONFIG_HIDRAW is not set
-CONFIG_HID_GENERIC=y
-
-#
-# Special HID drivers
-#
-# CONFIG_USB_ARCH_HAS_OHCI is not set
-# CONFIG_USB_ARCH_HAS_EHCI is not set
-# CONFIG_USB_ARCH_HAS_XHCI is not set
-CONFIG_USB_SUPPORT=y
-CONFIG_USB_ARCH_HAS_HCD=y
-# CONFIG_USB is not set
-
-#
-# NOTE: USB_STORAGE depends on SCSI but BLK_DEV_SD may
-#
-# CONFIG_USB_GADGET is not set
-
-#
-# OTG and related infrastructure
-#
-# CONFIG_MMC is not set
-# CONFIG_MEMSTICK is not set
-# CONFIG_NEW_LEDS is not set
-# CONFIG_ACCESSIBILITY is not set
-CONFIG_RTC_LIB=y
-# CONFIG_RTC_CLASS is not set
-# CONFIG_DMADEVICES is not set
-# CONFIG_AUXDISPLAY is not set
-# CONFIG_UIO is not set
-
-#
-# Virtio drivers
-#
-# CONFIG_VIRTIO_BALLOON is not set
-
-#
-# Microsoft Hyper-V guest support
-#
-# CONFIG_STAGING is not set
-CONFIG_CLKDEV_LOOKUP=y
-CONFIG_HAVE_MACH_CLKDEV=y
-
-#
-# Hardware Spinlock drivers
-#
-CONFIG_CLKSRC_MMIO=y
-# CONFIG_IOMMU_SUPPORT is not set
-
-#
-# Remoteproc drivers (EXPERIMENTAL)
-#
-
-#
-# Rpmsg drivers (EXPERIMENTAL)
-#
-# CONFIG_VIRT_DRIVERS is not set
-# CONFIG_PM_DEVFREQ is not set
-# CONFIG_EXTCON is not set
-# CONFIG_MEMORY is not set
-# CONFIG_IIO is not set
-
-#
-# File systems
-#
-# CONFIG_EXT2_FS is not set
-# CONFIG_EXT3_FS is not set
-# CONFIG_EXT4_FS is not set
-# CONFIG_REISERFS_FS is not set
-# CONFIG_JFS_FS is not set
-# CONFIG_XFS_FS is not set
-# CONFIG_FS_POSIX_ACL is not set
-CONFIG_FILE_LOCKING=y
-# CONFIG_FSNOTIFY is not set
-# CONFIG_DNOTIFY is not set
-# CONFIG_INOTIFY_USER is not set
-# CONFIG_FANOTIFY is not set
-# CONFIG_QUOTA is not set
-# CONFIG_QUOTACTL is not set
-# CONFIG_AUTOFS4_FS is not set
-# CONFIG_FUSE_FS is not set
-
-#
-# Caches
-#
-# CONFIG_FSCACHE is not set
-
-#
-# CD-ROM/DVD Filesystems
-#
-# CONFIG_ISO9660_FS is not set
-# CONFIG_UDF_FS is not set
-
-#
-# DOS/FAT/NT Filesystems
-#
-# CONFIG_MSDOS_FS is not set
-# CONFIG_VFAT_FS is not set
-# CONFIG_NTFS_FS is not set
-
-#
-# Pseudo filesystems
-#
-CONFIG_PROC_FS=y
-CONFIG_PROC_SYSCTL=y
-CONFIG_SYSFS=y
-# CONFIG_HUGETLB_PAGE is not set
-# CONFIG_CONFIGFS_FS is not set
-# CONFIG_MISC_FILESYSTEMS is not set
-# CONFIG_NLS is not set
-
-#
-# Kernel hacking
-#
-# CONFIG_PRINTK_TIME is not set
-CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
-# CONFIG_ENABLE_WARN_DEPRECATED is not set
-# CONFIG_ENABLE_MUST_CHECK is not set
-CONFIG_FRAME_WARN=1024
-# CONFIG_MAGIC_SYSRQ is not set
-# CONFIG_STRIP_ASM_SYMS is not set
-# CONFIG_UNUSED_SYMBOLS is not set
-# CONFIG_DEBUG_FS is not set
-# CONFIG_HEADERS_CHECK is not set
-# CONFIG_DEBUG_SECTION_MISMATCH is not set
-# CONFIG_DEBUG_KERNEL is not set
-# CONFIG_HARDLOCKUP_DETECTOR is not set
-# CONFIG_PANIC_ON_OOPS is not set
-CONFIG_PANIC_ON_OOPS_VALUE=0
-# CONFIG_SLUB_DEBUG_ON is not set
-# CONFIG_SLUB_STATS is not set
-# CONFIG_SPARSE_RCU_POINTER is not set
-CONFIG_DEBUG_BUGVERBOSE=y
-CONFIG_DEBUG_MEMORY_INIT=y
-CONFIG_FRAME_POINTER=y
-CONFIG_HAVE_FUNCTION_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-CONFIG_HAVE_DYNAMIC_FTRACE=y
-CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-CONFIG_HAVE_C_RECORDMCOUNT=y
-CONFIG_TRACING_SUPPORT=y
-# CONFIG_FTRACE is not set
-# CONFIG_DMA_API_DEBUG is not set
-# CONFIG_ATOMIC64_SELFTEST is not set
-# CONFIG_SAMPLES is not set
-CONFIG_HAVE_ARCH_KGDB=y
-# CONFIG_TEST_KSTRTOX is not set
-# CONFIG_DEBUG_USER is not set
-# CONFIG_OC_ETM is not set
-
-#
-# Security options
-#
-# CONFIG_KEYS is not set
-# CONFIG_SECURITY_DMESG_RESTRICT is not set
-# CONFIG_SECURITY is not set
-# CONFIG_SECURITYFS is not set
-CONFIG_DEFAULT_SECURITY_DAC=y
-CONFIG_DEFAULT_SECURITY=""
-# CONFIG_CRYPTO is not set
-# CONFIG_BINARY_PRINTF is not set
-
-#
-# Library routines
-#
-CONFIG_GENERIC_PCI_IOMAP=y
-CONFIG_GENERIC_IO=y
-# CONFIG_CRC_CCITT is not set
-# CONFIG_CRC16 is not set
-# CONFIG_CRC_T10DIF is not set
-# CONFIG_CRC_ITU_T is not set
-# CONFIG_CRC32 is not set
-# CONFIG_CRC7 is not set
-# CONFIG_LIBCRC32C is not set
-# CONFIG_CRC8 is not set
-# CONFIG_XZ_DEC is not set
-# CONFIG_XZ_DEC_BCJ is not set
-CONFIG_HAS_IOMEM=y
-CONFIG_HAS_IOPORT=y
-CONFIG_HAS_DMA=y
-CONFIG_GENERIC_ATOMIC64=y
-# CONFIG_AVERAGE is not set
-# CONFIG_CORDIC is not set
-# CONFIG_DDR is not set
-
---7qSK/uQB79J36Y4o--
+I have to revert the patch below from mmotm 2012-07-20-16-30 or
+next-20120720 in order to boot on the PowerPC G5: otherwise it
+freezes before switching to the framebuffer console - but I'm
+not certain where because that initial console doesn't scroll
+(there are mpic messages at bottom and at top of screen, probably
+later messages at the top but I don't know the sequence).
+
+Hugh
+
+commit 94f036a1f242f98cc30700b7676c07270a9c5c27
+Author: Grant Likely <grant.likely@secretlab.ca>
+Date:   Sun Jun 3 22:04:39 2012 -0700
+
+irqdomain: eliminate slow-path revmap lookups
+
+With the current state of irq_domain, the reverse map is always updated
+when new IRQs get mapped.  This means that the irq_find_mapping() function
+can be simplified to execute the revmap lookup functions unconditionally
+
+This patch adds lookup functions for the revmaps that don't yet have one
+and removes the slow path lookup code path.
+
+v8: Broke out unrelated changes into separate patches.  Rebased on Paul's irq
+    association patches.
+v7: Rebased to irqdomain/next for v3.4 and applied before the removal of 'hint'
+v6: Remove the slow path entirely.  The only place where the slow path
+    could get called is for a linear mapping if the hwirq number is larger
+    than the linear revmap size.  There shouldn't be any interrupt
+    controllers that do that.
+v5: rewrite to not use a ->revmap() callback.  It is simpler, smaller,
+    safer and faster to open code each of the revmap lookups directly into
+    irq_find_mapping() via a switch statement.
+v4: Fix build failure on incorrect variable reference.
+
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Milton Miller <miltonm@bga.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index c0e638b..a9b810e 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -686,16 +686,11 @@ EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+  * irq_find_mapping() - Find a linux irq from an hw irq number.
+  * @domain: domain owning this hardware interrupt
+  * @hwirq: hardware irq number in that domain space
+- *
+- * This is a slow path, for use by generic code. It's expected that an
+- * irq controller implementation directly calls the appropriate low level
+- * mapping function.
+  */
+ unsigned int irq_find_mapping(struct irq_domain *domain,
+ 			      irq_hw_number_t hwirq)
+ {
+-	unsigned int i;
+-	unsigned int hint = hwirq % nr_irqs;
++	struct irq_data *data;
+ 
+ 	/* Look for default domain if nececssary */
+ 	if (domain == NULL)
+@@ -703,22 +698,27 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
+ 	if (domain == NULL)
+ 		return 0;
+ 
+-	/* legacy -> bail early */
+-	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
++	switch (domain->revmap_type) {
++	case IRQ_DOMAIN_MAP_LEGACY:
+ 		return irq_domain_legacy_revmap(domain, hwirq);
+-
+-	/* Slow path does a linear search of the map */
+-	if (hint == 0)
+-		hint = 1;
+-	i = hint;
+-	do {
+-		struct irq_data *data = irq_get_irq_data(i);
++	case IRQ_DOMAIN_MAP_LINEAR:
++		return irq_linear_revmap(domain, hwirq);
++	case IRQ_DOMAIN_MAP_TREE:
++		rcu_read_lock();
++		data = radix_tree_lookup(&domain->revmap_data.tree, hwirq);
++		rcu_read_unlock();
++		if (data)
++			return data->irq;
++		break;
++	case IRQ_DOMAIN_MAP_NOMAP:
++		data = irq_get_irq_data(hwirq);
+ 		if (data && (data->domain == domain) && (data->hwirq == hwirq))
+-			return i;
+-		i++;
+-		if (i >= nr_irqs)
+-			i = 1;
+-	} while(i != hint);
++			return hwirq;
++		break;
++	}
++
++	WARN(1, "ERROR: irq revmap went horribly wrong. revmap_type=%i\n",
++		domain->revmap_type);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(irq_find_mapping);
+@@ -728,32 +728,19 @@ EXPORT_SYMBOL_GPL(irq_find_mapping);
+  * @domain: domain owning this hardware interrupt
+  * @hwirq: hardware irq number in that domain space
+  *
+- * This is a fast path, for use by irq controller code that uses linear
+- * revmaps. It does fallback to the slow path if the revmap doesn't exist
+- * yet and will create the revmap entry with appropriate locking
++ * This is a fast path that can be called directly by irq controller code to
++ * save a handful of instructions.
+  */
+ unsigned int irq_linear_revmap(struct irq_domain *domain,
+ 			       irq_hw_number_t hwirq)
+ {
+-	unsigned int *revmap;
++	BUG_ON(domain->revmap_type != IRQ_DOMAIN_MAP_LINEAR);
+ 
+-	if (WARN_ON_ONCE(domain->revmap_type != IRQ_DOMAIN_MAP_LINEAR))
+-		return irq_find_mapping(domain, hwirq);
+-
+-	/* Check revmap bounds */
+-	if (unlikely(hwirq >= domain->revmap_data.linear.size))
+-		return irq_find_mapping(domain, hwirq);
+-
+-	/* Check if revmap was allocated */
+-	revmap = domain->revmap_data.linear.revmap;
+-	if (unlikely(revmap == NULL))
+-		return irq_find_mapping(domain, hwirq);
+-
+-	/* Fill up revmap with slow path if no mapping found */
+-	if (unlikely(!revmap[hwirq]))
+-		revmap[hwirq] = irq_find_mapping(domain, hwirq);
++	/* Check revmap bounds; complain if exceeded */
++	if (WARN_ON(hwirq >= domain->revmap_data.linear.size))
++		return 0;
+ 
+-	return revmap[hwirq];
++	return domain->revmap_data.linear.revmap[hwirq];
+ }
+ EXPORT_SYMBOL_GPL(irq_linear_revmap);
+ 
