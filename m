@@ -1,35 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab2GVRgn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 13:36:43 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:49775 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab2GVRgm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 13:36:42 -0400
+	id S1752283Ab2GVRm7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 13:42:59 -0400
+Received: from mail.bmail.ru ([194.67.1.203]:23411 "EHLO sovam.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752201Ab2GVRm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 13:42:58 -0400
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sun Jul 22 21:42:57 2012
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+Date: Sun, 22 Jul 2012 21:42:50 +0400 (MSK)
+From: kyak <bas@bmail.ru>
+X-X-Sender: bas@bas
+To: linux-kernel@vger.kernel.org
+cc: Greg Kroah-Hartman <greg@kroah.com>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH] USB: plusb: Add support for PL-2501
+Message-ID: <alpine.LNX.2.02.1207222138410.1183@bas>
+User-Agent: Alpine 2.02 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120722141523.GA8892@gmail.com>
-References: <20120722141523.GA8892@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 22 Jul 2012 10:36:20 -0700
-X-Google-Sender-Auth: NarQydwV59F8_eyC_uKjhcD43e4
-Message-ID: <CA+55aFyh9+ZGjP+3kP1_bqmSVLxsHvWP967ZnEFHuda1MhAZ8w@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/uv changes for v3.6
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 7:15 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> UV2 BAU productization fixes.
+From: Mikhail Peselnik <peselnik@gmail.com>
 
-These kinds of "explanations" are not helpful, Ingo. Nobody except the
-SGI people know what the hell those TLA's mean. So please don't use
-random TLA's to "explain" things.
+This patch adds support for PL-2501 by adding the appropriate USB
+ID's. This chip is used in several USB 'Easy Trasfer' Cables.
 
-                  Linus
+Signed-off-by: Mikhail Peselnik <peselnik@gmail.com>
+Tested-by: Mikhail Peselnik <peselnik@gmail.com>
+---
+Now with proper sign-offs and right people in cc.
+plusb driver (drivers/net/usb/plusb.c) doesn't recognize PL2501 chip.
+Since PL2501 uses the same code as PL2301/PL2302 (PL2501 works in
+compatibility mode with PL2301/PL2302), the fix is trivial and
+attached as a patch.
+
+Just to note: the patch is not mine, it can be found here and there on
+Internet.
+I've tested the patch and it works great.
+
+Thank you.
+
+--- linux-3.5/drivers/net/usb/plusb.c.orig      2012-07-22
+21:06:41.905802795 +0400
++++ linux-3.5/drivers/net/usb/plusb.c   2012-07-22 21:07:00.345552404 +0400
+@@ -107,7 +107,7 @@ static int pl_reset(struct usbnet *dev)
+  }
+
+  static const struct driver_info        prolific_info = {
+-       .description =  "Prolific PL-2301/PL-2302/PL-25A1",
++       .description =  "Prolific PL-2301/PL-2302/PL-25A1/PL-2501",
+         .flags =        FLAG_POINTTOPOINT | FLAG_NO_SETINT,
+                 /* some PL-2302 versions seem to fail usb_set_interface() */
+         .reset =        pl_reset,
+@@ -139,6 +139,9 @@ static const struct usb_device_id   produc
+  }, {
+         USB_DEVICE(0x050d, 0x258a),     /* Belkin F5U258/F5U279 (PL-25A1) */
+         .driver_info =  (unsigned long) &prolific_info,
++}, {
++       USB_DEVICE(0x067b, 0x2501),     /* PL-2501 */
++       .driver_info =  (unsigned long) &prolific_info,
+  },
+
+         { },            // END
+@@ -158,5 +161,5 @@ static struct usb_driver plusb_driver =
+  module_usb_driver(plusb_driver);
+
+  MODULE_AUTHOR("David Brownell");
+-MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1 USB Host to Host Link Driver");
++MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1/2501 USB Host to Host
+Link Driver");
+  MODULE_LICENSE("GPL");
