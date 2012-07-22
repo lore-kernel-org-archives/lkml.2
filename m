@@ -1,98 +1,479 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab2GVM6u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 08:58:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60427 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394Ab2GVM6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 08:58:47 -0400
-Date: Sun, 22 Jul 2012 14:58:43 +0200
-From: Borislav Petkov <bp@alien8.de>
+	id S1751804Ab2GVNCc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 09:02:32 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:37887 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab2GVNCa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 09:02:30 -0400
+Date: Sun, 22 Jul 2012 15:02:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ming Lei <tom.leiming@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RFC] firmware load: defer request_firmware during early boot
- and resume
-Message-ID: <20120722125843.GC18939@liondog.tnic>
-Reply-To: Borislav Petkov <borislav.petkov@amd.com>
-Mail-Followup-To: Borislav Petkov <borislav.petkov@amd.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ming Lei <tom.leiming@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-usb <linux-usb@vger.kernel.org>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
- <CA+55aFwZRvtpE2e3zNqvtobpPROqw_bOwNt+=DBzmScV0_rq=w@mail.gmail.com>
- <CACVXFVPupumYqeBwTwgK3C04VQBxOjkFMbaKQ-Gsz3teCWqQ=w@mail.gmail.com>
- <CA+55aFwte5bc-4FC758pBN3FbrtKQfwm_Mv_banekhL=kSF8kg@mail.gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] core/iommu changes for v3.6
+Message-ID: <20120722130225.GA6068@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwte5bc-4FC758pBN3FbrtKQfwm_Mv_banekhL=kSF8kg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 21, 2012 at 01:38:52PM -0700, Linus Torvalds wrote:
-> > Looks it is not difficult to cache firmware data by kernel, for example, just
-> > call the
-> >
-> >            cache_firmware(fw_name)
-> >
-> > for each device which need firmware before suspending,
-> > then call the below to uncache firmware after resume:
-> >
-> >            uncache_firmware(fw_name)
-> 
-> Exactly. But we should make it automatic, and we should only do it if
-> the device is actually *active*. If nobody is using the device over
-> the suspend-resume event, the firmware shouldn't be loaded in the
-> first place, and resume obviously shouldn't need to re-load it.
-> Wouldn't it be nice if something like the PCI layer (or the USB layer)
-> just knew to do the rigth thing for the device on its own?
-> 
-> I would also suggest that the firmware caching have some internal
-> timeout, so that for the (fairly common) case where a suspend/resume
-> event might look like a unplug/replug event, the caching would
-> actually still remember the firmware despite the fact that it looked
-> (for a short while) like the device went away.
-> 
-> So *this* is where I think we could improve on the generic code. Make
-> it really easy for devices to do the right thing. Make sure that
-> firmware caches work, even if it looks like devices disappeared
-> momentarily. Maybe add a few callbacks from generic code to say "you
-> can load your firmware now, because the system is up".
+Linus,
 
-Question: is there any other reason
+Please pull the latest core-iommu-for-linus git tree from:
 
-  [besides maybe embedded people who care about each single Kb of memory
-   on the system]
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-iommu-for-linus
 
-why we don't make this cache/uncache firmware thing *implicit*? That is,
-load it once at driver open time and keep it in memory during the whole
-driver's lifetime. And this all taken care of by the driver core, btw.
+   HEAD: e9071b0be5e7ce4903b7f7c370769d485774d3e3 iommu/dmar: Use pr_format() instead of PREFIX to tidy up pr_*() calls
 
-This way you have the const void *firmware always there and can
-apply it whenever you feel like it, you obviate all the problems of
-request_firmware and it needing userspace and simpify the whole firmware
-handling and delays stuff immensely.
+ Thanks,
 
-You'd only waste just a couple of Kbs per system but what does memory
-cost nowadays...
+	Ingo
 
-Oh, we'd probably need to be able to jettison the old firmware and
-update to a new one but this can be done at convenient moments when the
-system is up and we have userspace to do so.
+------------------>
+Donald Dutile (3):
+      iommu/dmar: Replace printks with appropriate pr_*()
+      iommu/dmar: Reserve mmio space used by the IOMMU, if the BIOS forgets to
+      iommu/dmar: Use pr_format() instead of PREFIX to tidy up pr_*() calls
 
-Hmm...
 
--- 
-Regards/Gruss,
-    Boris.
+ drivers/iommu/dmar.c        |  194 ++++++++++++++++++++++++++-----------------
+ include/linux/intel-iommu.h |    2 +
+ 2 files changed, 118 insertions(+), 78 deletions(-)
+
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 3a74e44..86e2f4a 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -26,6 +26,8 @@
+  * These routines are used by both DMA-remapping and Interrupt-remapping
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt /* has to precede printk.h */
++
+ #include <linux/pci.h>
+ #include <linux/dmar.h>
+ #include <linux/iova.h>
+@@ -39,8 +41,6 @@
+ #include <asm/irq_remapping.h>
+ #include <asm/iommu_table.h>
+ 
+-#define PREFIX "DMAR: "
+-
+ /* No locks are needed as DMA remapping hardware unit
+  * list is constructed at boot time and hotplug of
+  * these units are not supported by the architecture.
+@@ -83,16 +83,12 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
+ 		 * ignore it
+ 		 */
+ 		if (!bus) {
+-			printk(KERN_WARNING
+-			PREFIX "Device scope bus [%d] not found\n",
+-			scope->bus);
++			pr_warn("Device scope bus [%d] not found\n", scope->bus);
+ 			break;
+ 		}
+ 		pdev = pci_get_slot(bus, PCI_DEVFN(path->dev, path->fn));
+ 		if (!pdev) {
+-			printk(KERN_WARNING PREFIX
+-			"Device scope device [%04x:%02x:%02x.%02x] not found\n",
+-				segment, bus->number, path->dev, path->fn);
++			/* warning will be printed below */
+ 			break;
+ 		}
+ 		path ++;
+@@ -100,9 +96,8 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
+ 		bus = pdev->subordinate;
+ 	}
+ 	if (!pdev) {
+-		printk(KERN_WARNING PREFIX
+-		"Device scope device [%04x:%02x:%02x.%02x] not found\n",
+-		segment, scope->bus, path->dev, path->fn);
++		pr_warn("Device scope device [%04x:%02x:%02x.%02x] not found\n",
++			segment, scope->bus, path->dev, path->fn);
+ 		*dev = NULL;
+ 		return 0;
+ 	}
+@@ -110,9 +105,8 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
+ 			pdev->subordinate) || (scope->entry_type == \
+ 			ACPI_DMAR_SCOPE_TYPE_BRIDGE && !pdev->subordinate)) {
+ 		pci_dev_put(pdev);
+-		printk(KERN_WARNING PREFIX
+-			"Device scope type does not match for %s\n",
+-			 pci_name(pdev));
++		pr_warn("Device scope type does not match for %s\n",
++			pci_name(pdev));
+ 		return -EINVAL;
+ 	}
+ 	*dev = pdev;
+@@ -134,8 +128,7 @@ int __init dmar_parse_dev_scope(void *start, void *end, int *cnt,
+ 		    scope->entry_type == ACPI_DMAR_SCOPE_TYPE_BRIDGE)
+ 			(*cnt)++;
+ 		else if (scope->entry_type != ACPI_DMAR_SCOPE_TYPE_IOAPIC) {
+-			printk(KERN_WARNING PREFIX
+-			       "Unsupported device scope\n");
++			pr_warn("Unsupported device scope\n");
+ 		}
+ 		start += scope->length;
+ 	}
+@@ -261,25 +254,23 @@ dmar_table_print_dmar_entry(struct acpi_dmar_header *header)
+ 	case ACPI_DMAR_TYPE_HARDWARE_UNIT:
+ 		drhd = container_of(header, struct acpi_dmar_hardware_unit,
+ 				    header);
+-		printk (KERN_INFO PREFIX
+-			"DRHD base: %#016Lx flags: %#x\n",
++		pr_info("DRHD base: %#016Lx flags: %#x\n",
+ 			(unsigned long long)drhd->address, drhd->flags);
+ 		break;
+ 	case ACPI_DMAR_TYPE_RESERVED_MEMORY:
+ 		rmrr = container_of(header, struct acpi_dmar_reserved_memory,
+ 				    header);
+-		printk (KERN_INFO PREFIX
+-			"RMRR base: %#016Lx end: %#016Lx\n",
++		pr_info("RMRR base: %#016Lx end: %#016Lx\n",
+ 			(unsigned long long)rmrr->base_address,
+ 			(unsigned long long)rmrr->end_address);
+ 		break;
+ 	case ACPI_DMAR_TYPE_ATSR:
+ 		atsr = container_of(header, struct acpi_dmar_atsr, header);
+-		printk(KERN_INFO PREFIX "ATSR flags: %#x\n", atsr->flags);
++		pr_info("ATSR flags: %#x\n", atsr->flags);
+ 		break;
+ 	case ACPI_DMAR_HARDWARE_AFFINITY:
+ 		rhsa = container_of(header, struct acpi_dmar_rhsa, header);
+-		printk(KERN_INFO PREFIX "RHSA base: %#016Lx proximity domain: %#x\n",
++		pr_info("RHSA base: %#016Lx proximity domain: %#x\n",
+ 		       (unsigned long long)rhsa->base_address,
+ 		       rhsa->proximity_domain);
+ 		break;
+@@ -299,7 +290,7 @@ static int __init dmar_table_detect(void)
+ 				&dmar_tbl_size);
+ 
+ 	if (ACPI_SUCCESS(status) && !dmar_tbl) {
+-		printk (KERN_WARNING PREFIX "Unable to map DMAR\n");
++		pr_warn("Unable to map DMAR\n");
+ 		status = AE_NOT_FOUND;
+ 	}
+ 
+@@ -333,20 +324,18 @@ parse_dmar_table(void)
+ 		return -ENODEV;
+ 
+ 	if (dmar->width < PAGE_SHIFT - 1) {
+-		printk(KERN_WARNING PREFIX "Invalid DMAR haw\n");
++		pr_warn("Invalid DMAR haw\n");
+ 		return -EINVAL;
+ 	}
+ 
+-	printk (KERN_INFO PREFIX "Host address width %d\n",
+-		dmar->width + 1);
++	pr_info("Host address width %d\n", dmar->width + 1);
+ 
+ 	entry_header = (struct acpi_dmar_header *)(dmar + 1);
+ 	while (((unsigned long)entry_header) <
+ 			(((unsigned long)dmar) + dmar_tbl->length)) {
+ 		/* Avoid looping forever on bad ACPI tables */
+ 		if (entry_header->length == 0) {
+-			printk(KERN_WARNING PREFIX
+-				"Invalid 0-length structure\n");
++			pr_warn("Invalid 0-length structure\n");
+ 			ret = -EINVAL;
+ 			break;
+ 		}
+@@ -369,8 +358,7 @@ parse_dmar_table(void)
+ #endif
+ 			break;
+ 		default:
+-			printk(KERN_WARNING PREFIX
+-				"Unknown DMAR structure type %d\n",
++			pr_warn("Unknown DMAR structure type %d\n",
+ 				entry_header->type);
+ 			ret = 0; /* for forward compatibility */
+ 			break;
+@@ -469,12 +457,12 @@ int __init dmar_table_init(void)
+ 	ret = parse_dmar_table();
+ 	if (ret) {
+ 		if (ret != -ENODEV)
+-			printk(KERN_INFO PREFIX "parse DMAR table failure.\n");
++			pr_info("parse DMAR table failure.\n");
+ 		return ret;
+ 	}
+ 
+ 	if (list_empty(&dmar_drhd_units)) {
+-		printk(KERN_INFO PREFIX "No DMAR devices found\n");
++		pr_info("No DMAR devices found\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -506,8 +494,7 @@ int __init check_zero_address(void)
+ 			(((unsigned long)dmar) + dmar_tbl->length)) {
+ 		/* Avoid looping forever on bad ACPI tables */
+ 		if (entry_header->length == 0) {
+-			printk(KERN_WARNING PREFIX
+-				"Invalid 0-length structure\n");
++			pr_warn("Invalid 0-length structure\n");
+ 			return 0;
+ 		}
+ 
+@@ -558,8 +545,7 @@ int __init detect_intel_iommu(void)
+ 
+ 		if (ret && irq_remapping_enabled && cpu_has_x2apic &&
+ 		    dmar->flags & 0x1)
+-			printk(KERN_INFO
+-			       "Queued invalidation will be enabled to support x2apic and Intr-remapping.\n");
++			pr_info("Queued invalidation will be enabled to support x2apic and Intr-remapping.\n");
+ 
+ 		if (ret && !no_iommu && !iommu_detected && !dmar_disabled) {
+ 			iommu_detected = 1;
+@@ -579,14 +565,89 @@ int __init detect_intel_iommu(void)
+ }
+ 
+ 
++static void unmap_iommu(struct intel_iommu *iommu)
++{
++	iounmap(iommu->reg);
++	release_mem_region(iommu->reg_phys, iommu->reg_size);
++}
++
++/**
++ * map_iommu: map the iommu's registers
++ * @iommu: the iommu to map
++ * @phys_addr: the physical address of the base resgister
++ *
++ * Memory map the iommu's registers.  Start w/ a single page, and
++ * possibly expand if that turns out to be insufficent.
++ */
++static int map_iommu(struct intel_iommu *iommu, u64 phys_addr)
++{
++	int map_size, err=0;
++
++	iommu->reg_phys = phys_addr;
++	iommu->reg_size = VTD_PAGE_SIZE;
++
++	if (!request_mem_region(iommu->reg_phys, iommu->reg_size, iommu->name)) {
++		pr_err("IOMMU: can't reserve memory\n");
++		err = -EBUSY;
++		goto out;
++	}
++
++	iommu->reg = ioremap(iommu->reg_phys, iommu->reg_size);
++	if (!iommu->reg) {
++		pr_err("IOMMU: can't map the region\n");
++		err = -ENOMEM;
++		goto release;
++	}
++
++	iommu->cap = dmar_readq(iommu->reg + DMAR_CAP_REG);
++	iommu->ecap = dmar_readq(iommu->reg + DMAR_ECAP_REG);
++
++	if (iommu->cap == (uint64_t)-1 && iommu->ecap == (uint64_t)-1) {
++		err = -EINVAL;
++		warn_invalid_dmar(phys_addr, " returns all ones");
++		goto unmap;
++	}
++
++	/* the registers might be more than one page */
++	map_size = max_t(int, ecap_max_iotlb_offset(iommu->ecap),
++			 cap_max_fault_reg_offset(iommu->cap));
++	map_size = VTD_PAGE_ALIGN(map_size);
++	if (map_size > iommu->reg_size) {
++		iounmap(iommu->reg);
++		release_mem_region(iommu->reg_phys, iommu->reg_size);
++		iommu->reg_size = map_size;
++		if (!request_mem_region(iommu->reg_phys, iommu->reg_size,
++					iommu->name)) {
++			pr_err("IOMMU: can't reserve memory\n");
++			err = -EBUSY;
++			goto out;
++		}
++		iommu->reg = ioremap(iommu->reg_phys, iommu->reg_size);
++		if (!iommu->reg) {
++			pr_err("IOMMU: can't map the region\n");
++			err = -ENOMEM;
++			goto release;
++		}
++	}
++	err = 0;
++	goto out;
++
++unmap:
++	iounmap(iommu->reg);
++release:
++	release_mem_region(iommu->reg_phys, iommu->reg_size);
++out:
++	return err;
++}
++
+ int alloc_iommu(struct dmar_drhd_unit *drhd)
+ {
+ 	struct intel_iommu *iommu;
+-	int map_size;
+ 	u32 ver;
+ 	static int iommu_allocated = 0;
+ 	int agaw = 0;
+ 	int msagaw = 0;
++	int err;
+ 
+ 	if (!drhd->reg_base_addr) {
+ 		warn_invalid_dmar(0, "");
+@@ -600,30 +661,22 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
+ 	iommu->seq_id = iommu_allocated++;
+ 	sprintf (iommu->name, "dmar%d", iommu->seq_id);
+ 
+-	iommu->reg = ioremap(drhd->reg_base_addr, VTD_PAGE_SIZE);
+-	if (!iommu->reg) {
+-		printk(KERN_ERR "IOMMU: can't map the region\n");
++	err = map_iommu(iommu, drhd->reg_base_addr);
++	if (err) {
++		pr_err("IOMMU: failed to map %s\n", iommu->name);
+ 		goto error;
+ 	}
+-	iommu->cap = dmar_readq(iommu->reg + DMAR_CAP_REG);
+-	iommu->ecap = dmar_readq(iommu->reg + DMAR_ECAP_REG);
+-
+-	if (iommu->cap == (uint64_t)-1 && iommu->ecap == (uint64_t)-1) {
+-		warn_invalid_dmar(drhd->reg_base_addr, " returns all ones");
+-		goto err_unmap;
+-	}
+ 
++	err = -EINVAL;
+ 	agaw = iommu_calculate_agaw(iommu);
+ 	if (agaw < 0) {
+-		printk(KERN_ERR
+-		       "Cannot get a valid agaw for iommu (seq_id = %d)\n",
+-		       iommu->seq_id);
++		pr_err("Cannot get a valid agaw for iommu (seq_id = %d)\n",
++			iommu->seq_id);
+ 		goto err_unmap;
+ 	}
+ 	msagaw = iommu_calculate_max_sagaw(iommu);
+ 	if (msagaw < 0) {
+-		printk(KERN_ERR
+-			"Cannot get a valid max agaw for iommu (seq_id = %d)\n",
++		pr_err("Cannot get a valid max agaw for iommu (seq_id = %d)\n",
+ 			iommu->seq_id);
+ 		goto err_unmap;
+ 	}
+@@ -632,19 +685,6 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
+ 
+ 	iommu->node = -1;
+ 
+-	/* the registers might be more than one page */
+-	map_size = max_t(int, ecap_max_iotlb_offset(iommu->ecap),
+-		cap_max_fault_reg_offset(iommu->cap));
+-	map_size = VTD_PAGE_ALIGN(map_size);
+-	if (map_size > VTD_PAGE_SIZE) {
+-		iounmap(iommu->reg);
+-		iommu->reg = ioremap(drhd->reg_base_addr, map_size);
+-		if (!iommu->reg) {
+-			printk(KERN_ERR "IOMMU: can't map the region\n");
+-			goto error;
+-		}
+-	}
+-
+ 	ver = readl(iommu->reg + DMAR_VER_REG);
+ 	pr_info("IOMMU %d: reg_base_addr %llx ver %d:%d cap %llx ecap %llx\n",
+ 		iommu->seq_id,
+@@ -659,10 +699,10 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
+ 	return 0;
+ 
+  err_unmap:
+-	iounmap(iommu->reg);
++	unmap_iommu(iommu);
+  error:
+ 	kfree(iommu);
+-	return -1;
++	return err;
+ }
+ 
+ void free_iommu(struct intel_iommu *iommu)
+@@ -673,7 +713,8 @@ void free_iommu(struct intel_iommu *iommu)
+ 	free_dmar_iommu(iommu);
+ 
+ 	if (iommu->reg)
+-		iounmap(iommu->reg);
++		unmap_iommu(iommu);
++
+ 	kfree(iommu);
+ }
+ 
+@@ -710,7 +751,7 @@ static int qi_check_fault(struct intel_iommu *iommu, int index)
+ 	if (fault & DMA_FSTS_IQE) {
+ 		head = readl(iommu->reg + DMAR_IQH_REG);
+ 		if ((head >> DMAR_IQ_SHIFT) == index) {
+-			printk(KERN_ERR "VT-d detected invalid descriptor: "
++			pr_err("VT-d detected invalid descriptor: "
+ 				"low=%llx, high=%llx\n",
+ 				(unsigned long long)qi->desc[index].low,
+ 				(unsigned long long)qi->desc[index].high);
+@@ -1129,15 +1170,14 @@ static int dmar_fault_do_one(struct intel_iommu *iommu, int type,
+ 	reason = dmar_get_fault_reason(fault_reason, &fault_type);
+ 
+ 	if (fault_type == INTR_REMAP)
+-		printk(KERN_ERR "INTR-REMAP: Request device [[%02x:%02x.%d] "
++		pr_err("INTR-REMAP: Request device [[%02x:%02x.%d] "
+ 		       "fault index %llx\n"
+ 			"INTR-REMAP:[fault reason %02d] %s\n",
+ 			(source_id >> 8), PCI_SLOT(source_id & 0xFF),
+ 			PCI_FUNC(source_id & 0xFF), addr >> 48,
+ 			fault_reason, reason);
+ 	else
+-		printk(KERN_ERR
+-		       "DMAR:[%s] Request device [%02x:%02x.%d] "
++		pr_err("DMAR:[%s] Request device [%02x:%02x.%d] "
+ 		       "fault addr %llx \n"
+ 		       "DMAR:[fault reason %02d] %s\n",
+ 		       (type ? "DMA Read" : "DMA Write"),
+@@ -1157,8 +1197,7 @@ irqreturn_t dmar_fault(int irq, void *dev_id)
+ 	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	fault_status = readl(iommu->reg + DMAR_FSTS_REG);
+ 	if (fault_status)
+-		printk(KERN_ERR "DRHD: handling fault status reg %x\n",
+-		       fault_status);
++		pr_err("DRHD: handling fault status reg %x\n", fault_status);
+ 
+ 	/* TBD: ignore advanced fault log currently */
+ 	if (!(fault_status & DMA_FSTS_PPF))
+@@ -1224,7 +1263,7 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
+ 
+ 	irq = create_irq();
+ 	if (!irq) {
+-		printk(KERN_ERR "IOMMU: no free vectors\n");
++		pr_err("IOMMU: no free vectors\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1241,7 +1280,7 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
+ 
+ 	ret = request_irq(irq, dmar_fault, IRQF_NO_THREAD, iommu->name, iommu);
+ 	if (ret)
+-		printk(KERN_ERR "IOMMU: can't request irq\n");
++		pr_err("IOMMU: can't request irq\n");
+ 	return ret;
+ }
+ 
+@@ -1258,8 +1297,7 @@ int __init enable_drhd_fault_handling(void)
+ 		ret = dmar_set_interrupt(iommu);
+ 
+ 		if (ret) {
+-			printk(KERN_ERR "DRHD %Lx: failed to enable fault, "
+-			       " interrupt, ret %d\n",
++			pr_err("DRHD %Lx: failed to enable fault, interrupt, ret %d\n",
+ 			       (unsigned long long)drhd->reg_base_addr, ret);
+ 			return -1;
+ 		}
+diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+index e6ca56d..78e2ada 100644
+--- a/include/linux/intel-iommu.h
++++ b/include/linux/intel-iommu.h
+@@ -308,6 +308,8 @@ enum {
+ 
+ struct intel_iommu {
+ 	void __iomem	*reg; /* Pointer to hardware regs, virtual addr */
++	u64 		reg_phys; /* physical address of hw register set */
++	u64		reg_size; /* size of hw register set */
+ 	u64		cap;
+ 	u64		ecap;
+ 	u32		gcmd; /* Holds TE, EAFL. Don't need SRTP, SFL, WBF */
