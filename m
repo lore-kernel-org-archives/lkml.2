@@ -1,129 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab2GVRWk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 13:22:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56623 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab2GVRWi (ORCPT
+	id S1752244Ab2GVRa6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 13:30:58 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56043 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab2GVRa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 13:22:38 -0400
-Date: Sun, 22 Jul 2012 10:22:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        kvm@vger.kernel.org, Andy Walls <awalls@md.metrocast.net>,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH UPDATED 1/2] kthread_worker: reorganize to prepare for
- flush_kthread_work() reimplementation
-Message-ID: <20120722172232.GD5144@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120719211510.GA32763@google.com>
- <20120719211541.GB32763@google.com>
+	Sun, 22 Jul 2012 13:30:57 -0400
+Date: Sun, 22 Jul 2012 21:30:53 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: kcmp() races?
+Message-ID: <20120722173053.GA19964@moon>
+References: <20120722154705.GA31729@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120719211541.GB32763@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120722154705.GA31729@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9a2e03d8ed518a61154f18d83d6466628e519f94 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Thu, 19 Jul 2012 13:52:53 -0700
+On Sun, Jul 22, 2012 at 04:47:05PM +0100, Al Viro wrote:
+>   I don't know how much of that is by design, but at the very least
+> it needs to be clearly documented in manpage: kcmp() can give false
+> positives.  Very easily.  There is nothing to prevent the objects
+> being compared from getting freed and reused; consider unshare(2), for
+> example.  Or close(2), for that matter.  Suppose we look at the descriptor
+> table for task1 just as it (or somebody sharing that table) closes the
+> descriptor we are after.  We got struct file *; it'll stay allocated
+> until we do rcu_read_unlock().  Which we promptly do and turn to
+> examining the descriptor table of task2.  Which is doing e.g. pipe(2)
+> at the moment (or somebody sharing its descriptor table is).  It
+> allocates struct file, getting the one that just had been freed by
+> task1.  And puts a reference to it into its descriptor table, which
+> is where we find it.  And we see the same pointer...
+> 
+>   Sure, if the processes are stopped, we are fine (except that
+> we need to stop everybody sharing the descriptor table with either
+> of our processes as well).  *IF* that is the intended behaviour
+> (and it could be argued that way - after all, if we want the values
+> we get to stay valid long enough for us to do sorting, we'd better
+> make sure that these guys won't get changed between the calls of
+> kcmp(2)), then we'd better document that in the manpage...
 
-Make the following two non-functional changes.
+Hi Al,
 
-* Separate out insert_kthread_work() from queue_kthread_work().
+yes, good point, this might result false positives if tasks are not
+stopped (or it's not guaranteed on userspace level that say files
+being compared are not closed when kcmp runs). I'll update man-page.
+And yes this was intentional (I tried to keep task-locks/rcu-locks
+as minimum time as possible).
 
-* Relocate struct kthread_flush_work and kthread_flush_work_fn()
-  definitions above flush_kthread_work().
-
-v2: Added lockdep_assert_held() in insert_kthread_work() as suggested
-    by Andy Walls.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Andy Walls <awalls@md.metrocast.net>
----
- kernel/kthread.c |   42 ++++++++++++++++++++++++++----------------
- 1 files changed, 26 insertions(+), 16 deletions(-)
-
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 3d3de63..4bfbff3 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -378,6 +378,19 @@ repeat:
- }
- EXPORT_SYMBOL_GPL(kthread_worker_fn);
- 
-+/* insert @work before @pos in @worker */
-+static void insert_kthread_work(struct kthread_worker *worker,
-+			       struct kthread_work *work,
-+			       struct list_head *pos)
-+{
-+	lockdep_assert_held(&worker->lock);
-+
-+	list_add_tail(&work->node, pos);
-+	work->queue_seq++;
-+	if (likely(worker->task))
-+		wake_up_process(worker->task);
-+}
-+
- /**
-  * queue_kthread_work - queue a kthread_work
-  * @worker: target kthread_worker
-@@ -395,10 +408,7 @@ bool queue_kthread_work(struct kthread_worker *worker,
- 
- 	spin_lock_irqsave(&worker->lock, flags);
- 	if (list_empty(&work->node)) {
--		list_add_tail(&work->node, &worker->work_list);
--		work->queue_seq++;
--		if (likely(worker->task))
--			wake_up_process(worker->task);
-+		insert_kthread_work(worker, work, &worker->work_list);
- 		ret = true;
- 	}
- 	spin_unlock_irqrestore(&worker->lock, flags);
-@@ -406,6 +416,18 @@ bool queue_kthread_work(struct kthread_worker *worker,
- }
- EXPORT_SYMBOL_GPL(queue_kthread_work);
- 
-+struct kthread_flush_work {
-+	struct kthread_work	work;
-+	struct completion	done;
-+};
-+
-+static void kthread_flush_work_fn(struct kthread_work *work)
-+{
-+	struct kthread_flush_work *fwork =
-+		container_of(work, struct kthread_flush_work, work);
-+	complete(&fwork->done);
-+}
-+
- /**
-  * flush_kthread_work - flush a kthread_work
-  * @work: work to flush
-@@ -436,18 +458,6 @@ void flush_kthread_work(struct kthread_work *work)
- }
- EXPORT_SYMBOL_GPL(flush_kthread_work);
- 
--struct kthread_flush_work {
--	struct kthread_work	work;
--	struct completion	done;
--};
--
--static void kthread_flush_work_fn(struct kthread_work *work)
--{
--	struct kthread_flush_work *fwork =
--		container_of(work, struct kthread_flush_work, work);
--	complete(&fwork->done);
--}
--
- /**
-  * flush_kthread_worker - flush all current works on a kthread_worker
-  * @worker: worker to flush
--- 
-1.7.7.3
-
+	Cyrill
