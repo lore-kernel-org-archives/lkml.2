@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab2GVTkX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 15:40:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38153 "EHLO
+	id S1752563Ab2GVTpR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 15:45:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38228 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab2GVTkV (ORCPT
+	with ESMTP id S1752429Ab2GVTpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 15:40:21 -0400
-Date: Sun, 22 Jul 2012 12:40:20 -0700 (PDT)
-Message-Id: <20120722.124020.1299343386554149788.davem@davemloft.net>
-To: mst@redhat.com
-Cc: jasowang@redhat.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        Ian.Campbell@citrix.com
-Subject: Re: [PATCHv3 0/6] tun zerocopy support
+	Sun, 22 Jul 2012 15:45:15 -0400
+Date: Sun, 22 Jul 2012 12:45:14 -0700 (PDT)
+Message-Id: <20120722.124514.239340989320198501.davem@davemloft.net>
+To: xufengzhang.main@gmail.com
+Cc: vyasevich@gmail.com, sri@us.ibm.com, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
+ SACK when bundling
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120721220534.GA22912@redhat.com>
-References: <cover.1342812067.git.mst@redhat.com>
-	<20120720.174902.2055189237500355771.davem@davemloft.net>
-	<20120721220534.GA22912@redhat.com>
+In-Reply-To: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
 X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,24 +25,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Sun, 22 Jul 2012 01:05:34 +0300
+From: <xufengzhang.main@gmail.com>
+Date: Thu, 19 Jul 2012 13:57:30 +0800
 
-> I agree a small win in CPU use is nothing to write home about,
-> I don't yet understand why the win is so small - macvtap has zero copy
-> supported for a while and it has exactly same issues.
-> I hope adding tun zerocopy support upstream will help us
-> make progress faster and find the bottleneck, so far not many people use
-> macvtap so zero copy mode there didn't make progress.
+> When "Invalid Stream Identifier" ERROR happens after process the
+> received DATA chunks, this ERROR chunk is enqueued into outqueue
+> before SACK chunk, so when bundling ERROR chunk with SACK chunk,
+> the ERROR chunk is always placed first in the packet because of
+> the chunk's position in the outqueue.
+> This violates sctp specification:
+>     RFC 4960 6.5. Stream Identifier and Stream Sequence Number
+>     ...The endpoint may bundle the ERROR chunk in the same
+>     packet as the SACK as long as the ERROR follows the SACK.
+> So we must place SACK first when bundling "Invalid Stream Identifier"
+> ERROR and SACK in one packet.
+> Although we can do that by enqueue SACK chunk into outqueue before
+> ERROR chunk, it will violate the side-effect interpreter processing.
+> It's easy to do this job when dequeue chunks from the outqueue,
+> by this way, we introduce a flag 'has_isi_err' which indicate
+> whether or not the "Invalid Stream Identifier" ERROR happens.
 > 
-> I do know why local performance regresses with zero copy enabled:
-> instead of plain copy to user we got get user pages and then memcpy.
-> We'll need some logic here to detect this and turn off zero copy.
-> 
-> The core patches will also be helpful for Ian's more ambitious work.
-> 
-> Overall I think it's a step in the right direction and it's easier to
-> work if core parts are upstream, but if you think we need to wait
-> until the gains are more significant, I understand that too.
+> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-Ok, I've applied this series, let's see what happens.
+Can some SCTP experts please review this?
