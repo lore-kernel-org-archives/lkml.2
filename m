@@ -1,72 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab2GVRW0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 13:22:26 -0400
-Received: from mail.bmail.ru ([194.67.1.203]:23350 "EHLO sovam.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab2GVRWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 13:22:25 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jul 2012 13:22:24 EDT
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sun Jul 22 21:17:22 2012
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-Date: Sun, 22 Jul 2012 21:17:20 +0400 (MSK)
-From: kyak <bas@bmail.ru>
-X-X-Sender: bas@bas
+	id S1752343Ab2GVRWk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 13:22:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56623 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab2GVRWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 13:22:38 -0400
+Date: Sun, 22 Jul 2012 10:22:32 -0700
+From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
-cc: torvalds@linux-foundation.org
-Subject: [PATCH] USB: plusb: Add support for PL-2501
-Message-ID: <alpine.LNX.2.02.1207222054020.1183@bas>
-User-Agent: Alpine 2.02 (LNX 1266 2009-07-14)
+Cc: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, Andy Walls <awalls@md.metrocast.net>,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH UPDATED 1/2] kthread_worker: reorganize to prepare for
+ flush_kthread_work() reimplementation
+Message-ID: <20120722172232.GD5144@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120719211510.GA32763@google.com>
+ <20120719211541.GB32763@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120719211541.GB32763@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikhail Peselnik <peselnik@gmail.com>
+>From 9a2e03d8ed518a61154f18d83d6466628e519f94 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Thu, 19 Jul 2012 13:52:53 -0700
 
-This patch adds support for PL-2501 by adding the appropriate USB 
-ID's. This chip is used in several USB 'Easy Trasfer' Cables.
+Make the following two non-functional changes.
 
-Tested-by: Mikhail Peselnik <peselnik@gmail.com>
+* Separate out insert_kthread_work() from queue_kthread_work().
+
+* Relocate struct kthread_flush_work and kthread_flush_work_fn()
+  definitions above flush_kthread_work().
+
+v2: Added lockdep_assert_held() in insert_kthread_work() as suggested
+    by Andy Walls.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Andy Walls <awalls@md.metrocast.net>
 ---
-plusb driver (drivers/net/usb/plusb.c) doesn't recognize PL2501 chip. 
-Since PL2501 uses the same code as PL2301/PL2302 (PL2501 works in compatibility 
-mode with PL2301/PL2302), the fix is trivial and attached as a patch.
+ kernel/kthread.c |   42 ++++++++++++++++++++++++++----------------
+ 1 files changed, 26 insertions(+), 16 deletions(-)
 
-Just to note: the patch is not mine, it can be found here and there on
-Internet.
-I've tested the patch and it works great.
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 3d3de63..4bfbff3 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -378,6 +378,19 @@ repeat:
+ }
+ EXPORT_SYMBOL_GPL(kthread_worker_fn);
+ 
++/* insert @work before @pos in @worker */
++static void insert_kthread_work(struct kthread_worker *worker,
++			       struct kthread_work *work,
++			       struct list_head *pos)
++{
++	lockdep_assert_held(&worker->lock);
++
++	list_add_tail(&work->node, pos);
++	work->queue_seq++;
++	if (likely(worker->task))
++		wake_up_process(worker->task);
++}
++
+ /**
+  * queue_kthread_work - queue a kthread_work
+  * @worker: target kthread_worker
+@@ -395,10 +408,7 @@ bool queue_kthread_work(struct kthread_worker *worker,
+ 
+ 	spin_lock_irqsave(&worker->lock, flags);
+ 	if (list_empty(&work->node)) {
+-		list_add_tail(&work->node, &worker->work_list);
+-		work->queue_seq++;
+-		if (likely(worker->task))
+-			wake_up_process(worker->task);
++		insert_kthread_work(worker, work, &worker->work_list);
+ 		ret = true;
+ 	}
+ 	spin_unlock_irqrestore(&worker->lock, flags);
+@@ -406,6 +416,18 @@ bool queue_kthread_work(struct kthread_worker *worker,
+ }
+ EXPORT_SYMBOL_GPL(queue_kthread_work);
+ 
++struct kthread_flush_work {
++	struct kthread_work	work;
++	struct completion	done;
++};
++
++static void kthread_flush_work_fn(struct kthread_work *work)
++{
++	struct kthread_flush_work *fwork =
++		container_of(work, struct kthread_flush_work, work);
++	complete(&fwork->done);
++}
++
+ /**
+  * flush_kthread_work - flush a kthread_work
+  * @work: work to flush
+@@ -436,18 +458,6 @@ void flush_kthread_work(struct kthread_work *work)
+ }
+ EXPORT_SYMBOL_GPL(flush_kthread_work);
+ 
+-struct kthread_flush_work {
+-	struct kthread_work	work;
+-	struct completion	done;
+-};
+-
+-static void kthread_flush_work_fn(struct kthread_work *work)
+-{
+-	struct kthread_flush_work *fwork =
+-		container_of(work, struct kthread_flush_work, work);
+-	complete(&fwork->done);
+-}
+-
+ /**
+  * flush_kthread_worker - flush all current works on a kthread_worker
+  * @worker: worker to flush
+-- 
+1.7.7.3
 
-Thank you.
-
---- linux-3.5/drivers/net/usb/plusb.c.orig	2012-07-22 21:06:41.905802795 +0400
-+++ linux-3.5/drivers/net/usb/plusb.c	2012-07-22 21:07:00.345552404 +0400
-@@ -107,7 +107,7 @@ static int pl_reset(struct usbnet *dev)
-  }
-
-  static const struct driver_info	prolific_info = {
--	.description =	"Prolific PL-2301/PL-2302/PL-25A1",
-+	.description =	"Prolific PL-2301/PL-2302/PL-25A1/PL-2501",
-  	.flags =	FLAG_POINTTOPOINT | FLAG_NO_SETINT,
-  		/* some PL-2302 versions seem to fail usb_set_interface() */
-  	.reset =	pl_reset,
-@@ -139,6 +139,9 @@ static const struct usb_device_id	produc
-  }, {
-  	USB_DEVICE(0x050d, 0x258a),     /* Belkin F5U258/F5U279 (PL-25A1) */
-  	.driver_info =  (unsigned long) &prolific_info,
-+}, {
-+	USB_DEVICE(0x067b, 0x2501),     /* PL-2501 */
-+	.driver_info =  (unsigned long) &prolific_info,
-  },
-
-  	{ },		// END
-@@ -158,5 +161,5 @@ static struct usb_driver plusb_driver =
-  module_usb_driver(plusb_driver);
-
-  MODULE_AUTHOR("David Brownell");
--MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1 USB Host to Host Link Driver");
-+MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1/2501 USB Host to Host Link Driver");
-  MODULE_LICENSE("GPL");
