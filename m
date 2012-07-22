@@ -1,117 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2GVVog (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 17:44:36 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49029 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab2GVVoe (ORCPT
+	id S1752740Ab2GVVyJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 17:54:09 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38943 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab2GVVyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 17:44:34 -0400
-Subject: Re: linux-next: manual merge of the staging tree with the
- target-merge tree
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Greg KH <greg@kroah.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Hajnoczi <stefanha@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Zhi Yong Wu <wuzhy@cn.ibm.com>, David Miller <davem@davemloft.net>,
-        kvm-devel <kvm@vger.kernel.org>,
-        target-devel <target-devel@vger.kernel.org>
-In-Reply-To: <20120722020746.GB31926@kroah.com>
-References: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
-	 <20120719235523.GA13623@kroah.com>
-	 <1342806778.25472.1.camel@haakon2.linux-iscsi.org>
-	 <20120720180358.GA9134@kroah.com> <20120720184228.GA19243@redhat.com>
-	 <20120722020746.GB31926@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 22 Jul 2012 14:44:23 -0700
-Message-ID: <1342993463.25472.265.camel@haakon2.linux-iscsi.org>
+	Sun, 22 Jul 2012 17:54:08 -0400
+Date: Sun, 22 Jul 2012 14:54:07 -0700 (PDT)
+Message-Id: <20120722.145407.2163219263880320745.davem@davemloft.net>
+To: jj@chaosbits.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: Fix references to out-of-scope variables in
+ put_cmsg_compat()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1207222335200.31033@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1207222335200.31033@swampdragon.chaosbits.net>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-07-21 at 19:07 -0700, Greg KH wrote:
-> On Fri, Jul 20, 2012 at 09:42:28PM +0300, Michael S. Tsirkin wrote:
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Sun, 22 Jul 2012 23:37:20 +0200 (CEST)
 
-<SNIP>
-
-> > It's very similar to how it was with nouveau: we are not sure
-> > we can commit to the userspace ABI yet.
+> In net/compat.c::put_cmsg_compat() we may assign 'data' the address of
+> either the 'ctv' or 'cts' local variables inside the 'if
+> (!COMPAT_USE_64BIT_TIME)' branch.
 > 
-> Then you are in trouble :)
+> Those variables go out of scope at the end of the 'if' statement, so
+> when we use 'data' further down in 'copy_to_user(CMSG_COMPAT_DATA(cm),
+> data, cmlen - sizeof(struct compat_cmsghdr))' there's no telling what
+> it may be refering to - not good.
 > 
-
-I agree with MST here that tcm_vhost needs a clear way to indicate that
-ABI changes are likely to occur in transmit from staging -> post-staging
-status.  
-
-> > Most importantly, it still seems not 100% clear whether this driver will
-> > have major userspace using it. And if not, it would be very hard to
-> > support a driver when recent userspace does not use it in the end.
-> > 
-> > At the moment arguments on upstream mailing list seem to be
-> > a bit circular: there's no module in upstream kernel so
-> > userspace does not want to accept the patches.
-> > 
-> > If we put enabling this driver in staging, then it works out in one of
-> > two ways
-> > - userspace starts using it then this effectively freezes the ABI and
-> >   we move it out of staging next release
-> > - no userspace uses it and we drop it completely or rework ABI
-> > 
-> > On the other hand, it is marginally better to not want code in staging
-> > for two reasons:
-> > - there are dependencies between this code and other code in
-> >   drivers/vhost which are easier for me to handle if it's all
-> >   in one place
+> Fix the problem by simply giving 'ctv' and 'cts' function scope.
 > 
-> If there are going to be lots of dependancies, then I don't want it in
-> drivers/staging/ as it doesn't belong there, it belongs cleaned up and
-> in the "real" place.
-> 
-> > - a bit easier to track history if we do not move code
-> 
-> git preserves this, don't worry about that at all.
-> 
-> So, if this code really does depend on core vhost changes that are going
-> to be happening over time, I would not recommend it being in
-> drivers/staging/ as you are right, you are going to have a hard time
-> syncing with me.
-> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-So Linus has merged target-pending/for-next this afternoon, so now we
-are just waiting on net-next to hit mainline with the vhost patches
-already ACK'ed by MST.  Hopefully that makes things easier for you to
-considering taking tcm_vhost upstream via staging.  ;)
-
-Also, MST asked for an RFC-v5 for the initial merge commit with some
-minor debug wrapper changes that will be going out next week.  This will
-include a move into drivers/staging/tcm_vhost/ against a rebased
-staging.git patch with the necessary -rc0 mainline dependencies.
-
-Please let me know if your OK with this, otherwise I'll just plan to
-keep -v5 against target-pending/for-next-merge for now, and send a GIT
-PULL after MST gets back from holiday on the 29th -> 30th.
-
-> But don't think that by somehow marking the driver with CONFIG_STAGING
-> that you get a free pass on the "we are going to break the userspace
-> api", that's not ok.  Be careful about this.  Yes, it's tough, and it's
-> a "chicken and egg" problem like you mention above, I know.
-> 
-
-After sleeping on this, I'm wondering if there is not something else we
-could do at the QEMU level to require an explicit 'development=1' flag
-in order to use vhost-scsi while tcm_vhost is still marked as staging
-code..?
-
-QEMU folks, would you be open to something like this..?
-
-Thank you,
-
---nab
-
+Applied and queued up for -stable, thanks.
