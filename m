@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab2GVMQM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 08:16:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60510 "EHLO mx1.redhat.com"
+	id S1752027Ab2GVMPx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 08:15:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2916 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000Ab2GVMQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 08:16:09 -0400
+	id S1751807Ab2GVMPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 08:15:47 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,223 +14,192 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 17/17] perf, tool: Add dso data caching tests
-Date: Sun, 22 Jul 2012 14:14:40 +0200
-Message-Id: <1342959280-5361-18-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 10/17] perf, tool: Add interface to read DSO image data
+Date: Sun, 22 Jul 2012 14:14:33 +0200
+Message-Id: <1342959280-5361-11-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding automated test for DSO data reading. Testing raw/cached
-reads from different file/cache locations.
+Adding following interface for DSO object to allow
+reading of DSO image data:
+
+  dso__data_fd
+    - opens DSO and returns file descriptor
+      Binary types are used to locate/open DSO in following order:
+        DSO_BINARY_TYPE__BUILD_ID_CACHE
+        DSO_BINARY_TYPE__SYSTEM_PATH_DSO
+      In other word we first try to open DSO build-id path,
+      and if that fails we try to open DSO system path.
+
+  dso__data_read_offset
+    - reads DSO data from specified offset
+
+  dso__data_read_addr
+    - reads DSO data from specified address/map.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile             |    1 +
- tools/perf/builtin-test.c       |    4 +
- tools/perf/util/dso-test-data.c |  154 +++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h        |    1 +
- 4 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/util/dso-test-data.c
+ tools/perf/util/symbol.c |  109 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h |    8 +++
+ 2 files changed, 117 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c18c790..1f550fa 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -364,6 +364,7 @@ LIB_OBJS += $(OUTPUT)util/usage.o
- LIB_OBJS += $(OUTPUT)util/wrapper.o
- LIB_OBJS += $(OUTPUT)util/sigchain.o
- LIB_OBJS += $(OUTPUT)util/symbol.o
-+LIB_OBJS += $(OUTPUT)util/dso-test-data.o
- LIB_OBJS += $(OUTPUT)util/color.o
- LIB_OBJS += $(OUTPUT)util/pager.o
- LIB_OBJS += $(OUTPUT)util/header.o
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 5d59398..000efb0 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -1142,6 +1142,10 @@ static struct test {
- 		.func = test__perf_pmu,
- 	},
- 	{
-+		.desc = "Test dso data interface",
-+		.func = dso__test_data,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/util/dso-test-data.c b/tools/perf/util/dso-test-data.c
-new file mode 100644
-index 0000000..ec62977
---- /dev/null
-+++ b/tools/perf/util/dso-test-data.c
-@@ -0,0 +1,154 @@
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 79fc779..ff4d603 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -65,6 +65,14 @@ static enum dso_binary_type binary_type_symtab[] = {
+ 
+ #define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
+ 
++static enum dso_binary_type binary_type_data[] = {
++	DSO_BINARY_TYPE__BUILD_ID_CACHE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
++	DSO_BINARY_TYPE__NOT_FOUND,
++};
 +
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <string.h>
++#define DSO_BINARY_TYPE__DATA_CNT sizeof(binary_type_data)
 +
-+#include "symbol.h"
+ int dso__name_len(const struct dso *dso)
+ {
+ 	if (!dso)
+@@ -336,6 +344,7 @@ struct dso *dso__new(const char *name)
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
++		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+@@ -2946,3 +2955,103 @@ struct map *dso__new_map(const char *name)
+ 
+ 	return map;
+ }
 +
-+#define TEST_ASSERT_VAL(text, cond) \
-+do { \
-+	if (!(cond)) { \
-+		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
-+		return -1; \
-+	} \
-+} while (0)
-+
-+static char *test_file(int size)
++static int open_dso(struct dso *dso, struct machine *machine)
 +{
-+	static char buf_templ[] = "/tmp/test-XXXXXX";
-+	char *templ = buf_templ;
-+	int fd, i;
-+	unsigned char *buf;
++	char *root_dir = (char *) "";
++	char *name;
++	int fd;
 +
-+	fd = mkostemp(templ, O_CREAT|O_WRONLY|O_TRUNC);
++	name = malloc(PATH_MAX);
++	if (!name)
++		return -ENOMEM;
 +
-+	buf = malloc(size);
-+	if (!buf) {
-+		close(fd);
-+		return NULL;
++	if (machine)
++		root_dir = machine->root_dir;
++
++	if (dso__binary_type_file(dso, dso->data_type,
++				  root_dir, name, PATH_MAX)) {
++		free(name);
++		return -EINVAL;
 +	}
 +
-+	for (i = 0; i < size; i++)
-+		buf[i] = (unsigned char) ((int) i % 10);
-+
-+	if (size != write(fd, buf, size))
-+		templ = NULL;
-+
-+	close(fd);
-+	return templ;
++	fd = open(name, O_RDONLY);
++	free(name);
++	return fd;
 +}
 +
-+#define TEST_FILE_SIZE (DSO__DATA_CACHE_SIZE * 20)
-+
-+struct test_data__offset {
-+	off_t offset;
-+	u8 data[10];
-+	int size;
-+};
-+
-+struct test_data__offset offsets[] = {
-+	/* Fill first cache page. */
-+	{
-+		.offset = 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read first cache page. */
-+	{
-+		.offset = 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Fill cache boundary pages. */
-+	{
-+		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read cache boundary pages. */
-+	{
-+		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Fill final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 3,
-+		.data   = { 7, 8, 9, 0, 0, 0, 0, 0, 0, 0 },
-+		.size   = 3,
-+	},
-+};
-+
-+#define OFFSETS_CNT (sizeof(offsets) / sizeof(struct test_data__offset))
-+
-+int dso__test_data(void)
++int dso__data_fd(struct dso *dso, struct machine *machine)
 +{
-+	struct machine machine;
-+	struct dso *dso;
-+	char *file = test_file(TEST_FILE_SIZE);
-+	int i;
++	int i = 0;
 +
-+	TEST_ASSERT_VAL("No test file", file);
++	if (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND)
++		return open_dso(dso, machine);
 +
-+	memset(&machine, 0, sizeof(machine));
++	do {
++		int fd;
 +
-+	dso = dso__new((const char *)file);
++		dso->data_type = binary_type_data[i++];
 +
-+	/* Basic 10 bytes tests. */
-+	for (i = 0; i < (int) OFFSETS_CNT; i++) {
-+		struct test_data__offset *data = &offsets[i];
-+		ssize_t size;
-+		u8 buf[10];
++		fd = open_dso(dso, machine);
++		if (fd >= 0)
++			return fd;
 +
-+		memset(buf, 0, 10);
-+		size = dso__data_read_offset(dso, &machine, data->offset,
-+				     buf, 10);
++	} while (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND);
 +
-+		TEST_ASSERT_VAL("Wrong size", size == data->size);
-+		TEST_ASSERT_VAL("Wrong data", !memcmp(buf, data->data, 10));
-+	}
++	return -EINVAL;
++}
 +
-+	/* Read cross multiple cache pages. */
-+	{
-+		ssize_t size;
-+		int c;
-+		u8 *buf;
++static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
++			      u8 *data __used, ssize_t size __used)
++{
++	return -EINVAL;
++}
 +
-+		buf = malloc(TEST_FILE_SIZE);
-+		TEST_ASSERT_VAL("ENOMEM\n", buf);
-+
-+		/* First iteration to fill caches, second one to read them. */
-+		for (c = 0; c < 2; c++) {
-+			memset(buf, 0, TEST_FILE_SIZE);
-+			size = dso__data_read_offset(dso, &machine, 10,
-+						     buf, TEST_FILE_SIZE);
-+
-+			TEST_ASSERT_VAL("Wrong size",
-+				size == (TEST_FILE_SIZE - 10));
-+
-+			for (i = 0; i < size; i++)
-+				TEST_ASSERT_VAL("Wrong data",
-+					buf[i] == (i % 10));
-+		}
-+
-+		free(buf);
-+	}
-+
-+	dso__delete(dso);
-+	unlink(file);
++static int dso_cache_add(struct dso *dso __used, u64 offset __used,
++			 u8 *data __used, ssize_t size __used)
++{
 +	return 0;
 +}
++
++static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
++		     u64 offset, u8 *data, ssize_t size)
++{
++	ssize_t rsize = -1;
++	int fd;
++
++	fd = dso__data_fd(dso, machine);
++	if (fd < 0)
++		return -1;
++
++	do {
++		if (-1 == lseek(fd, offset, SEEK_SET))
++			break;
++
++		rsize = read(fd, data, size);
++		if (-1 == rsize)
++			break;
++
++		if (dso_cache_add(dso, offset, data, size))
++			pr_err("Failed to add data int dso cache.");
++
++	} while (0);
++
++	close(fd);
++	return rsize;
++}
++
++ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size)
++{
++	if (dso_cache_read(dso, offset, data, size))
++		return read_dso_data(dso, machine, offset, data, size);
++	return 0;
++}
++
++ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
++			    struct machine *machine, u64 addr,
++			    u8 *data, ssize_t size)
++{
++	u64 offset = map->map_ip(map, addr);
++	return dso__data_read_offset(dso, machine, offset, data, size);
++}
 diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 980d5f5..1fe733a 100644
+index dc474f0..9b9ea00 100644
 --- a/tools/perf/util/symbol.h
 +++ b/tools/perf/util/symbol.h
-@@ -325,4 +325,5 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
- 			    struct machine *machine, u64 addr,
- 			    u8 *data, ssize_t size);
-+int dso__test_data(void);
+@@ -189,6 +189,7 @@ struct dso {
+ 	enum dso_kernel_type	kernel;
+ 	enum dso_swap_type	needs_swap;
+ 	enum dso_binary_type	symtab_type;
++	enum dso_binary_type	data_type;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+@@ -306,4 +307,11 @@ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
+ 
+ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+ 			  char *root_dir, char *file, size_t size);
++
++int dso__data_fd(struct dso *dso, struct machine *machine);
++ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size);
++ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
++			    struct machine *machine, u64 addr,
++			    u8 *data, ssize_t size);
  #endif /* __PERF_SYMBOL */
 -- 
 1.7.7.6
