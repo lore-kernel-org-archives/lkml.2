@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab2GVWPS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 18:15:18 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39934 "EHLO
+	id S1752770Ab2GVWPQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 18:15:16 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33542 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab2GVWPM (ORCPT
+	with ESMTP id S1752692Ab2GVWPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 18:15:12 -0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: mtk.manpages@gmail.com
 Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
         Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH 1/2] Add kcmp.2 manpage
-Date: Mon, 23 Jul 2012 02:15:06 +0400
-Message-Id: <1342995307-884-2-git-send-email-gorcunov@openvz.org>
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [PATCH 2/2] prctl.2: Add PR_SET_MM option description
+Date: Mon, 23 Jul 2012 02:15:07 +0400
+Message-Id: <1342995307-884-3-git-send-email-gorcunov@openvz.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1342995307-884-1-git-send-email-gorcunov@openvz.org>
 References: <1342995307-884-1-git-send-email-gorcunov@openvz.org>
@@ -25,192 +22,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAME
-       kcmp - compare if two processes do share a particular kernel resource
-
-SYNOPSIS
-       #define _GNU_SOURCE         /* See feature_test_macros(7) */
-       #include <unistd.h>
-       #include <linux/kcmp.h>
-       #include <sys/syscall.h>   /* For SYS_xxx definitions */
-
-       int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);
-
-DESCRIPTION
-       kcmp() allows to find out if two processes identified by pid1 and pid2
-       share kernel resources such as virtual memory, file descriptors, file system etc.
-
-       The comparison type is one of the following
-
-       KCMP_FILE determines whether a file descriptor idx1 in the first process
-       is the same as another descriptor idx2 in the second process
-
-       KCMP_VM compares whether processes share address space
-
-       KCMP_FILES compares the file descriptor arrays to see whether the processes
-       share all files
-
-       KCMP_FS compares whether processes share the file system information (the current
-       umask, working directory, namespace root, etc)
-
-       KCMP_SIGHAND compares whether processes share a signal handlers table
-
-       KCMP_IO compares whether processes do share I/O context, used mainly for
-       block I/O scheduling
-
-       KCMP_SYSVSEM compares the list of undo operations associated with SYSV semaphores
-
-       Note  the  kcmp() is not protected against false positives which may have
-       place if tasks are running.  Which means one should stop tasks being inspected
-       with this syscall to obtain meaningful results.
-
-RETURN VALUE
-       kcmp was designed to return values suitable for sorting.  This is particularly handy
-       when one have to compare a large number of file descriptors.
-
-       The return value is merely a result of simple arithmetic comparison of kernel pointers
-       (when kernel compares resources, it uses their memory addresses).
-
-       The  easiest way to explain is to consider an example.  Lets say v1 and v2 are the
-       addresses of appropriate resources, then the return value is one of the following
-
-       0 - v1 is equal to v2 , in other words we have a shared resource here
-       1 - v1 is less than v2
-       2 - v1 is greater than v2
-       3 - v1 is not equal to but ordering information is unavailble.
-
-       On error, -1 is returned, and errno is set appropriately.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
 CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 ---
- man2/kcmp.2 |  113 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 113 insertions(+), 0 deletions(-)
- create mode 100644 man2/kcmp.2
+ man2/prctl.2 |  161 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 160 insertions(+), 1 deletions(-)
 
-diff --git a/man2/kcmp.2 b/man2/kcmp.2
-new file mode 100644
-index 0000000..5d2e9a3
---- /dev/null
-+++ b/man2/kcmp.2
-@@ -0,0 +1,113 @@
-+.TH KCMP 2 2012-02-01 "Linux" "Linux Programmer's Manual"
+diff --git a/man2/prctl.2 b/man2/prctl.2
+index effad2a..2e1b27c 100644
+--- a/man2/prctl.2
++++ b/man2/prctl.2
+@@ -378,6 +378,121 @@ Return the current per-process machine check kill policy.
+ All unused
+ .BR prctl ()
+ arguments must be zero.
++.TP
++.BR PR_SET_MM " (since Linux 3.3)"
++Allows a user to modify certain kernel memory map descriptor fields
++of the calling process.
++Usually these fields are set by the kernel and dynamic loader (see
++.BR ld.so (8)
++for more information) and a regular application should not use this feature.
++Still there are cases such as self-modifying programs, where a program might
++find it useful to change its own memory map.
++The kernel must be built with
++.BR CONFIG_CHECKPOINT_RESTORE
++option turned on, otherwise this feature will not be accessible
++from a user space level.
++The calling process must have
++.BR CAP_SYS_RESOURCE
++(see
++.BR capabilities (7)
++for details) capability granted.
++The value in
++.I arg2
++is one of the options below, while
++.I arg3
++provides a new value for this option.
 +
-+.SH NAME
-+kcmp \- compare if two processes do share a particular kernel resource
++.BR PR_SET_MM_START_CODE
++to set the address above which program text can run.
 +
-+.SH SYNOPSIS
-+.nf
-+.BR "#define _GNU_SOURCE" "         /* See feature_test_macros(7) */"
-+.B #include <unistd.h>
-+.B #include <linux/kcmp.h>
-+.BR "#include <sys/syscall.h>   "  "/* For SYS_xxx definitions */"
++.BR PR_SET_MM_END_CODE
++to set the address below which program text can run.
 +
-+.BI "int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);"
-+.fi
++.BR PR_SET_MM_START_DATA
++to set the address above which program data+bss is placed.
 +
-+.SH DESCRIPTION
++.B PR_SET_MM_END_DATA
++to set the address below which program data+bss is placed.
 +
-+.BR kcmp ()
-+allows to find out if two processes identified by
-+.I pid1
-+and
-+.I pid2
-+share kernel resources such as virtual memory, file descriptors, file system etc.
++.BR PR_SET_MM_START_STACK
++to set the start address of the stack.
 +
-+The comparison
-+.I type
-+is one of the following
++.BR PR_SET_MM_START_BRK
++to set the address above which program heap can be expanded with
++.BR brk (2)
++call.
++The address must not be greater than ending address of
++the current program data segment, neither it may exceed
++resource limit for data (see
++.BR setrlimit (2)
++for more information).
 +
-+.BR KCMP_FILE
-+determines whether a file descriptor
-+.I idx1
-+in the first process is the same as another descriptor
-+.I idx2
-+in the second process
++.BR PR_SET_MM_BRK
++to set the current
++.BR brk (2)
++value.
++The requirements for address are the same as for
++.BR PR_SET_MM_START_BRK
++option.
 +
-+.BR KCMP_VM
-+compares whether processes share address space
++.BR PR_SET_MM_ARG_START
++to set the address above which program command line is placed.
 +
-+.BR KCMP_FILES
-+compares the file descriptor arrays to see whether the processes share all files
++.BR PR_SET_MM_ARG_END
++to set the address below which program command line is placed.
 +
-+.BR KCMP_FS
-+compares whether processes share the file system information (the current umask,
-+working directory, namespace root, etc)
++.BR PR_SET_MM_ENV_START
++to set the address above which program environment is placed.
 +
-+.BR KCMP_SIGHAND
-+compares whether processes share a signal handlers table
++.BR PR_SET_MM_ENV_END
++to set the address below which program environment is placed.
 +
-+.BR KCMP_IO
-+compares whether processes do share I/O context,
-+used mainly for block I/O scheduling
++The address passed with
++.BR PR_SET_MM_ARG_START ,
++.BR PR_SET_MM_ARG_END ,
++.BR PR_SET_MM_ENV_START ,
++.BR PR_SET_MM_ENV_END ,
++should belong to a process stack area, thus corresponding memory area
++must be readable, writable and (depending on the kernel
++configuration) has
++.BR MAP_GROWSDOWN
++attribute set (see
++.BR mmap (2)
++for details).
 +
-+.BR KCMP_SYSVSEM
-+compares the list of undo operations associated with SYSV semaphores
++.BR PR_SET_MM_AUXV
++to set a new auxiliary vector.
++The
++.I arg3
++argument should provide the address of the vector.
++The
++.I arg4
++is the size of the vector.
 +
-+Note the
-+.BR kcmp ()
-+is not protected against false positives which may have place if tasks are
-+running.
-+Which means one should stop tasks being inspected with this syscall to obtain
-+meaningful results.
++.BR PR_SET_MM_EXE_FILE
++to supersede
++.IR /proc/pid/exe
++symbolic link with a new one pointing to a new executable file
++which descriptor is provided provided in the
++.I arg3
++argument.
++The file descriptor should be obtaned with a regular
++.BR open (2)
++call.
 +
-+.SH "RETURN VALUE"
-+.B kcmp
-+was designed to return values suitable for sorting.
-+This is particularly handy when one have to compare
-+a large number of file descriptors.
++To change the symlink, one needs to unmap all existing
++executable memory areas being created by the kernel itself
++(for example the kernel usually creates at least one executable
++memory area for Elf file
++.IR \.text
++section).
 +
-+The return value is merely a result of simple arithmetic comparison
-+of kernel pointers (when kernel compares resources, it uses their
-+memory addresses).
-+
-+The easiest way to explain is to consider an example.
-+Lets say
-+.I v1
-+and
-+.I v2
-+are the addresses of appropriate resources, then the return value
-+is one of the following
-+
-+.B 0
-+\-
-+.I v1
-+is equal to
-+.IR v2 ,
-+in other words we have a shared resource here
-+
-+.B 1
-+\-
-+.I v1
-+is less than
-+.I v2
-+
-+.B 2
-+\-
-+.I v1
-+is greater than
-+.I v2
-+
-+.B 3
-+\-
-+.I v1
-+is not equal to
-+.IR v2 ,
-+but ordering information is unavailable.
-+
-+On error, \-1 is returned, and errno is set appropriately.
-+
-+.SH "CONFORMING TO"
-+.BR kcmp ()
-+is Linux specific and should not be used in programs intended to be portable.
-+.SH "SEE ALSO"
-+.BR clone (2)
++The second limitation is that such transition can be done once
++in a process life time.
++Any furter attempts will be rejected.
++This should help system administrators to monitor the unusual
++symlinks transitions over all process running in a system.
++.\"
+ .SH "RETURN VALUE"
+ On success,
+ .BR PR_GET_DUMPABLE ,
+@@ -411,7 +526,9 @@ is not recognized.
+ is
+ .BR PR_MCE_KILL
+ or
+-.BR PR_MCE_KILL_GET ,
++.BR PR_MCE_KILL_GET
++or
++.BR PR_SET_MM ,
+ and unused
+ .BR prctl ()
+ arguments were not specified as zero.
+@@ -459,6 +576,48 @@ is
+ and the caller does not have the
+ .B CAP_SETPCAP
+ capability.
++.TP
++.B EPERM
++.I option
++is
++.BR PR_SET_MM ,
++and the caller does not have the
++.B CAP_SYS_RESOURCE
++capability.
++.TP
++.B EACCES
++.I option
++is
++.BR PR_SET_MM ,
++and the
++.I arg3
++is
++.BR PR_SET_MM_EXE_FILE ,
++the file is not executable one.
++.TP
++.B EBUSY
++.I option
++is
++.BR PR_SET_MM ,
++and the
++.I arg3
++is
++.BR PR_SET_MM_EXE_FILE ,
++the second attempt to change
++.I /proc/pid/exe
++symlink is prohibited.
++.TP
++.B EBADF
++.I option
++is
++.BR PR_SET_MM ,
++and the
++.I arg3
++is
++.BR PR_SET_MM_EXE_FILE ,
++the file descriptor passed in
++.I arg4
++is not found.
+ .\" The following can't actually happen, because prctl() in
+ .\" seccomp mode will cause SIGKILL.
+ .\" .TP
 -- 
 1.7.7.6
 
