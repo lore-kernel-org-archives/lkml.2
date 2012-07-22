@@ -1,35 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045Ab2GVQJR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 12:09:17 -0400
-Received: from hapkido.dreamhost.com ([66.33.216.122]:59046 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab2GVQJP convert rfc822-to-8bit (ORCPT
+	id S1752064Ab2GVQSk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 12:18:40 -0400
+Received: from mailrelay.embarq.synacor.com ([208.47.184.3]:59402 "EHLO
+	mailrelay.embarq.synacor.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752001Ab2GVQSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 12:09:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=subject:from
-	:content-type:message-id:date:to:content-transfer-encoding:
-	mime-version; q=dns; s=shealevy.com; b=Se39hNk2BoMvnQdPw4PQG6F0m
-	VeBxK3vtjiD+pjbkN8Ky0jHSUKSAovbyohmbaoKO+C1FyVUb2eCi8FIG57gZh4pN
-	gJ1W9eEXe3NDmRpfHa56v/iTlTUTD+erL/VhxGf0d0+RAQ63nj45bplATf+QoU+m
-	o+ADD/yUf90H653wtI=
-Subject: Release Announcements
-From: Shea Levy <shea@shealevy.com>
-Content-Type: text/plain;
-	charset=us-ascii
-X-Mailer: iPad Mail (9B206)
-Message-Id: <1C17E3CE-50F0-4A56-BCCB-201C6E39E980@shealevy.com>
-Date: Sun, 22 Jul 2012 12:08:34 -0400
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0 (1.0)
+	Sun, 22 Jul 2012 12:18:39 -0400
+X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jul 2012 12:18:39 EDT
+X_CMAE_Category: 0,0 Undefined,Undefined
+X-CNFS-Analysis: v=2.0 cv=IOaA+3TG c=1 sm=0 a=2rrlmSmeztwA:10 a=FKkrIqjQGGEA:10 a=1poGYrevpj8A:10 a=IkcTkHD0fZMA:10 a=1oqGTYSLAAAA:8 a=K-v-2zaBAAAA:8 a=fpnzz_IF0pjF4QYdPd0A:9 a=QEXdDO2ut3YA:10 a=8RHsfxpF5pY5km4b:21 a=Hhc/OnKmOS1xKI2oHPQhqg==:117
+X-CM-Score: 0
+Date: Sun, 22 Jul 2012 11:58:37 -0400 (EDT)
+From: Bruce Moshman <brucem784@embarqmail.com>
+Message-ID: <1744397877.173270.1342972717125.JavaMail.root@md08.embarq.synacor.com>
+Subject: RE
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.245.64.157]
+X-Mailer: Zimbra 6.0.5_GA_2328.RHEL5_64 (ZimbraWebClient - FF3.0 (Win)/6.0.15_GA_2995)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-The linux-kernel-announce doesn't seem to have had any traffic since 3.1-rc4 (maybe due to the kernel.org break-in?). Is there a recommended way to get email news of kernel releases without being subscribed to the main kernel list?
-
-Cheers,
-Shea
+An ATM Card Donation of $4Million US Dollars
