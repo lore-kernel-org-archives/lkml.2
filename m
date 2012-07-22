@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab2GVPs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 11:48:59 -0400
-Received: from mail-ob0-f194.google.com ([209.85.214.194]:50362 "EHLO
-	mail-ob0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab2GVPs6 (ORCPT
+	id S1752045Ab2GVQJR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 12:09:17 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:59046 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab2GVQJP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 11:48:58 -0400
-MIME-Version: 1.0
-Date: Sun, 22 Jul 2012 21:18:57 +0530
-Message-ID: <CAMYGaxpusZsvVYdruSe4cYr9FWsAs2Eu-7tpoUJoU_GyL1QmXA@mail.gmail.com>
-Subject: [QUERY]: Understanding the calculations in mm/page-writeback.c
-From: rajman mekaco <rajman.mekaco@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 22 Jul 2012 12:09:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=subject:from
+	:content-type:message-id:date:to:content-transfer-encoding:
+	mime-version; q=dns; s=shealevy.com; b=Se39hNk2BoMvnQdPw4PQG6F0m
+	VeBxK3vtjiD+pjbkN8Ky0jHSUKSAovbyohmbaoKO+C1FyVUb2eCi8FIG57gZh4pN
+	gJ1W9eEXe3NDmRpfHa56v/iTlTUTD+erL/VhxGf0d0+RAQ63nj45bplATf+QoU+m
+	o+ADD/yUf90H653wtI=
+Subject: Release Announcements
+From: Shea Levy <shea@shealevy.com>
+Content-Type: text/plain;
+	charset=us-ascii
+X-Mailer: iPad Mail (9B206)
+Message-Id: <1C17E3CE-50F0-4A56-BCCB-201C6E39E980@shealevy.com>
+Date: Sun, 22 Jul 2012 12:08:34 -0400
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0 (1.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-I am trying to understand the calculations in mm/page-writeback.c but
-I am falling short of theoretical knowledge.
+The linux-kernel-announce doesn't seem to have had any traffic since 3.1-rc4 (maybe due to the kernel.org break-in?). Is there a recommended way to get email news of kernel releases without being subscribed to the main kernel list?
 
-What online (or otherwise) reading material can be used to fully
-understand the maths formulae in mm/page-writeback.c ?
-
-( Sorry for my last email with unchanged subject line. )
-
-Thanks,
-Rajman.
+Cheers,
+Shea
