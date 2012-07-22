@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab2GVDxB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 23:53:01 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34182 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2GVDw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 23:52:58 -0400
-Message-ID: <500B7916.6060804@lwfinger.net>
-Date: Sat, 21 Jul 2012 22:52:54 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1750926Ab2GVEL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 00:11:28 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:36375 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758Ab2GVEL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 00:11:27 -0400
+Date: Sat, 21 Jul 2012 21:10:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: fix pwr_btn_event_pending build error
+Message-ID: <20120722041038.GN2435@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120721214156.GA2515@linux.vnet.ibm.com>
+ <20120721215243.GA15362@shutemov.name>
+ <20120721233714.GL2435@linux.vnet.ibm.com>
+ <20120722000838.GA15798@shutemov.name>
 MIME-Version: 1.0
-To: Christopher Li <sparse@chrisli.org>
-CC: Linux-Sparse <linux-sparse@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: False warning from Sparse
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120722000838.GA15798@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072204-3534-0000-0000-00000AA8DDF5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jul 22, 2012 at 03:08:40AM +0300, Kirill A. Shutemov wrote:
+> On Sat, Jul 21, 2012 at 04:37:14PM -0700, Paul E. McKenney wrote:
+> > On Sun, Jul 22, 2012 at 12:52:43AM +0300, Kirill A. Shutemov wrote:
+> > > On Sat, Jul 21, 2012 at 02:41:56PM -0700, Paul E. McKenney wrote:
+> > > > Hello!
+> > > > 
+> > > > A recent build for KVM on x86 resulted in the following build error:
+> > > > 
+> > > > drivers/acpi/sleep.c:60:13: warning: ‘pwr_btn_event_pending’ defined but not
+> > > > +used [-Wunused-variable]
+> > > > 
+> > > > This patch silences this error.
+> > > > 
+> > > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > 
+> > > > diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> > > > index 8856102..18347aa 100644
+> > > > --- a/drivers/acpi/sleep.c
+> > > > +++ b/drivers/acpi/sleep.c
+> > > > @@ -57,7 +57,9 @@ MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
+> > > >  MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+> > > >  
+> > > >  static u8 sleep_states[ACPI_S_STATE_COUNT];
+> > > > +#ifdef CONFIG_ACPI_SLEEP
+> > > >  static bool pwr_btn_event_pending;
+> > > > +#endif /* #ifdef CONFIG_ACPI_SLEEP */
+> > > 
+> > > __maybe_unused ?
+> > 
+> > Are the compiler and linker smart enough to get rid of the storage in
+> > case it really isn't used?  (Not that the storage for a bool is worth
+> > worrying about, but...)
+> 
+> GCC with optimization enabled will get rid of the storage even without
+> __maybe_unused.
 
-I am getting the following false warning from sparse:
+OK, that should allow me to get rid of a few ifdefs, then!  For this one,
+please see below.
 
-   CHECK   drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c:1158:13: warning: context 
-imbalance in 'rtl92c_dm_refresh_rate_adaptive_mask' - different lock contexts 
-for basic block
+							Thanx, Paul
 
-The only code in that routine that does any locking is the following:
+------------------------------------------------------------------------
 
-              /* Only the PCI card uses sta in the update rate table
-               * callback routine */
-              if (rtlhal->interface == INTF_PCI) {
-                      rcu_read_lock();
-                      sta = ieee80211_find_sta(mac->vif, mac->bssid);
-              }
-              rtlpriv->cfg->ops->update_rate_tbl(hw, sta,
-                                   p_ra->ratr_state);
+acpi: fix pwr_btn_event_pending build error
 
-              p_ra->pre_ratr_state = p_ra->ratr_state;
-              if (rtlhal->interface == INTF_PCI)
-                      rcu_read_unlock();
+A recent build for KVM on x86 resulted in the following build error:
 
-Does the warning get output because the code cannot assume that 
-rtlhal->interface is the same in both if statements? If that is the case, are 
-there any compiler directives that would tell sparse of the situation?
+drivers/acpi/sleep.c:60:13: warning: ‘pwr_btn_event_pending’ defined but not
++used [-Wunused-variable]
 
-Thanks,
+This patch silences this error.
 
-Larry
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index 8856102..18347aa 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -57,7 +57,9 @@ MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
+ MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+ 
+ static u8 sleep_states[ACPI_S_STATE_COUNT];
++#ifdef CONFIG_ACPI_SLEEP
+ static bool pwr_btn_event_pending;
++#endif /* #ifdef CONFIG_ACPI_SLEEP */
+ 
+ static void acpi_sleep_tts_switch(u32 acpi_state)
+ {
+
