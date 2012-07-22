@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab2GVOK0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 10:10:26 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58356 "EHLO
+	id S1752078Ab2GVOPa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 10:15:30 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39774 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab2GVOKZ (ORCPT
+	with ESMTP id S1751772Ab2GVOP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 10:10:25 -0400
-Date: Sun, 22 Jul 2012 16:10:19 +0200
+	Sun, 22 Jul 2012 10:15:28 -0400
+Date: Sun, 22 Jul 2012 16:15:23 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/reboot changes for v3.6
-Message-ID: <20120722141019.GA8542@gmail.com>
+Subject: [GIT PULL] x86/uv changes for v3.6
+Message-ID: <20120722141523.GA8892@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,338 +25,944 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-reboot-for-linus git tree from:
+Please pull the latest x86-uv-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-reboot-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-uv-for-linus
 
-   HEAD: 9751d7627582fc1cc64625d63bde9528c14f1544 x86-64, reboot: Be more paranoid in 64-bit reboot=bios
+   HEAD: 8b6e511e51f7e540c8e71022318ee4cc9a4567a7 x86/uv: Work around UV2 BAU hangs
 
-Now that the revampted x86 real-mode trampoline code is upstream 
-and seems to be working well, we can extend the 64-bit reboot 
-code to be as capable as the 32-bit one.
+UV2 BAU productization fixes.
 
  Thanks,
 
 	Ingo
 
 ------------------>
-H. Peter Anvin (3):
-      x86-64, reboot: Allow reboot=bios and reboot-cpu override on x86-64
-      x86, reboot: Drop redundant write of reboot_mode
-      x86-64, reboot: Be more paranoid in 64-bit reboot=bios
+Cliff Wickman (3):
+      x86/uv: Fix the UV BAU destination timeout period
+      x86/uv: Implement UV BAU runtime enable and disable control via /proc/sgi_uv/
+      x86/uv: Work around UV2 BAU hangs
 
 
- arch/x86/include/asm/emergency-restart.h       |    2 -
- arch/x86/include/asm/realmode.h                |    3 +-
- arch/x86/include/asm/reboot.h                  |    4 +-
- arch/x86/kernel/reboot.c                       |   60 ++++++++++--------------
- arch/x86/realmode/rm/Makefile                  |    2 +-
- arch/x86/realmode/rm/header.S                  |    4 +-
- arch/x86/realmode/rm/{reboot_32.S => reboot.S} |   30 ++++++++++--
- 7 files changed, 59 insertions(+), 46 deletions(-)
- rename arch/x86/realmode/rm/{reboot_32.S => reboot.S} (85%)
+ arch/x86/include/asm/uv/uv_bau.h |   28 ++-
+ arch/x86/platform/uv/tlb_uv.c    |  453 ++++++++++++++++++++------------------
+ 2 files changed, 257 insertions(+), 224 deletions(-)
 
-diff --git a/arch/x86/include/asm/emergency-restart.h b/arch/x86/include/asm/emergency-restart.h
-index cc70c1c..75ce3f4 100644
---- a/arch/x86/include/asm/emergency-restart.h
-+++ b/arch/x86/include/asm/emergency-restart.h
-@@ -4,9 +4,7 @@
- enum reboot_type {
- 	BOOT_TRIPLE = 't',
- 	BOOT_KBD = 'k',
--#ifdef CONFIG_X86_32
- 	BOOT_BIOS = 'b',
--#endif
- 	BOOT_ACPI = 'a',
- 	BOOT_EFI = 'e',
- 	BOOT_CF9 = 'p',
-diff --git a/arch/x86/include/asm/realmode.h b/arch/x86/include/asm/realmode.h
-index fce3f4a..fe1ec5b 100644
---- a/arch/x86/include/asm/realmode.h
-+++ b/arch/x86/include/asm/realmode.h
-@@ -21,8 +21,9 @@ struct real_mode_header {
- 	u32	wakeup_header;
- #endif
- 	/* APM/BIOS reboot */
--#ifdef CONFIG_X86_32
- 	u32	machine_real_restart_asm;
-+#ifdef CONFIG_X86_64
-+	u32	machine_real_restart_seg;
- #endif
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index 6149b47..a06983c 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -140,6 +140,9 @@
+ #define IPI_RESET_LIMIT			1
+ /* after this # consecutive successes, bump up the throttle if it was lowered */
+ #define COMPLETE_THRESHOLD		5
++/* after this # of giveups (fall back to kernel IPI's) disable the use of
++   the BAU for a period of time */
++#define GIVEUP_LIMIT			100
+ 
+ #define UV_LB_SUBNODEID			0x10
+ 
+@@ -166,7 +169,6 @@
+ #define FLUSH_RETRY_TIMEOUT		2
+ #define FLUSH_GIVEUP			3
+ #define FLUSH_COMPLETE			4
+-#define FLUSH_RETRY_BUSYBUG		5
+ 
+ /*
+  * tuning the action when the numalink network is extremely delayed
+@@ -175,7 +177,7 @@
+ 						   microseconds */
+ #define CONGESTED_REPS			10	/* long delays averaged over
+ 						   this many broadcasts */
+-#define CONGESTED_PERIOD		30	/* time for the bau to be
++#define DISABLED_PERIOD			10	/* time for the bau to be
+ 						   disabled, in seconds */
+ /* see msg_type: */
+ #define MSG_NOOP			0
+@@ -520,6 +522,12 @@ struct ptc_stats {
+ 	unsigned long	s_uv2_wars;		/* uv2 workaround, perm. busy */
+ 	unsigned long	s_uv2_wars_hw;		/* uv2 workaround, hiwater */
+ 	unsigned long	s_uv2_war_waits;	/* uv2 workaround, long waits */
++	unsigned long	s_overipilimit;		/* over the ipi reset limit */
++	unsigned long	s_giveuplimit;		/* disables, over giveup limit*/
++	unsigned long	s_enters;		/* entries to the driver */
++	unsigned long	s_ipifordisabled;	/* fall back to IPI; disabled */
++	unsigned long	s_plugged;		/* plugged by h/w bug*/
++	unsigned long	s_congested;		/* giveup on long wait */
+ 	/* destination statistics */
+ 	unsigned long	d_alltlb;		/* times all tlb's on this
+ 						   cpu were flushed */
+@@ -586,8 +594,8 @@ struct bau_control {
+ 	int			timeout_tries;
+ 	int			ipi_attempts;
+ 	int			conseccompletes;
+-	int			baudisabled;
+-	int			set_bau_off;
++	short			nobau;
++	short			baudisabled;
+ 	short			cpu;
+ 	short			osnode;
+ 	short			uvhub_cpu;
+@@ -596,14 +604,16 @@ struct bau_control {
+ 	short			cpus_in_socket;
+ 	short			cpus_in_uvhub;
+ 	short			partition_base_pnode;
+-	short			using_desc; /* an index, like uvhub_cpu */
+-	unsigned int		inuse_map;
++	short			busy;       /* all were busy (war) */
+ 	unsigned short		message_number;
+ 	unsigned short		uvhub_quiesce;
+ 	short			socket_acknowledge_count[DEST_Q_SIZE];
+ 	cycles_t		send_message;
++	cycles_t		period_end;
++	cycles_t		period_time;
+ 	spinlock_t		uvhub_lock;
+ 	spinlock_t		queue_lock;
++	spinlock_t		disable_lock;
+ 	/* tunables */
+ 	int			max_concurr;
+ 	int			max_concurr_const;
+@@ -614,9 +624,9 @@ struct bau_control {
+ 	int			complete_threshold;
+ 	int			cong_response_us;
+ 	int			cong_reps;
+-	int			cong_period;
+-	unsigned long		clocks_per_100_usec;
+-	cycles_t		period_time;
++	cycles_t		disabled_period;
++	int			period_giveups;
++	int			giveup_limit;
+ 	long			period_requests;
+ 	struct hub_and_pnode	*thp;
+ };
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index 59880af..71b5d5a 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1,7 +1,7 @@
+ /*
+  *	SGI UltraViolet TLB flush routines.
+  *
+- *	(c) 2008-2011 Cliff Wickman <cpw@sgi.com>, SGI.
++ *	(c) 2008-2012 Cliff Wickman <cpw@sgi.com>, SGI.
+  *
+  *	This code is released under the GNU General Public License version 2 or
+  *	later.
+@@ -38,8 +38,7 @@ static int timeout_base_ns[] = {
+ 
+ static int timeout_us;
+ static int nobau;
+-static int baudisabled;
+-static spinlock_t disable_lock;
++static int nobau_perm;
+ static cycles_t congested_cycles;
+ 
+ /* tunables: */
+@@ -47,12 +46,13 @@ static int max_concurr		= MAX_BAU_CONCURRENT;
+ static int max_concurr_const	= MAX_BAU_CONCURRENT;
+ static int plugged_delay	= PLUGGED_DELAY;
+ static int plugsb4reset		= PLUGSB4RESET;
++static int giveup_limit		= GIVEUP_LIMIT;
+ static int timeoutsb4reset	= TIMEOUTSB4RESET;
+ static int ipi_reset_limit	= IPI_RESET_LIMIT;
+ static int complete_threshold	= COMPLETE_THRESHOLD;
+ static int congested_respns_us	= CONGESTED_RESPONSE_US;
+ static int congested_reps	= CONGESTED_REPS;
+-static int congested_period	= CONGESTED_PERIOD;
++static int disabled_period	= DISABLED_PERIOD;
+ 
+ static struct tunables tunables[] = {
+ 	{&max_concurr, MAX_BAU_CONCURRENT}, /* must be [0] */
+@@ -63,7 +63,8 @@ static struct tunables tunables[] = {
+ 	{&complete_threshold, COMPLETE_THRESHOLD},
+ 	{&congested_respns_us, CONGESTED_RESPONSE_US},
+ 	{&congested_reps, CONGESTED_REPS},
+-	{&congested_period, CONGESTED_PERIOD}
++	{&disabled_period, DISABLED_PERIOD},
++	{&giveup_limit, GIVEUP_LIMIT}
  };
  
-diff --git a/arch/x86/include/asm/reboot.h b/arch/x86/include/asm/reboot.h
-index 92f29706..a82c4f1 100644
---- a/arch/x86/include/asm/reboot.h
-+++ b/arch/x86/include/asm/reboot.h
-@@ -18,8 +18,8 @@ extern struct machine_ops machine_ops;
+ static struct dentry *tunables_dir;
+@@ -120,6 +121,40 @@ static DEFINE_PER_CPU(struct ptc_stats, ptcstats);
+ static DEFINE_PER_CPU(struct bau_control, bau_control);
+ static DEFINE_PER_CPU(cpumask_var_t, uv_flush_tlb_mask);
  
- void native_machine_crash_shutdown(struct pt_regs *regs);
- void native_machine_shutdown(void);
--void machine_real_restart(unsigned int type);
--/* These must match dispatch_table in reboot_32.S */
-+void __noreturn machine_real_restart(unsigned int type);
-+/* These must match dispatch in arch/x86/realmore/rm/reboot.S */
- #define MRR_BIOS	0
- #define MRR_APM		1
- 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 25b48ed..6ef559f 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -20,14 +20,12 @@
- #include <asm/virtext.h>
- #include <asm/cpu.h>
- #include <asm/nmi.h>
-+#include <asm/smp.h>
- 
--#ifdef CONFIG_X86_32
--# include <linux/ctype.h>
--# include <linux/mc146818rtc.h>
--# include <asm/realmode.h>
--#else
--# include <asm/x86_init.h>
--#endif
-+#include <linux/ctype.h>
-+#include <linux/mc146818rtc.h>
-+#include <asm/realmode.h>
-+#include <asm/x86_init.h>
- 
++static void
++set_bau_on(void)
++{
++	int cpu;
++	struct bau_control *bcp;
++
++	if (nobau_perm) {
++		pr_info("BAU not initialized; cannot be turned on\n");
++		return;
++	}
++	nobau = 0;
++	for_each_present_cpu(cpu) {
++		bcp = &per_cpu(bau_control, cpu);
++		bcp->nobau = 0;
++	}
++	pr_info("BAU turned on\n");
++	return;
++}
++
++static void
++set_bau_off(void)
++{
++	int cpu;
++	struct bau_control *bcp;
++
++	nobau = 1;
++	for_each_present_cpu(cpu) {
++		bcp = &per_cpu(bau_control, cpu);
++		bcp->nobau = 1;
++	}
++	pr_info("BAU turned off\n");
++	return;
++}
++
  /*
-  * Power off function, if any
-@@ -49,7 +47,7 @@ int reboot_force;
-  */
- static int reboot_default = 1;
+  * Determine the first node on a uvhub. 'Nodes' are used for kernel
+  * memory allocation.
+@@ -278,7 +313,7 @@ static void bau_process_message(struct msg_desc *mdp, struct bau_control *bcp,
+ 		 * Both sockets dump their completed count total into
+ 		 * the message's count.
+ 		 */
+-		smaster->socket_acknowledge_count[mdp->msg_slot] = 0;
++		*sp = 0;
+ 		asp = (struct atomic_short *)&msg->acknowledge_count;
+ 		msg_ack_count = atom_asr(socket_ack_count, asp);
  
--#if defined(CONFIG_X86_32) && defined(CONFIG_SMP)
-+#ifdef CONFIG_SMP
- static int reboot_cpu = -1;
- #endif
- 
-@@ -67,8 +65,8 @@ bool port_cf9_safe = false;
-  * reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] | p[ci]
-  * warm   Don't set the cold reboot flag
-  * cold   Set the cold reboot flag
-- * bios   Reboot by jumping through the BIOS (only for X86_32)
-- * smp    Reboot by executing reset on BSP or other CPU (only for X86_32)
-+ * bios   Reboot by jumping through the BIOS
-+ * smp    Reboot by executing reset on BSP or other CPU
-  * triple Force a triple fault (init)
-  * kbd    Use the keyboard controller. cold reset (default)
-  * acpi   Use the RESET_REG in the FADT
-@@ -95,7 +93,6 @@ static int __init reboot_setup(char *str)
- 			reboot_mode = 0;
- 			break;
- 
--#ifdef CONFIG_X86_32
- #ifdef CONFIG_SMP
- 		case 's':
- 			if (isdigit(*(str+1))) {
-@@ -112,7 +109,6 @@ static int __init reboot_setup(char *str)
- #endif /* CONFIG_SMP */
- 
- 		case 'b':
--#endif
- 		case 'a':
- 		case 'k':
- 		case 't':
-@@ -138,7 +134,6 @@ static int __init reboot_setup(char *str)
- __setup("reboot=", reboot_setup);
- 
- 
--#ifdef CONFIG_X86_32
- /*
-  * Reboot options and system auto-detection code provided by
-  * Dell Inc. so their systems "just work". :-)
-@@ -157,11 +152,8 @@ static int __init set_bios_reboot(const struct dmi_system_id *d)
- 	return 0;
+@@ -491,16 +526,15 @@ static int uv1_wait_completion(struct bau_desc *bau_desc,
  }
  
--void machine_real_restart(unsigned int type)
-+void __noreturn machine_real_restart(unsigned int type)
+ /*
+- * UV2 has an extra bit of status in the ACTIVATION_STATUS_2 register.
++ * UV2 could have an extra bit of status in the ACTIVATION_STATUS_2 register.
++ * But not currently used.
+  */
+ static unsigned long uv2_read_status(unsigned long offset, int rshft, int desc)
  {
--	void (*restart_lowmem)(unsigned int) = (void (*)(unsigned int))
--		real_mode_header->machine_real_restart_asm;
+ 	unsigned long descriptor_status;
+-	unsigned long descriptor_status2;
+ 
+-	descriptor_status = ((read_lmmr(offset) >> rshft) & UV_ACT_STATUS_MASK);
+-	descriptor_status2 = (read_mmr_uv2_status() >> desc) & 0x1UL;
+-	descriptor_status = (descriptor_status << 1) | descriptor_status2;
++	descriptor_status =
++		((read_lmmr(offset) >> rshft) & UV_ACT_STATUS_MASK) << 1;
+ 	return descriptor_status;
+ }
+ 
+@@ -531,87 +565,11 @@ int normal_busy(struct bau_control *bcp)
+  */
+ int handle_uv2_busy(struct bau_control *bcp)
+ {
+-	int busy_one = bcp->using_desc;
+-	int normal = bcp->uvhub_cpu;
+-	int selected = -1;
+-	int i;
+-	unsigned long descriptor_status;
+-	unsigned long status;
+-	int mmr_offset;
+-	struct bau_desc *bau_desc_old;
+-	struct bau_desc *bau_desc_new;
+-	struct bau_control *hmaster = bcp->uvhub_master;
+ 	struct ptc_stats *stat = bcp->statp;
+-	cycles_t ttm;
+ 
+ 	stat->s_uv2_wars++;
+-	spin_lock(&hmaster->uvhub_lock);
+-	/* try for the original first */
+-	if (busy_one != normal) {
+-		if (!normal_busy(bcp))
+-			selected = normal;
+-	}
+-	if (selected < 0) {
+-		/* can't use the normal, select an alternate */
+-		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_1;
+-		descriptor_status = read_lmmr(mmr_offset);
 -
- 	local_irq_disable();
+-		/* scan available descriptors 32-63 */
+-		for (i = 0; i < UV_CPUS_PER_AS; i++) {
+-			if ((hmaster->inuse_map & (1 << i)) == 0) {
+-				status = ((descriptor_status >>
+-						(i * UV_ACT_STATUS_SIZE)) &
+-						UV_ACT_STATUS_MASK) << 1;
+-				if (status != UV2H_DESC_BUSY) {
+-					selected = i + UV_CPUS_PER_AS;
+-					break;
+-				}
+-			}
+-		}
+-	}
+-
+-	if (busy_one != normal)
+-		/* mark the busy alternate as not in-use */
+-		hmaster->inuse_map &= ~(1 << (busy_one - UV_CPUS_PER_AS));
+-
+-	if (selected >= 0) {
+-		/* switch to the selected descriptor */
+-		if (selected != normal) {
+-			/* set the selected alternate as in-use */
+-			hmaster->inuse_map |=
+-					(1 << (selected - UV_CPUS_PER_AS));
+-			if (selected > stat->s_uv2_wars_hw)
+-				stat->s_uv2_wars_hw = selected;
+-		}
+-		bau_desc_old = bcp->descriptor_base;
+-		bau_desc_old += (ITEMS_PER_DESC * busy_one);
+-		bcp->using_desc = selected;
+-		bau_desc_new = bcp->descriptor_base;
+-		bau_desc_new += (ITEMS_PER_DESC * selected);
+-		*bau_desc_new = *bau_desc_old;
+-	} else {
+-		/*
+-		 * All are busy. Wait for the normal one for this cpu to
+-		 * free up.
+-		 */
+-		stat->s_uv2_war_waits++;
+-		spin_unlock(&hmaster->uvhub_lock);
+-		ttm = get_cycles();
+-		do {
+-			cpu_relax();
+-		} while (normal_busy(bcp));
+-		spin_lock(&hmaster->uvhub_lock);
+-		/* switch to the original descriptor */
+-		bcp->using_desc = normal;
+-		bau_desc_old = bcp->descriptor_base;
+-		bau_desc_old += (ITEMS_PER_DESC * bcp->using_desc);
+-		bcp->using_desc = (ITEMS_PER_DESC * normal);
+-		bau_desc_new = bcp->descriptor_base;
+-		bau_desc_new += (ITEMS_PER_DESC * normal);
+-		*bau_desc_new = *bau_desc_old; /* copy the entire descriptor */
+-	}
+-	spin_unlock(&hmaster->uvhub_lock);
+-	return FLUSH_RETRY_BUSYBUG;
++	bcp->busy = 1;
++	return FLUSH_GIVEUP;
+ }
+ 
+ static int uv2_wait_completion(struct bau_desc *bau_desc,
+@@ -620,7 +578,7 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
+ {
+ 	unsigned long descriptor_stat;
+ 	cycles_t ttm;
+-	int desc = bcp->using_desc;
++	int desc = bcp->uvhub_cpu;
+ 	long busy_reps = 0;
+ 	struct ptc_stats *stat = bcp->statp;
+ 
+@@ -628,24 +586,38 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
+ 
+ 	/* spin on the status MMR, waiting for it to go idle */
+ 	while (descriptor_stat != UV2H_DESC_IDLE) {
+-		/*
+-		 * Our software ack messages may be blocked because
+-		 * there are no swack resources available.  As long
+-		 * as none of them has timed out hardware will NACK
+-		 * our message and its state will stay IDLE.
+-		 */
+-		if ((descriptor_stat == UV2H_DESC_SOURCE_TIMEOUT) ||
+-		    (descriptor_stat == UV2H_DESC_DEST_PUT_ERR)) {
++		if ((descriptor_stat == UV2H_DESC_SOURCE_TIMEOUT)) {
++			/*
++			 * A h/w bug on the destination side may
++			 * have prevented the message being marked
++			 * pending, thus it doesn't get replied to
++			 * and gets continually nacked until it times
++			 * out with a SOURCE_TIMEOUT.
++			 */
+ 			stat->s_stimeout++;
+ 			return FLUSH_GIVEUP;
+-		} else if (descriptor_stat == UV2H_DESC_DEST_STRONG_NACK) {
+-			stat->s_strongnacks++;
+-			bcp->conseccompletes = 0;
+-			return FLUSH_GIVEUP;
+ 		} else if (descriptor_stat == UV2H_DESC_DEST_TIMEOUT) {
++			ttm = get_cycles();
++
++			/*
++			 * Our retries may be blocked by all destination
++			 * swack resources being consumed, and a timeout
++			 * pending.  In that case hardware returns the
++			 * ERROR that looks like a destination timeout.
++			 * Without using the extended status we have to
++			 * deduce from the short time that this was a
++			 * strong nack.
++			 */
++			if (cycles_2_us(ttm - bcp->send_message) < timeout_us) {
++				bcp->conseccompletes = 0;
++				stat->s_plugged++;
++				/* FLUSH_RETRY_PLUGGED causes hang on boot */
++				return FLUSH_GIVEUP;
++			}
+ 			stat->s_dtimeout++;
+ 			bcp->conseccompletes = 0;
+-			return FLUSH_RETRY_TIMEOUT;
++			/* FLUSH_RETRY_TIMEOUT causes hang on boot */
++			return FLUSH_GIVEUP;
+ 		} else {
+ 			busy_reps++;
+ 			if (busy_reps > 1000000) {
+@@ -653,9 +625,8 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
+ 				busy_reps = 0;
+ 				ttm = get_cycles();
+ 				if ((ttm - bcp->send_message) >
+-					(bcp->clocks_per_100_usec)) {
++						bcp->timeout_interval)
+ 					return handle_uv2_busy(bcp);
+-				}
+ 			}
+ 			/*
+ 			 * descriptor_stat is still BUSY
+@@ -679,7 +650,7 @@ static int wait_completion(struct bau_desc *bau_desc,
+ {
+ 	int right_shift;
+ 	unsigned long mmr_offset;
+-	int desc = bcp->using_desc;
++	int desc = bcp->uvhub_cpu;
+ 
+ 	if (desc < UV_CPUS_PER_AS) {
+ 		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_0;
+@@ -758,33 +729,31 @@ static void destination_timeout(struct bau_desc *bau_desc,
+ }
+ 
+ /*
+- * Completions are taking a very long time due to a congested numalink
+- * network.
++ * Stop all cpus on a uvhub from using the BAU for a period of time.
++ * This is reversed by check_enable.
+  */
+-static void disable_for_congestion(struct bau_control *bcp,
+-					struct ptc_stats *stat)
++static void disable_for_period(struct bau_control *bcp, struct ptc_stats *stat)
+ {
+-	/* let only one cpu do this disabling */
+-	spin_lock(&disable_lock);
+-
+-	if (!baudisabled && bcp->period_requests &&
+-	    ((bcp->period_time / bcp->period_requests) > congested_cycles)) {
+-		int tcpu;
+-		struct bau_control *tbcp;
+-		/* it becomes this cpu's job to turn on the use of the
+-		   BAU again */
+-		baudisabled = 1;
+-		bcp->set_bau_off = 1;
+-		bcp->set_bau_on_time = get_cycles();
+-		bcp->set_bau_on_time += sec_2_cycles(bcp->cong_period);
++	int tcpu;
++	struct bau_control *tbcp;
++	struct bau_control *hmaster;
++	cycles_t tm1;
++
++	hmaster = bcp->uvhub_master;
++	spin_lock(&hmaster->disable_lock);
++	if (!bcp->baudisabled) {
+ 		stat->s_bau_disabled++;
++		tm1 = get_cycles();
+ 		for_each_present_cpu(tcpu) {
+ 			tbcp = &per_cpu(bau_control, tcpu);
+-			tbcp->baudisabled = 1;
++			if (tbcp->uvhub_master == hmaster) {
++				tbcp->baudisabled = 1;
++				tbcp->set_bau_on_time =
++					tm1 + bcp->disabled_period;
++			}
+ 		}
+ 	}
+-
+-	spin_unlock(&disable_lock);
++	spin_unlock(&hmaster->disable_lock);
+ }
+ 
+ static void count_max_concurr(int stat, struct bau_control *bcp,
+@@ -815,16 +784,30 @@ static void record_send_stats(cycles_t time1, cycles_t time2,
+ 			bcp->period_requests++;
+ 			bcp->period_time += elapsed;
+ 			if ((elapsed > congested_cycles) &&
+-			    (bcp->period_requests > bcp->cong_reps))
+-				disable_for_congestion(bcp, stat);
++			    (bcp->period_requests > bcp->cong_reps) &&
++			    ((bcp->period_time / bcp->period_requests) >
++							congested_cycles)) {
++				stat->s_congested++;
++				disable_for_period(bcp, stat);
++			}
+ 		}
+ 	} else
+ 		stat->s_requestor--;
+ 
+ 	if (completion_status == FLUSH_COMPLETE && try > 1)
+ 		stat->s_retriesok++;
+-	else if (completion_status == FLUSH_GIVEUP)
++	else if (completion_status == FLUSH_GIVEUP) {
+ 		stat->s_giveup++;
++		if (get_cycles() > bcp->period_end)
++			bcp->period_giveups = 0;
++		bcp->period_giveups++;
++		if (bcp->period_giveups == 1)
++			bcp->period_end = get_cycles() + bcp->disabled_period;
++		if (bcp->period_giveups > bcp->giveup_limit) {
++			disable_for_period(bcp, stat);
++			stat->s_giveuplimit++;
++		}
++	}
+ }
+ 
+ /*
+@@ -868,7 +851,8 @@ static void handle_cmplt(int completion_status, struct bau_desc *bau_desc,
+  * Returns 1 if it gives up entirely and the original cpu mask is to be
+  * returned to the kernel.
+  */
+-int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
++int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp,
++	struct bau_desc *bau_desc)
+ {
+ 	int seq_number = 0;
+ 	int completion_stat = 0;
+@@ -881,24 +865,23 @@ int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
+ 	struct bau_control *hmaster = bcp->uvhub_master;
+ 	struct uv1_bau_msg_header *uv1_hdr = NULL;
+ 	struct uv2_bau_msg_header *uv2_hdr = NULL;
+-	struct bau_desc *bau_desc;
+ 
+-	if (bcp->uvhub_version == 1)
++	if (bcp->uvhub_version == 1) {
++		uv1 = 1;
+ 		uv1_throttle(hmaster, stat);
++	}
+ 
+ 	while (hmaster->uvhub_quiesce)
+ 		cpu_relax();
+ 
+ 	time1 = get_cycles();
++	if (uv1)
++		uv1_hdr = &bau_desc->header.uv1_hdr;
++	else
++		uv2_hdr = &bau_desc->header.uv2_hdr;
++
+ 	do {
+-		bau_desc = bcp->descriptor_base;
+-		bau_desc += (ITEMS_PER_DESC * bcp->using_desc);
+-		if (bcp->uvhub_version == 1) {
+-			uv1 = 1;
+-			uv1_hdr = &bau_desc->header.uv1_hdr;
+-		} else
+-			uv2_hdr = &bau_desc->header.uv2_hdr;
+-		if ((try == 0) || (completion_stat == FLUSH_RETRY_BUSYBUG)) {
++		if (try == 0) {
+ 			if (uv1)
+ 				uv1_hdr->msg_type = MSG_REGULAR;
+ 			else
+@@ -916,25 +899,24 @@ int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
+ 			uv1_hdr->sequence = seq_number;
+ 		else
+ 			uv2_hdr->sequence = seq_number;
+-		index = (1UL << AS_PUSH_SHIFT) | bcp->using_desc;
++		index = (1UL << AS_PUSH_SHIFT) | bcp->uvhub_cpu;
+ 		bcp->send_message = get_cycles();
+ 
+ 		write_mmr_activation(index);
+ 
+ 		try++;
+ 		completion_stat = wait_completion(bau_desc, bcp, try);
+-		/* UV2: wait_completion() may change the bcp->using_desc */
+ 
+ 		handle_cmplt(completion_stat, bau_desc, bcp, hmaster, stat);
+ 
+ 		if (bcp->ipi_attempts >= bcp->ipi_reset_limit) {
+ 			bcp->ipi_attempts = 0;
++			stat->s_overipilimit++;
+ 			completion_stat = FLUSH_GIVEUP;
+ 			break;
+ 		}
+ 		cpu_relax();
+ 	} while ((completion_stat == FLUSH_RETRY_PLUGGED) ||
+-		 (completion_stat == FLUSH_RETRY_BUSYBUG) ||
+ 		 (completion_stat == FLUSH_RETRY_TIMEOUT));
+ 
+ 	time2 = get_cycles();
+@@ -955,28 +937,33 @@ int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
+ }
+ 
+ /*
+- * The BAU is disabled. When the disabled time period has expired, the cpu
+- * that disabled it must re-enable it.
+- * Return 0 if it is re-enabled for all cpus.
++ * The BAU is disabled for this uvhub. When the disabled time period has
++ * expired re-enable it.
++ * Return 0 if it is re-enabled for all cpus on this uvhub.
+  */
+ static int check_enable(struct bau_control *bcp, struct ptc_stats *stat)
+ {
+ 	int tcpu;
+ 	struct bau_control *tbcp;
++	struct bau_control *hmaster;
+ 
+-	if (bcp->set_bau_off) {
+-		if (get_cycles() >= bcp->set_bau_on_time) {
+-			stat->s_bau_reenabled++;
+-			baudisabled = 0;
+-			for_each_present_cpu(tcpu) {
+-				tbcp = &per_cpu(bau_control, tcpu);
++	hmaster = bcp->uvhub_master;
++	spin_lock(&hmaster->disable_lock);
++	if (bcp->baudisabled && (get_cycles() >= bcp->set_bau_on_time)) {
++		stat->s_bau_reenabled++;
++		for_each_present_cpu(tcpu) {
++			tbcp = &per_cpu(bau_control, tcpu);
++			if (tbcp->uvhub_master == hmaster) {
+ 				tbcp->baudisabled = 0;
+ 				tbcp->period_requests = 0;
+ 				tbcp->period_time = 0;
++				tbcp->period_giveups = 0;
+ 			}
+-			return 0;
+ 		}
++		spin_unlock(&hmaster->disable_lock);
++		return 0;
+ 	}
++	spin_unlock(&hmaster->disable_lock);
+ 	return -1;
+ }
+ 
+@@ -1078,18 +1065,32 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 	struct cpumask *flush_mask;
+ 	struct ptc_stats *stat;
+ 	struct bau_control *bcp;
+-
+-	/* kernel was booted 'nobau' */
+-	if (nobau)
+-		return cpumask;
++	unsigned long descriptor_status;
++	unsigned long status;
+ 
+ 	bcp = &per_cpu(bau_control, cpu);
+ 	stat = bcp->statp;
++	stat->s_enters++;
++
++	if (bcp->nobau)
++		return cpumask;
++
++	if (bcp->busy) {
++		descriptor_status =
++			read_lmmr(UVH_LB_BAU_SB_ACTIVATION_STATUS_0);
++		status = ((descriptor_status >> (bcp->uvhub_cpu *
++			UV_ACT_STATUS_SIZE)) & UV_ACT_STATUS_MASK) << 1;
++		if (status == UV2H_DESC_BUSY)
++			return cpumask;
++		bcp->busy = 0;
++	}
+ 
+ 	/* bau was disabled due to slow response */
+ 	if (bcp->baudisabled) {
+-		if (check_enable(bcp, stat))
++		if (check_enable(bcp, stat)) {
++			stat->s_ipifordisabled++;
+ 			return cpumask;
++		}
+ 	}
  
  	/*
-@@ -181,25 +173,28 @@ void machine_real_restart(unsigned int type)
- 	/*
- 	 * Switch back to the initial page table.
+@@ -1105,7 +1106,7 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 		stat->s_ntargself++;
+ 
+ 	bau_desc = bcp->descriptor_base;
+-	bau_desc += (ITEMS_PER_DESC * bcp->using_desc);
++	bau_desc += (ITEMS_PER_DESC * bcp->uvhub_cpu);
+ 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
+ 	if (set_distrib_bits(flush_mask, bcp, bau_desc, &locals, &remotes))
+ 		return NULL;
+@@ -1118,25 +1119,27 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
+ 	 * or 1 if it gave up and the original cpumask should be returned.
  	 */
-+#ifdef CONFIG_X86_32
- 	load_cr3(initial_page_table);
+-	if (!uv_flush_send_and_wait(flush_mask, bcp))
++	if (!uv_flush_send_and_wait(flush_mask, bcp, bau_desc))
+ 		return NULL;
+ 	else
+ 		return cpumask;
+ }
+ 
+ /*
+- * Search the message queue for any 'other' message with the same software
+- * acknowledge resource bit vector.
++ * Search the message queue for any 'other' unprocessed message with the
++ * same software acknowledge resource bit vector as the 'msg' message.
+  */
+ struct bau_pq_entry *find_another_by_swack(struct bau_pq_entry *msg,
+-			struct bau_control *bcp, unsigned char swack_vec)
++					   struct bau_control *bcp)
+ {
+ 	struct bau_pq_entry *msg_next = msg + 1;
++	unsigned char swack_vec = msg->swack_vec;
+ 
+ 	if (msg_next > bcp->queue_last)
+ 		msg_next = bcp->queue_first;
+-	while ((msg_next->swack_vec != 0) && (msg_next != msg)) {
+-		if (msg_next->swack_vec == swack_vec)
++	while (msg_next != msg) {
++		if ((msg_next->canceled == 0) && (msg_next->replied_to == 0) &&
++				(msg_next->swack_vec == swack_vec))
+ 			return msg_next;
+ 		msg_next++;
+ 		if (msg_next > bcp->queue_last)
+@@ -1165,32 +1168,30 @@ void process_uv2_message(struct msg_desc *mdp, struct bau_control *bcp)
+ 		 * This message was assigned a swack resource, but no
+ 		 * reserved acknowlegment is pending.
+ 		 * The bug has prevented this message from setting the MMR.
+-		 * And no other message has used the same sw_ack resource.
+-		 * Do the requested shootdown but do not reply to the msg.
+-		 * (the 0 means make no acknowledge)
+ 		 */
+-		bau_process_message(mdp, bcp, 0);
+-		return;
+-	}
 -
 -	/*
--	 * Write 0x1234 to absolute memory location 0x472.  The BIOS reads
--	 * this on booting to tell it to "Bypass memory test (also warm
--	 * boot)".  This seems like a fairly standard thing that gets set by
--	 * REBOOT.COM programs, and the previous reset routine did this
--	 * too. */
--	*((unsigned short *)0x472) = reboot_mode;
-+#else
-+	write_cr3(real_mode_header->trampoline_pgd);
-+#endif
+-	 * Some message has set the MMR 'pending' bit; it might have been
+-	 * another message.  Look for that message.
+-	 */
+-	other_msg = find_another_by_swack(msg, bcp, msg->swack_vec);
+-	if (other_msg) {
+-		/* There is another.  Do not ack the current one. */
+-		bau_process_message(mdp, bcp, 0);
+ 		/*
+-		 * Let the natural processing of that message acknowledge
+-		 * it. Don't get the processing of sw_ack's out of order.
++		 * Some message has set the MMR 'pending' bit; it might have
++		 * been another message.  Look for that message.
+ 		 */
+-		return;
++		other_msg = find_another_by_swack(msg, bcp);
++		if (other_msg) {
++			/*
++			 * There is another. Process this one but do not
++			 * ack it.
++			 */
++			bau_process_message(mdp, bcp, 0);
++			/*
++			 * Let the natural processing of that other message
++			 * acknowledge it. Don't get the processing of sw_ack's
++			 * out of order.
++			 */
++			return;
++		}
+ 	}
  
- 	/* Jump to the identity-mapped low memory code */
--	restart_lowmem(type);
-+#ifdef CONFIG_X86_32
-+	asm volatile("jmpl *%0" : :
-+		     "rm" (real_mode_header->machine_real_restart_asm),
-+		     "a" (type));
-+#else
-+	asm volatile("ljmpl *%0" : :
-+		     "m" (real_mode_header->machine_real_restart_asm),
-+		     "D" (type));
-+#endif
-+	unreachable();
+ 	/*
+-	 * There is no other message using this sw_ack, so it is safe to
+-	 * acknowledge it.
++	 * Either the MMR shows this one pending a reply or there is no
++	 * other message using this sw_ack, so it is safe to acknowledge it.
+ 	 */
+ 	bau_process_message(mdp, bcp, 1);
+ 
+@@ -1295,7 +1296,8 @@ static void __init enable_timeouts(void)
+ 		 */
+ 		mmr_image |= (1L << SOFTACK_MSHIFT);
+ 		if (is_uv2_hub()) {
+-			mmr_image |= (1L << UV2_EXT_SHFT);
++			/* hw bug workaround; do not use extended status */
++			mmr_image &= ~(1L << UV2_EXT_SHFT);
+ 		}
+ 		write_mmr_misc_control(pnode, mmr_image);
+ 	}
+@@ -1338,29 +1340,34 @@ static inline unsigned long long usec_2_cycles(unsigned long microsec)
+ static int ptc_seq_show(struct seq_file *file, void *data)
+ {
+ 	struct ptc_stats *stat;
++	struct bau_control *bcp;
+ 	int cpu;
+ 
+ 	cpu = *(loff_t *)data;
+ 	if (!cpu) {
+ 		seq_printf(file,
+-			"# cpu sent stime self locals remotes ncpus localhub ");
++		 "# cpu bauoff sent stime self locals remotes ncpus localhub ");
+ 		seq_printf(file,
+ 			"remotehub numuvhubs numuvhubs16 numuvhubs8 ");
+ 		seq_printf(file,
+-		    "numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries rok ");
++			"numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries ");
++		seq_printf(file,
++			"rok resetp resett giveup sto bz throt disable ");
+ 		seq_printf(file,
+-			"resetp resett giveup sto bz throt swack recv rtime ");
++			"enable wars warshw warwaits enters ipidis plugged ");
+ 		seq_printf(file,
+-			"all one mult none retry canc nocan reset rcan ");
++			"ipiover glim cong swack recv rtime all one mult ");
+ 		seq_printf(file,
+-			"disable enable wars warshw warwaits\n");
++			"none retry canc nocan reset rcan\n");
+ 	}
+ 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
+-		stat = &per_cpu(ptcstats, cpu);
++		bcp = &per_cpu(bau_control, cpu);
++		stat = bcp->statp;
+ 		/* source side statistics */
+ 		seq_printf(file,
+-			"cpu %d %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
+-			   cpu, stat->s_requestor, cycles_2_us(stat->s_time),
++			"cpu %d %d %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
++			   cpu, bcp->nobau, stat->s_requestor,
++			   cycles_2_us(stat->s_time),
+ 			   stat->s_ntargself, stat->s_ntarglocals,
+ 			   stat->s_ntargremotes, stat->s_ntargcpu,
+ 			   stat->s_ntarglocaluvhub, stat->s_ntargremoteuvhub,
+@@ -1374,20 +1381,23 @@ static int ptc_seq_show(struct seq_file *file, void *data)
+ 			   stat->s_resets_plug, stat->s_resets_timeout,
+ 			   stat->s_giveup, stat->s_stimeout,
+ 			   stat->s_busy, stat->s_throttles);
++		seq_printf(file, "%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
++			   stat->s_bau_disabled, stat->s_bau_reenabled,
++			   stat->s_uv2_wars, stat->s_uv2_wars_hw,
++			   stat->s_uv2_war_waits, stat->s_enters,
++			   stat->s_ipifordisabled, stat->s_plugged,
++			   stat->s_overipilimit, stat->s_giveuplimit,
++			   stat->s_congested);
+ 
+ 		/* destination side statistics */
+ 		seq_printf(file,
+-			   "%lx %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
++			"%lx %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
+ 			   read_gmmr_sw_ack(uv_cpu_to_pnode(cpu)),
+ 			   stat->d_requestee, cycles_2_us(stat->d_time),
+ 			   stat->d_alltlb, stat->d_onetlb, stat->d_multmsg,
+ 			   stat->d_nomsg, stat->d_retries, stat->d_canceled,
+ 			   stat->d_nocanceled, stat->d_resets,
+ 			   stat->d_rcanceled);
+-		seq_printf(file, "%ld %ld %ld %ld %ld\n",
+-			stat->s_bau_disabled, stat->s_bau_reenabled,
+-			stat->s_uv2_wars, stat->s_uv2_wars_hw,
+-			stat->s_uv2_war_waits);
+ 	}
+ 	return 0;
  }
- #ifdef CONFIG_APM_MODULE
- EXPORT_SYMBOL(machine_real_restart);
- #endif
+@@ -1401,13 +1411,14 @@ static ssize_t tunables_read(struct file *file, char __user *userbuf,
+ 	char *buf;
+ 	int ret;
  
--#endif /* CONFIG_X86_32 */
--
- /*
-  * Some Apple MacBook and MacBookPro's needs reboot=p to be able to reboot
-  */
-@@ -223,11 +218,9 @@ static int __init set_kbd_reboot(const struct dmi_system_id *d)
+-	buf = kasprintf(GFP_KERNEL, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
+-		"max_concur plugged_delay plugsb4reset",
+-		"timeoutsb4reset ipi_reset_limit complete_threshold",
+-		"congested_response_us congested_reps congested_period",
++	buf = kasprintf(GFP_KERNEL, "%s %s %s\n%d %d %d %d %d %d %d %d %d %d\n",
++		"max_concur plugged_delay plugsb4reset timeoutsb4reset",
++		"ipi_reset_limit complete_threshold congested_response_us",
++		"congested_reps disabled_period giveup_limit",
+ 		max_concurr, plugged_delay, plugsb4reset,
+ 		timeoutsb4reset, ipi_reset_limit, complete_threshold,
+-		congested_respns_us, congested_reps, congested_period);
++		congested_respns_us, congested_reps, disabled_period,
++		giveup_limit);
+ 
+ 	if (!buf)
+ 		return -ENOMEM;
+@@ -1438,6 +1449,14 @@ static ssize_t ptc_proc_write(struct file *file, const char __user *user,
+ 		return -EFAULT;
+ 	optstr[count - 1] = '\0';
+ 
++	if (!strcmp(optstr, "on")) {
++		set_bau_on();
++		return count;
++	} else if (!strcmp(optstr, "off")) {
++		set_bau_off();
++		return count;
++	}
++
+ 	if (strict_strtol(optstr, 10, &input_arg) < 0) {
+ 		printk(KERN_DEBUG "%s is invalid\n", optstr);
+ 		return -EINVAL;
+@@ -1570,7 +1589,8 @@ static ssize_t tunables_write(struct file *file, const char __user *user,
+ 		bcp->complete_threshold =	complete_threshold;
+ 		bcp->cong_response_us =		congested_respns_us;
+ 		bcp->cong_reps =		congested_reps;
+-		bcp->cong_period =		congested_period;
++		bcp->disabled_period =		sec_2_cycles(disabled_period);
++		bcp->giveup_limit =		giveup_limit;
+ 	}
+ 	return count;
+ }
+@@ -1699,6 +1719,10 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
+ 			 *   fairness chaining multilevel count replied_to
+ 			 */
+ 		} else {
++			/*
++			 * BIOS uses legacy mode, but UV2 hardware always
++			 * uses native mode for selective broadcasts.
++			 */
+ 			uv2_hdr = &bd2->header.uv2_hdr;
+ 			uv2_hdr->swack_flag =	1;
+ 			uv2_hdr->base_dest_nasid =
+@@ -1811,8 +1835,8 @@ static int calculate_destination_timeout(void)
+ 		index = (mmr_image >> BAU_URGENCY_7_SHIFT) & BAU_URGENCY_7_MASK;
+ 		mmr_image = uv_read_local_mmr(UVH_TRANSACTION_TIMEOUT);
+ 		mult2 = (mmr_image >> BAU_TRANS_SHIFT) & BAU_TRANS_MASK;
+-		base = timeout_base_ns[index];
+-		ts_ns = base * mult1 * mult2;
++		ts_ns = timeout_base_ns[index];
++		ts_ns *= (mult1 * mult2);
+ 		ret = ts_ns / 1000;
+ 	} else {
+ 		/* 4 bits  0/1 for 10/80us base, 3 bits of multiplier */
+@@ -1836,6 +1860,8 @@ static void __init init_per_cpu_tunables(void)
+ 	for_each_present_cpu(cpu) {
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		bcp->baudisabled		= 0;
++		if (nobau)
++			bcp->nobau		= 1;
+ 		bcp->statp			= &per_cpu(ptcstats, cpu);
+ 		/* time interval to catch a hardware stay-busy bug */
+ 		bcp->timeout_interval		= usec_2_cycles(2*timeout_us);
+@@ -1848,10 +1874,11 @@ static void __init init_per_cpu_tunables(void)
+ 		bcp->complete_threshold		= complete_threshold;
+ 		bcp->cong_response_us		= congested_respns_us;
+ 		bcp->cong_reps			= congested_reps;
+-		bcp->cong_period		= congested_period;
+-		bcp->clocks_per_100_usec =	usec_2_cycles(100);
++		bcp->disabled_period =		sec_2_cycles(disabled_period);
++		bcp->giveup_limit =		giveup_limit;
+ 		spin_lock_init(&bcp->queue_lock);
+ 		spin_lock_init(&bcp->uvhub_lock);
++		spin_lock_init(&bcp->disable_lock);
+ 	}
  }
  
- /*
-- * This is a single dmi_table handling all reboot quirks.  Note that
-- * REBOOT_BIOS is only available for 32bit
-+ * This is a single dmi_table handling all reboot quirks.
-  */
- static struct dmi_system_id __initdata reboot_dmi_table[] = {
--#ifdef CONFIG_X86_32
- 	{	/* Handle problems with rebooting on Dell E520's */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell E520",
-@@ -377,7 +370,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
- 		},
- 	},
--#endif /* CONFIG_X86_32 */
+@@ -1972,7 +1999,6 @@ static int scan_sock(struct socket_desc *sdp, struct uvhub_desc *bdp,
+ 		}
+ 		bcp->uvhub_master = *hmasterp;
+ 		bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->blade_processor_id;
+-		bcp->using_desc = bcp->uvhub_cpu;
+ 		if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
+ 			printk(KERN_EMERG "%d cpus per uvhub invalid\n",
+ 				bcp->uvhub_cpu);
+@@ -2069,16 +2095,12 @@ static int __init uv_bau_init(void)
+ 	if (!is_uv_system())
+ 		return 0;
  
- 	{	/* Handle reboot issue on Acer Aspire one */
- 		.callback = set_kbd_reboot,
-@@ -576,13 +568,11 @@ static void native_machine_emergency_restart(void)
- 			reboot_type = BOOT_KBD;
- 			break;
- 
--#ifdef CONFIG_X86_32
- 		case BOOT_BIOS:
- 			machine_real_restart(MRR_BIOS);
- 
- 			reboot_type = BOOT_KBD;
- 			break;
--#endif
- 
- 		case BOOT_ACPI:
- 			acpi_reboot();
-@@ -624,12 +614,10 @@ void native_machine_shutdown(void)
- 	/* The boot cpu is always logical cpu 0 */
- 	int reboot_cpu_id = 0;
- 
--#ifdef CONFIG_X86_32
- 	/* See if there has been given a command line override */
- 	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
- 		cpu_online(reboot_cpu))
- 		reboot_cpu_id = reboot_cpu;
--#endif
- 
- 	/* Make certain the cpu I'm about to reboot on is online */
- 	if (!cpu_online(reboot_cpu_id))
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-index 5b84a2d..b2d534c 100644
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -22,7 +22,7 @@ wakeup-objs	+= video-bios.o
- realmode-y			+= header.o
- realmode-y			+= trampoline_$(BITS).o
- realmode-y			+= stack.o
--realmode-$(CONFIG_X86_32)	+= reboot_32.o
-+realmode-y			+= reboot.o
- realmode-$(CONFIG_ACPI_SLEEP)	+= $(wakeup-objs)
- 
- targets	+= $(realmode-y)
-diff --git a/arch/x86/realmode/rm/header.S b/arch/x86/realmode/rm/header.S
-index fadf483..a28221d 100644
---- a/arch/x86/realmode/rm/header.S
-+++ b/arch/x86/realmode/rm/header.S
-@@ -6,6 +6,7 @@
- 
- #include <linux/linkage.h>
- #include <asm/page_types.h>
-+#include <asm/segment.h>
- 
- #include "realmode.h"
- 	
-@@ -28,8 +29,9 @@ GLOBAL(real_mode_header)
- 	.long	pa_wakeup_header
- #endif
- 	/* APM/BIOS reboot */
--#ifdef CONFIG_X86_32
- 	.long	pa_machine_real_restart_asm
-+#ifdef CONFIG_X86_64
-+	.long	__KERNEL32_CS
- #endif
- END(real_mode_header)
- 
-diff --git a/arch/x86/realmode/rm/reboot_32.S b/arch/x86/realmode/rm/reboot.S
-similarity index 85%
-rename from arch/x86/realmode/rm/reboot_32.S
-rename to arch/x86/realmode/rm/reboot.S
-index 1140448..f932ea6 100644
---- a/arch/x86/realmode/rm/reboot_32.S
-+++ b/arch/x86/realmode/rm/reboot.S
-@@ -2,6 +2,8 @@
- #include <linux/init.h>
- #include <asm/segment.h>
- #include <asm/page_types.h>
-+#include <asm/processor-flags.h>
-+#include <asm/msr-index.h>
- #include "realmode.h"
- 
- /*
-@@ -12,13 +14,35 @@
-  * doesn't work with at least one type of 486 motherboard.  It is easy
-  * to stop this code working; hence the copious comments.
-  *
-- * This code is called with the restart type (0 = BIOS, 1 = APM) in %eax.
-+ * This code is called with the restart type (0 = BIOS, 1 = APM) in
-+ * the primary argument register (%eax for 32 bit, %edi for 64 bit).
-  */
- 	.section ".text32", "ax"
- 	.code32
+-	if (nobau)
+-		return 0;
 -
--	.balign	16
- ENTRY(machine_real_restart_asm)
-+
-+#ifdef CONFIG_X86_64
-+	/* Switch to trampoline GDT as it is guaranteed < 4 GiB */
-+	movl	$__KERNEL_DS, %eax
-+	movl	%eax, %ds
-+	lgdtl	pa_tr_gdt
-+
-+	/* Disable paging to drop us out of long mode */
-+	movl	%cr0, %eax
-+	andl	$~X86_CR0_PG, %eax
-+	movl	%eax, %cr0
-+	ljmpl	$__KERNEL32_CS, $pa_machine_real_restart_paging_off
-+
-+GLOBAL(machine_real_restart_paging_off)
-+	xorl	%eax, %eax
-+	xorl	%edx, %edx
-+	movl	$MSR_EFER, %ecx
-+	wrmsr
-+
-+	movl	%edi, %eax
-+	
-+#endif /* CONFIG_X86_64 */
-+	
- 	/* Set up the IDT for real mode. */
- 	lidtl	pa_machine_real_restart_idt
+ 	for_each_possible_cpu(cur_cpu) {
+ 		mask = &per_cpu(uv_flush_tlb_mask, cur_cpu);
+ 		zalloc_cpumask_var_node(mask, GFP_KERNEL, cpu_to_node(cur_cpu));
+ 	}
+ 
+ 	nuvhubs = uv_num_possible_blades();
+-	spin_lock_init(&disable_lock);
+ 	congested_cycles = usec_2_cycles(congested_respns_us);
+ 
+ 	uv_base_pnode = 0x7fffffff;
+@@ -2091,7 +2113,8 @@ static int __init uv_bau_init(void)
+ 	enable_timeouts();
+ 
+ 	if (init_per_cpu(nuvhubs, uv_base_pnode)) {
+-		nobau = 1;
++		set_bau_off();
++		nobau_perm = 1;
+ 		return 0;
+ 	}
  
