@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab2GVJPh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 05:15:37 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58512 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab2GVJPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 05:15:34 -0400
+	id S1751339Ab2GVJxO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 05:53:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25709 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab2GVJxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 05:53:09 -0400
+Message-ID: <500BCD7A.4060108@redhat.com>
+Date: Sun, 22 Jul 2012 12:52:58 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-Originating-IP: [121.7.229.38]
-Date: Sun, 22 Jul 2012 17:15:32 +0800
-Message-ID: <CAMVG2su3DfOTRHDr7oFPLM5LVOBEXtChPEy4LL_2QS-VT9vBgg@mail.gmail.com>
-Subject: 3.5.0 iwlagn AP crash...
-From: Daniel J Blueman <daniel@quora.org>
-To: Intel Linux Wireless <ilw@linux.intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+To: David Ahern <dsahern@gmail.com>
+CC: Gleb Natapov <gleb@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com> <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com> <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins> <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins> <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com> <5009EB16.1070809@gmail.com>
+In-Reply-To: <5009EB16.1070809@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes et al,
+On 07/21/2012 02:34 AM, David Ahern wrote:
+> On 7/11/12 1:10 AM, Gleb Natapov wrote:
+>> Looks like Avi is right about the overshoot. Can you test something
+>> like this?
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c
+>> b/arch/x86/kernel/cpu/perf_event_intel.c
+>> index 166546e..5fb371a 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>> @@ -1374,8 +1374,11 @@ static struct perf_guest_switch_msr
+>> *intel_guest_get_msrs(int *nr)
+>>       arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
+>>       arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
+>>       arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
+>> +    arr[1].msr = MSR_IA32_PEBS_ENABLE;
+>> +    arr[1].host = cpuc->pebs_enabled;
+>> +    arr[1].guest = 0;
+>> +    *nr = 2;
+>>
+>> -    *nr = 1;
+>>       return arr;
+>>   }
+> 
+> 
+> Tested-by: David Ahern <dsahern@gmail.com>
 
-When running my Centrino Wireless-N 130 BGN (rev 0xb0) card in nl80211
-AP mode with hostapd on linux 3.5.0, I immediately hit this fatal
-pagefault [1].
+Thanks.
 
-I can cook a debug kernel, reproduce, disassemble the code and do some
-quick analysis, if that helps get the ball rolling?
+Gleb, please add a comment explaining about the skid, because otherwise
+it looks redundant.
 
-Thanks!
-  Daniel
 
---- [1]
-
-BUG: unable to handle kernel NULL pointer dereference at      (null)
-IP: [<ffffffffa02e869d>] ieee80211_ave_rssi+0xd/0x50 [mac80211]
-PGD 116616067 PUD 115c22067 PMD 0
-Oops: 0000 [#1] SMP
-CPU 0
-Modules linked in:
- netconsole configfs snd_hda_codec_hdmi snd_hda_codec_realtek xt_hl
-ip6t_rt nf_conntrack_ipv6 nf_defrag_ipv6 ipt_REJECT snd_hda_intel
-snd_hda_codec snd_hwdep xt_limit xt_tcpudp xt_addrtype snd_pcm
-ir_lirc_codec lirc_dev ir_mce_kbd_decoder ir_sanyo_decoder
-ir_sony_decoder xt_state ir_jvc_decoder snd_seq_midi snd_rawmidi
-ip6table_filter ip6_tables joydev ir_rc6_decoder snd_seq_midi_event
-nf_conntrack_netbios_ns nf_conntrack_broadcast snd_seq hid_generic
-arc4 ir_rc5_decoder nf_nat_ftp nf_nat snd_timer nf_conntrack_ipv4
-snd_seq_device nf_defrag_ipv4 usbhid i915 hid coretemp drm_kms_helper
-iwlwifi mac80211 nf_conntrack_ftp ir_nec_decoder drm i2c_algo_bit
-rts5139(C) kvm_intel btusb snd nf_conntrack kvm psmouse bluetooth
-cfg80211 mac_hid ghash_clmulni_intel rc_rc6_mce lpc_ich soundcore
-iptable_filter snd_page_alloc mei ip_tables x_tables nuvoton_cir
-rc_core serio_raw cryptd microcode video r8169
-Pid: 0, comm: swapper/0 Tainted: G     C  3.5.0-030500-generic
-#201207211835 ZOTAC XXXXXX
-/XXXXXX
-RIP: 0010:[<ffffffffa02e869d>] [<ffffffffa02e869d>]
-ieee80211_ave_rssi+0xd/0x50 [mac80211]
-RSP: 0018:ffff88011fa03c60 EFLAGS: 00010286
-RDX: 0000000000000000 RSI: ffff880115b26008 RDI: 0000000000000000
-RBP: ffff88011fa03c70 R08: ffffffffa03b82e8 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000001 R12: ffff880115b26008
-R13: ffff880115b26008 R14: ffff880117bd1f50 R15: ffff880115b26000
-FS: 0000000000000000(0000) GS:ffff88011fa00000(0000) knlGS:0000000000000000
-CS: 0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 0000000116371000 CR4: 00000000000407f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper/0 (pid: 0, threadinfo ffffffff81c00000, task ffffffff81c13440)
-Stack:
- ffff880100000000 ffff880100000000 ffff88011fa03c90 ffffffffa037d997
- ffff880117bd1f50 ffff880115b26000 ffff88011fa03cc0 ffffffffa037de09
- ffff880117bd1f40 0000000000000000 ffff880117bd1f40 ffff88011fa03d98
-Call Trace:
- <IRQ>
- [<ffffffffa037d997>] iwlagn_fill_txpower_mode+0x27/0x100 [iwlwifi]
- [<ffffffffa037de09>] iwlagn_bt_coex_profile_notif+0x189/0x250 [iwlwifi]
- [<ffffffffa03888ac>] iwl_rx_dispatch+0xbc/0x120 [iwlwifi]
- [<ffffffffa039824f>] iwl_rx_handle+0xcf/0x190 [iwlwifi]
- [<ffffffffa03986e3>] iwl_irq_tasklet+0x353/0x9b0 [iwlwifi]
- [<ffffffff8105bfc4>] tasklet_action+0x64/0xe0
- [<ffffffff8105b9f8>] __do_softirq+0xa8/0x210
- [<ffffffff8168b32e>] ? _raw_spin_lock+0xe/0x20
- [<ffffffff81694f9c>] call_softirq+0x1c/0x30
- [<ffffffff81016245>] do_softirq+0x65/0xa0
- [<ffffffff8105bdde>] irq_exit+0x8e/0xb0
- [<ffffffff816957f3>] do_IRQ+0x63/0xe0
- [<ffffffff8168b7ea>] common_interrupt+0x6a/0x6a
- <EOI>
- [<ffffffff81040af9>] ? default_spin_lock_flags+0x9/0x10
- [<ffffffff8138a52a>] ? intel_idle+0xea/0x150
- [<ffffffff8138a50c>] ? intel_idle+0xcc/0x150
- [<ffffffff81523649>] cpuidle_enter+0x19/0x20
- [<ffffffff81523c6c>] cpuidle_idle_call+0xac/0x2a0
- [<ffffffff8101d81f>] cpu_idle+0xcf/0x120
- [<ffffffff8164efde>] rest_init+0x72/0x74
- [<ffffffff81cf2c4b>] start_kernel+0x3b7/0x3c4
- [<ffffffff81cf2726>] ? repair_env_string+0x5a/0x5a
- [<ffffffff81cf2397>] x86_64_start_reservations+0x131/0x135
- [<ffffffff81cf2120>] ? early_idt_handlers+0x120/0x120
- [<ffffffff81cf2468>] x86_64_start_kernel+0xcd/0xdc
-Code: 48 89 45 d8 48 8b 5d d8 4c 39 e3 75 c1 90 48 83 c4 10 5b 41 5c
-41 5d 41 5e 5d c3 0f 1f 00 55 48 89 e5 48 83 ec 10 66 66 90 3f 02 75
-05 8b 47 8c c9 c3 31 c0 80 3d 85 52 04 00 01 74 f3
-RIP [<ffffffffa02e869d>] ieee80211_ave_rssi+0xd/0x50 [mac80211]
- RSP <ffff88011fa03c60>
-CR2: 0000000000000000
 -- 
-Daniel J Blueman
+error compiling committee.c: too many arguments to function
+
+
