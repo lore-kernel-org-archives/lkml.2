@@ -1,88 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263Ab2GVFoQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 01:44:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57781 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab2GVFoN (ORCPT
+	id S1751038Ab2GVFs4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 01:48:56 -0400
+Received: from na3sys010aog111.obsmtp.com ([74.125.245.90]:58109 "HELO
+	na3sys010aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750777Ab2GVFsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 01:44:13 -0400
-Date: Sun, 22 Jul 2012 15:44:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Justin Lecher <jlec@gentoo.org>,
-        Suresh Jayaraman <sjayaraman@suse.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: manual merge of the akpm tree with the vfs tree
-Message-Id: <20120722154409.91ab34376657bc89b4ec1edc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__22_Jul_2012_15_44_09_+1000_QTr7t.e+n9fx3Wap"
+	Sun, 22 Jul 2012 01:48:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1207211905010.1570@eggly.anvils>
+References: <50079125.3020007@wpkg.org> <CAL1RGDU8TVBkZ4yP=kjwqvGUsrnQcBGpLa_x-7c=Gu54piVwyw@mail.gmail.com>
+ <alpine.LSU.2.00.1207211905010.1570@eggly.anvils>
+From: Roland Dreier <roland@purestorage.com>
+Date: Sat, 21 Jul 2012 22:48:32 -0700
+Message-ID: <CAL1RGDXUfcZi9gsinrmEDrWXAjtmRFJkkwHQyx=8=A=TDL9cBw@mail.gmail.com>
+Subject: Re: 3.5-rc7 - can no longer wake up from suspend to RAM
+To: Hugh Dickins <hughd@google.com>
+Cc: Tomasz Chmielewski <tch@wpkg.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__22_Jul_2012_15_44_09_+1000_QTr7t.e+n9fx3Wap
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks Hugh.  I just went ahead and built 3.5 final, and suspend/resume
+look to be working again.
 
-Hi Andrew,
+I'm not even going to try to understand how a timekeeping bug broke resume...
 
-Today's linux-next merge of the akpm tree got a conflict in
-fs/cachefiles/rdwr.c between commit e89cdeffe531 ("switch dentry_open()
-to struct path, make it grab references itself") from the vfs,  tree and
-commit "fs: cachefiles: add support for large files in filesystem
-caching" from the akpm tree.
-
-I fixed it up (and rolled in the following build fix - see below) and can
-carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/cachefiles/rdwr.c
-index c0353df,d136686..0000000
---- a/fs/cachefiles/rdwr.c
-+++ b/fs/cachefiles/rdwr.c
-@@@ -917,9 -916,10 +917,9 @@@ int cachefiles_write_page(struct fscach
- =20
-  	/* write the page to the backing filesystem and let it store it in its
-  	 * own time */
- -	dget(object->backer);
- -	mntget(cache->mnt);
- -	file =3D dentry_open(object->backer, cache->mnt, O_RDWR,
- -			   (O_RDWR | O_LARGEFILE), cache->cache_cred);
- +	path.mnt =3D cache->mnt;
- +	path.dentry =3D object->backer;
-- 	file =3D dentry_open(&path, O_RDWR, cache->cache_cred);
-++	file =3D dentry_open(&path, O_RDWR | O_LARGEFILE, cache->cache_cred);
-  	if (IS_ERR(file)) {
-  		ret =3D PTR_ERR(file);
-  	} else {
-
---Signature=_Sun__22_Jul_2012_15_44_09_+1000_QTr7t.e+n9fx3Wap
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQC5MpAAoJEECxmPOUX5FEbxEP/0xlNJY4TzJUGr+Q/qgL6P3t
-vH8AJD/YQEKwwL9fFV5XnfAQDbdUdPaYF8hMCIigQVKkqssIcYOJE1y7Q3gvG4as
-ERNqsuqHo6xANFwIqqQlvmhpqmdrCjowFS1oAF5542Yhz1fPAqHAfGe1/GoOc/LE
-xfKQWy2Pk7qJwnpGPZx5Br4ih6y21jBJvykM9Nxkt2p+xiMMtdhqpo+cdJrav43b
-nDsoaDke9gldPke+10v58sO3AscfA0uSqmKyAWayVxc3jZypEk7D+Sqa8MFg6WrA
-Wt6fAWbUyxS8MEeQmgC42r2wM4pnOjb09hxiEG8zR2FUwe2qiikhs35LIxzC9B1B
-43ODvCwpM6jDAcsTmxDTmiBQ5Tp5ckuIR/6sPGh4IWSL8fk+TrstHi2GswSnTmRX
-XNn29fUa9VZWvuY8h+2cpWJ6y33t5jhvnWju0uZIA0yeszJ3BPTwHhQtmM1yEwF3
-WlZopwZ+vssIvcuZ7UqDc8cuO8zikQiKNxPRNoODCWS7eAsQAcDzbqlCTyjITVV+
-whFqXGP6dr1baP09GPEZI600szzvSu4lHlu0Tvkb1gjkisnAbsGJt3UcTgdpYGuO
-9DeFW34s59sLg9Ak2OH6K2Ck+g1KUmW/jrRrLdScZJIKJDhzAzWESqgqRVeZLuKa
-jDHTElBPZXJMiyQaWHQ5
-=8Gkb
------END PGP SIGNATURE-----
-
---Signature=_Sun__22_Jul_2012_15_44_09_+1000_QTr7t.e+n9fx3Wap--
+ - R.
