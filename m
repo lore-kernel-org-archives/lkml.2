@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab2GVTTo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 15:19:44 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37999 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab2GVTTn (ORCPT
+	id S1752499Ab2GVTWt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 15:22:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50987 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab2GVTWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 15:19:43 -0400
-Date: Sun, 22 Jul 2012 12:19:42 -0700 (PDT)
-Message-Id: <20120722.121942.2002727319293471163.davem@davemloft.net>
-To: mst@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, asias@redhat.com,
-        nab@linux-iscsi.org, nab@risingtidesystems.com, pbonzini@redhat.com,
-        stefanha@gmail.com, stefanha@linux.vnet.ibm.com, wuzhy@cn.ibm.com
-Subject: Re: [PULL] vhost-net changes for net/3.6
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120721225436.GA23519@redhat.com>
-References: <20120721225436.GA23519@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 22 Jul 2012 15:22:47 -0400
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Sasha Levin <levinsasha928@gmail.com>, Wen Congyang <wency@cn.fujitsu.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v7] kvm: notify host when the guest is panicked
+In-Reply-To: <500A8969.1040300@gmail.com>
+References: <500A565A.8080403@cn.fujitsu.com> <500A8969.1040300@gmail.com>
+User-Agent: Notmuch/0.13.2+60~g7ecf77d (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Sun, 22 Jul 2012 14:22:42 -0500
+Message-ID: <87txwzwqgt.fsf@codemonkey.ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Sun, 22 Jul 2012 01:54:36 +0300
+Sasha Levin <levinsasha928@gmail.com> writes:
 
-> The following changes since commit 186e868786f97c8026f0a81400b451ace306b3a4:
-> 
->   forcedeth: spin_unlock_irq in interrupt handler fix (2012-07-20 16:18:36 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
-> 
-> for you to fetch changes up to 163049aefdc04323a2d17ec9f2862027b43b0502:
-> 
->   vhost: make vhost work queue visible (2012-07-22 01:22:23 +0300)
+> On 07/21/2012 09:12 AM, Wen Congyang wrote:
+>> +#define KVM_PV_PORT	(0x505UL)
+>> +
+>>  #ifdef __KERNEL__
+>>  #include <asm/processor.h>
+>>  
+>> @@ -221,6 +223,11 @@ static inline void kvm_disable_steal_time(void)
+>>  }
+>>  #endif
+>>  
+>> +static inline unsigned int kvm_arch_pv_features(void)
+>> +{
+>> +	return inl(KVM_PV_PORT);
+>> +}
+>> +
+>
+> Why is this safe?
+>
+> I'm not sure you can just pick any ioport you'd like and use it.
 
-Pulled, thanks.
+There are three ways I/O ports get used on a PC:
+
+1) Platform devices
+ - This is well defined since the vast majority of platform devices are
+   implemented within a single chip.  If you're emulating an i440fx
+   chipset, the PIIX4 spec has an exhaustive list.
+
+2) PCI devices
+ - Typically, PCI only allocates ports starting at 0x0d00 to avoid
+   conflicts with ISA devices.
+
+3) ISA devices
+ - ISA uses subtractive decoding so any ISA device can access.  In
+   theory, an ISA device could attempt to use port 0x0505 but it's
+   unlikely.  In a modern guest, there aren't really any ISA devices being
+   added either.
+
+So yes, picking port 0x0505 is safe for something like this (as long as
+you check to make sure that you really are under KVM).
+
+Regards,
+
+Anthony Liguori
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
