@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab2GVMPq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 08:15:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34750 "EHLO mx1.redhat.com"
+	id S1752054Ab2GVMP4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 08:15:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8505 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807Ab2GVMPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 08:15:34 -0400
+	id S1751958Ab2GVMPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 08:15:50 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,35 +14,141 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 08/17] perf, tool: Adding PERF_ATTR_SIZE_VER2 to the header swap check
-Date: Sun, 22 Jul 2012 14:14:31 +0200
-Message-Id: <1342959280-5361-9-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 12/17] perf, tool: Add libunwind dependency for dwarf cfi unwinding
+Date: Sun, 22 Jul 2012 14:14:35 +0200
+Message-Id: <1342959280-5361-13-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updating attr_file_abi_sizes array with PERF_ATTR_SIZE_VER2 version,
-so we have the swap check complete.
+Adding libunwind to be linked with perf if available. It's required
+for the to get dwarf cfi unwinding support.
+
+Also building perf with the dwarf call frame informations by default,
+so that we can unwind callchains in perf itself.
+
+Adding LIBUNWIND_DIR Makefile variable allowing user to specify
+the directory with libunwind to be linked. This is used for
+debug purposes.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/util/header.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/perf/Makefile                 |   30 +++++++++++++++++++++++++++++-
+ tools/perf/config/feature-tests.mak |   25 +++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 5a47aba..9678af6 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1814,6 +1814,7 @@ out_free:
- static const int attr_file_abi_sizes[] = {
- 	[0] = PERF_ATTR_SIZE_VER0,
- 	[1] = PERF_ATTR_SIZE_VER1,
-+	[2] = PERF_ATTR_SIZE_VER2,
- 	0,
- };
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 576db7e..d0c3291 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -38,6 +38,9 @@ include config/utilities.mak
+ # Define NO_NEWT if you do not want TUI support.
+ #
+ # Define NO_DEMANGLE if you do not want C++ symbol demangling.
++#
++# Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
++# backtrace post unwind.
  
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -59,6 +62,7 @@ AR = $(CROSS_COMPILE)ar
+ ifeq ($(ARCH),i386)
+ 	ARCH := x86
+ 	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86
+ endif
+ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+@@ -72,6 +76,7 @@ ifeq ($(ARCH),x86_64)
+ 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+ 	endif
+ 	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+ endif
+ 
+ # Treat warnings as errors unless directed not to
+@@ -92,7 +97,7 @@ ifdef PARSER_DEBUG
+ 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
+ endif
+ 
+-CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
++CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ ALL_LDFLAGS = $(LDFLAGS)
+@@ -456,6 +461,21 @@ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+ endif # Dwarf support
+ endif # NO_DWARF
+ 
++ifndef NO_LIBUNWIND
++# for linking with debug library, run like:
++# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++ifdef LIBUNWIND_DIR
++	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
++	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
++endif
++
++FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
++ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
++	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
++	NO_LIBUNWIND := 1
++endif # Libunwind support
++endif # NO_LIBUNWIND
++
+ -include arch/$(ARCH)/Makefile
+ 
+ ifneq ($(OUTPUT),)
+@@ -487,6 +507,14 @@ else
+ endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ 
++ifdef NO_LIBUNWIND
++	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
++else
++	EXTLIBS += $(LIBUNWIND_LIBS)
++	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
++	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
++endif
++
+ ifdef NO_NEWT
+ 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
+ else
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 6c18785..2f1156a 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -154,3 +154,28 @@ int main(void)
+ 	return 0;
+ }
+ endef
++
++ifndef NO_LIBUNWIND
++define SOURCE_LIBUNWIND
++#include <libunwind.h>
++#include <stdlib.h>
++
++extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
++                                      unw_word_t ip,
++                                      unw_dyn_info_t *di,
++                                      unw_proc_info_t *pi,
++                                      int need_unwind_info, void *arg);
++
++
++#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
++
++int main(void)
++{
++	unw_addr_space_t addr_space;
++	addr_space = unw_create_addr_space(NULL, 0);
++	unw_init_remote(NULL, addr_space, NULL);
++	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++	return 0;
++}
++endef
++endif
 -- 
 1.7.7.6
 
