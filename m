@@ -1,94 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab2GVMTH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 08:19:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19183 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab2GVMPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 08:15:16 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
-        mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 03/17] perf, x86: Add copy_from_user_nmi_nochk for best effort copy
-Date: Sun, 22 Jul 2012 14:14:26 +0200
-Message-Id: <1342959280-5361-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
-References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+	id S1751627Ab2GVMhF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 08:37:05 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:58042 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab2GVMhB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 08:37:01 -0400
+Message-ID: <500BF35D.6050605@linux.vnet.ibm.com>
+Date: Sun, 22 Jul 2012 18:04:37 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Rik van Riel <riel@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V5 0/3] kvm: Improving directed yield in PLE handler
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com> <20120720173640.GA22659@amt.cnet>
+In-Reply-To: <20120720173640.GA22659@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072212-3568-0000-0000-0000022DBFEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding copy_from_user_nmi_nochk that provides the best effort
-copy regardless the requesting size crossing the task boundary.
+On 07/20/2012 11:06 PM, Marcelo Tosatti wrote:
+> On Wed, Jul 18, 2012 at 07:07:17PM +0530, Raghavendra K T wrote:
+>>
+>> Currently Pause Loop Exit (PLE) handler is doing directed yield to a
+>> random vcpu on pl-exit. We already have filtering while choosing
+>> the candidate to yield_to. This change adds more checks while choosing
+>> a candidate to yield_to.
+>>
+>> On a large vcpu guests, there is a high probability of
+>> yielding to the same vcpu who had recently done a pause-loop exit.
+>> Such a yield can lead to the vcpu spinning again.
+>>
+>> The patchset keeps track of the pause loop exit and gives chance to a
+>> vcpu which has:
+>>
+>>   (a) Not done pause loop exit at all (probably he is preempted lock-holder)
+>>
+>>   (b) vcpu skipped in last iteration because it did pause loop exit, and
+>>   probably has become eligible now (next eligible lock holder)
+>>
+>> This concept also helps in cpu relax interception cases which use same handler.
+>>
+>> Changes since V4:
+>>   - Naming Change (Avi):
+>>    struct ple ==>  struct spin_loop
+>>    cpu_relax_intercepted ==>  in_spin_loop
+>>    vcpu_check_and_update_eligible ==>  vcpu_eligible_for_directed_yield
+>>   - mark vcpu in spinloop as not eligible to avoid influence of previous exit
+>>
+>> Changes since V3:
+>>   - arch specific fix/changes (Christian)
+>>
+>> Changes since v2:
+>>   - Move ple structure to common code (Avi)
+>>   - rename pause_loop_exited to cpu_relax_intercepted (Avi)
+>>   - add config HAVE_KVM_CPU_RELAX_INTERCEPT (Avi)
+>>   - Drop superfluous curly braces (Ingo)
+>>
+>> Changes since v1:
+>>   - Add more documentation for structure and algorithm and Rename
+>>     plo ==>  ple (Rik).
+>>   - change dy_eligible initial value to false. (otherwise very first directed
+>>      yield will not be skipped. (Nikunj)
+>>   - fixup signoff/from issue
+>>
+>> Future enhancements:
+>>    (1) Currently we have a boolean to decide on eligibility of vcpu. It
+>>      would be nice if I get feedback on guest (>32 vcpu) whether we can
+>>      improve better with integer counter. (with counter = say f(log n )).
+>>
+>>    (2) We have not considered system load during iteration of vcpu. With
+>>     that information we can limit the scan and also decide whether schedule()
+>>     is better. [ I am able to use #kicked vcpus to decide on this But may
+>>     be there are better ideas like information from global loadavg.]
+>>
+>>    (3) We can exploit this further with PV patches since it also knows about
+>>     next eligible lock-holder.
+>>
+>> Summary: There is a very good improvement for kvm based guest on PLE machine.
+>> The V5 has huge improvement for kbench.
+>>
+>> +-----------+-----------+-----------+------------+-----------+
+>>     base_rik    stdev       patched      stdev       %improve
+>> +-----------+-----------+-----------+------------+-----------+
+>>                kernbench (time in sec lesser is better)
+>> +-----------+-----------+-----------+------------+-----------+
+>>   1x    49.2300     1.0171    22.6842     0.3073    117.0233 %
+>>   2x    91.9358     1.7768    53.9608     1.0154    70.37516 %
+>> +-----------+-----------+-----------+------------+-----------+
+>>
+>> +-----------+-----------+-----------+------------+-----------+
+>>                ebizzy (records/sec more is better)
+>> +-----------+-----------+-----------+------------+-----------+
+>>   1x  1129.2500    28.6793    2125.6250    32.8239    88.23334 %
+>>   2x  1892.3750    75.1112    2377.1250   181.6822    25.61596 %
+>> +-----------+-----------+-----------+------------+-----------+
+>>
+>> Note: The patches are tested on x86.
+>>
+>>   Links
+>>    V4: https://lkml.org/lkml/2012/7/16/80
+>>    V3: https://lkml.org/lkml/2012/7/12/437
+>>    V2: https://lkml.org/lkml/2012/7/10/392
+>>    V1: https://lkml.org/lkml/2012/7/9/32
+>>
+>>   Raghavendra K T (3):
+>>     config: Add config to support ple or cpu relax optimzation
+>>     kvm : Note down when cpu relax intercepted or pause loop exited
+>>     kvm : Choose a better candidate for directed yield
+>> ---
+>>   arch/s390/kvm/Kconfig    |    1 +
+>>   arch/x86/kvm/Kconfig     |    1 +
+>>   include/linux/kvm_host.h |   39 +++++++++++++++++++++++++++++++++++++++
+>>   virt/kvm/Kconfig         |    3 +++
+>>   virt/kvm/kvm_main.c      |   41 +++++++++++++++++++++++++++++++++++++++++
+>>   5 files changed, 85 insertions(+), 0 deletions(-)
+>
+> Reviewed-by: Marcelo Tosatti<mtosatti@redhat.com>
+>
 
-This is going to be useful for stack dump we need in post
-DWARF CFI based unwind, where we have predefined size of
-the user stack to dump, and we need to store the most of
-the requested dump size, regardless this size is crossing
-the task boundary.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/x86/include/asm/uaccess.h |    2 ++
- arch/x86/lib/usercopy.c        |   15 +++++++++++----
- 2 files changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index e1f3a17..d8d6bcd 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -562,6 +562,8 @@ struct __large_struct { unsigned long buf[100]; };
- #endif /* CONFIG_X86_WP_WORKS_OK */
- 
- extern unsigned long
-+copy_from_user_nmi_nochk(void *to, const void __user *from, unsigned long n);
-+extern unsigned long
- copy_from_user_nmi(void *to, const void __user *from, unsigned long n);
- extern __must_check long
- strncpy_from_user(char *dst, const char __user *src, long count);
-diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-index 4f74d94..29ca1c7 100644
---- a/arch/x86/lib/usercopy.c
-+++ b/arch/x86/lib/usercopy.c
-@@ -14,7 +14,7 @@
-  * best effort, GUP based copy_from_user() that is NMI-safe
-  */
- unsigned long
--copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-+copy_from_user_nmi_nochk(void *to, const void __user *from, unsigned long n)
- {
- 	unsigned long offset, addr = (unsigned long)from;
- 	unsigned long size, len = 0;
-@@ -22,9 +22,6 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
- 	void *map;
- 	int ret;
- 
--	if (__range_not_ok(from, n, TASK_SIZE))
--		return len;
--
- 	do {
- 		ret = __get_user_pages_fast(addr, 1, 0, &page);
- 		if (!ret)
-@@ -46,4 +43,14 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
- 
- 	return len;
- }
-+EXPORT_SYMBOL_GPL(copy_from_user_nmi_nochk);
-+
-+unsigned long
-+copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-+{
-+	if (__range_not_ok(from, n, TASK_SIZE) == 0)
-+		return 0;
-+
-+	return copy_from_user_nmi_nochk(to, from, n);
-+}
- EXPORT_SYMBOL_GPL(copy_from_user_nmi);
--- 
-1.7.7.6
+Thanks Marcelo for the review. Avi, Rik, Christian, please let me know
+if this series looks good now.
 
