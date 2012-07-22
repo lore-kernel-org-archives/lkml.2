@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab2GVMP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 08:15:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8505 "EHLO mx1.redhat.com"
+	id S1752145Ab2GVMQM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 08:16:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60510 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751958Ab2GVMPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 08:15:50 -0400
+	id S1752000Ab2GVMQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 08:16:09 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,141 +14,224 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 12/17] perf, tool: Add libunwind dependency for dwarf cfi unwinding
-Date: Sun, 22 Jul 2012 14:14:35 +0200
-Message-Id: <1342959280-5361-13-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 17/17] perf, tool: Add dso data caching tests
+Date: Sun, 22 Jul 2012 14:14:40 +0200
+Message-Id: <1342959280-5361-18-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding libunwind to be linked with perf if available. It's required
-for the to get dwarf cfi unwinding support.
-
-Also building perf with the dwarf call frame informations by default,
-so that we can unwind callchains in perf itself.
-
-Adding LIBUNWIND_DIR Makefile variable allowing user to specify
-the directory with libunwind to be linked. This is used for
-debug purposes.
+Adding automated test for DSO data reading. Testing raw/cached
+reads from different file/cache locations.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/Makefile                 |   30 +++++++++++++++++++++++++++++-
- tools/perf/config/feature-tests.mak |   25 +++++++++++++++++++++++++
- 2 files changed, 54 insertions(+), 1 deletions(-)
+ tools/perf/Makefile             |    1 +
+ tools/perf/builtin-test.c       |    4 +
+ tools/perf/util/dso-test-data.c |  154 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h        |    1 +
+ 4 files changed, 160 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/util/dso-test-data.c
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 576db7e..d0c3291 100644
+index c18c790..1f550fa 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -38,6 +38,9 @@ include config/utilities.mak
- # Define NO_NEWT if you do not want TUI support.
- #
- # Define NO_DEMANGLE if you do not want C++ symbol demangling.
-+#
-+# Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
-+# backtrace post unwind.
- 
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-@@ -59,6 +62,7 @@ AR = $(CROSS_COMPILE)ar
- ifeq ($(ARCH),i386)
- 	ARCH := x86
- 	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -72,6 +76,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
- 	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
- endif
- 
- # Treat warnings as errors unless directed not to
-@@ -92,7 +97,7 @@ ifdef PARSER_DEBUG
- 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
- endif
- 
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
-@@ -456,6 +461,21 @@ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
- endif # Dwarf support
- endif # NO_DWARF
- 
-+ifndef NO_LIBUNWIND
-+# for linking with debug library, run like:
-+# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+ifdef LIBUNWIND_DIR
-+	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
-+	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
-+endif
+@@ -364,6 +364,7 @@ LIB_OBJS += $(OUTPUT)util/usage.o
+ LIB_OBJS += $(OUTPUT)util/wrapper.o
+ LIB_OBJS += $(OUTPUT)util/sigchain.o
+ LIB_OBJS += $(OUTPUT)util/symbol.o
++LIB_OBJS += $(OUTPUT)util/dso-test-data.o
+ LIB_OBJS += $(OUTPUT)util/color.o
+ LIB_OBJS += $(OUTPUT)util/pager.o
+ LIB_OBJS += $(OUTPUT)util/header.o
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 5d59398..000efb0 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1142,6 +1142,10 @@ static struct test {
+ 		.func = test__perf_pmu,
+ 	},
+ 	{
++		.desc = "Test dso data interface",
++		.func = dso__test_data,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/util/dso-test-data.c b/tools/perf/util/dso-test-data.c
+new file mode 100644
+index 0000000..ec62977
+--- /dev/null
++++ b/tools/perf/util/dso-test-data.c
+@@ -0,0 +1,154 @@
 +
-+FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-+ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-+	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-+	NO_LIBUNWIND := 1
-+endif # Libunwind support
-+endif # NO_LIBUNWIND
-+
- -include arch/$(ARCH)/Makefile
- 
- ifneq ($(OUTPUT),)
-@@ -487,6 +507,14 @@ else
- endif # PERF_HAVE_DWARF_REGS
- endif # NO_DWARF
- 
-+ifdef NO_LIBUNWIND
-+	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
-+else
-+	EXTLIBS += $(LIBUNWIND_LIBS)
-+	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
-+	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
-+endif
-+
- ifdef NO_NEWT
- 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
- else
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 6c18785..2f1156a 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -154,3 +154,28 @@ int main(void)
- 	return 0;
- }
- endef
-+
-+ifndef NO_LIBUNWIND
-+define SOURCE_LIBUNWIND
-+#include <libunwind.h>
 +#include <stdlib.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <string.h>
 +
-+extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
-+                                      unw_word_t ip,
-+                                      unw_dyn_info_t *di,
-+                                      unw_proc_info_t *pi,
-+                                      int need_unwind_info, void *arg);
++#include "symbol.h"
 +
++#define TEST_ASSERT_VAL(text, cond) \
++do { \
++	if (!(cond)) { \
++		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
++		return -1; \
++	} \
++} while (0)
 +
-+#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
-+
-+int main(void)
++static char *test_file(int size)
 +{
-+	unw_addr_space_t addr_space;
-+	addr_space = unw_create_addr_space(NULL, 0);
-+	unw_init_remote(NULL, addr_space, NULL);
-+	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++	static char buf_templ[] = "/tmp/test-XXXXXX";
++	char *templ = buf_templ;
++	int fd, i;
++	unsigned char *buf;
++
++	fd = mkostemp(templ, O_CREAT|O_WRONLY|O_TRUNC);
++
++	buf = malloc(size);
++	if (!buf) {
++		close(fd);
++		return NULL;
++	}
++
++	for (i = 0; i < size; i++)
++		buf[i] = (unsigned char) ((int) i % 10);
++
++	if (size != write(fd, buf, size))
++		templ = NULL;
++
++	close(fd);
++	return templ;
++}
++
++#define TEST_FILE_SIZE (DSO__DATA_CACHE_SIZE * 20)
++
++struct test_data__offset {
++	off_t offset;
++	u8 data[10];
++	int size;
++};
++
++struct test_data__offset offsets[] = {
++	/* Fill first cache page. */
++	{
++		.offset = 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Read first cache page. */
++	{
++		.offset = 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Fill cache boundary pages. */
++	{
++		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Read cache boundary pages. */
++	{
++		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Fill final cache page. */
++	{
++		.offset = TEST_FILE_SIZE - 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Read final cache page. */
++	{
++		.offset = TEST_FILE_SIZE - 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Read final cache page. */
++	{
++		.offset = TEST_FILE_SIZE - 3,
++		.data   = { 7, 8, 9, 0, 0, 0, 0, 0, 0, 0 },
++		.size   = 3,
++	},
++};
++
++#define OFFSETS_CNT (sizeof(offsets) / sizeof(struct test_data__offset))
++
++int dso__test_data(void)
++{
++	struct machine machine;
++	struct dso *dso;
++	char *file = test_file(TEST_FILE_SIZE);
++	int i;
++
++	TEST_ASSERT_VAL("No test file", file);
++
++	memset(&machine, 0, sizeof(machine));
++
++	dso = dso__new((const char *)file);
++
++	/* Basic 10 bytes tests. */
++	for (i = 0; i < (int) OFFSETS_CNT; i++) {
++		struct test_data__offset *data = &offsets[i];
++		ssize_t size;
++		u8 buf[10];
++
++		memset(buf, 0, 10);
++		size = dso__data_read_offset(dso, &machine, data->offset,
++				     buf, 10);
++
++		TEST_ASSERT_VAL("Wrong size", size == data->size);
++		TEST_ASSERT_VAL("Wrong data", !memcmp(buf, data->data, 10));
++	}
++
++	/* Read cross multiple cache pages. */
++	{
++		ssize_t size;
++		int c;
++		u8 *buf;
++
++		buf = malloc(TEST_FILE_SIZE);
++		TEST_ASSERT_VAL("ENOMEM\n", buf);
++
++		/* First iteration to fill caches, second one to read them. */
++		for (c = 0; c < 2; c++) {
++			memset(buf, 0, TEST_FILE_SIZE);
++			size = dso__data_read_offset(dso, &machine, 10,
++						     buf, TEST_FILE_SIZE);
++
++			TEST_ASSERT_VAL("Wrong size",
++				size == (TEST_FILE_SIZE - 10));
++
++			for (i = 0; i < size; i++)
++				TEST_ASSERT_VAL("Wrong data",
++					buf[i] == (i % 10));
++		}
++
++		free(buf);
++	}
++
++	dso__delete(dso);
++	unlink(file);
 +	return 0;
 +}
-+endef
-+endif
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 980d5f5..1fe733a 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -325,4 +325,5 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    struct machine *machine, u64 addr,
+ 			    u8 *data, ssize_t size);
++int dso__test_data(void);
+ #endif /* __PERF_SYMBOL */
 -- 
 1.7.7.6
 
