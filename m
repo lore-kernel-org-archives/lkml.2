@@ -1,151 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab2GVR67 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 13:58:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16145 "EHLO mx1.redhat.com"
+	id S1752300Ab2GVSJF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 14:09:05 -0400
+Received: from smtp.multi.fi ([85.134.37.151]:43744 "EHLO smtp.multi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab2GVR65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 13:58:57 -0400
-Message-ID: <500C3F44.5060708@redhat.com>
-Date: Sun, 22 Jul 2012 13:58:28 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752219Ab2GVSJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 14:09:04 -0400
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jul 2012 14:09:04 EDT
+Message-ID: <500C4013.2080101@mageia.org>
+Date: Sun, 22 Jul 2012 21:01:55 +0300
+From: Thomas Backlund <tmb@mageia.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120718 Thunderbird/14.0
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC V5 0/3] kvm: Improving directed yield in PLE handler
-References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com> <20120720173640.GA22659@amt.cnet> <500BF35D.6050605@linux.vnet.ibm.com>
-In-Reply-To: <500BF35D.6050605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Alexandre Ferrando <alferpal@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Build fails in 3.4.6
+References: <CALELsEM07z6BckpSvEUrdJU5T3715uED=9g=K3OicnjRP=O6nw@mail.gmail.com>
+In-Reply-To: <CALELsEM07z6BckpSvEUrdJU5T3715uED=9g=K3OicnjRP=O6nw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2012 08:34 AM, Raghavendra K T wrote:
-> On 07/20/2012 11:06 PM, Marcelo Tosatti wrote:
->> On Wed, Jul 18, 2012 at 07:07:17PM +0530, Raghavendra K T wrote:
->>>
->>> Currently Pause Loop Exit (PLE) handler is doing directed yield to a
->>> random vcpu on pl-exit. We already have filtering while choosing
->>> the candidate to yield_to. This change adds more checks while choosing
->>> a candidate to yield_to.
->>>
->>> On a large vcpu guests, there is a high probability of
->>> yielding to the same vcpu who had recently done a pause-loop exit.
->>> Such a yield can lead to the vcpu spinning again.
->>>
->>> The patchset keeps track of the pause loop exit and gives chance to a
->>> vcpu which has:
->>>
->>> (a) Not done pause loop exit at all (probably he is preempted
->>> lock-holder)
->>>
->>> (b) vcpu skipped in last iteration because it did pause loop exit, and
->>> probably has become eligible now (next eligible lock holder)
->>>
->>> This concept also helps in cpu relax interception cases which use
->>> same handler.
->>>
->>> Changes since V4:
->>> - Naming Change (Avi):
->>> struct ple ==> struct spin_loop
->>> cpu_relax_intercepted ==> in_spin_loop
->>> vcpu_check_and_update_eligible ==> vcpu_eligible_for_directed_yield
->>> - mark vcpu in spinloop as not eligible to avoid influence of
->>> previous exit
->>>
->>> Changes since V3:
->>> - arch specific fix/changes (Christian)
->>>
->>> Changes since v2:
->>> - Move ple structure to common code (Avi)
->>> - rename pause_loop_exited to cpu_relax_intercepted (Avi)
->>> - add config HAVE_KVM_CPU_RELAX_INTERCEPT (Avi)
->>> - Drop superfluous curly braces (Ingo)
->>>
->>> Changes since v1:
->>> - Add more documentation for structure and algorithm and Rename
->>> plo ==> ple (Rik).
->>> - change dy_eligible initial value to false. (otherwise very first
->>> directed
->>> yield will not be skipped. (Nikunj)
->>> - fixup signoff/from issue
->>>
->>> Future enhancements:
->>> (1) Currently we have a boolean to decide on eligibility of vcpu. It
->>> would be nice if I get feedback on guest (>32 vcpu) whether we can
->>> improve better with integer counter. (with counter = say f(log n )).
->>>
->>> (2) We have not considered system load during iteration of vcpu. With
->>> that information we can limit the scan and also decide whether
->>> schedule()
->>> is better. [ I am able to use #kicked vcpus to decide on this But may
->>> be there are better ideas like information from global loadavg.]
->>>
->>> (3) We can exploit this further with PV patches since it also knows
->>> about
->>> next eligible lock-holder.
->>>
->>> Summary: There is a very good improvement for kvm based guest on PLE
->>> machine.
->>> The V5 has huge improvement for kbench.
->>>
->>> +-----------+-----------+-----------+------------+-----------+
->>> base_rik stdev patched stdev %improve
->>> +-----------+-----------+-----------+------------+-----------+
->>> kernbench (time in sec lesser is better)
->>> +-----------+-----------+-----------+------------+-----------+
->>> 1x 49.2300 1.0171 22.6842 0.3073 117.0233 %
->>> 2x 91.9358 1.7768 53.9608 1.0154 70.37516 %
->>> +-----------+-----------+-----------+------------+-----------+
->>>
->>> +-----------+-----------+-----------+------------+-----------+
->>> ebizzy (records/sec more is better)
->>> +-----------+-----------+-----------+------------+-----------+
->>> 1x 1129.2500 28.6793 2125.6250 32.8239 88.23334 %
->>> 2x 1892.3750 75.1112 2377.1250 181.6822 25.61596 %
->>> +-----------+-----------+-----------+------------+-----------+
->>>
->>> Note: The patches are tested on x86.
->>>
->>> Links
->>> V4: https://lkml.org/lkml/2012/7/16/80
->>> V3: https://lkml.org/lkml/2012/7/12/437
->>> V2: https://lkml.org/lkml/2012/7/10/392
->>> V1: https://lkml.org/lkml/2012/7/9/32
->>>
->>> Raghavendra K T (3):
->>> config: Add config to support ple or cpu relax optimzation
->>> kvm : Note down when cpu relax intercepted or pause loop exited
->>> kvm : Choose a better candidate for directed yield
->>> ---
->>> arch/s390/kvm/Kconfig | 1 +
->>> arch/x86/kvm/Kconfig | 1 +
->>> include/linux/kvm_host.h | 39 +++++++++++++++++++++++++++++++++++++++
->>> virt/kvm/Kconfig | 3 +++
->>> virt/kvm/kvm_main.c | 41 +++++++++++++++++++++++++++++++++++++++++
->>> 5 files changed, 85 insertions(+), 0 deletions(-)
->>
->> Reviewed-by: Marcelo Tosatti<mtosatti@redhat.com>
->>
->
-> Thanks Marcelo for the review. Avi, Rik, Christian, please let me know
-> if this series looks good now.
+22.07.2012 18:02, Alexandre Ferrando skrev:
+> Summary: Linux kernel 3.4.6 fails to build in some cases when
+> CONFIG_NO_HZ is set
+> 
+> Full description: Kernel build using configurations [ 0 ] (mine,
+> trying to build the zen kernel) and [ 1 ] (from someone using
+> slackware) fail to build with this error message when CONFIG_NO_HZ is
+> set:
+> 
+> kernel/built-in.o: In function `tick_nohz_stop_sched_tick.isra.9':
+> tick-sched.c:(.text+0x4a3e9): undefined reference to `calc_load_enter_idle'
+> kernel/built-in.o: In function `tick_nohz_idle_exit':
+> (.text+0x4a767): undefined reference to `calc_load_exit_idle'
+> 
+> Unsetting CONFIG_NO_HZ solves the issue.
+> 
+> However, CONFIG_NO_HZ seems not to be the root of the problem because
+> this configuration [ 2 ] of the zen kernel and Arch's stock kernel [ 3
+> ] both build with CONFIG_NO_HZ set
 
-The series looks good to me.
+This fallout comes from the BFS scheduler patch in zen kernel that is
+not updated/adapted for the:
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+sched-nohz-rewrite-and-fix-load-avg-computation-again.patch
 
--- 
-All rights reversed
+that went into 3.4.6
+
+
+--
+Thomas
+
+
