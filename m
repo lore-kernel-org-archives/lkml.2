@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab2GVCZq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 22:25:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23317 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051Ab2GVCZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 22:25:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="182766507"
-Date: Sun, 22 Jul 2012 10:25:41 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] avr32: fix build error in ATSTK1002 code
-Message-ID: <20120722022541.GA8279@localhost>
+	id S1751995Ab2GVC2y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 22:28:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63493 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab2GVC2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 22:28:53 -0400
+Message-ID: <500B6563.8090108@gmail.com>
+Date: Sat, 21 Jul 2012 20:28:51 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 10/11] perf tool: give user better message if precise
+ is not supported
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com> <1342826756-64663-11-git-send-email-dsahern@gmail.com> <87y5mdqtwe.fsf@kernel.org>
+In-Reply-To: <87y5mdqtwe.fsf@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch/avr32/boards/atstk1000/atstk1002.c:100: error: 'num_partitions' undeclared here (not in a function)
+On 7/21/12 4:40 AM, Namhyung Kim wrote:
+> The name 'PEBS' is intel-specific, so shouldn't we try to avoid using it
+> directly? How about this:
+>
+>      Precise event sampling is not supported. Try removing 'p' modifier
 
-which is introduced by commit 1754aab9bb86 ("mtd: ATMEL, AVR32: inline
-nand partition table access ").
+Your right. should keep the response consistent with the documentation 
+which is generic. I'll wait for responses on the other patches; perhaps 
+only have to respin this one.
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- arch/avr32/boards/atstk1000/atstk1002.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/avr32/boards/atstk1000/atstk1002.c b/arch/avr32/boards/atstk1000/atstk1002.c
-index dc52633..6c80aba 100644
---- a/arch/avr32/boards/atstk1000/atstk1002.c
-+++ b/arch/avr32/boards/atstk1000/atstk1002.c
-@@ -97,7 +97,7 @@ static struct atmel_nand_data atstk1006_nand_data __initdata = {
- 	.enable_pin	= GPIO_PIN_PB(29),
- 	.ecc_mode	= NAND_ECC_SOFT,
- 	.parts		= nand_partitions,
--	.num_parts	= ARRAY_SIZE(num_partitions),
-+	.num_parts	= ARRAY_SIZE(nand_partitions),
- };
- #endif
- 
--- 
-1.7.10
+David
 
