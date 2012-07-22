@@ -1,112 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab2GVXfG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 19:35:06 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60601 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab2GVXfE (ORCPT
+	id S1752751Ab2GVXuf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 19:50:35 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49313 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab2GVXud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 19:35:04 -0400
-Message-ID: <500C8E41.9040109@gmail.com>
-Date: Mon, 23 Jul 2012 01:35:29 +0200
+	Sun, 22 Jul 2012 19:50:33 -0400
+Message-ID: <500C91E0.8090108@gmail.com>
+Date: Mon, 23 Jul 2012 01:50:56 +0200
 From: Sasha Levin <levinsasha928@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
 MIME-Version: 1.0
 To: Anthony Liguori <anthony@codemonkey.ws>
-CC: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+CC: Wen Congyang <wency@cn.fujitsu.com>, Gleb Natapov <gleb@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, Jan Kiszka <jan.kiszka@siemens.com>,
         qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v7] kvm: notify host when the guest is panicked
-References: <500A565A.8080403@cn.fujitsu.com> <500A8969.1040300@gmail.com> <87txwzwqgt.fsf@codemonkey.ws> <500C604B.3080800@gmail.com> <500C6333.6010609@gmail.com> <87wr1vctv3.fsf@codemonkey.ws>
-In-Reply-To: <87wr1vctv3.fsf@codemonkey.ws>
+        rusty@rustcorp.com.au
+Subject: Re: [Qemu-devel] [PATCH v7.5] kvm: notify host when the guest is
+ panicked
+References: <500A565A.8080403@cn.fujitsu.com> <500A6BF1.4030002@cn.fujitsu.com> <500BE68D.90005@gmail.com> <87wr1vwquz.fsf@codemonkey.ws> <500C5C91.3060505@gmail.com> <87txwzctje.fsf@codemonkey.ws>
+In-Reply-To: <87txwzctje.fsf@codemonkey.ws>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2012 12:29 AM, Anthony Liguori wrote:
+On 07/23/2012 12:36 AM, Anthony Liguori wrote:
 > Sasha Levin <levinsasha928@gmail.com> writes:
 > 
->> On 07/22/2012 10:19 PM, Sasha Levin wrote:
->>> On 07/22/2012 09:22 PM, Anthony Liguori wrote:
->>>> Sasha Levin <levinsasha928@gmail.com> writes:
->>>>
->>>>> On 07/21/2012 09:12 AM, Wen Congyang wrote:
->>>>>> +#define KVM_PV_PORT	(0x505UL)
->>>>>> +
->>>>>>  #ifdef __KERNEL__
->>>>>>  #include <asm/processor.h>
->>>>>>  
->>>>>> @@ -221,6 +223,11 @@ static inline void kvm_disable_steal_time(void)
->>>>>>  }
->>>>>>  #endif
->>>>>>  
->>>>>> +static inline unsigned int kvm_arch_pv_features(void)
->>>>>> +{
->>>>>> +	return inl(KVM_PV_PORT);
->>>>>> +}
->>>>>> +
+>> On 07/22/2012 09:14 PM, Anthony Liguori wrote:
+>>> Sasha Levin <levinsasha928@gmail.com> writes:
+>>>
+>>>> On 07/21/2012 10:44 AM, Wen Congyang wrote:
+>>>>> We can know the guest is panicked when the guest runs on xen.
+>>>>> But we do not have such feature on kvm.
 >>>>>
->>>>> Why is this safe?
+>>>>> Another purpose of this feature is: management app(for example:
+>>>>> libvirt) can do auto dump when the guest is panicked. If management
+>>>>> app does not do auto dump, the guest's user can do dump by hand if
+>>>>> he sees the guest is panicked.
 >>>>>
->>>>> I'm not sure you can just pick any ioport you'd like and use it.
+>>>>> We have three solutions to implement this feature:
+>>>>> 1. use vmcall
+>>>>> 2. use I/O port
+>>>>> 3. use virtio-serial.
+>>>>>
+>>>>> We have decided to avoid touching hypervisor. The reason why I choose
+>>>>> choose the I/O port is:
+>>>>> 1. it is easier to implememt
+>>>>> 2. it does not depend any virtual device
+>>>>> 3. it can work when starting the kernel
 >>>>
->>>> There are three ways I/O ports get used on a PC:
+>>>> Was the option of implementing a virtio-watchdog driver considered?
 >>>>
->>>> 1) Platform devices
->>>>  - This is well defined since the vast majority of platform devices are
->>>>    implemented within a single chip.  If you're emulating an i440fx
->>>>    chipset, the PIIX4 spec has an exhaustive list.
+>>>> You're basically re-implementing a watchdog, a guest-host interface and a set of protocols for guest-host communications.
 >>>>
->>>> 2) PCI devices
->>>>  - Typically, PCI only allocates ports starting at 0x0d00 to avoid
->>>>    conflicts with ISA devices.
->>>>
->>>> 3) ISA devices
->>>>  - ISA uses subtractive decoding so any ISA device can access.  In
->>>>    theory, an ISA device could attempt to use port 0x0505 but it's
->>>>    unlikely.  In a modern guest, there aren't really any ISA devices being
->>>>    added either.
->>>>
->>>> So yes, picking port 0x0505 is safe for something like this (as long as
->>>> you check to make sure that you really are under KVM).
+>>>> Why can't we re-use everything we have now, push a virtio watchdog
+>>>> driver into drivers/watchdog/, and gain a more complete solution to
+>>>> detecting hangs inside the guest.
 >>>
->>> Is there anything that actually prevents me from using PCI ports lower than 0x0d00? As you said in (3), ISA isn't really used anymore (nor is implemented by lkvm for example), so placing PCI below 0x0d00 might even make sense in that case.
+>>> The purpose of virtio is not to reinvent every possible type of device.
+>>> There are plenty of hardware watchdogs that are very suitable to be used
+>>> for this purpose.  QEMU implements quite a few already.
 >>>
->>> Furthermore, I can place one of these brand new virtio-mmio devices which got introduced recently wherever I want right now - Having a device that uses 0x505 would cause a pretty non-obvious failure mode.
->>>
->>> Either way, If we are going to grab an ioport, then:
->>>
->>>  - It should be documented well somewhere in Documentation/virt/kvm
->>>  - It should go through request_region() to actually claim those ioports.
->>>  - It should fail gracefully if that port is taken for some reason, instead of not even checking it.
->>>
+>>> Watchdogs are not performance sensitive so there's no point in using
+>>> virtio.
 >>
->> Out of curiosity I tested that, and apparently lkvm has no problem allocating virtio-pci devices in that range:
->>
->> sh-4.2# pwd
->> /sys/devices/pci0000:00/0000:00:01.0
->> sh-4.2# cat resource | head -n1
->> 0x0000000000000500 0x00000000000005ff 0x0000000000040101
->>
->> This was with the commit in question applied.
+>> The issue here is not performance, but the adding of a brand new
+>> guest-host interface.
 > 
-> With all due respect, lkvm has a half-baked implementation of PCI.  This
-> is why you have to pass kernel parameters to disable ACPI and disable
-> PCI BIOS probing.
+> We have:
 > 
-> So yeah, you can do funky things in lkvm but that doesn't mean a system
-> that emulated actual hardware would ever do that.
+> 1) Virtio--this is our preferred PV interface.  It needs PCI to be fully
+> initialized and probably will live as a module.
+> 
+> 2) Hypercalls--this a secondary PV interface but is available very
+> early.  It's terminated in kvm.ko which means it can only operate on
+> things that are logically part of the CPU and/or APIC complex.
+> 
+> This patch introduces a third interface which is available early like
+> hypercalls but not necessarily terminated in kvm.ko.  That means it can
+> have a broader scope in functionality than (2).
+> 
+> We could just as well use a hypercall and have multiple commands issued
+> to that hypercall as a convention and add a new exit type to KVM that
+> sent that specific hypercall to userspace for processing.
+> 
+> But a PIO operation already has this behavior and requires no changes to kvm.ko.
 
-We disable ACPI simply because we don't support it. MPtable is a perfectly valid mechanism to do everything we need so far, so implementing ACPI didn't interest either of us too much. What's more - why implement a "complete design disaster in every way" ;)
+I don't dispute that there may be a need for another guest-host interface, but this patch can basically be called "kvm: notify host when the guest is panicked, oh, btw, and add a brand new undocumented interface"
 
-Regarding PCI probing, while we do force the use of direct memory probing this is because we lack anything which reassembles a BIOS. Like the above, this wasn't too interesting in a virtualized environment, and the kernel is pretty happy running without it. PCI probing does happen in a standard way.
-
-I think that the interesting part in that test was not that you could actually put a PCI device in the 0x500 range, but that nothing failed and no one yelled at me (with the panic commit applied).
-
-I'm not worried about port 0x505 being taken, I'm worried that it'll silently break a (although not very common/reasonable/typical) perfectly valid use case.
+The new interface should at least come in it's own patch, with documentation.
