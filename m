@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794Ab2GVMP1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 08:15:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19056 "EHLO mx1.redhat.com"
+	id S1751916Ab2GVMPl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 08:15:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20401 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426Ab2GVMPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 08:15:14 -0400
+	id S1751451Ab2GVMPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 08:15:30 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,203 +14,137 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 02/17] perf: Add ability to attach user level registers dump to sample
-Date: Sun, 22 Jul 2012 14:14:25 +0200
-Message-Id: <1342959280-5361-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 07/17] perf: Add attribute to filter out callchains
+Date: Sun, 22 Jul 2012 14:14:30 +0200
+Message-Id: <1342959280-5361-8-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing PERF_SAMPLE_REGS_USER sample type bit to trigger
-the dump of user level registers on sample. Registers we want
-to dump are specified by sample_regs_user bitmask.
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Only user level registers are dumped at the moment. Meaning the
-register values of the user space context as it was before the
-user entered the kernel for whatever reason (syscall, irq,
-exception, or a PMI happening in userspace).
+Introducing following bits to the the perf_event_attr struct:
+  - exclude_callchain_kernel to filter out kernel callchain
+    from the sample dump
+  - exclude_callchain_user to filter out user callchain
+    from the sample dump
 
-The layout of the sample_regs_user bitmap is described in
-asm/perf_regs.h for archs that support register dump.
+We need to be able to disable standard user callchain dump
+when we use the dwarf cfi callchain mode, because frame
+pointer based user callchains are useless in this mode.
 
-This is going to be useful to bring Dwarf CFI based stack
-unwinding on top of samples.
+Implementing also exclude_callchain_kernel to have complete
+set of options.
 
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+[ Added kernel callchains filtering ]
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/perf_event.h |   20 ++++++++++++--
- kernel/events/core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 78 insertions(+), 3 deletions(-)
+ include/linux/perf_event.h |    5 ++++-
+ kernel/events/callchain.c  |   25 +++++++++++++++----------
+ kernel/events/core.c       |    5 ++++-
+ kernel/events/internal.h   |    3 ++-
+ 4 files changed, 25 insertions(+), 13 deletions(-)
 
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 76c5c8b..57f209d 100644
+index b4663b3..91c2de2 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -130,8 +130,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
- 	PERF_SAMPLE_RAW				= 1U << 10,
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
-+	PERF_SAMPLE_REGS_USER			= 1U << 12,
+@@ -259,7 +259,10 @@ struct perf_event_attr {
+ 				exclude_host   :  1, /* don't count in host   */
+ 				exclude_guest  :  1, /* don't count in guest  */
  
--	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
- };
- 
- /*
-@@ -194,6 +195,7 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
- #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
-+#define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
- 
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-@@ -271,7 +273,13 @@ struct perf_event_attr {
- 		__u64		bp_len;
- 		__u64		config2; /* extension of config1 */
- 	};
--	__u64	branch_sample_type; /* enum branch_sample_type */
-+	__u64	branch_sample_type; /* enum perf_branch_sample_type */
+-				__reserved_1   : 43;
++				exclude_callchain_kernel : 1, /* exclude kernel callchains */
++				exclude_callchain_user   : 1, /* exclude user callchains */
 +
-+	/*
-+	 * Defines set of user regs to dump on samples.
-+	 * See asm/perf_regs.h for details.
-+	 */
-+	__u64	sample_regs_user;
- };
++				__reserved_1   : 41;
  
- /*
-@@ -548,6 +556,9 @@ enum perf_event_type {
- 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
- 	 *
- 	 *	{ u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
-+	 *
-+	 * 	{ u64			available;
-+	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -609,6 +620,7 @@ struct perf_guest_info_callbacks {
- #include <linux/static_key.h>
- #include <linux/atomic.h>
- #include <linux/sysfs.h>
-+#include <linux/perf_regs.h>
- #include <asm/local.h>
- 
- struct perf_callchain_entry {
-@@ -1133,6 +1145,7 @@ struct perf_sample_data {
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
-+	struct pt_regs			*regs_user;
- };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -1142,7 +1155,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->addr = addr;
- 	data->raw  = NULL;
- 	data->br_stack = NULL;
--	data->period	= period;
-+	data->period = period;
-+	data->regs_user = NULL;
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+index 6581a04..905ffb2 100644
+--- a/kernel/events/callchain.c
++++ b/kernel/events/callchain.c
+@@ -153,12 +153,12 @@ put_callchain_entry(int rctx)
+ 	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
+-struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
++struct perf_callchain_entry *perf_callchain(struct pt_regs *regs,
++					    int kernel, int user)
+ {
+ 	int rctx;
+ 	struct perf_callchain_entry *entry;
+ 
+-
+ 	entry = get_callchain_entry(&rctx);
+ 	if (rctx == -1)
+ 		return NULL;
+@@ -168,18 +168,23 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+ 
+ 	entry->nr = 0;
+ 
+-	if (!user_mode(regs)) {
++	if (kernel && !user_mode(regs)) {
+ 		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 		perf_callchain_kernel(entry, regs);
+-		if (current->mm)
+-			regs = task_pt_regs(current);
+-		else
+-			regs = NULL;
+ 	}
+ 
+-	if (regs) {
+-		perf_callchain_store(entry, PERF_CONTEXT_USER);
+-		perf_callchain_user(entry, regs);
++	if (user) {
++		if (!user_mode(regs)) {
++			if  (current->mm)
++				regs = task_pt_regs(current);
++			else
++				regs = NULL;
++		}
++
++		if (regs) {
++			perf_callchain_store(entry, PERF_CONTEXT_USER);
++			perf_callchain_user(entry, regs);
++		}
+ 	}
+ 
+ exit_put:
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f1cf0ed..e817e32 100644
+index 8a9cf80..78f405e 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -3756,6 +3756,33 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
- }
- EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
+@@ -4126,8 +4126,11 @@ void perf_prepare_sample(struct perf_event_header *header,
  
-+static void
-+perf_output_sample_regs(struct perf_output_handle *handle,
-+			struct pt_regs *regs, u64 mask)
-+{
-+	int bit;
-+
-+	for_each_set_bit(bit, (const unsigned long *) &mask,
-+			 sizeof(mask) * BITS_PER_BYTE) {
-+		u64 val;
-+
-+		val = perf_reg_value(regs, bit);
-+		perf_output_put(handle, val);
-+	}
-+}
-+
-+static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
-+{
-+	if (!user_mode(regs)) {
-+		if (current->mm)
-+			regs = task_pt_regs(current);
-+		else
-+			regs = NULL;
-+	}
-+
-+	return regs;
-+}
-+
- static void __perf_event_header__init_id(struct perf_event_header *header,
- 					 struct perf_sample_data *data,
- 					 struct perf_event *event)
-@@ -4016,6 +4043,23 @@ void perf_output_sample(struct perf_output_handle *handle,
- 			perf_output_put(handle, nr);
- 		}
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_REGS_USER) {
-+		u64 avail = (data->regs_user != NULL);
-+
-+		/*
-+		 * If there are no regs to dump, notice it through
-+		 * first u64 being zero.
-+		 */
-+		perf_output_put(handle, avail);
-+
-+		if (avail) {
-+			u64 mask = event->attr.sample_regs_user;
-+			perf_output_sample_regs(handle,
-+						data->regs_user,
-+						mask);
-+		}
-+	}
- }
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		int size = 1;
++		int kernel = !event->attr.exclude_callchain_kernel;
++		int user   = !event->attr.exclude_callchain_user;
  
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -4067,6 +4111,19 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		}
- 		header->size += size;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_REGS_USER) {
-+		/* regs dump available bool */
-+		int size = sizeof(u64);
-+
-+		data->regs_user = perf_sample_regs_user(regs);
-+		if (data->regs_user) {
-+			u64 mask = event->attr.sample_regs_user;
-+			size += hweight64(mask) * sizeof(u64);
-+		}
-+
-+		header->size += size;
-+	}
- }
+-		data->callchain = perf_callchain(regs);
++		if (kernel || user)
++			data->callchain = perf_callchain(regs, kernel, user);
  
- static void perf_event_output(struct perf_event *event,
-@@ -6116,6 +6173,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 			attr->branch_sample_type = mask;
- 		}
- 	}
-+
-+	if (attr->sample_type & PERF_SAMPLE_REGS_USER)
-+		ret = perf_reg_validate(attr->sample_regs_user);
-+
- out:
- 	return ret;
+ 		if (data->callchain)
+ 			size += data->callchain->nr;
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index be1ef29..abcc03d 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -125,7 +125,8 @@ DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
+ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
+ 
+ /* Callchain handling */
+-extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
++extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs,
++						   int kernel, int user);
+ extern int get_callchain_buffers(void);
+ extern void put_callchain_buffers(void);
  
 -- 
 1.7.7.6
