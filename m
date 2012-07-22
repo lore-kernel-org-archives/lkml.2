@@ -1,139 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab2GVCH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 22:07:56 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51675 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751973Ab2GVCHs (ORCPT
+	id S1752313Ab2GVCIc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 22:08:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65439 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab2GVCIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 22:07:48 -0400
-X-Sasl-enc: Z2I8PM5gn1QI/GAYbeOqDLfqYAV6a+uWNt6rJQyU6dLm 1342922867
-Date: Sat, 21 Jul 2012 19:07:46 -0700
-From: Greg KH <greg@kroah.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the staging tree with the
- target-merge tree
-Message-ID: <20120722020746.GB31926@kroah.com>
-References: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
- <20120719235523.GA13623@kroah.com>
- <1342806778.25472.1.camel@haakon2.linux-iscsi.org>
- <20120720180358.GA9134@kroah.com>
- <20120720184228.GA19243@redhat.com>
+	Sat, 21 Jul 2012 22:08:24 -0400
+Date: Sat, 21 Jul 2012 19:07:42 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Roland Dreier <roland@purestorage.com>
+cc: Tomasz Chmielewski <tch@wpkg.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.5-rc7 - can no longer wake up from suspend to RAM
+In-Reply-To: <CAL1RGDU8TVBkZ4yP=kjwqvGUsrnQcBGpLa_x-7c=Gu54piVwyw@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1207211905010.1570@eggly.anvils>
+References: <50079125.3020007@wpkg.org> <CAL1RGDU8TVBkZ4yP=kjwqvGUsrnQcBGpLa_x-7c=Gu54piVwyw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720184228.GA19243@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 09:42:28PM +0300, Michael S. Tsirkin wrote:
-> On Fri, Jul 20, 2012 at 11:03:58AM -0700, Greg KH wrote:
-> > On Fri, Jul 20, 2012 at 10:52:58AM -0700, Nicholas A. Bellinger wrote:
-> > > Hi Greg,
-> > > 
-> > > On Thu, 2012-07-19 at 16:55 -0700, Greg KH wrote:
-> > > > On Thu, Jul 19, 2012 at 02:53:01PM +1000, Stephen Rothwell wrote:
-> > > > > Hi Greg,
-> > > > > 
-> > > > > Today's linux-next merge of the staging tree got a conflict in
-> > > > > drivers/staging/Kconfig between commit d0146d396bfa ("tcm_vhost: Initial
-> > > > > merge for vhost level target fabric driver") from the target-merge tree
-> > > > > and commit 15a4bc17b7f4 ("Staging: add CSR Wifi "os helper" module") from
-> > > > > the staging tree.
-> > > > > 
-> > > > > Just context changes.  I fixed it up (see below) and can carry the fix as
-> > > > > necessary.
-> > > > > -- 
-> > > > > Cheers,
-> > > > > Stephen Rothwell                    sfr@canb.auug.org.au
-> > > > > 
-> > > > > diff --cc drivers/staging/Kconfig
-> > > > > index 67ec9fe,e3402d5..0000000
-> > > > > --- a/drivers/staging/Kconfig
-> > > > > +++ b/drivers/staging/Kconfig
-> > > > > @@@ -132,6 -132,8 +132,10 @@@ source "drivers/staging/ipack/Kconfig
-> > > > >   
-> > > > >   source "drivers/staging/gdm72xx/Kconfig"
-> > > > >   
-> > > > > + source "drivers/staging/csr/Kconfig"
-> > > > > + 
-> > > > > + source "drivers/staging/omap-thermal/Kconfig"
-> > > > > + 
-> > > > >  +source "drivers/vhost/Kconfig.tcm"
-> > > > 
-> > > > Why is someone putting a non drivers/staging/ Kconfig file here in
-> > > > drivers/staging/Kconfig?  That's not ok at all.
-> > > > 
-> > > > Target people, please just depend on CONFIG_STAGING if you want to do
-> > > > that, but don't mess with files in the drivers/staging/ directory for no
-> > > > good reason at all.
-> > > > 
-> > > 
-> > > This was a request from MST (CC'ed) in order to have TCM_VHOST show up
-> > > under the staging configuration options..
-> > 
-> > If you really want it to show up there, then send me a patch adding the
-> > code to drivers/staging/.  Otherwise it really makes no sense.
-> > 
-> > > If that's really not what should be done, I'm happy to drop this part
-> > > and just use CONFIG_STAGING again.
-> > 
-> > Why are you wanting to depend on CONFIG_STAGING in the first place?
-> > What is wrong with the code that it can't be merged "properly" now?
-> > Don't use CONFIG_STAGING as a "crutch" unless you really need it.
-> > 
-> > thanks,
-> > 
-> > greg k-h
+On Sat, 21 Jul 2012, Roland Dreier wrote:
+> On Wed, Jul 18, 2012 at 9:46 PM, Tomasz Chmielewski <tch@wpkg.org> wrote:
+> > After upgrading to 3.5-rc7, my laptop no longer wakes up reliable from suspend to RAM. 3.4.x worked fine.
 > 
-> It's very similar to how it was with nouveau: we are not sure
-> we can commit to the userspace ABI yet.
-
-Then you are in trouble :)
-
-> Most importantly, it still seems not 100% clear whether this driver will
-> have major userspace using it. And if not, it would be very hard to
-> support a driver when recent userspace does not use it in the end.
+> FWIW, I've been having similar problems with 3.5-rc7.  With 3.5-rc6 my
+> laptop resumed fine, but since updating to -rc7, it often seems to just
+> sit there after opening the lid -- the moon/sleep LED stays on, and the
+> power LED smoothly cycles on and off, as if it's fast asleep.  Even pressing
+> the power button doesn't have any effect (until I hold down the power
+> button long enough to turn off).
 > 
-> At the moment arguments on upstream mailing list seem to be
-> a bit circular: there's no module in upstream kernel so
-> userspace does not want to accept the patches.
+> I guess I'll start a bisection, but it's slow going because it takes multiple
+> tries to know for sure if a kernel is bad.
 > 
-> If we put enabling this driver in staging, then it works out in one of
-> two ways
-> - userspace starts using it then this effectively freezes the ABI and
->   we move it out of staging next release
-> - no userspace uses it and we drop it completely or rework ABI
-> 
-> On the other hand, it is marginally better to not want code in staging
-> for two reasons:
-> - there are dependencies between this code and other code in
->   drivers/vhost which are easier for me to handle if it's all
->   in one place
+> The only commit between rc6 and rc7 that looks like it might be related
+> is dc332fdf9f373a87b1e2f423b5b004b2a3c37e1a ("ACPI / PM: Leave
+> Bus Master Arbitration enabled for suspend/resume"), which apparently
+> fixes some other laptops.  But perhaps I'll try reverting that and see how
+> it goes.
 
-If there are going to be lots of dependancies, then I don't want it in
-drivers/staging/ as it doesn't belong there, it belongs cleaned up and
-in the "real" place.
+Interrupt your bisection to try this from 3.5 final:
 
-> - a bit easier to track history if we do not move code
+commit 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Mon Jul 16 12:50:42 2012 -0400
 
-git preserves this, don't worry about that at all.
+    timekeeping: Add missing update call in timekeeping_resume()
+    
+    The leap second rework unearthed another issue of inconsistent data.
+    
+    On timekeeping_resume() the timekeeper data is updated, but nothing
+    calls timekeeping_update(), so now the update code in the timer
+    interrupt sees stale values.
+    
+    This has been the case before those changes, but then the timer
+    interrupt was using stale data as well so this went unnoticed for quite
+    some time.
+    
+    Add the missing update call, so all the data is consistent everywhere.
+    
+    Reported-by: Andreas Schwab <schwab@linux-m68k.org>
+    Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+    Reported-and-tested-by: Martin Steigerwald <Martin@lichtvoll.de>
+    Cc: LKML <linux-kernel@vger.kernel.org>
+    Cc: Linux PM list <linux-pm@vger.kernel.org>
+    Cc: John Stultz <johnstul@us.ibm.com>
+    Cc: Ingo Molnar <mingo@kernel.org>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+    Cc: Prarit Bhargava <prarit@redhat.com>
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+    Signed-off-by: John Stultz <johnstul@us.ibm.com>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-So, if this code really does depend on core vhost changes that are going
-to be happening over time, I would not recommend it being in
-drivers/staging/ as you are right, you are going to have a hard time
-syncing with me.
-
-But don't think that by somehow marking the driver with CONFIG_STAGING
-that you get a free pass on the "we are going to break the userspace
-api", that's not ok.  Be careful about this.  Yes, it's tough, and it's
-a "chicken and egg" problem like you mention above, I know.
-
-sorry,
-
-greg k-h
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 269b1fe..3447cfa 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -717,6 +717,7 @@ static void timekeeping_resume(void)
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+ 	timekeeper.ntp_error = 0;
+ 	timekeeping_suspended = 0;
++	timekeeping_update(false);
+ 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
+ 
+ 	touch_softlockup_watchdog();
