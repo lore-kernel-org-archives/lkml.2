@@ -1,122 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab2GVRfN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 13:35:13 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:51503 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752226Ab2GVRfK convert rfc822-to-8bit (ORCPT
+	id S1752341Ab2GVRgn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 13:36:43 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49775 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233Ab2GVRgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 13:35:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] acpi: fix pwr_btn_event_pending build error
-Date: Sun, 22 Jul 2012 19:40:51 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20120721214156.GA2515@linux.vnet.ibm.com> <20120722000838.GA15798@shutemov.name> <20120722041038.GN2435@linux.vnet.ibm.com>
-In-Reply-To: <20120722041038.GN2435@linux.vnet.ibm.com>
+	Sun, 22 Jul 2012 13:36:42 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201207221940.51764.rjw@sisk.pl>
+In-Reply-To: <20120722141523.GA8892@gmail.com>
+References: <20120722141523.GA8892@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 22 Jul 2012 10:36:20 -0700
+X-Google-Sender-Auth: NarQydwV59F8_eyC_uKjhcD43e4
+Message-ID: <CA+55aFyh9+ZGjP+3kP1_bqmSVLxsHvWP967ZnEFHuda1MhAZ8w@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/uv changes for v3.6
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, July 22, 2012, Paul E. McKenney wrote:
-> On Sun, Jul 22, 2012 at 03:08:40AM +0300, Kirill A. Shutemov wrote:
-> > On Sat, Jul 21, 2012 at 04:37:14PM -0700, Paul E. McKenney wrote:
-> > > On Sun, Jul 22, 2012 at 12:52:43AM +0300, Kirill A. Shutemov wrote:
-> > > > On Sat, Jul 21, 2012 at 02:41:56PM -0700, Paul E. McKenney wrote:
-> > > > > Hello!
-> > > > > 
-> > > > > A recent build for KVM on x86 resulted in the following build error:
-> > > > > 
-> > > > > drivers/acpi/sleep.c:60:13: warning: ‘pwr_btn_event_pending’ defined but not
-> > > > > +used [-Wunused-variable]
-> > > > > 
-> > > > > This patch silences this error.
-> > > > > 
-> > > > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > > > 
-> > > > > diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> > > > > index 8856102..18347aa 100644
-> > > > > --- a/drivers/acpi/sleep.c
-> > > > > +++ b/drivers/acpi/sleep.c
-> > > > > @@ -57,7 +57,9 @@ MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
-> > > > >  MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
-> > > > >  
-> > > > >  static u8 sleep_states[ACPI_S_STATE_COUNT];
-> > > > > +#ifdef CONFIG_ACPI_SLEEP
-> > > > >  static bool pwr_btn_event_pending;
-> > > > > +#endif /* #ifdef CONFIG_ACPI_SLEEP */
-> > > > 
-> > > > __maybe_unused ?
-> > > 
-> > > Are the compiler and linker smart enough to get rid of the storage in
-> > > case it really isn't used?  (Not that the storage for a bool is worth
-> > > worrying about, but...)
-> > 
-> > GCC with optimization enabled will get rid of the storage even without
-> > __maybe_unused.
-> 
-> OK, that should allow me to get rid of a few ifdefs, then!  For this one,
-> please see below.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> acpi: fix pwr_btn_event_pending build error
-> 
-> A recent build for KVM on x86 resulted in the following build error:
-> 
-> drivers/acpi/sleep.c:60:13: warning: ‘pwr_btn_event_pending’ defined but not
-> +used [-Wunused-variable]
-> 
-> This patch silences this error.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+On Sun, Jul 22, 2012 at 7:15 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> UV2 BAU productization fixes.
 
-Well, I prefer the one below.
+These kinds of "explanations" are not helpful, Ingo. Nobody except the
+SGI people know what the hell those TLA's mean. So please don't use
+random TLA's to "explain" things.
 
-Thanks,
-Rafael
-
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: ACPI / PM: Fix build warning in sleep.c for CONFIG_ACPI_SLEEP unset
-
-If CONFIG_ACPI_SLEEP is unset, the compiler complains that
-pwr_btn_event_pending is defined but not used.  To silence the
-warning, move the definition of pwr_btn_event_pending under an
-apprporiate #ifdef.
-
-Reported-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/sleep.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux/drivers/acpi/sleep.c
-===================================================================
---- linux.orig/drivers/acpi/sleep.c
-+++ linux/drivers/acpi/sleep.c
-@@ -57,7 +57,6 @@ MODULE_PARM_DESC(gts, "Enable evaluation
- MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
- 
- static u8 sleep_states[ACPI_S_STATE_COUNT];
--static bool pwr_btn_event_pending;
- 
- static void acpi_sleep_tts_switch(u32 acpi_state)
- {
-@@ -110,6 +109,7 @@ static int acpi_sleep_prepare(u32 acpi_s
- 
- #ifdef CONFIG_ACPI_SLEEP
- static u32 acpi_target_sleep_state = ACPI_STATE_S0;
-+static bool pwr_btn_event_pending;
- 
- /*
-  * The ACPI specification wants us to save NVS memory regions during hibernation
+                  Linus
