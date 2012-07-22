@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab2GVSlq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 14:41:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39429 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752234Ab2GVSlp (ORCPT
+	id S1752401Ab2GVSnT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 14:43:19 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:44786 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752234Ab2GVSnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 14:41:45 -0400
-Date: Sun, 22 Jul 2012 19:41:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] regmap updates for 3.6
-Message-ID: <20120722184142.GB4557@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
-Content-Disposition: inline
-X-Cookie: You will forget that you ever knew me.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 22 Jul 2012 14:43:17 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+YJQgcCcaYSaWBC2ZMKcUi5aDe8Qj69u6kQs+3vE
+	xcIjcLVi5DHwJf
+Message-ID: <1342982589.7210.25.camel@marge.simpson.net>
+Subject: Re: Deadlocks due to per-process plugging
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        mgalbraith@suse.com, Steven Rostedt <rostedt@goodmis.org>
+Date: Sun, 22 Jul 2012 20:43:09 +0200
+In-Reply-To: <1342856835.7739.19.camel@marge.simpson.net>
+References: <20120711133735.GA8122@quack.suse.cz>
+	 <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>
+	 <20120711201601.GB9779@quack.suse.cz>
+	 <alpine.LFD.2.02.1207121552111.32033@ionos>
+	 <20120713123318.GB20361@quack.suse.cz>
+	 <alpine.LFD.2.02.1207131444490.32033@ionos>
+	 <20120713144622.GB28715@quack.suse.cz>
+	 <alpine.LFD.2.02.1207151057010.32033@ionos>
+	 <1342343673.28142.2.camel@marge.simpson.net>
+	 <1342405366.7659.35.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207161058550.32033@ionos>
+	 <1342432094.7659.39.camel@marge.simpson.net>
+	 <1342433303.7659.42.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207161216200.32033@ionos>
+	 <1342530621.7353.116.camel@marge.simpson.net>
+	 <1342586692.7321.45.camel@marge.simpson.net>
+	 <1342589411.7321.59.camel@marge.simpson.net>
+	 <1342856835.7739.19.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2012-07-21 at 09:47 +0200, Mike Galbraith wrote: 
+> On Wed, 2012-07-18 at 07:30 +0200, Mike Galbraith wrote: 
+> > On Wed, 2012-07-18 at 06:44 +0200, Mike Galbraith wrote:
+> > 
+> > > The patch in question for missing Cc.  Maybe should be only mutex, but I
+> > > see no reason why IO dependency can only possibly exist for mutexes...
+> > 
+> > Well that was easy, box quickly said "nope, mutex only does NOT cut it".
+> 
+> And I also learned (ouch) that both doesn't cut it either.  Ksoftirqd
+> (or sirq-blk) being nailed by q->lock in blk_done_softirq() is.. not
+> particularly wonderful.  As long as that doesn't happen, IO deadlock
+> doesn't happen, troublesome filesystems just work.  If it does happen
+> though, you've instantly got a problem.
 
---3uo+9/B/ebqu+fSQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That problem being slab_lock in practice btw, though I suppose it could
+do the same with any number of others.  In encountered case, ksoftirqd
+(or sirq-blk) blocks on slab_lock while holding q->queue_lock, while a
+userspace task (dbench) blocks on q->queue_lock while holding slab_lock
+on the same cpu.  Game over.
 
-The following changes since commit 485802a6c524e62b5924849dd727ddbb1497cc71:
+Odd is that it doesn't seem to materialize if you have rt_mutex deadlock
+detector enabled, not that that matters.  My 64 core box beat on ext3
+for 35 hours without ever hitting it with no deadlock detector (this
+time.. other long runs on top thereof, totaling lots of hours), and my
+x3550 beat crap out of several fs for a very long day week without
+hitting it with deadlock detector, but hits it fairly easily without.  
 
-  Linux 3.5-rc3 (2012-06-16 17:25:17 -0700)
+Hohum, regardless of fickle timing gods mood of the moment, deadlocks
+are most definitely possible, and will happen, which leaves us with at
+least two filesystems needing strategically placed -rt unplug points,
+with no guarantee that this is really solving anything at all (other
+than empirical evidence that the bad thing ain't happening 'course).
 
-are available in the git repository at:
+-Mike
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-3.6
-
-for you to fetch changes up to 38e23194e1c95e73819d25a63bcf94fe4709d4c5:
-
-  Merge branches 'regmap-core', 'regmap-irq' and 'regmap-page' into regmap-next (2012-07-22 19:26:07 +0100)
-
-----------------------------------------------------------------
-
-regmap: Updates for 3.6
-
-A few fixes plus a few features, the most generally useful thing being
-the register paging support which can be used by quite a few devices:
-
-- Support for wake IRQs in regmap-irq
-- Support for register paging
-- Support for explicitly specified endianness, mostly for MMIO.
-
-----------------------------------------------------------------
-Axel Lin (1):
-      regmap: mmio: Staticize regmap_mmio_gen_context()
-
-Dimitris Papastamos (1):
-      regmap: Fix incorrect arguments to kzalloc() call
-
-Krystian Garbaciak (3):
-      regmap: Move lock out from internal function _regmap_update_bits().
-      regmap: Add support for register indirect addressing.
-      regmap: Fix work_buf switching for page update during virtual range access.
-
-Mark Brown (6):
-      regmap: Constify regmap_irq_chip
-      regmap: Don't try to map non-existant IRQs
-      regmap: Implement support for wake IRQs
-      regmap: Remove warning on stubbed dev_get_regmap()
-      regmap: Add hook for printk logging for debugging during early init
-      Merge branches 'regmap-core', 'regmap-irq' and 'regmap-page' into regmap-next
-
-Stephen Warren (2):
-      regmap: allow busses to request formatting with specific endianness
-      regmap: mmio: request native endian formatting
-
- drivers/base/regmap/internal.h    |   17 ++
- drivers/base/regmap/regmap-irq.c  |   57 +++++-
- drivers/base/regmap/regmap-mmio.c |   30 ++--
- drivers/base/regmap/regmap.c      |  344 ++++++++++++++++++++++++++++++++++---
- include/linux/regmap.h            |   69 +++++++-
- 5 files changed, 478 insertions(+), 39 deletions(-)
-
---3uo+9/B/ebqu+fSQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQDElfAAoJEBus8iNuMP3dzmAQAJMVE0azJKrA7/V7wiGTf9BV
-bJBWbMfqk1ovy4krUIFqCoRkKVBKva7MbFL3YBDhDjv8C4OQ8AdkqOIMxBdi6pYk
-Spg6xDSxEDTXry5yn6pdWCe2HXLLSQ4pKrnvj2iHwjtKdX1ucgK3lQgPqkI1m/vn
-OlD3GSWs+7fXedK0ze9nnbCj+nu7UzWCSvgJmw4l4YTuIcIY+KOeW16l1YPeYLa5
-sp3VTpSwpQJP2FukI2VcFdJl66/j7YBDy4q0u1M6zyVml8H5nujY6VufBeS04RSZ
-WmqPhb0qSxhs5rusC3a0Y1YysHQVSvBgVIg5uud1KD6WWUx9VtqShpxFSKUi18NA
-2aFwc4h56VRGkren308Do7KiHP2T97M6l5FOfJRlgF2nhkzobarWyg+1BUTB5qle
-0VAm0x5DzcPqOSN2TbCxHmMBu0WnM6qbpR8GYRjXVVF16nc6iRo6QfDz5G+3D1FT
-02hcpFDB4dAiUvX/zCzAQME6QEX1DNOLHYG6PdG0CZf2iw6c8CH7CavgXO08QPwb
-flPzbeMWid2gEIGu6sUDyI7A1CS1Eft9PCNJ1MY3+IepYX5KAnFwfrF+cpWY9QIm
-HfFl0X5/DXWOTaKXCJNtvPCSbugn54hylHH/554H3ins/8rfZ178tXo5+zNu525C
-V3Y1cBuq4JMWQT2S1F/9
-=Y1m1
------END PGP SIGNATURE-----
-
---3uo+9/B/ebqu+fSQ--
