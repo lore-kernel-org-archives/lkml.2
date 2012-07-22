@@ -1,220 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099Ab2GVFYr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 01:24:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59250 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab2GVFYp (ORCPT
+	id S1751391Ab2GVFgE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 01:36:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59498 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab2GVFgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 01:24:45 -0400
-From: "Yaakov (Cygwin/X)" <yselkowitz@users.sourceforge.net>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org
-Subject: [PATCH] tools/include: use stdint types for user-space byteshift headers
-Date: Sun, 22 Jul 2012 00:24:36 -0500
-Message-Id: <1342934676-5432-1-git-send-email-yselkowitz@users.sourceforge.net>
-X-Mailer: git-send-email 1.7.9
+	Sun, 22 Jul 2012 01:36:00 -0400
+Date: Sun, 22 Jul 2012 15:35:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Vinod Koul <vinod.koul@linux.intel.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: linux-next: manual merge of the akpm tree with the slave-dma tree
+Message-Id: <20120722153548.48213df45606109be4f7952b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sun__22_Jul_2012_15_35_48_+1000_XE+u/rdbu56N1wv="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
+--Signature=_Sun__22_Jul_2012_15_35_48_+1000_XE+u/rdbu56N1wv=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Commit a07f7672d7cf0ff0d6e548a9feb6e0bd016d9c6c added user-space copies
-of the byteshift headers to be used by hostprogs, changing e.g. u8 to __u8.
-However, in order to cross-compile the kernel from a non-Linux system,
-stdint.h types need to be used instead of linux/types.h types.
+Hi Andrew,
 
-Signed-off-by: Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
----
-Resubmitting; still no on-list response to original posted of 11 June.
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/dma/dmaengine.c between commit 634332502366 ("dmaengine: Cleanup
+logging messages") from the slave-dma tree and commit
+"drivers/dma/dmaengine.c: lower the priority of 'failed to get' dma
+channel message" from the akpm tree.
 
-Also applies to linux-3.[345].y
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- tools/include/tools/be_byteshift.h |   34 +++++++++++++++++-----------------
- tools/include/tools/le_byteshift.h |   34 +++++++++++++++++-----------------
- 2 files changed, 34 insertions(+), 34 deletions(-)
+diff --cc drivers/dma/dmaengine.c
+index 3491654,6c87d67..0000000
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@@ -582,8 -578,8 +582,8 @@@ void dmaengine_get(void
+  				list_del_rcu(&device->global_node);
+  				break;
+  			} else if (err)
+- 				pr_err("%s: failed to get %s: (%d)\n",
++ 				pr_debug("%s: failed to get %s: (%d)\n",
+ -					__func__, dma_chan_name(chan), err);
+ +				       __func__, dma_chan_name(chan), err);
+  		}
+  	}
+ =20
 
-diff --git a/tools/include/tools/be_byteshift.h b/tools/include/tools/be_byteshift.h
-index f4912e2..84c17d8 100644
---- a/tools/include/tools/be_byteshift.h
-+++ b/tools/include/tools/be_byteshift.h
-@@ -1,68 +1,68 @@
- #ifndef _TOOLS_BE_BYTESHIFT_H
- #define _TOOLS_BE_BYTESHIFT_H
- 
--#include <linux/types.h>
-+#include <stdint.h>
- 
--static inline __u16 __get_unaligned_be16(const __u8 *p)
-+static inline uint16_t __get_unaligned_be16(const uint8_t *p)
- {
- 	return p[0] << 8 | p[1];
- }
- 
--static inline __u32 __get_unaligned_be32(const __u8 *p)
-+static inline uint32_t __get_unaligned_be32(const uint8_t *p)
- {
- 	return p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3];
- }
- 
--static inline __u64 __get_unaligned_be64(const __u8 *p)
-+static inline uint64_t __get_unaligned_be64(const uint8_t *p)
- {
--	return (__u64)__get_unaligned_be32(p) << 32 |
-+	return (uint64_t)__get_unaligned_be32(p) << 32 |
- 	       __get_unaligned_be32(p + 4);
- }
- 
--static inline void __put_unaligned_be16(__u16 val, __u8 *p)
-+static inline void __put_unaligned_be16(uint16_t val, uint8_t *p)
- {
- 	*p++ = val >> 8;
- 	*p++ = val;
- }
- 
--static inline void __put_unaligned_be32(__u32 val, __u8 *p)
-+static inline void __put_unaligned_be32(uint32_t val, uint8_t *p)
- {
- 	__put_unaligned_be16(val >> 16, p);
- 	__put_unaligned_be16(val, p + 2);
- }
- 
--static inline void __put_unaligned_be64(__u64 val, __u8 *p)
-+static inline void __put_unaligned_be64(uint64_t val, uint8_t *p)
- {
- 	__put_unaligned_be32(val >> 32, p);
- 	__put_unaligned_be32(val, p + 4);
- }
- 
--static inline __u16 get_unaligned_be16(const void *p)
-+static inline uint16_t get_unaligned_be16(const void *p)
- {
--	return __get_unaligned_be16((const __u8 *)p);
-+	return __get_unaligned_be16((const uint8_t *)p);
- }
- 
--static inline __u32 get_unaligned_be32(const void *p)
-+static inline uint32_t get_unaligned_be32(const void *p)
- {
--	return __get_unaligned_be32((const __u8 *)p);
-+	return __get_unaligned_be32((const uint8_t *)p);
- }
- 
--static inline __u64 get_unaligned_be64(const void *p)
-+static inline uint64_t get_unaligned_be64(const void *p)
- {
--	return __get_unaligned_be64((const __u8 *)p);
-+	return __get_unaligned_be64((const uint8_t *)p);
- }
- 
--static inline void put_unaligned_be16(__u16 val, void *p)
-+static inline void put_unaligned_be16(uint16_t val, void *p)
- {
- 	__put_unaligned_be16(val, p);
- }
- 
--static inline void put_unaligned_be32(__u32 val, void *p)
-+static inline void put_unaligned_be32(uint32_t val, void *p)
- {
- 	__put_unaligned_be32(val, p);
- }
- 
--static inline void put_unaligned_be64(__u64 val, void *p)
-+static inline void put_unaligned_be64(uint64_t val, void *p)
- {
- 	__put_unaligned_be64(val, p);
- }
-diff --git a/tools/include/tools/le_byteshift.h b/tools/include/tools/le_byteshift.h
-index c99d45a..8fe9f24 100644
---- a/tools/include/tools/le_byteshift.h
-+++ b/tools/include/tools/le_byteshift.h
-@@ -1,68 +1,68 @@
- #ifndef _TOOLS_LE_BYTESHIFT_H
- #define _TOOLS_LE_BYTESHIFT_H
- 
--#include <linux/types.h>
-+#include <stdint.h>
- 
--static inline __u16 __get_unaligned_le16(const __u8 *p)
-+static inline uint16_t __get_unaligned_le16(const uint8_t *p)
- {
- 	return p[0] | p[1] << 8;
- }
- 
--static inline __u32 __get_unaligned_le32(const __u8 *p)
-+static inline uint32_t __get_unaligned_le32(const uint8_t *p)
- {
- 	return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
- }
- 
--static inline __u64 __get_unaligned_le64(const __u8 *p)
-+static inline uint64_t __get_unaligned_le64(const uint8_t *p)
- {
--	return (__u64)__get_unaligned_le32(p + 4) << 32 |
-+	return (uint64_t)__get_unaligned_le32(p + 4) << 32 |
- 	       __get_unaligned_le32(p);
- }
- 
--static inline void __put_unaligned_le16(__u16 val, __u8 *p)
-+static inline void __put_unaligned_le16(uint16_t val, uint8_t *p)
- {
- 	*p++ = val;
- 	*p++ = val >> 8;
- }
- 
--static inline void __put_unaligned_le32(__u32 val, __u8 *p)
-+static inline void __put_unaligned_le32(uint32_t val, uint8_t *p)
- {
- 	__put_unaligned_le16(val >> 16, p + 2);
- 	__put_unaligned_le16(val, p);
- }
- 
--static inline void __put_unaligned_le64(__u64 val, __u8 *p)
-+static inline void __put_unaligned_le64(uint64_t val, uint8_t *p)
- {
- 	__put_unaligned_le32(val >> 32, p + 4);
- 	__put_unaligned_le32(val, p);
- }
- 
--static inline __u16 get_unaligned_le16(const void *p)
-+static inline uint16_t get_unaligned_le16(const void *p)
- {
--	return __get_unaligned_le16((const __u8 *)p);
-+	return __get_unaligned_le16((const uint8_t *)p);
- }
- 
--static inline __u32 get_unaligned_le32(const void *p)
-+static inline uint32_t get_unaligned_le32(const void *p)
- {
--	return __get_unaligned_le32((const __u8 *)p);
-+	return __get_unaligned_le32((const uint8_t *)p);
- }
- 
--static inline __u64 get_unaligned_le64(const void *p)
-+static inline uint64_t get_unaligned_le64(const void *p)
- {
--	return __get_unaligned_le64((const __u8 *)p);
-+	return __get_unaligned_le64((const uint8_t *)p);
- }
- 
--static inline void put_unaligned_le16(__u16 val, void *p)
-+static inline void put_unaligned_le16(uint16_t val, void *p)
- {
- 	__put_unaligned_le16(val, p);
- }
- 
--static inline void put_unaligned_le32(__u32 val, void *p)
-+static inline void put_unaligned_le32(uint32_t val, void *p)
- {
- 	__put_unaligned_le32(val, p);
- }
- 
--static inline void put_unaligned_le64(__u64 val, void *p)
-+static inline void put_unaligned_le64(uint64_t val, void *p)
- {
- 	__put_unaligned_le64(val, p);
- }
--- 
-1.7.9
+--Signature=_Sun__22_Jul_2012_15_35_48_+1000_XE+u/rdbu56N1wv=
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQC5E0AAoJEECxmPOUX5FEBu4P/3KNJygrQtW2RARpvVEFAwTS
+XUHHR2US/xEsvYenYF+whOnBuF16fZ/AKIbRTOTNpE+My11meUD2zg5jMiapLyPG
+L2RNue4KcSUC/k15HyBxJzMD7RI+sJDocfgfV2jZg1gp9W0ZM74B6kZd1s8w0S9T
+EIrf7ky9wdZb5Yrj0hB8Z6uWQ/VsedoTnr1sNLbaEcXX8DYeBErAP3XYR/QcXvQv
+XrrqF6+YOipbgqLM/o2+tTB04qA4b92A4bOvo4C73nnc+tY4gT02EqVQukemCKb5
+LtFQhYkJ6OBJSCoBNx7SJr84KgkQHzLDcjdjPMxM5sbvBJl6jD+DBbc6Kq5Qckn2
+l4KvWfkZlvuj89BTc2+WjtDqzaT1wrmitWV/qxDszIVFL2zmzAaC5JS1cKEDDJb5
+Cu1mY4LZsaQfuCsH1BpxYT6fPYVl7X8ycSDQ4jnlj++sEdyCGqLBTp/gPy5PMzIT
+49ZoBx+DO2ixFuH5ECkF1kYLTFSW5OpSVZfOibJ5qhcFBSaS9beEJdIuAeWQd8Pq
+u0D++zo5MEcTzaJuxD3/mBDQ0PtZzqpb3uhHGBYwiYk/W3P15L1cz0bhpfyS5Swr
+5zy9F7kBm4MM0dzRa0oDFIZKpX2h8TU3j1OB4mcYVE/z1Xp4JD+y0jWv3EqnyCMY
+Zh1G1XNE1uFbrGLbb+XE
+=CMJk
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__22_Jul_2012_15_35_48_+1000_XE+u/rdbu56N1wv=--
