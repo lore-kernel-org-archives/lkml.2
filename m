@@ -1,215 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab2GVVTb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 17:19:31 -0400
-Received: from void.printf.net ([89.145.121.20]:41837 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab2GVVTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 17:19:30 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: [GIT PULL] MMC updates for 3.6-rc1
-Date: Sun, 22 Jul 2012 17:19:24 -0400
-Message-ID: <87394j1okj.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	id S1752686Ab2GVVYH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 17:24:07 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51000 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab2GVVYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 17:24:04 -0400
+Date: Sun, 22 Jul 2012 14:23:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de, linux-pm@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] workqueue: fix spurious CPU locality WARN from
+ process_one_work()
+Message-ID: <20120722212358.GT2435@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1342545149-3515-1-git-send-email-tj@kernel.org>
+ <1342545149-3515-2-git-send-email-tj@kernel.org>
+ <20120720215207.GA18841@linux.vnet.ibm.com>
+ <20120720215835.GB6823@google.com>
+ <20120721213656.GA7783@linux.vnet.ibm.com>
+ <20120722164327.GA5144@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120722164327.GA5144@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072221-4242-0000-0000-0000026656AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Jul 22, 2012 at 09:43:27AM -0700, Tejun Heo wrote:
+> 25511a4776 "workqueue: reimplement CPU online rebinding to handle idle
+> workers" added CPU locality sanity check in process_one_work().  It
+> triggers if a worker is executing on a different CPU without UNBOUND
+> or REBIND set.
+> 
+> This works for all normal workers but rescuers can trigger this
+> spuriously when they're serving the unbound or a disassociated
+> global_cwq - rescuers don't have either flag set and thus its
+> gcwq->cpu can be a different value including %WORK_CPU_UNBOUND.
+> 
+> Fix it by additionally testing %GCWQ_DISASSOCIATED.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> LKML-Refence: <20120721213656.GA7783@linux.vnet.ibm.com>
+> ---
+> This should fix it.  Will queue it on wq/for-3.6.
 
-Please pull from:
+I am running my tests on it, will let you know how it goes.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-merge-for-3.6-rc1
+							Thanx, Paul
 
-to receive the MMC merge for 3.6.  The patches have been tested in
-linux-next, and there are currently no merge conflicts.  Thanks.
+> Thanks!
+> 
+>  kernel/workqueue.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1949,7 +1949,13 @@ __acquires(&gcwq->lock)
+> 
+>  	lockdep_copy_map(&lockdep_map, &work->lockdep_map);
+>  #endif
+> +	/*
+> +	 * Ensure we're on the correct CPU.  DISASSOCIATED test is
+> +	 * necessary to avoid spurious warnings from rescuers servicing the
+> +	 * unbound or a disassociated gcwq.
+> +	 */
+>  	WARN_ON_ONCE(!(worker->flags & (WORKER_UNBOUND | WORKER_REBIND)) &&
+> +		     !(gcwq->flags & GCWQ_DISASSOCIATED) &&
+>  		     raw_smp_processor_id() != gcwq->cpu);
+> 
+>  	/*
+> 
 
-
-The following changes since commit 623b51fc8642fd3c795fa9903be3adaa537ad9c5:
-
-  mmc: cd-gpio: pass IRQF_ONESHOT to request_threaded_irq() (2012-07-10 23:03:57 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-merge-for-3.6-rc1
-
-for you to fetch changes up to 30b87c60e9cbfcdfce22aa652fc1e5d061fcb733:
-
-  mmc: sdhci-dove: Prepare for common clock framework (2012-07-22 16:42:48 -0400)
-
-----------------------------------------------------------------
-MMC highlights for 3.6:
-
-Core:
- - Rename cd-gpio to slot-gpio and extend it to support more
-   slot GPIO functions, such as write-protect.
- - Add a function to get regulators (Vdd and Vccq) for a host.
-
-Drivers:
- - sdhci-pxav2, sdhci-pxav3: Add device tree support.
- - sdhi: Add device tree support.
- - sh_mmcif: Add support for regulators, device tree, slot-gpio.
- - tmio: Add regulator support, use slot-gpio.
-
-----------------------------------------------------------------
-Aaron Lu (6):
-      mmc: sdhci: fix incorrect command used in tuning
-      mmc: sdhci: restore host settings when card is removed
-      mmc: core: Simplify and fix for SD switch processing
-      mmc: sdhci: Introduce new flag SDHCI_USING_RETUNING_TIMER
-      mmc: sd: Fix sd current limit setting
-      mmc: core: reset signal voltage on power up
-
-Alan Cox (1):
-      mmc: core: correct invalid error checking
-
-Chris Ball (4):
-      mmc: core: Export regulator_* functions as GPL
-      mmc: dt: Deduplicate binding docs by referencing mmc.txt
-      mmc: dt: Add reg/interrupts to mmc.txt for clarity.
-      mmc: sdhci-pxa: Add device tree support
-
-Daniel Drake (2):
-      mmc: sdhci-pci: CaFe has broken card detection
-      mmc: sdhci: poll for card even when card is logically unremovable
-
-Girish K S (1):
-      mmc: dw_mmc: Add check for IDMAC configuration
-
-Guennadi Liakhovetski (26):
-      mmc: tmio: use MMC opcode defines instead of numbers
-      mmc: extend and rename cd-gpio helpers to handle more slot GPIO functions
-      mmc: add a function to get regulators, supplying card's power
-      mmc: tmio: don't needlessly enable interrupts during probing
-      mmc: tmio: add callbacks to enable-update and disable the interface clock
-      mmc: sdhi: implement tmio-mmc clock enable-update and disable callbacks
-      mmc: tmio: add regulator support
-      mmc: sdhi: do not install dummy callbacks
-      mmc: tmio: remove a duplicated comment line
-      mmc: sh_mmcif: simplify and use meaningful label names in error-handling
-      mmc: sh_mmcif: fix clock management
-      mmc: sh_mmcif: re-read the clock frequency every time it is turned on
-      mmc: sh_mmcif: remove redundant .down_pwr() callback
-      mmc: sh_mmcif: add regulator support
-      mmc: core: use a more generic name for slot function types and fields
-      mmc: add two capability flags for CD and WP signal polarity
-      mmc: add CD GPIO polling support to slot functions
-      mmc: core: convert slot functions to managed allocation
-      mmc: core: add WP pin handler to slot functions
-      mmc: tmio: support caps2 flags
-      mmc: sh_mobile_sdhi: support caps2 flags
-      mmc: tmio: use generic GPIO CD and WP handlers
-      mmc: sdhi: add OF support, make platform data optional
-      mmc: sh-mmcif: add OF support, make platform data optional
-      mmc: prohibit card detection when host is not ready
-      mmc: sh_mmcif: support generic card-detection
-
-Jonathan Kliegman (1):
-      mmc: dw_mmc: Fix null dma_ops access when use_dma is false
-
-Kevin Hilman (1):
-      mmc: omap_hsmmc: ensure probe returns error upon resource failure
-
-Laurent Pinchart (2):
-      mmc: sh_mmcif: Support MMC_SLEEP_AWAKE command
-      mmc: tmio: Don't access hardware registers after stopping clocks
-
-Liu Chuansheng (1):
-      mmc: sdio: Change pr_warning to pr_warn_ratelimited
-
-Marek Vasut (1):
-      mmc: mxs-mmc: Add wp-inverted property
-
-Mark Brown (1):
-      mmc: sdhci: Report failure reasons for all cases in sdhci_add_host()
-
-Nicolas Ferre (2):
-      mmc: atmel-mci: fix incorrect setting of host->data to NULL
-      mmc: atmel-mci: modify CLKDIV displaying in debugfs
-
-Philip Rakity (5):
-      mmc: sdhci: if MAX_CURRENT is 0, try getting current from regulator
-      mmc: sdhci: only set 200mA support for 1.8v if 200mA is available
-      mmc: only support voltage (vdd) that regulator agrees with
-      mmc: sdhci: Allow caps[1] to be set via SDHCI_QUIRK_MISSING_CAPS
-      mmc: sdhci: When a UHS switch fails, cycle power if regulator is used
-
-Rajendra Nayak (1):
-      mmc: omap_hsmmc: add clk_prepare and clk_unprepare
-
-Sebastian Hesselbarth (2):
-      mmc: sdhci-dove: Add SDHCI_QUIRK_NO_HISPD_BIT
-      mmc: sdhci-dove: Prepare for common clock framework
-
-Shawn Guo (1):
-      mmc: mxs-mmc: enable regulator for mmc slot
-
-Subhash Jadavani (1):
-      mmc: block: replace __blk_end_request() with blk_end_request()
-
-Sylwester Nawrocki (1):
-      mmc: s3cmci: Convert s3cmci driver to gpiolib API
-
-Venkatraman S (1):
-      mmc: core: Fix the HPI execution sequence
-
-Wilson Callan (1):
-      mmc: esdhc: Fix DMA_MASK to not break mx25 DMA access
-
- .../devicetree/bindings/mmc/fsl-esdhc.txt          |   25 +--
- .../devicetree/bindings/mmc/fsl-imx-esdhc.txt      |    8 +-
- .../devicetree/bindings/mmc/mmc-spi-slot.txt       |    8 +-
- Documentation/devicetree/bindings/mmc/mmc.txt      |   10 +-
- Documentation/devicetree/bindings/mmc/mmci.txt     |   12 +-
- Documentation/devicetree/bindings/mmc/mxs-mmc.txt  |    8 +-
- .../devicetree/bindings/mmc/nvidia-sdhci.txt       |    8 +-
- .../devicetree/bindings/mmc/sdhci-pxa.txt          |   21 +++
- .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |    7 +-
- drivers/mmc/card/block.c                           |   36 +---
- drivers/mmc/core/Makefile                          |    2 +-
- drivers/mmc/core/cd-gpio.c                         |   83 ---------
- drivers/mmc/core/core.c                            |   90 +++++++---
- drivers/mmc/core/host.c                            |    6 +
- drivers/mmc/core/mmc.c                             |    3 -
- drivers/mmc/core/mmc_ops.c                         |    1 -
- drivers/mmc/core/sd.c                              |  171 ++++++++----------
- drivers/mmc/core/sdio.c                            |    7 -
- drivers/mmc/core/sdio_cis.c                        |    2 +-
- drivers/mmc/core/slot-gpio.c                       |  188 ++++++++++++++++++++
- drivers/mmc/host/atmel-mci.c                       |   14 +-
- drivers/mmc/host/dw_mmc.c                          |   17 +-
- drivers/mmc/host/mxs-mmc.c                         |   26 ++-
- drivers/mmc/host/omap_hsmmc.c                      |   16 +-
- drivers/mmc/host/s3cmci.c                          |   10 +-
- drivers/mmc/host/sdhci-dove.c                      |   51 +++++-
- drivers/mmc/host/sdhci-esdhc-imx.c                 |    9 +-
- drivers/mmc/host/sdhci-pci.c                       |    1 +
- drivers/mmc/host/sdhci-pxav2.c                     |   54 ++++++
- drivers/mmc/host/sdhci-pxav3.c                     |   52 ++++++
- drivers/mmc/host/sdhci.c                           |  144 +++++++++------
- drivers/mmc/host/sdhci.h                           |    1 +
- drivers/mmc/host/sh_mmcif.c                        |  185 ++++++++++++-------
- drivers/mmc/host/sh_mobile_sdhi.c                  |   66 +++++--
- drivers/mmc/host/tmio_mmc_pio.c                    |  132 ++++++++++----
- include/linux/mfd/tmio.h                           |    4 +
- include/linux/mmc/card.h                           |    1 +
- include/linux/mmc/cd-gpio.h                        |   18 --
- include/linux/mmc/host.h                           |   48 +++--
- include/linux/mmc/sdhci.h                          |    4 +-
- include/linux/mmc/sh_mmcif.h                       |    2 +
- include/linux/mmc/sh_mobile_sdhi.h                 |    1 +
- include/linux/mmc/slot-gpio.h                      |   24 +++
- 43 files changed, 1057 insertions(+), 519 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-pxa.txt
- delete mode 100644 drivers/mmc/core/cd-gpio.c
- create mode 100644 drivers/mmc/core/slot-gpio.c
- delete mode 100644 include/linux/mmc/cd-gpio.h
- create mode 100644 include/linux/mmc/slot-gpio.h
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
