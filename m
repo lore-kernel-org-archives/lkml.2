@@ -1,83 +1,425 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab2GVUSw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 16:18:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65123 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab2GVUSv (ORCPT
+	id S1752604Ab2GVUUf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 16:20:35 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39877 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab2GVUUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 16:18:51 -0400
-Message-ID: <500C604B.3080800@gmail.com>
-Date: Sun, 22 Jul 2012 22:19:23 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+	Sun, 22 Jul 2012 16:20:34 -0400
+Date: Sun, 22 Jul 2012 21:20:30 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [git pull] vfs.git; pile 1
+Message-ID: <20120722202030.GB31729@ZenIV.linux.org.uk>
+References: <20120722100920.GZ31729@ZenIV.linux.org.uk>
+ <CA+55aFzG9gzWRLvZMb6RnKua0=RHxBFisYSCVDNhjHBq7oq2yw@mail.gmail.com>
 MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v7] kvm: notify host when the guest is panicked
-References: <500A565A.8080403@cn.fujitsu.com> <500A8969.1040300@gmail.com> <87txwzwqgt.fsf@codemonkey.ws>
-In-Reply-To: <87txwzwqgt.fsf@codemonkey.ws>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzG9gzWRLvZMb6RnKua0=RHxBFisYSCVDNhjHBq7oq2yw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2012 09:22 PM, Anthony Liguori wrote:
-> Sasha Levin <levinsasha928@gmail.com> writes:
+On Sun, Jul 22, 2012 at 10:34:10AM -0700, Linus Torvalds wrote:
+> I'm not pulling this until the mess with the NFS tree is sorted out.
+> Apparently you rebased your (public!) VFS tree, and now half of your
+> old pre-rebase patches are in the NFS tree.
 > 
->> On 07/21/2012 09:12 AM, Wen Congyang wrote:
->>> +#define KVM_PV_PORT	(0x505UL)
->>> +
->>>  #ifdef __KERNEL__
->>>  #include <asm/processor.h>
->>>  
->>> @@ -221,6 +223,11 @@ static inline void kvm_disable_steal_time(void)
->>>  }
->>>  #endif
->>>  
->>> +static inline unsigned int kvm_arch_pv_features(void)
->>> +{
->>> +	return inl(KVM_PV_PORT);
->>> +}
->>> +
->>
->> Why is this safe?
->>
->> I'm not sure you can just pick any ioport you'd like and use it.
+> Rebasing public trees IS NOT A VALID OPERATION! Exactly because of
+> messes like this.
 > 
-> There are three ways I/O ports get used on a PC:
-> 
-> 1) Platform devices
->  - This is well defined since the vast majority of platform devices are
->    implemented within a single chip.  If you're emulating an i440fx
->    chipset, the PIIX4 spec has an exhaustive list.
-> 
-> 2) PCI devices
->  - Typically, PCI only allocates ports starting at 0x0d00 to avoid
->    conflicts with ISA devices.
-> 
-> 3) ISA devices
->  - ISA uses subtractive decoding so any ISA device can access.  In
->    theory, an ISA device could attempt to use port 0x0505 but it's
->    unlikely.  In a modern guest, there aren't really any ISA devices being
->    added either.
-> 
-> So yes, picking port 0x0505 is safe for something like this (as long as
-> you check to make sure that you really are under KVM).
+> So no. No way am I pulling a big VFS tree that apparently has random
+> unknown aliased commits in other trees.
 
-Is there anything that actually prevents me from using PCI ports lower than 0x0d00? As you said in (3), ISA isn't really used anymore (nor is implemented by lkvm for example), so placing PCI below 0x0d00 might even make sense in that case.
+*grumble*
 
-Furthermore, I can place one of these brand new virtio-mmio devices which got introduced recently wherever I want right now - Having a device that uses 0x505 would cause a pretty non-obvious failure mode.
+OK, with atomic_open series in there (and stomping all over NFS)
+I should have expected that kind of thing (i.e. another subsystem
+tree doing pulls from vfs.git).  Mea culpa...
 
-Either way, If we are going to grab an ioport, then:
+FWIW, I've got used to folding fixes back into the offending commits;
+that has the same effect as rebase, as far as the trees that pull
+from vfs.git are concerned.  Sigh...  Guess I'll do s/.*/&-rebased-at-will/
+for branches in there and if somebody needs a stable one, create it
+on demand (and yes, this time around it was clearly going to be needed;
+again, my apologies for missing that)
 
- - It should be documented well somewhere in Documentation/virt/kvm
- - It should go through request_region() to actually claim those ioports.
- - It should fail gracefully if that port is taken for some reason, instead of not even checking it.
+OK, I've grabbed nfs tree.  The only real issue was the fixup folded
+into one commit in the set they've got....
+
+I think the least painful solution is this: I've created a new branch
+(for-linus-2) in there, growing off the parent of merge in nfs.git.
+I've put the fixup to kern_path_locked() there as a separate commit
++ stuff that went in for-linus after that point.
+
+Result: for-linus-2 + v3.5 and for-linus + v3.5 give identical trees,
+and for-linus-2 merges clean with nfs/nfs-for-3.6.  Would you be OK
+with pulling that one?  Again, my apologies to everyone involved ;-/
+
+If you are OK with pulling that one, the summary is unchanged, location is
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus-2
+
+Shortlog:
+Al Viro (62):
+      get rid of ->mnt_longterm
+      get rid of magic in proc_namespace.c
+      qnx6: don't bother with ->i_dentry in inode-freeing callback
+      cifs: don't bother with ->i_dentry in ->destroy_inode()
+      adfs: don't bother with ->i_dentry in ->destroy_inode()
+      vfs: update documentation on ->i_dentry handling
+      affs: get rid of open-coded list_for_each_entry()
+      affs: unobfuscate affs_fix_dcache()
+      ocfs2: use list_for_each_entry in ocfs2_find_local_alias()
+      ext4: get rid of open-coded d_find_any_alias()
+      vfs: switch i_dentry/d_alias to hlist
+      coda: use list_for_each_entry
+      namei.c: let follow_link() do put_link() on failure
+      ->atomic_open() prototype change - pass int * instead of bool *
+      don't modify od->filp at all
+      make ->atomic_open() return int
+      kill opendata->{mnt,dentry}
+      kill struct opendata
+      fs/namei.c: get do_last() and friends return int
+      make finish_no_open() return int
+      switch do_dentry_open() to returning int
+      fold __dentry_open() into its sole caller
+      do_dentry_open(): take initialization of file->f_path to caller
+      switch nfs_lookup_check_intent() away from nameidata
+      nfs_lookup_verify_inode() - nd is *always* non-NULL here
+      fs/nfs/dir.c: switch to passing nd->flags instead of nd wherever possible
+      stop passing nameidata * to ->d_revalidate()
+      fs/namei.c: don't pass nameidata to d_revalidate()
+      fs/namei.c: don't pass namedata to lookup_dcache()
+      stop passing nameidata to ->lookup()
+      fs/namei.c: don't pass nameidata to __lookup_hash() and lookup_real()
+      don't pass nameidata to ->create()
+      don't pass nameidata * to vfs_create()
+      get rid of kern_path_parent()
+      sysfs: switch to ->s_d_op and ->d_release()
+      sysfs: just use d_materialise_unique()
+      __d_unalias() should refuse to move mountpoints
+      debugfs: make sure that debugfs_create_file() gets used only for regulars
+      debugfs: fold debugfs_create_by_name() into the only caller
+      debugfs: get rid of useless arguments to debugfs_{mkdir,symlink}
+      mark_files_ro(): don't bother with mntget/mntput
+      do_dentry_open(): close the race with mark_files_ro() in failure exit
+      use __lookup_hash() in kern_path_parent()
+      signal: make sure we don't get stopped with pending task_work
+      trimming task_work: kill ->data
+      trim task_work: get rid of hlist
+      merge task_work and rcu_head, get rid of separate allocation for keyring case
+      move exit_task_work() past exit_files() et.al.
+      deal with task_work callbacks adding more work
+      switch fput to task_work_add
+      aio: now fput() is OK from interrupt context; get rid of manual delayed __fput()
+      get rid of ->scm_work_list
+      hold task_lock around checks in keyctl
+      unobfuscate follow_up() a bit
+      tidy up namei.c a bit
+      don't expose I_NEW inodes via dentry->d_inode
+      ecryptfs: don't reinvent the wheels, please - use struct completion
+      zoran: don't bother with struct file * in zoran_map
+      spufs: shift dget/mntget towards dentry_open()
+      switch dentry_open() to struct path, make it grab references itself
+      btrfs: switch btrfs_ioctl_balance() to mnt_want_write_file()
+      ext4: switch EXT4_IOC_RESIZE_FS to mnt_want_write_file()
+
+Andrew Morton (1):
+      notify_change(): check that i_mutex is held
+
+Artem Bityutskiy (23):
+      affs: stop setting bm_flags
+      affs: remove useless superblock writeout on unmount
+      affs: remove useless superblock writeout on remount
+      affs: re-structure superblock locking a bit
+      affs: stop using lock_super
+      affs: introduce VFS superblock object back-reference
+      affs: get rid of affs_sync_super
+      hfsplus: make hfsplus_sync_fs static
+      hfsplus: amend debugging print
+      hfsplus: remove useless check
+      hfsplus: get rid of write_super
+      hfs: push lock_super down
+      hfs: get rid of lock_super
+      hfs: remove extra mdb write on unmount
+      hfs: simplify a bit checking for R/O
+      hfs: introduce VFS superblock object back-reference
+      hfs: get rid of hfs_sync_super
+      fs/sysv: remove useless write_super call
+      fs/sysv: remove another useless write_super call
+      fs/sysv: stop using write_super and s_dirt
+      fs/ufs: remove extra superblock write on unmount
+      fs/ufs: re-arrange the code a bit
+      fs/ufs: get rid of write_super
+
+Christoph Hellwig (2):
+      fs: move path_put on failure out of ->follow_link
+      fs: add nd_jump_link
+
+David Howells (6):
+      VFS: Fix the banner comment on lookup_open()
+      VFS: Make chown() and lchown() call fchownat()
+      VFS: Make clone_mnt()/copy_tree()/collect_mounts() return errors
+      VFS: Comment mount following code
+      VFS: Pass mount flags to sget()
+      VFS: Split inode_permission()
+
+Eric Sandeen (3):
+      vfs: allow custom EOF in generic_file_llseek code
+      ext4: use core vfs llseek code for dir seeks
+      ext3: pass custom EOF to generic_file_llseek_size()
+
+Jan Kara (8):
+      vfs: Move noop_backing_dev_info check from sync into writeback
+      quota: Split dquot_quota_sync() to writeback and cache flushing part
+      quota: Move quota syncing to ->sync_fs method
+      vfs: Reorder operations during sys_sync
+      vfs: Create function for iterating over block devices
+      vfs: Make sys_sync writeout also block device inodes
+      vfs: Remove unnecessary flushing of block devices
+      vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
+
+Julia Lawall (1):
+      fs/direct-io.c: adjust suspicious bit operation
+
+Miklos Szeredi (21):
+      vfs: do_last(): inline lookup_slow()
+      vfs: do_last(): separate O_CREAT specific code
+      vfs: do_last(): common slow lookup
+      vfs: add lookup_open()
+      vfs: lookup_open(): expand lookup_hash()
+      vfs: add i_op->atomic_open()
+      nfs: implement i_op->atomic_open()
+      nfs: clean up ->create in nfs_rpc_ops
+      nfs: don't use nd->intent.open.flags
+      nfs: don't use intents for checking atomic open
+      fuse: implement i_op->atomic_open()
+      cifs: implement i_op->atomic_open()
+      ceph: remove unused arg from ceph_lookup_open()
+      ceph: implement i_op->atomic_open()
+      9p: implement i_op->atomic_open()
+      vfs: remove open intents from nameidata
+      vfs: do_last(): clean up error handling
+      vfs: do_last(): clean up labels
+      vfs: do_last(): clean up bool
+      vfs: do_last(): clean up retry
+      vfs: move O_DIRECT check to common code
+
+Diffstat:
+ Documentation/filesystems/Locking         |   11 +-
+ Documentation/filesystems/porting         |   21 +-
+ Documentation/filesystems/vfs.txt         |   23 +-
+ arch/powerpc/platforms/cell/spufs/inode.c |   48 +--
+ drivers/base/devtmpfs.c                   |  100 ++--
+ drivers/media/video/zoran/zoran.h         |    4 +-
+ drivers/media/video/zoran/zoran_driver.c  |    4 +-
+ drivers/mtd/mtdsuper.c                    |    4 +-
+ fs/9p/v9fs.h                              |    2 +-
+ fs/9p/vfs_dentry.c                        |    4 +-
+ fs/9p/vfs_inode.c                         |  170 ++++---
+ fs/9p/vfs_inode_dotl.c                    |   59 ++-
+ fs/9p/vfs_super.c                         |    4 +-
+ fs/adfs/dir.c                             |    2 +-
+ fs/adfs/super.c                           |    1 -
+ fs/affs/affs.h                            |   11 +-
+ fs/affs/amigaffs.c                        |   22 +-
+ fs/affs/bitmap.c                          |    4 +-
+ fs/affs/namei.c                           |    4 +-
+ fs/affs/super.c                           |   68 ++-
+ fs/afs/dir.c                              |   14 +-
+ fs/afs/mntpt.c                            |    4 +-
+ fs/afs/super.c                            |    3 +-
+ fs/aio.c                                  |   73 +---
+ fs/attr.c                                 |    3 +-
+ fs/autofs4/dev-ioctl.c                    |    4 +-
+ fs/autofs4/root.c                         |    4 +-
+ fs/bad_inode.c                            |    4 +-
+ fs/befs/linuxvfs.c                        |    4 +-
+ fs/bfs/dir.c                              |    4 +-
+ fs/block_dev.c                            |   36 ++
+ fs/btrfs/inode.c                          |    6 +-
+ fs/btrfs/ioctl.c                          |    4 +-
+ fs/btrfs/super.c                          |    4 +-
+ fs/cachefiles/namei.c                     |    2 +-
+ fs/cachefiles/rdwr.c                      |    8 +-
+ fs/ceph/dir.c                             |   77 ++--
+ fs/ceph/file.c                            |   26 +-
+ fs/ceph/super.c                           |    2 +-
+ fs/ceph/super.h                           |    6 +-
+ fs/cifs/cifsfs.c                          |   11 +-
+ fs/cifs/cifsfs.h                          |    7 +-
+ fs/cifs/dir.c                             |  448 +++++++++--------
+ fs/cifs/inode.c                           |    5 +-
+ fs/coda/cache.c                           |   10 +-
+ fs/coda/dir.c                             |   14 +-
+ fs/configfs/dir.c                         |    2 +-
+ fs/cramfs/inode.c                         |    2 +-
+ fs/dcache.c                               |   44 +-
+ fs/debugfs/inode.c                        |   91 ++--
+ fs/devpts/inode.c                         |    6 +-
+ fs/direct-io.c                            |    2 +-
+ fs/ecryptfs/dentry.c                      |   20 +-
+ fs/ecryptfs/ecryptfs_kernel.h             |   14 -
+ fs/ecryptfs/inode.c                       |    9 +-
+ fs/ecryptfs/kthread.c                     |   73 +--
+ fs/ecryptfs/main.c                        |    8 +-
+ fs/efs/efs.h                              |    2 +-
+ fs/efs/namei.c                            |    3 +-
+ fs/exofs/namei.c                          |    4 +-
+ fs/exportfs/expfs.c                       |   16 +-
+ fs/ext2/namei.c                           |    8 +-
+ fs/ext2/super.c                           |    6 +
+ fs/ext3/dir.c                             |    3 +-
+ fs/ext3/namei.c                           |    8 +-
+ fs/ext3/super.c                           |    5 +
+ fs/ext4/dir.c                             |   75 +---
+ fs/ext4/file.c                            |    9 +-
+ fs/ext4/fsync.c                           |   11 +-
+ fs/ext4/ioctl.c                           |    4 +-
+ fs/ext4/namei.c                           |    8 +-
+ fs/ext4/super.c                           |    5 +
+ fs/fat/namei_msdos.c                      |    4 +-
+ fs/fat/namei_vfat.c                       |   16 +-
+ fs/file_table.c                           |   81 +++-
+ fs/freevxfs/vxfs_lookup.c                 |    4 +-
+ fs/fs-writeback.c                         |    5 +
+ fs/fs_struct.c                            |   32 +-
+ fs/fuse/dir.c                             |   99 +++--
+ fs/gfs2/dentry.c                          |    6 +-
+ fs/gfs2/inode.c                           |    7 +-
+ fs/gfs2/ops_fstype.c                      |    5 +-
+ fs/gfs2/quota.c                           |    4 +-
+ fs/gfs2/quota.h                           |    2 +-
+ fs/gfs2/super.c                           |    4 +-
+ fs/gfs2/sys.c                             |    2 +-
+ fs/hfs/dir.c                              |    4 +-
+ fs/hfs/extent.c                           |    2 +-
+ fs/hfs/hfs_fs.h                           |   15 +-
+ fs/hfs/inode.c                            |   16 +-
+ fs/hfs/mdb.c                              |   13 +
+ fs/hfs/super.c                            |   73 ++--
+ fs/hfs/sysdep.c                           |    4 +-
+ fs/hfsplus/bitmap.c                       |    4 +-
+ fs/hfsplus/dir.c                          |    6 +-
+ fs/hfsplus/hfsplus_fs.h                   |    7 +-
+ fs/hfsplus/inode.c                        |    8 +-
+ fs/hfsplus/super.c                        |   46 ++-
+ fs/hostfs/hostfs_kern.c                   |    4 +-
+ fs/hpfs/dir.c                             |    2 +-
+ fs/hpfs/hpfs_fn.h                         |    2 +-
+ fs/hpfs/namei.c                           |    2 +-
+ fs/hppfs/hppfs.c                          |   22 +-
+ fs/hugetlbfs/inode.c                      |    2 +-
+ fs/inode.c                                |    2 +-
+ fs/internal.h                             |   10 +-
+ fs/isofs/isofs.h                          |    2 +-
+ fs/isofs/namei.c                          |    2 +-
+ fs/jffs2/dir.c                            |   16 +-
+ fs/jfs/namei.c                            |   18 +-
+ fs/jfs/super.c                            |    5 +
+ fs/libfs.c                                |    6 +-
+ fs/logfs/dir.c                            |    4 +-
+ fs/logfs/super.c                          |    3 +-
+ fs/minix/namei.c                          |    4 +-
+ fs/mount.h                                |   13 +-
+ fs/namei.c                                |  808 ++++++++++++++++++++---------
+ fs/namespace.c                            |  195 ++++----
+ fs/ncpfs/dir.c                            |   14 +-
+ fs/nfs/dir.c                              |  314 +++++-------
+ fs/nfs/getroot.c                          |    2 +-
+ fs/nfs/nfs3proc.c                         |    2 +-
+ fs/nfs/nfs4proc.c                         |   37 +-
+ fs/nfs/proc.c                             |    2 +-
+ fs/nfs/super.c                            |    2 +-
+ fs/nfsd/vfs.c                             |   14 +-
+ fs/nilfs2/namei.c                         |    4 +-
+ fs/nilfs2/super.c                         |    4 +-
+ fs/notify/fanotify/fanotify_user.c        |    8 +-
+ fs/notify/fsnotify.c                      |    3 +-
+ fs/ntfs/namei.c                           |    2 +-
+ fs/ocfs2/dcache.c                         |   22 +-
+ fs/ocfs2/dlmfs/dlmfs.c                    |    2 +-
+ fs/ocfs2/namei.c                          |    4 +-
+ fs/omfs/dir.c                             |    4 +-
+ fs/open.c                                 |  213 +++------
+ fs/openpromfs/inode.c                     |    4 +-
+ fs/pnode.c                                |    5 +-
+ fs/proc/base.c                            |   51 +-
+ fs/proc/generic.c                         |    2 +-
+ fs/proc/internal.h                        |    6 +-
+ fs/proc/namespaces.c                      |    4 +-
+ fs/proc/proc_net.c                        |    2 +-
+ fs/proc/proc_sysctl.c                     |    6 +-
+ fs/proc/root.c                            |   10 +-
+ fs/proc_namespace.c                       |    7 +-
+ fs/qnx4/namei.c                           |    2 +-
+ fs/qnx4/qnx4.h                            |    2 +-
+ fs/qnx6/inode.c                           |    1 -
+ fs/qnx6/namei.c                           |    2 +-
+ fs/qnx6/qnx6.h                            |    2 +-
+ fs/quota/dquot.c                          |   24 +-
+ fs/quota/quota.c                          |    4 +-
+ fs/ramfs/inode.c                          |    2 +-
+ fs/read_write.c                           |   18 +-
+ fs/reiserfs/namei.c                       |   12 +-
+ fs/reiserfs/procfs.c                      |    2 +-
+ fs/reiserfs/super.c                       |    5 +
+ fs/reiserfs/xattr.c                       |    4 +-
+ fs/romfs/super.c                          |    2 +-
+ fs/squashfs/namei.c                       |    2 +-
+ fs/super.c                                |   22 +-
+ fs/sync.c                                 |   63 ++-
+ fs/sysfs/dir.c                            |   31 +-
+ fs/sysfs/mount.c                          |    4 +-
+ fs/sysfs/sysfs.h                          |    1 +
+ fs/sysv/inode.c                           |   18 +-
+ fs/sysv/namei.c                           |    4 +-
+ fs/sysv/sysv.h                            |    1 -
+ fs/ubifs/dir.c                            |    4 +-
+ fs/ubifs/super.c                          |    3 +-
+ fs/udf/namei.c                            |    4 +-
+ fs/ufs/balloc.c                           |    8 +-
+ fs/ufs/ialloc.c                           |    4 +-
+ fs/ufs/namei.c                            |    4 +-
+ fs/ufs/super.c                            |  148 +++---
+ fs/ufs/ufs.h                              |    5 +
+ fs/ufs/ufs_fs.h                           |    1 +
+ fs/xfs/xfs_ioctl.c                        |    7 +-
+ fs/xfs/xfs_iops.c                         |    6 +-
+ include/linux/dcache.h                    |    4 +-
+ include/linux/file.h                      |    3 +
+ include/linux/fs.h                        |   33 +-
+ include/linux/namei.h                     |   18 +-
+ include/linux/nfs_xdr.h                   |    2 +-
+ include/linux/quota.h                     |    2 +-
+ include/linux/quotaops.h                  |    8 +-
+ include/linux/sched.h                     |    3 +-
+ include/linux/task_work.h                 |   18 +-
+ include/linux/tracehook.h                 |    2 +-
+ include/linux/types.h                     |    9 +-
+ include/net/scm.h                         |    1 -
+ init/main.c                               |    3 +-
+ ipc/mqueue.c                              |  119 ++---
+ kernel/audit_tree.c                       |   10 +-
+ kernel/audit_watch.c                      |   25 +-
+ kernel/cgroup.c                           |    6 +-
+ kernel/exit.c                             |    6 +-
+ kernel/fork.c                             |    2 +-
+ kernel/irq/manage.c                       |    6 +-
+ kernel/signal.c                           |   15 +
+ kernel/task_work.c                        |   94 ++--
+ mm/shmem.c                                |    2 +-
+ net/core/scm.c                            |   22 +-
+ security/keys/internal.h                  |    2 +-
+ security/keys/keyctl.c                    |   26 +-
+ security/keys/process_keys.c              |    5 +-
+ security/selinux/hooks.c                  |    3 +-
+ security/selinux/include/security.h       |    2 +-
+ security/selinux/selinuxfs.c              |    6 +-
+ 210 files changed, 2609 insertions(+), 2398 deletions(-)
