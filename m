@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab2GVTMw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 15:12:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58514 "EHLO
+	id S1752472Ab2GVTOU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 15:14:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47818 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2GVTMv (ORCPT
+	with ESMTP id S1752416Ab2GVTOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 15:12:51 -0400
-Date: Sun, 22 Jul 2012 12:12:07 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Aristeu Rozanski <aris@ruivo.org>
-cc: Tejun Heo <tj@kernel.org>, Aristeu Rozanski <aris@redhat.com>,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 0/3] cgroup: add xattr support
-In-Reply-To: <20120720175959.GA32741@cathedrallabs.org>
-Message-ID: <alpine.LSU.2.00.1207221136160.1896@eggly.anvils>
-References: <20120702142925.795007114@napanee.usersys.redhat.com> <20120717204126.GE24336@google.com> <alpine.LSU.2.00.1207181237010.2160@eggly.anvils> <20120718221044.GJ24336@google.com> <alpine.LSU.2.00.1207181736020.3323@eggly.anvils>
- <20120720175959.GA32741@cathedrallabs.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sun, 22 Jul 2012 15:14:18 -0400
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Sasha Levin <levinsasha928@gmail.com>, Wen Congyang <wency@cn.fujitsu.com>
+Cc: Gleb Natapov <gleb@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Qemu-devel] [PATCH v7.5] kvm: notify host when the guest is panicked
+In-Reply-To: <500BE68D.90005@gmail.com>
+References: <500A565A.8080403@cn.fujitsu.com> <500A6BF1.4030002@cn.fujitsu.com> <500BE68D.90005@gmail.com>
+User-Agent: Notmuch/0.13.2+60~g7ecf77d (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Sun, 22 Jul 2012 14:14:12 -0500
+Message-ID: <87wr1vwquz.fsf@codemonkey.ws>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jul 2012, Aristeu Rozanski wrote:
-> On Wed, Jul 18, 2012 at 06:11:32PM -0700, Hugh Dickins wrote:
-> > > But why do we need something completely new?  Can't we hijack some
-> > > inodes used by tmpfs and use them for xattr storage?  ie. Would it be
-> > > difficult to use tmpfs as backend storage for on-memory xattr?  With
-> > > that, we would already have the mechanism and interface(!) for
-> > > limiting the size.
-> > 
-> > That sounds just like what I was suggesting in my last sentence:
-> > let userspace manage a tmpfs hierarchy parallel to the cgroupfs one.
-> > 
-> > Except, perhaps, where I assume "userspace" should be doing the hard work.
-> 
-> hm, not sure that's what Tejun meant. tmpfs uses anonymous memory for the file
-> contents, so reuse that infrastructure to allocate space for the extended
-> attributes the same way, instead of using kmem.
-> 
-> First thing I can think of is to use whole pages for it to prevent further
-> complexity. Shouldn't make much difference considering the usecases we have
-> now (systemd and containers), right?
+Sasha Levin <levinsasha928@gmail.com> writes:
 
-Please, do not do this.
+> On 07/21/2012 10:44 AM, Wen Congyang wrote:
+>> We can know the guest is panicked when the guest runs on xen.
+>> But we do not have such feature on kvm.
+>> 
+>> Another purpose of this feature is: management app(for example:
+>> libvirt) can do auto dump when the guest is panicked. If management
+>> app does not do auto dump, the guest's user can do dump by hand if
+>> he sees the guest is panicked.
+>> 
+>> We have three solutions to implement this feature:
+>> 1. use vmcall
+>> 2. use I/O port
+>> 3. use virtio-serial.
+>> 
+>> We have decided to avoid touching hypervisor. The reason why I choose
+>> choose the I/O port is:
+>> 1. it is easier to implememt
+>> 2. it does not depend any virtual device
+>> 3. it can work when starting the kernel
+>
+> Was the option of implementing a virtio-watchdog driver considered?
+>
+> You're basically re-implementing a watchdog, a guest-host interface and a set of protocols for guest-host communications.
+>
+> Why can't we re-use everything we have now, push a virtio watchdog
+> driver into drivers/watchdog/, and gain a more complete solution to
+> detecting hangs inside the guest.
 
-It may be fun to implement, but not to review and maintain.
+The purpose of virtio is not to reinvent every possible type of device.
+There are plenty of hardware watchdogs that are very suitable to be used
+for this purpose.  QEMU implements quite a few already.
 
-If we're going to start supporting swappable kernel memory, tmpfs
-xattrs is not the right place to start, and libfs xattrs certainly not:
-they are a poor fit for swappable memory.  (You contemplate using whole
-pages above: that will not be very kind to those without swap.)
+Watchdogs are not performance sensitive so there's no point in using
+virtio.
 
-By all means continue Zefan's work to move xattr support from tmpfs
-to libfs (ah, to fs/xattr.c actually, okay), but keep them as kmem.
+Regards,
 
-Support setting and removing user xattrs only if the user has the
-appropriate capability (which root will have): looking through the
-list of existing capabilities, CAP_IPC_LOCK actually looks appropriate,
-although I admit its name certainly does not - it's the "lock down
-unlimited amounts of memory" capability.
-
-And support setting and removing user xattrs only if the filesystem
-opts in to that: so cgroupfs can opt in, everything else stay out,
-and we know where to look when memory goes missing.
-
-Will "lsattr -R" in the cgroupfs mountpoint do enough to judge how
-much memory is being used in this way?  I expect not, but I'm
-unfamliar with it: you may need to show counts elsewhere.
-
-If we keep an eye on those counts as systemd starts to make use of
-this feature, perhaps a real case for making this memory swappable
-will emerge; but more likely, a case for systemd to be economical
-with them - they may be good for storing paths to data blobs, but
-I doubt they're good for large blobs.
-
-Hugh
+Anthony Liguori
