@@ -1,158 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2GVCvT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 22:51:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44981 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752109Ab2GVCvR (ORCPT
+	id S1752115Ab2GVDme (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 23:42:34 -0400
+Received: from science.horizon.com ([71.41.210.146]:54893 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751064Ab2GVDmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 22:51:17 -0400
-Message-ID: <1342925458.11373.210.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 00/13] drivers: hv: kvp
-From: Ben Hutchings <ben@decadent.org.uk>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Olaf Hering <olaf@aepfle.de>, Greg KH <gregkh@linuxfoundation.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Sun, 22 Jul 2012 03:50:58 +0100
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF9155EF7C6@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <20120621224737.GA5933@kroah.com>
-	 <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120622132547.GA2639@kroah.com>
-	 <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120626213954.GA4840@kroah.com>
-	 <426367E2313C2449837CD2DE46E7EAF9155ED64A@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120626222205.GA5948@kroah.com>
-	 <426367E2313C2449837CD2DE46E7EAF9155ED68D@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120628142340.GA21537@aepfle.de>
-	 <426367E2313C2449837CD2DE46E7EAF9155EF399@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120702195721.GE1894@decadent.org.uk>
-	 <426367E2313C2449837CD2DE46E7EAF9155EF7C6@SN2PRD0310MB382.namprd03.prod.outlook.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-HSWNoAn65+LsjDKWl4J7"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 21 Jul 2012 23:42:32 -0400
+Date: 21 Jul 2012 23:42:28 -0400
+Message-ID: <20120722034228.14345.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: dmitry.torokhov@gmail.com, dtor@mail.ru, linux-input@vger.kernel.org
+Subject: [REPOST #3 PATCH v2] Input: atkbd - make repeat period more accurate.
+Cc: linux-kernel@vger.kernel.org, linux@horizon.com
+In-Reply-To: <20120714110114.31895.qmail@science.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This replaces some inaccurate lookup tables with an exact
+computation.  Although the diff adds source comments,
+it shrinks binary size.  (By only 50 bytes, but hey.)
 
---=-HSWNoAn65+LsjDKWl4J7
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+AT keyboard repeat rates are multiples of 1/240 second
+expressed in a 0.2.3 bit floating point format.  That
+is, possible values are ({8..15} << {0..3}) / 240 s.
 
-On Tue, 2012-07-03 at 15:24 +0000, KY Srinivasan wrote:
->=20
-> > -----Original Message-----
-> > From: Ben Hutchings [mailto:ben@decadent.org.uk]
-> > Sent: Monday, July 02, 2012 3:57 PM
-> > To: KY Srinivasan
-> > Cc: Olaf Hering; Greg KH; apw@canonical.com; devel@linuxdriverproject.o=
-rg;
-> > virtualization@lists.osdl.org; linux-kernel@vger.kernel.org;
-> > netdev@vger.kernel.org
-> > Subject: Re: [PATCH 00/13] drivers: hv: kvp
-> >=20
-> > On Mon, Jul 02, 2012 at 03:22:25PM +0000, KY Srinivasan wrote:
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Olaf Hering [mailto:olaf@aepfle.de]
-> > > > Sent: Thursday, June 28, 2012 10:24 AM
-> > > > To: KY Srinivasan
-> > > > Cc: Greg KH; apw@canonical.com; devel@linuxdriverproject.org;
-> > > > virtualization@lists.osdl.org; linux-kernel@vger.kernel.org
-> > > > Subject: Re: [PATCH 00/13] drivers: hv: kvp
-> > > >
-> > > > On Tue, Jun 26, KY Srinivasan wrote:
-> > > >
-> > > > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > > > > The fact that it was Red Hat specific was the main part, this s=
-hould be
-> > > > > > done in a standard way, with standard tools, right?
-> > > > >
-> > > > > The reason I asked this question was to make sure I address these
-> > > > > issues in addition to whatever I am debugging now. I use the stan=
-dard
-> > > > > tools and calls to retrieve all the IP configuration. As I look a=
-t
-> > > > > each distribution the files they keep persistent IP configuration
-> > > > > Information is different and that is the reason I chose to start =
-with
-> > > > > RedHat. If there is a standard way to store the configuration, I =
-will
-> > > > > do that.
-> > > >
-> > > >
-> > > > KY,
-> > > >
-> > > > instead of using system() in kvp_get_ipconfig_info and kvp_set_ip_i=
-nfo,
-> > > > wouldnt it be easier to call an external helper script which does a=
-ll
-> > > > the distribution specific work? Just define some API to pass values=
- to
-> > > > the script, and something to read values collected by the script ba=
-ck
-> > > > into the daemon.
-> > >
-> > > On the "Get" side I mostly use standard commands/APIs to get all the
-> > information:
-> > >
-> > > 1) IP address information and subnet mask: getifaddrs()
-> > > 2) DNS information:  Parsing /etc/resolv.conf
-> > > 3) /sbin/ip command for all the routing information
-> >=20
-> > If you're interested in the *current* configuration then (1) and (3)
-> > are OK but you should really use the rtnetlink API.
-> >=20
-> > However, I suspect that Hyper-V assumes that current and persistent
-> > configuration are the same thing, which is obviously not true in
-> > general on Linux.  But if NetworkManager is running then you can
-> > assume they are.
->=20
-> I am only interested in the currently active information. Why do you
-> recommend the use of rtnetlink API over the "ip" command. If I am not
-> mistaken, the ip command uses netlink to get the information.=20
-[...]
+In addition to a slightly inaccurate lookup table, the
+old code would round up to the next repeat period.
+E.g. to get a period of 9/60 = 0.15 seconds, you had to
+ask for no more than 149 ms; if you asked for 150, it
+would round up to 167.  The new code rounds to nearest.
 
-'Screen-scraping' the output of administrative tools is not good
-practice.  It may be the best you can do when writing a shell script,
-but for a C program it's generaly less reliable and often more difficult
-than using the underlying C API.
+User-visible changes to the repeat periods reported by EVIOCGREP:
 
-Ben.
+Old	 37	109	116	149	182	232
+Exact	 37.50	108.33	116.66	150.00	183.33	233.33
+New	 38	108	117	150	183	233
 
---=20
-Ben Hutchings
-73.46% of all statistics are made up.
+Old	270	303	370	435	470
+Exact	266.66	300.00	366.66	433.33	466.66
+New	267	300	367	433	467
 
---=-HSWNoAn65+LsjDKWl4J7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+This does not bother utilities like kbdrate(8).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: George Spelvin <linux@horizon.com>
+---
+ drivers/input/keyboard/atkbd.c |   47 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 31 insertions(+), 16 deletions(-)
 
-iQIVAwUAUAtqkue/yOyVhhEJAQrhbRAAlwuiKyx4IkTbeZtGobWpsiO0k9uTblaC
-/u6PRlcTf/H/e78pd8PcvrE0789Uwmxmj2KsMXkLtr6/+mIK91lhCMik6CeOcwUn
-p4Zj1LnjaiHo9T12spUjW/ua6/CGDD9DPfHfTbl0HTsC2JVwwkxSQckC127GOvOf
-Oi9KEUOyl6S/BkvZMp5MK2o7Gu45wP7kOCzwTnG6FlJQuxHxbxNLifmxaVB5XzF6
-0I1pdlOOQH0Tg7GzSPjnX05MRUqOfmksXg3/xCiGBs7Mn/BuOTVpWjYBhtw3IaLr
-10HNFBfywtGNVed4XKJjdP1OwID7FRAHphl8d8GptkVzzjwb1K+//UpQFot+w+6o
-VeaFg/ttAuz3Pv5BpSZbkh0GLmf6Ew403eZkg2J4RasNF+dKRvKV47ibMYui62t/
-R+vruFdqyMoMJfyY7mYlzjZz9i13ofTSRm3oOY1QDbbdZf8FCcAPLygOF9phvTEn
-dzqRQZIvqdOvsRZtEo2n1y1kYtp8sCeS0iGFQQyGBo7xsHMbtVnsF71NK/3t9wD+
-vi7UI6lIqFZXWzqDDDj6qmOW1QhN2r8FzV1I0qOhvBPMonW3xwh6dVbYJsLBppQT
-5ZlCkQBehdvqD8KD+Z0Bq4TMK2ytVRyCUFB0lG5mwH2vZvFZuhOmA434ddBhu2uS
-oFF+Qg31fCg=
-=ujxn
------END PGP SIGNATURE-----
+Now that 3.5 is out, I'm posting this for a FOURTH time,
+hoping for some comments of any sort.
 
---=-HSWNoAn65+LsjDKWl4J7--
+
+Now that I've tweaked it (v1 had an error in rounding near exponent
+range boundaries), I think it's ready for merging upstream.
+
+
+One possible bug I observed in the code that calls this:
+
+Users of the KDKBDREP ioctl seem to assume that it returns the actual
+values set, but I'm not sure it really works that way; I don't think
+the command to change the parameters makes its way through the event
+queue and atkbd's schedule_delayed_work() to actually set dev->rep[]
+to the rounded values before kbd_rate_helper returns them to userspace.
+
+If desired, the fix that's most obvious to me would be to split this
+function in two: perform the conversion to a command byte synchronously,
+and only defer the actual ps2_command().
+
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index e05a2e7..3181b86 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -524,27 +524,42 @@ out:
+ 	return IRQ_HANDLED;
+ }
+ 
++/*
++ * AT keyboard repeat rates are set using a 2-bit initial repeat delay
++ * (250, 500, 750 or 1000 ms), and a 5-bit repeat period.  The latter
++ * is a 0.2.3-bit floating-point number (no sign, 2-bit exponent, and
++ * 3-bit mantissa), encoding a value from 8/240 to 120/240 of second.
++ *
++ * Given the requested delay and period in milliseconds, round to the
++ * nearest representable value, and convert the rounded values back to
++ * milliseconds to report the chosen values.
++ */
+ static int atkbd_set_repeat_rate(struct atkbd *atkbd)
+ {
+-	const short period[32] =
+-		{ 33,  37,  42,  46,  50,  54,  58,  63,  67,  75,  83,  92, 100, 109, 116, 125,
+-		 133, 149, 167, 182, 200, 217, 232, 250, 270, 303, 333, 370, 400, 435, 470, 500 };
+-	const short delay[4] =
+-		{ 250, 500, 750, 1000 };
+-
+ 	struct input_dev *dev = atkbd->dev;
+ 	unsigned char param;
+-	int i = 0, j = 0;
+-
+-	while (i < ARRAY_SIZE(period) - 1 && period[i] < dev->rep[REP_PERIOD])
+-		i++;
+-	dev->rep[REP_PERIOD] = period[i];
+-
+-	while (j < ARRAY_SIZE(delay) - 1 && delay[j] < dev->rep[REP_DELAY])
+-		j++;
+-	dev->rep[REP_DELAY] = delay[j];
++	unsigned exp = 3;	/* Period exponent */
++	int period;		/* Period mantissa */
++	int delay = clamp(dev->rep[REP_DELAY], 125, 1000);
++
++	/* AT kbd delay is {1..4} * 250 ms.  Round to 2 bits. */
++	delay = (delay + 125) / 250u;
++	/* Store actual value back */
++	dev->rep[REP_DELAY] = delay * 250;
++
++	/* AT kbd period is ({8..15} << {0..3}) / 240 s. */
++	period = clamp(dev->rep[REP_PERIOD], 33, 500);
++	/* Get correct exponent.  Split is at 258.333 ms */
++	while (period < 259) {
++		period <<= 1;
++		exp--;
++	}
++	/* Convert from 259..516 ms to 8..15 30ths of a second */
++	period = (period * 3 + 50) / 100u;
++	/* Store actual value back.  x * 1000 / 240 = x * 25 / 6 */
++	dev->rep[REP_PERIOD] = ((period << exp) * 25 + 3) / 6u;
+ 
+-	param = i | (j << 5);
++	param = (delay - 1) << 5 | exp << 3 | (period - 8);
+ 	return ps2_command(&atkbd->ps2dev, &param, ATKBD_CMD_SETREP);
+ }
+ 
