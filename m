@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045Ab2GVN7B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 09:59:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48054 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab2GVN7A (ORCPT
+	id S1752081Ab2GVN7h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 09:59:37 -0400
+Received: from smtp07.smtpout.orange.fr ([80.12.242.129]:34403 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab2GVN7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 09:59:00 -0400
-Date: Sun, 22 Jul 2012 06:58:47 -0700
-From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-36d93d88a5396baa135f8bcde7b8501dfe3b8e53@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        shuahkhan@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com, tglx@linutronix.de
-In-Reply-To: <1338424803.3569.5.camel@lorien2>
-References: <1338424803.3569.5.camel@lorien2>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] Revert "x86/early_printk:
-  Replace obsolete simple_strtoul() usage with kstrtoint()"
-Git-Commit-ID: 36d93d88a5396baa135f8bcde7b8501dfe3b8e53
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 22 Jul 2012 09:59:35 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: kconfig-frontends-3.5.0-0 released
+Date: Sun, 22 Jul 2012 15:59:31 +0200
+User-Agent: KMail/1.13.5 (Linux/3.5.0-treguer; KDE/4.4.5; x86_64; ; )
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 22 Jul 2012 06:58:52 -0700 (PDT)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207221559.31897.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  36d93d88a5396baa135f8bcde7b8501dfe3b8e53
-Gitweb:     http://git.kernel.org/tip/36d93d88a5396baa135f8bcde7b8501dfe3b8e53
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Fri, 22 Jun 2012 16:25:19 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 22 Jul 2012 15:47:52 +0200
+Hello All!
 
-Revert "x86/early_printk: Replace obsolete simple_strtoul() usage with kstrtoint()"
+I'm pleased to announce the release of kconfig-frontends 3.5.0-0!
+Go download it there:
+    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.5.0-0.tar.xz
+    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.5.0-0.tar.bz2
 
-This reverts commit fbd24153c48b8425b09c161a020483cd77da870e.
+The kconfig-frontends package provides the kconfig parser, as well as all the
+kconfig frontends and utilities, packaged using the traditional autotools, so
+the kconfig infrastructure is easy to deploy, either locally or system-wide.
 
-This commit is subtly buggy: kstrto*int() can return an error but
-it's not checked in every path. simple_strtoul() on the other hand
-could not fail, so this patch subtly intruduces new failure modes.
+What's new since 3.4.0-0:
+  - compiling on L10n-deffective systems has been fixed
+  - compiling under Cygwin is mostly functional (except the nconf frontend)
+  - the packaging has been enhanced and cleaned up
+  - compilation logs are now more like the kernel's (using the autotools
+    silent rules)
+  - the streamline utility has been removed because it is too kernel-specific
 
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
-Link: http://lkml.kernel.org/r/1338424803.3569.5.camel@lorien2
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/early_printk.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+As a reminder, the home for kconfig-frontends is:
+  http://ymorin.is-a-geek.org/projects/kconfig-frontends
 
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index 5e47712..9b9f18b 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -119,7 +119,7 @@ static __init void early_serial_init(char *s)
- 	unsigned char c;
- 	unsigned divisor;
- 	unsigned baud = DEFAULT_BAUD;
--	ssize_t ret;
-+	char *e;
- 
- 	if (*s == ',')
- 		++s;
-@@ -127,14 +127,14 @@ static __init void early_serial_init(char *s)
- 	if (*s) {
- 		unsigned port;
- 		if (!strncmp(s, "0x", 2)) {
--			ret = kstrtoint(s, 16, &early_serial_base);
-+			early_serial_base = simple_strtoul(s, &e, 16);
- 		} else {
- 			static const int __initconst bases[] = { 0x3f8, 0x2f8 };
- 
- 			if (!strncmp(s, "ttyS", 4))
- 				s += 4;
--			ret = kstrtouint(s, 10, &port);
--			if (ret || port > 1)
-+			port = simple_strtoul(s, &e, 10);
-+			if (port > 1 || s == e)
- 				port = 0;
- 			early_serial_base = bases[port];
- 		}
-@@ -149,8 +149,8 @@ static __init void early_serial_init(char *s)
- 	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
- 
- 	if (*s) {
--		ret = kstrtouint(s, 0, &baud);
--		if (ret || baud == 0)
-+		baud = simple_strtoul(s, &e, 0);
-+		if (baud == 0 || s == e)
- 			baud = DEFAULT_BAUD;
- 	}
- 
+And the repository can be browsed or hg-cloned from:
+  http://ymorin.is-a-geek.org/hg/kconfig-frontends
+
+kconfig-frontends is not meant to replace the in-tree Linux kconfig, but
+really targets third-party projects that want an easy path to following
+the evolution of kconfig, without the burden to manually synchronise from
+the Linux kernel source tree.
+
+Any comment, any feedback, any patch is welcome! ;-)
+
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
