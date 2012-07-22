@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395Ab2GVKBy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 06:01:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:56199 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab2GVKBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 06:01:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: arm-allnoconfig error: '__LINUX_ARM_ARCH__' undeclared
-Date: Sun, 22 Jul 2012 10:01:43 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <20120722024313.GD8279@localhost>
-In-Reply-To: <20120722024313.GD8279@localhost>
+	id S1751431Ab2GVKHj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 06:07:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49584 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab2GVKHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 06:07:37 -0400
+Message-ID: <500BD0DD.3000309@redhat.com>
+Date: Sun, 22 Jul 2012 13:07:25 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Rik van Riel <riel@redhat.com>
+CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: CFS vs. cpufreq/cstates vs. latency
+References: <50057565.7030405@redhat.com>
+In-Reply-To: <50057565.7030405@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207221001.43528.arnd@arndb.de>
-X-Provags-ID: V02:K0:dKzpLNkzjDaPOvVuf2m987mmJNYoY42jA0dCNgsCoEa
- lFyeW70jWKBML6LH42jG86zTva7cEAGY4dO/L7em6VURLxmTkt
- CttdxV/6fQ7OY/awHgb5bp8Dv1zYgKl7t2mZzeNGbxW0VGk8X6
- pjcrNCzLnlYNlLAUwe+yqn4mghpKzGzM2hHnq52vvIKbmKl/k/
- ifyOwO4KfD0pXEQGxW/JTIywGxW1Hx2RV5trVXV8qyj/zju9Jf
- hM8+YyR4SH2QhPyJXwRd/WDt/o0PUnXEPcVFgO/Gt1A2a7LhSV
- k+TDd+5mZWyO522KzRxdvxtBATlj7NNNeSO06ziDNeiujnklg1
- PMowpeRsAae7kL2Lp6Yw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 22 July 2012, Fengguang Wu wrote:
-> Kernel build failed on arm-allnoconfig:
+On 07/17/2012 05:23 PM, Rik van Riel wrote:
+> While tracking down a latency issue with communication between
+> KVM guests, we ran into a very interesting issue, an interplay
+> of CFS and power saving code.
 > 
-> include/linux/math64.h:55:15: error: '__LINUX_ARM_ARCH__' undeclared (first use in this function)
-> arch/arm/include/asm/glue-cache.h:129:2: error: #error Unknown cache maintenance model
-> arch/arm/include/asm/glue-df.h:99:2: error: #error Unknown data abort handler type
-> arch/arm/include/asm/glue-pf.h:54:2: error: #error Unknown prefetch abort handler type
+> About 3/4 of the 230us latency came from CPUs waking up out of
+> C-states. Disabling C states reduced the latency to 60us...
 > 
-> Do you think this allnoconfig test meaningful at all?
+> The issue? The communication is between various threads and
+> processes, each of which last ran on a CPU that is now in a
+> deeper C state. The total latency from that is "CPU wakeup
+> latency * NR CPUs woken".
+> 
+> This problem could be common to many different multi-threaded
+> or multi-process applications. It looks like something that
+> would be fixable at the scheduler + cpufreq level.
+> 
+> Specifically, waking up some process requires that the CPU
+> which is running the wakeup is already in C0 state. If the
+> CPU on which the to-be-woken task ran last is in a deep C
+> state, it may make sense to simply run the woken up task
+> on the local CPU, not the CPU where it was originally.
+> 
+> I seem to remember some scheduling code that (for power
+> saving reasons) tried running all the tasks on one CPU,
+> until that CPU got busy, and then spilled over onto other
+> CPUs.
+> 
+> I do not seem to be able to find that code in recent kernels,
+> but I have the feeling that a policy like that (related to
+> WAKE_AFFINE scheduling?) could improve this issue.
+> 
+> As an additional benefit, it has the possibility of further
+> improving power saving.
+> 
+> What do the scheduler and cpufreq people think about this
+> problem?
+> 
+> Any preferred ways to solve the "N * cpu wakeup latency"
+> problem that is plaguing multi-process and multi-threaded
+> workloads?
 
-The allno/mod/yesconfig tests on ARM are somewhat limited in their
-usefulness at the moment because they always pick the same platform
-type (versatile) and don't really cover the cases that most people
-are interested in.
+A few notes:
 
-The particular problem with allnoconfig is that the logic to determine
-the architecture level depends on at least one platform being selected,
-and there are also problems with nommu kernels that tend to not work
-if certain other options are not set correctly. 
+- if you go into deep C-state, it may be worthwhile to migrate all the
+interrupts away from that cpu.  sysfs says C3 latency is 200 us on one
+of my machines, if we go there we should migrate anything important away.
 
-We can make the nommu case go away if we make hide the option for
-non-expert configurations including allnoconfig. I suggested adding
-some logic to all the subarch Kconfig files that forces at least
-one of the boards to be enabled like the patch below, but a number
-of people didn't like it.
+- I believe some of those C-states flush the cache, so executing on a
+cpu that is has awoken from one of these states will be slow for a
+while; needs to be taken into account.
 
-For reference, here is what I would use in order to get 'make
-allnoconfig' to work on ARM. My impression is at the moment that
-we should make a more serious attempt at fixing all the possible
-configurations when we get to 'multiplatform' configurations,
-because that will be more interesting than doing it just for
-the versatile platform.
+- C1 state is listed as having 3 us latency.  If we're expecting a
+wakeup soon and are sensitive to latency, it's better to spin for a bit
+before sleeping.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index a306d6d..e43e743 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -236,7 +236,7 @@ source "kernel/Kconfig.freezer"
- menu "System Type"
- 
- config MMU
--	bool "MMU-based Paged Memory Management Support"
-+	bool "MMU-based Paged Memory Management Support" if EXPERT
- 	default y
- 	help
- 	  Select if you want MMU-based virtualised addressing space
-diff --git a/arch/arm/mach-versatile/Kconfig b/arch/arm/mach-versatile/Kconfig
-index c1f38f6..455f20a 100644
---- a/arch/arm/mach-versatile/Kconfig
-+++ b/arch/arm/mach-versatile/Kconfig
-@@ -25,4 +25,13 @@ config MACH_VERSATILE_DT
- 	  Include support for the ARM(R) Versatile/PB platform,
- 	  using the device tree for discovery
- 
-+config MACH_VERSATILE_AUTO
-+	def_bool y
-+	depends on !ARCH_VERSATILE_PB
-+	depends on !MACH_VERSATILE_AB
-+	select MACH_VERSATILE_DT
-+	help
-+	  We autoselect MACH_VERSATILE_DT if both PB and AB are
-+	  disabled, to ensure that at least one platform is enabled.
-+
- endmenu
+-- 
+error compiling committee.c: too many arguments to function
+
+
