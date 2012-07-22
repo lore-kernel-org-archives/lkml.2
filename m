@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab2GVK6a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 06:58:30 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:29750 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab2GVK62 (ORCPT
+	id S1751480Ab2GVLjl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 07:39:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58437 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab2GVLjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 06:58:28 -0400
-Date: Sun, 22 Jul 2012 12:58:10 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Devendra Naga <develkernel412222@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Cc: Len Brown <len.brown@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Fengguang Wu <wfg@linux.intel.com>,
-        Durgadoss R <durgadoss.r@intel.com>
-Subject: Re: [PATCH] thermal: fix build error at thermal_sys.c
-Message-ID: <20120722125810.052ca19e@endymion.delvare>
-In-Reply-To: <1342944622-16263-1-git-send-email-develkernel412222@gmail.com>
-References: <1342944622-16263-1-git-send-email-develkernel412222@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 22 Jul 2012 07:39:35 -0400
+Message-ID: <500BE68D.90005@gmail.com>
+Date: Sun, 22 Jul 2012 13:39:57 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v7.5] kvm: notify host when the guest is
+ panicked
+References: <500A565A.8080403@cn.fujitsu.com> <500A6BF1.4030002@cn.fujitsu.com>
+In-Reply-To: <500A6BF1.4030002@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Jul 2012 13:55:22 +0545, Devendra Naga wrote:
-> with the commit 67ff19 (Thermal: Make Thermal trip points writeable)
-> build error is introduced,
+On 07/21/2012 10:44 AM, Wen Congyang wrote:
+> We can know the guest is panicked when the guest runs on xen.
+> But we do not have such feature on kvm.
 > 
-> the following was reported from Fengguang Wu,
+> Another purpose of this feature is: management app(for example:
+> libvirt) can do auto dump when the guest is panicked. If management
+> app does not do auto dump, the guest's user can do dump by hand if
+> he sees the guest is panicked.
 > 
-> drivers/thermal/thermal_sys.c: In function 'create_trip_attrs':
-> drivers/thermal/thermal_sys.c:1216:3: error: 'count' undeclared (first use in this function)
-> drivers/thermal/thermal_sys.c:1216:3: note: each undeclared identifier is reported only once for each function it appears in
+> We have three solutions to implement this feature:
+> 1. use vmcall
+> 2. use I/O port
+> 3. use virtio-serial.
 > 
-> link:
-> http://www.spinics.net/lists/linux-kernel-janitors/msg12174.html
-> 
-> use the indx instead.
+> We have decided to avoid touching hypervisor. The reason why I choose
+> choose the I/O port is:
+> 1. it is easier to implememt
+> 2. it does not depend any virtual device
+> 3. it can work when starting the kernel
 
-Thanks for the fix.
+Was the option of implementing a virtio-watchdog driver considered?
 
-> Cc: Durgadoss R <durgadoss.r@intel.com>
-> Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
-> ---
-> 
-> This patch is build-tested only.
+You're basically re-implementing a watchdog, a guest-host interface and a set of protocols for guest-host communications.
 
-Something the original submitter apparently didn't do. Durga, can you
-please build-test all your commits from now on? I don't even understand
-how you managed to test your code if it did not build...
-
-The broken commit isn't upstream yet, so in the interest of
-bisectability I would recommend that the original commit is fixed and
-the branch in which this broken commit was is rebased. Only then, ask
-Linux to pull from it.
-
-Thanks.
-
-> 
->  drivers/thermal/thermal_sys.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index 9f56250..1b4aa9d 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -1259,7 +1259,7 @@ static int create_trip_attrs(struct thermal_zone_device *tz, int flag)
->  		snprintf(tz->trip_type_attrs[indx].name, THERMAL_NAME_LENGTH,
->  			 "trip_point_%d_type", indx);
->  
-> -		sysfs_attr_init(&tz->trip_type_attrs[count].attr.attr);
-> +		sysfs_attr_init(&tz->trip_type_attrs[indx].attr.attr);
->  		tz->trip_type_attrs[indx].attr.attr.name =
->  						tz->trip_type_attrs[indx].name;
->  		tz->trip_type_attrs[indx].attr.attr.mode = S_IRUGO;
-
--- 
-Jean Delvare
+Why can't we re-use everything we have now, push a virtio watchdog driver into drivers/watchdog/, and gain a more complete solution to detecting hangs inside the guest.
