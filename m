@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab2GVUbQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 16:31:16 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37615 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab2GVUbP (ORCPT
+	id S1752609Ab2GVUes (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 16:34:48 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:43997 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab2GVUer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 16:31:15 -0400
-Message-ID: <500C6333.6010609@gmail.com>
-Date: Sun, 22 Jul 2012 22:31:47 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
-MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v7] kvm: notify host when the guest is panicked
-References: <500A565A.8080403@cn.fujitsu.com> <500A8969.1040300@gmail.com> <87txwzwqgt.fsf@codemonkey.ws> <500C604B.3080800@gmail.com>
-In-Reply-To: <500C604B.3080800@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 22 Jul 2012 16:34:47 -0400
+Subject: Re: [PULL] vhost-net changes for net/3.6
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: David Miller <davem@davemloft.net>
+Cc: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        asias@redhat.com, pbonzini@redhat.com, stefanha@gmail.com,
+        stefanha@linux.vnet.ibm.com, wuzhy@cn.ibm.com,
+        Greg KH <gregkh@linuxfoundation.org>
+In-Reply-To: <20120722.121942.2002727319293471163.davem@davemloft.net>
+References: <20120721225436.GA23519@redhat.com>
+	 <20120722.121942.2002727319293471163.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 Jul 2012 13:34:44 -0700
+Message-ID: <1342989284.25472.227.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2012 10:19 PM, Sasha Levin wrote:
-> On 07/22/2012 09:22 PM, Anthony Liguori wrote:
->> Sasha Levin <levinsasha928@gmail.com> writes:
->>
->>> On 07/21/2012 09:12 AM, Wen Congyang wrote:
->>>> +#define KVM_PV_PORT	(0x505UL)
->>>> +
->>>>  #ifdef __KERNEL__
->>>>  #include <asm/processor.h>
->>>>  
->>>> @@ -221,6 +223,11 @@ static inline void kvm_disable_steal_time(void)
->>>>  }
->>>>  #endif
->>>>  
->>>> +static inline unsigned int kvm_arch_pv_features(void)
->>>> +{
->>>> +	return inl(KVM_PV_PORT);
->>>> +}
->>>> +
->>>
->>> Why is this safe?
->>>
->>> I'm not sure you can just pick any ioport you'd like and use it.
->>
->> There are three ways I/O ports get used on a PC:
->>
->> 1) Platform devices
->>  - This is well defined since the vast majority of platform devices are
->>    implemented within a single chip.  If you're emulating an i440fx
->>    chipset, the PIIX4 spec has an exhaustive list.
->>
->> 2) PCI devices
->>  - Typically, PCI only allocates ports starting at 0x0d00 to avoid
->>    conflicts with ISA devices.
->>
->> 3) ISA devices
->>  - ISA uses subtractive decoding so any ISA device can access.  In
->>    theory, an ISA device could attempt to use port 0x0505 but it's
->>    unlikely.  In a modern guest, there aren't really any ISA devices being
->>    added either.
->>
->> So yes, picking port 0x0505 is safe for something like this (as long as
->> you check to make sure that you really are under KVM).
-> 
-> Is there anything that actually prevents me from using PCI ports lower than 0x0d00? As you said in (3), ISA isn't really used anymore (nor is implemented by lkvm for example), so placing PCI below 0x0d00 might even make sense in that case.
-> 
-> Furthermore, I can place one of these brand new virtio-mmio devices which got introduced recently wherever I want right now - Having a device that uses 0x505 would cause a pretty non-obvious failure mode.
-> 
-> Either way, If we are going to grab an ioport, then:
-> 
->  - It should be documented well somewhere in Documentation/virt/kvm
->  - It should go through request_region() to actually claim those ioports.
->  - It should fail gracefully if that port is taken for some reason, instead of not even checking it.
-> 
+Hi DaveM,
 
-Out of curiosity I tested that, and apparently lkvm has no problem allocating virtio-pci devices in that range:
+On Sun, 2012-07-22 at 12:19 -0700, David Miller wrote:
+> From: "Michael S. Tsirkin" <mst@redhat.com>
+> Date: Sun, 22 Jul 2012 01:54:36 +0300
+> 
+> > The following changes since commit 186e868786f97c8026f0a81400b451ace306b3a4:
+> > 
+> >   forcedeth: spin_unlock_irq in interrupt handler fix (2012-07-20 16:18:36 -0700)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
+> > 
+> > for you to fetch changes up to 163049aefdc04323a2d17ec9f2862027b43b0502:
+> > 
+> >   vhost: make vhost work queue visible (2012-07-22 01:22:23 +0300)
+> 
+> Pulled, thanks.
 
-sh-4.2# pwd
-/sys/devices/pci0000:00/0000:00:01.0
-sh-4.2# cat resource | head -n1
-0x0000000000000500 0x00000000000005ff 0x0000000000040101
+So target-pending/for-next-merge will need to be rebased once these bits
+hit mainline for the tcm_vhost initial merge commit..
 
-This was with the commit in question applied.
+Just curious when your planning on sending out a -rc1 PULL request for
+net-next..?
+
+--nab
+
+
+
+
+
