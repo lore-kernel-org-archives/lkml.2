@@ -1,160 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab2GVPJI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 11:09:08 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:12373
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751399Ab2GVPJF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 11:09:05 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I936eI542M1432Izz1202hzz8275dhz2fh2a8h683h839h93fhd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Olaf Hering <olaf@aepfle.de>, Greg KH <gregkh@linuxfoundation.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH 00/13] drivers: hv: kvp
-Thread-Topic: [PATCH 00/13] drivers: hv: kvp
-Thread-Index: AQHNT/NB00SQsXjmDEmcq7JSjap8hpcFX8+AgADv8yCAAAVogIAFjrOAgAFErgCAAAhKEIAAA3+AgAAAZKCAAp6bAIAGMUUggAB1SYCAABj5oIAeNuMAgADJ0YA=
-Date: Sun, 22 Jul 2012 15:08:52 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF923548B42@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <20120621224737.GA5933@kroah.com>
-	 <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120622132547.GA2639@kroah.com>
-	 <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120626213954.GA4840@kroah.com>
-	 <426367E2313C2449837CD2DE46E7EAF9155ED64A@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120626222205.GA5948@kroah.com>
-	 <426367E2313C2449837CD2DE46E7EAF9155ED68D@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120628142340.GA21537@aepfle.de>
-	 <426367E2313C2449837CD2DE46E7EAF9155EF399@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	 <20120702195721.GE1894@decadent.org.uk>
-	 <426367E2313C2449837CD2DE46E7EAF9155EF7C6@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <1342925458.11373.210.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1342925458.11373.210.camel@deadeye.wl.decadent.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.24.39.100]
-Content-Type: text/plain; charset="utf-8"
+	id S1751988Ab2GVPJY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 11:09:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64915 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417Ab2GVPJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 11:09:22 -0400
+Date: Sun, 22 Jul 2012 18:09:17 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 0/4] kvm: level irqfd and new eoifd
+Message-ID: <20120722150917.GM26120@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120719165944.GB17213@redhat.com>
+ <1342718978.3142.26.camel@ul30vt>
+ <20120719174550.GA17762@redhat.com>
+ <1342723687.3142.35.camel@ul30vt>
+ <20120720100732.GB1357@redhat.com>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120720100732.GB1357@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6MF9GRt032090
 
-
-
-> -----Original Message-----
-> From: Ben Hutchings [mailto:ben@decadent.org.uk]
-> Sent: Saturday, July 21, 2012 10:51 PM
-> To: KY Srinivasan
-> Cc: Olaf Hering; Greg KH; apw@canonical.com; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; linux-kernel@vger.kernel.org;
-> netdev@vger.kernel.org
-> Subject: Re: [PATCH 00/13] drivers: hv: kvp
+On Fri, Jul 20, 2012 at 01:07:32PM +0300, Michael S. Tsirkin wrote:
+> On Thu, Jul 19, 2012 at 12:48:07PM -0600, Alex Williamson wrote:
+> > On Thu, 2012-07-19 at 20:45 +0300, Michael S. Tsirkin wrote:
+> > > On Thu, Jul 19, 2012 at 11:29:38AM -0600, Alex Williamson wrote:
+> > > > On Thu, 2012-07-19 at 19:59 +0300, Michael S. Tsirkin wrote:
+> > > > > On Mon, Jul 16, 2012 at 02:33:38PM -0600, Alex Williamson wrote:
+> > > > > > v5:
+> > > > > >  - irqfds now have a one-to-one mapping with eoifds to prevent users
+> > > > > >    from consuming all of kernel memory by repeatedly creating eoifds
+> > > > > >    from a single irqfd.
+> > > > > >  - implement a kvm_clear_irq() which does a test_and_clear_bit of
+> > > > > >    the irq_state, only updating the pic/ioapic if changes and allowing
+> > > > > >    the caller to know if anything was done.  I added this onto the end
+> > > > > >    as it's essentially an optimization on the previous design.  It's
+> > > > > >    hard to tell if there's an actual performance benefit to this.
+> > > > > >  - dropped eoifd gsi support patch as it was only an FYI.
+> > > > > > 
+> > > > > > Thanks,
+> > > > > > 
+> > > > > > Alex
+> > > > > 
+> > > > > 
+> > > > > So 3/4, 4/4 are racy and I think you convinced me it's best to drop it for
+> > > > > now. I hope that fact that we already scan all vcpus under spinlock for
+> > > > > level interrupts is enough to justify adding a lock here.
+> > > > > 
+> > > > > To summarize issues still outstanding with 1/2, 2/2:
+> > > > (a)
+> > > > > - source id lingering after irqfd was destroyed/deassigned
+> > > > >   prevents assigning a new irqfd
+> > > > (b)
+> > > > > - if same irqfd is deassigned and re-assigned, this
+> > > > >   seems to succeed but does not give any more EOIs
+> > > > (c)
+> > > > > - document that user needs to re-inject interrupts
+> > > > >   injected by level IRQFD after migration as they are cleared
+> > > > > 
+> > > > > Hope this helps!
+> > > > 
+> > > > Thanks, I'm refining and testing a re-write.  One thing I also noticed
+> > > > is that we don't do anything when the eoifd is closed.  We'll cleanup
+> > > > when kvm is closed, but that can leave a lot of stray eoifds, and
+> > > > therefore used irq_source_ids tied up.  So, I think I need to pull in a
+> > > > lot of the irqfd code just to be able to catch the POLLHUP and do
+> > > > cleanup.
+> > > 
+> > > I don't think it's worth it. With ioeventfd we have the same issue
+> > > and we don't care: userspace should just DEASSIGN before close.
+> > > With irqfd we committed to support cleanup by close but
+> > > it happens kind of naturally since we poll irqfd anyway.
+> > > 
+> > > It's there for irqfd for historical reasons.
+> > 
+> > You're not dealing with such a limited resource for ioeventfds though.
+> > It's pretty easily conceivable we could run out of irq source IDs.
 > 
-> On Tue, 2012-07-03 at 15:24 +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: Ben Hutchings [mailto:ben@decadent.org.uk]
-> > > Sent: Monday, July 02, 2012 3:57 PM
-> > > To: KY Srinivasan
-> > > Cc: Olaf Hering; Greg KH; apw@canonical.com; devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org; linux-kernel@vger.kernel.org;
-> > > netdev@vger.kernel.org
-> > > Subject: Re: [PATCH 00/13] drivers: hv: kvp
-> > >
-> > > On Mon, Jul 02, 2012 at 03:22:25PM +0000, KY Srinivasan wrote:
-> > > >
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Olaf Hering [mailto:olaf@aepfle.de]
-> > > > > Sent: Thursday, June 28, 2012 10:24 AM
-> > > > > To: KY Srinivasan
-> > > > > Cc: Greg KH; apw@canonical.com; devel@linuxdriverproject.org;
-> > > > > virtualization@lists.osdl.org; linux-kernel@vger.kernel.org
-> > > > > Subject: Re: [PATCH 00/13] drivers: hv: kvp
-> > > > >
-> > > > > On Tue, Jun 26, KY Srinivasan wrote:
-> > > > >
-> > > > > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > > > > > The fact that it was Red Hat specific was the main part, this should be
-> > > > > > > done in a standard way, with standard tools, right?
-> > > > > >
-> > > > > > The reason I asked this question was to make sure I address these
-> > > > > > issues in addition to whatever I am debugging now. I use the standard
-> > > > > > tools and calls to retrieve all the IP configuration. As I look at
-> > > > > > each distribution the files they keep persistent IP configuration
-> > > > > > Information is different and that is the reason I chose to start with
-> > > > > > RedHat. If there is a standard way to store the configuration, I will
-> > > > > > do that.
-> > > > >
-> > > > >
-> > > > > KY,
-> > > > >
-> > > > > instead of using system() in kvp_get_ipconfig_info and kvp_set_ip_info,
-> > > > > wouldnt it be easier to call an external helper script which does all
-> > > > > the distribution specific work? Just define some API to pass values to
-> > > > > the script, and something to read values collected by the script back
-> > > > > into the daemon.
-> > > >
-> > > > On the "Get" side I mostly use standard commands/APIs to get all the
-> > > information:
-> > > >
-> > > > 1) IP address information and subnet mask: getifaddrs()
-> > > > 2) DNS information:  Parsing /etc/resolv.conf
-> > > > 3) /sbin/ip command for all the routing information
-> > >
-> > > If you're interested in the *current* configuration then (1) and (3)
-> > > are OK but you should really use the rtnetlink API.
-> > >
-> > > However, I suspect that Hyper-V assumes that current and persistent
-> > > configuration are the same thing, which is obviously not true in
-> > > general on Linux.  But if NetworkManager is running then you can
-> > > assume they are.
-> >
-> > I am only interested in the currently active information. Why do you
-> > recommend the use of rtnetlink API over the "ip" command. If I am not
-> > mistaken, the ip command uses netlink to get the information.
-> [...]
+> Running out of fds is also very conceivable.  Not deassigning
+> before close is a userspace bug anyway.
 > 
-> 'Screen-scraping' the output of administrative tools is not good
-> practice.  It may be the best you can do when writing a shell script,
-> but for a C program it's generaly less reliable and often more difficult
-> than using the underlying C API.
+Close should free all recourses allocated by an fd. What if a code that
+closes the fd have no idea what cleanup should be done (fd was passed by
+unix socket). Heck, the code may not have permission to call ioctl
+to deassign. 
 
-Ben,
-Based on the input I have gotten, the consensus appears to be to have external
-scripts to both GET and SET IP related configuration information. So, the KVP
-daemon will need to parse information returned from these external distro specific
-scripts (on the GET side).  While I agree with you that it is good to use C APIs, I currently
-have the implementation using the "ip" command and it appears to be quite simple.
-Furthermore, given that the information I need to pass back to the host needs to be
-appropriately formatted (based on host specified format), I suspect using the "ip" command
-may actually simplify the code.
-
-Regards,
-
-K. Y
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--
+			Gleb.
