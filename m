@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab2GVSUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 14:20:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47505 "EHLO
+	id S1752369Ab2GVSlq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 14:41:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39429 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752278Ab2GVST7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752234Ab2GVSlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 14:19:59 -0400
-Date: Sun, 22 Jul 2012 19:19:56 +0100
+	Sun, 22 Jul 2012 14:41:45 -0400
+Date: Sun, 22 Jul 2012 19:41:42 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] leds: add new lp8788 led driver
-Message-ID: <20120722181956.GA4557@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
- <1342799346.5138.7.camel@lorien2>
- <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regmap updates for 3.6
+Message-ID: <20120722184142.GB4557@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
+	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
 Content-Disposition: inline
-In-Reply-To: <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
 X-Cookie: You will forget that you ever knew me.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,44 +24,84 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---BOKacYhQ+x31HxR3
+--3uo+9/B/ebqu+fSQ
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Sat, Jul 21, 2012 at 02:48:49AM +0800, Bryan Wu wrote:
+The following changes since commit 485802a6c524e62b5924849dd727ddbb1497cc71:
 
-> Actually cancel_work_sync() is quite similar to flush_work_sync()
-> here. For the timer thing, in fact it is NULL when cancel_work_sync()
-> call __cancel_work_timer().
+  Linux 3.5-rc3 (2012-06-16 17:25:17 -0700)
 
-> And Mark, do you have any advice about the flush_work_sync() and
-> cancel_work_sync(). I saw you use flush in the
-> drivers/leds/leds-wm8350.c.
+are available in the git repository at:
 
-If the work is flushed then the state that userspace thought was set
-when the driver is removed will actually be set before the driver is
-removed.  This is fairly minor but might be useful.
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-3.6
 
---BOKacYhQ+x31HxR3
+for you to fetch changes up to 38e23194e1c95e73819d25a63bcf94fe4709d4c5:
+
+  Merge branches 'regmap-core', 'regmap-irq' and 'regmap-page' into regmap-next (2012-07-22 19:26:07 +0100)
+
+----------------------------------------------------------------
+
+regmap: Updates for 3.6
+
+A few fixes plus a few features, the most generally useful thing being
+the register paging support which can be used by quite a few devices:
+
+- Support for wake IRQs in regmap-irq
+- Support for register paging
+- Support for explicitly specified endianness, mostly for MMIO.
+
+----------------------------------------------------------------
+Axel Lin (1):
+      regmap: mmio: Staticize regmap_mmio_gen_context()
+
+Dimitris Papastamos (1):
+      regmap: Fix incorrect arguments to kzalloc() call
+
+Krystian Garbaciak (3):
+      regmap: Move lock out from internal function _regmap_update_bits().
+      regmap: Add support for register indirect addressing.
+      regmap: Fix work_buf switching for page update during virtual range access.
+
+Mark Brown (6):
+      regmap: Constify regmap_irq_chip
+      regmap: Don't try to map non-existant IRQs
+      regmap: Implement support for wake IRQs
+      regmap: Remove warning on stubbed dev_get_regmap()
+      regmap: Add hook for printk logging for debugging during early init
+      Merge branches 'regmap-core', 'regmap-irq' and 'regmap-page' into regmap-next
+
+Stephen Warren (2):
+      regmap: allow busses to request formatting with specific endianness
+      regmap: mmio: request native endian formatting
+
+ drivers/base/regmap/internal.h    |   17 ++
+ drivers/base/regmap/regmap-irq.c  |   57 +++++-
+ drivers/base/regmap/regmap-mmio.c |   30 ++--
+ drivers/base/regmap/regmap.c      |  344 ++++++++++++++++++++++++++++++++++---
+ include/linux/regmap.h            |   69 +++++++-
+ 5 files changed, 478 insertions(+), 39 deletions(-)
+
+--3uo+9/B/ebqu+fSQ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQDERFAAoJEBus8iNuMP3dCD8P/1S/uIyV7qSmFVWs8AlfHkc3
-l9PKuCW3qv5dvA/VLPN/V7MmTN/kty0k9MNMUOyfidn8sVYDSiczDOFu47s+upOM
-saI+rG4Mc1WArVhoOqD/MQjMpHFlSttC94tG6o+qwXz86MUy53EEK1+ExouRo9DL
-xwSg6RKirSEHvSU3aYyX+8ESXAb2B0EbxmOe5jhF9lHwLLpvygXSRKsgFyYJ5abG
-6NLwhip0+86WvnzCPUIrQM3SpXgA346RinfusCrHX0GK4ddB1psyfzcqKpDOmHG3
-k0S72qoT+NxmWFXrW34fGr2dLVHLfiNIzRgfIPWFdejXPkvb5yThKkAbpDUycjw7
-xfd37JWQyP6YU57ir0swJqZfcCFr5Azq/pVDP6vL9vHabn0E8Y3Map8EaRf9NTEf
-T1M+MCZ7b1AR3zTkSkUXZQqF1SqlUTRYw11ryywb8E85Z7y1KFwOEKPjnaKa8KyW
-Vevb4Wi0DgKg55B30+KsnXdKvGLFb8d7QOZ+fJNWAxiZfe/3XIVJPVRH6mNAy64o
-cwGR5eujyASStYXmyz3qEbqQ3Ew5gE6+SaOlcwcXvgB9maWYdMmTI+zYfT0LbvJc
-IIsVcPbjSguP8vmWSgHWB6BsUnI9/GynsoMvw04ZnvCSFy2Yrp92ITWlFORENw2E
-7Y9q8iHFPFcv8ggnd++d
-=w9em
+iQIcBAEBAgAGBQJQDElfAAoJEBus8iNuMP3dzmAQAJMVE0azJKrA7/V7wiGTf9BV
+bJBWbMfqk1ovy4krUIFqCoRkKVBKva7MbFL3YBDhDjv8C4OQ8AdkqOIMxBdi6pYk
+Spg6xDSxEDTXry5yn6pdWCe2HXLLSQ4pKrnvj2iHwjtKdX1ucgK3lQgPqkI1m/vn
+OlD3GSWs+7fXedK0ze9nnbCj+nu7UzWCSvgJmw4l4YTuIcIY+KOeW16l1YPeYLa5
+sp3VTpSwpQJP2FukI2VcFdJl66/j7YBDy4q0u1M6zyVml8H5nujY6VufBeS04RSZ
+WmqPhb0qSxhs5rusC3a0Y1YysHQVSvBgVIg5uud1KD6WWUx9VtqShpxFSKUi18NA
+2aFwc4h56VRGkren308Do7KiHP2T97M6l5FOfJRlgF2nhkzobarWyg+1BUTB5qle
+0VAm0x5DzcPqOSN2TbCxHmMBu0WnM6qbpR8GYRjXVVF16nc6iRo6QfDz5G+3D1FT
+02hcpFDB4dAiUvX/zCzAQME6QEX1DNOLHYG6PdG0CZf2iw6c8CH7CavgXO08QPwb
+flPzbeMWid2gEIGu6sUDyI7A1CS1Eft9PCNJ1MY3+IepYX5KAnFwfrF+cpWY9QIm
+HfFl0X5/DXWOTaKXCJNtvPCSbugn54hylHH/554H3ins/8rfZ178tXo5+zNu525C
+V3Y1cBuq4JMWQT2S1F/9
+=Y1m1
 -----END PGP SIGNATURE-----
 
---BOKacYhQ+x31HxR3--
+--3uo+9/B/ebqu+fSQ--
