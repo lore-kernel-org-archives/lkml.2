@@ -1,77 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab2GVRm7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 13:42:59 -0400
-Received: from mail.bmail.ru ([194.67.1.203]:23411 "EHLO sovam.com"
+	id S1752313Ab2GVR67 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 13:58:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16145 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201Ab2GVRm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 13:42:58 -0400
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sun Jul 22 21:42:57 2012
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-Date: Sun, 22 Jul 2012 21:42:50 +0400 (MSK)
-From: kyak <bas@bmail.ru>
-X-X-Sender: bas@bas
-To: linux-kernel@vger.kernel.org
-cc: Greg Kroah-Hartman <greg@kroah.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH] USB: plusb: Add support for PL-2501
-Message-ID: <alpine.LNX.2.02.1207222138410.1183@bas>
-User-Agent: Alpine 2.02 (LNX 1266 2009-07-14)
+	id S1752154Ab2GVR65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 13:58:57 -0400
+Message-ID: <500C3F44.5060708@redhat.com>
+Date: Sun, 22 Jul 2012 13:58:28 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V5 0/3] kvm: Improving directed yield in PLE handler
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com> <20120720173640.GA22659@amt.cnet> <500BF35D.6050605@linux.vnet.ibm.com>
+In-Reply-To: <500BF35D.6050605@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikhail Peselnik <peselnik@gmail.com>
+On 07/22/2012 08:34 AM, Raghavendra K T wrote:
+> On 07/20/2012 11:06 PM, Marcelo Tosatti wrote:
+>> On Wed, Jul 18, 2012 at 07:07:17PM +0530, Raghavendra K T wrote:
+>>>
+>>> Currently Pause Loop Exit (PLE) handler is doing directed yield to a
+>>> random vcpu on pl-exit. We already have filtering while choosing
+>>> the candidate to yield_to. This change adds more checks while choosing
+>>> a candidate to yield_to.
+>>>
+>>> On a large vcpu guests, there is a high probability of
+>>> yielding to the same vcpu who had recently done a pause-loop exit.
+>>> Such a yield can lead to the vcpu spinning again.
+>>>
+>>> The patchset keeps track of the pause loop exit and gives chance to a
+>>> vcpu which has:
+>>>
+>>> (a) Not done pause loop exit at all (probably he is preempted
+>>> lock-holder)
+>>>
+>>> (b) vcpu skipped in last iteration because it did pause loop exit, and
+>>> probably has become eligible now (next eligible lock holder)
+>>>
+>>> This concept also helps in cpu relax interception cases which use
+>>> same handler.
+>>>
+>>> Changes since V4:
+>>> - Naming Change (Avi):
+>>> struct ple ==> struct spin_loop
+>>> cpu_relax_intercepted ==> in_spin_loop
+>>> vcpu_check_and_update_eligible ==> vcpu_eligible_for_directed_yield
+>>> - mark vcpu in spinloop as not eligible to avoid influence of
+>>> previous exit
+>>>
+>>> Changes since V3:
+>>> - arch specific fix/changes (Christian)
+>>>
+>>> Changes since v2:
+>>> - Move ple structure to common code (Avi)
+>>> - rename pause_loop_exited to cpu_relax_intercepted (Avi)
+>>> - add config HAVE_KVM_CPU_RELAX_INTERCEPT (Avi)
+>>> - Drop superfluous curly braces (Ingo)
+>>>
+>>> Changes since v1:
+>>> - Add more documentation for structure and algorithm and Rename
+>>> plo ==> ple (Rik).
+>>> - change dy_eligible initial value to false. (otherwise very first
+>>> directed
+>>> yield will not be skipped. (Nikunj)
+>>> - fixup signoff/from issue
+>>>
+>>> Future enhancements:
+>>> (1) Currently we have a boolean to decide on eligibility of vcpu. It
+>>> would be nice if I get feedback on guest (>32 vcpu) whether we can
+>>> improve better with integer counter. (with counter = say f(log n )).
+>>>
+>>> (2) We have not considered system load during iteration of vcpu. With
+>>> that information we can limit the scan and also decide whether
+>>> schedule()
+>>> is better. [ I am able to use #kicked vcpus to decide on this But may
+>>> be there are better ideas like information from global loadavg.]
+>>>
+>>> (3) We can exploit this further with PV patches since it also knows
+>>> about
+>>> next eligible lock-holder.
+>>>
+>>> Summary: There is a very good improvement for kvm based guest on PLE
+>>> machine.
+>>> The V5 has huge improvement for kbench.
+>>>
+>>> +-----------+-----------+-----------+------------+-----------+
+>>> base_rik stdev patched stdev %improve
+>>> +-----------+-----------+-----------+------------+-----------+
+>>> kernbench (time in sec lesser is better)
+>>> +-----------+-----------+-----------+------------+-----------+
+>>> 1x 49.2300 1.0171 22.6842 0.3073 117.0233 %
+>>> 2x 91.9358 1.7768 53.9608 1.0154 70.37516 %
+>>> +-----------+-----------+-----------+------------+-----------+
+>>>
+>>> +-----------+-----------+-----------+------------+-----------+
+>>> ebizzy (records/sec more is better)
+>>> +-----------+-----------+-----------+------------+-----------+
+>>> 1x 1129.2500 28.6793 2125.6250 32.8239 88.23334 %
+>>> 2x 1892.3750 75.1112 2377.1250 181.6822 25.61596 %
+>>> +-----------+-----------+-----------+------------+-----------+
+>>>
+>>> Note: The patches are tested on x86.
+>>>
+>>> Links
+>>> V4: https://lkml.org/lkml/2012/7/16/80
+>>> V3: https://lkml.org/lkml/2012/7/12/437
+>>> V2: https://lkml.org/lkml/2012/7/10/392
+>>> V1: https://lkml.org/lkml/2012/7/9/32
+>>>
+>>> Raghavendra K T (3):
+>>> config: Add config to support ple or cpu relax optimzation
+>>> kvm : Note down when cpu relax intercepted or pause loop exited
+>>> kvm : Choose a better candidate for directed yield
+>>> ---
+>>> arch/s390/kvm/Kconfig | 1 +
+>>> arch/x86/kvm/Kconfig | 1 +
+>>> include/linux/kvm_host.h | 39 +++++++++++++++++++++++++++++++++++++++
+>>> virt/kvm/Kconfig | 3 +++
+>>> virt/kvm/kvm_main.c | 41 +++++++++++++++++++++++++++++++++++++++++
+>>> 5 files changed, 85 insertions(+), 0 deletions(-)
+>>
+>> Reviewed-by: Marcelo Tosatti<mtosatti@redhat.com>
+>>
+>
+> Thanks Marcelo for the review. Avi, Rik, Christian, please let me know
+> if this series looks good now.
 
-This patch adds support for PL-2501 by adding the appropriate USB
-ID's. This chip is used in several USB 'Easy Trasfer' Cables.
+The series looks good to me.
 
-Signed-off-by: Mikhail Peselnik <peselnik@gmail.com>
-Tested-by: Mikhail Peselnik <peselnik@gmail.com>
----
-Now with proper sign-offs and right people in cc.
-plusb driver (drivers/net/usb/plusb.c) doesn't recognize PL2501 chip.
-Since PL2501 uses the same code as PL2301/PL2302 (PL2501 works in
-compatibility mode with PL2301/PL2302), the fix is trivial and
-attached as a patch.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Just to note: the patch is not mine, it can be found here and there on
-Internet.
-I've tested the patch and it works great.
-
-Thank you.
-
---- linux-3.5/drivers/net/usb/plusb.c.orig      2012-07-22
-21:06:41.905802795 +0400
-+++ linux-3.5/drivers/net/usb/plusb.c   2012-07-22 21:07:00.345552404 +0400
-@@ -107,7 +107,7 @@ static int pl_reset(struct usbnet *dev)
-  }
-
-  static const struct driver_info        prolific_info = {
--       .description =  "Prolific PL-2301/PL-2302/PL-25A1",
-+       .description =  "Prolific PL-2301/PL-2302/PL-25A1/PL-2501",
-         .flags =        FLAG_POINTTOPOINT | FLAG_NO_SETINT,
-                 /* some PL-2302 versions seem to fail usb_set_interface() */
-         .reset =        pl_reset,
-@@ -139,6 +139,9 @@ static const struct usb_device_id   produc
-  }, {
-         USB_DEVICE(0x050d, 0x258a),     /* Belkin F5U258/F5U279 (PL-25A1) */
-         .driver_info =  (unsigned long) &prolific_info,
-+}, {
-+       USB_DEVICE(0x067b, 0x2501),     /* PL-2501 */
-+       .driver_info =  (unsigned long) &prolific_info,
-  },
-
-         { },            // END
-@@ -158,5 +161,5 @@ static struct usb_driver plusb_driver =
-  module_usb_driver(plusb_driver);
-
-  MODULE_AUTHOR("David Brownell");
--MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1 USB Host to Host Link Driver");
-+MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1/2501 USB Host to Host
-Link Driver");
-  MODULE_LICENSE("GPL");
+-- 
+All rights reversed
