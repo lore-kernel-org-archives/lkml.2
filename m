@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab2GWRjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 13:39:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43166 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754320Ab2GWRjl (ORCPT
+	id S1754403Ab2GWRls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 13:41:48 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45767 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754226Ab2GWRlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 13:39:41 -0400
-Date: Mon, 23 Jul 2012 18:39:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH -next] mfd: fix arizona-irq.c build by selecting
- REGMAP_IRQ
-Message-ID: <20120723173939.GB8247@opensource.wolfsonmicro.com>
-References: <20120723164036.52bc93caafcd165fc16f0284@canb.auug.org.au>
- <500D8ACA.4020501@xenotime.net>
+	Mon, 23 Jul 2012 13:41:47 -0400
+Message-ID: <500D8CD0.7030902@kernel.org>
+Date: Mon, 23 Jul 2012 10:41:36 -0700
+From: Konstantin Ryabitsev <mricon@kernel.org>
+Organization: Linux Foundation/Kernel.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+CC: "John 'Warthog9' Hawley" <warthog9@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org
+Subject: Re: [kernel.org users] [KORG] lkml.kernel.org up and running
+References: <5000B5D1.3090307@kernel.org> <20120723130642.GA4572@breakpoint.cc>
+In-Reply-To: <20120723130642.GA4572@breakpoint.cc>
+X-Enigmail-Version: 1.4.3
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7ZAtKRhVyVSsbBD2"
-Content-Disposition: inline
-In-Reply-To: <500D8ACA.4020501@xenotime.net>
-X-Cookie: Exercise caution in your daily affairs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+ protocol="application/pgp-signature";
+ boundary="------------enigAEDCB69D4B881507F231F3EC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---7ZAtKRhVyVSsbBD2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigAEDCB69D4B881507F231F3EC
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 23, 2012 at 10:32:58AM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
->=20
-> arizona-irq.c uses functions that are only available when
-> CONFIG_REGMAP_IRQ is enabled, so select that symbol for
-> arizona builds.
+On 23/07/12 06:06 AM, Sebastian Andrzej Siewior wrote:
+> |wget
+> |'http://lkml.kernel.org/r/1342156917-25092-2-git-send-email-john.stult=
+z@linaro.org'
+> |--2012-07-23 15:05:14--
+> |http://lkml.kernel.org/r/1342156917-25092-2-git-send-email-john.stultz=
+@linaro.org
+> |Resolving lkml.kernel.org (lkml.kernel.org)... 198.145.19.208, 198.145=
+=2E19.209
+> |Connecting to lkml.kernel.org (lkml.kernel.org)|198.145.19.208|:80...
+> |connected.
+> |HTTP request sent, awaiting response... 500 Internal Server Error
+> |2012-07-23 15:05:14 ERROR 500: Internal Server Error.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This was fixed at 16:30 +0000.
 
---7ZAtKRhVyVSsbBD2
+Sorry about the problem -- it was caused by a bug in the upstream
+selinux policy for suexec.
+
+Best,
+--=20
+Konstantin Ryabitsev
+Systems Administrator
+Linux Foundation, kernel.org
+Montr=C3=A9al, Qu=C3=A9bec
+
+
+--------------enigAEDCB69D4B881507F231F3EC
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iQIcBAEBAgAGBQJQDYxUAAoJEBus8iNuMP3d3RkP+wUstnXglL4SG6vrz7MmNOJk
-zC0kYfb5MHdhEOCkqeLwuRjp3N9GSZHU+sBinJxsfetragSTact204PYCjoh2W0k
-DXZC4kwMD1H6ieszt/YYmjsmklzb5kG/rsnRKsqcpr0+JoOczMEeH72VL95+6bVs
-eIgmvtcKVXncu7bsNFmfTj9g6mSOhxuvWTffcvW+XOVtLs/jVyRXf5anLj+6g3dC
-8RCtlwRfx0YaAJT5qd83vbj6Ud9UJUKzo8Clb0s+U9IhGPApbty5gcstZmkXrvke
-el1xxdfyTF5iJl1/HmxORt7u5pfSPEznLBvYyfmRV9HAUPJxBsqXgkRml+w79bLC
-ElbGMleWcGY289v+NAIC+p/L5S2bjn/CQV4qjrkuffW9lr8TeGZThKhxRP5ttzIE
-1lPraxapN3bVqOL4J260tIEUsti8ATsL+vwrm6fL0U3vVouhjc/UGWAHSOftfXQa
-jO/553HF8L0Yo401xCyA/+djnsws79ALCvwGes/mPIKKcG4ncmwDHT1NiLy97a7d
-34FueB2i9LpZ6i9H7t7JpyHxTCbQhSGe3XxGxs5v8wgrFv8dSZzssHqnG1rszX5Y
-bJpwH+yAZibRcHCwLo16HeOrNZi+W2uuq6jpowUAlFty3IHduN0nr0j2WVTmL18a
-DQI745qO+H/Hk9hd3IsU
-=yxzZ
+iQGcBAEBAgAGBQJQDYzQAAoJEI6WedmufEleBAUL/2FSObMeyVFlWu+mGfg47Vch
+0OKI9kiAI0Reb+UN9CFZqRfYn8v5jCHIHOvmq2t38YHvllHUNRou7FuU+UZCpDRE
+8CGt46urzTW3uYwI71V+feYTdJmmDoH1iQLUY8RWowUws+B9NdEUEWh2irKRFF0X
+L9cq1sQlmLtSTSzOfdL71BbegKf7YWQWzIeJ+6OHOER+Vx/eWZM3+3cJFWv3elw1
+dwa6nZn3Dj6o0oZHJGogANZeQaPe9fD7xMlXzfbJ3Q7rfW2FoTci7MvwvO9LyHji
+aMvF6xYJ7z41JKRE2AEm8vyzLuRvVPOvFzxpWVK+lscS58krAJhsE5o+ETHoJoFh
+cB8QYE4mVsC11mPAPo3CAuwPY4ZabIoxRMHWRzXniRGCTsQ0XX1kQsl1t5GdXRry
+lefGXqOeBwp19+pefuN9LN8dYqDuNTYU1WHPbUnXpQ4il3C+MCU0e458g1JMoTdn
+6MXlTldxTl1QLDsdubMD/nAZNoSi2ZS3EywoOOeuwA==
+=jBHr
 -----END PGP SIGNATURE-----
 
---7ZAtKRhVyVSsbBD2--
+--------------enigAEDCB69D4B881507F231F3EC--
