@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab2GWBpd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:45:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54526 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753560Ab2GWBnx (ORCPT
+	id S1753773Ab2GWBpj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:45:39 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45356 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2GWBpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:53 -0400
-Message-Id: <20120723010655.027064805@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:14 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Baron <jbaron@redhat.com>,
-        "Yurij M. Plotnikov" <Yurij.Plotnikov@oktetlabs.ru>,
-        Nelson Elhage <nelhage@nelhage.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
-Subject: [ 023/108] epoll: clear the tfile_check_list on -ELOOP
-In-Reply-To: <20120723010651.408577075@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 22 Jul 2012 21:45:36 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWAHiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2] memcg: add mem_cgroup_from_css() helper
+Date: Mon, 23 Jul 2012 09:44:23 +0800
+Message-Id: <1343007863-18144-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 12072301-9574-0000-0000-000003A9704E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Changelog v2:
+* fix too many args to mem_cgroup_from_css() (spotted by Kirill A. Shutemov)
+* fix kernel build failed (spotted by Fengguang)
 
-------------------
+Add a mem_cgroup_from_css() helper to replace open-coded invokations of
+container_of().  To clarify the code and to add a little more type safety.
 
-From: Jason Baron <jbaron@redhat.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit 13d518074a952d33d47c428419693f63389547e9 upstream.
-
-An epoll_ctl(,EPOLL_CTL_ADD,,) operation can return '-ELOOP' to prevent
-circular epoll dependencies from being created.  However, in that case we
-do not properly clear the 'tfile_check_list'.  Thus, add a call to
-clear_tfile_check_list() for the -ELOOP case.
-
-Signed-off-by: Jason Baron <jbaron@redhat.com>
-Reported-by: Yurij M. Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
-Cc: Nelson Elhage <nelhage@nelhage.com>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Tested-by: Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/eventpoll.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/memcontrol.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 739b098..c0b3c70 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1663,8 +1663,10 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
- 	if (op == EPOLL_CTL_ADD) {
- 		if (is_file_epoll(tfile)) {
- 			error = -ELOOP;
--			if (ep_loop_check(ep, tfile) != 0)
-+			if (ep_loop_check(ep, tfile) != 0) {
-+				clear_tfile_check_list();
- 				goto error_tgt_fput;
-+			}
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 883283d..f0c7639 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -407,6 +407,12 @@ enum charge_type {
+ static void mem_cgroup_get(struct mem_cgroup *memcg);
+ static void mem_cgroup_put(struct mem_cgroup *memcg);
+ 
++static inline 
++struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
++{
++	return container_of(s, struct mem_cgroup, css);
++}
++
+ /* Writing them here to avoid exposing memcg's inner layout */
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ #include <net/sock.h>
+@@ -864,9 +870,8 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+ 
+ struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+ {
+-	return container_of(cgroup_subsys_state(cont,
+-				mem_cgroup_subsys_id), struct mem_cgroup,
+-				css);
++	return mem_cgroup_from_css(cgroup_subsys_state(cont,
++				mem_cgroup_subsys_id));
+ }
+ 
+ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+@@ -879,8 +884,7 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+ 	if (unlikely(!p))
+ 		return NULL;
+ 
+-	return container_of(task_subsys_state(p, mem_cgroup_subsys_id),
+-				struct mem_cgroup, css);
++	return mem_cgroup_from_css(task_subsys_state(p, mem_cgroup_subsys_id));
+ }
+ 
+ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+@@ -966,8 +970,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
+ 		if (css) {
+ 			if (css == &root->css || css_tryget(css))
+-				memcg = container_of(css,
+-						     struct mem_cgroup, css);
++				memcg = mem_cgroup_from_css(css);
  		} else
- 			list_add(&tfile->f_tfile_llink, &tfile_check_list);
- 	}
-
+ 			id = 0;
+ 		rcu_read_unlock();
+@@ -2429,7 +2432,7 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
+ 	css = css_lookup(&mem_cgroup_subsys, id);
+ 	if (!css)
+ 		return NULL;
+-	return container_of(css, struct mem_cgroup, css);
++	return mem_cgroup_from_css(css);
+ }
+ 
+ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+-- 
+1.7.7.6
 
