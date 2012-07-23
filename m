@@ -1,125 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab2GWC0z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:26:55 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43432 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab2GWC0y (ORCPT
+	id S1753239Ab2GWCbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:31:09 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53874 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab2GWCbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 22:26:54 -0400
-Date: Mon, 23 Jul 2012 10:26:45 +0800
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWAHiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] memcg: add mem_cgroup_from_css() helper
-Message-ID: <20120723022645.GA18871@kernel>
-Reply-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-References: <1343007863-18144-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20120723020856.GA24965@shangw.(null)>
+	Sun, 22 Jul 2012 22:31:07 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-8d-500cb769cb5a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Vlad Zolotarov <vlad@scalemp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        "Shai Fultheim \(Shai\@ScaleMP.com\)" <Shai@scalemp.com>
+Subject: Re: [RFC] optimize the locking in the rebalance_domains()
+References: <1342974235.6692.20.camel@vlad>
+Date: Mon, 23 Jul 2012 11:25:39 +0900
+In-Reply-To: <1342974235.6692.20.camel@vlad> (Vlad Zolotarov's message of
+	"Sun, 22 Jul 2012 19:23:55 +0300")
+Message-ID: <87fw8j6wnw.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120723020856.GA24965@shangw.(null)>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12072302-8878-0000-0000-00000357706E
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 10:08:56AM +0800, Gavin Shan wrote:
+Hi, Vlad
+
+On Sun, 22 Jul 2012 19:23:55 +0300, Vlad Zolotarov wrote:
+> Ingo, we've noticed that rebalance_domains() will try to take a lock
+> every time it's called (every jiffy) if SD_SERIALIZE is set (which is a
+> default configuration). This is done regardless the fact that maybe
+> there hasn't passed enough time since the last rebalancing in which case
+> there is no need to take a lock the first place.
 >
->For this case, we usually fix the build error on top of linux-next.
->It seems that you're changing the original patch and send again, which
->isn't reasonable, man :-)
-
-OK, I will send a patch just fix build error against linux-next.
-
-Regards,
-Wanpeng Li
-
+> The above creates a heavy false sharing problem on the "balancing"
+> spin-lock on large SMP systems: try_lock() is implemented with an
+> (atomic) xchng instruction which invalidates the cache line "balancing"
+> belongs to and therefore creates an intensive cross-NUMA-nodes traffic.
 >
->Thanks,
->Gavin
+> The below patch will minimize the above phenomena to the time slots it's
+> really needed, namely when the "interval" has really passed.
 >
->>Changelog v2:
->>* fix too many args to mem_cgroup_from_css() (spotted by Kirill A. Shutemov)
->>* fix kernel build failed (spotted by Fengguang)
->>
->>Add a mem_cgroup_from_css() helper to replace open-coded invokations of
->>container_of().  To clarify the code and to add a little more type safety.
->>
->>Acked-by: Michal Hocko <mhocko@suse.cz>
->>Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
->>
->>---
->> mm/memcontrol.c |   19 +++++++++++--------
->> 1 files changed, 11 insertions(+), 8 deletions(-)
->>
->>diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>index 883283d..f0c7639 100644
->>--- a/mm/memcontrol.c
->>+++ b/mm/memcontrol.c
->>@@ -407,6 +407,12 @@ enum charge_type {
->> static void mem_cgroup_get(struct mem_cgroup *memcg);
->> static void mem_cgroup_put(struct mem_cgroup *memcg);
->>
->>+static inline 
->>+struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
->>+{
->>+	return container_of(s, struct mem_cgroup, css);
->>+}
->>+
->> /* Writing them here to avoid exposing memcg's inner layout */
->> #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> #include <net/sock.h>
->>@@ -864,9 +870,8 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
->>
->> struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
->> {
->>-	return container_of(cgroup_subsys_state(cont,
->>-				mem_cgroup_subsys_id), struct mem_cgroup,
->>-				css);
->>+	return mem_cgroup_from_css(cgroup_subsys_state(cont,
->>+				mem_cgroup_subsys_id));
->> }
->>
->> struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
->>@@ -879,8 +884,7 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
->> 	if (unlikely(!p))
->> 		return NULL;
->>
->>-	return container_of(task_subsys_state(p, mem_cgroup_subsys_id),
->>-				struct mem_cgroup, css);
->>+	return mem_cgroup_from_css(task_subsys_state(p, mem_cgroup_subsys_id));
->> }
->>
->> struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
->>@@ -966,8 +970,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->> 		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
->> 		if (css) {
->> 			if (css == &root->css || css_tryget(css))
->>-				memcg = container_of(css,
->>-						     struct mem_cgroup, css);
->>+				memcg = mem_cgroup_from_css(css);
->> 		} else
->> 			id = 0;
->> 		rcu_read_unlock();
->>@@ -2429,7 +2432,7 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
->> 	css = css_lookup(&mem_cgroup_subsys, id);
->> 	if (!css)
->> 		return NULL;
->>-	return container_of(css, struct mem_cgroup, css);
->>+	return mem_cgroup_from_css(css);
->> }
->>
->> struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
->>-- 
->>1.7.7.6
->>
+> Pls., comment.
+>
+> thanks,
+> vlad
+>
+> ---
+>  kernel/sched/fair.c |   20 +++++++++++---------
+>  1 file changed, 11 insertions(+), 9 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c099cc6..6777d38 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4689,6 +4689,9 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+>  		interval = msecs_to_jiffies(interval);
+>  		interval = clamp(interval, 1UL, max_load_balance_interval);
+>  
+> +                if (!time_after_eq(jiffies, sd->last_balance + interval))
+> +			goto out;
+> +
 
+First line looks like white-space-damaged.
+Anyway, wouldn't it be better using time_before() here?
+
+Thanks,
+Namhyung
+
+
+>  		need_serialize = sd->flags & SD_SERIALIZE;
+>  
+>  		if (need_serialize) {
+> @@ -4696,16 +4699,15 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+>  				goto out;
+>  		}
+>  
+> -		if (time_after_eq(jiffies, sd->last_balance + interval)) {
+> -			if (load_balance(cpu, rq, sd, idle, &balance)) {
+> -				/*
+> -				 * We've pulled tasks over so either we're no
+> -				 * longer idle.
+> -				 */
+> -				idle = CPU_NOT_IDLE;
+> -			}
+> -			sd->last_balance = jiffies;
+> +		if (load_balance(cpu, rq, sd, idle, &balance)) {
+> +			/*
+> +			 * We've pulled tasks over so either we're no
+> +			 * longer idle.
+> +			 */
+> +			idle = CPU_NOT_IDLE;
+>  		}
+> +		sd->last_balance = jiffies;
+> +
+>  		if (need_serialize)
+>  			spin_unlock(&balancing);
+>  out:
