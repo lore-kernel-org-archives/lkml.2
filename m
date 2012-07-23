@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab2GWR6w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 13:58:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43164 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753473Ab2GWR6u (ORCPT
+	id S1754538Ab2GWR7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 13:59:06 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56568 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab2GWR6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 13:58:50 -0400
-Date: Mon, 23 Jul 2012 18:58:31 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
-Message-ID: <20120723175830.GA6027@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <1341608777-12982-9-git-send-email-catalin.marinas@arm.com>
- <4FF75986.8010706@wwwdotorg.org>
- <20120708091819.GA3845@arm.com>
- <500D8E5C.9020206@wwwdotorg.org>
+	Mon, 23 Jul 2012 13:58:51 -0400
+Message-ID: <500D90C7.9000903@gmail.com>
+Date: Mon, 23 Jul 2012 19:58:31 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500D8E5C.9020206@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
+References: <1333777207-4151-1-git-send-email-olof@lixom.net> <20120407070206.GA17623@core.coreip.homeip.net> <4F8089A9.6080704@raumfeld.com> <20120503043651.GA11830@core.coreip.homeip.net> <20120713070102.GA2223@core.coreip.homeip.net> <500561AF.9090901@gmail.com> <5008296C.5070709@gmail.com> <20120723165120.GB26577@core.coreip.homeip.net>
+In-Reply-To: <20120723165120.GB26577@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 06:48:12PM +0100, Stephen Warren wrote:
-> On 07/08/2012 03:18 AM, Catalin Marinas wrote:
-> > On Fri, Jul 06, 2012 at 10:32:54PM +0100, Stephen Warren wrote:
-> >> On 07/06/2012 03:05 PM, Catalin Marinas wrote:
-> >>> The patch adds the kernel booting and the initial setup code.
-> >>> Documentation/aarch64/booting.txt describes the booting protocol on the
-> >>> AArch64 Linux kernel. This is subject to change following the work on
-> >>> boot standardisation, ACPI.
-> ...
-> >>> +4. Call the kernel image
-> >>> +------------------------
-> >>> +
-> >>> +Requirement: MANDATORY
-> >>> +
-> >>> +The decompressed kernel image contains a 32-byte header as follows:
-> >>> +
-> >>> +  u32 magic	= 0x14000008;	/* branch to stext, little-endian */
-> >>> +  u32 res0	= 0;		/* reserved */
-> >>> +  u64 text_offset;		/* Image load offset */
-> >>> +  u64 res1	= 0;		/* reserved */
-> >>> +  u64 res2	= 0;		/* reserved */
-> >>> +
-> >>> +The image must be placed at the specified offset (currently 0x80000)
-> >>> +from the start of the system RAM (aligned to 2MB) and called there.
-> >>
-> >> Is "0x80000" meant to have an extra "0"; 0x80000 isn't aligned to 2MB
-> >> unless I'm really missing too much sleep today.
-> >  
-> > The value is correct, it wasn't meant to be aligned to 2MB. Why would
-> > that be? It's just an offset from the start of the RAM, which must
-> > indeed be 2MB aligned (PHYS_OFFSET).
+On 23.07.2012 18:51, Dmitry Torokhov wrote:
+> On Thu, Jul 19, 2012 at 05:36:12PM +0200, Daniel Mack wrote:
+
+>> Ok, finally I found some time. In general, the patch works fine. The
+>> only detail I had to amend was the irqflags, which were changed from
+>> IRQF_TRIGGER_RISING/IRQF_TRIGGER_FALLING to
+>> IRQF_TRIGGER_HIGH/IRQF_TRIGGER_LOW, which doesn't work as the PXA can't
+>> deal with level-based IRQs. Changing this back to RISING/FALLING makes
+>> the driver work again.
 > 
-> Oh, I see, it's the start of SDRAM that's aligned to 2MB, not the offset
-> from the start of SDRAM that needs to be aligned to 2MB. The wording
-> seems slightly unclear to me. Perhaps just drop the mention of alignment
-> at all, or add "which is" before "aligned to 2MB"?
+> Hmm, but that would mean we need to restore reading the data in open()
+> to make sure we re-arm IRQ in case somebody touched the screen before it
+> was opened by userspace...
 
-I'll probably just another sentence to make it clear that it refers to
-the start of the RAM.
+Hmm, right, that was the reason why I put it there in the first place.
+Thanks for the heads-up. Would you do it? Want me to?
 
-Thanks.
 
--- 
-Catalin
+Daniel
