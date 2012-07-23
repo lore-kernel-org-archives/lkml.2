@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab2GWByy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:54:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54311 "EHLO
+	id S1753430Ab2GWBz3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:55:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54291 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753398Ab2GWBnL (ORCPT
+	by vger.kernel.org with ESMTP id S1753162Ab2GWBnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:11 -0400
-Message-Id: <20120723010700.740777909@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:09 -0400
+Message-Id: <20120723010701.157212987@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:52 +0100
+Date: Mon, 23 Jul 2012 02:07:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Jian Li <jiali@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [ 061/108] cifs: on CONFIG_HIGHMEM machines, limit the rsize/wsize to the kmap
- space
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
+        majianpeng <majianpeng@gmail.com>
+Subject: [ 064/108] md: avoid crash when stopping md array races with closing other open
+ fds.
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,80 +29,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 3ae629d98bd5ed77585a878566f04f310adbc591 upstream.
+commit a05b7ea03d72f36edb0cec05e8893803335c61a0 upstream.
 
-We currently rely on being able to kmap all of the pages in an async
-read or write request. If you're on a machine that has CONFIG_HIGHMEM
-set then that kmap space is limited, sometimes to as low as 512 slots.
+md will refuse to stop an array if any other fd (or mounted fs) is
+using it.
+When any fs is unmounted of when the last open fd is closed all
+pending IO will be flushed (e.g. sync_blockdev call in __blkdev_put)
+so there will be no pending IO to worry about when the array is
+stopped.
 
-With 512 slots, we can only support up to a 2M r/wsize, and that's
-assuming that we can get our greedy little hands on all of them. There
-are other users however, so it's possible we'll end up stuck with a
-size that large.
+However in order to send the STOP_ARRAY ioctl to stop the array one
+must first get and open fd on the block device.
+If some fd is being used to write to the block device and it is closed
+after mdadm open the block device, but before mdadm issues the
+STOP_ARRAY ioctl, then there will be no last-close on the md device so
+__blkdev_put will not call sync_blockdev.
 
-Since we can't handle a rsize or wsize larger than that currently, cap
-those options at the number of kmap slots we have. We could consider
-capping it even lower, but we currently default to a max of 1M. Might as
-well allow those luddites on 32 bit arches enough rope to hang
-themselves.
+If this happens, then IO can still be in-flight while md tears down
+the array and bad things can happen (use-after-free and subsequent
+havoc).
 
-A more robust fix would be to teach the send and receive routines how
-to contend with an array of pages so we don't need to marshal up a kvec
-array at all. That's a fairly significant overhaul though, so we'll need
-this limit in place until that's ready.
+So in the case where do_md_stop is being called from an open file
+descriptor, call sync_block after taking the mutex to ensure there
+will be no new openers.
 
-Reported-by: Jian Li <jiali@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+This is needed when setting a read-write device to read-only too.
+
+Reported-by: majianpeng <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/cifs/connect.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/md/md.c |   36 +++++++++++++++++++++++-------------
+ 1 file changed, 23 insertions(+), 13 deletions(-)
 
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 0ae86dd..94b7788 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -3445,6 +3445,18 @@ void cifs_setup_cifs_sb(struct smb_vol *pvolume_info,
- #define CIFS_DEFAULT_NON_POSIX_RSIZE (60 * 1024)
- #define CIFS_DEFAULT_NON_POSIX_WSIZE (65536)
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 0c1fe4cb..d5ab449 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -3927,8 +3927,8 @@ array_state_show(struct mddev *mddev, char *page)
+ 	return sprintf(page, "%s\n", array_states[st]);
+ }
  
-+/*
-+ * On hosts with high memory, we can't currently support wsize/rsize that are
-+ * larger than we can kmap at once. Cap the rsize/wsize at
-+ * LAST_PKMAP * PAGE_SIZE. We'll never be able to fill a read or write request
-+ * larger than that anyway.
-+ */
-+#ifdef CONFIG_HIGHMEM
-+#define CIFS_KMAP_SIZE_LIMIT	(LAST_PKMAP * PAGE_CACHE_SIZE)
-+#else /* CONFIG_HIGHMEM */
-+#define CIFS_KMAP_SIZE_LIMIT	(1<<24)
-+#endif /* CONFIG_HIGHMEM */
-+
- static unsigned int
- cifs_negotiate_wsize(struct cifs_tcon *tcon, struct smb_vol *pvolume_info)
+-static int do_md_stop(struct mddev * mddev, int ro, int is_open);
+-static int md_set_readonly(struct mddev * mddev, int is_open);
++static int do_md_stop(struct mddev * mddev, int ro, struct block_device *bdev);
++static int md_set_readonly(struct mddev * mddev, struct block_device *bdev);
+ static int do_md_run(struct mddev * mddev);
+ static int restart_array(struct mddev *mddev);
+ 
+@@ -3944,14 +3944,14 @@ array_state_store(struct mddev *mddev, const char *buf, size_t len)
+ 		/* stopping an active array */
+ 		if (atomic_read(&mddev->openers) > 0)
+ 			return -EBUSY;
+-		err = do_md_stop(mddev, 0, 0);
++		err = do_md_stop(mddev, 0, NULL);
+ 		break;
+ 	case inactive:
+ 		/* stopping an active array */
+ 		if (mddev->pers) {
+ 			if (atomic_read(&mddev->openers) > 0)
+ 				return -EBUSY;
+-			err = do_md_stop(mddev, 2, 0);
++			err = do_md_stop(mddev, 2, NULL);
+ 		} else
+ 			err = 0; /* already inactive */
+ 		break;
+@@ -3959,7 +3959,7 @@ array_state_store(struct mddev *mddev, const char *buf, size_t len)
+ 		break; /* not supported yet */
+ 	case readonly:
+ 		if (mddev->pers)
+-			err = md_set_readonly(mddev, 0);
++			err = md_set_readonly(mddev, NULL);
+ 		else {
+ 			mddev->ro = 1;
+ 			set_disk_ro(mddev->gendisk, 1);
+@@ -3969,7 +3969,7 @@ array_state_store(struct mddev *mddev, const char *buf, size_t len)
+ 	case read_auto:
+ 		if (mddev->pers) {
+ 			if (mddev->ro == 0)
+-				err = md_set_readonly(mddev, 0);
++				err = md_set_readonly(mddev, NULL);
+ 			else if (mddev->ro == 1)
+ 				err = restart_array(mddev);
+ 			if (err == 0) {
+@@ -5352,15 +5352,17 @@ void md_stop(struct mddev *mddev)
+ }
+ EXPORT_SYMBOL_GPL(md_stop);
+ 
+-static int md_set_readonly(struct mddev *mddev, int is_open)
++static int md_set_readonly(struct mddev *mddev, struct block_device *bdev)
  {
-@@ -3475,6 +3487,9 @@ cifs_negotiate_wsize(struct cifs_tcon *tcon, struct smb_vol *pvolume_info)
- 		wsize = min_t(unsigned int, wsize,
- 				server->maxBuf - sizeof(WRITE_REQ) + 4);
+ 	int err = 0;
+ 	mutex_lock(&mddev->open_mutex);
+-	if (atomic_read(&mddev->openers) > is_open) {
++	if (atomic_read(&mddev->openers) > !!bdev) {
+ 		printk("md: %s still in use.\n",mdname(mddev));
+ 		err = -EBUSY;
+ 		goto out;
+ 	}
++	if (bdev)
++		sync_blockdev(bdev);
+ 	if (mddev->pers) {
+ 		__md_stop_writes(mddev);
  
-+	/* limit to the amount that we can kmap at once */
-+	wsize = min_t(unsigned int, wsize, CIFS_KMAP_SIZE_LIMIT);
-+
- 	/* hard limit of CIFS_MAX_WSIZE */
- 	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
+@@ -5382,18 +5384,26 @@ out:
+  *   0 - completely stop and dis-assemble array
+  *   2 - stop but do not disassemble array
+  */
+-static int do_md_stop(struct mddev * mddev, int mode, int is_open)
++static int do_md_stop(struct mddev * mddev, int mode,
++		      struct block_device *bdev)
+ {
+ 	struct gendisk *disk = mddev->gendisk;
+ 	struct md_rdev *rdev;
  
-@@ -3516,6 +3531,9 @@ cifs_negotiate_rsize(struct cifs_tcon *tcon, struct smb_vol *pvolume_info)
- 	if (!(server->capabilities & CAP_LARGE_READ_X))
- 		rsize = min_t(unsigned int, CIFSMaxBufSize, rsize);
+ 	mutex_lock(&mddev->open_mutex);
+-	if (atomic_read(&mddev->openers) > is_open ||
++	if (atomic_read(&mddev->openers) > !!bdev ||
+ 	    mddev->sysfs_active) {
+ 		printk("md: %s still in use.\n",mdname(mddev));
+ 		mutex_unlock(&mddev->open_mutex);
+ 		return -EBUSY;
+ 	}
++	if (bdev)
++		/* It is possible IO was issued on some other
++		 * open file which was closed before we took ->open_mutex.
++		 * As that was not the last close __blkdev_put will not
++		 * have called sync_blockdev, so we must.
++		 */
++		sync_blockdev(bdev);
  
-+	/* limit to the amount that we can kmap at once */
-+	rsize = min_t(unsigned int, rsize, CIFS_KMAP_SIZE_LIMIT);
-+
- 	/* hard limit of CIFS_MAX_RSIZE */
- 	rsize = min_t(unsigned int, rsize, CIFS_MAX_RSIZE);
+ 	if (mddev->pers) {
+ 		if (mddev->ro)
+@@ -5467,7 +5477,7 @@ static void autorun_array(struct mddev *mddev)
+ 	err = do_md_run(mddev);
+ 	if (err) {
+ 		printk(KERN_WARNING "md: do_md_run() returned %d\n", err);
+-		do_md_stop(mddev, 0, 0);
++		do_md_stop(mddev, 0, NULL);
+ 	}
+ }
  
+@@ -6482,11 +6492,11 @@ static int md_ioctl(struct block_device *bdev, fmode_t mode,
+ 			goto done_unlock;
+ 
+ 		case STOP_ARRAY:
+-			err = do_md_stop(mddev, 0, 1);
++			err = do_md_stop(mddev, 0, bdev);
+ 			goto done_unlock;
+ 
+ 		case STOP_ARRAY_RO:
+-			err = md_set_readonly(mddev, 1);
++			err = md_set_readonly(mddev, bdev);
+ 			goto done_unlock;
+ 
+ 		case BLKROSET:
 
 
