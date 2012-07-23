@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab2GWBqM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:46:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54504 "EHLO
+	id S1753795Ab2GWBqK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:46:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54495 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753632Ab2GWBnw (ORCPT
+	by vger.kernel.org with ESMTP id S1753629Ab2GWBnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:43:52 -0400
-Message-Id: <20120723010654.562849488@decadent.org.uk>
+Message-Id: <20120723010655.469503467@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:11 +0100
+Date: Mon, 23 Jul 2012 02:07:17 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [ 020/108] macvtap: zerocopy: validate vectors before building skb
+        alan@lxorguk.ukuu.org.uk,
+        Stanislaw Ledwon <staszek.ledwon@linux.jf.intel.com>,
+        Stanislaw Ledwon <staszek.ledwon@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>
+Subject: [ 026/108] usb: Add support for root hub port status CAS
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,83 +31,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Stanislaw Ledwon <staszek.ledwon@linux.jf.intel.com>
 
-commit b92946e2919134ebe2a4083e4302236295ea2a73 upstream.
+commit 8bea2bd37df08aaa599aa361a9f8b836ba98e554 upstream.
 
-There're several reasons that the vectors need to be validated:
+The host controller port status register supports CAS (Cold Attach
+Status) bit. This bit could be set when USB3.0 device is connected
+when system is in Sx state. When the system wakes to S0 this port
+status with CAS bit is reported and this port can't be used by any
+device.
 
-- Return error when caller provides vectors whose num is greater than UIO_MAXIOV.
-- Linearize part of skb when userspace provides vectors grater than MAX_SKB_FRAGS.
-- Return error when userspace provides vectors whose total length may exceed
-- MAX_SKB_FRAGS * PAGE_SIZE.
+When CAS bit is set the port should be reset by warm reset. This
+was not supported by xhci driver.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+The issue was found when pendrive was connected to suspended
+platform. The link state of "Compliance Mode" was reported together
+with CAS bit. This link state was also not supported by xhci and
+core/hub.c.
+
+The CAS bit is defined only for xhci root hub port and it is
+not supported on regular hubs. The link status is used to force
+warm reset on port. Make the USB core issue a warm reset when port
+is in ether the 'inactive' or 'compliance mode'. Change the xHCI driver
+to report 'compliance mode' when the CAS is set. This force warm reset
+on the root hub port.
+
+This patch should be backported to stable kernels as old as 3.2, that
+contain the commit 10d674a82e553cb8a1f41027bb3c3e309b3f6804 "USB: When
+hot reset for USB3 fails, try warm reset."
+
+Signed-off-by: Stanislaw Ledwon <staszek.ledwon@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/macvtap.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ drivers/usb/core/hub.c      |   18 ++++++++++--------
+ drivers/usb/host/xhci-hub.c |   44 +++++++++++++++++++++++++++++++++++++------
+ drivers/usb/host/xhci.h     |    6 +++++-
+ 3 files changed, 53 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index a4ff694..163559c 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -529,9 +529,10 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
- 		}
- 		base = (unsigned long)from->iov_base + offset;
- 		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		if (i + size > MAX_SKB_FRAGS)
-+			return -EMSGSIZE;
- 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
--		if ((num_pages != size) ||
--		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags)) {
-+		if (num_pages != size) {
- 			for (i = 0; i < num_pages; i++)
- 				put_page(page[i]);
- 			return -EFAULT;
-@@ -651,7 +652,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	int err;
- 	struct virtio_net_hdr vnet_hdr = { 0 };
- 	int vnet_hdr_len = 0;
--	int copylen;
-+	int copylen = 0;
- 	bool zerocopy = false;
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 25a7422..8fb4849 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2324,12 +2324,16 @@ static unsigned hub_is_wusb(struct usb_hub *hub)
+ static int hub_port_reset(struct usb_hub *hub, int port1,
+ 			struct usb_device *udev, unsigned int delay, bool warm);
  
- 	if (q->flags & IFF_VNET_HDR) {
-@@ -680,15 +681,31 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	if (unlikely(len < ETH_HLEN))
- 		goto err;
+-/* Is a USB 3.0 port in the Inactive state? */
+-static bool hub_port_inactive(struct usb_hub *hub, u16 portstatus)
++/* Is a USB 3.0 port in the Inactive or Complinance Mode state?
++ * Port worm reset is required to recover
++ */
++static bool hub_port_warm_reset_required(struct usb_hub *hub, u16 portstatus)
+ {
+ 	return hub_is_superspeed(hub->hdev) &&
+-		(portstatus & USB_PORT_STAT_LINK_STATE) ==
+-		USB_SS_PORT_LS_SS_INACTIVE;
++		(((portstatus & USB_PORT_STAT_LINK_STATE) ==
++		  USB_SS_PORT_LS_SS_INACTIVE) ||
++		 ((portstatus & USB_PORT_STAT_LINK_STATE) ==
++		  USB_SS_PORT_LS_COMP_MOD)) ;
+ }
  
-+	err = -EMSGSIZE;
-+	if (unlikely(count > UIO_MAXIOV))
-+		goto err;
+ static int hub_port_wait_reset(struct usb_hub *hub, int port1,
+@@ -2365,7 +2369,7 @@ static int hub_port_wait_reset(struct usb_hub *hub, int port1,
+ 			 *
+ 			 * See https://bugzilla.kernel.org/show_bug.cgi?id=41752
+ 			 */
+-			if (hub_port_inactive(hub, portstatus)) {
++			if (hub_port_warm_reset_required(hub, portstatus)) {
+ 				int ret;
+ 
+ 				if ((portchange & USB_PORT_STAT_C_CONNECTION))
+@@ -4408,9 +4412,7 @@ static void hub_events(void)
+ 			/* Warm reset a USB3 protocol port if it's in
+ 			 * SS.Inactive state.
+ 			 */
+-			if (hub_is_superspeed(hub->hdev) &&
+-				(portstatus & USB_PORT_STAT_LINK_STATE)
+-					== USB_SS_PORT_LS_SS_INACTIVE) {
++			if (hub_port_warm_reset_required(hub, portstatus)) {
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+ 				hub_port_reset(hub, i, NULL,
+ 						HUB_BH_RESET_TIME, true);
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 2732ef6..7b01094 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -462,6 +462,42 @@ void xhci_test_and_clear_bit(struct xhci_hcd *xhci, __le32 __iomem **port_array,
+ 	}
+ }
+ 
++/* Updates Link Status for super Speed port */
++static void xhci_hub_report_link_state(u32 *status, u32 status_reg)
++{
++	u32 pls = status_reg & PORT_PLS_MASK;
 +
- 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
- 		zerocopy = true;
- 
- 	if (zerocopy) {
-+		/* Userspace may produce vectors with count greater than
-+		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
-+		 * to let the rest of data to be fit in the frags.
++	/* resume state is a xHCI internal state.
++	 * Do not report it to usb core.
++	 */
++	if (pls == XDEV_RESUME)
++		return;
++
++	/* When the CAS bit is set then warm reset
++	 * should be performed on port
++	 */
++	if (status_reg & PORT_CAS) {
++		/* The CAS bit can be set while the port is
++		 * in any link state.
++		 * Only roothubs have CAS bit, so we
++		 * pretend to be in compliance mode
++		 * unless we're already in compliance
++		 * or the inactive state.
 +		 */
-+		if (count > MAX_SKB_FRAGS) {
-+			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
-+			if (copylen < vnet_hdr_len)
-+				copylen = 0;
-+			else
-+				copylen -= vnet_hdr_len;
++		if (pls != USB_SS_PORT_LS_COMP_MOD &&
++		    pls != USB_SS_PORT_LS_SS_INACTIVE) {
++			pls = USB_SS_PORT_LS_COMP_MOD;
 +		}
- 		/* There are 256 bytes to be copied in skb, so there is enough
- 		 * room for skb expand head in case it is used.
- 		 * The rest buffer is mapped from userspace.
- 		 */
--		copylen = vnet_hdr.hdr_len;
-+		if (copylen < vnet_hdr.hdr_len)
-+			copylen = vnet_hdr.hdr_len;
- 		if (!copylen)
- 			copylen = GOODCOPY_LEN;
- 	} else
-
++		/* Return also connection bit -
++		 * hub state machine resets port
++		 * when this bit is set.
++		 */
++		pls |= USB_PORT_STAT_CONNECTION;
++	}
++	/* update status field */
++	*status |= pls;
++}
++
+ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+ 		u16 wIndex, char *buf, u16 wLength)
+ {
+@@ -606,13 +642,9 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+ 			else
+ 				status |= USB_PORT_STAT_POWER;
+ 		}
+-		/* Port Link State */
++		/* Update Port Link State for super speed ports*/
+ 		if (hcd->speed == HCD_USB3) {
+-			/* resume state is a xHCI internal state.
+-			 * Do not report it to usb core.
+-			 */
+-			if ((temp & PORT_PLS_MASK) != XDEV_RESUME)
+-				status |= (temp & PORT_PLS_MASK);
++			xhci_hub_report_link_state(&status, temp);
+ 		}
+ 		if (bus_state->port_c_suspend & (1 << wIndex))
+ 			status |= 1 << USB_PORT_FEAT_C_SUSPEND;
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index de3d6e3..55c0785 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -341,7 +341,11 @@ struct xhci_op_regs {
+ #define PORT_PLC	(1 << 22)
+ /* port configure error change - port failed to configure its link partner */
+ #define PORT_CEC	(1 << 23)
+-/* bit 24 reserved */
++/* Cold Attach Status - xHC can set this bit to report device attached during
++ * Sx state. Warm port reset should be perfomed to clear this bit and move port
++ * to connected state.
++ */
++#define PORT_CAS	(1 << 24)
+ /* wake on connect (enable) */
+ #define PORT_WKCONN_E	(1 << 25)
+ /* wake on disconnect (enable) */
 
 
