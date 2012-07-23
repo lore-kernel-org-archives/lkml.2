@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab2GWPO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:14:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56518 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab2GWPO1 (ORCPT
+	id S1754125Ab2GWPPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:15:08 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44926 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab2GWPPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:14:27 -0400
-Date: Mon, 23 Jul 2012 08:14:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Enable devtmpfs by default
-Message-ID: <20120723151422.GA19236@kroah.com>
-References: <20120723115414.724e0046@kryten>
+	Mon, 23 Jul 2012 11:15:07 -0400
+Date: Mon, 23 Jul 2012 16:14:56 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: wei_wang@realsil.com.cn
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
+Message-ID: <20120723151456.GA24745@srcf.ucam.org>
+References: <1343036558-8189-1-git-send-email-wei_wang@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120723115414.724e0046@kryten>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1343036558-8189-1-git-send-email-wei_wang@realsil.com.cn>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 11:54:14AM +1000, Anton Blanchard wrote:
-> 
-> udev now requires CONFIG_DEVTMPFS so make it default to y.
-> 
-> I noticed this when booting a ppc64 pseries_defconfig on Fedora 17
-> and it paniced because it couldn't mount the root device.
+On Mon, Jul 23, 2012 at 05:42:38PM +0800, wei_wang@realsil.com.cn wrote:
+> +SUBSYSTEM=="rtsx_cr", ENV{RTSX_CARD_TYPE}=="SD", RUN+="/sbin/modprobe -bv rtsx_sdmmc"
 
-All the world isn't Fedora :)
+Ugh. Expose a modalias instead? I know tifm does it like this, but 
+that's probably also an argument for fixing tifm.
 
-See Linus's recent thread about distro configs, that's the best solution
-for something like this.
-
-greg k-h
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
