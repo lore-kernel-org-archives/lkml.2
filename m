@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab2GWG5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 02:57:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48581 "EHLO mga14.intel.com"
+	id S1753888Ab2GWG7u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 02:59:50 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:42593 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753387Ab2GWG5m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 02:57:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="171832623"
-From: "Berg, Johannes" <johannes.berg@intel.com>
-To: Daniel J Blueman <daniel@quora.org>,
-        Intel Linux Wireless <ilw@linux.intel.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: 3.5.0 iwlagn AP crash...
-Thread-Topic: 3.5.0 iwlagn AP crash...
-Thread-Index: AQHNZ+qOQyja1sAo20WrvL/lQkU2oJc1A86AgAFsOlCAAACLMA==
-Date: Mon, 23 Jul 2012 06:56:33 +0000
-Message-ID: <1DC40B07CD6EC041A66726C271A73AE61959314E@IRSMSX102.ger.corp.intel.com>
-References: <CAMVG2su3DfOTRHDr7oFPLM5LVOBEXtChPEy4LL_2QS-VT9vBgg@mail.gmail.com>
- <CAMVG2suiMXojoptfNNJEZWhiBfgVcU99BTvG6jqdKAFGBf65MA@mail.gmail.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.180]
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+	id S1753154Ab2GWG7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 02:59:49 -0400
+Subject: [RFC PATCH 1/1] sched: Add a new API to find the prefer idlest cpu
+From: Shirley Ma <mashirle@us.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        vivek@us.ibm.com, sri@us.ibm.com
+In-Reply-To: <1343026634.13461.15.camel@oc3660625478.ibm.com>
+References: <1343026634.13461.15.camel@oc3660625478.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 22 Jul 2012 23:59:43 -0700
+Message-ID: <1343026783.13461.17.camel@oc3660625478.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072306-6078-0000-0000-00000D753FF1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > BUG: unable to handle kernel NULL pointer dereference at      (null)
-> > > IP: [<ffffffffa02e869d>] ieee80211_ave_rssi+0xd/0x50 [mac80211]
-> >
-> > From my debug kernel, sdata is clearly NULL:
-> >
-> > (gdb) list *0xffffffff815b74f8
-> > 0xffffffff815b74f8 is in ieee80211_ave_rssi (net/mac80211/util.c:1801).
-> > 1796	int ieee80211_ave_rssi(struct ieee80211_vif *vif)
-> > 1797	{
-> > 1798		struct ieee80211_sub_if_data *sdata = vif_to_sdata(vif);
-> 
-> I'll look into it, thanks.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 64d9df5..46cc4a7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2806,4 +2806,6 @@ static inline unsigned long rlimit_max(unsigned int limit)
+ 
+ #endif /* __KERNEL__ */
+ 
++extern int find_idlest_prefer_cpu(struct cpumask *prefer,
++				 struct cpumask *allowed, int prev_cpu);
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c099cc6..7240868 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/profile.h>
+ #include <linux/interrupt.h>
++#include <linux/export.h>
+ 
+ #include <trace/events/sched.h>
+ 
+@@ -2809,6 +2810,35 @@ unlock:
+ 
+ 	return new_cpu;
+ }
++
++/*
++ * This API is used to find the most idle cpu from both preferred and
++ * allowed cpuset (such as cgroup controls cpuset). It helps per-cpu thread
++ * model to pick up the allowed local cpu to be scheduled.
++ * If these two cpusets have intersects, the cpu is chose from the intersects,
++ * if there is no intersects, then the cpu is chose from the allowed cpuset.
++ * prev_cpu helps to better local cache when prev_cpu is not busy.
++ */
++int find_idlest_prefer_cpu(struct cpumask *prefer, struct cpumask *allowed,
++			  int prev_cpu)
++{
++	unsigned long load, min_load = ULONG_MAX;
++	int check, i, idlest = -1;
++
++	check = cpumask_intersects(prefer, allowed);
++	/* Traverse only the allowed CPUs */
++	if (check == 0)
++		prefer = allowed;
++	for_each_cpu_and(i, prefer, allowed) {
++		load = weighted_cpuload(i);
++		if (load < min_load || (load == min_load && i == prev_cpu)) {
++			min_load = load;
++			idlest = i;
++		}
++	}
++	return idlest;
++}
++EXPORT_SYMBOL(find_idlest_prefer_cpu);
+ #endif /* CONFIG_SMP */
+ 
+ static unsigned long
 
-We had a fix, but it seems I missed putting it into 3.5:
-
-commit e19ebcab01cc130fa832764d453b263460ec3b91
-Author: Ilan Peer <ilan.peer@intel.com>
-Date:   Thu May 10 15:53:14 2012 +0300
-
-    iwlwifi: Check BSS ctx active before call mac80211
-
-I'll ask Greg to include it in 3.5 stable.
-
-johannes
-Intel GmbH
-Dornacher Strasse 1
-85622 Feldkirchen/Muenchen, Deutschland
-Sitz der Gesellschaft: Feldkirchen bei Muenchen
-Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer, Christian Lamprechter
-Registergericht: Muenchen HRB 47456
-Ust.-IdNr./VAT Registration No.: DE129385895
-Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
+Shirley
 
