@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab2GWNkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:40:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58782 "EHLO mx2.suse.de"
+	id S1753708Ab2GWNjG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:39:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58631 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395Ab2GWNjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:39:07 -0400
+	id S1753395Ab2GWNiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:38:54 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 30/34] mm: vmscan: Do not force kswapd to scan small targets
-Date: Mon, 23 Jul 2012 14:38:43 +0100
-Message-Id: <1343050727-3045-31-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/34] vmscan: reduce wind up shrinker->nr when shrinker can't do work
+Date: Mon, 23 Jul 2012 14:38:21 +0100
+Message-Id: <1343050727-3045-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,53 +20,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit ad2b8e601099a23dffffb53f91c18d874fe98854 upstream - WARNING: this is a substitute patch.
+From: Dave Chinner <dchinner@redhat.com>
 
-Stable note: Not tracked in Bugzilla. This is a substitute for an
-	upstream commit addressing a completely different issue that
-	accidentally contained an important fix. The workload this patch
-	helps was memcached when IO is started in the background. memcached
-	should stay resident but without this patch it gets swapped more
-	than it should. Sometimes this manifests as a drop in throughput
-	but mostly it was observed through /proc/vmstat.
+commit 3567b59aa80ac4417002bf58e35dce5c777d4164 upstream.
 
-Commit [246e87a9: memcg: fix get_scan_count() for small targets] was
-meant to fix a problem whereby small scan targets on memcg were ignored
-causing priority to raise too sharply. It forced scanning to take place
-if the target was small, memcg or kswapd.
+Stable note: Not tracked in Bugzilla. This patch reduces excessive
+	reclaim of slab objects reducing the amount of information that
+	has to be brought back in from disk. The third and fourth paragram
+	in the series describes the impact.
 
->From the time it was introduced it cause excessive reclaim by kswapd
-with workloads being pushed to swap that previously would have stayed
-resident. This was accidentally fixed by commit [ad2b8e60: mm: memcg:
-remove optimization of keeping the root_mem_cgroup LRU lists empty] but
-that patchset is not suitable for backporting.
+When a shrinker returns -1 to shrink_slab() to indicate it cannot do
+any work given the current memory reclaim requirements, it adds the
+entire total_scan count to shrinker->nr. The idea behind this is that
+when the shrinker is next called and can do work, it will do the work
+of the previously aborted shrinker call as well.
 
-The original patch came with no information on what workloads it benefits
-but the cost of it is obvious in that it forces scanning to take place
-on lists that would otherwise have been ignored such as small anonymous
-inactive lists. This patch partially reverts 246e87a9 so that small lists
-are not force scanned which means that IO-intensive workloads with small
-amounts of anonymous memory will not be swapped.
+However, if a filesystem is doing lots of allocation with GFP_NOFS
+set, then we get many, many more aborts from the shrinkers than we
+do successful calls. The result is that shrinker->nr winds up to
+it's maximum permissible value (twice the current cache size) and
+then when the next shrinker call that can do work is issued, it
+has enough scan count built up to free the entire cache twice over.
 
+This manifests itself in the cache going from full to empty in a
+matter of seconds, even when only a small part of the cache is
+needed to be emptied to free sufficient memory.
+
+Under metadata intensive workloads on ext4 and XFS, I'm seeing the
+VFS caches increase memory consumption up to 75% of memory (no page
+cache pressure) over a period of 30-60s, and then the shrinker
+empties them down to zero in the space of 2-3s. This cycle repeats
+over and over again, with the shrinker completely trashing the inode
+and dentry caches every minute or so the workload continues.
+
+This behaviour was made obvious by the shrink_slab tracepoints added
+earlier in the series, and made worse by the patch that corrected
+the concurrent accounting of shrinker->nr.
+
+To avoid this problem, stop repeated small increments of the total
+scan value from winding shrinker->nr up to a value that can cause
+the entire cache to be freed. We still need to allow it to wind up,
+so use the delta as the "large scan" threshold check - if the delta
+is more than a quarter of the entire cache size, then it is a large
+scan and allowed to cause lots of windup because we are clearly
+needing to free lots of memory.
+
+If it isn't a large scan then limit the total scan to half the size
+of the cache so that windup never increases to consume the whole
+cache. Reducing the total scan limit further does not allow enough
+wind-up to maintain the current levels of performance, whilst a
+higher threshold does not prevent the windup from freeing the entire
+cache under sustained workloads.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |    3 ---
- 1 file changed, 3 deletions(-)
+ mm/vmscan.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index e5382ad..49d8547 100644
+index 31b551e..8ca1cd5 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1849,9 +1849,6 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 	bool force_scan = false;
- 	unsigned long nr_force_scan[2];
+@@ -277,6 +277,21 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 		}
  
--	/* kswapd does zone balancing and needs to scan this zone */
--	if (scanning_global_lru(sc) && current_is_kswapd())
--		force_scan = true;
- 	/* memcg may have small limit and need to avoid priority drop */
- 	if (!scanning_global_lru(sc))
- 		force_scan = true;
+ 		/*
++		 * We need to avoid excessive windup on filesystem shrinkers
++		 * due to large numbers of GFP_NOFS allocations causing the
++		 * shrinkers to return -1 all the time. This results in a large
++		 * nr being built up so when a shrink that can do some work
++		 * comes along it empties the entire cache due to nr >>>
++		 * max_pass.  This is bad for sustaining a working set in
++		 * memory.
++		 *
++		 * Hence only allow the shrinker to scan the entire cache when
++		 * a large delta change is calculated directly.
++		 */
++		if (delta < max_pass / 4)
++			total_scan = min(total_scan, max_pass / 2);
++
++		/*
+ 		 * Avoid risking looping forever due to too large nr value:
+ 		 * never try to free more than twice the estimate number of
+ 		 * freeable entries.
 -- 
 1.7.9.2
 
