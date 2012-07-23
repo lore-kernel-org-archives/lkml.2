@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2GWPzt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:55:49 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231Ab2GWPzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:55:48 -0400
-Message-ID: <500D73FF.1070504@nod.at>
-Date: Mon, 23 Jul 2012 17:55:43 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	id S1754285Ab2GWP7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:59:36 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:40569 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754234Ab2GWP7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 11:59:34 -0400
+Message-ID: <500D74E2.2010906@compulab.co.il>
+Date: Mon, 23 Jul 2012 18:59:30 +0300
+From: Denis Turischev <denis@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: linux-fsdevel@vger.kernel.org, linux-man@vger.kernel.org
-Subject: st_size of a symlink
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/2 v2] xhci: provide usb_disable_xhci_ports function for
+ Intel chipsets.
+References: <5004454E.9030903@compulab.co.il> <20120717045416.GJ7599@xanatos> <50065E5A.2040103@compulab.co.il> <20120718165916.GA30828@xanatos> <500D398E.1060000@compulab.co.il> <500D6375.1070102@mvista.com>
+In-Reply-To: <500D6375.1070102@mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Some devices with Intel Panther Point chipset may require switchover
+usb ports from XHCI back to EHCI controller before shutdown.
+Otherwise various BIOS bugs related to power management may be
+triggered.
 
-lstat(2) on /proc/$pid/exe gives me a stat object where st_size is 0.
+v2: deleted unnecessary variables.
 
-Or:
-rw@mantary:~> ls -l /proc/$$/exe
-lrwxrwxrwx 1 rw users 0 23. Jul 17:02 /proc/16902/exe -> /bin/bash
+Signed-off-by: Denis Turischev <denis@compulab.co.il>
+---
+ drivers/usb/host/pci-quirks.c |    7 +++++++
+ drivers/usb/host/pci-quirks.h |    1 +
+ 2 files changed, 8 insertions(+)
 
-The lstat(2) manpage says:
-"The st_size field gives the size of the file (if it is a regular file 
-or a symbolic link) in bytes.  The size of a symbolic link is the length 
-of the pathname it contains, without a terminating null byte."
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index df0828c..c5e9e4a 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -800,6 +800,13 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+ }
+ EXPORT_SYMBOL_GPL(usb_enable_xhci_ports);
 
-This property is also used in the example in the readlink(2) manpage.
++void usb_disable_xhci_ports(struct pci_dev *xhci_pdev)
++{
++	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN, 0x0);
++	pci_write_config_dword(xhci_pdev, USB_INTEL_XUSB2PR, 0x0);
++}
++EXPORT_SYMBOL_GPL(usb_disable_xhci_ports);
++
+ /**
+  * PCI Quirks for xHCI.
+  *
+diff --git a/drivers/usb/host/pci-quirks.h b/drivers/usb/host/pci-quirks.h
+index b1002a8..ef004a5 100644
+--- a/drivers/usb/host/pci-quirks.h
++++ b/drivers/usb/host/pci-quirks.h
+@@ -10,6 +10,7 @@ void usb_amd_quirk_pll_disable(void);
+ void usb_amd_quirk_pll_enable(void);
+ bool usb_is_intel_switchable_xhci(struct pci_dev *pdev);
+ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev);
++void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
+ #else
+ static inline void usb_amd_quirk_pll_disable(void) {}
+ static inline void usb_amd_quirk_pll_enable(void) {}
+-- 
+1.7.9.5
 
-Is this a procfs issue or is the manpage wrong?
 
-Thanks,
-//richard
