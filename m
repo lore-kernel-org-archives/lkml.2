@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab2GWNjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:39:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58625 "EHLO mx2.suse.de"
+	id S1753850Ab2GWNkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:40:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58797 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab2GWNix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:38:53 -0400
+	id S1753775Ab2GWNjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:39:08 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/34] vmscan: shrinker->nr updates race and go wrong
-Date: Mon, 23 Jul 2012 14:38:20 +0100
-Message-Id: <1343050727-3045-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 32/34] cpusets: stall when updating mems_allowed for mempolicy or disjoint nodemask
+Date: Mon, 23 Jul 2012 14:38:45 +0100
+Message-Id: <1343050727-3045-33-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,115 +20,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: David Rientjes <rientjes@google.com>
 
-commit acf92b485cccf028177f46918e045c0c4e80ee10 upstream.
+commit b246272ecc5ac68c743b15c9e41a2275f7ce70e2 upstream.
 
-Stable note: Not tracked in Bugzilla. This patch reduces excessive
-	reclaim of slab objects reducing the amount of information
-	that has to be brought back in from disk.
+Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
+	expensive and severely impacted page allocator performance. This is
+	part of a series of patches that reduce page allocator overhead.
 
-shrink_slab() allows shrinkers to be called in parallel so the
-struct shrinker can be updated concurrently. It does not provide any
-exclusion for such updates, so we can get the shrinker->nr value
-increasing or decreasing incorrectly.
+Kernels where MAX_NUMNODES > BITS_PER_LONG may temporarily see an empty
+nodemask in a tsk's mempolicy if its previous nodemask is remapped onto a
+new set of allowed cpuset nodes where the two nodemasks, as a result of
+the remap, are now disjoint.
 
-As a result, when a shrinker repeatedly returns a value of -1 (e.g.
-a VFS shrinker called w/ GFP_NOFS), the shrinker->nr goes haywire,
-sometimes updating with the scan count that wasn't used, sometimes
-losing it altogether. Worse is when a shrinker does work and that
-update is lost due to racy updates, which means the shrinker will do
-the work again!
+c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
+cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
+nodes from changing for a thread.  This causes any update to a set of
+allowed nodes to stall until put_mems_allowed() is called.
 
-Fix this by making the total_scan calculations independent of
-shrinker->nr, and making the shrinker->nr updates atomic w.r.t. to
-other updates via cmpxchg loops.
+This stall is unncessary, however, if at least one node remains unchanged
+in the update to the set of allowed nodes.  This was addressed by
+89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
+node remains set"), but it's still possible that an empty nodemask may be
+read from a mempolicy because the old nodemask may be remapped to the new
+nodemask during rebind.  To prevent this, only avoid the stall if there is
+no mempolicy for the thread being changed.
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+This is a temporary solution until all reads from mempolicy nodemasks can
+be guaranteed to not be empty without the get_mems_allowed()
+synchronization.
+
+Also moves the check for nodemask intersection inside task_lock() so that
+tsk->mems_allowed cannot change.  This ensures that nothing can set this
+tsk's mems_allowed out from under us and also protects tsk->mempolicy.
+
+Reported-by: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |   45 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 32 insertions(+), 13 deletions(-)
+ kernel/cpuset.c |   29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d875058..31b551e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -251,17 +251,29 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		unsigned long total_scan;
- 		unsigned long max_pass;
- 		int shrink_ret = 0;
-+		long nr;
-+		long new_nr;
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index a995893..28d0bbd 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -123,6 +123,19 @@ static inline struct cpuset *task_cs(struct task_struct *task)
+ 			    struct cpuset, css);
+ }
  
-+		/*
-+		 * copy the current shrinker scan count into a local variable
-+		 * and zero it so that other concurrent shrinker invocations
-+		 * don't also do this scanning work.
-+		 */
-+		do {
-+			nr = shrinker->nr;
-+		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
++#ifdef CONFIG_NUMA
++static inline bool task_has_mempolicy(struct task_struct *task)
++{
++	return task->mempolicy;
++}
++#else
++static inline bool task_has_mempolicy(struct task_struct *task)
++{
++	return false;
++}
++#endif
 +
-+		total_scan = nr;
- 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
- 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
- 		delta *= max_pass;
- 		do_div(delta, lru_pages + 1);
--		shrinker->nr += delta;
--		if (shrinker->nr < 0) {
-+		total_scan += delta;
-+		if (total_scan < 0) {
- 			printk(KERN_ERR "shrink_slab: %pF negative objects to "
- 			       "delete nr=%ld\n",
--			       shrinker->shrink, shrinker->nr);
--			shrinker->nr = max_pass;
-+			       shrinker->shrink, total_scan);
-+			total_scan = max_pass;
- 		}
- 
- 		/*
-@@ -269,13 +281,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		 * never try to free more than twice the estimate number of
- 		 * freeable entries.
- 		 */
--		if (shrinker->nr > max_pass * 2)
--			shrinker->nr = max_pass * 2;
--
--		total_scan = shrinker->nr;
--		shrinker->nr = 0;
-+		if (total_scan > max_pass * 2)
-+			total_scan = max_pass * 2;
- 
--		trace_mm_shrink_slab_start(shrinker, shrink, total_scan,
-+		trace_mm_shrink_slab_start(shrinker, shrink, nr,
- 					nr_pages_scanned, lru_pages,
- 					max_pass, delta, total_scan);
- 
-@@ -296,9 +305,19 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 			cond_resched();
- 		}
- 
--		shrinker->nr += total_scan;
--		trace_mm_shrink_slab_end(shrinker, shrink_ret, total_scan,
--					 shrinker->nr);
-+		/*
-+		 * move the unused scan count back into the shrinker in a
-+		 * manner that handles concurrent updates. If we exhausted the
-+		 * scan, there is no need to do an update.
-+		 */
-+		do {
-+			nr = shrinker->nr;
-+			new_nr = total_scan + nr;
-+			if (total_scan <= 0)
-+				break;
-+		} while (cmpxchg(&shrinker->nr, nr, new_nr) != nr);
 +
-+		trace_mm_shrink_slab_end(shrinker, shrink_ret, nr, new_nr);
- 	}
- 	up_read(&shrinker_rwsem);
- out:
+ /* bits in struct cpuset flags field */
+ typedef enum {
+ 	CS_CPU_EXCLUSIVE,
+@@ -949,7 +962,7 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 					nodemask_t *newmems)
+ {
+-	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
++	bool need_loop;
+ 
+ repeat:
+ 	/*
+@@ -962,6 +975,14 @@ repeat:
+ 		return;
+ 
+ 	task_lock(tsk);
++	/*
++	 * Determine if a loop is necessary if another thread is doing
++	 * get_mems_allowed().  If at least one node remains unchanged and
++	 * tsk does not have a mempolicy, then an empty nodemask will not be
++	 * possible when mems_allowed is larger than a word.
++	 */
++	need_loop = task_has_mempolicy(tsk) ||
++			!nodes_intersects(*newmems, tsk->mems_allowed);
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+ 
+@@ -981,11 +1002,9 @@ repeat:
+ 
+ 	/*
+ 	 * Allocation of memory is very fast, we needn't sleep when waiting
+-	 * for the read-side.  No wait is necessary, however, if at least one
+-	 * node remains unchanged.
++	 * for the read-side.
+ 	 */
+-	while (masks_disjoint &&
+-			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
++	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
+ 		task_unlock(tsk);
+ 		if (!task_curr(tsk))
+ 			yield();
 -- 
 1.7.9.2
 
