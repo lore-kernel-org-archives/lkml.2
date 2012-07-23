@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab2GWBmV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:42:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53963 "EHLO
+	id S1753019Ab2GWCH2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:07:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54013 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752859Ab2GWBmL (ORCPT
+	by vger.kernel.org with ESMTP id S1752928Ab2GWBmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:11 -0400
-Message-Id: <20120723010653.983024423@decadent.org.uk>
+	Sun, 22 Jul 2012 21:42:19 -0400
+Message-Id: <20120723010701.746601273@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:07 +0100
+Date: Mon, 23 Jul 2012 02:07:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [ 016/108] macvtap: zerocopy: fix offset calculation when building skb
+        alan@lxorguk.ukuu.org.uk, Boaz Harrosh <bharrosh@panasas.com>
+Subject: [ 068/108] ore: Fix NFS crash by supporting any unaligned RAID IO
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,66 +27,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 3afc9621f15701c557e60f61eba9242bac2771dd upstream.
+commit 9ff19309a9623f2963ac5a136782ea4d8b5d67fb upstream.
 
-This patch fixes the offset calculation when building skb:
+In RAID_5/6 We used to not permit an IO that it's end
+byte is not stripe_size aligned and spans more than one stripe.
+.i.e the caller must check if after submission the actual
+transferred bytes is shorter, and would need to resubmit
+a new IO with the remainder.
 
-- offset1 were used as skb data offset not vector offset
-- reset offset to zero only when we advance to next vector
+Exofs supports this, and NFS was supposed to support this
+as well with it's short write mechanism. But late testing has
+exposed a CRASH when this is used with none-RPC layout-drivers.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+The change at NFS is deep and risky, in it's place the fix
+at ORE to lift the limitation is actually clean and simple.
+So here it is below.
+
+The principal here is that in the case of unaligned IO on
+both ends, beginning and end, we will send two read requests
+one like old code, before the calculation of the first stripe,
+and also a new site, before the calculation of the last stripe.
+If any "boundary" is aligned or the complete IO is within a single
+stripe. we do a single read like before.
+
+The code is clean and simple by splitting the old _read_4_write
+into 3 even parts:
+1._read_4_write_first_stripe
+2. _read_4_write_last_stripe
+3. _read_4_write_execute
+
+And calling 1+3 at the same place as before. 2+3 before last
+stripe, and in the case of all in a single stripe then 1+2+3
+is preformed additively.
+
+Why did I not think of it before. Well I had a strike of
+genius because I have stared at this code for 2 years, and did
+not find this simple solution, til today. Not that I did not try.
+
+This solution is much better for NFS than the previous supposedly
+solution because the short write was dealt  with out-of-band after
+IO_done, which would cause for a seeky IO pattern where as in here
+we execute in order. At both solutions we do 2 separate reads, only
+here we do it within a single IO request. (And actually combine two
+writes into a single submission)
+
+NFS/exofs code need not change since the ORE API communicates the new
+shorter length on return, what will happen is that this case would not
+occur anymore.
+
+hurray!!
+
+[Stable this is an NFS bug since 3.2 Kernel should apply cleanly]
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/macvtap.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ fs/exofs/ore_raid.c |   67 +++++++++++++++++++++++++++------------------------
+ 1 file changed, 36 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 0427c65..bd4a70d 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -505,10 +505,11 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
- 		if (copy > size) {
- 			++from;
- 			--count;
--		}
-+			offset = 0;
-+		} else
-+			offset += size;
- 		copy -= size;
- 		offset1 += size;
--		offset = 0;
+diff --git a/fs/exofs/ore_raid.c b/fs/exofs/ore_raid.c
+index d222c77..fff2070 100644
+--- a/fs/exofs/ore_raid.c
++++ b/fs/exofs/ore_raid.c
+@@ -461,16 +461,12 @@ static void _mark_read4write_pages_uptodate(struct ore_io_state *ios, int ret)
+  * ios->sp2d[p][*], xor is calculated the same way. These pages are
+  * allocated/freed and don't go through cache
+  */
+-static int _read_4_write(struct ore_io_state *ios)
++static int _read_4_write_first_stripe(struct ore_io_state *ios)
+ {
+-	struct ore_io_state *ios_read;
+ 	struct ore_striping_info read_si;
+ 	struct __stripe_pages_2d *sp2d = ios->sp2d;
+ 	u64 offset = ios->si.first_stripe_start;
+-	u64 last_stripe_end;
+-	unsigned bytes_in_stripe = ios->si.bytes_in_stripe;
+-	unsigned i, c, p, min_p = sp2d->pages_in_unit, max_p = -1;
+-	int ret;
++	unsigned c, p, min_p = sp2d->pages_in_unit, max_p = -1;
+ 
+ 	if (offset == ios->offset) /* Go to start collect $200 */
+ 		goto read_last_stripe;
+@@ -478,6 +474,9 @@ static int _read_4_write(struct ore_io_state *ios)
+ 	min_p = _sp2d_min_pg(sp2d);
+ 	max_p = _sp2d_max_pg(sp2d);
+ 
++	ORE_DBGMSG("stripe_start=0x%llx ios->offset=0x%llx min_p=%d max_p=%d\n",
++		   offset, ios->offset, min_p, max_p);
++
+ 	for (c = 0; ; c++) {
+ 		ore_calc_stripe_info(ios->layout, offset, 0, &read_si);
+ 		read_si.obj_offset += min_p * PAGE_SIZE;
+@@ -512,6 +511,18 @@ static int _read_4_write(struct ore_io_state *ios)
  	}
  
- 	if (len == offset1)
-@@ -519,13 +520,13 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
- 		int num_pages;
- 		unsigned long base;
+ read_last_stripe:
++	return 0;
++}
++
++static int _read_4_write_last_stripe(struct ore_io_state *ios)
++{
++	struct ore_striping_info read_si;
++	struct __stripe_pages_2d *sp2d = ios->sp2d;
++	u64 offset;
++	u64 last_stripe_end;
++	unsigned bytes_in_stripe = ios->si.bytes_in_stripe;
++	unsigned c, p, min_p = sp2d->pages_in_unit, max_p = -1;
++
+ 	offset = ios->offset + ios->length;
+ 	if (offset % PAGE_SIZE)
+ 		_add_to_r4w_last_page(ios, &offset);
+@@ -527,15 +538,15 @@ read_last_stripe:
+ 	c = _dev_order(ios->layout->group_width * ios->layout->mirrors_p1,
+ 		       ios->layout->mirrors_p1, read_si.par_dev, read_si.dev);
  
--		len = from->iov_len - offset1;
-+		len = from->iov_len - offset;
- 		if (!len) {
--			offset1 = 0;
-+			offset = 0;
- 			++from;
- 			continue;
+-	BUG_ON(ios->si.first_stripe_start + bytes_in_stripe != last_stripe_end);
+-	/* unaligned IO must be within a single stripe */
+-
+ 	if (min_p == sp2d->pages_in_unit) {
+ 		/* Didn't do it yet */
+ 		min_p = _sp2d_min_pg(sp2d);
+ 		max_p = _sp2d_max_pg(sp2d);
+ 	}
+ 
++	ORE_DBGMSG("offset=0x%llx stripe_end=0x%llx min_p=%d max_p=%d\n",
++		   offset, last_stripe_end, min_p, max_p);
++
+ 	while (offset < last_stripe_end) {
+ 		struct __1_page_stripe *_1ps = &sp2d->_1p_stripes[p];
+ 
+@@ -568,6 +579,15 @@ read_last_stripe:
+ 	}
+ 
+ read_it:
++	return 0;
++}
++
++static int _read_4_write_execute(struct ore_io_state *ios)
++{
++	struct ore_io_state *ios_read;
++	unsigned i;
++	int ret;
++
+ 	ios_read = ios->ios_read_4_write;
+ 	if (!ios_read)
+ 		return 0;
+@@ -591,6 +611,8 @@ read_it:
+ 	}
+ 
+ 	_mark_read4write_pages_uptodate(ios_read, ret);
++	ore_put_io_state(ios_read);
++	ios->ios_read_4_write = NULL; /* Might need a reuse at last stripe */
+ 	return 0;
+ }
+ 
+@@ -626,8 +648,11 @@ int _ore_add_parity_unit(struct ore_io_state *ios,
+ 			/* If first stripe, Read in all read4write pages
+ 			 * (if needed) before we calculate the first parity.
+ 			 */
+-			_read_4_write(ios);
++			_read_4_write_first_stripe(ios);
  		}
--		base = (unsigned long)from->iov_base + offset1;
-+		base = (unsigned long)from->iov_base + offset;
- 		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
- 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
- 		if ((num_pages != size) ||
-@@ -546,7 +547,7 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
- 			len -= size;
- 			i++;
++		if (!cur_len) /* If last stripe r4w pages of last stripe */
++			_read_4_write_last_stripe(ios);
++		_read_4_write_execute(ios);
+ 
+ 		for (i = 0; i < num_pages; i++) {
+ 			pages[i] = _raid_page_alloc();
+@@ -654,34 +679,14 @@ int _ore_add_parity_unit(struct ore_io_state *ios,
+ 
+ int _ore_post_alloc_raid_stuff(struct ore_io_state *ios)
+ {
+-	struct ore_layout *layout = ios->layout;
+-
+ 	if (ios->parity_pages) {
++		struct ore_layout *layout = ios->layout;
+ 		unsigned pages_in_unit = layout->stripe_unit / PAGE_SIZE;
+-		unsigned stripe_size = ios->si.bytes_in_stripe;
+-		u64 last_stripe, first_stripe;
+ 
+ 		if (_sp2d_alloc(pages_in_unit, layout->group_width,
+ 				layout->parity, &ios->sp2d)) {
+ 			return -ENOMEM;
  		}
--		offset1 = 0;
-+		offset = 0;
- 		++from;
+-
+-		/* Round io down to last full strip */
+-		first_stripe = div_u64(ios->offset, stripe_size);
+-		last_stripe = div_u64(ios->offset + ios->length, stripe_size);
+-
+-		/* If an IO spans more then a single stripe it must end at
+-		 * a stripe boundary. The reminder at the end is pushed into the
+-		 * next IO.
+-		 */
+-		if (last_stripe != first_stripe) {
+-			ios->length = last_stripe * stripe_size - ios->offset;
+-
+-			BUG_ON(!ios->length);
+-			ios->nr_pages = (ios->length + PAGE_SIZE - 1) /
+-					PAGE_SIZE;
+-			ios->si.length = ios->length; /*make it consistent */
+-		}
  	}
  	return 0;
-
+ }
 
 
