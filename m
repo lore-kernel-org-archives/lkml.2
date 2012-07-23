@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab2GWBmq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:42:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54122 "EHLO
+	id S1753817Ab2GWCCo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:02:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54130 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753161Ab2GWBmn (ORCPT
+	by vger.kernel.org with ESMTP id S1753165Ab2GWBmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:43 -0400
-Message-Id: <20120723010706.399261642@decadent.org.uk>
+	Sun, 22 Jul 2012 21:42:46 -0400
+Message-Id: <20120723010707.696202896@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:29 +0100
+Date: Mon, 23 Jul 2012 02:08:37 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [ 098/108] eCryptfs: Properly check for O_RDONLY flag before doing privileged
- open
+        alan@lxorguk.ukuu.org.uk, Ilia Katsnelson <k0009000@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 106/108] Input: xpad - add signature for Razer Onza Tournament Edition
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,43 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Ilia Katsnelson <k0009000@gmail.com>
 
-commit 9fe79d7600497ed8a95c3981cbe5b73ab98222f0 upstream.
+commit cc71a7e899cc6b2ff41e1be48756782ed004d802 upstream.
 
-If the first attempt at opening the lower file read/write fails,
-eCryptfs will retry using a privileged kthread. However, the privileged
-retry should not happen if the lower file's inode is read-only because a
-read/write open will still be unsuccessful.
-
-The check for determining if the open should be retried was intended to
-be based on the access mode of the lower file's open flags being
-O_RDONLY, but the check was incorrectly performed. This would cause the
-open to be retried by the privileged kthread, resulting in a second
-failed open of the lower file. This patch corrects the check to
-determine if the open request should be handled by the privileged
-kthread.
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Ilia Katsnelson <k0009000@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ecryptfs/kthread.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/joystick/xpad.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ecryptfs/kthread.c b/fs/ecryptfs/kthread.c
-index 69f994a..0dbe58a 100644
---- a/fs/ecryptfs/kthread.c
-+++ b/fs/ecryptfs/kthread.c
-@@ -149,7 +149,7 @@ int ecryptfs_privileged_open(struct file **lower_file,
- 	(*lower_file) = dentry_open(lower_dentry, lower_mnt, flags, cred);
- 	if (!IS_ERR(*lower_file))
- 		goto out;
--	if (flags & O_RDONLY) {
-+	if ((flags & O_ACCMODE) == O_RDONLY) {
- 		rc = PTR_ERR((*lower_file));
- 		goto out;
- 	}
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index 0369364..e066528 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -164,6 +164,7 @@ static const struct xpad_device {
+ 	{ 0x1bad, 0x0003, "Harmonix Rock Band Drumkit", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x0f0d, 0x0016, "Hori Real Arcade Pro.EX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x0f0d, 0x000d, "Hori Fighting Stick EX2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
++	{ 0x1689, 0xfd00, "Razer Onza Tournament Edition", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0xffff, 0xffff, "Chinese-made Xbox Controller", 0, XTYPE_XBOX },
+ 	{ 0x0000, 0x0000, "Generic X-Box pad", 0, XTYPE_UNKNOWN }
+ };
+@@ -244,7 +245,8 @@ static struct usb_device_id xpad_table [] = {
+ 	XPAD_XBOX360_VENDOR(0x1430),		/* RedOctane X-Box 360 controllers */
+ 	XPAD_XBOX360_VENDOR(0x146b),		/* BigBen Interactive Controllers */
+ 	XPAD_XBOX360_VENDOR(0x1bad),		/* Harminix Rock Band Guitar and Drums */
+-	XPAD_XBOX360_VENDOR(0x0f0d),            /* Hori Controllers */
++	XPAD_XBOX360_VENDOR(0x0f0d),		/* Hori Controllers */
++	XPAD_XBOX360_VENDOR(0x1689),		/* Razer Onza */
+ 	{ }
+ };
+ 
 
 
