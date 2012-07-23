@@ -1,335 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab2GWUcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:32:39 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46032 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768Ab2GWUcf (ORCPT
+	id S1754840Ab2GWUcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:32:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58865 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768Ab2GWUcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:32:35 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: rusty@rustcorp.com.au, mst@redhat.com, penberg@kernel.org,
-        asias.hejun@gmail.com
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, avi@redhat.com, anthony@codemonkey.ws,
-        wency@cn.fujitsu.com, Sasha Levin <levinsasha928@gmail.com>
-Subject: [RFC 2/2] kvm tools: support virtio-notifier
-Date: Mon, 23 Jul 2012 22:32:41 +0200
-Message-Id: <1343075561-29316-3-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1343075561-29316-1-git-send-email-levinsasha928@gmail.com>
-References: <1343075561-29316-1-git-send-email-levinsasha928@gmail.com>
+	Mon, 23 Jul 2012 16:32:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org
+Subject: [GIT PULL 08/15] arm-soc: cleanups, part 2
+Date: Mon, 23 Jul 2012 22:32:34 +0200
+Message-Id: <1343075561-17446-9-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1343075561-17446-1-git-send-email-arnd@arndb.de>
+References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:V4WFgQQGTCnVAESkJAJ0n5RvL6V4kSBhuPu5kYk+594
+ 2TmXsi76xTp+xeiamyFvO3dmWi2Usym3xE1tAcYlV0dYJhDlxp
+ 7qGvHTHWCL/YaBBuyK0tZXwu/rsN8qX2IA6n9klpXVoerv6/+B
+ 0SyPYW2hiEAGyWTjcLFHhBkySNDy8Q0cBLa9gbsf5VeoRbT226
+ 5yvNkvr/MdmLHZ6e8RmrirC/DQKhNzS+szt+QB8omIbDacOIcD
+ ci6sFlst97dWSfJrVxDuARMagtV17XBOGZJKLwP5tEIkNjy0zd
+ KK26wRAPN9miwwU2J5VTfMZvt5fV16FxKtLoaWuXXm9kaMaygu
+ t5aazb8oUkZUkqZK4742a/yfT8Yq18mUWpGoYBXL2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch supports the new virtio-notifier driver.
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
-When the guest experiences a panic or an OOM, it will notify the host and
-the host will notify the user of the event.
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
 
-We also ping echo packets every second to the guest to see if it's still
-alive and well, I haven't actually taken care of the case when echos are
-gone for some reason since I'm trying to think of something useful to do
-with that besides yell on stdout.
+are available in the git repository at:
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- tools/kvm/Makefile                      |    1 +
- tools/kvm/builtin-run.c                 |    6 +
- tools/kvm/include/kvm/virtio-notifier.h |    9 ++
- tools/kvm/include/kvm/virtio-pci-dev.h  |    1 +
- tools/kvm/virtio/notifier.c             |  203 +++++++++++++++++++++++++++++++
- 5 files changed, 220 insertions(+), 0 deletions(-)
- create mode 100644 tools/kvm/include/kvm/virtio-notifier.h
- create mode 100644 tools/kvm/virtio/notifier.c
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/cleanup2
 
-diff --git a/tools/kvm/Makefile b/tools/kvm/Makefile
-index f9e1ec1..6827c1f 100644
---- a/tools/kvm/Makefile
-+++ b/tools/kvm/Makefile
-@@ -89,6 +89,7 @@ OBJS	+= hw/pci-shmem.o
- OBJS	+= kvm-ipc.o
- OBJS	+= builtin-sandbox.o
- OBJS	+= virtio/mmio.o
-+OBJS	+= virtio/notifier.o
- 
- # Translate uname -m into ARCH string
- ARCH ?= $(shell uname -m | sed -e s/i.86/i386/ -e s/ppc.*/powerpc/)
-diff --git a/tools/kvm/builtin-run.c b/tools/kvm/builtin-run.c
-index 750d30c..90ac622 100644
---- a/tools/kvm/builtin-run.c
-+++ b/tools/kvm/builtin-run.c
-@@ -33,6 +33,7 @@
- #include "kvm/pci-shmem.h"
- #include "kvm/kvm-ipc.h"
- #include "kvm/builtin-debug.h"
-+#include "kvm/virtio-notifier.h"
- 
- #include <linux/types.h>
- #include <linux/err.h>
-@@ -99,6 +100,7 @@ static bool using_rootfs;
- static bool custom_rootfs;
- static bool no_net;
- static bool no_dhcp;
-+static bool virtio_notifier;
- extern bool ioport_debug;
- extern bool mmio_debug;
- static int  kvm_run_wrapper;
-@@ -442,6 +444,7 @@ static const struct option options[] = {
- 	OPT_BOOLEAN('\0', "vnc", &vnc, "Enable VNC framebuffer"),
- 	OPT_BOOLEAN('\0', "sdl", &sdl, "Enable SDL framebuffer"),
- 	OPT_BOOLEAN('\0', "rng", &virtio_rng, "Enable virtio Random Number Generator"),
-+	OPT_BOOLEAN('\0', "notifier", &virtio_notifier, "Enable virtio notifier"),
- 	OPT_CALLBACK('\0', "9p", NULL, "dir_to_share,tag_name",
- 		     "Enable virtio 9p to share files between host and guest", virtio_9p_rootdir_parser),
- 	OPT_STRING('\0', "console", &console, "serial, virtio or hv",
-@@ -1182,6 +1185,9 @@ static int kvm_cmd_run_init(int argc, const char **argv)
- 	if (virtio_rng)
- 		virtio_rng__init(kvm);
- 
-+	if (virtio_notifier)
-+		virtio_notif__init(kvm);
-+
- 	if (balloon)
- 		virtio_bln__init(kvm);
- 
-diff --git a/tools/kvm/include/kvm/virtio-notifier.h b/tools/kvm/include/kvm/virtio-notifier.h
-new file mode 100644
-index 0000000..5673fc2
---- /dev/null
-+++ b/tools/kvm/include/kvm/virtio-notifier.h
-@@ -0,0 +1,9 @@
-+#ifndef KVM__NOTIF_VIRTIO_H
-+#define KVM__NOTIF_VIRTIO_H
-+
-+struct kvm;
-+
-+int virtio_notif__init(struct kvm *kvm);
-+int virtio_notif__exit(struct kvm *kvm);
-+
-+#endif /* KVM__RNG_VIRTIO_H */
-diff --git a/tools/kvm/include/kvm/virtio-pci-dev.h b/tools/kvm/include/kvm/virtio-pci-dev.h
-index 7ceb125..a387ecd 100644
---- a/tools/kvm/include/kvm/virtio-pci-dev.h
-+++ b/tools/kvm/include/kvm/virtio-pci-dev.h
-@@ -13,6 +13,7 @@
- #define PCI_DEVICE_ID_VIRTIO_CONSOLE		0x1003
- #define PCI_DEVICE_ID_VIRTIO_RNG		0x1004
- #define PCI_DEVICE_ID_VIRTIO_BLN		0x1005
-+#define PCI_DEVICE_ID_VIRTIO_NOTIFIER		0x1006
- #define PCI_DEVICE_ID_VIRTIO_9P			0x1009
- #define PCI_DEVICE_ID_VESA			0x2000
- #define PCI_DEVICE_ID_PCI_SHMEM			0x0001
-diff --git a/tools/kvm/virtio/notifier.c b/tools/kvm/virtio/notifier.c
-new file mode 100644
-index 0000000..c17546b
---- /dev/null
-+++ b/tools/kvm/virtio/notifier.c
-@@ -0,0 +1,203 @@
-+#include "kvm/virtio-notifier.h"
-+
-+#include "kvm/virtio-pci-dev.h"
-+
-+#include "kvm/virtio.h"
-+#include "kvm/util.h"
-+#include "kvm/kvm.h"
-+#include "kvm/threadpool.h"
-+#include "kvm/guest_compat.h"
-+
-+#include <linux/virtio_ring.h>
-+#include <linux/virtio_notifier.h>
-+
-+#include <linux/list.h>
-+#include <fcntl.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <pthread.h>
-+#include <linux/kernel.h>
-+
-+#define NUM_VIRT_QUEUES			2
-+#define VIRTIO_NOTIFIER_QUEUE_SIZE	128
-+
-+struct ntf_dev_job {
-+	struct virt_queue	*vq;
-+	struct ntf_dev		*ndev;
-+	struct thread_pool__job	job_id;
-+};
-+
-+struct ntf_dev {
-+	struct list_head	list;
-+	struct virtio_device	vdev;
-+
-+	/* virtio queue */
-+	struct virt_queue	vqs[NUM_VIRT_QUEUES];
-+	struct ntf_dev_job	jobs[NUM_VIRT_QUEUES];
-+};
-+
-+static LIST_HEAD(ndevs);
-+static int compat_id = -1;
-+
-+static void set_config(struct kvm *kvm, void *dev, u8 data, u32 offset)
-+{
-+	/* Unused */
-+}
-+
-+static u8 get_config(struct kvm *kvm, void *dev, u32 offset)
-+{
-+	/* Unused */
-+	return 0;
-+}
-+
-+static u32 get_host_features(struct kvm *kvm, void *dev)
-+{
-+	/* Unused */
-+	return 0;
-+}
-+
-+static void set_guest_features(struct kvm *kvm, void *dev, u32 features)
-+{
-+	/* Unused */
-+}
-+
-+static bool virtio_ntf_do_io_request(struct kvm *kvm, struct ntf_dev *ndev, struct virt_queue *queue)
-+{
-+	struct iovec iov[VIRTIO_NOTIFIER_QUEUE_SIZE];
-+	unsigned int len = 0;
-+	u16 out, in, head;
-+	u32 *counters;
-+
-+	head = virt_queue__get_iov(queue, iov, &out, &in, kvm);
-+	counters = iov[0].iov_base;
-+
-+	printf("\n\n New updated counters from guest:\n\tPanic: %u OOM: %u\n\n",
-+		counters[VIRTIO_NOTIF_PANIC], counters[VIRTIO_NOTIF_OOM]);
-+
-+	virt_queue__set_used_elem(queue, head, len);
-+
-+	return true;
-+}
-+
-+static bool virtio_ntf_do_echo_request(struct kvm *kvm, struct ntf_dev *ndev, struct virt_queue *queue)
-+{
-+	struct iovec iov[VIRTIO_NOTIFIER_QUEUE_SIZE];
-+	u16 out, in, head;
-+
-+	sleep(1);
-+	head = virt_queue__get_iov(queue, iov, &out, &in, kvm);
-+	virt_queue__set_used_elem(queue, head, iov[0].iov_len);
-+
-+	return true;
-+}
-+
-+static void virtio_ntf_do_io(struct kvm *kvm, void *param)
-+{
-+	struct ntf_dev_job *job	= param;
-+	struct virt_queue *vq	= job->vq;
-+	struct ntf_dev *ndev	= job->ndev;
-+
-+	if ((vq - ndev->vqs) == 0) {
-+		while (virt_queue__available(vq))
-+			virtio_ntf_do_io_request(kvm, ndev, vq);
-+	} else {
-+		virtio_ntf_do_echo_request(kvm, ndev, vq);
-+	}
-+
-+	ndev->vdev.ops->signal_vq(kvm, &ndev->vdev, vq - ndev->vqs);
-+}
-+
-+static int init_vq(struct kvm *kvm, void *dev, u32 vq, u32 pfn)
-+{
-+	struct ntf_dev *ndev = dev;
-+	struct virt_queue *queue;
-+	struct ntf_dev_job *job;
-+	void *p;
-+
-+	compat__remove_message(compat_id);
-+
-+	queue		= &ndev->vqs[vq];
-+	queue->pfn	= pfn;
-+	p		= guest_pfn_to_host(kvm, queue->pfn);
-+
-+	job = &ndev->jobs[vq];
-+
-+	vring_init(&queue->vring, VIRTIO_NOTIFIER_QUEUE_SIZE, p, VIRTIO_PCI_VRING_ALIGN);
-+
-+	*job = (struct ntf_dev_job) {
-+		.vq	= queue,
-+		.ndev	= ndev,
-+	};
-+
-+	thread_pool__init_job(&job->job_id, kvm, virtio_ntf_do_io, job);
-+
-+	return 0;
-+}
-+
-+static int notify_vq(struct kvm *kvm, void *dev, u32 vq)
-+{
-+	struct ntf_dev *ndev = dev;
-+
-+	thread_pool__do_job(&ndev->jobs[vq].job_id);
-+
-+	return 0;
-+}
-+
-+static int get_pfn_vq(struct kvm *kvm, void *dev, u32 vq)
-+{
-+	struct ntf_dev *ndev = dev;
-+
-+	return ndev->vqs[vq].pfn;
-+}
-+
-+static int get_size_vq(struct kvm *kvm, void *dev, u32 vq)
-+{
-+	return VIRTIO_NOTIFIER_QUEUE_SIZE;
-+}
-+
-+static struct virtio_ops ntf_dev_virtio_ops = (struct virtio_ops) {
-+	.set_config		= set_config,
-+	.get_config		= get_config,
-+	.get_host_features	= get_host_features,
-+	.set_guest_features	= set_guest_features,
-+	.init_vq		= init_vq,
-+	.notify_vq		= notify_vq,
-+	.get_pfn_vq		= get_pfn_vq,
-+	.get_size_vq		= get_size_vq,
-+};
-+
-+int virtio_notif__init(struct kvm *kvm)
-+{
-+	struct ntf_dev *ndev;
-+	int r;
-+
-+	ndev = malloc(sizeof(*ndev));
-+	if (ndev == NULL)
-+		return -ENOMEM;
-+
-+	r = virtio_init(kvm, ndev, &ndev->vdev, &ntf_dev_virtio_ops,
-+			VIRTIO_PCI, PCI_DEVICE_ID_VIRTIO_NOTIFIER, VIRTIO_ID_NOTIFIER, PCI_CLASS_RNG);
-+	if (r < 0)
-+		goto cleanup;
-+
-+	list_add_tail(&ndev->list, &ndevs);
-+
-+	return 0;
-+cleanup:
-+	free(ndev);
-+
-+	return r;
-+}
-+
-+int virtio_notif__exit(struct kvm *kvm)
-+{
-+	struct ntf_dev *ndev, *tmp;
-+
-+	list_for_each_entry_safe(ndev, tmp, &ndevs, list) {
-+		list_del(&ndev->list);
-+		ndev->vdev.ops->exit(kvm, &ndev->vdev);
-+		free(ndev);
-+	}
-+
-+	return 0;
-+}
--- 
-1.7.8.6
+for you to fetch changes up to db3c47a3af96e8109b1bb114c32f0854259d5970:
 
+  Merge tag 'omap-cleanup-part2-for-v3.6' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into next/cleanup2 (2012-07-10 16:58:19 +0200)
+
+----------------------------------------------------------------
+
+arm-soc: cleanups, part 2
+
+These omap cleanups have dependencies on earlier omap branches that in
+turn depend on other cleanups, so they could not go into the same
+branch.
+
+----------------------------------------------------------------
+
+Arnd Bergmann (2):
+      Merge tag 'omap-cleanup-part2-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup2
+      Merge branch 'next/cleanup2' into for-next
+
+Jon Hunter (2):
+      ARM: OMAP4: clockdomain/CM code: Update supported transition modes
+      ARM: OMAP2+: powerdomain code: Fix Wake-up power domain power status
+
+Kishon Vijay Abraham I (1):
+      ARM: OMAP2+: hwmod code: add support to set dmadisable in hwmod framework
+
+Paul Walmsley (1):
+      Merge branches 'hwmod_am335x_support_3.6', 'clkdm_pwrdm_devel_a_3.6' and 'misc_devel_3.6' into omap_devel_f_3.6
+
+R Sricharan (1):
+      ARM: OMAP2+: PRM/CM: Move the stubbed prm and cm functions to prcm.c file and make them __weak
+
+Sakari Ailus (1):
+      ARM: OMAP3: control: add definition for CONTROL_CAMERA_PHY_CTRL
+
+Santosh Shilimkar (1):
+      ARM: OMAP: sdrc: Fix the build break for OMAP4 only builds
+
+Tarun Kanti DebBarma (3):
+      ARM: OMAP2+: hwmod: add omap_hwmod_get_main_clk() API
+      ARM: OMAP: dmtimer: use devm_ API and do some cleanup in probe()
+      ARM: OMAP2+: dmtimer: cleanup fclk usage
+
+Tony Lindgren (3):
+      Merge tags 'omap-cleanup-for-v3.6', 'omap-devel-dmtimer-for-v3.6' and 'omap-devel-am33xx-for-v3.6' into devel-am33xx-part2
+      Merge tag 'omap-devel-f-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into cleanup-part2
+      ARM: OMAP2+: Fix mismerge for omap_hwmod_get_main_clk() API
+
+Vaibhav Hiremath (7):
+      ARM: OMAP2+: hwmod: Add new sysc_type3 into omap_hwmod required for am33xx
+      ARM: OMAP3/4: omap_hwmod: Add rstst_offs field to struct omap_hwmod_omap4_prcm
+      ARM: OMAP2+: All OMAP2PLUS uses omap-device.o target so add one entry
+      ARM: OMAP2+: Move omap3 dpll ops to dpll3xxx.c
+      ARM: OMAP2+: am33xx: Make am33xx as a separate class
+      ARM: OMAP2+: am33xx: Change cpu_is_am33xx to soc_is_am33xx
+      ARM: OMAP2+: Remove unnecessary ifdef around __omap2_set_globals
+
+Vikram Pandita (1):
+      ARM: OMAP3+: dpll: optimize noncore dpll locking logic
+
+ arch/arm/mach-omap2/Kconfig                  |   12 +++-
+ arch/arm/mach-omap2/Makefile                 |    8 ++-
+ arch/arm/mach-omap2/clock.c                  |   18 ------
+ arch/arm/mach-omap2/clock3xxx_data.c         |    2 +-
+ arch/arm/mach-omap2/clock44xx_data.c         |   22 ++++----
+ arch/arm/mach-omap2/clockdomain44xx.c        |   10 +++-
+ arch/arm/mach-omap2/cminst44xx.c             |   14 -----
+ arch/arm/mach-omap2/cminst44xx.h             |   25 ---------
+ arch/arm/mach-omap2/common.c                 |   10 +---
+ arch/arm/mach-omap2/common.h                 |    5 ++
+ arch/arm/mach-omap2/control.h                |    1 +
+ arch/arm/mach-omap2/dpll3xxx.c               |   26 ++++++++-
+ arch/arm/mach-omap2/id.c                     |    4 +-
+ arch/arm/mach-omap2/omap_hwmod.c             |   76 ++++++++++++++++++++++++--
+ arch/arm/mach-omap2/omap_hwmod_common_data.c |   10 ++++
+ arch/arm/mach-omap2/powerdomain.c            |    6 +-
+ arch/arm/mach-omap2/prcm.c                   |   23 ++++++++
+ arch/arm/mach-omap2/prm2xxx_3xxx.h           |   65 ----------------------
+ arch/arm/mach-omap2/prm_common.c             |   62 +++++++++++++++++++++
+ arch/arm/mach-omap2/timer.c                  |    3 +-
+ arch/arm/plat-omap/Makefile                  |    4 +-
+ arch/arm/plat-omap/dmtimer.c                 |   53 ++++++------------
+ arch/arm/plat-omap/include/plat/cpu.h        |   17 +++---
+ arch/arm/plat-omap/include/plat/omap_hwmod.h |   19 +++++++
+ arch/arm/plat-omap/include/plat/sdrc.h       |    2 +-
+ arch/arm/plat-omap/sram.c                    |    6 +-
+ 26 files changed, 296 insertions(+), 207 deletions(-)
