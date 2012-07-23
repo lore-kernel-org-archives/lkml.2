@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab2GWBmW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:42:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53962 "EHLO
+	id S1752954Ab2GWBmV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:42:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53963 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752857Ab2GWBmL (ORCPT
+	by vger.kernel.org with ESMTP id S1752859Ab2GWBmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:42:11 -0400
-Message-Id: <20120723010654.135814246@decadent.org.uk>
+Message-Id: <20120723010653.983024423@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:08 +0100
+Date: Mon, 23 Jul 2012 02:07:07 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Jason Wang <jasowang@redhat.com>,
         "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [ 017/108] macvtap: zerocopy: fix truesize underestimation
+Subject: [ 016/108] macvtap: zerocopy: fix offset calculation when building skb
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,44 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Wang <jasowang@redhat.com>
 
-commit 4ef67ebedffa44ed9939b34708ac2fee06d2f65f upstream.
+commit 3afc9621f15701c557e60f61eba9242bac2771dd upstream.
 
-As the skb fragment were pinned/built from user pages, we should
-account the page instead of length for truesize.
+This patch fixes the offset calculation when building skb:
+
+- offset1 were used as skb data offset not vector offset
+- reset offset to zero only when we advance to next vector
 
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/macvtap.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/macvtap.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index bd4a70d..7cb2684 100644
+index 0427c65..bd4a70d 100644
 --- a/drivers/net/macvtap.c
 +++ b/drivers/net/macvtap.c
-@@ -519,6 +519,7 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
- 		struct page *page[MAX_SKB_FRAGS];
+@@ -505,10 +505,11 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 		if (copy > size) {
+ 			++from;
+ 			--count;
+-		}
++			offset = 0;
++		} else
++			offset += size;
+ 		copy -= size;
+ 		offset1 += size;
+-		offset = 0;
+ 	}
+ 
+ 	if (len == offset1)
+@@ -519,13 +520,13 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
  		int num_pages;
  		unsigned long base;
-+		unsigned long truesize;
  
- 		len = from->iov_len - offset;
+-		len = from->iov_len - offset1;
++		len = from->iov_len - offset;
  		if (!len) {
-@@ -533,10 +534,11 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
- 		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
- 			/* put_page is in skb free */
- 			return -EFAULT;
-+		truesize = size * PAGE_SIZE;
- 		skb->data_len += len;
- 		skb->len += len;
--		skb->truesize += len;
--		atomic_add(len, &skb->sk->sk_wmem_alloc);
-+		skb->truesize += truesize;
-+		atomic_add(truesize, &skb->sk->sk_wmem_alloc);
- 		while (len) {
- 			int off = base & ~PAGE_MASK;
- 			int size = min_t(int, len, PAGE_SIZE - off);
+-			offset1 = 0;
++			offset = 0;
+ 			++from;
+ 			continue;
+ 		}
+-		base = (unsigned long)from->iov_base + offset1;
++		base = (unsigned long)from->iov_base + offset;
+ 		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+ 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
+ 		if ((num_pages != size) ||
+@@ -546,7 +547,7 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 			len -= size;
+ 			i++;
+ 		}
+-		offset1 = 0;
++		offset = 0;
+ 		++from;
+ 	}
+ 	return 0;
 
 
 
