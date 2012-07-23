@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab2GWGW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 02:22:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51076 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752890Ab2GWGWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 02:22:54 -0400
-X-IronPort-AV: E=Sophos;i="4.77,637,1336320000"; 
-   d="scan'208";a="5458885"
-Message-ID: <500CEEE1.3060502@cn.fujitsu.com>
-Date: Mon, 23 Jul 2012 14:27:45 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Anthony Liguori <anthony@codemonkey.ws>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v7] kvm: notify host when the guest is panicked
-References: <500A565A.8080403@cn.fujitsu.com> <500A8969.1040300@gmail.com> <87txwzwqgt.fsf@codemonkey.ws> <500C604B.3080800@gmail.com>
-In-Reply-To: <500C604B.3080800@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/23 14:23:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/23 14:23:28,
-	Serialize complete at 2012/07/23 14:23:28
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753230Ab2GWGXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 02:23:37 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2285 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753061Ab2GWGXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 02:23:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="171817363"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 1/4] perf/x86: Fix typo in format definition of uncore PCU filter
+Date: Mon, 23 Jul 2012 14:23:30 +0800
+Message-Id: <1343024611-4692-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/23/2012 04:19 AM, Sasha Levin Wrote:
-> On 07/22/2012 09:22 PM, Anthony Liguori wrote:
->> Sasha Levin <levinsasha928@gmail.com> writes:
->>
->>> On 07/21/2012 09:12 AM, Wen Congyang wrote:
->>>> +#define KVM_PV_PORT	(0x505UL)
->>>> +
->>>>  #ifdef __KERNEL__
->>>>  #include <asm/processor.h>
->>>>  
->>>> @@ -221,6 +223,11 @@ static inline void kvm_disable_steal_time(void)
->>>>  }
->>>>  #endif
->>>>  
->>>> +static inline unsigned int kvm_arch_pv_features(void)
->>>> +{
->>>> +	return inl(KVM_PV_PORT);
->>>> +}
->>>> +
->>>
->>> Why is this safe?
->>>
->>> I'm not sure you can just pick any ioport you'd like and use it.
->>
->> There are three ways I/O ports get used on a PC:
->>
->> 1) Platform devices
->>  - This is well defined since the vast majority of platform devices are
->>    implemented within a single chip.  If you're emulating an i440fx
->>    chipset, the PIIX4 spec has an exhaustive list.
->>
->> 2) PCI devices
->>  - Typically, PCI only allocates ports starting at 0x0d00 to avoid
->>    conflicts with ISA devices.
->>
->> 3) ISA devices
->>  - ISA uses subtractive decoding so any ISA device can access.  In
->>    theory, an ISA device could attempt to use port 0x0505 but it's
->>    unlikely.  In a modern guest, there aren't really any ISA devices being
->>    added either.
->>
->> So yes, picking port 0x0505 is safe for something like this (as long as
->> you check to make sure that you really are under KVM).
-> 
-> Is there anything that actually prevents me from using PCI ports lower than 0x0d00? As you said in (3), ISA isn't really used anymore (nor is implemented by lkvm for example), so placing PCI below 0x0d00 might even make sense in that case.
-> 
-> Furthermore, I can place one of these brand new virtio-mmio devices which got introduced recently wherever I want right now - Having a device that uses 0x505 would cause a pretty non-obvious failure mode.
-> 
-> Either way, If we are going to grab an ioport, then:
-> 
->  - It should be documented well somewhere in Documentation/virt/kvm
->  - It should go through request_region() to actually claim those ioports.
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Good idea.
+The format definition of uncore PCU filter should be filter_band*
+instead of filter_brand*.
 
->  - It should fail gracefully if that port is taken for some reason, instead of not even checking it.
+Reported-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Yes, I agree it.
-
-I will update it.
-
-Thanks
-Wen Congyang
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 19faffc..a5de59f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -33,10 +33,10 @@ DEFINE_UNCORE_FORMAT_ATTR(filter_tid, filter_tid, "config1:0-4");
+ DEFINE_UNCORE_FORMAT_ATTR(filter_nid, filter_nid, "config1:10-17");
+ DEFINE_UNCORE_FORMAT_ATTR(filter_state, filter_state, "config1:18-22");
+ DEFINE_UNCORE_FORMAT_ATTR(filter_opc, filter_opc, "config1:23-31");
+-DEFINE_UNCORE_FORMAT_ATTR(filter_brand0, filter_brand0, "config1:0-7");
+-DEFINE_UNCORE_FORMAT_ATTR(filter_brand1, filter_brand1, "config1:8-15");
+-DEFINE_UNCORE_FORMAT_ATTR(filter_brand2, filter_brand2, "config1:16-23");
+-DEFINE_UNCORE_FORMAT_ATTR(filter_brand3, filter_brand3, "config1:24-31");
++DEFINE_UNCORE_FORMAT_ATTR(filter_band0, filter_band0, "config1:0-7");
++DEFINE_UNCORE_FORMAT_ATTR(filter_band1, filter_band1, "config1:8-15");
++DEFINE_UNCORE_FORMAT_ATTR(filter_band2, filter_band2, "config1:16-23");
++DEFINE_UNCORE_FORMAT_ATTR(filter_band3, filter_band3, "config1:24-31");
+ 
+ /* Sandy Bridge-EP uncore support */
+ static struct intel_uncore_type snbep_uncore_cbox;
+@@ -272,10 +272,10 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
+ 	&format_attr_thresh5.attr,
+ 	&format_attr_occ_invert.attr,
+ 	&format_attr_occ_edge.attr,
+-	&format_attr_filter_brand0.attr,
+-	&format_attr_filter_brand1.attr,
+-	&format_attr_filter_brand2.attr,
+-	&format_attr_filter_brand3.attr,
++	&format_attr_filter_band0.attr,
++	&format_attr_filter_band1.attr,
++	&format_attr_filter_band2.attr,
++	&format_attr_filter_band3.attr,
+ 	NULL,
+ };
+ 
+-- 
+1.7.10.4
 
