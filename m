@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab2GWBqo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:46:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54493 "EHLO
+	id S1753876Ab2GWBqs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:46:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54479 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753631Ab2GWBnt (ORCPT
+	by vger.kernel.org with ESMTP id S1753598Ab2GWBnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:49 -0400
-Message-Id: <20120723010655.323382582@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:47 -0400
+Message-Id: <20120723010656.638227018@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:16 +0100
+Date: Mon, 23 Jul 2012 02:07:25 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>,
-        Stefan Assmann <sassmann@redhat.com>
-Subject: [ 025/108] iommu/amd: Initialize dma_ops for hotplug and sriov devices
+        alan@lxorguk.ukuu.org.uk,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 034/108] hwspinlock/core: use global ID to register hwspinlocks on multiple
+ devices
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,46 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
 
-commit ac1534a55d1e87d59a21c09c570605933b551480 upstream.
+commit 476a7eeb60e70ddab138e7cb4bc44ef5ac20782e upstream.
 
-When a device is added to the system at runtime the AMD
-IOMMU driver initializes the necessary data structures to
-handle translation for it. But it forgets to change the
-per-device dma_ops to point to the AMD IOMMU driver. So
-mapping actually never happens and all DMA accesses end in
-an IO_PAGE_FAULT. Fix this.
+Commit 300bab9770 (hwspinlock/core: register a bank of hwspinlocks in a
+single API call, 2011-09-06) introduced 'hwspin_lock_register_single()'
+to register numerous (a bank of) hwspinlock instances in a single API,
+'hwspin_lock_register()'.
 
-Reported-by: Stefan Assmann <sassmann@redhat.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use global iommu_pass_through; there is no per-device pass_through]
+At which time, 'hwspin_lock_register()' accidentally passes 'local IDs'
+to 'hwspin_lock_register_single()', despite that ..._single() requires
+'global IDs' to register hwspinlocks.
+
+We have to convert into global IDs by supplying the missing 'base_id'.
+
+Signed-off-by: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+[ohad: fix error path of hwspin_lock_register, too]
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -59,6 +59,8 @@ static struct protection_domain *pt_doma
+ drivers/hwspinlock/hwspinlock_core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
+index 61c9cf1..1201a15 100644
+--- a/drivers/hwspinlock/hwspinlock_core.c
++++ b/drivers/hwspinlock/hwspinlock_core.c
+@@ -345,7 +345,7 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+ 		spin_lock_init(&hwlock->lock);
+ 		hwlock->bank = bank;
  
- static struct iommu_ops amd_iommu_ops;
+-		ret = hwspin_lock_register_single(hwlock, i);
++		ret = hwspin_lock_register_single(hwlock, base_id + i);
+ 		if (ret)
+ 			goto reg_failed;
+ 	}
+@@ -354,7 +354,7 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
  
-+static struct dma_map_ops amd_iommu_dma_ops;
-+
- /*
-  * general struct to manage commands send to an IOMMU
-  */
-@@ -1878,6 +1880,11 @@ static int device_change_notifier(struct
- 		list_add_tail(&dma_domain->list, &iommu_pd_list);
- 		spin_unlock_irqrestore(&iommu_pd_list_lock, flags);
- 
-+		if (!iommu_pass_through)
-+			dev->archdata.dma_ops = &amd_iommu_dma_ops;
-+		else
-+			dev->archdata.dma_ops = &nommu_dma_ops;
-+
- 		break;
- 	case BUS_NOTIFY_DEL_DEVICE:
- 
+ reg_failed:
+ 	while (--i >= 0)
+-		hwspin_lock_unregister_single(i);
++		hwspin_lock_unregister_single(base_id + i);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(hwspin_lock_register);
 
 
