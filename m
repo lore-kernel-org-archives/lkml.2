@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2GWCEW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:04:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54094 "EHLO
+	id S1753497Ab2GWCEw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:04:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54086 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753131Ab2GWBmj (ORCPT
+	by vger.kernel.org with ESMTP id S1753114Ab2GWBmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:42:39 -0400
-Message-Id: <20120723010704.519968474@decadent.org.uk>
+Message-Id: <20120723010706.104076762@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:17 +0100
+Date: Mon, 23 Jul 2012 02:08:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nadav HarEl <nyh@math.technion.ac.il>,
-        Nadav HarEl <nyh@il.ibm.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [ 086/108] vhost: dont forget to schedule()
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [ 096/108] eCryptfs: Gracefully refuse miscdev file ops on inherited/passed
+ files
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,59 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Har'El <nyh@math.technion.ac.il>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit d550dda192c1bd039afb774b99485e88b70d7cb8 upstream.
+commit 8dc6780587c99286c0d3de747a2946a76989414a upstream.
 
-This is a tiny, but important, patch to vhost.
+File operations on /dev/ecryptfs would BUG() when the operations were
+performed by processes other than the process that originally opened the
+file. This could happen with open files inherited after fork() or file
+descriptors passed through IPC mechanisms. Rather than calling BUG(), an
+error code can be safely returned in most situations.
 
-Vhost's worker thread only called schedule() when it had no work to do, and
-it wanted to go to sleep. But if there's always work to do, e.g., the guest
-is running a network-intensive program like netperf with small message sizes,
-schedule() was *never* called. This had several negative implications (on
-non-preemptive kernels):
+In ecryptfs_miscdev_release(), eCryptfs still needs to handle the
+release even if the last file reference is being held by a process that
+didn't originally open the file. ecryptfs_find_daemon_by_euid() will not
+be successful, so a pointer to the daemon is stored in the file's
+private_data. The private_data pointer is initialized when the miscdev
+file is opened and only used when the file is released.
 
- 1. Passing time was not properly accounted to the "vhost" process (ps and
-    top would wrongly show it using zero CPU time).
+https://launchpad.net/bugs/994247
 
- 2. Sometimes error messages about RCU timeouts would be printed, if the
-    core running the vhost thread didn't schedule() for a very long time.
-
- 3. Worst of all, a vhost thread would "hog" the core. If several vhost
-    threads need to share the same core, typically one would get most of the
-    CPU time (and its associated guest most of the performance), while the
-    others hardly get any work done.
-
-The trivial solution is to add
-
-	if (need_resched())
-		schedule();
-
-After doing every piece of work. This will not do the heavy schedule() all
-the time, just when the timer interrupt decided a reschedule is warranted
-(so need_resched returns true).
-
-Thanks to Abel Gordon for this patch.
-
-Signed-off-by: Nadav Har'El <nyh@il.ibm.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/vhost/vhost.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/ecryptfs/miscdev.c |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index c14c42b..ae66278 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -222,6 +222,8 @@ static int vhost_worker(void *data)
- 		if (work) {
- 			__set_current_state(TASK_RUNNING);
- 			work->fn(work);
-+			if (need_resched())
-+				schedule();
- 		} else
- 			schedule();
+diff --git a/fs/ecryptfs/miscdev.c b/fs/ecryptfs/miscdev.c
+index 3c632ec..c0038f6 100644
+--- a/fs/ecryptfs/miscdev.c
++++ b/fs/ecryptfs/miscdev.c
+@@ -49,7 +49,10 @@ ecryptfs_miscdev_poll(struct file *file, poll_table *pt)
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+ 	/* TODO: Just use file->private_data? */
+ 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
+-	BUG_ON(rc || !daemon);
++	if (rc || !daemon) {
++		mutex_unlock(&ecryptfs_daemon_hash_mux);
++		return -EINVAL;
++	}
+ 	mutex_lock(&daemon->mux);
+ 	mutex_unlock(&ecryptfs_daemon_hash_mux);
+ 	if (daemon->flags & ECRYPTFS_DAEMON_ZOMBIE) {
+@@ -122,6 +125,7 @@ ecryptfs_miscdev_open(struct inode *inode, struct file *file)
+ 		goto out_unlock_daemon;
+ 	}
+ 	daemon->flags |= ECRYPTFS_DAEMON_MISCDEV_OPEN;
++	file->private_data = daemon;
+ 	atomic_inc(&ecryptfs_num_miscdev_opens);
+ out_unlock_daemon:
+ 	mutex_unlock(&daemon->mux);
+@@ -152,9 +156,9 @@ ecryptfs_miscdev_release(struct inode *inode, struct file *file)
  
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+ 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
+-	BUG_ON(rc || !daemon);
++	if (rc || !daemon)
++		daemon = file->private_data;
+ 	mutex_lock(&daemon->mux);
+-	BUG_ON(daemon->pid != task_pid(current));
+ 	BUG_ON(!(daemon->flags & ECRYPTFS_DAEMON_MISCDEV_OPEN));
+ 	daemon->flags &= ~ECRYPTFS_DAEMON_MISCDEV_OPEN;
+ 	atomic_dec(&ecryptfs_num_miscdev_opens);
+@@ -270,8 +274,16 @@ ecryptfs_miscdev_read(struct file *file, char __user *buf, size_t count,
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+ 	/* TODO: Just use file->private_data? */
+ 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
+-	BUG_ON(rc || !daemon);
++	if (rc || !daemon) {
++		mutex_unlock(&ecryptfs_daemon_hash_mux);
++		return -EINVAL;
++	}
+ 	mutex_lock(&daemon->mux);
++	if (task_pid(current) != daemon->pid) {
++		mutex_unlock(&daemon->mux);
++		mutex_unlock(&ecryptfs_daemon_hash_mux);
++		return -EPERM;
++	}
+ 	if (daemon->flags & ECRYPTFS_DAEMON_ZOMBIE) {
+ 		rc = 0;
+ 		mutex_unlock(&ecryptfs_daemon_hash_mux);
+@@ -308,9 +320,6 @@ check_list:
+ 		 * message from the queue; try again */
+ 		goto check_list;
+ 	}
+-	BUG_ON(euid != daemon->euid);
+-	BUG_ON(current_user_ns() != daemon->user_ns);
+-	BUG_ON(task_pid(current) != daemon->pid);
+ 	msg_ctx = list_first_entry(&daemon->msg_ctx_out_queue,
+ 				   struct ecryptfs_msg_ctx, daemon_out_list);
+ 	BUG_ON(!msg_ctx);
 
 
