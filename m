@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2GWPJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:09:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59691 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753660Ab2GWPJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:09:29 -0400
-Message-ID: <500D691C.7010203@zytor.com>
-Date: Mon, 23 Jul 2012 08:09:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754154Ab2GWPO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:14:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56518 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab2GWPO1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 11:14:27 -0400
+Date: Mon, 23 Jul 2012 08:14:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Enable devtmpfs by default
+Message-ID: <20120723151422.GA19236@kroah.com>
+References: <20120723115414.724e0046@kryten>
 MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-CC: linux-kernel@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        initramfs@vger.kernel.org, bigeasy@linutronix.de,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH 1/2] init: Introduce early initrd files through uncompressed
- cpio passing
-References: <1342607764-66747-1-git-send-email-trenn@suse.de> <1342607764-66747-2-git-send-email-trenn@suse.de> <500AC8F6.4010802@zytor.com> <201207231640.35023.trenn@suse.de>
-In-Reply-To: <201207231640.35023.trenn@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120723115414.724e0046@kryten>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2012 07:40 AM, Thomas Renninger wrote:
-> This is another problem and I expect I call:
-> early_initrd_find_cpio_data()
-> early enough for Fenghua's needs.
-> If not, how early exactly is this needed?
+On Mon, Jul 23, 2012 at 11:54:14AM +1000, Anton Blanchard wrote:
+> 
+> udev now requires CONFIG_DEVTMPFS so make it default to y.
+> 
+> I noticed this when booting a ppc64 pseries_defconfig on Fedora 17
+> and it paniced because it couldn't mount the root device.
 
-We're calling that from arch-specific code before even turning paging 
-on.  This has a couple of consequences:
+All the world isn't Fedora :)
 
-1. ALL STATIC POINTERS ARE FORBIDDEN.  Period.  The code must be able to 
-be executed from a nonstandard linear address, and any static pointer 
-(like a function pointer) breaks that.
+See Linus's recent thread about distro configs, that's the best solution
+for something like this.
 
-2. Any ideas of doing everything at the same time, or uniform 
-architecture, is clearly out the window... we're just barely capable of 
-using C at this point at all.
-
-Now, you definitely do have a valid point about being able to iterate 
-over multiple files with a common prefix.  We could do that with either 
-a callback (where the callback is passed in as an argument), but I think 
-it might be nicer to do that as an iterator interface... let me ketch on 
-this.
-
-> If (just an example) CPU microcode files get passed via "early initrd",
-> the same path could be provided than needed by request_fw().
-
-This will all be obsolete.  request_fw is available way, way, way too late.
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+greg k-h
