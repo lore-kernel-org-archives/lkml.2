@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab2GWNkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:40:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58797 "EHLO mx2.suse.de"
+	id S1753915Ab2GWNkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:40:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58782 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775Ab2GWNjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:39:08 -0400
+	id S1753395Ab2GWNjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:39:07 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 32/34] cpusets: stall when updating mems_allowed for mempolicy or disjoint nodemask
-Date: Mon, 23 Jul 2012 14:38:45 +0100
-Message-Id: <1343050727-3045-33-git-send-email-mgorman@suse.de>
+Subject: [PATCH 30/34] mm: vmscan: Do not force kswapd to scan small targets
+Date: Mon, 23 Jul 2012 14:38:43 +0100
+Message-Id: <1343050727-3045-31-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,114 +20,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+commit ad2b8e601099a23dffffb53f91c18d874fe98854 upstream - WARNING: this is a substitute patch.
 
-commit b246272ecc5ac68c743b15c9e41a2275f7ce70e2 upstream.
+Stable note: Not tracked in Bugzilla. This is a substitute for an
+	upstream commit addressing a completely different issue that
+	accidentally contained an important fix. The workload this patch
+	helps was memcached when IO is started in the background. memcached
+	should stay resident but without this patch it gets swapped more
+	than it should. Sometimes this manifests as a drop in throughput
+	but mostly it was observed through /proc/vmstat.
 
-Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
-	expensive and severely impacted page allocator performance. This is
-	part of a series of patches that reduce page allocator overhead.
+Commit [246e87a9: memcg: fix get_scan_count() for small targets] was
+meant to fix a problem whereby small scan targets on memcg were ignored
+causing priority to raise too sharply. It forced scanning to take place
+if the target was small, memcg or kswapd.
 
-Kernels where MAX_NUMNODES > BITS_PER_LONG may temporarily see an empty
-nodemask in a tsk's mempolicy if its previous nodemask is remapped onto a
-new set of allowed cpuset nodes where the two nodemasks, as a result of
-the remap, are now disjoint.
+>From the time it was introduced it cause excessive reclaim by kswapd
+with workloads being pushed to swap that previously would have stayed
+resident. This was accidentally fixed by commit [ad2b8e60: mm: memcg:
+remove optimization of keeping the root_mem_cgroup LRU lists empty] but
+that patchset is not suitable for backporting.
 
-c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
-cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
-nodes from changing for a thread.  This causes any update to a set of
-allowed nodes to stall until put_mems_allowed() is called.
+The original patch came with no information on what workloads it benefits
+but the cost of it is obvious in that it forces scanning to take place
+on lists that would otherwise have been ignored such as small anonymous
+inactive lists. This patch partially reverts 246e87a9 so that small lists
+are not force scanned which means that IO-intensive workloads with small
+amounts of anonymous memory will not be swapped.
 
-This stall is unncessary, however, if at least one node remains unchanged
-in the update to the set of allowed nodes.  This was addressed by
-89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
-node remains set"), but it's still possible that an empty nodemask may be
-read from a mempolicy because the old nodemask may be remapped to the new
-nodemask during rebind.  To prevent this, only avoid the stall if there is
-no mempolicy for the thread being changed.
-
-This is a temporary solution until all reads from mempolicy nodemasks can
-be guaranteed to not be empty without the get_mems_allowed()
-synchronization.
-
-Also moves the check for nodemask intersection inside task_lock() so that
-tsk->mems_allowed cannot change.  This ensures that nothing can set this
-tsk's mems_allowed out from under us and also protects tsk->mempolicy.
-
-Reported-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Paul Menage <paul@paulmenage.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/cpuset.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ mm/vmscan.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index a995893..28d0bbd 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -123,6 +123,19 @@ static inline struct cpuset *task_cs(struct task_struct *task)
- 			    struct cpuset, css);
- }
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index e5382ad..49d8547 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1849,9 +1849,6 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
+ 	bool force_scan = false;
+ 	unsigned long nr_force_scan[2];
  
-+#ifdef CONFIG_NUMA
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return task->mempolicy;
-+}
-+#else
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return false;
-+}
-+#endif
-+
-+
- /* bits in struct cpuset flags field */
- typedef enum {
- 	CS_CPU_EXCLUSIVE,
-@@ -949,7 +962,7 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
- static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 					nodemask_t *newmems)
- {
--	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
-+	bool need_loop;
- 
- repeat:
- 	/*
-@@ -962,6 +975,14 @@ repeat:
- 		return;
- 
- 	task_lock(tsk);
-+	/*
-+	 * Determine if a loop is necessary if another thread is doing
-+	 * get_mems_allowed().  If at least one node remains unchanged and
-+	 * tsk does not have a mempolicy, then an empty nodemask will not be
-+	 * possible when mems_allowed is larger than a word.
-+	 */
-+	need_loop = task_has_mempolicy(tsk) ||
-+			!nodes_intersects(*newmems, tsk->mems_allowed);
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
- 
-@@ -981,11 +1002,9 @@ repeat:
- 
- 	/*
- 	 * Allocation of memory is very fast, we needn't sleep when waiting
--	 * for the read-side.  No wait is necessary, however, if at least one
--	 * node remains unchanged.
-+	 * for the read-side.
- 	 */
--	while (masks_disjoint &&
--			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
-+	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
- 		task_unlock(tsk);
- 		if (!task_curr(tsk))
- 			yield();
+-	/* kswapd does zone balancing and needs to scan this zone */
+-	if (scanning_global_lru(sc) && current_is_kswapd())
+-		force_scan = true;
+ 	/* memcg may have small limit and need to avoid priority drop */
+ 	if (!scanning_global_lru(sc))
+ 		force_scan = true;
 -- 
 1.7.9.2
 
