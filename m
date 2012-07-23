@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2GWBtc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:49:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54433 "EHLO
+	id S1753516Ab2GWBn3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:43:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54368 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753561Ab2GWBni (ORCPT
+	by vger.kernel.org with ESMTP id S1753478Ab2GWBnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:38 -0400
-Message-Id: <20120723010658.134773192@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:22 -0400
+Message-Id: <20120723010701.016123398@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:35 +0100
+Date: Mon, 23 Jul 2012 02:07:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>,
-        Stevie Trujillo <stevie.trujillo@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 044/108] hwmon: (it87) Preserve configuration register bits on init
+        alan@lxorguk.ukuu.org.uk, Aaditya Kumar <aaditya.kumar.30@gmail.com>,
+        Aaditya Kumar <aaditya.kumar@ap.sony.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: [ 063/108] mm: fix lost kswapd wakeup in kswapd_stop()
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,35 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
 
-commit 41002f8dd5938d5ad1d008ce5bfdbfe47fa7b4e8 upstream.
+commit 1c7e7f6c0703d03af6bcd5ccc11fc15d23e5ecbe upstream.
 
-We were accidentally losing one bit in the configuration register on
-device initialization. It was reported to freeze one specific system
-right away. Properly preserve all bits we don't explicitly want to
-change in order to prevent that.
+Offlining memory may block forever, waiting for kswapd() to wake up
+because kswapd() does not check the event kthread->should_stop before
+sleeping.
 
-Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+The proper pattern, from Documentation/memory-barriers.txt, is:
+
+   ---  waker  ---
+   event_indicated = 1;
+   wake_up_process(event_daemon);
+
+   ---  sleeper  ---
+   for (;;) {
+      set_current_state(TASK_UNINTERRUPTIBLE);
+      if (event_indicated)
+         break;
+      schedule();
+   }
+
+   set_current_state() may be wrapped by:
+      prepare_to_wait();
+
+In the kswapd() case, event_indicated is kthread->should_stop.
+
+  === offlining memory (waker) ===
+   kswapd_stop()
+      kthread_stop()
+         kthread->should_stop = 1
+         wake_up_process()
+         wait_for_completion()
+
+  ===  kswapd_try_to_sleep (sleeper) ===
+   kswapd_try_to_sleep()
+      prepare_to_wait()
+           .
+           .
+      schedule()
+           .
+           .
+      finish_wait()
+
+The schedule() needs to be protected by a test of kthread->should_stop,
+which is wrapped by kthread_should_stop().
+
+Reproducer:
+   Do heavy file I/O in background.
+   Do a memory offline/online in a tight loop
+
+Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/it87.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/vmscan.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/it87.c b/drivers/hwmon/it87.c
-index e7701d9..f1de397 100644
---- a/drivers/hwmon/it87.c
-+++ b/drivers/hwmon/it87.c
-@@ -2341,7 +2341,7 @@ static void __devinit it87_init_device(struct platform_device *pdev)
- 
- 	/* Start monitoring */
- 	it87_write_value(data, IT87_REG_CONFIG,
--			 (it87_read_value(data, IT87_REG_CONFIG) & 0x36)
-+			 (it87_read_value(data, IT87_REG_CONFIG) & 0x3e)
- 			 | (update_vbat ? 0x41 : 0x01));
- }
- 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 6615763..66e4310 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2688,7 +2688,10 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
+ 		 * them before going back to sleep.
+ 		 */
+ 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
+-		schedule();
++
++		if (!kthread_should_stop())
++			schedule();
++
+ 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
+ 	} else {
+ 		if (remaining)
 
 
