@@ -1,276 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2GWUfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:35:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49260 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab2GWUct (ORCPT
+	id S1754757Ab2GWUcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:32:22 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48967 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754371Ab2GWUcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:32:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org
-Subject: =?UTF-8?q?=5BGIT=20PULL=2003/15=5D=20arm-soc=3A=20soc-specific=20updates?=
-Date: Mon, 23 Jul 2012 22:32:29 +0200
-Message-Id: <1343075561-17446-4-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1343075561-17446-1-git-send-email-arnd@arndb.de>
-References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
+	Mon, 23 Jul 2012 16:32:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:DoWpadVwN04vM1bTXCEqWKeVovi38/IpIp01JMcydw6
- Ppk9xMMwIdN/nIx8Y/Q2ellFWTbP3CLg92FQE9JAwYnrRKjZiv
- OFQKVKT/r4N3nzNsMvGP14BjcanZC+jK8+shPBHlfA2wS4ljkY
- GLM7v6VExeeOzhTnyh7xxgeuA39d8OYvD/w3+ygyJiPrWcMZCA
- NG4mCxY1A/FrQ6sqP5zp3FzTECKIAB0ZWB/snYMOwaumZCNeVy
- OQG5cvm+HzgoQ+uC+QCr60Or2vFLZE2uJd4FPq9wMWrfwPMieq
- UQ5fBlmZKgzeN/b+RvV8MsB1e50LQ0lo6vpWmQ2p4f79RbJSyK
- +6fZSCie/0AJK/IJDrnKzfamtkoCgbtFzNEnXjgSc
+In-Reply-To: <1343063384.7811.20.camel@joe2Laptop>
+References: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
+ <1342727183-4520-2-git-send-email-jim.cromie@gmail.com> <20120723130759.GB28867@redhat.com>
+ <1343063384.7811.20.camel@joe2Laptop>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Mon, 23 Jul 2012 14:31:49 -0600
+Message-ID: <CAJfuBxxvR29xfzEhDu1WD6VjdsMJhZ5yhs0ExDiFpUpaCMPjTA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] drivers-core: make structured logging play nice with dynamic-debug
+To: Joe Perches <joe@perches.com>
+Cc: Jason Baron <jbaron@redhat.com>, greg@kroah.com,
+        linux-kernel@vger.kernel.org, kay@vrfy.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit bd0a521e88aa7a06ae7aabaed7ae196ed4ad867a:
+On Mon, Jul 23, 2012 at 11:09 AM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2012-07-23 at 09:07 -0400, Jason Baron wrote:
+>> On Thu, Jul 19, 2012 at 01:46:20PM -0600, Jim Cromie wrote:
+>> > commit c4e00daaa96d3a0786f1f4fe6456281c60ef9a16 changed __dev_printk
+>> > in a way that broke dynamic-debug's ability to control the dynamic
+>> > prefix of dev_dbg(dev,..), but not dev_dbg(NULL,..) or pr_debug(..),
+>> > which is why it wasnt noticed sooner.
+>> >
+>> > When dev==NULL, __dev_printk() just calls printk(), which just works.
+>> > But otherwise, it assumed that level was always a string like "<L>"
+>> > and just plucked out the 'L', ignoring the rest.  However,
+>> > dynamic_emit_prefix() adds "[tid] module:func:line:" to the string,
+>> > those additions all got lost.
+>> >
+>
+> I think this is not a really good approach.
+>
+> 3 depths of %pV can consume quite a lot of stack
+> and avoiding this is useful.
+>
+> I'd much rather improve/centralize the mechanism
+> in dynamic_debug.c so that the extra recursion
+> depth is avoided.
+>
+> Something like this:
+>
+> o Remove KERN_DEBUG from dynamic_emit_prefix
+> o Make a function of create_syslog_header to format
+>   the header for printk_emit.
+> o Call printk_emit in dynamic_dev_dbg and dynamic_netdev_dbg
+> o Call printk_emit in __dev_printk
+> o Remove now unused EXPORT_SYMBOL(__netdev_printk)
+> o Neatening
+>
+> Thoughts?
+>
 
-  Linux 3.5-rc6 (2012-07-07 17:23:56 -0700)
+My patch was a minimal bug-fix aimed at rc-late, but it missed the window.
+We now have room for a more comprehensive fix, such as yours.
 
-are available in the git repository at:
+OTOH, my patch does fix a bug, while yours is a bigger "optimization" patch.
+Your commit message could identify the lost prefix as its impetus,
+but I think it stands nicely on its own as a refactoring for less stack usage.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/soc
+I'll try the patch soon
 
-for you to fetch changes up to 233de298cb44e7dd300cd68f5abd7f1a75561fd5:
-
-  Merge branch 'lpc32xx/core2' of git://git.antcom.de/linux-2.6 into next/soc (2012-07-21 00:15:59 +0200)
-
-----------------------------------------------------------------
-
-arm-soc: soc-specific updates
-
-This is stuff that does not fit well into another category and in
-particular is not related to a particular board. The largest part
-in here is extending the am33xx support in the omap platform.
-
-----------------------------------------------------------------
-
-Afzal Mohammed (2):
-      ARM: OMAP2+: am33xx: Add low level debugging support
-      ARM: OMAP2+: am33xx: Add AM335XEVM machine support
-
-Alexander Shiyan (1):
-      ARM: i.MX51 iomux: added missing pin definitions
-
-Alexandre Pereira da Silva (12):
-      ARM: LPC32xx: Build arch dtbs
-      ARM: LPC32xx: Add dt settings to the at25 node
-      ARM: LPC32xx: Remove spi chipselect request from board init
-      ARM: LPC32xx: Remove spi chip definitions
-      ARM: LPC32xx: Cleanup board init, remove duplicate clock init
-      ARM: LPC32xx: Move uart6 irda disable to serial.c
-      ARM: LPC32xx: Move i2s1 dma enabling to clock.c
-      ARM: LPC32xx: Cleanup USB clock init
-      ARM: LPC32xx: Remove unused gpios
-      ARM: LPC32xx: Set system serial based on cpu unique id
-      ARM: LPC32xx: Add PWM clock
-      ARM: LPC32xx: Add PWM support
-
-Arnd Bergmann (13):
-      Merge branch 'lpc32xx/core' of git://git.antcom.de/linux-2.6 into next/soc
-      Merge tag 'omap-devel-am33xx-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/soc
-      Merge branch 'tegra/cleanup' into next/soc
-      Merge branch 'for-3.6/soc' of git://git.kernel.org/.../swarren/linux-tegra into next/soc
-      Merge tag 'davinci-v3.6-soc' of git://gitorious.org/linux-davinci/linux-davinci into next/soc
-      Merge tag 'v3.5-rc6' into next/soc
-      Merge tag 'imx-soc' of git://git.pengutronix.de/git/imx/linux-2.6 into next/soc
-      Merge branch 'lpc32xx/core-fixes' of git://git.antcom.de/linux-2.6 into next/soc
-      Merge branch 'vexpress-v3.5-rc6' of git://git.linaro.org/people/pawelmoll/linux into next/soc
-      Merge branch 'next/devel-samsung' of git://git.kernel.org/.../kgene/linux-samsung into next/soc
-      Merge tag 'ep93xx-devel-for-3.6' of git://github.com/RyanMallon/linux-ep93xx into next/soc
-      Merge branch 'lpc32xx/core2' of git://git.antcom.de/linux-2.6 into next/soc
-      Merge branch 'next/soc' into for-next
-
-Benoît Thébaudeau (5):
-      ARM: imx: fix i.MX35 CPU architecture
-      ARM: imx: enable support for mx35 rtc
-      ARM: imx: add rtc support to mx35_3ds
-      ARM: imx: make ehci power/oc polarities configurable
-      ARM: imx: fix mx51 ehci setup errors
-
-Heiko Schocher (1):
-      ARM: davinci: cp_intc: Add irq domain support
-
-Jonghwan Choi (1):
-      ARM: EXYNOS: Clear SYS_WDTRESET bit to use watchdog reset
-
-Kevin Hilman (1):
-      ARM: davinci: add runtime PM support for clock management
-
-Laxman Dewangan (2):
-      ARM: tegra: apbio access using dma for tegra20 only
-      ARM: tegra: apbio: use dmaengine based dma driver
-
-Linus Walleij (8):
-      ARM: nomadik: register GPIOs dynamically
-      ARM: nomadik: register AMBA devices dynamically
-      ARM: nomadik: register PL031 RTC
-      ARM: nomadik: convert to generic clock
-      ARM: nomadik: register all three I2C busses
-      ARM: nomadik: register the I2C devices
-      ARM: nomadik: register the MMC/SD device
-      ARM: nomadik: bump all IRQ numbers by one
-
-Mark Brown (1):
-      ARM: SAMSUNG: Introduce Kconfig variable for Samsung custom clk API
-
-Olof Johansson (2):
-      Merge branch 'nomadik-for-arm-soc' of git://git.kernel.org/.../linusw/linux-nomadik into next/soc
-      Merge branch 'lpc32xx/devel' into next/soc
-
-Pawel Moll (8):
-      ARM: vexpress: Check master site in daughterboard's sysctl operations
-      ARM: versatile: Make plat-versatile clock optional
-      ARM: vexpress: Initial common clock support
-      ARM: vexpress: Add missing SP804 interrupt in motherboard's DTS files
-      ARM: vexpress: Add fixed regulator for SMSC
-      ARM: vexpress: Convert V2P-CA15 Device Tree to 64 bit addresses
-      ARM: vexpress: Add Device Tree for V2P-CA15_CA7 core tile
-      ARM: vexpress: Config option for early printk console
-
-Rafal Prylowski (2):
-      ep93xx: IDE driver platform support code
-      ep93xx: Add IDE support to edb93xx boards
-
-Roland Stigge (20):
-      ARM: LPC32xx: Add NAND flash timing to PHY3250 board dts
-      ARM: LPC32xx: Clock initialization for NAND controllers
-      ARM: LPC32xx: Remove SLC controller initialization from platform init
-      ARM: LPC32xx: Add DMA configuration to platform data
-      ARM: LPC32xx: Adjust dtsi file for MLC controller configuration
-      ARM: LPC32xx: Add dts for EA3250 reference board
-      ARM: LPC32xx: DTS adjustment for key matrix controller
-      ARM: LPC32xx: Clock adjustment for key matrix controller
-      ARM: LPC32xx: Defconfig update
-      ARM: LPC32xx: Add MMC controller support
-      ARM: LPC32xx: DTS adjustment for using pl18x primecell
-      ARM: LPC32xx: DT conversion of Standard UARTs
-      ARM: LPC32xx: High Speed UART configuration via DT
-      ARM: LPC32xx: Remove mach specific ARCH_NR_GPIOS, use default
-      ARM: LPC32xx: Fix lpc32xx.dtsi status property: "disable" -> "disabled"
-      ARM: LPC32xx: Init MMC via clock
-      ARM: LPC32xx: Add further bits to MMC init
-      ARM: LPC32xx: Remove wrong re-initialization of MMC clock register
-      ARM: LPC32xx: Remove USB and I2C init from phy3250.c
-      ARM: LPC32xx: Adjust to pl08x DMA interface changes
-
-Sachin Kamat (3):
-      ARM: EXYNOS: Update HSOTG PHY clock setting for EXYNOS4X12
-      ARM: EXYNOS: Make combiner_init function static
-      ARM: EXYNOS: Add missing static storage class specifier in pmu.c file
-
-Tony Lindgren (1):
-      Merge tag 'omap-devel-a-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into devel-am33xx
-
-Vaibhav Hiremath (6):
-      ARM: OMAP2+: control: Add AM33XX control reg & sec clkctrl offset
-      ARM: OMAP AM33xx: voltagedomain: Add voltage domain data
-      ARM: OMAP AM33xx: PRM: add PRM support
-      ARM: OMAP AM33xx: CM: Introduce AM33xx CM APIs and register level details
-      ARM: OMAP AM33xx: powerdomains: add AM335x support
-      ARM: OMAP AM33xx: clockdomains: Add clockdomain data and respective operations
-
-Will Deacon (1):
-      ARM: vexpress: remove automatic errata workaround selection
-
- arch/arm/Kconfig                                  |   11 +-
- arch/arm/Kconfig.debug                            |   26 +
- arch/arm/boot/dts/ea3250.dts                      |  157 +++++
- arch/arm/boot/dts/lpc32xx.dtsi                    |   74 ++-
- arch/arm/boot/dts/phy3250.dts                     |   61 ++
- arch/arm/boot/dts/vexpress-v2m-rs1.dtsi           |   11 +
- arch/arm/boot/dts/vexpress-v2m.dtsi               |   11 +
- arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts       |   36 +-
- arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts        |  188 ++++++
- arch/arm/configs/lpc32xx_defconfig                |   24 +-
- arch/arm/mach-davinci/Kconfig                     |    1 +
- arch/arm/mach-davinci/Makefile                    |    1 +
- arch/arm/mach-davinci/cp_intc.c                   |   63 +-
- arch/arm/mach-davinci/pm_domain.c                 |   64 ++
- arch/arm/mach-ep93xx/core.c                       |   96 +++
- arch/arm/mach-ep93xx/edb93xx.c                    |   24 +
- arch/arm/mach-ep93xx/include/mach/platform.h      |    3 +
- arch/arm/mach-ep93xx/soc.h                        |    1 +
- arch/arm/mach-exynos/common.c                     |    3 +-
- arch/arm/mach-exynos/include/mach/regs-pmu.h      |    5 +
- arch/arm/mach-exynos/include/mach/regs-usb-phy.h  |   20 +-
- arch/arm/mach-exynos/pmu.c                        |   18 +-
- arch/arm/mach-exynos/setup-usb-phy.c              |   60 +-
- arch/arm/mach-imx/Kconfig                         |    3 +-
- arch/arm/mach-imx/devices-imx35.h                 |    4 +
- arch/arm/mach-imx/ehci-imx25.c                    |   24 +-
- arch/arm/mach-imx/ehci-imx35.c                    |   24 +-
- arch/arm/mach-imx/ehci-imx5.c                     |   31 +-
- arch/arm/mach-imx/mach-mx35_3ds.c                 |    1 +
- arch/arm/mach-lpc32xx/Kconfig                     |   32 -
- arch/arm/mach-lpc32xx/Makefile.boot               |    1 +
- arch/arm/mach-lpc32xx/clock.c                     |  123 +++-
- arch/arm/mach-lpc32xx/common.c                    |   10 +-
- arch/arm/mach-lpc32xx/include/mach/gpio.h         |    2 -
- arch/arm/mach-lpc32xx/include/mach/platform.h     |   14 +
- arch/arm/mach-lpc32xx/phy3250.c                   |  163 ++---
- arch/arm/mach-lpc32xx/serial.c                    |   90 +--
- arch/arm/mach-nomadik/Makefile                    |    2 -
- arch/arm/mach-nomadik/board-nhk8815.c             |   67 +-
- arch/arm/mach-nomadik/clock.c                     |   75 ---
- arch/arm/mach-nomadik/clock.h                     |   15 -
- arch/arm/mach-nomadik/cpu-8815.c                  |  126 ++--
- arch/arm/mach-nomadik/i2c-8815nhk.c               |   38 +-
- arch/arm/mach-nomadik/include/mach/irqs.h         |   85 ++-
- arch/arm/mach-omap2/Makefile                      |    6 +
- arch/arm/mach-omap2/board-generic.c               |   18 +
- arch/arm/mach-omap2/clockdomain.h                 |    2 +
- arch/arm/mach-omap2/clockdomain33xx.c             |   74 +++
- arch/arm/mach-omap2/clockdomains33xx_data.c       |  196 ++++++
- arch/arm/mach-omap2/cm-regbits-33xx.h             |  687 +++++++++++++++++++++
- arch/arm/mach-omap2/cm33xx.c                      |  313 ++++++++++
- arch/arm/mach-omap2/cm33xx.h                      |  420 +++++++++++++
- arch/arm/mach-omap2/common.h                      |    3 +
- arch/arm/mach-omap2/control.h                     |   39 +-
- arch/arm/mach-omap2/include/mach/debug-macro.S    |   17 +-
- arch/arm/mach-omap2/io.c                          |   13 +
- arch/arm/mach-omap2/irq.c                         |    2 +-
- arch/arm/mach-omap2/powerdomain.h                 |   23 +-
- arch/arm/mach-omap2/powerdomain33xx.c             |  229 +++++++
- arch/arm/mach-omap2/powerdomains33xx_data.c       |  185 ++++++
- arch/arm/mach-omap2/prm-regbits-33xx.h            |  357 +++++++++++
- arch/arm/mach-omap2/prm33xx.c                     |  135 ++++
- arch/arm/mach-omap2/prm33xx.h                     |  129 ++++
- arch/arm/mach-omap2/timer.c                       |    5 +
- arch/arm/mach-omap2/voltage.h                     |    1 +
- arch/arm/mach-omap2/voltagedomains33xx_data.c     |   43 ++
- arch/arm/mach-tegra/Makefile                      |    3 +-
- arch/arm/mach-tegra/apbio.c                       |  194 +++++-
- arch/arm/mach-tegra/apbio.h                       |   19 +-
- arch/arm/mach-tegra/common.c                      |    3 +
- arch/arm/mach-vexpress/Kconfig                    |    5 +-
- arch/arm/mach-vexpress/Makefile.boot              |    3 +-
- arch/arm/mach-vexpress/ct-ca9x4.c                 |   64 +-
- arch/arm/mach-vexpress/include/mach/clkdev.h      |   15 -
- arch/arm/mach-vexpress/include/mach/debug-macro.S |   41 ++
- arch/arm/mach-vexpress/include/mach/motherboard.h |   28 +-
- arch/arm/mach-vexpress/include/mach/uncompress.h  |   14 +
- arch/arm/mach-vexpress/v2m.c                      |  296 +++++----
- arch/arm/plat-mxc/devices/platform-mxc_rtc.c      |    5 +
- arch/arm/plat-mxc/include/mach/iomux-mx51.h       |   14 +
- arch/arm/plat-mxc/include/mach/mxc_ehci.h         |   16 +-
- arch/arm/plat-omap/include/plat/serial.h          |    4 +
- arch/arm/plat-omap/include/plat/uncompress.h      |    6 +
- arch/arm/plat-samsung/Kconfig                     |    4 +
- arch/arm/plat-samsung/Makefile                    |    4 +-
- arch/arm/plat-samsung/include/plat/cpu.h          |    4 +
- arch/arm/plat-versatile/Kconfig                   |    3 +
- arch/arm/plat-versatile/Makefile                  |    2 +-
- drivers/clk/Makefile                              |    1 +
- drivers/clk/clk-nomadik.c                         |   47 ++
- include/linux/platform_data/clk-nomadik.h         |    2 +
- 91 files changed, 4730 insertions(+), 852 deletions(-)
+thanks
+Jim
