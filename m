@@ -1,299 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab2GWMwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 08:52:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49332 "EHLO bear.ext.ti.com"
+	id S1753053Ab2GWMzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 08:55:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38478 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752675Ab2GWMwR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 08:52:17 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Subject: RE: [PATCH] PWM: Add support for configuring polarity of PWM
-Thread-Topic: [PATCH] PWM: Add support for configuring polarity of PWM
-Thread-Index: AQHNZOZ2DrTfmztun0iwJK4BcEJ8xpc2NNgAgABp63A=
-Date: Mon, 23 Jul 2012 12:51:11 +0000
-Deferred-Delivery: Mon, 23 Jul 2012 12:51:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E97189D@DBDE01.ent.ti.com>
-References: <1342616053-7793-1-git-send-email-avinashphilip@ti.com>
- <20120723083032.GA12868@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120723083032.GA12868@avionic-0098.mockup.avionic-design.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752866Ab2GWMzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 08:55:16 -0400
+Message-ID: <500D48D2.7080209@redhat.com>
+Date: Mon, 23 Jul 2012 20:51:30 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110904 Red Hat/3.1.14-1.el6_1 Thunderbird/3.1.14
 MIME-Version: 1.0
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+CC: amwang@redhat.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        xiyou.wangcong@gmail.com, hpa@zytor.com, rjw@sisk.pl,
+        yinghai.lu@oracle.com, tiwai@suse.de, kexec@lists.infradead.org
+Subject: Re: [PATCH] x86: revert "x86: Fix S4 regression"
+References: <1339478463-31172-1-git-send-email-amwang@redhat.com> <5004D8BF.6050205@jp.fujitsu.com> <500D20A1.1030800@redhat.com> <500D340F.5080801@jp.fujitsu.com>
+In-Reply-To: <500D340F.5080801@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 14:00:32, Thierry Reding wrote:
-> On Wed, Jul 18, 2012 at 06:24:13PM +0530, Philip, Avinash wrote:
-> > Duty cycle inversion of PWM wave should achieved through PWM polarity
-> > inversion. Also polarity of PWM wave should configurable from slave
-> > drivers,
-> 
-> Actually, I don't think that duty cycle inversion *should* be achieved
-> through polarity inversion. But it is true that the same effect *can* be
-> achieved by inverting the polarity.
+On 07/23/2012 07:22 PM, Takao Indoh wrote:
 
-Correct.
-
+> (2012/07/23 19:00), Dave Young wrote:
+>> On 07/17/2012 11:15 AM, Takao Indoh wrote:
+>>
+>>> Hi Cong,
+>>>
+>>> When I tested kdump with 3.5.0-rc6 kernel, I found a problem of kdump
+>>> kernel's panic in find_early_table_space().
+>>>
+>>> init_memory_mapping: [mem 0x00000000-0x36ffafff]
+>>> Kernel panic - not syncing: Cannot find space for the kernel page tables
+>>> Pid: 0, comm: swapper Not tainted 3.5.0-rc6 #17
+>>> Call Trace:
+>>>   [<ffffffff8158549b>] panic+0xb8/0x1c8
+>>>   [<ffffffff8158565d>] ? printk+0x48/0x4a
+>>>   [<ffffffff8157304c>] init_memory_mapping+0x46c/0x530
+>>>   [<ffffffff818a73c7>] setup_arch+0x669/0xb0e
+>>>   [<ffffffff8158565d>] ? printk+0x48/0x4a
+>>>   [<ffffffff818a3a1f>] start_kernel+0x9b/0x34a
+>>>   [<ffffffff818a332d>] x86_64_start_reservations+0x131/0x136
+>>>   [<ffffffff818a341f>] x86_64_start_kernel+0xed/0xf4
+>>>
+>>> In find_early_table_space(), a kernel tries to find free area below 512M
+>>> for pgtable using memblock_find_in_range, but it fails because kdump
+>>> kernel does not have enough free space below 512M due to the memmap
+>>> restriction. This is the memmap option specified against kdump kernel
+>>> when crashkernel=128M.
+>>>
+>>> memmap=560K@64K memmap=130492K@770608K
+>>>
+>>> Only 560KB area is available and it is not sufficient for pgtable (it
+>>> seems that about 1.8MB area is needed for pgtable). This problem is
+>>> fixed by your revert patch. I hope this patch gets merged.
+>>
+>>
+>> I can reproduce this issue as well, probably related to some x86 mm init
+>> commits, this alloc failure does not happen with reverting below commits:
+>>
+>> bd2753b2dda7bb43c7468826de75f49c6a7e8965
+>> 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> Yeah, my result of bisect is as follows and at first I thought the
+> commit 722bc6 caused this regression.
 > 
-> > Configure polarity
-> > 1. PWM_POLARITY_NORMAL  -> duty ns defines ON period of PWM wave
-> > 2. PWM_POLARITY_INVERSE -> duty ns defines OFF period of PWM wave.
+> 722bc6b16771ed80871e1fd81c86d3627dda2ac8 is the first bad commit
+> commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> Author: WANG Cong <xiyou.wangcong@gmail.com>
+> Date:   Mon Mar 5 15:05:13 2012 -0800
 > 
-> Similarly, this text describes how polarity inversion can be used to
-> simular duty cycle inversion.
-> 
-> I think you should describe that this change adds support for
-> configuring the PWM polarity. If you absolutely must note that it can be
-> used to simulate the duty cycle inversion, then you can give it as an
-> example below the actual description.
-> 
-> > This patch adds support for configuring PWM polarity in PWM frame work.
-> 
-> "framework" is one word.
-
-Ok.
-
-> 
-> > 
-> > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
-> > ---
-> > Configuring polarity to be done with PWM device disabled, if not
-> > failure reported.
-> > 
-> > If PWM device is enabled while configuring polarity, disabling and
-> > re_enabling make it complex. Whoever uses this API has to taken
-> > care of the basic rules.
-> 
-> These comments belong in the commit message because they are very useful
-> information about the change that you introduce. They probably belong
-> somewhere in the code as well.
-
-> 
-> > Discussions related to this can found at
-> > http://www.spinics.net/lists/kernel/msg1372110.html
-> 
-> Here's my proposal for a revised commit message:
-> 
-> 	pwm: Add support for configuring the PWM polarity
-> 
-> 	Some hardware supports inverting the polarity of the PWM signal. This
-> 	commit adds support to the PWM framework to allow users of the PWM API
-> 	to configure the polarity. Note that in order to reduce complexity,
-> 	changing the polarity of a PWM signal is only allowed while the PWM is
-> 	disabled.
-> 
-> 	A practical example where this can prove useful is to simulate inversion
-> 	of the duty cycle. While inversion of polarity and duty cycle are not
-> 	exactly the same, the differences for most use-cases are negligible.
-
-Ok I will update.
-
-> 
-> > :100644 100644 ecb7690... 24d5495... M	drivers/pwm/core.c
-> > :100644 100644 21d076c... 2e4e960... M	include/linux/pwm.h
-> >  drivers/pwm/core.c  |   32 ++++++++++++++++++++++++++++++++
-> >  include/linux/pwm.h |   15 +++++++++++++++
-> >  2 files changed, 47 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> > index ecb7690..24d5495 100644
-> > --- a/drivers/pwm/core.c
-> > +++ b/drivers/pwm/core.c
-> > @@ -379,6 +379,38 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-> >  EXPORT_SYMBOL_GPL(pwm_config);
-> >  
-> >  /**
-> > + * pwm_set_polarity() - change PWM device Polarity
-> 
-> Maybe: "pwm_set_polarity() - configure the polarity of a PWM signal"
+> IIUC, this commit just fixes a bug of counting pgtable entries. As the
+> result, another problem came up to the surface. In the case of my
+> machine(16GB memory), before applying 722bc6, find_early_table_space()
+> requests about 12KB free area and it can be got from 560K@64K area
+> luckily. I think the size find_early_table_space() requests was a bug.
+> After the bug is fixed by the commit 722bc6, find_early_table_space()
+> requires 1.8MB area and it fails as I wrote.
 
 
-> 
-> > + * @pwm: PWM device
-> > + * @polarity: Configure polarity of PWM
-> 
-> "new polarity of the PWM signal"
-
+Sounds reasonable, if find_early_table_space is ok then I also vote to
+revert the s4 regression fix.
 
 > 
-> > + *
-> > + * Polarity to be configured with PWM device disabled.
+> Thanks,
+> Takao Indoh
 > 
-> "Note that the polarity cannot be configured while the PWM device is
-> enabled."
+>>
+>>>
+>>> Thanks,
+>>> Takao Indoh
+>>>
+>>> (2012/06/12 14:21), Cong Wang wrote:
+>>>> From: Cong Wang <xiyou.wangcong@gmail.com>
+>>>>
+>>>> This reverts the following commit:
+>>>>
+>>>> 	commit 8548c84da2f47e71bbbe300f55edb768492575f7
+>>>> 	Author: Takashi Iwai <tiwai@suse.de>
+>>>> 	Date:   Sun Oct 23 23:19:12 2011 +0200
+>>>>
+>>>> 	    x86: Fix S4 regression
+>>>> 	
+>>>> 	    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
+>>>> 	    regression since 2.6.39, namely the machine reboots occasionally at S4
+>>>> 	    resume.  It doesn't happen always, overall rate is about 1/20.  But,
+>>>> 	    like other bugs, once when this happens, it continues to happen.
+>>>> 	
+>>>> 	    This patch fixes the problem by essentially reverting the memory
+>>>> 	    assignment in the older way.
+>>>>
+>>>> According to the previous discussion:
+>>>> http://marc.info/?l=linux-kernel&m=133161674120253&w=2
+>>>> it seems that so far the best solution is just reverting it.
+>>>>
+>>>> Takashi, could you help to test if the S4 regression is still
+>>>> there after this patch?
+>>>>
+>>>> Reported-by: CAI Qian <caiqian@redhat.com>
+>>>> Cc: Dave Young <dyoung@redhat.com>
+>>>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>>>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+>>>> Cc: Yinghai Lu <yinghai.lu@oracle.com>
+>>>> Cc: Takashi Iwai <tiwai@suse.de>
+>>>> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+>>>>
+>>>> ---
+>>>>    arch/x86/mm/init.c |    3 ++-
+>>>>    1 files changed, 2 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+>>>> index bc4e9d8..7ab7975 100644
+>>>> --- a/arch/x86/mm/init.c
+>>>> +++ b/arch/x86/mm/init.c
+>>>> @@ -74,8 +74,9 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
+>>>>    #ifdef CONFIG_X86_32
+>>>>    	/* for fixmap */
+>>>>    	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
+>>>> -#endif
+>>>> +
+>>>>    	good_end = max_pfn_mapped << PAGE_SHIFT;
+>>>> +#endif
+>>>>    
+>>>>    	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
+>>>>    	if (!base)
+>>>>
+>>
+>>
+>>
+> 
 
-Ok I will update.
 
-> 
-> > + */
-> > +int pwm_set_polarity(struct pwm_device *pwm, int polarity)
-> 
-> The polarity parameter should be an enum pwm_polarity, see below.
-> 
-> > +{
-> > +	int pwm_flags = PWM_POLARITY_NORMAL;
-> 
-> I don't think this is needed.
-> 
-> > +
-> > +	if (!pwm || !pwm->chip->ops->set_polarity)
-> > +		return -EINVAL;
-> 
-> I'd prefer -ENOSYS if .set_polarity is not implemented, so this check
-> should probably be split up:
-> 
-> 	if (!pwm || !pwm->chip || !pwm->chip->ops)
-> 		return -EINVAL;
-> 
-> 	if (!pwm->chip->ops->set_polarity)
-> 		return -ENOSYS;
 
-I will correct it.
-
-> 
-> > +
-> > +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-> > +		dev_err(pwm->chip->dev,
-> > +			"Polarity configuration Failed!, PWM device enabled\n");
-> > +		return -EBUSY;
-> > +	}
-> 
-> Maybe something like: "polarity cannot be configured while PWM device is
-> enabled"?
-
-Ok I will update.
-
-> Though I'm not sure the error message is all that useful. I'd
-> expect the user driver to handle -EBUSY specially.
-
-On EBUSY, client driver has to rework on it. Nothing to be done from
-framework
-
-> 
-> > +
-> > +	if (polarity == PWM_POLARITY_INVERSE)
-> > +		pwm_flags = PWM_POLARITY_INVERSE;
-> > +
-> > +	if (!pwm_flags)
-> > +		clear_bit(PWMF_POLARITY_INVERSE, &pwm->flags);
-> > +	else
-> > +		set_bit(PWMF_POLARITY_INVERSE, &pwm->flags);
-> 
-> You can make this decision based on the value of polarity, no need for
-> the additional variable. Also as I mention below, maybe this flag isn't
-> all that useful.
-
-Ok I will correct it.
-
-> 
-> > +
-> > +	return pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
-> > +}
-> > +EXPORT_SYMBOL_GPL(pwm_set_polarity);
-> > +
-> > +/**
-> >   * pwm_enable() - start a PWM output toggling
-> >   * @pwm: PWM device
-> >   */
-> > diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-> > index 21d076c..2e4e960 100644
-> > --- a/include/linux/pwm.h
-> > +++ b/include/linux/pwm.h
-> > @@ -21,6 +21,16 @@ void pwm_free(struct pwm_device *pwm);
-> >   */
-> >  int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
-> >  
-> > +enum {
-> > +	PWM_POLARITY_NORMAL,	/* ON period depends on duty_ns */
-> > +	PWM_POLARITY_INVERSE,	/* OFF period depends on duty_ns */
-> > +};
-> 
-> You should name this enumeration so that it can actually be used as a
-> type (enum pwm_polarity). Also you can drop the comments because they
-> only apply to the specific use-case of simulating duty-cycle inversion.
-> 
-> Maybe you can put a comment above the enum, but I think if you name it
-> pwm_polarity, the meaning will be quite obvious.
-
-Ok I will correct it.
-
-> 
-> > +
-> > +/*
-> > + * pwm_set_polarity - set polarity of PWM device
-> > + */
-> > +int pwm_set_polarity(struct pwm_device *pwm, int polarity);
-> > +
-> 
-> The enumeration and this prototype need to move inside the #ifdef
-> CONFIG_PWM block because they are not available in the legacy API.
-> Also as indicated above you should change the type of the polarity
-> parameter to "enum pwm_polarity".
-
-Ok I will update.
-
-> 
-> >  /*
-> >   * pwm_enable - start a PWM output toggling
-> >   */
-> > @@ -37,6 +47,7 @@ struct pwm_chip;
-> >  enum {
-> >  	PWMF_REQUESTED = 1 << 0,
-> >  	PWMF_ENABLED = 1 << 1,
-> > +	PWMF_POLARITY_INVERSE = 1 << 2,
-> 
-> This should be named PWMF_POLARITY_INVERSED for consistency.
-
-Ok I will correct it.
-
-> I'm not sure that we really need this flag, though. It isn't used anywhere. But
-> maybe you have a use-case in mind?
-
-It can be used to find the polarity of the PWM at runtime.
-
-> 
-> >  };
-> >  
-> >  struct pwm_device {
-> > @@ -66,6 +77,7 @@ static inline unsigned int pwm_get_period(struct pwm_device *pwm)
-> >   * @request: optional hook for requesting a PWM
-> >   * @free: optional hook for freeing a PWM
-> >   * @config: configure duty cycles and period length for this PWM
-> > + * @set_polarity: configure polarity of PWM
-> 
-> "configure the polarity of this PWM"
-> 
-> >   * @enable: enable PWM output toggling
-> >   * @disable: disable PWM output toggling
-> >   * @dbg_show: optional routine to show contents in debugfs
-> > @@ -79,6 +91,9 @@ struct pwm_ops {
-> >  	int			(*config)(struct pwm_chip *chip,
-> >  					  struct pwm_device *pwm,
-> >  					  int duty_ns, int period_ns);
-> > +	int			(*set_polarity)(struct pwm_chip *chip,
-> > +					  struct pwm_device *pwm,
-> > +					  int polarity);
-> 
-> Make sure these line up properly.
-
-I will align with existing lines.
-
+-- 
 Thanks
-Avinash
-
-> 
-> Thierry
-> 
-
+Dave
