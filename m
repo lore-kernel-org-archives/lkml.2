@@ -1,235 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab2GWSSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:18:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2130 "EHLO mx1.redhat.com"
+	id S1754594Ab2GWSSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:18:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49380 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562Ab2GWSRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754566Ab2GWSRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jul 2012 14:17:54 -0400
 From: David Teigland <teigland@redhat.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] dlm: fix conversion deadlock from recovery
-Date: Mon, 23 Jul 2012 13:17:46 -0500
-Message-Id: <1343067467-24308-6-git-send-email-teigland@redhat.com>
+Subject: [PATCH 6/6] dlm: fix missing dir remove
+Date: Mon, 23 Jul 2012 13:17:47 -0500
+Message-Id: <1343067467-24308-7-git-send-email-teigland@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The process of rebuilding locks on a new master during
-recovery could re-order the locks on the convert queue,
-creating an "in place" conversion deadlock that would
-not be resolved.  Fix this by not considering queue
-order when granting conversions after recovery.
+I don't know exactly how, but in some cases, a dir
+record is not removed, or a new one is created when
+it shouldn't be.  The result is that the dir node
+lookup returns a master node where the rsb does not
+exist.  In this case, The master node will repeatedly
+return -EBADR for requests, and the lock requests will
+be stuck.
+
+Until all possible ways for this to happen can be
+eliminated, a simple and effective way to recover from
+this situation is for the supposed master node to send
+a standard remove message to the dir node when it
+receives a request for a resource it has no rsb for.
 
 Signed-off-by: David Teigland <teigland@redhat.com>
 ---
- fs/dlm/lock.c    |   55 +++++++++++++++++++++++++++++++++++++++---------------
- fs/dlm/recover.c |   10 ++++++++--
- 2 files changed, 48 insertions(+), 17 deletions(-)
+ fs/dlm/lock.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 68 insertions(+), 2 deletions(-)
 
 diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
-index c7c6cf9..04e3f15 100644
+index 04e3f15..b569507 100644
 --- a/fs/dlm/lock.c
 +++ b/fs/dlm/lock.c
-@@ -2279,10 +2279,14 @@ static int conversion_deadlock_detect(struct dlm_rsb *r, struct dlm_lkb *lkb2)
-  * immediate request, it is 0 if called later, after the lock has been
-  * queued.
-  *
-+ * recover is 1 if dlm_recover_grant() is trying to grant conversions
-+ * after recovery.
-+ *
-  * References are from chapter 6 of "VAXcluster Principles" by Roy Davis
-  */
- 
--static int _can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now)
-+static int _can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now,
-+			   int recover)
- {
- 	int8_t conv = (lkb->lkb_grmode != DLM_LOCK_IV);
- 
-@@ -2314,7 +2318,7 @@ static int _can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now)
- 	 */
- 
- 	if (queue_conflict(&r->res_grantqueue, lkb))
--		goto out;
-+		return 0;
- 
- 	/*
- 	 * 6-3: By default, a conversion request is immediately granted if the
-@@ -2323,7 +2327,24 @@ static int _can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now)
- 	 */
- 
- 	if (queue_conflict(&r->res_convertqueue, lkb))
--		goto out;
-+		return 0;
-+
-+	/*
-+	 * The RECOVER_GRANT flag means dlm_recover_grant() is granting
-+	 * locks for a recovered rsb, on which lkb's have been rebuilt.
-+	 * The lkb's may have been rebuilt on the queues in a different
-+	 * order than they were in on the previous master.  So, granting
-+	 * queued conversions in order after recovery doesn't make sense
-+	 * since the order hasn't been preserved anyway.  The new order
-+	 * could also have created a new "in place" conversion deadlock.
-+	 * (e.g. old, failed master held granted EX, with PR->EX, NL->EX.
-+	 * After recovery, there would be no granted locks, and possibly
-+	 * NL->EX, PR->EX, an in-place conversion deadlock.)  So, after
-+	 * recovery, grant conversions without considering order.
-+	 */
-+
-+	if (conv && recover)
-+		return 1;
- 
- 	/*
- 	 * 6-5: But the default algorithm for deciding whether to grant or
-@@ -2360,7 +2381,7 @@ static int _can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now)
- 		if (list_empty(&r->res_convertqueue))
- 			return 1;
- 		else
--			goto out;
-+			return 0;
- 	}
- 
- 	/*
-@@ -2406,12 +2427,12 @@ static int _can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now)
- 	if (!now && !conv && list_empty(&r->res_convertqueue) &&
- 	    first_in_list(lkb, &r->res_waitqueue))
- 		return 1;
-- out:
-+
- 	return 0;
+@@ -4000,12 +4000,70 @@ static int validate_message(struct dlm_lkb *lkb, struct dlm_message *ms)
+ 	return error;
  }
  
- static int can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now,
--			  int *err)
-+			  int recover, int *err)
++static void send_repeat_remove(struct dlm_ls *ls, char *ms_name, int len)
++{
++	char name[DLM_RESNAME_MAXLEN + 1];
++	struct dlm_message *ms;
++	struct dlm_mhandle *mh;
++	struct dlm_rsb *r;
++	uint32_t hash, b;
++	int rv, dir_nodeid;
++
++	memset(name, 0, sizeof(name));
++	memcpy(name, ms_name, len);
++
++	hash = jhash(name, len, 0);
++	b = hash & (ls->ls_rsbtbl_size - 1);
++
++	dir_nodeid = dlm_hash2nodeid(ls, hash);
++
++	log_error(ls, "send_repeat_remove dir %d %s", dir_nodeid, name);
++
++	spin_lock(&ls->ls_rsbtbl[b].lock);
++	rv = dlm_search_rsb_tree(&ls->ls_rsbtbl[b].keep, name, len, &r);
++	if (!rv) {
++		spin_unlock(&ls->ls_rsbtbl[b].lock);
++		log_error(ls, "repeat_remove on keep %s", name);
++		return;
++	}
++
++	rv = dlm_search_rsb_tree(&ls->ls_rsbtbl[b].toss, name, len, &r);
++	if (!rv) {
++		spin_unlock(&ls->ls_rsbtbl[b].lock);
++		log_error(ls, "repeat_remove on toss %s", name);
++		return;
++	}
++
++	/* use ls->remove_name2 to avoid conflict with shrink? */
++
++	spin_lock(&ls->ls_remove_spin);
++	ls->ls_remove_len = len;
++	memcpy(ls->ls_remove_name, name, DLM_RESNAME_MAXLEN);
++	spin_unlock(&ls->ls_remove_spin);
++	spin_unlock(&ls->ls_rsbtbl[b].lock);
++
++	rv = _create_message(ls, sizeof(struct dlm_message) + len,
++			     dir_nodeid, DLM_MSG_REMOVE, &ms, &mh);
++	if (rv)
++		return;
++
++	memcpy(ms->m_extra, name, len);
++	ms->m_hash = hash;
++
++	send_message(mh, ms);
++
++	spin_lock(&ls->ls_remove_spin);
++	ls->ls_remove_len = 0;
++	memset(ls->ls_remove_name, 0, DLM_RESNAME_MAXLEN);
++	spin_unlock(&ls->ls_remove_spin);
++}
++
+ static int receive_request(struct dlm_ls *ls, struct dlm_message *ms)
  {
- 	int rv;
- 	int8_t alt = 0, rqmode = lkb->lkb_rqmode;
-@@ -2420,7 +2441,7 @@ static int can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now,
- 	if (err)
- 		*err = 0;
- 
--	rv = _can_be_granted(r, lkb, now);
-+	rv = _can_be_granted(r, lkb, now, recover);
- 	if (rv)
- 		goto out;
- 
-@@ -2461,7 +2482,7 @@ static int can_be_granted(struct dlm_rsb *r, struct dlm_lkb *lkb, int now,
- 
- 	if (alt) {
- 		lkb->lkb_rqmode = alt;
--		rv = _can_be_granted(r, lkb, now);
-+		rv = _can_be_granted(r, lkb, now, 0);
- 		if (rv)
- 			lkb->lkb_sbflags |= DLM_SBF_ALTMODE;
- 		else
-@@ -2485,6 +2506,7 @@ static int grant_pending_convert(struct dlm_rsb *r, int high, int *cw,
- 				 unsigned int *count)
- {
- 	struct dlm_lkb *lkb, *s;
-+	int recover = rsb_flag(r, RSB_RECOVER_GRANT);
- 	int hi, demoted, quit, grant_restart, demote_restart;
- 	int deadlk;
- 
-@@ -2498,7 +2520,7 @@ static int grant_pending_convert(struct dlm_rsb *r, int high, int *cw,
- 		demoted = is_demoted(lkb);
- 		deadlk = 0;
- 
--		if (can_be_granted(r, lkb, 0, &deadlk)) {
-+		if (can_be_granted(r, lkb, 0, recover, &deadlk)) {
- 			grant_lock_pending(r, lkb);
- 			grant_restart = 1;
- 			if (count)
-@@ -2542,7 +2564,7 @@ static int grant_pending_wait(struct dlm_rsb *r, int high, int *cw,
- 	struct dlm_lkb *lkb, *s;
- 
- 	list_for_each_entry_safe(lkb, s, &r->res_waitqueue, lkb_statequeue) {
--		if (can_be_granted(r, lkb, 0, NULL)) {
-+		if (can_be_granted(r, lkb, 0, 0, NULL)) {
- 			grant_lock_pending(r, lkb);
- 			if (count)
- 				(*count)++;
-@@ -3042,7 +3064,7 @@ static int do_request(struct dlm_rsb *r, struct dlm_lkb *lkb)
- {
- 	int error = 0;
- 
--	if (can_be_granted(r, lkb, 1, NULL)) {
-+	if (can_be_granted(r, lkb, 1, 0, NULL)) {
- 		grant_lock(r, lkb);
- 		queue_cast(r, lkb, 0);
- 		goto out;
-@@ -3082,7 +3104,7 @@ static int do_convert(struct dlm_rsb *r, struct dlm_lkb *lkb)
- 
- 	/* changing an existing lock may allow others to be granted */
- 
--	if (can_be_granted(r, lkb, 1, &deadlk)) {
-+	if (can_be_granted(r, lkb, 1, 0, &deadlk)) {
- 		grant_lock(r, lkb);
- 		queue_cast(r, lkb, 0);
- 		goto out;
-@@ -3108,7 +3130,7 @@ static int do_convert(struct dlm_rsb *r, struct dlm_lkb *lkb)
- 
- 	if (is_demoted(lkb)) {
- 		grant_pending_convert(r, DLM_LOCK_IV, NULL, NULL);
--		if (_can_be_granted(r, lkb, 1)) {
-+		if (_can_be_granted(r, lkb, 1, 0)) {
- 			grant_lock(r, lkb);
- 			queue_cast(r, lkb, 0);
- 			goto out;
-@@ -5373,9 +5395,10 @@ static struct dlm_rsb *find_grant_rsb(struct dlm_ls *ls, int bucket)
- 
- 		if (!rsb_flag(r, RSB_RECOVER_GRANT))
- 			continue;
--		rsb_clear_flag(r, RSB_RECOVER_GRANT);
--		if (!is_master(r))
-+		if (!is_master(r)) {
-+			rsb_clear_flag(r, RSB_RECOVER_GRANT);
- 			continue;
-+		}
- 		hold_rsb(r);
- 		spin_unlock(&ls->ls_rsbtbl[bucket].lock);
- 		return r;
-@@ -5420,7 +5443,9 @@ void dlm_recover_grant(struct dlm_ls *ls)
- 		rsb_count++;
- 		count = 0;
- 		lock_rsb(r);
-+		/* the RECOVER_GRANT flag is checked in the grant path */
- 		grant_pending_locks(r, &count);
-+		rsb_clear_flag(r, RSB_RECOVER_GRANT);
- 		lkb_count += count;
- 		confirm_master(r, 0);
- 		unlock_rsb(r);
-diff --git a/fs/dlm/recover.c b/fs/dlm/recover.c
-index 12702cc..4a7a76e 100644
---- a/fs/dlm/recover.c
-+++ b/fs/dlm/recover.c
-@@ -804,6 +804,7 @@ static void recover_lvb(struct dlm_rsb *r)
- 
- static void recover_conversion(struct dlm_rsb *r)
- {
-+	struct dlm_ls *ls = r->res_ls;
  	struct dlm_lkb *lkb;
- 	int grmode = -1;
+ 	struct dlm_rsb *r;
+ 	int from_nodeid;
+-	int error, namelen;
++	int error, namelen = 0;
  
-@@ -818,10 +819,15 @@ static void recover_conversion(struct dlm_rsb *r)
- 	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
- 		if (lkb->lkb_grmode != DLM_LOCK_IV)
- 			continue;
--		if (grmode == -1)
-+		if (grmode == -1) {
-+			log_debug(ls, "recover_conversion %x set gr to rq %d",
-+				  lkb->lkb_id, lkb->lkb_rqmode);
- 			lkb->lkb_grmode = lkb->lkb_rqmode;
--		else
-+		} else {
-+			log_debug(ls, "recover_conversion %x set gr %d",
-+				  lkb->lkb_id, grmode);
- 			lkb->lkb_grmode = grmode;
-+		}
+ 	from_nodeid = ms->m_header.h_nodeid;
+ 
+@@ -4073,13 +4131,21 @@ static int receive_request(struct dlm_ls *ls, struct dlm_message *ms)
+ 	   delayed in being sent/arriving/being processed on the dir node.
+ 	   Another node would repeatedly lookup up the master, and the dir
+ 	   node would continue returning our nodeid until our send_remove
+-	   took effect. */
++	   took effect.
++
++	   We send another remove message in case our previous send_remove
++	   was lost/ignored/missed somehow. */
+ 
+ 	if (error != -ENOTBLK) {
+ 		log_limit(ls, "receive_request %x from %d %d",
+ 			  ms->m_lkid, from_nodeid, error);
  	}
- }
  
++	if (namelen && error == -EBADR) {
++		send_repeat_remove(ls, ms->m_extra, namelen);
++		msleep(1000);
++	}
++
+ 	setup_stub_lkb(ls, ms);
+ 	send_request_reply(&ls->ls_stub_rsb, &ls->ls_stub_lkb, error);
+ 	return error;
 -- 
 1.7.10.1.362.g242cab3
 
