@@ -1,79 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab2GWNIL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:08:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32819 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979Ab2GWNIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:08:11 -0400
-Date: Mon, 23 Jul 2012 09:07:59 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Jim Cromie <jim.cromie@gmail.com>, greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, kay@vrfy.com, joe@perches.com
-Subject: Re: [PATCH 1/3] drivers-core: make structured logging play nice with
- dynamic-debug
-Message-ID: <20120723130759.GB28867@redhat.com>
-References: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
- <1342727183-4520-2-git-send-email-jim.cromie@gmail.com>
+	id S1753275Ab2GWNIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:08:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:57287 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab2GWNI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:08:28 -0400
+Date: Mon, 23 Jul 2012 15:08:25 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: Re: [PATCH] PWM: Add support for configuring polarity of PWM
+Message-ID: <20120723130825.GA21254@avionic-0098.mockup.avionic-design.de>
+References: <1342616053-7793-1-git-send-email-avinashphilip@ti.com>
+ <20120723083032.GA12868@avionic-0098.mockup.avionic-design.de>
+ <518397C60809E147AF5323E0420B992E3E97189D@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
 Content-Disposition: inline
-In-Reply-To: <1342727183-4520-2-git-send-email-jim.cromie@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <518397C60809E147AF5323E0420B992E3E97189D@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:3fNJXJleFBRc6ZLgsWy4sPvgUB/ZwHMAIWxtEbHqhlI
+ TYwFV9slgM7on8tCDlp0ZKkGBnYz6zrCTY5OUe+X8MGHFA9yjY
+ kKlpC3lfAa8uLB0Xsxgi082z2MSPBrkjh1KOSGyfnjI/0XNYqM
+ PiP/N4VAASyg09e1ltnHsxPGme6i19Zm6NsB91VpkBpv8SRN2l
+ xMsWU9yqhY1mnQoXe4UaQ2BlLdkyEMaFcb8izHVdAlUN1g1Uy+
+ 2HptoR9JWUScd7mmcbubcQ6dztcqY52OlmtQBXBmezULW0Z64d
+ +v//AkcrS4rwCv0l3xYVl+5A3giqUo6KJvV+6jcsv82qkLdvSA
+ 51/5wVB/itxzTKe8EwLiVtC5H6OveTvM0+mJzMtsm8nqhLaRc2
+ O9N3cmuJ6C1kYbMryIc6LrXKokKfS4JfvgLg3RZcPjKnTySXRo
+ Z2zmi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 01:46:20PM -0600, Jim Cromie wrote:
-> commit c4e00daaa96d3a0786f1f4fe6456281c60ef9a16 changed __dev_printk
-> in a way that broke dynamic-debug's ability to control the dynamic
-> prefix of dev_dbg(dev,..), but not dev_dbg(NULL,..) or pr_debug(..),
-> which is why it wasnt noticed sooner.
-> 
-> When dev==NULL, __dev_printk() just calls printk(), which just works.
-> But otherwise, it assumed that level was always a string like "<L>"
-> and just plucked out the 'L', ignoring the rest.  However,
-> dynamic_emit_prefix() adds "[tid] module:func:line:" to the string,
-> those additions all got lost.
-> 
-> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> ---
->  drivers/base/core.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
-> 
 
-Acked-by: Jason Baron <jbaron@redhat.com>
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Jul 23, 2012 at 12:51:11PM +0000, Philip, Avinash wrote:
+> On Mon, Jul 23, 2012 at 14:00:32, Thierry Reding wrote:
+> > On Wed, Jul 18, 2012 at 06:24:13PM +0530, Philip, Avinash wrote:
+[...]
+> > > +
+> > > +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+> > > +		dev_err(pwm->chip->dev,
+> > > +			"Polarity configuration Failed!, PWM device enabled\n");
+> > > +		return -EBUSY;
+> > > +	}
+> >=20
+> > Maybe something like: "polarity cannot be configured while PWM device is
+> > enabled"?
+>=20
+> Ok I will update.
+>=20
+> > Though I'm not sure the error message is all that useful. I'd
+> > expect the user driver to handle -EBUSY specially.
+>=20
+> On EBUSY, client driver has to rework on it. Nothing to be done from
+> framework
 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 346be8b..ebdb7c5 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -1848,6 +1848,7 @@ int __dev_printk(const char *level, const struct device *dev,
->  		 struct va_format *vaf)
->  {
->  	char dict[128];
-> +	const char *level_extra = "";
->  	size_t dictlen = 0;
->  	const char *subsys;
->  
-> @@ -1894,10 +1895,14 @@ int __dev_printk(const char *level, const struct device *dev,
->  				    "DEVICE=+%s:%s", subsys, dev_name(dev));
->  	}
->  skip:
-> +	if (level[3])
-> +		level_extra = &level[3]; /* skip past "<L>" */
-> +
->  	return printk_emit(0, level[1] - '0',
->  			   dictlen ? dict : NULL, dictlen,
-> -			   "%s %s: %pV",
-> -			   dev_driver_string(dev), dev_name(dev), vaf);
-> +			   "%s %s: %s%pV", 
-> +			   dev_driver_string(dev), dev_name(dev),
-> +			   level_extra, vaf);
->  }
->  EXPORT_SYMBOL(__dev_printk);
->  
-> -- 
-> 1.7.10.4
-> 
+Exactly, so I think that if an error is displayed because the PWM has
+been enabled, then that client (=3D=3D user) driver should output an error
+message, not the framework. Also, it really shouldn't happen because it
+clearly is a driver problem that needs to be fixed.
+
+> > >  /*
+> > >   * pwm_enable - start a PWM output toggling
+> > >   */
+> > > @@ -37,6 +47,7 @@ struct pwm_chip;
+> > >  enum {
+> > >  	PWMF_REQUESTED =3D 1 << 0,
+> > >  	PWMF_ENABLED =3D 1 << 1,
+> > > +	PWMF_POLARITY_INVERSE =3D 1 << 2,
+> >=20
+> > This should be named PWMF_POLARITY_INVERSED for consistency.
+>=20
+> Ok I will correct it.
+>=20
+> > I'm not sure that we really need this flag, though. It isn't used anywh=
+ere. But
+> > maybe you have a use-case in mind?
+>=20
+> It can be used to find the polarity of the PWM at runtime.
+
+Yes, but is there any use-case where this information would be required?
+
+Thierry
+
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQDUzJAAoJEN0jrNd/PrOhlMUP/RRHqEdxWyFUNGT8MT4eVhx+
+k3Y+E6v75hHUuPDp8KGDAktIRmuk6vzu4BB3QT1zvCIbdWLxKS701M4zn+yUeYWM
+MsCaByd9mcvO+RMGEDfsvjPUtg01BEjLS/zTPhSNQAzYjA7yhmoLCZt177X9xi7a
+ad3M2Gr0CW47qLhr3R/DzG6gM1NB3JoByjiKsgM9ZddbpFeYwKsq3UrjUj3z0XQw
+X0Y7+mHj9yIHIGbTKn3KXp/gjB2B77272cjJ0tR+5U5A1ZQcNL2edDKOgXGT7Ies
+pViXdrML0O++Bjeqjk+0zp+Dh62y0DuDb+Iyu+FVIUwXY/YYX+KWs1ayohSZ3sHv
+pTY7XrisycBWEpt7WsyVgvRcO3YU9htJOR29km6Wv89rLHcfeNk0+2QwlnqWtdaT
+UpANvzAXKnMeV4UWqY0z629DCxThkQXNsMKNx54JQ7r2bfuJc8belsvzbU2e00Rh
+pmp1lHvUh2HZmLEMEz4cFgEdc9AKyn4z1Y4KhKPoNrhiBrXzw7b9aTUaa5WMQF85
+yYXPG8VxZsKFJJn+7LXjoqiuAC2ExUYREOjPK0KXGP4HEAQu3Uhsyf41r23FgvHT
+GnHwrAVlKLOFy/Uk7NmGgCGeXYezHVHv6IZQd41EznUQqmi2Y9Sz7atmC9SdDTTo
+yOViLeGuZI4JS9Z3GN3X
+=E2wi
+-----END PGP SIGNATURE-----
+
+--3MwIy2ne0vdjdPXF--
