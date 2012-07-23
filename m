@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab2GWHZg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 03:25:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50584 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab2GWHZf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 03:25:35 -0400
-Date: Mon, 23 Jul 2012 00:24:50 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+	id S1753951Ab2GWH0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 03:26:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45819 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753892Ab2GWH0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 03:26:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="125673540"
+Message-ID: <1343028487.1682.316.camel@rui.sh.intel.com>
+Subject: Re: [PATCH] thermal: fix build error at thermal_sys.c
+From: Zhang Rui <rui.zhang@intel.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Devendra Naga <develkernel412222@gmail.com>,
+        Len Brown <len.brown@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: next/mmotm unbootable on G5: irqdomain
-In-Reply-To: <1343011543.2957.2.camel@pasglop>
-Message-ID: <alpine.LSU.2.00.1207230023380.6948@eggly.anvils>
-References: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils> <1343011543.2957.2.camel@pasglop>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        Fengguang Wu <wfg@linux.intel.com>,
+        Durgadoss R <durgadoss.r@intel.com>
+Date: Mon, 23 Jul 2012 15:28:07 +0800
+In-Reply-To: <20120723085413.38b5a314@endymion.delvare>
+References: <1342944622-16263-1-git-send-email-develkernel412222@gmail.com>
+	 <20120722125810.052ca19e@endymion.delvare>
+	 <1343008936.1682.307.camel@rui.sh.intel.com>
+	 <20120723085413.38b5a314@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jul 2012, Benjamin Herrenschmidt wrote:
-> On Sat, 2012-07-21 at 19:47 -0700, Hugh Dickins wrote:
-> > I have to revert the patch below from mmotm 2012-07-20-16-30 or
-> > next-20120720 in order to boot on the PowerPC G5: otherwise it
-> > freezes before switching to the framebuffer console - but I'm
-> > not certain where because that initial console doesn't scroll
-> > (there are mpic messages at bottom and at top of screen, probably
-> > later messages at the top but I don't know the sequence).
+On 一, 2012-07-23 at 08:54 +0200, Jean Delvare wrote:
+> Hi Rui,
 > 
-> This fixes it
+> On Mon, 23 Jul 2012 10:02:16 +0800, Zhang Rui wrote:
+> > BTW: what is the rule for linux-next?
+> > I refreshed the patches, did some test, and sent to mailing list
+> > saying that I want to push them to linux-next, please review.
+> > And then I got bug report from linux-next...
+> > shouldn't them be merged after I sending git pull request?
+> 
+> Your tree is set for linux-next inclusion.
+>  This means that, every day,
+> the current state of (one branch of) your tree makes it into that day's
+> linux-next. linux-next receives some testing so you may receive bug
+> reports that way (most frequently merge and build issues.)
+> 
+> But patches don't go from linux-next to Linus's upstream tree
+> automatically. Whenever you want your patches to actually go to Linus,
+> you must ask Linus explicitly to pull them.
+> 
+> So, when a build issue is found in linux-next, the right thing to do is
+> to blast the faulty branch and recreate it without the build breakage,
+> then have it go in at least one linux-next iterations to make sure you
+> did get things right this time, and only then ask Linus to pull from
+> your branch.
+> 
+I know they should stay in linux-next for a while before asking Linus to
+pull them, but I did not expect them to go into linux-next immediately
+when I submitted all the patches into my next branch and sent out for
+review.
 
-Confirmed: many thanks, Ben.
+so "my tree is set for linux-next inclusion" means that, all the stuff
+will be merged in linux-next automatically, even if I have not asked
+linux-next to pull my changes, right?
 
-> (Grant, how do we avoid bisection breakage here ? I can
-> put that in -powerpc and we can make sure that gets merged before your
-> tree ?)
-> 
-> powerpc/mpic: Create a revmap with enough entries for IPIs and timers
-> 
-> The current mpic code creates a linear revmap just big enough for all
-> the sources, which happens to miss the IPIs and timers on some machines.
-> 
-> This will in turn break when the irqdomain code loses the fallback of
-> doing a linear search when the revmap fails (and really slows down IPIs
-> otherwise).
-> 
-> This happens for example on the U4 based Apple machines such as the
-> dual core PowerMac G5s.
-> 
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
-> diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
-> index 906f29c..bfc6211 100644
-> --- a/arch/powerpc/sysdev/mpic.c
-> +++ b/arch/powerpc/sysdev/mpic.c
-> @@ -1376,7 +1376,7 @@ struct mpic * __init mpic_alloc(struct device_node *node,
->  	mpic->isu_mask = (1 << mpic->isu_shift) - 1;
->  
->  	mpic->irqhost = irq_domain_add_linear(mpic->node,
-> -				       last_irq + 1,
-> +				       intvec_top,
->  				       &mpic_host_ops, mpic);
->  
->  	/*
-> 
-> 
-> 
+sorry for the mistake again.
+
+thanks,
+rui
+
+
+
