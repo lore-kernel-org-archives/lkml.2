@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab2GWCXi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:23:38 -0400
-Received: from mail.windriver.com ([147.11.1.11]:52273 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab2GWCXg (ORCPT
+	id S1753232Ab2GWC0z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:26:55 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43432 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876Ab2GWC0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 22:23:36 -0400
-Message-ID: <500CB74A.4040300@windriver.com>
-Date: Mon, 23 Jul 2012 10:30:34 +0800
-From: xufeng zhang <xufeng.zhang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
+	Sun, 22 Jul 2012 22:26:54 -0400
+Date: Mon, 23 Jul 2012 10:26:45 +0800
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWAHiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] memcg: add mem_cgroup_from_css() helper
+Message-ID: <20120723022645.GA18871@kernel>
+Reply-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+References: <1343007863-18144-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20120723020856.GA24965@shangw.(null)>
 MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: <xufengzhang.main@gmail.com>, <vyasevich@gmail.com>, <sri@us.ibm.com>,
-        <davem@davemloft.net>, <linux-sctp@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
- SACK when bundling
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com> <20120723004932.GB8040@neilslaptop.think-freely.org>
-In-Reply-To: <20120723004932.GB8040@neilslaptop.think-freely.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120723020856.GA24965@shangw.(null)>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12072302-8878-0000-0000-00000357706E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2012 08:49 AM, Neil Horman wrote:
+On Mon, Jul 23, 2012 at 10:08:56AM +0800, Gavin Shan wrote:
 >
-> Not sure I understand how you came into this error.  If we get an invalid
-> stream, we issue an SCTP_REPORT_TSN side effect, followed by an SCTP_CMD_REPLY
-> which sends the error chunk.  The reply goes through
-> sctp_outq_tail->sctp_outq_chunk->sctp_outq_transmit_chunk->sctp_outq_append_chunk.
-> That last function checks to see if a sack is already part of the packet, and if
-> there isn't one, appends one, using the updated tsn map.
-Yes, you are right, but consider the invalid stream identifier's DATA 
-chunk is the first
-DATA chunk in the association which will need SACK immediately.
-Here is what I thought of the scenario:
-     sctp_sf_eat_data_6_2()
-         -->sctp_eat_data()
-             -->sctp_make_op_error()
-             -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(err))
-             -->sctp_outq_tail()          /* First enqueue ERROR chunk */
-         -->sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE())
-             -->sctp_gen_sack()
-                 -->sctp_make_sack()
-                 -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, 
-SCTP_CHUNK(sack))
-                 -->sctp_outq_tail()          /* Then enqueue SACK chunk */
+>For this case, we usually fix the build error on top of linux-next.
+>It seems that you're changing the original patch and send again, which
+>isn't reasonable, man :-)
 
-So SACK chunk is enqueued after ERROR chunk.
-> So Can you explain in
-> some more detail how you're getting into this situation?
->    
-Actually it's triggered by a customer's test case, but we can also 
-reproduce this problem
-easily by explicitly contaminating the sctp stack:
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -701,7 +701,7 @@ struct sctp_chunk *sctp_make_datafrag_empty(struct 
-sctp_association *asoc,
-          * creating the chunk.
-          */
-         dp.tsn = 0;
--       dp.stream = htons(sinfo->sinfo_stream);
-+       dp.stream = htons(sinfo->sinfo_stream) + 10;
-         dp.ppid   = sinfo->sinfo_ppid;
+OK, I will send a patch just fix build error against linux-next.
 
-         /* Set the flags for an unordered send.  */
+Regards,
+Wanpeng Li
 
-
-Then run sctp_darn application and capture the sctp packet at the same time.
-
-
-
-Thanks,
-Xufeng Zhang
-> Thanks!
-> Neil
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>Thanks,
+>Gavin
 >
->    
+>>Changelog v2:
+>>* fix too many args to mem_cgroup_from_css() (spotted by Kirill A. Shutemov)
+>>* fix kernel build failed (spotted by Fengguang)
+>>
+>>Add a mem_cgroup_from_css() helper to replace open-coded invokations of
+>>container_of().  To clarify the code and to add a little more type safety.
+>>
+>>Acked-by: Michal Hocko <mhocko@suse.cz>
+>>Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+>>
+>>---
+>> mm/memcontrol.c |   19 +++++++++++--------
+>> 1 files changed, 11 insertions(+), 8 deletions(-)
+>>
+>>diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>>index 883283d..f0c7639 100644
+>>--- a/mm/memcontrol.c
+>>+++ b/mm/memcontrol.c
+>>@@ -407,6 +407,12 @@ enum charge_type {
+>> static void mem_cgroup_get(struct mem_cgroup *memcg);
+>> static void mem_cgroup_put(struct mem_cgroup *memcg);
+>>
+>>+static inline 
+>>+struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
+>>+{
+>>+	return container_of(s, struct mem_cgroup, css);
+>>+}
+>>+
+>> /* Writing them here to avoid exposing memcg's inner layout */
+>> #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>> #include <net/sock.h>
+>>@@ -864,9 +870,8 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+>>
+>> struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+>> {
+>>-	return container_of(cgroup_subsys_state(cont,
+>>-				mem_cgroup_subsys_id), struct mem_cgroup,
+>>-				css);
+>>+	return mem_cgroup_from_css(cgroup_subsys_state(cont,
+>>+				mem_cgroup_subsys_id));
+>> }
+>>
+>> struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+>>@@ -879,8 +884,7 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+>> 	if (unlikely(!p))
+>> 		return NULL;
+>>
+>>-	return container_of(task_subsys_state(p, mem_cgroup_subsys_id),
+>>-				struct mem_cgroup, css);
+>>+	return mem_cgroup_from_css(task_subsys_state(p, mem_cgroup_subsys_id));
+>> }
+>>
+>> struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+>>@@ -966,8 +970,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>> 		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
+>> 		if (css) {
+>> 			if (css == &root->css || css_tryget(css))
+>>-				memcg = container_of(css,
+>>-						     struct mem_cgroup, css);
+>>+				memcg = mem_cgroup_from_css(css);
+>> 		} else
+>> 			id = 0;
+>> 		rcu_read_unlock();
+>>@@ -2429,7 +2432,7 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
+>> 	css = css_lookup(&mem_cgroup_subsys, id);
+>> 	if (!css)
+>> 		return NULL;
+>>-	return container_of(css, struct mem_cgroup, css);
+>>+	return mem_cgroup_from_css(css);
+>> }
+>>
+>> struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+>>-- 
+>>1.7.7.6
+>>
 
