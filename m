@@ -1,44 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab2GWVLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 17:11:52 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53198 "EHLO ogre.sisk.pl"
+	id S1754924Ab2GWVMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 17:12:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53935 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754663Ab2GWVLu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 17:11:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Anton Pyrogovskyi <asp@penguinishly.org.ua>
-Subject: Re: PROBLEM: Re: [PATCH] pci: Rework ASPM disable code
-Date: Mon, 23 Jul 2012 23:17:33 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: "mjg@redhat.com" <mjg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-References: <2806511343077258@web6f.yandex.ru>
-In-Reply-To: <2806511343077258@web6f.yandex.ru>
+	id S1754856Ab2GWVML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 17:12:11 -0400
+Date: Mon, 23 Jul 2012 22:12:06 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [MMTests] Scheduler
+Message-ID: <20120723211206.GZ9222@suse.de>
+References: <20120620113252.GE4011@suse.de>
+ <20120629111932.GA14154@suse.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201207232317.33764.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120629111932.GA14154@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 23, 2012, Anton Pyrogovskyi wrote:
-> Hello.
-> 
-> This patch (aka commit 3c076351c, https://lkml.org/lkml/2011/11/10/467) makes my GPU (NVidia GT 240) become undetectable by the NVidia proprietary driver.
-> The issue used to surface before, but I resolved it by disabling ASPM altogether (adding «pcie_aspm=off» to the kernel parameter line). This no more works since the commit is in order.
-> The driver not being loaded causes me some obvious trouble, such as uvesafb and X not being able to start.
-> This only happens during regular boot — if I thaw from hibernation or load the same kernel atop the currently running instance with kexec everything works fine.
-> Upon reverting the patch and rebuilding the kernel, everything returns to normal permanently and I can live without kexec again.
-> Tested on 3.4.4 and 3.5.0-rc7+, everything earlier than 3.3.x works as expected (due to not having its ASPM disable code reworked).
+Configuration:	global-dhp__scheduler-performance
+Result: 	http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__scheduler-performance
+Benchmarks:	hackbench-pipes hackbench-sockets pipetest starve lmbench
 
-Well, without knowing what's inside the NVidia driver, we can't really say
-what the problem may be.
+Summary
+=======
 
-Does nouveau detect your GPU with the Matthews commit?
+This is a mixed bag. The results on an I7 generally look great! There are
+some major improvemnets in there and I think this may be due to scheduler
+developers working with the latest chips. The other machines did not far
+as well. Look at pipetest on hydra for an example of a particularly bad
+set of results.
 
-Rafael
+Benchmark notes
+===============
+
+starve (http://www.hpl.hp.com/research/linux/kernel/o1-starve.php) was
+  chosen because even though it is designed to isolate a bug in the O(1)
+  scheduler, it is still interesting to monitor for performance regressions.
+  It does not take any special parameters.
+
+hackbench was chosen because it's a general scheduler benchmark that is
+  sensitive to regressions in the scheduler fast-path. It is difficult
+  to draw conclusions from as it is somewhat sensitive to the starting
+  conditions of the machine but trends over time may be observed. It is
+  run in both pipe and sockets mode and for each number of clients, it is
+  run for 30 iterations.
+
+pipetest is a scheduler ping-pong test that measures context switch latency.
+  It runs for 30 iterations.
+
+lmbench is just running the lat_ctx test and is another measure of context
+  switch latency.
+
+===========================================================
+Machine:	arnold
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__scheduler-performance/arnold/comparison.html
+Arch:		x86
+CPUs:		1 socket, 2 threads
+Model:		Pentium 4
+Disk:		Single Rotary Disk
+Status:		Context switch latency is regressing.
+===========================================================
+
+starve is looking ok except for 3.0 and 3.1 where System CPU time and elapsed
+	time increased. This was fixed in later kernels but worth noting
+	for users of -stable.
+
+lmbench showed a small regression in 3.0 where context switch latency was
+	increased and this has not been recovered yet. 3.3.6 was particularly
+	bad for low numbers of clients.
+
+hackbench-pipes looks ok in comparison to 2.6.32. The "Time ratio" graph
+	shows that kernels are below the red line reflecting that most
+	kernels are faster. However, it also shows that 2.6.34 was the
+	"best" kernel and recent kernels have regressed slightly
+
+hackbench-sockets regressed badly after 2.6.34 until 3.3 which should be
+	investigated. Again this is most obvious in the Time Ratio graph
+
+pipetest is showing major regressions in latency since some time between 2.6.34
+	and 2.6.39.
+
+==========================================================
+Machine:	hydra
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__scheduler-performance/hydra/comparison.html
+Arch:		x86-64
+CPUs:		1 socket, 4 threads
+Model:		AMD Phenom II X4 940
+Disk:		Single Rotary Disk
+Status:		pipetest is particularly bad.
+==========================================================
+
+starve is generally ok although again, 3.0 and 3.1 both regressed on System
+	CPU time. This was improved on kernels after that but it's still
+	a little worse than 2.6.32 was.
+
+lmbench shows no regression in 3.0 unlike on arnold but later kernels are
+	much worse with the latency of 3.4 being generally higher than it
+	was in 3.2
+
+hackbench-pipes generally looks ok.
+
+hackbench-sockets is generally bad. 3.1 was particularly bad and while
+	3.4 has improved the situation a bit, it is still worse than 2.6.32.
+
+pipetest is showing major regressions. 3.2 regressed particularly badly.
+
+==========================================================
+Machine:	sandy
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__scheduler-performance/sandy/comparison.html
+Arch:		x86-64
+CPUs:		1 socket, 8 threads
+Model:		Intel Core i7-2600
+Disk:		Single Rotary Disk
+Status:		Generally great.
+==========================================================
+
+starve is generally ok. 3.0 regressed in terms of System CPU time but
+	recent kernels are very good. This might reflect that a lot
+	of people are testing with later Intel processors to the
+	detriment of older models.
+
+lmbench is looking superb.
+
+hackbench-pipes looks great.
+
+hackbench-sockets does not look as great but it's still very good.
+
+pipetest is generally looking good in comparison to 2.6.32. However,
+	I am concerned that 3.4 is worse than 3.3.
+
+-- 
+Mel Gorman
+SUSE Labs
