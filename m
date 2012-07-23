@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab2GWAet (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 20:34:49 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:40590 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759Ab2GWAes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 20:34:48 -0400
-Date: Sun, 22 Jul 2012 20:34:40 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Ashish Sangwan <ashishsangwan2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        lczerner@redhat.com, Ashish Sangwan <ashish.sangwan2@gmail.com>,
-        Namjae Jeon <linkinjeon@gmail.com>
-Subject: Re: [PATCH v3] ext4: fix hole punch failure when depth is greater
- than 0
-Message-ID: <20120723003440.GG9958@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Ashish Sangwan <ashishsangwan2@gmail.com>,
-	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-	lczerner@redhat.com, Ashish Sangwan <ashish.sangwan2@gmail.com>,
-	Namjae Jeon <linkinjeon@gmail.com>
-References: <1341937570-5229-1-git-send-email-ashish.sangwan2@gmail.com>
+	id S1752814Ab2GWApx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 20:45:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42554 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752767Ab2GWApw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 20:45:52 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] regulator: lp8788-ldo: Set n_voltages to 1 for fixed
+ voltage
+Thread-Topic: [PATCH] regulator: lp8788-ldo: Set n_voltages to 1 for fixed
+ voltage
+Thread-Index: AQHNZnOYO6Zbf/0KB0+vabO6TGiuaJc2Cqrw
+Date: Mon, 23 Jul 2012 00:45:45 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FDC47@DQHE02.ent.ti.com>
+References: <1342787479.3531.1.camel@phoenix>
+In-Reply-To: <1342787479.3531.1.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.177.86]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341937570-5229-1-git-send-email-ashish.sangwan2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6N0kr1L000928
 
-On Tue, Jul 10, 2012 at 09:56:10PM +0530, Ashish Sangwan wrote:
-> Whether to continue removing extents or not is decided by the return value
-> of function ext4_ext_more_to_rm() which checks 2 conditions:
-> a) if there are no more indexes to process.
-> b) if the number of entries are decreased in the header of "depth -1".
+> For fixed voltage, the n_voltages should be 1 rather than 0.
 > 
-> In case of hole punch, if the last block to be removed is not part of the
-> last extent index than this index will not be deleted, hence the number of
-> valid entries in the extent header of "depth - 1" will remain as it is and
-> ext4_ext_more_to_rm will return 0 although the required blocks are not
-> yet removed.
-> 
-> This patch fixes the above mentioned problem as instead of removing the
-> extents from the end of file, it starts removing the blocks from the
-> particular extent from which removing blocks is actually required and
-> continue backward until done.
-> 
-> Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Applied, with a cc: to stable@kernel.org since it is a bug fix.
+Acked-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 
-Thanks for submitting this patch!
+Thanks !
 
-	      	       			       	  - Ted
+Best Regards,
+Milo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
