@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab2GWRKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 13:10:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25112 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754129Ab2GWRKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 13:10:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="170255777"
-Message-Id: <b0ae8224c13a4fc2320a43192582d1f357453c5d.1343062864.git.tony.luck@intel.com>
-In-Reply-To: <20120721020258.GA12898@thunk.org>
-From: Tony Luck <tony.luck@intel.com>
-Date: Mon, 23 Jul 2012 09:47:57 -0700
-Subject: [PATCH] random: Add comment to random_initialize()
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
-        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-        davem@davemloft.net, "Theodore Ts'o" <tytso@mit.edu>
+	id S1754127Ab2GWRMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 13:12:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40993 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab2GWRMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 13:12:20 -0400
+Date: Mon, 23 Jul 2012 10:12:15 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] kthread_worker: reimplement flush_kthread_work()
+ to allow freeing the work item being executed
+Message-ID: <20120723171215.GA5776@google.com>
+References: <20120719211510.GA32763@google.com>
+ <20120719211629.GC32763@google.com>
+ <1342894814.2504.31.camel@palomino.walls.org>
+ <20120722164953.GC5144@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1342990015.2487.19.camel@palomino.walls.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342990015.2487.19.camel@palomino.walls.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many platforms have per-machine instance data (serial numbers,
-asset tags, etc.) squirreled away in areas that are accessed
-during early system bringup. Mixing this data into the random
-pools has a very high value in providing better random data,
-so we should allow (and even encourage) architecture code to
-call add_device_randomness() from the setup_arch() paths.
+Hello,
 
-However, this limits our options for internal structure of
-the random driver since random_initialize() is not called
-until long after setup_arch().
+On Sun, Jul 22, 2012 at 04:46:54PM -0400, Andy Walls wrote:
+> Hmmm, I didn't know about the constraint about 'known to be alive' in
+> the other email I just sent.
+> 
+> That might make calling flush_kthread_work() hard for a user to use, if
+> the user lets the work get freed by another thread executing the work.
 
-Add a big fat comment to rand_initialize() spelling out
-this requirement.
+Umm... flushing a freed work item doesn't make any sense at all.  The
+pointer itself loses the ability to identify anything.  What if it
+gets recycled to another work item which happens to depend on the
+flusher to make forward progress?  You now have a circular dependency
+through a recycled memory area.  Good luck hunting that down.
 
-Suggested-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
+For pretty much any API, allowing dangling pointers as argument is
+insane.  If you want to flush self-freeing work items, flush the
+kthread_worker.  That's how it is with workqueue and how it should be
+with kthread_worker too.
 
-Theodore Ts'o wrote:
-> I agree.  Want to send a revised patch with the comment, and I'll drop
-> it into the random.git tree?
+Thanks.
 
-Additional patch rather than revised (since I'm touching different
-subsystems: dmi and random).
-
- drivers/char/random.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 9793b40..1a2dfa8 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1087,6 +1087,16 @@ static void init_std_data(struct entropy_store *r)
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
- }
- 
-+/*
-+ * Note that setup_arch() may call add_device_randomness()
-+ * long before we get here. This allows seeding of the pools
-+ * with some platform dependent data very early in the boot
-+ * process. But it limits our options here. We must use
-+ * statically allocated structures that already have all
-+ * initializations complete at compile time. We should also
-+ * take care not to overwrite the precious per platform data
-+ * we were given.
-+ */
- static int rand_initialize(void)
- {
- 	init_std_data(&input_pool);
 -- 
-1.7.10.2.552.gaa3bb87
-
+tejun
