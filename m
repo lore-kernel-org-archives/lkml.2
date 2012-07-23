@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab2GWR7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 13:59:06 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56568 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100Ab2GWR6v (ORCPT
+	id S1754553Ab2GWR72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 13:59:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46772 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473Ab2GWR7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 13:58:51 -0400
-Message-ID: <500D90C7.9000903@gmail.com>
-Date: Mon, 23 Jul 2012 19:58:31 +0200
-From: Daniel Mack <zonque@gmail.com>
+	Mon, 23 Jul 2012 13:59:25 -0400
+Message-ID: <500D90F9.7030909@wwwdotorg.org>
+Date: Mon, 23 Jul 2012 11:59:21 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
-References: <1333777207-4151-1-git-send-email-olof@lixom.net> <20120407070206.GA17623@core.coreip.homeip.net> <4F8089A9.6080704@raumfeld.com> <20120503043651.GA11830@core.coreip.homeip.net> <20120713070102.GA2223@core.coreip.homeip.net> <500561AF.9090901@gmail.com> <5008296C.5070709@gmail.com> <20120723165120.GB26577@core.coreip.homeip.net>
-In-Reply-To: <20120723165120.GB26577@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4.3
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Joerg Roedel <joerg.roedel@amd.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
+Subject: Re: [PATCH 5/7] drivers/iommu/tegra-smmu.c: remove invalid reference
+ to list iterator variable
+References: <1341747464-1772-1-git-send-email-Julia.Lawall@lip6.fr> <1341747464-1772-6-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1341747464-1772-6-git-send-email-Julia.Lawall@lip6.fr>
+X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.07.2012 18:51, Dmitry Torokhov wrote:
-> On Thu, Jul 19, 2012 at 05:36:12PM +0200, Daniel Mack wrote:
+On 07/08/2012 05:37 AM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 
->> Ok, finally I found some time. In general, the patch works fine. The
->> only detail I had to amend was the irqflags, which were changed from
->> IRQF_TRIGGER_RISING/IRQF_TRIGGER_FALLING to
->> IRQF_TRIGGER_HIGH/IRQF_TRIGGER_LOW, which doesn't work as the PXA can't
->> deal with level-based IRQs. Changing this back to RISING/FALLING makes
->> the driver work again.
+Julia,
+
+It looks like this patch hasn't seen any replies since you didn't CC the
+maintainers of this code. I've CC'd them now.
+
+> If list_for_each_entry, etc complete a traversal of the list, the iterator
+> variable ends up pointing to an address at an offset from the list head,
+> and not a meaningful structure.  Thus this value should not be used after
+> the end of the iterator.  Replace c->dev by dev, which is the value that
+> c->dev has been compared to.
 > 
-> Hmm, but that would mean we need to restore reading the data in open()
-> to make sure we re-arm IRQ in case somebody touched the screen before it
-> was opened by userspace...
+> This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Hmm, right, that was the reason why I put it there in the first place.
-Thanks for the heads-up. Would you do it? Want me to?
-
-
-Daniel
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
