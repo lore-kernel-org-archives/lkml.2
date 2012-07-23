@@ -1,87 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab2GWUc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:32:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52725 "EHLO
+	id S1754852Ab2GWUc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:32:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62077 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab2GWUcu (ORCPT
+	with ESMTP id S1754827Ab2GWUcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jul 2012 16:32:50 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         arm@kernel.org
-Subject: [GIT PULL 10/15] arm-soc: defconfig updates
-Date: Mon, 23 Jul 2012 22:32:36 +0200
-Message-Id: <1343075561-17446-11-git-send-email-arnd@arndb.de>
+Subject: [GIT PULL 14/15] arm-soc: power management changes
+Date: Mon, 23 Jul 2012 22:32:40 +0200
+Message-Id: <1343075561-17446-15-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343075561-17446-1-git-send-email-arnd@arndb.de>
 References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:+l1N1EIiPVxaaRGaqdJCPQj9LwAWETjP3T3iFFp3Wze
- irBxSuP2EW4CiJksoSj6MWKL5bicRhuyy4PSsUWjTJyx88M3OR
- 3vxUdo3hLB82adjFlha6xwyb9uOruqO8vfogDaCMusCIWIjQ8v
- xIgPIM41NgiObBz+xTE3UF60W4TFLhxTyW5gnRt52JfjtvnvCB
- nScgnfhRclzMg0YWvCPfWc2aLdwy+VLVYxWlQAyYVxGat6/VRt
- kvo63M0hehyThFnThlkBghR2MlMTZ87Qe5qv1uOzOeVyFfI2ck
- bAi7jtyLebPT4WbrMadmnZxyy5CAhiAEvQOfELxDHSh11Wt6yu
- tx7UkyMt+hJLML7S1Ri6NM1jUgm2scAZmX07267Tx
+X-Provags-ID: V02:K0:FkK3ep9RP3wLbxEgH4H6M+qJHvEaQKOR8yKmbU9Y55l
+ /1BgmW8/hv20adTPr4m2fTXQ3bdsN2ocu+TNmv8q2bIqzxjsxS
+ PJ0MAtxDjm8WwxHE2SZXX64irqv2Y/g3MCo0bQrDokhKxXX2Tc
+ ngbsUYAUpl8G7hO5cFHo9CtNDk9e6NCsRPVg2CyvwysxTG4Abx
+ UOpsT5iXQvzYyhjlJH76lORmCPVJQ8rY5QzJzc6ITYkenRzskq
+ AI4zip1ki5xCAHOvE5kd98ujfYzmcHtqvyV7I34HXAp/nQZhZT
+ FK662Qof0toQyihfTEfeflk+873ARSZmIfQICRwcmKWvMNh314
+ YsOle2zHxEw7iMisNFgn7WxPqz9F8AyKtcvSVYCNv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c:
+The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
 
-  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
+  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/defconfig
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/pm
 
-for you to fetch changes up to 2d05bf6ef7391ac3642ab62bc3a649fdb32731fe:
+for you to fetch changes up to 6b21a9ce0402e0c5fd2adfa3d41328fdd8f55a9a:
 
-  Merge branch 'samsung/defconfig' into next/defconfig (2012-07-21 23:22:35 +0200)
-
-----------------------------------------------------------------
-
-arm-soc: defconfig updates
-
-These are changes to the default configuration files, to account for
-kernel changes and new hardware.
+  Merge tag 'omap-devel-pm-for-v3.6' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into next/pm (2012-07-03 22:02:17 +0200)
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (6):
-      Merge branch 'lpc32xx/defconfig' of git://git.antcom.de/linux-2.6 into next/defconfig
-      Merge branch 'mxs/defconfig-for-3.6' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/defconfig
-      Merge branch 'for-3.6/defconfig' of git://git.kernel.org/.../swarren/linux-tegra into next/defconfig
-      Merge tag 'imx-defconfig' of git://git.pengutronix.de/git/imx/linux-2.6 into next/defconfig
-      Merge branch 'samsung/defconfig' into next/defconfig
-      Merge branch 'next/defconfig' into for-next
+arm-soc: power management changes
 
-Fabio Estevam (5):
-      ARM: mxs: Let GPMI driver be built by default
-      ARM: mxs: Enable MACH_APX4DEVKIT
-      ARM: mxs_defconfig: Let AUART driver be built by default
-      ARM: mxs_defconfig: Enable RTC driver
-      ARM: mxs: defconfig: Enable CONFIG_COMMON_CLK_DEBUG
+These are various power management related changes, mainly concerning
+cpuidle on i.MX and OMAP, as well as a the move of the omap smartreflex
+driver to live in the power subsystem.
+
+----------------------------------------------------------------
+
+Arnd Bergmann (3):
+      Merge tag 'omap-devel-driver-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/pm
+      Merge tag 'omap-devel-pm-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/pm
+      Merge branch 'next/pm' into for-next
+
+J Keerthy (1):
+      ARM: OMAP2+: Voltage: Move the omap_volt_data structure to plat
+
+Jean Pihet (13):
+      ARM: OMAP2+: SmartReflex: move the smartreflex header to include/linux/power
+      ARM: OMAP3+: SmartReflex: class drivers should use struct omap_sr *
+      ARM: OMAP2+: smartreflex: Use the names from hwmod data instead of voltage domains.
+      ARM: OMAP3: hwmod: rename the smartreflex entries
+      ARM: OMAP2+: SmartReflex: introduce a busy loop condition test macro
+      ARM: OMAP2+: SmartReflex: Use per-OPP data structure
+      ARM: OMAP2+: SmartReflex: Create per-opp debugfs node for errminlimit
+      ARM: OMAP2+: SmartReflex: add POWER_AVS Kconfig options
+      ARM: OMAP: SmartReflex: Move smartreflex driver to drivers/
+      ARM: OMAP3: PM: cpuidle: default to C1 in next_valid_state
+      ARM: OMAP3: PM: cpuidle: optimize the PER latency in C1 state
+      ARM: OMAP3: PM: cpuidle: optimize the clkdm idle latency in C1 state
+      ARM: OMAP2+: do not allow SmartReflex to be built as a module
+
+Kevin Hilman (5):
+      ARM: OMAP2+: PRM: fix compile for OMAP4-only build
+      ARM: OMAP2+: powerdomain: allow pre/post transtion to be per pwrdm
+      ARM: OMAP3: PM: call pre/post transition per powerdomain
+      ARM: OMAP3: PM: cleanup cam_pwrdm leftovers
+      ARM: OMAP2+: PM: fix IRQ_NOAUTOEN removal by mis-merge
+
+Mohan V (1):
+      ARM: OMAP3: PM: correct enable/disable of daisy io chain
 
 Olof Johansson (1):
-      ARM: exynos_defconfig: enable more platforms in defconfig
+      Merge branch 'imx/cpuidle' into next/pm
 
-Roland Stigge (1):
-      ARM: LPC32xx: Defconfig update
+Paul Walmsley (4):
+      W1: OMAP HDQ1W: allow driver to be built on all OMAP2+
+      W1: OMAP HDQ1W: use 32-bit register accesses
+      ARM: OMAP2+: HDQ1W: use omap_device
+      W1: OMAP HDQ1W: use runtime PM
 
-Sascha Hauer (2):
-      ARM: imx_v6_v7_defconfig: update features
-      ARM: imx_v4_v5_defconfig: update features
+Rajendra Nayak (1):
+      ARM: OMAP4: PRM: Add IO Daisychain support
 
-Stephen Warren (1):
-      ARM: tegra: defconfig updates
+Robert Lee (7):
+      ARM: imx: Modify IMX_IO_P2V macro
+      ARM: imx: Add comments to tzic_enable_waker()
+      ARM: imx: clean and consolidate imx5 suspend and idle code
+      ARM: imx: Enable imx53 low power idle
+      ARM: imx: Add common imx cpuidle init functionality.
+      ARM: imx: Add imx5 cpuidle
+      ARM: imx: Add imx6q cpuidle driver
 
- arch/arm/configs/exynos_defconfig    |   92 ++++++++++++++++++++++++++++++++++
- arch/arm/configs/imx_v4_v5_defconfig |   51 +++++++++----------
- arch/arm/configs/imx_v6_v7_defconfig |   61 +++++++++++++---------
- arch/arm/configs/lpc32xx_defconfig   |    2 +
- arch/arm/configs/mxs_defconfig       |    7 +++
- arch/arm/configs/tegra_defconfig     |   13 +++--
- 6 files changed, 170 insertions(+), 56 deletions(-)
+Tero Kristo (1):
+      ARM: OMAP3+: PRM: Enable IO wake up
+
+Tony Lindgren (5):
+      Merge tag 'omap-devel-b-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into devel-driver
+      Merge tag 'omap-devel-c-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into devel-pm
+      ARM: OMAP2: Use hwmod to initialize mmc for 2420
+      Merge branch 'for_3.6/pm/sr-move' of git://git.kernel.org/.../khilman/linux-omap-pm into devel-driver
+      Merge branch 'for_3.6/pm/performance' of git://git.kernel.org/.../khilman/linux-omap-pm into devel-pm
+
+Vishwanath BS (3):
+      ARM: OMAP3: PM: Move IO Daisychain function to omap3 prm file
+      ARM: OMAP3PLUS: hwmod: reconfigure IO Daisychain during hwmod mux
+      ARM: OMAP3: PM: Remove IO Daisychain control from cpuidle
+
+ arch/arm/mach-imx/clk-imx51-imx53.c                |    2 +-
+ arch/arm/mach-imx/imx53-dt.c                       |    1 +
+ arch/arm/mach-imx/mach-imx6q.c                     |   19 +++
+ arch/arm/mach-imx/mach-mx53_ard.c                  |    1 +
+ arch/arm/mach-imx/mach-mx53_evk.c                  |    1 +
+ arch/arm/mach-imx/mach-mx53_loco.c                 |    1 +
+ arch/arm/mach-imx/mach-mx53_smd.c                  |    1 +
+ arch/arm/mach-imx/mm-imx5.c                        |   26 +---
+ arch/arm/mach-imx/pm-imx5.c                        |  111 ++++++++++----
+ arch/arm/mach-omap2/Makefile                       |    5 +-
+ arch/arm/mach-omap2/cpuidle34xx.c                  |   71 ++++-----
+ arch/arm/mach-omap2/devices.c                      |  108 -------------
+ arch/arm/mach-omap2/hdq1w.c                        |   26 ++++
+ arch/arm/mach-omap2/msdi.c                         |   73 +++++++++
+ arch/arm/mach-omap2/omap-mpuss-lowpower.c          |    4 +-
+ arch/arm/mach-omap2/omap_hwmod.c                   |   38 ++++-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |   12 +-
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    3 +-
+ arch/arm/mach-omap2/pm.h                           |    2 +-
+ arch/arm/mach-omap2/pm34xx.c                       |   63 ++------
+ arch/arm/mach-omap2/powerdomain.c                  |   16 +-
+ arch/arm/mach-omap2/powerdomain.h                  |    4 +-
+ arch/arm/mach-omap2/prcm-common.h                  |    8 +
+ arch/arm/mach-omap2/prm2xxx_3xxx.c                 |   48 ++++++
+ arch/arm/mach-omap2/prm2xxx_3xxx.h                 |    2 +
+ arch/arm/mach-omap2/prm44xx.c                      |   63 +++++++-
+ arch/arm/mach-omap2/prm44xx.h                      |    2 +
+ arch/arm/mach-omap2/smartreflex-class3.c           |   29 ++--
+ arch/arm/mach-omap2/sr_device.c                    |   39 ++++-
+ arch/arm/mach-omap2/voltage.h                      |   21 +--
+ arch/arm/plat-mxc/Makefile                         |    1 +
+ arch/arm/plat-mxc/cpuidle.c                        |   80 ++++++++++
+ arch/arm/plat-mxc/include/mach/common.h            |    6 +-
+ arch/arm/plat-mxc/include/mach/cpuidle.h           |   22 +++
+ arch/arm/plat-mxc/include/mach/hardware.h          |   25 +--
+ arch/arm/plat-mxc/tzic.c                           |    4 +
+ arch/arm/plat-omap/Kconfig                         |   31 ++--
+ arch/arm/plat-omap/include/plat/voltage.h          |   21 ++-
+ drivers/power/Kconfig                              |    2 +
+ drivers/power/Makefile                             |    1 +
+ drivers/power/avs/Kconfig                          |   12 ++
+ drivers/power/avs/Makefile                         |    1 +
+ .../mach-omap2 => drivers/power/avs}/smartreflex.c |  161 ++++++++------------
+ drivers/w1/masters/Kconfig                         |    2 +-
+ drivers/w1/masters/omap_hdq.c                      |   86 +++--------
+ .../linux/power}/smartreflex.h                     |   74 +++++++--
+ 46 files changed, 808 insertions(+), 521 deletions(-)
