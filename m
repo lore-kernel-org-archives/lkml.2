@@ -1,42 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab2GWGJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 02:09:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47113 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab2GWGJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 02:09:14 -0400
-Date: Mon, 23 Jul 2012 07:09:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	id S1753104Ab2GWGNw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 02:13:52 -0400
+Received: from linux-sh.org ([111.68.239.195]:60994 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952Ab2GWGNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 02:13:50 -0400
+Date: Mon, 23 Jul 2012 15:13:46 +0900
+From: Paul Mundt <lethal@linux-sh.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [git pull] vfs.git; pile 1
-Message-ID: <20120723060909.GE31729@ZenIV.linux.org.uk>
-References: <20120722100920.GZ31729@ZenIV.linux.org.uk>
- <CA+55aFzG9gzWRLvZMb6RnKua0=RHxBFisYSCVDNhjHBq7oq2yw@mail.gmail.com>
- <20120722202030.GB31729@ZenIV.linux.org.uk>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 3.6-rc1
+Message-ID: <20120723061345.GA23783@linux-sh.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120722202030.GB31729@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 09:20:30PM +0100, Al Viro wrote:
-> Result: for-linus-2 + v3.5 and for-linus + v3.5 give identical trees,
-> and for-linus-2 merges clean with nfs/nfs-for-3.6.  Would you be OK
-> with pulling that one?  Again, my apologies to everyone involved ;-/
-> 
-> If you are OK with pulling that one, the summary is unchanged, location is
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus-2
+The following changes since commit 2437fccfbfc83bcb868ccc7fdfe2b5310bf07835:
 
-BTW, Stephen, could you confirm that vfs.git#for-linus-2 has no conflicts
-with the rest of trees in linux-next?  I've checked the lack of conflicts
-with nfs.git and you haven't mentioned any other conflicts, so I hope
-that this will do, but I haven't tried pulling and merging the rest of
-the stuff in -next; not with the link I'm behind right now... ;-/
+  Merge tag 'regulator-3.5' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator (2012-07-09 13:43:02 -0700)
+
+are available in the git repository at:
+
+
+  git://github.com/pmundt/linux-sh tags/sh-for-linus
+
+for you to fetch changes up to 9ff561fdf73493d757bbc74aa58627e1381650fb:
+
+  Merge branch 'common/pinctrl' into sh-latest (2012-07-20 16:42:59 +0900)
+
+----------------------------------------------------------------
+
+SuperH updates for 3.6-rc1 merge window
+
+- Migration off of old-style dynamic IRQ API.
+
+- irqdomain and generic irq chip propagation.
+
+- div4/6 clock consolidation, another step towards co-existing
+  with the common struct clk infrastructure.
+
+- Extensive PFC rework
+  - Decoupling GPIO from pin state.
+  - Initial pinctrl support to facilitate incremental migration
+    off of legacy pinmux.
+  - gpiolib support made optional, and made pinctrl-backed.
+
+----------------------------------------------------------------
+Paul Mundt (45):
+      sh: mach-se: Migrate 7724SE off of deprecated dynamic IRQ API.
+      sh: hd64461: Migrate off of deprecated dynamic IRQ API.
+      sh: dreamcast: Migrate off of deprecated dynamic IRQ API.
+      sh: Kill off now unused arch_probe_nr_irqs().
+      sh64: Convert to unwinder API.
+      sh64: Ensure KALLSYMS is enabled for unwinder use.
+      sh: mach-x3proto: Migrate to linear irq domain.
+      sh: se722: Move FPGA IRQs to irqdomain and generic irq chip.
+      sh: se7343: Move CPLD IRQs to irqdomain and generic irq chip.
+      sh: intc: Kill off deprecated dynamic IRQ API.
+      sh: clkfwk: Move to common clk_div_table accessors for div4/div6.
+      sh: clkfwk: Introduce a div_mask for variable div types.
+      sh: clkfwk: Use shared sh_clk_div_recalc().
+      sh: clkfwk: Use shared sh_clk_div_set_rate()
+      sh: clkfwk: Use shared sh_clk_div_enable/disable().
+      sh: clkfwk: Consolidate div6/div4 clk_ops definitions.
+      sh: clkfwk: Consolidate div clk registration helper.
+      sh: intc: Allocate subgroup virq backing desc directly.
+      Merge branch 'sh/multi-unwinders' into sh-latest
+      Merge branch 'sh/dynamic-irq-cleanup' into sh-latest
+      Merge branch 'sh/genirq' into sh-latest
+      sh64: Use generic unaligned access control/counters.
+      sh64: Kill off old exception debugging helpers.
+      sh: Consolidate die definitions for trap handlers.
+      sh64: Attempt to make reserved insn trap handler resemble C.
+      sh64: Fix up section mismatch warnings.
+      Merge branch 'sh/clkfwk' into sh-latest
+      sh: pfc: Split out gpio chip support.
+      sh: pfc: Make gpio chip support optional where possible.
+      sh: pfc: Kill off unused pinmux bias flags.
+      sh: pfc: Verify pin type encoding size at build time.
+      Merge branch 'common/pfc' into sh-latest
+      sh: pfc: Shuffle PFC support core.
+      Merge branch 'common/pfc' into common/pinctrl
+      sh: pfc: Dumb GPIO stringification.
+      sh: pfc: Rudimentary pinctrl-backed GPIO support.
+      sh: pfc: pinctrl legacy function support.
+      sh: pfc: Make pr_fmt consistent across pfc drivers.
+      sh: pfc: Error out on pinctrl init resolution failure.
+      sh: pfc: Export pinctrl binding init symbol.
+      sh: pfc: Ignore pinmux GPIOs with invalid enum IDs.
+      sh: pfc: pinctrl legacy group support.
+      sh: pfc: Prefer DRV_NAME over KBUILD_MODNAME.
+      sh: pfc: pin config get/set support.
+      Merge branch 'common/pinctrl' into sh-latest
+
+ arch/sh/Kconfig                       |   1 +
+ arch/sh/boards/Kconfig                |   5 +
+ arch/sh/boards/mach-dreamcast/irq.c   |  32 +-
+ arch/sh/boards/mach-se/7343/irq.c     | 129 ++++--
+ arch/sh/boards/mach-se/7343/setup.c   |  10 +-
+ arch/sh/boards/mach-se/7722/irq.c     | 131 +++---
+ arch/sh/boards/mach-se/7722/setup.c   |   6 +-
+ arch/sh/boards/mach-se/7724/irq.c     |  36 +-
+ arch/sh/boards/mach-x3proto/gpio.c    |  57 +--
+ arch/sh/cchips/hd6446x/hd64461.c      |  33 +-
+ arch/sh/include/asm/bug.h             |   4 +
+ arch/sh/include/asm/kdebug.h          |   2 +
+ arch/sh/include/mach-se/mach/se7343.h |   7 +-
+ arch/sh/include/mach-se/mach/se7722.h |  10 +-
+ arch/sh/kernel/cpu/sh5/unwind.c       |  63 ++-
+ arch/sh/kernel/dumpstack.c            |  58 +++
+ arch/sh/kernel/irq.c                  |  10 -
+ arch/sh/kernel/traps.c                |  71 ++++
+ arch/sh/kernel/traps_32.c             | 121 ------
+ arch/sh/kernel/traps_64.c             | 589 +++++++++++----------------
+ arch/sh/lib64/Makefile                |   2 +-
+ arch/sh/lib64/dbg.c                   | 248 ------------
+ arch/sh/mm/tlb-sh5.c                  |   2 +-
+ drivers/sh/Kconfig                    |   1 +
+ drivers/sh/Makefile                   |   3 +-
+ drivers/sh/clk/cpg.c                  | 333 +++++++--------
+ drivers/sh/intc/Makefile              |   2 +-
+ drivers/sh/intc/dynamic.c             |  57 ---
+ drivers/sh/intc/virq.c                |   4 +-
+ drivers/sh/pfc.c                      | 739 ----------------------------------
+ drivers/sh/pfc/Kconfig                |  26 ++
+ drivers/sh/pfc/Makefile               |   3 +
+ drivers/sh/pfc/core.c                 | 572 ++++++++++++++++++++++++++
+ drivers/sh/pfc/gpio.c                 | 239 +++++++++++
+ drivers/sh/pfc/pinctrl.c              | 530 ++++++++++++++++++++++++
+ include/linux/sh_clk.h                |  21 +-
+ include/linux/sh_pfc.h                |  65 ++-
+ 37 files changed, 2244 insertions(+), 1978 deletions(-)
+ delete mode 100644 arch/sh/lib64/dbg.c
+ delete mode 100644 drivers/sh/intc/dynamic.c
+ delete mode 100644 drivers/sh/pfc.c
+ create mode 100644 drivers/sh/pfc/Kconfig
+ create mode 100644 drivers/sh/pfc/Makefile
+ create mode 100644 drivers/sh/pfc/core.c
+ create mode 100644 drivers/sh/pfc/gpio.c
+ create mode 100644 drivers/sh/pfc/pinctrl.c
