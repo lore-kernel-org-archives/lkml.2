@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab2GWBl5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:41:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53954 "EHLO
+	id S1753051Ab2GWBm3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:42:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54052 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752809Ab2GWBl4 (ORCPT
+	by vger.kernel.org with ESMTP id S1752837Ab2GWBmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:41:56 -0400
-Message-Id: <20120723010651.408577075@decadent.org.uk>
+	Sun, 22 Jul 2012 21:42:25 -0400
+Message-Id: <20120723010705.309838820@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:06:51 +0100
+Date: Mon, 23 Jul 2012 02:08:22 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 000/108] 3.2.24-stable review
+        alan@lxorguk.ukuu.org.uk, Feng Tang <feng.tang@intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [ 091/108] ACPI: Make acpi_skip_timer_override cover all source_irq==0 cases
+In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
 X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
@@ -22,133 +24,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.2.24 release.
-There are 108 patches in this series, which will be posted as responses
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Jul 25 02:00:00 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-A combined patch relative to 3.2.23 will be posted as an additional
-response to this, and the diffstat can be found below.
+From: Feng Tang <feng.tang@intel.com>
 
-Ben.
+commit ae10ccdc3093486f8c2369d227583f9d79f628e5 upstream.
 
--------------
- Makefile                                          |    4 +-
- arch/arm/plat-samsung/adc.c                       |    8 +-
- arch/mips/include/asm/thread_info.h               |    4 +-
- arch/mips/kernel/vmlinux.lds.S                    |    3 +-
- arch/powerpc/include/asm/cputime.h                |    6 +-
- arch/powerpc/kernel/time.c                        |   10 +-
- arch/x86/kernel/acpi/boot.c                       |   27 +-
- arch/x86/kernel/reboot.c                          |    8 +
- block/scsi_ioctl.c                                |    5 +-
- drivers/acpi/processor_core.c                     |    6 +-
- drivers/acpi/sleep.c                              |    4 +-
- drivers/acpi/sysfs.c                              |    4 +-
- drivers/gpio/gpio-wm8994.c                        |    5 +-
- drivers/gpu/drm/i915/intel_display.c              |    4 +-
- drivers/hid/hid-apple.c                           |    6 +
- drivers/hid/hid-core.c                            |    7 +
- drivers/hid/hid-ids.h                             |    6 +
- drivers/hwmon/it87.c                              |    2 +-
- drivers/hwspinlock/hwspinlock_core.c              |    4 +-
- drivers/input/joystick/xpad.c                     |    6 +-
- drivers/input/mouse/bcm5974.c                     |   20 ++
- drivers/iommu/amd_iommu.c                         |    7 +
- drivers/iommu/amd_iommu_init.c                    |    3 +-
- drivers/md/dm-raid1.c                             |    3 +-
- drivers/md/dm-region-hash.c                       |    5 +-
- drivers/md/md.c                                   |   36 ++-
- drivers/md/raid1.c                                |   13 +-
- drivers/md/raid5.c                                |    4 +-
- drivers/media/dvb/dvb-core/dvbdev.c               |    1 +
- drivers/mtd/nand/nandsim.c                        |   12 +-
- drivers/net/bonding/bond_debugfs.c                |    2 +-
- drivers/net/bonding/bond_main.c                   |    9 +-
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c   |    1 -
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h       |   15 --
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c   |   36 ++-
- drivers/net/ethernet/broadcom/tg3.c               |    3 +-
- drivers/net/ethernet/intel/e1000e/82571.c         |    3 +
- drivers/net/ethernet/realtek/r8169.c              |    3 +
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    3 +
- drivers/net/macvtap.c                             |   57 +++--
- drivers/net/usb/ipheth.c                          |    5 +
- drivers/net/wireless/brcm80211/brcmsmac/main.c    |    3 +-
- drivers/net/wireless/ipw2x00/ipw.h                |   23 ++
- drivers/net/wireless/ipw2x00/ipw2100.c            |    4 +
- drivers/net/wireless/ipw2x00/ipw2200.c            |    4 +
- drivers/net/wireless/iwlegacy/iwl-4965-sta.c      |    4 +-
- drivers/net/wireless/iwlegacy/iwl-core.c          |   14 +-
- drivers/net/wireless/rt2x00/rt2x00usb.c           |    2 +-
- drivers/net/wireless/rtl818x/rtl8187/leds.c       |    2 +-
- drivers/pci/pci-driver.c                          |   12 +
- drivers/pci/pci.c                                 |    5 -
- drivers/pci/quirks.c                              |   26 --
- drivers/platform/x86/intel_ips.c                  |   22 ++
- drivers/platform/x86/samsung-laptop.c             |  225 +----------------
- drivers/rtc/rtc-mxc.c                             |    5 +-
- drivers/scsi/aic94xx/aic94xx_task.c               |    2 +-
- drivers/scsi/libsas/sas_ata.c                     |   12 +-
- drivers/target/target_core_cdb.c                  |    2 +-
- drivers/target/target_core_pr.c                   |    7 +-
- drivers/target/tcm_fc/tfc_cmd.c                   |    2 +
- drivers/usb/class/cdc-wdm.c                       |    2 +
- drivers/usb/core/hub.c                            |   18 +-
- drivers/usb/host/xhci-hub.c                       |   44 +++-
- drivers/usb/host/xhci.h                           |    6 +-
- drivers/usb/serial/option.c                       |   26 ++
- drivers/vhost/vhost.c                             |    2 +
- fs/buffer.c                                       |   22 +-
- fs/cifs/connect.c                                 |   18 ++
- fs/cifs/readdir.c                                 |    7 +-
- fs/ecryptfs/kthread.c                             |    2 +-
- fs/ecryptfs/miscdev.c                             |   48 ++--
- fs/eventpoll.c                                    |    4 +-
- fs/exofs/ore.c                                    |    8 +-
- fs/exofs/ore_raid.c                               |   67 ++---
- fs/ext4/super.c                                   |    2 +-
- fs/fifo.c                                         |    9 +-
- fs/hugetlbfs/inode.c                              |   54 ++--
- fs/locks.c                                        |    2 +-
- fs/nfs/idmap.c                                    |   48 +++-
- fs/nfs/nfs4state.c                                |    5 +-
- fs/nfs/objlayout/objio_osd.c                      |   25 +-
- fs/ocfs2/file.c                                   |    2 +-
- fs/ramfs/file-nommu.c                             |    1 +
- fs/ubifs/sb.c                                     |    8 +-
- include/linux/Kbuild                              |    1 +
- include/linux/hrtimer.h                           |   10 +-
- include/linux/hugetlb.h                           |   14 +-
- include/linux/mmzone.h                            |    2 +-
- include/linux/pci.h                               |    2 -
- include/linux/sched.h                             |    8 +
- include/linux/skbuff.h                            |    5 +-
- include/linux/timex.h                             |    2 +-
- include/scsi/libsas.h                             |    6 +-
- kernel/hrtimer.c                                  |   53 ++--
- kernel/power/swap.c                               |   62 +++--
- kernel/sched.c                                    |  276 +++++++++++++++------
- kernel/sched_idletask.c                           |    1 -
- kernel/time/ntp.c                                 |  124 +++------
- kernel/time/tick-sched.c                          |    2 +
- kernel/time/timekeeping.c                         |  115 ++++++---
- mm/compaction.c                                   |    5 +-
- mm/hugetlb.c                                      |  135 ++++++++--
- mm/vmscan.c                                       |   12 +-
- net/can/raw.c                                     |    3 -
- net/core/dev.c                                    |   23 +-
- net/ipv4/tcp_input.c                              |    2 +
- net/iucv/af_iucv.c                                |    1 -
- net/wireless/util.c                               |    2 +-
- scripts/depmod.sh                                 |    6 -
- virt/kvm/irq_comm.c                               |    1 +
- 110 files changed, 1213 insertions(+), 836 deletions(-)
+Currently when acpi_skip_timer_override is set, it only cover the
+(source_irq == 0 && global_irq == 2) cases. While there is also
+platform which need use this option and its global_irq is not 2.
+This patch will extend acpi_skip_timer_override to cover all
+timer overriding cases as long as the source irq is 0.
 
--- 
-Ben Hutchings
-Who are all these weirdos? - David Bowie, about L-Space IRC channel #afp
+This is the first part of a fix to kernel bug bugzilla 40002:
+	"IRQ 0 assigned to VGA"
+https://bugzilla.kernel.org/show_bug.cgi?id=40002
+
+Reported-and-tested-by: Szymon Kowalczyk <fazerxlo@o2.pl>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/x86/kernel/acpi/boot.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 8afb693..e7c698e 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -422,12 +422,14 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
+ 		return 0;
+ 	}
+ 
+-	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
++	if (intsrc->source_irq == 0) {
+ 		if (acpi_skip_timer_override) {
+-			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
++			printk(PREFIX "BIOS IRQ0 override ignored.\n");
+ 			return 0;
+ 		}
+-		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
++
++		if ((intsrc->global_irq == 2) && acpi_fix_pin2_polarity
++			&& (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
+ 			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
+ 			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
+ 		}
+@@ -1334,7 +1336,7 @@ static int __init dmi_disable_acpi(const struct dmi_system_id *d)
+ }
+ 
+ /*
+- * Force ignoring BIOS IRQ0 pin2 override
++ * Force ignoring BIOS IRQ0 override
+  */
+ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+ {
+@@ -1344,7 +1346,7 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+ 	 */
+ 	if (!acpi_skip_timer_override) {
+ 		WARN(1, KERN_ERR "ati_ixp4x0 quirk not complete.\n");
+-		pr_notice("%s detected: Ignoring BIOS IRQ0 pin2 override\n",
++		pr_notice("%s detected: Ignoring BIOS IRQ0 override\n",
+ 			d->ident);
+ 		acpi_skip_timer_override = 1;
+ 	}
+@@ -1438,7 +1440,7 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 	 * is enabled.  This input is incorrectly designated the
+ 	 * ISA IRQ 0 via an interrupt source override even though
+ 	 * it is wired to the output of the master 8259A and INTIN0
+-	 * is not connected at all.  Force ignoring BIOS IRQ0 pin2
++	 * is not connected at all.  Force ignoring BIOS IRQ0
+ 	 * override in that cases.
+ 	 */
+ 	{
+
 
