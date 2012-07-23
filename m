@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab2GWTrM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 15:47:12 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53596 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576Ab2GWTrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 15:47:09 -0400
-Subject: Re: linux-next: manual merge of the staging tree with the
- target-merge tree
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Greg KH <greg@kroah.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Hajnoczi <stefanha@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Zhi Yong Wu <wuzhy@cn.ibm.com>, David Miller <davem@davemloft.net>,
-        kvm-devel <kvm@vger.kernel.org>,
-        target-devel <target-devel@vger.kernel.org>
-In-Reply-To: <20120723151653.GB19236@kroah.com>
-References: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
-	 <20120719235523.GA13623@kroah.com>
-	 <1342806778.25472.1.camel@haakon2.linux-iscsi.org>
-	 <20120720180358.GA9134@kroah.com> <20120720184228.GA19243@redhat.com>
-	 <20120722020746.GB31926@kroah.com>
-	 <1342993463.25472.265.camel@haakon2.linux-iscsi.org>
-	 <20120723151653.GB19236@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 23 Jul 2012 12:47:06 -0700
-Message-ID: <1343072826.25472.280.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754734Ab2GWTu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 15:50:57 -0400
+Received: from shutemov.name ([176.9.204.213]:44230 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754644Ab2GWTu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 15:50:56 -0400
+Date: Mon, 23 Jul 2012 22:51:46 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf: fix build error
+Message-ID: <20120723195146.GA24938@shutemov.name>
+References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
+ <20120723180244.GB5418@infradead.org>
+ <20120723181608.GA24558@shutemov.name>
+ <20120723181849.GF6717@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120723181849.GF6717@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-23 at 08:16 -0700, Greg KH wrote:
-> On Sun, Jul 22, 2012 at 02:44:23PM -0700, Nicholas A. Bellinger wrote:
-> > So Linus has merged target-pending/for-next this afternoon, so now we
-> > are just waiting on net-next to hit mainline with the vhost patches
-> > already ACK'ed by MST.  Hopefully that makes things easier for you to
-> > considering taking tcm_vhost upstream via staging.  ;)
+On Mon, Jul 23, 2012 at 08:18:49PM +0200, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Jul 23, 2012 at 09:16:08PM +0300, Kirill A. Shutemov escreveu:
+> > On Mon, Jul 23, 2012 at 08:02:44PM +0200, Arnaldo Carvalho de Melo wrote:
+> > > Em Mon, Jul 23, 2012 at 06:00:44PM +0300, Kirill A. Shutemov escreveu:
+> > > > util/parse-events.c:29:5: error: redundant redeclaration of ‘parse_events_parse’ [-Werror=redundant-decls]
+> > > > util/parse-events-bison.h:99:5: note: previous declaration of ‘parse_events_parse’ was here
+> > > > cc1: all warnings being treated as errors
+> 
+> > > Causes the build to fail for me:
+> 
+> > > cc1: warnings being treated as errors
+> > > util/parse-events.c: In function ‘parse_events__scanner’:
+> > > util/parse-events.c:701: error: implicit declaration of function ‘parse_events_parse’
+> > > util/parse-events.c:701: error: nested extern declaration of ‘parse_events_parse’
+> > > make: *** [/home/acme/git/build/perf/util/parse-events.o] Error 1
+> > > make: *** Waiting for unfinished jobs....
+> > > make: Leaving directory `/home/git/linux/tools/perf'
 > > 
-> > Also, MST asked for an RFC-v5 for the initial merge commit with some
-> > minor debug wrapper changes that will be going out next week.  This will
-> > include a move into drivers/staging/tcm_vhost/ against a rebased
-> > staging.git patch with the necessary -rc0 mainline dependencies.
-> > 
-> > Please let me know if your OK with this, otherwise I'll just plan to
-> > keep -v5 against target-pending/for-next-merge for now, and send a GIT
-> > PULL after MST gets back from holiday on the 29th -> 30th.
+> > What bison version do you have?
 > 
-> I have no idea what any of the above three paragraphs are asking for, or
-> talking about, sorry.
-> 
-> Note, the merge window is closed for taking new stuff into the staging
-> tree.  If it isn't already in my staging-next tree, it isn't going to go
-> into 3.6 unless it's bug fixes, sorry.
-
-In that case, I'll just keep tcm_vhost in drivers/vhost/ for now and
-await MST's return to determine if he's willing to ACK this round (via
-target-pending) for an initial merge.
-
-> How about we figure all of this
-> out after 3.6-rc1 is out so we can understand what is going on for 3.7?
+> [acme@sandy linux]$ rpm -q bison
+> bison-2.4.1-5.el6.x86_64
 > 
 
-I'd like to try to avoid slipping to v3.7 if possible, as we'll have the
-necessary dependencies in mainline over the next days once net-next is
-merged.  It's also self-contained driver that does not effect existing
-code (aside from what's already been ACK'ed), so risk is very low..
+Could you test this one?
 
---nab
+>From 461531d2166574e4a3abc7ae27ebbea864d9f5ea Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Mon, 23 Jul 2012 17:39:11 +0300
+Subject: [PATCH] perf: fix build error
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
+Bison 2.6 started to generate parse_events_parse() declaration in
+header. In this case we have redundant redeclaration:
+
+util/parse-events.c:29:5: error: redundant redeclaration of ‘parse_events_parse’ [-Werror=redundant-decls]
+In file included from util/parse-events.c:14:0:
+util/parse-events-bison.h:99:5: note: previous declaration of ‘parse_events_parse’ was here
+cc1: all warnings being treated as errors
+
+Let's disable -Wredundant-decls for util/parse-events.c since it
+includes header we can't control.
+
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ tools/perf/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 75d74e5..71c274f 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -803,6 +803,9 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
++$(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
++
+ $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
+ 
+-- 
+ Kirill A. Shutemov
