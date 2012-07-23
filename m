@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2GWBnz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:43:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54476 "EHLO
+	id S1753726Ab2GWBoa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:44:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54506 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753617Ab2GWBnr (ORCPT
+	by vger.kernel.org with ESMTP id S1753642Ab2GWBnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:47 -0400
-Message-Id: <20120723010656.785489041@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:55 -0400
+Message-Id: <20120723010657.115433023@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:26 +0100
+Date: Mon, 23 Jul 2012 02:07:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
-        Praveen Murali <pmurali@logicube.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 035/108] [SCSI] libsas: fix taskfile corruption in sas_ata_qc_fill_rtf
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        =?ISO-8859-15?q?D=C3=A2niel=20Fraga?= <fragabr@gmail.com>,
+        Javier Marcet <jmarcet@gmail.com>, Andrey Rahmatullin <wrar@wrar.name>,
+        Oleksij Rempel <bug-track@fisher-privat.net>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 037/108] PCI: EHCI: fix crash during suspend on ASUS computers
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,108 +33,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 6ef1b512f4e6f936d89aa20be3d97a7ec7c290ac upstream.
+commit dbf0e4c7257f8d684ec1a3c919853464293de66e upstream.
 
-fill_result_tf() grabs the taskfile flags from the originating qc which
-sas_ata_qc_fill_rtf() promptly overwrites.  The presence of an
-ata_taskfile in the sata_device makes it tempting to just copy the full
-contents in sas_ata_qc_fill_rtf().  However, libata really only wants
-the fis contents and expects the other portions of the taskfile to not
-be touched by ->qc_fill_rtf.  To that end store a fis buffer in the
-sata_device and use ata_tf_from_fis() like every other ->qc_fill_rtf()
-implementation.
+Quite a few ASUS computers experience a nasty problem, related to the
+EHCI controllers, when going into system suspend.  It was observed
+that the problem didn't occur if the controllers were not put into the
+D3 power state before starting the suspend, and commit
+151b61284776be2d6f02d48c23c3625678960b97 (USB: EHCI: fix crash during
+suspend on ASUS computers) was created to do this.
 
-Reported-by: Praveen Murali <pmurali@logicube.com>
-Tested-by: Praveen Murali <pmurali@logicube.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[bwh: Backported to 3.2: adjust context]
+It turned out this approach messed up other computers that didn't have
+the problem -- it prevented USB wakeup from working.  Consequently
+commit c2fb8a3fa25513de8fedb38509b1f15a5bbee47b (USB: add
+NO_D3_DURING_SLEEP flag and revert 151b61284776be2) was merged; it
+reverted the earlier commit and added a whitelist of known good board
+names.
+
+Now we know the actual cause of the problem.  Thanks to AceLan Kao for
+tracking it down.
+
+According to him, an engineer at ASUS explained that some of their
+BIOSes contain a bug that was added in an attempt to work around a
+problem in early versions of Windows.  When the computer goes into S3
+suspend, the BIOS tries to verify that the EHCI controllers were first
+quiesced by the OS.  Nothing's wrong with this, but the BIOS does it
+by checking that the PCI COMMAND registers contain 0 without checking
+the controllers' power state.  If the register isn't 0, the BIOS
+assumes the controller needs to be quiesced and tries to do so.  This
+involves making various MMIO accesses to the controller, which don't
+work very well if the controller is already in D3.  The end result is
+a system hang or memory corruption.
+
+Since the value in the PCI COMMAND register doesn't matter once the
+controller has been suspended, and since the value will be restored
+anyway when the controller is resumed, we can work around the BIOS bug
+simply by setting the register to 0 during system suspend.  This patch
+(as1590) does so and also reverts the second commit mentioned above,
+which is now unnecessary.
+
+In theory we could do this for every PCI device.  However to avoid
+introducing new problems, the patch restricts itself to EHCI host
+controllers.
+
+Finally the affected systems can suspend with USB wakeup working
+properly.
+
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=37632
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=42728
+Based-on-patch-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Dâniel Fraga <fragabr@gmail.com>
+Tested-by: Javier Marcet <jmarcet@gmail.com>
+Tested-by: Andrey Rahmatullin <wrar@wrar.name>
+Tested-by: Oleksij Rempel <bug-track@fisher-privat.net>
+Tested-by: Pavel Pisa <pisa@cmp.felk.cvut.cz>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/aic94xx/aic94xx_task.c |    2 +-
- drivers/scsi/libsas/sas_ata.c       |   12 ++++++------
- include/scsi/libsas.h               |    6 ++++--
- 3 files changed, 11 insertions(+), 9 deletions(-)
+ drivers/pci/pci-driver.c |   12 ++++++++++++
+ drivers/pci/pci.c        |    5 -----
+ drivers/pci/quirks.c     |   26 --------------------------
+ include/linux/pci.h      |    2 --
+ 4 files changed, 12 insertions(+), 33 deletions(-)
 
---- a/drivers/scsi/aic94xx/aic94xx_task.c
-+++ b/drivers/scsi/aic94xx/aic94xx_task.c
-@@ -201,7 +201,7 @@ static void asd_get_response_tasklet(str
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index bf0cee6..099f46c 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -748,6 +748,18 @@ static int pci_pm_suspend_noirq(struct device *dev)
  
- 		if (SAS_STATUS_BUF_SIZE >= sizeof(*resp)) {
- 			resp->frame_len = le16_to_cpu(*(__le16 *)(r+6));
--			memcpy(&resp->ending_fis[0], r+16, 24);
-+			memcpy(&resp->ending_fis[0], r+16, ATA_RESP_FIS_SIZE);
- 			ts->buf_valid_size = sizeof(*resp);
- 		}
- 	}
---- a/drivers/scsi/libsas/sas_ata.c
-+++ b/drivers/scsi/libsas/sas_ata.c
-@@ -112,12 +112,12 @@ static void sas_ata_task_done(struct sas
- 	if (stat->stat == SAS_PROTO_RESPONSE || stat->stat == SAM_STAT_GOOD ||
- 	    ((stat->stat == SAM_STAT_CHECK_CONDITION &&
- 	      dev->sata_dev.command_set == ATAPI_COMMAND_SET))) {
--		ata_tf_from_fis(resp->ending_fis, &dev->sata_dev.tf);
-+		memcpy(dev->sata_dev.fis, resp->ending_fis, ATA_RESP_FIS_SIZE);
+ 	pci_pm_set_unknown_state(pci_dev);
  
- 		if (!link->sactive) {
--			qc->err_mask |= ac_err_mask(dev->sata_dev.tf.command);
-+			qc->err_mask |= ac_err_mask(dev->sata_dev.fis[2]);
- 		} else {
--			link->eh_info.err_mask |= ac_err_mask(dev->sata_dev.tf.command);
-+			link->eh_info.err_mask |= ac_err_mask(dev->sata_dev.fis[2]);
- 			if (unlikely(link->eh_info.err_mask))
- 				qc->flags |= ATA_QCFLAG_FAILED;
- 		}
-@@ -138,8 +138,8 @@ static void sas_ata_task_done(struct sas
- 				qc->flags |= ATA_QCFLAG_FAILED;
- 			}
- 
--			dev->sata_dev.tf.feature = 0x04; /* status err */
--			dev->sata_dev.tf.command = ATA_ERR;
-+			dev->sata_dev.fis[3] = 0x04; /* status err */
-+			dev->sata_dev.fis[2] = ATA_ERR;
- 		}
- 	}
- 
-@@ -252,7 +252,7 @@ static bool sas_ata_qc_fill_rtf(struct a
- {
- 	struct domain_device *dev = qc->ap->private_data;
- 
--	memcpy(&qc->result_tf, &dev->sata_dev.tf, sizeof(qc->result_tf));
-+	ata_tf_from_fis(dev->sata_dev.fis, &qc->result_tf);
- 	return true;
++	/*
++	 * Some BIOSes from ASUS have a bug: If a USB EHCI host controller's
++	 * PCI COMMAND register isn't 0, the BIOS assumes that the controller
++	 * hasn't been quiesced and tries to turn it off.  If the controller
++	 * is already in D3, this can hang or cause memory corruption.
++	 *
++	 * Since the value of the COMMAND register doesn't matter once the
++	 * device has been suspended, we can safely set it to 0 here.
++	 */
++	if (pci_dev->class == PCI_CLASS_SERIAL_USB_EHCI)
++		pci_write_config_word(pci_dev, PCI_COMMAND, 0);
++
+ 	return 0;
  }
  
---- a/include/scsi/libsas.h
-+++ b/include/scsi/libsas.h
-@@ -159,6 +159,8 @@ enum ata_command_set {
-         ATAPI_COMMAND_SET = 1,
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 77cb54a..447e834 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1744,11 +1744,6 @@ int pci_prepare_to_sleep(struct pci_dev *dev)
+ 	if (target_state == PCI_POWER_ERROR)
+ 		return -EIO;
+ 
+-	/* Some devices mustn't be in D3 during system sleep */
+-	if (target_state == PCI_D3hot &&
+-			(dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP))
+-		return 0;
+-
+ 	pci_enable_wake(dev, target_state, device_may_wakeup(&dev->dev));
+ 
+ 	error = pci_set_power_state(dev, target_state);
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 194b243a..2a75216 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2929,32 +2929,6 @@ static void __devinit disable_igfx_irq(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
+ 
+-/*
+- * The Intel 6 Series/C200 Series chipset's EHCI controllers on many
+- * ASUS motherboards will cause memory corruption or a system crash
+- * if they are in D3 while the system is put into S3 sleep.
+- */
+-static void __devinit asus_ehci_no_d3(struct pci_dev *dev)
+-{
+-	const char *sys_info;
+-	static const char good_Asus_board[] = "P8Z68-V";
+-
+-	if (dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP)
+-		return;
+-	if (dev->subsystem_vendor != PCI_VENDOR_ID_ASUSTEK)
+-		return;
+-	sys_info = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (sys_info && memcmp(sys_info, good_Asus_board,
+-			sizeof(good_Asus_board) - 1) == 0)
+-		return;
+-
+-	dev_info(&dev->dev, "broken D3 during system sleep on ASUS\n");
+-	dev->dev_flags |= PCI_DEV_FLAGS_NO_D3_DURING_SLEEP;
+-	device_set_wakeup_capable(&dev->dev, false);
+-}
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x1c26, asus_ehci_no_d3);
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x1c2d, asus_ehci_no_d3);
+-
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index fefb4e1..d8c379d 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -176,8 +176,6 @@ enum pci_dev_flags {
+ 	PCI_DEV_FLAGS_NO_D3 = (__force pci_dev_flags_t) 2,
+ 	/* Provide indication device is assigned by a Virtual Machine Manager */
+ 	PCI_DEV_FLAGS_ASSIGNED = (__force pci_dev_flags_t) 4,
+-	/* Device causes system crash if in D3 during S3 sleep */
+-	PCI_DEV_FLAGS_NO_D3_DURING_SLEEP = (__force pci_dev_flags_t) 8,
  };
  
-+#define ATA_RESP_FIS_SIZE 24
-+
- struct sata_device {
-         enum   ata_command_set command_set;
-         struct smp_resp        rps_resp; /* report_phy_sata_resp */
-@@ -170,7 +172,7 @@ struct sata_device {
- 
- 	struct ata_port *ap;
- 	struct ata_host ata_host;
--	struct ata_taskfile tf;
-+	u8     fis[ATA_RESP_FIS_SIZE];
- 	u32 sstatus;
- 	u32 serror;
- 	u32 scontrol;
-@@ -486,7 +488,7 @@ enum exec_status {
-  */
- struct ata_task_resp {
- 	u16  frame_len;
--	u8   ending_fis[24];	  /* dev to host or data-in */
-+	u8   ending_fis[ATA_RESP_FIS_SIZE];	  /* dev to host or data-in */
- 	u32  sstatus;
- 	u32  serror;
- 	u32  scontrol;
+ enum pci_irq_reroute_variant {
 
 
