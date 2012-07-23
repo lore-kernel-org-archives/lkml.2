@@ -1,129 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab2GWCjD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:39:03 -0400
-Received: from tundra.namei.org ([65.99.196.166]:42835 "EHLO tundra.namei.org"
+	id S1753086Ab2GWCqQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:46:16 -0400
+Received: from gate.crashing.org ([63.228.1.57]:45818 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086Ab2GWCjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 22:39:00 -0400
-Date: Mon, 23 Jul 2012 12:38:58 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [GIT] Security subsystem update for 3.6
-Message-ID: <alpine.LRH.2.02.1207231233421.13554@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752927Ab2GWCqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 22:46:15 -0400
+Message-ID: <1343011543.2957.2.camel@pasglop>
+Subject: Re: next/mmotm unbootable on G5: irqdomain
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 23 Jul 2012 12:45:43 +1000
+In-Reply-To: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils>
+References: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing groundbreaking for this kernel, just cleanups and fixes, and a 
-couple of Smack enhancements.
+On Sat, 2012-07-21 at 19:47 -0700, Hugh Dickins wrote:
+> I have to revert the patch below from mmotm 2012-07-20-16-30 or
+> next-20120720 in order to boot on the PowerPC G5: otherwise it
+> freezes before switching to the framebuffer console - but I'm
+> not certain where because that initial console doesn't scroll
+> (there are mpic messages at bottom and at top of screen, probably
+> later messages at the top but I don't know the sequence).
 
-Please pull.
+This fixes it (Grant, how do we avoid bisection breakage here ? I can
+put that in -powerpc and we can make sure that gets merged before your
+tree ?)
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
-  Linus Torvalds (1):
-        Linux 3.5
+powerpc/mpic: Create a revmap with enough entries for IPIs and timers
 
-are available in the git repository at:
+The current mpic code creates a linear revmap just big enough for all
+the sources, which happens to miss the IPIs and timers on some machines.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
+This will in turn break when the irqdomain code loses the fallback of
+doing a linear search when the revmap fails (and really slows down IPIs
+otherwise).
 
-Andi Shyti (1):
-      tpm: check the chip reference before using it
+This happens for example on the U4 based Apple machines such as the
+dual core PowerMac G5s.
 
-Casey Schaufler (4):
-      Smack: fix smack_new_inode bogosities
-      Smack: onlycap limits on CAP_MAC_ADMIN
-      Smack: user access check bounds
-      Smack: Maintainer Record
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
+index 906f29c..bfc6211 100644
+--- a/arch/powerpc/sysdev/mpic.c
++++ b/arch/powerpc/sysdev/mpic.c
+@@ -1376,7 +1376,7 @@ struct mpic * __init mpic_alloc(struct device_node *node,
+ 	mpic->isu_mask = (1 << mpic->isu_shift) - 1;
+ 
+ 	mpic->irqhost = irq_domain_add_linear(mpic->node,
+-				       last_irq + 1,
++				       intvec_top,
+ 				       &mpic_host_ops, mpic);
+ 
+ 	/*
 
-Chad Williamson (1):
-      samples: seccomp: add .gitignore for untracked executables
 
-David Howells (1):
-      KEYS: Fix some sparse warnings
-
-Dmitry Kasatkin (7):
-      Revert "crypto: GnuPG based MPI lib - additional sources (part 4)"
-      Remove unused code from MPI library
-      ima: free securityfs violations file
-      ima: remove unused cleanup functions
-      ima: add policy for pseudo fs
-      ima: ima_initialized is set only if successful
-      ima: audit is compiled only when enabled
-
-James Morris (2):
-      Merge branches 'next-queue' and 'next' into next
-      Merge commit 'v3.5-rc2' into next
-
-Mimi Zohar (1):
-      ima: use full pathnames in measurement list
-
-Paul Mundt (1):
-      security: Fix nommu build.
-
-Rafal Krypa (1):
-      Smack: don't show empty rules when /smack/load or /smack/load2 is read
-
-Rajiv Andrade (2):
-      MAINTAINERS: TPM maintainers' contacts update
-      TPM: chip disabled state erronously being reported as error
-
-Wanlong Gao (1):
-      TPM: fix memleak when register hardware fails
-
- MAINTAINERS                         |   16 +-
- drivers/char/tpm/tpm.c              |   27 ++-
- drivers/char/tpm/tpm_infineon.c     |    6 +-
- lib/Kconfig                         |    8 -
- lib/mpi/Makefile                    |   11 --
- lib/mpi/generic_mpi-asm-defs.h      |    4 -
- lib/mpi/mpi-add.c                   |  234 ------------------------
- lib/mpi/mpi-bit.c                   |  162 -----------------
- lib/mpi/mpi-cmp.c                   |   68 -------
- lib/mpi/mpi-div.c                   |  338 -----------------------------------
- lib/mpi/mpi-gcd.c                   |   59 ------
- lib/mpi/mpi-inline.c                |   31 ----
- lib/mpi/mpi-inv.c                   |  187 -------------------
- lib/mpi/mpi-mpow.c                  |  134 --------------
- lib/mpi/mpi-mul.c                   |  194 --------------------
- lib/mpi/mpi-scan.c                  |  136 --------------
- lib/mpi/mpicoder.c                  |   75 --------
- lib/mpi/mpih-div.c                  |  309 --------------------------------
- lib/mpi/mpih-mul.c                  |   30 ----
- lib/mpi/mpiutil.c                   |   88 ---------
- samples/seccomp/.gitignore          |    3 +
- security/integrity/ima/Kconfig      |    3 +-
- security/integrity/ima/Makefile     |    3 +-
- security/integrity/ima/ima.h        |    9 +
- security/integrity/ima/ima_api.c    |    4 +-
- security/integrity/ima/ima_audit.c  |    3 -
- security/integrity/ima/ima_fs.c     |   11 +-
- security/integrity/ima/ima_init.c   |    5 -
- security/integrity/ima/ima_main.c   |   50 ++++--
- security/integrity/ima/ima_policy.c |    2 +
- security/keys/compat.c              |    4 +-
- security/keys/internal.h            |    2 +-
- security/keys/keyctl.c              |    2 +-
- security/keys/keyring.c             |    2 +
- security/security.c                 |    1 +
- security/smack/smack.h              |   14 +-
- security/smack/smack_access.c       |    9 +-
- security/smack/smack_lsm.c          |   25 ++-
- security/smack/smackfs.c            |   53 +++---
- 39 files changed, 154 insertions(+), 2168 deletions(-)
- delete mode 100644 lib/mpi/generic_mpi-asm-defs.h
- delete mode 100644 lib/mpi/mpi-add.c
- delete mode 100644 lib/mpi/mpi-cmp.c
- delete mode 100644 lib/mpi/mpi-div.c
- delete mode 100644 lib/mpi/mpi-gcd.c
- delete mode 100644 lib/mpi/mpi-inline.c
- delete mode 100644 lib/mpi/mpi-inv.c
- delete mode 100644 lib/mpi/mpi-mpow.c
- delete mode 100644 lib/mpi/mpi-mul.c
- delete mode 100644 lib/mpi/mpi-scan.c
- create mode 100644 samples/seccomp/.gitignore
