@@ -1,102 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab2GWBpj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:45:39 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45356 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab2GWBpg (ORCPT
+	id S1753805Ab2GWBqM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:46:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54504 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753632Ab2GWBnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:45:36 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWAHiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2] memcg: add mem_cgroup_from_css() helper
-Date: Mon, 23 Jul 2012 09:44:23 +0800
-Message-Id: <1343007863-18144-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-x-cbid: 12072301-9574-0000-0000-000003A9704E
+	Sun, 22 Jul 2012 21:43:52 -0400
+Message-Id: <20120723010654.562849488@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 23 Jul 2012 02:07:11 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [ 020/108] macvtap: zerocopy: validate vectors before building skb
+In-Reply-To: <20120723010651.408577075@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog v2:
-* fix too many args to mem_cgroup_from_css() (spotted by Kirill A. Shutemov)
-* fix kernel build failed (spotted by Fengguang)
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Add a mem_cgroup_from_css() helper to replace open-coded invokations of
-container_of().  To clarify the code and to add a little more type safety.
+------------------
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+From: Jason Wang <jasowang@redhat.com>
 
+commit b92946e2919134ebe2a4083e4302236295ea2a73 upstream.
+
+There're several reasons that the vectors need to be validated:
+
+- Return error when caller provides vectors whose num is greater than UIO_MAXIOV.
+- Linearize part of skb when userspace provides vectors grater than MAX_SKB_FRAGS.
+- Return error when userspace provides vectors whose total length may exceed
+- MAX_SKB_FRAGS * PAGE_SIZE.
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/memcontrol.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+ drivers/net/macvtap.c |   25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 883283d..f0c7639 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -407,6 +407,12 @@ enum charge_type {
- static void mem_cgroup_get(struct mem_cgroup *memcg);
- static void mem_cgroup_put(struct mem_cgroup *memcg);
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index a4ff694..163559c 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -529,9 +529,10 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 		}
+ 		base = (unsigned long)from->iov_base + offset;
+ 		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
++		if (i + size > MAX_SKB_FRAGS)
++			return -EMSGSIZE;
+ 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
+-		if ((num_pages != size) ||
+-		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags)) {
++		if (num_pages != size) {
+ 			for (i = 0; i < num_pages; i++)
+ 				put_page(page[i]);
+ 			return -EFAULT;
+@@ -651,7 +652,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 	int err;
+ 	struct virtio_net_hdr vnet_hdr = { 0 };
+ 	int vnet_hdr_len = 0;
+-	int copylen;
++	int copylen = 0;
+ 	bool zerocopy = false;
  
-+static inline 
-+struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
-+{
-+	return container_of(s, struct mem_cgroup, css);
-+}
+ 	if (q->flags & IFF_VNET_HDR) {
+@@ -680,15 +681,31 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 	if (unlikely(len < ETH_HLEN))
+ 		goto err;
+ 
++	err = -EMSGSIZE;
++	if (unlikely(count > UIO_MAXIOV))
++		goto err;
 +
- /* Writing them here to avoid exposing memcg's inner layout */
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
- #include <net/sock.h>
-@@ -864,9 +870,8 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+ 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
+ 		zerocopy = true;
  
- struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
- {
--	return container_of(cgroup_subsys_state(cont,
--				mem_cgroup_subsys_id), struct mem_cgroup,
--				css);
-+	return mem_cgroup_from_css(cgroup_subsys_state(cont,
-+				mem_cgroup_subsys_id));
- }
- 
- struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
-@@ -879,8 +884,7 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
- 	if (unlikely(!p))
- 		return NULL;
- 
--	return container_of(task_subsys_state(p, mem_cgroup_subsys_id),
--				struct mem_cgroup, css);
-+	return mem_cgroup_from_css(task_subsys_state(p, mem_cgroup_subsys_id));
- }
- 
- struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
-@@ -966,8 +970,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
- 		if (css) {
- 			if (css == &root->css || css_tryget(css))
--				memcg = container_of(css,
--						     struct mem_cgroup, css);
-+				memcg = mem_cgroup_from_css(css);
- 		} else
- 			id = 0;
- 		rcu_read_unlock();
-@@ -2429,7 +2432,7 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
- 	css = css_lookup(&mem_cgroup_subsys, id);
- 	if (!css)
- 		return NULL;
--	return container_of(css, struct mem_cgroup, css);
-+	return mem_cgroup_from_css(css);
- }
- 
- struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
--- 
-1.7.7.6
+ 	if (zerocopy) {
++		/* Userspace may produce vectors with count greater than
++		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
++		 * to let the rest of data to be fit in the frags.
++		 */
++		if (count > MAX_SKB_FRAGS) {
++			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
++			if (copylen < vnet_hdr_len)
++				copylen = 0;
++			else
++				copylen -= vnet_hdr_len;
++		}
+ 		/* There are 256 bytes to be copied in skb, so there is enough
+ 		 * room for skb expand head in case it is used.
+ 		 * The rest buffer is mapped from userspace.
+ 		 */
+-		copylen = vnet_hdr.hdr_len;
++		if (copylen < vnet_hdr.hdr_len)
++			copylen = vnet_hdr.hdr_len;
+ 		if (!copylen)
+ 			copylen = GOODCOPY_LEN;
+ 	} else
+
+
 
