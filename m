@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab2GWSRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:17:16 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:40211 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab2GWSRP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:17:15 -0400
-Date: Mon, 23 Jul 2012 20:17:08 +0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 11/11] perf kvm top: limit guest kernel info message to
- once
-Message-ID: <20120723181708.GE6717@infradead.org>
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
- <1342826756-64663-12-git-send-email-dsahern@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342826756-64663-12-git-send-email-dsahern@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754583Ab2GWSR4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:17:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46910 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754512Ab2GWSRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 14:17:52 -0400
+From: David Teigland <teigland@redhat.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] dlm patches for 3.6
+Date: Mon, 23 Jul 2012 13:17:41 -0500
+Message-Id: <1343067467-24308-1-git-send-email-teigland@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jul 20, 2012 at 05:25:56PM -0600, David Ahern escreveu:
-> 'perf kvm top' shows a continual flurry of:
->     Can't find guest [5201]'s kernel information
-> 
-> if it can't find the guest info and with a lot of VMs running a user
-> has no chance of reading them all. Limit message to once per guest.
-> 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> ---
->  tools/perf/builtin-top.c |   14 ++++++++++++--
->  1 file changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index 1706dc9..6285374 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -706,8 +706,18 @@ static void perf_event__process_sample(struct perf_tool *tool,
->  	int err;
->  
->  	if (!machine && perf_guest) {
-> -		pr_err("Can't find guest [%d]'s kernel information\n",
-> -			event->ip.pid);
-> +		static struct strlist *seen;
-> +		char pidstr[8];
-> +
-> +		if (!seen)
-> +			seen = strlist__new(true, NULL);
-> +
-> +		scnprintf(pidstr, sizeof(pidstr), "%d", event->ip.pid);
-> +		if (!strlist__has_entry(seen, pidstr)) {
-> +			pr_err("Can't find guest [%d]'s kernel information\n",
-> +				event->ip.pid);
-> +			strlist__add(seen, pidstr);
-> +		}
 
-Abuse of strlist? Can't we have an intlist?
+These are the dlm patches from -next for 3.6.  The first is a major
+internal redesign of the way master nodes are recorded.  The old dirtbl
+hash table, which just recorded the master node of a resource, has been
+removed.  The rsbtbl hash table has always duplicated the master value
+from dirtbl, but is now the only record of the master node.
 
-- Arnaldo
+Having two full hash tables of all resources has always been inefficient,
+especially since one just duplicated information from the other.  Requests
+that are all local will require one instead of two lengthy hash table
+searches.
+
+The other substantial patch is made possible by the dirtbl removal, and
+fixes a long standing race between resource removal and lookup by
+reworking how removal is done.  At the same time it improves the shrink
+function efficiency by avoiding repeated searches through hash buckets.
+
+David Teigland (6):
+      dlm: use rsbtbl as resource directory
+      dlm: use idr instead of list for recovered rsbs
+      dlm: fix race between remove and lookup
+      dlm: use wait_event_timeout
+      dlm: fix conversion deadlock from recovery
+      dlm: fix missing dir remove
+
+ fs/dlm/config.c       |    7 -
+ fs/dlm/config.h       |    1 -
+ fs/dlm/debug_fs.c     |  103 +++-
+ fs/dlm/dir.c          |  287 +++--------
+ fs/dlm/dir.h          |    7 +-
+ fs/dlm/dlm_internal.h |   62 ++-
+ fs/dlm/lock.c         | 1292 ++++++++++++++++++++++++++++++++++++++++---------
+ fs/dlm/lock.h         |    5 +-
+ fs/dlm/lockspace.c    |   45 +-
+ fs/dlm/rcom.c         |  147 ++++--
+ fs/dlm/rcom.h         |    1 +
+ fs/dlm/recover.c      |  295 +++++++----
+ fs/dlm/recover.h      |    2 +-
+ fs/dlm/recoverd.c     |   14 +-
+ 14 files changed, 1600 insertions(+), 668 deletions(-)
