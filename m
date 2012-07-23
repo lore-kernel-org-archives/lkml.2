@@ -1,126 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2GWPBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:01:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27865 "EHLO mx1.redhat.com"
+	id S1754087Ab2GWPDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:03:22 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:55342 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753545Ab2GWPBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:01:24 -0400
-Subject: GFS2: Pull request (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-QW8eTIzPDhk/E2YvXO7m"
-Organization: Red Hat UK Ltd
-Date: Mon, 23 Jul 2012 15:59:52 +0100
-Message-ID: <1343055592.2703.41.camel@menhir>
+	id S1753289Ab2GWPDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 11:03:21 -0400
+Date: Mon, 23 Jul 2012 08:02:55 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Michael Leun <lkml20120218@newton.leun.net>
+Cc: bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.5 regression / bridge] constantly toggeling between disabled
+ and forwarding
+Message-ID: <20120723080255.361bfe04@nehalam.linuxnetplumber.net>
+In-Reply-To: <20120723091504.2d035d28@xenia.leun.net>
+References: <20120723091504.2d035d28@xenia.leun.net>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 23 Jul 2012 09:15:04 +0200
+Michael Leun <lkml20120218@newton.leun.net> wrote:
 
---=-QW8eTIzPDhk/E2YvXO7m
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Hi,
+> 
+> when I use my usb ethernet adapter
+> 
+> # > lsusb
+> [...]
+> Bus 002 Device 009: ID 9710:7830 MosChip Semiconductor MCS7830 10/100 Mbps Ethernet adapter
+> [...]
+> 
+> as port of an bridge
+> 
+> > # brctl addbr br0
+> > # brctl addif br0 eth0
+> > # brctl addif br0 ue5
+> > # ifconfig ue5 up
+> > # ifconfig br0 up
+> 
+> (Also does happen when eth0 is not part of the bridge, but the logs I
+> had available were from that situation...)
+> 
+> I constantly get messages showing the interface toggeling between
+> disabled and forwarding state:
+> 
+> Jul 23 07:40:50 elektra kernel: [ 1539.497337] br0: port 2(ue5) entered disabled state
+> Jul 23 07:40:50 elektra kernel: [ 1539.554992] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:50 elektra kernel: [ 1539.555005] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:51 elektra kernel: [ 1540.496242] br0: port 2(ue5) entered disabled state
+> Jul 23 07:40:51 elektra kernel: [ 1540.552534] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:51 elektra kernel: [ 1540.552548] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:52 elektra kernel: [ 1541.550413] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:53 elektra kernel: [ 1542.529672] br0: port 2(ue5) entered disabled state
+> Jul 23 07:40:53 elektra kernel: [ 1542.587162] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:53 elektra kernel: [ 1542.587175] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:54 elektra kernel: [ 1543.585309] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:00 elektra kernel: [ 1549.360600] br0: port 2(ue5) entered disabled state
+> Jul 23 07:41:00 elektra kernel: [ 1549.442998] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:00 elektra kernel: [ 1549.443011] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:01 elektra kernel: [ 1550.357686] br0: port 2(ue5) entered disabled state
+> Jul 23 07:41:01 elektra kernel: [ 1550.408208] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:01 elektra kernel: [ 1550.408222] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:02 elektra kernel: [ 1551.407656] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:03 elektra kernel: [ 1552.401578] br0: port 2(ue5) entered disabled state
+> Jul 23 07:41:03 elektra kernel: [ 1552.474773] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:03 elektra kernel: [ 1552.474786] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:04 elektra kernel: [ 1553.472487] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:05 elektra kernel: [ 1554.356138] br0: port 2(ue5) entered disabled state
+> [...]
+> 
+> This does (in the same situation, nothing else than the kernel changed)
+> not happen with 3.4.5.
+> 
+> Does anybody have an idea what the issue might be or do I need to bisect?
 
-Hi,
+Probably not a bridge issue, but rather an issue with link status reporting
+on the device. The bridge changes state when the attached ethernet
+device raises/lowers carrier.
 
-Please consider pulling the following patches. There have been no changes s=
-ince
-they were posted for review,
-
-Steve.
-
----------------------------------------------------------------------------=
-----
-The following changes since commit eea5b5510fc5545d15b69da8e485a7424ae388cf=
-:
-
-  Merge tag 'please-pull-mce' of git://git.kernel.org/pub/scm/linux/kernel/=
-git/ras/ras (2012-06-05 15:15:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git mast=
-er
-
-Abhijith Das (1):
-      GFS2: kernel panic with small gfs2 filesystems - 1 RG
-
-Benjamin Marzinski (1):
-      GFS2: Use lvbs for storing rgrp information with mount option
-
-Bob Peterson (6):
-      GFS2: Extend the life of the reservations
-      GFS2: Fold quota data into the reservations struct
-      GFS2: Add kobject release method
-      GFS2: Combine functions get_local_rgrp and gfs2_inplace_reserve
-      GFS2: Reduce file fragmentation
-      GFS2: Eliminate 64-bit divides
-
-Masatake YAMATO (1):
-      GFS2: Fixing double brelse'ing bh allocated in gfs2_meta_read when EI=
-O occurs
-
-Steven Whitehouse (7):
-      GFS2: Add "top dir" flag support
-      GFS2: Fix error handling when reading an invalid block from the journ=
-al
-      GFS2: Increase buffer size for glocks and glstats debugfs files
-      GFS2: Cache last hash bucket for glock seq_files
-      seq_file: Add seq_vprintf function and export it
-      GFS2: Use seq_vprintf for glocks debugfs file
-      GFS2: Size seq_file buffer more carefully
-
- fs/gfs2/aops.c              |   18 +-
- fs/gfs2/bmap.c              |   21 +-
- fs/gfs2/dir.c               |    9 +-
- fs/gfs2/file.c              |   65 ++--
- fs/gfs2/glock.c             |   39 ++-
- fs/gfs2/incore.h            |   54 ++-
- fs/gfs2/inode.c             |   94 +++---
- fs/gfs2/lops.c              |    9 +-
- fs/gfs2/main.c              |    1 -
- fs/gfs2/meta_io.c           |    5 +-
- fs/gfs2/ops_fstype.c        |   36 ++-
- fs/gfs2/quota.c             |   72 +++--
- fs/gfs2/rgrp.c              |  833 ++++++++++++++++++++++++++++++++++++---=
-----
- fs/gfs2/rgrp.h              |   45 ++-
- fs/gfs2/super.c             |   28 ++-
- fs/gfs2/sys.c               |   21 +-
- fs/gfs2/trace_gfs2.h        |   59 +++-
- fs/gfs2/trans.h             |    2 +-
- fs/gfs2/util.h              |   18 +-
- fs/gfs2/xattr.c             |   30 +-
- fs/seq_file.c               |   18 +-
- include/linux/gfs2_ondisk.h |   14 +-
- include/linux/seq_file.h    |    1 +
- 23 files changed, 1121 insertions(+), 371 deletions(-)
-
-
---=-QW8eTIzPDhk/E2YvXO7m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQDWbfAAoJEMrg3m4a/8jSRwgP/2lBkcA3eIodL9VWiLHaxAOD
-/bE1KXbAjJpkvDH4BTDg5l6gWosf7hBmE5rTr0aUwjuHC9CQbeCA4FNpXO1CxNrf
-wN0FryjAHbqBhBKxVK/XGrVf6MKlqhzVcOL6B3sxr+wLY1V78YANjlaBkIegZJo1
-cIbQpZotGzNmuNK1dy4BMZPmY9FoZLVq0uJDBAeutiBBJAJ96/lr2AAf+Vebv5aw
-SllDmw4gH05RWhOfsNxArvmWd7c1BLCP3sxtfbohCW8jVQGWrUyH56FWK7cFHut4
-AbeoG5YdjIon+D+GudhOjTg19lMQZ6qT+bEzB1SxpnNYMqH/EdmAgdHKDr/OGcEK
-liToXknKyznuueLUaiCKK/UFKk2XFEuYfwZMZwz4b+/TKbMc2nuTaTGdtsq5efGH
-FqeoUaGwWgLnqL4dXsqUwXzEnu/+V5FcWxZWWU75llSnU6+S7o47AvCHkYSqd0NF
-5k3Smv3pYnrxOVlSiHXd/q8DAbbideIWHViggGgAoiJpLSvcf86xvt6OmAGcocY8
-afxrDYRw4nglYJiOJCPcCYnmXxQKomYoUMq3yNymS7/HLdPyI1lmovOMSfo/C7im
-UIYi0vnplR37b63+GfUV+6IhAkud8MVPBNxBL3oIRIO0NOOBJ8iXhg64O3DuyWPb
-vVXg6UCZ+nQfJmmGNf8+
-=kBBq
------END PGP SIGNATURE-----
-
---=-QW8eTIzPDhk/E2YvXO7m--
-
+An independent way to observe link changes is to use a tool like:
+  ip monitor
+which will show carrier up/down events.
