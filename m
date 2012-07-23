@@ -1,109 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab2GWBOt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:14:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:12786 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752618Ab2GWBOr convert rfc822-to-8bit (ORCPT
+	id S1752852Ab2GWBl5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:41:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53954 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752809Ab2GWBl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:14:47 -0400
-X-IronPort-AV: E=Sophos;i="4.77,635,1336320000"; 
-   d="scan'208";a="5455260"
-Message-ID: <500CA599.6030907@cn.fujitsu.com>
-Date: Mon, 23 Jul 2012 09:15:05 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        eric.dumazet@gmail.com, davem@davemloft.net
-CC: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, mark.d.rustad@intel.com,
-        john.r.fastabend@intel.com, lizefan@huawei.com
-Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of uninitialized
- list
-References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/23 09:15:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/23 09:15:22
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 22 Jul 2012 21:41:56 -0400
+Message-Id: <20120723010651.408577075@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 23 Jul 2012 02:06:51 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 000/108] 3.2.24-stable review
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年07月20日 00:27, Srivatsa S. Bhat 写道:
-> After commit ef209f15 (net: cgroup: fix access the unallocated memory in
-> netprio cgroup), boot fails with the following NULL pointer dereference:
-> 
-> Initializing cgroup subsys devices
-> Initializing cgroup subsys freezer
-> Initializing cgroup subsys net_cls
-> Initializing cgroup subsys blkio
-> Initializing cgroup subsys perf_event
-> Initializing cgroup subsys net_prio
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000698
-> IP: [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
-> PGD 0
-> Oops: 0000 [#1] SMP
-> CPU 0
-> Modules linked in:
-> 
-> Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc7-mandeep #1 IBM IBM System x -[7870C4Q]-/68Y8033
-> RIP: 0010:[<ffffffff8145e8d6>]  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
-> RSP: 0000:ffffffff81a01ea8  EFLAGS: 00010213
-> RAX: 0000000000000000 RBX: ffffffffffffff10 RCX: 0000000000000000
-> RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffffffff81aa70a0
-> RBP: ffffffff81a01ed8 R08: 0000000000000000 R09: 0000000000000000
-> R10: ffff8808ff8641c0 R11: 6e697a696c616974 R12: 0000000000000001
-> R13: ffff8808ff8641c0 R14: 0000000000000000 R15: 0000000000093970
-> FS:  0000000000000000(0000) GS:ffff8808ffc00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000698 CR3: 0000000001a0b000 CR4: 00000000000006b0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process swapper/0 (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a13420)
-> Stack:
->  ffffffff81a01eb8 ffffffff818060ff ffffffff81d75ec8 ffffffff81aa8960
->  ffffffff81aa8960 ffffffff81b4c2c0 ffffffff81a01ef8 ffffffff81b1cb78
->  0000000000000018 0000000000000048 ffffffff81a01f18 ffffffff81b1ce13
-> Call Trace:
->  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
->  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
->  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
->  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
->  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
->  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
-> Code: 01 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 75 1b eb 73 0f 1f 00 48 8b 83 f0 00 00 00 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 74 5a <48> 8b 83 88 07 00 00 48 85 c0 74 de 44 3b 60 10 76 d8 44 89 e6
-> RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
->  RSP <ffffffff81a01ea8>
-> CR2: 0000000000000698
-> ---[ end trace a7919e7f17c0a725 ]---
-> Kernel panic - not syncing: Attempted to kill the idle task!
-> 
-> The code corresponds to:
-> 
-> update_netdev_tables():
->         for_each_netdev(&init_net, dev) {
->                 map = rtnl_dereference(dev->priomap);  <---- HERE
-> 
-> 
-> The list head is initialized in netdev_init(), which is called much
-> later than cgrp_create(). So the problem is that we are calling
-> update_netdev_tables() way too early (in cgrp_create()), which will
-> end up traversing the not-yet-circular linked list. So at some point,
-> the dev pointer will become NULL and hence dev->priomap becomes an
-> invalid access.
-> 
-> To fix this, just remove the update_netdev_tables() function entirely,
-> since it appears that write_update_netdev_table() will handle things
-> just fine.
+This is the start of the stable review cycle for the 3.2.24 release.
+There are 108 patches in this series, which will be posted as responses
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-The reason I add update_netdev_tables in cgrp_create is to avoid additional
-bound checkings when we accessing the dev->priomap.priomap.
+Responses should be made by Wed Jul 25 02:00:00 UTC 2012.
+Anything received after that time might be too late.
 
-Eric,can we revert this commit 91c68ce2b26319248a32d7baa1226f819d283758 now?
-I think it's safe enough to access priomap without bound check.
+A combined patch relative to 3.2.23 will be posted as an additional
+response to this, and the diffstat can be found below.
 
-Thanks
+Ben.
+
+-------------
+ Makefile                                          |    4 +-
+ arch/arm/plat-samsung/adc.c                       |    8 +-
+ arch/mips/include/asm/thread_info.h               |    4 +-
+ arch/mips/kernel/vmlinux.lds.S                    |    3 +-
+ arch/powerpc/include/asm/cputime.h                |    6 +-
+ arch/powerpc/kernel/time.c                        |   10 +-
+ arch/x86/kernel/acpi/boot.c                       |   27 +-
+ arch/x86/kernel/reboot.c                          |    8 +
+ block/scsi_ioctl.c                                |    5 +-
+ drivers/acpi/processor_core.c                     |    6 +-
+ drivers/acpi/sleep.c                              |    4 +-
+ drivers/acpi/sysfs.c                              |    4 +-
+ drivers/gpio/gpio-wm8994.c                        |    5 +-
+ drivers/gpu/drm/i915/intel_display.c              |    4 +-
+ drivers/hid/hid-apple.c                           |    6 +
+ drivers/hid/hid-core.c                            |    7 +
+ drivers/hid/hid-ids.h                             |    6 +
+ drivers/hwmon/it87.c                              |    2 +-
+ drivers/hwspinlock/hwspinlock_core.c              |    4 +-
+ drivers/input/joystick/xpad.c                     |    6 +-
+ drivers/input/mouse/bcm5974.c                     |   20 ++
+ drivers/iommu/amd_iommu.c                         |    7 +
+ drivers/iommu/amd_iommu_init.c                    |    3 +-
+ drivers/md/dm-raid1.c                             |    3 +-
+ drivers/md/dm-region-hash.c                       |    5 +-
+ drivers/md/md.c                                   |   36 ++-
+ drivers/md/raid1.c                                |   13 +-
+ drivers/md/raid5.c                                |    4 +-
+ drivers/media/dvb/dvb-core/dvbdev.c               |    1 +
+ drivers/mtd/nand/nandsim.c                        |   12 +-
+ drivers/net/bonding/bond_debugfs.c                |    2 +-
+ drivers/net/bonding/bond_main.c                   |    9 +-
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c   |    1 -
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x.h       |   15 --
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c   |   36 ++-
+ drivers/net/ethernet/broadcom/tg3.c               |    3 +-
+ drivers/net/ethernet/intel/e1000e/82571.c         |    3 +
+ drivers/net/ethernet/realtek/r8169.c              |    3 +
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    3 +
+ drivers/net/macvtap.c                             |   57 +++--
+ drivers/net/usb/ipheth.c                          |    5 +
+ drivers/net/wireless/brcm80211/brcmsmac/main.c    |    3 +-
+ drivers/net/wireless/ipw2x00/ipw.h                |   23 ++
+ drivers/net/wireless/ipw2x00/ipw2100.c            |    4 +
+ drivers/net/wireless/ipw2x00/ipw2200.c            |    4 +
+ drivers/net/wireless/iwlegacy/iwl-4965-sta.c      |    4 +-
+ drivers/net/wireless/iwlegacy/iwl-core.c          |   14 +-
+ drivers/net/wireless/rt2x00/rt2x00usb.c           |    2 +-
+ drivers/net/wireless/rtl818x/rtl8187/leds.c       |    2 +-
+ drivers/pci/pci-driver.c                          |   12 +
+ drivers/pci/pci.c                                 |    5 -
+ drivers/pci/quirks.c                              |   26 --
+ drivers/platform/x86/intel_ips.c                  |   22 ++
+ drivers/platform/x86/samsung-laptop.c             |  225 +----------------
+ drivers/rtc/rtc-mxc.c                             |    5 +-
+ drivers/scsi/aic94xx/aic94xx_task.c               |    2 +-
+ drivers/scsi/libsas/sas_ata.c                     |   12 +-
+ drivers/target/target_core_cdb.c                  |    2 +-
+ drivers/target/target_core_pr.c                   |    7 +-
+ drivers/target/tcm_fc/tfc_cmd.c                   |    2 +
+ drivers/usb/class/cdc-wdm.c                       |    2 +
+ drivers/usb/core/hub.c                            |   18 +-
+ drivers/usb/host/xhci-hub.c                       |   44 +++-
+ drivers/usb/host/xhci.h                           |    6 +-
+ drivers/usb/serial/option.c                       |   26 ++
+ drivers/vhost/vhost.c                             |    2 +
+ fs/buffer.c                                       |   22 +-
+ fs/cifs/connect.c                                 |   18 ++
+ fs/cifs/readdir.c                                 |    7 +-
+ fs/ecryptfs/kthread.c                             |    2 +-
+ fs/ecryptfs/miscdev.c                             |   48 ++--
+ fs/eventpoll.c                                    |    4 +-
+ fs/exofs/ore.c                                    |    8 +-
+ fs/exofs/ore_raid.c                               |   67 ++---
+ fs/ext4/super.c                                   |    2 +-
+ fs/fifo.c                                         |    9 +-
+ fs/hugetlbfs/inode.c                              |   54 ++--
+ fs/locks.c                                        |    2 +-
+ fs/nfs/idmap.c                                    |   48 +++-
+ fs/nfs/nfs4state.c                                |    5 +-
+ fs/nfs/objlayout/objio_osd.c                      |   25 +-
+ fs/ocfs2/file.c                                   |    2 +-
+ fs/ramfs/file-nommu.c                             |    1 +
+ fs/ubifs/sb.c                                     |    8 +-
+ include/linux/Kbuild                              |    1 +
+ include/linux/hrtimer.h                           |   10 +-
+ include/linux/hugetlb.h                           |   14 +-
+ include/linux/mmzone.h                            |    2 +-
+ include/linux/pci.h                               |    2 -
+ include/linux/sched.h                             |    8 +
+ include/linux/skbuff.h                            |    5 +-
+ include/linux/timex.h                             |    2 +-
+ include/scsi/libsas.h                             |    6 +-
+ kernel/hrtimer.c                                  |   53 ++--
+ kernel/power/swap.c                               |   62 +++--
+ kernel/sched.c                                    |  276 +++++++++++++++------
+ kernel/sched_idletask.c                           |    1 -
+ kernel/time/ntp.c                                 |  124 +++------
+ kernel/time/tick-sched.c                          |    2 +
+ kernel/time/timekeeping.c                         |  115 ++++++---
+ mm/compaction.c                                   |    5 +-
+ mm/hugetlb.c                                      |  135 ++++++++--
+ mm/vmscan.c                                       |   12 +-
+ net/can/raw.c                                     |    3 -
+ net/core/dev.c                                    |   23 +-
+ net/ipv4/tcp_input.c                              |    2 +
+ net/iucv/af_iucv.c                                |    1 -
+ net/wireless/util.c                               |    2 +-
+ scripts/depmod.sh                                 |    6 -
+ virt/kvm/irq_comm.c                               |    1 +
+ 110 files changed, 1213 insertions(+), 836 deletions(-)
+
+-- 
+Ben Hutchings
+Who are all these weirdos? - David Bowie, about L-Space IRC channel #afp
+
