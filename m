@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab2GWB4r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:56:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54240 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753323Ab2GWBnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753339Ab2GWBnA (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 22 Jul 2012 21:43:00 -0400
-Message-Id: <20120723010704.216878046@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54204 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753272Ab2GWBmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 21:42:55 -0400
+Message-Id: <20120723010702.560293644@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:15 +0100
+Date: Mon, 23 Jul 2012 02:08:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [ 084/108] timekeeping: Add missing update call in timekeeping_resume()
+        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 073/108] dm raid1: set discard_zeroes_data_unsupported
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,55 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-This is a backport of 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0
+commit 7c8d3a42fe1c58a7e8fd3f6a013e7d7b474ff931 upstream.
 
-The leap second rework unearthed another issue of inconsistent data.
+We can't guarantee that REQ_DISCARD on dm-mirror zeroes the data even if
+the underlying disks support zero on discard.  So this patch sets
+ti->discard_zeroes_data_unsupported.
 
-On timekeeping_resume() the timekeeper data is updated, but nothing
-calls timekeeping_update(), so now the update code in the timer
-interrupt sees stale values.
+For example, if the mirror is in the process of resynchronizing, it may
+happen that kcopyd reads a piece of data, then discard is sent on the
+same area and then kcopyd writes the piece of data to another leg.
+Consequently, the data is not zeroed.
 
-This has been the case before those changes, but then the timer
-interrupt was using stale data as well so this went unnoticed for quite
-some time.
+The flag was made available by commit 983c7db347db8ce2d8453fd1d89b7a4bb6920d56
+(dm crypt: always disable discard_zeroes_data).
 
-Add the missing update call, so all the data is consistent everywhere.
-
-Reported-by: Andreas Schwab <schwab@linux-m68k.org>
-Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-Reported-and-tested-by: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-Cc: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[John Stultz: Backported to 3.2]
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/time/timekeeping.c |    1 +
+ drivers/md/dm-raid1.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 4938c5e..03e67d4 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -699,6 +699,7 @@ static void timekeeping_resume(void)
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
- 	timekeeping_suspended = 0;
-+	timekeeping_update(false);
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
+diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
+index ea16984..b58b7a3 100644
+--- a/drivers/md/dm-raid1.c
++++ b/drivers/md/dm-raid1.c
+@@ -1084,6 +1084,7 @@ static int mirror_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+ 	ti->split_io = dm_rh_get_region_size(ms->rh);
+ 	ti->num_flush_requests = 1;
+ 	ti->num_discard_requests = 1;
++	ti->discard_zeroes_data_unsupported = 1;
  
- 	touch_softlockup_watchdog();
+ 	ms->kmirrord_wq = alloc_workqueue("kmirrord",
+ 					  WQ_NON_REENTRANT | WQ_MEM_RECLAIM, 0);
 
 
