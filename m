@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab2GWVQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 17:16:23 -0400
-Received: from longford.logfs.org ([213.229.74.203]:44594 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab2GWVQR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 17:16:17 -0400
-Date: Mon, 23 Jul 2012 16:02:30 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
-Subject: Re: [PATCH] add blockconsole version 1.1
-Message-ID: <20120723200230.GC17767@logfs.org>
-References: <20120424205946.GH20610@logfs.org>
- <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com>
- <20120712174633.GA7248@logfs.org>
- <201207231533.16350.tvrtko.ursulin@onelan.co.uk>
+	id S1755016Ab2GWVSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 17:18:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54241 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754769Ab2GWVSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 17:18:01 -0400
+Date: Mon, 23 Jul 2012 22:17:56 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [MMTests] memcachetest and parallel IO on ext3
+Message-ID: <20120723211756.GD9222@suse.de>
+References: <20120620113252.GE4011@suse.de>
+ <20120629111932.GA14154@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201207231533.16350.tvrtko.ursulin@onelan.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120629111932.GA14154@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 July 2012 15:33:16 +0100, Tvrtko Ursulin wrote:
-> On Thursday 12 Jul 2012 18:46:34 Jörn Engel wrote:
-> > Console driver similar to netconsole, except it writes to a block
-> > device.  Can be useful in a setup where netconsole, for whatever
-> > reasons, is impractical.
-> 
-> Perhaps you need to add a word or two about limitations compared to netconsole 
-> in documentation because it is quite significant difference in reliability? I 
-> mean so it is not assumed it is analogous to netconsole but just a different 
-> underlying media. I don't know if someone would expect it, but better said 
-> than not. 
+Configuration:	global-dhp__parallelio-memcachetest-ext3
+Result: 	http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__parallelio-memcachetest-ext3
+Benchmarks:	parallelio
 
-Given that I don't even know the limitations, that's a bit tough.  As
-a general rule, I would always prefer netconsole.  It appears to be
-more reliable than blockconsole and beats serial console by half a
-lightyear.  But as a fallback when netconsole is not realistic,
-blockconsole has proven useful.
+Summary
+=======
 
-> I second the notion that logging to partitions would be useful.
+  Indications are not very clear as different machines point to different
+  kernels. Very broadly speaking, swapping got worse between 2.6.39 and 3.0
+  and then again between 3.2 and 3.3.
 
-Below is a compile-tested patch to do that.  Feel free to give it a
-spin and fix any bugs.
+Benchmark notes
+===============
 
-> Also, and I haven't checked what the swap format is, if it could somehow be 
-> integrated together that could be useful.
+This is an experimental benchmark designed to measure the impact of
+background IO on a target workload.
 
-That appears to be slightly less likely than crossbreeding a rabbit
-with a chicken.  Is there something obvious I have missed?
+mkfs was run on system startup. No attempt was made to age it. No
+special mkfs or mount options were used.
 
-Jörn
+The target workload in this case is memcached and memcachetest. This is a
+benchmark of memcached and the workload is mostly anonymous.  The benchmark
+was chosen as it was a random client that is considered a valid benchmark
+for memcache and does not consume much memory in the client.  The server
+was configured to use 80% of memory.
 
---
-The story so far:
-In the beginning the Universe was created.  This has made a lot
-of people very angry and been widely regarded as a bad move.
--- Douglas Adams
+In the background, dd is used to generate IO of varying sizes. As the sizes
+increase, memory pressure may push the target workload out of memory. The
+benchmark is meant to measure how much the target workload is affected
+and may be used as a proxy measure for page reclaim decisions.
 
-[PATCH 2/2] bcon: Add a module parameter to support partitions
+Unlike other benchmarks, only the run with the worst throughput is displayed.
+This benchmark varies quite a bit depending on the reference pattern from
+the client. This hides the interesting result in the noise so we only
+consider the worst case.
 
-The usual methods of hooking into the partition scanner does not work
-for partitions.  Allow those who care to pass in a module parameter.
+===========================================================
+Machine:	arnold
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__parallelio-memcachetest-ext3/arnold/comparison.html
+Arch:		x86
+CPUs:		1 socket, 2 threads
+Model:		Pentium 4
+Disk:		Single Rotary Disk
+===========================================================
 
-Signed-off-by: Joern Engel <joern@logfs.org>
----
- drivers/block/blockconsole.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+parallelio-memcachetest
+-----------------------
+  Even for small amounts of background IO the memcached process is being
+  pushed into swap. This is due to a regression somewhere between 2.6.34
+  and 2.6.39 and a much larger regression between 2.6.39 and 3.0.  This is
+  even worse in 3.3 and 3.4.
 
-diff --git a/drivers/block/blockconsole.c b/drivers/block/blockconsole.c
-index 09f239c..91c27ce 100644
---- a/drivers/block/blockconsole.c
-+++ b/drivers/block/blockconsole.c
-@@ -10,6 +10,7 @@
- #include <linux/kref.h>
- #include <linux/kthread.h>
- #include <linux/mm.h>
-+#include <linux/moduleparam.h>
- #include <linux/mount.h>
- #include <linux/random.h>
- #include <linux/slab.h>
-@@ -543,6 +544,14 @@ static void bcon_create_fuzzy(const char *name)
- 	}
- }
- 
-+static int bcon_setup(const char *val, struct kernel_param *kp)
-+{
-+	bcon_create_fuzzy(val);
-+	return 0;
-+}
-+
-+module_param_call(device, bcon_setup, NULL, NULL, 0200);
-+
- static DEFINE_SPINLOCK(device_lock);
- static char scanned_devices[80];
- 
+  The "page reclaim immediate" figures started increasing from 3.2 implying
+  that a lot of dirty LRU pages are reaching the end of the LRU lists.
+
+==========================================================
+Machine:	hydra
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__parallelio-memcachetest-ext3/hydra/comparison.html
+Arch:		x86-64
+CPUs:		1 socket, 4 threads
+Model:		AMD Phenom II X4 940
+Disk:		Single Rotary Disk
+==========================================================
+
+parallelio-memcachetest
+-----------------------
+  Performance was reasonable until relatively recent kernels. The results
+  show that for 3.3 and later kernels that swapping started for moderate
+  amounts of IO (1624M) and performance dropped off sharply as a result.
+
+  As with arnold, dirty pages are reaching the end of the LRU list.
+
+==========================================================
+Machine:	sandy
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__parallelio-memcachetest-ext3/sandy/comparison.html
+Arch:		x86-64
+CPUs:		1 socket, 8 threads
+Model:		Intel Core i7-2600
+Disk:		Single Rotary Disk
+==========================================================
+
+parallelio-memcachetest
+-----------------------
+  This is showing everything smells of roses and the IO is not interfering
+  at all. It is possible that this is due to the amount of memory and that
+  the IO is being completed fast enough.
+
 -- 
-1.7.10.4
-
+Mel Gorman
+SUSE Labs
