@@ -1,132 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953Ab2GWV5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 17:57:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51442 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752685Ab2GWV5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 17:57:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="176263964"
-Message-Id: <180a06f3f357cf9f78259ae443a082b14a29535b.1343078495.git.tony.luck@intel.com>
-In-Reply-To: <cover.1343078495.git.tony.luck@intel.com>
-References: <cover.1343078495.git.tony.luck@intel.com>
-From: Tony Luck <tony.luck@intel.com>
-Date: Thu, 19 Jul 2012 11:28:46 -0700
-Subject: [PATCH 2/2] x86/mce: Add quirk for instruction recovery on Sandy
- Bridge processors
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+	id S1754601Ab2GWWDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 18:03:46 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64626 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab2GWWDp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 18:03:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120723210654.GA25248@shutemov.name>
+References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
+ <1343055645-24083-2-git-send-email-kirill@shutemov.name> <CAOPLpQe7=Gv7ToM8cqe1rNCP+vX5=gVppA1=gfaO0LSdqMhqMQ@mail.gmail.com>
+ <20120723203120.GA25072@shutemov.name> <CAOPLpQdcSw6KGT=odFSAUScd44mUdkYpR6hQM_zg81Y88T=VHg@mail.gmail.com>
+ <20120723210654.GA25248@shutemov.name>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Mon, 23 Jul 2012 18:03:24 -0400
+Message-ID: <CAOPLpQeLKYvonWXY-WSZt+DL_OoChyAqYm7nzNUSq7kumtUhZA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] perf: use XSI-complaint version of strerror_r()
+ instead of GNU-specific
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sandy Bridge processors follow the SDM (Vol 3B, Table 15-20) and set
-both the RIPV and EIPV bits in the MCG_STATUS register to zero for
-machine checks during instruction fetch. This is more than a little
-counter-intuitive and means that Linux cannot recover from these
-errors. Rather than insert special case code at several places in mce.c
-and mce-severity.c, we pretend the EIPV bit was set for just this case
-early in processing the machine check.
+On Mon, Jul 23, 2012 at 5:06 PM, Kirill A. Shutemov
+<kirill@shutemov.name> wrote:
+> They are bugs.
+>
+> Let's fix strerror_r() usage.
+>
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-Acked-by: Borislav Petkov <bp@amd64.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c | 43 +++++++++++++++++++++++++++++++++++++---
- 1 file changed, 40 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index da27c5d..e65e738 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -102,6 +102,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
- 
- static DEFINE_PER_CPU(struct work_struct, mce_work);
- 
-+static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
-+
- /*
-  * CPU/chipset specific EDAC code can register a notifier call here to print
-  * MCE errors in a human-readable form.
-@@ -649,14 +651,18 @@ EXPORT_SYMBOL_GPL(machine_check_poll);
-  * Do a quick check if any of the events requires a panic.
-  * This decides if we keep the events around or clear them.
-  */
--static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp)
-+static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
-+			  struct pt_regs *regs)
- {
- 	int i, ret = 0;
- 
- 	for (i = 0; i < banks; i++) {
- 		m->status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
--		if (m->status & MCI_STATUS_VAL)
-+		if (m->status & MCI_STATUS_VAL) {
- 			__set_bit(i, validp);
-+			if (quirk_no_way_out)
-+				quirk_no_way_out(i, m, regs);
-+		}
- 		if (mce_severity(m, tolerant, msg) >= MCE_PANIC_SEVERITY)
- 			ret = 1;
- 	}
-@@ -1039,7 +1045,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	*final = m;
- 
- 	memset(valid_banks, 0, sizeof(valid_banks));
--	no_way_out = mce_no_way_out(&m, &msg, valid_banks);
-+	no_way_out = mce_no_way_out(&m, &msg, valid_banks, regs);
- 
- 	barrier();
- 
-@@ -1415,6 +1421,34 @@ static void __mcheck_cpu_init_generic(void)
- 	}
- }
- 
-+/*
-+ * During IFU recovery Sandy Bridge -EP4S processors set the RIPV and
-+ * EIPV bits in MCG_STATUS to zero on the affected logical processor (SDM
-+ * Vol 3B Table 15-20). But this confuses both the code that determines
-+ * whether the machine check occurred in kernel or user mode, and also
-+ * the severity assessment code. Pretend that EIPV was set, and take the
-+ * ip/cs values from the pt_regs that mce_gather_info() ignored earlier.
-+ */
-+static void quirk_sandybridge_ifu(int bank, struct mce *m, struct pt_regs *regs)
-+{
-+	if (bank != 0)
-+		return;
-+	if ((m->mcgstatus & (MCG_STATUS_EIPV|MCG_STATUS_RIPV)) != 0)
-+		return;
-+	if ((m->status & (MCI_STATUS_OVER|MCI_STATUS_UC|
-+		          MCI_STATUS_EN|MCI_STATUS_MISCV|MCI_STATUS_ADDRV|
-+			  MCI_STATUS_PCC|MCI_STATUS_S|MCI_STATUS_AR|
-+			  MCACOD)) !=
-+			 (MCI_STATUS_UC|MCI_STATUS_EN|
-+			  MCI_STATUS_MISCV|MCI_STATUS_ADDRV|MCI_STATUS_S|
-+			  MCI_STATUS_AR|MCACOD_INSTR))
-+		return;
-+
-+	m->mcgstatus |= MCG_STATUS_EIPV;
-+	m->ip = regs->ip;
-+	m->cs = regs->cs;
-+}
-+
- /* Add per CPU specific workarounds here */
- static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- {
-@@ -1512,6 +1546,9 @@ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- 		 */
- 		if (c->x86 == 6 && c->x86_model <= 13 && mce_bootlog < 0)
- 			mce_bootlog = 0;
-+
-+		if (c->x86 == 6 && c->x86_model == 45)
-+			quirk_no_way_out = quirk_sandybridge_ifu;
- 	}
- 	if (monarch_timeout < 0)
- 		monarch_timeout = 0;
--- 
-1.7.10.2.552.gaa3bb87
-
+Acked-by: Ulrich Drepper <drepper@gmail.com>
