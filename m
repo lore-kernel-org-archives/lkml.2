@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab2GWBmk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:42:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54070 "EHLO
+	id S1753823Ab2GWCED (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:04:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54098 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753076Ab2GWBmd (ORCPT
+	by vger.kernel.org with ESMTP id S1753076Ab2GWBmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:33 -0400
-Message-Id: <20120723010705.459112970@decadent.org.uk>
+	Sun, 22 Jul 2012 21:42:40 -0400
+Message-Id: <20120723010706.588503517@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:23 +0100
+Date: Mon, 23 Jul 2012 02:08:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Feng Tang <feng.tang@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 092/108] ACPI: Remove one board specific WARN when ignoring timer overriding
+        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 099/108] ACPI / PM: Make acpi_pm_device_sleep_state() follow the
+ specification
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,40 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Feng Tang <feng.tang@intel.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 5752cdb805ff89942d99d12118e2844e7db34df8 upstream.
+commit dbe9a2edd17d843d80faf2b99f20a691c1853418 upstream.
 
-commit 7f68b4c2e158019c2ec494b5cfbd9c83b4e5b253 upstream.
+The comparison between the system sleep state being entered
+and the lowest system sleep state the given device may wake up
+from in acpi_pm_device_sleep_state() is reversed, because the
+specification (ACPI 5.0) says that for wakeup to work:
 
-Current WARN msg is only for the ati_ixp4x0 board, while this function
-is used by mulitple platforms. So this one board specific warning
-is not appropriate any more.
+"The sleeping state being entered must be less than or equal to the
+ power state declared in element 1 of the _PRW object."
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In other words, the state returned by _PRW is the deepest
+(lowest-power) system sleep state the device is capable of waking up
+the system from.
+
+Moreover, acpi_pm_device_sleep_state() also should check if the
+wakeup capability is supported through ACPI, because in principle it
+may be done via native PCIe PME, for example, in which case _SxW
+should not be evaluated.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/acpi/boot.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/acpi/sleep.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 9b3d328..2b84bc3 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1340,12 +1340,7 @@ static int __init dmi_disable_acpi(const struct dmi_system_id *d)
-  */
- static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
- {
--	/*
--	 * The ati_ixp4x0_rev() early PCI quirk should have set
--	 * the acpi_skip_timer_override flag already:
--	 */
- 	if (!acpi_skip_timer_override) {
--		WARN(1, KERN_ERR "ati_ixp4x0 quirk not complete.\n");
- 		pr_notice("%s detected: Ignoring BIOS IRQ0 override\n",
- 			d->ident);
- 		acpi_skip_timer_override = 1;
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index a564fc3..d8b381e 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -773,8 +773,8 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
+ 	 * can wake the system.  _S0W may be valid, too.
+ 	 */
+ 	if (acpi_target_sleep_state == ACPI_STATE_S0 ||
+-	    (device_may_wakeup(dev) &&
+-	     adev->wakeup.sleep_state <= acpi_target_sleep_state)) {
++	    (device_may_wakeup(dev) && adev->wakeup.flags.valid &&
++	     adev->wakeup.sleep_state >= acpi_target_sleep_state)) {
+ 		acpi_status status;
+ 
+ 		acpi_method[3] = 'W';
 
 
