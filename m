@@ -1,106 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab2GWNrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:47:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58569 "EHLO mx2.suse.de"
+	id S1754132Ab2GWNrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:47:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58541 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753264Ab2GWNiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:38:51 -0400
+	id S1752463Ab2GWNiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:38:50 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 04/34] mm: vmscan: fix force-scanning small targets without swap
-Date: Mon, 23 Jul 2012 14:38:17 +0100
-Message-Id: <1343050727-3045-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 00/34] Memory management performance backports for -stable V2
+Date: Mon, 23 Jul 2012 14:38:13 +0100
+Message-Id: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
-References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <jweiner@redhat.com>
+Changelog since V1
+  o Expand some of the notes					(jrnieder)
+  o Correct upstream commit SHA1				(hugh)
 
-commit a4d3e9e76337059406fcf3ead288c0df22a790e9 upstream.
+This series is related to the new addition to stable_kernel_rules.txt
 
-Stable note: Not tracked in Bugzilla. This patch augments an earlier commit
-	that avoids scanning priority being artificially raised. The older
-	fix was particularly important for small memcgs to avoid calling
-	wait_iff_congested() unnecessarily.
+ - Serious issues as reported by a user of a distribution kernel may also
+   be considered if they fix a notable performance or interactivity issue.
+   As these fixes are not as obvious and have a higher risk of a subtle
+   regression they should only be submitted by a distribution kernel
+   maintainer and include an addendum linking to a bugzilla entry if it
+   exists and additional information on the user-visible impact.
 
-Without swap, anonymous pages are not scanned.  As such, they should not
-count when considering force-scanning a small target if there is no swap.
+All of these patches have been backported to a distribution kernel and
+address some sort of performance issue in the VM. As they are not all
+obvious, I've added a "Stable note" to the top of each patch giving
+additional information on why the patch was backported. Lets see where
+the boundaries lie on how this new rule is interpreted in practice :).
 
-Otherwise, targets are not force-scanned even when their effective scan
-number is zero and the other conditions--kswapd/memcg--apply.
+Patch 1	Performance fix for tmpfs
+Patch 2 Memory hotadd fix
+Patch 3 Reduce boot time on large machines
+Patches 4-5 Reduce stalls for wait_iff_congested
+Patches 6-8 Reduce excessive reclaim of slab objects which for some workloads
+	will reduce the amount of IO required
+Patches 9-10 limits the amount of page reclaim when THP/Compaction is active.
+	Excessive reclaim in low memory situations can lead to stalls some
+	of which are user visible.
+Patches 11-19 reduce the amount of churn of the LRU lists. Poor reclaim
+	decisions can impair workloads in different ways and there have
+	been complaints recently the reclaim decisions of modern kernels
+	are worse than older ones.
+Patches 20-21 reduce the amount of CPU kswapd uses in some cases. This
+	is harder to trigger but were developed due to bug reports about
+	100% CPU usage from kswapd.
+Patches 22-25 are mostly related to interactivity when THP is enabled.
+Patches 26-30 are also related to page reclaim decisions, particularly
+	the residency of mapped pages.
+Patches 31-34 fix a major page allocator performance regression
 
-This fixes 246e87a93934 ("memcg: fix get_scan_count() for small
-targets").
+All of the patches will apply to 3.0-stable but the ordering of the
+patches is such that applying them to 3.2-stable and 3.4-stable should
+be straight-forward.
 
-[akpm@linux-foundation.org: fix comment]
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Ying Han <yinghan@google.com>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/vmscan.c |   27 ++++++++++++---------------
- 1 file changed, 12 insertions(+), 15 deletions(-)
+I am bending or breaking the rules in places that needs examination.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 769935d..bdfdec3 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1747,23 +1747,15 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 	u64 fraction[2], denominator;
- 	enum lru_list l;
- 	int noswap = 0;
--	int force_scan = 0;
-+	bool force_scan = false;
- 	unsigned long nr_force_scan[2];
- 
--
--	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
--		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
--	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
--		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
--
--	if (((anon + file) >> priority) < SWAP_CLUSTER_MAX) {
--		/* kswapd does zone balancing and need to scan this zone */
--		if (scanning_global_lru(sc) && current_is_kswapd())
--			force_scan = 1;
--		/* memcg may have small limit and need to avoid priority drop */
--		if (!scanning_global_lru(sc))
--			force_scan = 1;
--	}
-+	/* kswapd does zone balancing and needs to scan this zone */
-+	if (scanning_global_lru(sc) && current_is_kswapd())
-+		force_scan = true;
-+	/* memcg may have small limit and need to avoid priority drop */
-+	if (!scanning_global_lru(sc))
-+		force_scan = true;
- 
- 	/* If we have no swap space, do not bother scanning anon pages. */
- 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
-@@ -1776,6 +1768,11 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 		goto out;
- 	}
- 
-+	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
-+		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
-+	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
-+		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+
- 	if (scanning_global_lru(sc)) {
- 		free  = zone_page_state(zone, NR_FREE_PAGES);
- 		/* If we have very few page cache pages,
+1. Not all these patches have a bugzilla entry because in many cases I was
+   doing the investigation based on my own testing. By rights, I should
+   have been creating bugzilla entries for each of them but there only
+   are so many hours in the day.
+2. I will be duplicated in the signed-offs because I may both the author
+   of the patch and now part of the submission path to -stable. I don't think
+   there is anything wrong with this but it might look weird to some people.
+3. Some patches are in the series only because they make later patches
+   easier to backport.
+4. Patch 30 may be violating the rules. The upstream patch accidentally
+   fixes a problem and was found through bisection but the full patch and
+   the series itself is not a good -stable candidate. Patch 30 is a substitute
+   for an upstream commit.
+
+The patches are based on 3.0.36 but there should not be problems applying
+the series to later stable releases.
+
+Alex,Shi (2):
+  kswapd: avoid unnecessary rebalance after an unsuccessful balancing
+  kswapd: assign new_order and new_classzone_idx after wakeup in
+    sleeping
+
+Dave Chinner (3):
+  vmscan: add shrink_slab tracepoints
+  vmscan: shrinker->nr updates race and go wrong
+  vmscan: reduce wind up shrinker->nr when shrinker can't do work
+
+David Rientjes (2):
+  cpusets: avoid looping when storing to mems_allowed if one node
+    remains set
+  cpusets: stall when updating mems_allowed for mempolicy or disjoint
+    nodemask
+
+Dimitri Sivanich (1):
+  mm: vmstat: cache align vm_stat
+
+Hugh Dickins (1):
+  mm: test PageSwapBacked in lumpy reclaim
+
+Johannes Weiner (1):
+  mm: vmscan: fix force-scanning small targets without swap
+
+Konstantin Khlebnikov (3):
+  vmscan: promote shared file mapped pages
+  vmscan: activate executable pages after first usage
+  mm/hugetlb: fix warning in alloc_huge_page/dequeue_huge_page_vma
+
+Mel Gorman (14):
+  mm: memory hotplug: Check if pages are correctly reserved on a
+    per-section basis
+  mm: Reduce the amount of work done when updating min_free_kbytes
+  mm: Abort reclaim/compaction if compaction can proceed
+  mm: migration: clean up unmap_and_move()
+  mm: compaction: Allow compaction to isolate dirty pages
+  mm: compaction: Determine if dirty pages can be migrated without
+    blocking within ->migratepage
+  mm: page allocator: Do not call direct reclaim for THP allocations
+    while compaction is deferred
+  mm: compaction: make isolate_lru_page() filter-aware again
+  mm: compaction: Introduce sync-light migration for use by compaction
+  mm: vmscan: When reclaiming for compaction, ensure there are
+    sufficient free pages available
+  mm: vmscan: Do not OOM if aborting reclaim to start compaction
+  mm: vmscan: Check if reclaim should really abort even if
+    compaction_ready() is true for one zone
+  mm: vmscan: Do not force kswapd to scan small targets
+  cpuset: mm: Reduce large amounts of memory barrier related damage v3
+
+Minchan Kim (5):
+  mm: compaction: trivial clean up in acct_isolated()
+  mm: change isolate mode from #define to bitwise type
+  mm: compaction: make isolate_lru_page() filter-aware
+  mm: zone_reclaim: make isolate_lru_page() filter-aware
+  mm/vmscan.c: consider swap space when deciding whether to continue
+    reclaim
+
+Rik van Riel (1):
+  mm: limit direct reclaim for higher order allocations
+
+Shaohua Li (1):
+  vmscan: clear ZONE_CONGESTED for zone with good watermark
+
+ .../trace/postprocess/trace-vmscan-postprocess.pl  |    8 +-
+ drivers/base/memory.c                              |   58 ++--
+ fs/btrfs/disk-io.c                                 |    5 +-
+ fs/hugetlbfs/inode.c                               |    3 +-
+ fs/nfs/internal.h                                  |    2 +-
+ fs/nfs/write.c                                     |    4 +-
+ include/linux/cpuset.h                             |   45 ++--
+ include/linux/fs.h                                 |   11 +-
+ include/linux/init_task.h                          |    8 +
+ include/linux/memcontrol.h                         |    3 +-
+ include/linux/migrate.h                            |   23 +-
+ include/linux/mmzone.h                             |   14 +
+ include/linux/sched.h                              |    2 +-
+ include/linux/swap.h                               |    7 +-
+ include/trace/events/vmscan.h                      |   85 +++++-
+ kernel/cpuset.c                                    |   63 ++---
+ kernel/fork.c                                      |    3 +
+ mm/compaction.c                                    |   26 +-
+ mm/filemap.c                                       |   11 +-
+ mm/hugetlb.c                                       |   13 +-
+ mm/memcontrol.c                                    |    3 +-
+ mm/memory-failure.c                                |    2 +-
+ mm/memory_hotplug.c                                |    2 +-
+ mm/mempolicy.c                                     |   30 ++-
+ mm/migrate.c                                       |  224 ++++++++++------
+ mm/page_alloc.c                                    |  113 +++++---
+ mm/slab.c                                          |   13 +-
+ mm/slub.c                                          |   39 ++-
+ mm/vmscan.c                                        |  280 ++++++++++++++++----
+ mm/vmstat.c                                        |    2 +-
+ 30 files changed, 772 insertions(+), 330 deletions(-)
+
 -- 
 1.7.9.2
 
