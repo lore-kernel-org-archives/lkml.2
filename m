@@ -1,79 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab2GWT1u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 15:27:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44216 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab2GWT1s (ORCPT
+	id S1754729Ab2GWT2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 15:28:15 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51266 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab2GWT2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 15:27:48 -0400
+	Mon, 23 Jul 2012 15:28:10 -0400
+Date: Mon, 23 Jul 2012 12:27:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [RFC] page-table walkers vs memory order
+Message-ID: <20120723192740.GC2491@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1343064870.26034.23.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdaHdCvx1HJNDsyJSZAN--sF+4-V1TbzXZL1v+7Asoe_oA@mail.gmail.com>
-References: <1342567672-29071-1-git-send-email-ccross@android.com>
-	<CACRpkdaHdCvx1HJNDsyJSZAN--sF+4-V1TbzXZL1v+7Asoe_oA@mail.gmail.com>
-Date: Mon, 23 Jul 2012 12:27:47 -0700
-X-Google-Sender-Auth: SH3KE2Nih6tT6Z8ykDANCK1f92g
-Message-ID: <CAMbhsRR2-VjUeL2XPKubeaG=iLV5NE-i_sVYbuMAryXLxsbo1g@mail.gmail.com>
-Subject: Re: [RFC] ARM: sched_clock: update epoch_cyc on resume
-From: Colin Cross <ccross@android.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Krzysztof Halasa <khc@pm.waw.pl>, Nicolas Pitre <nico@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343064870.26034.23.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072319-4242-0000-0000-000002686E77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 11:55 AM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Wed, Jul 18, 2012 at 1:27 AM, Colin Cross <ccross@android.com> wrote:
->
->> This will have a side effect of causing SoCs that have clocks that
->> continue to count in suspend to appear to stop counting, reporting the
->> same sched_clock() value before and after suspend.
->
-> So for our platform (ux500) that has a sched clock that *does*
-> continue to run during suspend,
-> drivers/clocksource/clksrc-dbx500-prcmu.c
-> how do we opt out of this behaviour?
+On Mon, Jul 23, 2012 at 07:34:30PM +0200, Peter Zijlstra wrote:
+> 
+> While staring at mm/huge_memory.c I found a very under-commented
+> smp_wmb() in __split_huge_page_map(). It turns out that its copied from
+> __{pte,pmd,pud}_alloc() but forgot the useful comment (or a reference
+> thereto).
+> 
+> Now, afaict we're not good, as per that comment. Paul has since
+> convinced some of us that compiler writers are pure evil and out to get
+> us.
 
-Does the clock you use for sched_clock continue to run in all suspend
-modes?  All the SoC's I've used only have a 32kHz clock in the deepest
-suspend mode, which is not ideal for sched_clock.  For example, on
-Tegra2 the faster 1MHz clock used for sched_clock resets in the
-deepest suspend state (LP0) but not the shallowest suspend state
-(LP2), and which suspend state the chip hits depends on which hardware
-is active.  Opting out of this patch would cause Tegra's clock to
-sometimes run in suspend, and sometimes not, which seems worse for
-debugging than consistently not running in suspend.  I'd be surprised
-if a similar situation didn't apply to your platform.
+I have seen the glint in their eyes when they discuss optimization
+techniques that you would not want your children to know about!
 
-> Since sched_clock is used for the debug prints, if we have a
-> crash immediately after resume() it will appear to be at resume
-> time in the log which kinda sucks. :-(
+> Therefore we should do what rcu_dereference() does and use
+> ACCESS_ONCE()/barrier() followed smp_read_barrier_depends() every time
+> we dereference a page-table pointer.
+> 
+> 
+> In particular it looks like things like
+> mm/memcontrol.c:mem_cgroup_count_precharge(), which use
+> walk_page_range() under down_read(&mm->mmap_sem) and can thus be
+> concurrent with __{pte,pmd,pud}_alloc() from faults (and possibly
+> itself) are quite broken on Alpha and subtly broken for those of us with
+> 'creative' compilers.
 
-Most resume implementations I've seen print a resume message very
-early, making it fairly easy to distinguish between suspend and resume
-crashes, but I can see why an accurate timestamp would be helpful.
+Looks good to me, though given my ignorance of mm, not sure that counts
+for much.
 
-> Isn't the proper way to do this either:
->
-> - Assign suspend/resume hooks to the sched_clock code in the
->   platform and let the code that reads the hardware clock deal with
->   this
+							Thanx, Paul
 
-That's effectively what I've done on 3 different platforms, which is
-why I thought it might be better to put it in the core code.
+> Should I go do a more extensive audit of page-table walkers or are we
+> happy with the status quo?
+> 
+> ---
+>  arch/x86/mm/gup.c |    6 +++---
+>  mm/pagewalk.c     |   24 ++++++++++++++++++++++++
+>  2 files changed, 27 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+> index dd74e46..4958fb1 100644
+> --- a/arch/x86/mm/gup.c
+> +++ b/arch/x86/mm/gup.c
+> @@ -150,7 +150,7 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+>  
+>  	pmdp = pmd_offset(&pud, addr);
+>  	do {
+> -		pmd_t pmd = *pmdp;
+> +		pmd_t pmd = ACCESS_ONCE(*pmdp);
 
-> Or
->
-> - If it absolutely needs to be in the core code, also have a bool
->   field indicating whether the clock is going to die during suspend
->   and add new registration functions for setting that sched_clock
->   type, e.g. setup_sched_clock_nonsuspendable()
+Here, ACCESS_ONCE() suffices because this is x86-specific code.
+Core code would need to worry about Alpha, and would thus also need
+smp_read_barrier_depends(), as you in fact do have further down.
 
-Sounds reasonable if some platforms need the extra complexity.
+>  		next = pmd_addr_end(addr, end);
+>  		/*
+> @@ -220,7 +220,7 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+>  
+>  	pudp = pud_offset(&pgd, addr);
+>  	do {
+> -		pud_t pud = *pudp;
+> +		pud_t pud = ACCESS_ONCE(*pudp);
+>  
+>  		next = pud_addr_end(addr, end);
+>  		if (pud_none(pud))
+> @@ -280,7 +280,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+>  	local_irq_save(flags);
+>  	pgdp = pgd_offset(mm, addr);
+>  	do {
+> -		pgd_t pgd = *pgdp;
+> +		pgd_t pgd = ACCESS_ONCE(*pgdp);
+>  
+>  		next = pgd_addr_end(addr, end);
+>  		if (pgd_none(pgd))
+> diff --git a/mm/pagewalk.c b/mm/pagewalk.c
+> index 6c118d0..2ba2a74 100644
+> --- a/mm/pagewalk.c
+> +++ b/mm/pagewalk.c
+> @@ -10,6 +10,14 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  	int err = 0;
+>  
+>  	pte = pte_offset_map(pmd, addr);
+> +	/*
+> +	 * Pairs with the smp_wmb() in __{pte,pmd,pud}_alloc() and
+> +	 * __split_huge_page_map(). Ideally we'd use ACCESS_ONCE() on the
+> +	 * actual dereference of p[gum]d, but that's hidden deep within the
+> +	 * bowels of {pte,pmd,pud}_offset.
+> +	 */
+> +	barrier();
+> +	smp_read_barrier_depends();
+>  	for (;;) {
+>  		err = walk->pte_entry(pte, addr, addr + PAGE_SIZE, walk);
+>  		if (err)
+> @@ -32,6 +40,14 @@ static int walk_pmd_range(pud_t *pud, unsigned long addr, unsigned long end,
+>  	int err = 0;
+>  
+>  	pmd = pmd_offset(pud, addr);
+> +	/*
+> +	 * Pairs with the smp_wmb() in __{pte,pmd,pud}_alloc() and
+> +	 * __split_huge_page_map(). Ideally we'd use ACCESS_ONCE() on the
+> +	 * actual dereference of p[gum]d, but that's hidden deep within the
+> +	 * bowels of {pte,pmd,pud}_offset.
+> +	 */
+> +	barrier();
+> +	smp_read_barrier_depends();
+>  	do {
+>  again:
+>  		next = pmd_addr_end(addr, end);
+> @@ -77,6 +93,14 @@ static int walk_pud_range(pgd_t *pgd, unsigned long addr, unsigned long end,
+>  	int err = 0;
+>  
+>  	pud = pud_offset(pgd, addr);
+> +	/*
+> +	 * Pairs with the smp_wmb() in __{pte,pmd,pud}_alloc() and
+> +	 * __split_huge_page_map(). Ideally we'd use ACCESS_ONCE() on the
+> +	 * actual dereference of p[gum]d, but that's hidden deep within the
+> +	 * bowels of {pte,pmd,pud}_offset.
+> +	 */
+> +	barrier();
+> +	smp_read_barrier_depends();
+>  	do {
+>  		next = pud_addr_end(addr, end);
+>  		if (pud_none_or_clear_bad(pud)) {
+> 
+
