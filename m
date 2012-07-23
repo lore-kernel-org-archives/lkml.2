@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab2GWXlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 19:41:11 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:55395 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754973Ab2GWXlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 19:41:09 -0400
-Date: Tue, 24 Jul 2012 01:36:34 +0200
-From: Michael Leun <lkml20120218@newton.leun.net>
-To: linux@rainbow-software.org
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [3.5 regression / mcs7830 / bisected] bridge constantly
- toggeling between disabled and forwarding
-Message-ID: <20120724013634.11bf1360@xenia.leun.net>
-In-Reply-To: <20120723091504.2d035d28@xenia.leun.net>
-References: <20120723091504.2d035d28@xenia.leun.net>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755124Ab2GWXsW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 19:48:22 -0400
+Received: from nm31-vm5.bullet.mail.bf1.yahoo.com ([72.30.239.13]:35105 "HELO
+	nm31-vm5.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754877Ab2GWXsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 19:48:20 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 134618.93071.bm@omp1025.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=UqMisTNzfRd19S2pyE/CSKtIkJgjMFlaycaFMcqvAUmKYhSo85v7EQ+A/i5/oAqrqdyzL90eAVxvowkdPEQc7/V0AEtxdnOY0VRGbqm9hvBHapaV5bL/SWNCQGelk1VLkMiSIzaNyNZlmR5GhEx+vt0jxCBH+rkle2FJy5QmHJE=;
+X-YMail-OSG: BitALcQVM1mUIDgA2Nj0u_urdBFjmVoKsERrLsIeSyLn3lt
+ E0ve7SnEXcqMN0hcsdaPuXaa0K_Hoi0f7oVxB6wV8nCRVvHjtvJjwJ769EBk
+ eKjh_boPqToXwjoQtKvGLTuQjdkFPFk611GDRyZXHXNjpqJkzkslIvDQkrr1
+ 37sym.aYwb7YqdjgzxQTNFR4NG4L6NlhhXty3g5yS_8Lr7HiQa.LhQ8W2X77
+ EMQu2acS7WFGSUwfhlJvFGFIWi_j9zPV1LT8cNNkAi_nGSHg0fEB6j47JDAE
+ iLkm11kXYUOoz7qmSfYcJtRUAC0aPg0iV81IKO0rLWnpDVTMIEo6hdVHt_fk
+ f8dd2c8.CtEX9Pq6ZQqty3mEYiQqorfNvutYmKFVi5R9bMzB8lnoFajVkvjd
+ Do9JjsLyAKPXHnGwNTnUh864MHnyboVunKhALhEGl54WLoXMf86AqJ.36otV
+ TnZ6dvB8LuQ8SGi5zZmEkoBW_duiPTQz2VAsuJmG8Bx4.v3fUFyMyiiPmKB0
+ n6QIg.NImBVEeB7Ocdce6mUL_nLaa256Ny1uGTuWuxahDtJf2Qs2u8tIcxdU
+ ZphuvY_K2grVi38MZ0TXDuMg2LZokKt097Vqb_Q--
+X-Mailer: YahooMailWebService/0.8.120.356233
+References: <1342735724.60460.YahooMailNeo@web160604.mail.bf1.yahoo.com> <20120720093648.GA3909@router-fw-old.local.net-space.pl>
+Message-ID: <1343087299.65126.YahooMailNeo@web160606.mail.bf1.yahoo.com>
+Date: Mon, 23 Jul 2012 16:48:19 -0700 (PDT)
+From: joe shmoe <joeshmoeypeter@yahoo.com>
+Reply-To: joe shmoe <joeshmoeypeter@yahoo.com>
+Subject: Re: kdump/kexec vmcore size doubles each time
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        daniel.kiper@oracle.com
+In-Reply-To: <20120720093648.GA3909@router-fw-old.local.net-space.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jul 2012 09:15:04 +0200
-Michael Leun <lkml20120218@newton.leun.net> wrote:
+Hi,
+Thank you for the reply. I ended up opting for writing to filesystem rather than raw_device and this seems to have helped me sidestep the problem for now. Unfortunately, I can't quite make a jump to later sources.
 
-[see issue description below]
+I do have another question, I see KDUMP_KEEP_OLD_DUMPS mentioned to automatically clean up prior dumps (for ex: http://dedoimedo.com/computers/kdump.html and other SUSE docs).
+However, I cannot find any logic in sources to do this (and sure enough I don't see older cores in my /var/crash/ path clean up as new cores are dumped).
 
-Bisecting yielded
+Could someone please comment if:
+(i) KDUMP_KEEP_OLD_DUMPS is unsupported or not. If it IS supported, could someone please help with the relevant source code so I could debug why it isn't working? Yes, I did download kexec-tools git but cannot find anything relevant.
 
-b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113 is the first bad commit
-commit b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113
-Author: Ondrej Zary <linux@rainbow-software.org>
-Date:   Fri Jun 1 10:29:08 2012 +0000
+(ii) If there is NO explicit source code to achieve this -- then do folks achieve such a cleanup through KDUMP_PRE and KDUMP_POST scripts? If yes, is there a standard-ish script out there to achieve this?
 
-    mcs7830: Implement link state detection
+Thanks much.
 
-    Add .status callback that detects link state changes.
-    Tested with MCS7832CV-AA chip (9710:7830, identified as rev.C by the driver).
-    Fixes https://bugzilla.kernel.org/show_bug.cgi?id=28532
+----- Original Message -----
+From: Daniel Kiper <dkiper@net-space.pl>
+To: joe shmoe <joeshmoeypeter@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; daniel.kiper@oracle.com
+Sent: Friday, July 20, 2012 2:36 AM
+Subject: Re: kdump/kexec vmcore size doubles each time
 
-    Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-:040000 040000 5480780cb5e75c57122a621fc3bab0108c16be27 d97efd9cc0a465dff76bcd3a3c547f718f2a5345 M    drivers
-
-
-Reverting that from 3.5 makes the issue go away.
-
+On Thu, Jul 19, 2012 at 03:08:44PM -0700, joe shmoe wrote:
 > Hi,
-> 
-> when I use my usb ethernet adapter
-> 
-> # > lsusb
-> [...]
-> Bus 002 Device 009: ID 9710:7830 MosChip Semiconductor MCS7830 10/100 Mbps Ethernet adapter
-> [...]
-> 
-> as port of an bridge
-> 
-> > # brctl addbr br0
-> > # brctl addif br0 eth0
-> > # brctl addif br0 ue5
-> > # ifconfig ue5 up
-> > # ifconfig br0 up
-> 
-> (Also does happen when eth0 is not part of the bridge, but the logs I
-> had available were from that situation...)
-> 
-> I constantly get messages showing the interface toggeling between
-> disabled and forwarding state:
-> 
-> Jul 23 07:40:50 elektra kernel: [ 1539.497337] br0: port 2(ue5) entered disabled state
-> Jul 23 07:40:50 elektra kernel: [ 1539.554992] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:40:50 elektra kernel: [ 1539.555005] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:40:51 elektra kernel: [ 1540.496242] br0: port 2(ue5) entered disabled state
-> Jul 23 07:40:51 elektra kernel: [ 1540.552534] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:40:51 elektra kernel: [ 1540.552548] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:40:52 elektra kernel: [ 1541.550413] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:40:53 elektra kernel: [ 1542.529672] br0: port 2(ue5) entered disabled state
-> Jul 23 07:40:53 elektra kernel: [ 1542.587162] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:40:53 elektra kernel: [ 1542.587175] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:40:54 elektra kernel: [ 1543.585309] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:00 elektra kernel: [ 1549.360600] br0: port 2(ue5) entered disabled state
-> Jul 23 07:41:00 elektra kernel: [ 1549.442998] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:00 elektra kernel: [ 1549.443011] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:01 elektra kernel: [ 1550.357686] br0: port 2(ue5) entered disabled state
-> Jul 23 07:41:01 elektra kernel: [ 1550.408208] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:01 elektra kernel: [ 1550.408222] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:02 elektra kernel: [ 1551.407656] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:03 elektra kernel: [ 1552.401578] br0: port 2(ue5) entered disabled state
-> Jul 23 07:41:03 elektra kernel: [ 1552.474773] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:03 elektra kernel: [ 1552.474786] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:04 elektra kernel: [ 1553.472487] br0: port 2(ue5) entered forwarding state
-> Jul 23 07:41:05 elektra kernel: [ 1554.356138] br0: port 2(ue5) entered disabled state
-> [...]
-> 
-> This does (in the same situation, nothing else than the kernel changed)
-> not happen with 3.4.5.
-> 
-> Does anybody have an idea what the issue might be or do I need to bisect?
+> I am trying to configure kexec/kdump on 2.6.35-14.
+>
+>
+> $> kexec --version
+> kexec-tools-testing 20080330 released 30th March 2007
 
+[...]
 
--- 
-MfG,
+It is very ancient version. Please use at least Ver. 2.0.3
+(http://kernel.org/pub/linux/utils/kernel/kexec/) or current
+development version (git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git).
 
-Michael Leun
+Daniel
 
