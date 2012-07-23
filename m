@@ -1,137 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab2GWNmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:42:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58739 "EHLO mx2.suse.de"
+	id S1753971Ab2GWNm6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:42:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58725 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753599Ab2GWNjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:39:03 -0400
+	id S1751325Ab2GWNjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:39:02 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 23/34] mm: vmscan: When reclaiming for compaction, ensure there are sufficient free pages available
-Date: Mon, 23 Jul 2012 14:38:36 +0100
-Message-Id: <1343050727-3045-24-git-send-email-mgorman@suse.de>
+Subject: [PATCH 21/34] kswapd: assign new_order and new_classzone_idx after wakeup in sleeping
+Date: Mon, 23 Jul 2012 14:38:34 +0100
+Message-Id: <1343050727-3045-22-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit fe4b1b244bdb96136855f2c694071cb09d140766 upstream.
+From: "Alex,Shi" <alex.shi@intel.com>
 
-Stable note: Not tracked on Bugzilla. THP and compaction was found to
-	aggressively reclaim pages and stall systems under different
-	situations that was addressed piecemeal over time. This patch
-	addresses a problem where the fix regressed THP allocation
-	success rates.
+commit f0dfcde099453aa4c0dc42473828d15a6d492936 upstream.
 
-In commit [e0887c19: vmscan: limit direct reclaim for higher order
-allocations], Rik noted that reclaim was too aggressive when THP was
-enabled. In his initial patch he used the number of free pages to
-decide if reclaim should abort for compaction. My feedback was that
-reclaim and compaction should be using the same logic when deciding if
-reclaim should be aborted.
+Stable note: Fixes https://bugzilla.redhat.com/show_bug.cgi?id=712019. This
+	patch reduces kswapd CPU usage.
 
-Unfortunately, this had the effect of reducing THP success rates when
-the workload included something like streaming reads that continually
-allocated pages. The window during which compaction could run and return
-a THP was too small.
+There 2 places to read pgdat in kswapd.  One is return from a successful
+balance, another is waked up from kswapd sleeping.  The new_order and
+new_classzone_idx represent the balance input order and classzone_idx.
 
-This patch combines Rik's two patches together. compaction_suitable()
-is still used to decide if reclaim should be aborted to allow
-compaction is used. However, it will also ensure that there is a
-reasonable buffer of free pages available. This improves upon the
-THP allocation success rates but bounds the number of pages that are
-freed for compaction.
+But current new_order and new_classzone_idx are not assigned after
+kswapd_try_to_sleep(), that will cause a bug in the following scenario.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel<riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
+1: after a successful balance, kswapd goes to sleep, and new_order = 0;
+   new_classzone_idx = __MAX_NR_ZONES - 1;
+
+2: kswapd waked up with order = 3 and classzone_idx = ZONE_NORMAL
+
+3: in the balance_pgdat() running, a new balance wakeup happened with
+   order = 5, and classzone_idx = ZONE_NORMAL
+
+4: the first wakeup(order = 3) finished successufly, return order = 3
+   but, the new_order is still 0, so, this balancing will be treated as a
+   failed balance.  And then the second tighter balancing will be missed.
+
+So, to avoid the above problem, the new_order and new_classzone_idx need
+to be assigned for later successful comparison.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Tested-by: Pádraig Brady <P@draigBrady.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |   44 +++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 39 insertions(+), 5 deletions(-)
+ mm/vmscan.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b8c1fc0..e85abfd 100644
+index bf85e4d..b8c1fc0 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2075,6 +2075,42 @@ restart:
- 	throttle_vm_writeout(sc->gfp_mask);
- }
- 
-+/* Returns true if compaction should go ahead for a high-order request */
-+static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-+{
-+	unsigned long balance_gap, watermark;
-+	bool watermark_ok;
-+
-+	/* Do not consider compaction for orders reclaim is meant to satisfy */
-+	if (sc->order <= PAGE_ALLOC_COSTLY_ORDER)
-+		return false;
-+
-+	/*
-+	 * Compaction takes time to run and there are potentially other
-+	 * callers using the pages just freed. Continue reclaiming until
-+	 * there is a buffer of free pages available to give compaction
-+	 * a reasonable chance of completing and allocating the page
-+	 */
-+	balance_gap = min(low_wmark_pages(zone),
-+		(zone->present_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
-+			KSWAPD_ZONE_BALANCE_GAP_RATIO);
-+	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
-+	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
-+
-+	/*
-+	 * If compaction is deferred, reclaim up to a point where
-+	 * compaction will have a chance of success when re-enabled
-+	 */
-+	if (compaction_deferred(zone))
-+		return watermark_ok;
-+
-+	/* If compaction is not ready to start, keep reclaiming */
-+	if (!compaction_suitable(zone, sc->order))
-+		return false;
-+
-+	return watermark_ok;
-+}
-+
- /*
-  * This is the direct reclaim path, for page-allocating processes.  We only
-  * try to reclaim pages from zones which will satisfy the caller's allocation
-@@ -2092,8 +2128,8 @@ restart:
-  * scan then give up on it.
-  *
-  * This function returns true if a zone is being reclaimed for a costly
-- * high-order allocation and compaction is either ready to begin or deferred.
-- * This indicates to the caller that it should retry the allocation or fail.
-+ * allocation and compaction is ready to begin. This indicates to the caller
-+ * that it should retry the allocation or fail.
-  */
- static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
-@@ -2127,9 +2163,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 				 * noticable problem, like transparent huge page
- 				 * allocations.
- 				 */
--				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
--					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone))) {
-+				if (compaction_ready(zone, sc)) {
- 					should_abort_reclaim = true;
- 					continue;
- 				}
+@@ -2905,6 +2905,8 @@ static int kswapd(void *p)
+ 						balanced_classzone_idx);
+ 			order = pgdat->kswapd_max_order;
+ 			classzone_idx = pgdat->classzone_idx;
++			new_order = order;
++			new_classzone_idx = classzone_idx;
+ 			pgdat->kswapd_max_order = 0;
+ 			pgdat->classzone_idx = pgdat->nr_zones - 1;
+ 		}
 -- 
 1.7.9.2
 
