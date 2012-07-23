@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab2GWB4d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:56:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54247 "EHLO
+	id S1753610Ab2GWB4s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:56:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54233 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752938Ab2GWBnB (ORCPT
+	by vger.kernel.org with ESMTP id S1753307Ab2GWBnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:01 -0400
-Message-Id: <20120723010701.901167648@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:00 -0400
+Message-Id: <20120723010703.471406922@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:00 +0100
+Date: Mon, 23 Jul 2012 02:08:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Boaz Harrosh <bharrosh@panasas.com>,
-        Benny Halevy <bhalevy@tonian.com>
-Subject: [ 069/108] ore: Remove support of partial IO request (NFS crash)
+        alan@lxorguk.ukuu.org.uk, John Stultz <johnstul@us.ibm.com>,
+        Jan Engelhardt <jengelh@inai.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 079/108] timekeeping: Fix leapsecond triggered load spike issue
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,48 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: John Stultz <johnstul@us.ibm.com>
 
-commit 62b62ad873f2accad9222a4d7ffbe1e93f6714c1 upstream.
+This is a backport of 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51
 
-Do to OOM situations the ore might fail to allocate all resources
-needed for IO of the full request. If some progress was possible
-it would proceed with a partial/short request, for the sake of
-forward progress.
+The timekeeping code misses an update of the hrtimer subsystem after a
+leap second happened. Due to that timers based on CLOCK_REALTIME are
+either expiring a second early or late depending on whether a leap
+second has been inserted or deleted until an operation is initiated
+which causes that update. Unless the update happens by some other
+means this discrepancy between the timekeeping and the hrtimer data
+stays forever and timers are expired either early or late.
 
-Since this crashes NFS-core and exofs is just fine without it just
-remove this contraption, and fail.
+The reported immediate workaround - $ data -s "`date`" - is causing a
+call to clock_was_set() which updates the hrtimer data structures.
+See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
 
-TODO:
-	Support real forward progress with some reserved allocations
-	of resources, such as mem pools and/or bio_sets
+Add the missing clock_was_set() call to update_wall_time() in case of
+a leap second event. The actual update is deferred to softirq context
+as the necessary smp function call cannot be invoked from hard
+interrupt context.
 
-[Bug since 3.2 Kernel]
-CC: Benny Halevy <bhalevy@tonian.com>
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/exofs/ore.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ kernel/time/timekeeping.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
-index 49cf230..24a49d4 100644
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -735,13 +735,7 @@ static int _prepare_for_striping(struct ore_io_state *ios)
- out:
- 	ios->numdevs = devs_in_group;
- 	ios->pages_consumed = cur_pg;
--	if (unlikely(ret)) {
--		if (length == ios->length)
--			return ret;
--		else
--			ios->length -= length;
--	}
--	return 0;
-+	return ret;
- }
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 5d55185..8958ad7 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -941,6 +941,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+ 		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
+ 	}
  
- int ore_create(struct ore_io_state *ios)
+ 	/* Accumulate raw time */
+@@ -1052,6 +1054,8 @@ static void update_wall_time(void)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+ 		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
+ 	}
+ 
+ 	timekeeping_update(false);
 
 
