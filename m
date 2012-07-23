@@ -1,30 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2GWUcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:32:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58865 "EHLO
+	id S1754893Ab2GWUdC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:33:02 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58026 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768Ab2GWUcs (ORCPT
+	with ESMTP id S1754822Ab2GWUcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:32:48 -0400
+	Mon, 23 Jul 2012 16:32:50 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         arm@kernel.org
-Subject: [GIT PULL 08/15] arm-soc: cleanups, part 2
-Date: Mon, 23 Jul 2012 22:32:34 +0200
-Message-Id: <1343075561-17446-9-git-send-email-arnd@arndb.de>
+Subject: =?UTF-8?q?=5BGIT=20PULL=2012/15=5D=20arm-soc=3A=20sparse=20IRQ=20conversion?=
+Date: Mon, 23 Jul 2012 22:32:38 +0200
+Message-Id: <1343075561-17446-13-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343075561-17446-1-git-send-email-arnd@arndb.de>
 References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:V4WFgQQGTCnVAESkJAJ0n5RvL6V4kSBhuPu5kYk+594
- 2TmXsi76xTp+xeiamyFvO3dmWi2Usym3xE1tAcYlV0dYJhDlxp
- 7qGvHTHWCL/YaBBuyK0tZXwu/rsN8qX2IA6n9klpXVoerv6/+B
- 0SyPYW2hiEAGyWTjcLFHhBkySNDy8Q0cBLa9gbsf5VeoRbT226
- 5yvNkvr/MdmLHZ6e8RmrirC/DQKhNzS+szt+QB8omIbDacOIcD
- ci6sFlst97dWSfJrVxDuARMagtV17XBOGZJKLwP5tEIkNjy0zd
- KK26wRAPN9miwwU2J5VTfMZvt5fV16FxKtLoaWuXXm9kaMaygu
- t5aazb8oUkZUkqZK4742a/yfT8Yq18mUWpGoYBXL2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:VYu4ZIuFzdWSDdDEEoLtAjNqVPbzoKJWebjGL7mvJGU
+ 3zrE3Tpa0ODBetkzMAkyZfQs3TdmMW3OFNA9jfU4HWzzusfqnS
+ FgxMLyKtN5iSw4xGv5EoYoYJjwrx7u5jREWdIRp7h1Ix25c+jF
+ t5jKUaAitkcSD4ORQ5uqLNZWRkztEFgE41npMU2BnqXj8hqc5J
+ /dEvb3s6RlCrt218NmsVR1d2bq7F9jBkI9HNXkOOD9Z29SFs1n
+ bCQacevJlj5q4ZCpc5JF2asJpOiDvque0O0NaFYYD/i+ft9H6b
+ eqBa+FMHLl8vtYeuLdRM30WjC7Rs9HkJRtL3VWsDny09UFxoIH
+ OEMV0cW8nieWi1v4ZzSbiADizFVHE/VNnC4nxdw9H
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,91 +38,129 @@ The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/cleanup2
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/irq
 
-for you to fetch changes up to db3c47a3af96e8109b1bb114c32f0854259d5970:
+for you to fetch changes up to c7b0807b9d4faddd87a75a5acb079e5dbfedd211:
 
-  Merge tag 'omap-cleanup-part2-for-v3.6' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into next/cleanup2 (2012-07-10 16:58:19 +0200)
-
-----------------------------------------------------------------
-
-arm-soc: cleanups, part 2
-
-These omap cleanups have dependencies on earlier omap branches that in
-turn depend on other cleanups, so they could not go into the same
-branch.
+  Merge branch 'imx/sparse-irq' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/irq (2012-07-06 21:12:59 +0200)
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (2):
-      Merge tag 'omap-cleanup-part2-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup2
-      Merge branch 'next/cleanup2' into for-next
+arm-soc: sparse IRQ conversion
 
-Jon Hunter (2):
-      ARM: OMAP4: clockdomain/CM code: Update supported transition modes
-      ARM: OMAP2+: powerdomain code: Fix Wake-up power domain power status
+The I.MX platform is getting converted to use sparse IRQs. We are doing
+this for all platforms over time, because this is one of the
+requirements for building a multiplatform kernel, and generally a good
+idea.
 
-Kishon Vijay Abraham I (1):
-      ARM: OMAP2+: hwmod code: add support to set dmadisable in hwmod framework
+----------------------------------------------------------------
 
-Paul Walmsley (1):
-      Merge branches 'hwmod_am335x_support_3.6', 'clkdm_pwrdm_devel_a_3.6' and 'misc_devel_3.6' into omap_devel_f_3.6
+Arnd Bergmann (3):
+      Merge branch 'imx/sparse-irq' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/irq
+      Merge branch 'imx/sparse-irq' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/irq
+      Merge branch 'next/irq' into for-next
 
-R Sricharan (1):
-      ARM: OMAP2+: PRM/CM: Move the stubbed prm and cm functions to prcm.c file and make them __weak
+Fabio Estevam (1):
+      ARM: imx: Fix build error due to missing irqs.h include
 
-Sakari Ailus (1):
-      ARM: OMAP3: control: add definition for CONTROL_CAMERA_PHY_CTRL
+Shawn Guo (16):
+      ARM: imx: eliminate macro IMX_GPIO_TO_IRQ()
+      ARM: imx: eliminate macro IOMUX_TO_IRQ()
+      ARM: imx: eliminate macro IRQ_GPIOx()
+      gpio/mxc: move irq_domain_add_legacy call into gpio driver
+      ARM: imx: move irq_domain_add_legacy call into tzic driver
+      ARM: imx: move irq_domain_add_legacy call into avic driver
+      dma: ipu: remove the use of ipu_platform_data
+      ARM: imx: leave irq_base of wm8350_platform_data uninitialized
+      ARM: imx: pass gpio than irq number into mxc_expio_init
+      ARM: imx: add a legacy irqdomain for 3ds_debugboard
+      ARM: imx: add a legacy irqdomain for mx31ads
+      i2c: imx: remove unneeded mach/irqs.h inclusion
+      ARM: imx: remove unneeded mach/irq.h inclusion
+      tty: serial: imx: remove the use of MXC_INTERNAL_IRQS
+      ARM: fiq: change FIQ_START to a variable
+      ARM: imx: enable SPARSE_IRQ for imx platform
 
-Santosh Shilimkar (1):
-      ARM: OMAP: sdrc: Fix the build break for OMAP4 only builds
+Uwe Kleine-König (1):
+      ARM: imx: select USE_OF
 
-Tarun Kanti DebBarma (3):
-      ARM: OMAP2+: hwmod: add omap_hwmod_get_main_clk() API
-      ARM: OMAP: dmtimer: use devm_ API and do some cleanup in probe()
-      ARM: OMAP2+: dmtimer: cleanup fclk usage
-
-Tony Lindgren (3):
-      Merge tags 'omap-cleanup-for-v3.6', 'omap-devel-dmtimer-for-v3.6' and 'omap-devel-am33xx-for-v3.6' into devel-am33xx-part2
-      Merge tag 'omap-devel-f-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into cleanup-part2
-      ARM: OMAP2+: Fix mismerge for omap_hwmod_get_main_clk() API
-
-Vaibhav Hiremath (7):
-      ARM: OMAP2+: hwmod: Add new sysc_type3 into omap_hwmod required for am33xx
-      ARM: OMAP3/4: omap_hwmod: Add rstst_offs field to struct omap_hwmod_omap4_prcm
-      ARM: OMAP2+: All OMAP2PLUS uses omap-device.o target so add one entry
-      ARM: OMAP2+: Move omap3 dpll ops to dpll3xxx.c
-      ARM: OMAP2+: am33xx: Make am33xx as a separate class
-      ARM: OMAP2+: am33xx: Change cpu_is_am33xx to soc_is_am33xx
-      ARM: OMAP2+: Remove unnecessary ifdef around __omap2_set_globals
-
-Vikram Pandita (1):
-      ARM: OMAP3+: dpll: optimize noncore dpll locking logic
-
- arch/arm/mach-omap2/Kconfig                  |   12 +++-
- arch/arm/mach-omap2/Makefile                 |    8 ++-
- arch/arm/mach-omap2/clock.c                  |   18 ------
- arch/arm/mach-omap2/clock3xxx_data.c         |    2 +-
- arch/arm/mach-omap2/clock44xx_data.c         |   22 ++++----
- arch/arm/mach-omap2/clockdomain44xx.c        |   10 +++-
- arch/arm/mach-omap2/cminst44xx.c             |   14 -----
- arch/arm/mach-omap2/cminst44xx.h             |   25 ---------
- arch/arm/mach-omap2/common.c                 |   10 +---
- arch/arm/mach-omap2/common.h                 |    5 ++
- arch/arm/mach-omap2/control.h                |    1 +
- arch/arm/mach-omap2/dpll3xxx.c               |   26 ++++++++-
- arch/arm/mach-omap2/id.c                     |    4 +-
- arch/arm/mach-omap2/omap_hwmod.c             |   76 ++++++++++++++++++++++++--
- arch/arm/mach-omap2/omap_hwmod_common_data.c |   10 ++++
- arch/arm/mach-omap2/powerdomain.c            |    6 +-
- arch/arm/mach-omap2/prcm.c                   |   23 ++++++++
- arch/arm/mach-omap2/prm2xxx_3xxx.h           |   65 ----------------------
- arch/arm/mach-omap2/prm_common.c             |   62 +++++++++++++++++++++
- arch/arm/mach-omap2/timer.c                  |    3 +-
- arch/arm/plat-omap/Makefile                  |    4 +-
- arch/arm/plat-omap/dmtimer.c                 |   53 ++++++------------
- arch/arm/plat-omap/include/plat/cpu.h        |   17 +++---
- arch/arm/plat-omap/include/plat/omap_hwmod.h |   19 +++++++
- arch/arm/plat-omap/include/plat/sdrc.h       |    2 +-
- arch/arm/plat-omap/sram.c                    |    6 +-
- 26 files changed, 296 insertions(+), 207 deletions(-)
+ arch/arm/Kconfig                                |    2 +
+ arch/arm/include/asm/mach/irq.h                 |    2 +-
+ arch/arm/kernel/fiq.c                           |    9 +-
+ arch/arm/mach-imx/Kconfig                       |    4 -
+ arch/arm/mach-imx/devices-imx31.h               |    4 +-
+ arch/arm/mach-imx/devices-imx35.h               |    4 +-
+ arch/arm/mach-imx/eukrea_mbimx27-baseboard.c    |    3 +-
+ arch/arm/mach-imx/eukrea_mbimxsd35-baseboard.c  |    6 +-
+ arch/arm/mach-imx/imx27-dt.c                    |   28 ---
+ arch/arm/mach-imx/imx51-dt.c                    |   27 ---
+ arch/arm/mach-imx/imx53-dt.c                    |   27 ---
+ arch/arm/mach-imx/mach-apf9328.c                |    7 +-
+ arch/arm/mach-imx/mach-armadillo5x0.c           |   18 +-
+ arch/arm/mach-imx/mach-cpuimx27.c               |   12 +-
+ arch/arm/mach-imx/mach-cpuimx35.c               |    3 +-
+ arch/arm/mach-imx/mach-cpuimx51sd.c             |    3 +-
+ arch/arm/mach-imx/mach-imx27_visstrim_m10.c     |    9 +-
+ arch/arm/mach-imx/mach-imx6q.c                  |   14 --
+ arch/arm/mach-imx/mach-kzm_arm11_01.c           |   20 ++-
+ arch/arm/mach-imx/mach-mx1ads.c                 |    1 -
+ arch/arm/mach-imx/mach-mx21ads.c                |   16 +-
+ arch/arm/mach-imx/mach-mx27_3ds.c               |    7 +-
+ arch/arm/mach-imx/mach-mx27ads.c                |   12 +-
+ arch/arm/mach-imx/mach-mx31_3ds.c               |   18 +-
+ arch/arm/mach-imx/mach-mx31ads.c                |   63 ++++---
+ arch/arm/mach-imx/mach-mx31lilly.c              |   10 +-
+ arch/arm/mach-imx/mach-mx31lite.c               |   11 +-
+ arch/arm/mach-imx/mach-mx31moboard.c            |   10 +-
+ arch/arm/mach-imx/mach-mx35_3ds.c               |   18 +-
+ arch/arm/mach-imx/mach-mx51_3ds.c               |    3 +-
+ arch/arm/mach-imx/mach-mx53_ard.c               |    5 +-
+ arch/arm/mach-imx/mach-mxt_td60.c               |    6 +-
+ arch/arm/mach-imx/mach-pca100.c                 |    5 +-
+ arch/arm/mach-imx/mach-pcm037.c                 |   24 +--
+ arch/arm/mach-imx/mach-pcm038.c                 |    4 +-
+ arch/arm/mach-imx/mach-pcm043.c                 |    6 +-
+ arch/arm/mach-imx/mach-qong.c                   |   10 +-
+ arch/arm/mach-imx/mach-scb9328.c                |    7 +-
+ arch/arm/mach-imx/mach-vpr200.c                 |   10 +-
+ arch/arm/mach-imx/mm-imx1.c                     |    1 -
+ arch/arm/mach-imx/mm-imx21.c                    |    1 -
+ arch/arm/mach-imx/mm-imx25.c                    |    1 -
+ arch/arm/mach-imx/mm-imx27.c                    |    1 -
+ arch/arm/mach-imx/mm-imx3.c                     |    1 -
+ arch/arm/mach-imx/mx31lilly-db.c                |   11 +-
+ arch/arm/mach-imx/mx31lite-db.c                 |    5 +-
+ arch/arm/mach-imx/mx51_efika.c                  |    3 +-
+ arch/arm/mach-imx/pcm970-baseboard.c            |   13 +-
+ arch/arm/mach-rpc/irq.c                         |    2 +-
+ arch/arm/plat-mxc/3ds_debugboard.c              |   50 +++---
+ arch/arm/plat-mxc/avic.c                        |   35 +++-
+ arch/arm/plat-mxc/devices/platform-ipu-core.c   |    5 +-
+ arch/arm/plat-mxc/include/mach/3ds_debugboard.h |    2 +-
+ arch/arm/plat-mxc/include/mach/devices-common.h |    4 +-
+ arch/arm/plat-mxc/include/mach/hardware.h       |    2 -
+ arch/arm/plat-mxc/include/mach/iomux-mx3.h      |    3 -
+ arch/arm/plat-mxc/include/mach/iomux-v1.h       |    7 -
+ arch/arm/plat-mxc/include/mach/ipu.h            |    4 -
+ arch/arm/plat-mxc/include/mach/irqs.h           |   44 -----
+ arch/arm/plat-mxc/include/mach/mx1.h            |  111 ++++++------
+ arch/arm/plat-mxc/include/mach/mx21.h           |  107 +++++------
+ arch/arm/plat-mxc/include/mach/mx25.h           |   72 ++++----
+ arch/arm/plat-mxc/include/mach/mx27.h           |  127 ++++++-------
+ arch/arm/plat-mxc/include/mach/mx2x.h           |   87 ++++-----
+ arch/arm/plat-mxc/include/mach/mx31.h           |  118 ++++++------
+ arch/arm/plat-mxc/include/mach/mx35.h           |  109 ++++++------
+ arch/arm/plat-mxc/include/mach/mx3x.h           |   77 ++++----
+ arch/arm/plat-mxc/include/mach/mx50.h           |  187 +++++++++----------
+ arch/arm/plat-mxc/include/mach/mx51.h           |  209 +++++++++++-----------
+ arch/arm/plat-mxc/include/mach/mx53.h           |  217 ++++++++++++-----------
+ arch/arm/plat-mxc/tzic.c                        |   30 +++-
+ arch/arm/plat-s3c24xx/irq.c                     |    2 +-
+ drivers/dma/ipu/ipu_idmac.c                     |    8 +-
+ drivers/dma/ipu/ipu_irq.c                       |   14 +-
+ drivers/gpio/gpio-mxc.c                         |   56 +++---
+ drivers/i2c/busses/i2c-imx.c                    |    1 -
+ drivers/media/video/mx1_camera.c                |    1 +
+ drivers/tty/serial/imx.c                        |    6 +-
+ sound/soc/fsl/imx-pcm-fiq.c                     |    1 +
+ 79 files changed, 1052 insertions(+), 1131 deletions(-)
