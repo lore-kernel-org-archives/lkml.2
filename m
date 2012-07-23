@@ -1,129 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2GWFJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 01:09:28 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:33686 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2GWFJ0 (ORCPT
+	id S1753560Ab2GWF01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 01:26:27 -0400
+Received: from mail.harran.edu.tr ([193.140.254.2]:57993 "EHLO
+	mail.harran.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab2GWF0Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 01:09:26 -0400
-Message-ID: <500CDE35.6000009@windriver.com>
-Date: Mon, 23 Jul 2012 13:16:37 +0800
-From: xufeng zhang <xufeng.zhang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
+	Mon, 23 Jul 2012 01:26:25 -0400
+X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jul 2012 01:26:24 EDT
+Date: Mon, 23 Jul 2012 08:36:51 +0300 (EEST)
+From: Administrador de Sistemas <spalaz@harran.edu.tr>
+Reply-To: "systemadministrator12@inmail24.com" 
+	  <systemadministrator12@inmail24.com>
+Message-ID: <270413372.625.1343021811113.JavaMail.root@mail.harran.edu.tr>
+Subject: =?utf-8?Q?ATEN=C3=87=C3=83O;?=
 MIME-Version: 1.0
-To: <vyasevich@gmail.com>, <sri@us.ibm.com>, <davem@davemloft.net>
-CC: <xufengzhang.main@gmail.com>, <linux-sctp@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
- SACK when bundling
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
-In-Reply-To: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [116.203.247.84]
+X-Mailer: Zimbra 6.0.9_GA_2689 (zclient/6.0.9_GA_2689)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2012 01:57 PM, xufengzhang.main@gmail.com wrote:
-> When "Invalid Stream Identifier" ERROR happens after process the
-> received DATA chunks, this ERROR chunk is enqueued into outqueue
-> before SACK chunk, so when bundling ERROR chunk with SACK chunk,
-> the ERROR chunk is always placed first in the packet because of
-> the chunk's position in the outqueue.
-> This violates sctp specification:
->      RFC 4960 6.5. Stream Identifier and Stream Sequence Number
->      ...The endpoint may bundle the ERROR chunk in the same
->      packet as the SACK as long as the ERROR follows the SACK.
-> So we must place SACK first when bundling "Invalid Stream Identifier"
-> ERROR and SACK in one packet.
-> Although we can do that by enqueue SACK chunk into outqueue before
-> ERROR chunk, it will violate the side-effect interpreter processing.
-> It's easy to do this job when dequeue chunks from the outqueue,
-> by this way, we introduce a flag 'has_isi_err' which indicate
-> whether or not the "Invalid Stream Identifier" ERROR happens.
->
-> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
-> ---
->   include/net/sctp/structs.h |    2 ++
->   net/sctp/output.c          |   26 ++++++++++++++++++++++++++
->   2 files changed, 28 insertions(+), 0 deletions(-)
->
-> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-> index 88949a9..5adf4de 100644
-> --- a/include/net/sctp/structs.h
-> +++ b/include/net/sctp/structs.h
-> @@ -842,6 +842,8 @@ struct sctp_packet {
->   	    has_sack:1,		/* This packet contains a SACK chunk. */
->   	    has_auth:1,		/* This packet contains an AUTH chunk */
->   	    has_data:1,		/* This packet contains at least 1 DATA chunk */
-> +	    has_isi_err:1,	/* This packet contains a "Invalid Stream
-> +				 * Identifier" ERROR chunk */
->   	    ipfragok:1,		/* So let ip fragment this packet */
->   	    malloced:1;		/* Is it malloced? */
->   };
-> diff --git a/net/sctp/output.c b/net/sctp/output.c
-> index 817174e..77fb1ae 100644
-> --- a/net/sctp/output.c
-> +++ b/net/sctp/output.c
-> @@ -79,6 +79,7 @@ static void sctp_packet_reset(struct sctp_packet *packet)
->   	packet->has_sack = 0;
->   	packet->has_data = 0;
->   	packet->has_auth = 0;
-> +	packet->has_isi_err = 0;
->   	packet->ipfragok = 0;
->   	packet->auth = NULL;
->   }
-> @@ -267,6 +268,7 @@ static sctp_xmit_t sctp_packet_bundle_sack(struct sctp_packet *pkt,
->   sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
->   				     struct sctp_chunk *chunk)
->   {
-> +	struct sctp_chunk *lchunk;
->   	sctp_xmit_t retval = SCTP_XMIT_OK;
->   	__u16 chunk_len = WORD_ROUND(ntohs(chunk->chunk_hdr->length));
->
-> @@ -316,7 +318,31 @@ sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
->   		packet->has_cookie_echo = 1;
->   		break;
->
-> +	    case SCTP_CID_ERROR:
-> +		if (chunk->subh.err_hdr->cause&  SCTP_ERROR_INV_STRM)
-> +			packet->has_isi_err = 1;
-> +		break;
-> +
->   	    case SCTP_CID_SACK:
-> +		/* RFC 4960
-> +		 * 6.5 Stream Identifier and Stream Sequence Number
-> +		 * The endpoint may bundle the ERROR chunk in the same
-> +		 * packet as the SACK as long as the ERROR follows the SACK.
-> +		 */
-> +		if (packet->has_isi_err) {
-> +			if (list_is_singular(&packet->chunk_list))
-> +				list_add(&chunk->list,&packet->chunk_list);
-> +			else {
-> +				lchunk = list_first_entry(&packet->chunk_list,
-> +						struct sctp_chunk, list);
-> +				list_add(&chunk->list,&lchunk->list);
-> +			}
->    
-And I should clarify the above judgment code.
-AFAIK, there should be two cases for the bundling when invalid stream 
-identifier error happens:
-1). COOKIE_ACK ERROR SACK
-2). ERROR SACK
-So I need to deal with the two cases differently.
 
 
-Thanks,
-Xufeng Zhang
-> +			packet->size += chunk_len;
-> +			chunk->transport = packet->transport;
-> +			packet->has_sack = 1;
-> +			goto finish;
-> +		}
-> +
->   		packet->has_sack = 1;
->   		break;
->
->    
 
+ATENÇÃO;
+
+Sua caixa de correio excedeu o limite de armazenamento que é de 10GB, conforme definido pelo seu
+administrador, que está atualmente em execução no 10.9GB, você pode não ser capaz
+para enviar ou receber novas mensagens até que você re-validar a sua caixa de correio.
+Para revalidar sua caixa postal, envie os seguintes dados abaixo:
+
+nome:
+Nome de usuário:
+senha:
+Confirme a Senha:
+E-mail:
+
+Se você não conseguir revalidar sua caixa de correio, o correio será desactivado!
+
+obrigado
+Administrador de Sistemas
