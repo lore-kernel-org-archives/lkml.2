@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab2GWBsF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:48:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54472 "EHLO
+	id S1753757Ab2GWBsb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:48:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54449 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753601Ab2GWBnq (ORCPT
+	by vger.kernel.org with ESMTP id S1753583Ab2GWBnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:46 -0400
-Message-Id: <20120723010656.351850727@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:42 -0400
+Message-Id: <20120723010656.951599898@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:23 +0100
+Date: Mon, 23 Jul 2012 02:07:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 032/108] mtd: nandsim: dont open code a do_div helper
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
+        Arnold Schulz <arnysch@gmx.net>
+Subject: [ 036/108] md/raid1: fix use-after-free bug in RAID1 data-check code.
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,93 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 596fd46268634082314b3af1ded4612e1b7f3f03 upstream.
+commit 2d4f4f3384d4ef4f7c571448e803a1ce721113d5 upstream.
 
-We don't need to open code the divide function, just use div_u64 that
-already exists and do the same job. While this is a straightforward
-clean up, there is more to that, the real motivation for this.
+This bug has been present ever since data-check was introduce
+in 2.6.16.  However it would only fire if a data-check were
+done on a degraded array, which was only possible if the array
+has 3 or more devices.  This is certainly possible, but is quite
+uncommon.
 
-While building on a cross compiling environment in armel, using gcc
-4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5), I was getting the following build
-error:
+Since hot-replace was added in 3.3 it can happen more often as
+the same condition can arise if not all possible replacements are
+present.
 
-ERROR: "__aeabi_uldivmod" [drivers/mtd/nand/nandsim.ko] undefined!
+The problem is that as soon as we submit the last read request, the
+'r1_bio' structure could be freed at any time, so we really should
+stop looking at it.  If the last device is being read from we will
+stop looking at it.  However if the last device is not due to be read
+from, we will still check the bio pointer in the r1_bio, but the
+r1_bio might already be free.
 
-After investigating with objdump and hand built assembly version
-generated with the compiler, I narrowed __aeabi_uldivmod as being
-generated from the divide function. When nandsim.c is built with
--fno-inline-functions-called-once, that happens when
-CONFIG_DEBUG_SECTION_MISMATCH is enabled, the do_div optimization in
-arch/arm/include/asm/div64.h doesn't work as expected with the open
-coded divide function: even if the do_div we are using doesn't have a
-constant divisor, the compiler still includes the else parts of the
-optimized do_div macro, and translates the divisions there to use
-__aeabi_uldivmod, instead of only calling __do_div_asm -> __do_div64 and
-optimizing/removing everything else out.
+So use the read_targets counter to make sure we stop looking for bios
+to submit as soon as we have submitted them all.
 
-So to reproduce, gcc 4.6 plus CONFIG_DEBUG_SECTION_MISMATCH=y and
-CONFIG_MTD_NAND_NANDSIM=m should do it, building on armel.
+This fix is suitable for any -stable kernel since 2.6.16.
 
-After this change, the compiler does the intended thing even with
--fno-inline-functions-called-once, and optimizes out as expected the
-constant handling in the optimized do_div on arm. As this also avoids a
-build issue, I'm marking for Stable, as I think is applicable for this
-case.
-
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Reported-by: Arnold Schulz <arnysch@gmx.net>
+Signed-off-by: NeilBrown <neilb@suse.de>
+[bwh: Backported to 3.2: no doubling of conf->raid_disks; we don't have
+ hot-replace support]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mtd/nand/nandsim.c |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/md/raid1.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
-index 6cc8fbf..cf0cd31 100644
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -28,7 +28,7 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/vmalloc.h>
--#include <asm/div64.h>
-+#include <linux/math64.h>
- #include <linux/slab.h>
- #include <linux/errno.h>
- #include <linux/string.h>
-@@ -546,12 +546,6 @@ static char *get_partition_name(int i)
- 	return kstrdup(buf, GFP_KERNEL);
- }
- 
--static uint64_t divide(uint64_t n, uint32_t d)
--{
--	do_div(n, d);
--	return n;
--}
--
- /*
-  * Initialize the nandsim structure.
-  *
-@@ -580,7 +574,7 @@ static int init_nandsim(struct mtd_info *mtd)
- 	ns->geom.oobsz    = mtd->oobsize;
- 	ns->geom.secsz    = mtd->erasesize;
- 	ns->geom.pgszoob  = ns->geom.pgsz + ns->geom.oobsz;
--	ns->geom.pgnum    = divide(ns->geom.totsz, ns->geom.pgsz);
-+	ns->geom.pgnum    = div_u64(ns->geom.totsz, ns->geom.pgsz);
- 	ns->geom.totszoob = ns->geom.totsz + (uint64_t)ns->geom.pgnum * ns->geom.oobsz;
- 	ns->geom.secshift = ffs(ns->geom.secsz) - 1;
- 	ns->geom.pgshift  = chip->page_shift;
-@@ -921,7 +915,7 @@ static int setup_wear_reporting(struct mtd_info *mtd)
- 
- 	if (!rptwear)
- 		return 0;
--	wear_eb_count = divide(mtd->size, mtd->erasesize);
-+	wear_eb_count = div_u64(mtd->size, mtd->erasesize);
- 	mem = wear_eb_count * sizeof(unsigned long);
- 	if (mem / sizeof(unsigned long) != wear_eb_count) {
- 		NS_ERR("Too many erase blocks for wear reporting\n");
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2378,9 +2378,10 @@ static sector_t sync_request(struct mdde
+ 	 */
+ 	if (test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery)) {
+ 		atomic_set(&r1_bio->remaining, read_targets);
+-		for (i=0; i<conf->raid_disks; i++) {
++		for (i = 0; i < conf->raid_disks && read_targets; i++) {
+ 			bio = r1_bio->bios[i];
+ 			if (bio->bi_end_io == end_sync_read) {
++				read_targets--;
+ 				md_sync_acct(bio->bi_bdev, nr_sectors);
+ 				generic_make_request(bio);
+ 			}
 
 
