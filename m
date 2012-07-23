@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab2GWXa4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 19:30:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62680 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898Ab2GWXax (ORCPT
+	id S1754997Ab2GWXeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 19:34:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35804 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898Ab2GWXeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 19:30:53 -0400
-Date: Tue, 24 Jul 2012 07:30:45 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Lin Ming <minggr@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
-Subject: Re: [PATCH 4/5] scsi: pm: use runtime resume callback if available
-Message-ID: <20120723233043.GA1965@localhost.localdomain>
-References: <1343026180-22236-1-git-send-email-aaron.lu@amd.com>
- <1343026180-22236-5-git-send-email-aaron.lu@amd.com>
- <500D615C.1080605@mvista.com>
+	Mon, 23 Jul 2012 19:34:12 -0400
+Date: Mon, 23 Jul 2012 16:33:56 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-nq318h0okuaem8x9dpv9854k@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        sebastian-plotz@web.de, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sebastian-plotz@web.de, tglx@linutronix.de, hpa@linux.intel.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/boot] x86, doc: Assign a bootloader ID for "
+ Minimal Linux Bootloader"
+Git-Commit-ID: c5e5c42a68be66cb87573e5c2fcce6f1b5d82bd5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <500D615C.1080605@mvista.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 23 Jul 2012 16:34:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  c5e5c42a68be66cb87573e5c2fcce6f1b5d82bd5
+Gitweb:     http://git.kernel.org/tip/c5e5c42a68be66cb87573e5c2fcce6f1b5d82bd5
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 23 Jul 2012 16:16:17 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 23 Jul 2012 16:16:17 -0700
 
-On Mon, Jul 23, 2012 at 06:36:12PM +0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 07/23/2012 10:49 AM, Aaron Lu wrote:
-> 
-> > When runtime resume a scsi device, if the device's driver has
-> > implemented runtime resume callback, use that instead of the resume
-> > callback.
-> 
-> > sr driver needs this to properly do different things for system resume
-> > and runtime resume.
-> 
-> > Signed-off-by: Aaron Lu <aaron.lu@amd.com>
-> > ---
-> >  drivers/scsi/scsi_pm.c | 14 +++++++++-----
-> >  drivers/scsi/sr.c      | 21 +++++++++++++++++++++
-> >  2 files changed, 30 insertions(+), 5 deletions(-)
-> 
-> > diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-> > index d4201de..19bba47 100644
-> > --- a/drivers/scsi/scsi_pm.c
-> > +++ b/drivers/scsi/scsi_pm.c
-> > @@ -34,14 +34,18 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
-> >  	return err;
-> >  }
-> >  
-> > -static int scsi_dev_type_resume(struct device *dev)
-> > +static int scsi_dev_type_resume(struct device *dev, bool runtime)
-> >  {
-> >  	struct device_driver *drv;
-> >  	int err = 0;
-> > +	int (*resume)(struct device *);
-> >  
-> >  	drv = dev->driver;
-> > -	if (drv && drv->resume)
-> > -		err = drv->resume(dev);
-> > +	if (runtime && drv && drv->pm && drv->pm->runtime_resume)
-> > +		resume = drv->pm->runtime_resume;
-> > +	else
-> > +		resume = drv ? drv->resume : NULL;
-> 
->    Call thru NULL pointer below will cause kernel oops. Is it your intention?
+x86, doc: Assign a bootloader ID for "Minimal Linux Bootloader"
 
-Oops, I forgot the if check here, thanks for pointing this out.
+Assign a bootloader ID for Sebastian Plotz' "Minimal Linux Bootloader"
+(http://sebastian-plotz.blogspot.de).  Sebastian has agreed to make
+this the pilot for the use of extended boot loader IDs, so this is
+assigned version ID 0x11 (avoid assigning 0x10 for now to catch bugs
+with people putting E in the primary ID but leaving the extended ID as
+zero.)
 
--Aaron
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Sebastian Plotz <sebastian-plotz@web.de>
+Link: http://lkml.kernel.org/n/tip-nq318h0okuaem8x9dpv9854k@git.kernel.org
+---
+ Documentation/x86/boot.txt |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-> 
-> > +	err = resume(dev);
-> 
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index 7c3a880..473b32f 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -363,7 +363,8 @@ Protocol:	2.00+
+   ext_loader_type <- 0x05
+   ext_loader_ver  <- 0x23
+ 
+-  Assigned boot loader ids:
++  Assigned boot loader ids (hexadecimal):
++
+ 	0  LILO			(0x00 reserved for pre-2.00 bootloader)
+ 	1  Loadlin
+ 	2  bootsect-loader	(0x20, all other values reserved)
+@@ -378,6 +379,8 @@ Protocol:	2.00+
+ 	C  Arcturus Networks uCbootloader
+ 	E  Extended		(see ext_loader_type)
+ 	F  Special		(0xFF = undefined)
++       10  Reserved
++       11  Minimal Linux Bootloader <http://sebastian-plotz.blogspot.de>
+ 
+   Please contact <hpa@zytor.com> if you need a bootloader ID
+   value assigned.
