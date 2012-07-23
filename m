@@ -1,103 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab2GWIex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 04:34:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32124 "EHLO mga02.intel.com"
+	id S1754096Ab2GWIgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 04:36:16 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:31252 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab2GWIes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 04:34:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="175897484"
-Message-ID: <1343032755.4060.121.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBI changes for 3.6-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>
-Date: Mon, 23 Jul 2012 11:39:15 +0300
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Bm2ZnN8MwQLX/Zms0E6F"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1751458Ab2GWIgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 04:36:13 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        <linux-mm@kvack.org>, <devel@openvz.org>,
+        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH] provide a common place for initcall processing in kmem_cache
+Date: Mon, 23 Jul 2012 12:33:28 +0400
+Message-Id: <1343032408-20605-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Both SLAB and SLUB depend on some initialization to happen when the
+system is already booted, with all subsystems working. This is done
+by issuing an initcall that does the final initialization.
 
---=-Bm2ZnN8MwQLX/Zms0E6F
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This patch moves that to slab_common.c, while creating an empty
+placeholder for the SLOB.
 
-Hi Linus,
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: David Rientjes <rientjes@google.com>
+---
 
-The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c=
-:
+Pekka: This is the last slab change I need that is independent of memcg. All
+further changes are either not in the slab files, or done to accomodate the
+memcg changes. The reason I need this bit, is to register the memcg indexes,
+that can only be done after the caches are up (memcg_register_cache() ).
 
-  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
+ mm/slab.c        |    5 ++---
+ mm/slab.h        |    2 ++
+ mm/slab_common.c |    6 ++++++
+ mm/slob.c        |    5 +++++
+ mm/slub.c        |    4 +---
+ 5 files changed, 16 insertions(+), 6 deletions(-)
 
-are available in the git repository at:
-
-  git://git.infradead.org/linux-ubi.git tags/upstream-3.6-rc1
-
-for you to fetch changes up to 87e773c95eb0b363f2efcc7aff8a347dc18925d0:
-
-  UBI: harmonize the update of ubi->beb_rsvd_pebs (2012-07-18 14:30:34 +030=
-0)
-
-----------------------------------------------------------------
-Change the default amount of eraseblocks which UBI reserves for bad block
-handling from 1% to 2%, because 1% does not meet most modern flashes
-requirements. 1% was good enough in the past for old high-quality SLCs, but
-nowadays 2% is much more appropriate.
-
-Other changes are clean-ups.
-
-----------------------------------------------------------------
-Peter Meerwald (1):
-      UBI: fix spelling of detach in debug output
-
-Richard Genoud (1):
-      UBI: Change the default percentage of reserved PEB
-
-Shmulik Ladkani (2):
-      UBI: trivial: fix comment of ubi_calculate_reserved function
-      UBI: harmonize the update of ubi->beb_rsvd_pebs
-
- drivers/mtd/ubi/Kconfig |    2 +-
- drivers/mtd/ubi/cdev.c  |    2 +-
- drivers/mtd/ubi/misc.c  |   25 ++++++++++++++++++++++++-
- drivers/mtd/ubi/ubi.h   |    1 +
- drivers/mtd/ubi/vmt.c   |   20 ++------------------
- 5 files changed, 29 insertions(+), 21 deletions(-)
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-Bm2ZnN8MwQLX/Zms0E6F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQDQ2zAAoJECmIfjd9wqK00bwQAKj5kFQtqUW0IOOJkkvuTZPB
-axGQ2HZs+0nOaJ3Kj256DjHnr9wg+EmiNrAHPKCiiMgtA7FRu8q+eO0LRsreFpXM
-iU7oAFRt9096HYk5Cov8tvmpexdJnbZSrBxrE7YT2aeU4nuEN/27QUuOI/E/0ReO
-LgqJQQhgLxyMdfrx0t5wWFx2lxE1Odz5Iq1UFVed9R7JKc62YabbHELQcA633Zpi
-hPkcWY3LIVaqGFqtSfzjGcxalSr/bJUOVnyqXfQgxg/X8IGI/WgvvYJrncwqif1L
-pl2e4Yw8jEEg4eKw/TYoru+d02yB+6CoQi6oZLPBi48JQGkNMrag2TIxg7cVlR2B
-DcMXh0MoTyiaCqpM6LRylBhG26pYAp6hB3XkIM00ShlwY/3KePok+o5uNRrlR/RR
-pOZWTdUOUT3ndqFIfiXPPHipRv9xbIGcY652EdRAOKemFjsSCzUv6lNTJY/48IWI
-D9mApsYnlOZWv8gzYMu6FlwdMbmr8XCfyBDT/J5yb2Q6VsxIyj/L636075DfC44f
-N9OdVasusDvabygjb7mrpmIk4D9qW87JIxG53F6A8EwDlZCzffeRKaxfgrosFCrj
-8xoJDibwAEjjgFhcS6vBCSTas7y4qkSdm+LwsM0GwUOrdtMpHxYr1t9/NuWRSLx0
-+JqS2BohHDAbamIKIHiQ
-=+EDn
------END PGP SIGNATURE-----
-
---=-Bm2ZnN8MwQLX/Zms0E6F--
+diff --git a/mm/slab.c b/mm/slab.c
+index 1fcf3ac..2cf636a 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -863,7 +863,7 @@ static void __cpuinit start_cpu_timer(int cpu)
+ 	struct delayed_work *reap_work = &per_cpu(slab_reap_work, cpu);
+ 
+ 	/*
+-	 * When this gets called from do_initcalls via cpucache_init(),
++	 * When this gets called from do_initcalls via __kmem_cache_initcall(),
+ 	 * init_workqueues() has already run, so keventd will be setup
+ 	 * at that time.
+ 	 */
+@@ -1665,7 +1665,7 @@ void __init kmem_cache_init_late(void)
+ 	 */
+ }
+ 
+-static int __init cpucache_init(void)
++int __init __kmem_cache_initcall(void)
+ {
+ 	int cpu;
+ 
+@@ -1679,7 +1679,6 @@ static int __init cpucache_init(void)
+ 	slab_state = FULL;
+ 	return 0;
+ }
+-__initcall(cpucache_init);
+ 
+ static noinline void
+ slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
+diff --git a/mm/slab.h b/mm/slab.h
+index db7848c..1d17049 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -30,4 +30,6 @@ extern struct list_head slab_caches;
+ struct kmem_cache *__kmem_cache_create(const char *name, size_t size,
+ 	size_t align, unsigned long flags, void (*ctor)(void *));
+ 
++int __kmem_cache_initcall(void);
++
+ #endif
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 12637ce..af50ba0 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -116,3 +116,9 @@ int slab_is_available(void)
+ {
+ 	return slab_state >= UP;
+ }
++
++static int __init kmem_cache_initcall(void)
++{
++	return __kmem_cache_initcall();
++}
++__initcall(kmem_cache_initcall);
+diff --git a/mm/slob.c b/mm/slob.c
+index 45d4ca7..6c2b5d1 100644
+--- a/mm/slob.c
++++ b/mm/slob.c
+@@ -628,3 +628,8 @@ void __init kmem_cache_init_late(void)
+ {
+ 	slab_state = FULL;
+ }
++
++int __init __kmem_cache_initcall(void)
++{
++	return 0;
++}
+diff --git a/mm/slub.c b/mm/slub.c
+index e517d43..07b1c3e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5348,7 +5348,7 @@ static int sysfs_slab_alias(struct kmem_cache *s, const char *name)
+ 	return 0;
+ }
+ 
+-static int __init slab_sysfs_init(void)
++int __init __kmem_cache_initcall(void)
+ {
+ 	struct kmem_cache *s;
+ 	int err;
+@@ -5386,8 +5386,6 @@ static int __init slab_sysfs_init(void)
+ 	resiliency_test();
+ 	return 0;
+ }
+-
+-__initcall(slab_sysfs_init);
+ #endif /* CONFIG_SYSFS */
+ 
+ /*
+-- 
+1.7.10.4
 
