@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab2GWSNK (ORCPT <rfc822;w@1wt.eu>);
+	id S1754480Ab2GWSNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:13:13 -0400
+Received: from lobo.ruivo.org ([173.14.175.98]:40548 "EHLO lobo.ruivo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968Ab2GWSNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jul 2012 14:13:10 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43664 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753968Ab2GWSNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:13:08 -0400
-Date: Mon, 23 Jul 2012 19:12:49 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Help request - ASoC recursion issue
-Message-ID: <20120723181249.GF3421@mudshark.cambridge.arm.com>
-References: <500D5A1F.9000808@linaro.org>
- <500D649B.80704@linaro.org>
- <500D6602.6070809@linaro.org>
+Date: Mon, 23 Jul 2012 14:12:52 -0400
+From: Aristeu Rozanski <aris@ruivo.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Aristeu Rozanski <aris@redhat.com>,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 0/3] cgroup: add xattr support
+Message-ID: <20120723181252.GW14236@cathedrallabs.org>
+References: <20120702142925.795007114@napanee.usersys.redhat.com>
+ <20120717204126.GE24336@google.com>
+ <alpine.LSU.2.00.1207181237010.2160@eggly.anvils>
+ <20120718221044.GJ24336@google.com>
+ <alpine.LSU.2.00.1207181736020.3323@eggly.anvils>
+ <20120720175959.GA32741@cathedrallabs.org>
+ <alpine.LSU.2.00.1207221136160.1896@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <500D6602.6070809@linaro.org>
+In-Reply-To: <alpine.LSU.2.00.1207221136160.1896@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 03:56:02PM +0100, Lee Jones wrote:
-> On 23/07/12 15:50, Lee Jones wrote:
-> >> I was wondering if I may bother you for some help. I've been having
-> >> serious issues with testing the new mop500 sound system you have in your
-> >> ASoC for-next branch. I've fixed a few issues and will be submitting
-> >> patches shortly. The most serious issue I came across was with
-> >> recursion.
-> >
-> > It appears you can ignore this. I just tried another piece of hardware
-> > and this problem doesn't arise, leading me to believe I have some kind
-> > of eMMC corruption error going on with one of my boards.
+On Sun, Jul 22, 2012 at 12:12:07PM -0700, Hugh Dickins wrote:
+> Please, do not do this.
 > 
-> FYI, just so you don't think I'm mad: http://paste.ubuntu.com/1106535/
+> It may be fun to implement, but not to review and maintain.
+> 
+> If we're going to start supporting swappable kernel memory, tmpfs
+> xattrs is not the right place to start, and libfs xattrs certainly not:
+> they are a poor fit for swappable memory.  (You contemplate using whole
+> pages above: that will not be very kind to those without swap.)
+> 
+> By all means continue Zefan's work to move xattr support from tmpfs
+> to libfs (ah, to fs/xattr.c actually, okay), but keep them as kmem.
+> 
+> Support setting and removing user xattrs only if the user has the
+> appropriate capability (which root will have): looking through the
+> list of existing capabilities, CAP_IPC_LOCK actually looks appropriate,
+> although I admit its name certainly does not - it's the "lock down
+> unlimited amounts of memory" capability.
 
-I still maintain that you're getting memory corruption as a result of your
-linear mapping getting screwed up:
+ok, will have to do it in cgroupfs because it allows user prefixes, not the
+case on tmpfs.
 
-  Truncating RAM at 18000000-3fffffff to -2c3fffff (vmalloc region overlap).
+> And support setting and removing user xattrs only if the filesystem
+> opts in to that: so cgroupfs can opt in, everything else stay out,
+> and we know where to look when memory goes missing.
 
-looks wrong to me. Your command line also has some non-standard mem= options
-that I don't understand:
+hm, for tmpfs, there's a config option for it, while cgroup has a mount
+option, default off.
 
-  vmalloc=300M mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M mem=22M@360M mem_issw=1M@383M mem=640M@384M
+> Will "lsattr -R" in the cgroupfs mountpoint do enough to judge how
+> much memory is being used in this way?  I expect not, but I'm
+> unfamliar with it: you may need to show counts elsewhere.
 
-I'd guess you need highmem to map that lot, but you don't appear to have that
-enabled and you end up with a rather strange amount of reported memory to go
-with your lowmem mapping:
+that's for ext{2,3,4} file attributes, not extended attributes. but agreed,
+there's a need to have this stat somewhere. Tejun, any ideas?
 
-  Memory: 474156k/474156k available, 11220k reserved, 0K highmem
-  Virtual kernel memory layout:
-      vector  : 0xffff0000 - 0xffff1000   (   4 kB)
-      fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
-      vmalloc : 0xec800000 - 0xff000000   ( 296 MB)
-      lowmem  : 0xc0000000 - 0xec400000   ( 708 MB)
+-- 
+Aristeu
 
-Now, I don't know a thing about Snowball, so maybe this is all normal for
-that board but if you're seeing memory corruption I'd get to the bottom of
-this before trying to debug instances of it cropping up in random driver
-code :)
-
-Will
