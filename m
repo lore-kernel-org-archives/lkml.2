@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab2GWKRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 06:17:14 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:8607 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2GWKRM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 06:17:12 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-66-500d24a5bc0a
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH] devfreq: exynos4: Fix Kconfig option of
- CONFIG_ARM_EXYNOS4_BUS_DEVFREQ
-Date: Mon, 23 Jul 2012 19:16:54 +0900
-Message-id: <1343038614-18162-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t9jQd2lKrwBBg+3a1lc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MbUuvMRYcY614NTG6gfESSxcjJ4eEgInEws6V7BC2mMSFe+vZ
-	uhi5OIQEpjNKnGu4xQzhLGWS+DKtmwmkik1AR+L/vptgHSICChKbe5+xghQxCzQxSny9spoR
-	JCEsECnx8dBEVhCbRUBV4szJPcwgNq+Ah8TnbTuh1ilILLj3lm0CI/cCRoZVjKKpBckFxUnp
-	uUZ6xYm5xaV56XrJ+bmbGME+fCa9g3FVg8UhRgEORiUe3oflPAFCrIllxZW5hxglOJiVRHgv
-	X+cOEOJNSaysSi3Kjy8qzUktPsQozcGiJM5r4v3VX0ggPbEkNTs1tSC1CCbLxMEp1cA4+9c+
-	/vINb2aad6kI+Vdl5GycozbX/sHhpF/f938MMHkYzcZbKSRkeXxyxZeWntV6kWy7+gym/mxW
-	jJn98NfcpNu31pVermHMXZQV3Lkgyn/KhuCuJTM1uvUPBFgWObS/nnFh9qL5QryTDx1e/KQh
-	vsx8efClo69XSVtzGm+KPRA2W/FmdWmQEktxRqKhFnNRcSIAzMmpTN0BAAA=
-X-TM-AS-MML: No
+	id S1752200Ab2GWKRc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 06:17:32 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:52393 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752060Ab2GWKRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 06:17:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: Re: [PATCH] [CPUFREQ] conservative: Initialise the cpu field of the this_dbs_info
+Date: Mon, 23 Jul 2012 12:23:04 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org, amit.kachhap@linaro.org,
+        linux-kernel@vger.kernel.org
+References: <1343028920-4712-1-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1343028920-4712-1-git-send-email-amit.daniel@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207231223.04620.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes typo in devfreq's Kconfig.
+On Monday, July 23, 2012, Amit Daniel Kachhap wrote:
+> This patch initialises the cpu field of this_dbs_info structure. This
+> change is similar to existing ondemand governor.
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
----
- drivers/devfreq/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Why do you think the change is needed?
 
-diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-index 464fa21..5900267 100644
---- a/drivers/devfreq/Kconfig
-+++ b/drivers/devfreq/Kconfig
-@@ -67,7 +67,7 @@ comment "DEVFREQ Drivers"
- 
- config ARM_EXYNOS4_BUS_DEVFREQ
- 	bool "ARM Exynos4210/4212/4412 Memory Bus DEVFREQ Driver"
--	depends on CPU_EXYNOS4210 || CPU_EXYNOS4212 || CPU_EXYNOS4412
-+	depends on CPU_EXYNOS4210 || SOC_EXYNOS4212 || SOC_EXYNOS4412
- 	select ARCH_HAS_OPP
- 	select DEVFREQ_GOV_SIMPLE_ONDEMAND
- 	help
--- 
-1.7.4.1
+Rafael
+
+
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>  drivers/cpufreq/cpufreq_conservative.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+> index 235a340..a1563d7 100644
+> --- a/drivers/cpufreq/cpufreq_conservative.c
+> +++ b/drivers/cpufreq/cpufreq_conservative.c
+> @@ -504,6 +504,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  				j_dbs_info->prev_cpu_nice =
+>  						kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+>  		}
+> +		this_dbs_info->cpu = cpu;
+>  		this_dbs_info->down_skip = 0;
+>  		this_dbs_info->requested_freq = policy->cur;
+>  
+> 
 
