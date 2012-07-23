@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab2GWNoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:44:46 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:62642 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753040Ab2GWNoo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:44:44 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgMFAE9UDVBbdWOb/2dsb2JhbABFhSu0C4EHgiABAQUyAQUdIwEQCw4KCRYPCQMCAQIBRQYNAQcBAYgNvUyLTYZTA5VJhVuKMoJh
-X-IronPort-AV: E=Sophos;i="4.77,639,1336341600"; 
-   d="scan'208";a="547840957"
-Message-ID: <500D5549.3040109@igalia.com>
-Date: Mon, 23 Jul 2012 15:44:41 +0200
-From: =?ISO-8859-1?Q?Miguel_G=F3mez?= <magomez@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>, don@syst.com.br,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1 v2] classmate-laptop: Add support for Classmate V4
- accelerometer.
-References: <cover.1340976795.git.magomez@igalia.com> <39ac42c709e498fbef4f0f0f24edc5331e5f4473.1340976795.git.magomez@igalia.com> <20120717224749.GA20813@nautilus.holoscopio.com> <5006BFEC.1010407@igalia.com> <20120723132841.GD21495@srcf.ucam.org> <500D52A7.8040606@igalia.com> <20120723133618.GC21838@srcf.ucam.org>
-In-Reply-To: <20120723133618.GC21838@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753514Ab2GWNi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:38:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58655 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753415Ab2GWNiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:38:55 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Stable <stable@vger.kernel.org>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 11/34] mm: compaction: trivial clean up in acct_isolated()
+Date: Mon, 23 Jul 2012 14:38:24 +0100
+Message-Id: <1343050727-3045-12-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
+References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 23/07/12 15:36, Matthew Garrett escribió:
-> On Mon, Jul 23, 2012 at 03:33:27PM +0200, Miguel Gómez wrote:
->
->> Names are upper-cased in acpica, so the device is reported as
->> FNBT0000. But in the driver it's named FnBT0000, and that's why it
->> doesn't match.
->
-> So just change the existing entry in the driver to FNBT0000?
+From: Minchan Kim <minchan.kim@gmail.com>
 
-I'd go for it. I can send a patch if you want. But not sure about 
-Thadeu's opinion. In the old thread it seems that he wanted to explore 
-other options besides that.
+commit b9e84ac1536d35aee03b2601f19694949f0bd506 upstream.
 
-Do you agree with that change Thadeu?
+Stable note: Not tracked in Bugzilla. This patch makes later patches
+	easier to apply but has no other impact.
 
+acct_isolated of compaction uses page_lru_base_type which returns
+only base type of LRU list so it never returns LRU_ACTIVE_ANON or
+LRU_ACTIVE_FILE.  In addition, cc->nr_[anon|file] is used in only
+acct_isolated so it doesn't have fields in compact_control.
 
+This patch removes fields from compact_control and makes clear function of
+acct_issolated which counts the number of anon|file pages isolated.
+
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/compaction.c |   18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index c4bc5ac..d8c023e 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -35,10 +35,6 @@ struct compact_control {
+ 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+ 	bool sync;			/* Synchronous migration */
+ 
+-	/* Account for isolated anon and file pages */
+-	unsigned long nr_anon;
+-	unsigned long nr_file;
+-
+ 	unsigned int order;		/* order a direct compactor needs */
+ 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+ 	struct zone *zone;
+@@ -223,17 +219,13 @@ static void isolate_freepages(struct zone *zone,
+ static void acct_isolated(struct zone *zone, struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned int count[NR_LRU_LISTS] = { 0, };
++	unsigned int count[2] = { 0, };
+ 
+-	list_for_each_entry(page, &cc->migratepages, lru) {
+-		int lru = page_lru_base_type(page);
+-		count[lru]++;
+-	}
++	list_for_each_entry(page, &cc->migratepages, lru)
++		count[!!page_is_file_cache(page)]++;
+ 
+-	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+-	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+-	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
+-	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
++	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
++	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+ }
+ 
+ /* Similar to reclaim, but different enough that they don't share logic */
 -- 
-Miguel Gómez
-Igalia - http://www.igalia.com
+1.7.9.2
+
