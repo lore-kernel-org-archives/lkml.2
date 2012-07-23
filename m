@@ -1,118 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab2GWGv1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 02:51:27 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:14903
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753134Ab2GWGu7 (ORCPT
+	id S1753752Ab2GWGw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 02:52:56 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:51992 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753062Ab2GWGwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 02:50:59 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M7LPOU-01-5MQ-02
-X-M-MSG: 
-From: Aaron Lu <aaron.lu@amd.com>
-To: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Lin Ming <minggr@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@amd.com>
-Subject: [PATCH 5/5] block: genhd: add an interface to set disk's poll interval
-Date: Mon, 23 Jul 2012 14:49:40 +0800
-Message-ID: <1343026180-22236-6-git-send-email-aaron.lu@amd.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1343026180-22236-1-git-send-email-aaron.lu@amd.com>
-References: <1343026180-22236-1-git-send-email-aaron.lu@amd.com>
-X-OriginalArrivalTime: 23 Jul 2012 06:50:40.0248 (UTC) FILETIME=[78FBF780:01CD689F]
+	Mon, 23 Jul 2012 02:52:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <CACRpkdbKbQGKGsqnSKB5NgVG+yuBfHSLSS_bYWWJVXe1_tCByA@mail.gmail.com>
+References: <cover.1341925681.git.cmahapatra@ti.com>
+	<d0bd829760aba6c8e686f3b864b3831aa6bdcaa1.1341925681.git.cmahapatra@ti.com>
+	<CACRpkdbKbQGKGsqnSKB5NgVG+yuBfHSLSS_bYWWJVXe1_tCByA@mail.gmail.com>
+Date: Mon, 23 Jul 2012 12:22:52 +0530
+Message-ID: <CAF0AtAunEFYy48zjSD0pbQgWKERX+9A-x6nELX3MGcKJwQiLKQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] gpio/pca953x: register the device irq using
+ appropriate api's
+From: "Mahapatra, Chandrabhanu" <cmahapatra@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, leed.aguilar@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the ODD's in kernel poll interval to 2s for the user in case the
-user is using an old distro on which udev will not set the system wide
-block parameter events_dfl_poll_msecs.
+On Thu, Jul 12, 2012 at 3:41 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Jul 10, 2012 at 3:36 PM, Chandrabhanu Mahapatra
+> <cmahapatra@ti.com> wrote:
+>
+>> From: Leed Aguilar <leed.aguilar@ti.com>
+>>
+>> Here, the implementation of registration of requested IRQs has been corrected
+>> with appropiate api's. The gpio number is requested through gpio_request_one()
+>> API and conversion of the gpio to irq is done using the gpio_to_irq() API.
+>>
+>> Change-Id: I964145e2a280d6553ea2c05ea8049810a1983930
+>
+> Delete that.
+>
+>> Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
+>> Signed-off-by: Chandrabhanu Mahapatra <cmahapatra@ti.com>
+>> ---
+>>  drivers/gpio/gpio-pca953x.c |    8 +++++++-
+>>  1 file changed, 7 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+>> index c3ca7d8..27486da 100644
+>> --- a/drivers/gpio/gpio-pca953x.c
+>> +++ b/drivers/gpio/gpio-pca953x.c
+>> @@ -509,7 +509,13 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
+>>  #endif
+>>                 }
+>>
+>> -               ret = request_threaded_irq(client->irq,
+>> +               ret = gpio_request_one(client->irq, GPIOF_IN, "pca953x");
+>
+> Not that it's really related to this one patch, but why is a GPIO number named
+> "irq" in client->irq??
 
-Signed-off-by: Aaron Lu <aaron.lu@amd.com>
----
- block/genhd.c         | 23 +++++++++++++++++------
- drivers/scsi/sr.c     |  1 +
- include/linux/genhd.h |  1 +
- 3 files changed, 19 insertions(+), 6 deletions(-)
+Sorry, for the late reply. You need not pull this patch. There has
+been some slight miss understanding and as it turns out the
+gpio_request_one() should actually be done in the board file with the
+appropriate gpio number. This gpio number should be converted to irq
+in the board file and then finally sent as client->irq to pca953x
+driver. Please undo this patch.
 
-diff --git a/block/genhd.c b/block/genhd.c
-index bdb3682..de9b9d9 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1619,6 +1619,19 @@ static void disk_events_workfn(struct work_struct *work)
- 		kobject_uevent_env(&disk_to_dev(disk)->kobj, KOBJ_CHANGE, envp);
- }
- 
-+int disk_events_set_poll_msecs(struct gendisk *disk, long intv)
-+{
-+	if (intv < 0 && intv != -1)
-+		return -EINVAL;
-+
-+	disk_block_events(disk);
-+	disk->ev->poll_msecs = intv;
-+	__disk_unblock_events(disk, true);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(disk_events_set_poll_msecs);
-+
- /*
-  * A disk events enabled device has the following sysfs nodes under
-  * its /sys/block/X/ directory.
-@@ -1675,16 +1688,14 @@ static ssize_t disk_events_poll_msecs_store(struct device *dev,
- {
- 	struct gendisk *disk = dev_to_disk(dev);
- 	long intv;
-+	int ret;
- 
- 	if (!count || !sscanf(buf, "%ld", &intv))
- 		return -EINVAL;
- 
--	if (intv < 0 && intv != -1)
--		return -EINVAL;
--
--	disk_block_events(disk);
--	disk->ev->poll_msecs = intv;
--	__disk_unblock_events(disk, true);
-+	ret = disk_events_set_poll_msecs(disk, intv);
-+	if (ret)
-+		return ret;
- 
- 	return count;
- }
-diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-index 2f159aa..78c4226 100644
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -869,6 +869,7 @@ static int sr_probe(struct device *dev)
- 	dev_set_drvdata(dev, cd);
- 	disk->flags |= GENHD_FL_REMOVABLE;
- 	add_disk(disk);
-+	disk_events_set_poll_msecs(disk, 2000);
- 
- 	sdev_printk(KERN_DEBUG, sdev,
- 		    "Attached scsi CD-ROM %s\n", cd->cdi.name);
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 017a7fb..7414fb5 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -418,6 +418,7 @@ extern void disk_block_events(struct gendisk *disk);
- extern void disk_unblock_events(struct gendisk *disk);
- extern void disk_flush_events(struct gendisk *disk, unsigned int mask);
- extern unsigned int disk_clear_events(struct gendisk *disk, unsigned int mask);
-+extern int disk_events_set_poll_msecs(struct gendisk *disk, long intv);
- 
- /* drivers/char/random.c */
- extern void add_disk_randomness(struct gendisk *disk);
+
 -- 
-1.7.11.3
-
-
+Chandrabhanu Mahapatra
+Texas Instruments India Pvt. Ltd.
