@@ -1,143 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab2GWLkS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 07:40:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49787 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750854Ab2GWLkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 07:40:16 -0400
-Date: Mon, 23 Jul 2012 12:40:07 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-Message-ID: <20120723114007.GU9222@suse.de>
-References: <20120720134937.GG9222@suse.de>
- <20120720141108.GH9222@suse.de>
- <20120720143635.GE12434@tiehlicka.suse.cz>
- <20120720145121.GJ9222@suse.de>
- <alpine.LSU.2.00.1207222033030.6810@eggly.anvils>
+	id S1752502Ab2GWLlb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 07:41:31 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:47574 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2GWLl3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 07:41:29 -0400
+Date: Mon, 23 Jul 2012 07:40:57 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        eric.dumazet@gmail.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mark.d.rustad@intel.com, john.r.fastabend@intel.com,
+        lizefan@huawei.com
+Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of
+ uninitialized list
+Message-ID: <20120723114057.GA16518@hmsreliant.think-freely.org>
+References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
+ <500CA599.6030907@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1207222033030.6810@eggly.anvils>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <500CA599.6030907@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 09:04:33PM -0700, Hugh Dickins wrote:
-> On Fri, 20 Jul 2012, Mel Gorman wrote:
-> > On Fri, Jul 20, 2012 at 04:36:35PM +0200, Michal Hocko wrote:
-> > > And here is my attempt for the fix (Hugh mentioned something similar
-> > > earlier but he suggested using special flags in ptes or VMAs). I still
-> > > owe doc. update and it hasn't been tested with too many configs and I
-> > > could missed some definition updates.
-> > > I also think that changelog could be much better, I will add (steal) the
-> > > full bug description if people think that this way is worth going rather
-> > > than the one suggested by Mel.
-> > > To be honest I am not quite happy how I had to pollute generic mm code with
-> > > something that is specific to a single architecture.
-> > > Mel hammered it with the test case and it survived.
+On Mon, Jul 23, 2012 at 09:15:05AM +0800, Gao feng wrote:
+> 于 2012年07月20日 00:27, Srivatsa S. Bhat 写道:
+> > After commit ef209f15 (net: cgroup: fix access the unallocated memory in
+> > netprio cgroup), boot fails with the following NULL pointer dereference:
 > > 
-> > Tested-by: Mel Gorman <mgorman@suse.de>
+> > Initializing cgroup subsys devices
+> > Initializing cgroup subsys freezer
+> > Initializing cgroup subsys net_cls
+> > Initializing cgroup subsys blkio
+> > Initializing cgroup subsys perf_event
+> > Initializing cgroup subsys net_prio
+> > BUG: unable to handle kernel NULL pointer dereference at 0000000000000698
+> > IP: [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> > PGD 0
+> > Oops: 0000 [#1] SMP
+> > CPU 0
+> > Modules linked in:
 > > 
-> > This approach looks more or less like what I was expecting. I like that
-> > the trick was applied to the page table page instead of using PTE tricks
-> > or by bodging it with a VMA flag like I was thinking so kudos for that. I
-> > also prefer this approach to trying to free the page tables on or near
-> > huge_pmd_unshare()
+> > Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc7-mandeep #1 IBM IBM System x -[7870C4Q]-/68Y8033
+> > RIP: 0010:[<ffffffff8145e8d6>]  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> > RSP: 0000:ffffffff81a01ea8  EFLAGS: 00010213
+> > RAX: 0000000000000000 RBX: ffffffffffffff10 RCX: 0000000000000000
+> > RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffffffff81aa70a0
+> > RBP: ffffffff81a01ed8 R08: 0000000000000000 R09: 0000000000000000
+> > R10: ffff8808ff8641c0 R11: 6e697a696c616974 R12: 0000000000000001
+> > R13: ffff8808ff8641c0 R14: 0000000000000000 R15: 0000000000093970
+> > FS:  0000000000000000(0000) GS:ffff8808ffc00000(0000) knlGS:0000000000000000
+> > CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > CR2: 0000000000000698 CR3: 0000000001a0b000 CR4: 00000000000006b0
+> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > Process swapper/0 (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a13420)
+> > Stack:
+> >  ffffffff81a01eb8 ffffffff818060ff ffffffff81d75ec8 ffffffff81aa8960
+> >  ffffffff81aa8960 ffffffff81b4c2c0 ffffffff81a01ef8 ffffffff81b1cb78
+> >  0000000000000018 0000000000000048 ffffffff81a01f18 ffffffff81b1ce13
+> > Call Trace:
+> >  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
+> >  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
+> >  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
+> >  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
+> >  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
+> >  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
+> > Code: 01 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 75 1b eb 73 0f 1f 00 48 8b 83 f0 00 00 00 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 74 5a <48> 8b 83 88 07 00 00 48 85 c0 74 de 44 3b 60 10 76 d8 44 89 e6
+> > RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> >  RSP <ffffffff81a01ea8>
+> > CR2: 0000000000000698
+> > ---[ end trace a7919e7f17c0a725 ]---
+> > Kernel panic - not syncing: Attempted to kill the idle task!
 > > 
-> > In general I think this patch would execute better than mine because it is
-> > far less heavy-handed but I share your concern that it changes the core MM
-> > quite a bit for a corner case that only one architecture cares about. I am
-> > completely biased of course, but I still prefer my patch because other than
-> > an API change it keeps the bulk of the madness in arch/x86/mm/hugetlbpage.c
-> > . I am also not concerned with the scalability of how quickly we can setup
-> > page table sharing.
+> > The code corresponds to:
 > > 
-> > Hugh, I'm afraid you get to choose :)
+> > update_netdev_tables():
+> >         for_each_netdev(&init_net, dev) {
+> >                 map = rtnl_dereference(dev->priomap);  <---- HERE
+> > 
+> > 
+> > The list head is initialized in netdev_init(), which is called much
+> > later than cgrp_create(). So the problem is that we are calling
+> > update_netdev_tables() way too early (in cgrp_create()), which will
+> > end up traversing the not-yet-circular linked list. So at some point,
+> > the dev pointer will become NULL and hence dev->priomap becomes an
+> > invalid access.
+> > 
+> > To fix this, just remove the update_netdev_tables() function entirely,
+> > since it appears that write_update_netdev_table() will handle things
+> > just fine.
 > 
-> Thank you bestowing that honour upon me :) 
-
-Just so you know, there was a ceremonial gong when it happened.
-
-> Seriously, though, you
-> were quite right to Cc me on this, it is one of those areas I ought
-> to know something about (unlike hugetlb reservations, for example).
+> The reason I add update_netdev_tables in cgrp_create is to avoid additional
+> bound checkings when we accessing the dev->priomap.priomap.
 > 
-> Please don't be upset if I say that I don't like either of your patches.
-
-I can live with that :) It would not be the first time we found the right
-patch out of dislike for the first proposed and getting the fix is what's
-important.
-
-> Mainly for obvious reasons - I don't like Mel's because anything with
-> trylock retries and nested spinlocks worries me before I can even start
-> to think about it;
-
-That's a reasonable objection. The trylock could be avoided by always
-falling through at the cost of reducing the amount of sharing
-opportunities but the nested locking is unavoidable. I agree with you
-that nested locking like this should always be a cause for concern.
-
-> and I don't like Michal's for the same reason as Mel,
-> that it spreads more change around in common paths than we would like.
+> Eric,can we revert this commit 91c68ce2b26319248a32d7baa1226f819d283758 now?
+> I think it's safe enough to access priomap without bound check.
 > 
-> But I didn't spend much time thinking through either of them, they just
-> seemed more complicated than should be needed.  I cannot confirm or deny
-> whether they're correct - though I still do not understand how mmap_sem
-> can help you, Mel.  I can see that it will help in your shmdt()ing test,
-> but if you leave the area mapped on exit, then mmap_sem is not taken in
-> the exit_mmap() path, so how does it help?
+> Thanks
 > 
 
-It certainly helps in the shmdt case which is what the test case focused
-on because that is what the application that triggered this bug was
-doing. However, you're right in that the exit_mmap() path is still vunerable
-because it does not take mmap_sem. I'll think about that a bit more.
+I think its probably safe, yes, but lets leave it there for just a bit.  Its not
+hurting anything, and I'd like to look into getting Srivatsa' patch in first.
+Neil
 
-> I spent hours trying to dream up a better patch, trying various
-> approaches.  I think I have a nice one now, what do you think?  And
-> more importantly, does it work?  I have not tried to test it at all,
-> that I'm hoping to leave to you, I'm sure you'll attack it with gusto!
-> 
-> If you like it, please take it over and add your comments and signoff
-> and send it in. 
-> 
-
-I like it in that it's simple and I can confirm it works for the test case
-of interest.
-
-However, is your patch not vunerable to truncate issues?
-madvise()/truncate() issues was the main reason why I was wary of VMA tricks
-as a solution. As it turns out, madvise(DONTNEED) is not a problem as it is
-ignored for hugetlbfs but I think truncate is still problematic. Lets say
-we mmap(MAP_SHARED) a hugetlbfs file and then truncate for whatever reason.
-
-invalidate_inode_pages2
-  invalidate_inode_pages2_range
-    unmap_mapping_range_vma
-      zap_page_range_single
-        unmap_single_vma
-	  __unmap_hugepage_range (removes VM_MAYSHARE)
-
-The VMA still exists so the consequences for this would be varied but
-minimally fault is going to be "interesting".
-
-I think that potentially we could work around this but it may end up stomping
-on the core MM and not necessarily be any better than Michal's patch.
-
-> The second part won't come up in your testing, and could
-> be made a separate patch if you prefer: it's a related point that struck
-> me while I was playing with a different approach.
-
-I'm fine with the second part.
-
--- 
-Mel Gorman
-SUSE Labs
