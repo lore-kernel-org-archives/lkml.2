@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab2GWIes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 04:34:48 -0400
+	id S1754126Ab2GWIex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 04:34:53 -0400
 Received: from mga02.intel.com ([134.134.136.20]:32124 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab2GWIeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 04:34:46 -0400
+	id S1751458Ab2GWIes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 04:34:48 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="170063325"
-Message-ID: <1343032747.4060.120.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBIFS changes for 3.6-rc1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="175897484"
+Message-ID: <1343032755.4060.121.camel@sauron.fi.intel.com>
+Subject: [GIT PULL] UBI changes for 3.6-rc1
 From: Artem Bityutskiy <dedekind1@gmail.com>
 Reply-To: dedekind1@gmail.com
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
         linux-mtd <linux-mtd@lists.infradead.org>
-Date: Mon, 23 Jul 2012 11:39:07 +0300
+Date: Mon, 23 Jul 2012 11:39:15 +0300
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-qOl0sND/2ZGeY7GOepGg"
+	boundary="=-Bm2ZnN8MwQLX/Zms0E6F"
 X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,66 +26,57 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-qOl0sND/2ZGeY7GOepGg
+--=-Bm2ZnN8MwQLX/Zms0E6F
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
 Hi Linus,
 
-The following changes since commit c6727932cfdb13501108b16c38463c09d5ec7a74=
+The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c=
 :
 
-  UBIFS: fix a bug in empty space fix-up (2012-07-20 10:13:27 +0300)
+  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
 
 are available in the git repository at:
 
-  git://git.infradead.org/linux-ubifs.git tags/upstream-3.6-rc1
+  git://git.infradead.org/linux-ubi.git tags/upstream-3.6-rc1
 
-for you to fetch changes up to 7074e5eb233343e4bad8c0a3f9e73167cf85a159:
+for you to fetch changes up to 87e773c95eb0b363f2efcc7aff8a347dc18925d0:
 
-  UBIFS: remove invalid reference to list iterator variable (2012-07-20 10:=
-27:25 +0300)
-
-----------------------------------------------------------------
-* Added another debugfs knob for forcing UBIFS R/O mode without flushing ca=
-ches
-  or finishing commit or any other I/O operation. I've originally added thi=
-s
-  knob in order to reproduce the free space fixup bug (see c672793) on nand=
-sim.
-  Without this knob I would have to do real power-cuts, which would make
-  debugging much harder. Then I've decided to keep this knob because it is =
-also
-  useful for UBIFS power-cut recovery end error-paths testing.
-* Well-spotted fix from Julia. This bug did not cause real troubles for
-  UBIFS, but nevertheless it could cause issues for someone trying to modif=
-y
-  the orphans handling code. Kudos to coccinelle!
-* Minor cleanups.
+  UBI: harmonize the update of ubi->beb_rsvd_pebs (2012-07-18 14:30:34 +030=
+0)
 
 ----------------------------------------------------------------
-Alexandre Pereira da Silva (1):
-      UBIFS: fix compilation warning
+Change the default amount of eraseblocks which UBI reserves for bad block
+handling from 1% to 2%, because 1% does not meet most modern flashes
+requirements. 1% was good enough in the past for old high-quality SLCs, but
+nowadays 2% is much more appropriate.
 
-Artem Bityutskiy (2):
-      UBIFS: add debugfs knob to switch to R/O mode
-      UBIFS: simplify reply code a bit
+Other changes are clean-ups.
 
-Julia Lawall (1):
-      UBIFS: remove invalid reference to list iterator variable
+----------------------------------------------------------------
+Peter Meerwald (1):
+      UBI: fix spelling of detach in debug output
 
- fs/ubifs/debug.c  |   11 +++++++++++
- fs/ubifs/debug.h  |    5 +++++
- fs/ubifs/dir.c    |    2 +-
- fs/ubifs/orphan.c |    4 ++--
- fs/ubifs/replay.c |   20 ++++++--------------
- 5 files changed, 25 insertions(+), 17 deletions(-)
+Richard Genoud (1):
+      UBI: Change the default percentage of reserved PEB
+
+Shmulik Ladkani (2):
+      UBI: trivial: fix comment of ubi_calculate_reserved function
+      UBI: harmonize the update of ubi->beb_rsvd_pebs
+
+ drivers/mtd/ubi/Kconfig |    2 +-
+ drivers/mtd/ubi/cdev.c  |    2 +-
+ drivers/mtd/ubi/misc.c  |   25 ++++++++++++++++++++++++-
+ drivers/mtd/ubi/ubi.h   |    1 +
+ drivers/mtd/ubi/vmt.c   |   20 ++------------------
+ 5 files changed, 29 insertions(+), 21 deletions(-)
 
 --=20
 Best Regards,
 Artem Bityutskiy
 
---=-qOl0sND/2ZGeY7GOepGg
+--=-Bm2ZnN8MwQLX/Zms0E6F
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -93,20 +84,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQDQ2rAAoJECmIfjd9wqK0Oo4QAIzIoY5De3hhVxmsC5dliSLY
-3Z8LQL4okJGA/u2MWHU52eYCcheN1OSip4pzkMrQoGMWVDoz6k1BbfB//gnr0zor
-uK7r96Dk2q34jodJ4YL1SWs3pwLKSKbkm2Iq+YQFKI8B9hSLYMXPAT1ntqYSwyb/
-ruJvxeLfK/jene74KdBoI2PhwHgUAF79Qs/AWls6WQCaxg0FAJTAFeyNO31WbQVH
-3J9GthT2Xtos8zUfLmzqcZr9RLT7VPjNdxLjeqFINNpNHmwg1mnYb/jgbg/w8nAI
-lhxLfwZ+pEo+DQyTWf6IfsYlOGXiL9WJfNThWJouIt+cK/dNff9KYMnTUHv1GGXl
-hwF8yMss9XpdIq8itu5+HCF8dr9iTYvY7qzyb15L3zLom4DX3C+po2LiRYISttWV
-DeaDU2GhV2VRf3PRYFLcBxQVD2/B7HPqOv0kEIX0TW+fZEH1URsG3rH6x1LiI48B
-9yebXmboYtagYqwmLFkLyyXBF3JuwNaPMPJwgYqf7fksXKiz0OLaFeSQPbsA/qLY
-+3uDul/gJWs+o3kHyafp06537R0fAoqCOedNt7OK4LaW9xsxBCaYPBfMNHhdGO8U
-rMPoG8usNWWRyBviZgNCbALaYzrsvNZj4sDBUddaDDSsrORVA19V4/sGJhy8ugoo
-9eEeFUoiQGVMoI8nwLO8
-=cg9k
+iQIcBAABAgAGBQJQDQ2zAAoJECmIfjd9wqK00bwQAKj5kFQtqUW0IOOJkkvuTZPB
+axGQ2HZs+0nOaJ3Kj256DjHnr9wg+EmiNrAHPKCiiMgtA7FRu8q+eO0LRsreFpXM
+iU7oAFRt9096HYk5Cov8tvmpexdJnbZSrBxrE7YT2aeU4nuEN/27QUuOI/E/0ReO
+LgqJQQhgLxyMdfrx0t5wWFx2lxE1Odz5Iq1UFVed9R7JKc62YabbHELQcA633Zpi
+hPkcWY3LIVaqGFqtSfzjGcxalSr/bJUOVnyqXfQgxg/X8IGI/WgvvYJrncwqif1L
+pl2e4Yw8jEEg4eKw/TYoru+d02yB+6CoQi6oZLPBi48JQGkNMrag2TIxg7cVlR2B
+DcMXh0MoTyiaCqpM6LRylBhG26pYAp6hB3XkIM00ShlwY/3KePok+o5uNRrlR/RR
+pOZWTdUOUT3ndqFIfiXPPHipRv9xbIGcY652EdRAOKemFjsSCzUv6lNTJY/48IWI
+D9mApsYnlOZWv8gzYMu6FlwdMbmr8XCfyBDT/J5yb2Q6VsxIyj/L636075DfC44f
+N9OdVasusDvabygjb7mrpmIk4D9qW87JIxG53F6A8EwDlZCzffeRKaxfgrosFCrj
+8xoJDibwAEjjgFhcS6vBCSTas7y4qkSdm+LwsM0GwUOrdtMpHxYr1t9/NuWRSLx0
++JqS2BohHDAbamIKIHiQ
+=+EDn
 -----END PGP SIGNATURE-----
 
---=-qOl0sND/2ZGeY7GOepGg--
+--=-Bm2ZnN8MwQLX/Zms0E6F--
 
