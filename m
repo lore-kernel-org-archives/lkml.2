@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2GWBxD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:53:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54340 "EHLO
+	id S1753874Ab2GWBxk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:53:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753437Ab2GWBnS (ORCPT
+	by vger.kernel.org with ESMTP id S1753420Ab2GWBnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:18 -0400
-Message-Id: <20120723010700.272854370@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:17 -0400
+Message-Id: <20120723010700.567517051@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:49 +0100
+Date: Mon, 23 Jul 2012 02:07:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anders Kaseorg <andersk@MIT.EDU>,
-        Anders Kaseorg <andersk@MIT.EDU>, Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 058/108] fifo: Do not restart open() if it already found a partner
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 060/108] target: Fix range calculation in WRITE SAME emulation when num
+ blocks == 0
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,110 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anders Kaseorg <andersk@MIT.EDU>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 05d290d66be6ef77a0b962ebecf01911bd984a78 upstream.
+commit 1765fe5edcb83f53fc67edeb559fcf4bc82c6460 upstream.
 
-If a parent and child process open the two ends of a fifo, and the
-child immediately exits, the parent may receive a SIGCHLD before its
-open() returns.  In that case, we need to make sure that open() will
-return successfully after the SIGCHLD handler returns, instead of
-throwing EINTR or being restarted.  Otherwise, the restarted open()
-would incorrectly wait for a second partner on the other end.
+When NUMBER OF LOGICAL BLOCKS is 0, WRITE SAME is supposed to write
+all the blocks from the specified LBA through the end of the device.
+However, dev->transport->get_blocks(dev) (perhaps confusingly) returns
+the last valid LBA rather than the number of blocks, so the correct
+number of blocks to write starting with lba is
 
-The following test demonstrates the EINTR that was wrongly thrown from
-the parent’s open().  Change .sa_flags = 0 to .sa_flags = SA_RESTART
-to see a deadlock instead, in which the restarted open() waits for a
-second reader that will never come.  (On my systems, this happens
-pretty reliably within about 5 to 500 iterations.  Others report that
-it manages to loop ~forever sometimes; YMMV.)
+dev->transport->get_blocks(dev) - lba + 1
 
-  #include <sys/stat.h>
-  #include <sys/types.h>
-  #include <sys/wait.h>
-  #include <fcntl.h>
-  #include <signal.h>
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <unistd.h>
+(nab: Backport roland's for-3.6 patch to for-3.5)
 
-  #define CHECK(x) do if ((x) == -1) {perror(#x); abort();} while(0)
-
-  void handler(int signum) {}
-
-  int main()
-  {
-      struct sigaction act = {.sa_handler = handler, .sa_flags = 0};
-      CHECK(sigaction(SIGCHLD, &act, NULL));
-      CHECK(mknod("fifo", S_IFIFO | S_IRWXU, 0));
-      for (;;) {
-          int fd;
-          pid_t pid;
-          putc('.', stderr);
-          CHECK(pid = fork());
-          if (pid == 0) {
-              CHECK(fd = open("fifo", O_RDONLY));
-              _exit(0);
-          }
-          CHECK(fd = open("fifo", O_WRONLY));
-          CHECK(close(fd));
-          CHECK(waitpid(pid, NULL, 0));
-      }
-  }
-
-This is what I suspect was causing the Git test suite to fail in
-t9010-svn-fe.sh:
-
-	http://bugs.debian.org/678852
-
-Signed-off-by: Anders Kaseorg <andersk@mit.edu>
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/fifo.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/target/target_core_cdb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/fifo.c b/fs/fifo.c
-index b1a524d..cf6f434 100644
---- a/fs/fifo.c
-+++ b/fs/fifo.c
-@@ -14,7 +14,7 @@
- #include <linux/sched.h>
- #include <linux/pipe_fs_i.h>
+diff --git a/drivers/target/target_core_cdb.c b/drivers/target/target_core_cdb.c
+index 9888693..664f6e7 100644
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -1095,7 +1095,7 @@ int target_emulate_write_same(struct se_cmd *cmd)
+ 	if (num_blocks != 0)
+ 		range = num_blocks;
+ 	else
+-		range = (dev->transport->get_blocks(dev) - lba);
++		range = (dev->transport->get_blocks(dev) - lba) + 1;
  
--static void wait_for_partner(struct inode* inode, unsigned int *cnt)
-+static int wait_for_partner(struct inode* inode, unsigned int *cnt)
- {
- 	int cur = *cnt;	
- 
-@@ -23,6 +23,7 @@ static void wait_for_partner(struct inode* inode, unsigned int *cnt)
- 		if (signal_pending(current))
- 			break;
- 	}
-+	return cur == *cnt ? -ERESTARTSYS : 0;
- }
- 
- static void wake_up_partner(struct inode* inode)
-@@ -67,8 +68,7 @@ static int fifo_open(struct inode *inode, struct file *filp)
- 				 * seen a writer */
- 				filp->f_version = pipe->w_counter;
- 			} else {
--				wait_for_partner(inode, &pipe->w_counter);
--				if(signal_pending(current))
-+				if (wait_for_partner(inode, &pipe->w_counter))
- 					goto err_rd;
- 			}
- 		}
-@@ -90,8 +90,7 @@ static int fifo_open(struct inode *inode, struct file *filp)
- 			wake_up_partner(inode);
- 
- 		if (!pipe->readers) {
--			wait_for_partner(inode, &pipe->r_counter);
--			if (signal_pending(current))
-+			if (wait_for_partner(inode, &pipe->r_counter))
- 				goto err_wr;
- 		}
- 		break;
+ 	pr_debug("WRITE_SAME UNMAP: LBA: %llu Range: %llu\n",
+ 		 (unsigned long long)lba, (unsigned long long)range);
 
 
