@@ -1,115 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383Ab2GWQjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 12:39:12 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:44287 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab2GWQjL (ORCPT
+	id S1754406Ab2GWQjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 12:39:16 -0400
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:41418 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab2GWQjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 12:39:11 -0400
-Date: Mon, 23 Jul 2012 17:44:21 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] proc: do not allow negative offsets on
- /proc/<pid>/environ
-Message-ID: <20120723164421.GA5624@dztty>
-References: <1342974959-2748-1-git-send-email-tixxdz@opendz.org>
- <20120722200049.GA29222@redhat.com>
- <20120723010447.GA23410@dztty>
- <20120723154927.GA17439@redhat.com>
+	Mon, 23 Jul 2012 12:39:13 -0400
+Date: Mon, 23 Jul 2012 13:39:06 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: nicolas prochazka <prochazka.nicolas@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: oops in kernel ( 3.4.x -> 3.5rc )
+Message-ID: <20120723163906.GA3662@oc1711230544.ibm.com>
+References: <CADdae-i2FWspdm_BPQAeO3HUUyOWj8rDui0cTGR6fkRv7yr2zw@mail.gmail.com>
+ <20120720132153.GA26110@redhat.com>
+ <20120720202155.GB15677@oc1711230544.ibm.com>
+ <CADdae-hyq7RALEg6fOTQZc_cDoi8PnovBZ2xNdsZRNTqfJnORA@mail.gmail.com>
+ <20120720210606.GC15677@oc1711230544.ibm.com>
+ <CADdae-iQAoA_n3_azKWOR7HAe9_tOWybN_bGVG-C_P3Pa8Y1WA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120723154927.GA17439@redhat.com>
+In-Reply-To: <CADdae-iQAoA_n3_azKWOR7HAe9_tOWybN_bGVG-C_P3Pa8Y1WA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072316-9254-0000-0000-000009B0B916
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 05:49:27PM +0200, Oleg Nesterov wrote:
-> Hi Djalal,
+On Sat, Jul 21, 2012 at 12:59:12AM +0200, nicolas prochazka wrote:
+> Well done
+> 1fd36adcd98c14d2fd97f545293c488775cb2823  :  the bug occurs   ( cf dump )
+> 1dce27c5aa6770e9d195f2bb7db1db3d4dde5591 :  the bug not occurs
 > 
-> On 07/23, Djalal Harouni wrote:
-> >
-> > Hi Oleg,
-> >
-> > On Sun, Jul 22, 2012 at 10:00:49PM +0200, Oleg Nesterov wrote:
-> > >
-> > > Probablt the patch makes sense, but I can't understand the changelog...
-> > >
-> > > > Allowing negative offsets on /proc/<pid>/environ can turn it to act like
-> > > > /proc/<pid>/mem. A negative offset will pass the
-> > > > fs/read_write.c:lseek_execute() and the environ_read() checks and will
-> > > > point to another VMA.
-> > >
-> > > which VMA?
-> > It depends on the offset. Please see below.
-> >
-> > > environ_read() can only read the memory from [env_start, env_end], and
-> > > it should check *ppos anyway to ensure it doesn't read something else.
-> > Yes I agree, but currently that's not the case, there are no checks on *ppos.
->                                                   ^^^^^^^^^^^^^^^^^^^
-> There is, unless I missed something, just it is buggy, no?
-Right.
+> Regards,
+> Nicolas Prochazka.
 
-> > So if you pass a negative offset you will be able to read from an arbitrary
-> > address.
-> >
-> > [...snip...]
-> >
-> >   inside environ_read() there is only a one check:
-> >
-> >   int this_len = mm->env_end - (mm->env_start + src);
-> >
-> >   if (this_len <= 0)
-> >     break;
-> >
-> >
-> >   Here 'src' is 'src = *ppos' the negative offset converted to unsigned long
-> >   and (mm->env_start + src) can overflow and point to another VMA.
-> >
-> >   int this_len = mm->env_end - (mm->env_start + src)
-> >
-> >   'this_len' will be positive and we pass that check.
-> 
-> OK, thanks, but doesn't this mean that this check should be fixed
-> to avoid the overflow, no matter what *ppos is?
-Yes, we must also fix it and check if we are in the [env_start, env_end]
-range.
+Hi, Nicolas.
 
-> With or without FMODE_UNSIGNED_OFFSET change. And perhaps it is
-> possible to trigger the overflow even with the positive *ppos,
-> because:
-> 
-> > I also don't like the truncation of the result to 'int this_len'
-> 
-> Yes.
-> 
-> > BTW should I resend the patch with a better changelog entry ?
-> 
-> Up to you, but I think this makes sense ;)
-> 
-> > I'll also add another patch to check the offsets inside environ_read().
-> 
-> Yes, agreed, but please see above.
-> 
-> Please correct me, but afaics this patch should come 1st and fix the bug.
-> FMODE_UNSIGNED_OFFSET change can be considered as a cleanup after that.
-> 
-> What do you think?
-I agree, that makes more sense and we do not hide the *ppos bug.
+I was too hasty in sending you the commit id. There is a bug in 1fd36adc
+that is fixed by commit f044db4cb4bf16893812d35b5fbeaaf3e30c9215. Can
+you test running f044db4cb4? If you find the bug in there, then we know
+that this fix isn't the only one needed for 1fd36adc.
 
-I'll resend the two patches soon (fix and check *ppos + this patch with an
-updated changelog).
+Regards.
+Cascardo.
 
-Thanks.
+> 
+> dump  / 1fd36adcd98c14d2fd97f545293c488775cb2823
+> lloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> VMtap: no IPv6 routers present
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 71 not NULL!
+> alloc_fd: slot 121 not NULL!
+> alloc_fd: slot 96 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 110 not NULL!
+> alloc_fd: slot 121 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> brE: no IPv6 routers present
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 121 not NULL!
+> alloc_fd: slot 142 not NULL!
+> alloc_fd: slot 153 not NULL!
+> alloc_fd: slot 153 not NULL!
+> alloc_fd: slot 153 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 70 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 102 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 106 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 106 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 36 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 68 not NULL!
+> alloc_fd: slot 100 not NULL!
+> alloc_fd: slot 100 not NULL!
+> ------------[ cut here ]------------
+> kernel BUG at fs/open.c:873!
+> invalid opcode: 0000 [#1] SMP
+> CPU 0
+> Modules linked in: kvm_intel kvm
+> 
+> then BUG paging request as usual
+> 
+> 
+> 2012/7/20 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
+> > On Fri, Jul 20, 2012 at 10:52:40PM +0200, nicolas prochazka wrote:
+> >> Hello
+> >> the problem is occured with  :
+> >> - linux kernel 3.4.5    i do not test with 3.4.0 / 1 / 2 / 3 / 4    ,
+> >> but i can if you want
+> >> - linux kernel 3.5rc6 rc7  / do not test with other rc.
+> >>
+> >> the problem is not occured with :
+> >> linux kernel 3.3.4 / 3.3.8
+> >>
+> >> These servers are used for :
+> >> - starting a lot of virtual machine with qemu-kvm ( ~ 40 )   ( lot of
+> >> select i think)
+> >> - do a lot of network tests with openvswitch
+> >>
+> >> I can test a kernel 3.4.x before and after a commit id (?) to find a regression.
+> >>
+> >> Regards,
+> >> Nicolas.
+> >>
+> >
+> > Can you try this commit 1fd36adcd98c14d2fd97f545293c488775cb2823? And
+> > the commit before it?
+> >
+> >>
+> >> 2012/7/20 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
+> >> > On Fri, Jul 20, 2012 at 09:21:53AM -0400, Dave Jones wrote:
+> >> >> On Fri, Jul 20, 2012 at 11:56:06AM +0200, nicolas prochazka wrote:
+> >> >>
+> >> >>  > [ 2384.900061] BUG: unable to handle kernel paging request at 000000010000002f
+> >> >>
+> >> >> That '1' looks like a random bit flip. Try running memtest86.
+> >> >>
+> >> >
+> >> > Looks more a 32-bit value of 1 followed by a 32-bit value of 0x2f. Most
+> >> > likely a pointer to some other piece of a struct. However, taking a look
+> >> > at fs/files.c code, nothing seems suspicious.
+> >> >
+> >> > Nicolas, it wasn't clear to me if you had problems with 3.4 too. There
+> >> > has been some changes in fs/files.c on 3.4-rc1 in the piece of code
+> >> > where you hit the problem.
+> >> >
+> >> > What does your system exercise? Any chance you are using a lot of
+> >> > select, which has also been changed in those same patches to fs/files.c?
+> >> >
+> >> > Regards.
+> >> > Cascardo.
+> >> >
+> >> >
+> >> >>  > [ 2384.910010] Pid: 23838, comm: queue.sh Tainted: G      D W
+> >> >>
+> >> >> This wasn't the first problem either.
+> >> >>
+> >> >>  > [ 2397.885344] BUG: unable to handle kernel paging request at 000000010000003b
+> >> >>
+> >> >> Looks like the same flipped bit.
+> >> >>
+> >> >>       Dave
+> >> >>
+> >> >> --
+> >> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> >> the body of a message to majordomo@vger.kernel.org
+> >> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >> >>
+> >> >
+> >>
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
--- 
-tixxdz
-http://opendz.org
