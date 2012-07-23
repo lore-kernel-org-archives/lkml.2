@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab2GWBuh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:50:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54391 "EHLO
+	id S1753531Ab2GWBuf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:50:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54399 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753494Ab2GWBn0 (ORCPT
+	by vger.kernel.org with ESMTP id S1753500Ab2GWBn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:43:26 -0400
-Message-Id: <20120723010658.586361275@decadent.org.uk>
+Message-Id: <20120723010658.437358318@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:38 +0100
+Date: Mon, 23 Jul 2012 02:07:37 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>
-Subject: [ 047/108] Remove easily user-triggerable BUG from generic_setlease
+        alan@lxorguk.ukuu.org.uk, Jeff Moyer <jmoyer@redhat.com>,
+        "Richard W.M. Jones" <rjones@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 046/108] block: fix infinite loop in __getblk_slow
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,40 +29,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit 8d657eb3b43861064d36241e88d9d61c709f33f0 upstream.
+commit 91f68c89d8f35fe98ea04159b9a3b42d0149478f upstream.
 
-This can be trivially triggered from userspace by passing in something unexpected.
+Commit 080399aaaf35 ("block: don't mark buffers beyond end of disk as
+mapped") exposed a bug in __getblk_slow that causes mount to hang as it
+loops infinitely waiting for a buffer that lies beyond the end of the
+disk to become uptodate.
 
-    kernel BUG at fs/locks.c:1468!
-    invalid opcode: 0000 [#1] SMP
-    RIP: 0010:generic_setlease+0xc2/0x100
-    Call Trace:
-      __vfs_setlease+0x35/0x40
-      fcntl_setlease+0x76/0x150
-      sys_fcntl+0x1c6/0x810
-      system_call_fastpath+0x1a/0x1f
+The problem was initially reported by Torsten Hilbrich here:
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+    https://lkml.org/lkml/2012/6/18/54
+
+and also reported independently here:
+
+    http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511
+
+and then Richard W.M.  Jones and Marcos Mello noted a few separate
+bugzillas also associated with the same issue.  This patch has been
+confirmed to fix:
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=835019
+
+The main problem is here, in __getblk_slow:
+
+        for (;;) {
+                struct buffer_head * bh;
+                int ret;
+
+                bh = __find_get_block(bdev, block, size);
+                if (bh)
+                        return bh;
+
+                ret = grow_buffers(bdev, block, size);
+                if (ret < 0)
+                        return NULL;
+                if (ret == 0)
+                        free_more_memory();
+        }
+
+__find_get_block does not find the block, since it will not be marked as
+mapped, and so grow_buffers is called to fill in the buffers for the
+associated page.  I believe the for (;;) loop is there primarily to
+retry in the case of memory pressure keeping grow_buffers from
+succeeding.  However, we also continue to loop for other cases, like the
+block lying beond the end of the disk.  So, the fix I came up with is to
+only loop when grow_buffers fails due to memory allocation issues
+(return value of 0).
+
+The attached patch was tested by myself, Torsten, and Rich, and was
+found to resolve the problem in call cases.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Reported-and-Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Tested-by: Richard W.M. Jones <rjones@redhat.com>
+Reviewed-by: Josh Boyer <jwboyer@redhat.com>
+[ Jens is on vacation, taking this directly  - Linus ]
+--
+Stable Notes: this patch requires backport to 3.0, 3.2 and 3.3.
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/locks.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/buffer.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 814c51d..fce6238 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1465,7 +1465,7 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
- 	case F_WRLCK:
- 		return generic_add_lease(filp, arg, flp);
- 	default:
--		BUG();
-+		return -EINVAL;
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 838a9cf..c7062c8 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1036,6 +1036,9 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+ static struct buffer_head *
+ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+ {
++	int ret;
++	struct buffer_head *bh;
++
+ 	/* Size must be multiple of hard sectorsize */
+ 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+ 			(size < 512 || size > PAGE_SIZE))) {
+@@ -1048,20 +1051,21 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+ 		return NULL;
  	}
+ 
+-	for (;;) {
+-		struct buffer_head * bh;
+-		int ret;
++retry:
++	bh = __find_get_block(bdev, block, size);
++	if (bh)
++		return bh;
+ 
++	ret = grow_buffers(bdev, block, size);
++	if (ret == 0) {
++		free_more_memory();
++		goto retry;
++	} else if (ret > 0) {
+ 		bh = __find_get_block(bdev, block, size);
+ 		if (bh)
+ 			return bh;
+-
+-		ret = grow_buffers(bdev, block, size);
+-		if (ret < 0)
+-			return NULL;
+-		if (ret == 0)
+-			free_more_memory();
+ 	}
++	return NULL;
  }
- EXPORT_SYMBOL(generic_setlease);
+ 
+ /*
 
 
