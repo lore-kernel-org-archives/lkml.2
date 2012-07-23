@@ -1,145 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab2GWPAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:00:15 -0400
-Received: from shutemov.name ([176.9.204.213]:44214 "EHLO shutemov.name"
+	id S1754073Ab2GWPBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:01:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27865 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754061Ab2GWPAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:00:12 -0400
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH 2/2] perf: use XSI-complaint version of strerror_r() instead of GNU-specific
-Date: Mon, 23 Jul 2012 18:00:45 +0300
-Message-Id: <1343055645-24083-2-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
-References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753545Ab2GWPBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 11:01:24 -0400
+Subject: GFS2: Pull request (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-QW8eTIzPDhk/E2YvXO7m"
+Organization: Red Hat UK Ltd
+Date: Mon, 23 Jul 2012 15:59:52 +0100
+Message-ID: <1343055592.2703.41.camel@menhir>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-Perf uses GNU-specific version of strerror_r(). The GNU-specific
-strerror_r() returns a pointer to a string containing the error message.
-This may be either a pointer to a string that the function stores in
-buf, or a pointer to some (immutable) static string (in which case buf
-is unused).
+--=-QW8eTIzPDhk/E2YvXO7m
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-In glibc-2.16 GNU version was marked with attribute warn_unused_result.
-It triggers few warnings in perf:
+Hi,
 
-util/target.c: In function ‘perf_target__strerror’:
-util/target.c:114:13: error: ignoring return value of ‘strerror_r’, declared with attribute warn_unused_result [-Werror=unused-result]
-ui/browsers/hists.c: In function ‘hist_browser__dump’:
-ui/browsers/hists.c:981:13: error: ignoring return value of ‘strerror_r’, declared with attribute warn_unused_result [-Werror=unused-result]
+Please consider pulling the following patches. There have been no changes s=
+ince
+they were posted for review,
 
-They are bugs.
+Steve.
 
-The right way to fix it is to switch to XSI-compliant version.
-Unfortunately, glibc doesn't allow to get XSI-complaint strerror_r() and
-_GNU_SOURCE at the same time.
+---------------------------------------------------------------------------=
+----
+The following changes since commit eea5b5510fc5545d15b69da8e485a7424ae388cf=
+:
 
-Let's bundle XSI-complaint version to perf and use it.
+  Merge tag 'please-pull-mce' of git://git.kernel.org/pub/scm/linux/kernel/=
+git/ras/ras (2012-06-05 15:15:04 -0700)
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- tools/perf/ui/browsers/hists.c |  2 +-
- tools/perf/util/string.c       | 25 +++++++++++++++++++++++++
- tools/perf/util/target.c       |  3 ++-
- tools/perf/util/util.h         |  1 +
- 4 files changed, 29 insertions(+), 2 deletions(-)
+are available in the git repository at:
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 482f051..8bd1780 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -978,7 +978,7 @@ static int hist_browser__dump(struct hist_browser *browser)
- 	fp = fopen(filename, "w");
- 	if (fp == NULL) {
- 		char bf[64];
--		strerror_r(errno, bf, sizeof(bf));
-+		xsi_strerror_r(errno, bf, sizeof(bf));
- 		ui_helpline__fpush("Couldn't write to %s: %s", filename, bf);
- 		return -1;
- 	}
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index 199bc4d..71b68b9 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -1,5 +1,6 @@
- #include "util.h"
- #include "string.h"
-+#include <linux/kernel.h>
- 
- #define K 1024LL
- /*
-@@ -335,3 +336,27 @@ char *rtrim(char *s)
- 
- 	return s;
- }
-+
-+/**
-+ * xsi_strerror_r() - XSI-compliant version of strerror_r()
-+ */
-+int xsi_strerror_r(int errnum, char *buf, size_t buflen)
-+{
-+	const char *p;
-+	size_t len;
-+
-+	/* GNU-specific version of strerror_r() */
-+	p = strerror_r(errnum, buf, buflen);
-+
-+	/* glibc use the buffer only if errnum is not correct */
-+	if (p == buf)
-+		return EINVAL;
-+
-+	len = strlen(p);
-+	if (buflen > 0) {
-+		char *c = mempcpy(buf, p, min(buflen - 1, len));
-+		*c = '\0';
-+	}
-+
-+	return buflen > len ? 0 : ERANGE;
-+}
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 1064d5b..0ec1a30 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -8,6 +8,7 @@
- 
- #include "target.h"
- #include "debug.h"
-+#include "util.h"
- 
- #include <pwd.h>
- #include <string.h>
-@@ -111,7 +112,7 @@ int perf_target__strerror(struct perf_target *target, int errnum,
- 	const char *msg;
- 
- 	if (errnum >= 0) {
--		strerror_r(errnum, buf, buflen);
-+		xsi_strerror_r(errnum, buf, buflen);
- 		return 0;
- 	}
- 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index b13c733..3e85d63 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -265,5 +265,6 @@ bool is_power_of_2(unsigned long n)
- size_t hex_width(u64 v);
- 
- char *rtrim(char *s);
-+int xsi_strerror_r(int errnum, char *buf, size_t buflen);
- 
- #endif
--- 
-1.7.11.2
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git mast=
+er
+
+Abhijith Das (1):
+      GFS2: kernel panic with small gfs2 filesystems - 1 RG
+
+Benjamin Marzinski (1):
+      GFS2: Use lvbs for storing rgrp information with mount option
+
+Bob Peterson (6):
+      GFS2: Extend the life of the reservations
+      GFS2: Fold quota data into the reservations struct
+      GFS2: Add kobject release method
+      GFS2: Combine functions get_local_rgrp and gfs2_inplace_reserve
+      GFS2: Reduce file fragmentation
+      GFS2: Eliminate 64-bit divides
+
+Masatake YAMATO (1):
+      GFS2: Fixing double brelse'ing bh allocated in gfs2_meta_read when EI=
+O occurs
+
+Steven Whitehouse (7):
+      GFS2: Add "top dir" flag support
+      GFS2: Fix error handling when reading an invalid block from the journ=
+al
+      GFS2: Increase buffer size for glocks and glstats debugfs files
+      GFS2: Cache last hash bucket for glock seq_files
+      seq_file: Add seq_vprintf function and export it
+      GFS2: Use seq_vprintf for glocks debugfs file
+      GFS2: Size seq_file buffer more carefully
+
+ fs/gfs2/aops.c              |   18 +-
+ fs/gfs2/bmap.c              |   21 +-
+ fs/gfs2/dir.c               |    9 +-
+ fs/gfs2/file.c              |   65 ++--
+ fs/gfs2/glock.c             |   39 ++-
+ fs/gfs2/incore.h            |   54 ++-
+ fs/gfs2/inode.c             |   94 +++---
+ fs/gfs2/lops.c              |    9 +-
+ fs/gfs2/main.c              |    1 -
+ fs/gfs2/meta_io.c           |    5 +-
+ fs/gfs2/ops_fstype.c        |   36 ++-
+ fs/gfs2/quota.c             |   72 +++--
+ fs/gfs2/rgrp.c              |  833 ++++++++++++++++++++++++++++++++++++---=
+----
+ fs/gfs2/rgrp.h              |   45 ++-
+ fs/gfs2/super.c             |   28 ++-
+ fs/gfs2/sys.c               |   21 +-
+ fs/gfs2/trace_gfs2.h        |   59 +++-
+ fs/gfs2/trans.h             |    2 +-
+ fs/gfs2/util.h              |   18 +-
+ fs/gfs2/xattr.c             |   30 +-
+ fs/seq_file.c               |   18 +-
+ include/linux/gfs2_ondisk.h |   14 +-
+ include/linux/seq_file.h    |    1 +
+ 23 files changed, 1121 insertions(+), 371 deletions(-)
+
+
+--=-QW8eTIzPDhk/E2YvXO7m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJQDWbfAAoJEMrg3m4a/8jSRwgP/2lBkcA3eIodL9VWiLHaxAOD
+/bE1KXbAjJpkvDH4BTDg5l6gWosf7hBmE5rTr0aUwjuHC9CQbeCA4FNpXO1CxNrf
+wN0FryjAHbqBhBKxVK/XGrVf6MKlqhzVcOL6B3sxr+wLY1V78YANjlaBkIegZJo1
+cIbQpZotGzNmuNK1dy4BMZPmY9FoZLVq0uJDBAeutiBBJAJ96/lr2AAf+Vebv5aw
+SllDmw4gH05RWhOfsNxArvmWd7c1BLCP3sxtfbohCW8jVQGWrUyH56FWK7cFHut4
+AbeoG5YdjIon+D+GudhOjTg19lMQZ6qT+bEzB1SxpnNYMqH/EdmAgdHKDr/OGcEK
+liToXknKyznuueLUaiCKK/UFKk2XFEuYfwZMZwz4b+/TKbMc2nuTaTGdtsq5efGH
+FqeoUaGwWgLnqL4dXsqUwXzEnu/+V5FcWxZWWU75llSnU6+S7o47AvCHkYSqd0NF
+5k3Smv3pYnrxOVlSiHXd/q8DAbbideIWHViggGgAoiJpLSvcf86xvt6OmAGcocY8
+afxrDYRw4nglYJiOJCPcCYnmXxQKomYoUMq3yNymS7/HLdPyI1lmovOMSfo/C7im
+UIYi0vnplR37b63+GfUV+6IhAkud8MVPBNxBL3oIRIO0NOOBJ8iXhg64O3DuyWPb
+vVXg6UCZ+nQfJmmGNf8+
+=kBBq
+-----END PGP SIGNATURE-----
+
+--=-QW8eTIzPDhk/E2YvXO7m--
 
