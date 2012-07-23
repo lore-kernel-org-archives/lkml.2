@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab2GWNiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:38:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58582 "EHLO mx2.suse.de"
+	id S1753826Ab2GWNjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:39:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58789 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab2GWNiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:38:52 -0400
+	id S1753746Ab2GWNjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:39:08 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/34] vmscan: clear ZONE_CONGESTED for zone with good watermark
-Date: Mon, 23 Jul 2012 14:38:18 +0100
-Message-Id: <1343050727-3045-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 31/34] cpusets: avoid looping when storing to mems_allowed if one node remains set
+Date: Mon, 23 Jul 2012 14:38:44 +0100
+Message-Id: <1343050727-3045-32-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,73 +20,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaohua Li <shaohua.li@intel.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 439423f6894aa0dec22187526827456f5004baed upstream.
+commit 89e8a244b97e48f1f30e898b6f32acca477f2a13 upstream.
 
-Stable note: Not tracked in Bugzilla. kswapd is responsible for clearing
-	ZONE_CONGESTED after it balances a zone and this patch fixes a bug
-	where that was failing to happen. Without this patch, processes
-	can stall in wait_iff_congested unnecessarily. For users, this can
-	look like an interactivity stall but some workloads would see it
-	as sudden drop in throughput.
+Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is
+	extremely expensive and severely impacted page allocator performance.
+	This is part of a series of patches that reduce page allocator
+	overhead.
 
-ZONE_CONGESTED is only cleared in kswapd, but pages can be freed in any
-task.  It's possible ZONE_CONGESTED isn't cleared in some cases:
+{get,put}_mems_allowed() exist so that general kernel code may locklessly
+access a task's set of allowable nodes without having the chance that a
+concurrent write will cause the nodemask to be empty on configurations
+where MAX_NUMNODES > BITS_PER_LONG.
 
- 1. the zone is already balanced just entering balance_pgdat() for
-    order-0 because concurrent tasks free memory.  In this case, later
-    check will skip the zone as it's balanced so the flag isn't cleared.
+This could incur a significant delay, however, especially in low memory
+conditions because the page allocator is blocking and reclaim requires
+get_mems_allowed() itself.  It is not atypical to see writes to
+cpuset.mems take over 2 seconds to complete, for example.  In low memory
+conditions, this is problematic because it's one of the most imporant
+times to change cpuset.mems in the first place!
 
- 2. high order balance fallbacks to order-0.  quote from Mel: At the
-    end of balance_pgdat(), kswapd uses the following logic;
+The only way a task's set of allowable nodes may change is through cpusets
+by writing to cpuset.mems and when attaching a task to a generic code is
+not reading the nodemask with get_mems_allowed() at the same time, and
+then clearing all the old nodes.  This prevents the possibility that a
+reader will see an empty nodemask at the same time the writer is storing a
+new nodemask.
 
-	If reclaiming at high order {
-		for each zone {
-			if all_unreclaimable
-				skip
-			if watermark is not met
-				order = 0
-				loop again
+If at least one node remains unchanged, though, it's possible to simply
+set all new nodes and then clear all the old nodes.  Changing a task's
+nodemask is protected by cgroup_mutex so it's guaranteed that two threads
+are not changing the same task's nodemask at the same time, so the
+nodemask is guaranteed to be stored before another thread changes it and
+determines whether a node remains set or not.
 
-			/* watermark is met */
-			clear congested
-		}
-	}
-
-    i.e. it clears ZONE_CONGESTED if it the zone is balanced.  if not,
-    it restarts balancing at order-0.  However, if the higher zones are
-    balanced for order-0, kswapd will miss clearing ZONE_CONGESTED as
-    that only happens after a zone is shrunk.  This can mean that
-    wait_iff_congested() stalls unnecessarily.
-
-This patch makes kswapd clear ZONE_CONGESTED during its initial
-highmem->dma scan for zones that are already balanced.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Paul Menage <paul@paulmenage.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/cpuset.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index bdfdec3..72340b84 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2456,6 +2456,9 @@ loop_again:
- 					high_wmark_pages(zone), 0, 0)) {
- 				end_zone = i;
- 				break;
-+			} else {
-+				/* If balanced, clear the congested flag */
-+				zone_clear_flag(zone, ZONE_CONGESTED);
- 			}
- 		}
- 		if (i < 0)
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 9c9b754..a995893 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -949,6 +949,8 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 					nodemask_t *newmems)
+ {
++	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
++
+ repeat:
+ 	/*
+ 	 * Allow tasks that have access to memory reserves because they have
+@@ -963,7 +965,6 @@ repeat:
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+ 
+-
+ 	/*
+ 	 * ensure checking ->mems_allowed_change_disable after setting all new
+ 	 * allowed nodes.
+@@ -980,9 +981,11 @@ repeat:
+ 
+ 	/*
+ 	 * Allocation of memory is very fast, we needn't sleep when waiting
+-	 * for the read-side.
++	 * for the read-side.  No wait is necessary, however, if at least one
++	 * node remains unchanged.
+ 	 */
+-	while (ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
++	while (masks_disjoint &&
++			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
+ 		task_unlock(tsk);
+ 		if (!task_curr(tsk))
+ 			yield();
 -- 
 1.7.9.2
 
