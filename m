@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab2GWCKA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:10:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53982 "EHLO
+	id S1753906Ab2GWCJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:09:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53984 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752873Ab2GWBmP (ORCPT
+	by vger.kernel.org with ESMTP id S1752877Ab2GWBmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:42:15 -0400
-Message-Id: <20120723010652.464822846@decadent.org.uk>
+Message-Id: <20120723010651.806320180@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:06:57 +0100
+Date: Mon, 23 Jul 2012 02:06:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 006/108] net/wireless: ipw2x00: add supported cipher suites to wiphy
- initialization
+        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@kernel.org>,
+        Shaohua Li <shli@fusionio.com>, NeilBrown <neilb@suse.de>
+Subject: [ 002/108] raid5: delayed stripe fix
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,100 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+From: Shaohua Li <shli@kernel.org>
 
-commit a141e6a0097118bb35024485f1faffc0d9042f5c upstream.
+commit fab363b5ff502d1b39ddcfec04271f5858d9f26e upstream.
 
-Driver doesn't report its supported cipher suites through cfg80211
-interface. It still uses wext interface and probably will not work
-through nl80211, but will at least correctly advertise supported
-features.
+There isn't locking setting STRIPE_DELAYED and STRIPE_PREREAD_ACTIVE bits, but
+the two bits have relationship. A delayed stripe can be moved to hold list only
+when preread active stripe count is below IO_THRESHOLD. If a stripe has both
+the bits set, such stripe will be in delayed list and preread count not 0,
+which will make such stripe never leave delayed list.
 
-Bug was reported by Omar Siam.
-https://bugzilla.kernel.org/show_bug.cgi?id=43049
-
-Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ipw2x00/ipw.h     |   23 +++++++++++++++++++++++
- drivers/net/wireless/ipw2x00/ipw2100.c |    4 ++++
- drivers/net/wireless/ipw2x00/ipw2200.c |    4 ++++
- 3 files changed, 31 insertions(+)
- create mode 100644 drivers/net/wireless/ipw2x00/ipw.h
+ drivers/md/raid5.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/ipw2x00/ipw.h b/drivers/net/wireless/ipw2x00/ipw.h
-new file mode 100644
-index 0000000..4007bf5
---- /dev/null
-+++ b/drivers/net/wireless/ipw2x00/ipw.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Intel Pro/Wireless 2100, 2200BG, 2915ABG network connection driver
-+ *
-+ * Copyright 2012 Stanislav Yakovlev <stas.yakovlev@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __IPW_H__
-+#define __IPW_H__
-+
-+#include <linux/ieee80211.h>
-+
-+static const u32 ipw_cipher_suites[] = {
-+	WLAN_CIPHER_SUITE_WEP40,
-+	WLAN_CIPHER_SUITE_WEP104,
-+	WLAN_CIPHER_SUITE_TKIP,
-+	WLAN_CIPHER_SUITE_CCMP,
-+};
-+
-+#endif
-diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
-index d8d804e..8193687 100644
---- a/drivers/net/wireless/ipw2x00/ipw2100.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2100.c
-@@ -166,6 +166,7 @@ that only one external action is invoked at a time.
- #include <net/lib80211.h>
- 
- #include "ipw2100.h"
-+#include "ipw.h"
- 
- #define IPW2100_VERSION "git-1.2.2"
- 
-@@ -1946,6 +1947,9 @@ static int ipw2100_wdev_init(struct net_device *dev)
- 		wdev->wiphy->bands[IEEE80211_BAND_2GHZ] = bg_band;
- 	}
- 
-+	wdev->wiphy->cipher_suites = ipw_cipher_suites;
-+	wdev->wiphy->n_cipher_suites = ARRAY_SIZE(ipw_cipher_suites);
-+
- 	set_wiphy_dev(wdev->wiphy, &priv->pci_dev->dev);
- 	if (wiphy_register(wdev->wiphy)) {
- 		ipw2100_down(priv);
-diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
-index 77c5d2f..f37d315 100644
---- a/drivers/net/wireless/ipw2x00/ipw2200.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2200.c
-@@ -34,6 +34,7 @@
- #include <linux/slab.h>
- #include <net/cfg80211-wext.h>
- #include "ipw2200.h"
-+#include "ipw.h"
- 
- 
- #ifndef KBUILD_EXTMOD
-@@ -11532,6 +11533,9 @@ static int ipw_wdev_init(struct net_device *dev)
- 		wdev->wiphy->bands[IEEE80211_BAND_5GHZ] = a_band;
- 	}
- 
-+	wdev->wiphy->cipher_suites = ipw_cipher_suites;
-+	wdev->wiphy->n_cipher_suites = ARRAY_SIZE(ipw_cipher_suites);
-+
- 	set_wiphy_dev(wdev->wiphy, &priv->pci_dev->dev);
- 
- 	/* With that information in place, we can now register the wiphy... */
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 51169ec..7245a9d 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -196,12 +196,14 @@ static void __release_stripe(struct r5conf *conf, struct stripe_head *sh)
+ 		BUG_ON(!list_empty(&sh->lru));
+ 		BUG_ON(atomic_read(&conf->active_stripes)==0);
+ 		if (test_bit(STRIPE_HANDLE, &sh->state)) {
+-			if (test_bit(STRIPE_DELAYED, &sh->state))
++			if (test_bit(STRIPE_DELAYED, &sh->state) &&
++			    !test_bit(STRIPE_PREREAD_ACTIVE, &sh->state))
+ 				list_add_tail(&sh->lru, &conf->delayed_list);
+ 			else if (test_bit(STRIPE_BIT_DELAY, &sh->state) &&
+ 				   sh->bm_seq - conf->seq_write > 0)
+ 				list_add_tail(&sh->lru, &conf->bitmap_list);
+ 			else {
++				clear_bit(STRIPE_DELAYED, &sh->state);
+ 				clear_bit(STRIPE_BIT_DELAY, &sh->state);
+ 				list_add_tail(&sh->lru, &conf->handle_list);
+ 			}
 
 
