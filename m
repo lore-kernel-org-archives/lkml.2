@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab2GWB6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:58:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54219 "EHLO
+	id S1753267Ab2GWBmx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:42:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54127 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753286Ab2GWBm5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752830Ab2GWBmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:57 -0400
-Message-Id: <20120723010703.151981945@decadent.org.uk>
+	Sun, 22 Jul 2012 21:42:44 -0400
+Message-Id: <20120723010707.851502814@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:08 +0100
+Date: Mon, 23 Jul 2012 02:08:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 077/108] time: Move common updates to a function
+        alan@lxorguk.ukuu.org.uk, Yuri Khan <yurivkhan@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 107/108] Input: xpad - add Andamiro Pump It Up pad
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,98 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Yuri Khan <yurivkhan@gmail.com>
 
-This is a backport of cc06268c6a87db156af2daed6e96a936b955cc82
+commit e76b8ee25e034ab601b525abb95cea14aa167ed3 upstream.
 
-[John Stultz: While not a bugfix itself, it allows following fixes
- to backport in a more straightforward manner.]
+I couldn't find the vendor ID in any of the online databases, but this
+mat has a Pump It Up logo on the top side of the controller compartment,
+and a disclaimer stating that Andamiro will not be liable on the bottom.
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Richard Cochran <richardcochran@gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Yuri Khan <yurivkhan@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/time/timekeeping.c |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ drivers/input/joystick/xpad.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5c9b67e..5d55185 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -166,6 +166,19 @@ static struct timespec total_sleep_time;
-  */
- static struct timespec raw_time;
- 
-+/* must hold write on xtime_lock */
-+static void timekeeping_update(bool clearntp)
-+{
-+	if (clearntp) {
-+		timekeeper.ntp_error = 0;
-+		ntp_clear();
-+	}
-+	update_vsyscall(&xtime, &wall_to_monotonic,
-+			 timekeeper.clock, timekeeper.mult);
-+}
-+
-+
-+
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
- 
-@@ -366,11 +379,7 @@ int do_settimeofday(const struct timespec *tv)
- 
- 	xtime = *tv;
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -403,11 +412,7 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	xtime = timespec_add(xtime, *ts);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -636,10 +641,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 
- 	__timekeeping_inject_sleeptime(delta);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -1052,9 +1054,7 @@ static void update_wall_time(void)
- 		wall_to_monotonic.tv_sec -= leap;
- 	}
- 
--	/* check to see if there is a new clocksource to use */
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(false);
- }
- 
- /**
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index e066528..42f7b25 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -142,6 +142,7 @@ static const struct xpad_device {
+ 	{ 0x0c12, 0x880a, "Pelican Eclipse PL-2023", 0, XTYPE_XBOX },
+ 	{ 0x0c12, 0x8810, "Zeroplus Xbox Controller", 0, XTYPE_XBOX },
+ 	{ 0x0c12, 0x9902, "HAMA VibraX - *FAULTY HARDWARE*", 0, XTYPE_XBOX },
++	{ 0x0d2f, 0x0002, "Andamiro Pump It Up pad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
+ 	{ 0x0e4c, 0x1097, "Radica Gamester Controller", 0, XTYPE_XBOX },
+ 	{ 0x0e4c, 0x2390, "Radica Games Jtech Controller", 0, XTYPE_XBOX },
+ 	{ 0x0e6f, 0x0003, "Logic3 Freebird wireless Controller", 0, XTYPE_XBOX },
 
 
