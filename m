@@ -1,142 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab2GWUdA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:33:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53791 "EHLO
+	id S1754866Ab2GWUc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:32:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52725 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754823Ab2GWUcu (ORCPT
+	with ESMTP id S1754824Ab2GWUcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jul 2012 16:32:50 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         arm@kernel.org
-Subject: =?UTF-8?q?=5BGIT=20PULL=2015/15=5D=20arm-soc=3A=20clk=20changes?=
-Date: Mon, 23 Jul 2012 22:32:41 +0200
-Message-Id: <1343075561-17446-16-git-send-email-arnd@arndb.de>
+Subject: [GIT PULL 10/15] arm-soc: defconfig updates
+Date: Mon, 23 Jul 2012 22:32:36 +0200
+Message-Id: <1343075561-17446-11-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343075561-17446-1-git-send-email-arnd@arndb.de>
 References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:K4yUeRzlt8jYkgja4ORIJ7PM+AAushgPHrzDDBOKxLA
- 1Vmkn2nYhn/4q+NUXJy84O74ofvlsf69nKq9zrXvH4K9qxiU63
- ZFCtxZkiJKip1rOzc9mZIhdg56YXdtckNaGH98vq6ZxIOdkAQZ
- Uys2aUROjQ9lAlpndBZMG97n8XQBmC2zvp/E0gLZRPjRFDSsiI
- XyjRAD2rRAa2Eo0nnkB/jKyGgBwBDHErPcwV1JEmCstgxWXRrI
- eVuSc5hvG+L6EBOkcXNmJSqFPLOL69cVVVkjFbY/1ry7IHQKo6
- h7NLt3hOz/dkiPw+WdrpFYXq5LD1ZYm8IPGk0t2Aw8rgmTKLwd
- sSrxKRY5eRbkfo/3/VXEIXt2bWBvVpwJ8UTS3szcH
+X-Provags-ID: V02:K0:+l1N1EIiPVxaaRGaqdJCPQj9LwAWETjP3T3iFFp3Wze
+ irBxSuP2EW4CiJksoSj6MWKL5bicRhuyy4PSsUWjTJyx88M3OR
+ 3vxUdo3hLB82adjFlha6xwyb9uOruqO8vfogDaCMusCIWIjQ8v
+ xIgPIM41NgiObBz+xTE3UF60W4TFLhxTyW5gnRt52JfjtvnvCB
+ nScgnfhRclzMg0YWvCPfWc2aLdwy+VLVYxWlQAyYVxGat6/VRt
+ kvo63M0hehyThFnThlkBghR2MlMTZ87Qe5qv1uOzOeVyFfI2ck
+ bAi7jtyLebPT4WbrMadmnZxyy5CAhiAEvQOfELxDHSh11Wt6yu
+ tx7UkyMt+hJLML7S1Ri6NM1jUgm2scAZmX07267Tx
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit fb584511c4664573097ece7df0de06ad00b713a2:
+The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c:
 
-  ARM: OMAP: sdrc: Fix the build break for OMAP4 only builds (2012-07-09 01:44:11 -0700)
+  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/clk
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/defconfig
 
-for you to fetch changes up to 36c678f3c91ac92e9524abcf9b39f9f539d60279:
+for you to fetch changes up to 2d05bf6ef7391ac3642ab62bc3a649fdb32731fe:
 
-  Merge tag 'imx-clk' of git://git.pengutronix.de/git/imx/linux-2.6 into next/clk (2012-07-17 22:41:50 +0200)
-
-----------------------------------------------------------------
-
-arm-soc: clk changes
-
-Clock support is moving to the clk subsystem. These tegra, omap and imx
-changes are for code that is still platform specific and not (yet)
-part of that subsystem.
+  Merge branch 'samsung/defconfig' into next/defconfig (2012-07-21 23:22:35 +0200)
 
 ----------------------------------------------------------------
 
-Alexander Shiyan (4):
-      ARM: i.MX5x clocks: Add EPIT support
-      ARM: i.MX5x clocks: Fix parent for PWM clocks
-      ARM: i.MX5x clocks: Fix GPT clocks
-      ARM: i.MX5x CSPI: Fixed clock name for CSPI
+arm-soc: defconfig updates
+
+These are changes to the default configuration files, to account for
+kernel changes and new hardware.
+
+----------------------------------------------------------------
 
 Arnd Bergmann (6):
-      Merge branch 'tegra/cleanup' into next/clk
-      Merge branch 'for-3.6/common-clk' of git://git.kernel.org/.../swarren/linux-tegra into next/clk
-      Merge branch 'omap/cleanup2' into next/clk
-      Merge tag 'omap-devel-am33xx-data-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/clk
-      Merge tag 'imx-clk' of git://git.pengutronix.de/git/imx/linux-2.6 into next/clk
-      Merge branch 'next/clk' into for-next
+      Merge branch 'lpc32xx/defconfig' of git://git.antcom.de/linux-2.6 into next/defconfig
+      Merge branch 'mxs/defconfig-for-3.6' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/defconfig
+      Merge branch 'for-3.6/defconfig' of git://git.kernel.org/.../swarren/linux-tegra into next/defconfig
+      Merge tag 'imx-defconfig' of git://git.pengutronix.de/git/imx/linux-2.6 into next/defconfig
+      Merge branch 'samsung/defconfig' into next/defconfig
+      Merge branch 'next/defconfig' into for-next
 
-Fabio Estevam (3):
-      ARM: clk-imx27: Fix rtc clock id
-      ARM: mx27: Reenable silicon version print
-      ARM: imx: clk-imx31: Fix clock id for rnga driver
+Fabio Estevam (5):
+      ARM: mxs: Let GPMI driver be built by default
+      ARM: mxs: Enable MACH_APX4DEVKIT
+      ARM: mxs_defconfig: Let AUART driver be built by default
+      ARM: mxs_defconfig: Enable RTC driver
+      ARM: mxs: defconfig: Enable CONFIG_COMMON_CLK_DEBUG
 
-Laxman Dewangan (1):
-      ARM: tegra: dma: rename driver name for clock to "tegra-apbdma"
+Olof Johansson (1):
+      ARM: exynos_defconfig: enable more platforms in defconfig
 
-Paul Walmsley (1):
-      ARM: OMAP3+: clock: Move common clksel_rate & clock data to common file
+Roland Stigge (1):
+      ARM: LPC32xx: Defconfig update
 
-Prashant Gaikwad (10):
-      ARM: tegra: add clk_prepare/clk_unprepare
-      i2c: tegra: Add clk_prepare/clk_unprepare
-      mmc: tegra: add clk_prepare/clk_unprepare
-      USB: ehci-tegra: add clk_prepare/clk_unprepare
-      Input: tegra-kbc - add clk_prepare/clk_unprepare
-      spi/tegra: add clk_prepare/clk_unprepare
-      staging: nvec: add clk_prepare/clk_unprepare
-      ASoC: tegra: add clk_prepare/clk_unprepare
-      crypto: add clk_prepare/clk_unprepare
-      ARM: tegra: Remove second instance of uart clk
+Sascha Hauer (2):
+      ARM: imx_v6_v7_defconfig: update features
+      ARM: imx_v4_v5_defconfig: update features
 
-Simon Que (1):
-      ARM: tegra: Fix PWM clock programming
+Stephen Warren (1):
+      ARM: tegra: defconfig updates
 
-Thierry Reding (1):
-      ARM: tegra: Provide clock for only one PWM controller
-
-Tony Lindgren (1):
-      Merge tag 'omap-devel-e-for-3.5' of git://git.kernel.org/.../pjw/omap-pending into devel-am33xx-data
-
-Uwe Kleine-König (1):
-      ARM: imx: add missing item to the list of clock event modes
-
-Vaibhav Hiremath (1):
-      ARM: OMAP3+: clock33xx: Add AM33XX clock tree data
-
- arch/arm/mach-imx/clk-imx27.c                 |    4 +-
- arch/arm/mach-imx/clk-imx31.c                 |    4 +-
- arch/arm/mach-imx/clk-imx51-imx53.c           |   23 +-
- arch/arm/mach-omap2/Makefile                  |    1 +
- arch/arm/mach-omap2/clock.h                   |   14 +
- arch/arm/mach-omap2/clock33xx_data.c          | 1105 +++++++++++++++++++++++++
- arch/arm/mach-omap2/clock3xxx_data.c          |   20 +-
- arch/arm/mach-omap2/clock44xx_data.c          |   72 --
- arch/arm/mach-omap2/clock_common_data.c       |   77 ++
- arch/arm/mach-omap2/io.c                      |    2 +
- arch/arm/mach-tegra/cpu-tegra.c               |    6 +-
- arch/arm/mach-tegra/dma.c                     |    4 +-
- arch/arm/mach-tegra/pcie.c                    |    6 +-
- arch/arm/mach-tegra/powergate.c               |    4 +-
- arch/arm/mach-tegra/tegra2_clocks.c           |   58 +-
- arch/arm/mach-tegra/tegra30_clocks.c          |   28 +-
- arch/arm/mach-tegra/timer.c                   |    4 +-
- arch/arm/mach-tegra/usb_phy.c                 |   16 +-
- arch/arm/plat-mxc/devices/platform-spi_imx.c  |    2 +-
- arch/arm/plat-mxc/time.c                      |    3 +-
- arch/arm/plat-omap/include/plat/clkdev_omap.h |    1 +
- drivers/crypto/tegra-aes.c                    |   12 +-
- drivers/i2c/busses/i2c-tegra.c                |   10 +-
- drivers/input/keyboard/tegra-kbc.c            |    4 +-
- drivers/mmc/host/sdhci-tegra.c                |    6 +-
- drivers/spi/spi-tegra.c                       |    4 +-
- drivers/staging/nvec/nvec.c                   |    8 +-
- drivers/usb/host/ehci-tegra.c                 |   20 +-
- sound/soc/tegra/tegra20_i2s.c                 |    4 +-
- sound/soc/tegra/tegra20_spdif.c               |    4 +-
- sound/soc/tegra/tegra30_ahub.c                |    8 +-
- sound/soc/tegra/tegra30_i2s.c                 |    4 +-
- sound/soc/tegra/tegra_asoc_utils.c            |   12 +-
- 33 files changed, 1347 insertions(+), 203 deletions(-)
+ arch/arm/configs/exynos_defconfig    |   92 ++++++++++++++++++++++++++++++++++
+ arch/arm/configs/imx_v4_v5_defconfig |   51 +++++++++----------
+ arch/arm/configs/imx_v6_v7_defconfig |   61 +++++++++++++---------
+ arch/arm/configs/lpc32xx_defconfig   |    2 +
+ arch/arm/configs/mxs_defconfig       |    7 +++
+ arch/arm/configs/tegra_defconfig     |   13 +++--
+ 6 files changed, 170 insertions(+), 56 deletions(-)
