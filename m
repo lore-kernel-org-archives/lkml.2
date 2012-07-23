@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab2GWVMT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 17:12:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39694 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab2GWVMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 17:12:16 -0400
-Date: Mon, 23 Jul 2012 14:12:12 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Daniel Wisehart <daniel.wisehart@eladian.com>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: [Bcache v14 PATCH] fix compiler error
-Message-ID: <20120723211212.GA29052@google.com>
-References: <1abe2159-2201-46c4-9c60-afc4f358ff6a@mail.eladian.com>
- <0d1ae163-7cde-4a78-852a-04fba827249f@mail.eladian.com>
+	id S1754903Ab2GWVNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 17:13:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53980 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754663Ab2GWVNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 17:13:43 -0400
+Date: Mon, 23 Jul 2012 22:13:34 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [MMTests] Sysbench read-only on ext3
+Message-ID: <20120723211334.GA9222@suse.de>
+References: <20120620113252.GE4011@suse.de>
+ <20120629111932.GA14154@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <0d1ae163-7cde-4a78-852a-04fba827249f@mail.eladian.com>
+In-Reply-To: <20120629111932.GA14154@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 04:53:26PM -0400, Daniel Wisehart wrote:
-> Hello Kent, 
-> 
-> This patch keeps gcc 4.7.0 happy.  The static function dump_bset() could be moved, but that would have made a bigger patch.  :-)
+Configuration:	global-dhp__io-sysbench-large-ro-ext3
+Result: 	http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-sysbench-large-ro-ext3
+Benchmarks:	sysbench
 
-Thanks! dump_bset() does need to be moved so it's available if DEBUG or
-EDEBUG are on, but thanks for pointing it out :)
+Summary
+=======
 
-> 
-> Thanks,
-> Daniel
-> 
-> 
-> 
-> diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
-> index 3c9c24d..4dc0ba5 100644
-> --- a/drivers/md/bcache/debug.c
-> +++ b/drivers/md/bcache/debug.c
-> @@ -83,6 +83,8 @@ struct keyprint_hack bch_pbtree(const struct btree *b)
->  
->  #ifdef CONFIG_BCACHE_DEBUG
->  
-> +static void dump_bset(struct btree *b, struct bset *i);
-> +
->  void bch_btree_verify(struct btree *b, struct bset *new)
->  {
->         struct btree *v = b->c->verify_data;
-> 
-> 
-> This communication is restricted - please see http://www.eladian.com for further information.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Very large number of regressions.
+
+Benchmark notes
+===============
+
+mkfs was run on system startup. No attempt was made to age it. No
+special mkfs or mount options were used.
+
+sysbench is an OLTP-like benchmark. The test type was "complex" and
+read-only. The table size was 50,000,000 rows regardless of memory size
+but far exceeds the memory size of any of the test machines. sysbench
+was chosen because it's a reasonably complex OLTP-like benchmark with
+straight-forward prerequisites.
+
+The backing database was postgres.
+
+===========================================================
+Machine:	arnold
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-sysbench-large-ro-ext3/arnold/comparison.html
+Arch:		x86
+CPUs:		1 socket, 2 threads
+Model:		Pentium 4
+Disk:		Single Rotary Disk
+===========================================================
+
+sysbench
+--------
+  Oddly two clients is better but 1 or 4 is worse. 
+
+  Swapping for kernels 3.1 and 3.2 is crazy. Direct reclaim started since
+  2.6.39 and has not eased off but in the context of the overall test is
+  very low.
+
+==========================================================
+Machine:	hydra
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-sysbench-large-ro-ext3/hydra/comparison.html
+Arch:		x86-64
+CPUs:		1 socket, 4 threads
+Model:		AMD Phenom II X4 940
+Disk:		Single Rotary Disk
+Status:		Ok
+==========================================================
+
+sysbench
+--------
+  There are a lot of regressions here that were mostly introduced between
+  2.6.39 and 3.0. In general, this is looking bad.
+
+  Swapping in kernel 3.1 was higher.
+
+==========================================================
+Machine:	sandy
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-sysbench-large-ro-ext3/sandy/comparison.html
+Arch:		x86-64
+CPUs:		1 socket, 8 threads
+Model:		Intel Core i7-2600
+Disk:		Single Rotary Disk
+Status:		
+==========================================================
+
+  Generally this is telling a much better story but this could be because
+  of the much larger memory size of this machine offsetting some other
+  regression.
+
+  Swapping in 3.1 and 3.2.
+
+-- 
+Mel Gorman
+SUSE Labs
