@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab2GWNk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:40:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58780 "EHLO mx2.suse.de"
+	id S1753958Ab2GWNlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:41:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58772 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753693Ab2GWNjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753672Ab2GWNjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jul 2012 09:39:06 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 29/34] mm: test PageSwapBacked in lumpy reclaim
-Date: Mon, 23 Jul 2012 14:38:42 +0100
-Message-Id: <1343050727-3045-30-git-send-email-mgorman@suse.de>
+Subject: [PATCH 28/34] mm/vmscan.c: consider swap space when deciding whether to continue reclaim
+Date: Mon, 23 Jul 2012 14:38:41 +0100
+Message-Id: <1343050727-3045-29-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,41 +20,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+From: Minchan Kim <minchan@kernel.org>
 
-commit 043bcbe5ec51e0478ef2b44acef17193e01d7f70 upstream.
+commit 86cfd3a45042ab242d47f3935a02811a402beab6 upstream.
 
-Stable note: Not tracked in Bugzilla. There were reports of shared
-	mapped pages being unfairly reclaimed in comparison to older kernels.
-	This is being addressed over time. Even though the subject
-	refers to lumpy reclaim, it impacts compaction as well.
+Stable note: Not tracked in Bugzilla. This patch reduces kswapd CPU
+	usage on swapless systems with high anonymous memory usage.
 
-Lumpy reclaim does well to stop at a PageAnon when there's no swap, but
-better is to stop at any PageSwapBacked, which includes shmem/tmpfs too.
+It's pointless to continue reclaiming when we have no swap space and lots
+of anon pages in the inactive list.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+Without this patch, it is possible when swap is disabled to continue
+trying to reclaim when there are only anonymous pages in the system even
+though that will not make any progress.
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/vmscan.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index da195c2..e5382ad 100644
+index 8b98a75..da195c2 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1199,7 +1199,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 			 * anon page which don't already have a swap slot is
- 			 * pointless.
- 			 */
--			if (nr_swap_pages <= 0 && PageAnon(cursor_page) &&
-+			if (nr_swap_pages <= 0 && PageSwapBacked(cursor_page) &&
- 			    !PageSwapCache(cursor_page))
- 				break;
- 
+@@ -2008,8 +2008,9 @@ static inline bool should_continue_reclaim(struct zone *zone,
+ 	 * inactive lists are large enough, continue reclaiming
+ 	 */
+ 	pages_for_compaction = (2UL << sc->order);
+-	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON) +
+-				zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
++	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
++	if (nr_swap_pages > 0)
++		inactive_lru_pages += zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
+ 	if (sc->nr_reclaimed < pages_for_compaction &&
+ 			inactive_lru_pages > pages_for_compaction)
+ 		return true;
 -- 
 1.7.9.2
 
