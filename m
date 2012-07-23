@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab2GWCPo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:15:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57377 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab2GWCPm (ORCPT
+	id S1753266Ab2GWCXi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:23:38 -0400
+Received: from mail.windriver.com ([147.11.1.11]:52273 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab2GWCXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 22:15:42 -0400
-Message-ID: <500CB3CC.4070800@vflare.org>
-Date: Sun, 22 Jul 2012 22:15:40 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Sun, 22 Jul 2012 22:23:36 -0400
+Message-ID: <500CB74A.4040300@windriver.com>
+Date: Mon, 23 Jul 2012 10:30:34 +0800
+From: xufeng zhang <xufeng.zhang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] zsmalloc: add page table mapping method
-References: <1342630556-28686-1-git-send-email-sjenning@linux.vnet.ibm.com> <1342630556-28686-3-git-send-email-sjenning@linux.vnet.ibm.com> <20120723002655.GC4037@bbox>
-In-Reply-To: <20120723002655.GC4037@bbox>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: <xufengzhang.main@gmail.com>, <vyasevich@gmail.com>, <sri@us.ibm.com>,
+        <davem@davemloft.net>, <linux-sctp@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
+ SACK when bundling
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com> <20120723004932.GB8040@neilslaptop.think-freely.org>
+In-Reply-To: <20120723004932.GB8040@neilslaptop.think-freely.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2012 08:26 PM, Minchan Kim wrote:
-> On Wed, Jul 18, 2012 at 11:55:56AM -0500, Seth Jennings wrote:
->> This patchset provides page mapping via the page table.
->> On some archs, most notably ARM, this method has been
->> demonstrated to be faster than copying.
->>
->> The logic controlling the method selection (copy vs page table)
->> is controlled by the definition of USE_PGTABLE_MAPPING which
->> is/can be defined for any arch that performs better with page
->> table mapping.
->>
->> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->> ---
->>  drivers/staging/zsmalloc/zsmalloc-main.c |  182 ++++++++++++++++++++++--------
->>  drivers/staging/zsmalloc/zsmalloc_int.h  |    6 -
->>  2 files changed, 134 insertions(+), 54 deletions(-)
->>
->> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
->> index b86133f..defe350 100644
->> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
->> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
->> @@ -89,6 +89,30 @@
->>  #define CLASS_IDX_MASK	((1 << CLASS_IDX_BITS) - 1)
->>  #define FULLNESS_MASK	((1 << FULLNESS_BITS) - 1)
->>  
->> +/*
->> + * By default, zsmalloc uses a copy-based object mapping method to access
->> + * allocations that span two pages. However, if a particular architecture
->> + * 1) Implements local_flush_tlb_kernel_range() and 2) Performs VM mapping
->> + * faster than copying, then it should be added here so that
-> 
-> How about adding your benchmark url?
-> 
->> + * USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use page table
->> + * mapping rather than copying
->> + * for object mapping.
-> 
-> unnecessary new line.
-> 
->> +*/
->> +#if defined(CONFIG_ARM)
->> +#define USE_PGTABLE_MAPPING
->> +#endif
-> 
-> I had no better idea and I would like to add zsmalloc into mainline.
-> So no objection.
-> Nitin?
-> 
+On 07/23/2012 08:49 AM, Neil Horman wrote:
+>
+> Not sure I understand how you came into this error.  If we get an invalid
+> stream, we issue an SCTP_REPORT_TSN side effect, followed by an SCTP_CMD_REPLY
+> which sends the error chunk.  The reply goes through
+> sctp_outq_tail->sctp_outq_chunk->sctp_outq_transmit_chunk->sctp_outq_append_chunk.
+> That last function checks to see if a sack is already part of the packet, and if
+> there isn't one, appends one, using the updated tsn map.
+Yes, you are right, but consider the invalid stream identifier's DATA 
+chunk is the first
+DATA chunk in the association which will need SACK immediately.
+Here is what I thought of the scenario:
+     sctp_sf_eat_data_6_2()
+         -->sctp_eat_data()
+             -->sctp_make_op_error()
+             -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(err))
+             -->sctp_outq_tail()          /* First enqueue ERROR chunk */
+         -->sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE())
+             -->sctp_gen_sack()
+                 -->sctp_make_sack()
+                 -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, 
+SCTP_CHUNK(sack))
+                 -->sctp_outq_tail()          /* Then enqueue SACK chunk */
 
-Same here. I just cannot think of anything better for now.
+So SACK chunk is enqueued after ERROR chunk.
+> So Can you explain in
+> some more detail how you're getting into this situation?
+>    
+Actually it's triggered by a customer's test case, but we can also 
+reproduce this problem
+easily by explicitly contaminating the sctp stack:
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -701,7 +701,7 @@ struct sctp_chunk *sctp_make_datafrag_empty(struct 
+sctp_association *asoc,
+          * creating the chunk.
+          */
+         dp.tsn = 0;
+-       dp.stream = htons(sinfo->sinfo_stream);
++       dp.stream = htons(sinfo->sinfo_stream) + 10;
+         dp.ppid   = sinfo->sinfo_ppid;
 
-Thanks for your efforts.
-Nitin
+         /* Set the flags for an unordered send.  */
 
+
+Then run sctp_darn application and capture the sctp packet at the same time.
+
+
+
+Thanks,
+Xufeng Zhang
+> Thanks!
+> Neil
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>    
 
