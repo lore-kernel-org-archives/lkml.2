@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab2GWNIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:08:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57287 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab2GWNI2 (ORCPT
+	id S1753253Ab2GWNO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:14:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48310 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab2GWNO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:08:28 -0400
-Date: Mon, 23 Jul 2012 15:08:25 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Subject: Re: [PATCH] PWM: Add support for configuring polarity of PWM
-Message-ID: <20120723130825.GA21254@avionic-0098.mockup.avionic-design.de>
-References: <1342616053-7793-1-git-send-email-avinashphilip@ti.com>
- <20120723083032.GA12868@avionic-0098.mockup.avionic-design.de>
- <518397C60809E147AF5323E0420B992E3E97189D@DBDE01.ent.ti.com>
+	Mon, 23 Jul 2012 09:14:26 -0400
+Date: Mon, 23 Jul 2012 08:14:19 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lwn@lwn.net,
+        "criu@openvz.org" <criu@openvz.org>, users@openvz.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [Announce] Checkpoint-restore tool v0.1
+Message-ID: <20120723131419.GB4923@sergelap>
+References: <500D09C9.7060903@parallels.com>
+ <500D1116.7070301@parallels.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <518397C60809E147AF5323E0420B992E3E97189D@DBDE01.ent.ti.com>
+In-Reply-To: <500D1116.7070301@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:3fNJXJleFBRc6ZLgsWy4sPvgUB/ZwHMAIWxtEbHqhlI
- TYwFV9slgM7on8tCDlp0ZKkGBnYz6zrCTY5OUe+X8MGHFA9yjY
- kKlpC3lfAa8uLB0Xsxgi082z2MSPBrkjh1KOSGyfnjI/0XNYqM
- PiP/N4VAASyg09e1ltnHsxPGme6i19Zm6NsB91VpkBpv8SRN2l
- xMsWU9yqhY1mnQoXe4UaQ2BlLdkyEMaFcb8izHVdAlUN1g1Uy+
- 2HptoR9JWUScd7mmcbubcQ6dztcqY52OlmtQBXBmezULW0Z64d
- +v//AkcrS4rwCv0l3xYVl+5A3giqUo6KJvV+6jcsv82qkLdvSA
- 51/5wVB/itxzTKe8EwLiVtC5H6OveTvM0+mJzMtsm8nqhLaRc2
- O9N3cmuJ6C1kYbMryIc6LrXKokKfS4JfvgLg3RZcPjKnTySXRo
- Z2zmi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Pavel Emelyanov (xemul@parallels.com):
+> Fixing the bogus containers@ ml and adding cgroups@ one. Sorry :(
+> 
+> == Original message ==
+> 
+> Hi!
+> 
+> I'm glad to announce the first release of the checkpoint-restore tool.
+> 
+> 
+> This project is an attempt to implement the checkpoint-restore functionality
+> for processes and containers without driving too much code into the kernel tree,
+> but putting there "various oddball helper code" instead.
+> 
+> The tool can already be used for checkpointing and restoring various individual
+> applications. And the greatest thing about this so far is that most of the below
+> functionality has the required kernel support in the recently released v3.5!
+> 
+> So, we support now
+> 
+> * x86_64 architecture
+> * process' linkage
+> * process groups and sessions (without ttys though :\ )
+> * memory mappings of any kind (shared, file, etc.)
+> * threads
+> * open files (shared between tasks and partially opened-and-unlinked)
+> * pipes and fifos with data
+> * unix sockets with packet queues contents
+> * TCP and UDP sockets (TCP connections support exists, but needs polishing)
+> * inotifies, eventpoll and eventfd
+> * tasks' sigactions setup, credentials and itimers
+> * IPC, mount and PID namespaces
+> 
+> Though namespaces support is in there, we do not yet support an LXC container c/r,
+> but we're close to it :)
+> 
+> 
+> I'd like to thank everyone who took part in new kernel APIs discussions, the
+> feedback was great! Special thanks goes to Linus for letting the kernel parts
+> in early, instead of making them sit out of tree till becoming stable enough.
+> 
+> 
+> Tarball with the tool sources is at
+> 
+>   http://download.openvz.org/criu/crtools-0.1.tar.bz2
+> 
+> The git repo is at
+> 
+>   http://git.criu.org/
+> 
+> And some sort of docs growing at
+> 
+>   http://criu.org/
+> 
+> 
+> There are still things for which we don't have the kernel support merged (SysVIPC
+> and various anon file descriptors, i.e. inotify, eventpoll, eventfd) yet. We have
+> the kernel branch with the stuff applied available at
+> 
+>   https://github.com/cyrillos/linux-2.6.git
+> 
+> 
+> Thanks,
+> Pavel
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Jul 23, 2012 at 12:51:11PM +0000, Philip, Avinash wrote:
-> On Mon, Jul 23, 2012 at 14:00:32, Thierry Reding wrote:
-> > On Wed, Jul 18, 2012 at 06:24:13PM +0530, Philip, Avinash wrote:
-[...]
-> > > +
-> > > +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-> > > +		dev_err(pwm->chip->dev,
-> > > +			"Polarity configuration Failed!, PWM device enabled\n");
-> > > +		return -EBUSY;
-> > > +	}
-> >=20
-> > Maybe something like: "polarity cannot be configured while PWM device is
-> > enabled"?
->=20
-> Ok I will update.
->=20
-> > Though I'm not sure the error message is all that useful. I'd
-> > expect the user driver to handle -EBUSY specially.
->=20
-> On EBUSY, client driver has to rework on it. Nothing to be done from
-> framework
-
-Exactly, so I think that if an error is displayed because the PWM has
-been enabled, then that client (=3D=3D user) driver should output an error
-message, not the framework. Also, it really shouldn't happen because it
-clearly is a driver problem that needs to be fixed.
-
-> > >  /*
-> > >   * pwm_enable - start a PWM output toggling
-> > >   */
-> > > @@ -37,6 +47,7 @@ struct pwm_chip;
-> > >  enum {
-> > >  	PWMF_REQUESTED =3D 1 << 0,
-> > >  	PWMF_ENABLED =3D 1 << 1,
-> > > +	PWMF_POLARITY_INVERSE =3D 1 << 2,
-> >=20
-> > This should be named PWMF_POLARITY_INVERSED for consistency.
->=20
-> Ok I will correct it.
->=20
-> > I'm not sure that we really need this flag, though. It isn't used anywh=
-ere. But
-> > maybe you have a use-case in mind?
->=20
-> It can be used to find the polarity of the PWM at runtime.
-
-Yes, but is there any use-case where this information would be required?
-
-Thierry
-
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQDUzJAAoJEN0jrNd/PrOhlMUP/RRHqEdxWyFUNGT8MT4eVhx+
-k3Y+E6v75hHUuPDp8KGDAktIRmuk6vzu4BB3QT1zvCIbdWLxKS701M4zn+yUeYWM
-MsCaByd9mcvO+RMGEDfsvjPUtg01BEjLS/zTPhSNQAzYjA7yhmoLCZt177X9xi7a
-ad3M2Gr0CW47qLhr3R/DzG6gM1NB3JoByjiKsgM9ZddbpFeYwKsq3UrjUj3z0XQw
-X0Y7+mHj9yIHIGbTKn3KXp/gjB2B77272cjJ0tR+5U5A1ZQcNL2edDKOgXGT7Ies
-pViXdrML0O++Bjeqjk+0zp+Dh62y0DuDb+Iyu+FVIUwXY/YYX+KWs1ayohSZ3sHv
-pTY7XrisycBWEpt7WsyVgvRcO3YU9htJOR29km6Wv89rLHcfeNk0+2QwlnqWtdaT
-UpANvzAXKnMeV4UWqY0z629DCxThkQXNsMKNx54JQ7r2bfuJc8belsvzbU2e00Rh
-pmp1lHvUh2HZmLEMEz4cFgEdc9AKyn4z1Y4KhKPoNrhiBrXzw7b9aTUaa5WMQF85
-yYXPG8VxZsKFJJn+7LXjoqiuAC2ExUYREOjPK0KXGP4HEAQu3Uhsyf41r23FgvHT
-GnHwrAVlKLOFy/Uk7NmGgCGeXYezHVHv6IZQd41EznUQqmi2Y9Sz7atmC9SdDTTo
-yOViLeGuZI4JS9Z3GN3X
-=E2wi
------END PGP SIGNATURE-----
-
---3MwIy2ne0vdjdPXF--
+Awesome - thanks, Pavel, and congratulations :)  I'll have to give it a
+spin as soon as I get a chance.
