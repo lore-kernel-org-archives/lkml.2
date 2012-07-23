@@ -1,57 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab2GWMWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 08:22:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33361 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab2GWMWm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 08:22:42 -0400
-Message-ID: <1343046143.2583.60.camel@twins>
-Subject: Re: [PATCH] perf/x86: Fix LLC-* and node-* events on Intel
- SandyBridge
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <yanzheng@21cn.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@gmail.com>
-Date: Mon, 23 Jul 2012 14:22:23 +0200
-In-Reply-To: <CAAM7YAms2cTgzJCr3qePyb_P+x4ZaX5XteT_0zDGfvYZ8UydhA@mail.gmail.com>
-References: <1342517275-2875-1-git-send-email-zheng.z.yan@intel.com>
-	 <1342802895.2583.16.camel@twins>
-	 <CAAM7YAms2cTgzJCr3qePyb_P+x4ZaX5XteT_0zDGfvYZ8UydhA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752870Ab2GWM3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 08:29:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18918 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752423Ab2GWM3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 08:29:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="183999171"
+Date: Mon, 23 Jul 2012 20:29:05 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@parisc-linux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Subject: Re: [next:akpm 129/309] net/core/sock.c:274:36: error: initializer
+ element is not constant
+Message-ID: <20120723122905.GA22476@localhost>
+References: <20120722163058.GB13376@localhost>
+ <20120723111619.GT9222@suse.de>
+ <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
+ <20120723114258.GV9222@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120723114258.GV9222@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-22 at 19:43 +0800, Yan, Zheng wrote:
-> On Sat, Jul 21, 2012 at 12:48 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Tue, 2012-07-17 at 17:27 +0800, Yan, Zheng wrote:
-> >> From: "Yan, Zheng" <zheng.z.yan@intel.com>
-> >>
-> >> LLC-* and node-* events require using the OFFCORE_RESPONSE events
-> >> on SandyBridge, but the hw_cache_extra_regs is left uninitialized.
-> >> This patch adds the missing extra register configure table for
-> >> SandyBridge.
-> >
-> > Last time I tried this I couldn't get sane numbers out of it..
-> >
-> > Does these encodings work, if so, do explain them.
-> >
+On Mon, Jul 23, 2012 at 12:42:58PM +0100, Mel Gorman wrote:
+> On Mon, Jul 23, 2012 at 12:20:20PM +0100, James Bottomley wrote:
+> > [Parisc list cc added]
+> > On Mon, 2012-07-23 at 12:16 +0100, Mel Gorman wrote:
+> > > On Mon, Jul 23, 2012 at 12:30:58AM +0800, Fengguang Wu wrote:
+> > > > Hi Mel,
+> > > > 
+> > > > To be frank, I don't quite understand this build failure..
+> > > > 
+> > > > tree:   next/akpm akpm
+> > > > head:   37e2ad4953983527f7bdb6831bf478eedcc84082
+> > > > commit: 799dc3a908b1df8b766c35aefc24c1b5356aa051 [129/309] netvm: allow skb allocation to use PFMEMALLOC reserves
+> > > > config: parisc-defconfig (attached as .config)
+> > > > 
+> > > > All related error/warning messages:
+> > > > 
+> > > > net/core/sock.c:274:36: error: initializer element is not constant
+> > > > net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
+> > > > net/core/sock.c:274:36: error: initializer element is not constant
+> > > > 
+> > > 
+> > > It looks parisc specific so am adding some parisc because this builds but
+> > > I am less sure if it is actually correct. If it's correct, it should be
+> > > appear before the swap-over-nfs patches to avoid bisection problems.
+> > > I've added some parisc folk for review.
+> > > 
+> > > ---8<---
+> > > parisc: Redefine ATOMIC_INIT and ATOMIC64_INIT like other architectures
+> > > 
+> > > The following build error occured during a parisc build with
+> > > swap-over-NFS patches applied.
+> > > 
+> > > net/core/sock.c:274:36: error: initializer element is not constant
+> > > net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
+> > > net/core/sock.c:274:36: error: initializer element is not constant
+> > > 
+> > > It's not obvious but this is due to how ATOMIC_INIT is defined on
+> > > parisc. It should affect any user of STATIC_KEY_INIT_FALSE on that
+> > > platform.
+> > > 
+> > > This patch makes the definition of ATOMIC_INIT on parisc to look like
+> > > other arches definition.
+> > > 
+> > > Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > ---
+> > >  arch/parisc/include/asm/atomic.h |    4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/arch/parisc/include/asm/atomic.h b/arch/parisc/include/asm/atomic.h
+> > > index 6c6defc..af9cf30 100644
+> > > --- a/arch/parisc/include/asm/atomic.h
+> > > +++ b/arch/parisc/include/asm/atomic.h
+> > > @@ -141,7 +141,7 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
+> > >  
+> > >  #define atomic_sub_and_test(i,v)	(atomic_sub_return((i),(v)) == 0)
+> > >  
+> > > -#define ATOMIC_INIT(i)	((atomic_t) { (i) })
+> > > +#define ATOMIC_INIT(i)	{ (i) }
+> > >  
+> > >  #define smp_mb__before_atomic_dec()	smp_mb()
+> > >  #define smp_mb__after_atomic_dec()	smp_mb()
+> > > @@ -150,7 +150,7 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
+> > >  
+> > >  #ifdef CONFIG_64BIT
+> > >  
+> > > -#define ATOMIC64_INIT(i) ((atomic64_t) { (i) })
+> > > +#define ATOMIC64_INIT(i) { (i) }
+> > >  
+> > >  static __inline__ s64
+> > >  __atomic64_add_return(s64 i, atomic64_t *v)
+> > 
+> > OK, I don't understand this either ... why would not casting to the
+> > appropriate type suddenly stop warning about the initialiser being non
+> > constant.  It looks like some type of gcc bug to me. 
 > 
-> I have tested them and compared the results with Nehalme. I think
-> they do work.
+> I agree. I could not see any functional difference as such either but also
+> could not figure out why gcc would get it right for some arches and not
+> for others.
 
-OK, great, thanks!
+Will gcc create a temporary (and hence non constant) value for the
+conversion?
 
-> > I guess I can take this as an 'official' publication of this fact?
-> >
-> > (I knew those bits meant this, but I never got a response if I could
-> > publish that information.)
-> >
-> See chapter 18.8.7 of Intel 64 SDM Volume 3 (Order Number 325384)
+> > Our toolchain
+> > expert (Dave) hangs out on the parisc list ... he'll want to know your
+> > gcc -v.
+> > 
+> 
+> I'm using the cross-compiler from
+> ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/. I do
+> not know what compiler Fengguang Wu was using. 
 
-D'0h, that's confusing.. I was staring at 18.8.5..
+Yeah that's handy binaries and I'm using them in the x86 compile
+servers. However this particular parisc-defconfig is compile tested in
+an ia64 machine which is built from debian's gcc-4.7 source:
+
+Using built-in specs.
+COLLECT_GCC=/opt/cross/bin/hppa-linux-gcc
+COLLECT_LTO_WRAPPER=/opt/cross/libexec/gcc/hppa-linux/4.7/lto-wrapper
+Target: hppa-linux
+Configured with: /home/wfg/buildall/gcc-4.7-4.7.1/src/configure --target=hppa-linux --enable-targets=all --prefix=/opt/cross --enable-lang
+uages=c --without-headers --enable-sjlj-exceptions --with-system-libunwind --disable-nls --disable-threads --disable-shared --disable-libmudflap --disable-libssp --disable-libgomp --disable-decimal-float --disable-libquadmath --enable-checking=release                         Thread model: single
+gcc version 4.7.1 (GCC) 
+
+Thanks,
+Fengguang
+
+> Using built-in specs.
+> COLLECT_GCC=/home/mel/git-public/cross-compilers/gcc-4.6.3-nolibc/hppa-linux/bin/hppa-linux-gcc
+> COLLECT_LTO_WRAPPER=/home/mel/git-public/cross-compilers/gcc-4.6.3-nolibc/hppa-linux/bin/../libexec/gcc/hppa-linux/4.6.3/lto-wrapper
+> Target: hppa-linux
+> Configured with: /home/tony/buildall/src/gcc/configure
+> --target=hppa-linux --host=x86_64-linux-gnu --build=x86_64-linux-gnu
+> --enable-targets=all --prefix=/opt/cross/gcc-4.6.3-nolibc/hppa-linux/
+> --enable-languages=c --with-newlib --without-headers
+> --enable-sjlj-exceptions --with-system-libunwind --disable-nls
+> --disable-threads --disable-shared --disable-libmudflap --disable-libssp
+> --disable-libgomp --disable-decimal-float --enable-checking=release
+> --with-mpfr=/home/tony/buildall/src/sys-x86_64
+> --with-gmp=/home/tony/buildall/src/sys-x86_64 --disable-bootstrap
+> --disable-libquadmath
+> Thread model: single
+> gcc version 4.6.3 (GCC) 
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
