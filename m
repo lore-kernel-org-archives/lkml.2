@@ -1,114 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab2GWLlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 07:41:31 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:47574 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2GWLl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 07:41:29 -0400
-Date: Mon, 23 Jul 2012 07:40:57 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        eric.dumazet@gmail.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        mark.d.rustad@intel.com, john.r.fastabend@intel.com,
-        lizefan@huawei.com
-Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of
- uninitialized list
-Message-ID: <20120723114057.GA16518@hmsreliant.think-freely.org>
-References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
- <500CA599.6030907@cn.fujitsu.com>
+	id S1752538Ab2GWLnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 07:43:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49898 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750854Ab2GWLnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 07:43:03 -0400
+Date: Mon, 23 Jul 2012 12:42:58 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, kernel-janitors@vger.kernel.org,
+        Kyle McMartin <kyle@parisc-linux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Subject: Re: [next:akpm 129/309] net/core/sock.c:274:36: error: initializer
+ element is not constant
+Message-ID: <20120723114258.GV9222@suse.de>
+References: <20120722163058.GB13376@localhost>
+ <20120723111619.GT9222@suse.de>
+ <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <500CA599.6030907@cn.fujitsu.com>
+In-Reply-To: <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 09:15:05AM +0800, Gao feng wrote:
-> 于 2012年07月20日 00:27, Srivatsa S. Bhat 写道:
-> > After commit ef209f15 (net: cgroup: fix access the unallocated memory in
-> > netprio cgroup), boot fails with the following NULL pointer dereference:
+On Mon, Jul 23, 2012 at 12:20:20PM +0100, James Bottomley wrote:
+> [Parisc list cc added]
+> On Mon, 2012-07-23 at 12:16 +0100, Mel Gorman wrote:
+> > On Mon, Jul 23, 2012 at 12:30:58AM +0800, Fengguang Wu wrote:
+> > > Hi Mel,
+> > > 
+> > > To be frank, I don't quite understand this build failure..
+> > > 
+> > > tree:   next/akpm akpm
+> > > head:   37e2ad4953983527f7bdb6831bf478eedcc84082
+> > > commit: 799dc3a908b1df8b766c35aefc24c1b5356aa051 [129/309] netvm: allow skb allocation to use PFMEMALLOC reserves
+> > > config: parisc-defconfig (attached as .config)
+> > > 
+> > > All related error/warning messages:
+> > > 
+> > > net/core/sock.c:274:36: error: initializer element is not constant
+> > > net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
+> > > net/core/sock.c:274:36: error: initializer element is not constant
+> > > 
 > > 
-> > Initializing cgroup subsys devices
-> > Initializing cgroup subsys freezer
-> > Initializing cgroup subsys net_cls
-> > Initializing cgroup subsys blkio
-> > Initializing cgroup subsys perf_event
-> > Initializing cgroup subsys net_prio
-> > BUG: unable to handle kernel NULL pointer dereference at 0000000000000698
-> > IP: [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
-> > PGD 0
-> > Oops: 0000 [#1] SMP
-> > CPU 0
-> > Modules linked in:
+> > It looks parisc specific so am adding some parisc because this builds but
+> > I am less sure if it is actually correct. If it's correct, it should be
+> > appear before the swap-over-nfs patches to avoid bisection problems.
+> > I've added some parisc folk for review.
 > > 
-> > Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc7-mandeep #1 IBM IBM System x -[7870C4Q]-/68Y8033
-> > RIP: 0010:[<ffffffff8145e8d6>]  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
-> > RSP: 0000:ffffffff81a01ea8  EFLAGS: 00010213
-> > RAX: 0000000000000000 RBX: ffffffffffffff10 RCX: 0000000000000000
-> > RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffffffff81aa70a0
-> > RBP: ffffffff81a01ed8 R08: 0000000000000000 R09: 0000000000000000
-> > R10: ffff8808ff8641c0 R11: 6e697a696c616974 R12: 0000000000000001
-> > R13: ffff8808ff8641c0 R14: 0000000000000000 R15: 0000000000093970
-> > FS:  0000000000000000(0000) GS:ffff8808ffc00000(0000) knlGS:0000000000000000
-> > CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > CR2: 0000000000000698 CR3: 0000000001a0b000 CR4: 00000000000006b0
-> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > Process swapper/0 (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a13420)
-> > Stack:
-> >  ffffffff81a01eb8 ffffffff818060ff ffffffff81d75ec8 ffffffff81aa8960
-> >  ffffffff81aa8960 ffffffff81b4c2c0 ffffffff81a01ef8 ffffffff81b1cb78
-> >  0000000000000018 0000000000000048 ffffffff81a01f18 ffffffff81b1ce13
-> > Call Trace:
-> >  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
-> >  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
-> >  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
-> >  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
-> >  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
-> >  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
-> > Code: 01 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 75 1b eb 73 0f 1f 00 48 8b 83 f0 00 00 00 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 74 5a <48> 8b 83 88 07 00 00 48 85 c0 74 de 44 3b 60 10 76 d8 44 89 e6
-> > RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
-> >  RSP <ffffffff81a01ea8>
-> > CR2: 0000000000000698
-> > ---[ end trace a7919e7f17c0a725 ]---
-> > Kernel panic - not syncing: Attempted to kill the idle task!
+> > ---8<---
+> > parisc: Redefine ATOMIC_INIT and ATOMIC64_INIT like other architectures
 > > 
-> > The code corresponds to:
+> > The following build error occured during a parisc build with
+> > swap-over-NFS patches applied.
 > > 
-> > update_netdev_tables():
-> >         for_each_netdev(&init_net, dev) {
-> >                 map = rtnl_dereference(dev->priomap);  <---- HERE
+> > net/core/sock.c:274:36: error: initializer element is not constant
+> > net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
+> > net/core/sock.c:274:36: error: initializer element is not constant
 > > 
+> > It's not obvious but this is due to how ATOMIC_INIT is defined on
+> > parisc. It should affect any user of STATIC_KEY_INIT_FALSE on that
+> > platform.
 > > 
-> > The list head is initialized in netdev_init(), which is called much
-> > later than cgrp_create(). So the problem is that we are calling
-> > update_netdev_tables() way too early (in cgrp_create()), which will
-> > end up traversing the not-yet-circular linked list. So at some point,
-> > the dev pointer will become NULL and hence dev->priomap becomes an
-> > invalid access.
+> > This patch makes the definition of ATOMIC_INIT on parisc to look like
+> > other arches definition.
 > > 
-> > To fix this, just remove the update_netdev_tables() function entirely,
-> > since it appears that write_update_netdev_table() will handle things
-> > just fine.
+> > Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  arch/parisc/include/asm/atomic.h |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/parisc/include/asm/atomic.h b/arch/parisc/include/asm/atomic.h
+> > index 6c6defc..af9cf30 100644
+> > --- a/arch/parisc/include/asm/atomic.h
+> > +++ b/arch/parisc/include/asm/atomic.h
+> > @@ -141,7 +141,7 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
+> >  
+> >  #define atomic_sub_and_test(i,v)	(atomic_sub_return((i),(v)) == 0)
+> >  
+> > -#define ATOMIC_INIT(i)	((atomic_t) { (i) })
+> > +#define ATOMIC_INIT(i)	{ (i) }
+> >  
+> >  #define smp_mb__before_atomic_dec()	smp_mb()
+> >  #define smp_mb__after_atomic_dec()	smp_mb()
+> > @@ -150,7 +150,7 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
+> >  
+> >  #ifdef CONFIG_64BIT
+> >  
+> > -#define ATOMIC64_INIT(i) ((atomic64_t) { (i) })
+> > +#define ATOMIC64_INIT(i) { (i) }
+> >  
+> >  static __inline__ s64
+> >  __atomic64_add_return(s64 i, atomic64_t *v)
 > 
-> The reason I add update_netdev_tables in cgrp_create is to avoid additional
-> bound checkings when we accessing the dev->priomap.priomap.
-> 
-> Eric,can we revert this commit 91c68ce2b26319248a32d7baa1226f819d283758 now?
-> I think it's safe enough to access priomap without bound check.
-> 
-> Thanks
+> OK, I don't understand this either ... why would not casting to the
+> appropriate type suddenly stop warning about the initialiser being non
+> constant.  It looks like some type of gcc bug to me. 
+
+I agree. I could not see any functional difference as such either but also
+could not figure out why gcc would get it right for some arches and not
+for others.
+
+> Our toolchain
+> expert (Dave) hangs out on the parisc list ... he'll want to know your
+> gcc -v.
 > 
 
-I think its probably safe, yes, but lets leave it there for just a bit.  Its not
-hurting anything, and I'd like to look into getting Srivatsa' patch in first.
-Neil
+I'm using the cross-compiler from
+ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/. I do
+not know what compiler Fengguang Wu was using. 
 
+Using built-in specs.
+COLLECT_GCC=/home/mel/git-public/cross-compilers/gcc-4.6.3-nolibc/hppa-linux/bin/hppa-linux-gcc
+COLLECT_LTO_WRAPPER=/home/mel/git-public/cross-compilers/gcc-4.6.3-nolibc/hppa-linux/bin/../libexec/gcc/hppa-linux/4.6.3/lto-wrapper
+Target: hppa-linux
+Configured with: /home/tony/buildall/src/gcc/configure
+--target=hppa-linux --host=x86_64-linux-gnu --build=x86_64-linux-gnu
+--enable-targets=all --prefix=/opt/cross/gcc-4.6.3-nolibc/hppa-linux/
+--enable-languages=c --with-newlib --without-headers
+--enable-sjlj-exceptions --with-system-libunwind --disable-nls
+--disable-threads --disable-shared --disable-libmudflap --disable-libssp
+--disable-libgomp --disable-decimal-float --enable-checking=release
+--with-mpfr=/home/tony/buildall/src/sys-x86_64
+--with-gmp=/home/tony/buildall/src/sys-x86_64 --disable-bootstrap
+--disable-libquadmath
+Thread model: single
+gcc version 4.6.3 (GCC) 
+
+-- 
+Mel Gorman
+SUSE Labs
