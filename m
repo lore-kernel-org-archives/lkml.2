@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab2GWXaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 19:30:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54949 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898Ab2GWXaW (ORCPT
+	id S1755094Ab2GWXa4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 19:30:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62680 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898Ab2GWXax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 19:30:22 -0400
-Date: Mon, 23 Jul 2012 16:30:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC 0/6] Avoid cache trashing on clearing huge/gigantic
- page
-Message-Id: <20120723163020.5250e09e.akpm@linux-foundation.org>
-In-Reply-To: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jul 2012 19:30:53 -0400
+Date: Tue, 24 Jul 2012 07:30:45 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Lin Ming <minggr@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
+Subject: Re: [PATCH 4/5] scsi: pm: use runtime resume callback if available
+Message-ID: <20120723233043.GA1965@localhost.localdomain>
+References: <1343026180-22236-1-git-send-email-aaron.lu@amd.com>
+ <1343026180-22236-5-git-send-email-aaron.lu@amd.com>
+ <500D615C.1080605@mvista.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500D615C.1080605@mvista.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jul 2012 15:50:16 +0300
-"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+Hi,
 
-> Clearing a 2MB huge page will typically blow away several levels of CPU
-> caches.  To avoid this only cache clear the 4K area around the fault
-> address and use a cache avoiding clears for the rest of the 2MB area.
+On Mon, Jul 23, 2012 at 06:36:12PM +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> It would be nice to test the patchset with more workloads. Especially if
-> you see performance regression with THP.
+> On 07/23/2012 10:49 AM, Aaron Lu wrote:
 > 
-> Any feedback is appreciated.
+> > When runtime resume a scsi device, if the device's driver has
+> > implemented runtime resume callback, use that instead of the resume
+> > callback.
+> 
+> > sr driver needs this to properly do different things for system resume
+> > and runtime resume.
+> 
+> > Signed-off-by: Aaron Lu <aaron.lu@amd.com>
+> > ---
+> >  drivers/scsi/scsi_pm.c | 14 +++++++++-----
+> >  drivers/scsi/sr.c      | 21 +++++++++++++++++++++
+> >  2 files changed, 30 insertions(+), 5 deletions(-)
+> 
+> > diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> > index d4201de..19bba47 100644
+> > --- a/drivers/scsi/scsi_pm.c
+> > +++ b/drivers/scsi/scsi_pm.c
+> > @@ -34,14 +34,18 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
+> >  	return err;
+> >  }
+> >  
+> > -static int scsi_dev_type_resume(struct device *dev)
+> > +static int scsi_dev_type_resume(struct device *dev, bool runtime)
+> >  {
+> >  	struct device_driver *drv;
+> >  	int err = 0;
+> > +	int (*resume)(struct device *);
+> >  
+> >  	drv = dev->driver;
+> > -	if (drv && drv->resume)
+> > -		err = drv->resume(dev);
+> > +	if (runtime && drv && drv->pm && drv->pm->runtime_resume)
+> > +		resume = drv->pm->runtime_resume;
+> > +	else
+> > +		resume = drv ? drv->resume : NULL;
+> 
+>    Call thru NULL pointer below will cause kernel oops. Is it your intention?
 
-This all looks pretty sane to me.  Some detail-poking from the x86 guys
-would be nice.
+Oops, I forgot the if check here, thanks for pointing this out.
 
-What do other architectures need to do?  Simply implement
-clear_page_nocache()?  I believe that powerpc is one, not sure about
-others.  Please update the changelogs to let arch maintainers know
-what they should do and cc those people on future versions?
+-Aaron
 
+> 
+> > +	err = resume(dev);
+> 
