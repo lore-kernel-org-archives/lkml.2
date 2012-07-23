@@ -1,111 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab2GWGXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 02:23:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2285 "EHLO mga14.intel.com"
+	id S1753059Ab2GWGdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 02:33:14 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34768 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab2GWGXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 02:23:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="171817389"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 2/4] perf/x86: Fix format definition of SNB-EP uncore QPI box
-Date: Mon, 23 Jul 2012 14:23:31 +0800
-Message-Id: <1343024611-4692-2-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343024611-4692-1-git-send-email-zheng.z.yan@intel.com>
-References: <1343024611-4692-1-git-send-email-zheng.z.yan@intel.com>
+	id S1752543Ab2GWGdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 02:33:12 -0400
+Message-ID: <1343025161.2957.22.camel@pasglop>
+Subject: More irqdomain problems (Was: next/mmotm unbootable on G5:
+ irqdomain)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Hugh Dickins <hughd@google.com>, ul Mundt <lethal@linux-sh.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 23 Jul 2012 16:32:41 +1000
+In-Reply-To: <1343011543.2957.2.camel@pasglop>
+References: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils>
+	 <1343011543.2957.2.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+Allright, another one Grant:
 
-The event control register of SNB-EP uncore QPI box has a one bit
-extension at bit position 21.
+unsigned int irq_find_mapping(struct irq_domain *domain,
+			      irq_hw_number_t hwirq)
+{
+	struct irq_data *data;
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   23 ++++++++++++++++++++++-
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |    4 ++++
- 2 files changed, 26 insertions(+), 1 deletion(-)
+	/* Look for default domain if nececssary */
+	if (domain == NULL)
+		domain = irq_default_domain;
+	if (domain == NULL)
+		return 0;
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index a5de59f..305e603 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -21,6 +21,7 @@ DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
- DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
- DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
- DEFINE_UNCORE_FORMAT_ATTR(tid_en, tid_en, "config:19");
-+DEFINE_UNCORE_FORMAT_ATTR(ev_sel_ext, ev_sel_ext, "config:21");
- DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
- DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
- DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
-@@ -279,6 +280,16 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- 	NULL,
- };
- 
-+static struct attribute *snbep_uncore_qpi_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_ev_sel_ext.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_thresh8.attr,
-+	NULL,
-+};
-+
- static struct uncore_event_desc snbep_uncore_imc_events[] = {
- 	INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0x00"),
- 	INTEL_UNCORE_EVENT_DESC(cas_count_read,  "event=0x04,umask=0x03"),
-@@ -314,6 +325,11 @@ static struct attribute_group snbep_uncore_pcu_format_group = {
- 	.attrs = snbep_uncore_pcu_formats_attr,
- };
- 
-+static struct attribute_group snbep_uncore_qpi_format_group = {
-+	.name = "format",
-+	.attrs = snbep_uncore_qpi_formats_attr,
-+};
-+
- static struct intel_uncore_ops snbep_uncore_msr_ops = {
- 	.init_box	= snbep_uncore_msr_init_box,
- 	.disable_box	= snbep_uncore_msr_disable_box,
-@@ -485,8 +501,13 @@ static struct intel_uncore_type snbep_uncore_qpi = {
- 	.num_counters   = 4,
- 	.num_boxes	= 2,
- 	.perf_ctr_bits	= 48,
-+	.perf_ctr	= SNBEP_PCI_PMON_CTR0,
-+	.event_ctl	= SNBEP_PCI_PMON_CTL0,
-+	.event_mask	= SNBEP_QPI_PCI_PMON_RAW_EVENT_MASK,
-+	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,
-+	.ops		= &snbep_uncore_pci_ops,
- 	.event_descs	= snbep_uncore_qpi_events,
--	SNBEP_UNCORE_PCI_COMMON_INIT(),
-+	.format_group	= &snbep_uncore_qpi_format_group,
- };
- 
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index b13e9ea..0f8a8ca 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -115,6 +115,10 @@
- 				 SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
- 				 SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET)
- 
-+#define SNBEP_QPI_PCI_PMON_RAW_EVENT_MASK	\
-+				(SNBEP_PMON_RAW_EVENT_MASK | \
-+				 SNBEP_PMON_CTL_EV_SEL_EXT)
-+
- /* SNB-EP pci control register */
- #define SNBEP_PCI_PMON_BOX_CTL			0xf4
- #define SNBEP_PCI_PMON_CTL0			0xd8
--- 
-1.7.10.4
+	switch (domain->revmap_type) {
+	case IRQ_DOMAIN_MAP_LEGACY:
+		return irq_domain_legacy_revmap(domain, hwirq);
+	case IRQ_DOMAIN_MAP_LINEAR:
+		return irq_linear_revmap(domain, hwirq);
+	case IRQ_DOMAIN_MAP_TREE:
+		rcu_read_lock();
+		data = radix_tree_lookup(&domain->revmap_data.tree, hwirq);
+		rcu_read_unlock();
+		if (data)
+			return data->irq;
+-               break;
++               return 0;
+	case IRQ_DOMAIN_MAP_NOMAP:
+
+Please, stick a proper commit message and my s-o-b and see if you can fix
+your tree before you ask Linus to pull because that's not pretty on any
+pseries .... irq_find_mapping() does get called for all interrupt the
+first time it's mapped to check if there's a pre-existing mapping, so
+the case of the thing being unpopulated is absolutely legit.
+
+the NOMAP case has a similar dubious exit case but since I'm not that
+familiar with NOMAP I haven't touched it.
+
+Cheers,
+Ben.
+
 
