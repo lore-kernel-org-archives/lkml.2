@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab2GWWDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 18:03:46 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64626 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab2GWWDp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 18:03:45 -0400
+	id S1754663Ab2GWWH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 18:07:56 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752809Ab2GWWHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 18:07:52 -0400
+Message-ID: <500DCB34.6050209@nod.at>
+Date: Tue, 24 Jul 2012 00:07:48 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <20120723210654.GA25248@shutemov.name>
-References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
- <1343055645-24083-2-git-send-email-kirill@shutemov.name> <CAOPLpQe7=Gv7ToM8cqe1rNCP+vX5=gVppA1=gfaO0LSdqMhqMQ@mail.gmail.com>
- <20120723203120.GA25072@shutemov.name> <CAOPLpQdcSw6KGT=odFSAUScd44mUdkYpR6hQM_zg81Y88T=VHg@mail.gmail.com>
- <20120723210654.GA25248@shutemov.name>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Mon, 23 Jul 2012 18:03:24 -0400
-Message-ID: <CAOPLpQeLKYvonWXY-WSZt+DL_OoChyAqYm7nzNUSq7kumtUhZA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf: use XSI-complaint version of strerror_r()
- instead of GNU-specific
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Jesper Juhl <jj@chaosbits.net>
+CC: Al Viro <viro@ZenIV.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-man@vger.kernel.org
+Subject: Re: st_size of a symlink
+References: <500D73FF.1070504@nod.at> <alpine.LNX.2.00.1207231959410.1922@swampdragon.chaosbits.net> <20120723202224.GH31729@ZenIV.linux.org.uk> <alpine.LNX.2.00.1207232243110.1922@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1207232243110.1922@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 5:06 PM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
-> They are bugs.
+On 23.07.2012 22:47, Jesper Juhl wrote:
+>> Fix it _how_?
 >
-> Let's fix strerror_r() usage.
->
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> By returning the size as the number of bytes in the name the link is
+> currently pointing at.
 
-Acked-by: Ulrich Drepper <drepper@gmail.com>
+This is not easy.
+procfs has no clue where the link pointing at.
+The information is generated while accessing the link.
+tmpfs on the other hand has this information because symlinks get only 
+changed through tmpfs...
+
+>>   By retrying readlink() with bigger buffer.
+>> With procfs there's just a few more ways the readlink() output can
+>> change, that's all.
+>>
+> Still not a good reason to just return 0 IMHO.
+
+IMHO the lstat() and readlink() manpages have to be more precise about 
+st_size.
+
+Thanks,
+//richard
