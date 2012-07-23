@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab2GWSqe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:46:34 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:57648 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750970Ab2GWSqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:46:32 -0400
-Message-ID: <500D9BFC.9090707@fold.natur.cuni.cz>
-Date: Mon, 23 Jul 2012 20:46:20 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120706 Firefox/13.0.1 SeaMonkey/2.10.1
+	id S1754537Ab2GWStn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:49:43 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:52988 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754184Ab2GWStl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 14:49:41 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: Re: [PATCH] [CPUFREQ] conservative: Initialise the cpu field of the this_dbs_info
+Date: Mon, 23 Jul 2012 20:55:26 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1343028920-4712-1-git-send-email-amit.daniel@samsung.com> <201207231223.04620.rjw@sisk.pl> <CAK44p23wcPmK1c7PvobfuaFFaQ9FNDax9J-3iipgvEOCM5gWGQ@mail.gmail.com>
+In-Reply-To: <CAK44p23wcPmK1c7PvobfuaFFaQ9FNDax9J-3iipgvEOCM5gWGQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Mike Galbraith <mgalbraith@novell.com>
-CC: Michael Wang <wangyun@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        mmokrejs@fold.natur.cuni.cz, dan.carpenter@oracle.com
-Subject: Re: [QUESTION ON BUG] the rcu stall issue could not be reproduced
-References: <5008CBD4.6070907@linux.vnet.ibm.com> <1342767624.7432.54.camel@marge.simpson.net>
-In-Reply-To: <1342767624.7432.54.camel@marge.simpson.net>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207232055.26506.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  I see few more RCU bugs reported in bugzilla:
-
-https://bugzilla.kernel.org/show_bug.cgi?id=43028
-https://bugzilla.kernel.org/show_bug.cgi?id=40092
-https://bugzilla.kernel.org/show_bug.cgi?id=42997
-
-And, I placed my previous long email with logs at
-https://bugzilla.kernel.org/show_bug.cgi?id=45091
-
-Hope this helps eventually once.
-Martin
-
-Mike Galbraith wrote:
-> On Fri, 2012-07-20 at 11:09 +0800, Michael Wang wrote: 
->> Hi, Mike, Martin, Dan
->>
->> I'm currently taking an eye on the rcu stall issue which was reported by
->> you in the mail:
->>
->> rcu: endless stalls
->> 	From: Mike Galbraith
->> linux-3.4-rc7: rcu_sched self-detected stall on CPU
->> 	From: Martin Mokrejs
->> RCU stalls in linux-next
->> 	From: Dan Carpenter
->>
->> I try to reproduce the issue on my X86 server with 12 cpu
+On Monday, July 23, 2012, Amit Daniel Kachhap wrote:
+> On 23 July 2012 15:53, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 > 
-> The 'endless stalls' box was 341.33333 times larger.  Dunno if you can
-> even set a serial port slow enough to approximate all cores trying to
-> gripe through a single pinhole simultaneously.
+> > On Monday, July 23, 2012, Amit Daniel Kachhap wrote:
+> > > This patch initialises the cpu field of this_dbs_info structure. This
+> > > change is similar to existing ondemand governor.
+> >
+> > Why do you think the change is needed?
+> >
+> > Rafael
+> >
 > 
-> -Mike
-> 
-> 
+> I agree that this field is not used anywhere currently but I was trying to
+> perform some experiments and then this un-initialised field caused issues
+> so i thought of fixing this up.
 
+So perhaps please write in the changelog that this is to keep governors
+consistent with each other or something like this.  Without explanation it
+looks pointless.
+
+Thanks,
+Rafael
+
+
+> > > Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > > ---
+> > >  drivers/cpufreq/cpufreq_conservative.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/drivers/cpufreq/cpufreq_conservative.c
+> > b/drivers/cpufreq/cpufreq_conservative.c
+> > > index 235a340..a1563d7 100644
+> > > --- a/drivers/cpufreq/cpufreq_conservative.c
+> > > +++ b/drivers/cpufreq/cpufreq_conservative.c
+> > > @@ -504,6 +504,7 @@ static int cpufreq_governor_dbs(struct
+> > cpufreq_policy *policy,
+> > >                               j_dbs_info->prev_cpu_nice =
+> > >
+> > kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+> > >               }
+> > > +             this_dbs_info->cpu = cpu;
+> > >               this_dbs_info->down_skip = 0;
+> > >               this_dbs_info->requested_freq = policy->cur;
+> > >
+> > >
+> >
+> >
+> 
 
