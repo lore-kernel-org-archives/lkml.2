@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab2GWBn0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:43:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54366 "EHLO
+	id S1753576Ab2GWBuh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:50:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54391 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753421Ab2GWBnW (ORCPT
+	by vger.kernel.org with ESMTP id S1753494Ab2GWBn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:22 -0400
-Message-Id: <20120723010659.181223860@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:26 -0400
+Message-Id: <20120723010658.586361275@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:42 +0100
+Date: Mon, 23 Jul 2012 02:07:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [ 051/108] intel_ips: blacklist HP ProBook laptops
+        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>
+Subject: [ 047/108] Remove easily user-triggerable BUG from generic_setlease
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,69 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dave Jones <davej@redhat.com>
 
-commit 88ca518b0bb4161e5f20f8a1d9cc477cae294e54 upstream.
+commit 8d657eb3b43861064d36241e88d9d61c709f33f0 upstream.
 
-intel_ips driver spews the warning message
-  "ME failed to update for more than 1s, likely hung"
-at each second endlessly on HP ProBook laptops with IronLake.
+This can be trivially triggered from userspace by passing in something unexpected.
 
-As this has never worked, better to blacklist the driver for now.
+    kernel BUG at fs/locks.c:1468!
+    invalid opcode: 0000 [#1] SMP
+    RIP: 0010:generic_setlease+0xc2/0x100
+    Call Trace:
+      __vfs_setlease+0x35/0x40
+      fcntl_setlease+0x76/0x150
+      sys_fcntl+0x1c6/0x810
+      system_call_fastpath+0x1a/0x1f
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/platform/x86/intel_ips.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ fs/locks.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-index 0ffdb3c..9af4257 100644
---- a/drivers/platform/x86/intel_ips.c
-+++ b/drivers/platform/x86/intel_ips.c
-@@ -72,6 +72,7 @@
- #include <linux/string.h>
- #include <linux/tick.h>
- #include <linux/timer.h>
-+#include <linux/dmi.h>
- #include <drm/i915_drm.h>
- #include <asm/msr.h>
- #include <asm/processor.h>
-@@ -1485,6 +1486,24 @@ static DEFINE_PCI_DEVICE_TABLE(ips_id_table) = {
- 
- MODULE_DEVICE_TABLE(pci, ips_id_table);
- 
-+static int ips_blacklist_callback(const struct dmi_system_id *id)
-+{
-+	pr_info("Blacklisted intel_ips for %s\n", id->ident);
-+	return 1;
-+}
-+
-+static const struct dmi_system_id ips_blacklist[] = {
-+	{
-+		.callback = ips_blacklist_callback,
-+		.ident = "HP ProBook",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "HP ProBook"),
-+		},
-+	},
-+	{ }	/* terminating entry */
-+};
-+
- static int ips_probe(struct pci_dev *dev, const struct pci_device_id *id)
- {
- 	u64 platform_info;
-@@ -1494,6 +1513,9 @@ static int ips_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	u16 htshi, trc, trc_required_mask;
- 	u8 tse;
- 
-+	if (dmi_check_system(ips_blacklist))
-+		return -ENODEV;
-+
- 	ips = kzalloc(sizeof(struct ips_driver), GFP_KERNEL);
- 	if (!ips)
- 		return -ENOMEM;
+diff --git a/fs/locks.c b/fs/locks.c
+index 814c51d..fce6238 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1465,7 +1465,7 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
+ 	case F_WRLCK:
+ 		return generic_add_lease(filp, arg, flp);
+ 	default:
+-		BUG();
++		return -EINVAL;
+ 	}
+ }
+ EXPORT_SYMBOL(generic_setlease);
 
 
