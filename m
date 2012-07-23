@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab2GWCCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:02:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54148 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753161Ab2GWBmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:47 -0400
-Message-Id: <20120723010707.363798756@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:35 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 104/108] Input: bcm5974 - Add support for 2012 MacBook Pro Retina
-In-Reply-To: <20120723010651.408577075@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1753801Ab2GWCCU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:02:20 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26180 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753745Ab2GWCCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 22:02:17 -0400
+X-IronPort-AV: E=Sophos;i="4.77,636,1336320000"; 
+   d="scan'208";a="5455920"
+Message-ID: <500CB1C8.2040406@cn.fujitsu.com>
+Date: Mon, 23 Jul 2012 10:07:04 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v7.5] kvm: notify host when the guest is
+ panicked
+References: <500A565A.8080403@cn.fujitsu.com> <500A6BF1.4030002@cn.fujitsu.com> <500BE68D.90005@gmail.com>
+In-Reply-To: <500BE68D.90005@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/23 10:02:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/23 10:02:52,
+	Serialize complete at 2012/07/23 10:02:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+At 07/22/2012 07:39 PM, Sasha Levin Wrote:
+> On 07/21/2012 10:44 AM, Wen Congyang wrote:
+>> We can know the guest is panicked when the guest runs on xen.
+>> But we do not have such feature on kvm.
+>>
+>> Another purpose of this feature is: management app(for example:
+>> libvirt) can do auto dump when the guest is panicked. If management
+>> app does not do auto dump, the guest's user can do dump by hand if
+>> he sees the guest is panicked.
+>>
+>> We have three solutions to implement this feature:
+>> 1. use vmcall
+>> 2. use I/O port
+>> 3. use virtio-serial.
+>>
+>> We have decided to avoid touching hypervisor. The reason why I choose
+>> choose the I/O port is:
+>> 1. it is easier to implememt
+>> 2. it does not depend any virtual device
+>> 3. it can work when starting the kernel
+> 
+> Was the option of implementing a virtio-watchdog driver considered?
 
-------------------
+virtio-watchdog? What is this? I don't find it in qemu. Do I miss something?
 
-From: Henrik Rydberg <rydberg@euromail.se>
+Another reason why we don't use this:
+If the watchdog timeouts, we cannot say the kernel is panicked. For
+example, the kernel is hung, or the kernel is deadlock, or ...
+the watchdog daemon can not have chance to touch watchdog device.
 
-commit 3dde22a98e94eb18527f0ff0068fb2fb945e58d4 upstream.
+Thanks
+Wen Congyang
 
-Add support for the 15'' MacBook Pro Retina model (MacBookPro10,1).
-
-Patch originally written by clipcarl (forums.opensuse.org).
-
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/input/mouse/bcm5974.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index f9e2758..e410b98 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -79,6 +79,10 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI	0x0252
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO	0x0253
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS	0x0254
-+/* MacbookPro10,1 (unibody, June 2012) */
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI	0x0262
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7_ISO	0x0263
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7_JIS	0x0264
- 
- #define BCM5974_DEVICE(prod) {					\
- 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
-@@ -128,6 +132,10 @@ static const struct usb_device_id bcm5974_table[] = {
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS),
-+	/* MacbookPro10,1 */
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ISO),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
- 	/* Terminating entry */
- 	{}
- };
-@@ -354,6 +362,18 @@ static const struct bcm5974_config bcm5974_config_table[] = {
- 		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
- 		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
- 	},
-+	{
-+		USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI,
-+		USB_DEVICE_ID_APPLE_WELLSPRING7_ISO,
-+		USB_DEVICE_ID_APPLE_WELLSPRING7_JIS,
-+		HAS_INTEGRATED_BUTTON,
-+		0x84, sizeof(struct bt_data),
-+		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-+		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-+		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-+		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
-+		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
-+	},
- 	{}
- };
- 
-
+> 
+> You're basically re-implementing a watchdog, a guest-host interface and a set of protocols for guest-host communications.
+> 
+> Why can't we re-use everything we have now, push a virtio watchdog driver into drivers/watchdog/, and gain a more complete solution to detecting hangs inside the guest.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
