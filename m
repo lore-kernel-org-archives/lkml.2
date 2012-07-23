@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab2GWSS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:18:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59904 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab2GWSS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:18:56 -0400
-Date: Mon, 23 Jul 2012 20:18:49 +0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: fix build error
-Message-ID: <20120723181849.GF6717@infradead.org>
-References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
- <20120723180244.GB5418@infradead.org>
- <20120723181608.GA24558@shutemov.name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120723181608.GA24558@shutemov.name>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754611Ab2GWSSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:18:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754557Ab2GWSRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 14:17:53 -0400
+From: David Teigland <teigland@redhat.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6] dlm: use wait_event_timeout
+Date: Mon, 23 Jul 2012 13:17:45 -0500
+Message-Id: <1343067467-24308-5-git-send-email-teigland@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 23, 2012 at 09:16:08PM +0300, Kirill A. Shutemov escreveu:
-> On Mon, Jul 23, 2012 at 08:02:44PM +0200, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Jul 23, 2012 at 06:00:44PM +0300, Kirill A. Shutemov escreveu:
-> > > util/parse-events.c:29:5: error: redundant redeclaration of ‘parse_events_parse’ [-Werror=redundant-decls]
-> > > util/parse-events-bison.h:99:5: note: previous declaration of ‘parse_events_parse’ was here
-> > > cc1: all warnings being treated as errors
+Use wait_event_timeout to avoid using a timer
+directly.
 
-> > Causes the build to fail for me:
+Signed-off-by: David Teigland <teigland@redhat.com>
+---
+ fs/dlm/recover.c |   29 +++++++++++------------------
+ 1 file changed, 11 insertions(+), 18 deletions(-)
 
-> > cc1: warnings being treated as errors
-> > util/parse-events.c: In function ‘parse_events__scanner’:
-> > util/parse-events.c:701: error: implicit declaration of function ‘parse_events_parse’
-> > util/parse-events.c:701: error: nested extern declaration of ‘parse_events_parse’
-> > make: *** [/home/acme/git/build/perf/util/parse-events.o] Error 1
-> > make: *** Waiting for unfinished jobs....
-> > make: Leaving directory `/home/git/linux/tools/perf'
-> 
-> What bison version do you have?
-
-[acme@sandy linux]$ rpm -q bison
-bison-2.4.1-5.el6.x86_64
+diff --git a/fs/dlm/recover.c b/fs/dlm/recover.c
+index ff6f276..12702cc 100644
+--- a/fs/dlm/recover.c
++++ b/fs/dlm/recover.c
+@@ -36,30 +36,23 @@
+  * (LS_RECOVERY_STOP set due to failure of a node in ls_nodes).  When another
+  * function thinks it could have completed the waited-on task, they should wake
+  * up ls_wait_general to get an immediate response rather than waiting for the
+- * timer to detect the result.  A timer wakes us up periodically while waiting
+- * to see if we should abort due to a node failure.  This should only be called
+- * by the dlm_recoverd thread.
++ * timeout.  This uses a timeout so it can check periodically if the wait
++ * should abort due to node failure (which doesn't cause a wake_up).
++ * This should only be called by the dlm_recoverd thread.
+  */
+ 
+-static void dlm_wait_timer_fn(unsigned long data)
+-{
+-	struct dlm_ls *ls = (struct dlm_ls *) data;
+-	mod_timer(&ls->ls_timer, jiffies + (dlm_config.ci_recover_timer * HZ));
+-	wake_up(&ls->ls_wait_general);
+-}
+-
+ int dlm_wait_function(struct dlm_ls *ls, int (*testfn) (struct dlm_ls *ls))
+ {
+ 	int error = 0;
++	int rv;
+ 
+-	init_timer(&ls->ls_timer);
+-	ls->ls_timer.function = dlm_wait_timer_fn;
+-	ls->ls_timer.data = (long) ls;
+-	ls->ls_timer.expires = jiffies + (dlm_config.ci_recover_timer * HZ);
+-	add_timer(&ls->ls_timer);
+-
+-	wait_event(ls->ls_wait_general, testfn(ls) || dlm_recovery_stopped(ls));
+-	del_timer_sync(&ls->ls_timer);
++	while (1) {
++		rv = wait_event_timeout(ls->ls_wait_general,
++					testfn(ls) || dlm_recovery_stopped(ls),
++					dlm_config.ci_recover_timer * HZ);
++		if (rv)
++			break;
++	}
+ 
+ 	if (dlm_recovery_stopped(ls)) {
+ 		log_debug(ls, "dlm_wait_function aborted");
+-- 
+1.7.10.1.362.g242cab3
 
