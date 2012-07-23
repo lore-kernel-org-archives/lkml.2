@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2GWCJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:09:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53984 "EHLO
+	id S1753885Ab2GWCJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:09:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53985 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752877Ab2GWBmP (ORCPT
+	by vger.kernel.org with ESMTP id S1752878Ab2GWBmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:42:15 -0400
-Message-Id: <20120723010651.806320180@decadent.org.uk>
+Message-Id: <20120723010652.135504641@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:06:53 +0100
+Date: Mon, 23 Jul 2012 02:06:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@kernel.org>,
-        Shaohua Li <shli@fusionio.com>, NeilBrown <neilb@suse.de>
-Subject: [ 002/108] raid5: delayed stripe fix
+        alan@lxorguk.ukuu.org.uk, Matt Carlson <mcarlson@broadcom.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 004/108] tg3: Apply short DMA frag workaround to 5906
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shli@kernel.org>
+From: Matt Carlson <mcarlson@broadcom.com>
 
-commit fab363b5ff502d1b39ddcfec04271f5858d9f26e upstream.
+commit b7abee6ef888117f92db370620ebf116a38e3f4d upstream.
 
-There isn't locking setting STRIPE_DELAYED and STRIPE_PREREAD_ACTIVE bits, but
-the two bits have relationship. A delayed stripe can be moved to hold list only
-when preread active stripe count is below IO_THRESHOLD. If a stripe has both
-the bits set, such stripe will be in delayed list and preread count not 0,
-which will make such stripe never leave delayed list.
+5906 devices also need the short DMA fragment workaround.  This patch
+makes the necessary change.
 
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
+Tested-by: Christian Kujau <lists@nerdbynature.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/raid5.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 51169ec..7245a9d 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -196,12 +196,14 @@ static void __release_stripe(struct r5conf *conf, struct stripe_head *sh)
- 		BUG_ON(!list_empty(&sh->lru));
- 		BUG_ON(atomic_read(&conf->active_stripes)==0);
- 		if (test_bit(STRIPE_HANDLE, &sh->state)) {
--			if (test_bit(STRIPE_DELAYED, &sh->state))
-+			if (test_bit(STRIPE_DELAYED, &sh->state) &&
-+			    !test_bit(STRIPE_PREREAD_ACTIVE, &sh->state))
- 				list_add_tail(&sh->lru, &conf->delayed_list);
- 			else if (test_bit(STRIPE_BIT_DELAY, &sh->state) &&
- 				   sh->bm_seq - conf->seq_write > 0)
- 				list_add_tail(&sh->lru, &conf->bitmap_list);
- 			else {
-+				clear_bit(STRIPE_DELAYED, &sh->state);
- 				clear_bit(STRIPE_BIT_DELAY, &sh->state);
- 				list_add_tail(&sh->lru, &conf->handle_list);
- 			}
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index edeeb51..e47ff8b 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -14275,7 +14275,8 @@ static int __devinit tg3_get_invariants(struct tg3 *tp)
+ 		}
+ 	}
+ 
+-	if (tg3_flag(tp, 5755_PLUS))
++	if (tg3_flag(tp, 5755_PLUS) ||
++	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5906)
+ 		tg3_flag_set(tp, SHORT_DMA_BUG);
+ 
+ 	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
 
 
