@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab2GWBnN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:43:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54300 "EHLO
+	id S1753400Ab2GWBnL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:43:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54288 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753322Ab2GWBnJ (ORCPT
+	by vger.kernel.org with ESMTP id S1753239Ab2GWBnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:09 -0400
-Message-Id: <20120723010701.599448834@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:07 -0400
+Message-Id: <20120723010701.303457284@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:58 +0100
+Date: Mon, 23 Jul 2012 02:07:56 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
-        Iwo Mergler <Iwo.Mergler@netcommwireless.com>,
-        James Nute <newten82@gmail.com>
-Subject: [ 067/108] UBIFS: fix a bug in empty space fix-up
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
+        Alexander Lyakas <alex.bolshoy@gmail.com>
+Subject: [ 065/108] md/raid1: close some possible races on write errors during resync
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,66 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit c6727932cfdb13501108b16c38463c09d5ec7a74 upstream.
+commit 58e94ae18478c08229626daece2fc108a4a23261 upstream.
 
-UBIFS has a feature called "empty space fix-up" which is a quirk to work-around
-limitations of dumb flasher programs. Namely, of those flashers that are unable
-to skip NAND pages full of 0xFFs while flashing, resulting in empty space at
-the end of half-filled eraseblocks to be unusable for UBIFS. This feature is
-relatively new (introduced in v3.0).
+commit 4367af556133723d0f443e14ca8170d9447317cb
+   md/raid1: clear bad-block record when write succeeds.
 
-The fix-up routine (fixup_free_space()) is executed only once at the very first
-mount if the superblock has the 'space_fixup' flag set (can be done with -F
-option of mkfs.ubifs). It basically reads all the UBIFS data and metadata and
-writes it back to the same LEB. The routine assumes the image is pristine and
-does not have anything in the journal.
+Added a 'reschedule_retry' call possibility at the end of
+end_sync_write, but didn't add matching code at the end of
+sync_request_write.  So if the writes complete very quickly, or
+scheduling makes it seem that way, then we can miss rescheduling
+the request and the resync could hang.
 
-There was a bug in 'fixup_free_space()' where it fixed up the log incorrectly.
-All but one LEB of the log of a pristine file-system are empty. And one
-contains just a commit start node. And 'fixup_free_space()' just unmapped this
-LEB, which resulted in wiping the commit start node. As a result, some users
-were unable to mount the file-system next time with the following symptom:
+Also commit 73d5c38a9536142e062c35997b044e89166e063b
+    md: avoid races when stopping resync.
 
-UBIFS error (pid 1): replay_log_leb: first log node at LEB 3:0 is not CS node
-UBIFS error (pid 1): replay_log_leb: log error detected while replaying the log at LEB 3:0
+Fix a race condition in this same code in end_sync_write but didn't
+make the change in sync_request_write.
 
-The root-cause of this bug was that 'fixup_free_space()' wrongly assumed
-that the beginning of empty space in the log head (c->lhead_offs) was known
-on mount. However, it is not the case - it was always 0. UBIFS does not store
-in it the master node and finds out by scanning the log on every mount.
+This patch updates sync_request_write to fix both of those.
+Patch is suitable for 3.1 and later kernels.
 
-The fix is simple - just pass commit start node size instead of 0 to
-'fixup_leb()'.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
-Reported-by: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
-Tested-by: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
-Reported-by: James Nute <newten82@gmail.com>
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Original-version-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ubifs/sb.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/md/raid1.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ubifs/sb.c b/fs/ubifs/sb.c
-index ef3d1ba..15e2fc5 100644
---- a/fs/ubifs/sb.c
-+++ b/fs/ubifs/sb.c
-@@ -718,8 +718,12 @@ static int fixup_free_space(struct ubifs_info *c)
- 		lnum = ubifs_next_log_lnum(c, lnum);
- 	}
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 240ff31..cacd008 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1818,8 +1818,14 @@ static void sync_request_write(struct mddev *mddev, struct r1bio *r1_bio)
  
--	/* Fixup the current log head */
--	err = fixup_leb(c, c->lhead_lnum, c->lhead_offs);
-+	/*
-+	 * Fixup the log head which contains the only a CS node at the
-+	 * beginning.
-+	 */
-+	err = fixup_leb(c, c->lhead_lnum,
-+			ALIGN(UBIFS_CS_NODE_SZ, c->min_io_size));
- 	if (err)
- 		goto out;
+ 	if (atomic_dec_and_test(&r1_bio->remaining)) {
+ 		/* if we're here, all write(s) have completed, so clean up */
+-		md_done_sync(mddev, r1_bio->sectors, 1);
+-		put_buf(r1_bio);
++		int s = r1_bio->sectors;
++		if (test_bit(R1BIO_MadeGood, &r1_bio->state) ||
++		    test_bit(R1BIO_WriteError, &r1_bio->state))
++			reschedule_retry(r1_bio);
++		else {
++			put_buf(r1_bio);
++			md_done_sync(mddev, s, 1);
++		}
+ 	}
+ }
  
 
 
