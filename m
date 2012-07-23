@@ -1,30 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab2GWShR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:37:17 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19788 "EHLO
+	id S1754643Ab2GWShQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:37:16 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19786 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567Ab2GWShO (ORCPT
+	with ESMTP id S1754136Ab2GWShN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:37:14 -0400
+	Mon, 23 Jul 2012 14:37:13 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: [PATCH] docs and cleanups for v3.6 (v1)
-Date: Mon, 23 Jul 2012 14:28:18 -0400
-Message-Id: <1343068103-13579-1-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/5] xen/mmu: The xen_setup_kernel_pagetable doesn't need to return anything.
+Date: Mon, 23 Jul 2012 14:28:20 -0400
+Message-Id: <1343068103-13579-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1343068103-13579-1-git-send-email-konrad.wilk@oracle.com>
+References: <1343068103-13579-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A little of docs, cleanups of code, and some extra bits to make
-reporting more pleasing to eyes.
+We don't need to return the new PGD - as we do not use it.
 
- arch/x86/xen/enlighten.c |   41 ++++++++++++++++++++++++++++++---
- arch/x86/xen/mmu.c       |   25 ++++++++++++++------
- arch/x86/xen/p2m.c       |   19 ++++++++++-----
- arch/x86/xen/setup.c     |    9 -------
- arch/x86/xen/xen-head.S  |   56 ++++++++++++++++++++++++++++++++++++++++++++-
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c |    5 +----
+ arch/x86/xen/mmu.c       |   10 ++--------
  arch/x86/xen/xen-ops.h   |    2 +-
- 6 files changed, 121 insertions(+), 31 deletions(-)
+ 3 files changed, 4 insertions(+), 13 deletions(-)
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index ed7d549..ae8a2ab 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1256,7 +1256,6 @@ asmlinkage void __init xen_start_kernel(void)
+ {
+ 	struct physdev_set_iopl set_iopl;
+ 	int rc;
+-	pgd_t *pgd;
+ 
+ 	if (!xen_start_info)
+ 		return;
+@@ -1348,8 +1347,6 @@ asmlinkage void __init xen_start_kernel(void)
+ 	acpi_numa = -1;
+ #endif
+ 
+-	pgd = (pgd_t *)xen_start_info->pt_base;
+-
+ 	/* Don't do the full vcpu_info placement stuff until we have a
+ 	   possible map and a non-dummy shared_info. */
+ 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+@@ -1358,7 +1355,7 @@ asmlinkage void __init xen_start_kernel(void)
+ 	early_boot_irqs_disabled = true;
+ 
+ 	xen_raw_console_write("mapping kernel into physical memory\n");
+-	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
++	xen_setup_kernel_pagetable((pgd_t *)xen_start_info->pt_base, xen_start_info->nr_pages);
+ 
+ 	/* Allocate and initialize top and mid mfn levels for p2m structure */
+ 	xen_build_mfn_list_list();
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 3a73785..4ac21a4 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1719,8 +1719,7 @@ static void convert_pfn_mfn(void *v)
+  * of the physical mapping once some sort of allocator has been set
+  * up.
+  */
+-pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+-					 unsigned long max_pfn)
++void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ {
+ 	pud_t *l3;
+ 	pmd_t *l2;
+@@ -1781,8 +1780,6 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+ 
+ 	memblock_reserve(__pa(xen_start_info->pt_base),
+ 			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+-
+-	return pgd;
+ }
+ #else	/* !CONFIG_X86_64 */
+ static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
+@@ -1825,8 +1822,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
+ 	pv_mmu_ops.write_cr3 = &xen_write_cr3;
+ }
+ 
+-pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+-					 unsigned long max_pfn)
++void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ {
+ 	pmd_t *kernel_pmd;
+ 
+@@ -1858,8 +1854,6 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+ 
+ 	memblock_reserve(__pa(xen_start_info->pt_base),
+ 			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+-
+-	return initial_page_table;
+ }
+ #endif	/* CONFIG_X86_64 */
+ 
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 202d4c1..2230f57 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -27,7 +27,7 @@ void xen_setup_mfn_list_list(void);
+ void xen_setup_shared_info(void);
+ void xen_build_mfn_list_list(void);
+ void xen_setup_machphys_mapping(void);
+-pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
++void xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
+ void xen_reserve_top(void);
+ extern unsigned long xen_max_p2m_pfn;
+ 
+-- 
+1.7.7.6
+
