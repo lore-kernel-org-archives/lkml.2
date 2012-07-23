@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab2GWNjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:39:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58789 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753746Ab2GWNjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:39:08 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Stable <stable@vger.kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 31/34] cpusets: avoid looping when storing to mems_allowed if one node remains set
-Date: Mon, 23 Jul 2012 14:38:44 +0100
-Message-Id: <1343050727-3045-32-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
-References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
+	id S1753952Ab2GWNjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:39:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45331 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab2GWNjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:39:09 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org, bhelgaas@google.com
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] pci: hotplug: Fix typo in pci
+Date: Mon, 23 Jul 2012 22:39:51 +0900
+Message-Id: <1343050791-20564-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.11.3.287.ge771946
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+Correct spelling typo in drivers/pci/hotplug.
 
-commit 89e8a244b97e48f1f30e898b6f32acca477f2a13 upstream.
-
-Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is
-	extremely expensive and severely impacted page allocator performance.
-	This is part of a series of patches that reduce page allocator
-	overhead.
-
-{get,put}_mems_allowed() exist so that general kernel code may locklessly
-access a task's set of allowable nodes without having the chance that a
-concurrent write will cause the nodemask to be empty on configurations
-where MAX_NUMNODES > BITS_PER_LONG.
-
-This could incur a significant delay, however, especially in low memory
-conditions because the page allocator is blocking and reclaim requires
-get_mems_allowed() itself.  It is not atypical to see writes to
-cpuset.mems take over 2 seconds to complete, for example.  In low memory
-conditions, this is problematic because it's one of the most imporant
-times to change cpuset.mems in the first place!
-
-The only way a task's set of allowable nodes may change is through cpusets
-by writing to cpuset.mems and when attaching a task to a generic code is
-not reading the nodemask with get_mems_allowed() at the same time, and
-then clearing all the old nodes.  This prevents the possibility that a
-reader will see an empty nodemask at the same time the writer is storing a
-new nodemask.
-
-If at least one node remains unchanged, though, it's possible to simply
-set all new nodes and then clear all the old nodes.  Changing a task's
-nodemask is protected by cgroup_mutex so it's guaranteed that two threads
-are not changing the same task's nodemask at the same time, so the
-nodemask is guaranteed to be stored before another thread changes it and
-determines whether a node remains set or not.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: Miao Xie <miaox@cn.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Paul Menage <paul@paulmenage.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- kernel/cpuset.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/pci/hotplug/ibmphp_core.c | 2 +-
+ drivers/pci/hotplug/ibmphp_ebda.c | 2 +-
+ drivers/pci/hotplug/ibmphp_pci.c  | 2 +-
+ drivers/pci/setup-bus.c           | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 9c9b754..a995893 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -949,6 +949,8 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
- static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 					nodemask_t *newmems)
- {
-+	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
-+
- repeat:
- 	/*
- 	 * Allow tasks that have access to memory reserves because they have
-@@ -963,7 +965,6 @@ repeat:
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index 4fda7e6..01cc054 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -760,7 +760,7 @@ static u8 bus_structure_fixup(u8 busno)
+ 	for (dev->devfn = 0; dev->devfn < 256; dev->devfn += 8) {
+ 		if (!pci_read_config_word(dev, PCI_VENDOR_ID, &l) &&
+ 					(l != 0x0000) && (l != 0xffff)) {
+-			debug("%s - Inside bus_struture_fixup()\n",
++			debug("%s - Inside bus_structure_fixup()\n",
+ 							__func__);
+ 			pci_scan_bus(busno, ibmphp_pci_bus->ops, NULL);
+ 			break;
+diff --git a/drivers/pci/hotplug/ibmphp_ebda.c b/drivers/pci/hotplug/ibmphp_ebda.c
+index 714ca5c..9df78bc 100644
+--- a/drivers/pci/hotplug/ibmphp_ebda.c
++++ b/drivers/pci/hotplug/ibmphp_ebda.c
+@@ -784,7 +784,7 @@ static int __init ebda_rsrc_controller (void)
+ 		hpc_ptr->ctlr_relative_id = ctlr;
+ 		hpc_ptr->slot_count = slot_num;
+ 		hpc_ptr->bus_count = bus_num;
+-		debug ("now enter ctlr data struture ---\n");
++		debug ("now enter ctlr data structure ---\n");
+ 		debug ("ctlr id: %x\n", ctlr_id);
+ 		debug ("ctlr_relative_id: %x\n", hpc_ptr->ctlr_relative_id);
+ 		debug ("count of slots controlled by this ctlr: %x\n", slot_num);
+diff --git a/drivers/pci/hotplug/ibmphp_pci.c b/drivers/pci/hotplug/ibmphp_pci.c
+index 7b09e16..c60f5f3 100644
+--- a/drivers/pci/hotplug/ibmphp_pci.c
++++ b/drivers/pci/hotplug/ibmphp_pci.c
+@@ -109,7 +109,7 @@ int ibmphp_configure_card (struct pci_func *func, u8 slotno)
  
--
- 	/*
- 	 * ensure checking ->mems_allowed_change_disable after setting all new
- 	 * allowed nodes.
-@@ -980,9 +981,11 @@ repeat:
+ 		cur_func->function = function;
  
- 	/*
- 	 * Allocation of memory is very fast, we needn't sleep when waiting
--	 * for the read-side.
-+	 * for the read-side.  No wait is necessary, however, if at least one
-+	 * node remains unchanged.
- 	 */
--	while (ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
-+	while (masks_disjoint &&
-+			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
- 		task_unlock(tsk);
- 		if (!task_curr(tsk))
- 			yield();
+-		debug ("inside the loop, cur_func->busno = %x, cur_func->device = %x, cur_func->funcion = %x\n",
++		debug ("inside the loop, cur_func->busno = %x, cur_func->device = %x, cur_func->function = %x\n",
+ 			cur_func->busno, cur_func->device, cur_func->function);
+ 
+ 		pci_bus_read_config_word (ibmphp_pci_bus, devfn, PCI_VENDOR_ID, &vendor_id);
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 8fa2d4b..a7ba6de 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -308,7 +308,7 @@ static void __assign_resources_sorted(struct list_head *head,
+ 	 * Should not assign requested resources at first.
+ 	 *   they could be adjacent, so later reassign can not reallocate
+ 	 *   them one by one in parent resource window.
+-	 * Try to assign requested + add_size at begining
++	 * Try to assign requested + add_size at beginning
+ 	 *  if could do that, could get out early.
+ 	 *  if could not do that, we still try to assign requested at first,
+ 	 *    then try to reassign add_size for some resources.
 -- 
-1.7.9.2
+1.7.11.3.287.ge771946
 
