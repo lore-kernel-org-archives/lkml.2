@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab2GWXNv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 19:13:51 -0400
-Received: from smtp13.ono.com ([62.42.230.16]:42569 "EHLO resmaa13.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752749Ab2GWXNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 19:13:50 -0400
-Date: Tue, 24 Jul 2012 01:13:33 +0200
-From: Guillem Jover <guillem@hadrons.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Jesper Juhl <jj@chaosbits.net>, Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-man@vger.kernel.org
-Subject: Re: st_size of a symlink
-Message-ID: <20120723231333.GA1299@gaara.hadrons.org>
-References: <500D73FF.1070504@nod.at>
- <alpine.LNX.2.00.1207231959410.1922@swampdragon.chaosbits.net>
- <20120723202224.GH31729@ZenIV.linux.org.uk>
- <alpine.LNX.2.00.1207232243110.1922@swampdragon.chaosbits.net>
- <500DCB34.6050209@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500DCB34.6050209@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754883Ab2GWXTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 19:19:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54853 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab2GWXT2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 19:19:28 -0400
+Date: Mon, 23 Jul 2012 16:19:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        stable@vger.kernel.org
+Subject: Re: [PATCH for-3.5 1/4] kdb: Revive dmesg command
+Message-Id: <20120723161927.9af62e29.akpm@linux-foundation.org>
+In-Reply-To: <20120721002737.GA2213@lizard>
+References: <20120721002529.GA20567@lizard>
+	<20120721002737.GA2213@lizard>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-24 at 00:07:48 +0200, Richard Weinberger wrote:
-> On 23.07.2012 22:47, Jesper Juhl wrote:
-> >>Fix it _how_?
-> >
-> >By returning the size as the number of bytes in the name the link is
-> >currently pointing at.
+On Fri, 20 Jul 2012 17:27:37 -0700
+Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+
+> dmesg command appears to be broken after the printk rework. The old logic
+> in kdb code makes no sense in terms of current printk/logging storage
+> format, and KDB simply hangs forever.
 > 
-> This is not easy.
-> procfs has no clue where the link pointing at.
-> The information is generated while accessing the link.
-> tmpfs on the other hand has this information because symlinks get
-> only changed through tmpfs...
-
-Well, can't the link be accessed when getting the stat information
-then?
-
-> >>  By retrying readlink() with bigger buffer.
-> >>With procfs there's just a few more ways the readlink() output can
-> >>change, that's all.
-> >>
-> >Still not a good reason to just return 0 IMHO.
+> This patch revives the command by switching to kmsg_dumper iterator.
 > 
-> IMHO the lstat() and readlink() manpages have to be more precise
-> about st_size.
+> The code is now much more simpler and shorter.
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-They document what POSIX says:
+This one should me merged into 3.5.1 methinks.  Note that it has been
+merged into mainline without a -stable tag.
 
-  <http://pubs.opengroup.org/onlinepubs/009695399/basedefs/sys/stat.h.html>
-
-regards,
-guillem
