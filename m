@@ -1,167 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab2GWSBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:01:35 -0400
-Received: from fep13.mx.upcmail.net ([62.179.121.33]:40754 "EHLO
-	fep13.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab2GWSBd (ORCPT
+	id S1754522Ab2GWSCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:02:53 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36540 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab2GWSCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:01:33 -0400
-X-SourceIP: 178.83.228.246
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <500D916A.60703@odi.ch>
-Date: Mon, 23 Jul 2012 20:01:14 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 23 Jul 2012 14:02:52 -0400
+Date: Mon, 23 Jul 2012 20:02:44 +0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf: fix build error
+Message-ID: <20120723180244.GB5418@infradead.org>
+References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: bskeggs@redhat.com, dri-devel@lists.freedesktop.org
-Subject: drm/nouveau: crash regression in 3.5
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em Mon, Jul 23, 2012 at 06:00:44PM +0300, Kirill A. Shutemov escreveu:
+> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> 
+> util/parse-events.c:29:5: error: redundant redeclaration of ‘parse_events_parse’ [-Werror=redundant-decls]
+> In file included from util/parse-events.c:14:0:
+> util/parse-events-bison.h:99:5: note: previous declaration of ‘parse_events_parse’ was here
+> cc1: all warnings being treated as errors
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-My HP Elitebook 8540w now crashes on boot with 3.5. All works fine with 
-3.4. Bisected to the following commit:
+Causes the build to fail for me:
 
-20abd1634a6e2eedb84ca977adea56b8aa06cc3e is the first bad commit
-commit 20abd1634a6e2eedb84ca977adea56b8aa06cc3e
-Author: Ben Skeggs <bskeggs@redhat.com>
-Date:   Mon Apr 30 11:33:43 2012 -0500
-
-     drm/nouveau: create real execution engine for software object class
-
-     Just a cleanup more or less, and to remove the need for special 
-handling of
-     software objects.
-
-     This removes a heap of documentation on dma/graph object formats. 
-The info
-     is very out of date with our current understanding, and is far better
-     documented in rnndb in envytools git.
-
-     Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-
-lspci:
-01:00.0 VGA compatible controller: NVIDIA Corporation GT215 [Quadro FX 
-1800M] (rev a2)
-
-
-kernel output from a working 3.4:
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Detected 
-an NV50 generation card (0x0a3e00a2)
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Checking 
-PRAMIN for VBIOS
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: ... 
-appears to be valid
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Using 
-VBIOS from PRAMIN
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: BIT BIOS found
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Bios 
-version 70.15.43.00
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: TMDS table 
-version 2.0
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: MXM: BIOS 
-version 3.0
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: MXM: MXMS 
-Version 3.0
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB 
-version 4.0
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-00: 01000313 00010034
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-03: 080153d6 0f220020
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-04: 08015392 00020020
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-05: 080143c6 0f220010
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-06: 08014382 00020010
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-08: 040383b6 0f230014
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-10: 020273a6 0f220010
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-11: 02027362 00020010
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
-13: 02049300 00000000
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-00: 00000040
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-01: 00001161
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-02: 00001231
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-03: 01000331
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-04: 01000446
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-05: 02000546
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-06: 00010631
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-07: 00010746
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-08: 00020847
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
-09: 00000900
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
-VBIOS init table 0 at offset 0x7AE4
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 0x7E6B: 
-Condition still not met after 20ms, skipping follow
-ing opcodes
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 0x7E6F: 
-Condition still not met after 20ms, skipping follow
-ing opcodes
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
-VBIOS init table 1 at offset 0x809A
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
-VBIOS init table 2 at offset 0x951E
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
-VBIOS init table 3 at offset 0x955C
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
-VBIOS init table 4 at offset 0x97CA
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
-VBIOS init table at offset 0x982F
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 0x982F: 
-Condition still not met after 20ms, skipping follow
-ing opcodes
-Jul 23 19:49:57 localhost kernel: [TTM] Zone  kernel: Available graphics 
-memory: 4008772 kiB
-Jul 23 19:49:57 localhost kernel: [TTM] Zone   dma32: Available graphics 
-memory: 2097152 kiB
-Jul 23 19:49:57 localhost kernel: [TTM] Initializing pool allocator
-Jul 23 19:49:57 localhost kernel: [TTM] Initializing DMA pool allocator
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Detected 
-1024MiB VRAM (GDDR5)
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 512 MiB 
-GART (aperture)
-Jul 23 19:49:57 localhost kernel: [drm] Supports vblank timestamp 
-caching Rev 1 (10.10.2010).
-Jul 23 19:49:57 localhost kernel: [drm] No driver support for vblank 
-timestamp query.
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: ACPI 
-backlight interface available, not registering our own
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 3 
-available performance level(s)
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 0: core 
-135MHz shader 270MHz memory 135MHz voltage 800mV
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 1: core 
-405MHz shader 810MHz memory 324MHz voltage 850mV
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 3: core 
-561MHz shader 1125MHz memory 1099MHz voltage 1000mV
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: c: core 
-405MHz shader 810MHz memory 324MHz voltage 1000mV
-Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: allocated 
-1680x1050 fb: 0x210000, bo ffff880230e50c00
-Jul 23 19:49:57 localhost kernel: fbcon: nouveaufb (fb0) is primary device
-Jul 23 19:49:57 localhost kernel: Console: switching to colour frame 
-buffer device 210x65
-Jul 23 19:49:57 localhost kernel: fb0: nouveaufb frame buffer device
-Jul 23 19:49:57 localhost kernel: drm: registered panic notifier
-Jul 23 19:49:57 localhost kernel: [drm] Initialized nouveau 1.0.0 
-20120316 for 0000:01:00.0 on minor 0
+[acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
+make: Entering directory `/home/git/linux/tools/perf'
+PERF_VERSION = 3.5.rc7.235.g5e5fcb
+make: Leaving directory `/home/git/linux/tools/perf'
+make: Entering directory `/home/git/linux/tools/perf'
+    GEN perf-archive
+make[1]: Entering directory `/home/git/linux/tools/lib/traceevent'
+    CC /home/acme/git/build/perf/perf.o
+    CC /home/acme/git/build/perf/util/parse-events.o
+make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
+    CC /home/acme/git/build/perf/util/map.o
+    CC /home/acme/git/build/perf/util/session.o
+    CC /home/acme/git/build/perf/util/trace-event-parse.o
+make[2]: `libtraceevent.a' is up to date.
+make[1]: Leaving directory `/home/git/linux/tools/lib/traceevent'
+cc1: warnings being treated as errors
+util/parse-events.c: In function ‘parse_events__scanner’:
+util/parse-events.c:701: error: implicit declaration of function ‘parse_events_parse’
+util/parse-events.c:701: error: nested extern declaration of ‘parse_events_parse’
+make: *** [/home/acme/git/build/perf/util/parse-events.o] Error 1
+make: *** Waiting for unfinished jobs....
+make: Leaving directory `/home/git/linux/tools/perf'
+[acme@sandy linux]$ 
