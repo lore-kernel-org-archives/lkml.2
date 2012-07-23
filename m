@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2GWIUu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 04:20:50 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:42761 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab2GWIUs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 04:20:48 -0400
-Message-ID: <500D0949.9040301@panasas.com>
-Date: Mon, 23 Jul 2012 11:20:25 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	id S1754046Ab2GWIWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 04:22:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49337 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753980Ab2GWIWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 04:22:41 -0400
+Date: Mon, 23 Jul 2012 10:22:38 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Shea Levy <shea@shealevy.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ftpadmin@kernel.org
+Subject: Re: Release Announcements
+Message-ID: <20120723082238.GB21615@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Shea Levy <shea@shealevy.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	ftpadmin@kernel.org
+References: <1C17E3CE-50F0-4A56-BCCB-201C6E39E980@shealevy.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [git pull] vfs.git; pile 1
-References: <20120722100920.GZ31729@ZenIV.linux.org.uk> <CA+55aFzG9gzWRLvZMb6RnKua0=RHxBFisYSCVDNhjHBq7oq2yw@mail.gmail.com> <20120722202030.GB31729@ZenIV.linux.org.uk>
-In-Reply-To: <20120722202030.GB31729@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1C17E3CE-50F0-4A56-BCCB-201C6E39E980@shealevy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2012 11:20 PM, Al Viro wrote:
+On Sun, Jul 22, 2012 at 12:08:34PM -0400, Shea Levy wrote:
+> The linux-kernel-announce doesn't seem to have had any traffic
+> since 3.1-rc4 (maybe due to the kernel.org break-in?). Is there a
+> recommended way to get email news of kernel releases without being
+> subscribed to the main kernel list?
 
-> I think the least painful solution is this: I've created a new branch
-> (for-linus-2) in there, growing off the parent of merge in nfs.git.
-> I've put the fixup to kern_path_locked() there as a separate commit
-> + stuff that went in for-linus after that point.
-> 
+Let's CC some more people about this.
 
-
-Does this means that between "kern_path_locked() patch" and it's fixup
-the tree is not bisectable? or is it just an enhancement/simplification?
-
-Not having any opinion, just wants to know
-
-Thanks
-Boaz 
+-- 
+Regards/Gruss,
+    Boris.
