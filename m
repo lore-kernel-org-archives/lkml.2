@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2GWT3Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 15:29:24 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38061 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754658Ab2GWT3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 15:29:22 -0400
-Date: Mon, 23 Jul 2012 12:29:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: lenb@kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [Resend][PATCH] ACPI / PM: Fix build warning in sleep.c for
- CONFIG_ACPI_SLEEP unset
-Message-ID: <20120723192910.GD2491@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120721214156.GA2515@linux.vnet.ibm.com>
- <201207221940.51764.rjw@sisk.pl>
- <20120722202843.GQ2435@linux.vnet.ibm.com>
- <201207232101.02472.rjw@sisk.pl>
+	id S1754712Ab2GWTeZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 15:34:25 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33086 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754381Ab2GWTeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 15:34:24 -0400
+Message-ID: <500DA6A4.1000009@linaro.org>
+Date: Mon, 23 Jul 2012 12:31:48 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207232101.02472.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/2] time: Cleanup offs_real/wall_to_mono and offs_boot/total_sleep_time
+ updates
+References: <1342660753-10382-1-git-send-email-john.stultz@linaro.org> <1342660753-10382-3-git-send-email-john.stultz@linaro.org> <20120719093305.GA27086@gmail.com>
+In-Reply-To: <20120719093305.GA27086@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072319-4242-0000-0000-000002686FC0
+x-cbid: 12072319-7182-0000-0000-0000020ED43E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 09:01:02PM +0200, Rafael J. Wysocki wrote:
-> 
-> If CONFIG_ACPI_SLEEP is unset, the compiler complains that
-> pwr_btn_event_pending is defined but not used.  To silence the
-> warning, move the definition of pwr_btn_event_pending under an
-> appropriate #ifdef.
-> 
-> Reported-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+On 07/19/2012 02:33 AM, Ingo Molnar wrote:
+> * John Stultz <john.stultz@linaro.org> wrote:
+>
+>> +static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
+>> +{
+>> +	/* Verify consistency before modifying */
+>> +	WARN_ON_ONCE(tk->offs_boot.tv64 !=
+>> +				timespec_to_ktime(tk->total_sleep_time).tv64);
+> asserts like this can be put into a single line - we rarely need
+> to read them if they don't trigger - and making them
+> non-intrusive oneliners is a bonus.
 
-Tested-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Ack.
 
-> ---
->  drivers/acpi/sleep.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux/drivers/acpi/sleep.c
-> ===================================================================
-> --- linux.orig/drivers/acpi/sleep.c
-> +++ linux/drivers/acpi/sleep.c
-> @@ -57,7 +57,6 @@ MODULE_PARM_DESC(gts, "Enable evaluation
->  MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
-> 
->  static u8 sleep_states[ACPI_S_STATE_COUNT];
-> -static bool pwr_btn_event_pending;
-> 
->  static void acpi_sleep_tts_switch(u32 acpi_state)
->  {
-> @@ -110,6 +109,7 @@ static int acpi_sleep_prepare(u32 acpi_s
-> 
->  #ifdef CONFIG_ACPI_SLEEP
->  static u32 acpi_target_sleep_state = ACPI_STATE_S0;
-> +static bool pwr_btn_event_pending;
-> 
->  /*
->   * The ACPI specification wants us to save NVS memory regions during hibernation
-> 
+>>   @@ -456,8 +478,8 @@ int timekeeping_inject_offset(struct timespec *ts)
+>>   
+>>   
+>>   	tk_xtime_add(&timekeeper, ts);
+>> -	timekeeper.wall_to_monotonic =
+>> -				timespec_sub(timekeeper.wall_to_monotonic, *ts);
+>> +	tk_set_wall_to_mono(&timekeeper,
+>> +			timespec_sub(timekeeper.wall_to_monotonic, *ts));
+> There's a *lot* of unnecessary ugliness here and in many other
+> places in kernel/time/ due to repeating patterns of
+> "timekeeper.", which gets repeated many times and blows up line
+> length.
+>
+> Please add this to the highest level (system call, irq handler,
+> etc.) code:
+>
+> 	struct timekeeper *tk = &timekeeper;
+>
+> and pass that down to lower levels. The tk-> pattern will be the
+> obvious thing to type in typical time handling functions.
+>
+> This increases readability and clarifies the data flow and might
+> bring other advantages in the future.
+
+Sounds good. Are you ok if this is done in a follow-on patch?
+
+> Stray newline.
+>
+> I see a pattern with the newlines there - and this isnt the
+> first patch from you that has that problem.
+
+Yea, I personally prefer more space between functions, so its a bad 
+habit I have (and checkpatch doesn't catch). I'll try to be more 
+watchful of it going forward.
+
+thanks
+-john
+
 
