@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab2GWBmb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:42:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54063 "EHLO
+	id S1753158Ab2GWBmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:42:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54067 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752837Ab2GWBm3 (ORCPT
+	by vger.kernel.org with ESMTP id S1753074Ab2GWBmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:29 -0400
-Message-Id: <20120723010705.811727643@decadent.org.uk>
+	Sun, 22 Jul 2012 21:42:32 -0400
+Message-Id: <20120723010706.252373414@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:25 +0100
+Date: Mon, 23 Jul 2012 02:08:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Zhang Rui <rui.zhang@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [ 094/108] ACPI, x86: fix Dell M6600 ACPI reboot regression via DMI
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>
+Subject: [ 097/108] eCryptfs: Fix lockdep warning in miscdev operations
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,41 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 76eb9a30db4bc8fd172f9155247264b5f2686d7b upstream.
+commit 60d65f1f07a7d81d3eb3b91fc13fca80f2fdbb12 upstream.
 
-Dell Precision M6600 is known to require PCI reboot, so add it to
-the reboot blacklist in pci_reboot_dmi_table[].
+Don't grab the daemon mutex while holding the message context mutex.
+Addresses this lockdep warning:
 
-https://bugzilla.kernel.org/show_bug.cgi?id=42749
+ ecryptfsd/2141 is trying to acquire lock:
+  (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}, at: [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
 
-cc: x86@kernel.org
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+ but task is already holding lock:
+  (&(*daemon)->mux){+.+...}, at: [<ffffffffa029c2ec>] ecryptfs_miscdev_read+0x21c/0x470 [ecryptfs]
+
+ which lock already depends on the new lock.
+
+ the existing dependency chain (in reverse order) is:
+
+ -> #1 (&(*daemon)->mux){+.+...}:
+        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
+        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
+        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
+        [<ffffffffa029c5d7>] ecryptfs_send_miscdev+0x97/0x120 [ecryptfs]
+        [<ffffffffa029b744>] ecryptfs_send_message+0x134/0x1e0 [ecryptfs]
+        [<ffffffffa029a24e>] ecryptfs_generate_key_packet_set+0x2fe/0xa80 [ecryptfs]
+        [<ffffffffa02960f8>] ecryptfs_write_metadata+0x108/0x250 [ecryptfs]
+        [<ffffffffa0290f80>] ecryptfs_create+0x130/0x250 [ecryptfs]
+        [<ffffffff811963a4>] vfs_create+0xb4/0x120
+        [<ffffffff81197865>] do_last+0x8c5/0xa10
+        [<ffffffff811998f9>] path_openat+0xd9/0x460
+        [<ffffffff81199da2>] do_filp_open+0x42/0xa0
+        [<ffffffff81187998>] do_sys_open+0xf8/0x1d0
+        [<ffffffff81187a91>] sys_open+0x21/0x30
+        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}:
+        [<ffffffff810a3418>] __lock_acquire+0x1bf8/0x1c50
+        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
+        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
+        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
+        [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
+        [<ffffffff811887d3>] vfs_read+0xb3/0x180
+        [<ffffffff811888ed>] sys_read+0x4d/0x90
+        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/reboot.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/ecryptfs/miscdev.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 79c45af..412db57 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -451,6 +451,14 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 990"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on the Precision M6600. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell OptiPlex 990",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
-+		},
-+	},
- 	{ }
- };
+--- a/fs/ecryptfs/miscdev.c
++++ b/fs/ecryptfs/miscdev.c
+@@ -195,31 +195,32 @@ int ecryptfs_send_miscdev(char *data, si
+ 			  struct ecryptfs_msg_ctx *msg_ctx, u8 msg_type,
+ 			  u16 msg_flags, struct ecryptfs_daemon *daemon)
+ {
+-	int rc = 0;
++	struct ecryptfs_message *msg;
  
+-	mutex_lock(&msg_ctx->mux);
+-	msg_ctx->msg = kmalloc((sizeof(*msg_ctx->msg) + data_size),
+-			       GFP_KERNEL);
+-	if (!msg_ctx->msg) {
+-		rc = -ENOMEM;
++	msg = kmalloc((sizeof(*msg) + data_size), GFP_KERNEL);
++	if (!msg) {
+ 		printk(KERN_ERR "%s: Out of memory whilst attempting "
+ 		       "to kmalloc(%zd, GFP_KERNEL)\n", __func__,
+-		       (sizeof(*msg_ctx->msg) + data_size));
+-		goto out_unlock;
++		       (sizeof(*msg) + data_size));
++		return -ENOMEM;
+ 	}
++
++	mutex_lock(&msg_ctx->mux);
++	msg_ctx->msg = msg;
+ 	msg_ctx->msg->index = msg_ctx->index;
+ 	msg_ctx->msg->data_len = data_size;
+ 	msg_ctx->type = msg_type;
+ 	memcpy(msg_ctx->msg->data, data, data_size);
+ 	msg_ctx->msg_size = (sizeof(*msg_ctx->msg) + data_size);
+-	mutex_lock(&daemon->mux);
+ 	list_add_tail(&msg_ctx->daemon_out_list, &daemon->msg_ctx_out_queue);
++	mutex_unlock(&msg_ctx->mux);
++
++	mutex_lock(&daemon->mux);
+ 	daemon->num_queued_msg_ctx++;
+ 	wake_up_interruptible(&daemon->wait);
+ 	mutex_unlock(&daemon->mux);
+-out_unlock:
+-	mutex_unlock(&msg_ctx->mux);
+-	return rc;
++
++	return 0;
+ }
+ 
+ /**
 
 
