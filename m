@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab2GWSNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:13:13 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:40548 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab2GWSNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:13:10 -0400
-Date: Mon, 23 Jul 2012 14:12:52 -0400
-From: Aristeu Rozanski <aris@ruivo.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Aristeu Rozanski <aris@redhat.com>,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 0/3] cgroup: add xattr support
-Message-ID: <20120723181252.GW14236@cathedrallabs.org>
-References: <20120702142925.795007114@napanee.usersys.redhat.com>
- <20120717204126.GE24336@google.com>
- <alpine.LSU.2.00.1207181237010.2160@eggly.anvils>
- <20120718221044.GJ24336@google.com>
- <alpine.LSU.2.00.1207181736020.3323@eggly.anvils>
- <20120720175959.GA32741@cathedrallabs.org>
- <alpine.LSU.2.00.1207221136160.1896@eggly.anvils>
+	id S1754460Ab2GWSOH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:14:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54074 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab2GWSOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 14:14:05 -0400
+Date: Mon, 23 Jul 2012 20:13:58 +0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
+Message-ID: <20120723181358.GC6717@infradead.org>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+ <1342826756-64663-9-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1207221136160.1896@eggly.anvils>
+In-Reply-To: <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 12:12:07PM -0700, Hugh Dickins wrote:
-> Please, do not do this.
+Em Fri, Jul 20, 2012 at 05:25:53PM -0600, David Ahern escreveu:
+> PEBS cannot be used with guest mode. If user adds :p modifier set
+> exclude_guest as well.
+
+Is this something Intel specific? Or can someone think of an arch where
+this limitation wouldn't exist?
+ 
 > 
-> It may be fun to implement, but not to review and maintain.
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Link: https://lkml.org/lkml/2012/7/9/264
+> ---
+>  tools/perf/util/parse-events.c |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> If we're going to start supporting swappable kernel memory, tmpfs
-> xattrs is not the right place to start, and libfs xattrs certainly not:
-> they are a poor fit for swappable memory.  (You contemplate using whole
-> pages above: that will not be very kind to those without swap.)
-> 
-> By all means continue Zefan's work to move xattr support from tmpfs
-> to libfs (ah, to fs/xattr.c actually, okay), but keep them as kmem.
-> 
-> Support setting and removing user xattrs only if the user has the
-> appropriate capability (which root will have): looking through the
-> list of existing capabilities, CAP_IPC_LOCK actually looks appropriate,
-> although I admit its name certainly does not - it's the "lock down
-> unlimited amounts of memory" capability.
-
-ok, will have to do it in cgroupfs because it allows user prefixes, not the
-case on tmpfs.
-
-> And support setting and removing user xattrs only if the filesystem
-> opts in to that: so cgroupfs can opt in, everything else stay out,
-> and we know where to look when memory goes missing.
-
-hm, for tmpfs, there's a config option for it, while cgroup has a mount
-option, default off.
-
-> Will "lsattr -R" in the cgroupfs mountpoint do enough to judge how
-> much memory is being used in this way?  I expect not, but I'm
-> unfamliar with it: you may need to show counts elsewhere.
-
-that's for ext{2,3,4} file attributes, not extended attributes. but agreed,
-there's a need to have this stat somewhere. Tejun, any ideas?
-
--- 
-Aristeu
-
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 1aa721d..f34629b 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -653,6 +653,9 @@ int parse_events_modifier(struct list_head *list, char *str)
+>  			eH = 0;
+>  		} else if (*str == 'p') {
+>  			precise++;
+> +			/* use of precise requires exclude_guest */
+> +			if (!exclude_GH)
+> +				eG = 1;
+>  		} else
+>  			break;
+>  
+> -- 
+> 1.7.10.1
