@@ -1,37 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab2GWQgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 12:36:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37038 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab2GWQge convert rfc822-to-8bit (ORCPT
+	id S1754383Ab2GWQjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 12:39:12 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:44287 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab2GWQjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 12:36:34 -0400
-Message-ID: <1343061382.26034.1.camel@twins>
-Subject: Re: [PATCH 2/4] perf/x86: Fix format definition of SNB-EP uncore
- QPI box
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 23 Jul 2012 18:36:22 +0200
-In-Reply-To: <CABPqkBSLk_fCBEbVgNVc3iGsOFaSiKpPYF5krj_wymDP=SA6Cg@mail.gmail.com>
-References: <1343024611-4692-1-git-send-email-zheng.z.yan@intel.com>
-	 <1343024611-4692-2-git-send-email-zheng.z.yan@intel.com>
-	 <CABPqkBSLk_fCBEbVgNVc3iGsOFaSiKpPYF5krj_wymDP=SA6Cg@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 23 Jul 2012 12:39:11 -0400
+Date: Mon, 23 Jul 2012 17:44:21 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] proc: do not allow negative offsets on
+ /proc/<pid>/environ
+Message-ID: <20120723164421.GA5624@dztty>
+References: <1342974959-2748-1-git-send-email-tixxdz@opendz.org>
+ <20120722200049.GA29222@redhat.com>
+ <20120723010447.GA23410@dztty>
+ <20120723154927.GA17439@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120723154927.GA17439@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-23 at 18:33 +0200, Stephane Eranian wrote:
+On Mon, Jul 23, 2012 at 05:49:27PM +0200, Oleg Nesterov wrote:
+> Hi Djalal,
 > 
-> DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7,21");
-> 
-> Assuming the event parser supports disjoint bits. 
+> On 07/23, Djalal Harouni wrote:
+> >
+> > Hi Oleg,
+> >
+> > On Sun, Jul 22, 2012 at 10:00:49PM +0200, Oleg Nesterov wrote:
+> > >
+> > > Probablt the patch makes sense, but I can't understand the changelog...
+> > >
+> > > > Allowing negative offsets on /proc/<pid>/environ can turn it to act like
+> > > > /proc/<pid>/mem. A negative offset will pass the
+> > > > fs/read_write.c:lseek_execute() and the environ_read() checks and will
+> > > > point to another VMA.
+> > >
+> > > which VMA?
+> > It depends on the offset. Please see below.
+> >
+> > > environ_read() can only read the memory from [env_start, env_end], and
+> > > it should check *ppos anyway to ensure it doesn't read something else.
+> > Yes I agree, but currently that's not the case, there are no checks on *ppos.
+>                                                   ^^^^^^^^^^^^^^^^^^^
+> There is, unless I missed something, just it is buggy, no?
+Right.
 
-It does. Userspace should provide a 9bit value in this case and the 9th
-bit will be stored in bit 21.
+> > So if you pass a negative offset you will be able to read from an arbitrary
+> > address.
+> >
+> > [...snip...]
+> >
+> >   inside environ_read() there is only a one check:
+> >
+> >   int this_len = mm->env_end - (mm->env_start + src);
+> >
+> >   if (this_len <= 0)
+> >     break;
+> >
+> >
+> >   Here 'src' is 'src = *ppos' the negative offset converted to unsigned long
+> >   and (mm->env_start + src) can overflow and point to another VMA.
+> >
+> >   int this_len = mm->env_end - (mm->env_start + src)
+> >
+> >   'this_len' will be positive and we pass that check.
+> 
+> OK, thanks, but doesn't this mean that this check should be fixed
+> to avoid the overflow, no matter what *ppos is?
+Yes, we must also fix it and check if we are in the [env_start, env_end]
+range.
+
+> With or without FMODE_UNSIGNED_OFFSET change. And perhaps it is
+> possible to trigger the overflow even with the positive *ppos,
+> because:
+> 
+> > I also don't like the truncation of the result to 'int this_len'
+> 
+> Yes.
+> 
+> > BTW should I resend the patch with a better changelog entry ?
+> 
+> Up to you, but I think this makes sense ;)
+> 
+> > I'll also add another patch to check the offsets inside environ_read().
+> 
+> Yes, agreed, but please see above.
+> 
+> Please correct me, but afaics this patch should come 1st and fix the bug.
+> FMODE_UNSIGNED_OFFSET change can be considered as a cleanup after that.
+> 
+> What do you think?
+I agree, that makes more sense and we do not hide the *ppos bug.
+
+I'll resend the two patches soon (fix and check *ppos + this patch with an
+updated changelog).
+
+Thanks.
+
+-- 
+tixxdz
+http://opendz.org
