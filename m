@@ -1,175 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab2GWUdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:33:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63052 "EHLO
+	id S1754920Ab2GWUdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:33:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61616 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab2GWUdF (ORCPT
+	with ESMTP id S1754874Ab2GWUdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:33:05 -0400
+	Mon, 23 Jul 2012 16:33:17 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         arm@kernel.org
-Subject: [GIT PULL 01/15] arm-soc: non-critical bug fixes
-Date: Mon, 23 Jul 2012 22:32:27 +0200
-Message-Id: <1343075561-17446-2-git-send-email-arnd@arndb.de>
+Subject: [GIT PULL 04/15] arm-soc: samsung dma changes
+Date: Mon, 23 Jul 2012 22:32:30 +0200
+Message-Id: <1343075561-17446-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343075561-17446-1-git-send-email-arnd@arndb.de>
 References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:109DTIe0BSG/qjtJJ01YmLUSmdYKno0ZO1rVQ0RVVuF
- eq8rHuZG7PdpizFoLeBj+JAu72pfD6DbKa+oZ52RQQEWwmPhpX
- qx5VTL1sYOnn3T/8cMOv5RJlzK5AKw8v/Cvd85D/e4obvrAdiG
- Rypto0PANN5RMm9MdTacvJn7p8Z22fSs1Jvd/jXIY8xQ/w4UyO
- tI27x2RsFbUANpbl8Fg5/0k+xHIdC47osyjJ6igXsEs/xZ98gb
- QpLsRIqMrAIgiV33D80HvdtZL8UZwWDJ1wlIrZPyN5NxtHpcju
- /X+DcJmZh9H9uewPX96TzHQbMZQkxqNnMEuPSbXHNNDGeY3ZeL
- mbx3pVTbnjDdrzDWFoDZeCJj+i9vQWlRvOvlHfy4F
+X-Provags-ID: V02:K0:gFM819uogD6xXjhrHiwdG3uFUKqjA1+jedHqOwWx4ME
+ cSnWa/dXz9dOWGtgCHhBN3c1KxbtGUbxfiva2IIz5X85Yj7HoO
+ jJ7u9Pkfmxd346Hl+eevqZyykEQWgo88tUlM76KaxLb+uBc4ga
+ XeZyPykWPhzeGdFAKBUAlx7+sIP4f08dJtO2bUe/8Mbol6l356
+ k1cOCkE+g7rOzwwgreUkpW0aiKzWakv7io4byqbMbw0nXjfwLj
+ Rn3RZnSIdTGGOl0wU9CFaCqBrCUjTNZJz/Ex6pZuJTcQsozUJA
+ ST8Oqtre5/neCL0iNkqWbJZ8qJTOWZ6cZdz1+CzhzP6Q1DtNlg
+ ZGI0sPaPvlXyaioq9jABGBFLlxjTQ1j9QLOL8tyyK
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+The following changes since commit bd0a521e88aa7a06ae7aabaed7ae196ed4ad867a:
 
-  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+  Linux 3.5-rc6 (2012-07-07 17:23:56 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/fixes-non-critical
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/dma
 
-for you to fetch changes up to 913bdf1217f40c5e68c6b09f299177e5cd9629bd:
+for you to fetch changes up to 31dfec74c0dc49521b2e17543ff9dd9dd0221702:
 
-  Merge tag 'ep93xx-fixes-for-3.6' of git://github.com/RyanMallon/linux-ep93xx into next/fixes-non-critical (2012-07-18 18:56:34 +0200)
-
-----------------------------------------------------------------
-
-arm-soc: non-critical bug fixes
-
-These were submitted as bug fixes before v3.5 but not considered
-important enough to be included in it.
+  Merge branch 'next/devel-dma-ops' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into next/dma (2012-07-10 14:12:05 +0200)
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (6):
-      ARM: OMAP depends on MMU
-      Merge tag 'omap-fixes-non-critical-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
-      Merge branch 'mxs/fixes-for-3.6' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/fixes-non-critical
-      Merge tag 'davinci-v3.6-fixes' of git://gitorious.org/linux-davinci/linux-davinci into next/fixes-non-critical
-      Merge tag 'ep93xx-fixes-for-3.6' of git://github.com/RyanMallon/linux-ep93xx into next/fixes-non-critical
-      Merge branch 'next/fixes-non-critical' into for-next
+arm-soc: samsung dma changes
 
-Brian Austin (1):
-      ARM: OMAP: beagle: Set USB Host Port 1 to OMAP_USBHS_PORT_MODE_UNUSED
+Some platforms are not yet converted to use the dmaengine framework,
+including some of the samsung SoCs. In the meantime, we treat this
+as platform code and merge the patches through the arm-soc tree.
 
-Daniel Lezcano (1):
-      ARM: OMAP3/4: consolidate cpuidle Makefile
+----------------------------------------------------------------
 
-Igor Grinberg (1):
-      ARM: OMAP: fix the ads7846 init code
+Arnd Bergmann (2):
+      Merge branch 'next/devel-dma-ops' of git://git.kernel.org/.../kgene/linux-samsung into next/dma
+      Merge branch 'next/dma' into for-next
 
-Javier Martinez Canillas (1):
-      ARM: OMAP: omap2plus_defconfig: Enable EXT4 support
+Boojin Kim (3):
+      ARM: SAMSUNG: Add config() function in DMA common operations
+      spi/s3c64xx: Add the use of DMA config operation
+      ASoC: follow the updated samsung DMA common operations
 
-Juan Gutierrez (2):
-      ARM: OMAP: enable mailbox irq per instance
-      ARM: OMAP4: fix irq and clock name for dsp-iommu
+Sachin Kamat (1):
+      ARM: SAMSUNG: Fix compiler warning in dma-ops.c file
 
-Kevin Hilman (3):
-      ARM: OMAP2+: TWL: remove usage of pdata->irq_base/_end
-      mfd: twl: remove pdata->irq_base/_end, no more users
-      ARM: OMAP2+: fix CONFIG_CPU_IDLE dependency on CONFIG_PM
-
-Mark A. Greer (4):
-      ARM: OMAP3: PM: Only access IVA if one exists
-      ARM: OMAP AM35x: EMAC/MDIO integration: Add Davinci EMAC/MDIO hwmod support
-      ARM: OMAP AM35x: clockdomain data: Fix clockdomain dependencies
-      arm: omap3: am35x: Set proper powerdomain states
-
-Nishanth Menon (1):
-      ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
-
-Ohad Ben-Cohen (1):
-      ARM: OMAP4: hwspinlocks_init() should be static
-
-Paul Bolle (4):
-      ARM: OMAP7XX:  Remove omap730.h and omap850.h
-      ARM: OMAP: fix typos related to OMAP330
-      ARM: OMAP: remove unused cpu detection macros
-      ARM: mxs/tx28: fix odd include
-
-Paul Walmsley (4):
-      ARM: OMAP AM35xx: clock and hwmod data: fix AM35xx HSOTGUSB hwmod
-      ARM: OMAP AM35xx: clock and hwmod data: fix UART4 data
-      ARM: OMAP: AM35xx: fix UART4 softreset
-      Merge branches 'am35xx_hwmod_data_fixes_a_3.6', 'am35xx_emac_mdio_devel_3.6' and 'am35xx_prcm_data_devel_3.6' into am35xx_devel_3.6
-
-Peter Ujfalusi (1):
-      ARM: OMAP2: twl-common: Fix compiler warning
-
-Roland Stigge (1):
-      ARM: OMAP: Fix dts files w/ status property: "disable" -> "disabled"
-
-Sekhar Nori (1):
-      ARM: davinci: da8xx: fix interrupt handling
-
-Todor Colov (1):
-      arm: ep93xx: Enable i2c support for ep9302
-
-Tony Lindgren (5):
-      Merge branch 'for-tony' of git://git.kernel.org/.../ohad/linux into fixes-omap4-dsp
-      Merge branch 'fixes-omap4-dsp' into fixes-non-critical
-      Merge branch 'for_3.6/cleanup/pm' of git://git.kernel.org/.../khilman/linux-omap-pm into fixes-non-critical
-      Merge branch 'for_3.6/cleanup/twl-irq' of git://git.kernel.org/.../khilman/linux-omap-pm into fixes-non-critical
-      Merge tag 'omap-devel-d-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into fixes-non-critical
-
-Tony Prisk (1):
-      ARM:vt8500: Convert to use .restart and remove arch_reset()
-
-Venkatraman S (1):
-      ARM: OMAP2+: fix naming collision of variable nr_irqs
-
- arch/arm/Kconfig                                 |    1 +
- arch/arm/boot/dts/omap3-beagle.dts               |    4 +-
- arch/arm/boot/dts/omap4-panda.dts                |    6 +-
- arch/arm/boot/dts/omap4-sdp.dts                  |    4 +-
- arch/arm/configs/omap2plus_defconfig             |    1 +
- arch/arm/mach-davinci/include/mach/entry-macro.S |    8 +-
- arch/arm/mach-ep93xx/edb93xx.c                   |    4 +-
- arch/arm/mach-mxs/module-tx28.c                  |    2 +-
- arch/arm/mach-omap2/Kconfig                      |    2 +
- arch/arm/mach-omap2/Makefile                     |    7 +-
- arch/arm/mach-omap2/am35xx-emac.c                |   90 +++++++------
- arch/arm/mach-omap2/board-2430sdp.c              |    3 -
- arch/arm/mach-omap2/board-omap3beagle.c          |    2 +-
- arch/arm/mach-omap2/board-omap3logic.c           |    3 -
- arch/arm/mach-omap2/clock3xxx_data.c             |   28 ++--
- arch/arm/mach-omap2/clockdomains3xxx_data.c      |  157 ++++++++++++++++++++--
- arch/arm/mach-omap2/cm-regbits-34xx.h            |    4 +-
- arch/arm/mach-omap2/common-board-devices.c       |   22 +--
- arch/arm/mach-omap2/cpuidle34xx.c                |    8 --
- arch/arm/mach-omap2/cpuidle44xx.c                |    8 --
- arch/arm/mach-omap2/include/mach/am35xx.h        |    2 +
- arch/arm/mach-omap2/irq.c                        |    8 +-
- arch/arm/mach-omap2/mailbox.c                    |    2 -
- arch/arm/mach-omap2/omap-iommu.c                 |    6 +-
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c       |  143 ++++++++++++++++++--
- arch/arm/mach-omap2/opp.c                        |    3 +-
- arch/arm/mach-omap2/pm.h                         |   17 ++-
- arch/arm/mach-omap2/pm34xx.c                     |   15 ++-
- arch/arm/mach-omap2/powerdomains3xxx_data.c      |  139 +++++++++++++++++--
- arch/arm/mach-omap2/prcm-common.h                |    4 +-
- arch/arm/mach-omap2/prm_common.c                 |    8 +-
- arch/arm/mach-omap2/twl-common.c                 |   11 +-
- arch/arm/mach-vt8500/Makefile                    |    2 +-
- arch/arm/mach-vt8500/bv07.c                      |    3 +
- arch/arm/mach-vt8500/include/mach/restart.h      |   17 +++
- arch/arm/mach-vt8500/include/mach/system.h       |   13 --
- arch/arm/mach-vt8500/restart.c                   |   54 ++++++++
- arch/arm/mach-vt8500/wm8505_7in.c                |    4 +-
- arch/arm/plat-omap/include/plat/cpu.h            |   20 +--
- arch/arm/plat-omap/include/plat/mux.h            |    2 +-
- arch/arm/plat-omap/include/plat/omap730.h        |  102 --------------
- arch/arm/plat-omap/include/plat/omap850.h        |  102 --------------
- arch/arm/plat-omap/mailbox.c                     |   13 +-
- include/linux/i2c/twl.h                          |    1 -
- 44 files changed, 634 insertions(+), 421 deletions(-)
+ arch/arm/plat-samsung/dma-ops.c              |   76 ++++++++++++++------------
+ arch/arm/plat-samsung/include/plat/dma-ops.h |   20 ++++---
+ arch/arm/plat-samsung/s3c-dma-ops.c          |   39 +++++++------
+ drivers/spi/spi-s3c64xx.c                    |   33 ++++++-----
+ sound/soc/samsung/dma.c                      |   18 +++---
+ 5 files changed, 105 insertions(+), 81 deletions(-)
