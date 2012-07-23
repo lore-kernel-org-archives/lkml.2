@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab2GWRls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 13:41:48 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45767 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226Ab2GWRlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 13:41:47 -0400
-Message-ID: <500D8CD0.7030902@kernel.org>
-Date: Mon, 23 Jul 2012 10:41:36 -0700
-From: Konstantin Ryabitsev <mricon@kernel.org>
-Organization: Linux Foundation/Kernel.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754404Ab2GWRoK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 13:44:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18463 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754236Ab2GWRoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 13:44:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="170269470"
+Date: Mon, 23 Jul 2012 10:44:06 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Denis Turischev <denis@compulab.co.il>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/2] xhci: EHCI/XHCI ports switching on Intense-PC.
+Message-ID: <20120723174406.GG32758@xanatos>
+References: <5004454E.9030903@compulab.co.il>
+ <20120717045416.GJ7599@xanatos>
+ <50065E5A.2040103@compulab.co.il>
+ <20120718165916.GA30828@xanatos>
+ <500D3998.7010705@compulab.co.il>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-CC: "John 'Warthog9' Hawley" <warthog9@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org
-Subject: Re: [kernel.org users] [KORG] lkml.kernel.org up and running
-References: <5000B5D1.3090307@kernel.org> <20120723130642.GA4572@breakpoint.cc>
-In-Reply-To: <20120723130642.GA4572@breakpoint.cc>
-X-Enigmail-Version: 1.4.3
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigAEDCB69D4B881507F231F3EC"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500D3998.7010705@compulab.co.il>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigAEDCB69D4B881507F231F3EC
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Did you try disabling the wake on bits in the port status registers?  I
+would prefer that solution if it works.
 
-On 23/07/12 06:06 AM, Sebastian Andrzej Siewior wrote:
-> |wget
-> |'http://lkml.kernel.org/r/1342156917-25092-2-git-send-email-john.stult=
-z@linaro.org'
-> |--2012-07-23 15:05:14--
-> |http://lkml.kernel.org/r/1342156917-25092-2-git-send-email-john.stultz=
-@linaro.org
-> |Resolving lkml.kernel.org (lkml.kernel.org)... 198.145.19.208, 198.145=
-=2E19.209
-> |Connecting to lkml.kernel.org (lkml.kernel.org)|198.145.19.208|:80...
-> |connected.
-> |HTTP request sent, awaiting response... 500 Internal Server Error
-> |2012-07-23 15:05:14 ERROR 500: Internal Server Error.
+Otherwise this patchset looks fine.  I'll work with the hardware folks
+and see if this is exposed on other boards.  Also, this is not a BIOS
+bug, but a hardware issue that can be worked around in BIOS.  So I might
+edit your description on the first patch a bit when I submit it to Greg.
 
-This was fixed at 16:30 +0000.
+Sarah Sharp
 
-Sorry about the problem -- it was caused by a bug in the upstream
-selinux policy for suexec.
-
-Best,
---=20
-Konstantin Ryabitsev
-Systems Administrator
-Linux Foundation, kernel.org
-Montr=C3=A9al, Qu=C3=A9bec
-
-
---------------enigAEDCB69D4B881507F231F3EC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQGcBAEBAgAGBQJQDYzQAAoJEI6WedmufEleBAUL/2FSObMeyVFlWu+mGfg47Vch
-0OKI9kiAI0Reb+UN9CFZqRfYn8v5jCHIHOvmq2t38YHvllHUNRou7FuU+UZCpDRE
-8CGt46urzTW3uYwI71V+feYTdJmmDoH1iQLUY8RWowUws+B9NdEUEWh2irKRFF0X
-L9cq1sQlmLtSTSzOfdL71BbegKf7YWQWzIeJ+6OHOER+Vx/eWZM3+3cJFWv3elw1
-dwa6nZn3Dj6o0oZHJGogANZeQaPe9fD7xMlXzfbJ3Q7rfW2FoTci7MvwvO9LyHji
-aMvF6xYJ7z41JKRE2AEm8vyzLuRvVPOvFzxpWVK+lscS58krAJhsE5o+ETHoJoFh
-cB8QYE4mVsC11mPAPo3CAuwPY4ZabIoxRMHWRzXniRGCTsQ0XX1kQsl1t5GdXRry
-lefGXqOeBwp19+pefuN9LN8dYqDuNTYU1WHPbUnXpQ4il3C+MCU0e458g1JMoTdn
-6MXlTldxTl1QLDsdubMD/nAZNoSi2ZS3EywoOOeuwA==
-=jBHr
------END PGP SIGNATURE-----
-
---------------enigAEDCB69D4B881507F231F3EC--
+On Mon, Jul 23, 2012 at 02:46:32PM +0300, Denis Turischev wrote:
+> Intense-PC is Compulab's mini-desktop with Intel Panther Point
+> chipset.
+> 
+> Unconditional switchover to xHCI provided by function
+> usb_enable_xhci_ports() leads to surprising results, after shutdown
+> system powered-on again after a few seconds. On Windows power
+> related problems were not observed. Switching back to EHCI solves
+> the problem.
+> 
+> The patch switches usb ports back to EHCI during xhci shutdown
+> for Intense-PC.
+> 
+> Signed-off-by: Denis Turischev <denis@compulab.co.il>
+> ---
+>  drivers/usb/host/xhci.c |   14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index a979cd0..541efaa 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -26,6 +26,8 @@
+>  #include <linux/module.h>
+>  #include <linux/moduleparam.h>
+>  #include <linux/slab.h>
+> +#include <linux/dmi.h>
+> +#include "pci-quirks.h"
+> 
+>  #include "xhci.h"
+> 
+> @@ -656,8 +658,20 @@ void xhci_stop(struct usb_hcd *hcd)
+>   */
+>  void xhci_shutdown(struct usb_hcd *hcd)
+>  {
+> +	struct pci_dev *pdev;
+> +	const char *brd_name;
+>  	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+> 
+> +	pdev = to_pci_dev(hcd->self.controller);
+> +
+> +	if (usb_is_intel_switchable_xhci(pdev)) {
+> +		brd_name = dmi_get_system_info(DMI_BOARD_NAME);
+> +
+> +		/* quirk for Compulab's Intense-PC board */
+> +		if (brd_name && strstr(brd_name, "Intense-PC"))
+> +			usb_disable_xhci_ports(pdev);
+> +	}
+> +
+>  	spin_lock_irq(&xhci->lock);
+>  	xhci_halt(xhci);
+>  	spin_unlock_irq(&xhci->lock);
+> -- 
+> 1.7.9.5
+> 
