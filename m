@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab2GWO4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 10:56:09 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41477 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab2GWO4H (ORCPT
+	id S1754022Ab2GWO5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 10:57:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38367 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753296Ab2GWO53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 10:56:07 -0400
-Message-ID: <500D6602.6070809@linaro.org>
-Date: Mon, 23 Jul 2012 15:56:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 23 Jul 2012 10:57:29 -0400
+Date: Mon, 23 Jul 2012 10:57:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@amd.com>
+cc: Jeff Garzik <jgarzik@pobox.com>, Lin Ming <minggr@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        Aaron Lu <aaron.lwe@gmail.com>
+Subject: Re: [PATCH 2/5] scsi: sr: runtime pm when ODD is open/closed
+In-Reply-To: <1343026180-22236-3-git-send-email-aaron.lu@amd.com>
+Message-ID: <Pine.LNX.4.44L0.1207231052010.1633-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Help request - ASoC recursion issue
-References: <500D5A1F.9000808@linaro.org> <500D649B.80704@linaro.org>
-In-Reply-To: <500D649B.80704@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/07/12 15:50, Lee Jones wrote:
->> I was wondering if I may bother you for some help. I've been having
->> serious issues with testing the new mop500 sound system you have in your
->> ASoC for-next branch. I've fixed a few issues and will be submitting
->> patches shortly. The most serious issue I came across was with
->> recursion.
->
-> It appears you can ignore this. I just tried another piece of hardware
-> and this problem doesn't arise, leading me to believe I have some kind
-> of eMMC corruption error going on with one of my boards.
+On Mon, 23 Jul 2012, Aaron Lu wrote:
 
-FYI, just so you don't think I'm mad: http://paste.ubuntu.com/1106535/
+> The ODD can either be runtime resumed by the user or by a software
+> request. And for the latter part, we only support runtime resume the ODD
+> when the eject request is received. We did this in sr's block ioctl
+> function, this looks ugly.
+> 
+> Change this by runtime resuming the ODD in its open function and runtime
+> suspending it in its release function.
+> 
+> The downside of this approach is that in old distros with old udisk
+> daemon, the ODD will be polled by udisk daemon so open/close will
+> constantly be called, which will cause the ODD frequently resume from
+> suspend state, breaking the effect of power saving. User with such a
+> distro is advised to issue a udisk command to inhibit polling of the
+> disk like this:
+> $ udisks --inhibit-polling /dev/sr0
+> And since newer kernel has in kernel polling, there is no problem
+> regarding ODD's event report.
+> 
+> Signed-off-by: Aaron Lu <aaron.lu@amd.com>
+> ---
+>  drivers/scsi/sr.c | 18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+> index 5f4d19a..f7a7635 100644
+> --- a/drivers/scsi/sr.c
+> +++ b/drivers/scsi/sr.c
+> @@ -152,8 +152,15 @@ static inline struct scsi_cd *scsi_cd_get(struct gendisk *disk)
+>  	kref_get(&cd->kref);
+>  	if (scsi_device_get(cd->device))
+>  		goto out_put;
+> +	if (pm_runtime_get_sync(&cd->device->sdev_gendev) < 0) {
+> +		pm_runtime_put_noidle(&cd->device->sdev_gendev);
+> +		goto out_pm;
+> +	}
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+You should use scsi_autopm_get_device instead of bypassing the SCSI 
+layer.  Similarly for the _put call.
+
+I know the existing calls do this already.  They shouldn't.
+
+Alan Stern
+
