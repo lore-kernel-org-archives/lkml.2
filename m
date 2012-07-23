@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab2GWOqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 10:46:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35088 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab2GWOqn (ORCPT
+	id S1753975Ab2GWOrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 10:47:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38346 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753660Ab2GWOrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 10:46:43 -0400
-Message-ID: <500D6375.1070102@mvista.com>
-Date: Mon, 23 Jul 2012 18:45:09 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 23 Jul 2012 10:47:04 -0400
+Date: Mon, 23 Jul 2012 10:47:02 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sarbojit Ganguly <unixman.linuxboy@gmail.com>
+cc: Daniel Mack <zonque@gmail.com>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: Kernel Oops while disconnecting USB peripheral (always)
+In-Reply-To: <CAP2rAF-ZappKmznEVjd=kQgRx__oVZ3vSE53rWDHVJf6VwMVTA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1207231044380.1633-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Denis Turischev <denis@compulab.co.il>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/2] xhci: provide usb_disable_xhci_ports function for
- Intel chipsets.
-References: <5004454E.9030903@compulab.co.il> <20120717045416.GJ7599@xanatos> <50065E5A.2040103@compulab.co.il> <20120718165916.GA30828@xanatos> <500D398E.1060000@compulab.co.il>
-In-Reply-To: <500D398E.1060000@compulab.co.il>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 23 Jul 2012, Sarbojit Ganguly wrote:
 
-On 07/23/2012 03:46 PM, Denis Turischev wrote:
-
-> Some devices with Intel Panther Point chipset may require switchover
-> usb ports from XHCI back to EHCI controller before shutdown.
-> Overwise various BIOS bugs related to power management may be
-> triggered.
-
-> Signed-off-by: Denis Turischev <denis@compulab.co.il>
-> ---
->  drivers/usb/host/pci-quirks.c |   14 ++++++++++++++
->  drivers/usb/host/pci-quirks.h |    1 +
->  2 files changed, 15 insertions(+)
-
-> diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-> index df0828c..b19a84a 100644
-> --- a/drivers/usb/host/pci-quirks.c
-> +++ b/drivers/usb/host/pci-quirks.c
-> @@ -800,6 +800,20 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
->  }
->  EXPORT_SYMBOL_GPL(usb_enable_xhci_ports);
+> Hello Daniel,
 > 
-> +void usb_disable_xhci_ports(struct pci_dev *xhci_pdev)
-> +{
-> +	u32		ports_available;
-> +
-> +	ports_available = 0x0;
+> That is why I provided two stacks,
+> 
+> 1st one is when I tried to remove the USB hub (which connects a webcam
+> + microphone)
+> 2nd one is when I tried to remove an USB powered external HDD.
+> 
+> Just to make sure whether the problem is with USB sound or the USB subsystem.
 
-   Why not make it an initializer? And why do you need the variable at all?
+Do you stop all the programs that are using the USB devices before 
+unplugging the hub?  Do you unmount the USB HDD first?
 
-> +
-> +	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN,
-> +			cpu_to_le32(ports_available));
+The first crash shows a problem in the snd-usb-audio driver.
 
-   cpu_to_le32() not needed.
+The second crash shows a problem in the VFS layer or in ext3, not in 
+the USB stack.
 
-> +
-> +	pci_write_config_dword(xhci_pdev, USB_INTEL_XUSB2PR,
-> +			cpu_to_le32(ports_available));
-> +}
-> +EXPORT_SYMBOL_GPL(usb_disable_xhci_ports);
-> +
->  /**
->   * PCI Quirks for xHCI.
->   *
-
-WBR, Sergei
+Alan Stern
 
