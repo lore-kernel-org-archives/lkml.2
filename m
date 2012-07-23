@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab2GWCIx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:08:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53998 "EHLO
+	id S1753124Ab2GWCIv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:08:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53995 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752860Ab2GWBmR (ORCPT
+	by vger.kernel.org with ESMTP id S1752901Ab2GWBmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:42:17 -0400
-Message-Id: <20120723010652.743997034@decadent.org.uk>
+Message-Id: <20120723010652.299525359@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:06:59 +0100
+Date: Mon, 23 Jul 2012 02:06:56 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 008/108] drm/i915: fix operator precedence when enabling RC6p
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 005/108] rtl8187: ->brightness_set can not sleep
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,33 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit c0e2ee1bc0cf82eec89e26b7afe7e4db0561b7d9 upstream.
+commit 0fde0a8cfd0ede7f310d6a681c8e5a7cb3e32406 upstream.
 
-As noticed by Torsten Kaiser, the operator precedence can play tricks with
-us here.
+Fix:
 
-CC: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+BUG: sleeping function called from invalid context at kernel/workqueue.c:2547
+in_atomic(): 1, irqs_disabled(): 0, pid: 629, name: wpa_supplicant
+2 locks held by wpa_supplicant/629:
+ #0:  (rtnl_mutex){+.+.+.}, at: [<c08b2b84>] rtnl_lock+0x14/0x20
+ #1:  (&trigger->leddev_list_lock){.+.?..}, at: [<c0867f41>] led_trigger_event+0x21/0x80
+Pid: 629, comm: wpa_supplicant Not tainted 3.3.0-0.rc3.git5.1.fc17.i686
+Call Trace:
+ [<c046a9f6>] __might_sleep+0x126/0x1d0
+ [<c0457d6c>] wait_on_work+0x2c/0x1d0
+ [<c045a09a>] __cancel_work_timer+0x6a/0x120
+ [<c045a160>] cancel_delayed_work_sync+0x10/0x20
+ [<f7dd3c22>] rtl8187_led_brightness_set+0x82/0xf0 [rtl8187]
+ [<c0867f7c>] led_trigger_event+0x5c/0x80
+ [<f7ff5e6d>] ieee80211_led_radio+0x1d/0x40 [mac80211]
+ [<f7ff3583>] ieee80211_stop_device+0x13/0x230 [mac80211]
+
+Removing _sync is ok, because if led_on work is currently running
+it will be finished before led_off work start to perform, since
+they are always queued on the same mac80211 local->workqueue.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=795176
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
+ drivers/net/wireless/rtl818x/rtl8187/leds.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index e654f32..4871ba0 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8194,7 +8194,7 @@ void gen6_enable_rps(struct drm_i915_private *dev_priv)
- 
- 	if (intel_enable_rc6(dev_priv->dev))
- 		rc6_mask = GEN6_RC_CTL_RC6_ENABLE |
--			(IS_GEN7(dev_priv->dev)) ? GEN6_RC_CTL_RC6p_ENABLE : 0;
-+			((IS_GEN7(dev_priv->dev)) ? GEN6_RC_CTL_RC6p_ENABLE : 0);
- 
- 	I915_WRITE(GEN6_RC_CONTROL,
- 		   rc6_mask |
+diff --git a/drivers/net/wireless/rtl818x/rtl8187/leds.c b/drivers/net/wireless/rtl818x/rtl8187/leds.c
+index 2e0de2f..c2d5b49 100644
+--- a/drivers/net/wireless/rtl818x/rtl8187/leds.c
++++ b/drivers/net/wireless/rtl818x/rtl8187/leds.c
+@@ -117,7 +117,7 @@ static void rtl8187_led_brightness_set(struct led_classdev *led_dev,
+ 			radio_on = true;
+ 		} else if (radio_on) {
+ 			radio_on = false;
+-			cancel_delayed_work_sync(&priv->led_on);
++			cancel_delayed_work(&priv->led_on);
+ 			ieee80211_queue_delayed_work(hw, &priv->led_off, 0);
+ 		}
+ 	} else if (radio_on) {
 
 
