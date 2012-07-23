@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab2GWUab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:30:31 -0400
-Received: from shutemov.name ([176.9.204.213]:44236 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754371Ab2GWUa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:30:29 -0400
-Date: Mon, 23 Jul 2012 23:31:20 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] perf: use XSI-complaint version of strerror_r()
- instead of GNU-specific
-Message-ID: <20120723203120.GA25072@shutemov.name>
-References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
- <1343055645-24083-2-git-send-email-kirill@shutemov.name>
- <CAOPLpQe7=Gv7ToM8cqe1rNCP+vX5=gVppA1=gfaO0LSdqMhqMQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOPLpQe7=Gv7ToM8cqe1rNCP+vX5=gVppA1=gfaO0LSdqMhqMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754364Ab2GWUcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:32:24 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33778 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532Ab2GWUcV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 16:32:21 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: rusty@rustcorp.com.au, mst@redhat.com, penberg@kernel.org,
+        asias.hejun@gmail.com
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, avi@redhat.com, anthony@codemonkey.ws,
+        wency@cn.fujitsu.com, Sasha Levin <levinsasha928@gmail.com>
+Subject: [RFC 0/2] virtio: provide a way for host to monitor critical events in the device
+Date: Mon, 23 Jul 2012 22:32:39 +0200
+Message-Id: <1343075561-29316-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 02:00:33PM -0400, Ulrich Drepper wrote:
-> On Mon, Jul 23, 2012 at 11:00 AM, Kirill A. Shutemov
-> <kirill@shutemov.name> wrote:
-> > The right way to fix it is to switch to XSI-compliant version.
-> 
-> And why exactly would this be "the right way"?  Just fix the use of
-> strerror_r or use strerror_l.
+As it was discussed recently, there's currently no way for the guest to notify
+the host about panics. Further more, there's no reasonable way to notify the
+host of other critical events such as an OOM kill.
 
-Okay. What about this:
+This short patch series introduces a new device named virtio-notifier which
+does two simple things:
 
->From 8b76ea28a09ebc72c7bdcc1d92e80a63a5cdaf1c Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Mon, 23 Jul 2012 17:41:05 +0300
-Subject: [PATCH] perf: fix strerror_r() usage
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+ 1. Provide a simple interface for the guest to notify the host of critical
+ events. This is easily expandible to add support for any events we may find
+ interesting for the host to know about.
 
-Perf uses GNU-specific version of strerror_r(). The GNU-specific
-strerror_r() returns a pointer to a string containing the error message.
-This may be either a pointer to a string that the function stores in
-buf, or a pointer to some (immutable) static string (in which case buf
-is unused).
+ 2. Provide an "echo" interface for the host to ping the guest. This allows
+ the host to ping the guest at intervals chosen by the host, and act
+ accordingly if no response has been received.
 
-In glibc-2.16 GNU version was marked with attribute warn_unused_result.
-It triggers few warnings in perf:
+Sasha Levin (2):
+  virtio: Introduce virtio-notifier
+  kvm tools: support virtio-notifier
 
-util/target.c: In function ‘perf_target__strerror’:
-util/target.c:114:13: error: ignoring return value of ‘strerror_r’, declared with attribute warn_unused_result [-Werror=unused-result]
-ui/browsers/hists.c: In function ‘hist_browser__dump’:
-ui/browsers/hists.c:981:13: error: ignoring return value of ‘strerror_r’, declared with attribute warn_unused_result [-Werror=unused-result]
+ drivers/virtio/Kconfig                  |   11 ++
+ drivers/virtio/Makefile                 |    1 +
+ drivers/virtio/virtio_notifier.c        |  135 ++++++++++++++++++++
+ include/linux/virtio_ids.h              |    1 +
+ include/linux/virtio_notifier.h         |   15 +++
+ tools/kvm/Makefile                      |    1 +
+ tools/kvm/builtin-run.c                 |    6 +
+ tools/kvm/include/kvm/virtio-notifier.h |    9 ++
+ tools/kvm/include/kvm/virtio-pci-dev.h  |    1 +
+ tools/kvm/virtio/notifier.c             |  203 +++++++++++++++++++++++++++++++
+ 10 files changed, 383 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/virtio/virtio_notifier.c
+ create mode 100644 include/linux/virtio_notifier.h
+ create mode 100644 tools/kvm/include/kvm/virtio-notifier.h
+ create mode 100644 tools/kvm/virtio/notifier.c
 
-They are bugs.
-
-Let's fix strerror_r() usage.
-
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- tools/perf/ui/browsers/hists.c | 4 ++--
- tools/perf/util/target.c       | 9 ++++++++-
- 2 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 482f051..413bd62 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -978,8 +978,8 @@ static int hist_browser__dump(struct hist_browser *browser)
- 	fp = fopen(filename, "w");
- 	if (fp == NULL) {
- 		char bf[64];
--		strerror_r(errno, bf, sizeof(bf));
--		ui_helpline__fpush("Couldn't write to %s: %s", filename, bf);
-+		const char *err = strerror_r(errno, bf, sizeof(bf));
-+		ui_helpline__fpush("Couldn't write to %s: %s", filename, err);
- 		return -1;
- 	}
- 
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 1064d5b..45ab408 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -111,7 +111,14 @@ int perf_target__strerror(struct perf_target *target, int errnum,
- 	const char *msg;
- 
- 	if (errnum >= 0) {
--		strerror_r(errnum, buf, buflen);
-+		const char *err = strerror_r(errnum, buf, buflen);
-+
-+		if (err != buf && buflen > 0) {
-+			size_t len = strlen(err);
-+			char *c = mempcpy(buf, err, min(buflen - 1, len));
-+			*c = '\0';
-+		}
-+
- 		return 0;
- 	}
- 
 -- 
- Kirill A. Shutemov
+1.7.8.6
+
