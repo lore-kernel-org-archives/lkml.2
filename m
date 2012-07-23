@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab2GWUTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:19:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754160Ab2GWUTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:19:51 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dima Tisnek <dimaqq@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jens Axboe <axboe@kernel.dk>, <amethyst623@163.com>,
-        USB list <linux-usb@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "James Bottomley" <James.Bottomley@hansenpartnership.com>
-Subject: Re: mount stuck, khubd blocked
-References: <Pine.LNX.4.44L0.1207231556070.1633-100000@iolanthe.rowland.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 23 Jul 2012 16:19:36 -0400
-In-Reply-To: <Pine.LNX.4.44L0.1207231556070.1633-100000@iolanthe.rowland.org>
-	(Alan Stern's message of "Mon, 23 Jul 2012 15:57:55 -0400 (EDT)")
-Message-ID: <x49y5mas013.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754774Ab2GWUUZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:20:25 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:39926 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754160Ab2GWUUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 16:20:23 -0400
+X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jul 2012 16:20:23 EDT
+Message-ID: <500DB0CB.1000600@metafoo.de>
+Date: Mon, 23 Jul 2012 22:15:07 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "Philip, Avinash" <avinashphilip@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, nsekhar@ti.com, gururaja.hebbar@ti.com
+Subject: Re: [PATCH] PWM: Add support for configuring polarity of PWM
+References: <1342616053-7793-1-git-send-email-avinashphilip@ti.com> <20120723083032.GA12868@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120723083032.GA12868@avionic-0098.mockup.avionic-design.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern <stern@rowland.harvard.edu> writes:
+On 07/23/2012 10:30 AM, Thierry Reding wrote:
+> On Wed, Jul 18, 2012 at 06:24:13PM +0530, Philip, Avinash wrote:
+>>[...]
+>> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+>> index 21d076c..2e4e960 100644
+>> --- a/include/linux/pwm.h
+>> +++ b/include/linux/pwm.h
+>> @@ -21,6 +21,16 @@ void pwm_free(struct pwm_device *pwm);
+>>   */
+>>  int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
+>>  
+>> +enum {
+>> +	PWM_POLARITY_NORMAL,	/* ON period depends on duty_ns */
+>> +	PWM_POLARITY_INVERSE,	/* OFF period depends on duty_ns */
+>> +};
+> 
+> You should name this enumeration so that it can actually be used as a
+> type (enum pwm_polarity). Also you can drop the comments because they
+> only apply to the specific use-case of simulating duty-cycle inversion
 
-> On Mon, 23 Jul 2012, Jeff Moyer wrote:
->
->> > Jeff, does this also fix Bugzilla #43269?
->> 
->> First, this patch is wrong.  I posted another version later on that got
->> merged for 3.5.
->> 
->> As for bug 43269, it does not look like the same symptoms, so I would
->> not expect the patches I posted to resolve that issue.  Sorry.
->
-> Can you suggest someone who might be able to help with #43269?  It has 
-> been languishing since May.
+I think we should make it very explicit what normal polarity and inverse
+polarity is. There are certain applications where it is important. E.g. one
+such application would be using it in the IIO framework to generate a trigger
+pulse to synchronize devices. If we do not specify how each of these modes
+should behave drivers may interpret and implement them differently.
 
-Well, either Jens or James may be able to make more progress faster than
-I could.  I'm a little concerned that the reporter has unreasonable
-expectations for his use of library calls, but I suppose that's a
-separate issue.
+I'd vote for the following definitions:
+PWM_POLARITY_NORMAL: A high signal for the duration of duty_ns, followed by a
+low signal for the duration of (period_ns - duty_ns).
+PWM_POLARITY_INVERSE: A low signal for the duration duty_ns, followed by a high
+signal for the duration of (period_ns - duty_ns).
 
-James, Jens:
-  https://bugzilla.kernel.org/show_bug.cgi?id=43269
+Maybe even rename them to PWM_POLARITY_ACTIVE_HIGH and PWM_POLARITY_ACTIVE_LOW
+since it is a bit more explicit on how the waveform should look like. "NORMAL"
+and "INVERSE" sort of depend on what you consider to be normal.
 
-Cheers,
-Jeff
+- Lars
