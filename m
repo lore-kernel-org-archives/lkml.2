@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab2GWBnL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:43:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54288 "EHLO
+	id S1753682Ab2GWByy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:54:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54311 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753239Ab2GWBnH (ORCPT
+	by vger.kernel.org with ESMTP id S1753398Ab2GWBnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:07 -0400
-Message-Id: <20120723010701.303457284@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:11 -0400
+Message-Id: <20120723010700.740777909@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:56 +0100
+Date: Mon, 23 Jul 2012 02:07:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
-        Alexander Lyakas <alex.bolshoy@gmail.com>
-Subject: [ 065/108] md/raid1: close some possible races on write errors during resync
+        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
+        Jian Li <jiali@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 061/108] cifs: on CONFIG_HIGHMEM machines, limit the rsize/wsize to the kmap
+ space
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,56 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 58e94ae18478c08229626daece2fc108a4a23261 upstream.
+commit 3ae629d98bd5ed77585a878566f04f310adbc591 upstream.
 
-commit 4367af556133723d0f443e14ca8170d9447317cb
-   md/raid1: clear bad-block record when write succeeds.
+We currently rely on being able to kmap all of the pages in an async
+read or write request. If you're on a machine that has CONFIG_HIGHMEM
+set then that kmap space is limited, sometimes to as low as 512 slots.
 
-Added a 'reschedule_retry' call possibility at the end of
-end_sync_write, but didn't add matching code at the end of
-sync_request_write.  So if the writes complete very quickly, or
-scheduling makes it seem that way, then we can miss rescheduling
-the request and the resync could hang.
+With 512 slots, we can only support up to a 2M r/wsize, and that's
+assuming that we can get our greedy little hands on all of them. There
+are other users however, so it's possible we'll end up stuck with a
+size that large.
 
-Also commit 73d5c38a9536142e062c35997b044e89166e063b
-    md: avoid races when stopping resync.
+Since we can't handle a rsize or wsize larger than that currently, cap
+those options at the number of kmap slots we have. We could consider
+capping it even lower, but we currently default to a max of 1M. Might as
+well allow those luddites on 32 bit arches enough rope to hang
+themselves.
 
-Fix a race condition in this same code in end_sync_write but didn't
-make the change in sync_request_write.
+A more robust fix would be to teach the send and receive routines how
+to contend with an array of pages so we don't need to marshal up a kvec
+array at all. That's a fairly significant overhaul though, so we'll need
+this limit in place until that's ready.
 
-This patch updates sync_request_write to fix both of those.
-Patch is suitable for 3.1 and later kernels.
-
-Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
-Original-version-by: Alexander Lyakas <alex.bolshoy@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Jian Li <jiali@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/raid1.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/cifs/connect.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 240ff31..cacd008 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1818,8 +1818,14 @@ static void sync_request_write(struct mddev *mddev, struct r1bio *r1_bio)
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 0ae86dd..94b7788 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -3445,6 +3445,18 @@ void cifs_setup_cifs_sb(struct smb_vol *pvolume_info,
+ #define CIFS_DEFAULT_NON_POSIX_RSIZE (60 * 1024)
+ #define CIFS_DEFAULT_NON_POSIX_WSIZE (65536)
  
- 	if (atomic_dec_and_test(&r1_bio->remaining)) {
- 		/* if we're here, all write(s) have completed, so clean up */
--		md_done_sync(mddev, r1_bio->sectors, 1);
--		put_buf(r1_bio);
-+		int s = r1_bio->sectors;
-+		if (test_bit(R1BIO_MadeGood, &r1_bio->state) ||
-+		    test_bit(R1BIO_WriteError, &r1_bio->state))
-+			reschedule_retry(r1_bio);
-+		else {
-+			put_buf(r1_bio);
-+			md_done_sync(mddev, s, 1);
-+		}
- 	}
- }
++/*
++ * On hosts with high memory, we can't currently support wsize/rsize that are
++ * larger than we can kmap at once. Cap the rsize/wsize at
++ * LAST_PKMAP * PAGE_SIZE. We'll never be able to fill a read or write request
++ * larger than that anyway.
++ */
++#ifdef CONFIG_HIGHMEM
++#define CIFS_KMAP_SIZE_LIMIT	(LAST_PKMAP * PAGE_CACHE_SIZE)
++#else /* CONFIG_HIGHMEM */
++#define CIFS_KMAP_SIZE_LIMIT	(1<<24)
++#endif /* CONFIG_HIGHMEM */
++
+ static unsigned int
+ cifs_negotiate_wsize(struct cifs_tcon *tcon, struct smb_vol *pvolume_info)
+ {
+@@ -3475,6 +3487,9 @@ cifs_negotiate_wsize(struct cifs_tcon *tcon, struct smb_vol *pvolume_info)
+ 		wsize = min_t(unsigned int, wsize,
+ 				server->maxBuf - sizeof(WRITE_REQ) + 4);
+ 
++	/* limit to the amount that we can kmap at once */
++	wsize = min_t(unsigned int, wsize, CIFS_KMAP_SIZE_LIMIT);
++
+ 	/* hard limit of CIFS_MAX_WSIZE */
+ 	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
+ 
+@@ -3516,6 +3531,9 @@ cifs_negotiate_rsize(struct cifs_tcon *tcon, struct smb_vol *pvolume_info)
+ 	if (!(server->capabilities & CAP_LARGE_READ_X))
+ 		rsize = min_t(unsigned int, CIFSMaxBufSize, rsize);
+ 
++	/* limit to the amount that we can kmap at once */
++	rsize = min_t(unsigned int, rsize, CIFS_KMAP_SIZE_LIMIT);
++
+ 	/* hard limit of CIFS_MAX_RSIZE */
+ 	rsize = min_t(unsigned int, rsize, CIFS_MAX_RSIZE);
  
 
 
