@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab2GWBxk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:53:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54332 "EHLO
+	id S1753855Ab2GWBxi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:53:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54328 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753420Ab2GWBnR (ORCPT
+	by vger.kernel.org with ESMTP id S1753322Ab2GWBnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:43:17 -0400
-Message-Id: <20120723010700.567517051@decadent.org.uk>
+Message-Id: <20120723010700.069605757@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:51 +0100
+Date: Mon, 23 Jul 2012 02:07:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        alan@lxorguk.ukuu.org.uk, Mark Rustad <mark.d.rustad@intel.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 060/108] target: Fix range calculation in WRITE SAME emulation when num
- blocks == 0
+Subject: [ 057/108] tcm_fc: Fix crash seen with aborts and large reads
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,39 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit 1765fe5edcb83f53fc67edeb559fcf4bc82c6460 upstream.
+commit 3cc5d2a6b9a2fd1bf024aa5e52dd22961eecaf13 upstream.
 
-When NUMBER OF LOGICAL BLOCKS is 0, WRITE SAME is supposed to write
-all the blocks from the specified LBA through the end of the device.
-However, dev->transport->get_blocks(dev) (perhaps confusingly) returns
-the last valid LBA rather than the number of blocks, so the correct
-number of blocks to write starting with lba is
+This patch fixes a crash seen when large reads have their exchange
+aborted by either timing out or being reset. Because the exchange
+abort results in the seq pointer being set to NULL, because the
+sequence is no longer valid, it must not be dereferenced. This
+patch changes the function ft_get_task_tag to return ~0 if it is
+unable to get the tag for this reason. Because the get_task_tag
+interface provides no means of returning an error, this seems
+like the best way to fix this issue at the moment.
 
-dev->transport->get_blocks(dev) - lba + 1
-
-(nab: Backport roland's for-3.6 patch to for-3.5)
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_cdb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/tcm_fc/tfc_cmd.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/target/target_core_cdb.c b/drivers/target/target_core_cdb.c
-index 9888693..664f6e7 100644
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -1095,7 +1095,7 @@ int target_emulate_write_same(struct se_cmd *cmd)
- 	if (num_blocks != 0)
- 		range = num_blocks;
- 	else
--		range = (dev->transport->get_blocks(dev) - lba);
-+		range = (dev->transport->get_blocks(dev) - lba) + 1;
+diff --git a/drivers/target/tcm_fc/tfc_cmd.c b/drivers/target/tcm_fc/tfc_cmd.c
+index f03fb97..5b65f33 100644
+--- a/drivers/target/tcm_fc/tfc_cmd.c
++++ b/drivers/target/tcm_fc/tfc_cmd.c
+@@ -230,6 +230,8 @@ u32 ft_get_task_tag(struct se_cmd *se_cmd)
+ {
+ 	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
  
- 	pr_debug("WRITE_SAME UNMAP: LBA: %llu Range: %llu\n",
- 		 (unsigned long long)lba, (unsigned long long)range);
++	if (cmd->aborted)
++		return ~0;
+ 	return fc_seq_exch(cmd->seq)->rxid;
+ }
+ 
 
 
