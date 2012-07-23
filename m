@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab2GWB4s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:56:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54233 "EHLO
+	id S1753526Ab2GWB4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:56:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54240 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753307Ab2GWBnA (ORCPT
+	by vger.kernel.org with ESMTP id S1753323Ab2GWBnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:43:00 -0400
-Message-Id: <20120723010703.471406922@decadent.org.uk>
+Message-Id: <20120723010704.216878046@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:10 +0100
+Date: Mon, 23 Jul 2012 02:08:15 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, John Stultz <johnstul@us.ibm.com>,
-        Jan Engelhardt <jengelh@inai.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
         Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 079/108] timekeeping: Fix leapsecond triggered load spike issue
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [ 084/108] timekeeping: Add missing update call in timekeeping_resume()
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,64 +32,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <johnstul@us.ibm.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-This is a backport of 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51
+This is a backport of 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0
 
-The timekeeping code misses an update of the hrtimer subsystem after a
-leap second happened. Due to that timers based on CLOCK_REALTIME are
-either expiring a second early or late depending on whether a leap
-second has been inserted or deleted until an operation is initiated
-which causes that update. Unless the update happens by some other
-means this discrepancy between the timekeeping and the hrtimer data
-stays forever and timers are expired either early or late.
+The leap second rework unearthed another issue of inconsistent data.
 
-The reported immediate workaround - $ data -s "`date`" - is causing a
-call to clock_was_set() which updates the hrtimer data structures.
-See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
+On timekeeping_resume() the timekeeper data is updated, but nothing
+calls timekeeping_update(), so now the update code in the timer
+interrupt sees stale values.
 
-Add the missing clock_was_set() call to update_wall_time() in case of
-a leap second event. The actual update is deferred to softirq context
-as the necessary smp function call cannot be invoked from hard
-interrupt context.
+This has been the case before those changes, but then the timer
+interrupt was using stale data as well so this went unnoticed for quite
+some time.
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
+Add the missing update call, so all the data is consistent everywhere.
+
+Reported-by: Andreas Schwab <schwab@linux-m68k.org>
+Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Reported-and-tested-by: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Prarit Bhargava <prarit@redhat.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[John Stultz: Backported to 3.2]
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/time/timekeeping.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/time/timekeeping.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5d55185..8958ad7 100644
+index 4938c5e..03e67d4 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -941,6 +941,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
- 		wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
+@@ -699,6 +699,7 @@ static void timekeeping_resume(void)
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+ 	timekeeper.ntp_error = 0;
+ 	timekeeping_suspended = 0;
++	timekeeping_update(false);
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
  
- 	/* Accumulate raw time */
-@@ -1052,6 +1054,8 @@ static void update_wall_time(void)
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
- 		wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
- 
- 	timekeeping_update(false);
+ 	touch_softlockup_watchdog();
 
 
