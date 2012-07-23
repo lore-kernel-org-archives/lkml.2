@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab2GWWH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 18:07:56 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752809Ab2GWWHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 18:07:52 -0400
-Message-ID: <500DCB34.6050209@nod.at>
-Date: Tue, 24 Jul 2012 00:07:48 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	id S1754725Ab2GWWLH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 18:11:07 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:44813 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab2GWWLE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 18:11:04 -0400
+Message-ID: <500DCBDF.5090800@linux.vnet.ibm.com>
+Date: Mon, 23 Jul 2012 17:10:39 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-man@vger.kernel.org
-Subject: Re: st_size of a symlink
-References: <500D73FF.1070504@nod.at> <alpine.LNX.2.00.1207231959410.1922@swampdragon.chaosbits.net> <20120723202224.GH31729@ZenIV.linux.org.uk> <alpine.LNX.2.00.1207232243110.1922@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1207232243110.1922@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] zsmalloc: s/firstpage/page in new copy map funcs
+References: <1342630556-28686-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1342630556-28686-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072322-5518-0000-0000-000006423EA4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.07.2012 22:47, Jesper Juhl wrote:
->> Fix it _how_?
->
-> By returning the size as the number of bytes in the name the link is
-> currently pointing at.
+Greg,
 
-This is not easy.
-procfs has no clue where the link pointing at.
-The information is generated while accessing the link.
-tmpfs on the other hand has this information because symlinks get only 
-changed through tmpfs...
+I know it's the first Monday after a kernel release and
+things are crazy for you.  I was hoping to get this zsmalloc
+stuff in before the merge window hit so I wouldn't have to
+bother you :-/  But, alas, it didn't happen that way.
 
->>   By retrying readlink() with bigger buffer.
->> With procfs there's just a few more ways the readlink() output can
->> change, that's all.
->>
-> Still not a good reason to just return 0 IMHO.
+Minchan acked these yesterday.  When you get a chance, could
+you pull these 3 patches?  I'm wanting to send out a
+promotion patch for zsmalloc and zcache based on these.
 
-IMHO the lstat() and readlink() manpages have to be more precise about 
-st_size.
+Thanks Greg!
 
-Thanks,
-//richard
+--
+Seth
+
