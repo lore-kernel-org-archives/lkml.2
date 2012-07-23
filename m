@@ -1,67 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab2GWTH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 15:07:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38474 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754520Ab2GWTH0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 15:07:26 -0400
-Date: Mon, 23 Jul 2012 15:07:24 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jeff Moyer <jmoyer@redhat.com>
-cc: Dima Tisnek <dimaqq@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jens Axboe <axboe@kernel.dk>, <amethyst623@163.com>,
-        USB list <linux-usb@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: mount stuck, khubd blocked
-In-Reply-To: <x49lijhyg58.fsf@segfault.boston.devel.redhat.com>
-Message-ID: <Pine.LNX.4.44L0.1207231505520.1633-100000@iolanthe.rowland.org>
+	id S1754704Ab2GWTHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 15:07:34 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:36066 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754676Ab2GWTHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 15:07:31 -0400
+Date: Mon, 23 Jul 2012 12:03:06 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: santil@linux.vnet.ibm.com, anton@samba.org, paulus@samba.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anton Blanchard <anton@au1.ibm.com>
+Subject: Re: ibmveth bug?
+Message-ID: <20120723190306.GB3444@linux.vnet.ibm.com>
+References: <20120515170141.GA14272@linux.vnet.ibm.com>
+ <20120720224112.GD19288@linux.vnet.ibm.com>
+ <1342831966.29855.6.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342831966.29855.6.camel@pasglop>
+X-Operating-System: Linux 3.2.0-27-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072319-5806-0000-0000-00001796E32A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jun 2012, Jeff Moyer wrote:
+Hi Ben,
 
-> Alan Stern <stern@rowland.harvard.edu> writes:
+On 21.07.2012 [10:52:46 +1000], Benjamin Herrenschmidt wrote:
+> On Fri, 2012-07-20 at 15:41 -0700, Nishanth Aravamudan wrote:
+> > Ping on this ... we've tripped the same issue on a different system, it
+> > would appear. Would appreciate if anyone can provide answers to the
+> > questions below.
 > 
-> > On Tue, 19 Jun 2012, Dima Tisnek wrote:
-> >
-> >> I made a microsd flash with 2 partitions, sdb1 is data partition, and
-> >> sdb2 is a sentinel partition, 1 block in size.
-> >> 
-> >> I attached the usb-microsd reader with that card in it and by mistake
-> >> tried to mount the sentinel partition, I ran:
-> >> mount /dev/sdb2 /mnt/flash/
-> >> 
-> >> mount got stuck, I was not able to kill or strace it, I pulled the usb
-> >> reader from the port, mount was still stuck, here's the dmesg log:
-> 
-> Hi, Dima,
-> 
-> Could you try the following patch?
-> 
-> Thanks,
-> Jeff
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 838a9cf..769b30b 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -930,7 +930,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
->  			bh->b_blocknr = block;
->  			if (uptodate)
->  				set_buffer_uptodate(bh);
-> -			if (block < end_block)
-> +			if (block <= end_block)
->  				set_buffer_mapped(bh);
->  		}
->  		block++;
+> Well, I haven't hit it but your description makes sense. Why not use
+> dma_alloc_coherent though ? Rather than kmalloc followed by map ?
 
-Jeff, does this also fix Bugzilla #43269?
+Thanks for the response!
 
-Alan Stern
+dma_alloc_coherent here makes sense. I honestly haven't though too much
+about solutions yet, as the problem isn't consistent. For instance, the
+one reproducer right now is hitting it only at install time, and only if
+another particular PCI device is also plugged in to the machine.
+
+> At least on power we give you page alignment for these, so the problem
+> is solved magically :-) Another option is GFP + dma_map_page which is
+> roughly equivalent.
+> 
+> If you think it's a waste of space based on the queue size, then just
+> add an extra pointer, I wouldn't bother with a cache for something only
+> allocated when the driver initializes.
+
+Agreed, will try to code something up this week.
+
+Thanks,
+Nish
+
+> 
+> Cheers,
+> Ben.
+> 
+> > Thanks,
+> > Nish
+> > 
+> > On 15.05.2012 [10:01:41 -0700], Nishanth Aravamudan wrote:
+> > > Hi Santiago,
+> > > 
+> > > Are you still working on ibmveth?
+> > > 
+> > > I've found a very sporadic bug with ibmveth in some testing. PAPR
+> > > requires that:
+> > > 
+> > > "Validate the Buffer Descriptor of the receive queue buffer (I/O
+> > > addresses for entire buffer length starting at the spec- ified I/O
+> > > address are translated by the RTCE table, length is a multiple of 16
+> > > bytes, and alignment is on a 16 byte boundary) else H_Parameter."
+> > > 
+> > > but from what I can tell ibmveth.c is not enforcing this last condition:
+> > > 
+> > > 	adapter->rx_queue.queue_addr =
+> > > 		kmalloc(adapter->rx_queue.queue_len, GFP_KERNEL);
+> > > 
+> > > 	...
+> > > 
+> > > 	adapter->rx_queue.queue_dma = dma_map_single(dev,
+> > > 		adapter->rx_queue.queue_addr, adapter->rx_queue.queue_len,
+> > > 		DMA_BIDIRECTIONAL);
+> > > 
+> > > 	...
+> > > 
+> > > 	rxq_desc.fields.address = adapter->rx_queue.queue_dma;
+> > > 
+> > > 	...
+> > > 	
+> > > 
+> > > 	lpar_rc = ibmveth_register_logical_lan(adapter, rxq_desc,
+> > > 		mac_address);
+> > > 	netdev_err(netdev, "buffer TCE:0x%llx filter TCE:0x%llx rxq "
+> > > 	 	"desc:0x%llx MAC:0x%llx\n", adapter->buffer_list_dma,
+> > > 	 	adapter->filter_list_dma, rxq_desc.desc, mac_address);
+> > > 
+> > > And I got on one install attempt:
+> > > 
+> > > [ 39.978430] ibmveth 30000004: eth0: h_register_logical_lan failed with -4
+> > > [ 39.978449] ibmveth 30000004: eth0: buffer TCE:0x1000 filter TCE:0x10000 rxq desc:0x80006010000200a8 MAC:0x56754de8e904
+> > > 
+> > > rxq desc, as you can see is not 16byte aligned. kmalloc() only
+> > > guarantees 8-byte alignment (as does gcc, I think). Initially, I thought
+> > > we could just overallocate the queue_addr and ALIGN() down, but then we
+> > > would need to save the original kmalloc pointer in a new struct member
+> > > per rx_queue.
+> > > 
+> > > So a couple of questions:
+> > > 
+> > > 1) Is my analysis accurate? :)
+> > > 
+> > > 2) How gross would it be to save an extra pointer for every rx_queue?
+> > > 
+> > > 3) Based upon 2), is it better to just go ahead and create our own
+> > > kmem_cache (which gets an alignment specified)?
+> > > 
+> > > For 3), I started coding this, but couldn't find a clean place to
+> > > allocate the kmem_cache itself, as the size of each object depends on
+> > > the run-time characteristics (afaict), but needs to be specified at
+> > > cache creation time. Any insight you could provide would be great!
+> > > 
+> > > Thanks,
+> > > Nish
+> > >  
+> > > -- 
+> > > Nishanth Aravamudan <nacc@us.ibm.com>
+> > > IBM Linux Technology Center
+> > 
+> 
+> 
+
+-- 
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
 
