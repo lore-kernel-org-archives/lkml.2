@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab2GWCJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:09:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53991 "EHLO
+	id S1752898Ab2GWBmQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:42:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53965 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752896Ab2GWBmR (ORCPT
+	by vger.kernel.org with ESMTP id S1752860Ab2GWBmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:17 -0400
-Message-Id: <20120723010653.646297879@decadent.org.uk>
+	Sun, 22 Jul 2012 21:42:12 -0400
+Message-Id: <20120723010654.273014446@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:05 +0100
+Date: Mon, 23 Jul 2012 02:07:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: [ 014/108] NFSv4: Reduce the footprint of the idmapper
+        alan@lxorguk.ukuu.org.uk, Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [ 018/108] macvtap: zerocopy: put page when fail to get all requested  user pages
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,67 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit d073e9b541e1ac3f52d72c3a153855d9a9ee3278 upstream.
+commit 02ce04bb3d28c3333231f43bca677228dbc686fe upstream.
 
-Instead of pre-allocating the storage for all the strings, we can
-significantly reduce the size of that table by doing the allocation
-when we do the downcall.
+When get_user_pages_fast() fails to get all requested pages, we could not use
+kfree_skb() to free it as it has not been put in the skb fragments. So we need
+to call put_page() instead.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-[bwh: Backported to 3.2: adjust context in nfs_idmap_delete()]
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/idmap.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ drivers/net/macvtap.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -318,7 +318,7 @@
- 	unsigned long		ih_expires;
- 	__u32			ih_id;
- 	size_t			ih_namelen;
--	char			ih_name[IDMAP_NAMESZ];
-+	const char		*ih_name;
- };
- 
- struct idmap_hashtable {
-@@ -382,11 +382,16 @@
- nfs_idmap_delete(struct nfs_client *clp)
- {
- 	struct idmap *idmap = clp->cl_idmap;
-+	int i;
- 
- 	if (!idmap)
- 		return;
- 	rpc_unlink(idmap->idmap_dentry);
- 	clp->cl_idmap = NULL;
-+	for (i = 0; i < ARRAY_SIZE(idmap->idmap_user_hash.h_entries); i++)
-+		kfree(idmap->idmap_user_hash.h_entries[i].ih_name);
-+	for (i = 0; i < ARRAY_SIZE(idmap->idmap_group_hash.h_entries); i++)
-+		kfree(idmap->idmap_group_hash.h_entries[i].ih_name);
- 	kfree(idmap);
- }
- 
-@@ -449,9 +454,14 @@
- idmap_update_entry(struct idmap_hashent *he, const char *name,
- 		size_t namelen, __u32 id)
- {
-+	char *str = kmalloc(namelen + 1, GFP_KERNEL);
-+	if (str == NULL)
-+		return;
-+	kfree(he->ih_name);
- 	he->ih_id = id;
--	memcpy(he->ih_name, name, namelen);
--	he->ih_name[namelen] = '\0';
-+	memcpy(str, name, namelen);
-+	str[namelen] = '\0';
-+	he->ih_name = str;
- 	he->ih_namelen = namelen;
- 	he->ih_expires = jiffies + nfs_idmap_cache_timeout;
- }
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 7cb2684..9ab182a 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -531,9 +531,11 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+ 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
+ 		if ((num_pages != size) ||
+-		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
+-			/* put_page is in skb free */
++		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags)) {
++			for (i = 0; i < num_pages; i++)
++				put_page(page[i]);
+ 			return -EFAULT;
++		}
+ 		truesize = size * PAGE_SIZE;
+ 		skb->data_len += len;
+ 		skb->len += len;
 
 
 
