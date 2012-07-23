@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab2GWBnk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:43:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54428 "EHLO
+	id S1753812Ab2GWBtN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:49:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54440 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753558Ab2GWBni (ORCPT
+	by vger.kernel.org with ESMTP id S1753565Ab2GWBnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:38 -0400
-Message-Id: <20120723010657.532005062@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:40 -0400
+Message-Id: <20120723010657.383663220@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:31 +0100
+Date: Mon, 23 Jul 2012 02:07:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 040/108] mm, thp: abort compaction if migration page cannot be charged to
- memcg
+        alan@lxorguk.ukuu.org.uk,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Bret Towe <magnade@gmail.com>,
+        Sunil Mushran <sunil.mushran@oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>
+Subject: [ 039/108] ocfs2: fix NULL pointer dereference in __ocfs2_change_file_space()
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,51 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Luis Henriques <luis.henriques@canonical.com>
 
-commit 4bf2bba3750f10aa9e62e6949bc7e8329990f01b upstream.
+commit a4e08d001f2e50bb8b3c4eebadcf08e5535f02ee upstream.
 
-If page migration cannot charge the temporary page to the memcg,
-migrate_pages() will return -ENOMEM.  This isn't considered in memory
-compaction however, and the loop continues to iterate over all
-pageblocks trying to isolate and migrate pages.  If a small number of
-very large memcgs happen to be oom, however, these attempts will mostly
-be futile leading to an enormous amout of cpu consumption due to the
-page migration failures.
+As ocfs2_fallocate() will invoke __ocfs2_change_file_space() with a NULL
+as the first parameter (file), it may trigger a NULL pointer dereferrence
+due to a missing check.
 
-This patch will short circuit and fail memory compaction if
-migrate_pages() returns -ENOMEM.  COMPACT_PARTIAL is returned in case
-some migrations were successful so that the page allocator will retry.
+Addresses http://bugs.launchpad.net/bugs/1006012
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Reported-by: Bret Towe <magnade@gmail.com>
+Tested-by: Bret Towe <magnade@gmail.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
+Acked-by: Mark Fasheh <mfasheh@suse.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/compaction.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ocfs2/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 7ea259d..2f42d95 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -701,8 +701,11 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		if (err) {
- 			putback_lru_pages(&cc->migratepages);
- 			cc->nr_migratepages = 0;
-+			if (err == -ENOMEM) {
-+				ret = COMPACT_PARTIAL;
-+				goto out;
-+			}
- 		}
--
- 	}
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 98513c8..7602783 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -1950,7 +1950,7 @@ static int __ocfs2_change_file_space(struct file *file, struct inode *inode,
+ 	if (ret < 0)
+ 		mlog_errno(ret);
  
- out:
+-	if (file->f_flags & O_SYNC)
++	if (file && (file->f_flags & O_SYNC))
+ 		handle->h_sync = 1;
+ 
+ 	ocfs2_commit_trans(osb, handle);
 
 
