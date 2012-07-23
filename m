@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab2GWOhu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 10:37:50 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55482 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab2GWOhr (ORCPT
+	id S1753684Ab2GWOj7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 10:39:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53677 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752612Ab2GWOj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 10:37:47 -0400
-Message-ID: <500D615C.1080605@mvista.com>
-Date: Mon, 23 Jul 2012 18:36:12 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 23 Jul 2012 10:39:58 -0400
+Date: Mon, 23 Jul 2012 15:39:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Help request - ASoC recursion issue
+Message-ID: <20120723143955.GA8071@opensource.wolfsonmicro.com>
+References: <500D5A1F.9000808@linaro.org>
 MIME-Version: 1.0
-To: Aaron Lu <aaron.lu@amd.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Lin Ming <minggr@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
-Subject: Re: [PATCH 4/5] scsi: pm: use runtime resume callback if available
-References: <1343026180-22236-1-git-send-email-aaron.lu@amd.com> <1343026180-22236-5-git-send-email-aaron.lu@amd.com>
-In-Reply-To: <1343026180-22236-5-git-send-email-aaron.lu@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
+Content-Disposition: inline
+In-Reply-To: <500D5A1F.9000808@linaro.org>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 07/23/2012 10:49 AM, Aaron Lu wrote:
+--SUOF0GtieIMvvwua
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> When runtime resume a scsi device, if the device's driver has
-> implemented runtime resume callback, use that instead of the resume
-> callback.
+On Mon, Jul 23, 2012 at 03:05:19PM +0100, Lee Jones wrote:
 
-> sr driver needs this to properly do different things for system resume
-> and runtime resume.
+> I was wondering if I may bother you for some help. I've been having
+> serious issues with testing the new mop500 sound system you have in
 
-> Signed-off-by: Aaron Lu <aaron.lu@amd.com>
-> ---
->  drivers/scsi/scsi_pm.c | 14 +++++++++-----
->  drivers/scsi/sr.c      | 21 +++++++++++++++++++++
->  2 files changed, 30 insertions(+), 5 deletions(-)
+You might want to CC some of the people who wrote that code...
 
-> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-> index d4201de..19bba47 100644
-> --- a/drivers/scsi/scsi_pm.c
-> +++ b/drivers/scsi/scsi_pm.c
-> @@ -34,14 +34,18 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
->  	return err;
->  }
->  
-> -static int scsi_dev_type_resume(struct device *dev)
-> +static int scsi_dev_type_resume(struct device *dev, bool runtime)
->  {
->  	struct device_driver *drv;
->  	int err = 0;
-> +	int (*resume)(struct device *);
->  
->  	drv = dev->driver;
-> -	if (drv && drv->resume)
-> -		err = drv->resume(dev);
-> +	if (runtime && drv && drv->pm && drv->pm->runtime_resume)
-> +		resume = drv->pm->runtime_resume;
-> +	else
-> +		resume = drv ? drv->resume : NULL;
+> The problem seems to be that 'dapm_supply_check_power()' then calls
+> back into 'dapm_widget_power_check()'. Then round and round we go!
 
-   Call thru NULL pointer below will cause kernel oops. Is it your intention?
+Please describe what the problem you think you're seeing is, you've just
+cut'n'pasted the code into your mail without describing any actual
+problem in the system...
 
-> +	err = resume(dev);
+The tree walk is recursive so the fact that we call the same function
+more than once isn't terribly surprising.
 
-WBR, Sergei
+--SUOF0GtieIMvvwua
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQDWItAAoJEBus8iNuMP3dH+8P+wb8jxonN/7NxikoRjK7ltEN
+G71lEjSVzTpv2KytIWyou8U3xmNi2ykcYuyDagzZJLGZaGXHc+C9dlSj5JH7VHl0
+ocPnZTNNJD0YPAXsz9yuxpC0ubeepetz6Z9UwUPrOiY/0C1c4ntMOG7vqvjMSgX/
+bP1xZQLtwEiOaTUj15hjv0lRePZ8o5JXeSIvTx+DzCTdSa6FE14mHysaYIyAhQdn
+T1yP2i3hu/DYYvf8QfqA1TV9eQshS7UVKMRY2/UC/FRnmujZ4m2r0UaS4c/s4Vg+
+/brFa+w6Oxu/AgIvTNFgLjEaHOslweCjG9P2ZvrOpVbpzcN9MkZFPM6X/Lk94hyT
+Y11cqW40f52J1Wa135WhVEWyTLuHgtM0XqwbaastmwpIh9GijxXW7jMNSlQXTu1F
+TMHEn7Y6I3CBahO2FzeF5J3w3lSY7v0fvUway+cU0QJJBbpy+AkNIBnVQEpLBiwX
+cVmW2gS6aeplnlkkWdZpwe49VrUzpk4SiRlBWLg97D23bUeh6kv49LAlLfKnms3H
+n0aMutQphHbvBKi6Fl3+5i72KNgj8gy+kFzaL/pulPJakwUmLdev0GaxGkrMk8aF
+T/4llFIBQ32N5H9sY3pxTglHJZsXB6PDohJigU7gT+gsNahE8QPYLofflM3Ccmm5
+6CHdchhaYhTdAG0L96Lt
+=4Iga
+-----END PGP SIGNATURE-----
+
+--SUOF0GtieIMvvwua--
