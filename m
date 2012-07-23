@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab2GWBvd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:51:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54384 "EHLO
+	id S1753735Ab2GWBvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:51:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54383 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753482Ab2GWBnY (ORCPT
+	by vger.kernel.org with ESMTP id S1753480Ab2GWBnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:43:24 -0400
-Message-Id: <20120723010658.737029738@decadent.org.uk>
+Message-Id: <20120723010658.884051432@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:39 +0100
+Date: Mon, 23 Jul 2012 02:07:40 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Samuel Ortiz <sameo@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 048/108] NFC: Export nfc.h to userland
+        alan@lxorguk.ukuu.org.uk, Bojan Smojver <bojan@rexursive.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 049/108] PM / Hibernate: Hibernate/thaw fixes/improvements
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,31 +28,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Samuel Ortiz <sameo@linux.intel.com>
+From: Bojan Smojver <bojan@rexursive.com>
 
-commit dbd4fcaf8d664fab4163b1f8682e41ad8bff3444 upstream.
+commit 5a21d489fd9541a4a66b9a500659abaca1b19a51 upstream.
 
-The netlink commands and attributes, along with the socket structure
-definitions need to be exported.
+ 1. Do not allocate memory for buffers from emergency pools, unless
+    absolutely required. Do not warn about and do not retry non-essential
+    failed allocations.
 
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+ 2. Do not check the amount of free pages left on every single page
+    write, but wait until one map is completely populated and then check.
+
+ 3. Set maximum number of pages for read buffering consistently, instead
+    of inadvertently depending on the size of the sector type.
+
+ 4. Fix copyright line, which I missed when I submitted the hibernation
+    threading patch.
+
+ 5. Dispense with bit shifting arithmetic to improve readability.
+
+ 6. Really recalculate the number of pages required to be free after all
+    allocations have been done.
+
+ 7. Fix calculation of pages required for read buffering. Only count in
+    pages that do not belong to high memory.
+
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/Kbuild |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/power/swap.c |   62 ++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 39 insertions(+), 23 deletions(-)
 
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 3c9b616..f08e3ae 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -271,6 +271,7 @@ header-y += netfilter_ipv4.h
- header-y += netfilter_ipv6.h
- header-y += netlink.h
- header-y += netrom.h
-+header-y += nfc.h
- header-y += nfs.h
- header-y += nfs2.h
- header-y += nfs3.h
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index eef311a..11e22c0 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -6,7 +6,7 @@
+  *
+  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
+  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
++ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  *
+@@ -282,14 +282,17 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
+ 		return -ENOSPC;
+ 
+ 	if (bio_chain) {
+-		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++		src = (void *)__get_free_page(__GFP_WAIT | __GFP_NOWARN |
++		                              __GFP_NORETRY);
+ 		if (src) {
+ 			copy_page(src, buf);
+ 		} else {
+ 			ret = hib_wait_on_bio_chain(bio_chain); /* Free pages */
+ 			if (ret)
+ 				return ret;
+-			src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++			src = (void *)__get_free_page(__GFP_WAIT |
++			                              __GFP_NOWARN |
++			                              __GFP_NORETRY);
+ 			if (src) {
+ 				copy_page(src, buf);
+ 			} else {
+@@ -367,12 +370,17 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		clear_page(handle->cur);
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+-	}
+-	if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
+-		error = hib_wait_on_bio_chain(bio_chain);
+-		if (error)
+-			goto out;
+-		handle->reqd_free_pages = reqd_free_pages();
++
++		if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
++			error = hib_wait_on_bio_chain(bio_chain);
++			if (error)
++				goto out;
++			/*
++			 * Recalculate the number of required free pages, to
++			 * make sure we never take more than half.
++			 */
++			handle->reqd_free_pages = reqd_free_pages();
++		}
+ 	}
+  out:
+ 	return error;
+@@ -419,8 +427,9 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ /* Maximum number of threads for compression/decompression. */
+ #define LZO_THREADS	3
+ 
+-/* Maximum number of pages for read buffering. */
+-#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
++/* Minimum/maximum number of pages for read buffering. */
++#define LZO_MIN_RD_PAGES	1024
++#define LZO_MAX_RD_PAGES	8192
+ 
+ 
+ /**
+@@ -631,12 +640,6 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	}
+ 
+ 	/*
+-	 * Adjust number of free pages after all allocations have been done.
+-	 * We don't want to run out of pages when writing.
+-	 */
+-	handle->reqd_free_pages = reqd_free_pages();
+-
+-	/*
+ 	 * Start the CRC32 thread.
+ 	 */
+ 	init_waitqueue_head(&crc->go);
+@@ -657,6 +660,12 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 		goto out_clean;
+ 	}
+ 
++	/*
++	 * Adjust the number of required free pages after all allocations have
++	 * been done. We don't want to run out of pages when writing.
++	 */
++	handle->reqd_free_pages = reqd_free_pages();
++
+ 	printk(KERN_INFO
+ 		"PM: Using %u thread(s) for compression.\n"
+ 		"PM: Compressing and saving image data (%u pages) ...     ",
+@@ -1067,7 +1076,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	unsigned i, thr, run_threads, nr_threads;
+ 	unsigned ring = 0, pg = 0, ring_size = 0,
+ 	         have = 0, want, need, asked = 0;
+-	unsigned long read_pages;
++	unsigned long read_pages = 0;
+ 	unsigned char **page = NULL;
+ 	struct dec_data *data = NULL;
+ 	struct crc_data *crc = NULL;
+@@ -1079,7 +1088,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	nr_threads = num_online_cpus() - 1;
+ 	nr_threads = clamp_val(nr_threads, 1, LZO_THREADS);
+ 
+-	page = vmalloc(sizeof(*page) * LZO_READ_PAGES);
++	page = vmalloc(sizeof(*page) * LZO_MAX_RD_PAGES);
+ 	if (!page) {
+ 		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+ 		ret = -ENOMEM;
+@@ -1144,15 +1153,22 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	}
+ 
+ 	/*
+-	 * Adjust number of pages for read buffering, in case we are short.
++	 * Set the number of pages for read buffering.
++	 * This is complete guesswork, because we'll only know the real
++	 * picture once prepare_image() is called, which is much later on
++	 * during the image load phase. We'll assume the worst case and
++	 * say that none of the image pages are from high memory.
+ 	 */
+-	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
+-	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
++	if (low_free_pages() > snapshot_get_image_size())
++		read_pages = (low_free_pages() - snapshot_get_image_size()) / 2;
++	read_pages = clamp_val(read_pages, LZO_MIN_RD_PAGES, LZO_MAX_RD_PAGES);
+ 
+ 	for (i = 0; i < read_pages; i++) {
+ 		page[i] = (void *)__get_free_page(i < LZO_CMP_PAGES ?
+ 		                                  __GFP_WAIT | __GFP_HIGH :
+-		                                  __GFP_WAIT);
++		                                  __GFP_WAIT | __GFP_NOWARN |
++		                                  __GFP_NORETRY);
++
+ 		if (!page[i]) {
+ 			if (i < LZO_CMP_PAGES) {
+ 				ring_size = i;
 
 
