@@ -1,104 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab2GWP1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:27:20 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:47846 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753386Ab2GWP1T (ORCPT
+	id S1754213Ab2GWP3H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:29:07 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:33156 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754174Ab2GWP3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:27:19 -0400
-Date: Mon, 23 Jul 2012 18:24:09 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-Cc: balbi@ti.com, Vivek Gautam <gautam.vivek@samsung.com>,
-        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        l.majewski@samsung.com, a.kesavan@samsung.com, prashanth.g@samsung.com,
-        kmpark@infradead.org, joshi@samsung.com, olofj@google.com,
-        thomas.abraham@linaro.org, sshtylyov@mvista.com,
-        av.tikhomirov@samsung.com
-Subject: Re: [PATCH 2/2 v3] USB: dwc3-exynos: Add vbus setup function to the
- exynos dwc3 glue layer
-Message-ID: <20120723152407.GC9020@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1342418259-23802-1-git-send-email-gautam.vivek@samsung.com>
- <1342418259-23802-3-git-send-email-gautam.vivek@samsung.com>
- <20120720095134.GG24414@arwen.pp.htv.fi>
- <CAFp+6iENsdZW0tLRA-9QRPh4AvtyLq-Ebpty9zE+bd=hv3dKog@mail.gmail.com>
+	Mon, 23 Jul 2012 11:29:06 -0400
+Message-ID: <500D6D85.4090504@xenotime.net>
+Date: Mon, 23 Jul 2012 08:28:05 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eRtJSFbw+EEWtPj3"
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iENsdZW0tLRA-9QRPh4AvtyLq-Ebpty9zE+bd=hv3dKog@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apple-gmux: Fix kconfig dependencies
+References: <1341240929-3400-1-git-send-email-seth.forshee@canonical.com> <20120716235034.GB11710@ubuntu-530U> <20120723133010.GE21495@srcf.ucam.org> <20120723134427.GA3524@thinkpad-t410>
+In-Reply-To: <20120723134427.GA3524@thinkpad-t410>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/23/2012 06:44 AM, Seth Forshee wrote:
 
---eRtJSFbw+EEWtPj3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Mon, Jul 23, 2012 at 02:30:10PM +0100, Matthew Garrett wrote:
+>>> I'm looking at Andreas's code for switcharoo support, and something I
+>>> want to do along with it is make apple-gmux not dependent on backlight
+>>> support (i.e. you can still build switcharoo support if
+>>> BACKLIGHT_CLASS_DEVICE is disabled). I'm assuming this patch as a
+>>> prerequisite. But things do get really monstrously ugly, so if there's a
+>>> cleaner way to enforce this that I haven't found I'd love to hear about
+>>> it.
+>>
+>> Why do you want to support that case? One of the problems we have with 
+>> the kernel at present is that it's trivial to come up with non-sensical 
+>> configurations. I can't think of a single case where you'd want the gmux 
+>> support without also having the backlight support code.
+> 
+> Just because there isn't strictly any reason that the switching code
+> needs to depend on backlight support. But yes, I can't think of a good
+> reason why anyone would want this configuration. I won't mess with it
+> then.
 
-Hi,
 
-On Tue, Jul 24, 2012 at 12:09:47AM +0900, Vivek Gautam wrote:
-<snip>
-> > > @@ -58,6 +81,8 @@ static int __devinit dwc3_exynos_probe(struct
-> > platform_device *pdev)
-> > >       if (!pdev->dev.coherent_dma_mask)
-> > >               pdev->dev.coherent_dma_mask =3D DMA_BIT_MASK(32);
-> > >
-> > > +     dwc3_setup_vbus_gpio(pdev);
-> >
-> > I think this should be handled by the gpio-vbus transceiver. No ?
-> >
-> > I can understand that we can use gpio-vbus transceiver. But i have one
-> confusion here.
-> We have ehci as well as this dwc3 which need gpio to be setup to
-> control vbus. So do we have two instances of this gpio-vbus driver to
-> facilitate both ehci and dwc3, because both may be on different gpio
-> lines.
+then it should be required in Kconfig file(s), not left to
+create build errors.
 
-Sure... one for dwc3 and one for ehci.
-
-> Moreover, the gpio line right now is parsed from the DT node of the
-> device, so while assigning the 'gpio_vbus' field in
-> 'gpio_vbus_mach_info', how do we provide that. Please suggest.
-
-gpio-vbus doesn't have support for DT today, just add it ;-)
-
-> One more suggestion please. Now that we are moving to DT we should be
-> making changes for gpio-vbus transceiver also for device tree support.
-
-yes, it needs support for DT before you can use it then.
-
-cheers
-
---=20
-balbi
-
---eRtJSFbw+EEWtPj3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQDWyWAAoJEIaOsuA1yqREL3YQAJs77TTPGZpsuNfbh3peg8W3
-duLz0bNUy6WiyPc06Ad0M1KwLTt+NasTmgmyaroDjqNfnsgulQx2vvSgcsrGXRvO
-WHBzwdSGRpRhoSC3tzY9kAd9eLKyDkh2QET8odWZAjCcg/plveMOausf4sCl5et/
-zJ4A9TbNSTTMbGwVbLRXOGZAI5/V3zFr8SLALAQBgeMYigBavfAYJnbObqQyYMF3
-LDpQBsPPdmsaq3UTGNfmPmR14Gvsh7DXQz6pynOvubV/JngTKIWvEY5+rRSQv6V2
-tE50aydArGyJDYKuKJGGdGrPewJB5cpsJkPK1/p2YOrGas7N/mp2g6JWlLgQCp6s
-3xduYajVUmSNzLF+InkQxwfsXtgcN/5bpRXWXqf4QMB+4JssbLwWXibQq+pmPLLn
-NX0jc8QxLoU4Tcw/4aY+aFKNzn2gPAKKoA2QDKPcnkN73DffH9mxVlwg+Rd3EL1b
-xSppEp/gOh9yX3Pq29Afhk1xKt/GoC47dV+gPynWGAbwbvpQBd4QSY43jsEVm+eq
-TJWMaPfAdkbM8yirfjd3KRzSJhkVCysSPFKCFmqY50//mW6on6Bp97Y+FW+hLxbO
-/fJaHDEnMEkds7yAfa75Jj7axnOwZ3kzq7oh03zKGdGyE8CsAL8dXz+IspFgZgqi
-93lziv74N4vxJznwgblV
-=KEaZ
------END PGP SIGNATURE-----
-
---eRtJSFbw+EEWtPj3--
+-- 
+~Randy
