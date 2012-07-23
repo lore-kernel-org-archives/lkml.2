@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab2GWNjB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:39:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58633 "EHLO mx2.suse.de"
+	id S1753965Ab2GWNnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:43:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58717 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab2GWNiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:38:54 -0400
+	id S1753549Ab2GWNjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:39:01 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/34] mm: limit direct reclaim for higher order allocations
-Date: Mon, 23 Jul 2012 14:38:22 +0100
-Message-Id: <1343050727-3045-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 19/34] mm: compaction: make isolate_lru_page() filter-aware again
+Date: Mon, 23 Jul 2012 14:38:32 +0100
+Message-Id: <1343050727-3045-20-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,73 +20,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+commit c82449352854ff09e43062246af86bdeb628f0c3 upstream.
 
-commit e0887c19b2daa140f20ca8104bdc5740f39dbb86 upstream.
+Stable note: Not tracked in Bugzilla. A fix aimed at preserving page aging
+	information by reducing LRU list churning had the side-effect of
+	reducing THP allocation success rates. This was part of a series
+	to restore the success rates while preserving the reclaim fix.
 
-Stable note: Not tracked on Bugzilla. THP and compaction was found to
-	aggressively reclaim pages and stall systems under different
-	situations that was addressed piecemeal over time. Paragraph
-	3 of this changelog is the motivation for this patch.
+Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
+noted that compaction does not migrate dirty or writeback pages and
+that is was meaningless to pick the page and re-add it to the LRU list.
+This had to be partially reverted because some dirty pages can be
+migrated by compaction without blocking.
 
-When suffering from memory fragmentation due to unfreeable pages, THP page
-faults will repeatedly try to compact memory.  Due to the unfreeable
-pages, compaction fails.
+This patch updates "mm: compaction: make isolate_lru_page" by skipping
+over pages that migration has no possibility of migrating to minimise
+LRU disruption.
 
-Needless to say, at that point page reclaim also fails to create free
-contiguous 2MB areas.  However, that doesn't stop the current code from
-trying, over and over again, and freeing a minimum of 4MB (2UL <<
-sc->order pages) at every single invocation.
-
-This resulted in my 12GB system having 2-3GB free memory, a corresponding
-amount of used swap and very sluggish response times.
-
-This can be avoided by having the direct reclaim code not reclaim from
-zones that already have plenty of free memory available for compaction.
-
-If compaction still fails due to unmovable memory, doing additional
-reclaim will only hurt the system, not help.
-
-[jweiner@redhat.com: change comment to explain the order check]
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Acked-by: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel<riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Cc: Nai Xia <nai.xia@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ include/linux/mmzone.h |    2 ++
+ mm/compaction.c        |    3 +++
+ mm/vmscan.c            |   35 +++++++++++++++++++++++++++++++++--
+ 3 files changed, 38 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 951ed81..80caa71 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -166,6 +166,8 @@ static inline int is_unevictable_lru(enum lru_list l)
+ #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
+ /* Isolate unmapped file */
+ #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
++/* Isolate for asynchronous migration */
++#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
+ 
+ /* LRU Isolation modes. */
+ typedef unsigned __bitwise__ isolate_mode_t;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index afdc416..76bdd65 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -371,6 +371,9 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 			continue;
+ 		}
+ 
++		if (!cc->sync)
++			mode |= ISOLATE_ASYNC_MIGRATE;
++
+ 		/* Try isolate the page */
+ 		if (__isolate_lru_page(page, mode, 0) != 0)
+ 			continue;
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 8ca1cd5..d11b6c4 100644
+index 9aa75e9..aa75861 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2059,6 +2059,22 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
- 				continue;
- 			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
- 				continue;	/* Let kswapd poll it */
-+			if (COMPACTION_BUILD) {
-+				/*
-+				 * If we already have plenty of memory
-+				 * free for compaction, don't free any
-+				 * more.  Even though compaction is
-+				 * invoked for any non-zero order,
-+				 * only frequent costly order
-+				 * reclamation is disruptive enough to
-+				 * become a noticable problem, like
-+				 * transparent huge page allocations.
-+				 */
-+				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
-+					(compaction_suitable(zone, sc->order) ||
-+					 compaction_deferred(zone)))
-+					continue;
-+			}
- 			/*
- 			 * This steals pages from memory cgroups over softlimit
- 			 * and returns the number of reclaimed pages and
+@@ -1045,8 +1045,39 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+ 
+ 	ret = -EBUSY;
+ 
+-	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
+-		return ret;
++	/*
++	 * To minimise LRU disruption, the caller can indicate that it only
++	 * wants to isolate pages it will be able to operate on without
++	 * blocking - clean pages for the most part.
++	 *
++	 * ISOLATE_CLEAN means that only clean pages should be isolated. This
++	 * is used by reclaim when it is cannot write to backing storage
++	 *
++	 * ISOLATE_ASYNC_MIGRATE is used to indicate that it only wants to pages
++	 * that it is possible to migrate without blocking
++	 */
++	if (mode & (ISOLATE_CLEAN|ISOLATE_ASYNC_MIGRATE)) {
++		/* All the caller can do on PageWriteback is block */
++		if (PageWriteback(page))
++			return ret;
++
++		if (PageDirty(page)) {
++			struct address_space *mapping;
++
++			/* ISOLATE_CLEAN means only clean pages */
++			if (mode & ISOLATE_CLEAN)
++				return ret;
++
++			/*
++			 * Only pages without mappings or that have a
++			 * ->migratepage callback are possible to migrate
++			 * without blocking
++			 */
++			mapping = page_mapping(page);
++			if (mapping && !mapping->a_ops->migratepage)
++				return ret;
++		}
++	}
+ 
+ 	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
+ 		return ret;
 -- 
 1.7.9.2
 
