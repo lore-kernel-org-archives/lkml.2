@@ -1,155 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab2GWI1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 04:27:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18314 "EHLO mx1.redhat.com"
+	id S1754099Ab2GWI0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 04:26:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48608 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106Ab2GWI01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 04:26:27 -0400
+	id S1754070Ab2GWI0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 04:26:20 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Bob Peterson <rpeterso@redhat.com>,
+Cc: Benjamin Marzinski <bmarzins@redhat.com>,
         Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 12/16] GFS2: Combine functions get_local_rgrp and gfs2_inplace_reserve
-Date: Mon, 23 Jul 2012 09:01:02 +0100
-Message-Id: <1343030466-3053-13-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 07/16] GFS2: Use lvbs for storing rgrp information with mount option
+Date: Mon, 23 Jul 2012 09:00:57 +0100
+Message-Id: <1343030466-3053-8-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1343030466-3053-1-git-send-email-swhiteho@redhat.com>
 References: <1343030466-3053-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Peterson <rpeterso@redhat.com>
+From: Benjamin Marzinski <bmarzins@redhat.com>
 
-This function combines rgrp functions get_local_rgrp and
-gfs2_inplace_reserve so that the double retry loop is gone.
+Instead of reading in the resource groups when gfs2 is checking
+for free space to allocate from, gfs2 can store the necessary infromation
+in the resource group's lvb.  Also, instead of searching for unlinked
+inodes in every resource group that's checked for free space, gfs2 can
+store the number of unlinked but inodes in the lvb, and only check for
+unlinked inodes if it will find some.
 
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+The first time a resource group is locked, the lvb must initialized.
+Since this involves counting the unlinked inodes in the resource group,
+this takes a little extra time.  But after that, if the resource group
+is locked with GL_SKIP, the buffer head won't be read in unless it's
+actually needed.
+
+Enabling the resource groups lvbs is done via the rgrplvb mount option.  If
+this option isn't set, the lvbs will still be set and updated, but they won't
+be verfied or used by the filesystem.  To safely turn on this option, all of
+the nodes mounting the filesystem must be running code with this patch, and
+the filesystem must have been completely unmounted since they were updated.
+
+Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
+diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+index 3ad8cb3..10ae164 100644
+--- a/fs/gfs2/glock.c
++++ b/fs/gfs2/glock.c
+@@ -769,6 +769,7 @@ int gfs2_glock_get(struct gfs2_sbd *sdp, u64 number,
+ 	gl->gl_stats.stats[GFS2_LKS_DCOUNT] = 0;
+ 	gl->gl_stats.stats[GFS2_LKS_QCOUNT] = 0;
+ 	memset(&gl->gl_lksb, 0, sizeof(struct dlm_lksb));
++	memset(gl->gl_lvb, 0, 32 * sizeof(char));
+ 	gl->gl_lksb.sb_lvbptr = gl->gl_lvb;
+ 	gl->gl_tchange = jiffies;
+ 	gl->gl_object = NULL;
+diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
+index 5cda51a..dc73070 100644
+--- a/fs/gfs2/incore.h
++++ b/fs/gfs2/incore.h
+@@ -89,6 +89,7 @@ struct gfs2_rgrpd {
+ 	u64 rd_igeneration;
+ 	struct gfs2_bitmap *rd_bits;
+ 	struct gfs2_sbd *rd_sbd;
++	struct gfs2_rgrp_lvb *rd_rgl;
+ 	u32 rd_last_alloc;
+ 	u32 rd_flags;
+ #define GFS2_RDF_CHECK		0x10000000 /* check for unlinked inodes */
+@@ -470,6 +471,7 @@ struct gfs2_args {
+ 	unsigned int ar_discard:1;		/* discard requests */
+ 	unsigned int ar_errors:2;               /* errors=withdraw | panic */
+ 	unsigned int ar_nobarrier:1;            /* do not send barriers */
++	unsigned int ar_rgrplvb:1;		/* use lvbs for rgrp info */
+ 	int ar_commit;				/* Commit interval */
+ 	int ar_statfs_quantum;			/* The fast statfs interval */
+ 	int ar_quota_quantum;			/* The quota interval */
 diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 3c6f7ed..e53d0a1 100644
+index 9eca6a9..3c6f7ed 100644
 --- a/fs/gfs2/rgrp.c
 +++ b/fs/gfs2/rgrp.c
-@@ -1207,25 +1207,30 @@ static void try_rgrp_unlink(struct gfs2_rgrpd *rgd, u64 *last_unlinked, u64 skip
+@@ -660,6 +660,7 @@ static int read_rindex_entry(struct gfs2_inode *ip)
+ 		goto fail;
+ 
+ 	rgd->rd_gl->gl_object = rgd;
++	rgd->rd_rgl = (struct gfs2_rgrp_lvb *)rgd->rd_gl->gl_lvb;
+ 	rgd->rd_flags &= ~GFS2_RDF_UPTODATE;
+ 	if (rgd->rd_data > sdp->sd_max_rg_data)
+ 		sdp->sd_max_rg_data = rgd->rd_data;
+@@ -769,9 +770,65 @@ static void gfs2_rgrp_out(struct gfs2_rgrpd *rgd, void *buf)
+ 	memset(&str->rg_reserved, 0, sizeof(str->rg_reserved));
  }
  
++static int gfs2_rgrp_lvb_valid(struct gfs2_rgrpd *rgd)
++{
++	struct gfs2_rgrp_lvb *rgl = rgd->rd_rgl;
++	struct gfs2_rgrp *str = (struct gfs2_rgrp *)rgd->rd_bits[0].bi_bh->b_data;
++
++	if (rgl->rl_flags != str->rg_flags || rgl->rl_free != str->rg_free ||
++	    rgl->rl_dinodes != str->rg_dinodes ||
++	    rgl->rl_igeneration != str->rg_igeneration)
++		return 0;
++	return 1;
++}
++
++static void gfs2_rgrp_ondisk2lvb(struct gfs2_rgrp_lvb *rgl, const void *buf)
++{
++	const struct gfs2_rgrp *str = buf;
++
++	rgl->rl_magic = cpu_to_be32(GFS2_MAGIC);
++	rgl->rl_flags = str->rg_flags;
++	rgl->rl_free = str->rg_free;
++	rgl->rl_dinodes = str->rg_dinodes;
++	rgl->rl_igeneration = str->rg_igeneration;
++	rgl->__pad = 0UL;
++}
++
++static void update_rgrp_lvb_unlinked(struct gfs2_rgrpd *rgd, u32 change)
++{
++	struct gfs2_rgrp_lvb *rgl = rgd->rd_rgl;
++	u32 unlinked = be32_to_cpu(rgl->rl_unlinked) + change;
++	rgl->rl_unlinked = cpu_to_be32(unlinked);
++}
++
++static u32 count_unlinked(struct gfs2_rgrpd *rgd)
++{
++	struct gfs2_bitmap *bi;
++	const u32 length = rgd->rd_length;
++	const u8 *buffer = NULL;
++	u32 i, goal, count = 0;
++
++	for (i = 0, bi = rgd->rd_bits; i < length; i++, bi++) {
++		goal = 0;
++		buffer = bi->bi_bh->b_data + bi->bi_offset;
++		WARN_ON(!buffer_uptodate(bi->bi_bh));
++		while (goal < bi->bi_len * GFS2_NBBY) {
++			goal = gfs2_bitfit(buffer, bi->bi_len, goal,
++					   GFS2_BLKST_UNLINKED);
++			if (goal == BFITNOENT)
++				break;
++			count++;
++			goal++;
++		}
++	}
++
++	return count;
++}
++
++
  /**
-- * get_local_rgrp - Choose and lock a rgrp for allocation
-+ * gfs2_inplace_reserve - Reserve space in the filesystem
-  * @ip: the inode to reserve space for
-- * @last_unlinked: the last unlinked block
-- *
-- * Try to acquire rgrp in way which avoids contending with others.
-+ * @requested: the number of blocks to be reserved
+- * gfs2_rgrp_go_lock - Read in a RG's header and bitmaps
+- * @gh: The glock holder for the resource group
++ * gfs2_rgrp_bh_get - Read in a RG's header and bitmaps
++ * @rgd: the struct gfs2_rgrpd describing the RG to read in
   *
+  * Read in all of a Resource Group's header and bitmap blocks.
+  * Caller must eventually call gfs2_rgrp_relse() to free the bitmaps.
+@@ -779,9 +836,8 @@ static void gfs2_rgrp_out(struct gfs2_rgrpd *rgd, void *buf)
   * Returns: errno
   */
  
--static int get_local_rgrp(struct gfs2_inode *ip, u64 *last_unlinked)
-+int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
+-int gfs2_rgrp_go_lock(struct gfs2_holder *gh)
++int gfs2_rgrp_bh_get(struct gfs2_rgrpd *rgd)
  {
- 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
- 	struct gfs2_rgrpd *rgd, *begin = NULL;
- 	struct gfs2_blkreserv *rs = ip->i_res;
--	int error, rg_locked, flags = LM_FLAG_TRY;
-+	int error = 0, rg_locked, flags = LM_FLAG_TRY;
-+	u64 last_unlinked = NO_BLOCK;
+-	struct gfs2_rgrpd *rgd = gh->gh_gl->gl_object;
+ 	struct gfs2_sbd *sdp = rgd->rd_sbd;
+ 	struct gfs2_glock *gl = rgd->rd_gl;
+ 	unsigned int length = rgd->rd_length;
+@@ -789,6 +845,9 @@ int gfs2_rgrp_go_lock(struct gfs2_holder *gh)
+ 	unsigned int x, y;
+ 	int error;
+ 
++	if (rgd->rd_bits[0].bi_bh != NULL)
++		return 0;
++
+ 	for (x = 0; x < length; x++) {
+ 		bi = rgd->rd_bits + x;
+ 		error = gfs2_meta_read(gl, rgd->rd_addr + x, 0, &bi->bi_bh);
+@@ -815,7 +874,20 @@ int gfs2_rgrp_go_lock(struct gfs2_holder *gh)
+ 		rgd->rd_flags |= (GFS2_RDF_UPTODATE | GFS2_RDF_CHECK);
+ 		rgd->rd_free_clone = rgd->rd_free;
+ 	}
+-
++	if (be32_to_cpu(GFS2_MAGIC) != rgd->rd_rgl->rl_magic) {
++		rgd->rd_rgl->rl_unlinked = cpu_to_be32(count_unlinked(rgd));
++		gfs2_rgrp_ondisk2lvb(rgd->rd_rgl,
++				     rgd->rd_bits[0].bi_bh->b_data);
++	}
++	else if (sdp->sd_args.ar_rgrplvb) {
++		if (!gfs2_rgrp_lvb_valid(rgd)){
++			gfs2_consist_rgrpd(rgd);
++			error = -EIO;
++			goto fail;
++		}
++		if (rgd->rd_rgl->rl_unlinked == 0)
++			rgd->rd_flags &= ~GFS2_RDF_CHECK;
++	}
+ 	return 0;
+ 
+ fail:
+@@ -829,6 +901,39 @@ fail:
+ 	return error;
+ }
+ 
++int update_rgrp_lvb(struct gfs2_rgrpd *rgd)
++{
++	u32 rl_flags;
++
++	if (rgd->rd_flags & GFS2_RDF_UPTODATE)
++		return 0;
++
++	if (be32_to_cpu(GFS2_MAGIC) != rgd->rd_rgl->rl_magic)
++		return gfs2_rgrp_bh_get(rgd);
++
++	rl_flags = be32_to_cpu(rgd->rd_rgl->rl_flags);
++	rl_flags &= ~GFS2_RDF_MASK;
++	rgd->rd_flags &= GFS2_RDF_MASK;
++	rgd->rd_flags |= (rl_flags | GFS2_RDF_UPTODATE | GFS2_RDF_CHECK);
++	if (rgd->rd_rgl->rl_unlinked == 0)
++		rgd->rd_flags &= ~GFS2_RDF_CHECK;
++	rgd->rd_free = be32_to_cpu(rgd->rd_rgl->rl_free);
++	rgd->rd_free_clone = rgd->rd_free;
++	rgd->rd_dinodes = be32_to_cpu(rgd->rd_rgl->rl_dinodes);
++	rgd->rd_igeneration = be64_to_cpu(rgd->rd_rgl->rl_igeneration);
++	return 0;
++}
++
++int gfs2_rgrp_go_lock(struct gfs2_holder *gh)
++{
++	struct gfs2_rgrpd *rgd = gh->gh_gl->gl_object;
++	struct gfs2_sbd *sdp = rgd->rd_sbd;
++
++	if (gh->gh_flags & GL_SKIP && sdp->sd_args.ar_rgrplvb)
++		return 0;
++	return gfs2_rgrp_bh_get((struct gfs2_rgrpd *)gh->gh_gl->gl_object);
++}
++
+ /**
+  * gfs2_rgrp_go_unlock - Release RG bitmaps read in with gfs2_rgrp_bh_get()
+  * @gh: The glock holder for the resource group
+@@ -842,8 +947,10 @@ void gfs2_rgrp_go_unlock(struct gfs2_holder *gh)
+ 
+ 	for (x = 0; x < length; x++) {
+ 		struct gfs2_bitmap *bi = rgd->rd_bits + x;
+-		brelse(bi->bi_bh);
+-		bi->bi_bh = NULL;
++		if (bi->bi_bh) {
++			brelse(bi->bi_bh);
++			bi->bi_bh = NULL;
++		}
+ 	}
+ 
+ }
+@@ -987,6 +1094,7 @@ int gfs2_fitrim(struct file *filp, void __user *argp)
+ 				rgd->rd_flags |= GFS2_RGF_TRIMMED;
+ 				gfs2_trans_add_bh(rgd->rd_gl, bh, 1);
+ 				gfs2_rgrp_out(rgd, bh->b_data);
++				gfs2_rgrp_ondisk2lvb(rgd->rd_rgl, bh->b_data);
+ 				gfs2_trans_end(sdp);
+ 			}
+ 		}
+@@ -1116,6 +1224,9 @@ static int get_local_rgrp(struct gfs2_inode *ip, u64 *last_unlinked)
+ 	int error, rg_locked, flags = LM_FLAG_TRY;
  	int loops = 0;
  
- 	if (sdp->sd_args.ar_rgrplvb)
- 		flags |= GL_SKIP;
-+	rs = ip->i_res;
-+	rs->rs_requested = requested;
-+	if (gfs2_assert_warn(sdp, requested)) {
-+		error = -EINVAL;
-+		goto out;
-+	}
- 
++	if (sdp->sd_args.ar_rgrplvb)
++		flags |= GL_SKIP;
++
  	if (ip->i_rgd && rgrp_contains_block(ip->i_rgd, ip->i_goal))
  		rgd = begin = ip->i_rgd;
-@@ -1263,63 +1268,34 @@ static int get_local_rgrp(struct gfs2_inode *ip, u64 *last_unlinked)
- 			if (rgd->rd_flags & GFS2_RDF_CHECK) {
- 				if (sdp->sd_args.ar_rgrplvb)
- 					gfs2_rgrp_bh_get(rgd);
--				try_rgrp_unlink(rgd, last_unlinked, ip->i_no_addr);
-+				try_rgrp_unlink(rgd, &last_unlinked,
-+						ip->i_no_addr);
+ 	else
+@@ -1133,22 +1244,34 @@ static int get_local_rgrp(struct gfs2_inode *ip, u64 *last_unlinked)
+ 		} else {
+ 			error = gfs2_glock_nq_init(rgd->rd_gl, LM_ST_EXCLUSIVE,
+ 						   flags, &rs->rs_rgd_gh);
++			if (!error && sdp->sd_args.ar_rgrplvb) {
++				error = update_rgrp_lvb(rgd);
++				if (error) {
++					gfs2_glock_dq_uninit(&rs->rs_rgd_gh);
++					return error;
++				}
++			}
+ 		}
+ 		switch (error) {
+ 		case 0:
+ 			if (try_rgrp_fit(rgd, ip)) {
++				if (sdp->sd_args.ar_rgrplvb)
++					gfs2_rgrp_bh_get(rgd);
+ 				ip->i_rgd = rgd;
+ 				return 0;
  			}
+-			if (rgd->rd_flags & GFS2_RDF_CHECK)
++			if (rgd->rd_flags & GFS2_RDF_CHECK) {
++				if (sdp->sd_args.ar_rgrplvb)
++					gfs2_rgrp_bh_get(rgd);
+ 				try_rgrp_unlink(rgd, last_unlinked, ip->i_no_addr);
++			}
  			if (!rg_locked)
  				gfs2_glock_dq_uninit(&rs->rs_rgd_gh);
  			/* fall through */
  		case GLR_TRYFAILED:
  			rgd = gfs2_rgrpd_get_next(rgd);
--			if (rgd == begin) {
--				flags &= ~LM_FLAG_TRY;
--				loops++;
--			}
-+			if (rgd != begin) /* If we didn't wrap */
-+				break;
-+
-+			flags &= ~LM_FLAG_TRY;
-+			loops++;
-+			/* Check that fs hasn't grown if writing to rindex */
-+			if (ip == GFS2_I(sdp->sd_rindex) &&
-+			    !sdp->sd_rindex_uptodate) {
-+				error = gfs2_ri_update(ip);
-+				if (error)
-+					goto out;
-+			} else if (loops == 2)
-+				/* Flushing the log may release space */
-+				gfs2_log_flush(sdp, NULL);
+ 			if (rgd == begin) {
+-				flags = 0;
++				flags &= ~LM_FLAG_TRY;
+ 				loops++;
+ 			}
  			break;
- 		default:
--			return error;
-+			goto out;
- 		}
- 	}
--
--	return -ENOSPC;
--}
--
--/**
-- * gfs2_inplace_reserve - Reserve space in the filesystem
-- * @ip: the inode to reserve space for
-- * @requested: the number of blocks to be reserved
-- *
-- * Returns: errno
-- */
--
--int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
--{
--	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
--	struct gfs2_blkreserv *rs;
--	int error = 0;
--	u64 last_unlinked = NO_BLOCK;
--	int tries = 0;
--
--	rs = ip->i_res;
--	rs->rs_requested = requested;
--	if (gfs2_assert_warn(sdp, requested)) {
--		error = -EINVAL;
--		goto out;
--	}
--
--	do {
--		error = get_local_rgrp(ip, &last_unlinked);
--		if (error != -ENOSPC)
--			break;
--		/* Check that fs hasn't grown if writing to rindex */
--		if (ip == GFS2_I(sdp->sd_rindex) && !sdp->sd_rindex_uptodate) {
--			error = gfs2_ri_update(ip);
--			if (error)
--				break;
--			continue;
--		}
--		/* Flushing the log may release space */
--		gfs2_log_flush(sdp, NULL);
--	} while (tries++ < 3);
-+	error = -ENOSPC;
+@@ -1529,6 +1652,7 @@ int gfs2_alloc_blocks(struct gfs2_inode *ip, u64 *bn, unsigned int *nblocks,
  
- out:
- 	if (error)
+ 	gfs2_trans_add_bh(rgd->rd_gl, rgd->rd_bits[0].bi_bh, 1);
+ 	gfs2_rgrp_out(rgd, rgd->rd_bits[0].bi_bh->b_data);
++	gfs2_rgrp_ondisk2lvb(rgd->rd_rgl, rgd->rd_bits[0].bi_bh->b_data);
+ 
+ 	gfs2_statfs_change(sdp, 0, -(s64)*nblocks, dinode ? 1 : 0);
+ 	if (dinode)
+@@ -1575,6 +1699,7 @@ void __gfs2_free_blocks(struct gfs2_inode *ip, u64 bstart, u32 blen, int meta)
+ 	rgd->rd_flags &= ~GFS2_RGF_TRIMMED;
+ 	gfs2_trans_add_bh(rgd->rd_gl, rgd->rd_bits[0].bi_bh, 1);
+ 	gfs2_rgrp_out(rgd, rgd->rd_bits[0].bi_bh->b_data);
++	gfs2_rgrp_ondisk2lvb(rgd->rd_rgl, rgd->rd_bits[0].bi_bh->b_data);
+ 
+ 	/* Directories keep their data in the metadata address space */
+ 	if (meta || ip->i_depth)
+@@ -1611,6 +1736,8 @@ void gfs2_unlink_di(struct inode *inode)
+ 	trace_gfs2_block_alloc(ip, rgd, blkno, 1, GFS2_BLKST_UNLINKED);
+ 	gfs2_trans_add_bh(rgd->rd_gl, rgd->rd_bits[0].bi_bh, 1);
+ 	gfs2_rgrp_out(rgd, rgd->rd_bits[0].bi_bh->b_data);
++	gfs2_rgrp_ondisk2lvb(rgd->rd_rgl, rgd->rd_bits[0].bi_bh->b_data);
++	update_rgrp_lvb_unlinked(rgd, 1);
+ }
+ 
+ static void gfs2_free_uninit_di(struct gfs2_rgrpd *rgd, u64 blkno)
+@@ -1630,6 +1757,8 @@ static void gfs2_free_uninit_di(struct gfs2_rgrpd *rgd, u64 blkno)
+ 
+ 	gfs2_trans_add_bh(rgd->rd_gl, rgd->rd_bits[0].bi_bh, 1);
+ 	gfs2_rgrp_out(rgd, rgd->rd_bits[0].bi_bh->b_data);
++	gfs2_rgrp_ondisk2lvb(rgd->rd_rgl, rgd->rd_bits[0].bi_bh->b_data);
++	update_rgrp_lvb_unlinked(rgd, -1);
+ 
+ 	gfs2_statfs_change(sdp, 0, +1, -1);
+ }
+diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
+index 81fc762..7880687 100644
+--- a/fs/gfs2/super.c
++++ b/fs/gfs2/super.c
+@@ -78,6 +78,8 @@ enum {
+ 	Opt_quota_quantum,
+ 	Opt_barrier,
+ 	Opt_nobarrier,
++	Opt_rgrplvb,
++	Opt_norgrplvb,
+ 	Opt_error,
+ };
+ 
+@@ -115,6 +117,8 @@ static const match_table_t tokens = {
+ 	{Opt_quota_quantum, "quota_quantum=%d"},
+ 	{Opt_barrier, "barrier"},
+ 	{Opt_nobarrier, "nobarrier"},
++	{Opt_rgrplvb, "rgrplvb"},
++	{Opt_norgrplvb, "norgrplvb"},
+ 	{Opt_error, NULL}
+ };
+ 
+@@ -267,6 +271,12 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
+ 		case Opt_nobarrier:
+ 			args->ar_nobarrier = 1;
+ 			break;
++		case Opt_rgrplvb:
++			args->ar_rgrplvb = 1;
++			break;
++		case Opt_norgrplvb:
++			args->ar_rgrplvb = 0;
++			break;
+ 		case Opt_error:
+ 		default:
+ 			printk(KERN_WARNING "GFS2: invalid mount option: %s\n", o);
+@@ -1379,6 +1389,8 @@ static int gfs2_show_options(struct seq_file *s, struct dentry *root)
+ 		seq_printf(s, ",nobarrier");
+ 	if (test_bit(SDF_DEMOTE, &sdp->sd_flags))
+ 		seq_printf(s, ",demote_interface_used");
++	if (args->ar_rgrplvb)
++		seq_printf(s, ",rgrplvb");
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/gfs2_ondisk.h b/include/linux/gfs2_ondisk.h
+index e8ccf6f..b2de1f9 100644
+--- a/include/linux/gfs2_ondisk.h
++++ b/include/linux/gfs2_ondisk.h
+@@ -170,6 +170,16 @@ struct gfs2_rindex {
+ #define GFS2_RGF_NOALLOC	0x00000008
+ #define GFS2_RGF_TRIMMED	0x00000010
+ 
++struct gfs2_rgrp_lvb {
++	__be32 rl_magic;
++	__be32 rl_flags;
++	__be32 rl_free;
++	__be32 rl_dinodes;
++	__be64 rl_igeneration;
++	__be32 rl_unlinked;
++	__be32 __pad;
++};
++
+ struct gfs2_rgrp {
+ 	struct gfs2_meta_header rg_header;
+ 
 -- 
 1.7.4
 
