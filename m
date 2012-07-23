@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2GWPHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:07:45 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56340 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab2GWPHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:07:44 -0400
-Message-ID: <500D68B7.9060209@gmail.com>
-Date: Mon, 23 Jul 2012 17:07:35 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1754093Ab2GWPJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:09:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59691 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753660Ab2GWPJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 11:09:29 -0400
+Message-ID: <500D691C.7010203@zytor.com>
+Date: Mon, 23 Jul 2012 08:09:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Sarbojit Ganguly <unixman.linuxboy@gmail.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: Kernel Oops while disconnecting USB peripheral (always)
-References: <CAP2rAF-ZappKmznEVjd=kQgRx__oVZ3vSE53rWDHVJf6VwMVTA@mail.gmail.com> <Pine.LNX.4.44L0.1207231044380.1633-100000@iolanthe.rowland.org> <CAP2rAF_K8Zg=+ahi23U34nb+Hewh+Xaa64jfQxBxOegN3=AnyA@mail.gmail.com>
-In-Reply-To: <CAP2rAF_K8Zg=+ahi23U34nb+Hewh+Xaa64jfQxBxOegN3=AnyA@mail.gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Renninger <trenn@suse.de>
+CC: linux-kernel@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        initramfs@vger.kernel.org, bigeasy@linutronix.de,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH 1/2] init: Introduce early initrd files through uncompressed
+ cpio passing
+References: <1342607764-66747-1-git-send-email-trenn@suse.de> <1342607764-66747-2-git-send-email-trenn@suse.de> <500AC8F6.4010802@zytor.com> <201207231640.35023.trenn@suse.de>
+In-Reply-To: <201207231640.35023.trenn@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.07.2012 17:04, Sarbojit Ganguly wrote:
-> On 23 July 2012 20:17, Alan Stern <stern@rowland.harvard.edu> wrote:
+On 07/23/2012 07:40 AM, Thomas Renninger wrote:
+> This is another problem and I expect I call:
+> early_initrd_find_cpio_data()
+> early enough for Fenghua's needs.
+> If not, how early exactly is this needed?
 
-> Yes the issue is in evict() api which gets called when USB disconnect
-> is triggered.
->>
->> Alan Stern
->>
-> 
-> Even I was confused in the beginning but after thorough check I
-> confirmed its presence. I reverted back to my distro's stock kernel
-> (3.2.0-26-generic) where the issue does not recur.
-> 
-> I could not analysed further (due to my limited knowledge of USB).
+We're calling that from arch-specific code before even turning paging 
+on.  This has a couple of consequences:
 
-If you could bisect the problem, that would help a lot.
+1. ALL STATIC POINTERS ARE FORBIDDEN.  Period.  The code must be able to 
+be executed from a nonstandard linear address, and any static pointer 
+(like a function pointer) breaks that.
+
+2. Any ideas of doing everything at the same time, or uniform 
+architecture, is clearly out the window... we're just barely capable of 
+using C at this point at all.
+
+Now, you definitely do have a valid point about being able to iterate 
+over multiple files with a common prefix.  We could do that with either 
+a callback (where the callback is passed in as an argument), but I think 
+it might be nicer to do that as an iterator interface... let me ketch on 
+this.
+
+> If (just an example) CPU microcode files get passed via "early initrd",
+> the same path could be provided than needed by request_fw().
+
+This will all be obsolete.  request_fw is available way, way, way too late.
 
 
-Daniel
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
