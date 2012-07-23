@@ -1,76 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab2GWCsh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:48:37 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:55488 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab2GWCsf (ORCPT
+	id S1753076Ab2GWDEE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 23:04:04 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:44666 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab2GWDEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 22:48:35 -0400
+	Sun, 22 Jul 2012 23:04:01 -0400
+Message-ID: <500CBEEE.1080605@linux.vnet.ibm.com>
+Date: Mon, 23 Jul 2012 11:03:10 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAFbHwiQh-Cwo4xo6-vCbvWsmz_cheZK1m3SnwkvSziunV1ShBA@mail.gmail.com>
-References: <1342808038-7558-1-git-send-email-dianders@chromium.org>
-	<CAFbHwiQh-Cwo4xo6-vCbvWsmz_cheZK1m3SnwkvSziunV1ShBA@mail.gmail.com>
-Date: Sun, 22 Jul 2012 19:48:34 -0700
-X-Google-Sender-Auth: Cxce_4wRz7_bSzWyNxxf7qhl0Cw
-Message-ID: <CAD=FV=WxcXFgf+0a1UfAPRWuvWptLm9RjSqW3tEZjyT0Z+4gkA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Disable low power mode if SDIO interrupts
- are used
-From: Doug Anderson <dianders@chromium.org>
-To: Will Newton <will.newton@gmail.com>
-Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Benjamin Segall <bsegall@google.com>,
+        Ranjit Manomohan <ranjitm@google.com>, Nikhil Rao <ncrao@google.com>,
+        jmc@cs.unc.edu, Dhaval Giani <dhaval.giani@gmail.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] LinSched for v3.3-rc7
+References: <CAPM31RL6Sk6cNR9MzW_7XDvfkMA1q6xK_mcJJaCMY8Ex___9+A@mail.gmail.com>
+In-Reply-To: <CAPM31RL6Sk6cNR9MzW_7XDvfkMA1q6xK_mcJJaCMY8Ex___9+A@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072303-3568-0000-0000-0000022E4AC8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 21, 2012 at 3:40 AM, Will Newton <will.newton@gmail.com> wrote:
->>  static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
->>  {
->>         struct dw_mci_slot *slot = mmc_priv(mmc);
->> @@ -871,6 +896,14 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
->>         /* Enable/disable Slot Specific SDIO interrupt */
->>         int_mask = mci_readl(host, INTMASK);
->>         if (enb) {
->> +               /*
->> +                * Turn off low power mode if it was enabled.  This is a bit of
->> +                * a heavy operation and we disable / enable IRQs a lot, so
->> +                * we'll leave them disabled; they will get re-enabled again in
->> +                * dw_mci_setup_bus().
->> +                */
->> +               dw_mci_disable_low_power(mmc);
->> +
->
-> Is it safe to just disable low power here or could the setting be
-> overwritten in setup_bus?
+Is there any latest info about the linsched?
+I've not seen any updates so I'm not sure whether it is in the status to
+accept patches or still need some rebuilding?
 
-Very good question.  In my current setup I don't see setup_bus()
-called during normal operation.  If it were, my kernel messages would
-be constantly spammed with messages like:
-    Bus speed (slot %d) = %dHz (slot req %dHz, actual %dHZ div = %d)
+Regards,
+Michael Wang
 
-...and they're not.  Things may be different with different SDIO cards perhaps?
+On 03/15/2012 11:58 AM, Paul Turner wrote:
+> Hi All,
+> 
+> [ Take 2, gmail tried to a non text/plain component into the last email .. ]
+> 
+> Quick start version:
+> 
+> Available under linsched-alpha at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/pjt/linsched.git  .linsched
+> 
+> NOTE: The branch history is still subject to some revision as I am
+> still re-partitioning some of the patches.  Once this is complete, I
+> will promote linsched-alpha into a linsched branch at which point it
+> will no longer be subject to history re-writes.
+> 
+> After checking out the code:
+> cd tools/linsched
+> make
+> cd tests
+> ./run_tests.sh basic_tests
+> << then try changing some scheduler parameters, e.g. sched_latency,
+> and repeating >>
+> 
+> (Note:  The basic_tests are unit-tests, these are calibrated to the
+> current scheduler tunables and should strictly be considered sanity
+> tests.  Please see the mcarlo-sim work for a more useful testing
+> environment.)
+> 
+> Extended version:
+> 
+> First of all, apologies in the delay to posting this -- I know there's
+> been a lot of interest.  We made the choice to first rebase to v3.3
+> since there were fairly extensive changes, especially within the
+> scheduler, that meant we had the opportunity to significantly clean up
+> some of the LinSched code.  (For example, previously we were
+> processing kernel/sched* using awk as a Makefile step so that we could
+> extract the necessary structure information without modifying
+> sched.c!)  While the code benefited greatly from this, there were
+> several other changes that required fairly extensive modification in
+> this process (and in the meanwhile the v3.1 version became less
+> representative due to the extent of the above changes); which pushed
+> things out much further than I would have liked.  I suppose the moral
+> of the story is always release early, and often.
+> 
+> That said, I'm relatively happy with the current state of integration,
+> there's certainly some specific areas that can still be greatly
+> improved (in particular, the main simulator loop has not had as much
+> attention paid as the LinSched<>Kernel interactions and there's a long
+> list of TODOs that could be improved there), but things are now mated
+> fairly cleanly through the use of a new LinSched architecture.  This
+> is a total re-write of almost all LinSched<>Kernel interactions versus
+> the previous (2.6.35) version, and has allowed us to now carry almost
+> zero modifications against the kernel source.  It's both possible to
+> develop/test in place, as well as being patch compatible.  The
+> remaining touch-points now total just 20 lines!  Half of these are
+> likely mergable, with the other 10 lines being more LinSched specific
+> at this point in time, I've broken these down below:
+> 
+> The total damage:
+>  include/linux/init.h      |    6 ++++++   (linsched ugliness,
+> unfortunately necessary until we boot-strap proper initcall support)
+>  include/linux/rcupdate.h  |    3 +++    (only necessary to allow -O0
+> compilation which is extremely handy for analyzing the scheduler using
+> gdb)
+>  kernel/pid.c              |    4 ++++        (linsched ugliness,
+> these can go eventually)
+>  kernel/sched/fair.c       |    2 +-          (this is just the
+> promotion of 1 structure and function from static state which weren't
+> published in the sched/ re-factoring that we need from within the
+> simulator)
+>  kernel/sched/stats.c      |    2 +-
+>  kernel/time/timekeeping.c |    3 ++-    (this fixes a time-dilation
+> error due to rounding when our clock-source has ns-resolution, e.g.
+> shift==1)
+>  6 files changed, 17 insertions(+), 3 deletions(-)
+> 
+> Summarized changes vs 2.6.35 (previous version):
+> 
+> - The original LinSched (understandably) simplified many of the kernel
+> interactions in order to make simulation easier.  Unfortunately, this
+> has serious side-effects on the accuracy of simulation.  We've now
+> introduced a large portion of this state, including: irq and soft-irq
+> contexts (we now perform periodic load-balance out of SCHED_SOFTIRQ
+> for example), support for active load-balancing, correctly modeled
+> nohz interactions, ipi and stop-task support.
+> 
+> - Support for record and replay of application scheduling via perf.
+> This is not yet well integrated, but under tests exist the tools to
+> record an applications behavior using perf sched record, and then play
+> it back in the simulator.
+> 
+> - Load-balancer scoring.  This one is a very promising new avenue for
+> load-balancer testing.  We analyzed several workloads and found that
+> they could be well-modeled using a log-normal distribution.
+> Parameterizing these models then allows us to construct a large (500)
+> test-case set of randomly generated workloads that behave similarly.
+> By integrating the variance between the current load-balance and an
+> offline computed (currently greedy first-fit) balance we're able to
+> automatically identify and score an approximation of our distance from
+> an ideal load-balance.  Historically, such scores are very difficult
+> to interpret, however, that's where our ability to generate a large
+> set of test-cases above comes in.  This allows us to exploit a nice
+> property, it's much easier to design a scoring function that diverges
+> (in this case the variance) than a nice stable one that converges.  We
+> can then catch regressions in load-balancer quality by measuring the
+> divergence in this set of scoring functions across our set of
+> test-cases.  This particular feature needs a large set of
+> documentation in itself (todo), but to get started with playing with
+> it see Makefile.mcarlo-sims in tools/linsched/tests.  In particular to
+> evaluate the entire set across a variety of topologies the following
+> command can be issued:
+>   make -j <num_cpus * 2 > -f Makefile.mcarlo-sims
+> (The included 'diff-mcarlo-500' tool can then be used to make
+> comparisons across result sets.)
+> 
+> - Validation versus real hardware.  Under tests/validation we've
+> included a tool for replaying and recording the above simulations on a
+> live-machine.  These can then be compared to simulated runs using the
+> tools above to ensure that LinSched is modelling your architecture
+> reasonably appropriately.  We did some reasonably extensive
+> comparisons versus several x86 topologies in the v3.1 code using this;
+> it's a fundamentally hard problem -- in particular there's much more
+> clock drift between events on real hardware, but the results showed
+> the included topologies to be a reasonable simulacrum under LinSched.
+> 
+> What's to come?
+> - More documentation, especially about the use of the new
+> load-balancer scoring tools.
+> - The history is very coarse right now as a result of going through a
+> rebase cement-mixer.  I'd like to incrementally refactor some of the
+> larger commits; once this is done I will promote linsched-alpha to a
+> stable linsched branch that won't be subject to history re-writes.
+> - KBuild integration.  We currently build everything out of the
+> tools/linsched makefiles.  One of the immediate TODOs involves
+> re-working the arch/linsched half of this to work with kbuild so that
+> its less hacky/fragile.
+> - Writing up some of the existing TODOs as starting points for anyone
+> who wants to get involved.
+> 
+> I'd also like to take a moment to specially recognize the effort of
+> the following contributors, all of whom were involved extensively in
+> the work above.  Things have come a long way since the 5000 lines of
+> "#ifdef LINSCHED", the current status would not be possible without
+> them.
+>   Ben Segall, Dhaval Giani, Ranjit Manomohan, Nikhil Rao, and Abhishek
+> Srivastava
+> 
+> Thanks!
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-In any case, it's pretty easy for me to spin the patch so that we
-don't clobber the low power bit in setup_bus() if SDIO interrupts are
-enabled.  That makes a lot of sense, though I'd need to make sure that
-low power mode does eventually get set again if someone ejects the
-SDIO card and puts in a non-SDIO card.
 
-I'll spin the patch tomorrow when I can test it properly and also
-address some commenting concerns another engineer at chromium.org had.
-
-It still feels to me like there ought to be a better place to put this
-code.  I'd rather disable low power mode as soon as we detect an SDIO
-card.  I spent time searching and the best I could find was
-dw_mci_enable_sdio_irq(), but I'm all ears if someone has a better
-idea!  :)  Certainly this code needs to go somewhere if we want SDIO
-interrupts to be reliable.
-
-Thanks for your feeback!  :)
-
--Doug
