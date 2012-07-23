@@ -1,53 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab2GWXk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 19:40:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61248 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754966Ab2GWXk2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 19:40:28 -0400
-Date: Mon, 23 Jul 2012 16:38:20 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        stable@vger.kernel.org
-Subject: Re: [PATCH for-3.5 1/4] kdb: Revive dmesg command
-Message-ID: <20120723233819.GA6711@lizard>
-References: <20120721002529.GA20567@lizard>
- <20120721002737.GA2213@lizard>
- <20120723161927.9af62e29.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120723161927.9af62e29.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755146Ab2GWXlL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 19:41:11 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:55395 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754973Ab2GWXlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 19:41:09 -0400
+Date: Tue, 24 Jul 2012 01:36:34 +0200
+From: Michael Leun <lkml20120218@newton.leun.net>
+To: linux@rainbow-software.org
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [3.5 regression / mcs7830 / bisected] bridge constantly
+ toggeling between disabled and forwarding
+Message-ID: <20120724013634.11bf1360@xenia.leun.net>
+In-Reply-To: <20120723091504.2d035d28@xenia.leun.net>
+References: <20120723091504.2d035d28@xenia.leun.net>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 04:19:27PM -0700, Andrew Morton wrote:
-> > dmesg command appears to be broken after the printk rework. The old logic
-> > in kdb code makes no sense in terms of current printk/logging storage
-> > format, and KDB simply hangs forever.
-> > 
-> > This patch revives the command by switching to kmsg_dumper iterator.
-> > 
-> > The code is now much more simpler and shorter.
-> > 
-> > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+On Mon, 23 Jul 2012 09:15:04 +0200
+Michael Leun <lkml20120218@newton.leun.net> wrote:
+
+[see issue description below]
+
+Bisecting yielded
+
+b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113 is the first bad commit
+commit b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113
+Author: Ondrej Zary <linux@rainbow-software.org>
+Date:   Fri Jun 1 10:29:08 2012 +0000
+
+    mcs7830: Implement link state detection
+
+    Add .status callback that detects link state changes.
+    Tested with MCS7832CV-AA chip (9710:7830, identified as rev.C by the driver).
+    Fixes https://bugzilla.kernel.org/show_bug.cgi?id=28532
+
+    Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+:040000 040000 5480780cb5e75c57122a621fc3bab0108c16be27 d97efd9cc0a465dff76bcd3a3c547f718f2a5345 M    drivers
+
+
+Reverting that from 3.5 makes the issue go away.
+
+> Hi,
 > 
-> This one should me merged into 3.5.1 methinks.  Note that it has been
-> merged into mainline without a -stable tag.
+> when I use my usb ethernet adapter
+> 
+> # > lsusb
+> [...]
+> Bus 002 Device 009: ID 9710:7830 MosChip Semiconductor MCS7830 10/100 Mbps Ethernet adapter
+> [...]
+> 
+> as port of an bridge
+> 
+> > # brctl addbr br0
+> > # brctl addif br0 eth0
+> > # brctl addif br0 ue5
+> > # ifconfig ue5 up
+> > # ifconfig br0 up
+> 
+> (Also does happen when eth0 is not part of the bridge, but the logs I
+> had available were from that situation...)
+> 
+> I constantly get messages showing the interface toggeling between
+> disabled and forwarding state:
+> 
+> Jul 23 07:40:50 elektra kernel: [ 1539.497337] br0: port 2(ue5) entered disabled state
+> Jul 23 07:40:50 elektra kernel: [ 1539.554992] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:50 elektra kernel: [ 1539.555005] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:51 elektra kernel: [ 1540.496242] br0: port 2(ue5) entered disabled state
+> Jul 23 07:40:51 elektra kernel: [ 1540.552534] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:51 elektra kernel: [ 1540.552548] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:52 elektra kernel: [ 1541.550413] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:53 elektra kernel: [ 1542.529672] br0: port 2(ue5) entered disabled state
+> Jul 23 07:40:53 elektra kernel: [ 1542.587162] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:53 elektra kernel: [ 1542.587175] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:40:54 elektra kernel: [ 1543.585309] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:00 elektra kernel: [ 1549.360600] br0: port 2(ue5) entered disabled state
+> Jul 23 07:41:00 elektra kernel: [ 1549.442998] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:00 elektra kernel: [ 1549.443011] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:01 elektra kernel: [ 1550.357686] br0: port 2(ue5) entered disabled state
+> Jul 23 07:41:01 elektra kernel: [ 1550.408208] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:01 elektra kernel: [ 1550.408222] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:02 elektra kernel: [ 1551.407656] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:03 elektra kernel: [ 1552.401578] br0: port 2(ue5) entered disabled state
+> Jul 23 07:41:03 elektra kernel: [ 1552.474773] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:03 elektra kernel: [ 1552.474786] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:04 elektra kernel: [ 1553.472487] br0: port 2(ue5) entered forwarding state
+> Jul 23 07:41:05 elektra kernel: [ 1554.356138] br0: port 2(ue5) entered disabled state
+> [...]
+> 
+> This does (in the same situation, nothing else than the kernel changed)
+> not happen with 3.4.5.
+> 
+> Does anybody have an idea what the issue might be or do I need to bisect?
 
-Thanks to Linus, it made it into v3.5 release, so I believe there is
-no need for -stable.
-
-Cheers,
 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+MfG,
+
+Michael Leun
+
