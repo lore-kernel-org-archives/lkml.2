@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab2GWPj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:39:27 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27243 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab2GWPj0 (ORCPT
+	id S1754235Ab2GWPu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:50:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51406 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab2GWPuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:39:26 -0400
-Date: Mon, 23 Jul 2012 11:29:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: minchan@kernel.org, levinsasha928@gmail.com, liwp.linux@gmail.co
-Subject: [GIT PULL) (frontswap) stable/for-linus-3.6-rc0-tag
-Message-ID: <20120723152932.GC21870@phenom.dumpdata.com>
+	Mon, 23 Jul 2012 11:50:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 00/13] UAPI header file split
+Date: Mon, 23 Jul 2012 15:50:43 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@kernel.org, davej@redhat.com
+References: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207231550.43775.arnd@arndb.de>
+X-Provags-ID: V02:K0:4sINBobjRlEJct9FVzxCF/cI0mkYWoMI2Tx40lKjOov
+ bdc601lLSHRYpbRWe8jk8XBTIPBfDF8rrBfm3qF+Gkqf9M4I4U
+ 1AhpWcBQSEGC1liIBOhUHPfw0DFWeHqBOk7utJrjPfDYXdm4hw
+ pHTqMGJi/dpHISBpArGNeVeTJgsXTt0wRJ9DDy7uACKXi7vu4T
+ NJ8P8L168rT3mrxtPacZPXQFBBOnKWDENV0jmewIxViOk7QMYi
+ 1GACkaNZQeZLd1Kl+sMqRznzp6R3E6xYIeFV9cv1WznaI6XKy3
+ 6uL2Mv9jDC7NgsLHFKegaNxD04t4W7yEZCG6rGADcs7VX1MYcE
+ laMVkCnaePlS7PjENx1M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 20 July 2012, David Howells wrote:
+>      (a) It reduces the size of the kernel-only headers and obviates the need
+>          for __KERNEL__ conditionals in the remnant kernel-only headers.
+> 
+>      (b) In what we have today, there are complex interdependencies between
+>          headers that are partly exported to user space, and we want to reduce
+>          those interdependencies.
+> 
+>          It simplifies the problem space by splitting out the user headers as
+>          they then only depend only on other user headers.
+> 
+>      This step makes it easier to follow through with the remaining steps as
+>      the remnant kernel headers can be split up without regard as to whether
+>      the UAPI will be broken.  Header files such as linux/sched.h can even
+>      disappear entirely if that seems convenient.
+> 
+>      There is another potential benefit as well: it becomes easier to track
+>      when the UAPI changes just from the filenames in the GIT log.
+> 
+>      Further, linux-api@vger.kernel.org can be put into the MAINTAINERS file
+>      for the uapi/ directories so that patches changing them get sent to that
+>      list by everyone using get_maintainer.pl.
 
---ikeVEW9yuYc//A+q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks all good to me. For the entire series:
 
-Hey Linus,
-
-Please git pull the following tag:
-
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/mm.git stable=
-/for-linus-3.6-rc0-tag
-
-which has cleanups in the code and in the documentation. Also a bit of refa=
-ctoring
-is done. No functional, bug-fixes or features added.
-
-Note: Earlier I had a feature to add tracing but one of the reviewers did n=
-ot like it so
-I pulled the patch out a couple of days ago and was going to restart the de=
-bate on it.
-But instead of using revert I rebased  - and fixed up the conflict..  and e=
-nded up
-committing the patch that had a conflict with me as the author instead of S=
-asha
-(this is the "mm: frontswap: remove unneeded headers")!
-
-I realized this just today when I was prepping this email up and fixed it u=
-p - hence the git=20
-tree looks fresher - but the change was just to do 'git commit --ammend --a=
-uthor..'
-
-That teaches me to play with 'git rebase' instead of doing 'git revert' as =
-you had
-been rightfully pointing out <sigh>.
-
- Documentation/vm/frontswap.txt |    4 +-
- mm/frontswap.c                 |  150 ++++++++++++++++++++++++------------=
-----
- 2 files changed, 92 insertions(+), 62 deletions(-)
-
-Sasha Levin (9):
-      mm: frontswap: remove casting from function calls through ops structu=
-re
-      mm: frontswap: trivial coding convention issues
-      mm: frontswap: split out __frontswap_curr_pages
-      mm: frontswap: split out __frontswap_unuse_pages
-      mm: frontswap: split frontswap_shrink further to simplify locking
-      mm: frontswap: make all branches of if statement in put page consiste=
-nt
-      mm: frontswap: remove unnecessary check during initialization
-      mm: frontswap: split out function to clear a page out
-      mm: frontswap: remove unneeded headers
-
-Wanpeng Li (1):
-      mm/frontswap: cleanup doc and comment error
-
-
---ikeVEW9yuYc//A+q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQDW3YAAoJEFjIrFwIi8fJb7kIANVKWQr+GfBSmLhb2NUk9XE+
-uLe5M5a2ewRAngvFTi7g/SlzRnbHQUZi7jY8hmO6aFelDtxZQTdPfxkuMHCpkTiz
-v4ez+P8KNKHpMs5BM9AidggXAxeYLXP3IpQ8HgnysO/GVJXzKxzxWadJrRiq1toc
-a2KKX05dHXqft8wFC+NKj93TvrKanVInp6fMkUToRN8U5nL8KUrQ/vygV/0Vj17C
-hkZD0MCyqlkd9OSPnEVofUaIwEOH06hG/OMWwduKmh9BRmI9eZTv0xFWIKlipfWP
-nZ+kAAMSblMejS2oMRpRvyJPY5KAlGFpT5OIRDoitJTY2cJJfosDTbpipJTt9Qs=
-=GPqs
------END PGP SIGNATURE-----
-
---ikeVEW9yuYc//A+q--
+Acked-by: Arnd Bergmann <arnd@arndb.de>
