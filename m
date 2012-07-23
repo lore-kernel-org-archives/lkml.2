@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab2GWBmm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:42:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54067 "EHLO
+	id S1753284Ab2GWBmz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:42:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54166 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753074Ab2GWBmc (ORCPT
+	by vger.kernel.org with ESMTP id S1753221Ab2GWBmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:32 -0400
-Message-Id: <20120723010706.252373414@decadent.org.uk>
+	Sun, 22 Jul 2012 21:42:51 -0400
+Message-Id: <20120723010704.074208226@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:28 +0100
+Date: Mon, 23 Jul 2012 02:08:14 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>
-Subject: [ 097/108] eCryptfs: Fix lockdep warning in miscdev operations
+        alan@lxorguk.ukuu.org.uk, John Stultz <johnstul@us.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 083/108] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,102 +31,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: John Stultz <johnstul@us.ibm.com>
 
-commit 60d65f1f07a7d81d3eb3b91fc13fca80f2fdbb12 upstream.
+commit 5baefd6d84163443215f4a99f6a20f054ef11236 upstream.
 
-Don't grab the daemon mutex while holding the message context mutex.
-Addresses this lockdep warning:
+The update of the hrtimer base offsets on all cpus cannot be made
+atomically from the timekeeper.lock held and interrupt disabled region
+as smp function calls are not allowed there.
 
- ecryptfsd/2141 is trying to acquire lock:
-  (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}, at: [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
+clock_was_set(), which enforces the update on all cpus, is called
+either from preemptible process context in case of do_settimeofday()
+or from the softirq context when the offset modification happened in
+the timer interrupt itself due to a leap second.
 
- but task is already holding lock:
-  (&(*daemon)->mux){+.+...}, at: [<ffffffffa029c2ec>] ecryptfs_miscdev_read+0x21c/0x470 [ecryptfs]
+In both cases there is a race window for an hrtimer interrupt between
+dropping timekeeper lock, enabling interrupts and clock_was_set()
+issuing the updates. Any interrupt which arrives in that window will
+see the new time but operate on stale offsets.
 
- which lock already depends on the new lock.
+So we need to make sure that an hrtimer interrupt always sees a
+consistent state of time and offsets.
 
- the existing dependency chain (in reverse order) is:
+ktime_get_update_offsets() allows us to get the current monotonic time
+and update the per cpu hrtimer base offsets from hrtimer_interrupt()
+to capture a consistent state of monotonic time and the offsets. The
+function replaces the existing ktime_get() calls in hrtimer_interrupt().
 
- -> #1 (&(*daemon)->mux){+.+...}:
-        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
-        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
-        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
-        [<ffffffffa029c5d7>] ecryptfs_send_miscdev+0x97/0x120 [ecryptfs]
-        [<ffffffffa029b744>] ecryptfs_send_message+0x134/0x1e0 [ecryptfs]
-        [<ffffffffa029a24e>] ecryptfs_generate_key_packet_set+0x2fe/0xa80 [ecryptfs]
-        [<ffffffffa02960f8>] ecryptfs_write_metadata+0x108/0x250 [ecryptfs]
-        [<ffffffffa0290f80>] ecryptfs_create+0x130/0x250 [ecryptfs]
-        [<ffffffff811963a4>] vfs_create+0xb4/0x120
-        [<ffffffff81197865>] do_last+0x8c5/0xa10
-        [<ffffffff811998f9>] path_openat+0xd9/0x460
-        [<ffffffff81199da2>] do_filp_open+0x42/0xa0
-        [<ffffffff81187998>] do_sys_open+0xf8/0x1d0
-        [<ffffffff81187a91>] sys_open+0x21/0x30
-        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
+The overhead of the new function vs. ktime_get() is minimal as it just
+adds two store operations.
 
- -> #0 (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}:
-        [<ffffffff810a3418>] __lock_acquire+0x1bf8/0x1c50
-        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
-        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
-        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
-        [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
-        [<ffffffff811887d3>] vfs_read+0xb3/0x180
-        [<ffffffff811888ed>] sys_read+0x4d/0x90
-        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
+This ensures that any changes to realtime or boottime offsets are
+noticed and stored into the per-cpu hrtimer base structures, prior to
+any hrtimer expiration and guarantees that timers are not expired early.
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ecryptfs/miscdev.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ kernel/hrtimer.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
---- a/fs/ecryptfs/miscdev.c
-+++ b/fs/ecryptfs/miscdev.c
-@@ -195,31 +195,32 @@ int ecryptfs_send_miscdev(char *data, si
- 			  struct ecryptfs_msg_ctx *msg_ctx, u8 msg_type,
- 			  u16 msg_flags, struct ecryptfs_daemon *daemon)
- {
--	int rc = 0;
-+	struct ecryptfs_message *msg;
- 
--	mutex_lock(&msg_ctx->mux);
--	msg_ctx->msg = kmalloc((sizeof(*msg_ctx->msg) + data_size),
--			       GFP_KERNEL);
--	if (!msg_ctx->msg) {
--		rc = -ENOMEM;
-+	msg = kmalloc((sizeof(*msg) + data_size), GFP_KERNEL);
-+	if (!msg) {
- 		printk(KERN_ERR "%s: Out of memory whilst attempting "
- 		       "to kmalloc(%zd, GFP_KERNEL)\n", __func__,
--		       (sizeof(*msg_ctx->msg) + data_size));
--		goto out_unlock;
-+		       (sizeof(*msg) + data_size));
-+		return -ENOMEM;
- 	}
-+
-+	mutex_lock(&msg_ctx->mux);
-+	msg_ctx->msg = msg;
- 	msg_ctx->msg->index = msg_ctx->index;
- 	msg_ctx->msg->data_len = data_size;
- 	msg_ctx->type = msg_type;
- 	memcpy(msg_ctx->msg->data, data, data_size);
- 	msg_ctx->msg_size = (sizeof(*msg_ctx->msg) + data_size);
--	mutex_lock(&daemon->mux);
- 	list_add_tail(&msg_ctx->daemon_out_list, &daemon->msg_ctx_out_queue);
-+	mutex_unlock(&msg_ctx->mux);
-+
-+	mutex_lock(&daemon->mux);
- 	daemon->num_queued_msg_ctx++;
- 	wake_up_interruptible(&daemon->wait);
- 	mutex_unlock(&daemon->mux);
--out_unlock:
--	mutex_unlock(&msg_ctx->mux);
--	return rc;
-+
-+	return 0;
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 8f320af..6db7a5e 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -657,6 +657,14 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
+ 	return 0;
  }
  
- /**
++static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
++{
++	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
++	ktime_t *offs_boot = &base->clock_base[HRTIMER_BASE_BOOTTIME].offset;
++
++	return ktime_get_update_offsets(offs_real, offs_boot);
++}
++
+ /*
+  * Retrigger next event is called after clock was set
+  *
+@@ -665,22 +673,12 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
+ static void retrigger_next_event(void *arg)
+ {
+ 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
+-	struct timespec realtime_offset, xtim, wtm, sleep;
+ 
+ 	if (!hrtimer_hres_active())
+ 		return;
+ 
+-	/* Optimized out for !HIGH_RES */
+-	get_xtime_and_monotonic_and_sleep_offset(&xtim, &wtm, &sleep);
+-	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
+-
+-	/* Adjust CLOCK_REALTIME offset */
+ 	raw_spin_lock(&base->lock);
+-	base->clock_base[HRTIMER_BASE_REALTIME].offset =
+-		timespec_to_ktime(realtime_offset);
+-	base->clock_base[HRTIMER_BASE_BOOTTIME].offset =
+-		timespec_to_ktime(sleep);
+-
++	hrtimer_update_base(base);
+ 	hrtimer_force_reprogram(base, 0);
+ 	raw_spin_unlock(&base->lock);
+ }
+@@ -710,7 +708,6 @@ static int hrtimer_switch_to_hres(void)
+ 		base->clock_base[i].resolution = KTIME_HIGH_RES;
+ 
+ 	tick_setup_sched_timer();
+-
+ 	/* "Retrigger" the interrupt to get things going */
+ 	retrigger_next_event(NULL);
+ 	local_irq_restore(flags);
+@@ -1264,7 +1261,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
+ 	dev->next_event.tv64 = KTIME_MAX;
+ 
+ 	raw_spin_lock(&cpu_base->lock);
+-	entry_time = now = ktime_get();
++	entry_time = now = hrtimer_update_base(cpu_base);
+ retry:
+ 	expires_next.tv64 = KTIME_MAX;
+ 	/*
+@@ -1342,9 +1339,12 @@ retry:
+ 	 * We need to prevent that we loop forever in the hrtimer
+ 	 * interrupt routine. We give it 3 attempts to avoid
+ 	 * overreacting on some spurious event.
++	 *
++	 * Acquire base lock for updating the offsets and retrieving
++	 * the current time.
+ 	 */
+ 	raw_spin_lock(&cpu_base->lock);
+-	now = ktime_get();
++	now = hrtimer_update_base(cpu_base);
+ 	cpu_base->nr_retries++;
+ 	if (++retries < 3)
+ 		goto retry;
 
 
