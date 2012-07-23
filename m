@@ -1,106 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab2GWCBE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:01:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54456 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753584Ab2GWCBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 22:01:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="175760957"
-Message-ID: <1343008936.1682.307.camel@rui.sh.intel.com>
-Subject: Re: [PATCH] thermal: fix build error at thermal_sys.c
-From: Zhang Rui <rui.zhang@intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Devendra Naga <develkernel412222@gmail.com>,
-        Len Brown <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Fengguang Wu <wfg@linux.intel.com>,
-        Durgadoss R <durgadoss.r@intel.com>
-Date: Mon, 23 Jul 2012 10:02:16 +0800
-In-Reply-To: <20120722125810.052ca19e@endymion.delvare>
-References: <1342944622-16263-1-git-send-email-develkernel412222@gmail.com>
-	 <20120722125810.052ca19e@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1753217Ab2GWBmt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:42:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54120 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753074Ab2GWBmo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 21:42:44 -0400
+Message-Id: <20120723010704.366962842@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 23 Jul 2012 02:08:16 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Andreas Schwab <schwab@linux-m68k.org>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 085/108] powerpc: Fix wrong divisor in usecs_to_cputime
+In-Reply-To: <20120723010651.408577075@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all,
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-sorry for the stupid mistake.
-Actually, I did some functionality test myself, and run all patch set
-for some time. This is a problem that I have fixed already, but I'm
-wondering why it shows up again. Anyway, sorry again for the mistake!
+------------------
 
-BTW: what is the rule for linux-next?
-I refreshed the patches, did some test, and sent to mailing list
-saying that I want to push them to linux-next, please review.
-And then I got bug report from linux-next...
-shouldn't them be merged after I sending git pull request?
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-thanks,
-rui
+commit 9f5072d4f63f28d30d343573830ac6c85fc0deff upstream.
 
+Commit d57af9b (taskstats: use real microsecond granularity for CPU times)
+renamed msecs_to_cputime to usecs_to_cputime, but failed to update all
+numbers on the way.  This causes nonsensical cpu idle/iowait values to be
+displayed in /proc/stat (the only user of usecs_to_cputime so far).
 
+This also renames __cputime_msec_factor to __cputime_usec_factor, adapting
+its value and using it directly in cputime_to_usecs instead of doing two
+multiplications.
 
-On 日, 2012-07-22 at 12:58 +0200, Jean Delvare wrote:
-> On Sun, 22 Jul 2012 13:55:22 +0545, Devendra Naga wrote:
-> > with the commit 67ff19 (Thermal: Make Thermal trip points writeable)
-> > build error is introduced,
-> > 
-> > the following was reported from Fengguang Wu,
-> > 
-> > drivers/thermal/thermal_sys.c: In function 'create_trip_attrs':
-> > drivers/thermal/thermal_sys.c:1216:3: error: 'count' undeclared (first use in this function)
-> > drivers/thermal/thermal_sys.c:1216:3: note: each undeclared identifier is reported only once for each function it appears in
-> > 
-> > link:
-> > http://www.spinics.net/lists/linux-kernel-janitors/msg12174.html
-> > 
-> > use the indx instead.
-> 
-> Thanks for the fix.
-> 
-> > Cc: Durgadoss R <durgadoss.r@intel.com>
-> > Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
-> > ---
-> > 
-> > This patch is build-tested only.
-> 
-> Something the original submitter apparently didn't do. Durga, can you
-> please build-test all your commits from now on? I don't even understand
-> how you managed to test your code if it did not build...
-> 
-> The broken commit isn't upstream yet, so in the interest of
-> bisectability I would recommend that the original commit is fixed and
-> the branch in which this broken commit was is rebased. Only then, ask
-> Linux to pull from it.
-> 
-> Thanks.
-> 
-> > 
-> >  drivers/thermal/thermal_sys.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> > index 9f56250..1b4aa9d 100644
-> > --- a/drivers/thermal/thermal_sys.c
-> > +++ b/drivers/thermal/thermal_sys.c
-> > @@ -1259,7 +1259,7 @@ static int create_trip_attrs(struct thermal_zone_device *tz, int flag)
-> >  		snprintf(tz->trip_type_attrs[indx].name, THERMAL_NAME_LENGTH,
-> >  			 "trip_point_%d_type", indx);
-> >  
-> > -		sysfs_attr_init(&tz->trip_type_attrs[count].attr.attr);
-> > +		sysfs_attr_init(&tz->trip_type_attrs[indx].attr.attr);
-> >  		tz->trip_type_attrs[indx].attr.attr.name =
-> >  						tz->trip_type_attrs[indx].name;
-> >  		tz->trip_type_attrs[indx].attr.attr.mode = S_IRUGO;
-> 
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Acked-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/powerpc/include/asm/cputime.h |    6 +++---
+ arch/powerpc/kernel/time.c         |   10 +++++-----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
+index 1cf20bd..33a3580 100644
+--- a/arch/powerpc/include/asm/cputime.h
++++ b/arch/powerpc/include/asm/cputime.h
+@@ -126,11 +126,11 @@ static inline u64 cputime64_to_jiffies64(const cputime_t ct)
+ /*
+  * Convert cputime <-> microseconds
+  */
+-extern u64 __cputime_msec_factor;
++extern u64 __cputime_usec_factor;
+ 
+ static inline unsigned long cputime_to_usecs(const cputime_t ct)
+ {
+-	return mulhdu(ct, __cputime_msec_factor) * USEC_PER_MSEC;
++	return mulhdu(ct, __cputime_usec_factor);
+ }
+ 
+ static inline cputime_t usecs_to_cputime(const unsigned long us)
+@@ -143,7 +143,7 @@ static inline cputime_t usecs_to_cputime(const unsigned long us)
+ 	sec = us / 1000000;
+ 	if (ct) {
+ 		ct *= tb_ticks_per_sec;
+-		do_div(ct, 1000);
++		do_div(ct, 1000000);
+ 	}
+ 	if (sec)
+ 		ct += (cputime_t) sec * tb_ticks_per_sec;
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 9754743..567dd7c 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -158,13 +158,13 @@ EXPORT_SYMBOL_GPL(ppc_tb_freq);
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING
+ /*
+  * Factors for converting from cputime_t (timebase ticks) to
+- * jiffies, milliseconds, seconds, and clock_t (1/USER_HZ seconds).
++ * jiffies, microseconds, seconds, and clock_t (1/USER_HZ seconds).
+  * These are all stored as 0.64 fixed-point binary fractions.
+  */
+ u64 __cputime_jiffies_factor;
+ EXPORT_SYMBOL(__cputime_jiffies_factor);
+-u64 __cputime_msec_factor;
+-EXPORT_SYMBOL(__cputime_msec_factor);
++u64 __cputime_usec_factor;
++EXPORT_SYMBOL(__cputime_usec_factor);
+ u64 __cputime_sec_factor;
+ EXPORT_SYMBOL(__cputime_sec_factor);
+ u64 __cputime_clockt_factor;
+@@ -182,8 +182,8 @@ static void calc_cputime_factors(void)
+ 
+ 	div128_by_32(HZ, 0, tb_ticks_per_sec, &res);
+ 	__cputime_jiffies_factor = res.result_low;
+-	div128_by_32(1000, 0, tb_ticks_per_sec, &res);
+-	__cputime_msec_factor = res.result_low;
++	div128_by_32(1000000, 0, tb_ticks_per_sec, &res);
++	__cputime_usec_factor = res.result_low;
+ 	div128_by_32(1, 0, tb_ticks_per_sec, &res);
+ 	__cputime_sec_factor = res.result_low;
+ 	div128_by_32(USER_HZ, 0, tb_ticks_per_sec, &res);
 
 
