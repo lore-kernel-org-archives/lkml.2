@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2GWHHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 03:07:23 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:42176 "EHLO mx2.parallels.com"
+	id S1753920Ab2GWHSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 03:18:10 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:60723 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386Ab2GWHHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 03:07:22 -0400
-Message-ID: <500CF782.4060407@parallels.com>
-Date: Mon, 23 Jul 2012 11:04:34 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
-        Shuah Khan <shuah.khan@hp.com>, <js1304@gmail.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <shuahkhan@gmail.com>
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-References: <1342221125.17464.8.camel@lorien2> <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com> <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com> <1342407840.3190.5.camel@lorien2> <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com> <alpine.DEB.2.00.1207160915470.28952@router.home> <alpine.DEB.2.00.1207161253240.29012@chino.kir.corp.google.com> <alpine.DEB.2.00.1207161506390.32319@router.home> <alpine.DEB.2.00.1207161642420.18232@chino.kir.corp.google.com> <alpine.DEB.2.00.1207170929290.13599@router.home> <CAOJsxLECr7yj9cMs4oUJQjkjZe9x-6mvk76ArGsQzRWBi8_wVw@mail.gmail.com> <alpine.DEB.2.00.1207171005550.15061@router.home>
-In-Reply-To: <alpine.DEB.2.00.1207171005550.15061@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752312Ab2GWHSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 03:18:09 -0400
+Date: Mon, 23 Jul 2012 09:15:04 +0200
+From: Michael Leun <lkml20120218@newton.leun.net>
+To: bridge@lists.linux-foundation.org, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, shemminger@vyatta.com
+Subject: [3.5 regression / bridge] constantly toggeling between disabled and
+ forwarding
+Message-ID: <20120723091504.2d035d28@xenia.leun.net>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 07:11 PM, Christoph Lameter wrote:
-> On Tue, 17 Jul 2012, Pekka Enberg wrote:
-> 
->> Well, even SLUB checks for !name in mainline so that's definitely
->> worth including unconditionally. Furthermore, the size related checks
->> certainly make sense and I don't see any harm in having them as well.
-> 
-> There is a WARN_ON() there and then it returns NULL!!! Crazy. Causes a
-> NULL pointer dereference later in the caller?
-> 
+Hi,
 
-It obviously depends on the caller.
-Although most of the calls to kmem_cache_create are made from static
-data, we can't assume that. Of course whoever is using static data
-should do those very same tests from the outside to be safe, but in case
-they do not, this seems to fall in the category of things that make
-debugging easier - even if we later on get to a NULL pointer dereference.
+when I use my usb ethernet adapter
 
-Your mentioned bias towards minimum code size, however, is totally
-valid, IMHO. But I doubt those checks would introduce a huge footprint.
-I would imagine you being much more concerned about being able to wipe
-out entire subsystems like memcg, which will give you a lot more.
+# > lsusb
+[...]
+Bus 002 Device 009: ID 9710:7830 MosChip Semiconductor MCS7830 10/100 Mbps Ethernet adapter
+[...]
+
+as port of an bridge
+
+> # brctl addbr br0
+> # brctl addif br0 eth0
+> # brctl addif br0 ue5
+> # ifconfig ue5 up
+> # ifconfig br0 up
+
+(Also does happen when eth0 is not part of the bridge, but the logs I
+had available were from that situation...)
+
+I constantly get messages showing the interface toggeling between
+disabled and forwarding state:
+
+Jul 23 07:40:50 elektra kernel: [ 1539.497337] br0: port 2(ue5) entered disabled state
+Jul 23 07:40:50 elektra kernel: [ 1539.554992] br0: port 2(ue5) entered forwarding state
+Jul 23 07:40:50 elektra kernel: [ 1539.555005] br0: port 2(ue5) entered forwarding state
+Jul 23 07:40:51 elektra kernel: [ 1540.496242] br0: port 2(ue5) entered disabled state
+Jul 23 07:40:51 elektra kernel: [ 1540.552534] br0: port 2(ue5) entered forwarding state
+Jul 23 07:40:51 elektra kernel: [ 1540.552548] br0: port 2(ue5) entered forwarding state
+Jul 23 07:40:52 elektra kernel: [ 1541.550413] br0: port 2(ue5) entered forwarding state
+Jul 23 07:40:53 elektra kernel: [ 1542.529672] br0: port 2(ue5) entered disabled state
+Jul 23 07:40:53 elektra kernel: [ 1542.587162] br0: port 2(ue5) entered forwarding state
+Jul 23 07:40:53 elektra kernel: [ 1542.587175] br0: port 2(ue5) entered forwarding state
+Jul 23 07:40:54 elektra kernel: [ 1543.585309] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:00 elektra kernel: [ 1549.360600] br0: port 2(ue5) entered disabled state
+Jul 23 07:41:00 elektra kernel: [ 1549.442998] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:00 elektra kernel: [ 1549.443011] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:01 elektra kernel: [ 1550.357686] br0: port 2(ue5) entered disabled state
+Jul 23 07:41:01 elektra kernel: [ 1550.408208] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:01 elektra kernel: [ 1550.408222] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:02 elektra kernel: [ 1551.407656] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:03 elektra kernel: [ 1552.401578] br0: port 2(ue5) entered disabled state
+Jul 23 07:41:03 elektra kernel: [ 1552.474773] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:03 elektra kernel: [ 1552.474786] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:04 elektra kernel: [ 1553.472487] br0: port 2(ue5) entered forwarding state
+Jul 23 07:41:05 elektra kernel: [ 1554.356138] br0: port 2(ue5) entered disabled state
+[...]
+
+This does (in the same situation, nothing else than the kernel changed)
+not happen with 3.4.5.
+
+Does anybody have an idea what the issue might be or do I need to bisect?
+
+-- 
+MfG,
+
+Michael Leun
+
