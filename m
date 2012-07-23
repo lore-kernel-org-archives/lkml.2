@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab2GWHCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 03:02:09 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:19894 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab2GWHCH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 03:02:07 -0400
-Date: Mon, 23 Jul 2012 10:01:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        Christopher Harrer <charrer@alacritech.com>,
-        linux-kernel@vger.kernel.org, Lior Dotan <liodot@gmail.com>
-Subject: Re: [PATCH 1/2] Staging: slicoss: Clean up tabs vs spaces in slic.h
-Message-ID: <20120723070150.GA4352@mwanda>
-References: <alpine.LNX.2.00.1207222253370.31033@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753873Ab2GWHC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 03:02:27 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:48929 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab2GWHC0 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 23 Jul 2012 03:02:26 -0400
+Message-Id: <500D131C020000780008FC3E@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 23 Jul 2012 08:02:20 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Yinghai Lu" <yinghai@kernel.org>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH] x86: adjust generic_get_mtrr() for 64-bit
+References: <4FF70EFC020000780008E195@nat28.tlf.novell.com>
+ <CAE9FiQUNC2e03k=ECkQQU4732mGL-xidDyauAy0CdWjDg=EG8Q@mail.gmail.com>
+In-Reply-To: <CAE9FiQUNC2e03k=ECkQQU4732mGL-xidDyauAy0CdWjDg=EG8Q@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1207222253370.31033@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 10:57:09PM +0200, Jesper Juhl wrote:
-> Make it match CodingStyle a bit better, tab/space wise.
+>>> On 06.07.12 at 23:38, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Jul 6, 2012 at 7:14 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>> Needing to deal with potentially large memory configurations, the
+>> variables here should be "unsigned long" instead of "unsigned int".
+>>
+>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>>
+>> ---
+>>  arch/x86/kernel/cpu/mtrr/generic.c |    8 ++++----
+>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> --- 3.5-rc5/arch/x86/kernel/cpu/mtrr/generic.c
+>> +++ 3.5-rc5-x86-mtrr-generic-types/arch/x86/kernel/cpu/mtrr/generic.c
+>> @@ -514,8 +514,8 @@ generic_get_free_region(unsigned long ba
+>>  static void generic_get_mtrr(unsigned int reg, unsigned long *base,
+>>                              unsigned long *size, mtrr_type *type)
+>>  {
+>> -       unsigned int mask_lo, mask_hi, base_lo, base_hi;
+>> -       unsigned int tmp, hi;
+>> +       unsigned long mask_lo, mask_hi, base_lo, base_hi, tmp;
+>> +       unsigned int hi;
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/staging/slicoss/slic.h | 751 ++++++++++++++++++++---------------------
->  1 file changed, 374 insertions(+), 377 deletions(-)
+> _lo, _hi means we want it as 32bit.
 > 
-> diff --git a/drivers/staging/slicoss/slic.h b/drivers/staging/slicoss/slic.h
-> index ebdcc6f..0deb670 100644
-> --- a/drivers/staging/slicoss/slic.h
-> +++ b/drivers/staging/slicoss/slic.h
-> @@ -42,61 +42,62 @@
->  #define __SLIC_DRIVER_H__
->  
->  /* firmware stuff */
-> -#define OASIS_UCODE_VERS_STRING	"1.2"
-> -#define OASIS_UCODE_VERS_DATE  	"2006/03/27 15:10:37"
-> -#define OASIS_UCODE_HOSTIF_ID  	3
-> +#define OASIS_UCODE_VERS_STRING "1.2"
-> +#define OASIS_UCODE_VERS_DATE "2006/03/27 15:10:37"
-> +#define OASIS_UCODE_HOSTIF_ID 3
+> or we just change them to u32 to make it more clear ?
 
-No.  The original was far better.
+Agreed, it's really only "tmp" that needs to be "unsigned long".
+I'll send out a v2 soon, at once converting lo/hi to u32.
 
-Looking through the rest of the patch, some of these changes are ok,
-and some are nonsense.
-
-regards,
-dan carpenter
+Jan
 
