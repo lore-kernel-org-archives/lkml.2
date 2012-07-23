@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab2GWNmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:42:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58750 "EHLO mx2.suse.de"
+	id S1753877Ab2GWNm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:42:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58741 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab2GWNjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:39:04 -0400
+	id S1753607Ab2GWNjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:39:03 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 25/34] mm: vmscan: Check if reclaim should really abort even if compaction_ready() is true for one zone
-Date: Mon, 23 Jul 2012 14:38:38 +0100
-Message-Id: <1343050727-3045-26-git-send-email-mgorman@suse.de>
+Subject: [PATCH 24/34] mm: vmscan: Do not OOM if aborting reclaim to start compaction
+Date: Mon, 23 Jul 2012 14:38:37 +0100
+Message-Id: <1343050727-3045-25-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,117 +20,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 0cee34fd72c582b4f8ad8ce00645b75fb4168199 upstream.
+commit 7335084d446b83cbcb15da80497d03f0c1dc9e21 upstream.
 
-Stable note: Not tracked on Bugzilla. THP and compaction was found to
-	aggressively reclaim pages and stall systems under different
-	situations that was addressed piecemeal over time.
+Stable note: Not tracked in Bugzilla. This patch makes later patches
+	easier to apply but otherwise has little to justify it. The
+	problem it fixes was never observed but the source of the
+	theoretical problem did not exist for very long.
 
-If compaction can proceed for a given zone, shrink_zones() does not
-reclaim any more pages from it. After commit [e0c2327: vmscan: abort
-reclaim/compaction if compaction can proceed], do_try_to_free_pages()
-tries to finish as soon as possible once one zone can compact.
+When direct reclaim is entered is is possible that reclaim will be
+aborted so that compaction can be attempted to satisfy a high-order
+allocation.  If this decision is made before any pages are reclaimed,
+it is possible for 0 to be returned to the page allocator potentially
+triggering an OOM. This has not been observed but it is a possibility
+so this patch addresses it.
 
-This was intended to prevent slabs being shrunk unnecessarily but
-there are side-effects. One is that a small zone that is ready for
-compaction will abort reclaim even if the chances of successfully
-allocating a THP from that zone is small. It also means that reclaim
-can return too early even though sc->nr_to_reclaim pages were not
-reclaimed.
-
-This partially reverts the commit until it is proven that slabs are
-really being shrunk unnecessarily but preserves the check to return
-1 to avoid OOM if reclaim was aborted prematurely.
-
-[aarcange@redhat.com: This patch replaces a revert from Andrea]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ mm/vmscan.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f109f2d..bc31f32 100644
+index e85abfd..f109f2d 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2129,7 +2129,8 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-  *
-  * This function returns true if a zone is being reclaimed for a costly
-  * allocation and compaction is ready to begin. This indicates to the caller
-- * that it should retry the allocation or fail.
-+ * that it should consider retrying the allocation instead of
-+ * further reclaim.
-  */
- static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
-@@ -2138,7 +2139,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 	struct zone *zone;
- 	unsigned long nr_soft_reclaimed;
- 	unsigned long nr_soft_scanned;
--	bool should_abort_reclaim = false;
-+	bool aborted_reclaim = false;
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -2164,7 +2165,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 				 * allocations.
- 				 */
- 				if (compaction_ready(zone, sc)) {
--					should_abort_reclaim = true;
-+					aborted_reclaim = true;
- 					continue;
- 				}
- 			}
-@@ -2186,7 +2187,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 		shrink_zone(priority, zone, sc);
- 	}
- 
--	return should_abort_reclaim;
-+	return aborted_reclaim;
- }
- 
- static bool zone_reclaimable(struct zone *zone)
-@@ -2240,7 +2241,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+@@ -2240,6 +2240,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
  	struct zoneref *z;
  	struct zone *zone;
  	unsigned long writeback_threshold;
--	bool should_abort_reclaim;
-+	bool aborted_reclaim;
++	bool should_abort_reclaim;
  
  	get_mems_allowed();
  	delayacct_freepages_start();
-@@ -2252,9 +2253,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+@@ -2251,7 +2252,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
  		sc->nr_scanned = 0;
  		if (!priority)
  			disable_swap_token(sc->mem_cgroup);
--		should_abort_reclaim = shrink_zones(priority, zonelist, sc);
--		if (should_abort_reclaim)
--			break;
-+		aborted_reclaim = shrink_zones(priority, zonelist, sc);
+-		if (shrink_zones(priority, zonelist, sc))
++		should_abort_reclaim = shrink_zones(priority, zonelist, sc);
++		if (should_abort_reclaim)
+ 			break;
  
  		/*
- 		 * Don't shrink slabs when reclaiming memory from
-@@ -2320,8 +2319,8 @@ out:
+@@ -2318,6 +2320,10 @@ out:
  	if (oom_killer_disabled)
  		return 0;
  
--	/* Aborting reclaim to try compaction? don't OOM, then */
--	if (should_abort_reclaim)
-+	/* Aborted reclaim to try compaction? don't OOM, then */
-+	if (aborted_reclaim)
- 		return 1;
- 
++	/* Aborting reclaim to try compaction? don't OOM, then */
++	if (should_abort_reclaim)
++		return 1;
++
  	/* top priority shrink_zones still had more to do? don't OOM, then */
+ 	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
+ 		return 1;
 -- 
 1.7.9.2
 
