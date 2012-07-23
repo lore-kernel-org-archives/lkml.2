@@ -1,276 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab2GWQjQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 12:39:16 -0400
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:41418 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab2GWQjN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 12:39:13 -0400
-Date: Mon, 23 Jul 2012 13:39:06 -0300
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: nicolas prochazka <prochazka.nicolas@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: oops in kernel ( 3.4.x -> 3.5rc )
-Message-ID: <20120723163906.GA3662@oc1711230544.ibm.com>
-References: <CADdae-i2FWspdm_BPQAeO3HUUyOWj8rDui0cTGR6fkRv7yr2zw@mail.gmail.com>
- <20120720132153.GA26110@redhat.com>
- <20120720202155.GB15677@oc1711230544.ibm.com>
- <CADdae-hyq7RALEg6fOTQZc_cDoi8PnovBZ2xNdsZRNTqfJnORA@mail.gmail.com>
- <20120720210606.GC15677@oc1711230544.ibm.com>
- <CADdae-iQAoA_n3_azKWOR7HAe9_tOWybN_bGVG-C_P3Pa8Y1WA@mail.gmail.com>
+	id S1754418Ab2GWQju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 12:39:50 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:49704 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754364Ab2GWQjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 12:39:49 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: lkml <linux-kernel@vger.kernel.org>
+CC: Jan Kara <jack@suze.cz>, Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH] udf: fix udf_setsize() for file data in ICB
+Date: Mon, 23 Jul 2012 17:39:29 +0100
+Message-ID: <1343061569-3629-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 1.7.8.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADdae-iQAoA_n3_azKWOR7HAe9_tOWybN_bGVG-C_P3Pa8Y1WA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072316-9254-0000-0000-000009B0B916
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 21, 2012 at 12:59:12AM +0200, nicolas prochazka wrote:
-> Well done
-> 1fd36adcd98c14d2fd97f545293c488775cb2823  :  the bug occurs   ( cf dump )
-> 1dce27c5aa6770e9d195f2bb7db1db3d4dde5591 :  the bug not occurs
-> 
-> Regards,
-> Nicolas Prochazka.
+If the new size is larger than the old size and the old file data was
+stored in the ICB (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) and the
+new size still fits in the ICB, skip the call to udf_extend_file() as it
+does not handle this i_alloc_type value (it calls BUG()).
 
-Hi, Nicolas.
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ fs/udf/inode.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-I was too hasty in sending you the commit id. There is a bug in 1fd36adc
-that is fixed by commit f044db4cb4bf16893812d35b5fbeaaf3e30c9215. Can
-you test running f044db4cb4? If you find the bug in there, then we know
-that this fix isn't the only one needed for 1fd36adc.
-
-Regards.
-Cascardo.
-
-> 
-> dump  / 1fd36adcd98c14d2fd97f545293c488775cb2823
-> lloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> VMtap: no IPv6 routers present
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 71 not NULL!
-> alloc_fd: slot 121 not NULL!
-> alloc_fd: slot 96 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 110 not NULL!
-> alloc_fd: slot 121 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> brE: no IPv6 routers present
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 121 not NULL!
-> alloc_fd: slot 142 not NULL!
-> alloc_fd: slot 153 not NULL!
-> alloc_fd: slot 153 not NULL!
-> alloc_fd: slot 153 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 70 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 102 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 106 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 106 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 36 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 68 not NULL!
-> alloc_fd: slot 100 not NULL!
-> alloc_fd: slot 100 not NULL!
-> ------------[ cut here ]------------
-> kernel BUG at fs/open.c:873!
-> invalid opcode: 0000 [#1] SMP
-> CPU 0
-> Modules linked in: kvm_intel kvm
-> 
-> then BUG paging request as usual
-> 
-> 
-> 2012/7/20 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
-> > On Fri, Jul 20, 2012 at 10:52:40PM +0200, nicolas prochazka wrote:
-> >> Hello
-> >> the problem is occured with  :
-> >> - linux kernel 3.4.5    i do not test with 3.4.0 / 1 / 2 / 3 / 4    ,
-> >> but i can if you want
-> >> - linux kernel 3.5rc6 rc7  / do not test with other rc.
-> >>
-> >> the problem is not occured with :
-> >> linux kernel 3.3.4 / 3.3.8
-> >>
-> >> These servers are used for :
-> >> - starting a lot of virtual machine with qemu-kvm ( ~ 40 )   ( lot of
-> >> select i think)
-> >> - do a lot of network tests with openvswitch
-> >>
-> >> I can test a kernel 3.4.x before and after a commit id (?) to find a regression.
-> >>
-> >> Regards,
-> >> Nicolas.
-> >>
-> >
-> > Can you try this commit 1fd36adcd98c14d2fd97f545293c488775cb2823? And
-> > the commit before it?
-> >
-> >>
-> >> 2012/7/20 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
-> >> > On Fri, Jul 20, 2012 at 09:21:53AM -0400, Dave Jones wrote:
-> >> >> On Fri, Jul 20, 2012 at 11:56:06AM +0200, nicolas prochazka wrote:
-> >> >>
-> >> >>  > [ 2384.900061] BUG: unable to handle kernel paging request at 000000010000002f
-> >> >>
-> >> >> That '1' looks like a random bit flip. Try running memtest86.
-> >> >>
-> >> >
-> >> > Looks more a 32-bit value of 1 followed by a 32-bit value of 0x2f. Most
-> >> > likely a pointer to some other piece of a struct. However, taking a look
-> >> > at fs/files.c code, nothing seems suspicious.
-> >> >
-> >> > Nicolas, it wasn't clear to me if you had problems with 3.4 too. There
-> >> > has been some changes in fs/files.c on 3.4-rc1 in the piece of code
-> >> > where you hit the problem.
-> >> >
-> >> > What does your system exercise? Any chance you are using a lot of
-> >> > select, which has also been changed in those same patches to fs/files.c?
-> >> >
-> >> > Regards.
-> >> > Cascardo.
-> >> >
-> >> >
-> >> >>  > [ 2384.910010] Pid: 23838, comm: queue.sh Tainted: G      D W
-> >> >>
-> >> >> This wasn't the first problem either.
-> >> >>
-> >> >>  > [ 2397.885344] BUG: unable to handle kernel paging request at 000000010000003b
-> >> >>
-> >> >> Looks like the same flipped bit.
-> >> >>
-> >> >>       Dave
-> >> >>
-> >> >> --
-> >> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> >> the body of a message to majordomo@vger.kernel.org
-> >> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >> >>
-> >> >
-> >>
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+index fafaad7..15fb17e 100644
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -1124,14 +1124,17 @@ int udf_setsize(struct inode *inode, loff_t newsize)
+ 				if (err)
+ 					return err;
+ 				down_write(&iinfo->i_data_sem);
+-			} else
++			} else {
+ 				iinfo->i_lenAlloc = newsize;
++				goto extended_ad_in_icb;
++			}
+ 		}
+ 		err = udf_extend_file(inode, newsize);
+ 		if (err) {
+ 			up_write(&iinfo->i_data_sem);
+ 			return err;
+ 		}
++extended_ad_in_icb:
+ 		truncate_setsize(inode, newsize);
+ 		up_write(&iinfo->i_data_sem);
+ 	} else {
+-- 
+1.7.8.6
 
