@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab2GWE63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 00:58:29 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36906 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2GWE61 (ORCPT
+	id S1753468Ab2GWFJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 01:09:28 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:33686 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab2GWFJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 00:58:27 -0400
-Message-ID: <500CD9E9.80602@linux.vnet.ibm.com>
-Date: Mon, 23 Jul 2012 12:58:17 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Mon, 23 Jul 2012 01:09:26 -0400
+Message-ID: <500CDE35.6000009@windriver.com>
+Date: Mon, 23 Jul 2012 13:16:37 +0800
+From: xufeng zhang <xufeng.zhang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        mingo@redhat.com, paul@paulmenage.org
-Subject: Re: [PATCH 0/5] cpusets: dynamical scheduler domain flags
-References: <50052A78.6000407@linux.vnet.ibm.com> <1342802550.2583.12.camel@twins> <500CB763.9020802@linux.vnet.ibm.com> <1343017683.7336.67.camel@marge.simpson.net>
-In-Reply-To: <1343017683.7336.67.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
+To: <vyasevich@gmail.com>, <sri@us.ibm.com>, <davem@davemloft.net>
+CC: <xufengzhang.main@gmail.com>, <linux-sctp@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
+ SACK when bundling
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
+In-Reply-To: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12072304-3864-0000-0000-000003DDEFC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2012 12:28 PM, Mike Galbraith wrote:
-> On Mon, 2012-07-23 at 10:30 +0800, Michael Wang wrote: 
->> On 07/21/2012 12:42 AM, Peter Zijlstra wrote:
->>> On Tue, 2012-07-17 at 17:03 +0800, Michael Wang wrote:
->>>> This patch set provide a way for user to dynamically configure the scheduler
->>>> domain flags, which usually to be static. 
->>>
->>> NAK.. you don't get to expose all this nonsense in a 'stable' ABI.
->>>
->>> You shouldn't need to prod at them to begin with.
->>
->> So is that means expose those domain flags to user is a bad idea at all?
-> 
-> You can set/clear flags with scripts now, ie domain flags are already
-> exposed.. as defined by the running kernel.
-> 
-> SD_SHARE_PKG_RESOURCES is a good flag look at.  What does flipping that
-> switch do, and what did it stop doing recently?  So yeah, methinks
-> exporting flags via cpusets is a bad idea.  Not only is existence of any
-> particular flag volatile, functionality behind it is volatile as well,
-> so having a button to poke does undefined things.  (not to mention
-> non-exclusive sets)
-> 
+On 07/19/2012 01:57 PM, xufengzhang.main@gmail.com wrote:
+> When "Invalid Stream Identifier" ERROR happens after process the
+> received DATA chunks, this ERROR chunk is enqueued into outqueue
+> before SACK chunk, so when bundling ERROR chunk with SACK chunk,
+> the ERROR chunk is always placed first in the packet because of
+> the chunk's position in the outqueue.
+> This violates sctp specification:
+>      RFC 4960 6.5. Stream Identifier and Stream Sequence Number
+>      ...The endpoint may bundle the ERROR chunk in the same
+>      packet as the SACK as long as the ERROR follows the SACK.
+> So we must place SACK first when bundling "Invalid Stream Identifier"
+> ERROR and SACK in one packet.
+> Although we can do that by enqueue SACK chunk into outqueue before
+> ERROR chunk, it will violate the side-effect interpreter processing.
+> It's easy to do this job when dequeue chunks from the outqueue,
+> by this way, we introduce a flag 'has_isi_err' which indicate
+> whether or not the "Invalid Stream Identifier" ERROR happens.
+>
+> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
+> ---
+>   include/net/sctp/structs.h |    2 ++
+>   net/sctp/output.c          |   26 ++++++++++++++++++++++++++
+>   2 files changed, 28 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+> index 88949a9..5adf4de 100644
+> --- a/include/net/sctp/structs.h
+> +++ b/include/net/sctp/structs.h
+> @@ -842,6 +842,8 @@ struct sctp_packet {
+>   	    has_sack:1,		/* This packet contains a SACK chunk. */
+>   	    has_auth:1,		/* This packet contains an AUTH chunk */
+>   	    has_data:1,		/* This packet contains at least 1 DATA chunk */
+> +	    has_isi_err:1,	/* This packet contains a "Invalid Stream
+> +				 * Identifier" ERROR chunk */
+>   	    ipfragok:1,		/* So let ip fragment this packet */
+>   	    malloced:1;		/* Is it malloced? */
+>   };
+> diff --git a/net/sctp/output.c b/net/sctp/output.c
+> index 817174e..77fb1ae 100644
+> --- a/net/sctp/output.c
+> +++ b/net/sctp/output.c
+> @@ -79,6 +79,7 @@ static void sctp_packet_reset(struct sctp_packet *packet)
+>   	packet->has_sack = 0;
+>   	packet->has_data = 0;
+>   	packet->has_auth = 0;
+> +	packet->has_isi_err = 0;
+>   	packet->ipfragok = 0;
+>   	packet->auth = NULL;
+>   }
+> @@ -267,6 +268,7 @@ static sctp_xmit_t sctp_packet_bundle_sack(struct sctp_packet *pkt,
+>   sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
+>   				     struct sctp_chunk *chunk)
+>   {
+> +	struct sctp_chunk *lchunk;
+>   	sctp_xmit_t retval = SCTP_XMIT_OK;
+>   	__u16 chunk_len = WORD_ROUND(ntohs(chunk->chunk_hdr->length));
+>
+> @@ -316,7 +318,31 @@ sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
+>   		packet->has_cookie_echo = 1;
+>   		break;
+>
+> +	    case SCTP_CID_ERROR:
+> +		if (chunk->subh.err_hdr->cause&  SCTP_ERROR_INV_STRM)
+> +			packet->has_isi_err = 1;
+> +		break;
+> +
+>   	    case SCTP_CID_SACK:
+> +		/* RFC 4960
+> +		 * 6.5 Stream Identifier and Stream Sequence Number
+> +		 * The endpoint may bundle the ERROR chunk in the same
+> +		 * packet as the SACK as long as the ERROR follows the SACK.
+> +		 */
+> +		if (packet->has_isi_err) {
+> +			if (list_is_singular(&packet->chunk_list))
+> +				list_add(&chunk->list,&packet->chunk_list);
+> +			else {
+> +				lchunk = list_first_entry(&packet->chunk_list,
+> +						struct sctp_chunk, list);
+> +				list_add(&chunk->list,&lchunk->list);
+> +			}
+>    
+And I should clarify the above judgment code.
+AFAIK, there should be two cases for the bundling when invalid stream 
+identifier error happens:
+1). COOKIE_ACK ERROR SACK
+2). ERROR SACK
+So I need to deal with the two cases differently.
 
-I think I got your and peter's opinion, so we could not make sure the
-kernel could still work well if some flags was enabled because their
-behave are always changing, and it's impossible to maintain such
-volatile feature.
 
-Actually I got this idea after reading:
-
-http://marc.info/?l=linux-kernel&m=130822782111533
-
-But looks like I don't get the point, so what we want is building the
-domain according to some system topology designed by producer?
-
-Regards,
-Michael Wang
-
-> -Mike
-> 
-> 
-
+Thanks,
+Xufeng Zhang
+> +			packet->size += chunk_len;
+> +			chunk->transport = packet->transport;
+> +			packet->has_sack = 1;
+> +			goto finish;
+> +		}
+> +
+>   		packet->has_sack = 1;
+>   		break;
+>
+>    
 
