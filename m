@@ -1,1294 +1,2318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab2GWFq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 01:46:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5423 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753604Ab2GWFq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 01:46:26 -0400
-Message-ID: <500CE5B3.3040404@redhat.com>
-Date: Mon, 23 Jul 2012 13:48:35 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1753864Ab2GWFvL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 01:51:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:32871 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab2GWFvI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 01:51:08 -0400
+Message-ID: <500CE643.1040804@gmail.com>
+Date: Mon, 23 Jul 2012 07:50:59 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: mashirle@us.ibm.com, krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 4/5] virtio_net: multiqueue support
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-5-git-send-email-jasowang@redhat.com> <20120720134014.GD16550@redhat.com>
-In-Reply-To: <20120720134014.GD16550@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sarbojit Ganguly <unixman.linuxboy@gmail.com>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
+Subject: Re: Kernel Oops while disconnecting USB peripheral (always)
+References: <CAP2rAF8o6o4G4iow2s1uis+VSOfsv3ugpuSbMvCr02oqE15BCA@mail.gmail.com>
+In-Reply-To: <CAP2rAF8o6o4G4iow2s1uis+VSOfsv3ugpuSbMvCr02oqE15BCA@mail.gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 09:40 PM, Michael S. Tsirkin wrote:
-> On Thu, Jul 05, 2012 at 06:29:53PM +0800, Jason Wang wrote:
->> This patch converts virtio_net to a multi queue device. After negotiated
->> VIRTIO_NET_F_MULTIQUEUE feature, the virtio device has many tx/rx queue pairs,
->> and driver could read the number from config space.
->>
->> The driver expects the number of rx/tx queue paris is equal to the number of
->> vcpus. To maximize the performance under this per-cpu rx/tx queue pairs, some
->> optimization were introduced:
->>
->> - Txq selection is based on the processor id in order to avoid contending a lock
->>    whose owner may exits to host.
->> - Since the txq/txq were per-cpu, affinity hint were set to the cpu that owns
->>    the queue pairs.
->>
->> Signed-off-by: Krishna Kumar<krkumar2@in.ibm.com>
->> Signed-off-by: Jason Wang<jasowang@redhat.com>
-> Overall fine. I think it is best to smash the following patch
-> into this one, so that default behavior does not
-> jump to mq then back. some comments below: mostly nits, and a minor bug.
+On 23.07.2012 05:42, Sarbojit Ganguly wrote:
+> Dear all,
+> 
+> Problem description:
+> 
+> A 4 port USB hub which when disconnected yields an Oops.
+> The USB hub connects the following peripherals:
+> 1. USB keyboard
+> 2. USB mouse
+> 3. USB webcam + microphone built-in
+> 
+> The details of lsusb are provided.
+> 
+> This problem occurs when any USB device is removed (mass storage/usb
+> input devices etc.)
 
-Sure, thanks for the reviewing.
->
-> If you are worried the patch is too big, it can be split
-> differently
-> 	- rework to use send_queue/receive_queue structures, no
-> 	  functional changes.
-> 	- add multiqueue
->
-> but this is not a must.
->
->> ---
->>   drivers/net/virtio_net.c   |  645 ++++++++++++++++++++++++++++++-------------
->>   include/linux/virtio_net.h |    2 +
->>   2 files changed, 452 insertions(+), 195 deletions(-)
->>
->> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> index 1db445b..7410187 100644
->> --- a/drivers/net/virtio_net.c
->> +++ b/drivers/net/virtio_net.c
->> @@ -26,6 +26,7 @@
->>   #include<linux/scatterlist.h>
->>   #include<linux/if_vlan.h>
->>   #include<linux/slab.h>
->> +#include<linux/interrupt.h>
->>
->>   static int napi_weight = 128;
->>   module_param(napi_weight, int, 0444);
->> @@ -41,6 +42,8 @@ module_param(gso, bool, 0444);
->>   #define VIRTNET_SEND_COMMAND_SG_MAX    2
->>   #define VIRTNET_DRIVER_VERSION "1.0.0"
->>
->> +#define MAX_QUEUES 256
->> +
->>   struct virtnet_stats {
->>   	struct u64_stats_sync tx_syncp;
->>   	struct u64_stats_sync rx_syncp;
-> Would be a bit better not to have artificial limits like that.
-> Maybe allocate arrays at probe time, then we can
-> take whatever the device gives us?
+Are you sure about this? The stack trace clearly blames the audio
+driver. Can you provide one that happens without the webcam in the game?
 
-Sure.
->> @@ -51,43 +54,69 @@ struct virtnet_stats {
->>   	u64 rx_packets;
->>   };
->>
->> -struct virtnet_info {
->> -	struct virtio_device *vdev;
->> -	struct virtqueue *rvq, *svq, *cvq;
->> -	struct net_device *dev;
->> +/* Internal representation of a send virtqueue */
->> +struct send_queue {
->> +	/* Virtqueue associated with this send _queue */
->> +	struct virtqueue *vq;
->> +
->> +	/* TX: fragments + linear part + virtio header */
->> +	struct scatterlist sg[MAX_SKB_FRAGS + 2];
->> +};
->> +
->> +/* Internal representation of a receive virtqueue */
->> +struct receive_queue {
->> +	/* Virtqueue associated with this receive_queue */
->> +	struct virtqueue *vq;
->> +
->> +	/* Back pointer to the virtnet_info */
->> +	struct virtnet_info *vi;
->> +
->>   	struct napi_struct napi;
->> -	unsigned int status;
->>
->>   	/* Number of input buffers, and max we've ever had. */
->>   	unsigned int num, max;
->>
->> +	/* Work struct for refilling if we run low on memory. */
->> +	struct delayed_work refill;
->> +
->> +	/* Chain pages by the private ptr. */
->> +	struct page *pages;
->> +
->> +	/* RX: fragments + linear part + virtio header */
->> +	struct scatterlist sg[MAX_SKB_FRAGS + 2];
->> +};
->> +
->> +struct virtnet_info {
->> +	u16 num_queue_pairs;		/* # of RX/TX vq pairs */
->> +
->> +	struct send_queue *sq[MAX_QUEUES] ____cacheline_aligned_in_smp;
->> +	struct receive_queue *rq[MAX_QUEUES] ____cacheline_aligned_in_smp;
-> The assumption is a tx/rx pair is handled on the same cpu, yes?
-> If yes maybe make it a single array to improve cache locality
-> a bit?
-> 	struct queue_pair {
-> 		struct send_queue sq;
-> 		struct receive_queue rq;
-> 	};
 
-Ok.
->> +	struct virtqueue *cvq;
->> +
->> +	struct virtio_device *vdev;
->> +	struct net_device *dev;
->> +	unsigned int status;
->> +
->>   	/* I like... big packets and I cannot lie! */
->>   	bool big_packets;
->>
->>   	/* Host will merge rx buffers for big packets (shake it! shake it!) */
->>   	bool mergeable_rx_bufs;
->>
->> +	/* Has control virtqueue */
->> +	bool has_cvq;
->> +
-> won't checking (cvq != NULL) be enough?
+Daniel
 
-Enough, so has_cvq is dupliated with vi->cvq. I will remove it in next 
-version.
->
->>   	/* enable config space updates */
->>   	bool config_enable;
->>
->>   	/* Active statistics */
->>   	struct virtnet_stats __percpu *stats;
->>
->> -	/* Work struct for refilling if we run low on memory. */
->> -	struct delayed_work refill;
->> -
->>   	/* Work struct for config space updates */
->>   	struct work_struct config_work;
->>
->>   	/* Lock for config space updates */
->>   	struct mutex config_lock;
->> -
->> -	/* Chain pages by the private ptr. */
->> -	struct page *pages;
->> -
->> -	/* fragments + linear part + virtio header */
->> -	struct scatterlist rx_sg[MAX_SKB_FRAGS + 2];
->> -	struct scatterlist tx_sg[MAX_SKB_FRAGS + 2];
->>   };
->>
->>   struct skb_vnet_hdr {
->> @@ -108,6 +137,22 @@ struct padded_vnet_hdr {
->>   	char padding[6];
->>   };
->>
->> +static inline int txq_get_qnum(struct virtnet_info *vi, struct virtqueue *vq)
->> +{
->> +	int ret = virtqueue_get_queue_index(vq);
->> +
->> +	/* skip ctrl vq */
->> +	if (vi->has_cvq)
->> +		return (ret - 1) / 2;
->> +	else
->> +		return ret / 2;
->> +}
->> +
->> +static inline int rxq_get_qnum(struct virtnet_info *vi, struct virtqueue *vq)
->> +{
->> +	return virtqueue_get_queue_index(vq) / 2;
->> +}
->> +
->>   static inline struct skb_vnet_hdr *skb_vnet_hdr(struct sk_buff *skb)
->>   {
->>   	return (struct skb_vnet_hdr *)skb->cb;
->> @@ -117,22 +162,22 @@ static inline struct skb_vnet_hdr *skb_vnet_hdr(struct sk_buff *skb)
->>    * private is used to chain pages for big packets, put the whole
->>    * most recent used list in the beginning for reuse
->>    */
->> -static void give_pages(struct virtnet_info *vi, struct page *page)
->> +static void give_pages(struct receive_queue *rq, struct page *page)
->>   {
->>   	struct page *end;
->>
->>   	/* Find end of list, sew whole thing into vi->pages. */
->>   	for (end = page; end->private; end = (struct page *)end->private);
->> -	end->private = (unsigned long)vi->pages;
->> -	vi->pages = page;
->> +	end->private = (unsigned long)rq->pages;
->> +	rq->pages = page;
->>   }
->>
->> -static struct page *get_a_page(struct virtnet_info *vi, gfp_t gfp_mask)
->> +static struct page *get_a_page(struct receive_queue *rq, gfp_t gfp_mask)
->>   {
->> -	struct page *p = vi->pages;
->> +	struct page *p = rq->pages;
->>
->>   	if (p) {
->> -		vi->pages = (struct page *)p->private;
->> +		rq->pages = (struct page *)p->private;
->>   		/* clear private here, it is used to chain pages */
->>   		p->private = 0;
->>   	} else
->> @@ -140,15 +185,15 @@ static struct page *get_a_page(struct virtnet_info *vi, gfp_t gfp_mask)
->>   	return p;
->>   }
->>
->> -static void skb_xmit_done(struct virtqueue *svq)
->> +static void skb_xmit_done(struct virtqueue *vq)
->>   {
->> -	struct virtnet_info *vi = svq->vdev->priv;
->> +	struct virtnet_info *vi = vq->vdev->priv;
->>
->>   	/* Suppress further interrupts. */
->> -	virtqueue_disable_cb(svq);
->> +	virtqueue_disable_cb(vq);
->>
->>   	/* We were probably waiting for more output buffers. */
->> -	netif_wake_queue(vi->dev);
->> +	netif_wake_subqueue(vi->dev, txq_get_qnum(vi, vq));
->>   }
->>
->>   static void set_skb_frag(struct sk_buff *skb, struct page *page,
->> @@ -167,9 +212,10 @@ static void set_skb_frag(struct sk_buff *skb, struct page *page,
->>   }
->>
->>   /* Called from bottom half context */
->> -static struct sk_buff *page_to_skb(struct virtnet_info *vi,
->> +static struct sk_buff *page_to_skb(struct receive_queue *rq,
->>   				   struct page *page, unsigned int len)
->>   {
->> +	struct virtnet_info *vi = rq->vi;
->>   	struct sk_buff *skb;
->>   	struct skb_vnet_hdr *hdr;
->>   	unsigned int copy, hdr_len, offset;
->> @@ -225,12 +271,12 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
->>   	}
->>
->>   	if (page)
->> -		give_pages(vi, page);
->> +		give_pages(rq, page);
->>
->>   	return skb;
->>   }
->>
->> -static int receive_mergeable(struct virtnet_info *vi, struct sk_buff *skb)
->> +static int receive_mergeable(struct receive_queue *rq, struct sk_buff *skb)
->>   {
->>   	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
->>   	struct page *page;
->> @@ -244,7 +290,7 @@ static int receive_mergeable(struct virtnet_info *vi, struct sk_buff *skb)
->>   			skb->dev->stats.rx_length_errors++;
->>   			return -EINVAL;
->>   		}
->> -		page = virtqueue_get_buf(vi->rvq,&len);
->> +		page = virtqueue_get_buf(rq->vq,&len);
->>   		if (!page) {
->>   			pr_debug("%s: rx error: %d buffers missing\n",
->>   				 skb->dev->name, hdr->mhdr.num_buffers);
->> @@ -257,13 +303,14 @@ static int receive_mergeable(struct virtnet_info *vi, struct sk_buff *skb)
->>
->>   		set_skb_frag(skb, page, 0,&len);
->>
->> -		--vi->num;
->> +		--rq->num;
->>   	}
->>   	return 0;
->>   }
->>
->> -static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
->> +static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
->>   {
->> +	struct net_device *dev = rq->vi->dev;
->>   	struct virtnet_info *vi = netdev_priv(dev);
->>   	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->>   	struct sk_buff *skb;
->> @@ -274,7 +321,7 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
->>   		pr_debug("%s: short packet %i\n", dev->name, len);
->>   		dev->stats.rx_length_errors++;
->>   		if (vi->mergeable_rx_bufs || vi->big_packets)
->> -			give_pages(vi, buf);
->> +			give_pages(rq, buf);
->>   		else
->>   			dev_kfree_skb(buf);
->>   		return;
->> @@ -286,14 +333,14 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
->>   		skb_trim(skb, len);
->>   	} else {
->>   		page = buf;
->> -		skb = page_to_skb(vi, page, len);
->> +		skb = page_to_skb(rq, page, len);
->>   		if (unlikely(!skb)) {
->>   			dev->stats.rx_dropped++;
->> -			give_pages(vi, page);
->> +			give_pages(rq, page);
->>   			return;
->>   		}
->>   		if (vi->mergeable_rx_bufs)
->> -			if (receive_mergeable(vi, skb)) {
->> +			if (receive_mergeable(rq, skb)) {
->>   				dev_kfree_skb(skb);
->>   				return;
->>   			}
->> @@ -363,90 +410,91 @@ frame_err:
->>   	dev_kfree_skb(skb);
->>   }
->>
->> -static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
->> +static int add_recvbuf_small(struct receive_queue *rq, gfp_t gfp)
->>   {
->>   	struct sk_buff *skb;
->>   	struct skb_vnet_hdr *hdr;
->>   	int err;
->>
->> -	skb = __netdev_alloc_skb_ip_align(vi->dev, MAX_PACKET_LEN, gfp);
->> +	skb = __netdev_alloc_skb_ip_align(rq->vi->dev, MAX_PACKET_LEN, gfp);
->>   	if (unlikely(!skb))
->>   		return -ENOMEM;
->>
->>   	skb_put(skb, MAX_PACKET_LEN);
->>
->>   	hdr = skb_vnet_hdr(skb);
->> -	sg_set_buf(vi->rx_sg,&hdr->hdr, sizeof hdr->hdr);
->> +	sg_set_buf(rq->sg,&hdr->hdr, sizeof hdr->hdr);
->> +
->> +	skb_to_sgvec(skb, rq->sg + 1, 0, skb->len);
->>
->> -	skb_to_sgvec(skb, vi->rx_sg + 1, 0, skb->len);
->> +	err = virtqueue_add_buf(rq->vq, rq->sg, 0, 2, skb, gfp);
->>
->> -	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, 2, skb, gfp);
->>   	if (err<  0)
->>   		dev_kfree_skb(skb);
->>
->>   	return err;
->>   }
->>
->> -static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
->> +static int add_recvbuf_big(struct receive_queue *rq, gfp_t gfp)
->>   {
->>   	struct page *first, *list = NULL;
->>   	char *p;
->>   	int i, err, offset;
->>
->> -	/* page in vi->rx_sg[MAX_SKB_FRAGS + 1] is list tail */
->> +	/* page in rq->sg[MAX_SKB_FRAGS + 1] is list tail */
->>   	for (i = MAX_SKB_FRAGS + 1; i>  1; --i) {
->> -		first = get_a_page(vi, gfp);
->> +		first = get_a_page(rq, gfp);
->>   		if (!first) {
->>   			if (list)
->> -				give_pages(vi, list);
->> +				give_pages(rq, list);
->>   			return -ENOMEM;
->>   		}
->> -		sg_set_buf(&vi->rx_sg[i], page_address(first), PAGE_SIZE);
->> +		sg_set_buf(&rq->sg[i], page_address(first), PAGE_SIZE);
->>
->>   		/* chain new page in list head to match sg */
->>   		first->private = (unsigned long)list;
->>   		list = first;
->>   	}
->>
->> -	first = get_a_page(vi, gfp);
->> +	first = get_a_page(rq, gfp);
->>   	if (!first) {
->> -		give_pages(vi, list);
->> +		give_pages(rq, list);
->>   		return -ENOMEM;
->>   	}
->>   	p = page_address(first);
->>
->> -	/* vi->rx_sg[0], vi->rx_sg[1] share the same page */
->> -	/* a separated vi->rx_sg[0] for virtio_net_hdr only due to QEMU bug */
->> -	sg_set_buf(&vi->rx_sg[0], p, sizeof(struct virtio_net_hdr));
->> +	/* rq->sg[0], rq->sg[1] share the same page */
->> +	/* a separated rq->sg[0] for virtio_net_hdr only due to QEMU bug */
->> +	sg_set_buf(&rq->sg[0], p, sizeof(struct virtio_net_hdr));
->>
->> -	/* vi->rx_sg[1] for data packet, from offset */
->> +	/* rq->sg[1] for data packet, from offset */
->>   	offset = sizeof(struct padded_vnet_hdr);
->> -	sg_set_buf(&vi->rx_sg[1], p + offset, PAGE_SIZE - offset);
->> +	sg_set_buf(&rq->sg[1], p + offset, PAGE_SIZE - offset);
->>
->>   	/* chain first in list head */
->>   	first->private = (unsigned long)list;
->> -	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, MAX_SKB_FRAGS + 2,
->> +	err = virtqueue_add_buf(rq->vq, rq->sg, 0, MAX_SKB_FRAGS + 2,
->>   				first, gfp);
->>   	if (err<  0)
->> -		give_pages(vi, first);
->> +		give_pages(rq, first);
->>
->>   	return err;
->>   }
->>
->> -static int add_recvbuf_mergeable(struct virtnet_info *vi, gfp_t gfp)
->> +static int add_recvbuf_mergeable(struct receive_queue *rq, gfp_t gfp)
->>   {
->>   	struct page *page;
->>   	int err;
->>
->> -	page = get_a_page(vi, gfp);
->> +	page = get_a_page(rq, gfp);
->>   	if (!page)
->>   		return -ENOMEM;
->>
->> -	sg_init_one(vi->rx_sg, page_address(page), PAGE_SIZE);
->> +	sg_init_one(rq->sg, page_address(page), PAGE_SIZE);
->>
->> -	err = virtqueue_add_buf(vi->rvq, vi->rx_sg, 0, 1, page, gfp);
->> +	err = virtqueue_add_buf(rq->vq, rq->sg, 0, 1, page, gfp);
->>   	if (err<  0)
->> -		give_pages(vi, page);
->> +		give_pages(rq, page);
->>
->>   	return err;
->>   }
->> @@ -458,97 +506,104 @@ static int add_recvbuf_mergeable(struct virtnet_info *vi, gfp_t gfp)
->>    * before we're receiving packets, or from refill_work which is
->>    * careful to disable receiving (using napi_disable).
->>    */
->> -static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
->> +static bool try_fill_recv(struct receive_queue *rq, gfp_t gfp)
->>   {
->> +	struct virtnet_info *vi = rq->vi;
->>   	int err;
->>   	bool oom;
->>
->>   	do {
->>   		if (vi->mergeable_rx_bufs)
->> -			err = add_recvbuf_mergeable(vi, gfp);
->> +			err = add_recvbuf_mergeable(rq, gfp);
->>   		else if (vi->big_packets)
->> -			err = add_recvbuf_big(vi, gfp);
->> +			err = add_recvbuf_big(rq, gfp);
->>   		else
->> -			err = add_recvbuf_small(vi, gfp);
->> +			err = add_recvbuf_small(rq, gfp);
->>
->>   		oom = err == -ENOMEM;
->>   		if (err<  0)
->>   			break;
->> -		++vi->num;
->> +		++rq->num;
->>   	} while (err>  0);
->> -	if (unlikely(vi->num>  vi->max))
->> -		vi->max = vi->num;
->> -	virtqueue_kick(vi->rvq);
->> +	if (unlikely(rq->num>  rq->max))
->> +		rq->max = rq->num;
->> +	virtqueue_kick(rq->vq);
->>   	return !oom;
->>   }
->>
->> -static void skb_recv_done(struct virtqueue *rvq)
->> +static void skb_recv_done(struct virtqueue *vq)
->>   {
->> -	struct virtnet_info *vi = rvq->vdev->priv;
->> +	struct virtnet_info *vi = vq->vdev->priv;
->> +	struct napi_struct *napi =&vi->rq[rxq_get_qnum(vi, vq)]->napi;
->> +
->>   	/* Schedule NAPI, Suppress further interrupts if successful. */
->> -	if (napi_schedule_prep(&vi->napi)) {
->> -		virtqueue_disable_cb(rvq);
->> -		__napi_schedule(&vi->napi);
->> +	if (napi_schedule_prep(napi)) {
->> +		virtqueue_disable_cb(vq);
->> +		__napi_schedule(napi);
->>   	}
->>   }
->>
->> -static void virtnet_napi_enable(struct virtnet_info *vi)
->> +static void virtnet_napi_enable(struct receive_queue *rq)
->>   {
->> -	napi_enable(&vi->napi);
->> +	napi_enable(&rq->napi);
->>
->>   	/* If all buffers were filled by other side before we napi_enabled, we
->>   	 * won't get another interrupt, so process any outstanding packets
->>   	 * now.  virtnet_poll wants re-enable the queue, so we disable here.
->>   	 * We synchronize against interrupts via NAPI_STATE_SCHED */
->> -	if (napi_schedule_prep(&vi->napi)) {
->> -		virtqueue_disable_cb(vi->rvq);
->> +	if (napi_schedule_prep(&rq->napi)) {
->> +		virtqueue_disable_cb(rq->vq);
->>   		local_bh_disable();
->> -		__napi_schedule(&vi->napi);
->> +		__napi_schedule(&rq->napi);
->>   		local_bh_enable();
->>   	}
->>   }
->>
->>   static void refill_work(struct work_struct *work)
->>   {
->> -	struct virtnet_info *vi;
->> +	struct napi_struct *napi;
->> +	struct receive_queue *rq;
->>   	bool still_empty;
->>
->> -	vi = container_of(work, struct virtnet_info, refill.work);
->> -	napi_disable(&vi->napi);
->> -	still_empty = !try_fill_recv(vi, GFP_KERNEL);
->> -	virtnet_napi_enable(vi);
->> +	rq = container_of(work, struct receive_queue, refill.work);
->> +	napi =&rq->napi;
->> +
->> +	napi_disable(napi);
->> +	still_empty = !try_fill_recv(rq, GFP_KERNEL);
->> +	virtnet_napi_enable(rq);
->>
->>   	/* In theory, this can happen: if we don't get any buffers in
->>   	 * we will *never* try to fill again. */
->>   	if (still_empty)
->> -		queue_delayed_work(system_nrt_wq,&vi->refill, HZ/2);
->> +		queue_delayed_work(system_nrt_wq,&rq->refill, HZ/2);
->>   }
->>
->>   static int virtnet_poll(struct napi_struct *napi, int budget)
->>   {
->> -	struct virtnet_info *vi = container_of(napi, struct virtnet_info, napi);
->> +	struct receive_queue *rq = container_of(napi, struct receive_queue,
->> +						napi);
->>   	void *buf;
->>   	unsigned int len, received = 0;
->>
->>   again:
->>   	while (received<  budget&&
->> -	       (buf = virtqueue_get_buf(vi->rvq,&len)) != NULL) {
->> -		receive_buf(vi->dev, buf, len);
->> -		--vi->num;
->> +	       (buf = virtqueue_get_buf(rq->vq,&len)) != NULL) {
->> +		receive_buf(rq, buf, len);
->> +		--rq->num;
->>   		received++;
->>   	}
->>
->> -	if (vi->num<  vi->max / 2) {
->> -		if (!try_fill_recv(vi, GFP_ATOMIC))
->> -			queue_delayed_work(system_nrt_wq,&vi->refill, 0);
->> +	if (rq->num<  rq->max / 2) {
->> +		if (!try_fill_recv(rq, GFP_ATOMIC))
->> +			queue_delayed_work(system_nrt_wq,&rq->refill, 0);
->>   	}
->>
->>   	/* Out of packets? */
->>   	if (received<  budget) {
->>   		napi_complete(napi);
->> -		if (unlikely(!virtqueue_enable_cb(vi->rvq))&&
->> +		if (unlikely(!virtqueue_enable_cb(rq->vq))&&
->>   		napi_schedule_prep(napi)) {
->> -			virtqueue_disable_cb(vi->rvq);
->> +			virtqueue_disable_cb(rq->vq);
->>   			__napi_schedule(napi);
->>   			goto again;
->>   		}
->> @@ -557,13 +612,14 @@ again:
->>   	return received;
->>   }
->>
->> -static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
->> +static unsigned int free_old_xmit_skbs(struct virtnet_info *vi,
->> +				       struct virtqueue *vq)
->>   {
->>   	struct sk_buff *skb;
->>   	unsigned int len, tot_sgs = 0;
->>   	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->>
->> -	while ((skb = virtqueue_get_buf(vi->svq,&len)) != NULL) {
->> +	while ((skb = virtqueue_get_buf(vq,&len)) != NULL) {
->>   		pr_debug("Sent skb %p\n", skb);
->>
->>   		u64_stats_update_begin(&stats->tx_syncp);
->> @@ -577,7 +633,8 @@ static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
->>   	return tot_sgs;
->>   }
->>
->> -static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
->> +static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb,
->> +		    struct virtqueue *vq, struct scatterlist *sg)
->>   {
->>   	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
->>   	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
->> @@ -615,44 +672,47 @@ static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
->>
->>   	/* Encode metadata header at front. */
->>   	if (vi->mergeable_rx_bufs)
->> -		sg_set_buf(vi->tx_sg,&hdr->mhdr, sizeof hdr->mhdr);
->> +		sg_set_buf(sg,&hdr->mhdr, sizeof hdr->mhdr);
->>   	else
->> -		sg_set_buf(vi->tx_sg,&hdr->hdr, sizeof hdr->hdr);
->> +		sg_set_buf(sg,&hdr->hdr, sizeof hdr->hdr);
->>
->> -	hdr->num_sg = skb_to_sgvec(skb, vi->tx_sg + 1, 0, skb->len) + 1;
->> -	return virtqueue_add_buf(vi->svq, vi->tx_sg, hdr->num_sg,
->> +	hdr->num_sg = skb_to_sgvec(skb, sg + 1, 0, skb->len) + 1;
->> +	return virtqueue_add_buf(vq, sg, hdr->num_sg,
->>   				 0, skb, GFP_ATOMIC);
->>   }
->>
->>   static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
->>   {
->>   	struct virtnet_info *vi = netdev_priv(dev);
->> +	int qnum = skb_get_queue_mapping(skb);
->> +	struct virtqueue *vq = vi->sq[qnum]->vq;
->>   	int capacity;
->>
->>   	/* Free up any pending old buffers before queueing new ones. */
->> -	free_old_xmit_skbs(vi);
->> +	free_old_xmit_skbs(vi, vq);
->>
->>   	/* Try to transmit */
->> -	capacity = xmit_skb(vi, skb);
->> +	capacity = xmit_skb(vi, skb, vq, vi->sq[qnum]->sg);
->>
->>   	/* This can happen with OOM and indirect buffers. */
->>   	if (unlikely(capacity<  0)) {
->>   		if (likely(capacity == -ENOMEM)) {
->>   			if (net_ratelimit())
->>   				dev_warn(&dev->dev,
->> -					 "TX queue failure: out of memory\n");
->> +					"TXQ (%d) failure: out of memory\n",
->> +					qnum);
->>   		} else {
->>   			dev->stats.tx_fifo_errors++;
->>   			if (net_ratelimit())
->>   				dev_warn(&dev->dev,
->> -					 "Unexpected TX queue failure: %d\n",
->> -					 capacity);
->> +					"Unexpected TXQ (%d) failure: %d\n",
->> +					qnum, capacity);
->>   		}
->>   		dev->stats.tx_dropped++;
->>   		kfree_skb(skb);
->>   		return NETDEV_TX_OK;
->>   	}
->> -	virtqueue_kick(vi->svq);
->> +	virtqueue_kick(vq);
->>
->>   	/* Don't wait up for transmitted skbs to be freed. */
->>   	skb_orphan(skb);
->> @@ -661,13 +721,13 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
->>   	/* Apparently nice girls don't return TX_BUSY; stop the queue
->>   	 * before it gets out of hand.  Naturally, this wastes entries. */
->>   	if (capacity<  2+MAX_SKB_FRAGS) {
->> -		netif_stop_queue(dev);
->> -		if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
->> +		netif_stop_subqueue(dev, qnum);
->> +		if (unlikely(!virtqueue_enable_cb_delayed(vq))) {
->>   			/* More just got used, free them then recheck. */
->> -			capacity += free_old_xmit_skbs(vi);
->> +			capacity += free_old_xmit_skbs(vi, vq);
->>   			if (capacity>= 2+MAX_SKB_FRAGS) {
->> -				netif_start_queue(dev);
->> -				virtqueue_disable_cb(vi->svq);
->> +				netif_start_subqueue(dev, qnum);
->> +				virtqueue_disable_cb(vq);
->>   			}
->>   		}
->>   	}
->> @@ -700,7 +760,8 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
->>   	unsigned int start;
->>
->>   	for_each_possible_cpu(cpu) {
->> -		struct virtnet_stats *stats = per_cpu_ptr(vi->stats, cpu);
->> +		struct virtnet_stats __percpu *stats
->> +			= per_cpu_ptr(vi->stats, cpu);
->>   		u64 tpackets, tbytes, rpackets, rbytes;
->>
->>   		do {
->> @@ -734,20 +795,26 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
->>   static void virtnet_netpoll(struct net_device *dev)
->>   {
->>   	struct virtnet_info *vi = netdev_priv(dev);
->> +	int i;
->>
->> -	napi_schedule(&vi->napi);
->> +	for (i = 0; i<  vi->num_queue_pairs; i++)
->> +		napi_schedule(&vi->rq[i]->napi);
->>   }
->>   #endif
->>
->>   static int virtnet_open(struct net_device *dev)
->>   {
->>   	struct virtnet_info *vi = netdev_priv(dev);
->> +	int i;
->>
->> -	/* Make sure we have some buffers: if oom use wq. */
->> -	if (!try_fill_recv(vi, GFP_KERNEL))
->> -		queue_delayed_work(system_nrt_wq,&vi->refill, 0);
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		/* Make sure we have some buffers: if oom use wq. */
->> +		if (!try_fill_recv(vi->rq[i], GFP_KERNEL))
->> +			queue_delayed_work(system_nrt_wq,
->> +					&vi->rq[i]->refill, 0);
->> +		virtnet_napi_enable(vi->rq[i]);
->> +	}
->>
->> -	virtnet_napi_enable(vi);
->>   	return 0;
->>   }
->>
->> @@ -809,10 +876,13 @@ static void virtnet_ack_link_announce(struct virtnet_info *vi)
->>   static int virtnet_close(struct net_device *dev)
->>   {
->>   	struct virtnet_info *vi = netdev_priv(dev);
->> +	int i;
->>
->>   	/* Make sure refill_work doesn't re-enable napi! */
->> -	cancel_delayed_work_sync(&vi->refill);
->> -	napi_disable(&vi->napi);
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		cancel_delayed_work_sync(&vi->rq[i]->refill);
->> +		napi_disable(&vi->rq[i]->napi);
->> +	}
->>
->>   	return 0;
->>   }
->> @@ -924,11 +994,10 @@ static void virtnet_get_ringparam(struct net_device *dev,
->>   {
->>   	struct virtnet_info *vi = netdev_priv(dev);
->>
->> -	ring->rx_max_pending = virtqueue_get_vring_size(vi->rvq);
->> -	ring->tx_max_pending = virtqueue_get_vring_size(vi->svq);
->> +	ring->rx_max_pending = virtqueue_get_vring_size(vi->rq[0]->vq);
->> +	ring->tx_max_pending = virtqueue_get_vring_size(vi->sq[0]->vq);
->>   	ring->rx_pending = ring->rx_max_pending;
->>   	ring->tx_pending = ring->tx_max_pending;
->> -
->>   }
->>
->>
->> @@ -961,6 +1030,19 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
->>   	return 0;
->>   }
->>
->> +/* To avoid contending a lock hold by a vcpu who would exit to host, select the
->> + * txq based on the processor id.
->> + */
->> +static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
->> +{
->> +	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
->> +		  smp_processor_id();
->> +
->> +	while (unlikely(txq>= dev->real_num_tx_queues))
->> +		txq -= dev->real_num_tx_queues;
->> +	return txq;
->> +}
->> +
->>   static const struct net_device_ops virtnet_netdev = {
->>   	.ndo_open            = virtnet_open,
->>   	.ndo_stop   	     = virtnet_close,
->> @@ -972,6 +1054,7 @@ static const struct net_device_ops virtnet_netdev = {
->>   	.ndo_get_stats64     = virtnet_stats,
->>   	.ndo_vlan_rx_add_vid = virtnet_vlan_rx_add_vid,
->>   	.ndo_vlan_rx_kill_vid = virtnet_vlan_rx_kill_vid,
->> +	.ndo_select_queue     = virtnet_select_queue,
->>   #ifdef CONFIG_NET_POLL_CONTROLLER
->>   	.ndo_poll_controller = virtnet_netpoll,
->>   #endif
->> @@ -1007,10 +1090,10 @@ static void virtnet_config_changed_work(struct work_struct *work)
->>
->>   	if (vi->status&  VIRTIO_NET_S_LINK_UP) {
->>   		netif_carrier_on(vi->dev);
->> -		netif_wake_queue(vi->dev);
->> +		netif_tx_wake_all_queues(vi->dev);
->>   	} else {
->>   		netif_carrier_off(vi->dev);
->> -		netif_stop_queue(vi->dev);
->> +		netif_tx_stop_all_queues(vi->dev);
->>   	}
->>   done:
->>   	mutex_unlock(&vi->config_lock);
->> @@ -1023,41 +1106,217 @@ static void virtnet_config_changed(struct virtio_device *vdev)
->>   	queue_work(system_nrt_wq,&vi->config_work);
->>   }
->>
->> -static int init_vqs(struct virtnet_info *vi)
->> +static void free_receive_bufs(struct virtnet_info *vi)
->> +{
->> +	int i;
->> +
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		while (vi->rq[i]->pages)
->> +			__free_pages(get_a_page(vi->rq[i], GFP_KERNEL), 0);
->> +	}
->> +}
->> +
->> +/* Free memory allocated for send and receive queues */
->> +static void virtnet_free_queues(struct virtnet_info *vi)
->>   {
->> -	struct virtqueue *vqs[3];
->> -	vq_callback_t *callbacks[] = { skb_recv_done, skb_xmit_done, NULL};
->> -	const char *names[] = { "input", "output", "control" };
->> -	int nvqs, err;
->> +	int i;
->>
->> -	/* We expect two virtqueues, receive then send,
->> -	 * and optionally control. */
->> -	nvqs = virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ) ? 3 : 2;
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		kfree(vi->rq[i]);
->> +		vi->rq[i] = NULL;
->> +		kfree(vi->sq[i]);
->> +		vi->sq[i] = NULL;
->> +	}
->> +}
->>
->> -	err = vi->vdev->config->find_vqs(vi->vdev, nvqs, vqs, callbacks, names);
->> -	if (err)
->> -		return err;
->> +static void free_unused_bufs(struct virtnet_info *vi)
->> +{
->> +	void *buf;
->> +	int i;
->> +
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		struct virtqueue *vq = vi->sq[i]->vq;
->> +
->> +		while ((buf = virtqueue_detach_unused_buf(vq)) != NULL)
->> +			dev_kfree_skb(buf);
->> +	}
->> +
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		struct virtqueue *vq = vi->rq[i]->vq;
->> +
->> +		while ((buf = virtqueue_detach_unused_buf(vq)) != NULL) {
->> +			if (vi->mergeable_rx_bufs || vi->big_packets)
->> +				give_pages(vi->rq[i], buf);
->> +			else
->> +				dev_kfree_skb(buf);
->> +			--vi->rq[i]->num;
->> +		}
->> +		BUG_ON(vi->rq[i]->num != 0);
->> +	}
->> +}
->> +
->> +static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->> +{
->> +	int i;
->> +
->> +	if (vi->num_queue_pairs == 1)
->> +		return;
->> +
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		int cpu = set ? i : -1;
->> +		virtqueue_set_affinity(vi->rq[i]->vq, cpu);
->> +		virtqueue_set_affinity(vi->sq[i]->vq, cpu);
->> +	}
->> +	return;
->> +}
->> +
->> +static void virtnet_del_vqs(struct virtnet_info *vi)
->> +{
->> +	struct virtio_device *vdev = vi->vdev;
->> +
->> +	virtnet_set_affinity(vi, false);
->> +
->> +	vdev->config->del_vqs(vdev);
->> +
->> +	virtnet_free_queues(vi);
->> +}
->> +
->> +static int virtnet_find_vqs(struct virtnet_info *vi)
->> +{
->> +	vq_callback_t **callbacks;
->> +	struct virtqueue **vqs;
->> +	int ret = -ENOMEM;
->> +	int i, total_vqs;
->> +	char **names;
->>
->> -	vi->rvq = vqs[0];
->> -	vi->svq = vqs[1];
->> +	/*
->> +	 * We expect 1 RX virtqueue followed by 1 TX virtqueue, followd by
->> +	 * possible control virtqueue and followed by the same
->> +	 * 'vi->num_queue_pairs-1' more times
->> +	 */
->> +	total_vqs = vi->num_queue_pairs * 2 +
->> +		    virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ);
->> +
->> +	/* Allocate space for find_vqs parameters */
->> +	vqs = kmalloc(total_vqs * sizeof(*vqs), GFP_KERNEL);
->> +	callbacks = kmalloc(total_vqs * sizeof(*callbacks), GFP_KERNEL);
->> +	names = kmalloc(total_vqs * sizeof(*names), GFP_KERNEL);
-> so this needs to be kzalloc otherwise on an error cleanup will
-> get uninitialized data and crash?
 
-Yes, will change it to use kzalloc.
->
->> +	if (!vqs || !callbacks || !names)
->> +		goto err;
->> +
->> +	/* Parameters for control virtqueue, if any */
->> +	if (vi->has_cvq) {
->> +		callbacks[2] = NULL;
->> +		names[2] = "control";
->> +	}
->> +
->> +	/* Allocate/initialize parameters for send/receive virtqueues */
->> +	for (i = 0; i<  vi->num_queue_pairs * 2; i += 2) {
->> +		int j = (i == 0 ? i : i + vi->has_cvq);
->> +		callbacks[j] = skb_recv_done;
->> +		callbacks[j + 1] = skb_xmit_done;
->> +		names[j] = kasprintf(GFP_KERNEL, "input.%d", i / 2);
->> +		names[j + 1] = kasprintf(GFP_KERNEL, "output.%d", i / 2);
-> This needs wrappers. E.g. virtnet_rx_vq(int queue_pair), virtnet_tx_vq(int queue_pair);
-> Then you would just scan 0 to num_queue_pairs, and i is queue pair
-> number.
+> 
+> Kernel version:
+> Linux version 3.5.0 (sarbojit@Phrozen) (gcc version 4.6.3
+> (Ubuntu/Linaro 4.6.3-1ubuntu5) ) #2 SMP Sun Jul 22 23:41:08 IST 2012
+> 
+> CONFIG_DEBUG_PAGEALLOC=y has been turned on along with other kernel debug flags.
+> 
+> Output of ver_linux script:
+> 
+> If some fields are empty or look unusual you may have an old version.
+> Compare to the current minimal requirements in Documentation/Changes.
+> 
+> Linux Phrozen 3.5.0 #2 SMP Sun Jul 22 23:41:08 IST 2012 x86_64 x86_64
+> x86_64 GNU/Linux
+> 
+> Gnu C                  4.6
+> Gnu make               3.81
+> binutils               2.22
+> util-linux             2.20.1
+> mount                  support
+> module-init-tools      3.16
+> e2fsprogs              1.42
+> PPP                    2.4.5
+> Linux C Library        2.15
+> Dynamic linker (ldd)   2.15
+> Procps                 3.2.8
+> Net-tools              1.60
+> Kbd                    1.15.2
+> Sh-utils               8.13
+> wireless-tools         30
+> Modules Loaded         arc4 rt2800pci rt2800lib crc_ccitt rt2x00pci
+> rt2x00lib mac80211 snd_hda_codec_realtek i915 snd_hda_intel
+> snd_hda_codec snd_usb_audio snd_pcm snd_hwdep snd_usbmidi_lib
+> snd_seq_midi snd_rawmidi drm_kms_helper uvcvideo drm
+> snd_seq_midi_event joydev snd_seq videobuf2_core cfg80211 snd_timer
+> videodev jmb38x_ms videobuf2_vmalloc videobuf2_memops psmouse
+> snd_seq_device snd snd_page_alloc serio_raw soundcore bnep parport_pc
+> memstick eeprom_93cx6 ppdev i2c_algo_bit hid_generic rfcomm bluetooth
+> lp parport mxm_wmi acer_wmi sparse_keymap wmi mac_hid video usbhid hid
+> sdhci_pci sdhci r8169
+> 
+> 
+> Here is the syslog:
+> 
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.529418] usb 2-3: USB
+> disconnect, device number 2
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.529427] usb 2-3.1: USB
+> disconnect, device number 3
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.538766] usb 2-3.2: USB
+> disconnect, device number 4
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.552751] BUG: unable to handle
+> kernel paging request at ffff880135366ac8
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.552827] IP:
+> [<ffffffffa02a9648>] snd_usb_audio_disconnect.isra.2+0x128/0x1b0
+> [snd_usb_audio]
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.552912] PGD 1c0c063 PUD
+> baf6e067 PMD bb118067 PTE 8000000135366160
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.552984] Oops: 0000 [#1] SMP
+> DEBUG_PAGEALLOC
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.553038] CPU 1
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.553057] Modules linked in: arc4
+> rt2800pci rt2800lib crc_ccitt rt2x00pci rt2x00lib mac80211 i915
+> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_usb_audio joydev
+> snd_pcm snd_hwdep snd_usbmidi_lib snd_seq_midi snd_rawmidi uvcvideo
+> snd_seq_midi_event drm_kms_helper drm cfg80211 videobuf2_core videodev
+> snd_seq snd_timer snd_seq_device snd videobuf2_vmalloc psmouse
+> snd_page_alloc jmb38x_ms soundcore memstick videobuf2_memops serio_raw
+> i2c_algo_bit hid_generic eeprom_93cx6 parport_pc bnep ppdev rfcomm
+> bluetooth lp parport acer_wmi mxm_wmi sparse_keymap mac_hid video wmi
+> usbhid hid sdhci_pci sdhci r8169
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.553773]
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.553780] Pid: 21, comm: khubd
+> Not tainted 3.5.0 #2 Acer       Aspire 4730Z    /Aspire 4730Z
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.553862] RIP:
+> 0010:[<ffffffffa02a9648>]  [<ffffffffa02a9648>]
+> snd_usb_audio_disconnect.isra.2+0x128/0x1b0 [snd_usb_audio]
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.553966] RSP:
+> 0018:ffff880139547b50  EFLAGS: 00010282
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554012] RAX: 0000000000000001
+> RBX: ffff880135277800 RCX: 0000000000016f88
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554068] RDX: 000000000000e62b
+> RSI: 0000000000000000 RDI: 0000000000000202
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554125] RBP: ffff880139547b80
+> R08: 0000000000000364 R09: ffff88013fbfafd0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554180] R10: 000000000000007b
+> R11: 0000000000000001 R12: ffff880135277870
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554238] R13: ffff88013450ac00
+> R14: ffff880135366ac8 R15: ffff8801352778d8
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554294] FS:
+> 0000000000000000(0000) GS:ffff88013fc80000(0000)
+> knlGS:0000000000000000
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554362] CS:  0010 DS: 0000 ES:
+> 0000 CR0: 000000008005003b
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554407] CR2: ffff880135366ac8
+> CR3: 00000001366a6000 CR4: 00000000000407e0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554464] DR0: 0000000000000000
+> DR1: 0000000000000000 DR2: 0000000000000000
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554519] DR3: 0000000000000000
+> DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554577] Process khubd (pid: 21,
+> threadinfo ffff880139546000, task ffff880139badcc0)
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554637] Stack:
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554657]  ffff88013271a000
+> ffff880132478c30 ffff880132478c00 ffff88013271a000
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554736]  ffffffffa02bd718
+> 00000000ffffffea ffff880139547b90 ffffffffa02a96ea
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554814]  ffff880139547be0
+> ffffffff814b069d ffff880139547be0 0000000081414108
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554889] Call Trace:
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554926]  [<ffffffffa02a96ea>]
+> usb_audio_disconnect+0x1a/0x20 [snd_usb_audio]
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.554994]  [<ffffffff814b069d>]
+> usb_unbind_interface+0x5d/0x1b0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555050]  [<ffffffff814097cc>]
+> __device_release_driver+0x7c/0xe0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555102]  [<ffffffff8140985c>]
+> device_release_driver+0x2c/0x40
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555155]  [<ffffffff81409264>]
+> bus_remove_device+0xe4/0x120
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555206]  [<ffffffff81406a03>]
+> device_del+0x123/0x1b0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555256]  [<ffffffff814ae1af>]
+> usb_disable_device+0xaf/0x1f0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555306]  [<ffffffff814a6d20>]
+> usb_disconnect+0x90/0x120
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555353]  [<ffffffff814a6d09>]
+> usb_disconnect+0x79/0x120
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555399]  [<ffffffff814a7d88>]
+> hub_port_connect_change+0xa8/0x6c0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555453]  [<ffffffff814a8733>]
+> hub_events+0x393/0x5b0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555500]  [<ffffffff814a8985>]
+> hub_thread+0x35/0x1a0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555545]  [<ffffffff81076d70>] ?
+> __init_waitqueue_head+0x40/0x40
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555598]  [<ffffffff814a8950>] ?
+> hub_events+0x5b0/0x5b0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555646]  [<ffffffff810762d3>]
+> kthread+0x93/0xa0
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555692]  [<ffffffff8166f864>]
+> kernel_thread_helper+0x4/0x10
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555744]  [<ffffffff81076240>] ?
+> __init_kthread_worker+0x40/0x40
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555795]  [<ffffffff8166f860>] ?
+> gs_change+0x13/0x13
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.555839] Code: 00 48 39 c2 75 ad
+> 4c 8b b3 d8 00 00 00 4c 8d bb d8 00 00 00 4d 39 fe 74 1a 66 2e 0f 1f
+> 84 00 00 00 00 00 4c 89 f7 e8 18 24 00 00 <4d> 8b 36 4d 39 fe 75 f0 4c
+> 8b b3 f0 00 00 00 4c 8d bb f0 00 00
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.556149] RIP
+> [<ffffffffa02a9648>] snd_usb_audio_disconnect.isra.2+0x128/0x1b0
+> [snd_usb_audio]
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.556149]  RSP <ffff880139547b50>
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.556149] CR2: ffff880135366ac8
+> Jul 23 07:38:22 Phrozen kernel: [ 1691.585993] ---[ end trace
+> 5c54ad131247c0a7 ]---
+> Jul 23 07:39:47 Phrozen kernel: imklog 5.8.6, log source = /proc/kmsg started.
+> Jul 23 07:39:47 Phrozen rsyslogd: [origin software="rsyslogd"
+> swVersion="5.8.6" x-pid="563" x-info="http://www.rsyslog.com"] start
+> Jul 23 07:39:47 Phrozen rsyslogd: rsyslogd's groupid changed to 103
+> Jul 23 07:39:47 Phrozen rsyslogd: rsyslogd's userid changed to 101
+> Jul 23 07:39:47 Phrozen rsyslogd-2039: Could not open output pipe
+> '/dev/xconsole' [try http://www.rsyslog.com/e/2039 ]
+> Jul 23 07:39:47 Phrozen bluetoothd[556]: Failed to init alert plugin
+> Jul 23 07:39:47 Phrozen bluetoothd[556]: Failed to init time plugin
+> Jul 23 07:39:47 Phrozen bluetoothd[556]: Failed to init proximity plugin
+> Jul 23 07:39:47 Phrozen bluetoothd[556]: Failed to init gatt_example plugin
+> 
+> 
+> One more:
+> 
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.550604] VFS: Busy inodes after
+> unmount of sdb1. Self-destruct in 5 seconds.  Have a nice day...
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.551053] BUG: unable to handle
+> kernel NULL pointer dereference at 00000000000001e8
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.551178] IP:
+> [<ffffffff811fdb16>] ext3_evict_inode+0x46/0x2c0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.551275] PGD bb57e067 PUD bb4a2067 PMD 0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.551346] Oops: 0000 [#1] SMP
+> DEBUG_PAGEALLOC
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.551438] CPU 1
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.551470] Modules linked in: uas
+> usb_storage snd_usb_audio snd_usbmidi_lib hid_generic usbhid hid arc4
+> rt2800pci rt2800lib crc_ccitt rt2x00pci rt2x00lib mac80211
+> snd_hda_codec_realtek i915 snd_hda_intel snd_hda_codec snd_hwdep
+> snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event drm_kms_helper
+> joydev snd_seq cfg80211 snd_timer snd_seq_device snd drm uvcvideo
+> jmb38x_ms videobuf2_core soundcore snd_page_alloc memstick videodev
+> psmouse eeprom_93cx6 videobuf2_vmalloc i2c_algo_bit videobuf2_memops
+> serio_raw rfcomm parport_pc bnep ppdev bluetooth lp parport mxm_wmi
+> acer_wmi sparse_keymap video mac_hid wmi sdhci_pci sdhci r8169
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] Pid: 13148, comm:
+> gvfsd-trash Not tainted 3.5.0 #2 Acer       Aspire 4730Z    /Aspire
+> 4730Z
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] RIP:
+> 0010:[<ffffffff811fdb16>]  [<ffffffff811fdb16>]
+> ext3_evict_inode+0x46/0x2c0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] RSP:
+> 0000:ffff8800bb517e48  EFLAGS: 00010287
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] RAX: 0000000000004000
+> RBX: ffff880132d288b0 RCX: ffff88013ff83000
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] RDX: 0000000000000000
+> RSI: 3e772dc354865807 RDI: ffff880132d288b0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] RBP: ffff8800bb517e68
+> R08: e000000000000000 R09: c038000000000000
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] R10: feaf2dc354865807
+> R11: 7fffffffffffffff R12: 0000000000000000
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] R13: 0000000000000005
+> R14: ffff8801324189a0 R15: ffff8801347336a0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] FS:
+> 00007f0d9e5247c0(0000) GS:ffff88013fc80000(0000)
+> knlGS:0000000000000000
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] CS:  0010 DS: 0000 ES:
+> 0000 CR0: 0000000080050033
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] CR2: 00000000000001e8
+> CR3: 00000000bb426000 CR4: 00000000000407e0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] DR0: 0000000000000000
+> DR1: 0000000000000000 DR2: 0000000000000000
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] DR3: 0000000000000000
+> DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] Process gvfsd-trash
+> (pid: 13148, threadinfo ffff8800bb516000, task ffff88013189dcc0)
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] Stack:
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  ffff880132d288b0
+> ffff880132d289e8 ffffffff81824ca0 ffff8801324189a0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  ffff8800bb517e98
+> ffffffff8119a268 ffff880132d288b0 ffff880132d288b0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  ffff880132d28938
+> ffffffff81824ca0 ffff8800bb517ec8 ffffffff8119a452
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] Call Trace:
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  [<ffffffff8119a268>]
+> evict+0xb8/0x1c0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  [<ffffffff8119a452>]
+> iput_final+0xe2/0x1f0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  [<ffffffff8119a59e>]
+> iput+0x3e/0x50
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  [<ffffffff811c0630>]
+> fsnotify_destroy_mark+0x170/0x180
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  [<ffffffff811c2738>]
+> sys_inotify_rm_watch+0x78/0xd0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  [<ffffffff8166e569>]
+> system_call_fastpath+0x16/0x1b
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] Code: 48 45 31 e4 45 85
+> ed 0f 84 66 01 00 00 0f b7 03 48 8b 53 28 48 8b 92 70 03 00 00 25 00
+> f0 00 00 3d 00 80 00 00 0f 84 ea 01 00 00 <4c> 8b b2 e8 01 00 00 4c 8d
+> ab 80 01 00 00 4d 85 f6 74 17 3d 00
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] RIP
+> [<ffffffff811fdb16>] ext3_evict_inode+0x46/0x2c0
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029]  RSP <ffff8800bb517e48>
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.552029] CR2: 00000000000001e8
+> Jul 23 08:45:43 Phrozen kernel: [ 3878.590676] ---[ end trace
+> 3128f11f8290fec4 ]---
+> Jul 23 08:47:11 Phrozen kernel: imklog 5.8.6, log source = /proc/kmsg started.
+> Jul 23 08:47:11 Phrozen rsyslogd: [origin software="rsyslogd"
+> swVersion="5.8.6" x-pid="592" x-info="http://www.rsyslog.com"] start
+> Jul 23 08:47:11 Phrozen rsyslogd: rsyslogd's groupid changed to 103
+> Jul 23 08:47:11 Phrozen rsyslogd: rsyslogd's userid changed to 101
+> Jul 23 08:47:11 Phrozen rsyslogd-2039: Could not open output pipe
+> '/dev/xconsole' [try http://www.rsyslog.com/e/2039 ]
+> 
+> 
+> CPU-Info
+> processor	: 0
+> vendor_id	: GenuineIntel
+> cpu family	: 6
+> model		: 23
+> model name	: Pentium(R) Dual-Core CPU       T4200  @ 2.00GHz
+> stepping	: 10
+> microcode	: 0xa07
+> cpu MHz		: 2000.000
+> cache size	: 1024 KB
+> physical id	: 0
+> siblings	: 2
+> core id		: 0
+> cpu cores	: 2
+> apicid		: 0
+> initial apicid	: 0
+> fpu		: yes
+> fpu_exception	: yes
+> cpuid level	: 13
+> wp		: yes
+> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
+> pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx
+> lm constant_tsc arch_perfmon pebs bts rep_good nopl aperfmperf pni
+> dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm xsave lahf_lm
+> dtherm
+> bogomips	: 3989.98
+> clflush size	: 64
+> cache_alignment	: 64
+> address sizes	: 36 bits physical, 48 bits virtual
+> power management:
+> 
+> processor	: 1
+> vendor_id	: GenuineIntel
+> cpu family	: 6
+> model		: 23
+> model name	: Pentium(R) Dual-Core CPU       T4200  @ 2.00GHz
+> stepping	: 10
+> microcode	: 0xa07
+> cpu MHz		: 2000.000
+> cache size	: 1024 KB
+> physical id	: 0
+> siblings	: 2
+> core id		: 1
+> cpu cores	: 2
+> apicid		: 1
+> initial apicid	: 1
+> fpu		: yes
+> fpu_exception	: yes
+> cpuid level	: 13
+> wp		: yes
+> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
+> pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx
+> lm constant_tsc arch_perfmon pebs bts rep_good nopl aperfmperf pni
+> dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm xsave lahf_lm
+> dtherm
+> bogomips	: 3989.98
+> clflush size	: 64
+> cache_alignment	: 64
+> address sizes	: 36 bits physical, 48 bits virtual
+> power management:
+> 
+> 
+> lsusb -vvv output
+> 
+> 
+> Bus 001 Device 002: ID 064e:a103 Suyin Corp. Acer/HP Integrated Webcam [CN0314]
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               2.00
+>   bDeviceClass          239 Miscellaneous Device
+>   bDeviceSubClass         2 ?
+>   bDeviceProtocol         1 Interface Association
+>   bMaxPacketSize0        64
+>   idVendor           0x064e Suyin Corp.
+>   idProduct          0xa103 Acer/HP Integrated Webcam [CN0314]
+>   bcdDevice            1.00
+>   iManufacturer           2 SuYin
+>   iProduct                1 Acer Crystal Eye webcam
+>   iSerial                 3 CN0314-SN30-OV03-VA-R02.03.02
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength          544
+>     bNumInterfaces          2
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0x80
+>       (Bus Powered)
+>     MaxPower              500mA
+>     Interface Association:
+>       bLength                 8
+>       bDescriptorType        11
+>       bFirstInterface         0
+>       bInterfaceCount         2
+>       bFunctionClass         14 Video
+>       bFunctionSubClass       3 Video Interface Collection
+>       bFunctionProtocol       0
+>       iFunction               5 Acer Crystal Eye webcam
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      1 Video Control
+>       bInterfaceProtocol      0
+>       iInterface              5 Acer Crystal Eye webcam
+>       VideoControl Interface Descriptor:
+>         bLength                13
+>         bDescriptorType        36
+>         bDescriptorSubtype      1 (HEADER)
+>         bcdUVC               1.00
+>         wTotalLength          104
+>         dwClockFrequency       15.000000MHz
+>         bInCollection           1
+>         baInterfaceNr( 0)       1
+>       VideoControl Interface Descriptor:
+>         bLength                 9
+>         bDescriptorType        36
+>         bDescriptorSubtype      3 (OUTPUT_TERMINAL)
+>         bTerminalID             2
+>         wTerminalType      0x0101 USB Streaming
+>         bAssocTerminal          0
+>         bSourceID               5
+>         iTerminal               0
+>       VideoControl Interface Descriptor:
+>         bLength                26
+>         bDescriptorType        36
+>         bDescriptorSubtype      6 (EXTENSION_UNIT)
+>         bUnitID                 4
+>         guidExtensionCode         {7033f028-1163-2e4a-ba2c-6890eb334016}
+>         bNumControl             8
+>         bNrPins                 1
+>         baSourceID( 0)          3
+>         bControlSize            1
+>         bmControls( 0)       0x0f
+>         iExtension              0
+>       VideoControl Interface Descriptor:
+>         bLength                26
+>         bDescriptorType        36
+>         bDescriptorSubtype      6 (EXTENSION_UNIT)
+>         bUnitID                 5
+>         guidExtensionCode         {3fae1228-d7bc-114e-a357-6f1edef7d61d}
+>         bNumControl             8
+>         bNrPins                 1
+>         baSourceID( 0)          4
+>         bControlSize            1
+>         bmControls( 0)       0xff
+>         iExtension              0
+>       VideoControl Interface Descriptor:
+>         bLength                18
+>         bDescriptorType        36
+>         bDescriptorSubtype      2 (INPUT_TERMINAL)
+>         bTerminalID             1
+>         wTerminalType      0x0201 Camera Sensor
+>         bAssocTerminal          0
+>         iTerminal               0
+>         wObjectiveFocalLengthMin      0
+>         wObjectiveFocalLengthMax      0
+>         wOcularFocalLength            0
+>         bControlSize                  3
+>         bmControls           0x00000000
+>       VideoControl Interface Descriptor:
+>         bLength                12
+>         bDescriptorType        36
+>         bDescriptorSubtype      5 (PROCESSING_UNIT)
+>       Warning: Descriptor too short
+>         bUnitID                 3
+>         bSourceID               1
+>         wMaxMultiplier          0
+>         bControlSize            3
+>         bmControls     0x000025bf
+>           Brightness
+>           Contrast
+>           Hue
+>           Saturation
+>           Sharpness
+>           Gamma
+>           White Balance Component
+>           Backlight Compensation
+>           Power Line Frequency
+>           White Balance Component, Auto
+>         iProcessing             0
+>         bmVideoStandards     0x31
+>           None
+>           NTSC - 625/50
+>           PAL - 525/60
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x83  EP 3 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0010  1x 16 bytes
+>         bInterval               6
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       0
+>       bNumEndpoints           0
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       VideoStreaming Interface Descriptor:
+>         bLength                            14
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  1 (INPUT_HEADER)
+>         bNumFormats                         1
+>         wTotalLength                      297
+>         bEndPointAddress                  129
+>         bmInfo                              0
+>         bTerminalLink                       2
+>         bStillCaptureMethod                 0
+>         bTriggerSupport                     1
+>         bTriggerUsage                       1
+>         bControlSize                        1
+>         bmaControls( 0)                    27
+>       VideoStreaming Interface Descriptor:
+>         bLength                            27
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  4 (FORMAT_UNCOMPRESSED)
+>         bFormatIndex                        1
+>         bNumFrameDescriptors                5
+>         guidFormat
+> {59555932-0000-1000-8000-00aa00389b71}
+>         bBitsPerPixel                      16
+>         bDefaultFrameIndex                  1
+>         bAspectRatioX                       0
+>         bAspectRatioY                       0
+>         bmInterlaceFlags                 0x00
+>           Interlaced stream or variable: No
+>           Fields per frame: 2 fields
+>           Field 1 first: No
+>           Field pattern: Field 1 only
+>           bCopyProtect                      0
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         1
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            640
+>         wHeight                           480
+>         dwMinBitRate                  3072000
+>         dwMaxBitRate                 18432000
+>         dwMaxVideoFrameBufferSize      614400
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         2
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            352
+>         wHeight                           288
+>         dwMinBitRate                  1013760
+>         dwMaxBitRate                  6082560
+>         dwMaxVideoFrameBufferSize      202752
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         3
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            320
+>         wHeight                           240
+>         dwMinBitRate                   768000
+>         dwMaxBitRate                  4608000
+>         dwMaxVideoFrameBufferSize      153600
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         4
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            176
+>         wHeight                           144
+>         dwMinBitRate                   253440
+>         dwMaxBitRate                  1520640
+>         dwMaxVideoFrameBufferSize       50688
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         5
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            160
+>         wHeight                           120
+>         dwMinBitRate                   192000
+>         dwMaxBitRate                  1152000
+>         dwMaxVideoFrameBufferSize       38400
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                             6
+>         bDescriptorType                    36
+>         bDescriptorSubtype                 13 (COLORFORMAT)
+>         bColorPrimaries                     1 (BT.709,sRGB)
+>         bTransferCharacteristics            1 (BT.709)
+>         bMatrixCoefficients                 4 (SMPTE 170M (BT.601))
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       1
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0080  1x 128 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       2
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0100  1x 256 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       3
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0320  1x 800 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       4
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0b20  2x 800 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       5
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x1320  3x 800 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       6
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x1400  3x 1024 bytes
+>         bInterval               1
+> Device Qualifier (for other device speed):
+>   bLength                10
+>   bDescriptorType         6
+>   bcdUSB               2.00
+>   bDeviceClass          239 Miscellaneous Device
+>   bDeviceSubClass         2 ?
+>   bDeviceProtocol         1 Interface Association
+>   bMaxPacketSize0        64
+>   bNumConfigurations      1
+> Device Status:     0x0002
+>   (Bus Powered)
+>   Remote Wakeup Enabled
+> 
+> Bus 002 Device 002: ID 05e3:0608 Genesys Logic, Inc. USB-2.0 4-Port HUB
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               2.00
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         1 Single TT
+>   bMaxPacketSize0        64
+>   idVendor           0x05e3 Genesys Logic, Inc.
+>   idProduct          0x0608 USB-2.0 4-Port HUB
+>   bcdDevice           77.64
+>   iManufacturer           0
+>   iProduct                1 USB2.0 Hub
+>   iSerial                 0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower              100mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0001  1x 1 bytes
+>         bInterval              12
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             4
+>   wHubCharacteristic 0x00e0
+>     Ganged power switching
+>     Ganged overcurrent protection
+>     TT think time 32 FS bits
+>     Port indicators
+>   bPwrOn2PwrGood       50 * 2 milli seconds
+>   bHubContrCurrent    100 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0xff
+>  Hub Port Status:
+>    Port 1: 0000.0303 lowspeed power enable connect
+>    Port 2: 0000.0507 highspeed power suspend enable connect
+>    Port 3: 0000.0100 power
+>    Port 4: 0000.0103 power enable connect
+> Device Qualifier (for other device speed):
+>   bLength                10
+>   bDescriptorType         6
+>   bcdUSB               2.00
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   bNumConfigurations      1
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               2.00
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   idVendor           0x1d6b Linux Foundation
+>   idProduct          0x0002 2.0 root hub
+>   bcdDevice            3.05
+>   iManufacturer           3 Linux 3.5.0 ehci_hcd
+>   iProduct                2 EHCI Host Controller
+>   iSerial                 1 0000:00:1a.7
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower                0mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0004  1x 4 bytes
+>         bInterval              12
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             4
+>   wHubCharacteristic 0x000a
+>     No power switching (usb 1.0)
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood       10 * 2 milli seconds
+>   bHubContrCurrent      0 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0xff
+>  Hub Port Status:
+>    Port 1: 0000.0503 highspeed power enable connect
+>    Port 2: 0000.0100 power
+>    Port 3: 0000.0100 power
+>    Port 4: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               2.00
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   idVendor           0x1d6b Linux Foundation
+>   idProduct          0x0002 2.0 root hub
+>   bcdDevice            3.05
+>   iManufacturer           3 Linux 3.5.0 ehci_hcd
+>   iProduct                2 EHCI Host Controller
+>   iSerial                 1 0000:00:1d.7
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower                0mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0004  1x 4 bytes
+>         bInterval              12
+> Hub Descriptor:
+>   bLength              11
+>   bDescriptorType      41
+>   nNbrPorts             8
+>   wHubCharacteristic 0x000a
+>     No power switching (usb 1.0)
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood       10 * 2 milli seconds
+>   bHubContrCurrent      0 milli Ampere
+>   DeviceRemovable    0x00 0x00
+>   PortPwrCtrlMask    0xff 0xff
+>  Hub Port Status:
+>    Port 1: 0000.0100 power
+>    Port 2: 0000.0100 power
+>    Port 3: 0000.0503 highspeed power enable connect
+>    Port 4: 0000.0100 power
+>    Port 5: 0000.0100 power
+>    Port 6: 0000.0100 power
+>    Port 7: 0000.0100 power
+>    Port 8: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   idVendor           0x1d6b Linux Foundation
+>   idProduct          0x0001 1.1 root hub
+>   bcdDevice            3.05
+>   iManufacturer           3 Linux 3.5.0 uhci_hcd
+>   iProduct                2 UHCI Host Controller
+>   iSerial                 1 0000:00:1a.0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower                0mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0002  1x 2 bytes
+>         bInterval             255
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             2
+>   wHubCharacteristic 0x000a
+>     No power switching (usb 1.0)
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood        1 * 2 milli seconds
+>   bHubContrCurrent      0 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0xff
+>  Hub Port Status:
+>    Port 1: 0000.0100 power
+>    Port 2: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   idVendor           0x1d6b Linux Foundation
+>   idProduct          0x0001 1.1 root hub
+>   bcdDevice            3.05
+>   iManufacturer           3 Linux 3.5.0 uhci_hcd
+>   iProduct                2 UHCI Host Controller
+>   iSerial                 1 0000:00:1a.1
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower                0mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0002  1x 2 bytes
+>         bInterval             255
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             2
+>   wHubCharacteristic 0x000a
+>     No power switching (usb 1.0)
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood        1 * 2 milli seconds
+>   bHubContrCurrent      0 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0xff
+>  Hub Port Status:
+>    Port 1: 0000.0100 power
+>    Port 2: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 005 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   idVendor           0x1d6b Linux Foundation
+>   idProduct          0x0001 1.1 root hub
+>   bcdDevice            3.05
+>   iManufacturer           3 Linux 3.5.0 uhci_hcd
+>   iProduct                2 UHCI Host Controller
+>   iSerial                 1 0000:00:1d.0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower                0mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0002  1x 2 bytes
+>         bInterval             255
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             2
+>   wHubCharacteristic 0x000a
+>     No power switching (usb 1.0)
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood        1 * 2 milli seconds
+>   bHubContrCurrent      0 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0xff
+>  Hub Port Status:
+>    Port 1: 0000.0100 power
+>    Port 2: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 006 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   idVendor           0x1d6b Linux Foundation
+>   idProduct          0x0001 1.1 root hub
+>   bcdDevice            3.05
+>   iManufacturer           3 Linux 3.5.0 uhci_hcd
+>   iProduct                2 UHCI Host Controller
+>   iSerial                 1 0000:00:1d.1
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower                0mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0002  1x 2 bytes
+>         bInterval             255
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             2
+>   wHubCharacteristic 0x000a
+>     No power switching (usb 1.0)
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood        1 * 2 milli seconds
+>   bHubContrCurrent      0 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0xff
+>  Hub Port Status:
+>    Port 1: 0000.0100 power
+>    Port 2: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 007 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   idVendor           0x1d6b Linux Foundation
+>   idProduct          0x0001 1.1 root hub
+>   bcdDevice            3.05
+>   iManufacturer           3 Linux 3.5.0 uhci_hcd
+>   iProduct                2 UHCI Host Controller
+>   iSerial                 1 0000:00:1d.2
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower                0mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0002  1x 2 bytes
+>         bInterval             255
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             2
+>   wHubCharacteristic 0x000a
+>     No power switching (usb 1.0)
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood        1 * 2 milli seconds
+>   bHubContrCurrent      0 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0xff
+>  Hub Port Status:
+>    Port 1: 0000.0100 power
+>    Port 2: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 008 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0        64
+>   idVendor           0x1d6b Linux Foundation
+>   idProduct          0x0001 1.1 root hub
+>   bcdDevice            3.05
+>   iManufacturer           3 Linux 3.5.0 uhci_hcd
+>   iProduct                2 UHCI Host Controller
+>   iSerial                 1 0000:00:1d.3
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           25
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower                0mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0002  1x 2 bytes
+>         bInterval             255
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             2
+>   wHubCharacteristic 0x000a
+>     No power switching (usb 1.0)
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood        1 * 2 milli seconds
+>   bHubContrCurrent      0 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0xff
+>  Hub Port Status:
+>    Port 1: 0000.0100 power
+>    Port 2: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 002 Device 003: ID 045e:0047 Microsoft Corp. IntelliMouse Explorer 3.0
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            0 (Defined at Interface level)
+>   bDeviceSubClass         0
+>   bDeviceProtocol         0
+>   bMaxPacketSize0         8
+>   idVendor           0x045e Microsoft Corp.
+>   idProduct          0x0047 IntelliMouse Explorer 3.0
+>   bcdDevice            3.00
+>   iManufacturer           1 Microsoft
+>   iProduct                3 Microsoft 5-Button Mouse with IntelliEye(TM)
+>   iSerial                 0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           34
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xa0
+>       (Bus Powered)
+>       Remote Wakeup
+>     MaxPower              100mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         3 Human Interface Device
+>       bInterfaceSubClass      1 Boot Interface Subclass
+>       bInterfaceProtocol      2 Mouse
+>       iInterface              0
+>         HID Device Descriptor:
+>           bLength                 9
+>           bDescriptorType        33
+>           bcdHID               1.10
+>           bCountryCode            0 Not supported
+>           bNumDescriptors         1
+>           bDescriptorType        34 Report
+>           wDescriptorLength      72
+>          Report Descriptors:
+>            ** UNAVAILABLE **
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0004  1x 4 bytes
+>         bInterval              10
+> Device Status:     0x0000
+>   (Bus Powered)
+> 
+> Bus 002 Device 004: ID 0c45:62e0 Microdia MSI Starcam Racer
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               2.00
+>   bDeviceClass          239 Miscellaneous Device
+>   bDeviceSubClass         2 ?
+>   bDeviceProtocol         1 Interface Association
+>   bMaxPacketSize0        64
+>   idVendor           0x0c45 Microdia
+>   idProduct          0x62e0 MSI Starcam Racer
+>   bcdDevice            1.00
+>   iManufacturer           2 Sonix Technology Co., Ltd.
+>   iProduct                1 USB 2.0 Camera
+>   iSerial                 0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength         1051
+>     bNumInterfaces          4
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0x80
+>       (Bus Powered)
+>     MaxPower              250mA
+>     Interface Association:
+>       bLength                 8
+>       bDescriptorType        11
+>       bFirstInterface         0
+>       bInterfaceCount         2
+>       bFunctionClass         14 Video
+>       bFunctionSubClass       3 Video Interface Collection
+>       bFunctionProtocol       0
+>       iFunction               5 USB Camera
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      1 Video Control
+>       bInterfaceProtocol      0
+>       iInterface              5 USB Camera
+>       VideoControl Interface Descriptor:
+>         bLength                13
+>         bDescriptorType        36
+>         bDescriptorSubtype      1 (HEADER)
+>         bcdUVC               1.00
+>         wTotalLength          103
+>         dwClockFrequency       15.000000MHz
+>         bInCollection           1
+>         baInterfaceNr( 0)       1
+>       VideoControl Interface Descriptor:
+>         bLength                 9
+>         bDescriptorType        36
+>         bDescriptorSubtype      3 (OUTPUT_TERMINAL)
+>         bTerminalID             2
+>         wTerminalType      0x0101 USB Streaming
+>         bAssocTerminal          0
+>         bSourceID               5
+>         iTerminal               0
+>       VideoControl Interface Descriptor:
+>         bLength                26
+>         bDescriptorType        36
+>         bDescriptorSubtype      6 (EXTENSION_UNIT)
+>         bUnitID                 4
+>         guidExtensionCode         {7033f028-1163-2e4a-ba2c-6890eb334016}
+>         bNumControl             8
+>         bNrPins                 1
+>         baSourceID( 0)          3
+>         bControlSize            1
+>         bmControls( 0)       0x3f
+>         iExtension              0
+>       VideoControl Interface Descriptor:
+>         bLength                26
+>         bDescriptorType        36
+>         bDescriptorSubtype      6 (EXTENSION_UNIT)
+>         bUnitID                 5
+>         guidExtensionCode         {3fae1228-d7bc-114e-a357-6f1edef7d61d}
+>         bNumControl             8
+>         bNrPins                 1
+>         baSourceID( 0)          4
+>         bControlSize            1
+>         bmControls( 0)       0x00
+>         iExtension              0
+>       VideoControl Interface Descriptor:
+>         bLength                18
+>         bDescriptorType        36
+>         bDescriptorSubtype      2 (INPUT_TERMINAL)
+>         bTerminalID             1
+>         wTerminalType      0x0201 Camera Sensor
+>         bAssocTerminal          0
+>         iTerminal               0
+>         wObjectiveFocalLengthMin      0
+>         wObjectiveFocalLengthMax      0
+>         wOcularFocalLength            0
+>         bControlSize                  3
+>         bmControls           0x0002002e
+>           Auto-Exposure Mode
+>           Auto-Exposure Priority
+>           Exposure Time (Absolute)
+>           Focus (Absolute)
+>           Focus, Auto
+>       VideoControl Interface Descriptor:
+>         bLength                11
+>         bDescriptorType        36
+>         bDescriptorSubtype      5 (PROCESSING_UNIT)
+>       Warning: Descriptor too short
+>         bUnitID                 3
+>         bSourceID               1
+>         wMaxMultiplier          0
+>         bControlSize            2
+>         bmControls     0x0000177f
+>           Brightness
+>           Contrast
+>           Hue
+>           Saturation
+>           Sharpness
+>           Gamma
+>           White Balance Temperature
+>           Backlight Compensation
+>           Gain
+>           Power Line Frequency
+>           White Balance Temperature, Auto
+>         iProcessing             0
+>         bmVideoStandards     0x 0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x83  EP 3 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0010  1x 16 bytes
+>         bInterval               6
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       0
+>       bNumEndpoints           0
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       VideoStreaming Interface Descriptor:
+>         bLength                            15
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  1 (INPUT_HEADER)
+>         bNumFormats                         2
+>         wTotalLength                      692
+>         bEndPointAddress                  129
+>         bmInfo                              0
+>         bTerminalLink                       2
+>         bStillCaptureMethod                 2
+>         bTriggerSupport                     1
+>         bTriggerUsage                       1
+>         bControlSize                        1
+>         bmaControls( 0)                    27
+>         bmaControls( 1)                    27
+>       VideoStreaming Interface Descriptor:
+>         bLength                            27
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  4 (FORMAT_UNCOMPRESSED)
+>         bFormatIndex                        1
+>         bNumFrameDescriptors                6
+>         guidFormat
+> {59555932-0000-1000-8000-00aa00389b71}
+>         bBitsPerPixel                      16
+>         bDefaultFrameIndex                  1
+>         bAspectRatioX                       0
+>         bAspectRatioY                       0
+>         bmInterlaceFlags                 0x00
+>           Interlaced stream or variable: No
+>           Fields per frame: 2 fields
+>           Field 1 first: No
+>           Field pattern: Field 1 only
+>           bCopyProtect                      0
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         1
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            640
+>         wHeight                           480
+>         dwMinBitRate                  3072000
+>         dwMaxBitRate                 18432000
+>         dwMaxVideoFrameBufferSize      614400
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         2
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            352
+>         wHeight                           288
+>         dwMinBitRate                  1013760
+>         dwMaxBitRate                  6082560
+>         dwMaxVideoFrameBufferSize      202752
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         3
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            320
+>         wHeight                           240
+>         dwMinBitRate                   768000
+>         dwMaxBitRate                  4608000
+>         dwMaxVideoFrameBufferSize      153600
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         4
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            176
+>         wHeight                           144
+>         dwMinBitRate                   253440
+>         dwMaxBitRate                  1520640
+>         dwMaxVideoFrameBufferSize       50688
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         5
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            160
+>         wHeight                           120
+>         dwMinBitRate                   192000
+>         dwMaxBitRate                  1152000
+>         dwMaxVideoFrameBufferSize       38400
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            34
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+>         bFrameIndex                         6
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                           1280
+>         wHeight                          1024
+>         dwMinBitRate                 13107200
+>         dwMaxBitRate                 23592960
+>         dwMaxVideoFrameBufferSize     2621440
+>         dwDefaultFrameInterval        1111111
+>         bFrameIntervalType                  2
+>         dwFrameInterval( 0)           1111111
+>         dwFrameInterval( 1)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            30
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  3 (STILL_IMAGE_FRAME)
+>         bEndpointAddress                    0
+>         bNumImageSizePatterns               6
+>         wWidth( 0)                       1280
+>         wHeight( 0)                      1024
+>         wWidth( 1)                        640
+>         wHeight( 1)                       480
+>         wWidth( 2)                        352
+>         wHeight( 2)                       288
+>         wWidth( 3)                        320
+>         wHeight( 3)                       240
+>         wWidth( 4)                        176
+>         wHeight( 4)                       144
+>         wWidth( 5)                        160
+>         wHeight( 5)                       120
+>         bNumCompressionPatterns             6
+>       VideoStreaming Interface Descriptor:
+>         bLength                            11
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  6 (FORMAT_MJPEG)
+>         bFormatIndex                        2
+>         bNumFrameDescriptors                6
+>         bFlags                              0
+>           Fixed-size samples: No
+>         bDefaultFrameIndex                  1
+>         bAspectRatioX                       0
+>         bAspectRatioY                       0
+>         bmInterlaceFlags                 0x00
+>           Interlaced stream or variable: No
+>           Fields per frame: 1 fields
+>           Field 1 first: No
+>           Field pattern: Field 1 only
+>           bCopyProtect                      0
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  7 (FRAME_MJPEG)
+>         bFrameIndex                         1
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            640
+>         wHeight                           480
+>         dwMinBitRate                   384000
+>         dwMaxBitRate                  2304000
+>         dwMaxVideoFrameBufferSize       76800
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  7 (FRAME_MJPEG)
+>         bFrameIndex                         2
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            352
+>         wHeight                           288
+>         dwMinBitRate                   126720
+>         dwMaxBitRate                   760320
+>         dwMaxVideoFrameBufferSize       25344
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  7 (FRAME_MJPEG)
+>         bFrameIndex                         3
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            320
+>         wHeight                           240
+>         dwMinBitRate                    96000
+>         dwMaxBitRate                   576000
+>         dwMaxVideoFrameBufferSize       19200
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  7 (FRAME_MJPEG)
+>         bFrameIndex                         4
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            176
+>         wHeight                           144
+>         dwMinBitRate                    31680
+>         dwMaxBitRate                   190080
+>         dwMaxVideoFrameBufferSize        6336
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            50
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  7 (FRAME_MJPEG)
+>         bFrameIndex                         5
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                            160
+>         wHeight                           120
+>         dwMinBitRate                    24000
+>         dwMaxBitRate                   144000
+>         dwMaxVideoFrameBufferSize        4800
+>         dwDefaultFrameInterval         333333
+>         bFrameIntervalType                  6
+>         dwFrameInterval( 0)            333333
+>         dwFrameInterval( 1)            400000
+>         dwFrameInterval( 2)            500000
+>         dwFrameInterval( 3)            666666
+>         dwFrameInterval( 4)           1000000
+>         dwFrameInterval( 5)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            38
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  7 (FRAME_MJPEG)
+>         bFrameIndex                         6
+>         bmCapabilities                   0x00
+>           Still image unsupported
+>         wWidth                           1280
+>         wHeight                          1024
+>         dwMinBitRate                  1638400
+>         dwMaxBitRate                  4915200
+>         dwMaxVideoFrameBufferSize      327680
+>         dwDefaultFrameInterval         666666
+>         bFrameIntervalType                  3
+>         dwFrameInterval( 0)            666666
+>         dwFrameInterval( 1)           1000000
+>         dwFrameInterval( 2)           2000000
+>       VideoStreaming Interface Descriptor:
+>         bLength                            31
+>         bDescriptorType                    36
+>         bDescriptorSubtype                  3 (STILL_IMAGE_FRAME)
+>         bEndpointAddress                    0
+>         bNumImageSizePatterns               6
+>         wWidth( 0)                       1280
+>         wHeight( 0)                      1024
+>         wWidth( 1)                        640
+>         wHeight( 1)                       480
+>         wWidth( 2)                        352
+>         wHeight( 2)                       288
+>         wWidth( 3)                        320
+>         wHeight( 3)                       240
+>         wWidth( 4)                        176
+>         wHeight( 4)                       144
+>         wWidth( 5)                        160
+>         wHeight( 5)                       120
+>         bNumCompressionPatterns             6
+>         bCompression( 0)                    0
+>       VideoStreaming Interface Descriptor:
+>         bLength                             6
+>         bDescriptorType                    36
+>         bDescriptorSubtype                 13 (COLORFORMAT)
+>         bColorPrimaries                     1 (BT.709,sRGB)
+>         bTransferCharacteristics            1 (BT.709)
+>         bMatrixCoefficients                 4 (SMPTE 170M (BT.601))
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       1
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0080  1x 128 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       2
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0100  1x 256 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       3
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0320  1x 800 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       4
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0b20  2x 800 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       5
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x1320  3x 800 bytes
+>         bInterval               1
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       6
+>       bNumEndpoints           1
+>       bInterfaceClass        14 Video
+>       bInterfaceSubClass      2 Video Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x1400  3x 1024 bytes
+>         bInterval               1
+>     Interface Association:
+>       bLength                 8
+>       bDescriptorType        11
+>       bFirstInterface         2
+>       bInterfaceCount         2
+>       bFunctionClass          1 Audio
+>       bFunctionSubClass       0
+>       bFunctionProtocol       0
+>       iFunction               4 USB Audio Device
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        2
+>       bAlternateSetting       0
+>       bNumEndpoints           0
+>       bInterfaceClass         1 Audio
+>       bInterfaceSubClass      1 Control Device
+>       bInterfaceProtocol      0
+>       iInterface              4 USB Audio Device
+>       AudioControl Interface Descriptor:
+>         bLength                 9
+>         bDescriptorType        36
+>         bDescriptorSubtype      1 (HEADER)
+>         bcdADC               1.00
+>         wTotalLength           41
+>         bInCollection           1
+>         baInterfaceNr( 0)       3
+>       AudioControl Interface Descriptor:
+>         bLength                12
+>         bDescriptorType        36
+>         bDescriptorSubtype      2 (INPUT_TERMINAL)
+>         bTerminalID             1
+>         wTerminalType      0x0201 Microphone
+>         bAssocTerminal          0
+>         bNrChannels             1
+>         wChannelConfig     0x0000
+>         iChannelNames           0
+>         iTerminal               0
+>       AudioControl Interface Descriptor:
+>         bLength                11
+>         bDescriptorType        36
+>         bDescriptorSubtype      6 (FEATURE_UNIT)
+>         bUnitID                 2
+>         bSourceID               1
+>         bControlSize            2
+>         bmaControls( 0)      0x01
+>         bmaControls( 0)      0x00
+>           Mute Control
+>         bmaControls( 1)      0x02
+>         bmaControls( 1)      0x00
+>           Volume Control
+>         iFeature                0
+>       AudioControl Interface Descriptor:
+>         bLength                 9
+>         bDescriptorType        36
+>         bDescriptorSubtype      3 (OUTPUT_TERMINAL)
+>         bTerminalID             3
+>         wTerminalType      0x0101 USB Streaming
+>         bAssocTerminal          0
+>         bSourceID               2
+>         iTerminal               0
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        3
+>       bAlternateSetting       0
+>       bNumEndpoints           0
+>       bInterfaceClass         1 Audio
+>       bInterfaceSubClass      2 Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        3
+>       bAlternateSetting       1
+>       bNumEndpoints           1
+>       bInterfaceClass         1 Audio
+>       bInterfaceSubClass      2 Streaming
+>       bInterfaceProtocol      0
+>       iInterface              0
+>       AudioStreaming Interface Descriptor:
+>         bLength                 7
+>         bDescriptorType        36
+>         bDescriptorSubtype      1 (AS_GENERAL)
+>         bTerminalLink           3
+>         bDelay                  1 frames
+>         wFormatTag              1 PCM
+>       AudioStreaming Interface Descriptor:
+>         bLength                14
+>         bDescriptorType        36
+>         bDescriptorSubtype      2 (FORMAT_TYPE)
+>         bFormatType             1 (FORMAT_TYPE_I)
+>         bNrChannels             1
+>         bSubframeSize           2
+>         bBitResolution         16
+>         bSamFreqType            2 Discrete
+>         tSamFreq[ 0]         8000
+>         tSamFreq[ 1]        16000
+>       Endpoint Descriptor:
+>         bLength                 9
+>         bDescriptorType         5
+>         bEndpointAddress     0x84  EP 4 IN
+>         bmAttributes            5
+>           Transfer Type            Isochronous
+>           Synch Type               Asynchronous
+>           Usage Type               Data
+>         wMaxPacketSize     0x0190  1x 400 bytes
+>         bInterval               4
+>         bRefresh                0
+>         bSynchAddress           0
+>         AudioControl Endpoint Descriptor:
+>           bLength                 7
+>           bDescriptorType        37
+>           bDescriptorSubtype      1 (EP_GENERAL)
+>           bmAttributes         0x01
+>             Sampling Frequency
+>           bLockDelayUnits         0 Undefined
+>           wLockDelay              0 Undefined
+> Device Qualifier (for other device speed):
+>   bLength                10
+>   bDescriptorType         6
+>   bcdUSB               2.00
+>   bDeviceClass          239 Miscellaneous Device
+>   bDeviceSubClass         2 ?
+>   bDeviceProtocol         1 Interface Association
+>   bMaxPacketSize0        64
+>   bNumConfigurations      1
+> Device Status:     0x0002
+>   (Bus Powered)
+>   Remote Wakeup Enabled
+> 
+> Bus 002 Device 005: ID 03eb:0902 Atmel Corp. 4-Port Hub
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            9 Hub
+>   bDeviceSubClass         0 Unused
+>   bDeviceProtocol         0 Full speed (or root) hub
+>   bMaxPacketSize0         8
+>   idVendor           0x03eb Atmel Corp.
+>   idProduct          0x0902 4-Port Hub
+>   bcdDevice            1.00
+>   iManufacturer           0
+>   iProduct                2 USB 2.0 Hub
+>   iSerial                 0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           34
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xe0
+>       Self Powered
+>       Remote Wakeup
+>     MaxPower              100mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         9 Hub
+>       bInterfaceSubClass      0 Unused
+>       bInterfaceProtocol      0 Full speed (or root) hub
+>       iInterface              0
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0001  1x 1 bytes
+>         bInterval             255
+>         ** UNRECOGNIZED:  09 29 04 09 00 32 64 00 1e
+> Hub Descriptor:
+>   bLength               9
+>   bDescriptorType      41
+>   nNbrPorts             4
+>   wHubCharacteristic 0x0009
+>     Per-port power switching
+>     Per-port overcurrent protection
+>   bPwrOn2PwrGood       50 * 2 milli seconds
+>   bHubContrCurrent    100 milli Ampere
+>   DeviceRemovable    0x00
+>   PortPwrCtrlMask    0x1e
+>  Hub Port Status:
+>    Port 1: 0000.0303 lowspeed power enable connect
+>    Port 2: 0000.0100 power
+>    Port 3: 0000.0100 power
+>    Port 4: 0000.0100 power
+> Device Status:     0x0001
+>   Self Powered
+> 
+> Bus 002 Device 006: ID 413c:2003 Dell Computer Corp. Keyboard
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            0 (Defined at Interface level)
+>   bDeviceSubClass         0
+>   bDeviceProtocol         0
+>   bMaxPacketSize0         8
+>   idVendor           0x413c Dell Computer Corp.
+>   idProduct          0x2003 Keyboard
+>   bcdDevice            3.06
+>   iManufacturer           1 Dell
+>   iProduct                2
+>   iSerial                 0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           34
+>     bNumInterfaces          1
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xa0
+>       (Bus Powered)
+>       Remote Wakeup
+>     MaxPower               70mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           1
+>       bInterfaceClass         3 Human Interface Device
+>       bInterfaceSubClass      1 Boot Interface Subclass
+>       bInterfaceProtocol      1 Keyboard
+>       iInterface              0
+>         HID Device Descriptor:
+>           bLength                 9
+>           bDescriptorType        33
+>           bcdHID               1.10
+>           bCountryCode            0 Not supported
+>           bNumDescriptors         1
+>           bDescriptorType        34 Report
+>           wDescriptorLength      65
+>          Report Descriptors:
+>            ** UNAVAILABLE **
+>       Endpoint Descriptor:
+>         bLength                 7
+>         bDescriptorType         5
+>         bEndpointAddress     0x81  EP 1 IN
+>         bmAttributes            3
+>           Transfer Type            Interrupt
+>           Synch Type               None
+>           Usage Type               Data
+>         wMaxPacketSize     0x0008  1x 8 bytes
+>         bInterval              24
+> Device Status:     0x0000
+>   (Bus Powered)
+> 
+> --
+> Regards,
+> Sarbojit
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Ok.
->> +	}
->>
->> -	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ)) {
->> +	ret = vi->vdev->config->find_vqs(vi->vdev, total_vqs, vqs, callbacks,
->> +					 (const char **)names);
->> +	if (ret)
->> +		goto err;
->> +
->> +	if (vi->has_cvq)
->>   		vi->cvq = vqs[2];
->>
->> -		if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
->> -			vi->dev->features |= NETIF_F_HW_VLAN_FILTER;
->> +	for (i = 0; i<  vi->num_queue_pairs * 2; i += 2) {
->> +		int j = i == 0 ? i : i + vi->has_cvq;
->> +		vi->rq[i / 2]->vq = vqs[j];
->> +		vi->sq[i / 2]->vq = vqs[j + 1];
-> Same here.
-
-Consider the code is really simple, seem no need to use helpers.
->
->>   	}
->> -	return 0;
->> +
->> +err:
->> +	if (ret&&  names)
-> If we are here ret != 0. For names, just add another label, don't
-> complicate cleanup.
-
-Ok.
->> +		for (i = 0; i<  vi->num_queue_pairs * 2; i++)
->> +			kfree(names[i]);
->> +
->> +	kfree(names);
->> +	kfree(callbacks);
->> +	kfree(vqs);
->> +
->> +	return ret;
->> +}
->> +
->> +static int virtnet_alloc_queues(struct virtnet_info *vi)
->> +{
->> +	int ret = -ENOMEM;
->> +	int i;
->> +
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		vi->rq[i] = kzalloc(sizeof(*vi->rq[i]), GFP_KERNEL);
->> +		vi->sq[i] = kzalloc(sizeof(*vi->sq[i]), GFP_KERNEL);
->> +		if (!vi->rq[i] || !vi->sq[i])
->> +			goto err;
->> +	}
->> +
->> +	ret = 0;
->> +
->> +	/* setup initial receive and send queue parameters */
->> +	for (i = 0; i<  vi->num_queue_pairs; i++) {
->> +		vi->rq[i]->vi = vi;
->> +		vi->rq[i]->pages = NULL;
->> +		INIT_DELAYED_WORK(&vi->rq[i]->refill, refill_work);
->> +		netif_napi_add(vi->dev,&vi->rq[i]->napi, virtnet_poll,
->> +			       napi_weight);
->> +
->> +		sg_init_table(vi->rq[i]->sg, ARRAY_SIZE(vi->rq[i]->sg));
->> +		sg_init_table(vi->sq[i]->sg, ARRAY_SIZE(vi->sq[i]->sg));
->> +	}
->> +
-> Add return 0 here, then ret = 0 will not be needed
-> above and if (ret) below.
->
-
-Ok.
->> +err:
->> +	if (ret)
->> +		virtnet_free_queues(vi);
->> +
->> +	return ret;
->> +}
->> +
->> +static int virtnet_setup_vqs(struct virtnet_info *vi)
->> +{
->> +	int ret;
->> +
->> +	/* Allocate send&  receive queues */
->> +	ret = virtnet_alloc_queues(vi);
->> +	if (!ret) {
->> +		ret = virtnet_find_vqs(vi);
->> +		if (ret)
->> +			virtnet_free_queues(vi);
->> +		else
->> +			virtnet_set_affinity(vi, true);
->> +	}
->> +
->> +	return ret;
-> Add some labels for error handling, this if nesting is messy.
-
-Ok.
->>   }
->>
->>   static int virtnet_probe(struct virtio_device *vdev)
->>   {
->> -	int err;
->> +	int i, err;
->>   	struct net_device *dev;
->>   	struct virtnet_info *vi;
->> +	u16 num_queues, num_queue_pairs;
->> +
->> +	/* Find if host supports multiqueue virtio_net device */
->> +	err = virtio_config_val(vdev, VIRTIO_NET_F_MULTIQUEUE,
->> +				offsetof(struct virtio_net_config,
->> +				num_queues),&num_queues);
->> +
->> +	/* We need atleast 2 queue's */
-> typo
-
-Will fix this, thanks.
->> +	if (err || num_queues<  2)
->> +		num_queues = 2;
->> +	if (num_queues>  MAX_QUEUES * 2)
->> +		num_queues = MAX_QUEUES;
->> +
->> +	num_queue_pairs = num_queues / 2;
->>
->>   	/* Allocate ourselves a network device with room for our info */
->> -	dev = alloc_etherdev(sizeof(struct virtnet_info));
->> +	dev = alloc_etherdev_mq(sizeof(struct virtnet_info), num_queue_pairs);
->>   	if (!dev)
->>   		return -ENOMEM;
->>
->> @@ -1103,22 +1362,18 @@ static int virtnet_probe(struct virtio_device *vdev)
->>
->>   	/* Set up our device-specific information */
->>   	vi = netdev_priv(dev);
->> -	netif_napi_add(dev,&vi->napi, virtnet_poll, napi_weight);
->>   	vi->dev = dev;
->>   	vi->vdev = vdev;
->>   	vdev->priv = vi;
->> -	vi->pages = NULL;
->>   	vi->stats = alloc_percpu(struct virtnet_stats);
->>   	err = -ENOMEM;
->>   	if (vi->stats == NULL)
->> -		goto free;
->> +		goto free_netdev;
->>
->> -	INIT_DELAYED_WORK(&vi->refill, refill_work);
->>   	mutex_init(&vi->config_lock);
->>   	vi->config_enable = true;
->>   	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
->> -	sg_init_table(vi->rx_sg, ARRAY_SIZE(vi->rx_sg));
->> -	sg_init_table(vi->tx_sg, ARRAY_SIZE(vi->tx_sg));
->> +	vi->num_queue_pairs = num_queue_pairs;
->>
->>   	/* If we can receive ANY GSO packets, we must allocate large ones. */
->>   	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
->> @@ -1129,9 +1384,17 @@ static int virtnet_probe(struct virtio_device *vdev)
->>   	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
->>   		vi->mergeable_rx_bufs = true;
->>
->> -	err = init_vqs(vi);
->> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
->> +		vi->has_cvq = true;
->> +
-> How about we disable multiqueue if there's no cvq?
-> Will make logic a bit simpler, won't it?
-
-We can, but as you said, just let the logic simpler a bit.
->> +	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
->> +	err = virtnet_setup_vqs(vi);
->>   	if (err)
->> -		goto free_stats;
->> +		goto free_netdev;
->> +
->> +	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ)&&
->> +	    virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
->> +		dev->features |= NETIF_F_HW_VLAN_FILTER;
->>
->>   	err = register_netdev(dev);
->>   	if (err) {
->> @@ -1140,12 +1403,15 @@ static int virtnet_probe(struct virtio_device *vdev)
->>   	}
->>
->>   	/* Last of all, set up some receive buffers. */
->> -	try_fill_recv(vi, GFP_KERNEL);
->> -
->> -	/* If we didn't even get one input buffer, we're useless. */
->> -	if (vi->num == 0) {
->> -		err = -ENOMEM;
->> -		goto unregister;
->> +	for (i = 0; i<  num_queue_pairs; i++) {
->> +		try_fill_recv(vi->rq[i], GFP_KERNEL);
->> +
->> +		/* If we didn't even get one input buffer, we're useless. */
->> +		if (vi->rq[i]->num == 0) {
->> +			free_unused_bufs(vi);
->> +			err = -ENOMEM;
->> +			goto free_recv_bufs;
->> +		}
->>   	}
->>
->>   	/* Assume link up if device can't report link status,
->> @@ -1158,42 +1424,25 @@ static int virtnet_probe(struct virtio_device *vdev)
->>   		netif_carrier_on(dev);
->>   	}
->>
->> -	pr_debug("virtnet: registered device %s\n", dev->name);
->> +	pr_debug("virtnet: registered device %s with %d RX and TX vq's\n",
->> +		 dev->name, num_queue_pairs);
->> +
->>   	return 0;
->>
->> -unregister:
->> +free_recv_bufs:
->> +	free_receive_bufs(vi);
->>   	unregister_netdev(dev);
->> +
->>   free_vqs:
->> -	vdev->config->del_vqs(vdev);
->> -free_stats:
->> -	free_percpu(vi->stats);
->> -free:
->> +	for (i = 0; i<  num_queue_pairs; i++)
->> +		cancel_delayed_work_sync(&vi->rq[i]->refill);
->> +	virtnet_del_vqs(vi);
->> +
->> +free_netdev:
->>   	free_netdev(dev);
->>   	return err;
->>   }
->>
->> -static void free_unused_bufs(struct virtnet_info *vi)
->> -{
->> -	void *buf;
->> -	while (1) {
->> -		buf = virtqueue_detach_unused_buf(vi->svq);
->> -		if (!buf)
->> -			break;
->> -		dev_kfree_skb(buf);
->> -	}
->> -	while (1) {
->> -		buf = virtqueue_detach_unused_buf(vi->rvq);
->> -		if (!buf)
->> -			break;
->> -		if (vi->mergeable_rx_bufs || vi->big_packets)
->> -			give_pages(vi, buf);
->> -		else
->> -			dev_kfree_skb(buf);
->> -		--vi->num;
->> -	}
->> -	BUG_ON(vi->num != 0);
->> -}
->> -
->>   static void remove_vq_common(struct virtnet_info *vi)
->>   {
->>   	vi->vdev->config->reset(vi->vdev);
->> @@ -1201,10 +1450,9 @@ static void remove_vq_common(struct virtnet_info *vi)
->>   	/* Free unused buffers in both send and recv, if any. */
->>   	free_unused_bufs(vi);
->>
->> -	vi->vdev->config->del_vqs(vi->vdev);
->> +	free_receive_bufs(vi);
->>
->> -	while (vi->pages)
->> -		__free_pages(get_a_page(vi, GFP_KERNEL), 0);
->> +	virtnet_del_vqs(vi);
->>   }
->>
->>   static void __devexit virtnet_remove(struct virtio_device *vdev)
->> @@ -1230,6 +1478,7 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
->>   static int virtnet_freeze(struct virtio_device *vdev)
->>   {
->>   	struct virtnet_info *vi = vdev->priv;
->> +	int i;
->>
->>   	/* Prevent config work handler from accessing the device */
->>   	mutex_lock(&vi->config_lock);
->> @@ -1237,10 +1486,13 @@ static int virtnet_freeze(struct virtio_device *vdev)
->>   	mutex_unlock(&vi->config_lock);
->>
->>   	netif_device_detach(vi->dev);
->> -	cancel_delayed_work_sync(&vi->refill);
->> +	for (i = 0; i<  vi->num_queue_pairs; i++)
->> +		cancel_delayed_work_sync(&vi->rq[i]->refill);
->>
->>   	if (netif_running(vi->dev))
->> -		napi_disable(&vi->napi);
->> +		for (i = 0; i<  vi->num_queue_pairs; i++)
->> +			napi_disable(&vi->rq[i]->napi);
->> +
->>
->>   	remove_vq_common(vi);
->>
->> @@ -1252,19 +1504,22 @@ static int virtnet_freeze(struct virtio_device *vdev)
->>   static int virtnet_restore(struct virtio_device *vdev)
->>   {
->>   	struct virtnet_info *vi = vdev->priv;
->> -	int err;
->> +	int err, i;
->>
->> -	err = init_vqs(vi);
->> +	err = virtnet_setup_vqs(vi);
->>   	if (err)
->>   		return err;
->>
->>   	if (netif_running(vi->dev))
->> -		virtnet_napi_enable(vi);
->> +		for (i = 0; i<  vi->num_queue_pairs; i++)
->> +			virtnet_napi_enable(vi->rq[i]);
->>
->>   	netif_device_attach(vi->dev);
->>
->> -	if (!try_fill_recv(vi, GFP_KERNEL))
->> -		queue_delayed_work(system_nrt_wq,&vi->refill, 0);
->> +	for (i = 0; i<  vi->num_queue_pairs; i++)
->> +		if (!try_fill_recv(vi->rq[i], GFP_KERNEL))
->> +			queue_delayed_work(system_nrt_wq,
->> +					&vi->rq[i]->refill, 0);
->>
->>   	mutex_lock(&vi->config_lock);
->>   	vi->config_enable = true;
->> @@ -1287,7 +1542,7 @@ static unsigned int features[] = {
->>   	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
->>   	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
->>   	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
->> -	VIRTIO_NET_F_GUEST_ANNOUNCE,
->> +	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MULTIQUEUE,
->>   };
->>
->>   static struct virtio_driver virtio_net_driver = {
->> diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
->> index 1bc7e30..60f09ff 100644
->> --- a/include/linux/virtio_net.h
->> +++ b/include/linux/virtio_net.h
->> @@ -61,6 +61,8 @@ struct virtio_net_config {
->>   	__u8 mac[6];
->>   	/* See VIRTIO_NET_F_STATUS and VIRTIO_NET_S_* above */
->>   	__u16 status;
->> +	/* Total number of RX/TX queues */
->> +	__u16 num_queues;
->>   } __attribute__((packed));
->>
->>   /* This is the first element of the scatter-gather list.  If you don't
->> -- 
->> 1.7.1
 
