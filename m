@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2GWShQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:37:16 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19786 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab2GWShN (ORCPT
+	id S1754699Ab2GWSiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:38:07 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39690 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab2GWShP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:37:13 -0400
+	Mon, 23 Jul 2012 14:37:15 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/5] xen/mmu: The xen_setup_kernel_pagetable doesn't need to return anything.
-Date: Mon, 23 Jul 2012 14:28:20 -0400
-Message-Id: <1343068103-13579-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 5/5] xen/perf: Define .glob for the different hypercalls.
+Date: Mon, 23 Jul 2012 14:28:23 -0400
+Message-Id: <1343068103-13579-6-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1343068103-13579-1-git-send-email-konrad.wilk@oracle.com>
 References: <1343068103-13579-1-git-send-email-konrad.wilk@oracle.com>
@@ -21,100 +21,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to return the new PGD - as we do not use it.
+This allows us in perf to have this:
 
+ 99.67%  [kernel]             [k] xen_hypercall_sched_op
+  0.11%  [kernel]             [k] xen_hypercall_xen_version
+
+instead of the borring ever-encompassing:
+
+ 99.13%  [kernel]              [k] hypercall_page
+
+[v2: Use a macro to define the name and skip]
+[v3: Use balign per Jan's suggestion]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/enlighten.c |    5 +----
- arch/x86/xen/mmu.c       |   10 ++--------
- arch/x86/xen/xen-ops.h   |    2 +-
- 3 files changed, 4 insertions(+), 13 deletions(-)
+ arch/x86/xen/xen-head.S |   56 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 54 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index ed7d549..ae8a2ab 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1256,7 +1256,6 @@ asmlinkage void __init xen_start_kernel(void)
- {
- 	struct physdev_set_iopl set_iopl;
- 	int rc;
--	pgd_t *pgd;
+diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+index aaa7291..7faed58 100644
+--- a/arch/x86/xen/xen-head.S
++++ b/arch/x86/xen/xen-head.S
+@@ -28,9 +28,61 @@ ENTRY(startup_xen)
+ 	__FINIT
  
- 	if (!xen_start_info)
- 		return;
-@@ -1348,8 +1347,6 @@ asmlinkage void __init xen_start_kernel(void)
- 	acpi_numa = -1;
- #endif
+ .pushsection .text
+-	.align PAGE_SIZE
++	.balign PAGE_SIZE
+ ENTRY(hypercall_page)
+-	.skip PAGE_SIZE
++#define NEXT_HYPERCALL(x) \
++	ENTRY(xen_hypercall_##x) \
++	.skip 32
++
++NEXT_HYPERCALL(set_trap_table)
++NEXT_HYPERCALL(mmu_update)
++NEXT_HYPERCALL(set_gdt)
++NEXT_HYPERCALL(stack_switch)
++NEXT_HYPERCALL(set_callbacks)
++NEXT_HYPERCALL(fpu_taskswitch)
++NEXT_HYPERCALL(sched_op_compat)
++NEXT_HYPERCALL(platform_op)
++NEXT_HYPERCALL(set_debugreg)
++NEXT_HYPERCALL(get_debugreg)
++NEXT_HYPERCALL(update_descriptor)
++NEXT_HYPERCALL(ni)
++NEXT_HYPERCALL(memory_op)
++NEXT_HYPERCALL(multicall)
++NEXT_HYPERCALL(update_va_mapping)
++NEXT_HYPERCALL(set_timer_op)
++NEXT_HYPERCALL(event_channel_op_compat)
++NEXT_HYPERCALL(xen_version)
++NEXT_HYPERCALL(console_io)
++NEXT_HYPERCALL(physdev_op_compat)
++NEXT_HYPERCALL(grant_table_op)
++NEXT_HYPERCALL(vm_assist)
++NEXT_HYPERCALL(update_va_mapping_otherdomain)
++NEXT_HYPERCALL(iret)
++NEXT_HYPERCALL(vcpu_op)
++NEXT_HYPERCALL(set_segment_base)
++NEXT_HYPERCALL(mmuext_op)
++NEXT_HYPERCALL(xsm_op)
++NEXT_HYPERCALL(nmi_op)
++NEXT_HYPERCALL(sched_op)
++NEXT_HYPERCALL(callback_op)
++NEXT_HYPERCALL(xenoprof_op)
++NEXT_HYPERCALL(event_channel_op)
++NEXT_HYPERCALL(physdev_op)
++NEXT_HYPERCALL(hvm_op)
++NEXT_HYPERCALL(sysctl)
++NEXT_HYPERCALL(domctl)
++NEXT_HYPERCALL(kexec_op)
++NEXT_HYPERCALL(tmem_op) /* 38 */
++ENTRY(xen_hypercall_rsvr)
++	.skip 320
++NEXT_HYPERCALL(mca) /* 48 */
++NEXT_HYPERCALL(arch_1)
++NEXT_HYPERCALL(arch_2)
++NEXT_HYPERCALL(arch_3)
++NEXT_HYPERCALL(arch_4)
++NEXT_HYPERCALL(arch_5)
++NEXT_HYPERCALL(arch_6)
++	.balign PAGE_SIZE
+ .popsection
  
--	pgd = (pgd_t *)xen_start_info->pt_base;
--
- 	/* Don't do the full vcpu_info placement stuff until we have a
- 	   possible map and a non-dummy shared_info. */
- 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-@@ -1358,7 +1355,7 @@ asmlinkage void __init xen_start_kernel(void)
- 	early_boot_irqs_disabled = true;
- 
- 	xen_raw_console_write("mapping kernel into physical memory\n");
--	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
-+	xen_setup_kernel_pagetable((pgd_t *)xen_start_info->pt_base, xen_start_info->nr_pages);
- 
- 	/* Allocate and initialize top and mid mfn levels for p2m structure */
- 	xen_build_mfn_list_list();
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 3a73785..4ac21a4 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1719,8 +1719,7 @@ static void convert_pfn_mfn(void *v)
-  * of the physical mapping once some sort of allocator has been set
-  * up.
-  */
--pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
--					 unsigned long max_pfn)
-+void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- {
- 	pud_t *l3;
- 	pmd_t *l2;
-@@ -1781,8 +1780,6 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
- 
- 	memblock_reserve(__pa(xen_start_info->pt_base),
- 			 xen_start_info->nr_pt_frames * PAGE_SIZE);
--
--	return pgd;
- }
- #else	/* !CONFIG_X86_64 */
- static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
-@@ -1825,8 +1822,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
- 	pv_mmu_ops.write_cr3 = &xen_write_cr3;
- }
- 
--pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
--					 unsigned long max_pfn)
-+void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- {
- 	pmd_t *kernel_pmd;
- 
-@@ -1858,8 +1854,6 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
- 
- 	memblock_reserve(__pa(xen_start_info->pt_base),
- 			 xen_start_info->nr_pt_frames * PAGE_SIZE);
--
--	return initial_page_table;
- }
- #endif	/* CONFIG_X86_64 */
- 
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 202d4c1..2230f57 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -27,7 +27,7 @@ void xen_setup_mfn_list_list(void);
- void xen_setup_shared_info(void);
- void xen_build_mfn_list_list(void);
- void xen_setup_machphys_mapping(void);
--pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
-+void xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
- void xen_reserve_top(void);
- extern unsigned long xen_max_p2m_pfn;
- 
+ 	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS,       .asciz "linux")
 -- 
 1.7.7.6
 
