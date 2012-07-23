@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab2GWI0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 04:26:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19722 "EHLO mx1.redhat.com"
+	id S1754135Ab2GWI0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 04:26:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44224 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754121Ab2GWI0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 04:26:30 -0400
+	id S1754070Ab2GWI03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 04:26:29 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Abhijith Das <adas@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 14/16] GFS2: kernel panic with small gfs2 filesystems - 1 RG
-Date: Mon, 23 Jul 2012 09:01:04 +0100
-Message-Id: <1343030466-3053-15-git-send-email-swhiteho@redhat.com>
+Cc: Masatake YAMATO <yamato@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 13/16] GFS2: Fixing double brelse'ing bh allocated in gfs2_meta_read when EIO occurs
+Date: Mon, 23 Jul 2012 09:01:03 +0100
+Message-Id: <1343030466-3053-14-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1343030466-3053-1-git-send-email-swhiteho@redhat.com>
 References: <1343030466-3053-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhijith Das <adas@redhat.com>
+From: Masatake YAMATO <yamato@redhat.com>
 
-In the unlikely setup where there's only one resource group in the gfs2
-filesystem, gfs2_rgrpd_get_next() returns a NULL rgd that is not dealt with
-properly, causing a kernel NULL ptr dereference. This patch fixes this issue.
+This patch fixes buffer_head double free in following code path:
 
-Signed-off-by: Abhi Das <adas@redhat.com>
+gfs2_block_map
+=> gfs2_meta_inode_buffer
+ => gfs2_meta_indirect_buffer
+  => gfs2_meta_read
+=> release_metapath
+
+gfs2_block_map calls gfs2_meta_inode_buffer with &mp.mp_bh[0]
+as an argument. mp.mp_bh are filled with zero at the beginning
+of gfs2_block_map.
+
+If gfs2_meta_inode_buffer returns non-zero value, gfs2_block_map
+calls release_metapath to free buffers chained to mp.mp_bh.
+release_metapath checks each slot of mp.mp_bh[i] and
+free(with brelse) unless the slot is filled with NULL.
+
+&mp.mp_bh[0] passed to gfs2_meta_inode_buffer is filled at
+gfs2_meta_read. gfs2_meta_read is filled a buffer allocated with
+gfs2_getbuf even if EIO occurs. When EIO occurs, the allocated buffer
+is brelse'ed though the pointer(wrong poiner) points the brelse'ed is
+passed back to caller via an argument bhp.
+
+gfs2_meta_indirect_buffer, the caller also pass the wrong pointer
+to its caller with EIO. Finally gfs2_block_map gets both EIO and
+&mp.mp_bh[0] filled with the wrong pointer. release_metapath
+calls brelse again on the wrong pointer.
+
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index e53d0a1..fb70792 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -1276,6 +1276,7 @@ int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
- 			/* fall through */
- 		case GLR_TRYFAILED:
- 			rgd = gfs2_rgrpd_get_next(rgd);
-+			rgd = rgd ? : begin; /* if NULL, wrap */
- 			if (rgd != begin) /* If we didn't wrap */
- 				break;
+diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
+index 6c1e5d1..3a56c8d 100644
+--- a/fs/gfs2/meta_io.c
++++ b/fs/gfs2/meta_io.c
+@@ -213,8 +213,10 @@ int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno, int flags,
+ 	struct gfs2_sbd *sdp = gl->gl_sbd;
+ 	struct buffer_head *bh;
+ 
+-	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
++	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
++		*bhp = NULL;
+ 		return -EIO;
++	}
+ 
+ 	*bhp = bh = gfs2_getbuf(gl, blkno, CREATE);
+ 
+@@ -235,6 +237,7 @@ int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno, int flags,
+ 		if (tr && tr->tr_touched)
+ 			gfs2_io_error_bh(sdp, bh);
+ 		brelse(bh);
++		*bhp = NULL;
+ 		return -EIO;
+ 	}
  
 -- 
 1.7.4
