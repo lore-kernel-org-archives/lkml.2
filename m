@@ -1,40 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab2GWOG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 10:06:56 -0400
-Received: from huffman.acsalaska.net ([209.112.173.250]:62343 "EHLO
-	huffman.acsalaska.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab2GWOGz (ORCPT
+	id S1753930Ab2GWOHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 10:07:23 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:54659 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab2GWOHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 10:06:55 -0400
-X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jul 2012 10:06:55 EDT
-Message-ID: <59436.177.130.198.94.1343051677.squirrel@mymail.alaska.net>
-Date: Mon, 23 Jul 2012 05:54:37 -0800 (AKDT)
-Subject: Letter:
-From: "Liu Wang" <harry@alaska.net>
-Reply-To: liu.wang@3mail.ie
-User-Agent: SquirrelMail/1.4.13
+	Mon, 23 Jul 2012 10:07:20 -0400
+Message-ID: <500D5A90.3070502@linux.vnet.ibm.com>
+Date: Mon, 23 Jul 2012 22:07:12 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (huffman.acsalaska.net [209.112.168.122]); Mon, 23 Jul 2012 05:54:37 -0800 (AKDT)
-X-ACS-Spam-Status: yes
-X-ACS-Spam-Score: 5.4 (xxxxx)
-X-ACS-Spam-Tests: ALL_TRUSTED,FSL_RCVD_USER,HK_SCAM_S7,RISK_FREE,
-X-ACS-Scanned-By: MD 2.67; SA 3.3.0; spamdefang 1.122
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 3/3] KVM: remove dummy pages
+References: <500D59A7.9060503@linux.vnet.ibm.com> <500D5A1E.6000704@linux.vnet.ibm.com>
+In-Reply-To: <500D5A1E.6000704@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072314-1618-0000-0000-0000021F5556
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings:
+Currently, kvm allocate some pages and use them as error indicators,
+it wastes memory and is not good for scalability. So we use the error
+code instead of the pages to indicate the error
 
-I am Liu Wang, an official with the bank account of Taipei International.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ include/linux/kvm_host.h |    3 +-
+ virt/kvm/async_pf.c      |    3 +-
+ virt/kvm/kvm_main.c      |  121 +++++++++++++++++++---------------------------
+ 3 files changed, 52 insertions(+), 75 deletions(-)
 
-I have a business proposal that I like both of us to take part in this deal is risk
-free and legal. I have a very sensitive and confidential brief for you from the
-International Bank of Taipei, Taiwan
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 6d1a51e..f4e132c 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -411,6 +411,7 @@ void kvm_arch_flush_shadow(struct kvm *kvm);
+ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
+ 			    int nr_pages);
 
++struct page *get_bad_page(void);
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
+ void kvm_release_page_clean(struct page *page);
+@@ -564,7 +565,7 @@ void kvm_arch_sync_events(struct kvm *kvm);
+ int kvm_cpu_has_pending_timer(struct kvm_vcpu *vcpu);
+ void kvm_vcpu_kick(struct kvm_vcpu *vcpu);
+
+-int kvm_is_mmio_pfn(pfn_t pfn);
++bool kvm_is_mmio_pfn(pfn_t pfn);
+
+ struct kvm_irq_ack_notifier {
+ 	struct hlist_node link;
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index ebae24b..7972278 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -203,8 +203,7 @@ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
+ 	if (!work)
+ 		return -ENOMEM;
+
+-	work->page = bad_page;
+-	get_page(bad_page);
++	work->page = get_bad_page();
+ 	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
+
+ 	spin_lock(&vcpu->async_pf.lock);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index eb15833..92aae8b 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -100,17 +100,11 @@ EXPORT_SYMBOL_GPL(kvm_rebooting);
+
+ static bool largepages_enabled = true;
+
+-struct page *bad_page;
+-static pfn_t bad_pfn;
+-
+-static struct page *hwpoison_page;
+-static pfn_t hwpoison_pfn;
+-
+-static struct page *fault_page;
+-static pfn_t fault_pfn;
+-
+-inline int kvm_is_mmio_pfn(pfn_t pfn)
++bool kvm_is_mmio_pfn(pfn_t pfn)
+ {
++	if (is_error_pfn(pfn))
++		return false;
++
+ 	if (pfn_valid(pfn)) {
+ 		int reserved;
+ 		struct page *tail = pfn_to_page(pfn);
+@@ -936,34 +930,55 @@ EXPORT_SYMBOL_GPL(kvm_disable_largepages);
+
+ int is_error_page(struct page *page)
+ {
+-	return page == bad_page || page == hwpoison_page || page == fault_page;
++	return IS_ERR(page);
+ }
+ EXPORT_SYMBOL_GPL(is_error_page);
+
+ int is_error_pfn(pfn_t pfn)
+ {
+-	return pfn == bad_pfn || pfn == hwpoison_pfn || pfn == fault_pfn;
++	return IS_ERR_VALUE(pfn);
+ }
+ EXPORT_SYMBOL_GPL(is_error_pfn);
+
++static pfn_t get_bad_pfn(void)
++{
++	return -ENOENT;
++}
++
++pfn_t get_fault_pfn(void)
++{
++	return -EFAULT;
++}
++EXPORT_SYMBOL_GPL(get_fault_pfn);
++
++static pfn_t get_hwpoison_pfn(void)
++{
++	return -EHWPOISON;
++}
++
+ int is_hwpoison_pfn(pfn_t pfn)
+ {
+-	return pfn == hwpoison_pfn;
++	return pfn == -EHWPOISON;
+ }
+ EXPORT_SYMBOL_GPL(is_hwpoison_pfn);
+
+ int is_noslot_pfn(pfn_t pfn)
+ {
+-	return pfn == bad_pfn;
++	return pfn == -ENOENT;
+ }
+ EXPORT_SYMBOL_GPL(is_noslot_pfn);
+
+ int is_invalid_pfn(pfn_t pfn)
+ {
+-	return pfn == hwpoison_pfn || pfn == fault_pfn;
++	return !is_noslot_pfn(pfn) && is_error_pfn(pfn);
+ }
+ EXPORT_SYMBOL_GPL(is_invalid_pfn);
+
++struct page *get_bad_page(void)
++{
++	return ERR_PTR(-ENOENT);
++}
++
+ static inline unsigned long bad_hva(void)
+ {
+ 	return PAGE_OFFSET;
+@@ -1035,13 +1050,6 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+
+-pfn_t get_fault_pfn(void)
+-{
+-	get_page(fault_page);
+-	return fault_pfn;
+-}
+-EXPORT_SYMBOL_GPL(get_fault_pfn);
+-
+ int get_user_page_nowait(struct task_struct *tsk, struct mm_struct *mm,
+ 	unsigned long start, int write, struct page **page)
+ {
+@@ -1119,8 +1127,7 @@ static pfn_t hva_to_pfn(unsigned long addr, bool atomic, bool *async,
+ 		if (npages == -EHWPOISON ||
+ 			(!async && check_user_page_hwpoison(addr))) {
+ 			up_read(&current->mm->mmap_sem);
+-			get_page(hwpoison_page);
+-			return page_to_pfn(hwpoison_page);
++			return get_hwpoison_pfn();
+ 		}
+
+ 		vma = find_vma_intersection(current->mm, addr, addr+1);
+@@ -1158,10 +1165,8 @@ static pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic, bool *async,
+ 		*async = false;
+
+ 	addr = gfn_to_hva(kvm, gfn);
+-	if (kvm_is_error_hva(addr)) {
+-		get_page(bad_page);
+-		return page_to_pfn(bad_page);
+-	}
++	if (kvm_is_error_hva(addr))
++		return get_bad_pfn();
+
+ 	return hva_to_pfn(addr, atomic, async, write_fault, writable);
+ }
+@@ -1215,37 +1220,45 @@ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_page_many_atomic);
+
++static struct page *kvm_pfn_to_page(pfn_t pfn)
++{
++	WARN_ON(kvm_is_mmio_pfn(pfn));
++
++	if (is_error_pfn(pfn) || kvm_is_mmio_pfn(pfn))
++		return get_bad_page();
++
++	return pfn_to_page(pfn);
++}
++
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
+ {
+ 	pfn_t pfn;
+
+ 	pfn = gfn_to_pfn(kvm, gfn);
+-	if (!kvm_is_mmio_pfn(pfn))
+-		return pfn_to_page(pfn);
+-
+-	WARN_ON(kvm_is_mmio_pfn(pfn));
+
+-	get_page(bad_page);
+-	return bad_page;
++	return kvm_pfn_to_page(pfn);
+ }
+
+ EXPORT_SYMBOL_GPL(gfn_to_page);
+
+ void kvm_release_page_clean(struct page *page)
+ {
+-	kvm_release_pfn_clean(page_to_pfn(page));
++	if (!is_error_page(page))
++		kvm_release_pfn_clean(page_to_pfn(page));
+ }
+ EXPORT_SYMBOL_GPL(kvm_release_page_clean);
+
+ void kvm_release_pfn_clean(pfn_t pfn)
+ {
+-	if (!kvm_is_mmio_pfn(pfn))
++	if (!is_error_pfn(pfn) && !kvm_is_mmio_pfn(pfn))
+ 		put_page(pfn_to_page(pfn));
+ }
+ EXPORT_SYMBOL_GPL(kvm_release_pfn_clean);
+
+ void kvm_release_page_dirty(struct page *page)
+ {
++	WARN_ON(is_error_page(page));
++
+ 	kvm_release_pfn_dirty(page_to_pfn(page));
+ }
+ EXPORT_SYMBOL_GPL(kvm_release_page_dirty);
+@@ -2724,33 +2737,6 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
+ 	if (r)
+ 		goto out_fail;
+
+-	bad_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+-
+-	if (bad_page == NULL) {
+-		r = -ENOMEM;
+-		goto out;
+-	}
+-
+-	bad_pfn = page_to_pfn(bad_page);
+-
+-	hwpoison_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+-
+-	if (hwpoison_page == NULL) {
+-		r = -ENOMEM;
+-		goto out_free_0;
+-	}
+-
+-	hwpoison_pfn = page_to_pfn(hwpoison_page);
+-
+-	fault_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+-
+-	if (fault_page == NULL) {
+-		r = -ENOMEM;
+-		goto out_free_0;
+-	}
+-
+-	fault_pfn = page_to_pfn(fault_page);
+-
+ 	if (!zalloc_cpumask_var(&cpus_hardware_enabled, GFP_KERNEL)) {
+ 		r = -ENOMEM;
+ 		goto out_free_0;
+@@ -2825,12 +2811,6 @@ out_free_1:
+ out_free_0a:
+ 	free_cpumask_var(cpus_hardware_enabled);
+ out_free_0:
+-	if (fault_page)
+-		__free_page(fault_page);
+-	if (hwpoison_page)
+-		__free_page(hwpoison_page);
+-	__free_page(bad_page);
+-out:
+ 	kvm_arch_exit();
+ out_fail:
+ 	return r;
+@@ -2850,8 +2830,5 @@ void kvm_exit(void)
+ 	kvm_arch_hardware_unsetup();
+ 	kvm_arch_exit();
+ 	free_cpumask_var(cpus_hardware_enabled);
+-	__free_page(fault_page);
+-	__free_page(hwpoison_page);
+-	__free_page(bad_page);
+ }
+ EXPORT_SYMBOL_GPL(kvm_exit);
+-- 
+1.7.7.6
 
