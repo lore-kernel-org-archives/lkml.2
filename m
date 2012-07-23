@@ -1,33 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab2GWSA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:00:56 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:34139 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab2GWSAy (ORCPT
+	id S1754544Ab2GWSBf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:01:35 -0400
+Received: from fep13.mx.upcmail.net ([62.179.121.33]:40754 "EHLO
+	fep13.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169Ab2GWSBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:00:54 -0400
+	Mon, 23 Jul 2012 14:01:33 -0400
+X-SourceIP: 178.83.228.246
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <500D916A.60703@odi.ch>
+Date: Mon, 23 Jul 2012 20:01:14 +0200
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1343055645-24083-2-git-send-email-kirill@shutemov.name>
-References: <1343055645-24083-1-git-send-email-kirill@shutemov.name> <1343055645-24083-2-git-send-email-kirill@shutemov.name>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Mon, 23 Jul 2012 14:00:33 -0400
-Message-ID: <CAOPLpQe7=Gv7ToM8cqe1rNCP+vX5=gVppA1=gfaO0LSdqMhqMQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf: use XSI-complaint version of strerror_r()
- instead of GNU-specific
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+CC: bskeggs@redhat.com, dri-devel@lists.freedesktop.org
+Subject: drm/nouveau: crash regression in 3.5
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 11:00 AM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
-> The right way to fix it is to switch to XSI-compliant version.
+Hi,
 
-And why exactly would this be "the right way"?  Just fix the use of
-strerror_r or use strerror_l.
+My HP Elitebook 8540w now crashes on boot with 3.5. All works fine with 
+3.4. Bisected to the following commit:
+
+20abd1634a6e2eedb84ca977adea56b8aa06cc3e is the first bad commit
+commit 20abd1634a6e2eedb84ca977adea56b8aa06cc3e
+Author: Ben Skeggs <bskeggs@redhat.com>
+Date:   Mon Apr 30 11:33:43 2012 -0500
+
+     drm/nouveau: create real execution engine for software object class
+
+     Just a cleanup more or less, and to remove the need for special 
+handling of
+     software objects.
+
+     This removes a heap of documentation on dma/graph object formats. 
+The info
+     is very out of date with our current understanding, and is far better
+     documented in rnndb in envytools git.
+
+     Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+
+lspci:
+01:00.0 VGA compatible controller: NVIDIA Corporation GT215 [Quadro FX 
+1800M] (rev a2)
+
+
+kernel output from a working 3.4:
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Detected 
+an NV50 generation card (0x0a3e00a2)
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Checking 
+PRAMIN for VBIOS
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: ... 
+appears to be valid
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Using 
+VBIOS from PRAMIN
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: BIT BIOS found
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Bios 
+version 70.15.43.00
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: TMDS table 
+version 2.0
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: MXM: BIOS 
+version 3.0
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: MXM: MXMS 
+Version 3.0
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB 
+version 4.0
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+00: 01000313 00010034
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+03: 080153d6 0f220020
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+04: 08015392 00020020
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+05: 080143c6 0f220010
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+06: 08014382 00020010
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+08: 040383b6 0f230014
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+10: 020273a6 0f220010
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+11: 02027362 00020010
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB outp 
+13: 02049300 00000000
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+00: 00000040
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+01: 00001161
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+02: 00001231
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+03: 01000331
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+04: 01000446
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+05: 02000546
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+06: 00010631
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+07: 00010746
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+08: 00020847
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: DCB conn 
+09: 00000900
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
+VBIOS init table 0 at offset 0x7AE4
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 0x7E6B: 
+Condition still not met after 20ms, skipping follow
+ing opcodes
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 0x7E6F: 
+Condition still not met after 20ms, skipping follow
+ing opcodes
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
+VBIOS init table 1 at offset 0x809A
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
+VBIOS init table 2 at offset 0x951E
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
+VBIOS init table 3 at offset 0x955C
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
+VBIOS init table 4 at offset 0x97CA
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Parsing 
+VBIOS init table at offset 0x982F
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 0x982F: 
+Condition still not met after 20ms, skipping follow
+ing opcodes
+Jul 23 19:49:57 localhost kernel: [TTM] Zone  kernel: Available graphics 
+memory: 4008772 kiB
+Jul 23 19:49:57 localhost kernel: [TTM] Zone   dma32: Available graphics 
+memory: 2097152 kiB
+Jul 23 19:49:57 localhost kernel: [TTM] Initializing pool allocator
+Jul 23 19:49:57 localhost kernel: [TTM] Initializing DMA pool allocator
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: Detected 
+1024MiB VRAM (GDDR5)
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 512 MiB 
+GART (aperture)
+Jul 23 19:49:57 localhost kernel: [drm] Supports vblank timestamp 
+caching Rev 1 (10.10.2010).
+Jul 23 19:49:57 localhost kernel: [drm] No driver support for vblank 
+timestamp query.
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: ACPI 
+backlight interface available, not registering our own
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 3 
+available performance level(s)
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 0: core 
+135MHz shader 270MHz memory 135MHz voltage 800mV
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 1: core 
+405MHz shader 810MHz memory 324MHz voltage 850mV
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: 3: core 
+561MHz shader 1125MHz memory 1099MHz voltage 1000mV
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: c: core 
+405MHz shader 810MHz memory 324MHz voltage 1000mV
+Jul 23 19:49:57 localhost kernel: [drm] nouveau 0000:01:00.0: allocated 
+1680x1050 fb: 0x210000, bo ffff880230e50c00
+Jul 23 19:49:57 localhost kernel: fbcon: nouveaufb (fb0) is primary device
+Jul 23 19:49:57 localhost kernel: Console: switching to colour frame 
+buffer device 210x65
+Jul 23 19:49:57 localhost kernel: fb0: nouveaufb frame buffer device
+Jul 23 19:49:57 localhost kernel: drm: registered panic notifier
+Jul 23 19:49:57 localhost kernel: [drm] Initialized nouveau 1.0.0 
+20120316 for 0000:01:00.0 on minor 0
