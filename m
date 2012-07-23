@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab2GWHSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 03:18:10 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:60723 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312Ab2GWHSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 03:18:09 -0400
-Date: Mon, 23 Jul 2012 09:15:04 +0200
-From: Michael Leun <lkml20120218@newton.leun.net>
-To: bridge@lists.linux-foundation.org, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, shemminger@vyatta.com
-Subject: [3.5 regression / bridge] constantly toggeling between disabled and
- forwarding
-Message-ID: <20120723091504.2d035d28@xenia.leun.net>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753929Ab2GWHVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 03:21:04 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47207 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab2GWHVB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 03:21:01 -0400
+Message-ID: <500CFB59.6040305@googlemail.com>
+Date: Mon, 23 Jul 2012 09:20:57 +0200
+From: Stefan Beller <stefanbeller@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: rob@landley.net, jgarzik@pobox.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH] Rewrite Documentation/SubmittingPatches.
+References: <500BAFE0.8070108@googlemail.com> <500BB232.7000108@googlemail.com> <500CD6CC.2000108@xenotime.net>
+In-Reply-To: <500CD6CC.2000108@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 07/23/2012 06:45 AM, Randy Dunlap wrote:
 
-when I use my usb ethernet adapter
-
-# > lsusb
-[...]
-Bus 002 Device 009: ID 9710:7830 MosChip Semiconductor MCS7830 10/100 Mbps Ethernet adapter
-[...]
-
-as port of an bridge
-
-> # brctl addbr br0
-> # brctl addif br0 eth0
-> # brctl addif br0 ue5
-> # ifconfig ue5 up
-> # ifconfig br0 up
-
-(Also does happen when eth0 is not part of the bridge, but the logs I
-had available were from that situation...)
-
-I constantly get messages showing the interface toggeling between
-disabled and forwarding state:
-
-Jul 23 07:40:50 elektra kernel: [ 1539.497337] br0: port 2(ue5) entered disabled state
-Jul 23 07:40:50 elektra kernel: [ 1539.554992] br0: port 2(ue5) entered forwarding state
-Jul 23 07:40:50 elektra kernel: [ 1539.555005] br0: port 2(ue5) entered forwarding state
-Jul 23 07:40:51 elektra kernel: [ 1540.496242] br0: port 2(ue5) entered disabled state
-Jul 23 07:40:51 elektra kernel: [ 1540.552534] br0: port 2(ue5) entered forwarding state
-Jul 23 07:40:51 elektra kernel: [ 1540.552548] br0: port 2(ue5) entered forwarding state
-Jul 23 07:40:52 elektra kernel: [ 1541.550413] br0: port 2(ue5) entered forwarding state
-Jul 23 07:40:53 elektra kernel: [ 1542.529672] br0: port 2(ue5) entered disabled state
-Jul 23 07:40:53 elektra kernel: [ 1542.587162] br0: port 2(ue5) entered forwarding state
-Jul 23 07:40:53 elektra kernel: [ 1542.587175] br0: port 2(ue5) entered forwarding state
-Jul 23 07:40:54 elektra kernel: [ 1543.585309] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:00 elektra kernel: [ 1549.360600] br0: port 2(ue5) entered disabled state
-Jul 23 07:41:00 elektra kernel: [ 1549.442998] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:00 elektra kernel: [ 1549.443011] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:01 elektra kernel: [ 1550.357686] br0: port 2(ue5) entered disabled state
-Jul 23 07:41:01 elektra kernel: [ 1550.408208] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:01 elektra kernel: [ 1550.408222] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:02 elektra kernel: [ 1551.407656] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:03 elektra kernel: [ 1552.401578] br0: port 2(ue5) entered disabled state
-Jul 23 07:41:03 elektra kernel: [ 1552.474773] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:03 elektra kernel: [ 1552.474786] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:04 elektra kernel: [ 1553.472487] br0: port 2(ue5) entered forwarding state
-Jul 23 07:41:05 elektra kernel: [ 1554.356138] br0: port 2(ue5) entered disabled state
-[...]
-
-This does (in the same situation, nothing else than the kernel changed)
-not happen with 3.4.5.
-
-Does anybody have an idea what the issue might be or do I need to bisect?
-
--- 
-MfG,
-
-Michael Leun
+> On 07/22/2012 12:56 AM, Stefan Beller wrote:
+>
+>>   Documentation/SubmittingPatches | 191 ++++++++++++++++++++++++----------------
+>>   1 file changed, 116 insertions(+), 75 deletions(-)
+>>
+>> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+>> index c379a2a..ac00451 100644
+>> --- a/Documentation/SubmittingPatches
+>> +++ b/Documentation/SubmittingPatches
+>> @@ -163,9 +157,9 @@ Do not send more than 15 patches at once to the vger mailing lists!!!
+>>   Linus Torvalds is the final arbiter of all changes accepted into the
+>> -Linux kernel.  His e-mail address is <torvalds@linux-foundation.org>.
+>> +Linux kernel.  His e-mail address is <torvalds@linux-foundation.org>.
+>
+> what are the changes on the line above and below, please?
+>
+>>   He gets a lot of e-mail, so typically you should do your best to -avoid-
+>> -sending him e-mail.
+>> +sending him e-mail.
+>
+>
+>
+> thanks,
+>
+There used to be a whitespace after each of both lines, but my mailprogram removed them, so in
+the actually sent patch they seem to be equal. :/
 
