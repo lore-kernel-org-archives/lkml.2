@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751025Ab2GWEFV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 00:05:21 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:47544 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722Ab2GWEFT (ORCPT
+	id S1751500Ab2GWEGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 00:06:20 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:42317 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2GWEGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 00:05:19 -0400
-Date: Sun, 22 Jul 2012 21:04:33 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-In-Reply-To: <20120720145121.GJ9222@suse.de>
-Message-ID: <alpine.LSU.2.00.1207222033030.6810@eggly.anvils>
-References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 23 Jul 2012 00:06:18 -0400
+X-AuditID: b753bd60-936f2ba000004f2e-5c-500ccdb7c2a6
+X-AuditID: b753bd60-936f2ba000004f2e-5c-500ccdb7c2a6
+Message-ID: <500CCDB5.5000706@hitachi.com>
+Date: Mon, 23 Jul 2012 13:06:13 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Uros Bizjak <ubizjak@gmail.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 07/19] ftrace/x86_32: Simplify parameter setup for
+ ftrace_regs_caller
+References: <20120721021943.274162381@goodmis.org> <20120721022108.261804403@goodmis.org>
+In-Reply-To: <20120721022108.261804403@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jul 2012, Mel Gorman wrote:
-> On Fri, Jul 20, 2012 at 04:36:35PM +0200, Michal Hocko wrote:
-> > And here is my attempt for the fix (Hugh mentioned something similar
-> > earlier but he suggested using special flags in ptes or VMAs). I still
-> > owe doc. update and it hasn't been tested with too many configs and I
-> > could missed some definition updates.
-> > I also think that changelog could be much better, I will add (steal) the
-> > full bug description if people think that this way is worth going rather
-> > than the one suggested by Mel.
-> > To be honest I am not quite happy how I had to pollute generic mm code with
-> > something that is specific to a single architecture.
-> > Mel hammered it with the test case and it survived.
+(2012/07/21 11:19), Steven Rostedt wrote:
+> From: Uros Bizjak <ubizjak@gmail.com>
 > 
-> Tested-by: Mel Gorman <mgorman@suse.de>
+> The final position of the stack after saving regs and setting up
+> the parameters for ftrace_regs_call, is the position of the pt_regs
+> needed for the 4th parameter. Instead of saving it into a temporary
+> reg and pushing the reg, simply push the stack pointer.
 > 
-> This approach looks more or less like what I was expecting. I like that
-> the trick was applied to the page table page instead of using PTE tricks
-> or by bodging it with a VMA flag like I was thinking so kudos for that. I
-> also prefer this approach to trying to free the page tables on or near
-> huge_pmd_unshare()
+> Link: http://lkml.kernel.org/r/1342702344.12353.16.camel@gandalf.stny.rr.com
 > 
-> In general I think this patch would execute better than mine because it is
-> far less heavy-handed but I share your concern that it changes the core MM
-> quite a bit for a corner case that only one architecture cares about. I am
-> completely biased of course, but I still prefer my patch because other than
-> an API change it keeps the bulk of the madness in arch/x86/mm/hugetlbpage.c
-> . I am also not concerned with the scalability of how quickly we can setup
-> page table sharing.
+
+Looks simple and readable :)
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thanks!
+
+> Signed-off-by: Uros Bizjak <ubizjak@gmail.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/kernel/entry_32.S |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
-> Hugh, I'm afraid you get to choose :)
+> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> index 46caa56..4dc3017 100644
+> --- a/arch/x86/kernel/entry_32.S
+> +++ b/arch/x86/kernel/entry_32.S
+> @@ -1169,10 +1169,9 @@ ENTRY(ftrace_regs_caller)
+>  	movl $__KERNEL_CS,13*4(%esp)
+>  
+>  	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
+> -	movl 0x4(%ebp), %edx	/* Load parent ip (2cd parameter) */
+> -	lea  (%esp), %ecx
+> -	pushl %ecx		/* Save pt_regs as 4th parameter */
+> +	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
+>  	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
+> +	pushl %esp		/* Save pt_regs as 4th parameter */
+>  
+>  GLOBAL(ftrace_regs_call)
+>  	call ftrace_stub
+> 
 
-Thank you bestowing that honour upon me :)  Seriously, though, you
-were quite right to Cc me on this, it is one of those areas I ought
-to know something about (unlike hugetlb reservations, for example).
 
-Please don't be upset if I say that I don't like either of your patches.
-Mainly for obvious reasons - I don't like Mel's because anything with
-trylock retries and nested spinlocks worries me before I can even start
-to think about it; and I don't like Michal's for the same reason as Mel,
-that it spreads more change around in common paths than we would like.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-But I didn't spend much time thinking through either of them, they just
-seemed more complicated than should be needed.  I cannot confirm or deny
-whether they're correct - though I still do not understand how mmap_sem
-can help you, Mel.  I can see that it will help in your shmdt()ing test,
-but if you leave the area mapped on exit, then mmap_sem is not taken in
-the exit_mmap() path, so how does it help?
 
-I spent hours trying to dream up a better patch, trying various
-approaches.  I think I have a nice one now, what do you think?  And
-more importantly, does it work?  I have not tried to test it at all,
-that I'm hoping to leave to you, I'm sure you'll attack it with gusto!
-
-If you like it, please take it over and add your comments and signoff
-and send it in.  The second part won't come up in your testing, and could
-be made a separate patch if you prefer: it's a related point that struck
-me while I was playing with a different approach.
-
-I'm sorely tempted to leave a dangerous pair of eyes off the Cc,
-but that too would be unfair.
-
-Subject-to-your-testing-
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-
- mm/hugetlb.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
---- v3.5/mm/hugetlb.c	2012-07-21 13:58:29.000000000 -0700
-+++ linux/mm/hugetlb.c	2012-07-22 20:28:59.858077817 -0700
-@@ -2393,6 +2393,15 @@ void unmap_hugepage_range(struct vm_area
- {
- 	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
- 	__unmap_hugepage_range(vma, start, end, ref_page);
-+	/*
-+	 * Clear this flag so that x86's huge_pmd_share page_table_shareable
-+	 * test will fail on a vma being torn down, and not grab a page table
-+	 * on its way out.  We're lucky that the flag has such an appropriate
-+	 * name, and can in fact be safely cleared here.  We could clear it
-+	 * before the __unmap_hugepage_range above, but all that's necessary
-+	 * is to clear it before releasing the i_mmap_mutex below.
-+	 */
-+	vma->vm_flags &= ~VM_MAYSHARE;
- 	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
- }
- 
-@@ -2959,9 +2968,14 @@ void hugetlb_change_protection(struct vm
- 		}
- 	}
- 	spin_unlock(&mm->page_table_lock);
--	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
--
-+	/*
-+	 * Must flush TLB before releasing i_mmap_mutex: x86's huge_pmd_unshare
-+	 * may have cleared our pud entry and done put_page on the page table:
-+	 * once we release i_mmap_mutex, another task can do the final put_page
-+	 * and that page table be reused and filled with junk.
-+	 */
- 	flush_tlb_range(vma, start, end);
-+	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
- }
- 
- int hugetlb_reserve_pages(struct inode *inode,
