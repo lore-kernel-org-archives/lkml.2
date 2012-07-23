@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2GWSzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:55:16 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:19886 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753828Ab2GWSzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:55:15 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag4FAMOdDVBXQB38/2dsb2JhbABFhSu0M4EIgiABAQVWGAoBEAsOCgkWDwkDAgECASceBg0BBQIBAYgNvDeLTYZTA5skijKCYQ
-Message-ID: <500D9E04.8080306@computer.org>
-Date: Mon, 23 Jul 2012 20:55:00 +0200
-From: Jan Ceuleers <jan.ceuleers@computer.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754671Ab2GWSzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:55:20 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:53007 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753828Ab2GWSzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 14:55:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: lenb@kernel.org
+Subject: [Resend][PATCH] ACPI / PM: Fix build warning in sleep.c for CONFIG_ACPI_SLEEP unset
+Date: Mon, 23 Jul 2012 21:01:02 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: paulmck@linux.vnet.ibm.com, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <20120721214156.GA2515@linux.vnet.ibm.com> <201207221940.51764.rjw@sisk.pl> <20120722202843.GQ2435@linux.vnet.ibm.com>
+In-Reply-To: <20120722202843.GQ2435@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Sameer Rahmani <lxsameer@lxsameer.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Share network traffic between processes with respect to a priority
- value.
-References: <500D6E28.8020200@lxsameer.com>
-In-Reply-To: <500D6E28.8020200@lxsameer.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207232101.02472.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2012 05:30 PM, Sameer Rahmani wrote:
-> Hi guys.
-> What do you think about the idea ?
 
-What little old me thinks about the idea is that it is not fully formed (i.e. it could do with more detail), and that you have posted in the wrong place (i.e. the networking guys hang out on the netdev mailing list).
+If CONFIG_ACPI_SLEEP is unset, the compiler complains that
+pwr_btn_event_pending is defined but not used.  To silence the
+warning, move the definition of pwr_btn_event_pending under an
+appropriate #ifdef.
 
-So can I suggest that you write two or three paragraphs describing your idea and why it is desirable, and then two or three paragraphs more about how the kernel's behaviour would need to change to implement it, and then post that to netdev@vger.kernel.org ?
+Reported-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/sleep.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-KR, Jan
+Index: linux/drivers/acpi/sleep.c
+===================================================================
+--- linux.orig/drivers/acpi/sleep.c
++++ linux/drivers/acpi/sleep.c
+@@ -57,7 +57,6 @@ MODULE_PARM_DESC(gts, "Enable evaluation
+ MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+ 
+ static u8 sleep_states[ACPI_S_STATE_COUNT];
+-static bool pwr_btn_event_pending;
+ 
+ static void acpi_sleep_tts_switch(u32 acpi_state)
+ {
+@@ -110,6 +109,7 @@ static int acpi_sleep_prepare(u32 acpi_s
+ 
+ #ifdef CONFIG_ACPI_SLEEP
+ static u32 acpi_target_sleep_state = ACPI_STATE_S0;
++static bool pwr_btn_event_pending;
+ 
+ /*
+  * The ACPI specification wants us to save NVS memory regions during hibernation
