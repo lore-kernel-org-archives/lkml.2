@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab2GWBsb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:48:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54449 "EHLO
+	id S1753763Ab2GWBsq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:48:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54445 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753583Ab2GWBnm (ORCPT
+	by vger.kernel.org with ESMTP id S1753558Ab2GWBnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:42 -0400
-Message-Id: <20120723010656.951599898@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:41 -0400
+Message-Id: <20120723010657.690025574@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:27 +0100
+Date: Mon, 23 Jul 2012 02:07:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
-        Arnold Schulz <arnysch@gmx.net>
-Subject: [ 036/108] md/raid1: fix use-after-free bug in RAID1 data-check code.
+        alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        =?ISO-8859-15?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [ 041/108] drivers/rtc/rtc-mxc.c: fix irq enabled interrupts warning
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,54 +33,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
 
-commit 2d4f4f3384d4ef4f7c571448e803a1ce721113d5 upstream.
+commit b59f6d1febd6cbe9fae4589bf72da0ed32bc69e0 upstream.
 
-This bug has been present ever since data-check was introduce
-in 2.6.16.  However it would only fire if a data-check were
-done on a degraded array, which was only possible if the array
-has 3 or more devices.  This is certainly possible, but is quite
-uncommon.
+Fixes
 
-Since hot-replace was added in 3.3 it can happen more often as
-the same condition can arise if not all possible replacements are
-present.
+  WARNING: at irq/handle.c:146 handle_irq_event_percpu+0x19c/0x1b8()
+  irq 25 handler mxc_rtc_interrupt+0x0/0xac enabled interrupts
+  Modules linked in:
+   (unwind_backtrace+0x0/0xf0) from (warn_slowpath_common+0x4c/0x64)
+   (warn_slowpath_common+0x4c/0x64) from (warn_slowpath_fmt+0x30/0x40)
+   (warn_slowpath_fmt+0x30/0x40) from (handle_irq_event_percpu+0x19c/0x1b8)
+   (handle_irq_event_percpu+0x19c/0x1b8) from (handle_irq_event+0x28/0x38)
+   (handle_irq_event+0x28/0x38) from (handle_level_irq+0x80/0xc4)
+   (handle_level_irq+0x80/0xc4) from (generic_handle_irq+0x24/0x38)
+   (generic_handle_irq+0x24/0x38) from (handle_IRQ+0x30/0x84)
+   (handle_IRQ+0x30/0x84) from (avic_handle_irq+0x2c/0x4c)
+   (avic_handle_irq+0x2c/0x4c) from (__irq_svc+0x40/0x60)
+  Exception stack(0xc050bf60 to 0xc050bfa8)
+  bf60: 00000001 00000000 003c4208 c0018e20 c050a000 c050a000 c054a4c8 c050a000
+  bf80: c05157a8 4117b363 80503bb4 00000000 01000000 c050bfa8 c0018e2c c000e808
+  bfa0: 60000013 ffffffff
+   (__irq_svc+0x40/0x60) from (default_idle+0x1c/0x30)
+   (default_idle+0x1c/0x30) from (cpu_idle+0x68/0xa8)
+   (cpu_idle+0x68/0xa8) from (start_kernel+0x22c/0x26c)
 
-The problem is that as soon as we submit the last read request, the
-'r1_bio' structure could be freed at any time, so we really should
-stop looking at it.  If the last device is being read from we will
-stop looking at it.  However if the last device is not due to be read
-from, we will still check the bio pointer in the r1_bio, but the
-r1_bio might already be free.
-
-So use the read_targets counter to make sure we stop looking for bios
-to submit as soon as we have submitted them all.
-
-This fix is suitable for any -stable kernel since 2.6.16.
-
-Reported-by: Arnold Schulz <arnysch@gmx.net>
-Signed-off-by: NeilBrown <neilb@suse.de>
-[bwh: Backported to 3.2: no doubling of conf->raid_disks; we don't have
- hot-replace support]
+Signed-off-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/raid1.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/rtc/rtc-mxc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2378,9 +2378,10 @@ static sector_t sync_request(struct mdde
- 	 */
- 	if (test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery)) {
- 		atomic_set(&r1_bio->remaining, read_targets);
--		for (i=0; i<conf->raid_disks; i++) {
-+		for (i = 0; i < conf->raid_disks && read_targets; i++) {
- 			bio = r1_bio->bios[i];
- 			if (bio->bi_end_io == end_sync_read) {
-+				read_targets--;
- 				md_sync_acct(bio->bi_bdev, nr_sectors);
- 				generic_make_request(bio);
- 			}
+--- a/drivers/rtc/rtc-mxc.c
++++ b/drivers/rtc/rtc-mxc.c
+@@ -191,10 +191,11 @@ static irqreturn_t mxc_rtc_interrupt(int
+ 	struct platform_device *pdev = dev_id;
+ 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+ 	void __iomem *ioaddr = pdata->ioaddr;
++	unsigned long flags;
+ 	u32 status;
+ 	u32 events = 0;
+ 
+-	spin_lock_irq(&pdata->rtc->irq_lock);
++	spin_lock_irqsave(&pdata->rtc->irq_lock, flags);
+ 	status = readw(ioaddr + RTC_RTCISR) & readw(ioaddr + RTC_RTCIENR);
+ 	/* clear interrupt sources */
+ 	writew(status, ioaddr + RTC_RTCISR);
+@@ -217,7 +218,7 @@ static irqreturn_t mxc_rtc_interrupt(int
+ 		rtc_update_alarm(&pdev->dev, &pdata->g_rtc_alarm);
+ 
+ 	rtc_update_irq(pdata->rtc, 1, events);
+-	spin_unlock_irq(&pdata->rtc->irq_lock);
++	spin_unlock_irqrestore(&pdata->rtc->irq_lock, flags);
+ 
+ 	return IRQ_HANDLED;
+ }
 
 
