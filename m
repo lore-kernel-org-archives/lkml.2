@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab2GWNlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:41:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58759 "EHLO mx2.suse.de"
+	id S1753642Ab2GWNjE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:39:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58645 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414Ab2GWNjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:39:05 -0400
+	id S1753414Ab2GWNiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:38:55 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 26/34] vmscan: promote shared file mapped pages
-Date: Mon, 23 Jul 2012 14:38:39 +0100
-Message-Id: <1343050727-3045-27-git-send-email-mgorman@suse.de>
+Subject: [PATCH 10/34] mm: Abort reclaim/compaction if compaction can proceed
+Date: Mon, 23 Jul 2012 14:38:23 +0100
+Message-Id: <1343050727-3045-11-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,81 +20,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+commit e0c23279c9f800c403f37511484d9014ac83adec upstream.
 
-commit 34dbc67a644f11ab3475d822d72e25409911e760 upstream.
+Stable note: Not tracked on Bugzilla. THP and compaction was found to
+	aggressively reclaim pages and stall systems under different
+	situations that was addressed piecemeal over time.
 
-Stable note: Not tracked in Bugzilla. There were reports of shared
-	mapped pages being unfairly reclaimed in comparison to older kernels.
-	This is being addressed over time. The specific workload being
-	addressed here in described in paragraph four and while paragraph
-	five says it did not help performance as such, it made a difference
-	to major page faults. I'm aware of at least one bug for a large
-	vendor that was due to increased major faults.
+If compaction can proceed, shrink_zones() stops doing any work but its
+callers still call shrink_slab() which raises the priority and potentially
+sleeps.  This is unnecessary and wasteful so this patch aborts direct
+reclaim/compaction entirely if compaction can proceed.
 
-Commit 645747462435 ("vmscan: detect mapped file pages used only once")
-greatly decreases lifetime of single-used mapped file pages.
-Unfortunately it also decreases life time of all shared mapped file
-pages.  Because after commit bf3f3bc5e7347 ("mm: don't mark_page_accessed
-in fault path") page-fault handler does not mark page active or even
-referenced.
-
-Thus page_check_references() activates file page only if it was used twice
-while it stays in inactive list, meanwhile it activates anon pages after
-first access.  Inactive list can be small enough, this way reclaimer can
-accidentally throw away any widely used page if it wasn't used twice in
-short period.
-
-After this patch page_check_references() also activate file mapped page at
-first inactive list scan if this page is already used multiple times via
-several ptes.
-
-I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5
-(~2.6.18).  There a complete mess with >100 web/mail/spam/ftp containers,
-they share all their files but there a lot of anonymous pages: ~500mb
-shared file mapped memory and 15-20Gb non-shared anonymous memory.  In
-this situation major-pagefaults are very costly, because all containers
-share the same page.  In my load kernel created a disproportionate
-pressure on the file memory, compared with the anonymous, they equaled
-only if I raise swappiness up to 150 =)
-
-These patches actually wasn't helped a lot in my problem, but I saw
-noticable (10-20 times) reduce in count and average time of
-major-pagefault in file-mapped areas.
-
-Actually both patches are fixes for commit v2.6.33-5448-g6457474, because
-it was aimed at one scenario (singly used pages), but it breaks the logic
-in other scenarios (shared and/or executable pages)
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Acked-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Shaohua Li <shaohua.li@intel.com>
-Cc: Rik van Riel <riel@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <jweiner@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/vmscan.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index bc31f32..7edaaac 100644
+index d11b6c4..65388ac 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -723,7 +723,7 @@ static enum page_references page_check_references(struct page *page,
- 		 */
- 		SetPageReferenced(page);
+@@ -2037,14 +2037,19 @@ restart:
+  *
+  * If a zone is deemed to be full of pinned pages then just give it a light
+  * scan then give up on it.
++ *
++ * This function returns true if a zone is being reclaimed for a costly
++ * high-order allocation and compaction is either ready to begin or deferred.
++ * This indicates to the caller that it should retry the allocation or fail.
+  */
+-static void shrink_zones(int priority, struct zonelist *zonelist,
++static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
++	bool should_abort_reclaim = false;
  
--		if (referenced_page)
-+		if (referenced_page || referenced_ptes > 1)
- 			return PAGEREF_ACTIVATE;
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2061,19 +2066,20 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
+ 				continue;	/* Let kswapd poll it */
+ 			if (COMPACTION_BUILD) {
+ 				/*
+-				 * If we already have plenty of memory
+-				 * free for compaction, don't free any
+-				 * more.  Even though compaction is
+-				 * invoked for any non-zero order,
+-				 * only frequent costly order
+-				 * reclamation is disruptive enough to
+-				 * become a noticable problem, like
+-				 * transparent huge page allocations.
++				 * If we already have plenty of memory free for
++				 * compaction in this zone, don't free any more.
++				 * Even though compaction is invoked for any
++				 * non-zero order, only frequent costly order
++				 * reclamation is disruptive enough to become a
++				 * noticable problem, like transparent huge page
++				 * allocations.
+ 				 */
+ 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+ 					(compaction_suitable(zone, sc->order) ||
+-					 compaction_deferred(zone)))
++					 compaction_deferred(zone))) {
++					should_abort_reclaim = true;
+ 					continue;
++				}
+ 			}
+ 			/*
+ 			 * This steals pages from memory cgroups over softlimit
+@@ -2092,6 +2098,8 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
  
- 		return PAGEREF_KEEP;
+ 		shrink_zone(priority, zone, sc);
+ 	}
++
++	return should_abort_reclaim;
+ }
+ 
+ static bool zone_reclaimable(struct zone *zone)
+@@ -2156,7 +2164,9 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		shrink_zones(priority, zonelist, sc);
++		if (shrink_zones(priority, zonelist, sc))
++			break;
++
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from
+ 		 * over limit cgroups
 -- 
 1.7.9.2
 
