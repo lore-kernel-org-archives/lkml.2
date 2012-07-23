@@ -1,79 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2GWCh4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:37:56 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38417 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086Ab2GWChz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 22:37:55 -0400
-Message-ID: <500CB8F6.3000208@linux.vnet.ibm.com>
-Date: Mon, 23 Jul 2012 10:37:42 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Mike Galbraith <mgalbraith@novell.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        mmokrejs@fold.natur.cuni.cz, dan.carpenter@oracle.com
-Subject: Re: [QUESTION ON BUG] the rcu stall issue could not be reproduced
-References: <5008CBD4.6070907@linux.vnet.ibm.com> <1342767624.7432.54.camel@marge.simpson.net> <5009170E.1080807@linux.vnet.ibm.com> <1342775305.7432.76.camel@marge.simpson.net>
-In-Reply-To: <1342775305.7432.76.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072302-7014-0000-0000-0000019A518E
+	id S1753326Ab2GWCiq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:38:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753086Ab2GWCip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 22:38:45 -0400
+From: Weiping Pan <wpan@redhat.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH net] rds: set correct msg_namelen
+Date: Mon, 23 Jul 2012 10:37:48 +0800
+Message-Id: <5181687def9991f9878460d932bd31c64f9ad0cb.1343010976.git.wpan@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 05:08 PM, Mike Galbraith wrote:
-> On Fri, 2012-07-20 at 16:30 +0800, Michael Wang wrote: 
->> On 07/20/2012 03:00 PM, Mike Galbraith wrote:
->>> On Fri, 2012-07-20 at 11:09 +0800, Michael Wang wrote: 
->>>> Hi, Mike, Martin, Dan
->>>>
->>>> I'm currently taking an eye on the rcu stall issue which was reported by
->>>> you in the mail:
->>>>
->>>> rcu: endless stalls
->>>> 	From: Mike Galbraith
->>>> linux-3.4-rc7: rcu_sched self-detected stall on CPU
->>>> 	From: Martin Mokrejs
->>>> RCU stalls in linux-next
->>>> 	From: Dan Carpenter
->>>>
->>>> I try to reproduce the issue on my X86 server with 12 cpu
->>>
->>> The 'endless stalls' box was 341.33333 times larger.  Dunno if you can
->>> even set a serial port slow enough to approximate all cores trying to
->>> gripe through a single pinhole simultaneously.
->>
->> Hi, Mike
->>
->> Thanks for your reply.
->>
->> So you mean this issue is still existing on you box and you can see it
->> without doing any special things?
-> 
-> It's not my box (thank god).  It was initially triggered by tasks
-> exiting simultaneously on all cores.  They jammed up, endless stall
-> followed.
-> 
->> I just want to try to reproduce it but it's impossible for me to get
->> some hardware as yours...
->>
->> So is there any idea on how to reproduce it on normal hardware?
-> 
-> No, AFAIK this problem is restricted to size XXL boxen, with all the
-> joys that come along with having way too many CPUs.
+Jay Fenlason (fenlason@redhat.com) found a bug,
+that recvfrom() on an RDS socket can return the contents of random kernel
+memory to userspace if it was called with a address length larger than
+sizeof(struct sockaddr_in).
+rds_recvmsg() also fails to set the addr_len paramater properly before
+returning, but that's just a bug.
+There are also a number of cases wher recvfrom() can return an entirely bogus
+address. Anything in rds_recvmsg() that returns a non-negative value but does
+not go through the "sin = (struct sockaddr_in *)msg->msg_name;" code path
+at the end of the while(1) loop will return up to 128 bytes of kernel memory
+to userspace.
 
-I see, thanks for your info, looks like it's hard to reproduce on normal
-servers like mine...
+And I write two test programs to reproduce this bug, you will see that in
+rds_server, fromAddr will be overwritten and the following sock_fd will be
+destroyed.
+Yes, it is the programmer's fault to set msg_namelen incorrectly, but it is
+better to make the kernel copy the real length of address to user space in
+such case.
 
-Regards,
-Michael Wang
-> 
-> -Mike
-> 
+How to run the test programs ?
+I test them on 32bit x86 system, 3.5.0-rc7.
 
+1 compile
+gcc -o rds_client rds_client.c
+gcc -o rds_server rds_server.c
+
+2 run ./rds_server on one console
+
+3 run ./rds_client on another console
+
+4 you will see something like:
+server is waiting to receive data...
+old socket fd=3
+server received data from client:data from client
+msg.msg_namelen=32
+new socket fd=-1067277685
+sendmsg()
+: Bad file descriptor
+
+/***************** rds_client.c ********************/
+
+int main(void)
+{
+	int sock_fd;
+	struct sockaddr_in serverAddr;
+	struct sockaddr_in toAddr;
+	char recvBuffer[128] = "data from client";
+	struct msghdr msg;
+	struct iovec iov;
+
+	sock_fd = socket(AF_RDS, SOCK_SEQPACKET, 0);
+	if (sock_fd < 0) {
+		perror("create socket error\n");
+		exit(1);
+	}
+
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	serverAddr.sin_port = htons(4001);
+
+	if (bind(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+		perror("bind() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	memset(&toAddr, 0, sizeof(toAddr));
+	toAddr.sin_family = AF_INET;
+	toAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	toAddr.sin_port = htons(4000);
+	msg.msg_name = &toAddr;
+	msg.msg_namelen = sizeof(toAddr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = strlen(recvBuffer) + 1;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+
+	if (sendmsg(sock_fd, &msg, 0) == -1) {
+		perror("sendto() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("client send data:%s\n", recvBuffer);
+
+	memset(recvBuffer, '\0', 128);
+
+	msg.msg_name = &toAddr;
+	msg.msg_namelen = sizeof(toAddr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = 128;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+	if (recvmsg(sock_fd, &msg, 0) == -1) {
+		perror("recvmsg() error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("receive data from server:%s\n", recvBuffer);
+
+	close(sock_fd);
+
+	return 0;
+}
+
+/***************** rds_server.c ********************/
+
+int main(void)
+{
+	struct sockaddr_in fromAddr;
+	int sock_fd;
+	struct sockaddr_in serverAddr;
+	unsigned int addrLen;
+	char recvBuffer[128];
+	struct msghdr msg;
+	struct iovec iov;
+
+	sock_fd = socket(AF_RDS, SOCK_SEQPACKET, 0);
+	if(sock_fd < 0) {
+		perror("create socket error\n");
+		exit(0);
+	}
+
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	serverAddr.sin_port = htons(4000);
+	if (bind(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+		perror("bind error\n");
+		close(sock_fd);
+		exit(1);
+	}
+
+	printf("server is waiting to receive data...\n");
+	msg.msg_name = &fromAddr;
+
+	/*
+	 * I add 16 to sizeof(fromAddr), ie 32,
+	 * and pay attention to the definition of fromAddr,
+	 * recvmsg() will overwrite sock_fd,
+	 * since kernel will copy 32 bytes to userspace.
+	 *
+	 * If you just use sizeof(fromAddr), it works fine.
+	 * */
+	msg.msg_namelen = sizeof(fromAddr) + 16;
+	/* msg.msg_namelen = sizeof(fromAddr); */
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_iov->iov_base = recvBuffer;
+	msg.msg_iov->iov_len = 128;
+	msg.msg_control = 0;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+
+	while (1) {
+		printf("old socket fd=%d\n", sock_fd);
+		if (recvmsg(sock_fd, &msg, 0) == -1) {
+			perror("recvmsg() error\n");
+			close(sock_fd);
+			exit(1);
+		}
+		printf("server received data from client:%s\n", recvBuffer);
+		printf("msg.msg_namelen=%d\n", msg.msg_namelen);
+		printf("new socket fd=%d\n", sock_fd);
+		strcat(recvBuffer, "--data from server");
+		if (sendmsg(sock_fd, &msg, 0) == -1) {
+			perror("sendmsg()\n");
+			close(sock_fd);
+			exit(1);
+		}
+	}
+
+	close(sock_fd);
+	return 0;
+}
+
+Signed-off-by: Weiping Pan <wpan@redhat.com>
+---
+ net/rds/recv.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/net/rds/recv.c b/net/rds/recv.c
+index 5c6e9f1..9f0f17c 100644
+--- a/net/rds/recv.c
++++ b/net/rds/recv.c
+@@ -410,6 +410,8 @@ int rds_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
+ 
+ 	rdsdebug("size %zu flags 0x%x timeo %ld\n", size, msg_flags, timeo);
+ 
++	msg->msg_namelen = 0;
++
+ 	if (msg_flags & MSG_OOB)
+ 		goto out;
+ 
+@@ -485,6 +487,7 @@ int rds_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
+ 			sin->sin_port = inc->i_hdr.h_sport;
+ 			sin->sin_addr.s_addr = inc->i_saddr;
+ 			memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
++			msg->msg_namelen = sizeof(*sin);
+ 		}
+ 		break;
+ 	}
+-- 
+1.7.4
 
