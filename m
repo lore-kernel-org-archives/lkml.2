@@ -1,183 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab2GWRjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 13:39:08 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:8490 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab2GWRjH (ORCPT
+	id S1754476Ab2GWRjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 13:39:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43166 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754320Ab2GWRjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 13:39:07 -0400
-Message-ID: <500D8C39.8000401@tilera.com>
-Date: Mon, 23 Jul 2012 13:39:05 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 23 Jul 2012 13:39:41 -0400
+Date: Mon, 23 Jul 2012 18:39:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH -next] mfd: fix arizona-irq.c build by selecting
+ REGMAP_IRQ
+Message-ID: <20120723173939.GB8247@opensource.wolfsonmicro.com>
+References: <20120723164036.52bc93caafcd165fc16f0284@canb.auug.org.au>
+ <500D8ACA.4020501@xenotime.net>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/tile: new drivers for 3.6
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7ZAtKRhVyVSsbBD2"
+Content-Disposition: inline
+In-Reply-To: <500D8ACA.4020501@xenotime.net>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the following changes for 3.6 from:
+--7ZAtKRhVyVSsbBD2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
+On Mon, Jul 23, 2012 at 10:32:58AM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>=20
+> arizona-irq.c uses functions that are only available when
+> CONFIG_REGMAP_IRQ is enabled, so select that symbol for
+> arizona builds.
 
-These changes provide support for PCIe root complex and USB host mode
-for tilegx's on-chip I/Os.  In addition, this pull provides the required
-underpinning for the on-chip networking support that was pulled into 3.5.
-The changes have all been through LKML (with several rounds for PCIe RC)
-and on linux-next.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Chris Metcalf (14):
-      arch/tile: introduce GXIO IORPC framework for tilegx
-      arch/tile: support MMIO-based readb/writeb etc.
-      arch/tile: common DMA code for the GXIO IORPC subsystem
-      arch/tile: provide kernel support for the tilegx mPIPE shim
-      arch/tile: break out the "csum a long" function to <asm/checksum.h>
-      arch/tile: provide kernel support for the tilegx TRIO shim
-      arch/tile: tilegx PCI root complex support
-      tilegx pci: support I/O to arbitrarily-cached pages
-      arch/tile: enable ZONE_DMA for tilegx
-      tile pci: enable IOMMU to support DMA for legacy devices
-      arch/tile: provide kernel support for the tilegx USB shim
-      usb: add host support for the tilegx architecture
-      bounce: allow use of bounce pool via config option
-      tile: updates to pci root complex from community feedback
+--7ZAtKRhVyVSsbBD2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Paul Bolle (1):
-      tile: remove unused header
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
- arch/tile/Kconfig                            |   42 +
- arch/tile/Makefile                           |    2 +
- arch/tile/gxio/Kconfig                       |   28 +
- arch/tile/gxio/Makefile                      |    9 +
- arch/tile/gxio/dma_queue.c                   |  176 +++
- arch/tile/gxio/iorpc_globals.c               |   89 ++
- arch/tile/gxio/iorpc_mpipe.c                 |  529 ++++++++
- arch/tile/gxio/iorpc_mpipe_info.c            |   85 ++
- arch/tile/gxio/iorpc_trio.c                  |  327 +++++
- arch/tile/gxio/iorpc_usb_host.c              |   99 ++
- arch/tile/gxio/kiorpc.c                      |   61 +
- arch/tile/gxio/mpipe.c                       |  545 ++++++++
- arch/tile/gxio/trio.c                        |   49 +
- arch/tile/gxio/usb_host.c                    |   91 ++
- arch/tile/include/arch/mpipe.h               |  359 ++++++
- arch/tile/include/arch/mpipe_constants.h     |   42 +
- arch/tile/include/arch/mpipe_def.h           |   39 +
- arch/tile/include/arch/mpipe_shm.h           |  509 ++++++++
- arch/tile/include/arch/mpipe_shm_def.h       |   23 +
- arch/tile/include/arch/trio.h                |   72 ++
- arch/tile/include/arch/trio_constants.h      |   36 +
- arch/tile/include/arch/trio_def.h            |   41 +
- arch/tile/include/arch/trio_pcie_intfc.h     |  229 ++++
- arch/tile/include/arch/trio_pcie_intfc_def.h |   32 +
- arch/tile/include/arch/trio_pcie_rc.h        |  156 +++
- arch/tile/include/arch/trio_pcie_rc_def.h    |   24 +
- arch/tile/include/arch/trio_shm.h            |  125 ++
- arch/tile/include/arch/trio_shm_def.h        |   19 +
- arch/tile/include/arch/usb_host.h            |   26 +
- arch/tile/include/arch/usb_host_def.h        |   19 +
- arch/tile/include/asm/Kbuild                 |    1 -
- arch/tile/include/asm/cache.h                |   12 +-
- arch/tile/include/asm/checksum.h             |   18 +
- arch/tile/include/asm/device.h               |   33 +
- arch/tile/include/asm/dma-mapping.h          |  146 ++-
- arch/tile/include/asm/fixmap.h               |   14 +-
- arch/tile/include/asm/homecache.h            |   19 +-
- arch/tile/include/asm/io.h                   |  144 ++-
- arch/tile/include/asm/memprof.h              |   33 -
- arch/tile/include/asm/page.h                 |    7 +-
- arch/tile/include/asm/pci.h                  |  151 ++-
- arch/tile/include/gxio/common.h              |   40 +
- arch/tile/include/gxio/dma_queue.h           |  161 +++
- arch/tile/include/gxio/iorpc_globals.h       |   38 +
- arch/tile/include/gxio/iorpc_mpipe.h         |  136 ++
- arch/tile/include/gxio/iorpc_mpipe_info.h    |   46 +
- arch/tile/include/gxio/iorpc_trio.h          |   97 ++
- arch/tile/include/gxio/iorpc_usb_host.h      |   46 +
- arch/tile/include/gxio/kiorpc.h              |   29 +
- arch/tile/include/gxio/mpipe.h               | 1736 ++++++++++++++++++++++++++
- arch/tile/include/gxio/trio.h                |  298 +++++
- arch/tile/include/gxio/usb_host.h            |   87 ++
- arch/tile/include/hv/drv_mpipe_intf.h        |  602 +++++++++
- arch/tile/include/hv/drv_trio_intf.h         |  195 +++
- arch/tile/include/hv/drv_usb_host_intf.h     |   39 +
- arch/tile/include/hv/iorpc.h                 |  714 +++++++++++
- arch/tile/kernel/Makefile                    |    5 +
- arch/tile/kernel/pci-dma.c                   |  536 ++++++--
- arch/tile/kernel/pci_gx.c                    | 1543 +++++++++++++++++++++++
- arch/tile/kernel/setup.c                     |   45 +-
- arch/tile/kernel/usb.c                       |   69 +
- arch/tile/lib/checksum.c                     |   15 +-
- arch/tile/mm/homecache.c                     |  156 ++-
- arch/tile/mm/init.c                          |   70 +-
- arch/tile/mm/pgtable.c                       |    7 -
- drivers/pci/quirks.c                         |    6 +-
- drivers/usb/host/ehci-hcd.c                  |    5 +
- drivers/usb/host/ehci-tilegx.c               |  214 ++++
- drivers/usb/host/ohci-hcd.c                  |    5 +
- drivers/usb/host/ohci-tilegx.c               |  203 +++
- include/linux/usb/tilegx.h                   |   34 +
- mm/bounce.c                                  |    8 +-
- 72 files changed, 11240 insertions(+), 406 deletions(-)
- create mode 100644 arch/tile/gxio/Kconfig
- create mode 100644 arch/tile/gxio/Makefile
- create mode 100644 arch/tile/gxio/dma_queue.c
- create mode 100644 arch/tile/gxio/iorpc_globals.c
- create mode 100644 arch/tile/gxio/iorpc_mpipe.c
- create mode 100644 arch/tile/gxio/iorpc_mpipe_info.c
- create mode 100644 arch/tile/gxio/iorpc_trio.c
- create mode 100644 arch/tile/gxio/iorpc_usb_host.c
- create mode 100644 arch/tile/gxio/kiorpc.c
- create mode 100644 arch/tile/gxio/mpipe.c
- create mode 100644 arch/tile/gxio/trio.c
- create mode 100644 arch/tile/gxio/usb_host.c
- create mode 100644 arch/tile/include/arch/mpipe.h
- create mode 100644 arch/tile/include/arch/mpipe_constants.h
- create mode 100644 arch/tile/include/arch/mpipe_def.h
- create mode 100644 arch/tile/include/arch/mpipe_shm.h
- create mode 100644 arch/tile/include/arch/mpipe_shm_def.h
- create mode 100644 arch/tile/include/arch/trio.h
- create mode 100644 arch/tile/include/arch/trio_constants.h
- create mode 100644 arch/tile/include/arch/trio_def.h
- create mode 100644 arch/tile/include/arch/trio_pcie_intfc.h
- create mode 100644 arch/tile/include/arch/trio_pcie_intfc_def.h
- create mode 100644 arch/tile/include/arch/trio_pcie_rc.h
- create mode 100644 arch/tile/include/arch/trio_pcie_rc_def.h
- create mode 100644 arch/tile/include/arch/trio_shm.h
- create mode 100644 arch/tile/include/arch/trio_shm_def.h
- create mode 100644 arch/tile/include/arch/usb_host.h
- create mode 100644 arch/tile/include/arch/usb_host_def.h
- create mode 100644 arch/tile/include/asm/device.h
- delete mode 100644 arch/tile/include/asm/memprof.h
- create mode 100644 arch/tile/include/gxio/common.h
- create mode 100644 arch/tile/include/gxio/dma_queue.h
- create mode 100644 arch/tile/include/gxio/iorpc_globals.h
- create mode 100644 arch/tile/include/gxio/iorpc_mpipe.h
- create mode 100644 arch/tile/include/gxio/iorpc_mpipe_info.h
- create mode 100644 arch/tile/include/gxio/iorpc_trio.h
- create mode 100644 arch/tile/include/gxio/iorpc_usb_host.h
- create mode 100644 arch/tile/include/gxio/kiorpc.h
- create mode 100644 arch/tile/include/gxio/mpipe.h
- create mode 100644 arch/tile/include/gxio/trio.h
- create mode 100644 arch/tile/include/gxio/usb_host.h
- create mode 100644 arch/tile/include/hv/drv_mpipe_intf.h
- create mode 100644 arch/tile/include/hv/drv_trio_intf.h
- create mode 100644 arch/tile/include/hv/drv_usb_host_intf.h
- create mode 100644 arch/tile/include/hv/iorpc.h
- create mode 100644 arch/tile/kernel/pci_gx.c
- create mode 100644 arch/tile/kernel/usb.c
- create mode 100644 drivers/usb/host/ehci-tilegx.c
- create mode 100644 drivers/usb/host/ohci-tilegx.c
- create mode 100644 include/linux/usb/tilegx.h
+iQIcBAEBAgAGBQJQDYxUAAoJEBus8iNuMP3d3RkP+wUstnXglL4SG6vrz7MmNOJk
+zC0kYfb5MHdhEOCkqeLwuRjp3N9GSZHU+sBinJxsfetragSTact204PYCjoh2W0k
+DXZC4kwMD1H6ieszt/YYmjsmklzb5kG/rsnRKsqcpr0+JoOczMEeH72VL95+6bVs
+eIgmvtcKVXncu7bsNFmfTj9g6mSOhxuvWTffcvW+XOVtLs/jVyRXf5anLj+6g3dC
+8RCtlwRfx0YaAJT5qd83vbj6Ud9UJUKzo8Clb0s+U9IhGPApbty5gcstZmkXrvke
+el1xxdfyTF5iJl1/HmxORt7u5pfSPEznLBvYyfmRV9HAUPJxBsqXgkRml+w79bLC
+ElbGMleWcGY289v+NAIC+p/L5S2bjn/CQV4qjrkuffW9lr8TeGZThKhxRP5ttzIE
+1lPraxapN3bVqOL4J260tIEUsti8ATsL+vwrm6fL0U3vVouhjc/UGWAHSOftfXQa
+jO/553HF8L0Yo401xCyA/+djnsws79ALCvwGes/mPIKKcG4ncmwDHT1NiLy97a7d
+34FueB2i9LpZ6i9H7t7JpyHxTCbQhSGe3XxGxs5v8wgrFv8dSZzssHqnG1rszX5Y
+bJpwH+yAZibRcHCwLo16HeOrNZi+W2uuq6jpowUAlFty3IHduN0nr0j2WVTmL18a
+DQI745qO+H/Hk9hd3IsU
+=yxzZ
+-----END PGP SIGNATURE-----
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+--7ZAtKRhVyVSsbBD2--
