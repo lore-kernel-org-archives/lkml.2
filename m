@@ -1,86 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab2GWI0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 04:26:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42106 "EHLO mx1.redhat.com"
+	id S1754119Ab2GWI02 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 04:26:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51047 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754008Ab2GWI0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 04:26:22 -0400
+	id S1754070Ab2GWI00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 04:26:26 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 08/16] seq_file: Add seq_vprintf function and export it
-Date: Mon, 23 Jul 2012 09:00:58 +0100
-Message-Id: <1343030466-3053-9-git-send-email-swhiteho@redhat.com>
+Cc: Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 11/16] GFS2: Add kobject release method
+Date: Mon, 23 Jul 2012 09:01:01 +0100
+Message-Id: <1343030466-3053-12-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1343030466-3053-1-git-send-email-swhiteho@redhat.com>
 References: <1343030466-3053-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing seq_printf function is rewritten in terms of the new
-seq_vprintf which is also exported to modules. This allows GFS2
-(and potentially other seq_file users) to have a vprintf based
-interface and to avoid an extra copy into a temporary buffer in
-some cases.
+From: Bob Peterson <rpeterso@redhat.com>
 
+This patch adds a kobject release function that properly maintains
+the kobject use count, so that accesses to the sysfs files do not
+cause an access to freed kernel memory after an unmount.
+
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 0cbd049..14cf9de 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -385,15 +385,12 @@ int seq_escape(struct seq_file *m, const char *s, const char *esc)
- }
- EXPORT_SYMBOL(seq_escape);
+diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
+index b8c250f..9b23897 100644
+--- a/fs/gfs2/ops_fstype.c
++++ b/fs/gfs2/ops_fstype.c
+@@ -1118,20 +1118,33 @@ static int fill_super(struct super_block *sb, struct gfs2_args *args, int silent
+ 	}
  
--int seq_printf(struct seq_file *m, const char *f, ...)
-+int seq_vprintf(struct seq_file *m, const char *f, va_list args)
- {
--	va_list args;
- 	int len;
+ 	error = init_names(sdp, silent);
+-	if (error)
+-		goto fail;
++	if (error) {
++		/* In this case, we haven't initialized sysfs, so we have to
++		   manually free the sdp. */
++		free_percpu(sdp->sd_lkstats);
++		kfree(sdp);
++		sb->s_fs_info = NULL;
++		return error;
++	}
  
- 	if (m->count < m->size) {
--		va_start(args, f);
- 		len = vsnprintf(m->buf + m->count, m->size - m->count, f, args);
--		va_end(args);
- 		if (m->count + len < m->size) {
- 			m->count += len;
- 			return 0;
-@@ -402,6 +399,19 @@ int seq_printf(struct seq_file *m, const char *f, ...)
- 	seq_set_overflow(m);
- 	return -1;
- }
-+EXPORT_SYMBOL(seq_vprintf);
+ 	snprintf(sdp->sd_fsname, GFS2_FSNAME_LEN, "%s", sdp->sd_table_name);
+ 
+-	gfs2_create_debugfs_file(sdp);
+-
+ 	error = gfs2_sys_fs_add(sdp);
++	/*
++	 * If we hit an error here, gfs2_sys_fs_add will have called function
++	 * kobject_put which causes the sysfs usage count to go to zero, which
++	 * causes sysfs to call function gfs2_sbd_release, which frees sdp.
++	 * Subsequent error paths here will call gfs2_sys_fs_del, which also
++	 * kobject_put to free sdp.
++	 */
+ 	if (error)
+-		goto fail;
++		return error;
 +
-+int seq_printf(struct seq_file *m, const char *f, ...)
++	gfs2_create_debugfs_file(sdp);
+ 
+ 	error = gfs2_lm_mount(sdp, silent);
+ 	if (error)
+-		goto fail_sys;
++		goto fail_debug;
+ 
+ 	error = init_locking(sdp, &mount_gh, DO);
+ 	if (error)
+@@ -1215,12 +1228,12 @@ fail_locking:
+ fail_lm:
+ 	gfs2_gl_hash_clear(sdp);
+ 	gfs2_lm_unmount(sdp);
+-fail_sys:
+-	gfs2_sys_fs_del(sdp);
+-fail:
++fail_debug:
+ 	gfs2_delete_debugfs_file(sdp);
+ 	free_percpu(sdp->sd_lkstats);
+-	kfree(sdp);
++	/* gfs2_sys_fs_del must be the last thing we do, since it causes
++	 * sysfs to call function gfs2_sbd_release, which frees sdp. */
++	gfs2_sys_fs_del(sdp);
+ 	sb->s_fs_info = NULL;
+ 	return error;
+ }
+@@ -1390,10 +1403,9 @@ static void gfs2_kill_sb(struct super_block *sb)
+ 	sdp->sd_root_dir = NULL;
+ 	sdp->sd_master_dir = NULL;
+ 	shrink_dcache_sb(sb);
+-	kill_block_super(sb);
+ 	gfs2_delete_debugfs_file(sdp);
+ 	free_percpu(sdp->sd_lkstats);
+-	kfree(sdp);
++	kill_block_super(sb);
+ }
+ 
+ struct file_system_type gfs2_fs_type = {
+diff --git a/fs/gfs2/sys.c b/fs/gfs2/sys.c
+index 9c2592b..e4bee4b 100644
+--- a/fs/gfs2/sys.c
++++ b/fs/gfs2/sys.c
+@@ -276,7 +276,15 @@ static struct attribute *gfs2_attrs[] = {
+ 	NULL,
+ };
+ 
++static void gfs2_sbd_release(struct kobject *kobj)
 +{
-+	int ret;
-+	va_list args;
++	struct gfs2_sbd *sdp = container_of(kobj, struct gfs2_sbd, sd_kobj);
 +
-+	va_start(args, f);
-+	ret = seq_vprintf(m, f, args);
-+	va_end(args);
-+
-+	return ret;
++	kfree(sdp);
 +}
- EXPORT_SYMBOL(seq_printf);
++
+ static struct kobj_type gfs2_ktype = {
++	.release = gfs2_sbd_release,
+ 	.default_attrs = gfs2_attrs,
+ 	.sysfs_ops     = &gfs2_attr_ops,
+ };
+@@ -583,6 +591,7 @@ int gfs2_sys_fs_add(struct gfs2_sbd *sdp)
+ 	char ro[20];
+ 	char spectator[20];
+ 	char *envp[] = { ro, spectator, NULL };
++	int sysfs_frees_sdp = 0;
  
- /**
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index fc61854..83c44ee 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -86,6 +86,7 @@ int seq_puts(struct seq_file *m, const char *s);
- int seq_write(struct seq_file *seq, const void *data, size_t len);
+ 	sprintf(ro, "RDONLY=%d", (sb->s_flags & MS_RDONLY) ? 1 : 0);
+ 	sprintf(spectator, "SPECTATOR=%d", sdp->sd_args.ar_spectator ? 1 : 0);
+@@ -591,8 +600,10 @@ int gfs2_sys_fs_add(struct gfs2_sbd *sdp)
+ 	error = kobject_init_and_add(&sdp->sd_kobj, &gfs2_ktype, NULL,
+ 				     "%s", sdp->sd_table_name);
+ 	if (error)
+-		goto fail;
++		goto fail_reg;
  
- __printf(2, 3) int seq_printf(struct seq_file *, const char *, ...);
-+__printf(2, 0) int seq_vprintf(struct seq_file *, const char *, va_list args);
++	sysfs_frees_sdp = 1; /* Freeing sdp is now done by sysfs calling
++				function gfs2_sbd_release. */
+ 	error = sysfs_create_group(&sdp->sd_kobj, &tune_group);
+ 	if (error)
+ 		goto fail_reg;
+@@ -615,9 +626,13 @@ fail_lock_module:
+ fail_tune:
+ 	sysfs_remove_group(&sdp->sd_kobj, &tune_group);
+ fail_reg:
+-	kobject_put(&sdp->sd_kobj);
+-fail:
++	free_percpu(sdp->sd_lkstats);
+ 	fs_err(sdp, "error %d adding sysfs files", error);
++	if (sysfs_frees_sdp)
++		kobject_put(&sdp->sd_kobj);
++	else
++		kfree(sdp);
++	sb->s_fs_info = NULL;
+ 	return error;
+ }
  
- int seq_path(struct seq_file *, const struct path *, const char *);
- int seq_dentry(struct seq_file *, struct dentry *, const char *);
 -- 
 1.7.4
 
