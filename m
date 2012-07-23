@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab2GWNiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:38:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58545 "EHLO mx2.suse.de"
+	id S1753403Ab2GWNiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 09:38:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58582 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab2GWNit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 09:38:49 -0400
+	id S1751325Ab2GWNiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:38:52 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/34] mm: vmstat: cache align vm_stat
-Date: Mon, 23 Jul 2012 14:38:14 +0100
-Message-Id: <1343050727-3045-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 05/34] vmscan: clear ZONE_CONGESTED for zone with good watermark
+Date: Mon, 23 Jul 2012 14:38:18 +0100
+Message-Id: <1343050727-3045-6-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
@@ -20,44 +20,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dimitri Sivanich <sivanich@sgi.com>
+From: Shaohua Li <shaohua.li@intel.com>
 
-commit a1cb2c60ddc98ff4e5246f410558805401ceee67 upstream.
+commit 439423f6894aa0dec22187526827456f5004baed upstream.
 
-Stable note: Not tracked on Bugzilla. This patch is known to make a big
-	difference to tmpfs performance on larger machines.
+Stable note: Not tracked in Bugzilla. kswapd is responsible for clearing
+	ZONE_CONGESTED after it balances a zone and this patch fixes a bug
+	where that was failing to happen. Without this patch, processes
+	can stall in wait_iff_congested unnecessarily. For users, this can
+	look like an interactivity stall but some workloads would see it
+	as sudden drop in throughput.
 
-Avoid false sharing of the vm_stat array. This was found to adversely
-affect tmpfs I/O performance.
+ZONE_CONGESTED is only cleared in kswapd, but pages can be freed in any
+task.  It's possible ZONE_CONGESTED isn't cleared in some cases:
 
-Tests run on a 640 cpu UV system.
+ 1. the zone is already balanced just entering balance_pgdat() for
+    order-0 because concurrent tasks free memory.  In this case, later
+    check will skip the zone as it's balanced so the flag isn't cleared.
 
-With 120 threads doing parallel writes, each to different tmpfs mounts:
-No patch:		~300 MB/sec
-With vm_stat alignment:	~430 MB/sec
+ 2. high order balance fallbacks to order-0.  quote from Mel: At the
+    end of balance_pgdat(), kswapd uses the following logic;
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-Acked-by: Christoph Lameter <cl@gentwo.org>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+	If reclaiming at high order {
+		for each zone {
+			if all_unreclaimable
+				skip
+			if watermark is not met
+				order = 0
+				loop again
+
+			/* watermark is met */
+			clear congested
+		}
+	}
+
+    i.e. it clears ZONE_CONGESTED if it the zone is balanced.  if not,
+    it restarts balancing at order-0.  However, if the higher zones are
+    balanced for order-0, kswapd will miss clearing ZONE_CONGESTED as
+    that only happens after a zone is shrunk.  This can mean that
+    wait_iff_congested() stalls unnecessarily.
+
+This patch makes kswapd clear ZONE_CONGESTED during its initial
+highmem->dma scan for zones that are already balanced.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmstat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/vmscan.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 20c18b7..6559013 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -78,7 +78,7 @@ void vm_events_fold_cpu(int cpu)
-  *
-  * vm_stat contains the global counters
-  */
--atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
-+atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS] __cacheline_aligned_in_smp;
- EXPORT_SYMBOL(vm_stat);
- 
- #ifdef CONFIG_SMP
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index bdfdec3..72340b84 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2456,6 +2456,9 @@ loop_again:
+ 					high_wmark_pages(zone), 0, 0)) {
+ 				end_zone = i;
+ 				break;
++			} else {
++				/* If balanced, clear the congested flag */
++				zone_clear_flag(zone, ZONE_CONGESTED);
+ 			}
+ 		}
+ 		if (i < 0)
 -- 
 1.7.9.2
 
