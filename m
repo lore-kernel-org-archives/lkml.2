@@ -1,131 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab2GWKDh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 06:03:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16983 "EHLO mx1.redhat.com"
+	id S1752144Ab2GWKDt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 06:03:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11189 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab2GWKDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 06:03:35 -0400
-Message-ID: <500D20A1.1030800@redhat.com>
-Date: Mon, 23 Jul 2012 18:00:01 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110904 Red Hat/3.1.14-1.el6_1 Thunderbird/3.1.14
+	id S1751743Ab2GWKDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 06:03:46 -0400
+Message-ID: <500D2162.8010209@redhat.com>
+Date: Mon, 23 Jul 2012 13:03:14 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-CC: amwang@redhat.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        xiyou.wangcong@gmail.com, hpa@zytor.com, rjw@sisk.pl,
-        yinghai.lu@oracle.com, tiwai@suse.de
-Subject: Re: [PATCH] x86: revert "x86: Fix S4 regression"
-References: <1339478463-31172-1-git-send-email-amwang@redhat.com> <5004D8BF.6050205@jp.fujitsu.com>
-In-Reply-To: <5004D8BF.6050205@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V5 0/3] kvm: Improving directed yield in PLE handler
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 11:15 AM, Takao Indoh wrote:
-
-> Hi Cong,
+On 07/18/2012 04:37 PM, Raghavendra K T wrote:
+> Currently Pause Loop Exit (PLE) handler is doing directed yield to a
+> random vcpu on pl-exit. We already have filtering while choosing
+> the candidate to yield_to. This change adds more checks while choosing
+> a candidate to yield_to.
 > 
-> When I tested kdump with 3.5.0-rc6 kernel, I found a problem of kdump
-> kernel's panic in find_early_table_space().
+> On a large vcpu guests, there is a high probability of
+> yielding to the same vcpu who had recently done a pause-loop exit. 
+> Such a yield can lead to the vcpu spinning again.
 > 
-> init_memory_mapping: [mem 0x00000000-0x36ffafff]
-> Kernel panic - not syncing: Cannot find space for the kernel page tables
-> Pid: 0, comm: swapper Not tainted 3.5.0-rc6 #17
-> Call Trace:
->  [<ffffffff8158549b>] panic+0xb8/0x1c8
->  [<ffffffff8158565d>] ? printk+0x48/0x4a
->  [<ffffffff8157304c>] init_memory_mapping+0x46c/0x530
->  [<ffffffff818a73c7>] setup_arch+0x669/0xb0e
->  [<ffffffff8158565d>] ? printk+0x48/0x4a
->  [<ffffffff818a3a1f>] start_kernel+0x9b/0x34a
->  [<ffffffff818a332d>] x86_64_start_reservations+0x131/0x136
->  [<ffffffff818a341f>] x86_64_start_kernel+0xed/0xf4
+> The patchset keeps track of the pause loop exit and gives chance to a
+> vcpu which has:
 > 
-> In find_early_table_space(), a kernel tries to find free area below 512M
-> for pgtable using memblock_find_in_range, but it fails because kdump
-> kernel does not have enough free space below 512M due to the memmap
-> restriction. This is the memmap option specified against kdump kernel
-> when crashkernel=128M.
+>  (a) Not done pause loop exit at all (probably he is preempted lock-holder)
 > 
-> memmap=560K@64K memmap=130492K@770608K
+>  (b) vcpu skipped in last iteration because it did pause loop exit, and
+>  probably has become eligible now (next eligible lock holder)
 > 
-> Only 560KB area is available and it is not sufficient for pgtable (it
-> seems that about 1.8MB area is needed for pgtable). This problem is
-> fixed by your revert patch. I hope this patch gets merged.
-
-
-I can reproduce this issue as well, probably related to some x86 mm init
-commits, this alloc failure does not happen with reverting below commits:
-
-bd2753b2dda7bb43c7468826de75f49c6a7e8965
-722bc6b16771ed80871e1fd81c86d3627dda2ac8
-
-
-
+> This concept also helps in cpu relax interception cases which use same handler.
 > 
-> Thanks,
-> Takao Indoh
-> 
-> (2012/06/12 14:21), Cong Wang wrote:
->> From: Cong Wang <xiyou.wangcong@gmail.com>
->>
->> This reverts the following commit:
->>
->> 	commit 8548c84da2f47e71bbbe300f55edb768492575f7
->> 	Author: Takashi Iwai <tiwai@suse.de>
->> 	Date:   Sun Oct 23 23:19:12 2011 +0200
->>
->> 	    x86: Fix S4 regression
->> 	
->> 	    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
->> 	    regression since 2.6.39, namely the machine reboots occasionally at S4
->> 	    resume.  It doesn't happen always, overall rate is about 1/20.  But,
->> 	    like other bugs, once when this happens, it continues to happen.
->> 	
->> 	    This patch fixes the problem by essentially reverting the memory
->> 	    assignment in the older way.
->>
->> According to the previous discussion:
->> http://marc.info/?l=linux-kernel&m=133161674120253&w=2
->> it seems that so far the best solution is just reverting it.
->>
->> Takashi, could you help to test if the S4 regression is still
->> there after this patch?
->>
->> Reported-by: CAI Qian <caiqian@redhat.com>
->> Cc: Dave Young <dyoung@redhat.com>
->> Cc: "H. Peter Anvin" <hpa@zytor.com>
->> Cc: Rafael J. Wysocki <rjw@sisk.pl>
->> Cc: Yinghai Lu <yinghai.lu@oracle.com>
->> Cc: Takashi Iwai <tiwai@suse.de>
->> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
->>
->> ---
->>   arch/x86/mm/init.c |    3 ++-
->>   1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
->> index bc4e9d8..7ab7975 100644
->> --- a/arch/x86/mm/init.c
->> +++ b/arch/x86/mm/init.c
->> @@ -74,8 +74,9 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
->>   #ifdef CONFIG_X86_32
->>   	/* for fixmap */
->>   	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
->> -#endif
->> +
->>   	good_end = max_pfn_mapped << PAGE_SHIFT;
->> +#endif
->>   
->>   	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
->>   	if (!base)
->>
 
+Thanks, applied to 'queue'.
 
 
 -- 
-Thanks
-Dave
+error compiling committee.c: too many arguments to function
+
+
