@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab2GWOrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 10:47:05 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38346 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753660Ab2GWOrE (ORCPT
+	id S1753862Ab2GWOuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 10:50:09 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50489 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab2GWOuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 10:47:04 -0400
-Date: Mon, 23 Jul 2012 10:47:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sarbojit Ganguly <unixman.linuxboy@gmail.com>
-cc: Daniel Mack <zonque@gmail.com>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: Kernel Oops while disconnecting USB peripheral (always)
-In-Reply-To: <CAP2rAF-ZappKmznEVjd=kQgRx__oVZ3vSE53rWDHVJf6VwMVTA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1207231044380.1633-100000@iolanthe.rowland.org>
+	Mon, 23 Jul 2012 10:50:07 -0400
+Message-ID: <500D649B.80704@linaro.org>
+Date: Mon, 23 Jul 2012 15:50:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Help request - ASoC recursion issue
+References: <500D5A1F.9000808@linaro.org>
+In-Reply-To: <500D5A1F.9000808@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jul 2012, Sarbojit Ganguly wrote:
+> I was wondering if I may bother you for some help. I've been having
+> serious issues with testing the new mop500 sound system you have in your
+> ASoC for-next branch. I've fixed a few issues and will be submitting
+> patches shortly. The most serious issue I came across was with
+> recursion.
 
-> Hello Daniel,
-> 
-> That is why I provided two stacks,
-> 
-> 1st one is when I tried to remove the USB hub (which connects a webcam
-> + microphone)
-> 2nd one is when I tried to remove an USB powered external HDD.
-> 
-> Just to make sure whether the problem is with USB sound or the USB subsystem.
+It appears you can ignore this. I just tried another piece of hardware 
+and this problem doesn't arise, leading me to believe I have some kind 
+of eMMC corruption error going on with one of my boards.
 
-Do you stop all the programs that are using the USB devices before 
-unplugging the hub?  Do you unmount the USB HDD first?
-
-The first crash shows a problem in the snd-usb-audio driver.
-
-The second crash shows a problem in the VFS layer or in ext3, not in 
-the USB stack.
-
-Alan Stern
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
