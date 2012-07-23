@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2GWBnV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:43:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54336 "EHLO
+	id S1753534Ab2GWBna (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:43:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54373 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753421Ab2GWBnS (ORCPT
+	by vger.kernel.org with ESMTP id S1753127Ab2GWBnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:18 -0400
-Message-Id: <20120723010700.419812793@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:23 -0400
+Message-Id: <20120723010659.344471507@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:50 +0100
+Date: Mon, 23 Jul 2012 02:07:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 059/108] target: Clean up returning errors in PR handling code
+        alan@lxorguk.ukuu.org.uk, Cloud Ren <cjren@qca.qualcomm.com>,
+        xiong <xiong@qca.qualcomm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 052/108] atl1c: fix issue of transmit queue 0 timed out
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,53 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Cloud Ren <cjren@qca.qualcomm.com>
 
-commit d35212f3ca3bf4fb49d15e37f530c9931e2d2183 upstream.
+commit b94e52f62683dc0b00c6d1b58b80929a078c0fd5 upstream.
 
- - instead of (PTR_ERR(file) < 0) just use IS_ERR(file)
- - return -EINVAL instead of EINVAL
- - all other error returns in target_scsi3_emulate_pr_out() use
-   "goto out" -- get rid of the one remaining straight "return."
+some people report atl1c could cause system hang with following
+kernel trace info:
+---------------------------------------
+WARNING: at.../net/sched/sch_generic.c:258 dev_watchdog+0x1db/0x1d0()
+...
+NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+...
+---------------------------------------
+This is caused by netif_stop_queue calling when cable Link is down.
+So remove netif_stop_queue, because link_watch will take it over.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: xiong <xiong@qca.qualcomm.com>
+Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_pr.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
-index 8556499..a1bcd92 100644
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -2031,7 +2031,7 @@ static int __core_scsi3_write_aptpl_to_file(
- 	if (IS_ERR(file) || !file || !file->f_dentry) {
- 		pr_err("filp_open(%s) for APTPL metadata"
- 			" failed\n", path);
--		return (PTR_ERR(file) < 0 ? PTR_ERR(file) : -ENOENT);
-+		return IS_ERR(file) ? PTR_ERR(file) : -ENOENT;
- 	}
- 
- 	iov[0].iov_base = &buf[0];
-@@ -3818,7 +3818,7 @@ int target_scsi3_emulate_pr_out(struct se_cmd *cmd)
- 			" SPC-2 reservation is held, returning"
- 			" RESERVATION_CONFLICT\n");
- 		cmd->scsi_sense_reason = TCM_RESERVATION_CONFLICT;
--		ret = EINVAL;
-+		ret = -EINVAL;
- 		goto out;
- 	}
- 
-@@ -3828,7 +3828,8 @@ int target_scsi3_emulate_pr_out(struct se_cmd *cmd)
- 	 */
- 	if (!cmd->se_sess) {
- 		cmd->scsi_sense_reason = TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto out;
- 	}
- 
- 	if (cmd->data_length < 24) {
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -267,7 +267,6 @@ static void atl1c_check_link_status(stru
+ 				dev_warn(&pdev->dev, "stop mac failed\n");
+ 		atl1c_set_aspm(hw, false);
+ 		netif_carrier_off(netdev);
+-		netif_stop_queue(netdev);
+ 		atl1c_phy_reset(hw);
+ 		atl1c_phy_init(&adapter->hw);
+ 	} else {
 
 
