@@ -1,229 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab2GWUmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:42:08 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42602 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab2GWUmH (ORCPT
+	id S1754806Ab2GWUoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:44:08 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:40175 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754388Ab2GWUoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:42:07 -0400
-Date: Mon, 23 Jul 2012 22:41:59 +0200
-From: Andrea Righi <righi.andrea@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Alexey Vlasov <renton@renton.name>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Attaching a process to cgroups
-Message-ID: <20120723204159.GB6379@thinkpad>
-References: <20120619185856.GC31797@beaver>
- <1340195298.15707.3.camel@marge.simpson.net>
- <20120621075428.GE31797@beaver>
- <1340266982.29752.37.camel@marge.simpson.net>
+	Mon, 23 Jul 2012 16:44:06 -0400
+Message-ID: <500DB757.2030200@xenotime.net>
+Date: Mon, 23 Jul 2012 13:43:03 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340266982.29752.37.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: "Du, ChangbinX" <changbinx.du@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Do need keep mail in thread when sending a new version patch?
+References: <0C18FE92A7765D4EB9EE5D38D86A563A0B2DCF@SHSMSX101.ccr.corp.intel.com> <20120723113449.GD9103@khazad-dum.debian.net> <500D89D0.8080005@xenotime.net> <20120723184349.GB22968@khazad-dum.debian.net>
+In-Reply-To: <20120723184349.GB22968@khazad-dum.debian.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 10:23:02AM +0200, Mike Galbraith wrote:
-> On Thu, 2012-06-21 at 11:54 +0400, Alexey Vlasov wrote: 
-> > On Wed, Jun 20, 2012 at 02:28:18PM +0200, Mike Galbraith wrote:
-> > > 
-> > > kernel/cgroup.c::cgroup_attach_task()
-> > > {
-> > > ...
-> > > 	synchronize_rcu();
-> > > ...
-> > > }
-> > 
-> > So nothing can be done here? (I mean if only I knew how to fix it I
-> > wouldn't ask about it ;)
+On 07/23/2012 11:43 AM, Henrique de Moraes Holschuh wrote:
+
+> On Mon, 23 Jul 2012, Randy Dunlap wrote:
+>> On 07/23/2012 04:34 AM, Henrique de Moraes Holschuh wrote:
+>>> On Mon, 23 Jul 2012, Du, ChangbinX wrote:
+>>>> Hi, developers!
+>>>> 	I have a question about sending patch: If my patch have a new version, 
+>>>> do I need set "--in-reply-to" option so keep them in the same thread when
+>>>> sending it? And in which cases should "--in-reply-to" option be set? Thanks!
+>>>
+>>> Yes, please do it when possible.  It groups patches nicely in theaded email
+>>> readers, and it makes it easier for people who are interested in the subject
+>>> to find the new version of your patchset (and all individual patches that
+>>> are part of the same patchset), AND for people who are not interested to
+>>> skip the entire thing.
+>>
+>>
+>> Please compare to a proposed patch:
+>>
+>>   http://marc.info/?l=linux-doc&m=133539116205348&w=2
 > 
-> Sure, kill the obnoxious thing, it's sitting right in the middle of the
-> userspace interface.
+> This one (referenced by the commit changelog of the above) seems to be a
+> better explanation:
 > 
-> I banged on it a while back (wrt explosive android patches), extracted
-> RCU from the userspace interface.  It seemed to work great, much faster,
-> couldn't make it explode.  I wouldn't bet anything I wasn't willing to
-> immediately part with that the result was really really safe though ;-)
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-April/096236.html
 > 
-> -Mike
+> Anyway, I stand corrected.
+> 
 
-JFYI,
 
-I'm testing the following patch in a bunch of hosts and I wasn't able to
-make any of them to explode, even running a multi-threaded
-cgroup-intensive workload, but probably I was just lucky (or unlucky,
-depending on the point of view).
+Well, that patch isn't merged into mainline yet, right?
+and it is only one opinion.
 
-It is basically the same Not-signed-off-by work posted by Mike a while
-ago: https://lkml.org/lkml/2011/4/12/599.
+I don't mind seeing the new versions of a patch sent as
+replies to older versions, so I don't see a need to codify it.
 
-In addition, I totally removed the synchronize_rcu() call from
-cgroup_attach_task() and added the call_rcu -> schedule_work removal
-also for css_set. The latter looks unnecessary to me from a logical
-point of view, or maybe I'm missing something, because I can't explain
-why with it I can't trigger any BUG / oops.
 
-Mike, did you make any progress from your old patch?
-
-Thanks,
--Andrea
-
----
- include/linux/cgroup.h |    2 ++
- kernel/cgroup.c        |   91 +++++++++++++++++++++++++++++-------------------
- 2 files changed, 58 insertions(+), 35 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index d3f5fba..2bab2d6 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -212,6 +212,7 @@ struct cgroup {
- 
- 	/* For RCU-protected deletion */
- 	struct rcu_head rcu_head;
-+	struct work_struct work;
- 
- 	/* List of events which userspace want to receive */
- 	struct list_head event_list;
-@@ -260,6 +261,7 @@ struct css_set {
- 
- 	/* For RCU-protected deletion */
- 	struct rcu_head rcu_head;
-+	struct work_struct work;
- };
- 
- /*
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b303dfc..aa7cc06 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -396,6 +396,21 @@ static struct hlist_head *css_set_hash(struct cgroup_subsys_state *css[])
-  * compiled into their kernel but not actually in use */
- static int use_task_css_set_links __read_mostly;
- 
-+static void free_css_set_work(struct work_struct *work)
-+{
-+	struct css_set *cg = container_of(work, struct css_set, work);
-+
-+	kfree(cg);
-+}
-+
-+static void free_css_set_rcu(struct rcu_head *obj)
-+{
-+	struct css_set *cg = container_of(obj, struct css_set, rcu_head);
-+
-+	INIT_WORK(&cg->work, free_css_set_work);
-+	schedule_work(&cg->work);
-+}
-+
- static void __put_css_set(struct css_set *cg, int taskexit)
- {
- 	struct cg_cgroup_link *link;
-@@ -433,7 +448,7 @@ static void __put_css_set(struct css_set *cg, int taskexit)
- 	}
- 
- 	write_unlock(&css_set_lock);
--	kfree_rcu(cg, rcu_head);
-+	call_rcu(&cg->rcu_head, free_css_set_rcu);
- }
- 
- /*
-@@ -875,44 +890,52 @@ static int cgroup_call_pre_destroy(struct cgroup *cgrp)
- 	return ret;
- }
- 
--static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-+static void free_cgroup_work(struct work_struct *work)
- {
--	/* is dentry a directory ? if so, kfree() associated cgroup */
--	if (S_ISDIR(inode->i_mode)) {
--		struct cgroup *cgrp = dentry->d_fsdata;
--		struct cgroup_subsys *ss;
--		BUG_ON(!(cgroup_is_removed(cgrp)));
--		/* It's possible for external users to be holding css
--		 * reference counts on a cgroup; css_put() needs to
--		 * be able to access the cgroup after decrementing
--		 * the reference count in order to know if it needs to
--		 * queue the cgroup to be handled by the release
--		 * agent */
--		synchronize_rcu();
-+	struct cgroup *cgrp = container_of(work, struct cgroup, work);
-+	struct cgroup_subsys *ss;
- 
--		mutex_lock(&cgroup_mutex);
--		/*
--		 * Release the subsystem state objects.
--		 */
--		for_each_subsys(cgrp->root, ss)
--			ss->destroy(cgrp);
-+	mutex_lock(&cgroup_mutex);
-+	/*
-+	 * Release the subsystem state objects.
-+	 */
-+	for_each_subsys(cgrp->root, ss)
-+		ss->destroy(cgrp);
- 
--		cgrp->root->number_of_cgroups--;
--		mutex_unlock(&cgroup_mutex);
-+	cgrp->root->number_of_cgroups--;
-+	mutex_unlock(&cgroup_mutex);
- 
--		/*
--		 * Drop the active superblock reference that we took when we
--		 * created the cgroup
--		 */
--		deactivate_super(cgrp->root->sb);
-+	/*
-+	 * Drop the active superblock reference that we took when we
-+	 * created the cgroup
-+	 */
-+	deactivate_super(cgrp->root->sb);
- 
--		/*
--		 * if we're getting rid of the cgroup, refcount should ensure
--		 * that there are no pidlists left.
--		 */
--		BUG_ON(!list_empty(&cgrp->pidlists));
-+	/*
-+	 * if we're getting rid of the cgroup, refcount should ensure
-+	 * that there are no pidlists left.
-+	 */
-+	BUG_ON(!list_empty(&cgrp->pidlists));
-+
-+	kfree(cgrp);
-+}
-+
-+static void free_cgroup_rcu(struct rcu_head *obj)
-+{
-+	struct cgroup *cgrp = container_of(obj, struct cgroup, rcu_head);
-+
-+	INIT_WORK(&cgrp->work, free_cgroup_work);
-+	schedule_work(&cgrp->work);
-+}
-+
-+static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-+{
-+	/* is dentry a directory ? if so, kfree() associated cgroup */
-+	if (S_ISDIR(inode->i_mode)) {
-+		struct cgroup *cgrp = dentry->d_fsdata;
- 
--		kfree_rcu(cgrp, rcu_head);
-+		BUG_ON(!(cgroup_is_removed(cgrp)));
-+		call_rcu(&cgrp->rcu_head, free_cgroup_rcu);
- 	} else {
- 		struct cfent *cfe = __d_cfe(dentry);
- 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
-@@ -1990,8 +2013,6 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 			ss->attach(cgrp, &tset);
- 	}
- 
--	synchronize_rcu();
--
- 	/*
- 	 * wake up rmdir() waiter. the rmdir should fail since the cgroup
- 	 * is no longer empty.
+-- 
+~Randy
