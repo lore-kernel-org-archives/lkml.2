@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab2GWKRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 06:17:32 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:52393 "EHLO ogre.sisk.pl"
+	id S1752162Ab2GWKUP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 06:20:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50670 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752060Ab2GWKRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 06:17:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH] [CPUFREQ] conservative: Initialise the cpu field of the this_dbs_info
-Date: Mon, 23 Jul 2012 12:23:04 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org, amit.kachhap@linaro.org,
-        linux-kernel@vger.kernel.org
-References: <1343028920-4712-1-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1343028920-4712-1-git-send-email-amit.daniel@samsung.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1751924Ab2GWKUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 06:20:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="183915828"
+Date: Mon, 23 Jul 2012 11:37:18 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Anisse Astier <anisse@astier.eu>
+Cc: Josh Boyer <jwboyer@redhat.com>, kernel-team@fedoraproject.org,
+        Dave Airlie <airlied@redhat.com>, dkline@redhat.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: gma500 opregion/power init order backtrace
+Message-ID: <20120723113718.3422c3c9@bob.linux.org.uk>
+In-Reply-To: <20120720172044.5ad38413@destiny.ordissimo>
+References: <20120717192614.GB18229@zod.bos.redhat.com>
+	<20120717221242.315f8dfe@bob.linux.org.uk>
+	<20120720163247.19578db4@destiny.ordissimo>
+	<20120720172044.5ad38413@destiny.ordissimo>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207231223.04620.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 23, 2012, Amit Daniel Kachhap wrote:
-> This patch initialises the cpu field of this_dbs_info structure. This
-> change is similar to existing ondemand governor.
+> What I meant is: although these keycodes are already sent by acpi
+> driver code, is it up to userspace to figure out which backlight
+> driver to use, or should the kernel modify brightness in psb-bl
+> directly ?
 
-Why do you think the change is needed?
-
-Rafael
-
-
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
->  drivers/cpufreq/cpufreq_conservative.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-> index 235a340..a1563d7 100644
-> --- a/drivers/cpufreq/cpufreq_conservative.c
-> +++ b/drivers/cpufreq/cpufreq_conservative.c
-> @@ -504,6 +504,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  				j_dbs_info->prev_cpu_nice =
->  						kcpustat_cpu(j).cpustat[CPUTIME_NICE];
->  		}
-> +		this_dbs_info->cpu = cpu;
->  		this_dbs_info->down_skip = 0;
->  		this_dbs_info->requested_freq = policy->cur;
->  
-> 
-
+I'm not sure how its all glued together. I need to find out some day !
