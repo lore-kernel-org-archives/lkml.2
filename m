@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab2GWCbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 22:31:09 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53874 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2GWCbH (ORCPT
+	id S1753305Ab2GWCbK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 22:31:10 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:52597 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab2GWCbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 22:31:07 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-8d-500cb769cb5a
-From: Namhyung Kim <namhyung@kernel.org>
-To: Vlad Zolotarov <vlad@scalemp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        "Shai Fultheim \(Shai\@ScaleMP.com\)" <Shai@scalemp.com>
-Subject: Re: [RFC] optimize the locking in the rebalance_domains()
-References: <1342974235.6692.20.camel@vlad>
-Date: Mon, 23 Jul 2012 11:25:39 +0900
-In-Reply-To: <1342974235.6692.20.camel@vlad> (Vlad Zolotarov's message of
-	"Sun, 22 Jul 2012 19:23:55 +0300")
-Message-ID: <87fw8j6wnw.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+Message-ID: <500CB763.9020802@linux.vnet.ibm.com>
+Date: Mon, 23 Jul 2012 10:30:59 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Peter Zijlstra <peterz@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>, mingo@redhat.com, paul@paulmenage.org
+Subject: Re: [PATCH 0/5] cpusets: dynamical scheduler domain flags
+References: <50052A78.6000407@linux.vnet.ibm.com> <1342802550.2583.12.camel@twins>
+In-Reply-To: <1342802550.2583.12.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072302-8878-0000-0000-00000357728A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Vlad
+On 07/21/2012 12:42 AM, Peter Zijlstra wrote:
+> On Tue, 2012-07-17 at 17:03 +0800, Michael Wang wrote:
+>> This patch set provide a way for user to dynamically configure the scheduler
+>> domain flags, which usually to be static. 
+> 
+> NAK.. you don't get to expose all this nonsense in a 'stable' ABI.
+> 
+> You shouldn't need to prod at them to begin with.
 
-On Sun, 22 Jul 2012 19:23:55 +0300, Vlad Zolotarov wrote:
-> Ingo, we've noticed that rebalance_domains() will try to take a lock
-> every time it's called (every jiffy) if SD_SERIALIZE is set (which is a
-> default configuration). This is done regardless the fact that maybe
-> there hasn't passed enough time since the last rebalancing in which case
-> there is no need to take a lock the first place.
->
-> The above creates a heavy false sharing problem on the "balancing"
-> spin-lock on large SMP systems: try_lock() is implemented with an
-> (atomic) xchng instruction which invalidates the cache line "balancing"
-> belongs to and therefore creates an intensive cross-NUMA-nodes traffic.
->
-> The below patch will minimize the above phenomena to the time slots it's
-> really needed, namely when the "interval" has really passed.
->
-> Pls., comment.
->
-> thanks,
-> vlad
->
-> ---
->  kernel/sched/fair.c |   20 +++++++++++---------
->  1 file changed, 11 insertions(+), 9 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index c099cc6..6777d38 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4689,6 +4689,9 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
->  		interval = msecs_to_jiffies(interval);
->  		interval = clamp(interval, 1UL, max_load_balance_interval);
->  
-> +                if (!time_after_eq(jiffies, sd->last_balance + interval))
-> +			goto out;
-> +
+So is that means expose those domain flags to user is a bad idea at all?
 
-First line looks like white-space-damaged.
-Anyway, wouldn't it be better using time_before() here?
+Is this caused by that people don't need such feature or this feature
+has do harm to kernel's stability?(it could be not...)
 
-Thanks,
-Namhyung
+Regards,
+Michael Wang
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 
->  		need_serialize = sd->flags & SD_SERIALIZE;
->  
->  		if (need_serialize) {
-> @@ -4696,16 +4699,15 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
->  				goto out;
->  		}
->  
-> -		if (time_after_eq(jiffies, sd->last_balance + interval)) {
-> -			if (load_balance(cpu, rq, sd, idle, &balance)) {
-> -				/*
-> -				 * We've pulled tasks over so either we're no
-> -				 * longer idle.
-> -				 */
-> -				idle = CPU_NOT_IDLE;
-> -			}
-> -			sd->last_balance = jiffies;
-> +		if (load_balance(cpu, rq, sd, idle, &balance)) {
-> +			/*
-> +			 * We've pulled tasks over so either we're no
-> +			 * longer idle.
-> +			 */
-> +			idle = CPU_NOT_IDLE;
->  		}
-> +		sd->last_balance = jiffies;
-> +
->  		if (need_serialize)
->  			spin_unlock(&balancing);
->  out:
