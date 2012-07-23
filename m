@@ -1,115 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2GWNnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 09:43:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58721 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753572Ab2GWNjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753573Ab2GWNjB (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 23 Jul 2012 09:39:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58633 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325Ab2GWNiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 09:38:54 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 20/34] kswapd: avoid unnecessary rebalance after an unsuccessful balancing
-Date: Mon, 23 Jul 2012 14:38:33 +0100
-Message-Id: <1343050727-3045-21-git-send-email-mgorman@suse.de>
+Subject: [PATCH 09/34] mm: limit direct reclaim for higher order allocations
+Date: Mon, 23 Jul 2012 14:38:22 +0100
+Message-Id: <1343050727-3045-10-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
 References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Alex,Shi" <alex.shi@intel.com>
+From: Rik van Riel <riel@redhat.com>
 
-commit d2ebd0f6b89567eb93ead4e2ca0cbe03021f344b upstream.
+commit e0887c19b2daa140f20ca8104bdc5740f39dbb86 upstream.
 
-Stable note: Fixes https://bugzilla.redhat.com/show_bug.cgi?id=712019. This
-	patch reduces kswapd CPU usage.
+Stable note: Not tracked on Bugzilla. THP and compaction was found to
+	aggressively reclaim pages and stall systems under different
+	situations that was addressed piecemeal over time. Paragraph
+	3 of this changelog is the motivation for this patch.
 
-In commit 215ddd66 ("mm: vmscan: only read new_classzone_idx from pgdat
-when reclaiming successfully") , Mel Gorman said kswapd is better to sleep
-after a unsuccessful balancing if there is tighter reclaim request pending
-in the balancing.  But in the following scenario, kswapd do something that
-is not matched our expectation.  The patch fixes this issue.
+When suffering from memory fragmentation due to unfreeable pages, THP page
+faults will repeatedly try to compact memory.  Due to the unfreeable
+pages, compaction fails.
 
-1, Read pgdat request A (classzone_idx, order = 3)
-2, balance_pgdat()
-3, During pgdat, a new pgdat request B (classzone_idx, order = 5) is placed
-4, balance_pgdat() returns but failed since returned order = 0
-5, pgdat of request A assigned to balance_pgdat(), and do balancing again.
-   While the expectation behavior of kswapd should try to sleep.
+Needless to say, at that point page reclaim also fails to create free
+contiguous 2MB areas.  However, that doesn't stop the current code from
+trying, over and over again, and freeing a minimum of 4MB (2UL <<
+sc->order pages) at every single invocation.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Reviewed-by: Tim Chen <tim.c.chen@linux.intel.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Tested-by: Pádraig Brady <P@draigBrady.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+This resulted in my 12GB system having 2-3GB free memory, a corresponding
+amount of used swap and very sluggish response times.
+
+This can be avoided by having the direct reclaim code not reclaim from
+zones that already have plenty of free memory available for compaction.
+
+If compaction still fails due to unmovable memory, doing additional
+reclaim will only hurt the system, not help.
+
+[jweiner@redhat.com: change comment to explain the order check]
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ mm/vmscan.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index aa75861..bf85e4d 100644
+index 8ca1cd5..d11b6c4 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2841,7 +2841,9 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
- static int kswapd(void *p)
- {
- 	unsigned long order, new_order;
-+	unsigned balanced_order;
- 	int classzone_idx, new_classzone_idx;
-+	int balanced_classzone_idx;
- 	pg_data_t *pgdat = (pg_data_t*)p;
- 	struct task_struct *tsk = current;
- 
-@@ -2872,7 +2874,9 @@ static int kswapd(void *p)
- 	set_freezable();
- 
- 	order = new_order = 0;
-+	balanced_order = 0;
- 	classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
-+	balanced_classzone_idx = classzone_idx;
- 	for ( ; ; ) {
- 		int ret;
- 
-@@ -2881,7 +2885,8 @@ static int kswapd(void *p)
- 		 * new request of a similar or harder type will succeed soon
- 		 * so consider going to sleep on the basis we reclaimed at
- 		 */
--		if (classzone_idx >= new_classzone_idx && order == new_order) {
-+		if (balanced_classzone_idx >= new_classzone_idx &&
-+					balanced_order == new_order) {
- 			new_order = pgdat->kswapd_max_order;
- 			new_classzone_idx = pgdat->classzone_idx;
- 			pgdat->kswapd_max_order =  0;
-@@ -2896,7 +2901,8 @@ static int kswapd(void *p)
- 			order = new_order;
- 			classzone_idx = new_classzone_idx;
- 		} else {
--			kswapd_try_to_sleep(pgdat, order, classzone_idx);
-+			kswapd_try_to_sleep(pgdat, balanced_order,
-+						balanced_classzone_idx);
- 			order = pgdat->kswapd_max_order;
- 			classzone_idx = pgdat->classzone_idx;
- 			pgdat->kswapd_max_order = 0;
-@@ -2913,7 +2919,9 @@ static int kswapd(void *p)
- 		 */
- 		if (!ret) {
- 			trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
--			order = balance_pgdat(pgdat, order, &classzone_idx);
-+			balanced_classzone_idx = classzone_idx;
-+			balanced_order = balance_pgdat(pgdat, order,
-+						&balanced_classzone_idx);
- 		}
- 	}
- 	return 0;
+@@ -2059,6 +2059,22 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
+ 				continue;
+ 			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
+ 				continue;	/* Let kswapd poll it */
++			if (COMPACTION_BUILD) {
++				/*
++				 * If we already have plenty of memory
++				 * free for compaction, don't free any
++				 * more.  Even though compaction is
++				 * invoked for any non-zero order,
++				 * only frequent costly order
++				 * reclamation is disruptive enough to
++				 * become a noticable problem, like
++				 * transparent huge page allocations.
++				 */
++				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
++					(compaction_suitable(zone, sc->order) ||
++					 compaction_deferred(zone)))
++					continue;
++			}
+ 			/*
+ 			 * This steals pages from memory cgroups over softlimit
+ 			 * and returns the number of reclaimed pages and
 -- 
 1.7.9.2
 
