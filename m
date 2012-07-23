@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab2GWBm0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:42:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53960 "EHLO
+	id S1752989Ab2GWBmX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:42:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53958 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752856Ab2GWBmL (ORCPT
+	by vger.kernel.org with ESMTP id S1752809Ab2GWBmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 21:42:11 -0400
-Message-Id: <20120723010653.341677646@decadent.org.uk>
+Message-Id: <20120723010651.667402515@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:03 +0100
+Date: Mon, 23 Jul 2012 02:06:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Russell Coker <russell@coker.com.au>
-Subject: [ 012/108] ext4: Report max_batch_time option correctly
+        alan@lxorguk.ukuu.org.uk, Corentin Chary <corentincj@iksaif.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Matthew Garrett <mjg@redhat.com>
+Subject: [ 001/108] samsung-laptop: make the dmi check less strict
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,31 +28,304 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Corentin Chary <corentincj@iksaif.net>
 
-commit 1d526fc91bea04ee35b7599bf8b82f86c0aaf46c upstream.
+commit 3be324a94df0c3f032178d04549dbfbf6cccb09a upstream.
 
-Currently the value reported for max_batch_time is really the
-value of min_batch_time.
+This enable the driver for everything that look like
+a laptop and is from vendor "SAMSUNG ELECTRONICS CO., LTD.".
+Note that laptop supported by samsung-q10 seem to have a different
+vendor strict.
 
-Reported-by: Russell Coker <russell@coker.com.au>
+Also remove every log output until we know that we have a SABI interface
+(except if the driver is forced to load, or debug is enabled).
+
+Keeping a whitelist of laptop with a model granularity is something that can't
+work without close vendor cooperation (and we don't have that).
+
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop changes relating to ACPI video]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/platform/x86/samsung-laptop.c |  235 +++------------------------------
+ 1 file changed, 15 insertions(+), 220 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 35377d5..36570b7 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1096,7 +1096,7 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
- 	}
- 	if (sbi->s_max_batch_time != EXT4_DEF_MAX_BATCH_TIME) {
- 		seq_printf(seq, ",max_batch_time=%u",
--			   (unsigned) sbi->s_min_batch_time);
-+			   (unsigned) sbi->s_max_batch_time);
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -540,245 +540,34 @@
+ 		   get_performance_level, set_performance_level);
+ 
+ 
+-static int __init dmi_check_cb(const struct dmi_system_id *id)
+-{
+-	pr_info("found laptop model '%s'\n",
+-		id->ident);
+-	return 1;
+-}
+-
+ static struct dmi_system_id __initdata samsung_dmi_table[] = {
+ 	{
+-		.ident = "N128",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "N128"),
+-			DMI_MATCH(DMI_BOARD_NAME, "N128"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "N130",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR,
+ 					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "N130"),
+-			DMI_MATCH(DMI_BOARD_NAME, "N130"),
++			DMI_MATCH(DMI_CHASSIS_TYPE, "8"), /* Portable */
+ 		},
+-		.callback = dmi_check_cb,
+ 	},
+ 	{
+-		.ident = "N510",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR,
+ 					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "N510"),
+-			DMI_MATCH(DMI_BOARD_NAME, "N510"),
++			DMI_MATCH(DMI_CHASSIS_TYPE, "9"), /* Laptop */
+ 		},
+-		.callback = dmi_check_cb,
+ 	},
+ 	{
+-		.ident = "X125",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR,
+ 					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "X125"),
+-			DMI_MATCH(DMI_BOARD_NAME, "X125"),
++			DMI_MATCH(DMI_CHASSIS_TYPE, "10"), /* Notebook */
+ 		},
+-		.callback = dmi_check_cb,
+ 	},
+ 	{
+-		.ident = "X120/X170",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR,
+ 					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "X120/X170"),
+-			DMI_MATCH(DMI_BOARD_NAME, "X120/X170"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "NC10",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "NC10"),
+-			DMI_MATCH(DMI_BOARD_NAME, "NC10"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-		{
+-		.ident = "NP-Q45",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "SQ45S70S"),
+-			DMI_MATCH(DMI_BOARD_NAME, "SQ45S70S"),
+-		},
+-		.callback = dmi_check_cb,
+-		},
+-	{
+-		.ident = "X360",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "X360"),
+-			DMI_MATCH(DMI_BOARD_NAME, "X360"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "R410 Plus",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "R410P"),
+-			DMI_MATCH(DMI_BOARD_NAME, "R460"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "R518",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "R518"),
+-			DMI_MATCH(DMI_BOARD_NAME, "R518"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "R519/R719",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "R519/R719"),
+-			DMI_MATCH(DMI_BOARD_NAME, "R519/R719"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "N150/N210/N220",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
+-			DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "N220",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "N220"),
+-			DMI_MATCH(DMI_BOARD_NAME, "N220"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "N150/N210/N220/N230",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220/N230"),
+-			DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220/N230"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "N150P/N210P/N220P",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "N150P/N210P/N220P"),
+-			DMI_MATCH(DMI_BOARD_NAME, "N150P/N210P/N220P"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "R700",
+-		.matches = {
+-		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+-		      DMI_MATCH(DMI_PRODUCT_NAME, "SR700"),
+-		      DMI_MATCH(DMI_BOARD_NAME, "SR700"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "R530/R730",
+-		.matches = {
+-		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+-		      DMI_MATCH(DMI_PRODUCT_NAME, "R530/R730"),
+-		      DMI_MATCH(DMI_BOARD_NAME, "R530/R730"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "NF110/NF210/NF310",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
+-			DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "N145P/N250P/N260P",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
+-			DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "R70/R71",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR,
+-					"SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "R70/R71"),
+-			DMI_MATCH(DMI_BOARD_NAME, "R70/R71"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "P460",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "P460"),
+-			DMI_MATCH(DMI_BOARD_NAME, "P460"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "R528/R728",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "R528/R728"),
+-			DMI_MATCH(DMI_BOARD_NAME, "R528/R728"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-	{
+-		.ident = "NC210/NC110",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "NC210/NC110"),
+-			DMI_MATCH(DMI_BOARD_NAME, "NC210/NC110"),
+-		},
+-		.callback = dmi_check_cb,
+-	},
+-		{
+-		.ident = "X520",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "X520"),
+-			DMI_MATCH(DMI_BOARD_NAME, "X520"),
++			DMI_MATCH(DMI_CHASSIS_TYPE, "14"), /* Sub-Notebook */
+ 		},
+-		.callback = dmi_check_cb,
+ 	},
+ 	{ },
+ };
+@@ -819,7 +608,8 @@
+ 
+ 	f0000_segment = ioremap_nocache(0xf0000, 0xffff);
+ 	if (!f0000_segment) {
+-		pr_err("Can't map the segment at 0xf0000\n");
++		if (debug || force)
++			pr_err("Can't map the segment at 0xf0000\n");
+ 		return -EINVAL;
  	}
  
- 	/*
+@@ -832,7 +622,8 @@
+ 	}
+ 
+ 	if (loca == 0xffff) {
+-		pr_err("This computer does not support SABI\n");
++		if (debug || force)
++			pr_err("This computer does not support SABI\n");
+ 		goto error_no_signature;
+ 	}
+ 
+
 
 
