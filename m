@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab2GWGye (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 02:54:34 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:42402 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab2GWGyd (ORCPT
+	id S1753661Ab2GWGzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 02:55:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57071 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752312Ab2GWGzq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 02:54:33 -0400
-Date: Mon, 23 Jul 2012 08:54:13 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Devendra Naga <develkernel412222@gmail.com>,
-        Len Brown <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Fengguang Wu <wfg@linux.intel.com>,
-        Durgadoss R <durgadoss.r@intel.com>
-Subject: Re: [PATCH] thermal: fix build error at thermal_sys.c
-Message-ID: <20120723085413.38b5a314@endymion.delvare>
-In-Reply-To: <1343008936.1682.307.camel@rui.sh.intel.com>
-References: <1342944622-16263-1-git-send-email-develkernel412222@gmail.com>
-	<20120722125810.052ca19e@endymion.delvare>
-	<1343008936.1682.307.camel@rui.sh.intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jul 2012 02:55:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="196577492"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Daniel J Blueman <daniel@quora.org>,
+        Intel Linux Wireless <ilw@linux.intel.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: RE: 3.5.0 iwlagn AP crash...
+Thread-Topic: 3.5.0 iwlagn AP crash...
+Thread-Index: AQHNZ+qOQyja1sAo20WrvL/lQkU2oJc1A86AgAFsOlA=
+Date: Mon, 23 Jul 2012 06:54:29 +0000
+Message-ID: <1DC40B07CD6EC041A66726C271A73AE619593035@IRSMSX102.ger.corp.intel.com>
+References: <CAMVG2su3DfOTRHDr7oFPLM5LVOBEXtChPEy4LL_2QS-VT9vBgg@mail.gmail.com>
+ <CAMVG2suiMXojoptfNNJEZWhiBfgVcU99BTvG6jqdKAFGBf65MA@mail.gmail.com>
+In-Reply-To: <CAMVG2suiMXojoptfNNJEZWhiBfgVcU99BTvG6jqdKAFGBf65MA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.180]
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui,
+> > When running my Centrino Wireless-N 130 BGN (rev 0xb0) card in nl80211
+> > AP mode with hostapd on linux 3.5.0, I immediately hit this fatal
+> > pagefault [1].
+> >
+> > I can cook a debug kernel, reproduce, disassemble the code and do some
+> > quick analysis, if that helps get the ball rolling?
 
-On Mon, 23 Jul 2012 10:02:16 +0800, Zhang Rui wrote:
-> BTW: what is the rule for linux-next?
-> I refreshed the patches, did some test, and sent to mailing list
-> saying that I want to push them to linux-next, please review.
-> And then I got bug report from linux-next...
-> shouldn't them be merged after I sending git pull request?
+> > BUG: unable to handle kernel NULL pointer dereference at      (null)
+> > IP: [<ffffffffa02e869d>] ieee80211_ave_rssi+0xd/0x50 [mac80211]
+> 
+> From my debug kernel, sdata is clearly NULL:
+> 
+> (gdb) list *0xffffffff815b74f8
+> 0xffffffff815b74f8 is in ieee80211_ave_rssi (net/mac80211/util.c:1801).
+> 1796	int ieee80211_ave_rssi(struct ieee80211_vif *vif)
+> 1797	{
+> 1798		struct ieee80211_sub_if_data *sdata = vif_to_sdata(vif);
 
-Your tree is set for linux-next inclusion. This means that, every day,
-the current state of (one branch of) your tree makes it into that day's
-linux-next. linux-next receives some testing so you may receive bug
-reports that way (most frequently merge and build issues.)
+I'll look into it, thanks.
 
-But patches don't go from linux-next to Linus's upstream tree
-automatically. Whenever you want your patches to actually go to Linus,
-you must ask Linus explicitly to pull them.
+johannes
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer, Christian Lamprechter
+Registergericht: Muenchen HRB 47456
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
 
-So, when a build issue is found in linux-next, the right thing to do is
-to blast the faulty branch and recreate it without the build breakage,
-then have it go in at least one linux-next iterations to make sure you
-did get things right this time, and only then ask Linus to pull from
-your branch.
-
--- 
-Jean Delvare
