@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab2GWBov (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:44:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54483 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753630Ab2GWBny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753670Ab2GWBny (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 22 Jul 2012 21:43:54 -0400
-Message-Id: <20120723010655.768372060@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54488 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753625Ab2GWBns (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jul 2012 21:43:48 -0400
+Message-Id: <20120723010655.910164185@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:19 +0100
+Date: Mon, 23 Jul 2012 02:07:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 028/108] sched/nohz: Rewrite and fix load-avg computation -- again
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 029/108] USB: option: add ZTE MF60
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,453 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Bjørn Mork <bjorn@mork.no> <bjorn@mork.no>
 
-commit 5167e8d5417bf5c322a703d2927daec727ea40dd upstream.
+commit 8e16e33c168a6efd0c9f7fa9dd4c1e1db9a74553 upstream.
 
-Thanks to Charles Wang for spotting the defects in the current code:
+Switches into a composite device by ejecting the initial
+driver CD.  The four interfaces are: QCDM, AT, QMI/wwan
+and mass storage.  Let this driver manage the two serial
+interfaces:
 
- - If we go idle during the sample window -- after sampling, we get a
-   negative bias because we can negate our own sample.
+T:  Bus=02 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 28 Spd=480  MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=19d2 ProdID=1402 Rev= 0.00
+S:  Manufacturer=ZTE,Incorporated
+S:  Product=ZTE WCDMA Technologies MSM
+S:  SerialNumber=xxxxx
+C:* #Ifs= 4 Cfg#= 1 Atr=c0 MxPwr=500mA
+I:* If#= 0 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 2 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=qmi_wwan
+E:  Ad=83(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 3 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
 
- - If we wake up during the sample window we get a positive bias
-   because we push the sample to a known active period.
-
-So rewrite the entire nohz load-avg muck once again, now adding
-copious documentation to the code.
-
-Reported-and-tested-by: Doug Smythies <dsmythies@telus.net>
-Reported-and-tested-by: Charles Wang <muming.wq@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1340373782.18025.74.camel@twins
-[ minor edits ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2: adjust filenames, context]
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/sched.h    |    8 ++
- kernel/sched/core.c      |  275 ++++++++++++++++++++++++++++++++++------------
- kernel/sched/idle_task.c |    1 -
- kernel/sched/sched.h     |    2 -
- kernel/time/tick-sched.c |    2 +
- 5 files changed, 213 insertions(+), 75 deletions(-)
+ drivers/usb/serial/option.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1892,6 +1892,14 @@ static inline int set_cpus_allowed_ptr(s
- }
- #endif
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index adf8ce7..167aed8 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -554,6 +554,10 @@ static const struct option_blacklist_info net_intf1_blacklist = {
+ 	.reserved = BIT(1),
+ };
  
-+#ifdef CONFIG_NO_HZ
-+void calc_load_enter_idle(void);
-+void calc_load_exit_idle(void);
-+#else
-+static inline void calc_load_enter_idle(void) { }
-+static inline void calc_load_exit_idle(void) { }
-+#endif /* CONFIG_NO_HZ */
++static const struct option_blacklist_info net_intf2_blacklist = {
++	.reserved = BIT(2),
++};
 +
- #ifndef CONFIG_CPUMASK_OFFSTACK
- static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
- {
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1885,7 +1885,6 @@ static void double_rq_unlock(struct rq *
- 
- #endif
- 
--static void calc_load_account_idle(struct rq *this_rq);
- static void update_sysctl(void);
- static int get_update_sysctl_factor(void);
- static void update_cpu_load(struct rq *this_rq);
-@@ -3401,11 +3400,73 @@ unsigned long this_cpu_load(void)
- }
- 
- 
-+/*
-+ * Global load-average calculations
-+ *
-+ * We take a distributed and async approach to calculating the global load-avg
-+ * in order to minimize overhead.
-+ *
-+ * The global load average is an exponentially decaying average of nr_running +
-+ * nr_uninterruptible.
-+ *
-+ * Once every LOAD_FREQ:
-+ *
-+ *   nr_active = 0;
-+ *   for_each_possible_cpu(cpu)
-+ *   	nr_active += cpu_of(cpu)->nr_running + cpu_of(cpu)->nr_uninterruptible;
-+ *
-+ *   avenrun[n] = avenrun[0] * exp_n + nr_active * (1 - exp_n)
-+ *
-+ * Due to a number of reasons the above turns in the mess below:
-+ *
-+ *  - for_each_possible_cpu() is prohibitively expensive on machines with
-+ *    serious number of cpus, therefore we need to take a distributed approach
-+ *    to calculating nr_active.
-+ *
-+ *        \Sum_i x_i(t) = \Sum_i x_i(t) - x_i(t_0) | x_i(t_0) := 0
-+ *                      = \Sum_i { \Sum_j=1 x_i(t_j) - x_i(t_j-1) }
-+ *
-+ *    So assuming nr_active := 0 when we start out -- true per definition, we
-+ *    can simply take per-cpu deltas and fold those into a global accumulate
-+ *    to obtain the same result. See calc_load_fold_active().
-+ *
-+ *    Furthermore, in order to avoid synchronizing all per-cpu delta folding
-+ *    across the machine, we assume 10 ticks is sufficient time for every
-+ *    cpu to have completed this task.
-+ *
-+ *    This places an upper-bound on the IRQ-off latency of the machine. Then
-+ *    again, being late doesn't loose the delta, just wrecks the sample.
-+ *
-+ *  - cpu_rq()->nr_uninterruptible isn't accurately tracked per-cpu because
-+ *    this would add another cross-cpu cacheline miss and atomic operation
-+ *    to the wakeup path. Instead we increment on whatever cpu the task ran
-+ *    when it went into uninterruptible state and decrement on whatever cpu
-+ *    did the wakeup. This means that only the sum of nr_uninterruptible over
-+ *    all cpus yields the correct result.
-+ *
-+ *  This covers the NO_HZ=n code, for extra head-aches, see the comment below.
-+ */
-+
- /* Variables and functions for calc_load */
- static atomic_long_t calc_load_tasks;
- static unsigned long calc_load_update;
- unsigned long avenrun[3];
--EXPORT_SYMBOL(avenrun);
-+EXPORT_SYMBOL(avenrun); /* should be removed */
-+
-+/**
-+ * get_avenrun - get the load average array
-+ * @loads:	pointer to dest load array
-+ * @offset:	offset to add
-+ * @shift:	shift count to shift the result left
-+ *
-+ * These values are estimates at best, so no need for locking.
-+ */
-+void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
-+{
-+	loads[0] = (avenrun[0] + offset) << shift;
-+	loads[1] = (avenrun[1] + offset) << shift;
-+	loads[2] = (avenrun[2] + offset) << shift;
-+}
- 
- static long calc_load_fold_active(struct rq *this_rq)
- {
-@@ -3422,6 +3483,9 @@ static long calc_load_fold_active(struct
- 	return delta;
- }
- 
-+/*
-+ * a1 = a0 * e + a * (1 - e)
-+ */
- static unsigned long
- calc_load(unsigned long load, unsigned long exp, unsigned long active)
- {
-@@ -3433,30 +3497,118 @@ calc_load(unsigned long load, unsigned l
- 
- #ifdef CONFIG_NO_HZ
- /*
-- * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
-+ * Handle NO_HZ for the global load-average.
-+ *
-+ * Since the above described distributed algorithm to compute the global
-+ * load-average relies on per-cpu sampling from the tick, it is affected by
-+ * NO_HZ.
-+ *
-+ * The basic idea is to fold the nr_active delta into a global idle-delta upon
-+ * entering NO_HZ state such that we can include this as an 'extra' cpu delta
-+ * when we read the global state.
-+ *
-+ * Obviously reality has to ruin such a delightfully simple scheme:
-+ *
-+ *  - When we go NO_HZ idle during the window, we can negate our sample
-+ *    contribution, causing under-accounting.
-+ *
-+ *    We avoid this by keeping two idle-delta counters and flipping them
-+ *    when the window starts, thus separating old and new NO_HZ load.
-+ *
-+ *    The only trick is the slight shift in index flip for read vs write.
-+ *
-+ *        0s            5s            10s           15s
-+ *          +10           +10           +10           +10
-+ *        |-|-----------|-|-----------|-|-----------|-|
-+ *    r:0 0 1           1 0           0 1           1 0
-+ *    w:0 1 1           0 0           1 1           0 0
-+ *
-+ *    This ensures we'll fold the old idle contribution in this window while
-+ *    accumlating the new one.
-+ *
-+ *  - When we wake up from NO_HZ idle during the window, we push up our
-+ *    contribution, since we effectively move our sample point to a known
-+ *    busy state.
-+ *
-+ *    This is solved by pushing the window forward, and thus skipping the
-+ *    sample, for this cpu (effectively using the idle-delta for this cpu which
-+ *    was in effect at the time the window opened). This also solves the issue
-+ *    of having to deal with a cpu having been in NOHZ idle for multiple
-+ *    LOAD_FREQ intervals.
-  *
-  * When making the ILB scale, we should try to pull this in as well.
-  */
--static atomic_long_t calc_load_tasks_idle;
-+static atomic_long_t calc_load_idle[2];
-+static int calc_load_idx;
-+
-+static inline int calc_load_write_idx(void)
-+{
-+	int idx = calc_load_idx;
-+
-+	/*
-+	 * See calc_global_nohz(), if we observe the new index, we also
-+	 * need to observe the new update time.
-+	 */
-+	smp_rmb();
-+
-+	/*
-+	 * If the folding window started, make sure we start writing in the
-+	 * next idle-delta.
-+	 */
-+	if (!time_before(jiffies, calc_load_update))
-+		idx++;
-+
-+	return idx & 1;
-+}
-+
-+static inline int calc_load_read_idx(void)
-+{
-+	return calc_load_idx & 1;
-+}
- 
--static void calc_load_account_idle(struct rq *this_rq)
-+void calc_load_enter_idle(void)
- {
-+	struct rq *this_rq = this_rq();
- 	long delta;
- 
-+	/*
-+	 * We're going into NOHZ mode, if there's any pending delta, fold it
-+	 * into the pending idle delta.
-+	 */
- 	delta = calc_load_fold_active(this_rq);
--	if (delta)
--		atomic_long_add(delta, &calc_load_tasks_idle);
-+	if (delta) {
-+		int idx = calc_load_write_idx();
-+		atomic_long_add(delta, &calc_load_idle[idx]);
-+	}
- }
- 
--static long calc_load_fold_idle(void)
-+void calc_load_exit_idle(void)
- {
--	long delta = 0;
-+	struct rq *this_rq = this_rq();
- 
- 	/*
--	 * Its got a race, we don't care...
-+	 * If we're still before the sample window, we're done.
- 	 */
--	if (atomic_long_read(&calc_load_tasks_idle))
--		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
-+	if (time_before(jiffies, this_rq->calc_load_update))
-+		return;
-+
-+	/*
-+	 * We woke inside or after the sample window, this means we're already
-+	 * accounted through the nohz accounting, so skip the entire deal and
-+	 * sync up for the next window.
-+	 */
-+	this_rq->calc_load_update = calc_load_update;
-+	if (time_before(jiffies, this_rq->calc_load_update + 10))
-+		this_rq->calc_load_update += LOAD_FREQ;
-+}
-+
-+static long calc_load_fold_idle(void)
-+{
-+	int idx = calc_load_read_idx();
-+	long delta = 0;
-+
-+	if (atomic_long_read(&calc_load_idle[idx]))
-+		delta = atomic_long_xchg(&calc_load_idle[idx], 0);
- 
- 	return delta;
- }
-@@ -3542,66 +3694,39 @@ static void calc_global_nohz(void)
- {
- 	long delta, active, n;
- 
--	/*
--	 * If we crossed a calc_load_update boundary, make sure to fold
--	 * any pending idle changes, the respective CPUs might have
--	 * missed the tick driven calc_load_account_active() update
--	 * due to NO_HZ.
--	 */
--	delta = calc_load_fold_idle();
--	if (delta)
--		atomic_long_add(delta, &calc_load_tasks);
--
--	/*
--	 * It could be the one fold was all it took, we done!
--	 */
--	if (time_before(jiffies, calc_load_update + 10))
--		return;
--
--	/*
--	 * Catch-up, fold however many we are behind still
--	 */
--	delta = jiffies - calc_load_update - 10;
--	n = 1 + (delta / LOAD_FREQ);
-+	if (!time_before(jiffies, calc_load_update + 10)) {
-+		/*
-+		 * Catch-up, fold however many we are behind still
-+		 */
-+		delta = jiffies - calc_load_update - 10;
-+		n = 1 + (delta / LOAD_FREQ);
- 
--	active = atomic_long_read(&calc_load_tasks);
--	active = active > 0 ? active * FIXED_1 : 0;
-+		active = atomic_long_read(&calc_load_tasks);
-+		active = active > 0 ? active * FIXED_1 : 0;
- 
--	avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
--	avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
--	avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
-+		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
-+		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
-+		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
- 
--	calc_load_update += n * LOAD_FREQ;
--}
--#else
--static void calc_load_account_idle(struct rq *this_rq)
--{
--}
-+		calc_load_update += n * LOAD_FREQ;
-+	}
- 
--static inline long calc_load_fold_idle(void)
--{
--	return 0;
-+	/*
-+	 * Flip the idle index...
-+	 *
-+	 * Make sure we first write the new time then flip the index, so that
-+	 * calc_load_write_idx() will see the new time when it reads the new
-+	 * index, this avoids a double flip messing things up.
-+	 */
-+	smp_wmb();
-+	calc_load_idx++;
- }
-+#else /* !CONFIG_NO_HZ */
- 
--static void calc_global_nohz(void)
--{
--}
--#endif
-+static inline long calc_load_fold_idle(void) { return 0; }
-+static inline void calc_global_nohz(void) { }
- 
--/**
-- * get_avenrun - get the load average array
-- * @loads:	pointer to dest load array
-- * @offset:	offset to add
-- * @shift:	shift count to shift the result left
-- *
-- * These values are estimates at best, so no need for locking.
-- */
--void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
--{
--	loads[0] = (avenrun[0] + offset) << shift;
--	loads[1] = (avenrun[1] + offset) << shift;
--	loads[2] = (avenrun[2] + offset) << shift;
--}
-+#endif /* CONFIG_NO_HZ */
- 
- /*
-  * calc_load - update the avenrun load estimates 10 ticks after the
-@@ -3609,11 +3734,18 @@ void get_avenrun(unsigned long *loads, u
-  */
- void calc_global_load(unsigned long ticks)
- {
--	long active;
-+	long active, delta;
- 
- 	if (time_before(jiffies, calc_load_update + 10))
- 		return;
- 
-+	/*
-+	 * Fold the 'old' idle-delta to include all NO_HZ cpus.
-+	 */
-+	delta = calc_load_fold_idle();
-+	if (delta)
-+		atomic_long_add(delta, &calc_load_tasks);
-+
- 	active = atomic_long_read(&calc_load_tasks);
- 	active = active > 0 ? active * FIXED_1 : 0;
- 
-@@ -3624,12 +3756,7 @@ void calc_global_load(unsigned long tick
- 	calc_load_update += LOAD_FREQ;
- 
- 	/*
--	 * Account one period with whatever state we found before
--	 * folding in the nohz state and ageing the entire idle period.
--	 *
--	 * This avoids loosing a sample when we go idle between 
--	 * calc_load_account_active() (10 ticks ago) and now and thus
--	 * under-accounting.
-+	 * In case we idled for multiple LOAD_FREQ intervals, catch up in bulk.
- 	 */
- 	calc_global_nohz();
- }
-@@ -3646,7 +3773,6 @@ static void calc_load_account_active(str
- 		return;
- 
- 	delta  = calc_load_fold_active(this_rq);
--	delta += calc_load_fold_idle();
- 	if (delta)
- 		atomic_long_add(delta, &calc_load_tasks);
- 
-@@ -3654,6 +3780,10 @@ static void calc_load_account_active(str
- }
- 
- /*
-+ * End of global load-average stuff
-+ */
-+
-+/*
-  * The exact cpuload at various idx values, calculated at every tick would be
-  * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
-  *
---- a/kernel/sched_idletask.c
-+++ b/kernel/sched_idletask.c
-@@ -23,7 +23,6 @@ static void check_preempt_curr_idle(stru
- static struct task_struct *pick_next_task_idle(struct rq *rq)
- {
- 	schedstat_inc(rq, sched_goidle);
--	calc_load_account_idle(rq);
- 	return rq->idle;
- }
- 
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -430,6 +430,7 @@ void tick_nohz_stop_sched_tick(int inidl
- 		 */
- 		if (!ts->tick_stopped) {
- 			select_nohz_load_balancer(1);
-+			calc_load_enter_idle();
- 
- 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
- 			ts->tick_stopped = 1;
-@@ -563,6 +564,7 @@ void tick_nohz_restart_sched_tick(void)
- 		account_idle_ticks(ticks);
- #endif
- 
-+	calc_load_exit_idle();
- 	touch_softlockup_watchdog();
- 	/*
- 	 * Cancel the scheduled timer and restore the tick
+ static const struct option_blacklist_info net_intf3_blacklist = {
+ 	.reserved = BIT(3),
+ };
+@@ -1099,6 +1103,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1298, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1299, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1300, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1402, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff,
+ 	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_k3765_z_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
 
 
