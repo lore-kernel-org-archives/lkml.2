@@ -1,124 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab2GWSnm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:43:42 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:19294 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab2GWSni (ORCPT
+	id S1754670Ab2GWSnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:43:55 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37938 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750970Ab2GWSnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:43:38 -0400
-Message-ID: <1343069014.25735.28.camel@ejdallLaptop>
-Subject: Re: [PATCH 5/5] block: genhd: add an interface to set disk's poll
- interval
-From: Betty Dall <betty.dall@hp.com>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Lin Ming <minggr@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
-Date: Mon, 23 Jul 2012 12:43:34 -0600
-In-Reply-To: <1343026180-22236-6-git-send-email-aaron.lu@amd.com>
-References: <1343026180-22236-1-git-send-email-aaron.lu@amd.com>
-	 <1343026180-22236-6-git-send-email-aaron.lu@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 23 Jul 2012 14:43:53 -0400
+X-Sasl-enc: cZYq6bNE68d7WKGnNIP4GJPPy3+b3SkIk6u9EjkWgcJ9 1343069032
+Date: Mon, 23 Jul 2012 15:43:49 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: "Du, ChangbinX" <changbinx.du@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Do need keep mail in thread when sending a new version patch?
+Message-ID: <20120723184349.GB22968@khazad-dum.debian.net>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A0B2DCF@SHSMSX101.ccr.corp.intel.com>
+ <20120723113449.GD9103@khazad-dum.debian.net>
+ <500D89D0.8080005@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500D89D0.8080005@xenotime.net>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aaron,
-
-On Mon, 2012-07-23 at 14:49 +0800, Aaron Lu wrote:
-> Set the ODD's in kernel poll interval to 2s for the user in case the
-> user is using an old distro on which udev will not set the system wide
-> block parameter events_dfl_poll_msecs.
-Why did you pick 2 seconds? 
-
+On Mon, 23 Jul 2012, Randy Dunlap wrote:
+> On 07/23/2012 04:34 AM, Henrique de Moraes Holschuh wrote:
+> > On Mon, 23 Jul 2012, Du, ChangbinX wrote:
+> >> Hi, developers!
+> >> 	I have a question about sending patch: If my patch have a new version, 
+> >> do I need set "--in-reply-to" option so keep them in the same thread when
+> >> sending it? And in which cases should "--in-reply-to" option be set? Thanks!
+> > 
+> > Yes, please do it when possible.  It groups patches nicely in theaded email
+> > readers, and it makes it easier for people who are interested in the subject
+> > to find the new version of your patchset (and all individual patches that
+> > are part of the same patchset), AND for people who are not interested to
+> > skip the entire thing.
 > 
-> Signed-off-by: Aaron Lu <aaron.lu@amd.com>
-> ---
->  block/genhd.c         | 23 +++++++++++++++++------
->  drivers/scsi/sr.c     |  1 +
->  include/linux/genhd.h |  1 +
->  3 files changed, 19 insertions(+), 6 deletions(-)
 > 
-> diff --git a/block/genhd.c b/block/genhd.c
-> index bdb3682..de9b9d9 100644
-> --- a/block/genhd.c
-> +++ b/block/genhd.c
-> @@ -1619,6 +1619,19 @@ static void disk_events_workfn(struct work_struct *work)
->  		kobject_uevent_env(&disk_to_dev(disk)->kobj, KOBJ_CHANGE, envp);
->  }
->  
-> +int disk_events_set_poll_msecs(struct gendisk *disk, long intv)
-> +{
-> +	if (intv < 0 && intv != -1)
-> +		return -EINVAL;
-> +
-> +	disk_block_events(disk);
-> +	disk->ev->poll_msecs = intv;
-> +	__disk_unblock_events(disk, true);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(disk_events_set_poll_msecs);
-> +
->  /*
->   * A disk events enabled device has the following sysfs nodes under
->   * its /sys/block/X/ directory.
-> @@ -1675,16 +1688,14 @@ static ssize_t disk_events_poll_msecs_store(struct device *dev,
->  {
->  	struct gendisk *disk = dev_to_disk(dev);
->  	long intv;
-> +	int ret;
->  
->  	if (!count || !sscanf(buf, "%ld", &intv))
->  		return -EINVAL;
->  
-> -	if (intv < 0 && intv != -1)
-> -		return -EINVAL;
-> -
-> -	disk_block_events(disk);
-> -	disk->ev->poll_msecs = intv;
-> -	__disk_unblock_events(disk, true);
-> +	ret = disk_events_set_poll_msecs(disk, intv);
-> +	if (ret)
-> +		return ret;
->  
->  	return count;
->  }
-> diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-> index 2f159aa..78c4226 100644
-> --- a/drivers/scsi/sr.c
-> +++ b/drivers/scsi/sr.c
-> @@ -869,6 +869,7 @@ static int sr_probe(struct device *dev)
->  	dev_set_drvdata(dev, cd);
->  	disk->flags |= GENHD_FL_REMOVABLE;
->  	add_disk(disk);
-> +	disk_events_set_poll_msecs(disk, 2000);
+> Please compare to a proposed patch:
+> 
+>   http://marc.info/?l=linux-doc&m=133539116205348&w=2
 
-Could you check that disk event's poll_msecs is the default (-1) before
-setting it to 2s? I am thinking of a case when the probe happens after
-the call to disk_events_poll_msecs_store() and this code would overwrite
-the user specified value.
+This one (referenced by the commit changelog of the above) seems to be a
+better explanation:
 
->  
->  	sdev_printk(KERN_DEBUG, sdev,
->  		    "Attached scsi CD-ROM %s\n", cd->cdi.name);
-> diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-> index 017a7fb..7414fb5 100644
-> --- a/include/linux/genhd.h
-> +++ b/include/linux/genhd.h
-> @@ -418,6 +418,7 @@ extern void disk_block_events(struct gendisk *disk);
->  extern void disk_unblock_events(struct gendisk *disk);
->  extern void disk_flush_events(struct gendisk *disk, unsigned int mask);
->  extern unsigned int disk_clear_events(struct gendisk *disk, unsigned int mask);
-> +extern int disk_events_set_poll_msecs(struct gendisk *disk, long intv);
->  
->  /* drivers/char/random.c */
->  extern void add_disk_randomness(struct gendisk *disk);
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-April/096236.html
 
--Betty
+Anyway, I stand corrected.
 
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
