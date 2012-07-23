@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab2GWQ2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 12:28:25 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44802 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab2GWQ2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 12:28:23 -0400
-Date: Mon, 23 Jul 2012 17:32:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH 02/12] usb: fix sillies in the metro USB driver
-Message-ID: <20120723173201.5724b9d0@pyramind.ukuu.org.uk>
-In-Reply-To: <4FE78B62.4090106@suse.cz>
-References: <20120622153600.1405.15575.stgit@localhost.localdomain>
-	<20120622153655.1405.21453.stgit@localhost.localdomain>
-	<4FE78B62.4090106@suse.cz>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754343Ab2GWQ3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 12:29:34 -0400
+Received: from claranet-outbound-smtp01.uk.clara.net ([195.8.89.34]:60458 "EHLO
+	claranet-outbound-smtp01.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754257Ab2GWQ3d convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 12:29:33 -0400
+X-Greylist: delayed 1548 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jul 2012 12:29:33 EDT
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+To: =?utf-8?q?J=C3=B6rn_Engel?= <joern@logfs.org>
+Subject: Re: [PATCH] add blockconsole version 1.1
+Date: Mon, 23 Jul 2012 15:33:16 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-90.fc15.x86_64; KDE/4.6.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
+References: <20120424205946.GH20610@logfs.org> <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com> <20120712174633.GA7248@logfs.org>
+In-Reply-To: <20120712174633.GA7248@logfs.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201207231533.16350.tvrtko.ursulin@onelan.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Jun 2012 23:49:22 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
 
-> On 06/22/2012 05:38 PM, Alan Cox wrote:
-> > Bits noticed doing the termios conversion
-> > 
-> > Signed-off-by: Alan Cox <alan@linux.intel.com>
-> > ---
-> > 
-> >  drivers/usb/serial/metro-usb.c |    8 +-------
-> >  1 file changed, 1 insertion(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/usb/serial/metro-usb.c b/drivers/usb/serial/metro-usb.c
-> > index 81423f7..bad5f0c 100644
-> > --- a/drivers/usb/serial/metro-usb.c
-> > +++ b/drivers/usb/serial/metro-usb.c
-> > @@ -130,20 +130,14 @@ static void metrousb_read_int_callback(struct urb *urb)
-> ...
-> >  	if (tty && urb->actual_length) {
-> >  		/* Loop through the data copying each byte to the tty layer. */
-> >  		tty_insert_flip_string(tty, data, urb->actual_length);
-> >  
-> >  		/* Force the data to the tty layer. */
-> >  		tty_flip_buffer_push(tty);
-> > +		tty_kref_put(tty);
-> >  	}
-> > -	tty_kref_put(tty);
-> 
-> This doesn't seem right. (Depends on whether tty is non-null iff
-> urb->actual_length is non-zero.)
+Hi,
 
-Doh fixed.. queued
+On Thursday 12 Jul 2012 18:46:34 Jörn Engel wrote:
+> Console driver similar to netconsole, except it writes to a block
+> device.  Can be useful in a setup where netconsole, for whatever
+> reasons, is impractical.
+
+Perhaps you need to add a word or two about limitations compared to netconsole 
+in documentation because it is quite significant difference in reliability? I 
+mean so it is not assumed it is analogous to netconsole but just a different 
+underlying media. I don't know if someone would expect it, but better said 
+than not. 
+
+I second the notion that logging to partitions would be useful.
+
+Also, and I haven't checked what the swap format is, if it could somehow be 
+integrated together that could be useful.
+
+Tvrtko
