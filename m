@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab2GWKUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 06:20:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:50670 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924Ab2GWKUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 06:20:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="183915828"
-Date: Mon, 23 Jul 2012 11:37:18 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Anisse Astier <anisse@astier.eu>
-Cc: Josh Boyer <jwboyer@redhat.com>, kernel-team@fedoraproject.org,
-        Dave Airlie <airlied@redhat.com>, dkline@redhat.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: gma500 opregion/power init order backtrace
-Message-ID: <20120723113718.3422c3c9@bob.linux.org.uk>
-In-Reply-To: <20120720172044.5ad38413@destiny.ordissimo>
-References: <20120717192614.GB18229@zod.bos.redhat.com>
-	<20120717221242.315f8dfe@bob.linux.org.uk>
-	<20120720163247.19578db4@destiny.ordissimo>
-	<20120720172044.5ad38413@destiny.ordissimo>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752117Ab2GWK0g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 06:26:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:64201 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab2GWK0e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 06:26:34 -0400
+Message-ID: <500D26A1.50500@mvista.com>
+Date: Mon, 23 Jul 2012 14:25:37 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: kyak <bas@bmail.ru>
+CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] USB: plusb: Add support for PL-2501
+References: <alpine.LNX.2.02.1207222138410.1183@bas>
+In-Reply-To: <alpine.LNX.2.02.1207222138410.1183@bas>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What I meant is: although these keycodes are already sent by acpi
-> driver code, is it up to userspace to figure out which backlight
-> driver to use, or should the kernel modify brightness in psb-bl
-> directly ?
+Hello.
 
-I'm not sure how its all glued together. I need to find out some day !
+On 22-07-2012 21:42, kyak wrote:
+
+> From: Mikhail Peselnik <peselnik@gmail.com>
+
+> This patch adds support for PL-2501 by adding the appropriate USB
+> ID's. This chip is used in several USB 'Easy Trasfer' Cables.
+
+> Signed-off-by: Mikhail Peselnik <peselnik@gmail.com>
+> Tested-by: Mikhail Peselnik <peselnik@gmail.com>
+> ---
+> Now with proper sign-offs and right people in cc.
+> plusb driver (drivers/net/usb/plusb.c) doesn't recognize PL2501 chip.
+> Since PL2501 uses the same code as PL2301/PL2302 (PL2501 works in
+> compatibility mode with PL2301/PL2302), the fix is trivial and
+> attached as a patch.
+
+> Just to note: the patch is not mine, it can be found here and there on
+> Internet.
+> I've tested the patch and it works great.
+
+> Thank you.
+
+> --- linux-3.5/drivers/net/usb/plusb.c.orig      2012-07-22
+> 21:06:41.905802795 +0400
+> +++ linux-3.5/drivers/net/usb/plusb.c   2012-07-22 21:07:00.345552404 +0400
+[...]
+> @@ -158,5 +161,5 @@ static struct usb_driver plusb_driver =
+>   module_usb_driver(plusb_driver);
+>
+>   MODULE_AUTHOR("David Brownell");
+> -MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1 USB Host to Host Link Driver");
+> +MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1/2501 USB Host to Host
+> Link Driver");
+
+    Your patch is line wrapped. Seeems easy to fix though...
+
+WBR, Sergei
+
