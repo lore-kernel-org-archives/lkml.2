@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab2GWUzB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:55:01 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50614 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2GWUy7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:54:59 -0400
-Message-ID: <500DBA1F.7050605@wwwdotorg.org>
-Date: Mon, 23 Jul 2012 14:54:55 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1754842Ab2GWVDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 17:03:18 -0400
+Received: from shutemov.name ([176.9.204.213]:44241 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754576Ab2GWVDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 17:03:17 -0400
+Date: Tue, 24 Jul 2012 00:04:07 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf: fix build error
+Message-ID: <20120723210407.GA25186@shutemov.name>
+References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
+ <20120723180244.GB5418@infradead.org>
+ <20120723181608.GA24558@shutemov.name>
+ <20120723181849.GF6717@infradead.org>
+ <20120723195146.GA24938@shutemov.name>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, "lrg@ti.com" <lrg@ti.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] regulator: tps6586x: add support for input supply
-References: <1342187432-18668-1-git-send-email-ldewangan@nvidia.com> <1342187432-18668-3-git-send-email-ldewangan@nvidia.com> <20120713142229.GM4215@opensource.wolfsonmicro.com> <500057A0.1050108@nvidia.com> <20120715212114.GI4041@opensource.wolfsonmicro.com>
-In-Reply-To: <20120715212114.GI4041@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120723195146.GA24938@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2012 03:21 PM, Mark Brown wrote:
-> On Fri, Jul 13, 2012 at 10:45:12PM +0530, Laxman Dewangan wrote:
+On Mon, Jul 23, 2012 at 10:51:46PM +0300, Kirill A. Shutemov wrote:
+> On Mon, Jul 23, 2012 at 08:18:49PM +0200, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Jul 23, 2012 at 09:16:08PM +0300, Kirill A. Shutemov escreveu:
+> > > On Mon, Jul 23, 2012 at 08:02:44PM +0200, Arnaldo Carvalho de Melo wrote:
+> > > > Em Mon, Jul 23, 2012 at 06:00:44PM +0300, Kirill A. Shutemov escreveu:
+> > > > > util/parse-events.c:29:5: error: redundant redeclaration of ‘parse_events_parse’ [-Werror=redundant-decls]
+> > > > > util/parse-events-bison.h:99:5: note: previous declaration of ‘parse_events_parse’ was here
+> > > > > cc1: all warnings being treated as errors
+> > 
+> > > > Causes the build to fail for me:
+> > 
+> > > > cc1: warnings being treated as errors
+> > > > util/parse-events.c: In function ‘parse_events__scanner’:
+> > > > util/parse-events.c:701: error: implicit declaration of function ‘parse_events_parse’
+> > > > util/parse-events.c:701: error: nested extern declaration of ‘parse_events_parse’
+> > > > make: *** [/home/acme/git/build/perf/util/parse-events.o] Error 1
+> > > > make: *** Waiting for unfinished jobs....
+> > > > make: Leaving directory `/home/git/linux/tools/perf'
+> > > 
+> > > What bison version do you have?
+> > 
+> > [acme@sandy linux]$ rpm -q bison
+> > bison-2.4.1-5.el6.x86_64
+> > 
 > 
->> I was thinking that 1/2 should also go through your tree to
->> avoid any functionality break on existing platform who are using
->> this regulator.
-> 
-> I'd be happy to do that if the ARM people are happy with it; just
-> let me know and resend the patch if you want me to apply it.
+> Could you test this one?
 
-Patch 2/2 really depends on patch 1/2 to avoid git bisect breakage;
-are you able to rebase it to maintain that order when applying it?
+Err... Sorry, it breaks build with O=...
+Fixed version:
 
+>From 14f476dddcb36bca93a50ef1a3341e2c60836e0a Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Mon, 23 Jul 2012 17:39:11 +0300
+Subject: [PATCH 1/2] perf: fix build error
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
+Bison 2.6 started to generate parse_events_parse() declaration in
+header. In this case we have redundant redeclaration:
+
+util/parse-events.c:29:5: error: redundant redeclaration of ‘parse_events_parse’ [-Werror=redundant-decls]
+In file included from util/parse-events.c:14:0:
+util/parse-events-bison.h:99:5: note: previous declaration of ‘parse_events_parse’ was here
+cc1: all warnings being treated as errors
+
+Let's disable -Wredundant-decls for util/parse-events.c since it
+includes header we can't control.
+
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ tools/perf/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 75d74e5..1091192 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -803,6 +803,9 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
++$(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
++
+ $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
+ 
+-- 
+ Kirill A. Shutemov
