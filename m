@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab2GWBqK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:46:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54495 "EHLO
+	id S1753853Ab2GWBqo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:46:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54493 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753629Ab2GWBnw (ORCPT
+	by vger.kernel.org with ESMTP id S1753631Ab2GWBnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:52 -0400
-Message-Id: <20120723010655.469503467@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:49 -0400
+Message-Id: <20120723010655.323382582@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:17 +0100
+Date: Mon, 23 Jul 2012 02:07:16 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Stanislaw Ledwon <staszek.ledwon@linux.jf.intel.com>,
-        Stanislaw Ledwon <staszek.ledwon@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Andiry Xu <andiry.xu@amd.com>
-Subject: [ 026/108] usb: Add support for root hub port status CAS
+        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>,
+        Stefan Assmann <sassmann@redhat.com>
+Subject: [ 025/108] iommu/amd: Initialize dma_ops for hotplug and sriov devices
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,169 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Ledwon <staszek.ledwon@linux.jf.intel.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 8bea2bd37df08aaa599aa361a9f8b836ba98e554 upstream.
+commit ac1534a55d1e87d59a21c09c570605933b551480 upstream.
 
-The host controller port status register supports CAS (Cold Attach
-Status) bit. This bit could be set when USB3.0 device is connected
-when system is in Sx state. When the system wakes to S0 this port
-status with CAS bit is reported and this port can't be used by any
-device.
+When a device is added to the system at runtime the AMD
+IOMMU driver initializes the necessary data structures to
+handle translation for it. But it forgets to change the
+per-device dma_ops to point to the AMD IOMMU driver. So
+mapping actually never happens and all DMA accesses end in
+an IO_PAGE_FAULT. Fix this.
 
-When CAS bit is set the port should be reset by warm reset. This
-was not supported by xhci driver.
-
-The issue was found when pendrive was connected to suspended
-platform. The link state of "Compliance Mode" was reported together
-with CAS bit. This link state was also not supported by xhci and
-core/hub.c.
-
-The CAS bit is defined only for xhci root hub port and it is
-not supported on regular hubs. The link status is used to force
-warm reset on port. Make the USB core issue a warm reset when port
-is in ether the 'inactive' or 'compliance mode'. Change the xHCI driver
-to report 'compliance mode' when the CAS is set. This force warm reset
-on the root hub port.
-
-This patch should be backported to stable kernels as old as 3.2, that
-contain the commit 10d674a82e553cb8a1f41027bb3c3e309b3f6804 "USB: When
-hot reset for USB3 fails, try warm reset."
-
-Signed-off-by: Stanislaw Ledwon <staszek.ledwon@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Andiry Xu <andiry.xu@amd.com>
+Reported-by: Stefan Assmann <sassmann@redhat.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Use global iommu_pass_through; there is no per-device pass_through]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/hub.c      |   18 ++++++++++--------
- drivers/usb/host/xhci-hub.c |   44 +++++++++++++++++++++++++++++++++++++------
- drivers/usb/host/xhci.h     |    6 +++++-
- 3 files changed, 53 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 25a7422..8fb4849 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2324,12 +2324,16 @@ static unsigned hub_is_wusb(struct usb_hub *hub)
- static int hub_port_reset(struct usb_hub *hub, int port1,
- 			struct usb_device *udev, unsigned int delay, bool warm);
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -59,6 +59,8 @@ static struct protection_domain *pt_doma
  
--/* Is a USB 3.0 port in the Inactive state? */
--static bool hub_port_inactive(struct usb_hub *hub, u16 portstatus)
-+/* Is a USB 3.0 port in the Inactive or Complinance Mode state?
-+ * Port worm reset is required to recover
-+ */
-+static bool hub_port_warm_reset_required(struct usb_hub *hub, u16 portstatus)
- {
- 	return hub_is_superspeed(hub->hdev) &&
--		(portstatus & USB_PORT_STAT_LINK_STATE) ==
--		USB_SS_PORT_LS_SS_INACTIVE;
-+		(((portstatus & USB_PORT_STAT_LINK_STATE) ==
-+		  USB_SS_PORT_LS_SS_INACTIVE) ||
-+		 ((portstatus & USB_PORT_STAT_LINK_STATE) ==
-+		  USB_SS_PORT_LS_COMP_MOD)) ;
- }
+ static struct iommu_ops amd_iommu_ops;
  
- static int hub_port_wait_reset(struct usb_hub *hub, int port1,
-@@ -2365,7 +2369,7 @@ static int hub_port_wait_reset(struct usb_hub *hub, int port1,
- 			 *
- 			 * See https://bugzilla.kernel.org/show_bug.cgi?id=41752
- 			 */
--			if (hub_port_inactive(hub, portstatus)) {
-+			if (hub_port_warm_reset_required(hub, portstatus)) {
- 				int ret;
- 
- 				if ((portchange & USB_PORT_STAT_C_CONNECTION))
-@@ -4408,9 +4412,7 @@ static void hub_events(void)
- 			/* Warm reset a USB3 protocol port if it's in
- 			 * SS.Inactive state.
- 			 */
--			if (hub_is_superspeed(hub->hdev) &&
--				(portstatus & USB_PORT_STAT_LINK_STATE)
--					== USB_SS_PORT_LS_SS_INACTIVE) {
-+			if (hub_port_warm_reset_required(hub, portstatus)) {
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
- 				hub_port_reset(hub, i, NULL,
- 						HUB_BH_RESET_TIME, true);
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 2732ef6..7b01094 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -462,6 +462,42 @@ void xhci_test_and_clear_bit(struct xhci_hcd *xhci, __le32 __iomem **port_array,
- 	}
- }
- 
-+/* Updates Link Status for super Speed port */
-+static void xhci_hub_report_link_state(u32 *status, u32 status_reg)
-+{
-+	u32 pls = status_reg & PORT_PLS_MASK;
++static struct dma_map_ops amd_iommu_dma_ops;
 +
-+	/* resume state is a xHCI internal state.
-+	 * Do not report it to usb core.
-+	 */
-+	if (pls == XDEV_RESUME)
-+		return;
+ /*
+  * general struct to manage commands send to an IOMMU
+  */
+@@ -1878,6 +1880,11 @@ static int device_change_notifier(struct
+ 		list_add_tail(&dma_domain->list, &iommu_pd_list);
+ 		spin_unlock_irqrestore(&iommu_pd_list_lock, flags);
+ 
++		if (!iommu_pass_through)
++			dev->archdata.dma_ops = &amd_iommu_dma_ops;
++		else
++			dev->archdata.dma_ops = &nommu_dma_ops;
 +
-+	/* When the CAS bit is set then warm reset
-+	 * should be performed on port
-+	 */
-+	if (status_reg & PORT_CAS) {
-+		/* The CAS bit can be set while the port is
-+		 * in any link state.
-+		 * Only roothubs have CAS bit, so we
-+		 * pretend to be in compliance mode
-+		 * unless we're already in compliance
-+		 * or the inactive state.
-+		 */
-+		if (pls != USB_SS_PORT_LS_COMP_MOD &&
-+		    pls != USB_SS_PORT_LS_SS_INACTIVE) {
-+			pls = USB_SS_PORT_LS_COMP_MOD;
-+		}
-+		/* Return also connection bit -
-+		 * hub state machine resets port
-+		 * when this bit is set.
-+		 */
-+		pls |= USB_PORT_STAT_CONNECTION;
-+	}
-+	/* update status field */
-+	*status |= pls;
-+}
-+
- int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
- 		u16 wIndex, char *buf, u16 wLength)
- {
-@@ -606,13 +642,9 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
- 			else
- 				status |= USB_PORT_STAT_POWER;
- 		}
--		/* Port Link State */
-+		/* Update Port Link State for super speed ports*/
- 		if (hcd->speed == HCD_USB3) {
--			/* resume state is a xHCI internal state.
--			 * Do not report it to usb core.
--			 */
--			if ((temp & PORT_PLS_MASK) != XDEV_RESUME)
--				status |= (temp & PORT_PLS_MASK);
-+			xhci_hub_report_link_state(&status, temp);
- 		}
- 		if (bus_state->port_c_suspend & (1 << wIndex))
- 			status |= 1 << USB_PORT_FEAT_C_SUSPEND;
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index de3d6e3..55c0785 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -341,7 +341,11 @@ struct xhci_op_regs {
- #define PORT_PLC	(1 << 22)
- /* port configure error change - port failed to configure its link partner */
- #define PORT_CEC	(1 << 23)
--/* bit 24 reserved */
-+/* Cold Attach Status - xHC can set this bit to report device attached during
-+ * Sx state. Warm port reset should be perfomed to clear this bit and move port
-+ * to connected state.
-+ */
-+#define PORT_CAS	(1 << 24)
- /* wake on connect (enable) */
- #define PORT_WKCONN_E	(1 << 25)
- /* wake on disconnect (enable) */
+ 		break;
+ 	case BUS_NOTIFY_DEL_DEVICE:
+ 
 
 
