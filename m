@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab2GWPu5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 11:50:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51406 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab2GWPuy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 11:50:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 00/13] UAPI header file split
-Date: Mon, 23 Jul 2012 15:50:43 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@kernel.org, davej@redhat.com
-References: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
+	id S1754262Ab2GWPwe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 11:52:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10679 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754220Ab2GWPwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 11:52:33 -0400
+Date: Mon, 23 Jul 2012 17:49:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] proc: do not allow negative offsets on
+	/proc/<pid>/environ
+Message-ID: <20120723154927.GA17439@redhat.com>
+References: <1342974959-2748-1-git-send-email-tixxdz@opendz.org> <20120722200049.GA29222@redhat.com> <20120723010447.GA23410@dztty>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207231550.43775.arnd@arndb.de>
-X-Provags-ID: V02:K0:4sINBobjRlEJct9FVzxCF/cI0mkYWoMI2Tx40lKjOov
- bdc601lLSHRYpbRWe8jk8XBTIPBfDF8rrBfm3qF+Gkqf9M4I4U
- 1AhpWcBQSEGC1liIBOhUHPfw0DFWeHqBOk7utJrjPfDYXdm4hw
- pHTqMGJi/dpHISBpArGNeVeTJgsXTt0wRJ9DDy7uACKXi7vu4T
- NJ8P8L168rT3mrxtPacZPXQFBBOnKWDENV0jmewIxViOk7QMYi
- 1GACkaNZQeZLd1Kl+sMqRznzp6R3E6xYIeFV9cv1WznaI6XKy3
- 6uL2Mv9jDC7NgsLHFKegaNxD04t4W7yEZCG6rGADcs7VX1MYcE
- laMVkCnaePlS7PjENx1M=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120723010447.GA23410@dztty>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 July 2012, David Howells wrote:
->      (a) It reduces the size of the kernel-only headers and obviates the need
->          for __KERNEL__ conditionals in the remnant kernel-only headers.
-> 
->      (b) In what we have today, there are complex interdependencies between
->          headers that are partly exported to user space, and we want to reduce
->          those interdependencies.
-> 
->          It simplifies the problem space by splitting out the user headers as
->          they then only depend only on other user headers.
-> 
->      This step makes it easier to follow through with the remaining steps as
->      the remnant kernel headers can be split up without regard as to whether
->      the UAPI will be broken.  Header files such as linux/sched.h can even
->      disappear entirely if that seems convenient.
-> 
->      There is another potential benefit as well: it becomes easier to track
->      when the UAPI changes just from the filenames in the GIT log.
-> 
->      Further, linux-api@vger.kernel.org can be put into the MAINTAINERS file
->      for the uapi/ directories so that patches changing them get sent to that
->      list by everyone using get_maintainer.pl.
+Hi Djalal,
 
-Looks all good to me. For the entire series:
+On 07/23, Djalal Harouni wrote:
+>
+> Hi Oleg,
+>
+> On Sun, Jul 22, 2012 at 10:00:49PM +0200, Oleg Nesterov wrote:
+> >
+> > Probablt the patch makes sense, but I can't understand the changelog...
+> >
+> > > Allowing negative offsets on /proc/<pid>/environ can turn it to act like
+> > > /proc/<pid>/mem. A negative offset will pass the
+> > > fs/read_write.c:lseek_execute() and the environ_read() checks and will
+> > > point to another VMA.
+> >
+> > which VMA?
+> It depends on the offset. Please see below.
+>
+> > environ_read() can only read the memory from [env_start, env_end], and
+> > it should check *ppos anyway to ensure it doesn't read something else.
+> Yes I agree, but currently that's not the case, there are no checks on *ppos.
+                                                  ^^^^^^^^^^^^^^^^^^^
+There is, unless I missed something, just it is buggy, no?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+> So if you pass a negative offset you will be able to read from an arbitrary
+> address.
+>
+> [...snip...]
+>
+>   inside environ_read() there is only a one check:
+>
+>   int this_len = mm->env_end - (mm->env_start + src);
+>
+>   if (this_len <= 0)
+>     break;
+>
+>
+>   Here 'src' is 'src = *ppos' the negative offset converted to unsigned long
+>   and (mm->env_start + src) can overflow and point to another VMA.
+>
+>   int this_len = mm->env_end - (mm->env_start + src)
+>
+>   'this_len' will be positive and we pass that check.
+
+OK, thanks, but doesn't this mean that this check should be fixed
+to avoid the overflow, no matter what *ppos is?
+
+With or without FMODE_UNSIGNED_OFFSET change. And perhaps it is
+possible to trigger the overflow even with the positive *ppos,
+because:
+
+> I also don't like the truncation of the result to 'int this_len'
+
+Yes.
+
+> BTW should I resend the patch with a better changelog entry ?
+
+Up to you, but I think this makes sense ;)
+
+> I'll also add another patch to check the offsets inside environ_read().
+
+Yes, agreed, but please see above.
+
+Please correct me, but afaics this patch should come 1st and fix the bug.
+FMODE_UNSIGNED_OFFSET change can be considered as a cleanup after that.
+
+What do you think?
+
+Oleg.
+
