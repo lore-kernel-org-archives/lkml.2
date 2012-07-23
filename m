@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab2GWLoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 07:44:16 -0400
-Received: from mail.bmail.ru ([194.67.1.203]:27066 "EHLO sovam.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750854Ab2GWLoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 07:44:15 -0400
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Mon Jul 23 15:44:12 2012
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-Date: Mon, 23 Jul 2012 15:44:11 +0400 (MSK)
-From: kyak <bas@bmail.ru>
-X-X-Sender: bas@bas
-To: linux-kernel@vger.kernel.org
-cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>
-Subject: [PATCH] USB: plusb: Add support for PL-2501
-Message-ID: <alpine.LNX.2.02.1207231540580.1183@bas>
-User-Agent: Alpine 2.02 (LNX 1266 2009-07-14)
+	id S1752591Ab2GWLq1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 07:46:27 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:48722 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750854Ab2GWLqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 07:46:25 -0400
+Message-ID: <500D398E.1060000@compulab.co.il>
+Date: Mon, 23 Jul 2012 14:46:22 +0300
+From: Denis Turischev <denis@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/2] xhci: provide usb_disable_xhci_ports function for Intel
+ chipsets.
+References: <5004454E.9030903@compulab.co.il> <20120717045416.GJ7599@xanatos> <50065E5A.2040103@compulab.co.il> <20120718165916.GA30828@xanatos>
+In-Reply-To: <20120718165916.GA30828@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikhail Peselnik <peselnik@gmail.com>
+Some devices with Intel Panther Point chipset may require switchover
+usb ports from XHCI back to EHCI controller before shutdown.
+Overwise various BIOS bugs related to power management may be
+triggered.
 
-This patch adds support for PL-2501 by adding the appropriate USB
-ID's. This chip is used in several USB 'Easy Trasfer' Cables.
-
-Signed-off-by: Mikhail Peselnik <peselnik@gmail.com>
-Tested-by: Mikhail Peselnik <peselnik@gmail.com>
+Signed-off-by: Denis Turischev <denis@compulab.co.il>
 ---
-Now with proper sign-offs and right people in cc and unwrapped lines.
-plusb driver (drivers/net/usb/plusb.c) doesn't recognize PL2501 chip.
-Since PL2501 uses the same code as PL2301/PL2302 (PL2501 works in
-compatibility mode with PL2301/PL2302), the fix is trivial and
-attached as a patch.
+ drivers/usb/host/pci-quirks.c |   14 ++++++++++++++
+ drivers/usb/host/pci-quirks.h |    1 +
+ 2 files changed, 15 insertions(+)
 
-Just to note: the patch is not mine, it can be found here and there on
-Internet.
-I've tested the patch and it works great.
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index df0828c..b19a84a 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -800,6 +800,20 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+ }
+ EXPORT_SYMBOL_GPL(usb_enable_xhci_ports);
 
-Thank you.
++void usb_disable_xhci_ports(struct pci_dev *xhci_pdev)
++{
++	u32		ports_available;
++
++	ports_available = 0x0;
++
++	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN,
++			cpu_to_le32(ports_available));
++
++	pci_write_config_dword(xhci_pdev, USB_INTEL_XUSB2PR,
++			cpu_to_le32(ports_available));
++}
++EXPORT_SYMBOL_GPL(usb_disable_xhci_ports);
++
+ /**
+  * PCI Quirks for xHCI.
+  *
+diff --git a/drivers/usb/host/pci-quirks.h b/drivers/usb/host/pci-quirks.h
+index b1002a8..ef004a5 100644
+--- a/drivers/usb/host/pci-quirks.h
++++ b/drivers/usb/host/pci-quirks.h
+@@ -10,6 +10,7 @@ void usb_amd_quirk_pll_disable(void);
+ void usb_amd_quirk_pll_enable(void);
+ bool usb_is_intel_switchable_xhci(struct pci_dev *pdev);
+ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev);
++void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
+ #else
+ static inline void usb_amd_quirk_pll_disable(void) {}
+ static inline void usb_amd_quirk_pll_enable(void) {}
+-- 
+1.7.9.5
 
---- linux-3.5/drivers/net/usb/plusb.c.orig	2012-07-22 21:06:41.905802795 +0400
-+++ linux-3.5/drivers/net/usb/plusb.c	2012-07-22 21:07:00.345552404 +0400
-@@ -107,7 +107,7 @@ static int pl_reset(struct usbnet *dev)
-  }
 
-  static const struct driver_info	prolific_info = {
--	.description =	"Prolific PL-2301/PL-2302/PL-25A1",
-+	.description =	"Prolific PL-2301/PL-2302/PL-25A1/PL-2501",
-  	.flags =	FLAG_POINTTOPOINT | FLAG_NO_SETINT,
-  		/* some PL-2302 versions seem to fail usb_set_interface() */
-  	.reset =	pl_reset,
-@@ -139,6 +139,9 @@ static const struct usb_device_id	produc
-  }, {
-  	USB_DEVICE(0x050d, 0x258a),     /* Belkin F5U258/F5U279 (PL-25A1) */
-  	.driver_info =  (unsigned long) &prolific_info,
-+}, {
-+	USB_DEVICE(0x067b, 0x2501),     /* PL-2501 */
-+	.driver_info =  (unsigned long) &prolific_info,
-  },
-
-  	{ },		// END
-@@ -158,5 +161,5 @@ static struct usb_driver plusb_driver =
-  module_usb_driver(plusb_driver);
-
-  MODULE_AUTHOR("David Brownell");
--MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1 USB Host to Host Link Driver");
-+MODULE_DESCRIPTION("Prolific PL-2301/2302/25A1/2501 USB Host to Host Link Driver");
-  MODULE_LICENSE("GPL");
