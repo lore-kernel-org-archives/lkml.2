@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab2GWBqn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:46:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54502 "EHLO
+	id S1753818Ab2GWBqm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:46:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54486 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753636Ab2GWBnu (ORCPT
+	by vger.kernel.org with ESMTP id S1753624Ab2GWBnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:43:50 -0400
-Message-Id: <20120723010654.723525227@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:51 -0400
+Message-Id: <20120723010656.209678390@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:07:12 +0100
+Date: Mon, 23 Jul 2012 02:07:22 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Avi Kivity <avi@redhat.com>
-Subject: [ 021/108] KVM: Fix buffer overflow in kvm_set_irq()
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oneukum@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 031/108] USB: cdc-wdm: fix lockup on error in wdm_read
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,34 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Bjørn Mork <bjorn@mork.no> <bjorn@mork.no>
 
-commit f2ebd422f71cda9c791f76f85d2ca102ae34a1ed upstream.
+commit b086b6b10d9f182cd8d2f0dcfd7fd11edba93fc9 upstream.
 
-kvm_set_irq() has an internal buffer of three irq routing entries, allowing
-connecting a GSI to three IRQ chips or on MSI.  However setup_routing_entry()
-does not properly enforce this, allowing three irqchip routes followed by
-an MSI route to overflow the buffer.
+Clear the WDM_READ flag on empty reads to avoid running
+forever in an infinite tight loop, causing lockups:
 
-Fix by ensuring that an MSI entry is added to an empty list.
+Jul  1 21:58:11 nemi kernel: [ 3658.898647] qmi_wwan 2-1:1.2: Unexpected error -71
+Jul  1 21:58:36 nemi kernel: [ 3684.072021] BUG: soft lockup - CPU#0 stuck for 23s! [qmi.pl:12235]
+Jul  1 21:58:36 nemi kernel: [ 3684.072212] CPU 0
+Jul  1 21:58:36 nemi kernel: [ 3684.072355]
+Jul  1 21:58:36 nemi kernel: [ 3684.072367] Pid: 12235, comm: qmi.pl Tainted: P           O 3.5.0-rc2+ #13 LENOVO 2776LEG/2776LEG
+Jul  1 21:58:36 nemi kernel: [ 3684.072383] RIP: 0010:[<ffffffffa0635008>]  [<ffffffffa0635008>] spin_unlock_irq+0x8/0xc [cdc_wdm]
+Jul  1 21:58:36 nemi kernel: [ 3684.072388] RSP: 0018:ffff88022dca1e70  EFLAGS: 00000282
+Jul  1 21:58:36 nemi kernel: [ 3684.072393] RAX: ffff88022fc3f650 RBX: ffffffff811c56f7 RCX: 00000001000ce8c1
+Jul  1 21:58:36 nemi kernel: [ 3684.072398] RDX: 0000000000000010 RSI: 000000000267d810 RDI: ffff88022fc3f650
+Jul  1 21:58:36 nemi kernel: [ 3684.072403] RBP: ffff88022dca1eb0 R08: ffffffffa063578e R09: 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072407] R10: 0000000000000008 R11: 0000000000000246 R12: 0000000000000002
+Jul  1 21:58:36 nemi kernel: [ 3684.072412] R13: 0000000000000246 R14: ffffffff00000002 R15: ffff8802281d8c88
+Jul  1 21:58:36 nemi kernel: [ 3684.072418] FS:  00007f666a260700(0000) GS:ffff88023bc00000(0000) knlGS:0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072423] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Jul  1 21:58:36 nemi kernel: [ 3684.072428] CR2: 000000000270d9d8 CR3: 000000022e865000 CR4: 00000000000007f0
+Jul  1 21:58:36 nemi kernel: [ 3684.072433] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072438] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jul  1 21:58:36 nemi kernel: [ 3684.072444] Process qmi.pl (pid: 12235, threadinfo ffff88022dca0000, task ffff88022ff76380)
+Jul  1 21:58:36 nemi kernel: [ 3684.072448] Stack:
+Jul  1 21:58:36 nemi kernel: [ 3684.072458]  ffffffffa063592e 0000000100020000 ffff88022fc3f650 ffff88022fc3f6a8
+Jul  1 21:58:36 nemi kernel: [ 3684.072466]  0000000000000200 0000000100000000 000000000267d810 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072475]  0000000000000000 ffff880212cfb6d0 0000000000000200 ffff880212cfb6c0
+Jul  1 21:58:36 nemi kernel: [ 3684.072479] Call Trace:
+Jul  1 21:58:36 nemi kernel: [ 3684.072489]  [<ffffffffa063592e>] ? wdm_read+0x1a0/0x263 [cdc_wdm]
+Jul  1 21:58:36 nemi kernel: [ 3684.072500]  [<ffffffff8110adb7>] ? vfs_read+0xa1/0xfb
+Jul  1 21:58:36 nemi kernel: [ 3684.072509]  [<ffffffff81040589>] ? alarm_setitimer+0x35/0x64
+Jul  1 21:58:36 nemi kernel: [ 3684.072517]  [<ffffffff8110aec7>] ? sys_read+0x45/0x6e
+Jul  1 21:58:36 nemi kernel: [ 3684.072525]  [<ffffffff813725f9>] ? system_call_fastpath+0x16/0x1b
+Jul  1 21:58:36 nemi kernel: [ 3684.072557] Code: <66> 66 90 c3 83 ff ed 89 f8 74 16 7f 06 83 ff a1 75 0a c3 83 ff f4
 
-Signed-off-by: Avi Kivity <avi@redhat.com>
+The WDM_READ flag is normally cleared by wdm_int_callback
+before resubmitting the read urb, and set by wdm_in_callback
+when this urb returns with data or an error.  But a crashing
+device may cause both a read error and cancelling all urbs.
+Make sure that the flag is cleared by wdm_read if the buffer
+is empty.
+
+We don't clear the flag on errors, as there may be pending
+data in the buffer which should be processed.  The flag will
+instead be cleared on the next wdm_read call.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- virt/kvm/irq_comm.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/class/cdc-wdm.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-index a6a0365..5afb431 100644
---- a/virt/kvm/irq_comm.c
-+++ b/virt/kvm/irq_comm.c
-@@ -332,6 +332,7 @@ static int setup_routing_entry(struct kvm_irq_routing_table *rt,
- 	 */
- 	hlist_for_each_entry(ei, n, &rt->map[ue->gsi], link)
- 		if (ei->type == KVM_IRQ_ROUTING_MSI ||
-+		    ue->type == KVM_IRQ_ROUTING_MSI ||
- 		    ue->u.irqchip.irqchip == ei->irqchip.irqchip)
- 			return r;
- 
+diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
+index 8fd398d..ee46927 100644
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -500,6 +500,8 @@ retry:
+ 			goto retry;
+ 		}
+ 		if (!desc->reslength) { /* zero length read */
++			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
++			clear_bit(WDM_READ, &desc->flags);
+ 			spin_unlock_irq(&desc->iuspin);
+ 			goto retry;
+ 		}
 
 
