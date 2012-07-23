@@ -1,169 +1,417 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2GWUc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 16:32:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:62077 "EHLO
+	id S1754957Ab2GWUf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 16:35:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54477 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab2GWUcu (ORCPT
+	with ESMTP id S1754770Ab2GWUct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 16:32:50 -0400
+	Mon, 23 Jul 2012 16:32:49 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         arm@kernel.org
-Subject: [GIT PULL 14/15] arm-soc: power management changes
-Date: Mon, 23 Jul 2012 22:32:40 +0200
-Message-Id: <1343075561-17446-15-git-send-email-arnd@arndb.de>
+Subject: =?UTF-8?q?=5BGIT=20PULL=2002/15=5D=20arm-soc=3A=20general=20cleanups?=
+Date: Mon, 23 Jul 2012 22:32:28 +0200
+Message-Id: <1343075561-17446-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343075561-17446-1-git-send-email-arnd@arndb.de>
 References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:FkK3ep9RP3wLbxEgH4H6M+qJHvEaQKOR8yKmbU9Y55l
- /1BgmW8/hv20adTPr4m2fTXQ3bdsN2ocu+TNmv8q2bIqzxjsxS
- PJ0MAtxDjm8WwxHE2SZXX64irqv2Y/g3MCo0bQrDokhKxXX2Tc
- ngbsUYAUpl8G7hO5cFHo9CtNDk9e6NCsRPVg2CyvwysxTG4Abx
- UOpsT5iXQvzYyhjlJH76lORmCPVJQ8rY5QzJzc6ITYkenRzskq
- AI4zip1ki5xCAHOvE5kd98ujfYzmcHtqvyV7I34HXAp/nQZhZT
- FK662Qof0toQyihfTEfeflk+873ARSZmIfQICRwcmKWvMNh314
- YsOle2zHxEw7iMisNFgn7WxPqz9F8AyKtcvSVYCNv
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:nEnimY2GzYDpIC2l3Gn/DdrLZ+wtWYg3ITnMumR3gl7
+ uX5u1vBjWdg3ap8ePOHktD4Jkx7OE7votlFvO2O//bnrnqQBqy
+ f3DvvDChXpVHXTxAIpifi8Dbes96A7WIgK5a1j0jqHJpRN45Nc
+ 3jqxQ+nm476m5zBQCX9z+oZWAFNGe0YY5krXcXMxSxUNkcHESx
+ rEI4LckRR25164ND3ssItMeBEeD5zwnIIY97gYTTviMH+nbQOy
+ PxAnW+h1SHP7vEqliOR/rK2eg4mTJrBE0mDlrpkVpJ/6bKH0TB
+ TZzo64o+NMhnZ8WrJoaHE+UimyA0Mn08UFLk7ctPL4eWhsh+s+
+ FohQDD6NCTcFAXItuv1idgtHks2/3wONxeRyzHHGe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
+The following changes since commit bd0a521e88aa7a06ae7aabaed7ae196ed4ad867a:
 
-  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
+  Linux 3.5-rc6 (2012-07-07 17:23:56 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/pm
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git next/cleanup
 
-for you to fetch changes up to 6b21a9ce0402e0c5fd2adfa3d41328fdd8f55a9a:
+for you to fetch changes up to 1a33a4ebecce89163de27cba57ba84fd7aa16137:
 
-  Merge tag 'omap-devel-pm-for-v3.6' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into next/pm (2012-07-03 22:02:17 +0200)
-
-----------------------------------------------------------------
-
-arm-soc: power management changes
-
-These are various power management related changes, mainly concerning
-cpuidle on i.MX and OMAP, as well as a the move of the omap smartreflex
-driver to live in the power subsystem.
+  Merge branch 'next/cleanup-samsung-2' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into next/cleanup (2012-07-17 22:53:38 +0200)
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (3):
-      Merge tag 'omap-devel-driver-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/pm
-      Merge tag 'omap-devel-pm-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/pm
-      Merge branch 'next/pm' into for-next
+arm-soc: general cleanups
 
-J Keerthy (1):
-      ARM: OMAP2+: Voltage: Move the omap_volt_data structure to plat
+These are all boring changes, moving stuff around or renaming things
+mostly, and also getting rid of stuff that is duplicate or should
+not be there to start with. Platform-wise this is all over the place,
+mainly omap, samsung, at91, imx and tegra.
 
-Jean Pihet (13):
-      ARM: OMAP2+: SmartReflex: move the smartreflex header to include/linux/power
-      ARM: OMAP3+: SmartReflex: class drivers should use struct omap_sr *
-      ARM: OMAP2+: smartreflex: Use the names from hwmod data instead of voltage domains.
-      ARM: OMAP3: hwmod: rename the smartreflex entries
-      ARM: OMAP2+: SmartReflex: introduce a busy loop condition test macro
-      ARM: OMAP2+: SmartReflex: Use per-OPP data structure
-      ARM: OMAP2+: SmartReflex: Create per-opp debugfs node for errminlimit
-      ARM: OMAP2+: SmartReflex: add POWER_AVS Kconfig options
-      ARM: OMAP: SmartReflex: Move smartreflex driver to drivers/
-      ARM: OMAP3: PM: cpuidle: default to C1 in next_valid_state
-      ARM: OMAP3: PM: cpuidle: optimize the PER latency in C1 state
-      ARM: OMAP3: PM: cpuidle: optimize the clkdm idle latency in C1 state
-      ARM: OMAP2+: do not allow SmartReflex to be built as a module
+----------------------------------------------------------------
 
-Kevin Hilman (5):
-      ARM: OMAP2+: PRM: fix compile for OMAP4-only build
-      ARM: OMAP2+: powerdomain: allow pre/post transtion to be per pwrdm
-      ARM: OMAP3: PM: call pre/post transition per powerdomain
-      ARM: OMAP3: PM: cleanup cam_pwrdm leftovers
-      ARM: OMAP2+: PM: fix IRQ_NOAUTOEN removal by mis-merge
+Alexander Shiyan (3):
+      ARM: clps711x/p720t: Replace __initcall by .init_early call
+      ARM: clps711x: Removed superfluous transform virt_to_bus and related functions
+      ARM: clps711x: Remove the setting of the time
 
-Mohan V (1):
-      ARM: OMAP3: PM: correct enable/disable of daisy io chain
+Arnd Bergmann (12):
+      Merge tag 'at91-for-next-cleanup' of git://github.com/at91linux/linux-at91 into next/cleanup
+      Merge tag 'omap-cleanup-for-v3.6' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup
+      ARM: at91: fix new build errors
+      Merge branch 'imx/cleanup-for-3.6' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/cleanup
+      Merge tag 'imx-cleanup' of git://git.pengutronix.de/git/imx/linux-2.6 into next/cleanup
+      Merge branch 'for-3.6/cleanup' of git://git.kernel.org/.../swarren/linux-tegra into next/cleanup
+      Merge branch 'for-3.6/fixes' of git://git.kernel.org/.../swarren/linux-tegra into next/cleanup
+      Merge branch 'next/cleanup-samsung' of git://git.kernel.org/.../kgene/linux-samsung into next/cleanup
+      Merge tag 'davinci-v3.6-cleanup' of git://gitorious.org/linux-davinci/linux-davinci into next/cleanup
+      Merge branch 'clps711x/cleanup' into next/cleanup
+      Merge branch 'next/cleanup-samsung-2' of git://git.kernel.org/.../kgene/linux-samsung into next/cleanup
+      Merge branch 'next/cleanup' into for-next
 
-Olof Johansson (1):
-      Merge branch 'imx/cpuidle' into next/pm
+Bartlomiej Zolnierkiewicz (1):
+      ARM: EXYNOS: Remove leftovers of the Samsung specific power domain control
 
-Paul Walmsley (4):
-      W1: OMAP HDQ1W: allow driver to be built on all OMAP2+
-      W1: OMAP HDQ1W: use 32-bit register accesses
-      ARM: OMAP2+: HDQ1W: use omap_device
-      W1: OMAP HDQ1W: use runtime PM
+Benoît Thébaudeau (2):
+      ARM: imx: cleanup otg_mode
+      ARM: imx: remove unused pdata from device macros
 
-Rajendra Nayak (1):
-      ARM: OMAP4: PRM: Add IO Daisychain support
+Boojin Kim (1):
+      ARM: EXYNOS: Remove the L2 cache latency setting for EXYNOS5
 
-Robert Lee (7):
-      ARM: imx: Modify IMX_IO_P2V macro
-      ARM: imx: Add comments to tzic_enable_waker()
-      ARM: imx: clean and consolidate imx5 suspend and idle code
-      ARM: imx: Enable imx53 low power idle
-      ARM: imx: Add common imx cpuidle init functionality.
-      ARM: imx: Add imx5 cpuidle
-      ARM: imx: Add imx6q cpuidle driver
+Fabio Estevam (1):
+      ARM: imx: Kconfig: Remove IMX_HAVE_PLATFORM_IMX_SSI from MACH_MX25_3DS
 
-Tero Kristo (1):
-      ARM: OMAP3+: PRM: Enable IO wake up
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: aic add dt support for external irqs
 
-Tony Lindgren (5):
-      Merge tag 'omap-devel-b-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into devel-driver
-      Merge tag 'omap-devel-c-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into devel-pm
-      ARM: OMAP2: Use hwmod to initialize mmc for 2420
-      Merge branch 'for_3.6/pm/sr-move' of git://git.kernel.org/.../khilman/linux-omap-pm into devel-driver
-      Merge branch 'for_3.6/pm/performance' of git://git.kernel.org/.../khilman/linux-omap-pm into devel-pm
+Jonghwan Choi (1):
+      ARM: SAMSUNG: Remove unused variable 'running' on PWM
 
-Vishwanath BS (3):
-      ARM: OMAP3: PM: Move IO Daisychain function to omap3 prm file
-      ARM: OMAP3PLUS: hwmod: reconfigure IO Daisychain during hwmod mux
-      ARM: OMAP3: PM: Remove IO Daisychain control from cpuidle
+Kevin Hilman (7):
+      ARM: OMAP4: hwmod: rename _enable_module to _omap4_enable_module()
+      ARM: OMAP2+: hwmod: use init-time function ptrs for enable/disable module
+      ARM: OMAP4: hwmod: drop extra cpu_is check from _wait_target_disable()
+      ARM: OMAP2+: hwmod: use init-time function pointer for wait_target_ready
+      ARM: OMAP2+: hwmod: use init-time function pointer for hardreset
+      ARM: OMAP2+: hwmod: use init-time function pointer for _init_clkdm
+      ARM: OMAP2+: CLEANUP: Remove ARCH_OMAPx ifdef from struct dpll_data
 
- arch/arm/mach-imx/clk-imx51-imx53.c                |    2 +-
- arch/arm/mach-imx/imx53-dt.c                       |    1 +
- arch/arm/mach-imx/mach-imx6q.c                     |   19 +++
- arch/arm/mach-imx/mach-mx53_ard.c                  |    1 +
- arch/arm/mach-imx/mach-mx53_evk.c                  |    1 +
- arch/arm/mach-imx/mach-mx53_loco.c                 |    1 +
- arch/arm/mach-imx/mach-mx53_smd.c                  |    1 +
- arch/arm/mach-imx/mm-imx5.c                        |   26 +---
- arch/arm/mach-imx/pm-imx5.c                        |  111 ++++++++++----
- arch/arm/mach-omap2/Makefile                       |    5 +-
- arch/arm/mach-omap2/cpuidle34xx.c                  |   71 ++++-----
- arch/arm/mach-omap2/devices.c                      |  108 -------------
- arch/arm/mach-omap2/hdq1w.c                        |   26 ++++
- arch/arm/mach-omap2/msdi.c                         |   73 +++++++++
- arch/arm/mach-omap2/omap-mpuss-lowpower.c          |    4 +-
- arch/arm/mach-omap2/omap_hwmod.c                   |   38 ++++-
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |   12 +-
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    3 +-
- arch/arm/mach-omap2/pm.h                           |    2 +-
- arch/arm/mach-omap2/pm34xx.c                       |   63 ++------
- arch/arm/mach-omap2/powerdomain.c                  |   16 +-
- arch/arm/mach-omap2/powerdomain.h                  |    4 +-
- arch/arm/mach-omap2/prcm-common.h                  |    8 +
- arch/arm/mach-omap2/prm2xxx_3xxx.c                 |   48 ++++++
- arch/arm/mach-omap2/prm2xxx_3xxx.h                 |    2 +
- arch/arm/mach-omap2/prm44xx.c                      |   63 +++++++-
- arch/arm/mach-omap2/prm44xx.h                      |    2 +
- arch/arm/mach-omap2/smartreflex-class3.c           |   29 ++--
- arch/arm/mach-omap2/sr_device.c                    |   39 ++++-
- arch/arm/mach-omap2/voltage.h                      |   21 +--
- arch/arm/plat-mxc/Makefile                         |    1 +
- arch/arm/plat-mxc/cpuidle.c                        |   80 ++++++++++
- arch/arm/plat-mxc/include/mach/common.h            |    6 +-
- arch/arm/plat-mxc/include/mach/cpuidle.h           |   22 +++
- arch/arm/plat-mxc/include/mach/hardware.h          |   25 +--
- arch/arm/plat-mxc/tzic.c                           |    4 +
- arch/arm/plat-omap/Kconfig                         |   31 ++--
- arch/arm/plat-omap/include/plat/voltage.h          |   21 ++-
- drivers/power/Kconfig                              |    2 +
- drivers/power/Makefile                             |    1 +
- drivers/power/avs/Kconfig                          |   12 ++
- drivers/power/avs/Makefile                         |    1 +
- .../mach-omap2 => drivers/power/avs}/smartreflex.c |  161 ++++++++------------
- drivers/w1/masters/Kconfig                         |    2 +-
- drivers/w1/masters/omap_hdq.c                      |   86 +++--------
- .../linux/power}/smartreflex.h                     |   74 +++++++--
- 46 files changed, 808 insertions(+), 521 deletions(-)
+Ludovic Desroches (8):
+      ARM: at91: fix at91_aic_write macro
+      ARM: at91: aic can use fast eoi handler type
+      ARM: at91: add of irq priorities support
+      ARM: at91: remove static irq priorities for sam9x5
+      ARM: at91: at91 based machines specify their own irq handler at run time
+      ARM: at91: sparse irq support
+      ARM: at91: remove mach/irqs.h
+      ARM: at91: add AIC5 support
+
+Oleg Matcovschi (1):
+      ARM: OMAP: dma: Clear status registers on enable/disable irq
+
+Omar Ramirez Luna (2):
+      ARM: OMAP2+: control: new APIs to configure boot address and mode
+      ARM: OMAP: dsp: interface to control module functions
+
+Paul Bolle (4):
+      ARM: davinci: remove dummy header files
+      ARM: S3C24XX: remove unused header <mach/bast-pmu.h>
+      ARM: SAMSUNG: remove unused SPI clock headers
+      ARM: at91: remove two unused headers
+
+Paul Walmsley (2):
+      ARM: OMAP2+: hwmod: remove prm_clkdm, cm_clkdm; allow hwmods to have no clockdomain
+      Merge branches 'clock_cleanup_misc_3.6', 'control_clean_dspbridge_writes_cleanup_3.6', 'hwmod_soc_conditional_cleanup_3.6', 'mcbsp_clock_aliases_cleanup_3.6' and 'remove_clkdm_requirement_from_hwmod_3.6' into omap_cleanup_a_3.6
+
+Peter Ujfalusi (3):
+      ARM: OMAP2: Move McBSP fck clock alias to hwmod data for OMAP2420
+      ARM: OMAP2: Move McBSP fck clock alias to hwmod data for OMAP2430
+      ARM: OMAP3: Move McBSP fck clock alias to hwmod data
+
+Prashant Gaikwad (1):
+      ARM: tegra: Remove flow controller programming
+
+Roland Stigge (1):
+      ARM: tegra: Fix dts files w/ status property: "disable" -> "disabled"
+
+Sachin Kamat (4):
+      ARM: S5P64X0: Remove unused variable in dma.c file
+      ARM: S5PC100: Remove unused variable in dma.c file
+      ARM: SAMSUNG: Remove description corresponding to a deleted element
+      ARM: S3C24XX: Remove duplicate header file inclusion
+
+Shawn Guo (1):
+      ARM: imx6q: remove unneeded clkdev lookups
+
+Stephen Warren (5):
+      dt: name all Tegra binding docs consistently
+      mmc: tegra: use bus-width property instead of support-8bit
+      ARM: dt: tegra: remove legacy support-8bit property
+      ASoC: tegra: simplify Kconfig dependencies
+      ARM: dt: tegra: rename board files to match SoC
+
+Sylwester Nawrocki (8):
+      ARM: S3C24XX: Free the backlight gpio requested in Mini2440 board code
+      ARM: S3C24XX: Convert SMDK board file to the gpiolib API
+      ARM: S3C24XX: Convert QT2410 board file to the gpiolib API
+      ARM: S3C24XX: Convert the PM code to gpiolib API
+      ARM: S3C24XX: Convert the touchscreen setup code to common GPIO API
+      ARM: S3C24XX: Remove unused GPA, GPE, GPH bank GPIO aliases
+      ARM: S3C24XX: Remove unused GPIO definitions for port J
+      ARM: S3C24XX: Remove unused GPIO definitions for Openmoko GTA02 board
+
+Tony Lindgren (6):
+      ARM: OMAP3: There is no FS USB controller on omap3
+      ARM: OMAP2: Remove legacy USB FS support
+      ARM: OMAP: Make FS USB omap1 only
+      Merge tag 'omap-cleanup-a-for-3.6' of git://git.kernel.org/.../pjw/omap-pending into cleanup-hwmod
+      Merge branches 'cleanup-udc' and 'cleanup-dma' into cleanup
+      Merge branch 'cleanup-hwmod' into cleanup
+
+Uwe Kleine-König (1):
+      ARM: imx27/dt: make dt_compat entry const
+
+Wolfram Sang (1):
+      ARM: tegra: build powergate unconditionally
+
+hdoyu@nvidia.com (5):
+      amba: tegra-ahb: Remove empty *_remove()
+      ARM: dt: tegra{20,30}.dtsi: Rename "mc" to "memory-controller"
+      ARM: tegra{20,30}: Rename "mc" to "memory-controller"
+      ARM: dt: tegra20: Rename "emc" to "memory-controller"
+      ARM: tegra20: Rename "emc" to "memory-controller"
+
+ .../devicetree/bindings/arm/atmel-aic.txt          |    9 +-
+ .../arm/tegra/{emc.txt => nvidia,tegra20-emc.txt}  |    2 +-
+ .../bindings/arm/tegra/nvidia,tegra20-mc.txt       |    2 +-
+ .../bindings/arm/tegra/nvidia,tegra30-mc.txt       |    2 +-
+ .../{gpio_nvidia.txt => nvidia,tegra20-gpio.txt}   |    0
+ .../{tegra-kbc.txt => nvidia,tegra20-kbc.txt}      |    0
+ .../{nvidia-sdhci.txt => nvidia,tegra20-sdhci.txt} |    0
+ .../nvec/{nvec_nvidia.txt => nvidia,nvec.txt}      |    0
+ ...-alc5632.txt => nvidia,tegra-audio-alc5632.txt} |    0
+ ...mslice.txt => nvidia,tegra-audio-trimslice.txt} |    0
+ ...io-wm8753.txt => nvidia,tegra-audio-wm8753.txt} |    0
+ ...io-wm8903.txt => nvidia,tegra-audio-wm8903.txt} |    0
+ .../{tegra20-das.txt => nvidia,tegra20-das.txt}    |    0
+ .../{tegra20-i2s.txt => nvidia,tegra20-i2s.txt}    |    0
+ .../spi/{spi_nvidia.txt => nvidia,tegra20-spi.txt} |    0
+ .../usb/{tegra-usb.txt => nvidia,tegra20-ehci.txt} |    0
+ arch/arm/boot/dts/at91sam9260.dtsi                 |   37 +-
+ arch/arm/boot/dts/at91sam9263.dtsi                 |   31 +-
+ arch/arm/boot/dts/at91sam9g45.dtsi                 |   39 +-
+ arch/arm/boot/dts/at91sam9n12.dtsi                 |   30 +-
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |   39 +-
+ .../dts/{tegra-harmony.dts => tegra20-harmony.dts} |    1 -
+ .../dts/{tegra-paz00.dts => tegra20-paz00.dts}     |    1 -
+ .../{tegra-seaboard.dts => tegra20-seaboard.dts}   |    3 +-
+ .../{tegra-trimslice.dts => tegra20-trimslice.dts} |    0
+ .../dts/{tegra-ventana.dts => tegra20-ventana.dts} |    1 -
+ arch/arm/boot/dts/tegra20.dtsi                     |   40 +-
+ .../dts/{tegra-cardhu.dts => tegra30-cardhu.dts}   |    1 -
+ arch/arm/boot/dts/tegra30.dtsi                     |   40 +-
+ arch/arm/kernel/irq.c                              |   10 -
+ arch/arm/mach-at91/Kconfig                         |    6 +
+ arch/arm/mach-at91/at91rm9200.c                    |    1 +
+ arch/arm/mach-at91/at91rm9200_devices.c            |   84 ++--
+ arch/arm/mach-at91/at91sam9260.c                   |    1 +
+ arch/arm/mach-at91/at91sam9260_devices.c           |   92 ++---
+ arch/arm/mach-at91/at91sam9261.c                   |    1 +
+ arch/arm/mach-at91/at91sam9261_devices.c           |   68 ++--
+ arch/arm/mach-at91/at91sam9263.c                   |    1 +
+ arch/arm/mach-at91/at91sam9263_devices.c           |   80 ++--
+ arch/arm/mach-at91/at91sam926x_time.c              |    2 +-
+ arch/arm/mach-at91/at91sam9g45.c                   |    1 +
+ arch/arm/mach-at91/at91sam9g45_devices.c           |  108 ++---
+ arch/arm/mach-at91/at91sam9rl.c                    |    1 +
+ arch/arm/mach-at91/at91sam9rl_devices.c            |   76 ++--
+ arch/arm/mach-at91/at91sam9x5.c                    |   40 --
+ arch/arm/mach-at91/at91x40.c                       |    2 +
+ arch/arm/mach-at91/board-1arm.c                    |    2 +
+ arch/arm/mach-at91/board-afeb-9260v1.c             |    2 +
+ arch/arm/mach-at91/board-cam60.c                   |    2 +
+ arch/arm/mach-at91/board-carmeva.c                 |    2 +
+ arch/arm/mach-at91/board-cpu9krea.c                |    2 +
+ arch/arm/mach-at91/board-cpuat91.c                 |    2 +
+ arch/arm/mach-at91/board-csb337.c                  |    2 +
+ arch/arm/mach-at91/board-csb637.c                  |    2 +
+ arch/arm/mach-at91/board-dt.c                      |    2 +
+ arch/arm/mach-at91/board-eb01.c                    |    2 +
+ arch/arm/mach-at91/board-eb9200.c                  |    2 +
+ arch/arm/mach-at91/board-ecbat91.c                 |    2 +
+ arch/arm/mach-at91/board-eco920.c                  |    2 +
+ arch/arm/mach-at91/board-flexibity.c               |    2 +
+ arch/arm/mach-at91/board-foxg20.c                  |    2 +
+ arch/arm/mach-at91/board-gsia18s.c                 |    2 +
+ arch/arm/mach-at91/board-kafa.c                    |    2 +
+ arch/arm/mach-at91/board-kb9202.c                  |    2 +
+ arch/arm/mach-at91/board-neocore926.c              |    2 +
+ arch/arm/mach-at91/board-pcontrol-g20.c            |    2 +
+ arch/arm/mach-at91/board-picotux200.c              |    2 +
+ arch/arm/mach-at91/board-qil-a9260.c               |    2 +
+ arch/arm/mach-at91/board-rm9200dk.c                |    2 +
+ arch/arm/mach-at91/board-rm9200ek.c                |    2 +
+ arch/arm/mach-at91/board-rsi-ews.c                 |    2 +
+ arch/arm/mach-at91/board-sam9-l9260.c              |    2 +
+ arch/arm/mach-at91/board-sam9260ek.c               |    2 +
+ arch/arm/mach-at91/board-sam9261ek.c               |    2 +
+ arch/arm/mach-at91/board-sam9263ek.c               |    2 +
+ arch/arm/mach-at91/board-sam9g20ek.c               |    3 +
+ arch/arm/mach-at91/board-sam9m10g45ek.c            |    2 +
+ arch/arm/mach-at91/board-sam9rlek.c                |    2 +
+ arch/arm/mach-at91/board-snapper9260.c             |    2 +
+ arch/arm/mach-at91/board-stamp9g20.c               |    3 +
+ arch/arm/mach-at91/board-usb-a926x.c               |    4 +
+ arch/arm/mach-at91/board-yl-9200.c                 |    2 +
+ arch/arm/mach-at91/generic.h                       |    2 +
+ arch/arm/mach-at91/gpio.c                          |    9 +-
+ arch/arm/mach-at91/include/mach/at91_aic.h         |   36 +-
+ arch/arm/mach-at91/include/mach/at91_spi.h         |   81 ----
+ arch/arm/mach-at91/include/mach/at91_ssc.h         |  106 -----
+ arch/arm/mach-at91/include/mach/entry-macro.S      |   27 --
+ arch/arm/mach-at91/include/mach/irqs.h             |   48 ---
+ arch/arm/mach-at91/irq.c                           |  414 ++++++++++++++++---
+ arch/arm/mach-at91/pm.c                            |    1 +
+ arch/arm/mach-clps711x/common.c                    |    6 -
+ arch/arm/mach-clps711x/include/mach/memory.h       |   37 --
+ arch/arm/mach-clps711x/p720t.c                     |   34 +-
+ arch/arm/mach-davinci/include/mach/dm365.h         |    1 -
+ arch/arm/mach-davinci/include/mach/dm646x.h        |    1 -
+ arch/arm/mach-exynos/common.c                      |   25 --
+ arch/arm/mach-exynos/include/mach/spi-clocks.h     |   16 -
+ arch/arm/mach-exynos/mach-nuri.c                   |    1 -
+ arch/arm/mach-exynos/mach-origen.c                 |    1 -
+ arch/arm/mach-exynos/mach-smdkv310.c               |    1 -
+ arch/arm/mach-exynos/mach-universal_c210.c         |    1 -
+ arch/arm/mach-imx/Kconfig                          |    1 -
+ arch/arm/mach-imx/clk-imx6q.c                      |    3 -
+ arch/arm/mach-imx/devices-imx21.h                  |    4 +-
+ arch/arm/mach-imx/devices-imx25.h                  |    4 +-
+ arch/arm/mach-imx/devices-imx27.h                  |    6 +-
+ arch/arm/mach-imx/devices-imx31.h                  |    6 +-
+ arch/arm/mach-imx/devices-imx35.h                  |    4 +-
+ arch/arm/mach-imx/devices-imx51.h                  |    2 +-
+ arch/arm/mach-imx/devices-imx53.h                  |    2 +-
+ arch/arm/mach-imx/imx27-dt.c                       |    2 +-
+ arch/arm/mach-imx/mach-cpuimx27.c                  |   12 +-
+ arch/arm/mach-imx/mach-cpuimx35.c                  |   10 +-
+ arch/arm/mach-imx/mach-cpuimx51sd.c                |   10 +-
+ arch/arm/mach-imx/mach-eukrea_cpuimx25.c           |   12 +-
+ arch/arm/mach-imx/mach-imx27ipcam.c                |    2 +-
+ arch/arm/mach-imx/mach-mx25_3ds.c                  |    4 +-
+ arch/arm/mach-imx/mach-mx27_3ds.c                  |   10 +-
+ arch/arm/mach-imx/mach-mx27ads.c                   |    2 +-
+ arch/arm/mach-imx/mach-mx31_3ds.c                  |   10 +-
+ arch/arm/mach-imx/mach-mx31moboard.c               |    2 +-
+ arch/arm/mach-imx/mach-mx35_3ds.c                  |   10 +-
+ arch/arm/mach-imx/mach-mx51_3ds.c                  |    2 +-
+ arch/arm/mach-imx/mach-mx51_babbage.c              |   10 +-
+ arch/arm/mach-imx/mach-mx53_ard.c                  |    2 +-
+ arch/arm/mach-imx/mach-mx53_evk.c                  |    2 +-
+ arch/arm/mach-imx/mach-mx53_loco.c                 |    2 +-
+ arch/arm/mach-imx/mach-mx53_smd.c                  |    2 +-
+ arch/arm/mach-imx/mach-pca100.c                    |   12 +-
+ arch/arm/mach-imx/mach-pcm037.c                    |   12 +-
+ arch/arm/mach-imx/mach-pcm038.c                    |    4 +-
+ arch/arm/mach-imx/mach-pcm043.c                    |   10 +-
+ arch/arm/mach-imx/mach-qong.c                      |    2 +-
+ arch/arm/mach-imx/mach-vpr200.c                    |    2 +-
+ arch/arm/mach-imx/mx31lite-db.c                    |    4 +-
+ arch/arm/mach-omap1/board-ams-delta.c              |    2 +-
+ arch/arm/mach-omap1/board-generic.c                |    4 +-
+ arch/arm/mach-omap1/board-h2.c                     |    2 +-
+ arch/arm/mach-omap1/board-h3.c                     |    2 +-
+ arch/arm/mach-omap1/board-htcherald.c              |    2 +-
+ arch/arm/mach-omap1/board-innovator.c              |    2 +-
+ arch/arm/mach-omap1/board-nokia770.c               |    2 +-
+ arch/arm/mach-omap1/board-osk.c                    |    2 +-
+ arch/arm/mach-omap1/board-palmte.c                 |    2 +-
+ arch/arm/mach-omap1/board-palmtt.c                 |    2 +-
+ arch/arm/mach-omap1/board-palmz71.c                |    2 +-
+ arch/arm/mach-omap1/board-sx1.c                    |    2 +-
+ arch/arm/mach-omap1/board-voiceblue.c              |    3 +-
+ arch/arm/mach-omap1/clock_data.c                   |    3 +-
+ arch/arm/mach-omap1/include/mach/usb.h             |  165 ++++++++
+ arch/arm/mach-omap1/usb.c                          |  116 +++++-
+ arch/arm/mach-omap2/Kconfig                        |    3 -
+ arch/arm/mach-omap2/Makefile                       |    4 -
+ arch/arm/mach-omap2/board-2430sdp.c                |   11 -
+ arch/arm/mach-omap2/board-apollon.c                |   18 -
+ arch/arm/mach-omap2/board-h4.c                     |   13 -
+ arch/arm/mach-omap2/clock2420_data.c               |    4 -
+ arch/arm/mach-omap2/clock2430_data.c               |   10 -
+ arch/arm/mach-omap2/clock3xxx_data.c               |   10 -
+ arch/arm/mach-omap2/clockdomain.h                  |    2 -
+ arch/arm/mach-omap2/clockdomains2420_data.c        |    2 -
+ arch/arm/mach-omap2/clockdomains2430_data.c        |    2 -
+ arch/arm/mach-omap2/clockdomains3xxx_data.c        |    3 +-
+ arch/arm/mach-omap2/clockdomains44xx_data.c        |    2 -
+ arch/arm/mach-omap2/clockdomains_common_data.c     |   24 --
+ arch/arm/mach-omap2/control.c                      |   43 ++
+ arch/arm/mach-omap2/control.h                      |    2 +
+ arch/arm/mach-omap2/dsp.c                          |    4 +
+ .../include/mach/ctrl_module_core_44xx.h           |    1 +
+ arch/arm/mach-omap2/omap_hwmod.c                   |  427 ++++++++++++++------
+ arch/arm/mach-omap2/omap_hwmod_2420_data.c         |   10 +
+ arch/arm/mach-omap2/omap_hwmod_2430_data.c         |   16 +
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |   23 ++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    4 +-
+ arch/arm/mach-omap2/usb-fs.c                       |  359 ----------------
+ arch/arm/mach-s3c24xx/common-smdk.c                |   20 +-
+ arch/arm/mach-s3c24xx/common.c                     |    1 -
+ arch/arm/mach-s3c24xx/include/mach/bast-pmu.h      |   40 --
+ arch/arm/mach-s3c24xx/include/mach/gpio-nrs.h      |   21 -
+ arch/arm/mach-s3c24xx/include/mach/gta02.h         |   69 ----
+ arch/arm/mach-s3c24xx/include/mach/regs-gpio.h     |   17 +-
+ arch/arm/mach-s3c24xx/include/mach/regs-gpioj.h    |   70 ----
+ arch/arm/mach-s3c24xx/mach-gta02.c                 |    1 -
+ arch/arm/mach-s3c24xx/mach-mini2440.c              |    4 +-
+ arch/arm/mach-s3c24xx/mach-qt2410.c                |    6 +-
+ arch/arm/mach-s3c24xx/mach-rx1950.c                |    1 -
+ arch/arm/mach-s3c24xx/pm-s3c2410.c                 |   12 +-
+ arch/arm/mach-s3c24xx/pm-s3c2412.c                 |    1 -
+ arch/arm/mach-s3c24xx/s3c2412.c                    |    1 -
+ arch/arm/mach-s3c24xx/s3c244x.c                    |    1 -
+ arch/arm/mach-s3c24xx/setup-ts.c                   |    6 +-
+ arch/arm/mach-s3c64xx/include/mach/spi-clocks.h    |   18 -
+ arch/arm/mach-s5p64x0/dma.c                        |    2 -
+ arch/arm/mach-s5p64x0/include/mach/spi-clocks.h    |   20 -
+ arch/arm/mach-s5pc100/dma.c                        |    2 -
+ arch/arm/mach-s5pc100/include/mach/spi-clocks.h    |   18 -
+ arch/arm/mach-s5pv210/include/mach/spi-clocks.h    |   17 -
+ arch/arm/mach-tegra/Kconfig                        |    3 -
+ arch/arm/mach-tegra/Makefile                       |    2 +-
+ arch/arm/mach-tegra/Makefile.boot                  |   12 +-
+ arch/arm/mach-tegra/cpuidle.c                      |    6 +-
+ arch/arm/mach-tegra/sleep.S                        |   29 --
+ arch/arm/plat-omap/Makefile                        |    2 +-
+ arch/arm/plat-omap/dma.c                           |   59 ++-
+ arch/arm/plat-omap/include/plat/board.h            |   38 --
+ arch/arm/plat-omap/include/plat/clock.h            |    2 -
+ arch/arm/plat-omap/include/plat/dsp.h              |    3 +
+ arch/arm/plat-omap/include/plat/omap_hwmod.h       |    2 +
+ arch/arm/plat-omap/include/plat/usb.h              |  196 +--------
+ arch/arm/plat-omap/usb.c                           |  145 -------
+ arch/arm/plat-samsung/Kconfig                      |    8 -
+ arch/arm/plat-samsung/Makefile                     |    4 -
+ arch/arm/plat-samsung/include/plat/devs.h          |    1 -
+ arch/arm/plat-samsung/include/plat/fb.h            |    1 -
+ arch/arm/plat-samsung/include/plat/pd.h            |   30 --
+ arch/arm/plat-samsung/pd.c                         |   95 -----
+ arch/arm/plat-samsung/pwm.c                        |    4 -
+ drivers/amba/tegra-ahb.c                           |    6 -
+ drivers/mmc/host/sdhci-tegra.c                     |    5 +-
+ drivers/rtc/rtc-at91rm9200.c                       |    1 +
+ drivers/usb/gadget/Kconfig                         |    2 +-
+ drivers/usb/gadget/omap_udc.c                      |    3 +-
+ drivers/usb/host/Kconfig                           |    2 +-
+ drivers/usb/host/ohci-omap.c                       |    7 +-
+ drivers/usb/otg/isp1301_omap.c                     |    2 +-
+ sound/soc/tegra/Kconfig                            |   10 +-
+ 227 files changed, 1794 insertions(+), 2504 deletions(-)
