@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab2GWBnA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:43:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54204 "EHLO
+	id S1753546Ab2GWB5S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:57:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54235 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753272Ab2GWBmz (ORCPT
+	by vger.kernel.org with ESMTP id S1753314Ab2GWBnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:42:55 -0400
-Message-Id: <20120723010702.560293644@decadent.org.uk>
+	Sun, 22 Jul 2012 21:43:00 -0400
+Message-Id: <20120723010703.300978965@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Jul 2012 02:08:04 +0100
+Date: Mon, 23 Jul 2012 02:08:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 073/108] dm raid1: set discard_zeroes_data_unsupported
+        alan@lxorguk.ukuu.org.uk, John Stultz <johnstul@us.ibm.com>,
+        Jan Engelhardt <jengelh@inai.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 078/108] hrtimer: Provide clock_was_set_delayed()
 In-Reply-To: <20120723010651.408577075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,40 +31,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: John Stultz <johnstul@us.ibm.com>
 
-commit 7c8d3a42fe1c58a7e8fd3f6a013e7d7b474ff931 upstream.
+commit f55a6faa384304c89cfef162768e88374d3312cb upstream.
 
-We can't guarantee that REQ_DISCARD on dm-mirror zeroes the data even if
-the underlying disks support zero on discard.  So this patch sets
-ti->discard_zeroes_data_unsupported.
+clock_was_set() cannot be called from hard interrupt context because
+it calls on_each_cpu().
 
-For example, if the mirror is in the process of resynchronizing, it may
-happen that kcopyd reads a piece of data, then discard is sent on the
-same area and then kcopyd writes the piece of data to another leg.
-Consequently, the data is not zeroed.
+For fixing the widely reported leap seconds issue it is necessary to
+call it from hard interrupt context, i.e. the timer tick code, which
+does the timekeeping updates.
 
-The flag was made available by commit 983c7db347db8ce2d8453fd1d89b7a4bb6920d56
-(dm crypt: always disable discard_zeroes_data).
+Provide a new function which denotes it in the hrtimer cpu base
+structure of the cpu on which it is called and raise the hrtimer
+softirq. We then execute the clock_was_set() notificiation from
+softirq context in run_hrtimer_softirq(). The hrtimer softirq is
+rarely used, so polling the flag there is not a performance issue.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+[ tglx: Made it depend on CONFIG_HIGH_RES_TIMERS. We really should get
+  rid of all this ifdeffery ASAP ]
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-2-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-raid1.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/hrtimer.h |    9 ++++++++-
+ kernel/hrtimer.c        |   20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
-index ea16984..b58b7a3 100644
---- a/drivers/md/dm-raid1.c
-+++ b/drivers/md/dm-raid1.c
-@@ -1084,6 +1084,7 @@ static int mirror_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 	ti->split_io = dm_rh_get_region_size(ms->rh);
- 	ti->num_flush_requests = 1;
- 	ti->num_discard_requests = 1;
-+	ti->discard_zeroes_data_unsupported = 1;
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0dc30..c9ec940 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -165,6 +165,7 @@ enum  hrtimer_base_type {
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+  * @active_bases:	Bitfield to mark bases with active timers
++ * @clock_was_set:	Indicates that clock was set from irq context.
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+  * @hres_active:	State of high resolution mode
+@@ -177,7 +178,8 @@ enum  hrtimer_base_type {
+  */
+ struct hrtimer_cpu_base {
+ 	raw_spinlock_t			lock;
+-	unsigned long			active_bases;
++	unsigned int			active_bases;
++	unsigned int			clock_was_set;
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	ktime_t				expires_next;
+ 	int				hres_active;
+@@ -286,6 +288,8 @@ extern void hrtimer_peek_ahead_timers(void);
+ # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
+ # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
  
- 	ms->kmirrord_wq = alloc_workqueue("kmirrord",
- 					  WQ_NON_REENTRANT | WQ_MEM_RECLAIM, 0);
++extern void clock_was_set_delayed(void);
++
+ #else
+ 
+ # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
+@@ -306,6 +310,9 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
+ {
+ 	return 0;
+ }
++
++static inline void clock_was_set_delayed(void) { }
++
+ #endif
+ 
+ extern void clock_was_set(void);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index ae34bf5..3c24fb2 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -717,6 +717,19 @@ static int hrtimer_switch_to_hres(void)
+ 	return 1;
+ }
+ 
++/*
++ * Called from timekeeping code to reprogramm the hrtimer interrupt
++ * device. If called from the timer interrupt context we defer it to
++ * softirq context.
++ */
++void clock_was_set_delayed(void)
++{
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	cpu_base->clock_was_set = 1;
++	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
++}
++
+ #else
+ 
+ static inline int hrtimer_hres_active(void) { return 0; }
+@@ -1395,6 +1408,13 @@ void hrtimer_peek_ahead_timers(void)
+ 
+ static void run_hrtimer_softirq(struct softirq_action *h)
+ {
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	if (cpu_base->clock_was_set) {
++		cpu_base->clock_was_set = 0;
++		clock_was_set();
++	}
++
+ 	hrtimer_peek_ahead_timers();
+ }
+ 
 
 
