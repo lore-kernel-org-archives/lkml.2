@@ -1,92 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab2GWB5v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jul 2012 21:57:51 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:64288 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404Ab2GWB5s (ORCPT
+	id S1753720Ab2GWB6M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jul 2012 21:58:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54222 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753294Ab2GWBm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jul 2012 21:57:48 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-1b-500caf9a0c40
-Message-id: <500CAF8F.5040407@samsung.com>
-Date: Mon, 23 Jul 2012 10:57:35 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615
- Thunderbird/13.0.1
-MIME-version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, cjb@laptop.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH v3 0/6] mmc: dw_mmc: add support for device tree based
- instantiation
-References: <1342097668-25243-1-git-send-email-thomas.abraham@linaro.org>
- <5008279B.4000001@samsung.com>
- <CAJuYYwQBgpJ1wiS3fSDS2cMi6kanuO47rc8SmniAqjRPuBGJHg@mail.gmail.com>
- <195201cd6600$7cb089f0$76119dd0$%kim@samsung.com>
-In-reply-to: <195201cd6600$7cb089f0$76119dd0$%kim@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jAd1Z63kCDF41SVpc3jWHzeLI/35G
-	ixnn9zE5MHt83iQXwBjFZZOSmpNZllqkb5fAlbF+fX3BAe6KDxN+MTcwzuTsYuTkkBAwkfi6
-	fyULhC0mceHeerYuRi4OIYFFjBKLvv5kBkkICbxklOhryAGxeQW0JK6v2A4WZxFQldi9rw3M
-	ZhPQkdj+7TgTiC0qECbx6u5PNoh6QYkfk++BLRARUJPoWbyVEWQBs8BjJok155awgiSEBaIk
-	Znf3sEAse8ooce90FIjNKWAn8f5gM9ggZqAF+1unQdnyEpvXvGWewCgwC8mOWUjKZiEpW8DI
-	vIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOCifSe9gXNVgcYhRgINRiYf3YTlPgBBrYllx
-	Ze4hRgkOZiUR3svXuQOEeFMSK6tSi/Lji0pzUosPMUpzsCiJ85p4f/UXEkhPLEnNTk0tSC2C
-	yTJxcEo1MEpdjzr0Zf3hfbKsSscyz7leZNnj0jFRsiQ9osxY8x8/d6hlIfPZh9dbnlYo/P3R
-	k+UXFV6/LnX3JWbBwhOPdj9NKg1/eSvz7/0nYrr65zs3beO13Xl8xrk468xLe2sCtD41vuGX
-	/VYbGShxZ/o9+7M8TBLfpO4oTbSLuTnngSrPLduZ/Rf/1CmxFGckGmoxFxUnAgAJjlPjRgIA	AA==
-X-TM-AS-MML: No
+	Sun, 22 Jul 2012 21:42:58 -0400
+Message-Id: <20120723010702.391696367@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 23 Jul 2012 02:08:03 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 072/108] dm raid1: fix crash with mirror recovery and discard
+In-Reply-To: <20120723010651.408577075@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 07:47 AM, Kukjin Kim wrote:
-> Thomas Abraham wrote:
->>
->> On 19 July 2012 20:58, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->>> Hi Thomas,
->>>
->>> I think not good that added the samsung specific code into dw_mmc-
->> pltfm.c
->>> How about separating to dw-mmc-exynos.c?
->>
->> I am not sure of this. The only samsung specific code in
->> dw_mmc-pltfm.c file is the data for of_device_id instances. The clock
->> lookup added into this file in the 3rd patch does not cause any harm
->> on non-samsung SoC's which might not define those clocks (on clock
->> lookup failure, there are only warning printed, the driver's probe
->> does not fail.
->>
-> I agree with Thomas' opinion, in addition, the dw_mmc-pltfm.c file can
-> support that, so adding dw-mmc-exynos.c is not needed now.
-> 
->> I would prefer not to add separate file for Exynos SoC's for now.
->> Splitting into different files will need to defined new callbacks
->> which I fell is not really required.
-Then where is the callback function located?
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Best Regards,
-Jaehoon Chung
->>
-> Yes.
-> 
-> Thanks.
-> 
-> Best regards,
-> Kgene.
-> --
-> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-> SW Solution Development Team, Samsung Electronics Co., Ltd.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+------------------
+
+From: Mikulas Patocka <mpatocka@redhat.com>
+
+commit 751f188dd5ab95b3f2b5f2f467c38aae5a2877eb upstream.
+
+This patch fixes a crash when a discard request is sent during mirror
+recovery.
+
+Firstly, some background.  Generally, the following sequence happens during
+mirror synchronization:
+- function do_recovery is called
+- do_recovery calls dm_rh_recovery_prepare
+- dm_rh_recovery_prepare uses a semaphore to limit the number
+  simultaneously recovered regions (by default the semaphore value is 1,
+  so only one region at a time is recovered)
+- dm_rh_recovery_prepare calls __rh_recovery_prepare,
+  __rh_recovery_prepare asks the log driver for the next region to
+  recover. Then, it sets the region state to DM_RH_RECOVERING. If there
+  are no pending I/Os on this region, the region is added to
+  quiesced_regions list. If there are pending I/Os, the region is not
+  added to any list. It is added to the quiesced_regions list later (by
+  dm_rh_dec function) when all I/Os finish.
+- when the region is on quiesced_regions list, there are no I/Os in
+  flight on this region. The region is popped from the list in
+  dm_rh_recovery_start function. Then, a kcopyd job is started in the
+  recover function.
+- when the kcopyd job finishes, recovery_complete is called. It calls
+  dm_rh_recovery_end. dm_rh_recovery_end adds the region to
+  recovered_regions or failed_recovered_regions list (depending on
+  whether the copy operation was successful or not).
+
+The above mechanism assumes that if the region is in DM_RH_RECOVERING
+state, no new I/Os are started on this region. When I/O is started,
+dm_rh_inc_pending is called, which increases reg->pending count. When
+I/O is finished, dm_rh_dec is called. It decreases reg->pending count.
+If the count is zero and the region was in DM_RH_RECOVERING state,
+dm_rh_dec adds it to the quiesced_regions list.
+
+Consequently, if we call dm_rh_inc_pending/dm_rh_dec while the region is
+in DM_RH_RECOVERING state, it could be added to quiesced_regions list
+multiple times or it could be added to this list when kcopyd is copying
+data (it is assumed that the region is not on any list while kcopyd does
+its jobs). This results in memory corruption and crash.
+
+There already exist bypasses for REQ_FLUSH requests: REQ_FLUSH requests
+do not belong to any region, so they are always added to the sync list
+in do_writes. dm_rh_inc_pending does not increase count for REQ_FLUSH
+requests. In mirror_end_io, dm_rh_dec is never called for REQ_FLUSH
+requests. These bypasses avoid the crash possibility described above.
+
+These bypasses were improperly implemented for REQ_DISCARD when
+the mirror target gained discard support in commit
+5fc2ffeabb9ee0fc0e71ff16b49f34f0ed3d05b4 (dm raid1: support discard).
+
+In do_writes, REQ_DISCARD requests is always added to the sync queue and
+immediately dispatched (even if the region is in DM_RH_RECOVERING).  However,
+dm_rh_inc and dm_rh_dec is called for REQ_DISCARD resusts.  So it violates the
+rule that no I/Os are started on DM_RH_RECOVERING regions, and causes the list
+corruption described above.
+
+This patch changes it so that REQ_DISCARD requests follow the same path
+as REQ_FLUSH. This avoids the crash.
+
+Reference: https://bugzilla.redhat.com/837607
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/md/dm-raid1.c       |    2 +-
+ drivers/md/dm-region-hash.c |    5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
+index d039de8..ea16984 100644
+--- a/drivers/md/dm-raid1.c
++++ b/drivers/md/dm-raid1.c
+@@ -1214,7 +1214,7 @@ static int mirror_end_io(struct dm_target *ti, struct bio *bio,
+ 	 * We need to dec pending if this was a write.
+ 	 */
+ 	if (rw == WRITE) {
+-		if (!(bio->bi_rw & REQ_FLUSH))
++		if (!(bio->bi_rw & (REQ_FLUSH | REQ_DISCARD)))
+ 			dm_rh_dec(ms->rh, map_context->ll);
+ 		return error;
+ 	}
+diff --git a/drivers/md/dm-region-hash.c b/drivers/md/dm-region-hash.c
+index 7771ed2..69732e0 100644
+--- a/drivers/md/dm-region-hash.c
++++ b/drivers/md/dm-region-hash.c
+@@ -404,6 +404,9 @@ void dm_rh_mark_nosync(struct dm_region_hash *rh, struct bio *bio)
+ 		return;
+ 	}
+ 
++	if (bio->bi_rw & REQ_DISCARD)
++		return;
++
+ 	/* We must inform the log that the sync count has changed. */
+ 	log->type->set_region_sync(log, region, 0);
+ 
+@@ -524,7 +527,7 @@ void dm_rh_inc_pending(struct dm_region_hash *rh, struct bio_list *bios)
+ 	struct bio *bio;
+ 
+ 	for (bio = bios->head; bio; bio = bio->bi_next) {
+-		if (bio->bi_rw & REQ_FLUSH)
++		if (bio->bi_rw & (REQ_FLUSH | REQ_DISCARD))
+ 			continue;
+ 		rh_inc(rh, dm_rh_bio_to_region(rh, bio));
+ 	}
 
 
