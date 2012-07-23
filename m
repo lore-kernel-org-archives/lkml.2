@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab2GWSLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 14:11:25 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53284 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab2GWSLY (ORCPT
+	id S1754278Ab2GWSNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 14:13:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43664 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753968Ab2GWSNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 14:11:24 -0400
-Date: Mon, 23 Jul 2012 20:11:17 +0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 06/11] perf kvm: limit repetitive guestmount message to
- once per directory
-Message-ID: <20120723181117.GB6717@infradead.org>
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
- <1342826756-64663-7-git-send-email-dsahern@gmail.com>
+	Mon, 23 Jul 2012 14:13:08 -0400
+Date: Mon, 23 Jul 2012 19:12:49 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lrg@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Help request - ASoC recursion issue
+Message-ID: <20120723181249.GF3421@mudshark.cambridge.arm.com>
+References: <500D5A1F.9000808@linaro.org>
+ <500D649B.80704@linaro.org>
+ <500D6602.6070809@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342826756-64663-7-git-send-email-dsahern@gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <500D6602.6070809@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jul 20, 2012 at 05:25:51PM -0600, David Ahern escreveu:
-> After 7ed97ad use of the guestmount option without a subdir for *each*
-> VM generates an error message for each sample related to that VM. Once
-> per VM is enough.
+On Mon, Jul 23, 2012 at 03:56:02PM +0100, Lee Jones wrote:
+> On 23/07/12 15:50, Lee Jones wrote:
+> >> I was wondering if I may bother you for some help. I've been having
+> >> serious issues with testing the new mop500 sound system you have in your
+> >> ASoC for-next branch. I've fixed a few issues and will be submitting
+> >> patches shortly. The most serious issue I came across was with
+> >> recursion.
+> >
+> > It appears you can ignore this. I just tried another piece of hardware
+> > and this problem doesn't arise, leading me to believe I have some kind
+> > of eMMC corruption error going on with one of my boards.
 > 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> ---
->  tools/perf/util/map.c |   11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index 16d783d..cc33486 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -8,6 +8,7 @@
->  #include <unistd.h>
->  #include "map.h"
->  #include "thread.h"
-> +#include "strlist.h"
->  
->  const char *map_type__name[MAP__NR_TYPES] = {
->  	[MAP__FUNCTION] = "Functions",
-> @@ -695,7 +696,15 @@ struct machine *machines__findnew(struct rb_root *self, pid_t pid)
->  	    (symbol_conf.guestmount)) {
->  		sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
->  		if (access(path, R_OK)) {
-> -			pr_err("Can't access file %s\n", path);
-> +			static struct strlist *seen;
-> +
-> +			if (!seen)
-> +				seen = strlist__new(true, NULL);
-> +
-> +			if (!strlist__has_entry(seen, path)) {
-> +				pr_err("Can't access file %s\n", path);
-> +				strlist__add(seen, path);
-> +			}
+> FYI, just so you don't think I'm mad: http://paste.ubuntu.com/1106535/
 
-At some point we'll need to have __exit functions in userland perf so
-that we can delete this when using mem leak detectors :-\ Applying
-anyway.
+I still maintain that you're getting memory corruption as a result of your
+linear mapping getting screwed up:
 
-- Arnaldo
+  Truncating RAM at 18000000-3fffffff to -2c3fffff (vmalloc region overlap).
+
+looks wrong to me. Your command line also has some non-standard mem= options
+that I don't understand:
+
+  vmalloc=300M mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M mem=22M@360M mem_issw=1M@383M mem=640M@384M
+
+I'd guess you need highmem to map that lot, but you don't appear to have that
+enabled and you end up with a rather strange amount of reported memory to go
+with your lowmem mapping:
+
+  Memory: 474156k/474156k available, 11220k reserved, 0K highmem
+  Virtual kernel memory layout:
+      vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+      fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+      vmalloc : 0xec800000 - 0xff000000   ( 296 MB)
+      lowmem  : 0xc0000000 - 0xec400000   ( 708 MB)
+
+Now, I don't know a thing about Snowball, so maybe this is all normal for
+that board but if you're seeing memory corruption I'd get to the bottom of
+this before trying to debug instances of it cropping up in random driver
+code :)
+
+Will
