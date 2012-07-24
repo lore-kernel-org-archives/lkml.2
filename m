@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab2GXVHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 17:07:36 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54705 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab2GXVHe (ORCPT
+	id S932579Ab2GXVIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 17:08:00 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:43872 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932083Ab2GXVH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 17:07:34 -0400
-Date: Tue, 24 Jul 2012 22:07:25 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-Subject: Re: [RFC][PATCH v2 2/3] Hold multiple logs
-Message-ID: <20120724210725.GA29109@srcf.ucam.org>
-References: <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
- <20120720030328.GC5637@redhat.com>
- <20120723141632.GB23047@srcf.ucam.org>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB33479@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F19370A1B@ORSMSX104.amr.corp.intel.com>
- <20120724181820.GA23820@srcf.ucam.org>
- <3908561D78D1C84285E8C5FCA982C28F19370CA2@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB346A4@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F19370D21@ORSMSX104.amr.corp.intel.com>
+	Tue, 24 Jul 2012 17:07:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19370D21@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1342969400-21123-1-git-send-email-linux@prisktech.co.nz>
+References: <1342969400-21123-1-git-send-email-linux@prisktech.co.nz>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 24 Jul 2012 14:07:35 -0700
+Message-ID: <CAJOA=zNNE18DWwSgfh0H0zGgqpFhPeZrZ8zc0i_cxPBUc2VuoQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: vt8500: clk: Add clock support for arch-vt8500
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: VT8500 mailing list <vt8500-wm8505-linux-kernel@googlegroups.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Alexey Charkov <alchark@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 08:54:59PM +0000, Luck, Tony wrote:
+On Sun, Jul 22, 2012 at 8:03 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
+> This patch adds common clock framework support for arch-vt8500.
+> WM8650 support is included in preparation for devicetree support.
+> Each SoC has a seperate initialization function due to no
+> devicetree support to identify SoCs at the moment. Once devicetree
+> is implemented, VT8500 and WM8505 should be combined. WM8650 uses
+> different functions for clocks.
+>
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 
-> Now we panic. Pstore asks EFI "Do you have any space?" EFI replies "No". Pstore can't even overwrite
-> one of the old OOPs records ... because it thinks they have all been erased. So we lose the panic
-> log.
+Hi Tony,
 
-I think we inevitably lose in that scenario. I'd need to verify, but my 
-recollection is that overwriting existing variables may be equivalent to 
-a delete/create cycle.
+I'll give this a more thorough review once the -rc1 window is over.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Regards,
+Mike
