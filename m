@@ -1,64 +1,377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab2GXMdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 08:33:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8580 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378Ab2GXMdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 08:33:11 -0400
-Date: Tue, 24 Jul 2012 15:33:01 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: rusty@rustcorp.com.au, mst@redhat.com, penberg@kernel.org,
-        asias.hejun@gmail.com, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
-        anthony@codemonkey.ws, wency@cn.fujitsu.com
-Subject: Re: [RFC 0/2] virtio: provide a way for host to monitor critical
- events in the device
-Message-ID: <20120724123301.GH26120@redhat.com>
-References: <1343075561-29316-1-git-send-email-levinsasha928@gmail.com>
- <20120724074434.GE26120@redhat.com>
- <500E9479.3050405@gmail.com>
- <20120724122824.GG26120@redhat.com>
- <500E959D.70009@gmail.com>
+	id S1753877Ab2GXMeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 08:34:25 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:52957 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab2GXMeY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 08:34:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500E959D.70009@gmail.com>
+In-Reply-To: <500E89D1.9010303@suse.de>
+References: <500E89D1.9010303@suse.de>
+Date: Tue, 24 Jul 2012 18:04:23 +0530
+Message-ID: <CAAYFAvp7xDG8et_dyqSgEVOAr7ykNBkgBhs1m5gGjoOdQFkxGQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Make io_submit non-blocking
+From: Rajat Sharma <fs.rajat@gmail.com>
+To: Ankit Jain <jankit@suse.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, bcrl@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 02:31:25PM +0200, Sasha Levin wrote:
-> On 07/24/2012 02:28 PM, Gleb Natapov wrote:
-> > On Tue, Jul 24, 2012 at 02:26:33PM +0200, Sasha Levin wrote:
-> >> On 07/24/2012 09:44 AM, Gleb Natapov wrote:
-> >>> On Mon, Jul 23, 2012 at 10:32:39PM +0200, Sasha Levin wrote:
-> >>>> As it was discussed recently, there's currently no way for the guest to notify
-> >>>> the host about panics. Further more, there's no reasonable way to notify the
-> >>>> host of other critical events such as an OOM kill.
-> >>>>
-> >>>> This short patch series introduces a new device named virtio-notifier which
-> >>>> does two simple things:
-> >>>>
-> >>>>  1. Provide a simple interface for the guest to notify the host of critical
-> >>> To get early OOPSes virtio will have to be compiled into the kernel. If
-> >>> your are so keen on using virtio for this though, why not just use
-> >>> dedicated virtio serial channel?
-> >>
-> >> Let's separate between having log for these events and receiving notifications about them.
-> >>
-> >> For the log part, I can already run a simple serial console to dump everything somewhere. I'm more concerned about having notifications about something critical happening when the guest is already up and running.
-> >>
-> > I am talking about notifications. Run your notification protocol over
-> > dedicated virtio-serial channel. Logs goes to virtio-console as you've
-> > said.
-> 
-> Ah, so just add another channel into virtio-serial to pass these notifications? Good idea - I'll look into it.
-> 
-Yes, that's what I mean. This solution still has the disadvantage of not
-been able to catch early boot oopses without compiling the whole virtio
-into a kernel image.
+Hi Ankit,
+
+On Tue, Jul 24, 2012 at 5:11 PM, Ankit Jain <jankit@suse.de> wrote:
+>
+>
+> Currently, io_submit tries to execute the io requests on the
+> same thread, which could block because of various reaons (eg.
+> allocation of disk blocks). So, essentially, io_submit ends
+> up being a blocking call.
+>
+
+Ideally filesystem should take care of it e.g. by deferring such time
+consuming allocations and return -EIOCBQUEUED immediately. But have
+you seen such cases?
+
+> With this patch, io_submit prepares all the kiocbs and then
+> adds (kicks) them to ctx->run_list (kicked) in one go and then
+> schedules the workqueue. The actual operations are not executed
+> on io_submit's process context, so it can return very quickly.
+>
+
+With lots of application threads firing continuous IOs, workqueue
+threads might become bottleneck and you might have to eventually
+develop a priority scheduling. This workqueue was originally designed
+for IO retries which is an error path, now consumers of workqueue
+might easily increase by 100x.
+
+> This run_list is processed either on a workqueue or in response to
+> an io_getevents call. This utilizes the existing retry infrastructure.
+>
+> It uses override_creds/revert_creds to use the submitting process'
+> credentials when processing the iocb request from the workqueue. This
+> is required for proper support of quota and reserved block access.
+>
+> Currently, we use block plugging in io_submit, since most of the IO
+> was being done there itself. This patch moves it to aio_kick_handler
+> and aio_run_all_iocbs, where the IO gets submitted.
+>
+> All the tests were run with ext4.
+>
+> I tested the patch with fio
+>  (fio rand-rw-disk.fio --max-jobs=2 --latency-log
+>  --bandwidth-log)
+>
+> **Unpatched**
+> read : io=102120KB, bw=618740 B/s, iops=151 , runt=169006msec
+> slat (usec): min=275 , max=87560 , avg=6571.88, stdev=2799.57
+>
+> write: io=102680KB, bw=622133 B/s, iops=151 , runt=169006msec
+> slat (usec): min=2 , max=196 , avg=24.66, stdev=20.35
+>
+> **Patched**
+> read : io=102864KB, bw=504885 B/s, iops=123 , runt=208627msec
+> slat (usec): min=0 , max=120 , avg= 1.65, stdev= 3.46
+>
+> write: io=101936KB, bw=500330 B/s, iops=122 , runt=208627msec
+> slat (usec): min=0 , max=131 , avg= 1.85, stdev= 3.27
+>
+> From above, it can be seen that submit latencies improve a lot with the
+> patch. The full fio results for the "old"(unpatched) and "new"(patched)
+> cases are attached. Results with both ramdisk (*rd*) and disk attached,
+> and also the corresponding fio files.
+>
+> Some variations I tried:
+>
+> 1. I tried to submit one iocb at a time (lock/unlock ctx->lock), and
+> that had good performance for a regular disk, but when I tested with a
+> ramdisk (to simulate very fast disk), performance was extremely bad.
+> Submitting all the iocbs from an io_submit in one go, restored the
+> performance (latencies+bandwidth).
+>
+> 2. I was earlier trying to use queue_delayed_work with 0 timeout, but
+> that worsened the submit latencies a bit but improved bandwidth.
+>
+> 3. Also, I tried not using aio_queue_work from io_submit call, and instead
+> depending on an already scheduled one or the iocbs being run when
+> io_getevents gets called. This seemed to give improved perfomance. But
+> does this constitute as change of api semantics?
+>
+
+I once have observed latency issues with aio_queue_work with lesser
+number of threads when I was trying to resubmit IOs on a ramdisk, as
+this function introduces a mandatory delay if nobody is waiting on
+this iocb. The latencies were high but with large number of threads,
+effect was not prominent.
+
+> Signed-off-by: Ankit Jain <jankit@suse.de>
+>
+> --
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 71f613c..79801096b 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -563,6 +563,11 @@ static int __aio_put_req(struct kioctx *ctx, struct
+> kiocb *req)
+>         req->ki_cancel = NULL;
+>         req->ki_retry = NULL;
+>
+> +       if (likely(req->submitter_cred)) {
+> +               put_cred(req->submitter_cred);
+> +               req->submitter_cred = NULL;
+> +       }
+> +
+>         fput(req->ki_filp);
+>         req->ki_filp = NULL;
+>         really_put_req(ctx, req);
+> @@ -659,6 +664,7 @@ static ssize_t aio_run_iocb(struct kiocb *iocb)
+>         struct kioctx   *ctx = iocb->ki_ctx;
+>         ssize_t (*retry)(struct kiocb *);
+>         ssize_t ret;
+> +       const struct cred *old_cred = NULL;
+>
+>         if (!(retry = iocb->ki_retry)) {
+>                 printk("aio_run_iocb: iocb->ki_retry = NULL\n");
+> @@ -703,12 +709,19 @@ static ssize_t aio_run_iocb(struct kiocb *iocb)
+>                 goto out;
+>         }
+>
+> +       if (iocb->submitter_cred)
+> +               /* setup creds */
+> +               old_cred = override_creds(iocb->submitter_cred);
+> +
+>         /*
+>          * Now we are all set to call the retry method in async
+>          * context.
+>          */
+>         ret = retry(iocb);
+>
+> +       if (old_cred)
+> +               revert_creds(old_cred);
+> +
+>         if (ret != -EIOCBRETRY && ret != -EIOCBQUEUED) {
+>                 /*
+>                  * There's no easy way to restart the syscall since other
+> AIO's
+> @@ -804,10 +817,14 @@ static void aio_queue_work(struct kioctx * ctx)
+>   */
+>  static inline void aio_run_all_iocbs(struct kioctx *ctx)
+>  {
+> +       struct blk_plug plug;
+> +
+> +       blk_start_plug(&plug);
+>         spin_lock_irq(&ctx->ctx_lock);
+>         while (__aio_run_iocbs(ctx))
+>                 ;
+>         spin_unlock_irq(&ctx->ctx_lock);
+> +       blk_finish_plug(&plug);
+>  }
+>
+>  /*
+> @@ -825,13 +842,16 @@ static void aio_kick_handler(struct work_struct
+> *work)
+>         mm_segment_t oldfs = get_fs();
+>         struct mm_struct *mm;
+>         int requeue;
+> +       struct blk_plug plug;
+>
+>         set_fs(USER_DS);
+>         use_mm(ctx->mm);
+> +       blk_start_plug(&plug);
+>         spin_lock_irq(&ctx->ctx_lock);
+>         requeue =__aio_run_iocbs(ctx);
+>         mm = ctx->mm;
+>         spin_unlock_irq(&ctx->ctx_lock);
+> +       blk_finish_plug(&plug);
+>         unuse_mm(mm);
+>         set_fs(oldfs);
+>         /*
+> @@ -1506,12 +1526,14 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb,
+> bool compat)
+>
+>  static int io_submit_one(struct kioctx *ctx, struct iocb __user
+> *user_iocb,
+>                          struct iocb *iocb, struct kiocb_batch *batch,
+> -                        bool compat)
+> +                        bool compat, struct kiocb **req_entry)
+>  {
+>         struct kiocb *req;
+>         struct file *file;
+>         ssize_t ret;
+>
+> +       *req_entry = NULL;
+> +
+>         /* enforce forwards compatibility on users */
+>         if (unlikely(iocb->aio_reserved1 || iocb->aio_reserved2)) {
+>                 pr_debug("EINVAL: io_submit: reserve field set\n");
+> @@ -1537,6 +1559,7 @@ static int io_submit_one(struct kioctx *ctx, struct
+> iocb __user *user_iocb,
+>                 fput(file);
+>                 return -EAGAIN;
+>         }
+> +
+>         req->ki_filp = file;
+>         if (iocb->aio_flags & IOCB_FLAG_RESFD) {
+>                 /*
+> @@ -1567,38 +1590,16 @@ static int io_submit_one(struct kioctx *ctx,
+> struct iocb __user *user_iocb,
+>         req->ki_left = req->ki_nbytes = iocb->aio_nbytes;
+>         req->ki_opcode = iocb->aio_lio_opcode;
+>
+> +       req->submitter_cred = get_current_cred();
+> +
+>         ret = aio_setup_iocb(req, compat);
+>
+>         if (ret)
+>                 goto out_put_req;
+>
+> -       spin_lock_irq(&ctx->ctx_lock);
+> -       /*
+> -        * We could have raced with io_destroy() and are currently holding
+> a
+> -        * reference to ctx which should be destroyed. We cannot submit IO
+> -        * since ctx gets freed as soon as io_submit() puts its reference.
+> The
+> -        * check here is reliable: io_destroy() sets ctx->dead before
+> waiting
+> -        * for outstanding IO and the barrier between these two is
+> realized by
+> -        * unlock of mm->ioctx_lock and lock of ctx->ctx_lock.
+> Analogously we
+> -        * increment ctx->reqs_active before checking for ctx->dead and
+> the
+> -        * barrier is realized by unlock and lock of ctx->ctx_lock. Thus
+> if we
+> -        * don't see ctx->dead set here, io_destroy() waits for our IO to
+> -        * finish.
+> -        */
+> -       if (ctx->dead) {
+> -               spin_unlock_irq(&ctx->ctx_lock);
+> -               ret = -EINVAL;
+> -               goto out_put_req;
+> -       }
+> -       aio_run_iocb(req);
+> -       if (!list_empty(&ctx->run_list)) {
+> -               /* drain the run list */
+> -               while (__aio_run_iocbs(ctx))
+> -                       ;
+> -       }
+> -       spin_unlock_irq(&ctx->ctx_lock);
+> -
+>         aio_put_req(req);       /* drop extra ref to req */
+> +
+> +       *req_entry = req;
+>         return 0;
+>
+>  out_put_req:
+> @@ -1613,8 +1614,10 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+>         struct kioctx *ctx;
+>         long ret = 0;
+>         int i = 0;
+> -       struct blk_plug plug;
+>         struct kiocb_batch batch;
+> +       struct kiocb **req_arr = NULL;
+> +       int nr_submitted = 0;
+> +       int req_arr_cnt = 0;
+>
+>         if (unlikely(nr < 0))
+>                 return -EINVAL;
+> @@ -1632,8 +1635,8 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+>         }
+>
+>         kiocb_batch_init(&batch, nr);
+> -
+> -       blk_start_plug(&plug);
+> +       req_arr = kmalloc(sizeof(struct kiocb *) * nr, GFP_KERNEL);
+> +       memset(req_arr, 0, sizeof(req_arr));
+>
+>         /*
+>          * AKPM: should this return a partial result if some of the IOs
+> were
+> @@ -1653,15 +1656,51 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+>                         break;
+>                 }
+>
+> -               ret = io_submit_one(ctx, user_iocb, &tmp, &batch, compat);
+> +               ret = io_submit_one(ctx, user_iocb, &tmp, &batch, compat,
+> +                               &req_arr[i]);
+>                 if (ret)
+>                         break;
+> +               req_arr_cnt++;
+>         }
+> -       blk_finish_plug(&plug);
+>
+> +       spin_lock_irq(&ctx->ctx_lock);
+> +       /*
+> +        * We could have raced with io_destroy() and are currently holding
+> a
+> +        * reference to ctx which should be destroyed. We cannot submit IO
+> +        * since ctx gets freed as soon as io_submit() puts its reference.
+> The
+> +        * check here is reliable: io_destroy() sets ctx->dead before
+> waiting
+> +        * for outstanding IO and the barrier between these two is
+> realized by
+> +        * unlock of mm->ioctx_lock and lock of ctx->ctx_lock.
+> Analogously we
+> +        * increment ctx->reqs_active before checking for ctx->dead and
+> the
+> +        * barrier is realized by unlock and lock of ctx->ctx_lock. Thus
+> if we
+> +        * don't see ctx->dead set here, io_destroy() waits for our IO to
+> +        * finish.
+> +        */
+> +       if (ctx->dead) {
+> +               spin_unlock_irq(&ctx->ctx_lock);
+> +               for (i = 0; i < req_arr_cnt; i++)
+> +                       /* drop i/o ref to the req */
+> +                       __aio_put_req(ctx, req_arr[i]);
+> +
+> +               ret = -EINVAL;
+> +               goto out;
+> +       }
+> +
+> +       for (i = 0; i < req_arr_cnt; i++) {
+> +               struct kiocb *req = req_arr[i];
+> +               if (likely(!kiocbTryKick(req)))
+> +                       __queue_kicked_iocb(req);
+> +               nr_submitted++;
+> +       }
+> +       if (likely(nr_submitted > 0))
+> +               aio_queue_work(ctx);
+> +       spin_unlock_irq(&ctx->ctx_lock);
+> +
+> +out:
+>         kiocb_batch_free(ctx, &batch);
+> +       kfree(req_arr);
+>         put_ioctx(ctx);
+> -       return i ? i : ret;
+> +       return nr_submitted ? nr_submitted : ret;
+>  }
+>
+>  /* sys_io_submit:
+> diff --git a/include/linux/aio.h b/include/linux/aio.h
+> index b1a520e..bcd6a5e 100644
+> --- a/include/linux/aio.h
+> +++ b/include/linux/aio.h
+> @@ -124,6 +124,8 @@ struct kiocb {
+>          * this is the underlying eventfd context to deliver events to.
+>          */
+>         struct eventfd_ctx      *ki_eventfd;
+> +
+> +       const struct cred       *submitter_cred;
+>  };
+>
+>  #define is_sync_kiocb(iocb)    ((iocb)->ki_key == KIOCB_SYNC_KEY)
+>
+> --
+> Ankit Jain
+> SUSE Labs
 
 --
-			Gleb.
+Rajat Sharma
