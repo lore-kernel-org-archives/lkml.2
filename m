@@ -1,107 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab2GXJH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 05:07:26 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12041 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751824Ab2GXJHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 05:07:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="126182843"
-Date: Tue, 24 Jul 2012 17:07:20 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Rostedt <srostedt@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Testing tracer wakeup_rt: .. no entries found ..FAILED!
-Message-ID: <20120724090720.GA10434@localhost>
-References: <20120724090330.GA9830@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724090330.GA9830@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753200Ab2GXJHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 05:07:08 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55075 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab2GXJG7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 05:06:59 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-fd-500e65b13e5e
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 03/12] perf hist: Collapse group hist_entries to a leader
+Date: Tue, 24 Jul 2012 18:01:24 +0900
+Message-Id: <1343120493-23059-4-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
+References: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 05:03:30PM +0800, Fengguang Wu wrote:
-> Hi Steven,
-> 
-> This looks like some old bug, so I directly report to you w/o trying
-> to bisect it. It only happens on the attached i386 randconfig and
-> happens in about half of the kvm boots.
-> 
-> [    1.380369] Testing tracer irqsoff: [    1.524917] 
-> [    1.525217] ===============================
-> [    1.525868] [ INFO: suspicious RCU usage. ]
-> [    1.526556] 3.5.0+ #1289 Not tainted
-> [    1.527124] -------------------------------
-> [    1.527799] /c/kernel-tests/src/linux/include/linux/rcupdate.h:730 rcu_read_lock() used illegally while idle!
-> [    1.529375] 
-> [    1.529375] other info that might help us debug this:
-> [    1.529375] 
-> [    1.530667] 
-> [    1.530667] RCU used illegally from idle CPU!
-> [    1.530667] rcu_scheduler_active = 1, debug_locks = 1
-> [    1.532383] RCU used illegally from extended quiescent state!
-> [    1.533297] 2 locks held by swapper/0/0:
-> 
-> [    1.533924]  #0: [    1.534271]  (max_trace_lock){......}, at: [<410e9d67>] check_critical_timing+0x67/0x1b0
-> [    1.534883]  #1:  (rcu_read_lock){.+.+..}, at: [<410e1ea0>] __update_max_tr+0x0/0x200
-> 
-> [    1.534883] stack backtrace:
-> [    1.534883] Pid: 0, comm: swapper/0 Not tainted 3.5.0+ #1289
-> [    1.534883] Call Trace:
-> [    1.534883]  [<41093a76>] lockdep_rcu_suspicious+0xc6/0x100
-> [    1.534883]  [<410e2071>] __update_max_tr+0x1d1/0x200
-> [    1.534883]  [<410e1ea0>] ? tracing_record_cmdline+0x130/0x130
-> [    1.534883]  [<410e30f5>] update_max_tr_single+0x1f5/0x240
-> [    1.534883]  [<410e294c>] ? __trace_stack+0x1c/0x30
-> [    1.534883]  [<410e9e96>] check_critical_timing+0x196/0x1b0
-> [    1.534883]  [<4100b858>] ? default_idle+0x468/0x4c0
-> [    1.534883]  [<4100b858>] ? default_idle+0x468/0x4c0
-> [    1.534883]  [<410ea47f>] time_hardirqs_on+0xff/0x110
-> [    1.534883]  [<410961eb>] ? trace_hardirqs_on+0xb/0x10
-> [    1.534883]  [<4100b858>] ? default_idle+0x468/0x4c0
-> [    1.534883]  [<41096031>] trace_hardirqs_on_caller+0x11/0x1c0
-> [    1.534883]  [<410961eb>] trace_hardirqs_on+0xb/0x10
-> [    1.534883]  [<4100b858>] default_idle+0x468/0x4c0
-> [    1.534883]  [<4100c4e6>] cpu_idle+0x186/0x190
-> [    1.534883]  [<412953c3>] rest_init+0x127/0x134
-> [    1.534883]  [<4129529c>] ? __read_lock_failed+0x14/0x14
-> [    1.534883]  [<4141b9e0>] start_kernel+0x36f/0x375
-> [    1.534883]  [<4141b4a6>] ? repair_env_string+0x51/0x51
-> [    1.534883]  [<4141b2d4>] i386_start_kernel+0x8a/0x8f
-> [    1.534883] 
-> [    1.534883] ===============================
+To support viewing an event group together, collapse all of members
+in the group to the leader's tree. The entries in the leader's tree
+will have group_stats to store those information.
 
-And this warning shows up in one of the dozens of boots, for the same
-kconfig.
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/hist.c   |  114 ++++++++++++++++++++++++++++++++++++++++++----
+ tools/perf/util/symbol.c |    4 ++
+ tools/perf/util/symbol.h |    3 +-
+ 3 files changed, 111 insertions(+), 10 deletions(-)
 
-[    2.320434] Testing tracer wakeup: PASSED
-[    2.840288] Testing tracer wakeup_rt: .. no entries found ..FAILED!
-[    3.280861] ------------[ cut here ]------------
-[    3.281967] WARNING: at /c/kernel-tests/src/linux/kernel/trace/trace.c:834 register_tracer+0x1b0/0x270()
-[    3.284162] Hardware name: Bochs
-[    3.284933] Modules linked in:
-[    3.285695] Pid: 1, comm: swapper/0 Not tainted 3.5.0+ #1371
-[    3.287032] Call Trace:
-[    3.287626]  [<41035c32>] warn_slowpath_common+0x72/0xa0
-[    3.288938]  [<410e7dd0>] ? register_tracer+0x1b0/0x270
-[    3.290280]  [<410e7dd0>] ? register_tracer+0x1b0/0x270
-[    3.291516]  [<41035c82>] warn_slowpath_null+0x22/0x30
-[    3.292723]  [<410e7dd0>] register_tracer+0x1b0/0x270
-[    3.293921]  [<41434c7a>] ? init_irqsoff_tracer+0x11/0x11
-[    3.295269]  [<41434c95>] init_wakeup_tracer+0x1b/0x1d
-[    3.296464]  [<41001112>] do_one_initcall+0x112/0x160
-[    3.297639]  [<4141fadd>] kernel_init+0xf7/0x18e
-[    3.298724]  [<4141f455>] ? do_early_param+0x7a/0x7a
-[    3.299879]  [<4141f9e6>] ? start_kernel+0x375/0x375
-[    3.301093]  [<412b15c2>] kernel_thread_helper+0x6/0x10
-[    3.302352] ---[ end trace 57f7151f6a5def05 ]---
-
-Thanks,
-Fengguang
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index d2a76d379f87..a8f4c56261a0 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -4,6 +4,7 @@
+ #include "hist.h"
+ #include "session.h"
+ #include "sort.h"
++#include "evsel.h"
+ #include <math.h>
+ 
+ static bool hists__filter_entry_by_dso(struct hists *hists,
+@@ -394,17 +395,50 @@ void hist_entry__free(struct hist_entry *he)
+ 	free(he);
+ }
+ 
++static void hist_entry__add_stat(struct he_stat *left, struct he_stat *right)
++{
++	left->period		+= right->period;
++	left->period_sys	+= right->period_sys;
++	left->period_us		+= right->period_us;
++	left->period_guest_sys	+= right->period_guest_sys;
++	left->period_guest_us	+= right->period_guest_us;
++	left->nr_events		+= right->nr_events;
++}
++
++static void hist_entry__add_group_stat(struct perf_evsel *evsel,
++				       struct hist_entry *iter,
++				       struct hist_entry *he)
++{
++	struct perf_evsel *leader = evsel->leader;
++	if (!leader)
++		leader = evsel;
++
++	if (!iter->group_stats) {
++		iter->group_stats = calloc(leader->nr_children,
++					   sizeof(struct he_stat));
++		if (!iter->group_stats)
++			return;
++	}
++
++	if (!perf_evsel__is_group_leader(evsel))
++		hist_entry__add_stat(&iter->group_stats[evsel->group_idx],
++				     &he->stat);
++	else
++		hist_entry__add_stat(&iter->stat, &he->stat);
++}
++
+ /*
+  * collapse the histogram
+  */
+ 
+-static bool hists__collapse_insert_entry(struct hists *hists __used,
++static bool hists__collapse_insert_entry(struct hists *hists,
+ 					 struct rb_root *root,
+ 					 struct hist_entry *he)
+ {
+ 	struct rb_node **p = &root->rb_node;
+ 	struct rb_node *parent = NULL;
+ 	struct hist_entry *iter;
++	struct perf_evsel *evsel = hists_2_evsel(hists);
+ 	int64_t cmp;
+ 
+ 	while (*p != NULL) {
+@@ -414,8 +448,11 @@ static bool hists__collapse_insert_entry(struct hists *hists __used,
+ 		cmp = hist_entry__collapse(iter, he);
+ 
+ 		if (!cmp) {
+-			iter->stat.period += he->stat.period;
+-			iter->stat.nr_events += he->stat.nr_events;
++			if (symbol_conf.report_group)
++				hist_entry__add_group_stat(evsel, iter, he);
++			else
++				hist_entry__add_stat(&iter->stat, &he->stat);
++
+ 			if (symbol_conf.use_callchain) {
+ 				callchain_cursor_reset(&callchain_cursor);
+ 				callchain_merge(&callchain_cursor,
+@@ -432,6 +469,16 @@ static bool hists__collapse_insert_entry(struct hists *hists __used,
+ 			p = &(*p)->rb_right;
+ 	}
+ 
++	if (symbol_conf.report_group) {
++		/*
++		 * 'he' is not found in the leader tree.
++		 * Insert it to the tree and setup stats properly.
++		 */
++		hist_entry__add_group_stat(evsel, he, he);
++		if (!perf_evsel__is_group_leader(evsel))
++			memset(&he->stat, 0, sizeof(struct he_stat));
++	}
++
+ 	rb_link_node(&he->rb_node_in, parent, p);
+ 	rb_insert_color(&he->rb_node_in, root);
+ 	return true;
+@@ -462,6 +509,7 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
+ static void __hists__collapse_resort(struct hists *hists, bool threaded)
+ {
+ 	struct rb_root *root;
++	struct rb_root *dest;
+ 	struct rb_node *next;
+ 	struct hist_entry *n;
+ 
+@@ -470,13 +518,26 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
+ 
+ 	root = hists__get_rotate_entries_in(hists);
+ 	next = rb_first(root);
++	dest = &hists->entries_collapsed;
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *leader;
++
++		/*
++		 * Collapse hist entries to the leader's tree.
++		 * If evsel->leader == NULL, it's the leader.
++		 */
++		leader = hists_2_evsel(hists)->leader;
++		if (leader)
++			dest = &leader->hists.entries_collapsed;
++	}
+ 
+ 	while (next) {
+ 		n = rb_entry(next, struct hist_entry, rb_node_in);
+ 		next = rb_next(&n->rb_node_in);
+ 
+ 		rb_erase(&n->rb_node_in, root);
+-		if (hists__collapse_insert_entry(hists, &hists->entries_collapsed, n)) {
++		if (hists__collapse_insert_entry(hists, dest, n)) {
+ 			/*
+ 			 * If it wasn't combined with one of the entries already
+ 			 * collapsed, we need to apply the filters that may have
+@@ -501,13 +562,38 @@ void hists__collapse_resort_threaded(struct hists *hists)
+  * reverse the map, sort on period.
+  */
+ 
+-static void __hists__insert_output_entry(struct rb_root *entries,
++static int __hists__output_cmd_period(struct hist_entry *left,
++				      struct hist_entry *right,
++				      int nr_group)
++{
++	if (left->stat.period > right->stat.period)
++		return 1;
++	if (left->stat.period < right->stat.period)
++		return -1;
++
++	if (symbol_conf.report_group) {
++		int i;
++
++		for (i = 0; i < nr_group; i++) {
++			if (left->group_stats[i].period >
++			    right->group_stats[i].period)
++				return 1;
++			if (left->group_stats[i].period <
++			    right->group_stats[i].period)
++				return -1;
++		}
++	}
++	return 0;
++}
++
++static void __hists__insert_output_entry(struct hists *hists,
+ 					 struct hist_entry *he,
+ 					 u64 min_callchain_hits)
+ {
+-	struct rb_node **p = &entries->rb_node;
++	struct rb_node **p = &hists->entries.rb_node;
+ 	struct rb_node *parent = NULL;
+ 	struct hist_entry *iter;
++	struct perf_evsel *evsel = hists_2_evsel(hists);
+ 
+ 	if (symbol_conf.use_callchain)
+ 		callchain_param.sort(&he->sorted_chain, he->callchain,
+@@ -517,14 +603,14 @@ static void __hists__insert_output_entry(struct rb_root *entries,
+ 		parent = *p;
+ 		iter = rb_entry(parent, struct hist_entry, rb_node);
+ 
+-		if (he->stat.period > iter->stat.period)
++		if (__hists__output_cmd_period(he, iter, evsel->nr_children) > 0)
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+ 	rb_link_node(&he->rb_node, parent, p);
+-	rb_insert_color(&he->rb_node, entries);
++	rb_insert_color(&he->rb_node, &hists->entries);
+ }
+ 
+ static void __hists__output_resort(struct hists *hists, bool threaded)
+@@ -536,6 +622,16 @@ static void __hists__output_resort(struct hists *hists, bool threaded)
+ 
+ 	min_callchain_hits = hists->stats.total_period * (callchain_param.min_percent / 100);
+ 
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(hists);
++
++		/*
++		 * We've collapsed all of non-leader entries to the leader.
++		 */
++		if (!perf_evsel__is_group_leader(evsel))
++			return;
++	}
++
+ 	if (sort__need_collapse || threaded)
+ 		root = &hists->entries_collapsed;
+ 	else
+@@ -552,7 +648,7 @@ static void __hists__output_resort(struct hists *hists, bool threaded)
+ 		n = rb_entry(next, struct hist_entry, rb_node_in);
+ 		next = rb_next(&n->rb_node_in);
+ 
+-		__hists__insert_output_entry(&hists->entries, n, min_callchain_hits);
++		__hists__insert_output_entry(hists, n, min_callchain_hits);
+ 		hists__inc_nr_entries(hists, n);
+ 	}
+ }
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 50958bbeb26a..753faa76b7c3 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -14,6 +14,7 @@
+ #include "debug.h"
+ #include "symbol.h"
+ #include "strlist.h"
++#include "sort.h"
+ 
+ #include <libelf.h>
+ #include <gelf.h>
+@@ -2733,6 +2734,9 @@ int symbol__init(void)
+ 
+ 	symbol_conf.kptr_restrict = symbol__read_kptr_restrict();
+ 
++	if (symbol_conf.report_group)
++		sort__need_collapse = 1;
++
+ 	symbol_conf.initialized = true;
+ 	return 0;
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index a884b99017f0..9da14d6b1729 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -88,7 +88,8 @@ struct symbol_conf {
+ 			initialized,
+ 			kptr_restrict,
+ 			annotate_asm_raw,
+-			annotate_src;
++			annotate_src,
++			report_group;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
+-- 
+1.7.10.4
 
