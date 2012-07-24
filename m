@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab2GXW2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 18:28:17 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34527 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755098Ab2GXW2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 18:28:15 -0400
-Message-ID: <1343168893.28520.8.camel@joe2Laptop>
-Subject: Re: [PATCH 0/3] dyndbg: dev_dbg bugfix + 2 trivials
-From: Joe Perches <joe@perches.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: Jason Baron <jbaron@redhat.com>, kay@vrfy.org,
-        linux-kernel@vger.kernel.org, greg@kroah.com
-Date: Tue, 24 Jul 2012 15:28:13 -0700
-In-Reply-To: <CAJfuBxzV-hct4wE+wPxrSabd_2oJ9DaH31Oxd-LVhuh1hFyoSw@mail.gmail.com>
-References: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
-	 <20120720203857.GD13835@redhat.com>
-	 <CAJfuBxzV-hct4wE+wPxrSabd_2oJ9DaH31Oxd-LVhuh1hFyoSw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755100Ab2GXWbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 18:31:18 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:45623 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754774Ab2GXWbQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 18:31:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgoFAAMhD1B5LMut/2dsb2JhbABFhQq0eYEIgiABAQQBJxMcIwULCAMOCi4UJQMhE4gHBbsuFIs3HIZYA5VIiSyGYoJxgUU
+Date: Wed, 25 Jul 2012 08:31:10 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Ankit Jain <jankit@suse.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, bcrl@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Make io_submit non-blocking
+Message-ID: <20120724223110.GQ23387@dastard>
+References: <500E89D1.9010303@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500E89D1.9010303@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-24 at 15:40 -0600, Jim Cromie wrote:
-> On Fri, Jul 20, 2012 at 2:38 PM, Jason Baron <jbaron@redhat.com> wrote:
-> > On Thu, Jul 19, 2012 at 01:46:19PM -0600, Jim Cromie wrote:
-> >> 3 patches here, 1st is bugfix, others are trivial.
-> >>
-> >> 1- fix __dev_printk, which broke dev_dbg() prefix under CONFIG_DYNAMIC_DEBUG.
-
-I'd rather what I posted be tested/implemented instead.
-It works with the printk changes already in -next via mm.
-
-Try your patch against -next and see it doesn't work.
-It requires additional changes for SOH handling.
-
-> >> 2- change dyndbg prefix interfield separator from ':' to '.'
-
-I think this part of the patch completely unnecessary.
-What value does changing the prefix from one char to another really add?
-Trying to parse  logfiles via cut will always be imperfect.
-
-dmesg -r|grep "^<7>" seems to work well enough for debug messages
-
-> Going forward, the proper priorities for dyndbg are IMO (CMIIW)
+On Tue, Jul 24, 2012 at 05:11:05PM +0530, Ankit Jain wrote:
 > 
-> - get jumplabels working
+> Currently, io_submit tries to execute the io requests on the
+> same thread, which could block because of various reaons (eg.
+> allocation of disk blocks). So, essentially, io_submit ends
+> up being a blocking call.
 > 
->   Ive coded this, and it looks ok, but Im stuck on the circular
-> include problem seen
->   when I add #include <linux/jumplabel.h> needed for the ddebug.key field.
->   Ive tried a few permutations, but I dont think thats gonna
-> illuminate a working fix.
->   I think I'll post a minimal RF-Help patch to demonstrate the problem ..
-
-Seems reasonable.
-
-> - propose a pr_debug_flags("flagchars", "fmt", ...)
+> With this patch, io_submit prepares all the kiocbs and then
+> adds (kicks) them to ctx->run_list (kicked) in one go and then
+> schedules the workqueue. The actual operations are not executed
+> on io_submit's process context, so it can return very quickly.
 > 
->   "flagchars" would be uppercase chars defined for each module
->   DBG_DEFINE_FLAG( mod_debug_str, "A", "alpha flag controls .. blah blah..");
+> This run_list is processed either on a workqueue or in response to
+> an io_getevents call. This utilizes the existing retry infrastructure.
+> 
+> It uses override_creds/revert_creds to use the submitting process'
+> credentials when processing the iocb request from the workqueue. This
+> is required for proper support of quota and reserved block access.
+> 
+> Currently, we use block plugging in io_submit, since most of the IO
+> was being done there itself. This patch moves it to aio_kick_handler
+> and aio_run_all_iocbs, where the IO gets submitted.
+> 
+> All the tests were run with ext4.
+> 
+> I tested the patch with fio
+>  (fio rand-rw-disk.fio --max-jobs=2 --latency-log
+>  --bandwidth-log)
+> 
+> **Unpatched**
+> read : io=102120KB, bw=618740 B/s, iops=151 , runt=169006msec
+> slat (usec): min=275 , max=87560 , avg=6571.88, stdev=2799.57
 
-what's the fmt,... for?
-Why not just a per-module set of flags?
+Hmmm, I had to check the numbers twice - that's only 600KB/s.
 
+Perhaps you need to test on something more than a single piece of
+spinning rust. Optimising AIO for SSD rates (say 100k 4k write IOPS)
+is probably more relevant to the majority of AIO users....
 
+> write: io=102680KB, bw=622133 B/s, iops=151 , runt=169006msec
+> slat (usec): min=2 , max=196 , avg=24.66, stdev=20.35
+> 
+> **Patched**
+> read : io=102864KB, bw=504885 B/s, iops=123 , runt=208627msec
+> slat (usec): min=0 , max=120 , avg= 1.65, stdev= 3.46 
+> 
+> write: io=101936KB, bw=500330 B/s, iops=122 , runt=208627msec
+> slat (usec): min=0 , max=131 , avg= 1.85, stdev= 3.27 
+
+So you made ext4 20% slower at random 4k writes with worst case
+latencies only improving by about 30%. That, I think, is a
+non-starter....
+
+Also, you added a memory allocation in the io submit code. Worse
+case latency will still be effectively undefined - what happens to
+latencies if you generate memory pressure while the test is running?
+
+FWIW, if you are going to change generic code, you need to present
+results for other filesystems as well (xfs, btrfs are typical), as
+they may not have the same problems as ext4 or react the same way to
+your change. The result might simply be "it is 20% slower"....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
