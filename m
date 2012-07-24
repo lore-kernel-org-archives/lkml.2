@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab2GXIB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 04:01:29 -0400
-Received: from claranet-outbound-smtp04.uk.clara.net ([195.8.89.37]:40917 "EHLO
-	claranet-outbound-smtp04.uk.clara.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755084Ab2GXIB0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 04:01:26 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-To: =?utf-8?q?J=C3=B6rn_Engel?= <joern@logfs.org>
-Subject: Re: [PATCH] add blockconsole version 1.1
-Date: Tue, 24 Jul 2012 09:01:16 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-90.fc15.x86_64; KDE/4.6.5; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
-References: <20120424205946.GH20610@logfs.org> <201207231533.16350.tvrtko.ursulin@onelan.co.uk> <20120723200230.GC17767@logfs.org>
-In-Reply-To: <20120723200230.GC17767@logfs.org>
+	id S1755589Ab2GXIH3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:07:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63542 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755521Ab2GXIHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 04:07:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="170587947"
+Date: Tue, 24 Jul 2012 11:07:29 +0300
+From: andrei.emeltchenko.news@gmail.com
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        joe@perches.com, Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCHv3 1/3] lib: printf: update documentation to cover all of
+ %p[Mm][FR]
+Message-ID: <20120724080727.GA11502@aemeltch-MOBL1>
+References: <1341341280.2012.3.camel@joe2Laptop>
+ <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201207240901.16151.tvrtko.ursulin@onelan.co.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 Jul 2012 21:02:30 Jörn Engel wrote:
-> On Mon, 23 July 2012 15:33:16 +0100, Tvrtko Ursulin wrote:
-> > On Thursday 12 Jul 2012 18:46:34 Jörn Engel wrote:
-> > > Console driver similar to netconsole, except it writes to a block
-> > > device.  Can be useful in a setup where netconsole, for whatever
-> > > reasons, is impractical.
-> > 
-> > Perhaps you need to add a word or two about limitations compared to
-> > netconsole in documentation because it is quite significant difference
-> > in reliability? I mean so it is not assumed it is analogous to
-> > netconsole but just a different underlying media. I don't know if
-> > someone would expect it, but better said than not.
+On Wed, Jul 04, 2012 at 11:45:50AM +0300, Andy Shevchenko wrote:
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+
+Acked-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com> 
+
+> ---
+>  Documentation/printk-formats.txt |    1 +
+>  lib/vsprintf.c                   |    5 ++++-
+>  2 files changed, 5 insertions(+), 1 deletion(-)
 > 
-> Given that I don't even know the limitations, that's a bit tough.  As
-> a general rule, I would always prefer netconsole.  It appears to be
-> more reliable than blockconsole and beats serial console by half a
-> lightyear.  But as a fallback when netconsole is not realistic,
-> blockconsole has proven useful.
-
-At the very least block console does not work from interrupt context while 
-netconsole does, right? Also netconsole does things to try and work around low 
-memory situations. Things like that I think would be useful additions to 
-documentation.
- 
-> > I second the notion that logging to partitions would be useful.
+> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+> index d8d168fa..90ff4d7 100644
+> --- a/Documentation/printk-formats.txt
+> +++ b/Documentation/printk-formats.txt
+> @@ -59,6 +59,7 @@ MAC/FDDI addresses:
+>  	%pMR	05:04:03:02:01:00
+>  	%pMF	00-01-02-03-04-05
+>  	%pm	000102030405
+> +	%pmR	050403020100
+>  
+>  	For printing 6-byte MAC/FDDI addresses in hex notation. The 'M' and 'm'
+>  	specifiers result in a printed address with ('M') or without ('m') byte
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index a0b5f15..e500158 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -946,7 +946,7 @@ int kptr_restrict __read_mostly;
+>   * - 'm' For a 6-byte MAC address, it prints the hex address without colons
+>   * - 'MF' For a 6-byte MAC FDDI address, it prints the address
+>   *       with a dash-separated hex notation
+> - * - '[mM]R For a 6-byte MAC address, Reverse order (Bluetooth)
+> + * - '[mM]R' For a 6-byte MAC address, Reverse order (Bluetooth)
+>   * - 'I' [46] for IPv4/IPv6 addresses printed in the usual way
+>   *       IPv4 uses dot-separated decimal without leading 0's (1.2.3.4)
+>   *       IPv6 uses colon separated network-order 16 bit hex with leading 0's
+> @@ -1287,7 +1287,10 @@ qualifier:
+>   * %pR output the address range in a struct resource with decoded flags
+>   * %pr output the address range in a struct resource with raw flags
+>   * %pM output a 6-byte MAC address with colons
+> + * %pMR output a 6-byte MAC address with colons in reversed order
+> + * %pMF output a 6-byte MAC address with dashes
+>   * %pm output a 6-byte MAC address without colons
+> + * %pmR output a 6-byte MAC address without colons in reversed order
+>   * %pI4 print an IPv4 address without leading zeros
+>   * %pi4 print an IPv4 address with leading zeros
+>   * %pI6 print an IPv6 address with colons
+> -- 
+> 1.7.10
 > 
-> Below is a compile-tested patch to do that.  Feel free to give it a
-> spin and fix any bugs.
-
-I can't promise to do that in the very near future, but in principle idea 
-could be interesting to me, at least to evaluate how reliable mechanism is 
-with different storage interfaces and controllers.
-
-> > Also, and I haven't checked what the swap format is, if it could somehow
-> > be integrated together that could be useful.
-> 
-> That appears to be slightly less likely than crossbreeding a rabbit
-> with a chicken.  Is there something obvious I have missed?
-
-I was thinking how swap space is always there and is potentially much faster 
-to write to than a random USB stick - which could translate to more reliable. 
-Then it's a question of which storage subsystem (libata vs. usb-storage) would 
-work better in different oops/panic situations. Again I tend to have less hope 
-in USB based solutions - maybe it's my bias from working in that area many 
-years ago. So the idea of swap space was that _if_ swap format could be 
-extended to allocate a number of blocks to use other than swap, then that area 
-could be used by blockconsole. Seemed like a convenient and potentially more 
-reliable solution to me, but as I said the latter may depend.
-
-Tvrtko
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
