@@ -1,99 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab2GXIur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 04:50:47 -0400
-Received: from softlayer.compulab.co.il ([50.23.254.55]:47552 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab2GXIuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 04:50:46 -0400
-Message-ID: <500E61E2.9080406@compulab.co.il>
-Date: Tue, 24 Jul 2012 11:50:42 +0300
-From: Denis Turischev <denis@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 2/2] xhci: EHCI/XHCI ports switching on Intense-PC.
-References: <5004454E.9030903@compulab.co.il> <20120717045416.GJ7599@xanatos> <50065E5A.2040103@compulab.co.il> <20120718165916.GA30828@xanatos> <500D3998.7010705@compulab.co.il> <20120723174406.GG32758@xanatos>
-In-Reply-To: <20120723174406.GG32758@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+	id S1752268Ab2GXI4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:56:55 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56527 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab2GXI4x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 04:56:53 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: Alexander Graf <agraf@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        KVM <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Date: Tue, 24 Jul 2012 14:23:59 +0530
+Message-Id: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH] Documentation/kvm : Add documentation on Hypercalls
+x-cbid: 12072408-3568-0000-0000-00000230B2D4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2012 08:44 PM, Sarah Sharp wrote:
-> Did you try disabling the wake on bits in the port status registers?  I
-> would prefer that solution if it works.
-No, I didn't. Why we need to disable wake on capabilities?
-> 
-> Otherwise this patchset looks fine.  I'll work with the hardware folks
-> and see if this is exposed on other boards.  Also, this is not a BIOS
-> bug, but a hardware issue that can be worked around in BIOS.  So I might
-> edit your description on the first patch a bit when I submit it to Greg.
-Of course, please edit it if required.
-> 
-> Sarah Sharp
-> 
-> On Mon, Jul 23, 2012 at 02:46:32PM +0300, Denis Turischev wrote:
->> Intense-PC is Compulab's mini-desktop with Intel Panther Point
->> chipset.
->>
->> Unconditional switchover to xHCI provided by function
->> usb_enable_xhci_ports() leads to surprising results, after shutdown
->> system powered-on again after a few seconds. On Windows power
->> related problems were not observed. Switching back to EHCI solves
->> the problem.
->>
->> The patch switches usb ports back to EHCI during xhci shutdown
->> for Intense-PC.
->>
->> Signed-off-by: Denis Turischev <denis@compulab.co.il>
->> ---
->>  drivers/usb/host/xhci.c |   14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
->>
->> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
->> index a979cd0..541efaa 100644
->> --- a/drivers/usb/host/xhci.c
->> +++ b/drivers/usb/host/xhci.c
->> @@ -26,6 +26,8 @@
->>  #include <linux/module.h>
->>  #include <linux/moduleparam.h>
->>  #include <linux/slab.h>
->> +#include <linux/dmi.h>
->> +#include "pci-quirks.h"
->>
->>  #include "xhci.h"
->>
->> @@ -656,8 +658,20 @@ void xhci_stop(struct usb_hcd *hcd)
->>   */
->>  void xhci_shutdown(struct usb_hcd *hcd)
->>  {
->> +	struct pci_dev *pdev;
->> +	const char *brd_name;
->>  	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
->>
->> +	pdev = to_pci_dev(hcd->self.controller);
->> +
->> +	if (usb_is_intel_switchable_xhci(pdev)) {
->> +		brd_name = dmi_get_system_info(DMI_BOARD_NAME);
->> +
->> +		/* quirk for Compulab's Intense-PC board */
->> +		if (brd_name && strstr(brd_name, "Intense-PC"))
->> +			usb_disable_xhci_ports(pdev);
->> +	}
->> +
->>  	spin_lock_irq(&xhci->lock);
->>  	xhci_halt(xhci);
->>  	spin_unlock_irq(&xhci->lock);
->> -- 
->> 1.7.9.5
->>
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+
+Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
+and Peter (HPA) for suggesting hypercall ABI addition.
+
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+Please have a closer look at Hypercall ABI newly added
+
+Changes since last post:
+ - Added hypercall ABI (Peter)
+ - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
+
+TODO: We need to add history details of each hypercall as suggested by HPA,
+which I could not trace easily. Hope it is easy for hypercall authors
+
+ Documentation/virtual/hypercalls.txt |   71 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 71 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/virtual/hypercalls.txt
+
+diff --git a/Documentation/virtual/hypercalls.txt b/Documentation/virtual/hypercalls.txt
+new file mode 100644
+index 0000000..caffc08
+--- /dev/null
++++ b/Documentation/virtual/hypercalls.txt
+@@ -0,0 +1,71 @@
++Hypercall ABI:
++=============
++A brief look at calling conventions of X86, S390 and PPC
++X86:
++ KVM Hypercalls have a three-byte sequence of either the vmrun or the vmmrun
++ instruction. The hypervisor can replace it with instructions that are
++ guaranteed to be supported.
++
++ Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
++ The hypercall number should be placed in rax and the return value will be
++ placed in rax.  No other registers will be clobbered unless explicitly stated
++ by the particular hypercall.
++
++S390:
++  R2-R7 are used for parameters 1-6. In addition, R1 is used for hypercall
++  number. The return value is written to R2.
++
++  S390 uses diagnose instruction as hypercall (0x500) along with hypercall
++  number in R1.
++
++ PoewerPC:
++  It uses R3-R10 and hypercall number in R11. R4-R11 are used as output registers.
++  Return value is placed in R3.
++
++  KVM hypercalls uses 4 byte opcode, that are patched with 'hypercall-instructions'
++  property inside the device tree's /hypervisor node.
++  For more information refer to Documentation/virtual/kvm/ppc-pv.txt
++
++KVM Hypercalls Documentation
++===========================
++The template for each hypercall is:
++1. Hypercall name, value.
++2. Architecture(s)
++3. Status (deprecated, obsolete, active)
++4. Purpose
++
++1. KVM_HC_VAPIC_POLL_IRQ
++------------------------
++Value: 1
++Architecture: x86
++Status: active
++Purpose: Trigger guest exit so that the host can check for pending
++interrupts on reentry.
++
++2. KVM_HC_MMU_OP
++------------------------
++Value: 2
++Architecture: x86
++Status: deprecated.
++Purpose: Support MMU operations such as writing to PTE,
++flushing TLB, release PT.
++
++3. KVM_HC_FEATURES
++------------------------
++Value: 3
++Architecture: PPC
++Status: active
++Purpose: Expose hypercall availability to the guest. On x86 platforms, cpuid
++used to enumerate which hypercalls are available. On PPC, either device tree
++based lookup ( which is also what EPAPR dictates) OR KVM specific enumeration
++mechanism (which is this hypercall) can be used.
++
++4. KVM_HC_PPC_MAP_MAGIC_PAGE
++------------------------
++Value: 4
++Architecture: PPC
++Status: active
++Purpose: To enable communication between the hypervisor and guest there is a
++shared page that contains parts of supervisor visible register state.
++The guest can map this shared page to access its supervisor register through
++memory using this hypercall.
 
