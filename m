@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab2GXRBU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 13:01:20 -0400
+	id S1756141Ab2GXRBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 13:01:30 -0400
 Received: from mail-gh0-f174.google.com ([209.85.160.174]:58760 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755798Ab2GXRBR (ORCPT
+	with ESMTP id S1755798Ab2GXRB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 13:01:17 -0400
+	Tue, 24 Jul 2012 13:01:28 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Borislav Petkov <borislav.petkov@amd.com>,
         linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH 07/13] driver core: firmware loader: introduce cache_firmware and uncache_firmware
-Date: Wed, 25 Jul 2012 01:00:07 +0800
-Message-Id: <1343149213-10160-8-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH 09/13] driver core: firmware loader: store firmware name into devres list
+Date: Wed, 25 Jul 2012 01:00:09 +0800
+Message-Id: <1343149213-10160-10-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
 References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
@@ -23,151 +23,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches introduce two kernel APIs of cache_firmware and
-uncache_firmware, both of which take the firmware file name
-as the only parameter.
-
-So any drivers can call cache_firmware to cache the specified
-firmware file into kernel memory, and can use the cached firmware
-in situations which can't request firmware from user space.
+This patch will store firmware name into devres list of the device
+which is requesting firmware loading, so that we can implement
+auto cache firmware for devices in need.
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/base/firmware_class.c |   79 +++++++++++++++++++++++++++++++++++++++++
- include/linux/firmware.h      |   12 +++++++
- 2 files changed, 91 insertions(+)
+ drivers/base/firmware_class.c |   66 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
 diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 225898e..674cb11 100644
+index 540b2e1..c181e6d 100644
 --- a/drivers/base/firmware_class.c
 +++ b/drivers/base/firmware_class.c
-@@ -168,6 +168,22 @@ static int fw_lookup_and_alloate_buf(const char *fw_name,
- 	return tmp ? 0 : -1;
+@@ -115,6 +115,11 @@ struct firmware_priv {
+ 	struct firmware *fw;
+ };
+ 
++struct fw_name_devm {
++	unsigned long magic;
++	char name[];
++};
++
+ #define to_fwbuf(d) container_of(d, struct firmware_buf, ref)
+ 
+ /* fw_lock could be moved to 'struct firmware_priv' but since it is just
+@@ -574,6 +579,56 @@ static void fw_set_page_data(struct firmware_buf *buf, struct firmware *fw)
+ 	fw->priv = buf;
  }
  
-+static struct firmware_buf *fw_lookup_buf(const char *fw_name)
++static void fw_name_devm_release(struct device *dev, void *res)
 +{
-+	struct firmware_buf *tmp;
-+	struct firmware_cache *fwc = &fw_cache;
++	struct fw_name_devm *fwn = res;
 +
-+	spin_lock(&fwc->lock);
-+	list_for_each_entry(tmp, &fwc->head, list)
-+		if (!strcmp(tmp->fw_id, fw_name)) {
-+			spin_unlock(&fwc->lock);
-+			return tmp;
-+		}
-+	spin_unlock(&fwc->lock);
-+
-+	return NULL;
++	if (fwn->magic == (unsigned long)&fw_cache)
++		pr_debug("%s: fw_name-%s devm-%p released\n",
++				__func__, fwn->name, res);
 +}
 +
- static void __fw_free_buf(struct kref *ref)
++static int fw_devm_match(struct device *dev, void *res,
++		void *match_data)
++{
++	struct fw_name_devm *fwn = res;
++
++	return (fwn->magic == (unsigned long)&fw_cache) &&
++		!strcmp(fwn->name, match_data);
++}
++
++static struct fw_name_devm *fw_find_devm_name(struct device *dev,
++		const char *name)
++{
++	struct fw_name_devm *fwn;
++
++	fwn = devres_find(dev, fw_name_devm_release,
++			fw_devm_match, (void *)name);
++	return fwn;
++}
++
++/* add firmware name into devres list */
++static int fw_add_devm_name(struct device *dev, const char *name)
++{
++	struct fw_name_devm *fwn;
++
++	fwn = fw_find_devm_name(dev, name);
++	if (fwn)
++		return 1;
++
++	fwn = devres_alloc(fw_name_devm_release, sizeof(struct fw_name_devm) +
++			strlen(name) + 1, GFP_KERNEL);
++
++	if (!fwn)
++		return -ENOMEM;
++
++	fwn->magic = (unsigned long)&fw_cache;
++	strcpy(fwn->name, name);
++	devres_add(dev, fwn);
++
++	return 0;
++}
++
+ static void _request_firmware_cleanup(const struct firmware **firmware_p)
  {
- 	struct firmware_buf *buf = to_fwbuf(ref);
-@@ -833,6 +849,67 @@ request_firmware_nowait(
- 	return 0;
- }
+ 	release_firmware(*firmware_p);
+@@ -690,6 +745,17 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
  
-+/**
-+ * cache_firmware - cache one firmware image in kernel memory space
-+ * @fw_name: the firmware image name
-+ *
-+ * Cache firmware in kernel memory so that drivers can use the firmware
-+ * when system isn't ready for drivers to request firmware image from
-+ * userspace. Once returns successfully, driver can use request_firmware*
-+ * to get the cached firmware without any interacting with user space
-+ *
-+ * Return 0 if the firmware image has been cached successfully
-+ * Return !0 if it is not successfully
-+ *
-+ */
-+int cache_firmware(const char *fw_name)
-+{
-+	int ret;
-+	const struct firmware *fw;
-+
-+	pr_debug("%s: %s\n", __func__, fw_name);
-+
-+	ret = request_firmware(&fw, fw_name, NULL);
-+
-+	if (!ret)
-+		kfree(fw);
-+
-+	pr_debug("%s: %s ret=%d\n", __func__, fw_name, ret);
-+
-+	return ret;
-+}
-+
-+/**
-+ * uncache_firmware - remove one cached firmware image
-+ *
-+ * @fw_name: the firmware image name
-+ *
-+ * Uncache one firmware image which has been cached successfully
-+ * before.
-+ *
-+ * Return 0 if the firmware cache has been removed successfully
-+ * Return !0 if it is not successfully
-+ *
-+ */
-+int uncache_firmware(const char *fw_name)
-+{
-+	struct firmware_buf *buf;
-+	struct firmware fw;
-+
-+	pr_debug("%s: %s\n", __func__, fw_name);
-+
-+	if (fw_get_builtin_firmware(&fw, fw_name))
-+		return 0;
-+
-+	buf = fw_lookup_buf(fw_name);
-+	if (buf) {
-+		fw_free_buf(buf);
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
- static int __init firmware_class_init(void)
- {
- 	fw_cache_init();
-@@ -850,3 +927,5 @@ module_exit(firmware_class_exit);
- EXPORT_SYMBOL(release_firmware);
- EXPORT_SYMBOL(request_firmware);
- EXPORT_SYMBOL(request_firmware_nowait);
-+EXPORT_SYMBOL_GPL(cache_firmware);
-+EXPORT_SYMBOL_GPL(uncache_firmware);
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index e85b771..1bfa202 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -47,6 +47,8 @@ int request_firmware_nowait(
- 	void (*cont)(const struct firmware *fw, void *context));
+ 	fw_set_page_data(buf, fw_priv->fw);
  
- void release_firmware(const struct firmware *fw);
-+int cache_firmware(const char *name);
-+int uncache_firmware(const char *name);
- #else
- static inline int request_firmware(const struct firmware **fw,
- 				   const char *name,
-@@ -65,6 +67,16 @@ static inline int request_firmware_nowait(
- static inline void release_firmware(const struct firmware *fw)
- {
- }
++	/*
++	 * add firmware name into devres list so that we can auto cache
++	 * firmware for device.
++	 *
++	 * f_dev->parent may has been deleted already, but the problem
++	 * should be fixed in devres.
++	 *
++	 */
++	if (!retval && f_dev->parent)
++		fw_add_devm_name(f_dev->parent, buf->fw_id);
 +
-+int cache_firmware(const char *name)
-+{
-+	return -ENOENT;
-+}
-+
-+int uncache_firmware(const char *name)
-+{
-+	return -EINVAL;
-+}
- #endif
+ 	fw_priv->buf = NULL;
+ 	mutex_unlock(&fw_lock);
  
- #endif
 -- 
 1.7.9.5
 
