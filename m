@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab2GXF65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 01:58:57 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:35636 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755043Ab2GXF6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 01:58:55 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18L0a4A4C8LVQygZST1Be7U49F3abyifIuKTuD/S1
-	Jcebsde6ASNe5A
-Message-ID: <1343109531.7412.47.camel@marge.simpson.net>
-Subject: Re: [PATCH 00/34] Memory management performance backports for
- -stable V2
-From: Mike Galbraith <efault@gmx.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Stable <stable@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jul 2012 07:58:51 +0200
-In-Reply-To: <1343050727-3045-1-git-send-email-mgorman@suse.de>
-References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1755275Ab2GXGAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 02:00:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:40024 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755043Ab2GXGAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 02:00:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="172341576"
+Message-ID: <500E39E2.6020604@intel.com>
+Date: Tue, 24 Jul 2012 14:00:02 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V6 05/13] perf: Generic intel uncore support
+References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com> <1339741902-8449-6-git-send-email-zheng.z.yan@intel.com> <CABPqkBS8SULKGw5gvWd4fTup7NyrvsaM1ZejCtsq4ChCPEwXHg@mail.gmail.com>
+In-Reply-To: <CABPqkBS8SULKGw5gvWd4fTup7NyrvsaM1ZejCtsq4ChCPEwXHg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-23 at 14:38 +0100, Mel Gorman wrote: 
-> Changelog since V1
->   o Expand some of the notes					(jrnieder)
->   o Correct upstream commit SHA1				(hugh)
+[...snip...]
+>> +
+>> +static int __init intel_uncore_init(void)
+>> +{
+>> +       int ret;
+>> +
+>> +       if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+>> +               return -ENODEV;
+>> +
+>> +       ret = uncore_cpu_init();
+>> +       if (ret)
+>> +               goto fail;
+>> +
+>> +       uncore_pmus_register();
+>> +       return 0;
+>> +fail:
+>> +       return ret;
+>> +}
+>> +device_initcall(intel_uncore_init);
 > 
-> This series is related to the new addition to stable_kernel_rules.txt
 > 
->  - Serious issues as reported by a user of a distribution kernel may also
->    be considered if they fix a notable performance or interactivity issue.
->    As these fixes are not as obvious and have a higher risk of a subtle
->    regression they should only be submitted by a distribution kernel
->    maintainer and include an addendum linking to a bugzilla entry if it
->    exists and additional information on the user-visible impact.
-> 
-> All of these patches have been backported to a distribution kernel and
-> address some sort of performance issue in the VM. As they are not all
-> obvious, I've added a "Stable note" to the top of each patch giving
-> additional information on why the patch was backported. Lets see where
-> the boundaries lie on how this new rule is interpreted in practice :).
+> You cannot use device_initcall() here. Otherwise you're subject
+> to linker ordering issues between intel_uncore_init() and the
+> perf_event_sysfs_init() initcall. You need the perf_event sysfs
+> support to be enabled BEFORE you init the uncore otherwise you
+> won't see the uncore sysfs entries. Given how perf now relies on
+> sysfs to parse the event, this is a showstopper.
 
-FWIW, I'm all for performance backports.  They do have a downside though
-(other than the risk of bugs slipping in, or triggering latent bugs).
+I think the ordering makes no matter. perf_event_sysfs_init() checks
+PMUs that were registered previously and allocates sysfs entries for
+them.
 
-When the next enterprise kernel is built, marketeers ask for numbers to
-make potential customers drool over, and you _can't produce any_ because
-you wedged all the spiffy performance stuff into the crusty old kernel.
-
--Mike
-
+Regards
+Yan, Zheng
