@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab2GXPrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:47:07 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39827
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1755741Ab2GXPse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:48:34 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:40459
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755559Ab2GXPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755527Ab2GXPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jul 2012 11:46:37 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
@@ -13,9 +13,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         olaf@aepfle.de, apw@canonical.com, netdev@vger.kernel.org,
         ben@decadent.org.uk
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 17/17] Tools: hv: Correctly type string variables
-Date: Tue, 24 Jul 2012 09:01:41 -0700
-Message-Id: <1343145701-3691-17-git-send-email-kys@microsoft.com>
+Subject: [PATCH 06/17] Tools: hv: Further refactor kvp_get_ip_address()
+Date: Tue, 24 Jul 2012 09:01:30 -0700
+Message-Id: <1343145701-3691-6-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1343145701-3691-1-git-send-email-kys@microsoft.com>
 References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
@@ -24,48 +24,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correctly type character strings. I would like to thank Ben Hutchings
-for pointing out the issue (ben@decadent.org.uk).
+In preparation for making kvp_get_ip_address() more generic, factor out
+the code for handling IP addresses.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- tools/hv/hv_kvp_daemon.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ tools/hv/hv_kvp_daemon.c |   94 ++++++++++++++++++++-------------------------
+ 1 files changed, 42 insertions(+), 52 deletions(-)
 
 diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index e72d6db..3746033 100644
+index 2169f2f..933c164 100644
 --- a/tools/hv/hv_kvp_daemon.c
 +++ b/tools/hv/hv_kvp_daemon.c
-@@ -96,8 +96,8 @@ static struct utsname uts_buf;
- #define ENTRIES_PER_BLOCK 50
+@@ -491,17 +491,50 @@ done:
+ 	return;
+ }
  
- struct kvp_record {
--	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
--	__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
-+	char key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
-+	char value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
- };
++static int kvp_process_ip_address(void *addrp,
++				int family, char *buffer,
++				int length,  int *offset)
++{
++	struct sockaddr_in *addr;
++	struct sockaddr_in6 *addr6;
++	int addr_length;
++	char tmp[50];
++	const char *str;
++
++	if (family == AF_INET) {
++		addr = (struct sockaddr_in *)addrp;
++		str = inet_ntop(family, &addr->sin_addr, tmp, 50);
++		addr_length = INET_ADDRSTRLEN;
++	} else {
++		addr6 = (struct sockaddr_in6 *)addrp;
++		str = inet_ntop(family, &addr6->sin6_addr.s6_addr, tmp, 50);
++		addr_length = INET6_ADDRSTRLEN;
++	}
++
++	if ((length - *offset) < addr_length + 1)
++		return 1;
++	if (str == NULL) {
++		strcpy(buffer, "inet_ntop failed\n");
++		return 1;
++	}
++	if (*offset == 0)
++		strcpy(buffer, tmp);
++	else
++		strcat(buffer, tmp);
++	strcat(buffer, ";");
++
++	*offset += strlen(str) + 1;
++	return 0;
++}
++
+ static int
+ kvp_get_ip_address(int family, char *if_name, int op,
+ 		 void  *out_buffer, int length)
+ {
+ 	struct ifaddrs *ifap;
+ 	struct ifaddrs *curp;
+-	int ipv4_len = strlen("255.255.255.255") + 1;
+-	int ipv6_len = strlen("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")+1;
+ 	int offset = 0;
+ 	const char *str;
+-	char tmp[50];
+ 	int error = 0;
+ 	char *buffer;
+ 	struct hv_kvp_ipaddr_value *ip_buffer;
+@@ -556,55 +589,12 @@ kvp_get_ip_address(int family, char *if_name, int op,
+ 			continue;
+ 		}
  
- struct kvp_file_state {
-@@ -105,7 +105,7 @@ struct kvp_file_state {
- 	int num_blocks;
- 	struct kvp_record *records;
- 	int num_records;
--	__u8 fname[MAX_FILE_NAME];
-+	char fname[MAX_FILE_NAME];
- };
+-		if ((curp->ifa_addr->sa_family == AF_INET) &&
+-			((family == AF_INET) || (family == 0))) {
+-			struct sockaddr_in *addr =
+-			(struct sockaddr_in *) curp->ifa_addr;
+-
+-			str = inet_ntop(AF_INET, &addr->sin_addr, tmp, 50);
+-			if (str == NULL) {
+-				strcpy(buffer, "inet_ntop failed\n");
+-				error = 1;
+-				goto getaddr_done;
+-			}
+-			if (offset == 0)
+-				strcpy(buffer, tmp);
+-			else
+-				strcat(buffer, tmp);
+-			strcat(buffer, ";");
+-
+-			offset += strlen(str) + 1;
+-			if ((length - offset) < (ipv4_len + 1))
+-				goto getaddr_done;
+-
+-		} else if ((family == AF_INET6) || (family == 0)) {
+-
+-			/*
+-			 * We only support AF_INET and AF_INET6
+-			 * and the list of addresses is separated by a ";".
+-			 */
+-			struct sockaddr_in6 *addr =
+-				(struct sockaddr_in6 *) curp->ifa_addr;
+-
+-			str = inet_ntop(AF_INET6,
+-					&addr->sin6_addr.s6_addr,
+-					tmp, 50);
+-			if (str == NULL) {
+-				strcpy(buffer, "inet_ntop failed\n");
+-				error = 1;
+-				goto getaddr_done;
+-			}
+-			if (offset == 0)
+-				strcpy(buffer, tmp);
+-			else
+-				strcat(buffer, tmp);
+-			strcat(buffer, ";");
+-			offset += strlen(str) + 1;
+-			if ((length - offset) < (ipv6_len + 1))
+-				goto getaddr_done;
+-
+-		}
+-
++		error = kvp_process_ip_address(curp->ifa_addr,
++						curp->ifa_addr->sa_family,
++						buffer,
++						length, &offset);
++		if (error)
++			goto getaddr_done;
  
- static struct kvp_file_state kvp_file_info[KVP_POOL_COUNT];
-@@ -209,7 +209,7 @@ static int kvp_file_init(void)
- 	int  fd;
- 	FILE *filep;
- 	size_t records_read;
--	__u8 *fname;
-+	char *fname;
- 	struct kvp_record *record;
- 	struct kvp_record *readp;
- 	int num_blocks;
+ 		curp = curp->ifa_next;
+ 	}
 -- 
 1.7.4.1
 
