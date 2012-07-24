@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2GXMwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 08:52:50 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43445 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab2GXMws (ORCPT
+	id S1754018Ab2GXMzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 08:55:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46493 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753812Ab2GXMzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 08:52:48 -0400
-Date: Tue, 24 Jul 2012 13:52:38 +0100
+	Tue, 24 Jul 2012 08:55:17 -0400
+Date: Tue, 24 Jul 2012 13:55:14 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Colin Cross <ccross@android.com>
-Subject: Re: [PATCH 5/5] i2c: tegra: convert normal suspend/resume to
- *_noirq
-Message-ID: <20120724125237.GB22576@sirena.org.uk>
-References: <1341919244-23327-1-git-send-email-ldewangan@nvidia.com>
- <1341919244-23327-6-git-send-email-ldewangan@nvidia.com>
- <500D96E6.4060507@wwwdotorg.org>
- <20120724091358.GK12034@tbergstrom-lnx.Nvidia.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] leds: add new lp8788 led driver
+Message-ID: <20120724125513.GG12438@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+ <1342799346.5138.7.camel@lorien2>
+ <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
+ <20120722181956.GA4557@opensource.wolfsonmicro.com>
+ <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XRI2XbIfl/05pQwm"
 Content-Disposition: inline
-In-Reply-To: <20120724091358.GK12034@tbergstrom-lnx.Nvidia.com>
-X-Cookie: You buttered your bread, now lie in it.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 12:13:58PM +0300, Peter De Schrijver wrote:
-> On Mon, Jul 23, 2012 at 08:24:38PM +0200, Stephen Warren wrote:
 
-> > IIRC, I proposed it before solely to solve some suspend/resume ordering
-> > issues, and Colin Cross NAKd it. These days, deferred probe should make
-> > this change unnecessary.
+--XRI2XbIfl/05pQwm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> How does deferred probe solve this? Iirc the problem is that i2c is needed to
-> talk to the PMIC, so we need to make sure i2c is shutdown last because drivers
-> might want to do regulator control in the suspend function.
+On Tue, Jul 24, 2012 at 08:23:00AM +0800, Bryan Wu wrote:
+> On Mon, Jul 23, 2012 at 2:19 AM, Mark Brown
 
-With probe deferral the drivers will be after the regulator driver in
-the DPM list and so be suspended first.
+> > If the work is flushed then the state that userspace thought was set
+> > when the driver is removed will actually be set before the driver is
+> > removed.  This is fairly minor but might be useful.
+
+> So what's kind of state you mentioned here that is cared by user
+> space. I find these 2 functions are quite confused for use right now.
+
+Any state - none of the drivers with sleeping I/O can do anything
+directly in their callbacks so they defer everything to work (we really
+should have that in the core but it was too annoying to implement last
+time I looked).
+
+> Literally, canceling normally will remove pending work item and wait
+> for running work item to finish. flushing will wait for both pending
+> and running work item to finish.
+
+Right, so if we flush it means we know that any scheduled work actually
+ran and implemented whatever change was requested.
+
+--XRI2XbIfl/05pQwm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQDpslAAoJEBus8iNuMP3dEocP/0VnluuSK03w00QcG/BBICQ6
+Ca+x6TIhtDg1Q49XOhBo0qurX71xIDjmtGtns6umYAShcTNAV/44jUeOLhN9KFp1
+SdGORe+mo2Je9yHDsgf+Iox1AlZ4EUHQ1Vt+jpikHMuWT84FJpXqSAJFgadLRhaV
++n6GyyctwKyyIoEQcmc3IOCFnGjowLgQkKMK5RW28DvH0ErdhkrFIUP02s3voGaj
+FxxZ0ddPGuet+G5pNgUbq/i/pHU++jq1Qi+ojJxYyt3hcfXm/4XD9dkOKi5OCpnc
+QQLwuBJnu/EURDOyTwzm8TuvlNg4uFpsTnwNTEdSYfuCR2C77KoYNuddcGUQ5c/q
+6a2k7I5dEX3Xm5QUJEUP8qcUebI/Wu6gCSkKEmlx9Ror+Ohz+hqEroHN1L8b7TpO
+WhGt24eXlFNpHy10JXYA4sUTyPUC9Uol/FWXkm0wM9thBzBMhShupk3OFFZtv9CG
+17oqwP16YcSwXWGtM7lzkoaSwKThEzdyo0r+TvBNsmnESz/32sCJXlaW4phJdwRj
+kaMebgCjFTxxGpfqpPuLy0q9n1uG9/KxZDWpi7ff8VI4OtgnnS8xZJ9pInSI63ex
+4T+SSXopdGDeuMFNndcmIM/UunGDcsR+Qs4V30nwn1UcSzy+tauvwwHbvS8yCxAS
+RLcGc0/MQmYzJ23ZAQIE
+=sRP+
+-----END PGP SIGNATURE-----
+
+--XRI2XbIfl/05pQwm--
