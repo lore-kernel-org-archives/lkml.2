@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab2GXPUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:20:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62926 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab2GXPUa (ORCPT
+	id S1755422Ab2GXPWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:22:18 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62436 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab2GXPWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 11:20:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RFC][PATCH 0/14] PM / shmobile: Pass power domain information via DT (was: Re: [RFD] PM: Device tree representation of power domains)
-Date: Tue, 24 Jul 2012 15:20:20 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>
-References: <201207032302.17805.rjw@sisk.pl> <201207162315.49073.rjw@sisk.pl> <201207211917.12519.rjw@sisk.pl>
-In-Reply-To: <201207211917.12519.rjw@sisk.pl>
+	Tue, 24 Jul 2012 11:22:17 -0400
+Message-ID: <500EBDA4.6020104@gmail.com>
+Date: Tue, 24 Jul 2012 17:22:12 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH] gpiolib: fix chip->base handling in of_gpio_simple_xlate()
+References: <1342977052-7880-1-git-send-email-zonque@gmail.com> <201207241256.56535.arnd@arndb.de> <500E9D75.60002@gmail.com> <201207241408.44168.arnd@arndb.de>
+In-Reply-To: <201207241408.44168.arnd@arndb.de>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207241520.20674.arnd@arndb.de>
-X-Provags-ID: V02:K0:3UtdCCIoN1weSZQEtAHxYYAAoMsSQCVVAjAOtQcM8jJ
- GkpsRyl3fd/OGNhQ6kO80nz6B4pCxUsACCEih0OFfU5JprOnvU
- vMnA/WKg0Y8uw2h5xVrNDXIoJGzwZuUUDU5DiSdclTiECo5pGG
- kGcF1I9wRWF5sxkm56fImlw3NxgVXHUxsAZrlT/SlF6zOEnYKG
- jylCXvBcbt7yZDXOPcXI74O7vuJymcJYURDXGo2hVvbU/dCjM/
- zcU277ZTWtumf061mZQTBb+DK/ynMuqqBbbwVAMS8qKnTW1Qku
- /8NSstFJY+HOoA6IBugm+XMSe7itwhkZwEIO68ztLoNbAM7KYr
- Kd6ixj+RbQKzf4QycTlM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 21 July 2012, Rafael J. Wysocki wrote:
-> On Monday, July 16, 2012, Rafael J. Wysocki wrote:
-> > On Thursday, July 05, 2012, Rafael J. Wysocki wrote:
-> > > On Wednesday, July 04, 2012, Mark Brown wrote:
-> > > > I guess the OMAP hwmod stuff is the closest thing we've got at the
-> > > > minute (I don't recall seeing any other implementations in mainline) but
-> > > > the hwmods themselves don't appear in the DTS right now.  They have a
-> > > > ti,hwmods property on each device naming the hwmod it's in, something
-> > > > like that seems like a reasonable approach, possibly a reference to
-> > > > another DT node rather than or as well as a string?  That seems fairly
-> > > > easy.
-> > > 
-> > > Well, it looks like (and please tell me if I'm wrong) the hwmons are just
-> > > string attributes that are parsed by the platform-specific code through
-> > > a platform bus type notifier.
-> > > 
-> > > We could do that for power domains too, but then each platform wanting to
-> > > use them would need to implement such a notifier and add its own routine
-> > > for parsing those strings.  Would that be acceptable to everyone concerned?
-> > 
-> > I tried to follow the above suggestion and prepared the following patchset
-> > that allows power domain information for Renesas platforms to be passed as
-> > "renesas,pmdomain" string attribute of device nodes.  It adds functions
-> > allowing the generic PM domains framework to use names for domain
-> > identification in various situations and reworks the ARM/shmobile power domains
-> > support code to used those functions instead of the "raw" ones that take
-> > domain pointers as their arguments.  Finally, it defines a platform bus type
-> > notifier that will add devices whose DT nodes contain the "renesas,pmdomain"
-> > attribute to the power domains indicated by it (the value of that attribute
-> > should be the name of the PM domain to add the device to after it's been
-> > registered).  All of this should allow platform devices to be added to
-> > appropriate power domains automatically based on the information read from
-> > a DT.
-> > 
-> > The patches are on top of the current linux-next tree.
-> > 
-> > I've tested the patches that could be tested on the Mackerel board, except
-> > for the last one (I'm still working on testing it).
+On 24.07.2012 16:08, Arnd Bergmann wrote:
+> On Tuesday 24 July 2012, Daniel Mack wrote:
+
+>>>>> diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+>>>>> index d18068a..51bc232 100644
+>>>>> --- a/drivers/gpio/gpiolib-of.c
+>>>>> +++ b/drivers/gpio/gpiolib-of.c
+>>>>> @@ -147,13 +147,13 @@ int of_gpio_simple_xlate(struct gpio_chip *gc,
+>>>>>     if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
+>>>>>             return -EINVAL;
+>>>>>  
+>>>>> -   if (gpiospec->args[0] >= gc->ngpio)
+>>>>> +   if (gpiospec->args[0] >= gc->ngpio + gc->base)
+>>>>>             return -EINVAL;
+>>>>>  
+>>>>>     if (flags)
+>>>>>             *flags = gpiospec->args[1];
+>>>>>  
+>>>>> -   return gpiospec->args[0];
+>>>>> +   return gpiospec->args[0] - gc->base;
+>>>>>  }
+>>>>>  EXPORT_SYMBOL(of_gpio_simple_xlate);
+>>>
+>>> Where would that gc->base come from?
+>>
+>> It is set up when the chips are initialized. Let's put it that way: why
+>> would we have this ->base if it is practically unusable in devicetree
+>> environments?
 > 
-> Well, no comments, no objections.  Good!
+> The base gets used to put the gpiochip into the Linux gpio number space,
+> which is not necessarily the same as the number space used in the device
+> tree. You can dynamically add other gpio controllers that would get
+> some arbitrary base assigned at runtime, so you cannot subtract that
+> base from the hardware number to get a local one in the common code.
 > 
-> I've just tested [14/14] too and it works as expected.
+> I fear you will have to provide your own xlate function for pxa if
+> you want to use this numbering. Something like this:?
 
-Sorry for taking so long to reply. I am really not that familiar with the
-power domain requirements, but I do have two comments on your approach:
+I did my own xlate function in the first place, but then I thought it
+could be made working in a more general way. But your explanation makes
+sense, so I will add something that is based on your sniplet.
 
-* I think when we want to add a generic concept to the device tree such
-  as power domains, we should always make it specified in a generic way.
-  You have used the "renesas,pmdomain" attribute, which is specific to
-  one vendor and requires platform specific code to read it.
-  Is there any reason not to put the code into the generic
-  drivers/base/power/domain.c file (or near it) and make a binding that
-  works for everyone?
-
-* Mark suggested two options (string and phandle), and (you guessed it),
-  I would much prefer the other one.
-  IMHO using phandle makes it much easier to do this in a generic way,
-  without having to document every possible string that this can be
-  set to in the binding document. Obviously the phandle requires having
-  a node in the device tree for each domain, but I think having that
-  node is actually an advantage because it lets you describe the
-  hierarchy of the domains there.
-
-	Arnd
+Thanks,
+Daniel
