@@ -1,33 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab2GXOSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:18:13 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43584 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab2GXOSJ (ORCPT
+	id S1754921Ab2GXOSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:18:23 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:53026 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754418Ab2GXOSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:18:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <1343137938.7412.95.camel@marge.simpson.net>
-References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
-	<1343109531.7412.47.camel@marge.simpson.net>
-	<CAJd=RBC835W52nsXCqhM_4KR3CuLF9zijh3416LiJLybTuR_YA@mail.gmail.com>
-	<1343137938.7412.95.camel@marge.simpson.net>
-Date: Tue, 24 Jul 2012 22:18:08 +0800
-Message-ID: <CAJd=RBCKFw5tQcQch-txrvbp9ht9ahY6JH7At1LQuXfttgfAtA@mail.gmail.com>
-Subject: Re: [PATCH 00/34] Memory management performance backports for -stable V2
-From: Hillf Danton <dhillf@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Mel Gorman <mgorman@suse.de>, Stable <stable@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Jul 2012 10:18:20 -0400
+X-IronPort-AV: E=Sophos;i="4.77,646,1336341600"; 
+   d="scan'208";a="167981492"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] drivers/iommu/intel-iommu.c: add missing free_domain_mem
+Date: Tue, 24 Jul 2012 16:18:14 +0200
+Message-Id: <1343139494-26998-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 9:52 PM, Mike Galbraith <efault@gmx.de> wrote:
-> Last time I looked, handling SUSE support issues on LKML was not in my
-> job description.  I don't recall seeing anything about taking direction
-> from random LKML subscribers either.
->
-End users pay for SUSE products/service, right?
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+
+Add missing free_domain_mem on failure path after alloc_domain.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@km exists@
+local idexpression e;
+expression e1,e2,e3;
+type T,T1;
+identifier f;
+@@
+
+* e = alloc_domain(...)
+... when any
+    when != e = e1
+    when != e1 = (T)e
+    when != e1(...,(T)e,...)
+    when != &e->f
+if(...) { ... when != e2(...,(T1)e,...)
+                 when != e3 = e
+                 when forall
+(
+             return <+...e...+>;
+|
+*             return ...;
+) }
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+Email address corrected.
+
+ drivers/iommu/intel-iommu.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 7469b53..0204b62 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2008,6 +2008,7 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
+ 	if (!drhd) {
+ 		printk(KERN_ERR "IOMMU: can't find DMAR for device %s\n",
+ 			pci_name(pdev));
++		free_domain_mem(domain);
+ 		return NULL;
+ 	}
+ 	iommu = drhd->iommu;
+
