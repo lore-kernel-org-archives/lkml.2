@@ -1,111 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab2GXUPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:15:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45200 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab2GXULy (ORCPT
+	id S1755611Ab2GXUXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:23:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:3422 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755118Ab2GXUXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:11:54 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: [PATCH v4 02/12] dm: Use bioset's front_pad for dm_rq_clone_bio_info
-Date: Tue, 24 Jul 2012 13:11:19 -0700
-Message-Id: <1343160689-12378-3-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1343160689-12378-1-git-send-email-koverstreet@google.com>
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
+	Tue, 24 Jul 2012 16:23:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6782"; a="214054589"
+Message-ID: <39c8c611bf7f120d9b1c519d56b44e15.squirrel@www.codeaurora.org>
+In-Reply-To: <34e29d774773a7dfa3e1b57232249b68.squirrel@www.codeaurora.org>
+References: <34e29d774773a7dfa3e1b57232249b68.squirrel@www.codeaurora.org>
+Date: Tue, 24 Jul 2012 13:23:16 -0700 (PDT)
+Subject: Re: [PATCH v2 1/1] mmc: block: Add write packing control
+From: merez@codeaurora.org
+To: merez@codeaurora.org
+Cc: "S, Venkatraman" <svenkatr@ti.com>, merez@codeaurora.org,
+        "Chris Ball" <cjb@laptop.org>, "Muthu Kumar" <muthu.lkml@gmail.com>,
+        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "Seungwon Jeon" <tgih.jun@samsung.com>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, dm_rq_clone_bio_info needed to be freed by the bio's
-destructor to avoid a memory leak in the blk_rq_prep_clone() error path.
-This gets rid of a memory allocation and means we can kill
-dm_rq_bio_destructor.
+Attached are the trace logs for parallel read and write lmdd operations.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- drivers/md/dm.c |   31 +++++--------------------------
- 1 files changed, 5 insertions(+), 26 deletions(-)
+On Tue, July 24, 2012 1:44 am, merez@codeaurora.org wrote:
+> On Mon, July 23, 2012 5:22 am, S, Venkatraman wrote:
+>> On Mon, Jul 23, 2012 at 5:13 PM,  <merez@codeaurora.org> wrote:
+>>> On Wed, July 18, 2012 12:26 am, Chris Ball wrote:
+>>>> Hi,  [removing Jens and the documentation list, since now we're
+> talking about the MMC side only]
+>>>> On Wed, Jul 18 2012, merez@codeaurora.org wrote:
+>>>>> Is there anything else that holds this patch from being pushed to
+>>> mmc-next?
+>>>> Yes, I'm still uncomfortable with the write packing patchsets for a
+>>> couple of reasons, and I suspect that the sum of those reasons means
+>>> that
+>>> we should probably plan on holding off merging it until after 3.6.
+>>>> Here are the open issues; please correct any misunderstandings: With
+> Seungwon's patchset ("Support packed write command"):
+>>>> * I still don't have a good set of representative benchmarks showing
+>>>>   what kind of performance changes come with this patchset.  It seems
+>>> like we've had a small amount of testing on one controller/eMMC part
+>>> combo
+>>> from Seungwon, and an entirely different test from Maya, and the
+> results
+>>> aren't documented fully anywhere to the level of describing what the
+> hardware was, what the test was, and what the results were before and
+> after the patchset.
+>>> Currently, there is only one card vendor that supports packed commands.
+> Following are our sequential write (LMDD) test results on 2 of our
+> targets
+>>> (in MB/s):
+>>>                        No packing        packing
+>>> Target 1 (SDR 50MHz)     15               25
+>>> Target 2 (DDR 50MHz)     20               30
+>>>> With the reads-during-writes regression:
+>>>> * Venkat still has open questions about the nature of the read
+>>>>   regression, and thinks we should understand it with blktrace before
+>>> trying to fix it.  Maya has a theory about writes overwhelming reads,
+>>> but
+>>> Venkat doesn't understand why this would explain the observed
+>>> bandwidth drop.
+>>> The degradation of read due to writes is not a new behavior and exists
+> also without the write packing feature (which only increases the
+> degradation). Our investigation of this phenomenon led us to the
+> Conclusion that a new scheduling policy should be used for mobile
+> devices,
+>>> but this is not related to the current discussion of the write packing
+> feature.
+>>> The write packing feature increases the degradation of read due to
+> write
+>>> since it allows the MMC to fetch many write requests in a row, instead
+>>> of
+>>> fetching only one at a time.  Therefore some of the read requests will
+> have to wait for the completion of more write requests before they can
+> be
+>>> issued.
+>>
+>> I am a bit puzzled by this claim. One thing I checked carefully when
+> reviewing write packing patches from SJeon was that the code didn't
+> plough through a mixed list of reads and writes and selected only
+> writes.
+>> This section of the code in "mmc_blk_prep_packed_list()", from v8
+> patchset..
+>> <Quote>
+>> +               if (rq_data_dir(cur) != rq_data_dir(next)) {
+>> +                       put_back = 1;
+>> +                       break;
+>> +               }
+>> </Quote>
+>>
+>> means that once a read is encountered in the middle of write packing,
+> the packing is stopped at that point and it is executed. Then the next
+> blk_fetch_request should get the next read and continue as before.
+>>
+>> IOW, the ordering of reads and writes is _not_ altered when using packed
+> commands.
+>> For example if there were 5 write requests, followed by 1 read,
+>> followed by 5 more write requests in the request_queue, the first 5
+> writes will be executed as one "packed command", then the read will be
+> executed, and then the remaining 5 writes will be executed as one
+> "packed command". So the read does not have to wait any more than it
+> waited before (packing feature)
+>
+> Let me try to better explain with your example.
+> Without packing the MMC layer will fetch 2 write requests and wait for the
+> first write request completion before fetching another write request.
+> During this time the read request could be inserted into the CFQ and since
+> it has higher priority than the async write it will be dispatched in the
+> next fetch. So, the result would be 2 write requests followed by one read
+> request and the read would have to wait for completion of only 2 write
+> requests.
+> With packing, all the 5 write requests will be fetched in a row, and then
+> the read will arrive and be dispatched in the next fetch. Then the read
+> will have to wait for the completion of 5 write requests.
+>
+> Few more clarifications:
+> Due to the plug list mechanism in the block layer the applications can
+> "aggregate" several requests to be inserted into the scheduler before
+> waking the MMC queue thread.
+> This leads to a situation where there are several write requests in the
+> CFQ queue when MMC starts to do the fetches.
+>
+> If the read was inserted while we are building the packed command then I
+> agree that we should have seen less effect on the read performance.
+> However, the write packing statistics show that in most of the cases the
+> packing stopped due to an empty queue, meaning that the read was inserted
+> to the CFQ after all the pending write requests were fetched and packed.
+>
+> Following is an example for write packing statistics of a READ/WRITE
+> parallel scenario:
+> write packing statistics:
+> Packed 1 reqs - 448 times
+> Packed 2 reqs - 38 times
+> Packed 3 reqs - 23 times
+> Packed 4 reqs - 30 times
+> Packed 5 reqs - 14 times
+> Packed 6 reqs - 8 times
+> Packed 7 reqs - 4 times
+> Packed 8 reqs - 1 times
+> Packed 10 reqs - 1 times
+> Packed 34 reqs - 1 times
+> stopped packing due to the following reasons:
+> 2 times: wrong data direction (meaning a READ was fetched and stopped the
+> packing)
+> 1 times: flush or discard
+> 565 times: empty queue (meaning blk_fetch_request returned NULL)
+>
+>>
+>> And I requested blktrace to confirm that this is indeed the behaviour.
+>
+> The trace logs show that in case of no packing, there are maximum of 3-4
+> requests issued before a read request, while with packing there are also
+> cases of 6 and 7 requests dispatched before a read request.
+>
+> I'm waiting for an approval for sharing the block trace logs.
+> Since this is a simple test to run you can collect the trace logs and let
+> us know if you reach other conclusions.
+>
+> Thanks,
+> Maya
+>
+>>
+>> Your rest of the arguments anyway depend on this assertion, so can you
+> please clarify this.
+>>
+>>> To overcome this behavior, the solution would be to stop the write
+>>> packing
+>>> when a read request is fetched, and this is the algorithm suggested by
+>>> the
+>>> write packing control.
+>>> Let's also keep in mind that lmdd benchmarking doesn't fully reflect
+> the
+>>> real life in which there are not many scenarios that cause massive read
+> and write operations. In our user-common-scenarios tests we saw that in
+> many cases the write packing decreases the read latency. It can happen
+> in
+>>> cases where the same amount of write requests is fetched with and
+>>> without
+>>> packing. In such a case the write packing decreases the transfer time
+> of
+>>> the write requests and causes the read request to wait for a shorter
+>>> time.
+>>>> With Maya's patchset ("write packing control"):
+>>>> * Venkat thinks that HPI should be used, and the number-of-requests
+>>>>   metric is too coarse, and it doesn't let you disable packing at the
+>>> right time, and you're essentially implementing a new I/O scheduler
+>>> inside
+>>> the MMC subsystem without understanding the root cause for why that's
+> necessary.
+>>> According to our measurements the stop transmission (CMD12) + HPI is a
+> heavy operation that may take up to several milliseconds. Therefore, a
+> massive usage of HPI can cause a degradation of performance.
+>>> In addition, it doesn’t provide a complete solution for read during
+>>> write
+>>> since it doesn’t solve the problem of “what to do with the interrupted
+> write request remainder?”.  That is, a common interrupting read request
+> will usually be followed by another one. If we just continue to write
+> the
+>>> interrupted write request remainder we will probably get another HPI
+> due
+>>> to the second read request, so eventually we may end up with lots of
+>>> HPIs
+>>> and write retries. A complete solution will be: stop the current write,
+> change packing mode to non-packing, serve the read request, push back
+> the
+>>> write remainders to the block I/O scheduler and let him schedule them
+> again probably after the read burst ends (this requires block layer
+> support of course).
+>>> Regarding the packing control, there seem to be a confusion since the
+> number-of-requests is the trigger for *enabling* the packing (after it
+> was
+>>> disabled), while a single read request disable packing. Therefore, the
+> packing is stopped at the right time.
+>>> The packing control doesn't add any scheduling policy to the MMC layer.
+> The write packing feature is the one changing the scheduling policy by
+> fetching many write requests in a row without a delay that allows read
+> requests to come in the middle.
+>>> By disabling the write packing, the write packing control returns the
+>>> old
+>>> scheduling policy. It causes the MMC to fetch the requests one by one,
+> thus read requests are served as before.
+>>> It is correct that the trigger for enabling the write packing control
+> should be adjusted per platform and doesn't give a complete solution.
+> As
+>>> I
+>>> mentioned above, the complete solution will include the usage of write
+> packing control, a re-insert of the write packed to the scheduler when
+> a
+>>> read request is fetched and usage of HPI to stop the packing that is
+> already transferred.
+>>> To summarize -
+>>> We recommend including the write packing in 3.6 due to the following
+> reasons:
+>>> 1. It significantly improves the write throughput
+>>> 2. In some of the cases it even decreases the read latency
+>>> 3. The read degradation in simultaneous read-write flows already exist,
+> even without this feature
+>>> As for the write packing control, it can be included in 3.6 to supply a
+> partial solution for the read degradation or we can postpone it to 3.7
+> and
+>>> integrate it as part of the complete solution.
+>>> Thanks,
+>>> Maya
+>>>> My sense is that there's no way we can solve all of these to
+>>>> satisfaction in the next week (which is when the merge window will
+>>> open), but that by waiting a cycle we might come up with some good
+> answers.
+>>>> What do other people think?  If you're excited about these patchsets,
+>>> now would be a fine time to come forward with your benchmarking results
+> and to help understand the reads-during-writes regression.
+>>
+>
+>
+> --
+> Sent by consultant of Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 40b7735..4014696 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -92,6 +92,7 @@ struct dm_rq_target_io {
- struct dm_rq_clone_bio_info {
- 	struct bio *orig;
- 	struct dm_rq_target_io *tio;
-+	struct bio clone;
- };
- 
- union map_info *dm_get_mapinfo(struct bio *bio)
-@@ -467,16 +468,6 @@ static void free_rq_tio(struct dm_rq_target_io *tio)
- 	mempool_free(tio, tio->md->tio_pool);
- }
- 
--static struct dm_rq_clone_bio_info *alloc_bio_info(struct mapped_device *md)
--{
--	return mempool_alloc(md->io_pool, GFP_ATOMIC);
--}
--
--static void free_bio_info(struct dm_rq_clone_bio_info *info)
--{
--	mempool_free(info, info->tio->md->io_pool);
--}
--
- static int md_in_flight(struct mapped_device *md)
- {
- 	return atomic_read(&md->pending[READ]) +
-@@ -1438,30 +1429,17 @@ void dm_dispatch_request(struct request *rq)
- }
- EXPORT_SYMBOL_GPL(dm_dispatch_request);
- 
--static void dm_rq_bio_destructor(struct bio *bio)
--{
--	struct dm_rq_clone_bio_info *info = bio->bi_private;
--	struct mapped_device *md = info->tio->md;
--
--	free_bio_info(info);
--	bio_free(bio, md->bs);
--}
--
- static int dm_rq_bio_constructor(struct bio *bio, struct bio *bio_orig,
- 				 void *data)
- {
- 	struct dm_rq_target_io *tio = data;
--	struct mapped_device *md = tio->md;
--	struct dm_rq_clone_bio_info *info = alloc_bio_info(md);
--
--	if (!info)
--		return -ENOMEM;
-+	struct dm_rq_clone_bio_info *info =
-+		container_of(bio, struct dm_rq_clone_bio_info, clone);
- 
- 	info->orig = bio_orig;
- 	info->tio = tio;
- 	bio->bi_end_io = end_clone_bio;
- 	bio->bi_private = info;
--	bio->bi_destructor = dm_rq_bio_destructor;
- 
- 	return 0;
- }
-@@ -2696,7 +2674,8 @@ struct dm_md_mempools *dm_alloc_md_mempools(unsigned type, unsigned integrity)
- 	if (!pools->tio_pool)
- 		goto free_io_pool_and_out;
- 
--	pools->bs = bioset_create(pool_size, 0);
-+	pools->bs = bioset_create(pool_size,
-+				  offsetof(struct dm_rq_clone_bio_info, orig));
- 	if (!pools->bs)
- 		goto free_tio_pool_and_out;
- 
+
 -- 
-1.7.7.3
+Sent by consultant of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
