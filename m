@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab2GXMBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 08:01:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35317 "EHLO mx2.suse.de"
+	id S1753592Ab2GXMCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 08:02:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35600 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753573Ab2GXMBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 08:01:13 -0400
-Date: Tue, 24 Jul 2012 14:01:05 +0200 (CEST)
+	id S1753493Ab2GXMCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 08:02:44 -0400
+Date: Tue, 24 Jul 2012 14:02:38 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1207241355080.9707@pobox.suse.cz>
+Subject: [GIT] trivial
+Message-ID: <alpine.LNX.2.00.1207241401081.9707@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,157 +24,161 @@ Linus,
 
 please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
 
-to receive 3.6 merge window updates for HID layer.
-
-The list of changes worth pointing out explicitly:
-
-- We are getting 'UHID', which is a new framework for implementing HID 
-  transport drivers in userspace (this is different from HIDRAW, which is
-  transport-independent and provides report parsing facilities; uhid is
-  for the other (transport) part of the pipeline).
-  It's needed for (and currently being used by) Bluetooth-LowEnergy, as
-  its specification mandates things we don't want in the kernel.
-  Written by David Herrmann.
-
-- there have been quite a few bugs in runtime suspend/resume paths 
-  (probably never reported to actually happen in the wild, but still).
-  Alan Stern fixed those.
-
-- a few other driver updates and fixes and random new device support.
+to receive trivial+doc updates. Trivial updates all over the place as 
+usual.
 
 Thanks.
 
-Alan Stern (6):
-      HID: usbhid: fix use-after-free bug
-      HID: usbhid: fix autosuspend calls
-      HID: usbhid: inline some simple routines
-      HID: usbhid: replace HID_REPORTED_IDLE with HID_SUSPENDED
-      HID: usbhid: check for suspend or reset before restarting
-      HID: usbhid: fix error paths in suspend
 
-Austin Hendrix (1):
-      HID: multitouch: add support for Novatek touchscreen
 
-Benjamin Tissoires (2):
-      HID: hid-multitouch: fix input mode feature command
-      HID: hid-multitouch: add support for Zytronic panels
+Akinobu Mita (1):
+      lib: correct link to the original source for div64_u64
 
-Bernhard Seibold (1):
-      HID: Driver for Lenovo Keyboard with Trackpoint
+Alan Cox (2):
+      lm8333: Fix check ordering
+      via: Remove bogus if check
 
-Bryan Wu (1):
-      HID: select NEW_LEDS for driver of Lenovo ThinkPad USB Keyboard with TrackPoint
+Christopher L. Simons (1):
+      Documentation: ManagementStyle: fixed typo
 
-Cyrus Lien (1):
-      HID: add ASUS AIO keyboard model AK1D
+Geert Uytterhoeven (2):
+      module.c: spelling s/postition/position/g
+      arm,unicore32: Remove obsolete "select MISC_DEVICES"
 
-David Herrmann (17):
-      HID: uhid: introduce user-space I/O driver support for HID
-      HID: uhid: add internal message buffer
-      HID: uhid: allow poll()'ing on uhid devices
-      HID: uhid: implement read() on uhid devices
-      HID: uhid: implement write() on uhid devices
-      HID: uhid: add UHID_CREATE and UHID_DESTROY events
-      HID: uhid: allow feeding input data into uhid devices
-      HID: uhid: forward hid report-descriptor to hid core
-      HID: uhid: add UHID_START and UHID_STOP events
-      HID: uhid: forward open/close events to user-space
-      HID: uhid: forward output request to user-space
-      HID: uhid: forward raw output reports to user-space
-      HID: uhid: implement feature requests
-      HID: uhid: add documentation
-      HID: uhid: add example program
-      MAINTAINERS: add UHID entry
-      HID: Allow drivers to be their own listener
+Jan-Simon Möller (1):
+      Fix typo in include/linux/clk.h .
 
-Giuseppe Bilotta (1):
-      HID: wiimote-ext: comment spelling fix
+Jesper Juhl (1):
+      Documentation: Add newline at end-of-file to files lacking one
 
-Jiri Kosina (2):
-      HID: multitouch: fix entry for Novatek Touchscreen
-      HID: uhid: silence gcc warning
+Jiri Kosina (1):
+      Merge branch 'master' into for-next
 
-Keng-Yu Lin (1):
-      HID: Add suport for the brightness control keys on HP keyboards
+Kazuo Moriwaka (1):
+      Doc: document max raw dev number
 
-Lionel Vaux (1):
-      HID: add support for Cypress barcode scanner 04B4:ED81
+Krzysztof Wilczynski (1):
+      scsi: aha152x: Fix sparse warning and make printing pointer address more portable.
 
-Matthieu CASTET (2):
-      HID: hidraw: fix list->buffer memleak
-      HID: hid-core: optimize in case of hidraw
+Liu Bo (2):
+      netprio_cgroup.c: fix comment typo
+      Btrfs: fix typo in convert_extent_bit
 
-Stefan Achatz (5):
-      HID: roccat: add support for Roccat Savu
-      HID: roccat: move functionality to roccat-common
-      HID: roccat: fix wrong hid_err usage on struct usb_device
-      HID: roccat: rename roccat_common functions to roccat_common2
-      HID: roccat: added sensor sysfs attribute for Savu
+Martlin Ettl (1):
+      backlight: fix memory leak on obscure error path
 
-Tom Harwood (1):
-      HID: Add driver for Holtek based keyboards with broken HID
+Masanari Iida (5):
+      mach-omap2: Fix typo in debug message and comment
+      cpufreq: Fix typo in cpufreq driver
+      video: Fix typo in drivers/video
+      iommu: Fix typo in iommu
+      pci: hotplug: Fix typo in pci
 
-Vinicius Costa Gomes (1):
-      HID: uhid: Fix sending events with invalid data
+Masatake YAMATO (1):
+      trivial: typo in comment in mksysmap
 
-Yufeng Shen (2):
-      HID: magicmouse: Removing report_touches switch
-      HID: magicmouse: Implement Multi-touch Protocol B (MT-B)
+Paul Bolle (4):
+      renesas_usbhs: cleanup quoted includes
+      parisc: cleanup quoted include
+      treewide: Put a space between #include and FILE
+      ab8500-btemp: Fix typo 'AB5500'
 
- .../ABI/testing/sysfs-driver-hid-lenovo-tpkbd      |   38 ++
- .../ABI/testing/sysfs-driver-hid-roccat-savu       |   77 +++
- Documentation/hid/uhid.txt                         |  169 ++++++
- MAINTAINERS                                        |    7 +
- drivers/hid/Kconfig                                |   40 ++-
- drivers/hid/Makefile                               |    6 +-
- drivers/hid/hid-chicony.c                          |    1 +
- drivers/hid/hid-core.c                             |   21 +-
- drivers/hid/hid-cypress.c                          |    2 +
- drivers/hid/hid-holtek-kbd.c                       |  183 +++++++
- drivers/hid/hid-ids.h                              |   12 +
- drivers/hid/hid-input.c                            |    9 +
- drivers/hid/hid-lenovo-tpkbd.c                     |  564 +++++++++++++++++++
- drivers/hid/hid-magicmouse.c                       |  157 +++----
- drivers/hid/hid-multitouch.c                       |   18 +-
- drivers/hid/hid-picolcd.c                          |    6 +-
- drivers/hid/hid-roccat-arvo.c                      |   16 +-
- drivers/hid/hid-roccat-common.c                    |   72 +++-
- drivers/hid/hid-roccat-common.h                    |   16 +-
- drivers/hid/hid-roccat-isku.c                      |   52 +--
- drivers/hid/hid-roccat-isku.h                      |    7 -
- drivers/hid/hid-roccat-kone.c                      |    6 +-
- drivers/hid/hid-roccat-koneplus.c                  |   98 +---
- drivers/hid/hid-roccat-koneplus.h                  |   22 -
- drivers/hid/hid-roccat-kovaplus.c                  |   71 +--
- drivers/hid/hid-roccat-kovaplus.h                  |   15 -
- drivers/hid/hid-roccat-pyra.c                      |   59 +--
- drivers/hid/hid-roccat-pyra.h                      |   12 -
- drivers/hid/hid-roccat-savu.c                      |  316 +++++++++++
- drivers/hid/hid-roccat-savu.h                      |   87 +++
- drivers/hid/hid-wiimote-ext.c                      |    2 +-
- drivers/hid/hidraw.c                               |   12 +-
- drivers/hid/uhid.c                                 |  572 ++++++++++++++++++++
- drivers/hid/usbhid/hid-core.c                      |  294 +++++-----
- drivers/hid/usbhid/usbhid.h                        |    1 -
- include/linux/Kbuild                               |    1 +
- include/linux/hid.h                                |    1 +
- include/linux/uhid.h                               |  104 ++++
- samples/uhid/Makefile                              |   10 +
- samples/uhid/uhid-example.c                        |  381 +++++++++++++
- 40 files changed, 2983 insertions(+), 554 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-lenovo-tpkbd
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-roccat-savu
- create mode 100644 Documentation/hid/uhid.txt
- create mode 100644 drivers/hid/hid-holtek-kbd.c
- create mode 100644 drivers/hid/hid-lenovo-tpkbd.c
- create mode 100644 drivers/hid/hid-roccat-savu.c
- create mode 100644 drivers/hid/hid-roccat-savu.h
- create mode 100644 drivers/hid/uhid.c
- create mode 100644 include/linux/uhid.h
- create mode 100644 samples/uhid/Makefile
- create mode 100644 samples/uhid/uhid-example.c
+Paul Gortmaker (1):
+      Documentation: asus-laptop.txt references an obsolete Kconfig item
+
+Ralf Baechle (1):
+      Fix comment typo multipy -> multiply
+
+Steve Glendinning (1):
+      Change email address for Steve Glendinning
+
+Wanpeng Li (3):
+      mm: fix page reclaim comment error
+      mm: cleanup on the comments of zone_reclaim_stat
+      mm/vmscan: cleanup comment error in balance_pgdat
+
+ Documentation/ABI/stable/vdso                      |    2 +-
+ Documentation/ABI/testing/sysfs-block-zram         |    2 +-
+ .../ABI/testing/sysfs-bus-usb-devices-usbsevseg    |    2 +-
+ .../testing/sysfs-class-backlight-driver-adp8870   |    2 +-
+ Documentation/ManagementStyle                      |    2 +-
+ Documentation/arm/Samsung-S3C24XX/H1940.txt        |    2 +-
+ Documentation/arm/Samsung-S3C24XX/SMDK2440.txt     |    2 +-
+ Documentation/devices.txt                          |    2 ++
+ Documentation/laptops/asus-laptop.txt              |    3 +--
+ Documentation/sound/alsa/hdspm.txt                 |    2 +-
+ Documentation/video4linux/cpia2_overview.txt       |    2 +-
+ Documentation/video4linux/stv680.txt               |    2 +-
+ MAINTAINERS                                        |   20 ++++++++++----------
+ arch/arm/mach-davinci/Kconfig                      |    6 ------
+ arch/arm/mach-omap2/board-apollon.c                |    2 +-
+ arch/arm/mach-omap2/board-omap4panda.c             |    2 +-
+ arch/arm/mach-omap2/omap-mpuss-lowpower.c          |    2 +-
+ arch/arm/mach-omap2/sr_device.c                    |    2 +-
+ arch/arm/mach-omap2/twl-common.c                   |    2 +-
+ arch/arm/plat-samsung/include/plat/gpio-cfg.h      |    2 +-
+ arch/ia64/kernel/ia64_ksyms.c                      |    2 +-
+ arch/ia64/kvm/vmm.c                                |    6 +++---
+ arch/m68k/kernel/module.c                          |    4 ++--
+ arch/parisc/include/asm/compat_rt_sigframe.h       |    6 +++---
+ arch/sh/boards/board-polaris.c                     |    2 +-
+ arch/unicore32/Kconfig                             |    1 -
+ arch/x86/kernel/module.c                           |    2 +-
+ drivers/cpufreq/s3c2416-cpufreq.c                  |    4 ++--
+ drivers/cpufreq/speedstep-ich.c                    |    2 +-
+ drivers/hwmon/emc2103.c                            |    2 +-
+ drivers/input/keyboard/lm8333.c                    |    2 +-
+ drivers/input/misc/cma3000_d0x.c                   |    2 +-
+ drivers/iommu/amd_iommu_v2.c                       |    2 +-
+ drivers/iommu/exynos-iommu.c                       |    2 +-
+ drivers/iommu/iova.c                               |   14 +++++++-------
+ drivers/media/video/zoran/zr36016.c                |    4 ++--
+ drivers/net/phy/smsc.c                             |    2 +-
+ drivers/net/usb/smsc75xx.c                         |    2 +-
+ drivers/net/usb/smsc95xx.c                         |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-io.c              |    2 +-
+ drivers/parisc/iosapic.c                           |    2 +-
+ drivers/pci/hotplug/ibmphp_core.c                  |    2 +-
+ drivers/pci/hotplug/ibmphp_ebda.c                  |    2 +-
+ drivers/pci/hotplug/ibmphp_pci.c                   |    2 +-
+ drivers/pci/setup-bus.c                            |    2 +-
+ drivers/power/Kconfig                              |    2 +-
+ drivers/scsi/aha152x.c                             |    4 ++--
+ drivers/scsi/aha1542.c                             |    2 +-
+ drivers/staging/comedi/drivers/s626.h              |    2 +-
+ drivers/usb/renesas_usbhs/common.c                 |    2 +-
+ drivers/usb/renesas_usbhs/common.h                 |    4 ++--
+ drivers/usb/renesas_usbhs/fifo.c                   |    4 ++--
+ drivers/usb/renesas_usbhs/mod.c                    |    4 ++--
+ drivers/usb/renesas_usbhs/mod.h                    |    2 +-
+ drivers/usb/renesas_usbhs/pipe.c                   |    4 ++--
+ drivers/usb/renesas_usbhs/pipe.h                   |    4 ++--
+ drivers/video/arcfb.c                              |    4 ++--
+ drivers/video/atmel_lcdfb.c                        |    2 +-
+ drivers/video/aty/atyfb_base.c                     |    2 +-
+ drivers/video/aty/radeon_base.c                    |    2 +-
+ drivers/video/backlight/88pm860x_bl.c              |    1 +
+ drivers/video/bfin_adv7393fb.c                     |    2 +-
+ drivers/video/cirrusfb.c                           |    2 +-
+ drivers/video/exynos/exynos_dp_reg.c               |    2 +-
+ drivers/video/exynos/exynos_mipi_dsi.c             |    2 +-
+ drivers/video/i740fb.c                             |    6 +++---
+ drivers/video/s3c-fb.c                             |    2 +-
+ drivers/video/savage/savagefb_driver.c             |    6 +++---
+ drivers/video/sis/init.c                           |    3 ++-
+ drivers/video/smscufx.c                            |    8 ++++----
+ drivers/video/sunxvr500.c                          |    2 +-
+ fs/btrfs/extent_io.c                               |    3 ++-
+ include/linux/clk.h                                |    4 ++--
+ include/linux/mmzone.h                             |    2 +-
+ lib/div64.c                                        |    2 +-
+ mm/vmscan.c                                        |    5 +++--
+ net/core/netprio_cgroup.c                          |    2 +-
+ scripts/mksysmap                                   |    2 +-
+ sound/oss/vwsnd.c                                  |    2 +-
+ 79 files changed, 119 insertions(+), 121 deletions(-)
 
 -- 
 Jiri Kosina
