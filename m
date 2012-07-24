@@ -1,37 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab2GXNSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:18:18 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:57437 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab2GXNSR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:18:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <1343109531.7412.47.camel@marge.simpson.net>
-References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
-	<1343109531.7412.47.camel@marge.simpson.net>
-Date: Tue, 24 Jul 2012 21:18:16 +0800
-Message-ID: <CAJd=RBC835W52nsXCqhM_4KR3CuLF9zijh3416LiJLybTuR_YA@mail.gmail.com>
-Subject: Re: [PATCH 00/34] Memory management performance backports for -stable V2
-From: Hillf Danton <dhillf@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Mel Gorman <mgorman@suse.de>, Stable <stable@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754274Ab2GXNT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:19:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754109Ab2GXNT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 09:19:27 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com>
+References: <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com> <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de, tglx@linutronix.de,
+        mingo@kernel.org, davej@redhat.com
+Subject: Re: [PATCH 00/13] UAPI header file split
+Date: Tue, 24 Jul 2012 14:19:12 +0100
+Message-ID: <28702.1343135952@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 1:58 PM, Mike Galbraith <efault@gmx.de> wrote:
-> FWIW, I'm all for performance backports.  They do have a downside though
-> (other than the risk of bugs slipping in, or triggering latent bugs).
->
-> When the next enterprise kernel is built, marketeers ask for numbers to
-> make potential customers drool over, and you _can't produce any_ because
-> you wedged all the spiffy performance stuff into the crusty old kernel.
->
-Well do your job please.
+Michael Kerrisk <mtk.manpages@gmail.com> wrote:
 
-	Suse 11 SP1 kernel panic on HP hardware
-	https://lkml.org/lkml/2012/7/24/136
+> In the uapi-split branch, there are now 44 empty Kbuild files. Was
+> that intended? Or, should these files rather be removed by your
+> patches?
+
+To be removed by a later patch, I think.  Getting rid of some of them isn't
+trivial - ones in arch/x/include/asm/Kbuild for example - because that Kbuild
+is referenced by common code IIRC as a function of the arch.
+
+David
