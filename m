@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab2GXRBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 13:01:41 -0400
+	id S1756201Ab2GXRBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 13:01:51 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:40776 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755798Ab2GXRBi (ORCPT
+	with ESMTP id S1755798Ab2GXRBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 13:01:38 -0400
+	Tue, 24 Jul 2012 13:01:49 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Borislav Petkov <borislav.petkov@amd.com>,
         linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH 11/13] driver core: firmware: introduce devices_cache/uncache_firmwares
-Date: Wed, 25 Jul 2012 01:00:11 +0800
-Message-Id: <1343149213-10160-12-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH 13/13] driver core: firmware loader: cache devices firmware during suspend/resume cycle
+Date: Wed, 25 Jul 2012 01:00:13 +0800
+Message-Id: <1343149213-10160-14-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
 References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
@@ -23,304 +23,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches introduces the three helpers below:
-
-	void device_cache_firmwares(void)
-	void device_uncache_firmwares(void)
-	void device_uncache_firmwares_delay(unsigned long)
-
-so we can call device_cache_firmwares() to cache firmwares for
-all devices which need firmwares to work, and the device driver
-can get the firmware easily from kernel memory when system isn't
-readly for completing their requests of loading firmwares.
-
-When system is ready for completing firmware loading, driver core
-can call device_uncache_firmwares() or its delay version to free
-the cached firmwares.
-
-The above helpers should be used to cache device firmwares during
-system suspend/resume cycle in the following patches.
+This patch implements caching devices' firmware automatically
+during system syspend/resume cycle, so any device drivers can
+call request_firmware or request_firmware_nowait inside resume
+path to get the cached firmware if they have loaded firmwares
+successfully at least once before entering suspend.
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/base/firmware_class.c |  236 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 230 insertions(+), 6 deletions(-)
+ drivers/base/firmware_class.c |   32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
 diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index c181e6d..7a96e75 100644
+index 0918b26..59384e0 100644
 --- a/drivers/base/firmware_class.c
 +++ b/drivers/base/firmware_class.c
-@@ -22,6 +22,10 @@
- #include <linux/slab.h>
- #include <linux/sched.h>
+@@ -24,6 +24,7 @@
  #include <linux/list.h>
-+#include <linux/async.h>
-+#include <linux/pm.h>
-+
-+#include "base.h"
+ #include <linux/async.h>
+ #include <linux/pm.h>
++#include <linux/suspend.h>
  
- MODULE_AUTHOR("Manuel Estrada Sainz");
- MODULE_DESCRIPTION("Multi purpose firmware loading support");
-@@ -91,6 +95,17 @@ struct firmware_cache {
- 	/* firmware_buf instance will be added into the below list */
- 	spinlock_t lock;
- 	struct list_head head;
+ #include "base.h"
+ 
+@@ -106,6 +107,8 @@ struct firmware_cache {
+ 	wait_queue_head_t      wait_queue;
+ 	int cnt;
+ 	struct delayed_work work;
 +
-+	/*
-+	 * Name of firmware which has been cached successfully will be
-+	 * added into the below list so that device uncache helper can
-+	 * trace which firmware has been cached before.
-+	 */
-+	spinlock_t name_lock;
-+	struct list_head name_head;
-+	wait_queue_head_t      wait_queue;
-+	int cnt;
-+	struct delayed_work work;
++	struct notifier_block   pm_notify;
  };
  
  struct firmware_buf {
-@@ -107,6 +122,11 @@ struct firmware_buf {
- 	char fw_id[];
- };
- 
-+struct fw_name_for_cache {
-+	struct list_head list;
-+	char name[];
-+};
-+
- struct firmware_priv {
- 	struct timer_list timeout;
- 	bool nowait;
-@@ -214,12 +234,6 @@ static void fw_free_buf(struct firmware_buf *buf)
- 	kref_put(&buf->ref, __fw_free_buf);
+@@ -1202,6 +1205,31 @@ static void device_uncache_firmwares_delay(unsigned long delay)
+ 			msecs_to_jiffies(delay));
  }
  
--static void fw_cache_init(void)
--{
--	spin_lock_init(&fw_cache.lock);
--	INIT_LIST_HEAD(&fw_cache.head);
--}
--
- static struct firmware_priv *to_firmware_priv(struct device *dev)
++#ifdef CONFIG_PM
++static int fw_pm_notify(struct notifier_block *notify_block,
++					unsigned long mode, void *unused)
++{
++	switch (mode) {
++	case PM_HIBERNATION_PREPARE:
++	case PM_SUSPEND_PREPARE:
++		device_cache_firmwares();
++		break;
++
++	case PM_POST_SUSPEND:
++	case PM_POST_HIBERNATION:
++	case PM_POST_RESTORE:
++		device_uncache_firmwares_delay(10 * MSEC_PER_SEC);
++		break;
++	}
++
++	return 0;
++}
++#else
++static int fw_pm_notify(struct notifier_block *notify_block,
++					unsigned long mode, void *unused)
++{}
++#endif
++
+ static void __init fw_cache_init(void)
  {
- 	return container_of(dev, struct firmware_priv, dev);
-@@ -981,6 +995,216 @@ int uncache_firmware(const char *fw_name)
- 	return -EINVAL;
+ 	spin_lock_init(&fw_cache.lock);
+@@ -1214,6 +1242,9 @@ static void __init fw_cache_init(void)
+ 	init_waitqueue_head(&fw_cache.wait_queue);
+ 	INIT_DELAYED_WORK(&fw_cache.work,
+ 		device_uncache_firmwares_work);
++	fw_cache.pm_notify.notifier_call = fw_pm_notify;
++
++	register_pm_notifier(&fw_cache.pm_notify);
  }
  
-+static struct fw_name_for_cache *alloc_fw_name_cache(const char *name)
-+{
-+	struct fw_name_for_cache *nc;
-+
-+	nc = kzalloc(sizeof(nc) + strlen(name) + 1, GFP_KERNEL);
-+	if (!nc)
-+		goto exit;
-+
-+	strcpy(nc->name, name);
-+exit:
-+	return nc;
-+}
-+
-+static void free_fw_name_cache(struct fw_name_for_cache *nc)
-+{
-+	kfree(nc);
-+}
-+
-+static void __async_dev_cache_firmware(void *fw_name,
-+		async_cookie_t cookie)
-+{
-+	struct fw_name_for_cache *nc;
-+	struct firmware_cache *fwc = &fw_cache;
-+	char *curr_name;
-+	int ret;
-+
-+	/* 'fw_name' is stored in devres, and it may be released,
-+	 * so allocate buffer to store the firmware name
-+	 */
-+	curr_name = kstrdup((const char *)fw_name, GFP_KERNEL);
-+	if (!curr_name) {
-+		ret = -ENOMEM;
-+		goto drop_ref;
-+	}
-+
-+	strcpy(curr_name, fw_name);
-+
-+	ret = cache_firmware(curr_name);
-+
-+	if (!ret) {
-+		/*
-+		 * allocate/all the instance of alloc_fw_name_cache
-+		 * for uncaching later if cache_firmware returns
-+		 * successfully
-+		 */
-+		nc = alloc_fw_name_cache(curr_name);
-+
-+		/*
-+		 * have to uncache firmware in case of allocation
-+		 * failure since we can't trace the firmware cache
-+		 * any more without the firmware name.
-+		 */
-+		if (!nc) {
-+			uncache_firmware(curr_name);
-+		} else {
-+			spin_lock(&fwc->name_lock);
-+			list_add(&nc->list, &fwc->name_head);
-+			spin_unlock(&fwc->name_lock);
-+		}
-+	}
-+	kfree(curr_name);
-+
-+drop_ref:
-+	spin_lock(&fwc->name_lock);
-+	fwc->cnt--;
-+	spin_unlock(&fwc->name_lock);
-+	wake_up(&fwc->wait_queue);
-+}
-+
-+static void __dev_cache_firmware(struct device *dev, void *res)
-+{
-+	struct fw_name_devm *fwn = res;
-+	const char *fw_name = fwn->name;
-+	struct firmware_cache *fwc = &fw_cache;
-+
-+	dev_dbg(dev, "fw-%s %d\n", fw_name, fwc->cnt);
-+
-+	spin_lock(&fwc->name_lock);
-+	fwc->cnt++;
-+	spin_unlock(&fwc->name_lock);
-+
-+	async_schedule(__async_dev_cache_firmware, (void *)fw_name);
-+}
-+
-+static int devm_name_match(struct device *dev, void *res,
-+		void *match_data)
-+{
-+	struct fw_name_devm *fwn = res;
-+	return (fwn->magic == (unsigned long)match_data);
-+}
-+
-+static void dev_cache_firmware(struct device *dev)
-+{
-+	devres_for_each_res(dev, fw_name_devm_release,
-+			devm_name_match, &fw_cache,
-+			__dev_cache_firmware);
-+}
-+
-+static void __device_uncache_firmwares(void)
-+{
-+	struct firmware_cache *fwc = &fw_cache;
-+	struct fw_name_for_cache *nc;
-+
-+	spin_lock(&fwc->name_lock);
-+	while (!list_empty(&fwc->name_head)) {
-+		nc = list_entry(fwc->name_head.next,
-+				struct fw_name_for_cache, list);
-+		list_del(&nc->list);
-+		spin_unlock(&fwc->name_lock);
-+
-+		uncache_firmware(nc->name);
-+		free_fw_name_cache(nc);
-+
-+		spin_lock(&fwc->name_lock);
-+	}
-+	spin_unlock(&fwc->name_lock);
-+}
-+
-+extern struct list_head dpm_list;
-+/**
-+ * device_cache_firmwares - cache devices' firmwares
-+ *
-+ * For each devices, if they called request_firmware or
-+ * request_firmware_nowait successfully before, their firmware
-+ * name will be recored into these devices' devres link list, so
-+ * device_cache_firmwares can call cache_firmware() to cache these
-+ * firmwares for these devices, then these device drivers can load
-+ * their firmwares easily at any time even when system is not ready
-+ * to complete loading firmwares.
-+ *
-+ */
-+static void device_cache_firmwares(void)
-+{
-+	struct firmware_cache *fwc = &fw_cache;
-+	struct device *dev;
-+	DEFINE_WAIT(wait);
-+
-+	pr_debug("%s\n", __func__);
-+
-+	device_pm_lock();
-+	list_for_each_entry(dev, &dpm_list, power.entry)
-+		dev_cache_firmware(dev);
-+	device_pm_unlock();
-+
-+	pr_debug("%s firmwares %d\n", __func__, fwc->cnt);
-+
-+	/* wait for completion of caching firmware for all devices */
-+	spin_lock(&fwc->name_lock);
-+	for (;;) {
-+		prepare_to_wait(&fwc->wait_queue, &wait,
-+				TASK_UNINTERRUPTIBLE);
-+		if (!fwc->cnt)
-+			break;
-+
-+		spin_unlock(&fwc->name_lock);
-+
-+		schedule();
-+
-+		spin_lock(&fwc->name_lock);
-+	}
-+	spin_unlock(&fwc->name_lock);
-+	finish_wait(&fwc->wait_queue, &wait);
-+}
-+
-+/**
-+ * device_uncache_firmwares - uncache devices' firmwares
-+ *
-+ * uncache all firmwares which have been cached successfully
-+ * by device_uncache_firmwares
-+ *
-+ */
-+static void device_uncache_firmwares(void)
-+{
-+	pr_debug("%s\n", __func__);
-+	__device_uncache_firmwares();
-+}
-+
-+static void device_uncache_firmwares_work(struct work_struct *work)
-+{
-+	device_uncache_firmwares();
-+}
-+
-+/**
-+ * device_uncache_firmwares_delay - uncache devices firmwares
-+ * @delay: number of milliseconds to delay uncache device firmwares
-+ *
-+ * uncache all devices's firmwares which has been cached successfully
-+ * by device_cache_firmwares after @delay milliseconds.
-+ *
-+ */
-+static void device_uncache_firmwares_delay(unsigned long delay)
-+{
-+	schedule_delayed_work(&fw_cache.work,
-+			msecs_to_jiffies(delay));
-+}
-+
-+static void __init fw_cache_init(void)
-+{
-+	spin_lock_init(&fw_cache.lock);
-+	INIT_LIST_HEAD(&fw_cache.head);
-+
-+	spin_lock_init(&fw_cache.name_lock);
-+	INIT_LIST_HEAD(&fw_cache.name_head);
-+	fw_cache.cnt = 0;
-+
-+	init_waitqueue_head(&fw_cache.wait_queue);
-+	INIT_DELAYED_WORK(&fw_cache.work,
-+		device_uncache_firmwares_work);
-+}
-+
  static int __init firmware_class_init(void)
+@@ -1224,6 +1255,7 @@ static int __init firmware_class_init(void)
+ 
+ static void __exit firmware_class_exit(void)
  {
- 	fw_cache_init();
++	unregister_pm_notifier(&fw_cache.pm_notify);
+ 	class_unregister(&firmware_class);
+ }
+ 
 -- 
 1.7.9.5
 
