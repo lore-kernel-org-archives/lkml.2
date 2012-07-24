@@ -1,73 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2GXRBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 13:01:00 -0400
+	id S1756126Ab2GXRBU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 13:01:20 -0400
 Received: from mail-gh0-f174.google.com ([209.85.160.174]:58760 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755953Ab2GXRA5 (ORCPT
+	with ESMTP id S1755798Ab2GXRBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 13:00:57 -0400
-Message-ID: <500ED4B5.4010104@gmail.com>
-Date: Wed, 25 Jul 2012 01:00:37 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, WuJianguo <wujianguo@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2] SLUB: enhance slub to handle memory nodes without
- normal memory
-References: <alpine.DEB.2.00.1207181349370.22907@router.home> <1343123710-4972-1-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207240931560.29808@router.home>
-In-Reply-To: <alpine.DEB.2.00.1207240931560.29808@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jul 2012 13:01:17 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
+Subject: [RFC PATCH 07/13] driver core: firmware loader: introduce cache_firmware and uncache_firmware
+Date: Wed, 25 Jul 2012 01:00:07 +0800
+Message-Id: <1343149213-10160-8-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 10:45 PM, Christoph Lameter wrote:
-> On Tue, 24 Jul 2012, Jiang Liu wrote:
-> 
->>
->> diff --git a/mm/slub.c b/mm/slub.c
->> index 8c691fa..3976745 100644
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -2803,6 +2803,17 @@ static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
->>
->>  static struct kmem_cache *kmem_cache_node;
->>
->> +static bool node_has_normal_memory(int node)
->> +{
->> +	int i;
->> +
->> +	for (i = ZONE_NORMAL; i >= 0; i--)
->> +		if (populated_zone(&NODE_DATA(node)->node_zones[i]))
->> +			return true;
->> +
->> +	return false;
->> +}
-> 
-> There is already a N_NORMAL_MEMORY node map that contains a list of node
-> that have *normal* memory usable by slab allocators etc. I think the
-> cleanest solution would be to clear the corresponding node bits for your
-> special movable only zones. Then you wont be needing to modify other
-> subsystems anymore.
-> 
-Hi Chris,
-	Thanks for your comments! I have thought about the solution mentioned,
-but seems it doesn't work. We have node masks for both N_NORMAL_MEMORY and
-N_HIGH_MEMORY to distinguish between normal and highmem on platforms such as x86.
-But we still don't have such a mechanism to distinguish between "normal" and "movable"
-memory. So for memory nodes with only movable zones, we still set N_NORMAL_MEMORY for
-them. One possible solution is to add a node mask for "N_NORMAL_OR_MOVABLE_MEMORY",
-but haven't tried that yet. Will have a try for that.
-	Thanks!
-	Gerry
+This patches introduce two kernel APIs of cache_firmware and
+uncache_firmware, both of which take the firmware file name
+as the only parameter.
+
+So any drivers can call cache_firmware to cache the specified
+firmware file into kernel memory, and can use the cached firmware
+in situations which can't request firmware from user space.
+
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/base/firmware_class.c |   79 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/firmware.h      |   12 +++++++
+ 2 files changed, 91 insertions(+)
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 225898e..674cb11 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -168,6 +168,22 @@ static int fw_lookup_and_alloate_buf(const char *fw_name,
+ 	return tmp ? 0 : -1;
+ }
+ 
++static struct firmware_buf *fw_lookup_buf(const char *fw_name)
++{
++	struct firmware_buf *tmp;
++	struct firmware_cache *fwc = &fw_cache;
++
++	spin_lock(&fwc->lock);
++	list_for_each_entry(tmp, &fwc->head, list)
++		if (!strcmp(tmp->fw_id, fw_name)) {
++			spin_unlock(&fwc->lock);
++			return tmp;
++		}
++	spin_unlock(&fwc->lock);
++
++	return NULL;
++}
++
+ static void __fw_free_buf(struct kref *ref)
+ {
+ 	struct firmware_buf *buf = to_fwbuf(ref);
+@@ -833,6 +849,67 @@ request_firmware_nowait(
+ 	return 0;
+ }
+ 
++/**
++ * cache_firmware - cache one firmware image in kernel memory space
++ * @fw_name: the firmware image name
++ *
++ * Cache firmware in kernel memory so that drivers can use the firmware
++ * when system isn't ready for drivers to request firmware image from
++ * userspace. Once returns successfully, driver can use request_firmware*
++ * to get the cached firmware without any interacting with user space
++ *
++ * Return 0 if the firmware image has been cached successfully
++ * Return !0 if it is not successfully
++ *
++ */
++int cache_firmware(const char *fw_name)
++{
++	int ret;
++	const struct firmware *fw;
++
++	pr_debug("%s: %s\n", __func__, fw_name);
++
++	ret = request_firmware(&fw, fw_name, NULL);
++
++	if (!ret)
++		kfree(fw);
++
++	pr_debug("%s: %s ret=%d\n", __func__, fw_name, ret);
++
++	return ret;
++}
++
++/**
++ * uncache_firmware - remove one cached firmware image
++ *
++ * @fw_name: the firmware image name
++ *
++ * Uncache one firmware image which has been cached successfully
++ * before.
++ *
++ * Return 0 if the firmware cache has been removed successfully
++ * Return !0 if it is not successfully
++ *
++ */
++int uncache_firmware(const char *fw_name)
++{
++	struct firmware_buf *buf;
++	struct firmware fw;
++
++	pr_debug("%s: %s\n", __func__, fw_name);
++
++	if (fw_get_builtin_firmware(&fw, fw_name))
++		return 0;
++
++	buf = fw_lookup_buf(fw_name);
++	if (buf) {
++		fw_free_buf(buf);
++		return 0;
++	}
++
++	return -EINVAL;
++}
++
+ static int __init firmware_class_init(void)
+ {
+ 	fw_cache_init();
+@@ -850,3 +927,5 @@ module_exit(firmware_class_exit);
+ EXPORT_SYMBOL(release_firmware);
+ EXPORT_SYMBOL(request_firmware);
+ EXPORT_SYMBOL(request_firmware_nowait);
++EXPORT_SYMBOL_GPL(cache_firmware);
++EXPORT_SYMBOL_GPL(uncache_firmware);
+diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+index e85b771..1bfa202 100644
+--- a/include/linux/firmware.h
++++ b/include/linux/firmware.h
+@@ -47,6 +47,8 @@ int request_firmware_nowait(
+ 	void (*cont)(const struct firmware *fw, void *context));
+ 
+ void release_firmware(const struct firmware *fw);
++int cache_firmware(const char *name);
++int uncache_firmware(const char *name);
+ #else
+ static inline int request_firmware(const struct firmware **fw,
+ 				   const char *name,
+@@ -65,6 +67,16 @@ static inline int request_firmware_nowait(
+ static inline void release_firmware(const struct firmware *fw)
+ {
+ }
++
++int cache_firmware(const char *name)
++{
++	return -ENOENT;
++}
++
++int uncache_firmware(const char *name)
++{
++	return -EINVAL;
++}
+ #endif
+ 
+ #endif
+-- 
+1.7.9.5
+
