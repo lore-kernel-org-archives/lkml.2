@@ -1,169 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab2GXFTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 01:19:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7830 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229Ab2GXFTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 01:19:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="197152593"
-Subject: [GIT PULL] slave-dmaengine updates for v3.6
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, dan.j.williams@gmail.com
+	id S1752955Ab2GXFVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 01:21:47 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42716 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751229Ab2GXFVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 01:21:45 -0400
+Message-ID: <1343107299.3513.7.camel@dabdike>
+Subject: [GIT PULL] First round of SCSI updates for the 3.5+ merge window
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Jul 2012 09:21:39 +0400
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 24 Jul 2012 10:49:25 +0530
-Message-ID: <1343107165.1726.5996.camel@vkoul-udesk3>
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The most important feature of this patch set is the new async
+infrastructure that makes sure async_synchronize_full() synchronizes all
+domains and allows us to remove all the hacks (like having
+scsi_complete_async_scans() in the device base code) and means that the
+async infrastructure will "just work" in future. The rest is assorted
+driver updates (aacraid, bnx2fc, virto-scsi, megaraid, bfa, lpfc,
+qla2xxx, qla4xxx) plus a lot of infrastructure work in sas and FC.
 
-Hi Linus,
+The patch is available here:
 
-Here is the slave-dmaengine update for 3.6
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-misc
 
-This time we have new dmaengine driver from tegra folks. Also we have
-Guennadi's cleanup of sh drivers which incudes a library for sh drivers.
-And the usual odd fixes in bunch of drivers and some nice cleanup of
-dw_dmac from Andy.
+The short changelog is
 
+Alan Cox (1):
+      aha152x: Allow use on 64bit systems
 
-The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
+Bart Van Assche (5):
+      Stop accepting SCSI requests before removing a device
+      Change return type of scsi_queue_insert() into void
+      Avoid dangling pointer in scsi_requeue_command()
+      Fix device removal NULL pointer dereference
+      scsi_dh_alua: Re-enable STPG for unavailable ports
 
-are available in the git repository at:
+Ben Collins (4):
+      aacraid: Fix endian issues in core and SRC portions of driver
+      aacraid: Relax the tight timeout loop on fib commands
+      aacraid: Better handling of in-flight events on thread stop
+      aacraid: Use resource_size_t for IO mem pointers and offsets
 
-  git://git.infradead.org/users/vkoul/slave-dma.git next
+Bhanu Prakash Gollapudi (4):
+      bnx2fc: Bumped version to 1.0.12
+      bnx2fc: use list_entry instead of explicit cast
+      bnx2fc: Improve error recovery by handling parity errors
+      bnx2fc: Support interface creation on non-VLAN interface also.
 
-Andy Shevchenko (12):
-      dw_dmac: fix constant in the comment
-      dw_dmac: use proper casting to print dma_addr_t values
-      dw_dmac: introduce dwc_dump_chan_regs to dump registers
-      dw_dmac: print correct number of scanned descriptors
-      dw_dmac: use __func__ constant in the debug prints
-      dw_dmac: disable dma in optimal way in probe
-      dw_dmac: disable BLOCK interrupts
-      dw_dmac: introduce dwc_fast_fls()
-      dw_dmac: move from __init to __devinit
-      dw_dmac: introduce dwc_chan_disable
-      dw_dmac: mark dwc_dump_lli inline
-      dw_dmac: use 'u32' for LLI structure members, not dma_addr_t
+Cong Meng (1):
+      virtio-scsi: hotplug support for virtio-scsi
 
-Attila Kinali (1):
-      dma: mxs-dma: Export missing symbols from mxs-dma.c
+Dan Carpenter (6):
+      mvsas: remove unused variable in mvs_task_exec()
+      megaraid: remove a spurious IRQ enable
+      megaraid: cleanup type issue in mega_build_cmd()
+      bfa: dereferencing freed memory in bfad_im_probe()
+      bfa: off by one in bfa_ioc_mbox_isr()
+      arcmsr: fix misuse of | instead of &
 
-Guennadi Liakhovetski (17):
-      dma: move shdma driver to an own directory
-      dmaengine: add an shdma-base library
-      dma: shdma: prepare for conversion to the shdma base library
-      mmc: sh_mmcif: remove unneeded struct sh_mmcif_dma, prepare to shdma conversion
-      mmc: sh_mobile_sdhi: prepare for conversion to the shdma base library
-      serial: sh-sci: prepare for conversion to the shdma base library
-      ASoC: siu: prepare for conversion to the shdma base library
-      usb: renesas_usbhs: prepare for conversion to the shdma base library
-      ASoC: fsi: prepare for conversion to the shdma base library
-      dma: shdma: convert to the shdma base library
-      dmaengine: shdma: (cosmetic) simplify a static function
-      ASoC: siu: don't use DMA device for channel filtering
-      sh: remove unused DMA device pointer from SIU platform data
-      dmaengine: shdma: prepare to stop using struct dma_chan::private
-      dma: sh: use an integer slave ID to improve API compatibility
-      dma: sh: provide a migration path for slave drivers to stop using .private
-      mmc: sh_mmcif: switch to the new DMA channel allocation and configuration
+Dan Williams (17):
+      Revert "[SCSI] fix async probe regression"
+      cleanup usages of scsi_complete_async_scans
+      queue async scan work to an async_schedule domain
+      async: make async_synchronize_full() flush all work regardless of
+domain
+      async: introduce 'async_domain' type
+      libsas: trim sas_task of slow path infrastructure
+      libsas: drop sata port multiplier infrastructure
+      libsas: fix sas_discover_devices return code handling
+      libsas: continue revalidation
+      isci: use sas eh strategy handlers
+      libsas: use ->lldd_I_T_nexus_reset for ->eh_bus_reset_handler
+      libsas: add sas_eh_abort_handler
+      libsas: enforce eh strategy handlers only in eh context
+      cleanup setting task state in scsi_error_handler()
+      fix eh wakeup (scsi_schedule_eh vs scsi_restart_operations)
+      libata, libsas: introduce sched_eh and end_eh port ops
+      fix hot unplug vs async scan race
 
-Huang Shijie (1):
-      dma: enable mxs-dma for imx6q
+Eric Dumazet (1):
+      bnx2fc: use kthread_create_on_node
 
-Javi Merino (1):
-      DMA: PL330: Fix racy mutex unlock
+HighPoint Linux Team (1):
+      hptiop: fix RR312x in hosts with >12GB
+
+James Bottomley (2):
+      lpfc: fix problems with -Werror
+      Remove scsi_wait_scan module
+
+James Smart (10):
+      lpfc 8.3.32: Update lpfc to version 8.3.32
+      lpfc 8.3.32: Fix error reporting of misconfigured ports
+      lpfc 8.3.32: Fix system panic due to node state change
+      lpfc 8.3.32: Fix ability to change FCP EQ delay multiplier
+      lpfc 8.3.32: Correct successful aborts returning error status
+      lpfc 8.3.32: Correct provisioning change failure on local function
+      lpfc 8.3.32: Correct host DIF configuration that hung system
+      lpfc 8.3.32: Fix CQ and EQ dump failure for debugfs
+      lpfc 8.3.32: Correct null pointer Error in lpfc_sli.c
+      lpfc 8.3.32: lpfc_sli.c: add missing jumps to mempool_free
+
+Jeff Skirvin (1):
+      libsas: sas_rediscover_dev did not look at the SMP exec status.
 
 Joe Perches (1):
-      dmaengine: Cleanup logging messages
+      bnx2fc: Reduce object size by consolidating formats
 
-Lars-Peter Clausen (1):
-      dmaengine: Add wrapper for device_tx_status callback
+Jon Mason (2):
+      qla2xxx: remove unnecessary reads of PCI_CAP_ID_EXP
+      qla4xxx: remove unnecessary read of PCI_CAP_ID_EXP
 
-Laxman Dewangan (7):
-      dma: dmaengine: add slave req id in slave_config
-      dma: tegra: add dmaengine based dma driver
-      dma: tegra: use sg_dma_address() for getting dma buffer address
-      dma: tegra: do not set transfer desc flag to DMA_CTRL_ACK in cyclic mode
-      dma: tegra: set DMA_CYCLIC capability
-      dma: tegra: fix residual calculation for cyclic case
-      dma: tegra: rename driver and compatible to match with dts
+Josh Hunt (1):
+      properly initialize atomic_t
 
-Linus Walleij (1):
-      dma: coh901318: use devm allocation
+Karen Xie (1):
+      cxgb4i: tcp push bit fix
 
-Nicolas Ferre (1):
-      dmaengine: at_hdmac: trivial: fix comment in header
+Krishna Gudipati (1):
+      bfa: Fix to set correct return error codes and misc cleanup.
 
-Prashant Gaikwad (1):
-      dma: tegra: add clk_prepare/clk_unprepare
+Kyle McMartin (1):
+      bfa: squelch lockdep complaint with a spin_lock_init
 
-Richard Zhao (1):
-      dma: imx-sdma: buf_tail should be initialize in prepare function
+Lin Ming (1):
+      scsi_pm: set device runtime state before parent suspended
 
-Sachin Kamat (1):
-      DMA: PL330: Add missing static storage class specifier
+Maciej Trela (1):
+      libsas: cleanup spurious calls to scsi_schedule_eh
 
-Tushar Behera (1):
-      dmaengine: pl330: dont complete descriptor for cyclic dma
+Mahesh Rajashekhara (1):
+      aacraid: Series 7 Async. (performance) mode support
 
-Uwe Kleine-König (1):
-      dmaengine: at_hdmac: add a few const qualifiers
+Mark Rustad (1):
+      libfcoe: Fix section mismatch
 
-Vinod Koul (2):
-      Merge branch 'fixes' into next
-      dmaengine: mmp_tdma: fix the arch dependency
+Mike Christie (3):
+      remove old comment from block/unblock functions
+      core, classes, mpt2sas: have scsi_internal_device_unblock take new
+state
+      add new SDEV_TRANSPORT_OFFLINE state
 
-Zhangfei Gao (1):
-      dmaengine: mmp_tdma: add mmp tdma support
+Mike Snitzer (1):
+      scsi_dh: add scsi_dh_attached_handler_name
 
- arch/sh/include/asm/siu.h              |    1 -
- arch/sh/kernel/cpu/sh4a/setup-sh7722.c |    1 -
- drivers/dma/Kconfig                    |   26 +-
- drivers/dma/Makefile                   |    4 +-
- drivers/dma/at_hdmac.c                 |   11 +-
- drivers/dma/coh901318.c                |   72 +-
- drivers/dma/dmaengine.c                |   20 +-
- drivers/dma/dw_dmac.c                  |  182 ++---
- drivers/dma/dw_dmac_regs.h             |    8 +-
- drivers/dma/imx-sdma.c                 |    6 +-
- drivers/dma/mmp_tdma.c                 |  610 +++++++++++++
- drivers/dma/mxs-dma.c                  |    3 +-
- drivers/dma/pl330.c                    |   30 +-
- drivers/dma/sh/Makefile                |    2 +
- drivers/dma/sh/shdma-base.c            |  934 +++++++++++++++++++
- drivers/dma/sh/shdma.c                 |  943 ++++++++++++++++++++
- drivers/dma/{ => sh}/shdma.h           |   46 +-
- drivers/dma/shdma.c                    | 1524 --------------------------------
- drivers/dma/tegra20-apb-dma.c          | 1415 +++++++++++++++++++++++++++++
- drivers/mmc/host/sh_mmcif.c            |   94 ++-
- drivers/mmc/host/sh_mobile_sdhi.c      |    8 +-
- drivers/tty/serial/sh-sci.c            |    8 +-
- drivers/usb/renesas_usbhs/fifo.c       |   10 +-
- include/linux/dmaengine.h              |   10 +
- include/linux/mmc/sh_mmcif.h           |    8 +-
- include/linux/sh_dma.h                 |   41 +-
- include/linux/shdma-base.h             |  124 +++
- sound/soc/sh/fsi.c                     |    4 +-
- sound/soc/sh/siu_pcm.c                 |   12 +-
- 29 files changed, 4320 insertions(+), 1837 deletions(-)
- create mode 100644 drivers/dma/mmp_tdma.c
- create mode 100644 drivers/dma/sh/Makefile
- create mode 100644 drivers/dma/sh/shdma-base.c
- create mode 100644 drivers/dma/sh/shdma.c
- rename drivers/dma/{ => sh}/shdma.h (58%)
- delete mode 100644 drivers/dma/shdma.c
- create mode 100644 drivers/dma/tegra20-apb-dma.c
- create mode 100644 include/linux/shdma-base.h
+Muthukumar Ratty (1):
+      block: Fix blk_execute_rq_nowait() dead queue handling
 
--- 
-~Vinod
+Namjae Jeon (4):
+      ufs: fix incorrect return value about SUCCESS and FAILED
+      usb-storage: update usb devices for write cache quirk in quirk
+list.
+      usb-storage: add support for write cache quirk
+      set to WCE if usb cache quirk is present.
+
+Neil Horman (1):
+      fcoe: Cleanup locking on fcoe_percpu_receive_thread
+
+Nicholas Bellinger (1):
+      virtio-scsi: Add vdrv->scan for post VIRTIO_CONFIG_S_DRIVER_OK LUN
+scanning
+
+Paolo Bonzini (4):
+      virtio-scsi: split scatterlist per target
+      virtio-scsi: release sg_lock after add_buf
+      virtio-scsi: split locking per vq
+      virtio-scsi: unlock during kick
+
+Rob Evers (3):
+      scsi_dh_alua: backoff alua rtpg retry linearly vs. geometrically
+      scsi_dh_alua: retry alua rtpg extended header for illegal request
+response
+      scsi_dh_alua: implement 'implied transition timeout'
+
+Robert Love (1):
+      fcoe: Remove redundant 'less than zero' check
+
+Vasu Dev (6):
+      libfc: fix retries with FDMI lport states
+      libfc: add exch timer debug info
+      libfc: update fcp and exch stats
+      libfc: adds FCP failures stats
+      libfc, fcoe, bnx2fc: cleanup fcoe_dev_stats
+      fc: add some more FC specific stats to fc_host
+
+Venkatraman S (2):
+      ufs: reverse the ufshcd_is_device_present logic
+      ufs: use module_pci_driver
+
+Vikas Chaudhary (4):
+      qla4xxx: Update driver version to 5.02.00-k18
+      qla4xxx: Fix Spell check.
+      qla4xxx: Fix a Sparse warning message
+      qla4xxx: multi-session fix for flash ddbs
+
+Yi Zou (2):
+      libfc: fix sending REC after FCP_RESP is received
+      libfc: don't exch_done() on invalid sequence ptr
+
+And the diffstat:
+
+ Documentation/kernel-parameters.txt        |    2 +
+ block/blk-exec.c                           |   11 +-
+ drivers/ata/libata-core.c                  |    4 +
+ drivers/ata/libata-eh.c                    |   57 ++++-
+ drivers/base/dd.c                          |    2 -
+ drivers/regulator/core.c                   |    2 +-
+ drivers/scsi/Kconfig                       |   19 +-
+ drivers/scsi/Makefile                      |    2 -
+ drivers/scsi/aacraid/aachba.c              |  237 ++++++++++++++++---
+ drivers/scsi/aacraid/aacraid.h             |   79 +++++--
+ drivers/scsi/aacraid/commctrl.c            |    2 +
+ drivers/scsi/aacraid/comminit.c            |   54 +++--
+ drivers/scsi/aacraid/commsup.c             |   31 ++-
+ drivers/scsi/aacraid/dpcsup.c              |    6 +-
+ drivers/scsi/aacraid/linit.c               |   16 +-
+ drivers/scsi/aacraid/nark.c                |    4 +-
+ drivers/scsi/aacraid/rkt.c                 |    2 +-
+ drivers/scsi/aacraid/rx.c                  |    4 +-
+ drivers/scsi/aacraid/sa.c                  |    4 +-
+ drivers/scsi/aacraid/src.c                 |   96 ++++----
+ drivers/scsi/arcmsr/arcmsr_hba.c           |    4 +-
+ drivers/scsi/bfa/bfa_fcs_lport.c           |    4 +-
+ drivers/scsi/bfa/bfa_ioc.c                 |    2 +-
+ drivers/scsi/bfa/bfad.c                    |    2 +
+ drivers/scsi/bfa/bfad_bsg.c                |    5 +-
+ drivers/scsi/bfa/bfad_im.c                 |   12 +-
+ drivers/scsi/bnx2fc/Makefile               |    3 +-
+ drivers/scsi/bnx2fc/bnx2fc.h               |    9 +-
+ drivers/scsi/bnx2fc/bnx2fc_debug.c         |   70 ++++++
+ drivers/scsi/bnx2fc/bnx2fc_debug.h         |   73 ++----
+ drivers/scsi/bnx2fc/bnx2fc_fcoe.c          |   56 +++--
+ drivers/scsi/bnx2fc/bnx2fc_hwi.c           |    4 +-
+ drivers/scsi/bnx2fc/bnx2fc_io.c            |   25 +--
+ drivers/scsi/bnx2fc/bnx2fc_tgt.c           |   40 ++--
+ drivers/scsi/cxgbi/cxgb4i/cxgb4i.c         |    4 +-
+ drivers/scsi/device_handler/scsi_dh.c      |   38 +++-
+ drivers/scsi/device_handler/scsi_dh_alua.c |   71 +++++-
+ drivers/scsi/fcoe/fcoe.c                   |   36 +--
+ drivers/scsi/fcoe/fcoe_ctlr.c              |   13 +-
+ drivers/scsi/fcoe/fcoe_sysfs.c             |    2 +-
+ drivers/scsi/fcoe/fcoe_transport.c         |   12 +-
+ drivers/scsi/hosts.c                       |    9 +-
+ drivers/scsi/hptiop.c                      |   10 +-
+ drivers/scsi/hptiop.h                      |    1 +
+ drivers/scsi/isci/init.c                   |    3 +
+ drivers/scsi/libfc/fc_exch.c               |  130 ++++++-----
+ drivers/scsi/libfc/fc_fcp.c                |   22 +-
+ drivers/scsi/libfc/fc_frame.c              |    2 +-
+ drivers/scsi/libfc/fc_lport.c              |   69 +++---
+ drivers/scsi/libsas/sas_ata.c              |   41 +++-
+ drivers/scsi/libsas/sas_discover.c         |   23 +-
+ drivers/scsi/libsas/sas_event.c            |   12 +-
+ drivers/scsi/libsas/sas_expander.c         |   74 +++---
+ drivers/scsi/libsas/sas_init.c             |   39 +++-
+ drivers/scsi/libsas/sas_scsi_host.c        |  195 ++++++++++++++--
+ drivers/scsi/lpfc/Makefile                 |    2 +
+ drivers/scsi/lpfc/lpfc.h                   |    4 +
+ drivers/scsi/lpfc/lpfc_attr.c              |   93 +++++++-
+ drivers/scsi/lpfc/lpfc_crtn.h              |    4 +-
+ drivers/scsi/lpfc/lpfc_debugfs.h           |   18 +-
+ drivers/scsi/lpfc/lpfc_hbadisc.c           |    2 +-
+ drivers/scsi/lpfc/lpfc_hw4.h               |   45 ++++
+ drivers/scsi/lpfc/lpfc_init.c              |  233 +++++++++++++++----
+ drivers/scsi/lpfc/lpfc_scsi.c              |   32 ++-
+ drivers/scsi/lpfc/lpfc_sli.c               |  131 +++++++++--
+ drivers/scsi/lpfc/lpfc_sli4.h              |    1 +
+ drivers/scsi/lpfc/lpfc_version.h           |    2 +-
+ drivers/scsi/megaraid.c                    |    4 +-
+ drivers/scsi/megaraid/megaraid_mbox.c      |    2 +-
+ drivers/scsi/mpt2sas/mpt2sas_base.h        |    3 +-
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c       |    4 +-
+ drivers/scsi/mvsas/mv_sas.c                |   21 +-
+ drivers/scsi/pm8001/pm8001_sas.c           |   37 +--
+ drivers/scsi/qla2xxx/qla_init.c            |    4 +-
+ drivers/scsi/qla2xxx/qla_nx.c              |    4 +-
+ drivers/scsi/qla2xxx/qla_os.c              |    4 +-
+ drivers/scsi/qla4xxx/ql4_def.h             |    1 +
+ drivers/scsi/qla4xxx/ql4_glbl.h            |    3 +-
+ drivers/scsi/qla4xxx/ql4_init.c            |    2 +-
+ drivers/scsi/qla4xxx/ql4_nx.c              |    2 +-
+ drivers/scsi/qla4xxx/ql4_os.c              |  156 +++++++++++--
+ drivers/scsi/qla4xxx/ql4_version.h         |    2 +-
+ drivers/scsi/scsi.c                        |    4 +-
+ drivers/scsi/scsi_error.c                  |   18 +-
+ drivers/scsi/scsi_lib.c                    |  104 +++++----
+ drivers/scsi/scsi_pm.c                     |   23 +-
+ drivers/scsi/scsi_priv.h                   |   10 +-
+ drivers/scsi/scsi_scan.c                   |   34 +--
+ drivers/scsi/scsi_sysfs.c                  |   56 +++--
+ drivers/scsi/scsi_transport_fc.c           |   34 ++-
+ drivers/scsi/scsi_transport_iscsi.c        |    6 +-
+ drivers/scsi/scsi_wait_scan.c              |   37 ---
+ drivers/scsi/sd.c                          |   10 +-
+ drivers/scsi/ufs/ufshcd.c                  |   35 +--
+ drivers/scsi/virtio_scsi.c                 |  337 ++++++++++++++++++++++------
+ drivers/usb/storage/scsiglue.c             |    5 +
+ drivers/usb/storage/unusual_devs.h         |   12 +
+ drivers/usb/storage/usb.c                  |    5 +-
+ drivers/virtio/virtio.c                    |    5 +-
+ include/linux/async.h                      |   36 ++-
+ include/linux/libata.h                     |    4 +
+ include/linux/usb_usual.h                  |    4 +-
+ include/linux/virtio.h                     |    1 +
+ include/linux/virtio_scsi.h                |    9 +
+ include/scsi/libfc.h                       |   24 +-
+ include/scsi/libsas.h                      |   30 ++-
+ include/scsi/sas_ata.h                     |    5 +
+ include/scsi/scsi.h                        |    2 +
+ include/scsi/scsi_device.h                 |    5 +-
+ include/scsi/scsi_dh.h                     |    6 +
+ include/scsi/scsi_scan.h                   |   11 -
+ include/scsi/scsi_transport_fc.h           |   12 +
+ kernel/async.c                             |   76 +++++--
+ sound/soc/soc-dapm.c                       |    2 +-
+ 114 files changed, 2509 insertions(+), 1018 deletions(-)
+ create mode 100644 drivers/scsi/bnx2fc/bnx2fc_debug.c
+ delete mode 100644 drivers/scsi/scsi_wait_scan.c
+ delete mode 100644 include/scsi/scsi_scan.h
+
+James
+
 
