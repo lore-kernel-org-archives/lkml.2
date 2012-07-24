@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab2GXWi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 18:38:56 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38884 "EHLO gate.crashing.org"
+	id S1755688Ab2GXWl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 18:41:56 -0400
+Received: from mga14.intel.com ([143.182.124.37]:41670 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755368Ab2GXWiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 18:38:55 -0400
-Message-ID: <1343169516.3715.25.camel@pasglop>
-Subject: Re: [GIT PULL] KVM updates for the 3.6 merge window
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>
-Date: Wed, 25 Jul 2012 08:38:36 +1000
-In-Reply-To: <CA+55aFygKruOf1G5bjfE3mpvaMP3B7Eg3Hh2=HpMO=M8fDX=tw@mail.gmail.com>
-References: <500D1573.3030406@redhat.com>
-	 <CA+55aFygKruOf1G5bjfE3mpvaMP3B7Eg3Hh2=HpMO=M8fDX=tw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755453Ab2GXWlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 18:41:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="172736683"
+Date: Wed, 25 Jul 2012 00:41:51 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        swarren@nvidia.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 0/6] mfd: tp6586x: enhancements in the driver
+Message-ID: <20120724224151.GC11304@sortiz-mobl>
+References: <1342592450-12488-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342592450-12488-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-24 at 12:04 -0700, Linus Torvalds wrote:
-> Ok, this caused conflicts with the s390 and ppc trees. I think I fixed
-> them correctly, but the respective arch people really should take a
-> look.
+Hi Laxman,
 
-A quick peek at the merge commit looks allright, but Alex mentioned that
-there's some more fallover that needs an actual patch to fix (the
-changes to enforce a cleaner ASM syntax need to be applied to some new
-code from Avi's tree that didn't actually trigger merge conflicts).
-
-I'll follow up with Alex and send you the relevant patches if any.
+On Wed, Jul 18, 2012 at 11:50:44AM +0530, Laxman Dewangan wrote:
+> Doing some enhancements in the tps6586x core driver which is
+> based on some recent driver framework enhancements.
+> Following are highlights of changes:
+> - Use devm for allocation to remove the code for freeing it.
+> - Use regmap i2c for register access in place of direct i2c apis.
+>   This will give the debug fs and cache functionality through regmap
+>   framework.
+> - Use the regmap caching for some fo register in place of local
+>   implementation.
+> - Move the gpio support driver to the drivers/gpio and implement it as
+>   platform driver. The registration will be done as mfd sub devices.
+Nice, all 6 patches applied. I had to manually apply #5, please let me know if
+there are some issues.
 
 Cheers,
-Ben.
+Samuel.
 
->                   Linus
-> 
-> On Mon, Jul 23, 2012 at 2:12 AM, Avi Kivity <avi@redhat.com> wrote:
-> > Linus, please pull from the repo and tag at:
-> >
-> >   git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/kvm-3.6-1
-> >
-> > to merge the KVM updates for the 3.5 merge window.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
