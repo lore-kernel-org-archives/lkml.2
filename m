@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2GXGJv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 02:09:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40410 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab2GXGJt convert rfc822-to-8bit (ORCPT
+	id S1755387Ab2GXGVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 02:21:31 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36187 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab2GXGV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 02:09:49 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Subject: RE: [PATCH] PWM: Add support for configuring polarity of PWM
-Thread-Topic: [PATCH] PWM: Add support for configuring polarity of PWM
-Thread-Index: AQHNZOZ2DrTfmztun0iwJK4BcEJ8xpc2NNgAgABp63D//+O5gIAAXLlggAAURICAAQfRMA==
-Date: Tue, 24 Jul 2012 06:08:43 +0000
-Deferred-Delivery: Tue, 24 Jul 2012 06:08:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9726A6@DBDE01.ent.ti.com>
-References: <1342616053-7793-1-git-send-email-avinashphilip@ti.com>
- <20120723083032.GA12868@avionic-0098.mockup.avionic-design.de>
- <518397C60809E147AF5323E0420B992E3E97189D@DBDE01.ent.ti.com>
- <20120723130825.GA21254@avionic-0098.mockup.avionic-design.de>
- <518397C60809E147AF5323E0420B992E3E971AE3@DBDE01.ent.ti.com>
- <20120723195249.GA7526@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120723195249.GA7526@avionic-0098.mockup.avionic-design.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jul 2012 02:21:29 -0400
 MIME-Version: 1.0
+In-Reply-To: <500E39E2.6020604@intel.com>
+References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
+	<1339741902-8449-6-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBS8SULKGw5gvWd4fTup7NyrvsaM1ZejCtsq4ChCPEwXHg@mail.gmail.com>
+	<500E39E2.6020604@intel.com>
+Date: Tue, 24 Jul 2012 08:21:28 +0200
+Message-ID: <CABPqkBRcmZDKPN9RpR7TKAPC4orvCxd232Tt0QQt1mhzXVUfhA@mail.gmail.com>
+Subject: Re: [PATCH V6 05/13] perf: Generic intel uncore support
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 01:22:49, Thierry Reding wrote:
-> On Mon, Jul 23, 2012 at 03:05:26PM +0000, Philip, Avinash wrote:
-> > On Mon, Jul 23, 2012 at 18:38:25, Thierry Reding wrote:
-> > > On Mon, Jul 23, 2012 at 12:51:11PM +0000, Philip, Avinash wrote:
-> > > > On Mon, Jul 23, 2012 at 14:00:32, Thierry Reding wrote:
-> > > > > On Wed, Jul 18, 2012 at 06:24:13PM +0530, Philip, Avinash wrote:
-> > > > > >  /*
-> > > > > >   * pwm_enable - start a PWM output toggling
-> > > > > >   */
-> > > > > > @@ -37,6 +47,7 @@ struct pwm_chip;
-> > > > > >  enum {
-> > > > > >  	PWMF_REQUESTED = 1 << 0,
-> > > > > >  	PWMF_ENABLED = 1 << 1,
-> > > > > > +	PWMF_POLARITY_INVERSE = 1 << 2,
-> > > > > 
-> > > > > This should be named PWMF_POLARITY_INVERSED for consistency.
-> > > > 
-> > > > Ok I will correct it.
-> > > > 
-> > > > > I'm not sure that we really need this flag, though. It isn't used anywhere. But
-> > > > > maybe you have a use-case in mind?
-> > > > 
-> > > > It can be used to find the polarity of the PWM at runtime.
-> > > 
-> > > Yes, but is there any use-case where this information would be required?
-> > 
-> > It's been added as a feature enhancement. May be it can ignore?
-> 
-> I think it can be removed for now. It can be added back if we ever
-> really need it.
-
-Ok. I will remove it.
-
-Thanks
-Avinash
-
-> 
-> Thierry
-> 
-
+On Tue, Jul 24, 2012 at 8:00 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> [...snip...]
+>>> +
+>>> +static int __init intel_uncore_init(void)
+>>> +{
+>>> +       int ret;
+>>> +
+>>> +       if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+>>> +               return -ENODEV;
+>>> +
+>>> +       ret = uncore_cpu_init();
+>>> +       if (ret)
+>>> +               goto fail;
+>>> +
+>>> +       uncore_pmus_register();
+>>> +       return 0;
+>>> +fail:
+>>> +       return ret;
+>>> +}
+>>> +device_initcall(intel_uncore_init);
+>>
+>>
+>> You cannot use device_initcall() here. Otherwise you're subject
+>> to linker ordering issues between intel_uncore_init() and the
+>> perf_event_sysfs_init() initcall. You need the perf_event sysfs
+>> support to be enabled BEFORE you init the uncore otherwise you
+>> won't see the uncore sysfs entries. Given how perf now relies on
+>> sysfs to parse the event, this is a showstopper.
+>
+> I think the ordering makes no matter. perf_event_sysfs_init() checks
+> PMUs that were registered previously and allocates sysfs entries for
+> them.
+>
+You're right, seems like I had a bad kernel that caused the problem
+to happen.
+Thanks for checking.
