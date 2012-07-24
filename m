@@ -1,159 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab2GXNR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:17:26 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44985 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab2GXNRY (ORCPT
+	id S1754285Ab2GXNSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:18:18 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:57437 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754069Ab2GXNSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:17:24 -0400
-Message-ID: <500E9FD0.6090300@linux.vnet.ibm.com>
-Date: Tue, 24 Jul 2012 18:44:56 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Tue, 24 Jul 2012 09:18:17 -0400
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        KVM <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
-References: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com> <500E9161.209@suse.de>
-In-Reply-To: <500E9161.209@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072413-5490-0000-0000-000001D7181F
+In-Reply-To: <1343109531.7412.47.camel@marge.simpson.net>
+References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
+	<1343109531.7412.47.camel@marge.simpson.net>
+Date: Tue, 24 Jul 2012 21:18:16 +0800
+Message-ID: <CAJd=RBC835W52nsXCqhM_4KR3CuLF9zijh3416LiJLybTuR_YA@mail.gmail.com>
+Subject: Re: [PATCH 00/34] Memory management performance backports for -stable V2
+From: Hillf Danton <dhillf@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Mel Gorman <mgorman@suse.de>, Stable <stable@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 05:43 PM, Alexander Graf wrote:
-> On 07/24/2012 10:53 AM, Raghavendra K T wrote:
->> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>
->> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
->> and Peter (HPA) for suggesting hypercall ABI addition.
->>
->> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->> ---
->> Please have a closer look at Hypercall ABI newly added
->>
->> Changes since last post:
->> - Added hypercall ABI (Peter)
->> - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
->>
->> TODO: We need to add history details of each hypercall as suggested by
->> HPA,
->> which I could not trace easily. Hope it is easy for hypercall authors
->>
->> Documentation/virtual/hypercalls.txt | 71
->> ++++++++++++++++++++++++++++++++++
->> 1 files changed, 71 insertions(+), 0 deletions(-)
->> create mode 100644 Documentation/virtual/hypercalls.txt
->>
->> diff --git a/Documentation/virtual/hypercalls.txt
->> b/Documentation/virtual/hypercalls.txt
->> new file mode 100644
->> index 0000000..caffc08
->> --- /dev/null
->> +++ b/Documentation/virtual/hypercalls.txt
->> @@ -0,0 +1,71 @@
->> +Hypercall ABI:
->> +=============
->> +A brief look at calling conventions of X86, S390 and PPC
->> +X86:
->> + KVM Hypercalls have a three-byte sequence of either the vmrun or the
->> vmmrun
->> + instruction. The hypervisor can replace it with instructions that are
->> + guaranteed to be supported.
->> +
->> + Up to four arguments may be passed in rbx, rcx, rdx, and rsi
->> respectively.
->> + The hypercall number should be placed in rax and the return value
->> will be
->> + placed in rax. No other registers will be clobbered unless
->> explicitly stated
->> + by the particular hypercall.
->> +
->> +S390:
->> + R2-R7 are used for parameters 1-6. In addition, R1 is used for
->> hypercall
->> + number. The return value is written to R2.
->> +
->> + S390 uses diagnose instruction as hypercall (0x500) along with
->> hypercall
->> + number in R1.
->> +
->> + PoewerPC:
+On Tue, Jul 24, 2012 at 1:58 PM, Mike Galbraith <efault@gmx.de> wrote:
+> FWIW, I'm all for performance backports.  They do have a downside though
+> (other than the risk of bugs slipping in, or triggering latent bugs).
 >
-> PowerPC
+> When the next enterprise kernel is built, marketeers ask for numbers to
+> make potential customers drool over, and you _can't produce any_ because
+> you wedged all the spiffy performance stuff into the crusty old kernel.
+>
+Well do your job please.
 
-Sorry for the typo.
-
->
->> + It uses R3-R10 and hypercall number in R11. R4-R11 are used as
->> output registers.
->> + Return value is placed in R3.
->> +
->> + KVM hypercalls uses 4 byte opcode, that are patched with
->> 'hypercall-instructions'
->> + property inside the device tree's /hypervisor node.
->> + For more information refer to Documentation/virtual/kvm/ppc-pv.txt
->
-> What exactly is this document supposed to cover? We have 3 different
-> hypercall ABIs in KVM on PowerPC:
-
-Thanks for the detailed information on PPC hypercalls.
-My intention was to cover KVM specific hypercalls here.
-
-Patch is wrongly generated against Documentation/virtual/ instead of
-Documentation/virtual/kvm will correct that.
-
-Information you have provided should be very useful in understanding
-PPC hypercalls. Do you wish to have (2), (3) below goto some doc?
-
-
-> 1) KVM hypercalls (ePAPR)
->
-> The ePAPR compliant hypercall implementation. This one is used for KVM
-> specific hypercalls. All hypercalls get a KVM vendor prefix (42) and
-> then the hypercall id. We also implement generic hypercalls here, like
-> the ePAPR idle hcall. The instruction sequence for these is listed in
-> the device tree, as you noted above. It's available on all targets.
->
-> 2) PAPR hypercalls
->
-> To run server PowerPC PAPR guests (-M pseries in QEMU), we need to
-> handle PAPR hypercalls. These are the same hypercalls that pHyp, the
-> POWER hypervisor implements. Some of them are handled in the kernel,
-> some are handled in user space. This is only available on book3s_64.
->
-> 3) OSI hypercalls
->
-> In parallel to QEMU, there is another user of KVM on PowerPC:
-> Mac-on-Linux. That project had its own hypercalls long before we came
-> along with KVM, so to maintain compatibility we also support their
-> hypercalls. All of these get forwarded to user space. This is only
-> useful on book3s_32, but can be used with book3s_64 as well.
->
->> +
->> +KVM Hypercalls Documentation
->> +===========================
->> +The template for each hypercall is:
->> +1. Hypercall name, value.
->> +2. Architecture(s)
->> +3. Status (deprecated, obsolete, active)
->> +4. Purpose
->> +
->> +1. KVM_HC_VAPIC_POLL_IRQ
->> +------------------------
->> +Value: 1
->
-> What are the value fields supposed to mean?
-
-Value field is just #define value of the hypercall in header.
-If that does not make much sense probably it can be dropped.
-
+	Suse 11 SP1 kernel panic on HP hardware
+	https://lkml.org/lkml/2012/7/24/136
