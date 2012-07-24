@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab2GXBPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:15:41 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49199 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755430Ab2GXBJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755432Ab2GXBJv (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 23 Jul 2012 21:09:51 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46932 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755147Ab2GXBJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 21:09:49 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <linux-kernel@vger.kernel.org>, <nico@linaro.org>, <will.deacon@arm.com>,
         <catalin.marinas@arm.com>, Cyril Chemparathy <cyril@ti.com>,
         Vitaly Andrianov <vitalya@ti.com>
-Subject: [RFC 23/23] ARM: keystone: add switch over to high physical address range
-Date: Mon, 23 Jul 2012 21:09:25 -0400
-Message-ID: <1343092165-9470-24-git-send-email-cyril@ti.com>
+Subject: [RFC 19/23] drivers: cma: fix addressing on PAE machines
+Date: Mon, 23 Jul 2012 21:09:21 -0400
+Message-ID: <1343092165-9470-20-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343092165-9470-1-git-send-email-cyril@ti.com>
 References: <1343092165-9470-1-git-send-email-cyril@ti.com>
@@ -23,292 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keystone platforms have their physical memory mapped at an address outside the
-32-bit physical range.  A Keystone machine with 16G of RAM would find its
-memory at 0x0800000000 - 0x0bffffffff.
+This patch fixes a couple of bugs that otherwise impair CMA functionality on
+PAE machines:
 
-For boot purposes, the interconnect supports a limited alias of some of this
-memory within the 32-bit addressable space (0x80000000 - 0xffffffff).  This
-aliasing is implemented in hardware, and is not intended to be used much
-beyond boot.  For instance, DMA coherence does not work when running out of
-this aliased address space.
+  - alignment must be a 64-bit type when running on systems with 64-bit
+    physical addresses.  If this is not the case, the limit calculation thunks
+    allocations down to an address range < 4G.
 
-Therefore, we've taken the approach of booting out of the low physical address
-range, and subsequently we switch over to the high range once we're safely
-inside machine specific territory.  This patch implements this switch over
-mechanism, which involves rewiring the TTBRs and page tables to point to the
-new physical address space.
+  - The allocated range is now being checked using dma_supported() instead of
+    hardcoding a 32-bit addressable limit.
 
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/Kconfig                             |    1 +
- arch/arm/boot/dts/keystone-sim.dts           |    6 +-
- arch/arm/configs/keystone_defconfig          |    1 +
- arch/arm/mach-keystone/include/mach/memory.h |   29 ++++++++
- arch/arm/mach-keystone/keystone.c            |   92 ++++++++++++++++++++++++++
- arch/arm/mach-keystone/platsmp.c             |   21 ++++++
- 6 files changed, 147 insertions(+), 3 deletions(-)
+ drivers/base/dma-contiguous.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5b82879..f970ee1 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -373,6 +373,7 @@ config ARCH_KEYSTONE
- 	select NEED_MACH_MEMORY_H
- 	select HAVE_SCHED_CLOCK
- 	select HAVE_SMP
-+	select ZONE_DMA if ARM_LPAE
- 	help
- 	  Support for boards based on the Texas Instruments Keystone family of
- 	  SoCs.
-diff --git a/arch/arm/boot/dts/keystone-sim.dts b/arch/arm/boot/dts/keystone-sim.dts
-index 118d631..afdef89 100644
---- a/arch/arm/boot/dts/keystone-sim.dts
-+++ b/arch/arm/boot/dts/keystone-sim.dts
-@@ -4,7 +4,7 @@
- / {
- 	model = "Texas Instruments Keystone 2 SoC";
- 	compatible = "ti,keystone-evm";
--	#address-cells = <1>;
-+	#address-cells = <2>;
- 	#size-cells = <1>;
- 	interrupt-parent = <&gic>;
- 
-@@ -13,11 +13,11 @@
- 	};
- 
- 	chosen {
--		bootargs = "console=ttyS0,115200n8 debug earlyprintk lpj=50000 rdinit=/bin/ash rw root=/dev/ram0 initrd=0x85000000,9M";
-+		bootargs = "console=ttyS0,115200n8 debug earlyprintk lpj=50000 rdinit=/bin/ash rw root=/dev/ram0 initrd=0x805000000,9M";
- 	};
- 
- 	memory {
--		reg = <0x80000000 0x8000000>;
-+		reg = <0x00000008 0x00000000 0x8000000>;
- 	};
- 
- 	cpus {
-diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
-index 5f71e66..8ea3b96 100644
---- a/arch/arm/configs/keystone_defconfig
-+++ b/arch/arm/configs/keystone_defconfig
-@@ -1,6 +1,7 @@
- CONFIG_EXPERIMENTAL=y
- CONFIG_BLK_DEV_INITRD=y
- CONFIG_ARCH_KEYSTONE=y
-+CONFIG_ARM_LPAE=y
- CONFIG_SMP=y
- CONFIG_ARM_ARCH_TIMER=y
- CONFIG_NR_CPUS=4
-diff --git a/arch/arm/mach-keystone/include/mach/memory.h b/arch/arm/mach-keystone/include/mach/memory.h
-index 7c78b1e..6404633 100644
---- a/arch/arm/mach-keystone/include/mach/memory.h
-+++ b/arch/arm/mach-keystone/include/mach/memory.h
-@@ -19,4 +19,33 @@
- #define MAX_PHYSMEM_BITS	36
- #define SECTION_SIZE_BITS	34
- 
-+#define KEYSTONE_LOW_PHYS_START		0x80000000ULL
-+#define KEYSTONE_LOW_PHYS_SIZE		0x80000000ULL /* 2G */
-+#define KEYSTONE_LOW_PHYS_END		(KEYSTONE_LOW_PHYS_START + \
-+					 KEYSTONE_LOW_PHYS_SIZE - 1)
-+
-+#define KEYSTONE_HIGH_PHYS_START	0x800000000ULL
-+#define KEYSTONE_HIGH_PHYS_SIZE		0x400000000ULL	/* 16G */
-+#define KEYSTONE_HIGH_PHYS_END		(KEYSTONE_HIGH_PHYS_START + \
-+					 KEYSTONE_HIGH_PHYS_SIZE - 1)
-+#ifdef CONFIG_ARM_LPAE
-+
-+#ifndef __ASSEMBLY__
-+
-+extern phys_addr_t  keystone_phys_offset;
-+
-+#define PLAT_PHYS_OFFSET keystone_phys_offset
-+
-+static inline phys_addr_t __virt_to_idmap(unsigned long x)
-+{
-+	return (phys_addr_t)(x) - CONFIG_PAGE_OFFSET +
-+		KEYSTONE_LOW_PHYS_START;
-+}
-+
-+#define virt_to_idmap(x)	__virt_to_idmap((unsigned long)(x))
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* CONFIG_ARM_LPAE */
-+
- #endif /* __ASM_MACH_MEMORY_H */
-diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
-index 650e202..f0f4a08 100644
---- a/arch/arm/mach-keystone/keystone.c
-+++ b/arch/arm/mach-keystone/keystone.c
-@@ -19,12 +19,20 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/of_address.h>
-+#include <linux/sched.h>
- 
- #include <asm/arch_timer.h>
- #include <asm/mach/map.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/time.h>
- #include <asm/hardware/gic.h>
-+#include <asm/setup.h>
-+#include <asm/pgtable.h>
-+#include <asm/pgalloc.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
-+#include <asm/cputype.h>
-+#include <asm/procinfo.h>
- 
- extern struct smp_ops keystone_smp_ops;
- 
-@@ -74,6 +82,86 @@ static const char *keystone_match[] __initconst = {
- 	NULL,
- };
- 
-+#ifdef CONFIG_ARM_LPAE
-+
-+phys_addr_t keystone_phys_offset  = KEYSTONE_LOW_PHYS_START;
-+
-+extern struct proc_info_list *lookup_processor_type(unsigned int);
-+
-+static void __init keystone_init_meminfo(void)
-+{
-+	unsigned long map_start, map_end;
-+	struct proc_info_list *procinfo;
-+	phys_addr_t mem_start, mem_end;
-+	pgd_t *pgd0, *pgdk;
-+	pud_t *pud0, *pudk;
-+	pmd_t *pmd0, *pmdk;
-+	phys_addr_t phys;
-+	pmdval_t pmdprot;
-+	int i;
-+
-+	BUG_ON(meminfo.nr_banks < 1);
-+
-+	mem_start = meminfo.bank[0].start;
-+	mem_end   = mem_start + meminfo.bank[0].size - 1;
-+
-+	/* nothing to do if we are running out of the <32-bit space */
-+	if (mem_start >= KEYSTONE_LOW_PHYS_START &&
-+	    mem_end   <= KEYSTONE_LOW_PHYS_END)
-+		return;
-+
-+	BUG_ON(mem_start < KEYSTONE_HIGH_PHYS_START ||
-+	       mem_end   > KEYSTONE_HIGH_PHYS_END);
-+
-+	/* remap kernel code and data */
-+	map_start = init_mm.start_code;
-+	map_end   = init_mm.brk;
-+
-+	/* get a handle on things -  */
-+	pgd0 = pgd_offset_k(0);
-+	pud0 = pud_offset(pgd0, 0);
-+	pmd0 = pmd_offset(pud0, 0);
-+
-+	pgdk = pgd_offset_k(map_start);
-+	pudk = pud_offset(pgdk, map_start);
-+	pmdk = pmd_offset(pudk, map_start);
-+
-+	procinfo = lookup_processor_type(read_cpuid_id());
-+	pmdprot  = procinfo->__cpu_mm_mmu_flags;
-+
-+	/* set the phys offset, all pa/va operations now use this */
-+	keystone_phys_offset = KEYSTONE_HIGH_PHYS_START;
-+
-+	/* remap level 1 table */
-+	for (i = 0; i < PTRS_PER_PGD; i++) {
-+		*pud0++ = __pud(__pa(pmd0) | PMD_TYPE_TABLE | L_PGD_SWAPPER);
-+		pmd0 += PTRS_PER_PMD;
-+	}
-+
-+	/* remap pmds for kernel mapping */
-+	phys = __pa(map_start) & PMD_MASK;
-+	do {
-+		*pmdk++ = __pmd(phys | pmdprot);
-+		phys += PMD_SIZE;
-+	} while (phys < map_end);
-+
-+	flush_cache_all();
-+	cpu_set_ttbr(0, __pa(pgd0));
-+	cpu_set_ttbr(1, __pa(pgd0) + TTBR1_OFFSET);
-+	local_flush_tlb_all();
-+
-+	pr_err("relocated to high address space\n");
-+}
-+
-+#else
-+
-+static void __init keystone_init_meminfo(void)
-+{
-+	/* nothing to do here */
-+}
-+
-+#endif
-+
- DT_MACHINE_START(KEYSTONE, "Keystone")
- 	smp_ops(keystone_smp_ops)
- 	.map_io		= keystone_map_io,
-@@ -82,5 +170,9 @@ DT_MACHINE_START(KEYSTONE, "Keystone")
- 	.handle_irq	= gic_handle_irq,
- 	.init_machine	= keystone_init,
- 	.dt_compat	= keystone_match,
-+	.init_meminfo	= keystone_init_meminfo,
-+#ifdef CONFIG_ZONE_DMA
-+	.dma_zone_size	= SZ_2G,
-+#endif
- 	.nr_irqs	= 480,
- MACHINE_END
-diff --git a/arch/arm/mach-keystone/platsmp.c b/arch/arm/mach-keystone/platsmp.c
-index 437659a..074fccb 100644
---- a/arch/arm/mach-keystone/platsmp.c
-+++ b/arch/arm/mach-keystone/platsmp.c
-@@ -24,6 +24,7 @@
- #include <asm/smp_ops.h>
- #include <asm/hardware/gic.h>
- #include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
- #include <asm/memory.h>
- 
- extern void secondary_startup(void);
-@@ -51,15 +52,35 @@ static void __init keystone_smp_prepare_cpus(unsigned int max_cpus)
- 	/* nothing for now */
- }
- 
-+#ifdef CONFIG_ARM_LPAE
-+static void __cpuinit keystone_secondary_initmem(void)
-+{
-+	pgd_t *pgd0;
-+
-+	pgd0 = pgd_offset_k(0);
-+	cpu_set_ttbr(1, __pa(pgd0) + TTBR1_OFFSET);
-+	local_flush_tlb_all();
-+}
-+#else
-+static void __cpuinit keystone_secondary_initmem(void)
-+{
-+}
-+#endif
-+
- static void __cpuinit keystone_secondary_init(unsigned int cpu)
+diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+index 78efb03..e10bd9a 100644
+--- a/drivers/base/dma-contiguous.c
++++ b/drivers/base/dma-contiguous.c
+@@ -234,7 +234,7 @@ int __init dma_declare_contiguous(struct device *dev, unsigned long size,
+ 				  phys_addr_t base, phys_addr_t limit)
  {
- 	gic_secondary_init(0);
-+	keystone_secondary_initmem();
- }
+ 	struct cma_reserved *r = &cma_reserved[cma_reserved_count];
+-	unsigned long alignment;
++	phys_addr_t alignment;
  
- static int __cpuinit
- keystone_boot_secondary(unsigned int cpu, struct task_struct *idle)
- {
-+#ifdef CONFIG_ARM_LPAE
-+	unsigned long *jump_ptr = phys_to_virt(0x8000001f0);
-+#else
- 	unsigned long *jump_ptr = phys_to_virt(0x800001f0);
-+#endif
- 
- 	jump_ptr[cpu] = virt_to_idmap(&secondary_startup);
- 	__cpuc_flush_dcache_area(jump_ptr, sizeof(jump_ptr) * 4);
+ 	pr_debug("%s(size %lx, base %08lx, limit %08lx)\n", __func__,
+ 		 (unsigned long)size, (unsigned long)base,
+@@ -271,7 +271,7 @@ int __init dma_declare_contiguous(struct device *dev, unsigned long size,
+ 		if (!addr) {
+ 			base = -ENOMEM;
+ 			goto err;
+-		} else if (addr + size > ~(unsigned long)0) {
++		} else if (!dma_supported(dev, addr + size)) {
+ 			memblock_free(addr, size);
+ 			base = -EINVAL;
+ 			goto err;
 -- 
 1.7.9.5
 
