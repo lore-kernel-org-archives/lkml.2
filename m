@@ -1,257 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab2GXO2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:28:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42183 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab2GXO2A (ORCPT
+	id S1755124Ab2GXOa3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:30:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59203 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab2GXOa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:28:00 -0400
-Date: Tue, 24 Jul 2012 07:20:59 -0700
-From: tip-bot for Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Message-ID: <tip-88b8dac0a14c511ff41486b83a8c3d688936eec0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        prashanth@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, prashanth@linux.vnet.ibm.com
-In-Reply-To: <4FE06CDB.2060605@linux.vnet.ibm.com>
-References: <4FE06CDB.2060605@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Improve balance_cpu()
-  to consider other cpus in its group as target of (pinned) task
-Git-Commit-ID: 88b8dac0a14c511ff41486b83a8c3d688936eec0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 24 Jul 2012 10:30:27 -0400
+Date: Tue, 24 Jul 2012 16:30:23 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: linux-kernel@vger.kernel.org, nsekhar@ti.com
+Subject: Re: [PATCH v2] pwm: Add support for configuring the PWM polarity
+Message-ID: <20120724143023.GA22293@avionic-0098.mockup.avionic-design.de>
+References: <1343138732-12972-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:21:05 -0700 (PDT)
+In-Reply-To: <1343138732-12972-1-git-send-email-avinashphilip@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:Erq3jkLy8twNYTefiTfJ/wwOO6wQWRzlV+MwzsStoUO
+ 35APHDGGR52yVXeh/uH/udHpoOsWJIeCJlpnYQzT1jByPU/A7f
+ 8SkhQ4siBBdd/cDrJ8z2tjJ5cfwWBfFltRuqFwYZtWjEhlepNT
+ c/VuJRbN5OGcE2Zh8SqTJIX2iiEGl+kvdXA6LP1j3KyYFUl0Kn
+ A+JxosXRGIbOhj3GXd2zQt7NgwhC4DV/yf1peHL6zCoYhOuSyw
+ EwiPUucE+7DHa/RHYLTuh3Bz6mztY3c0gDulslSFLdjC4n4zh5
+ MmPNNzXYwmBowoPmJjNCVc5nfd7Nxn9yYqbEia808dkVsB635a
+ GSjhXKARp9uX4G/F3NURvYaIHzBXc/ZYbLrJIQo0scQ0S2wBrV
+ 0N3F2AUZk+fqQjf5X062X3M/1c3mQ4SfkPoGBxw2JvQV0xu6JD
+ o/J7m
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  88b8dac0a14c511ff41486b83a8c3d688936eec0
-Gitweb:     http://git.kernel.org/tip/88b8dac0a14c511ff41486b83a8c3d688936eec0
-Author:     Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-AuthorDate: Tue, 19 Jun 2012 17:43:15 +0530
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 24 Jul 2012 13:58:06 +0200
 
-sched: Improve balance_cpu() to consider other cpus in its group as target of (pinned) task
+--SUOF0GtieIMvvwua
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Current load balance scheme requires only one cpu in a
-sched_group (balance_cpu) to look at other peer sched_groups for
-imbalance and pull tasks towards itself from a busy cpu. Tasks
-thus pulled by balance_cpu could later get picked up by cpus
-that are in the same sched_group as that of balance_cpu.
+On Tue, Jul 24, 2012 at 07:35:32PM +0530, Philip, Avinash wrote:
+> Some hardware supports inverting the polarity of the PWM signal. This
+> commit adds support to the PWM framework to allow users of the PWM API
+> to configure the polarity. Note that in order to reduce complexity,
+> changing the polarity of a PWM signal is only allowed while the PWM is
+> disabled.
+>=20
+> A practical example where this can prove useful is to simulate inversion
+> of the duty cycle. While inversion of polarity and duty cycle are not
+> exactly the same, the differences for most use-cases are negligible.
+>=20
+> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 
-This scheme however fails to pull tasks that are not allowed to
-run on balance_cpu (but are allowed to run on other cpus in its
-sched_group). That can affect fairness and in some worst case
-scenarios cause starvation.
+This looks good to me. I'll queue this for 3.7 once the 3.6 merge window
+closes.
 
-Consider a two core (2 threads/core) system running tasks as
-below:
+Thanks,
+Thierry
 
-          Core0            Core1
-         /     \          /     \
-	C0     C1	 C2     C3
-        |      |         |      |
-        v      v         v      v
-	F0     T1        F1     [idle]
-			 T2
+--SUOF0GtieIMvvwua
+Content-Type: application/pgp-signature
 
- F0 = SCHED_FIFO task (pinned to C0)
- F1 = SCHED_FIFO task (pinned to C2)
- T1 = SCHED_OTHER task (pinned to C1)
- T2 = SCHED_OTHER task (pinned to C1 and C2)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-F1 could become a cpu hog, which will starve T2 unless C1 pulls
-it. Between C0 and C1 however, C0 is required to look for
-imbalance between cores, which will fail to pull T2 towards
-Core0. T2 will starve eternally in this case. The same scenario
-can arise in presence of non-rt tasks as well (say we replace F1
-with high irq load).
+iQIcBAEBAgAGBQJQDrF/AAoJEN0jrNd/PrOhY9gP/3x5qKmO2yWz0cSFubxsjwFq
+/wC+PdTpZFoi0rb4Af+u2eeV2Y6sJPtdxycP2vKTf1+4V83HCpoFqn6IolvvPZiw
+s+HbYPB4bnnMZBZIWYk28GgGRM47AhyPj27TtrtOb9R/93DXZNaQgVxLgjQQmBvw
+lm0bUTdmq/AqkhWpcQOIF4L50Bw4usoOiPjtwqrur8G1YkpZQZeoYc4v4Mi4D6KM
+AOvGjpA2g4ONRsav+ETiedYuer6BD1yEzka77pjeOn/j6s9/lmroSKKU67/yB/r5
+TbavevE0le0Iju2nDJoZLVU4LDPexWFzZ8PP2MsLl1+X/fxHl63nuHPTRz3IIafA
+7VmUa94HTN5TBAXyIwnpPDPdPjljKoerZfqRSccXF2NZeGx38ZhG2VbLMX6EL9jP
+rACbY4sQ6yhDXfRSIqLxojxbsW40pTOSRZOoYELcQzXAbE/TxYMLIUGk7UTIHMBB
+PO+LahCBObTYr1gQRM4hcU7zpkKSAtUA0hWALNO30Nu10FpmI2rSFDC+/A3BnJXB
+A+sEEaJWYUb4SSi7APNBpZLGSz8voILh21eMUeW2wRFk9LeOACH2/4kWt4BKh/th
+mqQznnt6M6bfHbIwTBRtxQeziHcMYPjfKaQ0WiES3UNa6cciqojXRFXROOaD1/Ui
+9z7iAl20Ig43E4lQKRbq
+=XXFx
+-----END PGP SIGNATURE-----
 
-We tackle this problem by having balance_cpu move pinned tasks
-to one of its sibling cpus (where they can run). We first check
-if load balance goal can be met by ignoring pinned tasks,
-failing which we retry move_tasks() with a new env->dst_cpu.
-
-This patch modifies load balance semantics on who can move load
-towards a given cpu in a given sched_domain.
-
-Before this patch, a given_cpu or a ilb_cpu acting on behalf of
-an idle given_cpu is responsible for moving load to given_cpu.
-
-With this patch applied, balance_cpu can in addition decide on
-moving some load to a given_cpu.
-
-There is a remote possibility that excess load could get moved
-as a result of this (balance_cpu and given_cpu/ilb_cpu deciding
-*independently* and at *same* time to move some load to a
-given_cpu). However we should see less of such conflicting
-decisions in practice and moreover subsequent load balance
-cycles should correct the excess load moved to given_cpu.
-
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4FE06CDB.2060605@linux.vnet.ibm.com
-[ minor edits ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 74 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f9f9aa0..22321db 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3054,6 +3054,7 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
- 
- #define LBF_ALL_PINNED	0x01
- #define LBF_NEED_BREAK	0x02
-+#define LBF_SOME_PINNED 0x04
- 
- struct lb_env {
- 	struct sched_domain	*sd;
-@@ -3064,6 +3065,8 @@ struct lb_env {
- 	int			dst_cpu;
- 	struct rq		*dst_rq;
- 
-+	struct cpumask		*dst_grpmask;
-+	int			new_dst_cpu;
- 	enum cpu_idle_type	idle;
- 	long			imbalance;
- 	unsigned int		flags;
-@@ -3131,9 +3134,31 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	 * 3) are cache-hot on their current CPU.
- 	 */
- 	if (!cpumask_test_cpu(env->dst_cpu, tsk_cpus_allowed(p))) {
-+		int new_dst_cpu;
-+
- 		schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
-+
-+		/*
-+		 * Remember if this task can be migrated to any other cpu in
-+		 * our sched_group. We may want to revisit it if we couldn't
-+		 * meet load balance goals by pulling other tasks on src_cpu.
-+		 *
-+		 * Also avoid computing new_dst_cpu if we have already computed
-+		 * one in current iteration.
-+		 */
-+		if (!env->dst_grpmask || (env->flags & LBF_SOME_PINNED))
-+			return 0;
-+
-+		new_dst_cpu = cpumask_first_and(env->dst_grpmask,
-+						tsk_cpus_allowed(p));
-+		if (new_dst_cpu < nr_cpu_ids) {
-+			env->flags |= LBF_SOME_PINNED;
-+			env->new_dst_cpu = new_dst_cpu;
-+		}
- 		return 0;
- 	}
-+
-+	/* Record that we found atleast one task that could run on dst_cpu */
- 	env->flags &= ~LBF_ALL_PINNED;
- 
- 	if (task_running(env->src_rq, p)) {
-@@ -4213,7 +4238,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 			struct sched_domain *sd, enum cpu_idle_type idle,
- 			int *balance)
- {
--	int ld_moved, active_balance = 0;
-+	int ld_moved, cur_ld_moved, active_balance = 0;
-+	int lb_iterations, max_lb_iterations;
- 	struct sched_group *group;
- 	struct rq *busiest;
- 	unsigned long flags;
-@@ -4223,11 +4249,13 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.sd		= sd,
- 		.dst_cpu	= this_cpu,
- 		.dst_rq		= this_rq,
-+		.dst_grpmask    = sched_group_cpus(sd->groups),
- 		.idle		= idle,
- 		.loop_break	= sched_nr_migrate_break,
- 	};
- 
- 	cpumask_copy(cpus, cpu_active_mask);
-+	max_lb_iterations = cpumask_weight(env.dst_grpmask);
- 
- 	schedstat_inc(sd, lb_count[idle]);
- 
-@@ -4253,6 +4281,7 @@ redo:
- 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
- 
- 	ld_moved = 0;
-+	lb_iterations = 1;
- 	if (busiest->nr_running > 1) {
- 		/*
- 		 * Attempt to move tasks. If find_busiest_group has found
-@@ -4270,7 +4299,13 @@ more_balance:
- 		double_rq_lock(this_rq, busiest);
- 		if (!env.loop)
- 			update_h_load(env.src_cpu);
--		ld_moved += move_tasks(&env);
-+
-+		/*
-+		 * cur_ld_moved - load moved in current iteration
-+		 * ld_moved     - cumulative load moved across iterations
-+		 */
-+		cur_ld_moved = move_tasks(&env);
-+		ld_moved += cur_ld_moved;
- 		double_rq_unlock(this_rq, busiest);
- 		local_irq_restore(flags);
- 
-@@ -4282,8 +4317,43 @@ more_balance:
- 		/*
- 		 * some other cpu did the load balance for us.
- 		 */
--		if (ld_moved && this_cpu != smp_processor_id())
--			resched_cpu(this_cpu);
-+		if (cur_ld_moved && env.dst_cpu != smp_processor_id())
-+			resched_cpu(env.dst_cpu);
-+
-+		/*
-+		 * Revisit (affine) tasks on src_cpu that couldn't be moved to
-+		 * us and move them to an alternate dst_cpu in our sched_group
-+		 * where they can run. The upper limit on how many times we
-+		 * iterate on same src_cpu is dependent on number of cpus in our
-+		 * sched_group.
-+		 *
-+		 * This changes load balance semantics a bit on who can move
-+		 * load to a given_cpu. In addition to the given_cpu itself
-+		 * (or a ilb_cpu acting on its behalf where given_cpu is
-+		 * nohz-idle), we now have balance_cpu in a position to move
-+		 * load to given_cpu. In rare situations, this may cause
-+		 * conflicts (balance_cpu and given_cpu/ilb_cpu deciding
-+		 * _independently_ and at _same_ time to move some load to
-+		 * given_cpu) causing exceess load to be moved to given_cpu.
-+		 * This however should not happen so much in practice and
-+		 * moreover subsequent load balance cycles should correct the
-+		 * excess load moved.
-+		 */
-+		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
-+				lb_iterations++ < max_lb_iterations) {
-+
-+			this_rq		 = cpu_rq(env.new_dst_cpu);
-+			env.dst_rq	 = this_rq;
-+			env.dst_cpu	 = env.new_dst_cpu;
-+			env.flags	&= ~LBF_SOME_PINNED;
-+			env.loop	 = 0;
-+			env.loop_break	 = sched_nr_migrate_break;
-+			/*
-+			 * Go back to "more_balance" rather than "redo" since we
-+			 * need to continue with same src_cpu.
-+			 */
-+			goto more_balance;
-+		}
- 
- 		/* All tasks on this runqueue were pinned by CPU affinity */
- 		if (unlikely(env.flags & LBF_ALL_PINNED)) {
+--SUOF0GtieIMvvwua--
