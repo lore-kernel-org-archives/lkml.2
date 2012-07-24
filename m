@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab2GXHwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 03:52:25 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55324 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084Ab2GXHwY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 03:52:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL 00/15] arm-soc: changes for v3.6
-Date: Tue, 24 Jul 2012 07:51:38 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, "Mark A. Greer" <mgreer@animalcreek.com>,
-        Paul Walmsley <paul@pwsan.com>
-References: <1343075561-17446-1-git-send-email-arnd@arndb.de> <CA+55aFyObNFgsaVOsjVOcH+aLjDyOgcqpvckM29T3dvugekVwg@mail.gmail.com>
-In-Reply-To: <CA+55aFyObNFgsaVOsjVOcH+aLjDyOgcqpvckM29T3dvugekVwg@mail.gmail.com>
+	id S1755549Ab2GXHzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 03:55:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6397 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755084Ab2GXHzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 03:55:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="197235572"
+Date: Tue, 24 Jul 2012 15:54:59 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: rajman mekaco <rajman.mekaco@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [QUERY]: Understanding the calculations in mm/page-writeback.c
+Message-ID: <20120724075459.GB9519@localhost>
+References: <CAMYGaxpusZsvVYdruSe4cYr9FWsAs2Eu-7tpoUJoU_GyL1QmXA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207240751.39111.arnd@arndb.de>
-X-Provags-ID: V02:K0:bhlh4QhUaDTq5Yo+M25yMMaiWc/YbDXdVDCCqYRMGxL
- jfsjUxYhCcXlpL7SPQO3kCvWkqf4CvhyRXYeQDLPLD6Bod5Ev7
- MNmT3buj/wRICn5GzUzBEnr1jFiPPFR5G4F3UoC1qNLWvMrcCu
- r4Dc1QFbvYNTspdzIw4uarBI+ba51jfCiC+pNAgd2Yqzhg8CDd
- de5jNp20gNisIbZVoEXmKPueB5bJQxVQ5VRlGOy6xbTRJGhil7
- trf9k+M+4L8yLItUoF9Zh9JFgK/r9L0ul3t4iPZXEV8BVfy89R
- qP4SRdY9SFYT80EQ2ysxAUecT7YPLryh3rCbmtJ5zC41yQls+I
- gk5I95qw+ynI+HxYEPkw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMYGaxpusZsvVYdruSe4cYr9FWsAs2Eu-7tpoUJoU_GyL1QmXA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 July 2012, Linus Torvalds wrote:
+Hi Rajman,
 
-> In your "for-linus" branch, "&mpu_3xxx_clkdm" remains in the
-> clockdomains_common[] array. In my merge, it is gone. But I think I
-> did the merge correctly, and you did it wrong. HOWEVER, I don't know
-> the code, maybe there is some subtle reason why you did it like you
-> did.
-
-Yes, I think you are right now that I look at it again. Paul Walmsley
-can have another look at the merge and send an update if we are both
-missing something now.
-
-> Your "for-linus" branch also had that
+On Sun, Jul 22, 2012 at 09:18:57PM +0530, rajman mekaco wrote:
+> Hi,
 > 
->    arch/arm/arm-soc-for-next-contents.txt
+> I am trying to understand the calculations in mm/page-writeback.c but
+> I am falling short of theoretical knowledge.
 > 
-> file that shouldn't have been there, but whatever.
+> What online (or otherwise) reading material can be used to fully
+> understand the maths formulae in mm/page-writeback.c ?
 
-That's the file I use for communication with Olof about stuff we
-merge. I briefly considered rebuilding a branch for your reference
-without it, but since you always do the merges yourself I figured there
-would be no need.
-We do leave this file in the for-next branch because it helps some
-people sending us patches to see what the existing branches and
-interdependencies are.
+Here is the slides I used in LinuxCon Japan 2012, please feel free to
+ask more specific questions on it :)
 
-> Anyway, apart from that "please check" comment, I also have small
-> complaint: your pull requests didn't actually point to the tags, they
-> pointed to the next/xyz commits. So every time I did a pull, I had to
-> change "next/xyz" to "tags/xyz". That's just annoying make-work. I
-> think it's because you just said "xyz" to the git request-pull script,
-> and then git had to pick one of the things and picked next. Please
-> disambiguate by just saying "tags/xyz" explicitly.
+http://events.linuxfoundation.org/images/stories/pdf/lcjp2012_wu.pdf
 
-I spent too much time fiddling with my scripts again in an attempt to
-get closer to the regular git-request-pull version. The older version
-got this right, but unfortunately I removed the part where I manually
-print the right pull address because that had caused other problems
-before.
-I did the trivial fix you suggested now.
-
-	Arnd
+Thanks,
+Fengguang
