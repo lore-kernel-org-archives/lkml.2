@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab2GXPwg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:52:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63338 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755468Ab2GXPwf (ORCPT
+	id S1755689Ab2GXPyS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:54:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34885 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab2GXPyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 11:52:35 -0400
+	Tue, 24 Jul 2012 11:54:16 -0400
+Date: Tue, 24 Jul 2012 08:54:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, olaf@aepfle.de, apw@canonical.com,
+        netdev@vger.kernel.org, ben@decadent.org.uk
+Subject: Re: [PATCH 00/17] drivers: hv: kvp
+Message-ID: <20120724155412.GA23918@kroah.com>
+References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <5000259D.9020303@canonical.com>
-References: <5000259D.9020303@canonical.com>
-Date: Tue, 24 Jul 2012 23:52:34 +0800
-Message-ID: <CAM_iQpVPzB69R1_4E_J5Yw=d1TncqHe0+dWEwOufQniNcpBVtg@mail.gmail.com>
-Subject: Re: x86/mm: Limit 2/4M size calculation to x86_32
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343145672-3641-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 9:41 PM, Stefan Bader
-<stefan.bader@canonical.com> wrote:
-> I was bisecting a problem on 64bit where any attempt to cause a crash kernel to
-> boot would hang. The bisect ended up on commit 722bc6b (x86/mm: Fix the size
-> calculation of mapping tables) and somehow, looking at the calling function and
-> the ranges printed on boot, I think the calculations should only be done in the
-> 32bit case.
->
-> On 64bit:
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x77e87fff]
-> [    0.000000]  [mem 0x00000000-0x77dfffff] page 2M
-> [    0.000000]  [mem 0x77e00000-0x77e87fff] page 4k
->
-> Attached patch would fix this if you agree with it. Thanks.
->
-> -Stefan
->
->
-> From 6b679d1af20656929c0e829f29eed60b0a86a74f Mon Sep 17 00:00:00 2001
-> From: Stefan Bader <stefan.bader@canonical.com>
-> Date: Fri, 13 Jul 2012 15:16:33 +0200
-> Subject: [PATCH] x86/mm: Limit 2/4M size calculation to x86_32
->
-> commit 722bc6b (x86/mm: Fix the size calculation of mapping tables)
-> did modify the extra space calculation for mapping tables in order
-> to make up for the first 2/4M memory range using 4K pages.
-> However this setup is only used when compiling for 32bit. On 64bit
-> there is only the trailing area of 4K pages (which is already added).
->
-> The code was already adapted once for things went wrong on a 8TB
-> machine (bd2753b x86/mm: Only add extra pages count for the first memory
-> range during pre-allocation early page table space), but it looks a bit
-> like it currently would overdo things for 64bit.
-> I only noticed while bisecting for the reason I could not make a crash
-> kernel boot (which ended up on this patch).
->
-> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-> Cc: WANG Cong <xiyou.wangcong@gmail.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Tejun Heo <tj@kernel.org>
+On Tue, Jul 24, 2012 at 09:01:12AM -0700, K. Y. Srinivasan wrote:
+> This patchset expands the KVP (Key Value Pair) functionality to
+> implement the mechanism to GET/SET IP addresses in the guest. This
+> functionality is used in Windows Server 2012 to implement VM
+> replication functionality. The way IP configuration information
+> is managed is distro specific. Based on the feedback I have gotten
+> from Olaf, Greg, Steve, Ben and Mairus, I have chosen to seperate
+> distro specific code from this patch-set. Most of the GET operation
+> can be implemented in a way that is completely distro independent and
+> I have implemented that as such and is included in this patch-set.
+> Some of the attributes that can only be fetched in a distro
+> dependent way as well the mechanism for configuring an interface
+> (the SET operation) that is clearly distro specific is to be
+> implemented via external scripts that will be invoked via the KVP
+> code. We define here the interface to these scripts.
+> 
+> Adding support for IP injection resulted in some changes to the
+> protocol between the user level daemon and the kernel driver.
+> These changes have been implemented in way that would retain
+> compatibility with older daemons. I would like to thank Olaf and
+> Greg for pointing out the compatibility issue.
 
-Acked-by: Cong Wang <xiyou.wangcong@gmail.com>
+Due to this being the middle of the merge window, I will not be able to
+look at this until after 3.6-rc1 is out.
 
-Sorry for that I was not aware of x86_64 is different with x86 in the
-first 2/4M.
+greg k-h
