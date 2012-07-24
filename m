@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab2GXP33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:29:29 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:36465 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab2GXP32 (ORCPT
+	id S1755387Ab2GXP3x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:29:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46718 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755452Ab2GXP3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 11:29:28 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>,
-        David Rientjes <rientjes@google.com>,
-        Brad Spengler <spender@grsecurity.net>
-Cc: Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH v2 0/2] proc: /proc/<pid>/environ offset fixes
-Date: Tue, 24 Jul 2012 16:29:00 +0100
-Message-Id: <1343143742-31229-1-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.1
+	Tue, 24 Jul 2012 11:29:52 -0400
+Date: Tue, 24 Jul 2012 17:29:34 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, swarren@nvidia.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Colin Cross <ccross@android.com>
+Subject: Re: [PATCH 5/5] i2c: tegra: convert normal suspend/resume to *_noirq
+Message-ID: <20120724152934.GA25942@pengutronix.de>
+References: <1341919244-23327-1-git-send-email-ldewangan@nvidia.com>
+ <1341919244-23327-6-git-send-email-ldewangan@nvidia.com>
+ <500D96E6.4060507@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <500D96E6.4060507@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-This is the V2 to correctly check offsets on /proc/<pid>/environ before
-reading. This was previously discussed here:
-http://lkml.org/lkml/2012/7/22/79
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Due to incorrect offset checks, currently one can read from aribtrary
-addresses on /proc/<pid>/environ, not only the environment address range
-as shown here (the same thread):
-http://lkml.org/lkml/2012/7/22/163
+On Mon, Jul 23, 2012 at 12:24:38PM -0600, Stephen Warren wrote:
+> On 07/10/2012 05:20 AM, Laxman Dewangan wrote:
+> > To provide the late suspend and early resume for i2c
+> > driver, convert the suspend/resume as
+> > 	suspend-> suspend_noirq
+> > 	resume -> resume_noirq
+> >=20
+> > Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+>=20
+> Why do we need this change?
+>=20
+> IIRC, I proposed it before solely to solve some suspend/resume ordering
+> issues, and Colin Cross NAKd it. These days, deferred probe should make
+> this change unnecessary.
+>=20
+> Unless there's a really good reason for this change, I'd tend to request
+> reverting it.
 
-The bug is in environ_read().
+I will drop it from my tree and exclude it from my pull request. Please
+resend if it should go in later.
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-That first patch was not complete as noted by Oleg Nestrov, since even
-with positive offsets we can perhaps overflow the address from where to
-read the environment variables, or perhaps we can make multiple lseek()
-calls with a positive offset set to 0x7fffffff, this will pass the
-fs/read_write.c:lseek_execute() checks, and one can make the
-'mm->env_addr + offset' point to another VMA. This will make
-/proc/<pid>/environ to act like /proc/<pid>/mem.
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The first version removed only negative offsets which when converted to
-unsigned long will overflow the 'mm->env_addr + offset' the address from
-where to start to read the environment variables, and will also pass all
-the fs/read_write.c:lseek_execute() and environ_read() checks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-As suggested by Oleg Nesterov this version makes sure to fix the offset
-checks, then it removes negative offsets support on /proc/<pid>/environ
-since it does not need them.
+iEYEARECAAYFAlAOv14ACgkQD27XaX1/VRvV3wCfcHSaErshHwP4cAd+V1ysV+8M
+i9sAn1pSEwrBjkeb/zrWtlZ0zYvi4gNl
+=goUI
+-----END PGP SIGNATURE-----
 
-
-Thanks to patch 'proc: clean up /proc/<pid>/environ handling'
-commit b409e578d9a4ec95913e ,this is not a security issue since at
-->open() there is: the ptrace check + save the current 'mm' for next
-operations.
-
-
-Djalal Harouni (2):
-  proc: environ_read() make sure offset points to environment address range
-  proc: do not allow negative offsets on /proc/<pid>/environ
-
- fs/proc/base.c |   22 +++++++++++++---------
-  1 files changed, 13 insertions(+), 9 deletions(-)
-
-
-V2:
- * Added the [PATCH 1/2] to make sure that the offset points to the
-   environment address range as suggested by Oleg Nesterov.
- * Updated the [PATCH 2/2] changelog entry since we have added [PATCH 1/2]
+--fdj2RfSjLxBAspz7--
