@@ -1,145 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab2GXNKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:10:07 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37290 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab2GXNKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:10:05 -0400
+	id S1754219Ab2GXNPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:15:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21644 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754001Ab2GXNPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 09:15:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="170704158"
+Date: Tue, 24 Jul 2012 16:15:27 +0300
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: Masatake YAMATO <yamato@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH v3 1/8] bluetooth: /proc/net/ entries for bluetooth
+ protocols
+Message-ID: <20120724131520.GC11981@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+	Masatake YAMATO <yamato@redhat.com>, linux-kernel@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org
+References: <20120629.020253.963694178693689545.yamato@redhat.com>
+ <20120710140400.GA15795@aemeltch-MOBL1>
+ <20120711.135831.1712662939552441872.yamato@redhat.com>
+ <20120724.220831.1797978247249215593.yamato@redhat.com>
 MIME-Version: 1.0
-Date: Tue, 24 Jul 2012 22:10:04 +0900
-Message-ID: <CAPOY1bUqm1Lb4ppf5UYqUA+cbK3_sHE=zJu3x6-UNb+uKiYiWg@mail.gmail.com>
-Subject: [PATCH] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-From: Andy Lee <raphael.andy.lee@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724.220831.1797978247249215593.yamato@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that Extended CSD register(the size of this register
-is larger than CID/CSD) will be referenced more frequently as more
-fields have been added to Extended CSD.
-This patch is intended to avoid the use of bounce buffer for reading
-Extended CSD register in mmc_send_cxd_data(). It seems that it is
-not a good option to double the memory used.
+Hi Masatake,
 
-Signed-off-by: kyungsik.lee <kyungsik.lee@lge.com>
----
- drivers/mmc/core/mmc_ops.c |   45 ++++++++++++++++++++++++++++---------------
- 1 files changed, 29 insertions(+), 16 deletions(-)
+On Tue, Jul 24, 2012 at 10:08:31PM +0900, Masatake YAMATO wrote:
+> (I have got no reply since 11th Jul. So I resend this mail here.
+>  Please, review this patch and merge it if no problem.)
+> 
+> (The patch sets are rebased to bluetooth-next. Unnecessary white
+>  spaces are trimmed.)
+> 
+> lsof command can tell the type of socket processes are using.
+> Internal lsof uses inode numbers on socket fs to resolve the type of
+> sockets. Files under /proc/net/, such as tcp, udp, unix, etc provides
+> such inode information.
+> 
+> Unfortunately bluetooth related protocols don't provide such inode
+> information. This patch series introduces /proc/net files for the protocols.
+> 
+> This patch against af_bluetooth.c provides facility to the implementation
+> of protocols. This patch extends bt_sock_list and introduces two exported
+> function bt_procfs_init, bt_procfs_cleanup.
+> 
+> The type bt_sock_list is already used in some of implementation of
+> protocols. bt_procfs_init prepare seq_operations which converts
+> protocol own bt_sock_list data to protocol own proc entry when the
+> entry is accessed.
+> 
+> What I, lsof user, need is just inode number of bluetooth
+> socket. However, people may want more information. The bt_procfs_init
+> takes a function pointer for customizing the show handler of
+> seq_operations.
+>  
+> Signed-off-by: Masatake YAMATO <yamato@redhat.com>
 
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index 0ed2cc5..b1a7df3 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -238,14 +238,6 @@ mmc_send_cxd_data(struct mmc_card *card, struct
-mmc_host *host,
- 	struct mmc_command cmd = {0};
- 	struct mmc_data data = {0};
- 	struct scatterlist sg;
--	void *data_buf;
--
--	/* dma onto stack is unsafe/nonportable, but callers to this
--	 * routine normally provide temporary on-stack buffers ...
--	 */
--	data_buf = kmalloc(len, GFP_KERNEL);
--	if (data_buf == NULL)
--		return -ENOMEM;
+Tested-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com> 
 
- 	mrq.cmd = &cmd;
- 	mrq.data = &data;
-@@ -266,7 +258,7 @@ mmc_send_cxd_data(struct mmc_card *card, struct
-mmc_host *host,
- 	data.sg = &sg;
- 	data.sg_len = 1;
-
--	sg_init_one(&sg, data_buf, len);
-+	sg_init_one(&sg, buf, len);
-
- 	if (opcode == MMC_SEND_CSD || opcode == MMC_SEND_CID) {
- 		/*
-@@ -280,9 +272,6 @@ mmc_send_cxd_data(struct mmc_card *card, struct
-mmc_host *host,
-
- 	mmc_wait_for_req(host, &mrq);
-
--	memcpy(buf, data_buf, len);
--	kfree(data_buf);
--
- 	if (cmd.error)
- 		return cmd.error;
- 	if (data.error)
-@@ -294,24 +283,37 @@ mmc_send_cxd_data(struct mmc_card *card, struct
-mmc_host *host,
- int mmc_send_csd(struct mmc_card *card, u32 *csd)
- {
- 	int ret, i;
-+	u32 *csd_t;
-
- 	if (!mmc_host_is_spi(card->host))
- 		return mmc_send_cxd_native(card->host, card->rca << 16,
- 				csd, MMC_SEND_CSD);
-
--	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
-+	csd_t = kmalloc(16, GFP_KERNEL);
-+	if (!csd_t)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_t, 16);
- 	if (ret)
--		return ret;
-+		goto err;
-+
-+	memcpy(csd, csd_t, 16);
-
- 	for (i = 0;i < 4;i++)
- 		csd[i] = be32_to_cpu(csd[i]);
-
-+	kfree(csd_t);
- 	return 0;
-+
-+err:
-+	kfree(csd_t);
-+	return ret;
- }
-
- int mmc_send_cid(struct mmc_host *host, u32 *cid)
- {
- 	int ret, i;
-+	u32 *cid_t;
-
- 	if (!mmc_host_is_spi(host)) {
- 		if (!host->card)
-@@ -320,14 +322,25 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
- 				cid, MMC_SEND_CID);
- 	}
-
--	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
-+	cid_t = kmalloc(16, GFP_KERNEL);
-+	if (!cid_t)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_t, 16);
- 	if (ret)
--		return ret;
-+		goto err;
-+
-+	memcpy(cid, cid_t, 16);
-
- 	for (i = 0;i < 4;i++)
- 		cid[i] = be32_to_cpu(cid[i]);
-
-+	kfree(cid_t);
- 	return 0;
-+
-+err:
-+	kfree(cid_t);
-+	return ret;
- }
-
- int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
--- 
-1.7.0.4
+Best regards 
+Andrei Emeltchenko 
