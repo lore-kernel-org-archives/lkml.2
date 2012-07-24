@@ -1,47 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab2GXPzk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:55:40 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53230 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab2GXPzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 11:55:39 -0400
-From: Vivek Trivedi <vtrivedi018@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kevin McKinney <klmckinney1@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Vivek Trivedi <vtrivedi018@gmail.com>, Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH] staging: bcm: use SEEK_SET instead of 0 in vfs_llseek
-Date: Tue, 24 Jul 2012 21:25:04 +0530
-Message-Id: <1343145304-4555-1-git-send-email-vtrivedi018@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755818Ab2GXPz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:55:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52411 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755790Ab2GXPz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 11:55:58 -0400
+Message-ID: <1343145331.16290.45.camel@cr0>
+Subject: Re: [PATCH] x86: revert "x86: Fix S4 regression"
+From: Cong Wang <amwang@redhat.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: dyoung@redhat.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        xiyou.wangcong@gmail.com, hpa@zytor.com, rjw@sisk.pl,
+        yinghai.lu@oracle.com, tiwai@suse.de, kexec@lists.infradead.org
+Date: Tue, 24 Jul 2012 23:55:31 +0800
+In-Reply-To: <500D340F.5080801@jp.fujitsu.com>
+References: <1339478463-31172-1-git-send-email-amwang@redhat.com>
+	 <5004D8BF.6050205@jp.fujitsu.com> <500D20A1.1030800@redhat.com>
+	 <500D340F.5080801@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They're equivalent, but SEEK_SET seems more informative...
+On Mon, 2012-07-23 at 20:22 +0900, Takao Indoh wrote:
+> (2012/07/23 19:00), Dave Young wrote:
+> > On 07/17/2012 11:15 AM, Takao Indoh wrote:
+> > 
+> >> Hi Cong,
+> >>
+> >> When I tested kdump with 3.5.0-rc6 kernel, I found a problem of kdump
+> >> kernel's panic in find_early_table_space().
+> >>
+> >> init_memory_mapping: [mem 0x00000000-0x36ffafff]
+> >> Kernel panic - not syncing: Cannot find space for the kernel page tables
+> >> Pid: 0, comm: swapper Not tainted 3.5.0-rc6 #17
+> >> Call Trace:
+> >>   [<ffffffff8158549b>] panic+0xb8/0x1c8
+> >>   [<ffffffff8158565d>] ? printk+0x48/0x4a
+> >>   [<ffffffff8157304c>] init_memory_mapping+0x46c/0x530
+> >>   [<ffffffff818a73c7>] setup_arch+0x669/0xb0e
+> >>   [<ffffffff8158565d>] ? printk+0x48/0x4a
+> >>   [<ffffffff818a3a1f>] start_kernel+0x9b/0x34a
+> >>   [<ffffffff818a332d>] x86_64_start_reservations+0x131/0x136
+> >>   [<ffffffff818a341f>] x86_64_start_kernel+0xed/0xf4
+> >>
+> >> In find_early_table_space(), a kernel tries to find free area below 512M
+> >> for pgtable using memblock_find_in_range, but it fails because kdump
+> >> kernel does not have enough free space below 512M due to the memmap
+> >> restriction. This is the memmap option specified against kdump kernel
+> >> when crashkernel=128M.
+> >>
+> >> memmap=560K@64K memmap=130492K@770608K
+> >>
+> >> Only 560KB area is available and it is not sufficient for pgtable (it
+> >> seems that about 1.8MB area is needed for pgtable). This problem is
+> >> fixed by your revert patch. I hope this patch gets merged.
+> > 
+> > 
+> > I can reproduce this issue as well, probably related to some x86 mm init
+> > commits, this alloc failure does not happen with reverting below commits:
+> > 
+> > bd2753b2dda7bb43c7468826de75f49c6a7e8965
+> > 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> Yeah, my result of bisect is as follows and at first I thought the
+> commit 722bc6 caused this regression.
+> 
+> 722bc6b16771ed80871e1fd81c86d3627dda2ac8 is the first bad commit
+> commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> Author: WANG Cong <xiyou.wangcong@gmail.com>
+> Date:   Mon Mar 5 15:05:13 2012 -0800
+> 
+> IIUC, this commit just fixes a bug of counting pgtable entries. As the
+> result, another problem came up to the surface. In the case of my
+> machine(16GB memory), before applying 722bc6, find_early_table_space()
+> requests about 12KB free area and it can be got from 560K@64K area
+> luckily. I think the size find_early_table_space() requests was a bug.
+> After the bug is fixed by the commit 722bc6, find_early_table_space()
+> requires 1.8MB area and it fails as I wrote.
 
-Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
----
- drivers/staging/bcm/Misc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks for tracking this, Takao!
 
-diff --git a/drivers/staging/bcm/Misc.c b/drivers/staging/bcm/Misc.c
-index 8223a69..8fab3ec 100644
---- a/drivers/staging/bcm/Misc.c
-+++ b/drivers/staging/bcm/Misc.c
-@@ -203,7 +203,7 @@ static int BcmFileDownload(PMINI_ADAPTER Adapter, const char *path, unsigned int
- 	}
- 	oldfs = get_fs();
- 	set_fs(get_ds());
--	vfs_llseek(flp, 0, 0);
-+	vfs_llseek(flp, 0, SEEK_SET);
- 	set_fs(oldfs);
- 	if (Adapter->bcm_file_readback_from_chip(Adapter->pvInterfaceAdapter, flp, loc)) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "Failed to read back firmware!");
--- 
-1.7.1
+I bet you are using x86_64 not x86 PAE? If so, could you try this patch
+https://patchwork.kernel.org/patch/1195751/
+? I already reviewed it.
+
+Sorry for the trouble!
+
 
