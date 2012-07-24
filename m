@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab2GXU7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:59:34 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1598 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755173Ab2GXU7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:59:32 -0400
-X-Greylist: delayed 1718 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jul 2012 16:59:32 EDT
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net
-Subject: [PATCH] ene_ub6250: Use macros for firmware names
-Date: Tue, 24 Jul 2012 14:31:09 -0600
-Message-Id: <1343161869-129765-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932113Ab2GXVBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 17:01:36 -0400
+Received: from smtp201.iad.emailsrvr.com ([207.97.245.201]:41065 "EHLO
+	smtp201.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab2GXVBe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 17:01:34 -0400
+X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jul 2012 17:01:34 EDT
+From: Peter Hurley <peter@hurleysoftware.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Jul 2012 16:51:12 -0400
+Subject: [RFC] x86: mtrr: Constrain WB MTRR to max phys mem prior to cleanup
+Thread-Topic: [RFC] x86: mtrr: Constrain WB MTRR to max phys mem prior to
+ cleanup
+Thread-Index: Ac1p3g9fI7rSAE5aRQ6VuJdRbiQR3g==
+Message-ID: <1343163072.2229.5.camel@thor>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Advertise firmware files using MODULE_FIRMWARE macros.
+  If BIOS maps all or most of the phys address space as write-back,
+  regardless of the amount of actual RAM, then mtrr_cleanup may create
+  superfluous MTRR entries, or may be unable to create an optimal map
+  (or may use all MTRRs attempting to do so, thus making cleanup
+  pointless). Ideally, WB MTRRs should not be used for physical memory
+  addresses where memory does not exist (Intel SDM, Vol 3A, 11.11.2.1).
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
-Cc: usb-storage@lists.one-eyed-alien.net
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+  For example, Dell Precision T5400 wkstn w/ rev. A04 BIOS constructs
+  the following MTRR map for 10GB memory:
+   kernel: [    0.000000] MTRR variable ranges enabled:
+   kernel: [    0.000000]   0 base 0000000000 mask 2000000000 write-back
+   kernel: [    0.000000]   1 base 00CFF00000 mask 3FFFF00000 uncachable
+   kernel: [    0.000000]   2 base 00D0000000 mask 3FF0000000 uncachable
+   kernel: [    0.000000]   3 base 00E0000000 mask 3FE0000000 uncachable
+   kernel: [    0.000000]   4 base 1FF0000000 mask 3FF0000000 uncachable
+   kernel: [    0.000000]   5 disabled
+   kernel: [    0.000000]   6 disabled
+   kernel: [    0.000000]   7 disabled
+   kernel: [    0.000000] x86 PAT enabled: cpu 0 ......
+   kernel: [    0.000000] original variable MTRRs
+   kernel: [    0.000000] reg 0, base: 0GB, range: 128GB, type WB
+   kernel: [    0.000000] reg 1, base: 3327MB, range: 1MB, type UC
+   kernel: [    0.000000] reg 2, base: 3328MB, range: 256MB, type UC
+   kernel: [    0.000000] reg 3, base: 3584MB, range: 512MB, type UC
+   kernel: [    0.000000] reg 4, base: 130816MB, range: 256MB, type UC
+   kernel: [    0.000000] total RAM covered: 130047M
+
+  mtrr_cleanup cannot construct an optimal map for this configuration.
+  Additionally, if the mtrr_gran_size/mtrr_chunk_size is specified,
+  mtrr_cleanup will use all entries attempting to map the full 128GB
+  phys address range.
+
+  If a WB MTRR entry which maps phys addr range [0, > max_pfn) exists,
+  constrain the entry to [0, roundup_pow_of_two(max_pfn) ) prior to
+  generating potential solutions. The example MTRR map is optimized to:
+   kernel: [    0.000000] New variable MTRRs
+   kernel: [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
+   kernel: [    0.000000] reg 1, base: 2GB, range: 1GB, type WB
+   kernel: [    0.000000] reg 2, base: 3GB, range: 256MB, type WB
+   kernel: [    0.000000] reg 3, base: 3327MB, range: 1MB, type UC
+   kernel: [    0.000000] reg 4, base: 4GB, range: 4GB, type WB
+   kernel: [    0.000000] reg 5, base: 8GB, range: 8GB, type WB
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/usb/storage/ene_ub6250.c |   26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/mtrr/cleanup.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/storage/ene_ub6250.c b/drivers/usb/storage/ene_ub6250.c
-index b28f2ad..3fec82f 100644
---- a/drivers/usb/storage/ene_ub6250.c
-+++ b/drivers/usb/storage/ene_ub6250.c
-@@ -29,9 +29,21 @@
- #include "protocol.h"
- #include "debug.h"
+diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+index bdda2e6..ee399c3 100644
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -714,6 +714,16 @@ int __init mtrr_cleanup(unsigned address_bits)
+ 	if (mtrr_tom2)
+ 		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
  
-+#define SD_INIT1_FIRMWARE "ene-ub6250/sd_init1.bin"
-+#define SD_INIT2_FIRMWARE "ene-ub6250/sd_init2.bin"
-+#define SD_RW_FIRMWARE "ene-ub6250/sd_rdwr.bin"
-+#define MS_INIT_FIRMWARE "ene-ub6250/ms_init.bin"
-+#define MSP_RW_FIRMWARE "ene-ub6250/msp_rdwr.bin"
-+#define MS_RW_FIRMWARE "ene-ub6250/ms_rdwr.bin"
++	/* Constrain a WB entry that maps entire phys addr space to max mem */
++	for (i = 0; i < num_var_ranges; i++) {
++		if (range_state[i].type == MTRR_TYPE_WRBACK &&
++		    range_state[i].base_pfn == 0 &&
++		    range_state[i].size_pfn > max_pfn) {
++			range_state[i].size_pfn = roundup_pow_of_two(max_pfn);
++			break;
++		}
++	}
 +
- MODULE_DESCRIPTION("Driver for ENE UB6250 reader");
- MODULE_LICENSE("GPL");
--
-+MODULE_FIRMWARE(SD_INIT1_FIRMWARE);
-+MODULE_FIRMWARE(SD_INIT2_FIRMWARE);
-+MODULE_FIRMWARE(SD_RW_FIRMWARE);
-+MODULE_FIRMWARE(MS_INIT_FIRMWARE);
-+MODULE_FIRMWARE(MSP_RW_FIRMWARE);
-+MODULE_FIRMWARE(MS_RW_FIRMWARE);
- 
- /*
-  * The table of devices
-@@ -1883,28 +1895,28 @@ static int ene_load_bincode(struct us_data *us, unsigned char flag)
- 	/* For SD */
- 	case SD_INIT1_PATTERN:
- 		US_DEBUGP("SD_INIT1_PATTERN\n");
--		fw_name = "ene-ub6250/sd_init1.bin";
-+		fw_name = SD_INIT1_FIRMWARE;
- 		break;
- 	case SD_INIT2_PATTERN:
- 		US_DEBUGP("SD_INIT2_PATTERN\n");
--		fw_name = "ene-ub6250/sd_init2.bin";
-+		fw_name = SD_INIT2_FIRMWARE;
- 		break;
- 	case SD_RW_PATTERN:
- 		US_DEBUGP("SD_RDWR_PATTERN\n");
--		fw_name = "ene-ub6250/sd_rdwr.bin";
-+		fw_name = SD_RW_FIRMWARE;
- 		break;
- 	/* For MS */
- 	case MS_INIT_PATTERN:
- 		US_DEBUGP("MS_INIT_PATTERN\n");
--		fw_name = "ene-ub6250/ms_init.bin";
-+		fw_name = MS_INIT_FIRMWARE;
- 		break;
- 	case MSP_RW_PATTERN:
- 		US_DEBUGP("MSP_RW_PATTERN\n");
--		fw_name = "ene-ub6250/msp_rdwr.bin";
-+		fw_name = MSP_RW_FIRMWARE;
- 		break;
- 	case MS_RW_PATTERN:
- 		US_DEBUGP("MS_RW_PATTERN\n");
--		fw_name = "ene-ub6250/ms_rdwr.bin";
-+		fw_name = MS_RW_FIRMWARE;
- 		break;
- 	default:
- 		US_DEBUGP("----------- Unknown PATTERN ----------\n");
+ 	nr_range = x86_get_mtrr_mem_range(range, 0, x_remove_base, x_remove_size);
+ 	/*
+ 	 * [0, 1M) should always be covered by var mtrr with WB
 -- 
-1.7.9.5
+1.7.5.4
 
