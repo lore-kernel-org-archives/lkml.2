@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2GXJJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 05:09:36 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53057 "EHLO
+	id S1753391Ab2GXJJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 05:09:35 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55515 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab2GXJHB (ORCPT
+	with ESMTP id S1752994Ab2GXJHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jul 2012 05:07:01 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-03-500e65b22181
+X-AuditID: 9c930179-b7bdcae000003d91-04-500e65b28dcd
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
         Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 06/12] perf header: Reconstruct group relationship by parsing cmdline
-Date: Tue, 24 Jul 2012 18:01:27 +0900
-Message-Id: <1343120493-23059-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 07/12] perf ui/hist: Add support to group viewing
+Date: Tue, 24 Jul 2012 18:01:28 +0900
+Message-Id: <1343120493-23059-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
 References: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
@@ -25,174 +25,221 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support the event group viewer, their group relationship
-is needed. Since it's not recorded explicitly anywhere in the perf.data
-we should parse saved cmdline and apply the result to the evlist. It is
-assumed that parsed entries are in a same order with the originals.
-
-I know it's fragile but hard to find other way to do it in the current
-condition. :(
+Show group members' overhead also when showing the leader's.
 
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/header.c |  110 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 110 insertions(+)
+ tools/perf/ui/hist.c |  132 +++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 119 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 0efbaa3c5a6b..9d9553fed8a6 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1404,6 +1404,40 @@ static int process_version(struct perf_file_section *section __used,
- 	return ph->version ? 0 : -ENOMEM;
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 8092a621bbec..57d00b75b6fa 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -4,32 +4,83 @@
+ #include "../util/util.h"
+ #include "../util/hist.h"
+ #include "../util/sort.h"
++#include "../util/evsel.h"
+ 
+ static int hpp_header_overhead(struct hist_print_context *ctx)
+ {
++	int len = 8;
++	const char *str = "Overhead";
++
+ 	if (ctx->pair_hists)
+-		return scnprintf(ctx->s, ctx->size, "Baseline");
+-	else
+-		return scnprintf(ctx->s, ctx->size, "Overhead");
++		str = "Baseline";
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++
++		BUG_ON(!perf_evsel__is_group_leader(evsel));
++
++		len *= evsel->nr_children + 1;
++	}
++	return scnprintf(ctx->s, ctx->size, "%-*s", len, str);
  }
  
-+/*
-+ * Reconstruct group relationship using parsed entries. It's assumed that
-+ * the parsed entries are in a same order with the original entries.
-+ */
-+static void reconstruct_group_relation(struct list_head *parsed_head,
-+				       struct list_head *orig_head)
-+{
-+	struct perf_evsel *pos, *orig;
-+	struct perf_evsel *leader = NULL;
+ static int hpp_width_overhead(struct hist_print_context *ctx __used)
+ {
+-	return 8;
++	int len = 8;
 +
-+	/* Fake first entry to use list_for_each_entry_continue */
-+	orig = container_of(orig_head, struct perf_evsel, node);
-+
-+	list_for_each_entry(pos, parsed_head, node) {
-+		list_for_each_entry_continue(orig, orig_head, node) {
-+			BUG_ON(pos->attr.type != orig->attr.type);
-+			BUG_ON(pos->attr.config != orig->attr.config);
-+
-+			if (pos->leader == NULL) {
-+				orig->leader = NULL;
-+				if (pos->group_name)
-+					orig->group_name = strdup(pos->group_name);
-+				orig->nr_children = pos->nr_children;
-+
-+				leader = orig;
-+			} else {
-+				orig->leader = leader;
-+				orig->group_idx = pos->group_idx;
-+			}
-+			break;
-+		}
-+	}
-+}
-+
- /* Each argv would be separated by a NULL character */
- static int process_cmdline(struct perf_file_section *section __used,
- 			   struct perf_header *ph, int fd, void *data __used)
-@@ -1413,6 +1447,11 @@ static int process_cmdline(struct perf_file_section *section __used,
- 	u32 nr, i;
- 	char *cmdline = NULL;
- 	size_t len = 0;
-+	LIST_HEAD(head);
-+	struct perf_evlist *evlist = NULL;
-+	int nr_entries = 0;
-+	bool found = false;
-+	bool regenerated = false;
- 
- 	ret = read(fd, &nr, sizeof(nr));
- 	if (ret != (ssize_t)sizeof(nr))
-@@ -1421,6 +1460,25 @@ static int process_cmdline(struct perf_file_section *section __used,
- 	if (ph->needs_swap)
- 		nr = bswap_32(nr);
- 
 +	if (symbol_conf.report_group) {
-+		struct perf_session *session;
-+
-+		session = container_of(ph, struct perf_session, header);
-+		evlist = session->evlist;
-+
-+		/*
-+		 * The evlist->entries will be regenerated by parsing cmdline
-+		 * to track grouping information. However we cannot use the
-+		 * generated entries since they lack sample id information.
-+		 *
-+		 * Save the original entries to 'head' and reconstruct group
-+		 * information using parse entries.
-+		 */
-+		list_splice_init(&evlist->entries, &head);
-+		nr_entries = evlist->nr_entries;
-+		evlist->nr_entries = 0;
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		len *= evsel->nr_children + 1;
 +	}
-+
- 	ph->cmdline_argc = nr;
++	return len;
+ }
  
- 	for (i = 0; i < nr; i++) {
-@@ -1428,6 +1486,19 @@ static int process_cmdline(struct perf_file_section *section __used,
- 		if (!str)
- 			goto error;
- 
-+		if (symbol_conf.report_group) {
-+			if (found) {
-+				/* Regenerate evlist */
-+				if (!parse_events(evlist, str, 0))
-+					regenerated = true;
-+			}
+ static int hpp_color_overhead(struct hist_print_context *ctx,
+ 			      struct hist_entry *he)
+ {
++	int ret;
+ 	double percent = 100.0 * he->stat.period / ctx->total_period;
+-	return percent_color_snprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
 +
-+			if (!strcmp(str, "-e"))
-+				found = true;
-+			else
-+				found = false;
++	ret = percent_color_snprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		int i;
++
++		for (i = 0; i < evsel->nr_children; i++) {
++			u64 period = he->group_stats[i].period;
++			u64 total_period = ctx->hists->group_stats[i].total_period;
++
++			percent = 100.0 * period / total_period;
++			ret += percent_color_snprintf(ctx->s + ret, ctx->size - ret,
++						      "  %5.2f%%", percent);
 +		}
++	}
++	return ret;
+ }
+ 
+ static int hpp_entry_overhead(struct hist_print_context *ctx,
+ 			      struct hist_entry *he)
+ {
++	int ret;
+ 	double percent = 100.0 * he->stat.period / ctx->total_period;
+-	return scnprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
 +
- 		tmp = realloc(cmdline, len + strlen(str) + 1);
- 		if (!tmp)
- 			goto error;
-@@ -1439,10 +1510,49 @@ static int process_cmdline(struct perf_file_section *section __used,
- 		len += strlen(str) + 1;
- 		free(str);
++	ret = scnprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		int i;
++
++		for (i = 0; i < evsel->nr_children; i++) {
++			u64 period = he->group_stats[i].period;
++			u64 total_period = ctx->hists->group_stats[i].total_period;
++
++			percent = 100.0 * period / total_period;
++			ret += scnprintf(ctx->s + ret, ctx->size - ret,
++					 "  %5.2f%%", percent);
++		}
++	}
++	return ret;
+ }
+ 
+ static int hpp_header_overhead_sys(struct hist_print_context *ctx)
+@@ -130,34 +181,86 @@ static int hpp_entry_overhead_guest_us(struct hist_print_context *ctx,
+ 
+ static int hpp_header_samples(struct hist_print_context *ctx)
+ {
+-	return scnprintf(ctx->s, ctx->size, "  Samples  ");
++	int len = 11;
++	const char str[] = "  Samples  ";
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		len += (len + 2) * evsel->nr_children;
++	}
++	return scnprintf(ctx->s, ctx->size, "%-*s", len, str);
+ }
+ 
+ static int hpp_width_samples(struct hist_print_context *ctx __used)
+ {
+-	return 11;
++	int len = 11;
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		len += (len + 2) * evsel->nr_children;
++	}
++	return len;
+ }
+ 
+ static int hpp_entry_samples(struct hist_print_context *ctx,
+ 			     struct hist_entry *he)
+ {
+-	return scnprintf(ctx->s, ctx->size, "%11" PRIu64, he->stat.nr_events);
++	int ret;
++
++	ret = scnprintf(ctx->s, ctx->size, "%11" PRIu64, he->stat.nr_events);
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		int i;
++
++		for (i = 0; i < evsel->nr_children; i++) {
++			ret += scnprintf(ctx->s + ret, ctx->size - ret,
++				"  %11" PRIu64, he->group_stats[i].nr_events);
++		}
++	}
++	return ret;
+ }
+ 
+ static int hpp_header_period(struct hist_print_context *ctx)
+ {
+-	return scnprintf(ctx->s, ctx->size, "   Period   ");
++	int len = 12;
++	const char str[] = "   Period   ";
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		len += (len + 2) * evsel->nr_children;
++	}
++	return scnprintf(ctx->s, ctx->size, "%-*s", len, str);
+ }
+ 
+ static int hpp_width_period(struct hist_print_context *ctx __used)
+ {
+-	return 12;
++	int len = 12;
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		len += (len + 2) * evsel->nr_children;
++	}
++	return len;
+ }
+ 
+ static int hpp_entry_period(struct hist_print_context *ctx,
+ 			    struct hist_entry *he)
+ {
+-	return scnprintf(ctx->s, ctx->size, "%12" PRIu64, he->stat.period);
++	int ret;
++
++	ret = scnprintf(ctx->s, ctx->size, "%12" PRIu64, he->stat.period);
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
++		int i;
++
++		for (i = 0; i < evsel->nr_children; i++) {
++			ret += scnprintf(ctx->s + ret, ctx->size - ret,
++				"  %12" PRIu64, he->group_stats[i].period);
++		}
++	}
++	return ret;
+ }
+ 
+ static int hpp_header_delta(struct hist_print_context *ctx)
+@@ -801,6 +904,9 @@ unsigned int hists__sort_list_width(struct hists *hists)
+ {
+ 	struct sort_entry *se;
+ 	int i, ret = 0;
++	struct hist_print_context dummy_ctx = {
++		.hists	= hists,
++	};
+ 
+ 	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+ 		if (!hpp_functions[i].cond)
+@@ -808,7 +914,7 @@ unsigned int hists__sort_list_width(struct hists *hists)
+ 		if (i)
+ 			ret += 2;
+ 
+-		ret += hpp_functions[i].width(NULL);
++		ret += hpp_functions[i].width(&dummy_ctx);
  	}
-+
-+	if (symbol_conf.report_group) {
-+		struct perf_evsel *pos, *orig;
-+
-+		if (regenerated) {
-+			BUG_ON(evlist->nr_entries != nr_entries);
-+
-+			reconstruct_group_relation(&evlist->entries, &head);
-+
-+			/* Parsed entries are not needed anymore */
-+			list_for_each_entry_safe(pos, orig, &evlist->entries, node) {
-+				list_del_init(&pos->node);
-+				perf_evsel__delete(pos);
-+			}
-+
-+			/* Restore the original entries */
-+			list_splice(&head, &evlist->entries);
-+		} else {
-+			/*
-+			 * Indirect record command doesn't contain events on
-+			 * the cmdline. Restore original entries.
-+			 */
-+			list_splice(&head, &evlist->entries);
-+			evlist->nr_entries = nr_entries;
-+		}
-+	}
- 	ph->cmdline = cmdline;
- 	return 0;
  
- error:
-+	if (symbol_conf.report_group) {
-+		struct perf_evsel *pos, *n;
-+
-+		/* Delete intermediate entries */
-+		list_for_each_entry_safe(pos, n, &evlist->entries, node) {
-+			list_del_init(&pos->node);
-+			perf_evsel__delete(pos);
-+		}
-+
-+		/* Restore original entries */
-+		list_splice(&head, &evlist->entries);
-+		evlist->nr_entries = nr_entries;
-+	}
- 	free(cmdline);
- 	free(str);
- 	return -1;
+ 	list_for_each_entry(se, &hist_entry__sort_list, list)
 -- 
 1.7.10.4
 
