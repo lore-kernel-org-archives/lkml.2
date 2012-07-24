@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab2GXTVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 15:21:38 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:41015 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755872Ab2GXTVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 15:21:36 -0400
-Date: Tue, 24 Jul 2012 15:21:20 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, vapier@gentoo.org,
-        sonic.zhang@analog.com
-Subject: Re: [GIT PULL v2] Blackfin changes for 3.6-rc1
-Message-ID: <20120724192120.GB29239@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Bob Liu <lliubbo@gmail.com>, torvalds@linux-foundation.org,
-	linux-kernel@vger.kernel.org,
-	uclinux-dist-devel@blackfin.uclinux.org, vapier@gentoo.org,
-	sonic.zhang@analog.com
-References: <1343109280-22653-1-git-send-email-lliubbo@gmail.com>
+	id S1756077Ab2GXTY1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:24:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59832 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995Ab2GXTY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 15:24:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Cyril Chemparathy <cyril@ti.com>
+Subject: Re: [RFC 21/23] ARM: keystone: introducing TI Keystone platform
+Date: Tue, 24 Jul 2012 18:45:57 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        nico@linaro.org, will.deacon@arm.com, catalin.marinas@arm.com,
+        Vitaly Andrianov <vitalya@ti.com>
+References: <1343092165-9470-1-git-send-email-cyril@ti.com> <201207241446.53401.arnd@arndb.de> <500EE1CD.6030701@ti.com>
+In-Reply-To: <500EE1CD.6030701@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343109280-22653-1-git-send-email-lliubbo@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207241845.57784.arnd@arndb.de>
+X-Provags-ID: V02:K0:tZ9ttKzVOweaF3jkZJAVqRis5d2dq1FA66ABjggMhVi
+ PtJT5UNIptCLf1WlHS9gDiZbwmuvf+IdasCZMtlzF3kT7Ooi+q
+ qeZ9NsmMwS1XR6P0XQXBqeu1a1miBtH1LkHmzsj1lnpy/PPh+y
+ 0Z7Ympa+E+N15h4ybxSUDuLjfXU78h3/3gRn3FKylBLBJ1T5Mm
+ t27opBjJPNcB/8Q5TPtVqNrg2gfCJGMOQiZ7wx0OHfkn/j2P4d
+ C/wWpj/voanHdKNpToptrU5Jx/kGmnzknSaBb0O62StGWp0sym
+ PAN7yvAOu01TzdqFxWfnNfe6hadZBEkuWo+olmZk3j0GnssAIJ
+ vQxZ9r8LvXCSCbEoP5aA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 01:54:40PM +0800, Bob Liu wrote:
+On Tuesday 24 July 2012, Cyril Chemparathy wrote:
+> >> diff --git a/arch/arm/mach-keystone/include/mach/memory.h b/arch/arm/mach-keystone/include/mach/memory.h
+> >> new file mode 100644
+> >> index 0000000..7c78b1e
+> >> --- /dev/null
+> >> +++ b/arch/arm/mach-keystone/include/mach/memory.h
+> >
+> >> +#ifndef __ASM_MACH_MEMORY_H
+> >> +#define __ASM_MACH_MEMORY_H
+> >> +
+> >> +#define MAX_PHYSMEM_BITS    36
+> >> +#define SECTION_SIZE_BITS   34
+> >> +
+> >> +#endif /* __ASM_MACH_MEMORY_H */
+> >
+> > I wonder if there is anything we can do to make these generic. What you
+> > have here is ok for now, but we will need to do this differently once
+> > we are building multiplatform kernels with keystone and sparse memory.
+> >
 > 
-> This is the new pull request about blackfin changes for 3.6-rc1.
-> I've rebased my tree to 3.5.
+> Understood.  Any ideas on the general direction towards solving this?
 
-To save Linus having to send you a chastising e-mail (and because I'll
-probably be more gentle about it than he would be :-), in general it's
-good not to rebase your the tree before submitting to Linus.  If you
-tested with your set of commits pon top of 3.5-rc3, then submit those
-patches that way.  Rebasing at least partially invalidates your
-testing, and causes other problems if someone else has based their
-tree off of yours.
+I can't remember discussing this in the past. Maybe it never came up
+because most platforms don't enable sparsemem.
 
-If the goal is to avoid merge conflicts, it's better to just resolve
-the conflict, and push the proposed merge resolution, and send Linus
-both the commit pre-merge, and post-merge, and let him decide if wants
-to use your merge resolution, or to fix things up in a slightly
-different way.
+IIRC this is done through Kconfig on powerpc, where we pick the minimum
+required size based on which platforms are enabled.
 
-Regards,
+I also don't know what to do about ARM_PATCH_PHYS_VIRT here: my
+impression so far was that we would enable it for all multiplatform
+builds, but it conflicts with sparsemem.
 
-						- Ted
+> >> +DT_MACHINE_START(KEYSTONE, "Keystone")
+> >> +    .map_io         = keystone_map_io,
+> >> +    .init_irq       = keystone_init_irq,
+> >> +    .timer          = &keystone_timer,
+> >> +    .handle_irq     = gic_handle_irq,
+> >> +    .init_machine   = keystone_init,
+> >> +    .dt_compat      = keystone_match,
+> >> +    .nr_irqs        = 480,
+> >> +MACHINE_END
+> >
+> > IIRC, you don't need to set the nr_irqs this high in advance,
+> > they will be allocated automatically since you have enabled
+> > sparse IRQs.
+> >
+> 
+> We were seeing a complaint without nr_irqs set, but I'll dig into that 
+> further.
+
+Maybe a driver that hardcodes an IRQ number?
+
+	Arndx
