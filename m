@@ -1,150 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab2GXIBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 04:01:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5463 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755084Ab2GXIBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 04:01:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="184770186"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Viresh Kumar <viresh.linux@gmail.com>
-Subject: [PATCH] dw_dmac: use devm_* functions to simplify code
-Date: Tue, 24 Jul 2012 11:00:55 +0300
-Message-Id: <1343116855-6804-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755592Ab2GXIB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:01:29 -0400
+Received: from claranet-outbound-smtp04.uk.clara.net ([195.8.89.37]:40917 "EHLO
+	claranet-outbound-smtp04.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755084Ab2GXIB0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 04:01:26 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+To: =?utf-8?q?J=C3=B6rn_Engel?= <joern@logfs.org>
+Subject: Re: [PATCH] add blockconsole version 1.1
+Date: Tue, 24 Jul 2012 09:01:16 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-90.fc15.x86_64; KDE/4.6.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
+References: <20120424205946.GH20610@logfs.org> <201207231533.16350.tvrtko.ursulin@onelan.co.uk> <20120723200230.GC17767@logfs.org>
+In-Reply-To: <20120723200230.GC17767@logfs.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201207240901.16151.tvrtko.ursulin@onelan.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_kzalloc, devm_clk_get, devm_request_irq, and devm_request_and_ioremap
-to reduce the code and to simplify the error path.
+On Monday 23 Jul 2012 21:02:30 Jörn Engel wrote:
+> On Mon, 23 July 2012 15:33:16 +0100, Tvrtko Ursulin wrote:
+> > On Thursday 12 Jul 2012 18:46:34 Jörn Engel wrote:
+> > > Console driver similar to netconsole, except it writes to a block
+> > > device.  Can be useful in a setup where netconsole, for whatever
+> > > reasons, is impractical.
+> > 
+> > Perhaps you need to add a word or two about limitations compared to
+> > netconsole in documentation because it is quite significant difference
+> > in reliability? I mean so it is not assumed it is analogous to
+> > netconsole but just a different underlying media. I don't know if
+> > someone would expect it, but better said than not.
+> 
+> Given that I don't even know the limitations, that's a bit tough.  As
+> a general rule, I would always prefer netconsole.  It appears to be
+> more reliable than blockconsole and beats serial console by half a
+> lightyear.  But as a fallback when netconsole is not realistic,
+> blockconsole has proven useful.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>
----
- drivers/dma/dw_dmac.c      |   53 +++++++++-----------------------------------
- drivers/dma/dw_dmac_regs.h |    2 --
- 2 files changed, 10 insertions(+), 45 deletions(-)
+At the very least block console does not work from interrupt context while 
+netconsole does, right? Also netconsole does things to try and work around low 
+memory situations. Things like that I think would be useful additions to 
+documentation.
+ 
+> > I second the notion that logging to partitions would be useful.
+> 
+> Below is a compile-tested patch to do that.  Feel free to give it a
+> spin and fix any bugs.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 3d061c6..832538c 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1394,26 +1394,17 @@ static int __devinit dw_probe(struct platform_device *pdev)
- 
- 	size = sizeof(struct dw_dma);
- 	size += pdata->nr_channels * sizeof(struct dw_dma_chan);
--	dw = kzalloc(size, GFP_KERNEL);
-+	dw = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
- 	if (!dw)
- 		return -ENOMEM;
- 
--	if (!request_mem_region(io->start, DW_REGLEN, pdev->dev.driver->name)) {
--		err = -EBUSY;
--		goto err_kfree;
--	}
--
--	dw->regs = ioremap(io->start, DW_REGLEN);
--	if (!dw->regs) {
--		err = -ENOMEM;
--		goto err_release_r;
--	}
-+	dw->regs = devm_request_and_ioremap(&pdev->dev, io);
-+	if (!dw->regs)
-+		return -EBUSY;
- 
--	dw->clk = clk_get(&pdev->dev, "hclk");
--	if (IS_ERR(dw->clk)) {
--		err = PTR_ERR(dw->clk);
--		goto err_clk;
--	}
-+	dw->clk = devm_clk_get(&pdev->dev, "hclk");
-+	if (IS_ERR(dw->clk))
-+		return PTR_ERR(dw->clk);
- 	clk_prepare_enable(dw->clk);
- 
- 	/* Calculate all channel mask before DMA setup */
-@@ -1425,9 +1416,10 @@ static int __devinit dw_probe(struct platform_device *pdev)
- 	/* disable BLOCK interrupts as well */
- 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
- 
--	err = request_irq(irq, dw_dma_interrupt, 0, "dw_dmac", dw);
-+	err = devm_request_irq(&pdev->dev, irq, dw_dma_interrupt, 0,
-+			       "dw_dmac", dw);
- 	if (err)
--		goto err_irq;
-+		return err;
- 
- 	platform_set_drvdata(pdev, dw);
- 
-@@ -1493,30 +1485,16 @@ static int __devinit dw_probe(struct platform_device *pdev)
- 	dma_async_device_register(&dw->dma);
- 
- 	return 0;
--
--err_irq:
--	clk_disable_unprepare(dw->clk);
--	clk_put(dw->clk);
--err_clk:
--	iounmap(dw->regs);
--	dw->regs = NULL;
--err_release_r:
--	release_resource(io);
--err_kfree:
--	kfree(dw);
--	return err;
- }
- 
- static int __devexit dw_remove(struct platform_device *pdev)
- {
- 	struct dw_dma		*dw = platform_get_drvdata(pdev);
- 	struct dw_dma_chan	*dwc, *_dwc;
--	struct resource		*io;
- 
- 	dw_dma_off(dw);
- 	dma_async_device_unregister(&dw->dma);
- 
--	free_irq(platform_get_irq(pdev, 0), dw);
- 	tasklet_kill(&dw->tasklet);
- 
- 	list_for_each_entry_safe(dwc, _dwc, &dw->dma.channels,
-@@ -1525,17 +1503,6 @@ static int __devexit dw_remove(struct platform_device *pdev)
- 		channel_clear_bit(dw, CH_EN, dwc->mask);
- 	}
- 
--	clk_disable_unprepare(dw->clk);
--	clk_put(dw->clk);
--
--	iounmap(dw->regs);
--	dw->regs = NULL;
--
--	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(io->start, DW_REGLEN);
--
--	kfree(dw);
--
- 	return 0;
- }
- 
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 50830be..f6d92d7 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -140,8 +140,6 @@ struct dw_dma_regs {
- /* Bitfields in CFG */
- #define DW_CFG_DMA_EN		(1 << 0)
- 
--#define DW_REGLEN		0x400
--
- enum dw_dmac_flags {
- 	DW_DMA_IS_CYCLIC = 0,
- };
--- 
-1.7.10.4
+I can't promise to do that in the very near future, but in principle idea 
+could be interesting to me, at least to evaluate how reliable mechanism is 
+with different storage interfaces and controllers.
 
+> > Also, and I haven't checked what the swap format is, if it could somehow
+> > be integrated together that could be useful.
+> 
+> That appears to be slightly less likely than crossbreeding a rabbit
+> with a chicken.  Is there something obvious I have missed?
+
+I was thinking how swap space is always there and is potentially much faster 
+to write to than a random USB stick - which could translate to more reliable. 
+Then it's a question of which storage subsystem (libata vs. usb-storage) would 
+work better in different oops/panic situations. Again I tend to have less hope 
+in USB based solutions - maybe it's my bias from working in that area many 
+years ago. So the idea of swap space was that _if_ swap format could be 
+extended to allocate a number of blocks to use other than swap, then that area 
+could be used by blockconsole. Seemed like a convenient and potentially more 
+reliable solution to me, but as I said the latter may depend.
+
+Tvrtko
