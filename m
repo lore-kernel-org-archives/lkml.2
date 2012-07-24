@@ -1,93 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab2GXLDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 07:03:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45310 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752502Ab2GXLDb (ORCPT
+	id S1753286Ab2GXLDp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 07:03:45 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:59241 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab2GXLDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 07:03:31 -0400
-Date: Tue, 24 Jul 2012 12:02:54 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Cyril Chemparathy <cyril@ti.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nico@linaro.org" <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
-        Vitaly Andrianov <vitalya@ti.com>
-Subject: Re: [RFC 03/23] ARM: LPAE: use phys_addr_t on virt <--> phys
- conversion
-Message-ID: <20120724110254.GG20132@arm.com>
-References: <1343092165-9470-1-git-send-email-cyril@ti.com>
- <1343092165-9470-4-git-send-email-cyril@ti.com>
- <20120724103717.GF20132@arm.com>
- <500E7F22.9090803@ti.com>
+	Tue, 24 Jul 2012 07:03:43 -0400
+X-AuditID: b753bd60-932c5ba0000047ca-ae-500e810c7383
+X-AuditID: b753bd60-932c5ba0000047ca-ae-500e810c7383
+Message-ID: <500E810A.4030309@hitachi.com>
+Date: Tue, 24 Jul 2012 20:03:38 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500E7F22.9090803@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
+        Borislav Petkov <bp@amd64.org>,
+        virtualization@lists.linux-foundation.org,
+        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Shah <amit.shah@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>
+Subject: Re: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp> <CAJSP0QW_2JJ0nf=NW0y30VSid2HSxaqb=mRGV8CTtAKj0ujDWw@mail.gmail.com>
+In-Reply-To: <CAJSP0QW_2JJ0nf=NW0y30VSid2HSxaqb=mRGV8CTtAKj0ujDWw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 11:55:30AM +0100, Cyril Chemparathy wrote:
-> On 7/24/2012 6:37 AM, Catalin Marinas wrote:
-> > On Tue, Jul 24, 2012 at 02:09:05AM +0100, Cyril Chemparathy wrote:
-> >> This patch fixes up the types used when converting back and forth between
-> >> physical and virtual addresses.
-> >>
-> >> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-> >> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-> >> ---
-> >>   arch/arm/include/asm/memory.h |   17 +++++++++++------
-> >>   1 file changed, 11 insertions(+), 6 deletions(-)
-> >>
-> >> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> >> index fcb5757..7629dfe 100644
-> >> --- a/arch/arm/include/asm/memory.h
-> >> +++ b/arch/arm/include/asm/memory.h
-> >> @@ -169,22 +169,27 @@ extern unsigned long __pv_phys_offset;
-> >>   	: "=r" (to)					\
-> >>   	: "r" (from), "I" (type))
-> >>
-> >> -static inline unsigned long __virt_to_phys(unsigned long x)
-> >> +static inline phys_addr_t __virt_to_phys(unsigned long x)
-> >>   {
-> >>   	unsigned long t;
-> >>   	__pv_stub(x, t, "add", __PV_BITS_31_24);
-> >>   	return t;
-> >>   }
-> >>
-> >> -static inline unsigned long __phys_to_virt(unsigned long x)
-> >> +static inline unsigned long __phys_to_virt(phys_addr_t x)
-> >>   {
-> >>   	unsigned long t;
-> >>   	__pv_stub(x, t, "sub", __PV_BITS_31_24);
-> >>   	return t;
-> >>   }
-> >
-> > BTW, I would prefer if the phys-to-virt patching was fixed as well. It
-> > shouldn't be difficult.
+(2012/07/24 19:02), Stefan Hajnoczi wrote:
+> On Tue, Jul 24, 2012 at 3:36 AM, Yoshihiro YUNOMAE
+> <yoshihiro.yunomae.ez@hitachi.com> wrote:
+>> The performance of each method is compared as follows:
+>>  [1] Native
+>>      - only recording trace data to ring-buffer on a guest
+>>  [2] Virtio-trace
+>>      - running a trace agent on a guest
+>>      - a reader on a host opens FIFO using cat command
+>>  [3] IVRing
+>>      - A SystemTap script in a guest records trace data to IVRing.
+>>        -- probe points are same as ftrace.
+>>  [4] Virtio-serial(normal)
+>>      - A reader(using cat) on a guest output trace data to a host using
+>>        standard output via virtio-serial.
 > 
-> On that topic - yes, we have this on our radar, but in our case we;re 
-> talking about patching (in head.S) and then repatching (at switch over).
-> 
-> One of the ideas we've been bouncing around has been to convert the 
-> phys-virt patch code into arithmetic on PFNs.  This way we don't have to 
-> get too messy with 64-bit in the patch code, and we can use the same 
-> patch code for both phys_to_virt and virt_to_phys.  Thoughts on this 
-> approach?
+> The first time I read this I thought you are adding a new virtio-trace
+> device.  But it looks like this series really add splice support to
+> virtio-console and that yields a big performance improvement when
+> sending trace_pipe_raw.
 
-It may be slightly less efficient with Thumb-2 code as we can't have add
-and lsl in the same instruction. It may anyway be faster than reading a
-global variable.
+Yes, sorry for the confusion. Actually this is an enhancement of
+virtio-serial. I'm working with Yoshihiro on this feature.
 
-But I suspect you can just mask out the top 32-bit part of a physical
-address when converting to virtual. The opposite may also work, you just
-have some constant in the top 32-bit part of the phys address. Note that
-virt_to_phys is only valid for the lowmem, so 32-bit arithmetic with
-some constant for the top 32-bit should be enough.
+> Guest ftrace is useful and I like this.  Have you thought about
+> controlling ftrace from the host?  Perhaps a command could be added to
+> the QEMU guest agent which basically invokes trace-cmd/perf.
+
+As you can see, guest trace-agent can be controlled via a
+control channel. In our scenario, host tools can control that
+instead of guest one.
+
+We are considering that exporting the tracing part of guest's
+debugfs to host via another virtio-serial channel by using
+9pfs, so that the host tools can refer that.
+
+(In this scenario, guest trace-agent will also provide 9pfs server.
+Since it means that the agent can handle writing a special file,
+trace-agent can be controlled via the special file on exported
+debugfs.)
+
+Of course, this also requires modifying trace-cmd/perf to accept
+some options like guest-debugfs mount point, guest's serial
+channel pipe (or unix socket?), etc. However, it will be a small
+change.
+
+Thank you,
 
 -- 
-Catalin
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
