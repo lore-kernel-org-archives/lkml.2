@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab2GXCk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 22:40:28 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:53401 "EHLO
+	id S1755111Ab2GXCko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 22:40:44 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:53403 "EHLO
 	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab2GXCkX (ORCPT
+	with ESMTP id S1755230Ab2GXCk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 22:40:23 -0400
-X-AuditID: b753bd60-914c2ba0000047ca-d5-500e0a7d0f88
-X-AuditID: b753bd60-914c2ba0000047ca-d5-500e0a7d0f88
+	Mon, 23 Jul 2012 22:40:26 -0400
+X-AuditID: b753bd60-a2688ba000000655-30-500e0a91183c
+X-AuditID: b753bd60-a2688ba000000655-30-500e0a91183c
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: [RFC PATCH 4/6] ftrace: Allow stealing pages from pipe buffer
+Subject: [RFC PATCH 6/6] tools: Add guest trace agent as a user tool
 To: linux-kernel@vger.kernel.org
 Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
         Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
@@ -23,12 +23,9 @@ Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
         Steven Rostedt <rostedt@goodmis.org>,
         virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
         yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Tue, 24 Jul 2012 11:37:38 +0900
-Message-ID: <20120724023738.6600.59837.stgit@ltc189.sdl.hitachi.co.jp>
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Date: Tue, 24 Jul 2012 11:37:58 +0900
+Message-ID: <20120724023758.6600.52708.stgit@ltc189.sdl.hitachi.co.jp>
 In-Reply-To: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
 References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -40,54 +37,871 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+This patch adds a user tool, "trace agent" for sending trace data of a guest to
+a Host in low overhead. This agent has the following functions:
+ - splice a page of ring-buffer to read_pipe without memory copying
+ - splice the page from write_pipe to virtio-console without memory copying
+ - write trace data to stdout by using -o option
+ - controlled by start/stop orders from a Host
 
-Use generic steal operation on pipe buffer to allow stealing
-ring buffer's read page from pipe buffer.
-
-Note that this could reduce the performance of splice on the
-splice_write side operation without affinity setting.
-Since the ring buffer's read pages are allocated on the
-tracing-node, but the splice user does not always execute
-splice write side operation on the same node. In this case,
-the page will be accessed from the another node.
-Thus, it is strongly recommended to assign the splicing
-thread to corresponding node.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 ---
 
- kernel/trace/trace.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+ tools/virtio/virtio-trace/Makefile          |   14 +
+ tools/virtio/virtio-trace/README            |  118 ++++++++++++
+ tools/virtio/virtio-trace/trace-agent-ctl.c |  137 ++++++++++++++
+ tools/virtio/virtio-trace/trace-agent-rw.c  |  192 +++++++++++++++++++
+ tools/virtio/virtio-trace/trace-agent.c     |  270 +++++++++++++++++++++++++++
+ tools/virtio/virtio-trace/trace-agent.h     |   75 ++++++++
+ 6 files changed, 806 insertions(+), 0 deletions(-)
+ create mode 100644 tools/virtio/virtio-trace/Makefile
+ create mode 100644 tools/virtio/virtio-trace/README
+ create mode 100644 tools/virtio/virtio-trace/trace-agent-ctl.c
+ create mode 100644 tools/virtio/virtio-trace/trace-agent-rw.c
+ create mode 100644 tools/virtio/virtio-trace/trace-agent.c
+ create mode 100644 tools/virtio/virtio-trace/trace-agent.h
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index a120f98..ae01930 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4194,12 +4194,6 @@ static void buffer_pipe_buf_release(struct pipe_inode_info *pipe,
- 	buf->private = 0;
- }
- 
--static int buffer_pipe_buf_steal(struct pipe_inode_info *pipe,
--				 struct pipe_buffer *buf)
--{
--	return 1;
--}
--
- static void buffer_pipe_buf_get(struct pipe_inode_info *pipe,
- 				struct pipe_buffer *buf)
- {
-@@ -4215,7 +4209,7 @@ static const struct pipe_buf_operations buffer_pipe_buf_ops = {
- 	.unmap			= generic_pipe_buf_unmap,
- 	.confirm		= generic_pipe_buf_confirm,
- 	.release		= buffer_pipe_buf_release,
--	.steal			= buffer_pipe_buf_steal,
-+	.steal			= generic_pipe_buf_steal,
- 	.get			= buffer_pipe_buf_get,
- };
- 
+diff --git a/tools/virtio/virtio-trace/Makefile b/tools/virtio/virtio-trace/Makefile
+new file mode 100644
+index 0000000..ef3adfc
+--- /dev/null
++++ b/tools/virtio/virtio-trace/Makefile
+@@ -0,0 +1,14 @@
++CC = gcc
++CFLAGS = -O2 -Wall
++LFLAG = -lpthread
++
++all: trace-agent
++
++.c.o:
++	$(CC) $(CFLAGS) $(LFLAG) -c $^ -o $@
++
++trace-agent: trace-agent.o trace-agent-ctl.o trace-agent-rw.o
++	$(CC) $(CFLAGS) $(LFLAG) -o $@ $^
++
++clean:
++	rm -f *.o trace-agent
+diff --git a/tools/virtio/virtio-trace/README b/tools/virtio/virtio-trace/README
+new file mode 100644
+index 0000000..b64845b
+--- /dev/null
++++ b/tools/virtio/virtio-trace/README
+@@ -0,0 +1,118 @@
++Trace Agent for virtio-trace
++============================
++
++Trace agent is a user tool for sending trace data of a guest to a Host in low
++overhead. Trace agent has the following functions:
++ - splice a page of ring-buffer to read_pipe without memory copying
++ - splice the page from write_pipe to virtio-console without memory copying
++ - write trace data to stdout by using -o option
++ - controlled by start/stop orders from a Host
++
++The trace agent operates as follows:
++ 1) Initialize all structures.
++ 2) Create a read/write thread per CPU. Each thread is bound to a CPU.
++    The read/write threads hold it.
++ 3) A controller thread does poll() for a start order of a host.
++ 4) After the controller of the trace agent receives a start order from a host,
++    the controller wake read/write threads.
++ 5) The read/write threads start to read trace data from ring-buffers and
++    write the data to virtio-serial.
++ 6) If the controller receives a stop order from a host, the read/write threads
++    stop to read trace data.
++
++
++Files
++=====
++
++README: this file
++Makefile: Makefile of trace agent for virtio-trace
++trace-agent.c: includes main function, sets up for operating trace agent
++trace-agent.h: includes all structures and some macros
++trace-agent-ctl.c: includes controller function for read/write threads
++trace-agent-rw.c: includes read/write threads function
++
++
++Setup
++=====
++
++To use this trace agent for virtio-trace, we need to prepare some virtio-serial
++I/Fs.
++
++1) Make FIFO in a host
++ virtio-trace uses virtio-serial pipe as trace data paths as to the number
++of CPUs and a control path, so FIFO (named pipe) should be created as follows:
++	# mkdir /tmp/virtio-trace/
++	# mkfifo /tmp/virtio-trace/trace-path-cpu{0,1,2,...,X}.{in,out}
++	# mkfifo /tmp/virtio-trace/agent-ctl-path.{in,out}
++
++For example, if a guest use three CPUs, the names are
++	trace-path-cpu{0,1,2}.{in.out}
++and
++	agent-ctl-path.{in,out}.
++
++2) Set up of virtio-serial pipe in a host
++ Add qemu option to use virtio-serial pipe.
++
++ ##virtio-serial device##
++     -device virtio-serial-pci,id=virtio-serial0\
++ ##control path##
++     -chardev pipe,id=charchannel0,path=/tmp/virtio-trace/agent-ctl-path\
++     -device virtserialport,bus=virtio-serial0.0,nr=1,chardev=charchannel0,\
++      id=channel0,name=agent-ctl-path\
++ ##data path##
++     -chardev pipe,id=charchannel1,path=/tmp/virtio-trace/trace-path-cpu0\
++     -device virtserialport,bus=virtio-serial0.0,nr=2,chardev=charchannel0,\
++      id=channel1,name=trace-path-cpu0\
++      ...
++
++If you manage guests with libvirt, add the following tags to domain XML files.
++Then, libvirt passes the same command option to qemu.
++
++	<channel type='pipe'>
++	   <source path='/tmp/virtio-trace/agent-ctl-path'/>
++	   <target type='virtio' name='agent-ctl-path'/>
++	   <address type='virtio-serial' controller='0' bus='0' port='0'/>
++	</channel>
++	<channel type='pipe'>
++	   <source path='/tmp/virtio-trace/trace-path-cpu0'/>
++	   <target type='virtio' name='trace-path-cpu0'/>
++	   <address type='virtio-serial' controller='0' bus='0' port='1'/>
++	</channel>
++	...
++Here, chardev names are restricted to trace-path-cpuX and agent-ctl-path. For
++example, if a guest use three CPUs, chardev names should be trace-path-cpu0,
++trace-path-cpu1, trace-path-cpu2, and agent-ctl-path.
++
++3) Boot the guest
++ You can find some chardev in /dev/virtio-ports/ in the guest.
++
++
++Run
++===
++
++0) Build trace agent in a guest
++	$ make
++
++1) Enable ftrace in the guest
++ <Example>
++	# echo 1 > /sys/kernel/debug/tracing/events/sched/enable
++
++2) Run trace agent in the guest
++ This agent must be operated as root.
++	# ./trace-agent
++read/write threads in the agent wait for start order from host. If you add -o
++option, trace data are output via stdout in the guest.
++
++3) Open FIFO in a host
++	# cat /tmp/virtio-trace/trace-path-cpu0.out
++If a host does not open these, trace data get stuck in buffers of virtio. Then,
++the guest will stop by specification of chardev in QEMU. This blocking mode may
++be solved in the future.
++
++4) Start to read trace data by ordering from a host
++ A host injects read start order to the guest via virtio-serial.
++	# echo 1 > /tmp/virtio-trace/agent-ctl-path.in
++
++5) Stop to read trace data by ordering from a host
++ A host injects read stop order to the guest via virtio-serial.
++	# echo 0 > /tmp/virtio-trace/agent-ctl-path.in
+diff --git a/tools/virtio/virtio-trace/trace-agent-ctl.c b/tools/virtio/virtio-trace/trace-agent-ctl.c
+new file mode 100644
+index 0000000..0739815
+--- /dev/null
++++ b/tools/virtio/virtio-trace/trace-agent-ctl.c
+@@ -0,0 +1,137 @@
++/*
++ * Controller of read/write threads for virtio-trace
++ *
++ * Copyright (C) 2012 Hitachi, Ltd.
++ * Created by Yoshihiro Yunomae <yoshihiro.yunomae.ez@hitachi.com>
++ *            Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
++ *
++ * Licensed under GPL version 2 only.
++ *
++ */
++
++#define _GNU_SOURCE
++#include <fcntl.h>
++#include <poll.h>
++#include <signal.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include "trace-agent.h"
++
++#define HOST_MSG_SIZE		256
++#define EVENT_WAIT_MSEC		100
++
++static volatile sig_atomic_t global_signal_val;
++bool global_sig_receive;	/* default false */
++bool global_run_operation;	/* default false*/
++
++/* Handle SIGTERM/SIGINT/SIGQUIT to exit */
++static void signal_handler(int sig)
++{
++	global_signal_val = sig;
++}
++
++int rw_ctl_init(const char *ctl_path)
++{
++	int ctl_fd;
++
++	ctl_fd = open(ctl_path, O_RDONLY);
++	if (ctl_fd == -1) {
++		fprintf(stderr, "Cannot open ctl_fd\n");
++		goto error;
++	}
++
++	return ctl_fd;
++
++error:
++	exit(EXIT_FAILURE);
++}
++
++static int wait_order(int ctl_fd)
++{
++	struct pollfd poll_fd;
++	int ret = 0;
++
++	while (!global_sig_receive) {
++		poll_fd.fd = ctl_fd;
++		poll_fd.events = POLLIN;
++
++		ret = poll(&poll_fd, 1, EVENT_WAIT_MSEC);
++
++		if (global_signal_val) {
++			global_sig_receive = true;
++			pr_info("Receive interrupt %d\n", global_signal_val);
++
++			/* Wakes rw-threads when they are sleeping */
++			if (!global_run_operation)
++				pthread_cond_broadcast(&cond_wakeup);
++
++			ret = -1;
++			break;
++		}
++
++		if (ret < 0) {
++			pr_err("Polling error\n");
++			goto error;
++		}
++
++		if (ret)
++			break;
++	};
++
++	return ret;
++
++error:
++	exit(EXIT_FAILURE);
++}
++
++/*
++ * contol read/write threads by handling global_run_operation
++ */
++void *rw_ctl_loop(int ctl_fd)
++{
++	ssize_t rlen;
++	char buf[HOST_MSG_SIZE];
++	int ret;
++
++	/* Setup signal handlers */
++	signal(SIGTERM, signal_handler);
++	signal(SIGINT, signal_handler);
++	signal(SIGQUIT, signal_handler);
++
++	while (!global_sig_receive) {
++
++		ret = wait_order(ctl_fd);
++		if (ret < 0)
++			break;
++
++		rlen = read(ctl_fd, buf, sizeof(buf));
++		if (rlen < 0) {
++			pr_err("read data error in ctl thread\n");
++			goto error;
++		}
++
++		if (rlen == 2 && buf[0] == '1') {
++			/*
++			 * If host writes '1' to a control path,
++			 * this controller wakes all read/write threads.
++			 */
++			global_run_operation = true;
++			pthread_cond_broadcast(&cond_wakeup);
++			pr_debug("Wake up all read/write threads\n");
++		} else if (rlen == 2 && buf[0] == '0') {
++			/*
++			 * If host writes '0' to a control path, read/write
++			 * threads will wait for notification from Host.
++			 */
++			global_run_operation = false;
++			pr_debug("Stop all read/write threads\n");
++		} else
++			pr_info("Invalid host notification: %s\n", buf);
++	}
++
++	return NULL;
++
++error:
++	exit(EXIT_FAILURE);
++}
+diff --git a/tools/virtio/virtio-trace/trace-agent-rw.c b/tools/virtio/virtio-trace/trace-agent-rw.c
+new file mode 100644
+index 0000000..3aace5e
+--- /dev/null
++++ b/tools/virtio/virtio-trace/trace-agent-rw.c
+@@ -0,0 +1,192 @@
++/*
++ * Read/write thread of a guest agent for virtio-trace
++ *
++ * Copyright (C) 2012 Hitachi, Ltd.
++ * Created by Yoshihiro Yunomae <yoshihiro.yunomae.ez@hitachi.com>
++ *            Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
++ *
++ * Licensed under GPL version 2 only.
++ *
++ */
++
++#define _GNU_SOURCE
++#include <fcntl.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <sys/syscall.h>
++#include "trace-agent.h"
++
++#define READ_WAIT_USEC	100000
++
++void *rw_thread_info_new(void)
++{
++	struct rw_thread_info *rw_ti;
++
++	rw_ti = zalloc(sizeof(struct rw_thread_info));
++	if (rw_ti == NULL) {
++		pr_err("rw_thread_info zalloc error\n");
++		exit(EXIT_FAILURE);
++	}
++
++	rw_ti->cpu_num = -1;
++	rw_ti->in_fd = -1;
++	rw_ti->out_fd = -1;
++	rw_ti->read_pipe = -1;
++	rw_ti->write_pipe = -1;
++	rw_ti->pipe_size = PIPE_INIT;
++
++	return rw_ti;
++}
++
++void *rw_thread_init(int cpu, const char *in_path, const char *out_path,
++				bool stdout_flag, unsigned long pipe_size,
++				struct rw_thread_info *rw_ti)
++{
++	int data_pipe[2];
++
++	rw_ti->cpu_num = cpu;
++
++	/* set read(input) fd */
++	rw_ti->in_fd = open(in_path, O_RDONLY);
++	if (rw_ti->in_fd == -1) {
++		pr_err("Could not open in_fd (CPU:%d)\n", cpu);
++		goto error;
++	}
++
++	/* set write(output) fd */
++	if (!stdout_flag) {
++		/* virtio-serial output mode */
++		rw_ti->out_fd = open(out_path, O_WRONLY);
++		if (rw_ti->out_fd == -1) {
++			pr_err("Could not open out_fd (CPU:%d)\n", cpu);
++			goto error;
++		}
++	} else
++		/* stdout mode */
++		rw_ti->out_fd = STDOUT_FILENO;
++
++	if (pipe2(data_pipe, O_NONBLOCK) < 0) {
++		pr_err("Could not create pipe in rw-thread(%d)\n", cpu);
++		goto error;
++	}
++
++	/*
++	 * Size of pipe is 64kB in default based on fs/pipe.c.
++	 * To read/write trace data speedy, pipe size is changed.
++	 */
++	if (fcntl(*data_pipe, F_SETPIPE_SZ, pipe_size) < 0) {
++		pr_err("Could not change pipe size in rw-thread(%d)\n", cpu);
++		goto error;
++	}
++
++	rw_ti->read_pipe = data_pipe[1];
++	rw_ti->write_pipe = data_pipe[0];
++	rw_ti->pipe_size = pipe_size;
++
++	return NULL;
++
++error:
++	exit(EXIT_FAILURE);
++}
++
++/* Bind a thread to a cpu */
++static void bind_cpu(int cpu_num)
++{
++	cpu_set_t mask;
++
++	CPU_ZERO(&mask);
++	CPU_SET(cpu_num, &mask);
++
++	/* bind my thread to cpu_num by assigning zero to the first argument */
++	if (sched_setaffinity(0, sizeof(mask), &mask) == -1)
++		pr_err("Could not set CPU#%d affinity\n", (int)cpu_num);
++}
++
++static void *rw_thread_main(void *thread_info)
++{
++	ssize_t rlen, wlen;
++	ssize_t ret;
++	struct rw_thread_info *ts = (struct rw_thread_info *)thread_info;
++
++	bind_cpu(ts->cpu_num);
++
++	while (1) {
++		/* Wait for a read order of trace data by Host OS */
++		if (!global_run_operation) {
++			pthread_mutex_lock(&mutex_notify);
++			pthread_cond_wait(&cond_wakeup, &mutex_notify);
++			pthread_mutex_unlock(&mutex_notify);
++		}
++
++		if (global_sig_receive)
++			break;
++
++		/*
++		 * Each thread read trace_pipe_raw of each cpu bounding the
++		 * thread, so contention of multi-threads does not occur.
++		 */
++		rlen = splice(ts->in_fd, NULL, ts->read_pipe, NULL,
++				ts->pipe_size, SPLICE_F_MOVE | SPLICE_F_MORE);
++
++		if (rlen < 0) {
++			pr_err("Splice_read in rw-thread(%d)\n", ts->cpu_num);
++			goto error;
++		} else if (rlen == 0) {
++			/*
++			 * If trace data do not exist or are unreadable not
++			 * for exceeding the page size, splice_read returns
++			 * NULL. Then, this waits for being filled the data in a
++			 * ring-buffer.
++			 */
++			usleep(READ_WAIT_USEC);
++			pr_debug("Read retry(cpu:%d)\n", ts->cpu_num);
++			continue;
++		}
++
++		wlen = 0;
++
++		do {
++			ret = splice(ts->write_pipe, NULL, ts->out_fd, NULL,
++					rlen - wlen,
++					SPLICE_F_MOVE | SPLICE_F_MORE);
++
++			if (ret < 0) {
++				pr_err("Splice_write in rw-thread(%d)\n",
++								ts->cpu_num);
++				goto error;
++			} else if (ret == 0)
++				/*
++				 * When host reader is not in time for reading
++				 * trace data, guest will be stopped. This is
++				 * because char dev in QEMU is not supported
++				 * non-blocking mode. Then, writer might be
++				 * sleep in that case.
++				 * This sleep will be removed by supporting
++				 * non-blocking mode.
++				 */
++				sleep(1);
++			wlen += ret;
++		} while (wlen < rlen);
++	}
++
++	return NULL;
++
++error:
++	exit(EXIT_FAILURE);
++}
++
++
++pthread_t rw_thread_run(struct rw_thread_info *rw_ti)
++{
++	int ret;
++	pthread_t rw_thread_per_cpu;
++
++	ret = pthread_create(&rw_thread_per_cpu, NULL, rw_thread_main, rw_ti);
++	if (ret != 0) {
++		pr_err("Could not create a rw thread(%d)\n", rw_ti->cpu_num);
++		exit(EXIT_FAILURE);
++	}
++
++	return rw_thread_per_cpu;
++}
+diff --git a/tools/virtio/virtio-trace/trace-agent.c b/tools/virtio/virtio-trace/trace-agent.c
+new file mode 100644
+index 0000000..1816259
+--- /dev/null
++++ b/tools/virtio/virtio-trace/trace-agent.c
+@@ -0,0 +1,270 @@
++/*
++ * Guest agent for virtio-trace
++ *
++ * Copyright (C) 2012 Hitachi, Ltd.
++ * Created by Yoshihiro Yunomae <yoshihiro.yunomae.ez@hitachi.com>
++ *            Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
++ *
++ * Licensed under GPL version 2 only.
++ *
++ */
++
++#define _GNU_SOURCE
++#include <limits.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include "trace-agent.h"
++
++#define PAGE_SIZE		(sysconf(_SC_PAGE_SIZE))
++#define PIPE_DEF_BUFS		16
++#define PIPE_MIN_SIZE		(PAGE_SIZE*PIPE_DEF_BUFS)
++#define PIPE_MAX_SIZE		(1024*1024)
++#define READ_PATH_FMT	\
++		"/sys/kernel/debug/tracing/per_cpu/cpu%d/trace_pipe_raw"
++#define WRITE_PATH_FMT		"/dev/virtio-ports/trace-path-cpu%d"
++#define CTL_PATH		"/dev/virtio-ports/agent-ctl-path"
++
++pthread_mutex_t mutex_notify = PTHREAD_MUTEX_INITIALIZER;
++pthread_cond_t cond_wakeup = PTHREAD_COND_INITIALIZER;
++
++static int get_total_cpus(void)
++{
++	int nr_cpus = (int)sysconf(_SC_NPROCESSORS_CONF);
++
++	if (nr_cpus <= 0) {
++		pr_err("Could not read cpus\n");
++		goto error;
++	} else if (nr_cpus > MAX_CPUS) {
++		pr_err("Exceed max cpus(%d)\n", (int)MAX_CPUS);
++		goto error;
++	}
++
++	return nr_cpus;
++
++error:
++	exit(EXIT_FAILURE);
++}
++
++static void *agent_info_new(void)
++{
++	struct agent_info *s;
++	int i;
++
++	s = zalloc(sizeof(struct agent_info));
++	if (s == NULL) {
++		pr_err("agent_info zalloc error\n");
++		exit(EXIT_FAILURE);
++	}
++
++	s->pipe_size = PIPE_INIT;
++	s->use_stdout = false;
++	s->cpus = get_total_cpus();
++	s->ctl_fd = -1;
++
++	/* read/write threads init */
++	for (i = 0; i < s->cpus; i++)
++		s->rw_ti[i] = rw_thread_info_new();
++
++	return s;
++}
++
++static unsigned long parse_size(const char *arg)
++{
++	unsigned long value, round;
++	char *ptr;
++
++	value = strtoul(arg, &ptr, 10);
++	switch (*ptr) {
++	case 'K': case 'k':
++		value <<= 10;
++		break;
++	case 'M': case 'm':
++		value <<= 20;
++		break;
++	default:
++		break;
++	}
++
++	if (value > PIPE_MAX_SIZE) {
++		pr_err("Pipe size must be less than 1MB\n");
++		goto error;
++	} else if (value < PIPE_MIN_SIZE) {
++		pr_err("Pipe size must be over 64KB\n");
++		goto error;
++	}
++
++	/* Align buffer size with page unit */
++	round = value & (PAGE_SIZE - 1);
++	value = value - round;
++
++	return value;
++error:
++	return 0;
++}
++
++static void usage(char const *prg)
++{
++	fprintf(stderr, "usage: %s [-h] [-o] [-s <size of pipe>]\n", prg);
++}
++
++static const char *make_path(int cpu_num, bool this_is_write_path)
++{
++	int ret;
++	char *buf;
++
++	buf = zalloc(PATH_MAX);
++	if (buf == NULL) {
++		pr_err("Could not allocate buffer\n");
++		goto error;
++	}
++
++	if (this_is_write_path)
++		/* write(output) path */
++		ret = snprintf(buf, PATH_MAX, WRITE_PATH_FMT, cpu_num);
++	else
++		/* read(input) path */
++		ret = snprintf(buf, PATH_MAX, READ_PATH_FMT, cpu_num);
++
++	if (ret <= 0) {
++		pr_err("Failed to generate %s path(CPU#%d):%d\n",
++			this_is_write_path ? "read" : "write", cpu_num, ret);
++		goto error;
++	}
++
++	return buf;
++
++error:
++	free(buf);
++	return NULL;
++}
++
++static const char *make_input_path(int cpu_num)
++{
++	return make_path(cpu_num, false);
++}
++
++static const char *make_output_path(int cpu_num)
++{
++	return make_path(cpu_num, true);
++}
++
++static void *agent_info_init(struct agent_info *s)
++{
++	int cpu;
++	const char *in_path = NULL;
++	const char *out_path = NULL;
++
++	/* init read/write threads */
++	for (cpu = 0; cpu < s->cpus; cpu++) {
++		/* set read(input) path per read/write thread */
++		in_path = make_input_path(cpu);
++		if (in_path == NULL)
++			goto error;
++
++		/* set write(output) path per read/write thread*/
++		if (!s->use_stdout) {
++			out_path = make_output_path(cpu);
++			if (out_path == NULL)
++				goto error;
++		} else
++			/* stdout mode */
++			pr_debug("stdout mode\n");
++
++		rw_thread_init(cpu, in_path, out_path, s->use_stdout,
++						s->pipe_size, s->rw_ti[cpu]);
++	}
++
++	/* init controller of read/write threads */
++	s->ctl_fd = rw_ctl_init((const char *)CTL_PATH);
++
++	return NULL;
++
++error:
++	exit(EXIT_FAILURE);
++}
++
++static void *parse_args(int argc, char *argv[], struct agent_info *s)
++{
++	int cmd;
++	unsigned long size;
++
++	while ((cmd = getopt(argc, argv, "hos:")) != -1) {
++		switch (cmd) {
++		/* stdout mode */
++		case 'o':
++			s->use_stdout = true;
++			break;
++		/* size of pipe */
++		case 's':
++			size = parse_size(optarg);
++			if (size == 0)
++				goto error;
++			s->pipe_size = size;
++			break;
++		case 'h':
++		default:
++			usage(argv[0]);
++			goto error;
++		}
++	}
++
++	agent_info_init(s);
++
++	return NULL;
++
++error:
++	exit(EXIT_FAILURE);
++}
++
++static void agent_main_loop(struct agent_info *s)
++{
++	int cpu;
++	pthread_t rw_thread_per_cpu[MAX_CPUS];
++
++	/* Start all read/write threads */
++	for (cpu = 0; cpu < s->cpus; cpu++)
++		rw_thread_per_cpu[cpu] = rw_thread_run(s->rw_ti[cpu]);
++
++	rw_ctl_loop(s->ctl_fd);
++
++	/* Finish all read/write threads */
++	for (cpu = 0; cpu < s->cpus; cpu++) {
++		int ret;
++
++		ret = pthread_join(rw_thread_per_cpu[cpu], NULL);
++		if (ret != 0) {
++			pr_err("pthread_join() error:%d (cpu %d)\n", ret, cpu);
++			exit(EXIT_FAILURE);
++		}
++	}
++}
++
++static void agent_info_free(struct agent_info *s)
++{
++	int i;
++
++	close(s->ctl_fd);
++	for (i = 0; i < s->cpus; i++) {
++		close(s->rw_ti[i]->in_fd);
++		close(s->rw_ti[i]->out_fd);
++		close(s->rw_ti[i]->read_pipe);
++		close(s->rw_ti[i]->write_pipe);
++		free(s->rw_ti[i]);
++	}
++	free(s);
++}
++
++int main(int argc, char *argv[])
++{
++	struct agent_info *s = NULL;
++
++	s = agent_info_new();
++	parse_args(argc, argv, s);
++
++	agent_main_loop(s);
++
++	agent_info_free(s);
++
++	return 0;
++}
+diff --git a/tools/virtio/virtio-trace/trace-agent.h b/tools/virtio/virtio-trace/trace-agent.h
+new file mode 100644
+index 0000000..4711a75
+--- /dev/null
++++ b/tools/virtio/virtio-trace/trace-agent.h
+@@ -0,0 +1,75 @@
++#ifndef __GUEST_AGENT_H__
++#define __GUEST_AGENT_H__
++#include <pthread.h>
++#include <stdbool.h>
++
++#define MAX_CPUS	256
++#define PIPE_INIT       (1024*1024)
++
++/*
++ * agent_info - structure managing total information of guest agent
++ * @pipe_size:	size of pipe (default 1MB)
++ * @use_stdout:	set to true when o option is added (default false)
++ * @cpus:	total number of CPUs
++ * @ctl_fd:	fd of control path, /dev/virtio-ports/agent-ctl-path
++ * @rw_ti:	structure managing information of read/write threads
++ */
++struct agent_info {
++	unsigned long pipe_size;
++	bool use_stdout;
++	int cpus;
++	int ctl_fd;
++	struct rw_thread_info *rw_ti[MAX_CPUS];
++};
++
++/*
++ * rw_thread_info - structure managing a read/write thread a cpu
++ * @cpu_num:	cpu number operating this read/write thread
++ * @in_fd:	fd of reading trace data path in cpu_num
++ * @out_fd:	fd of writing trace data path in cpu_num
++ * @read_pipe:	fd of read pipe
++ * @write_pipe:	fd of write pipe
++ * @pipe_size:	size of pipe (default 1MB)
++ */
++struct rw_thread_info {
++	int cpu_num;
++	int in_fd;
++	int out_fd;
++	int read_pipe;
++	int write_pipe;
++	unsigned long pipe_size;
++};
++
++/* use for stopping rw threads */
++extern bool global_sig_receive;
++
++/* use for notification */
++extern bool global_run_operation;
++extern pthread_mutex_t mutex_notify;
++extern pthread_cond_t cond_wakeup;
++
++/* for controller of read/write threads */
++extern int rw_ctl_init(const char *ctl_path);
++extern void *rw_ctl_loop(int ctl_fd);
++
++/* for trace read/write thread */
++extern void *rw_thread_info_new(void);
++extern void *rw_thread_init(int cpu, const char *in_path, const char *out_path,
++			bool stdout_flag, unsigned long pipe_size,
++			struct rw_thread_info *rw_ti);
++extern pthread_t rw_thread_run(struct rw_thread_info *rw_ti);
++
++static inline void *zalloc(size_t size)
++{
++	return calloc(1, size);
++}
++
++#define pr_err(format, ...) fprintf(stderr, format, ## __VA_ARGS__)
++#define pr_info(format, ...) fprintf(stdout, format, ## __VA_ARGS__)
++#ifdef DEBUG
++#define pr_debug(format, ...) fprintf(stderr, format, ## __VA_ARGS__)
++#else
++#define pr_debug(format, ...) do {} while (0)
++#endif
++
++#endif /*__GUEST_AGENT_H__*/
 
 
