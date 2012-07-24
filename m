@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab2GXDDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 23:03:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52786 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab2GXDDf (ORCPT
+	id S1755203Ab2GXDKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 23:10:49 -0400
+Received: from trem.minaslivre.org ([74.50.53.205]:59779 "EHLO
+	grilo.cascardo.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab2GXDKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 23:03:35 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <500E107A.7030907@jp.fujitsu.com>
-Date: Tue, 24 Jul 2012 12:03:22 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 23 Jul 2012 23:10:47 -0400
+Date: Tue, 24 Jul 2012 00:09:47 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+To: Miguel =?utf-8?B?R8OzbWV6?= <magomez@igalia.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, don@syst.com.br,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1 v2] classmate-laptop: Add support for Classmate V4
+ accelerometer.
+Message-ID: <20120724030946.GA2742@nautilus.holoscopio.com>
+References: <cover.1340976795.git.magomez@igalia.com>
+ <39ac42c709e498fbef4f0f0f24edc5331e5f4473.1340976795.git.magomez@igalia.com>
+ <20120717224749.GA20813@nautilus.holoscopio.com>
+ <5006BFEC.1010407@igalia.com>
+ <20120723132841.GD21495@srcf.ucam.org>
+ <500D52A7.8040606@igalia.com>
+ <20120723133618.GC21838@srcf.ucam.org>
+ <500D5549.3040109@igalia.com>
 MIME-Version: 1.0
-To: <lenb@kernel.org>, <linux-acpi@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] acpi : create sun sysfs file in container device
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <500D5549.3040109@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no comment on the patch about a month. But I want to merge the patch
-into linux-3.6. So I resend it. 
 
----
-Even if container device has _SUN method, the method is ignored. So we cannot
-know slot-unique ID number of the container device. The patch creates "sun"
-file in sysfs so that we can recognize it.
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On Mon, Jul 23, 2012 at 03:44:41PM +0200, Miguel G=C3=B3mez wrote:
+> El 23/07/12 15:36, Matthew Garrett escribi=C3=B3:
+> >On Mon, Jul 23, 2012 at 03:33:27PM +0200, Miguel G=C3=B3mez wrote:
+> >
+> >>Names are upper-cased in acpica, so the device is reported as
+> >>FNBT0000. But in the driver it's named FnBT0000, and that's why it
+> >>doesn't match.
+> >
+> >So just change the existing entry in the driver to FNBT0000?
+>=20
+> I'd go for it. I can send a patch if you want. But not sure about
+> Thadeu's opinion. In the old thread it seems that he wanted to
+> explore other options besides that.
+>=20
+> Do you agree with that change Thadeu?
+>=20
 
----
- drivers/acpi/container.c |   36 +++++++++++++++++++++++++++++++++---
- 1 file changed, 33 insertions(+), 3 deletions(-)
+I'd say the other options were met with silence. So, go forward with the
+patch and I'll ack it.
 
-Index: linux-3.5-rc1/drivers/acpi/container.c
-===================================================================
---- linux-3.5-rc1.orig/drivers/acpi/container.c	2012-06-14 15:35:31.045500166 +0900
-+++ linux-3.5-rc1/drivers/acpi/container.c	2012-06-14 16:40:13.010405144 +0900
-@@ -32,6 +32,7 @@
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/acpi.h>
-+#include <linux/device.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
- #include <acpi/container.h>
-@@ -93,10 +94,30 @@ static int is_device_present(acpi_handle
- }
+Thanks.
+Cascardo.
 
- /*******************************************************************/
-+
-+static ssize_t acpi_device_sun_show(struct device *dev,
-+				    struct device_attribute *attr, char *buf) {
-+	struct acpi_device *device = to_acpi_device(dev);
-+	acpi_status status;
-+	unsigned long long sun;
-+
-+	status = acpi_evaluate_integer(device->handle, "_SUN", NULL,  &sun);
-+	if (ACPI_FAILURE(status))
-+		return 0;
-+
-+	return sprintf(buf, "%llu\n", sun);
-+}
-+
-+static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
-+
-+/*******************************************************************/
-+
- static int acpi_container_add(struct acpi_device *device)
- {
- 	struct acpi_container *container;
--
-+	acpi_status status;
-+	acpi_handle temp;
-+	int result = 0;
+>=20
+> --=20
+> Miguel G=C3=B3mez
+> Igalia - http://www.igalia.com
 
- 	if (!device) {
- 		printk(KERN_ERR PREFIX "device is NULL\n");
-@@ -115,13 +136,22 @@ static int acpi_container_add(struct acp
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device <%s> bid <%s>\n",
- 			  acpi_device_name(device), acpi_device_bid(device)));
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--	return 0;
-+	status = acpi_get_handle(device->handle, "_SUN", &temp);
-+	if (ACPI_SUCCESS(status))
-+		result = device_create_file(&device->dev, &dev_attr_sun);
-+
-+	return result;
- }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
- static int acpi_container_remove(struct acpi_device *device, int type)
- {
--	acpi_status status = AE_OK;
-+	acpi_status status;
- 	struct acpi_container *pc = NULL;
-+	acpi_handle temp;
-+
-+	status = acpi_get_handle(device->handle, "_SUN", &temp);
-+	if (ACPI_SUCCESS(status))
-+		device_remove_file(&device->dev, &dev_attr_sun);
+iQIcBAEBAgAGBQJQDhH5AAoJEAq6ZQNy/ZVxF7oQAKtYBBw92OeB7YkNSlG1Wram
+IHpCk5so8sYk0rz58NKg8JMgh5GD4A0UWHMGuEb1hRbkHzTbdF5Jdps8ldFH/6Sm
+HAOJ9Pf7kiAucDVCOojsR8391FFvxQFgHUOhpY0VAUFpJgD7obDXrCCl08dBlN70
+F075JqYsK3rh9enpJvUI5nDrA/h0/XUdRgstAagUmLhCAqEgToiF5j02bE+kdlpG
+wE0iqtco337Gczc1pidRQXwEm1wY8NXM++XGFtxUPG2ITGrgyzpEyCRQOH4zN0tB
+/Ozm+nhoMTqehxToFp1Q/Q+1DUYAG46oxXw7hN8hCJzJhiuQifcbawLVb/uGwUSy
+V/b9Dkv2JVihTvW8NBN0dtgUmsO/RfvNmGG+OBN96qHvuJ8/Wdyw8uunxFGIybjM
+M+ntunSPC5IfV7k2RBd0HD4RW3hjTFgPMTp5u3Onh//EfAWOJIliLzY1ThV/LjRA
+TkVMAXUs4sGc7T9PN1/j/d5IW+or7MD+QDAnkCE5ZsCwgAA8XyrbFGAJzB80P9td
+OuDA7VEZKbVidBj64o5JSUc9YdUoWnkD697xfZuPMfFf+hoIc9DTbeICT7giicST
++pvqG4Zv0c7qBbxCzvGzCmLR2VKNRlmV5rxGSt26wWWK2Ypjt43CUbiFi1mc3v3r
+603qbYXV0iQaUy2dveBQ
+=82TM
+-----END PGP SIGNATURE-----
 
- 	pc = acpi_driver_data(device);
- 	kfree(pc);
-
+--TB36FDmn/VVEgNH/--
