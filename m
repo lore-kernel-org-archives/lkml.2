@@ -1,47 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab2GXT0m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 15:26:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28697 "EHLO mx1.redhat.com"
+	id S1754018Ab2GXT2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:28:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:54802 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab2GXT0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 15:26:40 -0400
-Message-ID: <500EF6EF.4080708@redhat.com>
-Date: Tue, 24 Jul 2012 13:26:39 -0600
-From: Jeff Law <law@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753694Ab2GXT2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 15:28:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [RFC][PATCH 0/14] PM / shmobile: Pass power domain information via DT (was: Re: [RFD] PM: Device tree representation of power domains)
+Date: Tue, 24 Jul 2012 21:34:00 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>
+References: <201207032302.17805.rjw@sisk.pl> <201207211917.12519.rjw@sisk.pl> <201207241520.20674.arnd@arndb.de>
+In-Reply-To: <201207241520.20674.arnd@arndb.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Josh Boyer <jwboyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc
- definition
-References: <20120724181209.GA10534@zod.bos.redhat.com> <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com> <20120724182409.GB10534@zod.bos.redhat.com> <20120724183230.GC10534@zod.bos.redhat.com> <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com> <20120724190302.GE10534@zod.bos.redhat.com> <CA+55aFyn-yMUMdcY8jp65eeoGm3RPzy9p+St35-HGE_xXiVJag@mail.gmail.com> <500EF43C.3060200@redhat.com> <CA+55aFwvidWyBK5+U_4r5uibSkk4A-1jbnY-i9BtRgbx=Odo7w@mail.gmail.com>
-In-Reply-To: <CA+55aFwvidWyBK5+U_4r5uibSkk4A-1jbnY-i9BtRgbx=Odo7w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207242134.00769.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/12 13:24, Linus Torvalds wrote:
-> On Tue, Jul 24, 2012 at 12:15 PM, Jeff Law <law@redhat.com> wrote:
->>
->> Please refer to the original discussion where they did evaluate the cost of
->> this change and tested that the final change made no difference to the
->> generated code.
->
-> Umm. That bugzilla entry seems to be talking about a *sane* change, namely
->
-> -  ({ unsigned long int __d = (d);					    \
-> +  ({ unsigned long int __d = (unsigned long int) (d);			    \
->
-> in __FD_ELT(), which is totally different from the one Josh talks about.
-Right.  Josh's change is necessary to prevent warnings from folks 
-(incorrectly) using posix_types.h instead of select.h after the change 
-in that BZ was made.  That's why I originally stated that, arguably, 
-posix_types.h really should go away or just use the definitions provided 
-by glibc.
+On Tuesday, July 24, 2012, Arnd Bergmann wrote:
+> On Saturday 21 July 2012, Rafael J. Wysocki wrote:
+> > On Monday, July 16, 2012, Rafael J. Wysocki wrote:
+> > > On Thursday, July 05, 2012, Rafael J. Wysocki wrote:
+> > > > On Wednesday, July 04, 2012, Mark Brown wrote:
+> > > > > I guess the OMAP hwmod stuff is the closest thing we've got at the
+> > > > > minute (I don't recall seeing any other implementations in mainline) but
+> > > > > the hwmods themselves don't appear in the DTS right now.  They have a
+> > > > > ti,hwmods property on each device naming the hwmod it's in, something
+> > > > > like that seems like a reasonable approach, possibly a reference to
+> > > > > another DT node rather than or as well as a string?  That seems fairly
+> > > > > easy.
+> > > > 
+> > > > Well, it looks like (and please tell me if I'm wrong) the hwmons are just
+> > > > string attributes that are parsed by the platform-specific code through
+> > > > a platform bus type notifier.
+> > > > 
+> > > > We could do that for power domains too, but then each platform wanting to
+> > > > use them would need to implement such a notifier and add its own routine
+> > > > for parsing those strings.  Would that be acceptable to everyone concerned?
+> > > 
+> > > I tried to follow the above suggestion and prepared the following patchset
+> > > that allows power domain information for Renesas platforms to be passed as
+> > > "renesas,pmdomain" string attribute of device nodes.  It adds functions
+> > > allowing the generic PM domains framework to use names for domain
+> > > identification in various situations and reworks the ARM/shmobile power domains
+> > > support code to used those functions instead of the "raw" ones that take
+> > > domain pointers as their arguments.  Finally, it defines a platform bus type
+> > > notifier that will add devices whose DT nodes contain the "renesas,pmdomain"
+> > > attribute to the power domains indicated by it (the value of that attribute
+> > > should be the name of the PM domain to add the device to after it's been
+> > > registered).  All of this should allow platform devices to be added to
+> > > appropriate power domains automatically based on the information read from
+> > > a DT.
+> > > 
+> > > The patches are on top of the current linux-next tree.
+> > > 
+> > > I've tested the patches that could be tested on the Mackerel board, except
+> > > for the last one (I'm still working on testing it).
+> > 
+> > Well, no comments, no objections.  Good!
+> > 
+> > I've just tested [14/14] too and it works as expected.
+> 
+> Sorry for taking so long to reply. I am really not that familiar with the
+> power domain requirements, but I do have two comments on your approach:
+> 
+> * I think when we want to add a generic concept to the device tree such
+>   as power domains, we should always make it specified in a generic way.
 
+Do we really want that?  I'm a bit skeptical, because apparently nobody
+cares, as the (zero) response to this patchset evidently indicates and
+since nobody cares, it's probably better not to add such "generic" things
+just yet.
 
-Jeff
+>   You have used the "renesas,pmdomain" attribute, which is specific to
+>   one vendor and requires platform specific code to read it.
+>   Is there any reason not to put the code into the generic
+>   drivers/base/power/domain.c file (or near it) and make a binding that
+>   works for everyone?
+
+Yes, there is.  A couple of them in fact.
+
+First off, power domains will always need platform-specific code to support
+them, no matter what.  The problem is that they tend to require special
+handling, even within the same SoC, let alone different SoCs, and that handling
+has to be implemented in an SoC-specific way, because it has to know various
+things about the platform (like what to write to what register(s) at what time
+and so on).  Of course, that platform-specific code needs to know which
+domain the given description corresponds to and there doesn't seem to be any
+useful way to specify that through DTs.
+
+Second, the generic code needed to support such a binding would have to be
+quite complex and I don't see any advantage from adding it.
+
+Finally, even if I did that, I seriously doubt it would really work for
+everyone.  Unfortunately, I have no idea what _everyone's_ needs are,
+I only know what the needs of Renesas platforms are, so I went for an
+approach limited to those platforms.
+
+> * Mark suggested two options (string and phandle), and (you guessed it),
+
+To me, the Mark's suggestion was to follow the example of TI hwmods, which
+I did.  In fact, the power domains on Renesas platforms are an analogous
+concept, so in my opinion handling them in analogy with hwmods makes a lot of
+sense.
+
+>   I would much prefer the other one.
+
+However, I wouldn't. :-)
+
+>   IMHO using phandle makes it much easier to do this in a generic way,
+>   without having to document every possible string that this can be
+>   set to in the binding document. Obviously the phandle requires having
+>   a node in the device tree for each domain, but I think having that
+>   node is actually an advantage because it lets you describe the
+>   hierarchy of the domains there.
+
+I don't quite see how it is better.  I could (and should in fact) represent
+that hierarchy as an array of pairs of strings without adding any special
+parsing code to the kernel (except for a simple routine walking that table
+and calling pm_genpd_add_subdomain_names() for every pair).
+
+The only disadvantage of the current approach I can see is that whoever
+creates a dts for a board based on the given SoC has to know the names of the
+power domains to use in there.  I don't think this is an overly burdensome
+requirement.
+
+The other way around, the platform code supposed to handle the power domains
+would need a way to match DT nodes against the domains, which also would
+require some string-based identification and that would have to be documented
+as well.
+
+So no, I don't think using phandles would buy us anything, as of today at least.
+
+Thanks,
+Rafael
