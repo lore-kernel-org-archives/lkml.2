@@ -1,132 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab2GXUc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:32:28 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:29092 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab2GXUc1 (ORCPT
+	id S1756047Ab2GXUex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:34:53 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60138 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755882Ab2GXUew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:32:27 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/p2m: Check __brk_limit before allocating.
-Date: Tue, 24 Jul 2012 16:23:33 -0400
-Message-Id: <1343161413-11077-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 24 Jul 2012 16:34:52 -0400
+Date: Tue, 24 Jul 2012 13:34:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        usb-storage@lists.one-eyed-alien.net
+Subject: Re: [PATCH] ene_ub6250: Use macros for firmware names
+Message-ID: <20120724203448.GA1617@kroah.com>
+References: <1343161869-129765-1-git-send-email-tim.gardner@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343161869-129765-1-git-send-email-tim.gardner@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The P2M code is smart enough to return that it cannot allocate
-anymore and it can perculate up the stack without trouble.
-So check the __brk_limit values before allocating from extend_brk.
+On Tue, Jul 24, 2012 at 02:31:09PM -0600, Tim Gardner wrote:
+> Advertise firmware files using MODULE_FIRMWARE macros.
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-usb@vger.kernel.org
+> Cc: usb-storage@lists.one-eyed-alien.net
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/usb/storage/ene_ub6250.c |   26 +++++++++++++++++++-------
+>  1 file changed, 19 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/usb/storage/ene_ub6250.c b/drivers/usb/storage/ene_ub6250.c
+> index b28f2ad..3fec82f 100644
+> --- a/drivers/usb/storage/ene_ub6250.c
+> +++ b/drivers/usb/storage/ene_ub6250.c
+> @@ -29,9 +29,21 @@
+>  #include "protocol.h"
+>  #include "debug.h"
+>  
+> +#define SD_INIT1_FIRMWARE "ene-ub6250/sd_init1.bin"
+> +#define SD_INIT2_FIRMWARE "ene-ub6250/sd_init2.bin"
+> +#define SD_RW_FIRMWARE "ene-ub6250/sd_rdwr.bin"
+> +#define MS_INIT_FIRMWARE "ene-ub6250/ms_init.bin"
+> +#define MSP_RW_FIRMWARE "ene-ub6250/msp_rdwr.bin"
+> +#define MS_RW_FIRMWARE "ene-ub6250/ms_rdwr.bin"
+> +
+>  MODULE_DESCRIPTION("Driver for ENE UB6250 reader");
+>  MODULE_LICENSE("GPL");
+> -
+> +MODULE_FIRMWARE(SD_INIT1_FIRMWARE);
+> +MODULE_FIRMWARE(SD_INIT2_FIRMWARE);
+> +MODULE_FIRMWARE(SD_RW_FIRMWARE);
+> +MODULE_FIRMWARE(MS_INIT_FIRMWARE);
+> +MODULE_FIRMWARE(MSP_RW_FIRMWARE);
+> +MODULE_FIRMWARE(MS_RW_FIRMWARE);
 
-This allows us to boot on machines where we do not have enough
-__brk space. This means that instead of getting:
+Why do you need the #defines here at all?  What's wrong with just using
+the file names in the MODULE_FIRMWARE() macro directly?  That cuts the
+size of the patch in half :)
 
-Freeing 9f-100 pfn range: 97 pages freed
-Freeing b7ee0-ecd9b pfn range: 216763 pages freed
-Released 216860 pages of unused memory
-Set 295297 page(s) to 1-1 mapping
--Populating 100000-134f1c pfn range: 216860 pages added
-+Populating 100000-134f1c pfn range: 30720 pages added
+thanks,
 
-We would get a limited amount of pages populated back, but
-without hitting this:
-
-(XEN) domain_crash_sync called from entry.S
-(XEN) CPU:    0
-(XEN) RIP:    e033:[<ffffffff818aad3b>]
-(XEN) RFLAGS: 0000000000000206   EM: 1   CONTEXT: pv guest
-(XEN) rax: ffffffff81a7c000   rbx: 000000000000003d   rcx: 0000000000001000
-(XEN) rdx: ffffffff81a7b000   rsi: 0000000000001000   rdi: 0000000000001000
-(XEN) rbp: ffffffff81801cd8   rsp: ffffffff81801c98   r8:  0000000000100000
-(XEN) r9:  ffffffff81a7a000   r10: 0000000000000001   r11: 0000000000000003
-(XEN) r12: 0000000000000004   r13: 0000000000000004   r14: 000000000000003d
-(XEN) r15: 00000000000001e8   cr0: 000000008005003b   cr4: 00000000000006f0
-(XEN) cr3: 0000000125803000   cr2: 0000000000000000
-(XEN) ds: 0000   es: 0000   fs: 0000   gs: 0000   ss: e02b   cs: e033
-(XEN) Guest stack trace from rsp=ffffffff81801c98:
-
-.. which is extend_brk hitting a BUG_ON.
-
-Note that git commit c3d93f880197953f86ab90d9da4744e926b38e33
-(xen: populate correct number of pages when across mem boundary (v2))
-exposed this bug).
-
-Interestingly enough, most of the time we are not going to hit this
-b/c the _brk space is quite large:
- ffffffff81a25000 B __brk_base
- ffffffff81e43000 B __brk_limit
-= ~4MB.
-vs earlier kernels (with this back-ported), the space is smaller:
- ffffffff81a25000 B __brk_base
- ffffffff81a7b000 B __brk_limit
-= 344 kBytes.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/p2m.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 64effdc..b5bb26c 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -498,7 +498,14 @@ static bool alloc_p2m(unsigned long pfn)
- 
- 	return true;
- }
--
-+#include <asm/sections.h>
-+bool __init can_extend_brk()
-+{
-+	/* Always reserve one for the DMI extend_brk call. */
-+	if ((char *)(_brk_end + 2 * PAGE_SIZE) > __brk_limit)
-+		return false;
-+	return true;
-+}
- static bool __init early_alloc_p2m_middle(unsigned long pfn, bool check_boundary)
- {
- 	unsigned topidx, mididx, idx;
-@@ -524,6 +531,9 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn, bool check_boundary
- 		return false;
- 
- 	/* Boundary cross-over for the edges: */
-+	if (!can_extend_brk())
-+		return false;
-+
- 	p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
- 
- 	p2m_init(p2m);
-@@ -540,7 +550,6 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn, bool check_boundary
- 
- 	return true;
- }
--
- static bool __init early_alloc_p2m(unsigned long pfn)
- {
- 	unsigned topidx = p2m_top_index(pfn);
-@@ -550,6 +559,8 @@ static bool __init early_alloc_p2m(unsigned long pfn)
- 	mid = p2m_top[topidx];
- 	mid_mfn_p = p2m_top_mfn_p[topidx];
- 	if (mid == p2m_mid_missing) {
-+		if (!can_extend_brk())
-+			return false;
- 		mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
- 
- 		p2m_mid_init(mid);
-@@ -560,6 +571,8 @@ static bool __init early_alloc_p2m(unsigned long pfn)
- 	}
- 	/* And the save/restore P2M tables.. */
- 	if (mid_mfn_p == p2m_mid_missing_mfn) {
-+		if (!can_extend_brk())
-+			return false;
- 		mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
- 		p2m_mid_mfn_init(mid_mfn_p);
- 
--- 
-1.7.7.6
-
+greg k-h
