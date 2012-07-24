@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab2GXBNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:13:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37371 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755528Ab2GXBKK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755629Ab2GXBNn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 21:13:43 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49219 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755529Ab2GXBKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Jul 2012 21:10:10 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <linux-kernel@vger.kernel.org>, <nico@linaro.org>, <will.deacon@arm.com>,
-        <catalin.marinas@arm.com>, Cyril Chemparathy <cyril@ti.com>,
-        Vitaly Andrianov <vitalya@ti.com>
-Subject: [RFC 16/23] ARM: LPAE: accomodate >32-bit addresses for page table base
-Date: Mon, 23 Jul 2012 21:09:18 -0400
-Message-ID: <1343092165-9470-17-git-send-email-cyril@ti.com>
+        <catalin.marinas@arm.com>, Vitaly Andrianov <vitalya@ti.com>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: [RFC 01/23] ARM: LPAE: disable phys-to-virt patching on PAE systems
+Date: Mon, 23 Jul 2012 21:09:03 -0400
+Message-ID: <1343092165-9470-2-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343092165-9470-1-git-send-email-cyril@ti.com>
 References: <1343092165-9470-1-git-send-email-cyril@ti.com>
@@ -24,267 +23,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch redefines the early boot time use of the R4 register to steal a few
-low order bits (ARCH_PGD_SHIFT bits), allowing for up to 38-bit physical
-addresses.
+From: Vitaly Andrianov <vitalya@ti.com>
 
-This is probably not the best means to the end, and a better alternative may
-be to modify the head.S register allocations to fit in full register pairs for
-pgdir and swapper_pg_dir.  However, squeezing out these extra registers seemed
-to be a far greater pain than squeezing out a few low order bits from the page
-table addresses.
+The current phys-to-virt patching mechanism is broken on PAE machines with
+64-bit physical addressing.  This patch disables the patching mechanism in
+such configurations.
 
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/include/asm/cache.h |    9 +++++++++
- arch/arm/kernel/head.S       |    7 +++++--
- arch/arm/kernel/smp.c        |   11 +++++++++--
- arch/arm/mm/proc-arm1026.S   |    2 ++
- arch/arm/mm/proc-mohawk.S    |    2 ++
- arch/arm/mm/proc-v6.S        |    2 ++
- arch/arm/mm/proc-v7-2level.S |    2 ++
- arch/arm/mm/proc-v7-3level.S |    7 +++++++
- arch/arm/mm/proc-v7.S        |    1 +
- arch/arm/mm/proc-xsc3.S      |    2 ++
- 10 files changed, 41 insertions(+), 4 deletions(-)
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/include/asm/cache.h b/arch/arm/include/asm/cache.h
-index 75fe66b..986480c 100644
---- a/arch/arm/include/asm/cache.h
-+++ b/arch/arm/include/asm/cache.h
-@@ -17,6 +17,15 @@
- #define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
- 
- /*
-+ * Minimum guaranted alignment in pgd_alloc().  The page table pointers passed
-+ * around in head.S and proc-*.S are shifted by this amount, in order to
-+ * leave spare high bits for systems with physical address extension.  This
-+ * does not fully accomodate the 40-bit addressing capability of ARM LPAE, but
-+ * gives us about 38-bits or so.
-+ */
-+#define ARCH_PGD_SHIFT		L1_CACHE_SHIFT
-+
-+/*
-  * With EABI on ARMv5 and above we must have 64-bit aligned slab pointers.
-  */
- #if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index 692e57f..6fe1c40 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -22,6 +22,7 @@
- #include <asm/memory.h>
- #include <asm/thread_info.h>
- #include <asm/pgtable.h>
-+#include <asm/cache.h>
- 
- #ifdef CONFIG_DEBUG_LL
- #include <mach/debug-macro.S>
-@@ -160,7 +161,7 @@ ENDPROC(stext)
-  *
-  * Returns:
-  *  r0, r3, r5-r7 corrupted
-- *  r4 = physical page table address
-+ *  r4 = page table (see ARCH_PGD_SHIFT in asm/cache.h)
-  */
- __create_page_tables:
- 	pgtbl	r4, r8				@ page table address
-@@ -320,6 +321,7 @@ __create_page_tables:
- #ifdef CONFIG_ARM_LPAE
- 	sub	r4, r4, #0x1000		@ point to the PGD table
- #endif
-+	mov	r4, r4, lsr #ARCH_PGD_SHIFT
- 	mov	pc, lr
- ENDPROC(__create_page_tables)
- 	.ltorg
-@@ -392,7 +394,7 @@ __secondary_data:
-  *  r0  = cp#15 control register
-  *  r1  = machine ID
-  *  r2  = atags or dtb pointer
-- *  r4  = page table pointer
-+ *  r4  = page table (see ARCH_PGD_SHIFT in asm/cache.h)
-  *  r9  = processor ID
-  *  r13 = *virtual* address to jump to upon completion
-  */
-@@ -422,6 +424,7 @@ __enable_mmu:
- 	@ has the processor setup already programmed the page table pointer?
- 	adds	r5, r4, #1
- 	beq	__turn_mmu_on			@ yes!
-+	mov	r4, r4, lsl #ARCH_PGD_SHIFT
- 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
- 	b	__turn_mmu_on
- ENDPROC(__enable_mmu)
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 2c7217d..e41e1be 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -42,6 +42,7 @@
- #include <asm/ptrace.h>
- #include <asm/localtimer.h>
- #include <asm/smp_plat.h>
-+#include <asm/cache.h>
- 
- /*
-  * as from 2.5, kernels no longer have an init_tasks structure
-@@ -62,6 +63,7 @@ static DECLARE_COMPLETION(cpu_running);
- 
- int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
- {
-+	phys_addr_t pgdir;
- 	int ret;
- 
- 	/*
-@@ -69,8 +71,13 @@ int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
- 	 * its stack and the page tables.
- 	 */
- 	secondary_data.stack = task_stack_page(idle) + THREAD_START_SP;
--	secondary_data.pgdir = virt_to_phys(idmap_pgd);
--	secondary_data.swapper_pg_dir = virt_to_phys(swapper_pg_dir);
-+
-+	pgdir = virt_to_phys(idmap_pgd);
-+	secondary_data.pgdir = pgdir >> ARCH_PGD_SHIFT;
-+
-+	pgdir = virt_to_phys(swapper_pg_dir);
-+	secondary_data.swapper_pg_dir = pgdir >> ARCH_PGD_SHIFT;
-+
- 	__cpuc_flush_dcache_area(&secondary_data, sizeof(secondary_data));
- 	outer_clean_range(__pa(&secondary_data), __pa(&secondary_data + 1));
- 
-diff --git a/arch/arm/mm/proc-arm1026.S b/arch/arm/mm/proc-arm1026.S
-index c28070e..4556f77 100644
---- a/arch/arm/mm/proc-arm1026.S
-+++ b/arch/arm/mm/proc-arm1026.S
-@@ -22,6 +22,7 @@
- #include <asm/pgtable-hwdef.h>
- #include <asm/pgtable.h>
- #include <asm/ptrace.h>
-+#include <asm/cache.h>
- 
- #include "proc-macros.S"
- 
-@@ -403,6 +404,7 @@ __arm1026_setup:
- 	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer on v4
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs on v4
-+	mov	r4, r4, lsl #ARCH_PGD_SHIFT
- 	mcr	p15, 0, r4, c2, c0		@ load page table pointer
- 	mvn	r4, #0				@ do not set page table pointer
- #endif
-diff --git a/arch/arm/mm/proc-mohawk.S b/arch/arm/mm/proc-mohawk.S
-index a26303c..13fcc67 100644
---- a/arch/arm/mm/proc-mohawk.S
-+++ b/arch/arm/mm/proc-mohawk.S
-@@ -28,6 +28,7 @@
- #include <asm/pgtable.h>
- #include <asm/page.h>
- #include <asm/ptrace.h>
-+#include <asm/cache.h>
- #include "proc-macros.S"
- 
- /*
-@@ -388,6 +389,7 @@ __mohawk_setup:
- 	mcr	p15, 0, r0, c7, c7		@ invalidate I,D caches
- 	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
- 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs
-+	mov	r4, r4, lsl #ARCH_PGD_SHIFT
- 	orr	r4, r4, #0x18			@ cache the page table in L2
- 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
- 	mvn	r4, #0				@ do not set page table pointer
-diff --git a/arch/arm/mm/proc-v6.S b/arch/arm/mm/proc-v6.S
-index 872156e..4751be7 100644
---- a/arch/arm/mm/proc-v6.S
-+++ b/arch/arm/mm/proc-v6.S
-@@ -17,6 +17,7 @@
- #include <asm/hwcap.h>
- #include <asm/pgtable-hwdef.h>
- #include <asm/pgtable.h>
-+#include <asm/cache.h>
- 
- #include "proc-macros.S"
- 
-@@ -206,6 +207,7 @@ __v6_setup:
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r0, c8, c7, 0		@ invalidate I + D TLBs
- 	mcr	p15, 0, r0, c2, c0, 2		@ TTB control register
-+	mov	r4, r4, lsl #ARCH_PGD_SHIFT
- 	ALT_SMP(orr	r4, r4, #TTB_FLAGS_SMP)
- 	ALT_UP(orr	r4, r4, #TTB_FLAGS_UP)
- 	ALT_SMP(orr	r8, r8, #TTB_FLAGS_SMP)
-diff --git a/arch/arm/mm/proc-v7-2level.S b/arch/arm/mm/proc-v7-2level.S
-index cc78c0c..f4bc63b 100644
---- a/arch/arm/mm/proc-v7-2level.S
-+++ b/arch/arm/mm/proc-v7-2level.S
-@@ -143,8 +143,10 @@ ENDPROC(cpu_v7_set_pte_ext)
- 	 */
- 	.macro	v7_ttb_setup, zero, ttbr0, ttbr1, tmp
- 	mcr	p15, 0, \zero, c2, c0, 2	@ TTB control register
-+	mov	\ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT
- 	ALT_SMP(orr	\ttbr0, \ttbr0, #TTB_FLAGS_SMP)
- 	ALT_UP(orr	\ttbr0, \ttbr0, #TTB_FLAGS_UP)
-+	mov	\ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT
- 	ALT_SMP(orr	\ttbr1, \ttbr1, #TTB_FLAGS_SMP)
- 	ALT_UP(orr	\ttbr1, \ttbr1, #TTB_FLAGS_UP)
- 	mcr	p15, 0, \ttbr0, c2, c0, 0	@ load TTB0
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index 5e3bed1..33f322a 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -103,6 +103,7 @@ ENDPROC(cpu_v7_set_pte_ext)
- 	 */
- 	.macro	v7_ttb_setup, zero, ttbr0, ttbr1, tmp
- 	ldr	\tmp, =swapper_pg_dir		@ swapper_pg_dir virtual address
-+	mov	\tmp, \tmp, lsr #ARCH_PGD_SHIFT
- 	cmp	\ttbr1, \tmp			@ PHYS_OFFSET > PAGE_OFFSET? (branch below)
- 	mrc	p15, 0, \tmp, c2, c0, 2		@ TTB control register
- 	orr	\tmp, \tmp, #TTB_EAE
-@@ -122,8 +123,14 @@ ENDPROC(cpu_v7_set_pte_ext)
- 	 */
- 	orrls	\tmp, \tmp, #TTBR1_SIZE				@ TTBCR.T1SZ
- 	mcr	p15, 0, \tmp, c2, c0, 2				@ TTBCR
-+	mov	\tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)	@ upper bits
-+	mov	\ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT		@ lower bits
- 	addls	\ttbr1, \ttbr1, #TTBR1_OFFSET
- 	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
-+	mov	\tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)	@ upper bits
-+	mov	\ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT		@ lower bits
-+	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
-+	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
- 	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
- 	.endm
- 
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index 8850194..443f602 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -16,6 +16,7 @@
- #include <asm/hwcap.h>
- #include <asm/pgtable-hwdef.h>
- #include <asm/pgtable.h>
-+#include <asm/cache.h>
- 
- #include "proc-macros.S"
- 
-diff --git a/arch/arm/mm/proc-xsc3.S b/arch/arm/mm/proc-xsc3.S
-index db3836b..a43a07d 100644
---- a/arch/arm/mm/proc-xsc3.S
-+++ b/arch/arm/mm/proc-xsc3.S
-@@ -32,6 +32,7 @@
- #include <asm/pgtable-hwdef.h>
- #include <asm/page.h>
- #include <asm/ptrace.h>
-+#include <asm/cache.h>
- #include "proc-macros.S"
- 
- /*
-@@ -453,6 +454,7 @@ __xsc3_setup:
- 	mcr	p15, 0, ip, c7, c10, 4		@ data write barrier
- 	mcr	p15, 0, ip, c7, c5, 4		@ prefetch flush
- 	mcr	p15, 0, ip, c8, c7, 0		@ invalidate I and D TLBs
-+	mov	r4, r4, lsl #ARCH_PGD_SHIFT
- 	orr	r4, r4, #0x18			@ cache the page table in L2
- 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
- 	mvn	r4, #0				@ do not set page table pointer
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a91009c..55da671 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -191,6 +191,7 @@ config ARM_PATCH_PHYS_VIRT
+ 	default y
+ 	depends on !XIP_KERNEL && MMU
+ 	depends on !ARCH_REALVIEW || !SPARSEMEM
++	depends on !ARCH_PHYS_ADDR_T_64BIT
+ 	help
+ 	  Patch phys-to-virt and virt-to-phys translation functions at
+ 	  boot and module load time according to the position of the
 -- 
 1.7.9.5
 
