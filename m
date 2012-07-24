@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030181Ab2GXSSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 14:18:30 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:49580 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933707Ab2GXSSZ (ORCPT
+	id S1756262Ab2GXSTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 14:19:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55716 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab2GXSTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 14:18:25 -0400
-Date: Tue, 24 Jul 2012 19:18:20 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	Tue, 24 Jul 2012 14:19:03 -0400
+Date: Tue, 24 Jul 2012 11:18:58 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Cc: Olof Johansson <olof@lixom.net>, "axboe@kernel.dk" <axboe@kernel.dk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-Subject: Re: [RFC][PATCH v2 2/3] Hold multiple logs
-Message-ID: <20120724181820.GA23820@srcf.ucam.org>
-References: <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
- <20120720030328.GC5637@redhat.com>
- <20120723141632.GB23047@srcf.ucam.org>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB33479@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F19370A1B@ORSMSX104.amr.corp.intel.com>
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION] [PATCH] block: uninitialized ioc->nr_tasks
+ triggers WARN_ON
+Message-ID: <20120724181858.GB5776@google.com>
+References: <20120717213643.GA24726@quad.lixom.net>
+ <20120717222444.GG24336@google.com>
+ <500EA4A2.8050806@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19370A1B@ORSMSX104.amr.corp.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <500EA4A2.8050806@parallels.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 05:52:25PM +0000, Luck, Tony wrote:
-> 	if (QueryVariableInfo says enough space)
-> 		pstore saves log as new record
-> 	else
-> 		we consider over-write options to re-use an existing record, or just drop this one
+Hello,
 
-I'd lean towards saying drop, and rely on userspace to do something 
-useful. Personal experience is that if two oopses are unrelated then 
-there's enough time for userspace to do something and remove the 
-existing record, and if they're related it's the first one that tells 
-you where the problem actually is.
+On Tue, Jul 24, 2012 at 05:35:30PM +0400, Maxim V. Patlasov wrote:
+> 07/18/2012 02:24 AM, Tejun Heo пишет:
+> >Hello, Olof.
+> >
+> >On Tue, Jul 17, 2012 at 02:36:43PM -0700, Olof Johansson wrote:
+> >>It seems like the init of ioc->nr_tasks was removed in that patch,
+> >>so it starts out at 0 instead of 1.
+> >>
+> >>Tejun, is the right thing here to add back the init, or should something else
+> >>be done?
+> >>
+> >>The below patch removes the warning, but I haven't done any more extensive
+> >>testing on it.
+> >>
+> >>
+> >>Signed-off-by: Olof Johansson <olof@lixom.net>
+> >Right, the patch shouldn't have replaced the init.
+> >
+> >  Acked-by: Tejun Heo <tj@kernel.org>
+> >
+> >Fortunately, the effect of the bug is limited.  ioc->nr_tasks only
+> >used to veto block cgroup migration if a task has ioc which is shared
+> >by multiple tasks.  Currently, the only known program using CLONE_IO
+> >is dump and even if somebody migrates some threads of a single dump
+> >instance to a different block cgroup, the result won't be catastrophic
+> >although block cgroup policies would become ambiguous.  IMHO, it
+> >should be okay to route this through -stable after 3.5.  Jens?
+> 
+> Please notice that annoying WARN_ON comes from world-visible
+> ioc_task_link(). So any third-party module using ioc_task_link()
+> ends up in that clutter in logs. E.g. OpenVZ ploop block-device uses
+> ioc_task_link().
 
-One thing that's worth noting - UEFI systems will typically only recover 
-deleted space on reset. create->delete->create->delete will reduce 
-available space until the platform is rebooted, at which point the 
-deleted portion will become available again.
+This should go through block tree.  Jens, ping.
+
+Thanks.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+tejun
