@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab2GXQgb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:36:31 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42042 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab2GXQg0 (ORCPT
+	id S932187Ab2GXQgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:36:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39412 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109Ab2GXQgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:36:26 -0400
+	Tue, 24 Jul 2012 12:36:35 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 19/32] PCI/mlx4: use PCIe capabilities access functions to simplify implementation
-Date: Wed, 25 Jul 2012 00:31:31 +0800
-Message-Id: <1343147504-25891-20-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v2 20/32] PCI/niu: use PCIe capabilities access functions to simplify implementation
+Date: Wed, 25 Jul 2012 00:31:32 +0800
+Message-Id: <1343147504-25891-21-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com>
 References: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com>
@@ -27,39 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe capabilities access functions to simplify mlx4 driver's
+Use PCIe capabilities access functions to simplify niu driver's
 implementation.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/net/ethernet/mellanox/mlx4/reset.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/sun/niu.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/reset.c b/drivers/net/ethernet/mellanox/mlx4/reset.c
-index 11e7c1c..6895214 100644
---- a/drivers/net/ethernet/mellanox/mlx4/reset.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/reset.c
-@@ -141,16 +141,16 @@ int mlx4_reset(struct mlx4_dev *dev)
- 	/* Now restore the PCI headers */
- 	if (pcie_cap) {
- 		devctl = hca_header[(pcie_cap + PCI_EXP_DEVCTL) / 4];
--		if (pci_write_config_word(dev->pdev, pcie_cap + PCI_EXP_DEVCTL,
--					   devctl)) {
-+		if (pci_pcie_capability_write_word(dev->pdev, PCI_EXP_DEVCTL,
-+						   devctl)) {
- 			err = -ENODEV;
- 			mlx4_err(dev, "Couldn't restore HCA PCI Express "
- 				 "Device Control register, aborting.\n");
- 			goto out;
- 		}
- 		linkctl = hca_header[(pcie_cap + PCI_EXP_LNKCTL) / 4];
--		if (pci_write_config_word(dev->pdev, pcie_cap + PCI_EXP_LNKCTL,
--					   linkctl)) {
-+		if (pci_pcie_capability_write_word(dev->pdev, PCI_EXP_LNKCTL,
-+						   linkctl)) {
- 			err = -ENODEV;
- 			mlx4_err(dev, "Couldn't restore HCA PCI Express "
- 				 "Link control register, aborting.\n");
+diff --git a/drivers/net/ethernet/sun/niu.c b/drivers/net/ethernet/sun/niu.c
+index 703c8cc..3f914c1 100644
+--- a/drivers/net/ethernet/sun/niu.c
++++ b/drivers/net/ethernet/sun/niu.c
+@@ -9768,7 +9768,7 @@ static int __devinit niu_pci_init_one(struct pci_dev *pdev,
+ 	union niu_parent_id parent_id;
+ 	struct net_device *dev;
+ 	struct niu *np;
+-	int err, pos;
++	int err;
+ 	u64 dma_mask;
+ 	u16 val16;
+ 
+@@ -9793,8 +9793,7 @@ static int __devinit niu_pci_init_one(struct pci_dev *pdev,
+ 		goto err_out_disable_pdev;
+ 	}
+ 
+-	pos = pci_pcie_cap(pdev);
+-	if (pos <= 0) {
++	if (!pci_is_pcie(pdev)) {
+ 		dev_err(&pdev->dev, "Cannot find PCI Express capability, aborting\n");
+ 		goto err_out_free_res;
+ 	}
+@@ -9819,14 +9818,14 @@ static int __devinit niu_pci_init_one(struct pci_dev *pdev,
+ 		goto err_out_free_dev;
+ 	}
+ 
+-	pci_read_config_word(pdev, pos + PCI_EXP_DEVCTL, &val16);
++	pci_pcie_capability_read_word(pdev, PCI_EXP_DEVCTL, &val16);
+ 	val16 &= ~PCI_EXP_DEVCTL_NOSNOOP_EN;
+ 	val16 |= (PCI_EXP_DEVCTL_CERE |
+ 		  PCI_EXP_DEVCTL_NFERE |
+ 		  PCI_EXP_DEVCTL_FERE |
+ 		  PCI_EXP_DEVCTL_URRE |
+ 		  PCI_EXP_DEVCTL_RELAX_EN);
+-	pci_write_config_word(pdev, pos + PCI_EXP_DEVCTL, val16);
++	pci_pcie_capability_write_word(pdev, PCI_EXP_DEVCTL, val16);
+ 
+ 	dma_mask = DMA_BIT_MASK(44);
+ 	err = pci_set_dma_mask(pdev, dma_mask);
 -- 
 1.7.9.5
 
