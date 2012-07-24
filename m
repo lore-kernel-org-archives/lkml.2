@@ -1,88 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab2GXU20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:28:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58450 "EHLO mail.skyhub.de"
+	id S1755982Ab2GXUbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:31:47 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:54916 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755738Ab2GXU2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:28:25 -0400
-Date: Tue, 24 Jul 2012 22:28:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
-Subject: Re: [PATCH] add blockconsole version 1.1
-Message-ID: <20120724202820.GA5167@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	=?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
-	Steve Hodgson <steve@purestorage.com>
-References: <20120713130336.GC10298@x1.osrc.amd.com>
- <20120713162009.GA10268@logfs.org>
- <20120716124614.GA19497@x1.osrc.amd.com>
- <20120718185335.GA1771@logfs.org>
- <20120718214520.GA14067@liondog.tnic>
- <20120723200459.GD17767@logfs.org>
- <20120724154218.GB13753@x1.osrc.amd.com>
- <20120724145334.GB24954@logfs.org>
- <20120724162546.GC13753@x1.osrc.amd.com>
- <20120724175232.GC24954@logfs.org>
+	id S1755392Ab2GXUbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 16:31:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [RFC][PATCH 0/14] PM / shmobile: Pass power domain information via DT (was: Re: [RFD] PM: Device tree representation of power domains)
+Date: Tue, 24 Jul 2012 22:37:27 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>
+References: <201207032302.17805.rjw@sisk.pl> <201207242134.00769.rjw@sisk.pl> <201207241956.06986.arnd@arndb.de>
+In-Reply-To: <201207241956.06986.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120724175232.GC24954@logfs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207242237.28051.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 01:52:32PM -0400, Jörn Engel wrote:
-> On Tue, 24 July 2012 18:25:47 +0200, Borislav Petkov wrote:
-> > > The advantage should be better robustness, in particular when dealing
-> > > with cheap flash devices.
+On Tuesday, July 24, 2012, Arnd Bergmann wrote:
+> On Tuesday 24 July 2012, Rafael J. Wysocki wrote:
+> > On Tuesday, July 24, 2012, Arnd Bergmann wrote:
+> > > On Saturday 21 July 2012, Rafael J. Wysocki wrote:
+> 
+> > > 
+> > > Sorry for taking so long to reply. I am really not that familiar with the
+> > > power domain requirements, but I do have two comments on your approach:
+> > > 
+> > > * I think when we want to add a generic concept to the device tree such
+> > >   as power domains, we should always make it specified in a generic way.
 > > 
-> > In the sense that we flush the current sector after one second the
-> > latest so that we can lose as small amount of data as possible if the
-> > system crashes right at that point?
+> > Do we really want that?  I'm a bit skeptical, because apparently nobody
+> > cares, as the (zero) response to this patchset evidently indicates and
+> > since nobody cares, it's probably better not to add such "generic" things
+> > just yet.
 > 
-> In the sense that cheap devices don't always handle rewrites of the
-> same sector well.  Often this results in the entire erase block being
-> rewritten, causing bad performance and wear-out.  Many cheap devices
-> aren't real block devices.  They are barely good enough to support
-> FAT and may die near-instantly with a different write pattern.
-> Blockconsole assumes utter crap as an underlying device.
-> 
-> The timer mainly ensures that, on a quiet system, those two lines of
-> output from half an hour ago actually make it to the device
-> eventually.  In the case of a crash, the panic notifier is supposed to
-> do the same for those messages you _really_ care about.
-> 
-> > Ok, I see what you mean. I see a red line in vim here. Ok, good to know,
-> > maybe this feature with the empty lines could be in the docs too so
-> > people don't ask that question again?
-> 
-> Last paragraph. ;)
-> 
-> > Or you issue a tag instead of an empty line like so:
+> Well, the trouble with bindings is that they are much harder to change
+> later, at least in incompatible ways. 
+
+Hmm, so I think you wanted to say that it might be burdensome to retain the
+code handling the old binding once we had started to use a new generic one.
+
+I can agree with that, but that's quite similar to user space interfaces.
+Once we've exposed a user space interface of some kind and someone starts
+to use it, we'll have to maintain it going forward for the user in question.
+However, there is a way to deprecate old user space interfaces and it has
+happened.
+
+In this particular case the burden would be on Renesas, but I don't think it
+would affect anybody else.
+
+> > >   You have used the "renesas,pmdomain" attribute, which is specific to
+> > >   one vendor and requires platform specific code to read it.
+> > >   Is there any reason not to put the code into the generic
+> > >   drivers/base/power/domain.c file (or near it) and make a binding that
+> > >   works for everyone?
 > > 
-> > [   10.498422] console [bcon0] enabled
-> > [   10.499899] blockconsole: now logging to /dev/sdc at 1
-> > [   10.594791] usb 5-2: new full-speed USB device number 3 using ohci_hcd
-> > <<LOG timeout of 1sec>>
-> > [   12.665911] xhci_hcd 0000:00:10.0: xHCI Host Controller
-> > [   12.668469] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
+> > Yes, there is.  A couple of them in fact.
 > > 
-> > which explains everything.
+> > First off, power domains will always need platform-specific code to support
+> > them, no matter what.  The problem is that they tend to require special
+> > handling, even within the same SoC, let alone different SoCs, and that handling
+> > has to be implemented in an SoC-specific way, because it has to know various
+> > things about the platform (like what to write to what register(s) at what time
+> > and so on).  Of course, that platform-specific code needs to know which
+> > domain the given description corresponds to and there doesn't seem to be any
+> > useful way to specify that through DTs.
 > 
-> That would only work if you have at least 26 bytes to pad.  Bunch of
-> spaces with a newline works for any value between 0 and 512.
+> We have the same problem for a lot of other subsystems: clock, regulator,
+> irq, gpio, pinctrl, dma, ...
+> 
+> In each of these cases, we want a driver to be able to associate some
+> property with a driver (or platform code) from another subsystem.
+> We try to handle those using generic subsystem code that interprets
+> regular property names.
 
-Ok, thanks for taking the time to explain this - very interesting stuff.
+For power domains those properties would be SoC-specific.  That is, there may
+be a different set of properties for each SoC in principle and it's going to
+get quite messy relatively quickly.
 
-So, as far as I'm concerned blockconsole is ready for shipping! 8-)
+> > Second, the generic code needed to support such a binding would have to be
+> > quite complex and I don't see any advantage from adding it.
+> 
+> The generic binding would only need to specify what the property
+> looks like and how the possible values can be determined. We don't
+> need to make that code generic right away but could wait until we
+> have a couple of implementations before we pull out the common bits.
+> 
+> The important part to me is writing the binding in a way that allows
+> us to do this.
 
--- 
-Regards/Gruss,
-    Boris.
+Admittedly, I have a little experience with writing DT bindings.
+
+The regulator bindings look like we could do something similar for power
+domains, but for one I don't want platform device objects to be created
+for them in any case (that would make as much sense as creating a platform
+device for a bus type).
+
+> > 
+> > > * Mark suggested two options (string and phandle), and (you guessed it),
+> > 
+> > To me, the Mark's suggestion was to follow the example of TI hwmods, which
+> > I did.  In fact, the power domains on Renesas platforms are an analogous
+> > concept, so in my opinion handling them in analogy with hwmods makes a lot of
+> > sense.
+> 
+> I had never seen the hwmod binding before and if I had I would have
+> given them the same comments. I definitely don't think we should be
+> using it as a good example for common code.
+
+Well, good to know. :-)
+
+> > >   IMHO using phandle makes it much easier to do this in a generic way,
+> > >   without having to document every possible string that this can be
+> > >   set to in the binding document. Obviously the phandle requires having
+> > >   a node in the device tree for each domain, but I think having that
+> > >   node is actually an advantage because it lets you describe the
+> > >   hierarchy of the domains there.
+> > 
+> > I don't quite see how it is better.  I could (and should in fact) represent
+> > that hierarchy as an array of pairs of strings without adding any special
+> > parsing code to the kernel (except for a simple routine walking that table
+> > and calling pm_genpd_add_subdomain_names() for every pair).
+> > 
+> > The only disadvantage of the current approach I can see is that whoever
+> > creates a dts for a board based on the given SoC has to know the names of the
+> > power domains to use in there.  I don't think this is an overly burdensome
+> > requirement.
+> 
+> Well, it does mean that we need to maintain a separate binding document
+> for each soc that has its own set of possible values.
+
+I'm not sure we'll be able to avoid that anyway.
+
+> > The other way around, the platform code supposed to handle the power domains
+> > would need a way to match DT nodes against the domains, which also would
+> > require some string-based identification and that would have to be documented
+> > as well.
+> 
+> The part that matches the pm-domain device nodes can and should be
+> specific to the platform implementing the pm-domain. We can easily
+> do the same thing we did for regulators, where each regulator can
+> be either identified through its "reg" property in cases where that
+> makes sense or through a "regulator-compatible" property in cases
+> where we need a string representation.
+
+Where can I find the code that parses the regulator bindings?
+
+Rafael
