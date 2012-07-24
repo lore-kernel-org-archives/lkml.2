@@ -1,165 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab2GXBRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:17:14 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:47436 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab2GXBRM (ORCPT
+	id S1755164Ab2GXBTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 21:19:22 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:60507 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755064Ab2GXBTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 21:17:12 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-e9-500df79250c2
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>, linux-mmc@vger.kernel.org
-Cc: "'Chris Ball'" <cjb@laptop.org>, "'Will Newton'" <will.newton@imgtec.com>,
-        "'James Hogan'" <james.hogan@imgtec.com>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Olof Johansson'" <olofj@chromium.org>, shashidharh@vayavyalabs.com,
-        ki0351.kim@samsung.com
-References: <CAD=FV=XuXUe1Jyd_urCzmS5+1vv7iuNTXYr23XYZp+MnTq1HGg@mail.gmail.com>
- <1343062955-24516-1-git-send-email-dianders@chromium.org>
-In-reply-to: <1343062955-24516-1-git-send-email-dianders@chromium.org>
-Subject: RE: [PATCH v2] mmc: dw_mmc: Disable low power mode if SDIO interrupts
- are used
-Date: Tue, 24 Jul 2012 10:17:06 +0900
-Message-id: <004d01cd693a$0a55d7b0$1f018710$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ks_c_5601-1987
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1o9PxuaQiZn2oNT3ybVmxOXhVI3wAPChEQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQd1J33kDDHavMrG4vGsOm8WR//2M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGXc3PiauWClYsXul1OZGhjnS3UxcnJICJhIzF/RxAxh
-	i0lcuLeeDcQWEpjOKLFjUXEXIxeQ/YdR4mv3J0aQBJuAlsTfN2/AGkQE3CQO/jrMCFLELHCS
-	SeJSZwMrREcfo8T//bvAqjiBqroOvQcbKywQKXFzxzR2EJtFQFVizrHNYDW8ArYSn888YIKw
-	BSV+TL7HAmIzCxhIvJ/Vxwphy0tsXvMWqJ4D6FR1iUd/dSGOMJK49vAcO0SJiMS+F+8YJzAK
-	zUIyaRaSSbOQTJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOCgfia1g3Flg8Uh
-	RgEORiUe3sxW3gAh1sSy4srcQ4wSHMxKIrwFn4BCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeY29
-	v/oLCaQnlqRmp6YWpBbBZJk4OKUaGA2+mluXhu+aWZLMw3eArYSV+/dZ9b1LP/jXrH+z1Pzd
-	gUqDwmVyUU+UQi1f3DNyzKvZvj8kdefarKJ5m/9PMDnJ+ZtPbylHMpPWne7D85xuWv47+t7R
-	76V1Zre++qfpury8863Fp65sUZy9fMpvaZH97pva/kpnqomVSnj9DSlIn8owqfyYkxJLcUai
-	oRZzUXEiALouxv1mAgAA
-X-TM-AS-MML: No
+	Mon, 23 Jul 2012 21:19:20 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/SAdtobbfSparAkifteABKkLVQdPaB51UQPQD6UU
+	rTZ3nL6sBIqWMf
+Message-ID: <1343092755.7412.6.camel@marge.simpson.net>
+Subject: Re: Attaching a process to cgroups
+From: Mike Galbraith <efault@gmx.de>
+To: Andrea Righi <righi.andrea@gmail.com>
+Cc: Alexey Vlasov <renton@renton.name>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 24 Jul 2012 03:19:15 +0200
+In-Reply-To: <20120723204159.GB6379@thinkpad>
+References: <20120619185856.GC31797@beaver>
+	 <1340195298.15707.3.camel@marge.simpson.net>
+	 <20120621075428.GE31797@beaver>
+	 <1340266982.29752.37.camel@marge.simpson.net>
+	 <20120723204159.GB6379@thinkpad>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-July 24, 2012, Doug Anderson <dianders@chromium.org> wrote:
-> The documentation for the dw_mmc part says that the low power
-> mode should normally only be set for MMC and SD memory and should
-> be turned off for SDIO cards that need interrupts detected.
+On Mon, 2012-07-23 at 22:41 +0200, Andrea Righi wrote: 
+> On Thu, Jun 21, 2012 at 10:23:02AM +0200, Mike Galbraith wrote:
+> > On Thu, 2012-06-21 at 11:54 +0400, Alexey Vlasov wrote: 
+> > > On Wed, Jun 20, 2012 at 02:28:18PM +0200, Mike Galbraith wrote:
+> > > > 
+> > > > kernel/cgroup.c::cgroup_attach_task()
+> > > > {
+> > > > ...
+> > > > 	synchronize_rcu();
+> > > > ...
+> > > > }
+> > > 
+> > > So nothing can be done here? (I mean if only I knew how to fix it I
+> > > wouldn't ask about it ;)
+> > 
+> > Sure, kill the obnoxious thing, it's sitting right in the middle of the
+> > userspace interface.
+> > 
+> > I banged on it a while back (wrt explosive android patches), extracted
+> > RCU from the userspace interface.  It seemed to work great, much faster,
+> > couldn't make it explode.  I wouldn't bet anything I wasn't willing to
+> > immediately part with that the result was really really safe though ;-)
+> > 
+> > -Mike
 > 
-> The best place I could find to do this is when the SDIO interrupt
-> was first enabled.  I rely on the fact that dw_mci_setup_bus()
-> will be called when it's time to reenable.
+> JFYI,
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v2:
-> - Commenting fixes requested by Grant Grundler.
-> - Be extra certain that we don't re-turn on the low power mode in
->   CLKENA in dw_mci_setup_bus() if SDIO interrupts are enabled.
->   There are no known instances of this happening but it's good to be safe.
+> I'm testing the following patch in a bunch of hosts and I wasn't able to
+> make any of them to explode, even running a multi-threaded
+> cgroup-intensive workload, but probably I was just lucky (or unlucky,
+> depending on the point of view).
 > 
->  drivers/mmc/host/dw_mmc.c |   43 ++++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 40 insertions(+), 3 deletions(-)
+> It is basically the same Not-signed-off-by work posted by Mike a while
+> ago: https://lkml.org/lkml/2011/4/12/599.
 > 
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 72dc3cd..0ab1771 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -627,6 +627,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot)
->  {
->  	struct dw_mci *host = slot->host;
->  	u32 div;
-> +	u32 clk_en_a;
+> In addition, I totally removed the synchronize_rcu() call from
+> cgroup_attach_task() and added the call_rcu -> schedule_work removal
+> also for css_set. The latter looks unnecessary to me from a logical
+> point of view, or maybe I'm missing something, because I can't explain
+> why with it I can't trigger any BUG / oops.
 > 
->  	if (slot->clock != host->current_speed) {
->  		div = host->bus_hz / slot->clock;
-> @@ -659,9 +660,11 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot)
->  		mci_send_cmd(slot,
->  			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
-> 
-> -		/* enable clock */
-> -		mci_writel(host, CLKENA, ((SDMMC_CLKEN_ENABLE |
-> -			   SDMMC_CLKEN_LOW_PWR) << slot->id));
-> +		/* enable clock; only low power if no SDIO */
-> +		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
-> +		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
-> +			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
-> +		mci_writel(host, CLKENA, clk_en_a);
-I have followed this patch from v1.
-I think it's a good point.
-Looks good to me.
+> Mike, did you make any progress from your old patch?
 
-> 
->  		/* inform CIU */
->  		mci_send_cmd(slot,
-> @@ -862,6 +865,32 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
->  	return present;
->  }
-> 
-> +/*
-> + * Disable lower power mode.
-> + *
-> + * Low power mode will stop the card clock when idle.  According to
-> + * documentation (Exynos 5250 User's Manual 0.04, description of
-> + * CLKENA register) we should disable low power mode for SDIO cards
-> + * if we need interrupts to work.
-Above comment is correct, but this is not specific for Exynos5250.
-Exynos5250 is just one of host controllers base on Synopsys's.
-It'd be better to remove the part related to Exynos you mentioned .
+No, it worked, but I couldn't prove it was really safe, so let it drop.
 
-
-> + *
-> + * This function is fast if the power mode is already disabled.
-Definitely, low power mode not power mode, right?
-
-Best regards,
-Seungwon Jeon
-
-> + */
-> +static void dw_mci_disable_low_power(struct mmc_host *mmc)
-> +{
-> +	struct dw_mci_slot *slot = mmc_priv(mmc);
-> +	struct dw_mci *host = slot->host;
-> +	u32 clk_en_a;
-> +	const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
-> +
-> +	clk_en_a = mci_readl(host, CLKENA);
-> +
-> +	if (clk_en_a & clken_low_pwr) {
-> +		mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
-> +		mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
-> +			     SDMMC_CMD_PRV_DAT_WAIT, 0);
-> +	}
-> +}
-> +
->  static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
->  {
->  	struct dw_mci_slot *slot = mmc_priv(mmc);
-> @@ -871,6 +900,14 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
->  	/* Enable/disable Slot Specific SDIO interrupt */
->  	int_mask = mci_readl(host, INTMASK);
->  	if (enb) {
-> +		/*
-> +		 * Turn off low power mode if it was enabled.  This is a bit of
-> +		 * a heavy operation and we disable / enable IRQs a lot, so
-> +		 * we'll leave low power mode disabled and it will get
-> +		 * re-enabled again in dw_mci_setup_bus().
-> +		 */
-> +		dw_mci_disable_low_power(mmc);
-> +
->  		mci_writel(host, INTMASK,
->  			   (int_mask | SDMMC_INT_SDIO(slot->id)));
->  	} else {
-> --
-> 1.7.7.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-Mike
 
