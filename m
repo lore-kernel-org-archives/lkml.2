@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab2GXQop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:44:45 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:58608 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932066Ab2GXQon (ORCPT
+	id S932075Ab2GXQsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:48:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54336 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755435Ab2GXQsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:44:43 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 32/32] PCI/rtl8192e: use PCIe capabilities access functions to simplify implementation
-Date: Wed, 25 Jul 2012 00:41:17 +0800
-Message-Id: <1343148077-25941-9-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343148077-25941-1-git-send-email-jiang.liu@huawei.com>
-References: <1343148077-25941-1-git-send-email-jiang.liu@huawei.com>
+	Tue, 24 Jul 2012 12:48:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1343109280-22653-1-git-send-email-lliubbo@gmail.com>
+References: <1343109280-22653-1-git-send-email-lliubbo@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 Jul 2012 09:47:52 -0700
+X-Google-Sender-Auth: X3ymunVkB6AoqSOxXO1T7BnnQtc
+Message-ID: <CA+55aFx4bytJFzJTbCbp-YTEfuGo9di3oyBwY87BRRXszfK5Rg@mail.gmail.com>
+Subject: Re: [GIT PULL v2] Blackfin changes for 3.6-rc1
+To: Bob Liu <lliubbo@gmail.com>
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        vapier@gentoo.org, sonic.zhang@analog.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+On Mon, Jul 23, 2012 at 10:54 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>
+> This is the new pull request about blackfin changes for 3.6-rc1.
+> I've rebased my tree to 3.5.
 
-Use PCIe capabilities access functions to simplify rtl8192e driver's
-implementation.
+So I pulled it, but next time I'd really like to not see so much
+recent rebasing.
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- drivers/staging/rtl8192e/rtl8192e/rtl_pci.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+So preferably it would be something that has been stable for at least
+a week, and tested in next. If you really need to use some kind of
+rebasing model, try to calm it down *before* the merge window starts,
+so that you can have a tested tree ready without rebasing it in the
+last few days.
 
-diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_pci.c b/drivers/staging/rtl8192e/rtl8192e/rtl_pci.c
-index ddadcc3..820cc68 100644
---- a/drivers/staging/rtl8192e/rtl8192e/rtl_pci.c
-+++ b/drivers/staging/rtl8192e/rtl8192e/rtl_pci.c
-@@ -31,12 +31,10 @@ static void rtl8192_parse_pci_configuration(struct pci_dev *pdev,
- 	struct r8192_priv *priv = (struct r8192_priv *)rtllib_priv(dev);
- 
- 	u8 tmp;
--	int pos;
--	u8 LinkCtrlReg;
-+	u16 LinkCtrlReg;
- 
--	pos = pci_find_capability(priv->pdev, PCI_CAP_ID_EXP);
--	pci_read_config_byte(priv->pdev, pos + PCI_EXP_LNKCTL, &LinkCtrlReg);
--	priv->NdisAdapter.LinkCtrlReg = LinkCtrlReg;
-+	pci_pcie_capability_read_word(priv->pdev, PCI_EXP_LNKCTL, &LinkCtrlReg);
-+	priv->NdisAdapter.LinkCtrlReg = (u8)LinkCtrlReg;
- 
- 	RT_TRACE(COMP_INIT, "Link Control Register =%x\n",
- 		 priv->NdisAdapter.LinkCtrlReg);
--- 
-1.7.9.5
+The release schedule is generally predictable enough that you can (for
+example) decide to pick a fairly stable -rc version (say -rc5 or -rc6,
+by which time the kernel should be pretty reliable), and use that as
+your base point, and keep it in -next *without* rebasing at all (just
+possibly add new patches at the end).
 
+Generally, the less you rebase, the better. Yes, sometimes it's worth
+it as a way to clean up the history especially if you need some
+changes that come from elsewhere, or if you want to fix a bug in a
+commit that you haven't asked me to pull yet. But if you can get to a
+workflow with minimal rebasing, it really helps people who want to
+work with you, so that they can rely on your tree not changing from
+under them.
+
+Now, I assume that blackfin just doesn't have enough developers or big
+changes for this to be a big deal, but it's a good habit to aim for
+regardless.
+
+                   Linus
