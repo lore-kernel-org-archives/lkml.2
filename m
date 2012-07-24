@@ -1,91 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab2GXH0m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 03:26:42 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59986 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab2GXH0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 03:26:40 -0400
-Message-ID: <500E4E2C.3060804@linaro.org>
-Date: Tue, 24 Jul 2012 08:26:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Help request - ASoC recursion issue
-References: <500D5A1F.9000808@linaro.org> <500D649B.80704@linaro.org> <500D6602.6070809@linaro.org> <20120723181249.GF3421@mudshark.cambridge.arm.com>
-In-Reply-To: <20120723181249.GF3421@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755490Ab2GXHdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 03:33:23 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34542 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755084Ab2GXHdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 03:33:22 -0400
+Message-ID: <1343115193.3715.15.camel@pasglop>
+Subject: hvc_console: Better kernel console support
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Jul 2012 17:33:13 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/07/12 19:12, Will Deacon wrote:
-> On Mon, Jul 23, 2012 at 03:56:02PM +0100, Lee Jones wrote:
->> On 23/07/12 15:50, Lee Jones wrote:
->>>> I was wondering if I may bother you for some help. I've been having
->>>> serious issues with testing the new mop500 sound system you have in your
->>>> ASoC for-next branch. I've fixed a few issues and will be submitting
->>>> patches shortly. The most serious issue I came across was with
->>>> recursion.
->>>
->>> It appears you can ignore this. I just tried another piece of hardware
->>> and this problem doesn't arise, leading me to believe I have some kind
->>> of eMMC corruption error going on with one of my boards.
->>
->> FYI, just so you don't think I'm mad: http://paste.ubuntu.com/1106535/
->
-> I still maintain that you're getting memory corruption as a result of your
-> linear mapping getting screwed up:
->
->    Truncating RAM at 18000000-3fffffff to -2c3fffff (vmalloc region overlap).
->
-> looks wrong to me. Your command line also has some non-standard mem= options
-> that I don't understand:
+hvc_console has two methods to instanciate the consoles.
 
-Yes, I am inclined to agree with you. I just thought it was 
-uncharacteristic of a memory corruption error, as can reliably reproduce 
-the bootlog above. What's even more strange is that the issue only 
-arises on one of my two _identical_ development boards.
+hvc_instanciate is meant to be called at early boot, while hvc_alloc is
+called for more dynamically probed objects.
 
->    vmalloc=300M mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M mem=22M@360M mem_issw=1M@383M mem=640M@384M
->
-> I'd guess you need highmem to map that lot, but you don't appear to have that
-> enabled and you end up with a rather strange amount of reported memory to go
-> with your lowmem mapping:
->
->    Memory: 474156k/474156k available, 11220k reserved, 0K highmem
->    Virtual kernel memory layout:
->        vector  : 0xffff0000 - 0xffff1000   (   4 kB)
->        fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
->        vmalloc : 0xec800000 - 0xff000000   ( 296 MB)
->        lowmem  : 0xc0000000 - 0xec400000   ( 708 MB)
+Currently, it only deals with adding kernel consoles in the former case,
+which means for example that if a console only uses dynamic probing, it
+will never be usable as a kernel console even when specifying
+console=hvc0 explicitly, which could be considered annoying...
 
-Enabling HIGHMEM is actually on my TODO list. We have it enabled in our 
-release kernel, it's just on in Mainline yet. I'll bring it forward and 
-make it the next think I do.
+More specifically, on pseries, we only do the early instanciate for the
+console currently used by the firmware, so if you have your firmware
+configured to go to a video card, for example, you cannot get your
+kernel console, oops messages, etc... on your serial port or hypervisor
+console, which would be handy to deal with oopses.
 
-> Now, I don't know a thing about Snowball, so maybe this is all normal for
-> that board but if you're seeing memory corruption I'd get to the bottom of
-> this before trying to debug instances of it cropping up in random driver
-> code :)
+This fixes it by checking if hvc_console.flags & CON_ENABLED is set when
+registering a new dynamic console, and if not, redo the index check and
+re-register the console if the index matches, allowing console=hvcN to
+work.
 
-I don't have any allocated time to debug issues which only arise on 
-Snowball. I'm just waiting on another piece of hardware, then I can 
-start testing on the u9540. This issue will be the first thing I test for.
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 2d691eb..f1d4d96 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -245,6 +245,20 @@ static void hvc_port_destruct(struct tty_port *port)
+ 	kfree(hp);
+ }
+ 
++static void hvc_check_console(int index)
++{
++	/* Already enabled, bail out */
++	if (hvc_console.flags & CON_ENABLED)
++		return;
++
++ 	/* If this index is what the user requested, then register
++	 * now (setup won't fail at this point).  It's ok to just
++	 * call register again if previously .setup failed.
++	 */
++	if (index == hvc_console.index)
++		register_console(&hvc_console);
++}
++
+ /*
+  * hvc_instantiate() is an early console discovery method which locates
+  * consoles * prior to the vio subsystem discovering them.  Hotplugged
+@@ -275,12 +289,8 @@ int hvc_instantiate(uint32_t vtermno, int index, const struct hv_ops *ops)
+ 	if (last_hvc < index)
+ 		last_hvc = index;
+ 
+-	/* if this index is what the user requested, then register
+-	 * now (setup won't fail at this point).  It's ok to just
+-	 * call register again if previously .setup failed.
+-	 */
+-	if (index == hvc_console.index)
+-		register_console(&hvc_console);
++	/* check if we need to re-register the kernel console */
++	hvc_check_console(index);
+ 
+ 	return 0;
+ }
+@@ -858,10 +868,15 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
+ 		i = ++last_hvc;
+ 
+ 	hp->index = i;
++	cons_ops[i] = ops;
++	vtermnos[i] = vtermno;
+ 
+ 	list_add_tail(&(hp->next), &hvc_structs);
+ 	spin_unlock(&hvc_structs_lock);
+ 
++	/* check if we need to re-register the kernel console */
++	hvc_check_console(i);
++
+ 	return hp;
+ }
+ EXPORT_SYMBOL_GPL(hvc_alloc);
+@@ -874,8 +889,12 @@ int hvc_remove(struct hvc_struct *hp)
+ 	tty = tty_port_tty_get(&hp->port);
+ 
+ 	spin_lock_irqsave(&hp->lock, flags);
+-	if (hp->index < MAX_NR_HVC_CONSOLES)
++	if (hp->index < MAX_NR_HVC_CONSOLES) {
++		console_lock();
+ 		vtermnos[hp->index] = -1;
++		cons_ops[hp->index] = NULL;
++		console_unlock();
++	}
+ 
+ 	/* Don't whack hp->irq because tty_hangup() will need to free the irq. */
+ 
 
-Thanks for your time chaps.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
