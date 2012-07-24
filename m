@@ -1,104 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab2GXOIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:08:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57789 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab2GXOIt (ORCPT
+	id S1754593Ab2GXOLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:11:16 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34868 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753384Ab2GXOLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:08:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Mack <zonque@gmail.com>
-Subject: Re: [PATCH] gpiolib: fix chip->base handling in of_gpio_simple_xlate()
-Date: Tue, 24 Jul 2012 14:08:43 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-References: <1342977052-7880-1-git-send-email-zonque@gmail.com> <201207241256.56535.arnd@arndb.de> <500E9D75.60002@gmail.com>
-In-Reply-To: <500E9D75.60002@gmail.com>
+	Tue, 24 Jul 2012 10:11:15 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207241408.44168.arnd@arndb.de>
-X-Provags-ID: V02:K0:LUIV/alRx7rO3p0ddwCijZHZFzbRD3BO7I/s7tel7+X
- zInhGQWmw2jfbsb+apvqjOMFno2vrjD1fbTrNmfbRX0Ie3hfln
- lLwaNi/lyt0M7A5iYOhu1iESpQCK9MPgUum5c9pDWGTN7JUpoH
- TR+GH6X5IY+UtjkaUGtp9j29NhwHNbrp21gjT6UckjHtOIyZJo
- TRVTU7lGOxX1dmzJgdSLDk40Uf6mG3DDIWLcmJWhFnWRLd2nFc
- YQAdpACmCglWzID1mnwzfM+CRCY6c/oeqZ1EU5grCNzgMsCU5P
- oTcIzU33sGVChtxr7LGN7JLYaZWrlKpO1ZrrdM+gYXDhddLju4
- WO3gDPs5Rx+XB7pNZqEo=
+In-Reply-To: <20120724135340.GT9222@suse.de>
+References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
+	<1343109531.7412.47.camel@marge.simpson.net>
+	<CAJd=RBC835W52nsXCqhM_4KR3CuLF9zijh3416LiJLybTuR_YA@mail.gmail.com>
+	<20120724132741.GS9222@suse.de>
+	<CAJd=RBBvg-irMTOjAV60LUU9=bNm+9Z6YzpLe7LyWs=jjZdtFg@mail.gmail.com>
+	<20120724135340.GT9222@suse.de>
+Date: Tue, 24 Jul 2012 22:11:13 +0800
+Message-ID: <CAJd=RBCCueEWm7Kkfbarp-LiNQwsc5RT_o1xVqEE56+U+Ogg4g@mail.gmail.com>
+Subject: Re: [PATCH 00/34] Memory management performance backports for -stable V2
+From: Hillf Danton <dhillf@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Mike Galbraith <efault@gmx.de>, Stable <stable@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 July 2012, Daniel Mack wrote:
-> > But why would you do that? Both the "gpiochip" and its DT representation
-> > attempt to represent the hardware structure. If they don't match, then
-> > I'd assume one of them is wrong ;-)
-> 
-> Well, have a look at what's currently there in drivers/gpio/gpio-pxa.c.
-> There are several gpio_chips that are registered. On the DT side,
-> however, I would much like to present all GPIO line in one array, so the
-> numbers match the hardware documentation.
-> 
-> I prepared patches for all that and they work find, the only thing I
-> need to touch in the core for that is this minor detail.
-
-We recently reworked the gpiolib code to allow multiple gpiochips
-to be registered for the same device, but in that use case (lpc32xx)
-we had separate banks listed in the data sheet, and it still made more
-sense to have the bank number listed in the gpio specifier.
-
-> >>> diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-> >>> index d18068a..51bc232 100644
-> >>> --- a/drivers/gpio/gpiolib-of.c
-> >>> +++ b/drivers/gpio/gpiolib-of.c
-> >>> @@ -147,13 +147,13 @@ int of_gpio_simple_xlate(struct gpio_chip *gc,
-> >>>     if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
-> >>>             return -EINVAL;
-> >>>  
-> >>> -   if (gpiospec->args[0] >= gc->ngpio)
-> >>> +   if (gpiospec->args[0] >= gc->ngpio + gc->base)
-> >>>             return -EINVAL;
-> >>>  
-> >>>     if (flags)
-> >>>             *flags = gpiospec->args[1];
-> >>>  
-> >>> -   return gpiospec->args[0];
-> >>> +   return gpiospec->args[0] - gc->base;
-> >>>  }
-> >>>  EXPORT_SYMBOL(of_gpio_simple_xlate);
-> > 
-> > Where would that gc->base come from?
-> 
-> It is set up when the chips are initialized. Let's put it that way: why
-> would we have this ->base if it is practically unusable in devicetree
-> environments?
-
-The base gets used to put the gpiochip into the Linux gpio number space,
-which is not necessarily the same as the number space used in the device
-tree. You can dynamically add other gpio controllers that would get
-some arbitrary base assigned at runtime, so you cannot subtract that
-base from the hardware number to get a local one in the common code.
-
-I fear you will have to provide your own xlate function for pxa if
-you want to use this numbering. Something like this:?
-
-static int pxa_of_xlate(struct gpio_chip *gc,
-                        const struct of_phandle_args *gpiospec, u32 *flags)
-{
-	if (gpiospec->args[0] > pxa_last_gpio)
-		return -EINVAL;
-
-	if (gc != &pxa_gpio_chips[gpiospec->args[0] / 32]->chip)
-		return -EINVAL;
-
-        if (flags)
-                *flags = gpiospec->args[1];
-
-        return gpiospec->args[0] % 32;
-}
-
-	Arnd
+On Tue, Jul 24, 2012 at 9:53 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Tue, Jul 24, 2012 at 09:34:56PM +0800, Hillf Danton wrote:
+>> On Tue, Jul 24, 2012 at 9:27 PM, Mel Gorman <mgorman@suse.de> wrote:
+>> > I would suggest the user in question use the normal support channels for
+>> > resolving a potentially SLES-specific bug.
+>> >
+>> Thanks, Mel.
+>>
+>> Is Mike busy in other fairs?
+>
+> It's not for me whether to say whether he is or not. SUSE already provide
+> excellent support channel for handling bugs like the one. If the user uses
+> them, they are very likely to find that this particular bug was resolved
+> in February 2011 by Mike without you stamping your foot on LKML.
+>
+If you pay for good products and service, you see why
+I forwarded the message to you, the SUSE gurus.
