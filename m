@@ -1,135 +1,564 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab2GXLi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 07:38:26 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60655 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab2GXLiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 07:38:24 -0400
-Date: Tue, 24 Jul 2012 07:38:02 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: xufeng zhang <xufeng.zhang@windriver.com>
-Cc: xufengzhang.main@gmail.com, vyasevich@gmail.com, sri@us.ibm.com,
-        davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
- SACK when bundling
-Message-ID: <20120724113802.GA30142@hmsreliant.think-freely.org>
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
- <20120723004932.GB8040@neilslaptop.think-freely.org>
- <500CB74A.4040300@windriver.com>
- <20120723121411.GC16518@hmsreliant.think-freely.org>
- <500DFF5A.20203@windriver.com>
+	id S1753510Ab2GXLlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 07:41:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33706 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305Ab2GXLlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 07:41:47 -0400
+Message-ID: <500E89D1.9010303@suse.de>
+Date: Tue, 24 Jul 2012 17:11:05 +0530
+From: Ankit Jain <jankit@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500DFF5A.20203@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Al Viro <viro@zeniv.linux.org.uk>, bcrl@kvack.org
+Cc: linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [RFC][PATCH] Make io_submit non-blocking
+Content-Type: multipart/mixed;
+ boundary="------------030201030701090402070003"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 09:50:18AM +0800, xufeng zhang wrote:
-> On 07/23/2012 08:14 PM, Neil Horman wrote:
-> >On Mon, Jul 23, 2012 at 10:30:34AM +0800, xufeng zhang wrote:
-> >>On 07/23/2012 08:49 AM, Neil Horman wrote:
-> >>>Not sure I understand how you came into this error.  If we get an invalid
-> >>>stream, we issue an SCTP_REPORT_TSN side effect, followed by an SCTP_CMD_REPLY
-> >>>which sends the error chunk.  The reply goes through
-> >>>sctp_outq_tail->sctp_outq_chunk->sctp_outq_transmit_chunk->sctp_outq_append_chunk.
-> >>>That last function checks to see if a sack is already part of the packet, and if
-> >>>there isn't one, appends one, using the updated tsn map.
-> >>Yes, you are right, but consider the invalid stream identifier's
-> >>DATA chunk is the first
-> >>DATA chunk in the association which will need SACK immediately.
-> >>Here is what I thought of the scenario:
-> >>     sctp_sf_eat_data_6_2()
-> >>         -->sctp_eat_data()
-> >>             -->sctp_make_op_error()
-> >>             -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(err))
-> >>             -->sctp_outq_tail()          /* First enqueue ERROR chunk */
-> >>         -->sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE())
-> >>             -->sctp_gen_sack()
-> >>                 -->sctp_make_sack()
-> >>                 -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
-> >>SCTP_CHUNK(sack))
-> >>                 -->sctp_outq_tail()          /* Then enqueue SACK chunk */
-> >>
-> >>So SACK chunk is enqueued after ERROR chunk.
-> >Ah, I see.  Since the ERROR and SACK chunks are both control chunks, and since
-> >we explicitly add the SACK to the control queue instead of going through the
-> >bundle path in sctp_packet_append_chunk the ordering gets wrong.
-> >
-> >Ok, so the problem makes sense.  I think the soultion could be alot easier
-> >though.  IIRC SACK chunks always live at the head of a packet, so why not just
-> >special case it in sctp_outq_tail?  I.e. instead of doing a list_add_tail, in
-> >the else clause of sctp_outq_tail check the chunk_hdr->type to see if its
-> >SCTP_CID_SACK.  If it is, use list_add_head rather than list_add_tail.  I think
-> >that will fix up both the COOKIE_ECHO and ESTABLISHED cases, won't it?  And then
-> >you won't have keep track of extra state in the packet configuration.
-> Yes, it's a good idea, but I think the premise is not correct:
-> RFC 4960 page 57:
-> "D) Upon reception of the COOKIE ECHO chunk, endpoint "Z" will reply
->    with a COOKIE ACK chunk after building a TCB and moving to the
->    ESTABLISHED state. A COOKIE ACK chunk may be bundled with any
->    pending DATA chunks (and/or SACK chunks), *but the COOKIE ACK chunk
->    MUST be the first chunk in the packet*."
-> 
-> So we can't put SACK chunk always at the head of the packet.
-> 
-Ok, Fair point, but that just changes the ordering a bit to:
-COOKIE_ACK
-SACK
-OTHER CONTROL CHUNKS
-
-What about something like this?  Its completely untested, and I'm sure it can be
-cleaned up a bunch, but this keeps us from having to add additional state to the
-packet structure.
+This is a multi-part message in MIME format.
+--------------030201030701090402070003
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
 
-diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-index e7aa177c..eeac32f 100644
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -300,7 +300,7 @@ void sctp_outq_free(struct sctp_outq *q)
- int sctp_outq_tail(struct sctp_outq *q, struct sctp_chunk *chunk)
- {
- 	int error = 0;
--
-+	struct sctp_chunk *cptr;
- 	SCTP_DEBUG_PRINTK("sctp_outq_tail(%p, %p[%s])\n",
- 			  q, chunk, chunk && chunk->chunk_hdr ?
- 			  sctp_cname(SCTP_ST_CHUNK(chunk->chunk_hdr->type))
-@@ -344,7 +344,21 @@ int sctp_outq_tail(struct sctp_outq *q, struct sctp_chunk *chunk)
- 			break;
- 		}
- 	} else {
--		list_add_tail(&chunk->list, &q->control_chunk_list);
-+		list_del_init(&chunk->list);
-+		if (chunk->chunk_hdr->type == SCTP_CID_COOKIE_ACK)
-+			list_add_head(&chunk->list, &q->control_chunk_list);
-+		else if (!list_empty(&q->control_chunk_list) &&
-+		    chunk->chunk_hdr->type == SCTP_CID_SACK) {
-+			list_for_each_entry(cptr, &q->control_chunk_list, list) {
-+				if (cptr->chunk_hdr->type == SCTP_CID_COOKIE_ACK)
-+					continue;
-+				list_add(&chunk->list, &cptr->list);
-+				break;
-+			}
-+		} 
+Currently, io_submit tries to execute the io requests on the
+same thread, which could block because of various reaons (eg.
+allocation of disk blocks). So, essentially, io_submit ends
+up being a blocking call.
+
+With this patch, io_submit prepares all the kiocbs and then
+adds (kicks) them to ctx->run_list (kicked) in one go and then
+schedules the workqueue. The actual operations are not executed
+on io_submit's process context, so it can return very quickly.
+
+This run_list is processed either on a workqueue or in response to
+an io_getevents call. This utilizes the existing retry infrastructure.
+
+It uses override_creds/revert_creds to use the submitting process'
+credentials when processing the iocb request from the workqueue. This
+is required for proper support of quota and reserved block access.
+
+Currently, we use block plugging in io_submit, since most of the IO
+was being done there itself. This patch moves it to aio_kick_handler
+and aio_run_all_iocbs, where the IO gets submitted.
+
+All the tests were run with ext4.
+
+I tested the patch with fio
+ (fio rand-rw-disk.fio --max-jobs=2 --latency-log
+ --bandwidth-log)
+
+**Unpatched**
+read : io=102120KB, bw=618740 B/s, iops=151 , runt=169006msec
+slat (usec): min=275 , max=87560 , avg=6571.88, stdev=2799.57
+
+write: io=102680KB, bw=622133 B/s, iops=151 , runt=169006msec
+slat (usec): min=2 , max=196 , avg=24.66, stdev=20.35
+
+**Patched**
+read : io=102864KB, bw=504885 B/s, iops=123 , runt=208627msec
+slat (usec): min=0 , max=120 , avg= 1.65, stdev= 3.46 
+
+write: io=101936KB, bw=500330 B/s, iops=122 , runt=208627msec
+slat (usec): min=0 , max=131 , avg= 1.85, stdev= 3.27 
+
+>From above, it can be seen that submit latencies improve a lot with the
+patch. The full fio results for the "old"(unpatched) and "new"(patched)
+cases are attached. Results with both ramdisk (*rd*) and disk attached,
+and also the corresponding fio files.
+
+Some variations I tried:
+
+1. I tried to submit one iocb at a time (lock/unlock ctx->lock), and
+that had good performance for a regular disk, but when I tested with a
+ramdisk (to simulate very fast disk), performance was extremely bad.
+Submitting all the iocbs from an io_submit in one go, restored the
+performance (latencies+bandwidth).
+
+2. I was earlier trying to use queue_delayed_work with 0 timeout, but
+that worsened the submit latencies a bit but improved bandwidth. 
+
+3. Also, I tried not using aio_queue_work from io_submit call, and instead
+depending on an already scheduled one or the iocbs being run when
+io_getevents gets called. This seemed to give improved perfomance. But
+does this constitute as change of api semantics?
+
+Signed-off-by: Ankit Jain <jankit@suse.de>
+
+--
+diff --git a/fs/aio.c b/fs/aio.c
+index 71f613c..79801096b 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -563,6 +563,11 @@ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ 	req->ki_cancel = NULL;
+ 	req->ki_retry = NULL;
+ 
++	if (likely(req->submitter_cred)) {
++		put_cred(req->submitter_cred);
++		req->submitter_cred = NULL;
++	}
 +
-+		if (list_empty(&chunk->list))
-+			list_add_tail(&chunk->list, &q->control_chunk_list);
- 		SCTP_INC_STATS(SCTP_MIB_OUTCTRLCHUNKS);
+ 	fput(req->ki_filp);
+ 	req->ki_filp = NULL;
+ 	really_put_req(ctx, req);
+@@ -659,6 +664,7 @@ static ssize_t aio_run_iocb(struct kiocb *iocb)
+ 	struct kioctx	*ctx = iocb->ki_ctx;
+ 	ssize_t (*retry)(struct kiocb *);
+ 	ssize_t ret;
++	const struct cred *old_cred = NULL;
+ 
+ 	if (!(retry = iocb->ki_retry)) {
+ 		printk("aio_run_iocb: iocb->ki_retry = NULL\n");
+@@ -703,12 +709,19 @@ static ssize_t aio_run_iocb(struct kiocb *iocb)
+ 		goto out;
  	}
  
-> 
-> Thanks,
-> Xufeng Zhang
-> >Regards
-> >Neil
-> >
-> >
-> 
++	if (iocb->submitter_cred)
++		/* setup creds */
++		old_cred = override_creds(iocb->submitter_cred);
++
+ 	/*
+ 	 * Now we are all set to call the retry method in async
+ 	 * context.
+ 	 */
+ 	ret = retry(iocb);
+ 
++	if (old_cred)
++		revert_creds(old_cred);
++
+ 	if (ret != -EIOCBRETRY && ret != -EIOCBQUEUED) {
+ 		/*
+ 		 * There's no easy way to restart the syscall since other AIO's
+@@ -804,10 +817,14 @@ static void aio_queue_work(struct kioctx * ctx)
+  */
+ static inline void aio_run_all_iocbs(struct kioctx *ctx)
+ {
++	struct blk_plug plug;
++
++	blk_start_plug(&plug);
+ 	spin_lock_irq(&ctx->ctx_lock);
+ 	while (__aio_run_iocbs(ctx))
+ 		;
+ 	spin_unlock_irq(&ctx->ctx_lock);
++	blk_finish_plug(&plug);
+ }
+ 
+ /*
+@@ -825,13 +842,16 @@ static void aio_kick_handler(struct work_struct *work)
+ 	mm_segment_t oldfs = get_fs();
+ 	struct mm_struct *mm;
+ 	int requeue;
++	struct blk_plug plug;
+ 
+ 	set_fs(USER_DS);
+ 	use_mm(ctx->mm);
++	blk_start_plug(&plug);
+ 	spin_lock_irq(&ctx->ctx_lock);
+ 	requeue =__aio_run_iocbs(ctx);
+ 	mm = ctx->mm;
+ 	spin_unlock_irq(&ctx->ctx_lock);
++	blk_finish_plug(&plug);
+  	unuse_mm(mm);
+ 	set_fs(oldfs);
+ 	/*
+@@ -1506,12 +1526,14 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
+ 
+ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 			 struct iocb *iocb, struct kiocb_batch *batch,
+-			 bool compat)
++			 bool compat, struct kiocb **req_entry)
+ {
+ 	struct kiocb *req;
+ 	struct file *file;
+ 	ssize_t ret;
+ 
++	*req_entry = NULL;
++
+ 	/* enforce forwards compatibility on users */
+ 	if (unlikely(iocb->aio_reserved1 || iocb->aio_reserved2)) {
+ 		pr_debug("EINVAL: io_submit: reserve field set\n");
+@@ -1537,6 +1559,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 		fput(file);
+ 		return -EAGAIN;
+ 	}
++
+ 	req->ki_filp = file;
+ 	if (iocb->aio_flags & IOCB_FLAG_RESFD) {
+ 		/*
+@@ -1567,38 +1590,16 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	req->ki_left = req->ki_nbytes = iocb->aio_nbytes;
+ 	req->ki_opcode = iocb->aio_lio_opcode;
+ 
++	req->submitter_cred = get_current_cred();
++
+ 	ret = aio_setup_iocb(req, compat);
+ 
+ 	if (ret)
+ 		goto out_put_req;
+ 
+-	spin_lock_irq(&ctx->ctx_lock);
+-	/*
+-	 * We could have raced with io_destroy() and are currently holding a
+-	 * reference to ctx which should be destroyed. We cannot submit IO
+-	 * since ctx gets freed as soon as io_submit() puts its reference.  The
+-	 * check here is reliable: io_destroy() sets ctx->dead before waiting
+-	 * for outstanding IO and the barrier between these two is realized by
+-	 * unlock of mm->ioctx_lock and lock of ctx->ctx_lock.  Analogously we
+-	 * increment ctx->reqs_active before checking for ctx->dead and the
+-	 * barrier is realized by unlock and lock of ctx->ctx_lock. Thus if we
+-	 * don't see ctx->dead set here, io_destroy() waits for our IO to
+-	 * finish.
+-	 */
+-	if (ctx->dead) {
+-		spin_unlock_irq(&ctx->ctx_lock);
+-		ret = -EINVAL;
+-		goto out_put_req;
+-	}
+-	aio_run_iocb(req);
+-	if (!list_empty(&ctx->run_list)) {
+-		/* drain the run list */
+-		while (__aio_run_iocbs(ctx))
+-			;
+-	}
+-	spin_unlock_irq(&ctx->ctx_lock);
+-
+ 	aio_put_req(req);	/* drop extra ref to req */
++
++	*req_entry = req;
+ 	return 0;
+ 
+ out_put_req:
+@@ -1613,8 +1614,10 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 	struct kioctx *ctx;
+ 	long ret = 0;
+ 	int i = 0;
+-	struct blk_plug plug;
+ 	struct kiocb_batch batch;
++	struct kiocb **req_arr = NULL;
++	int nr_submitted = 0;
++	int req_arr_cnt = 0;
+ 
+ 	if (unlikely(nr < 0))
+ 		return -EINVAL;
+@@ -1632,8 +1635,8 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 	}
+ 
+ 	kiocb_batch_init(&batch, nr);
+-
+-	blk_start_plug(&plug);
++	req_arr = kmalloc(sizeof(struct kiocb *) * nr, GFP_KERNEL);
++	memset(req_arr, 0, sizeof(req_arr));
+ 
+ 	/*
+ 	 * AKPM: should this return a partial result if some of the IOs were
+@@ -1653,15 +1656,51 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 			break;
+ 		}
+ 
+-		ret = io_submit_one(ctx, user_iocb, &tmp, &batch, compat);
++		ret = io_submit_one(ctx, user_iocb, &tmp, &batch, compat,
++				&req_arr[i]);
+ 		if (ret)
+ 			break;
++		req_arr_cnt++;
+ 	}
+-	blk_finish_plug(&plug);
+ 
++	spin_lock_irq(&ctx->ctx_lock);
++	/*
++	 * We could have raced with io_destroy() and are currently holding a
++	 * reference to ctx which should be destroyed. We cannot submit IO
++	 * since ctx gets freed as soon as io_submit() puts its reference.  The
++	 * check here is reliable: io_destroy() sets ctx->dead before waiting
++	 * for outstanding IO and the barrier between these two is realized by
++	 * unlock of mm->ioctx_lock and lock of ctx->ctx_lock.  Analogously we
++	 * increment ctx->reqs_active before checking for ctx->dead and the
++	 * barrier is realized by unlock and lock of ctx->ctx_lock. Thus if we
++	 * don't see ctx->dead set here, io_destroy() waits for our IO to
++	 * finish.
++	 */
++	if (ctx->dead) {
++		spin_unlock_irq(&ctx->ctx_lock);
++		for (i = 0; i < req_arr_cnt; i++)
++			/* drop i/o ref to the req */
++			__aio_put_req(ctx, req_arr[i]);
++
++		ret = -EINVAL;
++		goto out;
++	}
++
++	for (i = 0; i < req_arr_cnt; i++) {
++		struct kiocb *req = req_arr[i];
++		if (likely(!kiocbTryKick(req)))
++			__queue_kicked_iocb(req);
++		nr_submitted++;
++	}
++	if (likely(nr_submitted > 0))
++		aio_queue_work(ctx);
++	spin_unlock_irq(&ctx->ctx_lock);
++
++out:
+ 	kiocb_batch_free(ctx, &batch);
++	kfree(req_arr);
+ 	put_ioctx(ctx);
+-	return i ? i : ret;
++	return nr_submitted ? nr_submitted : ret;
+ }
+ 
+ /* sys_io_submit:
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index b1a520e..bcd6a5e 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -124,6 +124,8 @@ struct kiocb {
+ 	 * this is the underlying eventfd context to deliver events to.
+ 	 */
+ 	struct eventfd_ctx	*ki_eventfd;
++
++	const struct cred	*submitter_cred;
+ };
+ 
+ #define is_sync_kiocb(iocb)	((iocb)->ki_key == KIOCB_SYNC_KEY)
+
+-- 
+Ankit Jain
+SUSE Labs
+
+--------------030201030701090402070003
+Content-Type: text/x-log;
+ name="ext4-disk-new.log"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ext4-disk-new.log"
+
+random_rw: (g=0): rw=randrw, bs=4K-4K/4K-4K, ioengine=libaio, iodepth=32
+fio-2.0.8-9-gfb9f0
+Starting 1 process
+
+random_rw: (groupid=0, jobs=1): err= 0: pid=2021: Tue Jul 24 15:37:25 2012
+  read : io=102864KB, bw=504885 B/s, iops=123 , runt=208627msec
+    slat (usec): min=0 , max=120 , avg= 1.65, stdev= 3.46
+    clat (msec): min=29 , max=619 , avg=134.15, stdev=53.04
+     lat (msec): min=29 , max=619 , avg=134.15, stdev=53.04
+    clat percentiles (msec):
+     |  1.00th=[   63],  5.00th=[   78], 10.00th=[   87], 20.00th=[   98],
+     | 30.00th=[  106], 40.00th=[  114], 50.00th=[  123], 60.00th=[  130],
+     | 70.00th=[  143], 80.00th=[  163], 90.00th=[  198], 95.00th=[  231],
+     | 99.00th=[  302], 99.50th=[  363], 99.90th=[  619], 99.95th=[  619],
+     | 99.99th=[  619]
+    bw (KB/s)  : min=  153, max=  761, per=100.00%, avg=497.88, stdev=128.35
+  write: io=101936KB, bw=500330 B/s, iops=122 , runt=208627msec
+    slat (usec): min=0 , max=131 , avg= 1.85, stdev= 3.27
+    clat (usec): min=97 , max=619552 , avg=126590.22, stdev=50338.80
+     lat (usec): min=108 , max=619553 , avg=126592.26, stdev=50338.83
+    clat percentiles (msec):
+     |  1.00th=[   59],  5.00th=[   72], 10.00th=[   80], 20.00th=[   91],
+     | 30.00th=[  100], 40.00th=[  108], 50.00th=[  116], 60.00th=[  125],
+     | 70.00th=[  137], 80.00th=[  155], 90.00th=[  188], 95.00th=[  225],
+     | 99.00th=[  293], 99.50th=[  334], 99.90th=[  578], 99.95th=[  619],
+     | 99.99th=[  619]
+    bw (KB/s)  : min=  127, max=  842, per=100.00%, avg=493.55, stdev=140.80
+    lat (usec) : 100=0.01%, 250=0.01%
+    lat (msec) : 50=0.25%, 100=26.26%, 250=70.61%, 500=2.69%, 750=0.19%
+  cpu          : usr=0.07%, sys=1.25%, ctx=27318, majf=0, minf=24
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=99.9%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.1%, 64=0.0%, >=64=0.0%
+     issued    : total=r=25716/w=25484/d=0, short=r=0/w=0/d=0
+
+Run status group 0 (all jobs):
+   READ: io=102864KB, aggrb=493KB/s, minb=493KB/s, maxb=493KB/s, mint=208627msec, maxt=208627msec
+  WRITE: io=101936KB, aggrb=488KB/s, minb=488KB/s, maxb=488KB/s, mint=208627msec, maxt=208627msec
+
+Disk stats (read/write):
+  sda: ios=25681/22647, merge=0/70, ticks=204770/98179832, in_queue=99369560, util=98.97%
+fio rand-rw-disk-2.fio --output=/home/radical/src/play/ios-test/new-logs/ext4-disk-2-b73147d.log --max-jobs=2 --latency-log --bandwidth-log
+b73147d remove unused ki_colln
+
+--------------030201030701090402070003
+Content-Type: text/plain; charset=UTF-8;
+ name="ext4-disk-old.org"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ext4-disk-old.org"
+
+random_rw: (g=0): rw=randrw, bs=4K-4K/4K-4K, ioengine=libaio, iodepth=32
+fio-2.0.8-9-gfb9f0
+Starting 1 process
+random_rw: Laying out IO file(s) (1 file(s) / 200MB)
+
+random_rw: (groupid=0, jobs=1): err= 0: pid=2011: Tue Jul 24 01:00:02 2012
+  read : io=102120KB, bw=618740 B/s, iops=151 , runt=169006msec
+    slat (usec): min=275 , max=87560 , avg=6571.88, stdev=2799.57
+    clat (usec): min=294 , max=214745 , avg=102349.31, stdev=21957.26
+     lat (msec): min=9 , max=225 , avg=108.92, stdev=22.21
+    clat percentiles (msec):
+     |  1.00th=[   54],  5.00th=[   68], 10.00th=[   76], 20.00th=[   84],
+     | 30.00th=[   91], 40.00th=[   96], 50.00th=[  102], 60.00th=[  108],
+     | 70.00th=[  114], 80.00th=[  121], 90.00th=[  131], 95.00th=[  141],
+     | 99.00th=[  157], 99.50th=[  161], 99.90th=[  182], 99.95th=[  198],
+     | 99.99th=[  210]
+    bw (KB/s)  : min=  474, max=  817, per=99.90%, avg=603.38, stdev=47.87
+  write: io=102680KB, bw=622133 B/s, iops=151 , runt=169006msec
+    slat (usec): min=2 , max=196 , avg=24.66, stdev=20.35
+    clat (usec): min=42 , max=221533 , avg=102260.25, stdev=21825.38
+     lat (usec): min=85 , max=221542 , avg=102285.38, stdev=21825.25
+    clat percentiles (msec):
+     |  1.00th=[   53],  5.00th=[   69], 10.00th=[   76], 20.00th=[   85],
+     | 30.00th=[   91], 40.00th=[   96], 50.00th=[  102], 60.00th=[  108],
+     | 70.00th=[  114], 80.00th=[  121], 90.00th=[  131], 95.00th=[  139],
+     | 99.00th=[  157], 99.50th=[  163], 99.90th=[  184], 99.95th=[  206],
+     | 99.99th=[  215]
+    bw (KB/s)  : min=  318, max=  936, per=99.86%, avg=606.14, stdev=100.63
+    lat (usec) : 50=0.01%, 250=0.01%, 500=0.01%
+    lat (msec) : 10=0.01%, 20=0.02%, 50=0.60%, 100=46.62%, 250=52.75%
+  cpu          : usr=0.41%, sys=1.58%, ctx=27474, majf=0, minf=22
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=99.9%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.1%, 64=0.0%, >=64=0.0%
+     issued    : total=r=25530/w=25670/d=0, short=r=0/w=0/d=0
+
+Run status group 0 (all jobs):
+   READ: io=102120KB, aggrb=604KB/s, minb=604KB/s, maxb=604KB/s, mint=169006msec, maxt=169006msec
+  WRITE: io=102680KB, aggrb=607KB/s, minb=607KB/s, maxb=607KB/s, mint=169006msec, maxt=169006msec
+
+Disk stats (read/write):
+  sda: ios=25533/4, merge=23/18, ticks=164781/112, in_queue=164823, util=97.51%
+
+--------------030201030701090402070003
+Content-Type: text/x-log;
+ name="ext4-rd-new.log"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ext4-rd-new.log"
+
+random_rw: (g=0): rw=randrw, bs=4K-4K/4K-4K, ioengine=libaio, iodepth=32
+fio-2.0.8-9-gfb9f0
+Starting 1 process
+random_rw: Laying out IO file(s) (1 file(s) / 1700MB)
+
+random_rw: (groupid=0, jobs=1): err= 0: pid=2002: Tue Jul 24 15:31:47 2012
+  read : io=870504KB, bw=558373KB/s, iops=139593 , runt=  1559msec
+    slat (usec): min=0 , max=32 , avg= 0.38, stdev= 0.52
+    clat (usec): min=62 , max=597 , avg=114.05, stdev=18.96
+     lat (usec): min=63 , max=599 , avg=114.49, stdev=19.03
+    clat percentiles (usec):
+     |  1.00th=[  103],  5.00th=[  105], 10.00th=[  106], 20.00th=[  107],
+     | 30.00th=[  108], 40.00th=[  108], 50.00th=[  109], 60.00th=[  110],
+     | 70.00th=[  115], 80.00th=[  123], 90.00th=[  126], 95.00th=[  129],
+     | 99.00th=[  145], 99.50th=[  151], 99.90th=[  438], 99.95th=[  462],
+     | 99.99th=[  580]
+    bw (KB/s)  : min=550016, max=572568, per=100.00%, avg=560584.00, stdev=11342.49
+  write: io=870296KB, bw=558240KB/s, iops=139559 , runt=  1559msec
+    slat (usec): min=0 , max=65 , avg= 0.42, stdev= 0.53
+    clat (usec): min=62 , max=595 , avg=113.45, stdev=18.91
+     lat (usec): min=63 , max=597 , avg=113.93, stdev=18.99
+    clat percentiles (usec):
+     |  1.00th=[  103],  5.00th=[  104], 10.00th=[  105], 20.00th=[  106],
+     | 30.00th=[  107], 40.00th=[  108], 50.00th=[  108], 60.00th=[  110],
+     | 70.00th=[  115], 80.00th=[  122], 90.00th=[  125], 95.00th=[  129],
+     | 99.00th=[  145], 99.50th=[  149], 99.90th=[  438], 99.95th=[  462],
+     | 99.99th=[  564]
+    bw (KB/s)  : min=547456, max=575144, per=100.00%, avg=559728.00, stdev=14109.21
+    lat (usec) : 100=0.02%, 250=99.72%, 500=0.24%, 750=0.03%
+  cpu          : usr=18.73%, sys=80.76%, ctx=175, majf=0, minf=22
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=100.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.1%, 64=0.0%, >=64=0.0%
+     issued    : total=r=217626/w=217574/d=0, short=r=0/w=0/d=0
+
+Run status group 0 (all jobs):
+   READ: io=870504KB, aggrb=558373KB/s, minb=558373KB/s, maxb=558373KB/s, mint=1559msec, maxt=1559msec
+  WRITE: io=870296KB, aggrb=558239KB/s, minb=558239KB/s, maxb=558239KB/s, mint=1559msec, maxt=1559msec
+
+Disk stats (read/write):
+  ram0: ios=0/0, merge=0/0, ticks=0/0, in_queue=0, util=0.00%
+fio rand-rw-rd.fio --output=/home/radical/src/play/ios-test/new-logs/ext4-rd-b73147d.log --max-jobs=2 --latency-log --bandwidth-log
+b73147d remove unused ki_colln
+
+--------------030201030701090402070003
+Content-Type: text/plain; charset=UTF-8;
+ name="ext4-rd-old.org"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ext4-rd-old.org"
+
+random_rw: (g=0): rw=randrw, bs=4K-4K/4K-4K, ioengine=libaio, iodepth=32
+fio-2.0.8-9-gfb9f0
+Starting 1 process
+random_rw: Laying out IO file(s) (1 file(s) / 1700MB)
+
+random_rw: (groupid=0, jobs=1): err= 0: pid=1999: Tue Jul 24 00:55:56 2012
+  read : io=869872KB, bw=489517KB/s, iops=122379 , runt=  1777msec
+    slat (usec): min=2 , max=78 , avg= 3.46, stdev= 0.87
+    clat (usec): min=16 , max=604 , avg=126.83, stdev=16.35
+     lat (usec): min=19 , max=617 , avg=130.40, stdev=16.74
+    clat percentiles (usec):
+     |  1.00th=[  119],  5.00th=[  121], 10.00th=[  122], 20.00th=[  123],
+     | 30.00th=[  124], 40.00th=[  124], 50.00th=[  125], 60.00th=[  126],
+     | 70.00th=[  127], 80.00th=[  129], 90.00th=[  133], 95.00th=[  135],
+     | 99.00th=[  149], 99.50th=[  155], 99.90th=[  490], 99.95th=[  524],
+     | 99.99th=[  548]
+    bw (KB/s)  : min=487648, max=493224, per=100.00%, avg=490160.00, stdev=2828.69
+  write: io=870928KB, bw=490111KB/s, iops=122527 , runt=  1777msec
+    slat (usec): min=2 , max=171 , avg= 2.78, stdev= 0.90
+    clat (usec): min=23 , max=606 , avg=126.77, stdev=16.22
+     lat (usec): min=26 , max=616 , avg=129.65, stdev=16.57
+    clat percentiles (usec):
+     |  1.00th=[  118],  5.00th=[  120], 10.00th=[  121], 20.00th=[  123],
+     | 30.00th=[  124], 40.00th=[  124], 50.00th=[  125], 60.00th=[  126],
+     | 70.00th=[  127], 80.00th=[  129], 90.00th=[  133], 95.00th=[  135],
+     | 99.00th=[  149], 99.50th=[  155], 99.90th=[  490], 99.95th=[  516],
+     | 99.99th=[  548]
+    bw (KB/s)  : min=484072, max=496464, per=100.00%, avg=490920.00, stdev=6298.07
+    lat (usec) : 20=0.01%, 50=0.01%, 100=0.01%, 250=99.80%, 500=0.11%
+    lat (usec) : 750=0.08%
+  cpu          : usr=24.21%, sys=75.34%, ctx=185, majf=0, minf=22
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=100.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.1%, 64=0.0%, >=64=0.0%
+     issued    : total=r=217468/w=217732/d=0, short=r=0/w=0/d=0
+
+Run status group 0 (all jobs):
+   READ: io=869872KB, aggrb=489517KB/s, minb=489517KB/s, maxb=489517KB/s, mint=1777msec, maxt=1777msec
+  WRITE: io=870928KB, aggrb=490111KB/s, minb=490111KB/s, maxb=490111KB/s, mint=1777msec, maxt=1777msec
+
+Disk stats (read/write):
+  ram0: ios=0/0, merge=0/0, ticks=0/0, in_queue=0, util=0.00%
+
+--------------030201030701090402070003
+Content-Type: text/plain; charset=UTF-8;
+ name="rand-rw-disk.io"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="rand-rw-disk.io"
+
+[random_rw]
+rw=randrw
+size=200m
+directory=/misc/rd
+ioengine=libaio
+iodepth=32
+
+--------------030201030701090402070003
+Content-Type: text/plain; charset=UTF-8;
+ name="rand-rw-rd.fio"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="rand-rw-rd.fio"
+
+[random_rw]
+rw=randrw
+size=1700m
+directory=/mnt/rd
+ioengine=libaio
+iodepth=32
+
+--------------030201030701090402070003--
