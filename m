@@ -1,206 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab2GXUin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:38:43 -0400
-Received: from bounces.ut.ee ([193.40.5.137]:47464 "EHLO bounces.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755741Ab2GXUik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:38:40 -0400
-Date: Tue, 24 Jul 2012 23:38:37 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        sparclinux@vger.kernel.org
-Subject: 3.5: kernel BUG at mm/mmap.c:2313 (on sparc64)
-Message-ID: <alpine.SOC.1.00.1207242330050.16040@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1756083Ab2GXUkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:40:16 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:54345 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755588Ab2GXUkN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 16:40:13 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>
+CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXAAAc9d8AAOI+0AAK5hfwAAMAYhEAAJzp+AAADntgAAA3nmAAAHQ+6g
+Date: Tue, 24 Jul 2012 20:39:53 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB346A4@USINDEM103.corp.hds.com>
+References: <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
+ <20120720030328.GC5637@redhat.com> <20120723141632.GB23047@srcf.ucam.org>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB33479@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F19370A1B@ORSMSX104.amr.corp.intel.com>
+ <20120724181820.GA23820@srcf.ucam.org>
+ <3908561D78D1C84285E8C5FCA982C28F19370CA2@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19370CA2@ORSMSX104.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-24_04:2012-07-24,2012-07-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207240215
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While testing Debian update on fresh 3.5 kernel on Sun Ultra 2 
-(sparc64), got the above BUG during generation of initramfs. The machine 
-last run 3.5-rc7 and some previous rc-s fine, as well as earlier 3.x 
-releases.
+> > One thing that's worth noting - UEFI systems will typically only
+> > recover deleted space on reset. create->delete->create->delete will
+> > reduce available space until the platform is rebooted, at which point
+> > the deleted portion will become available again.
+> 
+> Some ACPI/ERST systems do this too :-(
 
-Rerunning this initramfs generation after reboot worked fine, I cannot 
-reproduce the problem.
+So, we don't need to introduce a overwriting policy.
+I will make a patch using QueryVariableInfo and just writing multiple logs.
 
-Full dmesg:
-
-[    0.000000] PROMLIB: Sun IEEE Boot Prom 'OBP 3.25.0 1999/12/03 11:35'
-[    0.000000] PROMLIB: Root node compatible: 
-[    0.000000] Linux version 3.5.0 (mroos@u2) (gcc version 4.6.3 (Debian 4.6.3-8) ) #17 SMP Tue Jul 24 02:26:02 EEST 2012
-[    0.000000] debug: ignoring loglevel setting.
-[    0.000000] bootconsole [earlyprom0] enabled
-[    0.000000] ARCH: SUN4U
-[    0.000000] Ethernet address: 08:00:20:89:2a:a0
-[    0.000000] Kernel: Using 2 locked TLB entries for main kernel image.
-[    0.000000] Remapping the kernel... done.
-[    0.000000] OF stdout device is: /sbus@1f,0/zs@f,1100000:a
-[    0.000000] PROM: Built device tree with 41324 bytes of memory.
-[    0.000000] Top of RAM: 0x6ff2c000, Total RAM: 0x37f1a000
-[    0.000000] Memory hole size: 896MB
-[    0.000000] [0000010000000000-fffff8006f800000] page_structs=131072 node=0 entry=0/8192
-[    0.000000] [0000010000000000-fffff8006f400000] page_structs=131072 node=0 entry=1/8192
-[    0.000000] [0000010000800000-fffff8006f000000] page_structs=131072 node=0 entry=2/8192
-[    0.000000] [0000010000800000-fffff8006ec00000] page_structs=131072 node=0 entry=3/8192
-[    0.000000] Zone ranges:
-[    0.000000]   Normal   [mem 0x00000000-0x6ff2bfff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00000000-0x0fffffff]
-[    0.000000]   node   0: [mem 0x20000000-0x27ffffff]
-[    0.000000]   node   0: [mem 0x40000000-0x4fffffff]
-[    0.000000]   node   0: [mem 0x60000000-0x6fefdfff]
-[    0.000000]   node   0: [mem 0x6ff00000-0x6ff05fff]
-[    0.000000]   node   0: [mem 0x6ff16000-0x6ff2bfff]
-[    0.000000] On node 0 totalpages: 114573
-[    0.000000]   Normal zone: 1792 pages used for memmap
-[    0.000000]   Normal zone: 0 pages reserved
-[    0.000000]   Normal zone: 112781 pages, LIFO batch:15
-[    0.000000] Booting Linux...
-[    0.000000] CPU CAPS: [flush,stbar,swap,muldiv,v9,mul32,div32,v8plus]
-[    0.000000] CPU CAPS: [vis]
-[    0.000000] PERCPU: Embedded 5 pages/cpu @fffff8006e800000 s11200 r8192 d21568 u2097152
-[    0.000000] pcpu-alloc: s11200 r8192 d21568 u2097152 alloc=1*4194304
-[    0.000000] pcpu-alloc: [0] 0 1 
-[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 112781
-[    0.000000] Kernel command line: root=/dev/sda2 ro debug ignore_loglevel
-[    0.000000] PID hash table entries: 4096 (order: 2, 32768 bytes)
-[    0.000000] Dentry cache hash table entries: 131072 (order: 7, 1048576 bytes)
-[    0.000000] Inode-cache hash table entries: 65536 (order: 6, 524288 bytes)
-[    0.000000] Memory: 893880k available (2952k kernel code, 976k data, 160k init) [fffff80000000000,000000006ff2c000]
-[    0.000000] SLUB: Genslabs=16, HWalign=32, Order=0-3, MinObjects=0, CPUs=2, Nodes=1
-[    0.000000] Hierarchical RCU implementation.
-[    0.000000] 	Additional per-CPU info printed with stalls.
-[    0.000000] NR_IRQS:255
-[    0.000000] clocksource: mult[360e5a2] shift[24]
-[    0.000000] clockevent: mult[4bc5ef63] shift[32]
-[    0.000000] Console: colour dummy device 80x25
-[    0.000000] console [tty0] enabled, bootconsole disabled
-[   71.667928] Calibrating delay using timer specific routine.. 593.12 BogoMIPS (lpj=2965620)
-[   71.667983] pid_max: default: 32768 minimum: 301
-[   71.668573] Mount-cache hash table entries: 512
-[   71.721773] CPU 1: synchronized TICK with master CPU (last diff -11 cycles, maxerr 544 cycles)
-[   71.721934] Brought up 2 CPUs
-[   71.723608] NET: Registered protocol family 16
-[   71.741550] SYSIO: UPA portID ffffffff, at 000001fe00000000
-[   71.768148] bio: create slab <bio-0> at 0
-[   71.771151] SCSI subsystem initialized
-[   71.774974] /sbus@1f,0/eeprom@f,1200000: Mostek regs at 0x1fff1200000
-[   71.776909] AUXIO: Found device at /sbus@1f,0/auxio@f,1900000
-[   71.777270] Switching to clocksource tick
-[   71.810118] NET: Registered protocol family 2
-[   71.810608] IP route cache hash table entries: 8192 (order: 3, 65536 bytes)
-[   71.811819] TCP established hash table entries: 32768 (order: 6, 524288 bytes)
-[   71.814438] TCP bind hash table entries: 32768 (order: 6, 524288 bytes)
-[   71.816949] TCP: Hash tables configured (established 32768 bind 32768)
-[   71.817001] TCP: reno registered
-[   71.817043] UDP hash table entries: 512 (order: 1, 16384 bytes)
-[   71.817177] UDP-Lite hash table entries: 512 (order: 1, 16384 bytes)
-[   71.818995] NET: Registered protocol family 1
-[   71.823115] HugeTLB registered 4 MB page size, pre-allocated 0 pages
-[   71.862789] msgmni has been set to 1745
-[   71.865244] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)
-[   71.865330] io scheduler noop registered
-[   71.865377] io scheduler deadline registered
-[   71.865973] io scheduler cfq registered (default)
-[   71.878355] Console: switching to colour frame buffer device 144x56
-[   71.889094] /SUNW,ffb@1e,0: FFB at 000001fc00000000, type 8, DAC pnum[236c] rev[10] manuf_rev[4]
-[   71.890384] /sbus@1f,0/cgsix@1,0: CGsix [TGX sparc] at 0:1ff10000000
-[   71.892870] f005b518: ttyS0 at MMIO 0x1fff1100000 (irq = 9) is a zs
-[   71.892999] Console: ttyS0 (SunZilog zs0)
-[   77.306607] console [ttyS0] enabled
-[   77.348957] f005b518: ttyS1 at MMIO 0x1fff1100004 (irq = 9) is a zs
-[   77.349819] f005c9b8: Keyboard at MMIO 0x1fff1000000 (irq = 9) is a zs
-[   77.349830] f005c9b8: Mouse at MMIO 0x1fff1000004 (irq = 9) is a zs
-[   77.576410] esp: esp0, regs[1ffe8810000:1ffe8800000] irq[10]
-[   77.576422] esp: esp0 is a FASHME, 40 MHz (ccf=0), SCSI ID 7
-[   80.578511] scsi0 : esp
-[   80.609109] scsi 0:0:0:0: Direct-Access     FUJITSU  MAP3367N SUN36G  0401 PQ: 0 ANSI: 4
-[   80.704326] scsi target0:0:0: Beginning Domain Validation
-[   80.774040] scsi target0:0:0: FAST-10 WIDE SCSI 20.0 MB/s ST (100 ns, offset 15)
-[   80.862223] scsi target0:0:0: Domain Validation skipping write tests
-[   80.936748] scsi target0:0:0: Ending Domain Validation
-[   82.178015] scsi 0:0:6:0: CD-ROM            NEC      CD-ROM DRIVE:463 1.05 PQ: 0 ANSI: 2
-[   82.273068] scsi target0:0:6: Beginning Domain Validation
-[   82.341475] scsi target0:0:6: FAST-10 SCSI 10.0 MB/s ST (100 ns, offset 15)
-[   82.425639] scsi target0:0:6: Domain Validation skipping write tests
-[   82.499862] scsi target0:0:6: Ending Domain Validation
-[   84.442608] mousedev: PS/2 mouse device common for all mice
-[   84.507655] sd 0:0:0:0: [sda] 71132959 512-byte logical blocks: (36.4 GB/33.9 GiB)
-[   84.600644] sd 0:0:0:0: [sda] Write Protect is off
-[   84.600836] rtc-m48t59 rtc-m48t59.0: rtc core: registered m48t59 as rtc0
-[   84.603507] TCP: cubic registered
-[   84.603521] NET: Registered protocol family 17
-[   84.603611] Key type dns_resolver registered
-[   84.880103] sd 0:0:0:0: [sda] Mode Sense: b3 00 00 08
-[   84.942084] sd 0:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
-[   85.064358]  sda: sda1 sda2 sda3 sda4
-[   85.117273] sd 0:0:0:0: [sda] Attached SCSI disk
-[   85.175012] rtc-m48t59 rtc-m48t59.0: setting system clock to 2012-07-24 19:06:54 UTC (1343156814)
-[   85.589714] input: Sun Mouse as /devices/root/f005abc8/f005c9b8/serio1/input/input0
-[   85.687776] EXT4-fs (sda2): couldn't mount as ext3 due to feature incompatibilities
-[   85.831413] EXT4-fs (sda2): couldn't mount as ext2 due to feature incompatibilities
-[   86.060119] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
-[   86.154382] VFS: Mounted root (ext4 filesystem) readonly on device 8:2.
-[   89.033972] /sbus@1f,0/flashprom@f,0: OBP Flash, RD 1fff0000000[80000] WR 1fff1380000[80000]
-[   89.227691] sunhme.c:v3.10 August 26, 2008 David S. Miller (davem@davemloft.net)
-[   89.330622] sr0: scsi-1 drive
-[   89.330634] cdrom: Uniform CD-ROM driver Revision: 3.20
-[   89.331310] sr 0:0:6:0: Attached scsi CD-ROM sr0
-[   89.321066] eth0: HAPPY MEAL (SBUS) 10/100baseT Ethernet 08:00:20:89:2a:a0
-[   89.568887] eth1: Quattro HME slot 0 (SBUS) 10/100baseT Ethernet 08:00:20:cc:93:40
-[   89.570931] eth2: Quattro HME slot 1 (SBUS) 10/100baseT Ethernet 08:00:20:cc:93:41
-[   89.572972] eth3: Quattro HME slot 2 (SBUS) 10/100baseT Ethernet 08:00:20:cc:93:42
-[   89.662787] eth4: Quattro HME slot 3 (SBUS) 10/100baseT Ethernet 08:00:20:cc:93:43
-[   89.902924] parport0: sunbpp at 0x1ffec800000
-[   91.215862] Adding 722912k swap on /dev/sda4.  Priority:-1 extents:1 across:722912k 
-[   91.452314] EXT4-fs (sda2): re-mounted. Opts: (null)
-[  114.855018] EXT4-fs (sda2): re-mounted. Opts: errors=remount-ro
-[  115.442137] loop: module loaded
-[  118.956300] EXT4-fs (sda1): mounting ext2 file system using the ext4 subsystem
-[  119.058273] EXT4-fs (sda1): mounted filesystem without journal. Opts: (null)
-[  121.004662] NET: Registered protocol family 10
-[  124.903762] eth0: Link is up using internal transceiver at 100Mb/s, Full Duplex.
-[  820.614828] kernel BUG at mm/mmap.c:2313!
-[  820.665386]               \|/ ____ \|/
-[  820.665386]               "@'/ .. \`@"
-[  820.665386]               /_| \__/ |_\
-[  820.665386]                  \__U_/
-[  820.857162] ld-linux.so.2(6567): Kernel bad sw trap 5 [#1]
-[  820.925150] TSTATE: 0000008011001607 TPC: 00000000004c0904 TNPC: 00000000004c0908 Y: 00000000    Not tainted
-[  821.045290] TPC: <exit_mmap+0x144/0x160>
-[  821.094569] g0: 0000000000000005 g1: 0000000000000000 g2: 000000000000000e g3: 0000000000000001
-[  821.201268] g4: fffff8006e3369a0 g5: fffff8006e1fc000 g6: fffff8004bb6c000 g7: fffff8006e0b8000
-[  821.307941] o0: 000000000000001d o1: 0000000000753a88 o2: 0000000000000909 o3: 0000000000000000
-[  821.414586] o4: 0000000000400000 o5: 0000000000753a88 sp: fffff8004bb6f201 ret_pc: 00000000004c08fc
-[  821.525433] RPC: <exit_mmap+0x13c/0x160>
-[  821.574888] l0: 00000000700348a0 l1: 00000000700351c8 l2: 0000000070033dc0 l3: 0000000070034dc8
-[  821.681687] l4: 000000007001ebc8 l5: 0000000000000000 l6: 00000000000001f8 l7: 0000000070034000
-[  821.788578] i0: fffff8006e381220 i1: fffff8006e381270 i2: 00000000007568b0 i3: 0000000000100000
-[  821.895400] i4: 0000000000000020 i5: 0000000000000000 i6: fffff8004bb6f321 i7: 000000000044d82c
-[  822.002370] I7: <mmput.part.57+0xc/0xc0>
-[  822.051791] Call Trace:
-[  822.083520]  [000000000044d82c] mmput.part.57+0xc/0xc0
-[  822.147692]  [0000000000452b34] exit_mm+0xf4/0x160
-[  822.207623]  [00000000004548cc] do_exit+0x22c/0x320
-[  822.268439]  [0000000000454b28] do_group_exit+0x28/0xc0
-[  822.333479]  [0000000000454bd4] SyS_exit_group+0x14/0x20
-[  822.399437]  [0000000000406134] linux_sparc_syscall32+0x34/0x40
-[  822.472848] Disabling lock debugging due to kernel taint
-[  822.538820] Caller[000000000044d82c]: mmput.part.57+0xc/0xc0
-[  822.609026] Caller[0000000000452b34]: exit_mm+0xf4/0x160
-[  822.674979] Caller[00000000004548cc]: do_exit+0x22c/0x320
-[  822.741901] Caller[0000000000454b28]: do_group_exit+0x28/0xc0
-[  822.813052] Caller[0000000000454bd4]: SyS_exit_group+0x14/0x20
-[  822.885145] Caller[0000000000406134]: linux_sparc_syscall32+0x34/0x40
-[  822.964530] Caller[0000000070012248]: 0x70012248
-[  823.021965] Instruction DUMP: 92102909  7ffd9d81  90122288 <91d02005> 30680006  01000000  01000000  01000000  01000000 
-[  823.153374] Fixing recursive fault but reboot is needed!
-
-
--- 
-Meelis Roos (mroos@linux.ee)
+Seiji
