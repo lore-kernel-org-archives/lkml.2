@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab2GXJHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 05:07:04 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55515 "EHLO
+	id S1753241Ab2GXJHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 05:07:10 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55075 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916Ab2GXJHA (ORCPT
+	with ESMTP id S1752596Ab2GXJHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jul 2012 05:07:00 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-ff-500e65b1193e
+X-AuditID: 9c930179-b7bdcae000003d91-00-500e65b2163b
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
         Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 04/12] perf hist: Maintain total periods of group members in the leader
-Date: Tue, 24 Jul 2012 18:01:25 +0900
-Message-Id: <1343120493-23059-5-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 05/12] perf report: Make another loop for output resorting
+Date: Tue, 24 Jul 2012 18:01:26 +0900
+Message-Id: <1343120493-23059-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
 References: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
@@ -28,72 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Like group_stats in hist_entry, total periods information also need
-to be known to the leader.
+Now the event grouping viewing requires collapsing all member's in a
+group to the leader. Thus hists__output_resort should be called after
+collapsing all entreis in evlist.
 
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c |   25 +++++++++++++++++++++++++
- tools/perf/util/hist.h |    1 +
- 2 files changed, 26 insertions(+)
+ tools/perf/builtin-report.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index a8f4c56261a0..5ae71429ba53 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -427,6 +427,28 @@ static void hist_entry__add_group_stat(struct perf_evsel *evsel,
- 		hist_entry__add_stat(&iter->stat, &he->stat);
- }
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 69b1c1185159..46ed9c2ad4ed 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -415,6 +415,11 @@ static int __cmd_report(struct perf_report *rep)
+ 			hists->symbol_filter_str = rep->symbol_filter_str;
  
-+static void hists__add_group_stat(struct hists *hists)
-+{
-+	struct perf_evsel *evsel = hists_2_evsel(hists);
-+	struct perf_evsel *leader = evsel->leader;
-+	struct hists *leader_hists;
-+
-+	if (perf_evsel__is_group_leader(evsel))
-+		return;
-+
-+	leader_hists = &leader->hists;
-+
-+	if (!leader_hists->group_stats) {
-+		leader_hists->group_stats = calloc(leader->nr_children,
-+						sizeof(struct events_stats));
-+		if (!leader_hists->group_stats)
-+			return;
+ 		hists__collapse_resort(hists);
 +	}
 +
-+	memcpy(&leader_hists->group_stats[evsel->group_idx],
-+	       &hists->stats, sizeof(struct events_stats));
-+}
++	list_for_each_entry(pos, &session->evlist->entries, node) {
++		struct hists *hists = &pos->hists;
 +
- /*
-  * collapse the histogram
-  */
-@@ -546,6 +568,9 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
- 			hists__apply_filters(hists, n);
- 		}
+ 		hists__output_resort(hists);
+ 		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
  	}
-+
-+	if (symbol_conf.report_group)
-+		hists__add_group_stat(hists);
- }
- 
- void hists__collapse_resort(struct hists *hists)
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 8594459594d9..5f81ee723c77 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -66,6 +66,7 @@ struct hists {
- 	const char		*symbol_filter_str;
- 	pthread_mutex_t		lock;
- 	struct events_stats	stats;
-+	struct events_stats	*group_stats;
- 	u64			event_stream;
- 	u16			col_len[HISTC_NR_COLS];
- };
 -- 
 1.7.10.4
 
