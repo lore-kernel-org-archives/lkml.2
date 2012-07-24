@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab2GXQZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:25:42 -0400
-Received: from nm28-vm3.bullet.mail.ne1.yahoo.com ([98.138.91.158]:46696 "HELO
-	nm28-vm3.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755052Ab2GXQZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:25:41 -0400
-X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jul 2012 12:25:41 EDT
-X-Yahoo-Newman-Id: 265519.97977.bm@smtp209.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: iUz2nVgVM1m_B1Bl5koGbNt5lmCQSTqOFtbupFEjiuUUum7
- 00oxAqm32dpqtaxBYQ9G8WdT918_JQ7vdBckwkVhvEORH0heclSGtRsM4Rp5
- pc2J7cD7r.DcsppLDPp2EeVcQkyZ1PG7sFx.A2JiFzQ4HGLUc9_x5Knr7gpz
- T48t.oqxx.xXiYcXvAzV7UeOiUyK3hEP27okB5J5ODX7frIDJ3t.SwgT2_Xh
- I8KA2J8RV76Mx4FSw6hUJUr7UagfZvKXdkU5a962H9AnjUqsoP7NCdFlFHQW
- x5GqLCBOjeYbcg6y73JkeN3Bk1a2NTU9qgJmTuZiKc7rjEPpKcIf6MHvnYhL
- lP6A.7.esFd2qyyvlOhxJwrODnX9FO.XQxQbxTzhKbI7mL1oyzTHCDFrS9cw
- zOTfzw0dhnrXIJETS0FjMUO0OeHmNLc5r.L2hkOo-
-X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
-Date: Tue, 24 Jul 2012 11:18:51 -0500
-From: Andrew Watts <akwatts@ymail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [SEGFAULT: perf]
-Message-ID: <20120724161848.GA30762@ymail.com>
-References: <20120723135214.GA14465@ymail.com>
- <878vea6mgf.fsf@sejong.aot.lge.com>
+	id S1755858Ab2GXQZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:25:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51877 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755797Ab2GXQZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 12:25:49 -0400
+Date: Tue, 24 Jul 2012 18:25:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
+Subject: Re: [PATCH] add blockconsole version 1.1
+Message-ID: <20120724162546.GC13753@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	=?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+	Steve Hodgson <steve@purestorage.com>
+References: <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com>
+ <20120712174633.GA7248@logfs.org>
+ <20120713130336.GC10298@x1.osrc.amd.com>
+ <20120713162009.GA10268@logfs.org>
+ <20120716124614.GA19497@x1.osrc.amd.com>
+ <20120718185335.GA1771@logfs.org>
+ <20120718214520.GA14067@liondog.tnic>
+ <20120723200459.GD17767@logfs.org>
+ <20120724154218.GB13753@x1.osrc.amd.com>
+ <20120724145334.GB24954@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <878vea6mgf.fsf@sejong.aot.lge.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120724145334.GB24954@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung.
-
-On Tue, Jul 24, 2012 at 09:18:24AM +0900, Namhyung Kim wrote:
+On Tue, Jul 24, 2012 at 10:53:35AM -0400, Jörn Engel wrote:
+> On Tue, 24 July 2012 17:42:19 +0200, Borislav Petkov wrote:
+> > 
+> > Just a minor nuisance: I have this in the log:
+> > 
+> > ...
+> > [   10.498422] console [bcon0] enabled
+> > [   10.499899] blockconsole: now logging to /dev/sdc at 1
+> > [   10.594791] usb 5-2: new full-speed USB device number 3 using ohci_hcd
+> >                                                                                                                                 
+> > [   12.665911] xhci_hcd 0000:00:10.0: xHCI Host Controller
+> > [   12.668469] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
+> > ...
+> > 
+> > which doesn't have the empty line with a bunch of '\s' chars:
+> > 
+> > ...
+> > [   10.498422] console [bcon0] enabled
+> > [   10.499899] blockconsole: now logging to /dev/sdc at 1
+> > [   10.594791] usb 5-2: new full-speed USB device number 3 using ohci_hcd
+> > [   12.665911] xhci_hcd 0000:00:10.0: xHCI Host Controller
+> > [   12.668469] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
+> > ...
+> > 
+> > Do you know per-chance why that happens? I have a couple more lines like
+> > that further in the log file which bcon_tail generated.
 > 
-> (A) has a fix already in the tip tree [1], and maybe in mainline too.
+> If there is no logging for a second, blockconsole will flush the
+> current sector.  So however much of it is empty will be filled with
+> spaces and a newline at the end.  Result are those empty lines.
 
-Ah yes, I see the fix in 3.5 as well. Though it is slightly different
-from the patch I submitted.
+... and this is consistent with the printk timestamps above: 10.5 to
+12.6 seconds = one empty line.
 
-> And yes, I think this sort thing needs some love. It's on my TODO list
-> but not have time to do it yet.
+> The advantage should be better robustness, in particular when dealing
+> with cheap flash devices.
 
-I understand all about time constraints. I am glad it is on your TODO 
-though; will be on the lookout for commits on that front.
+In the sense that we flush the current sector after one second the
+latest so that we can lose as small amount of data as possible if the
+system crashes right at that point?
 
-Cheers.
+And, at the same time, writes to cheap devices get flushed for sure?
 
-~ Andy
+> Disadvantage is the wasted real estate on your monitor - although
+> sometimes I have found it nice to have syntax highlighting (in a way)
+> for pauses in the logging.
+
+Ok, I see what you mean. I see a red line in vim here. Ok, good to know,
+maybe this feature with the empty lines could be in the docs too so
+people don't ask that question again?
+
+Or you issue a tag instead of an empty line like so:
+
+[   10.498422] console [bcon0] enabled
+[   10.499899] blockconsole: now logging to /dev/sdc at 1
+[   10.594791] usb 5-2: new full-speed USB device number 3 using ohci_hcd
+<<LOG timeout of 1sec>>
+[   12.665911] xhci_hcd 0000:00:10.0: xHCI Host Controller
+[   12.668469] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
+
+which explains everything.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
