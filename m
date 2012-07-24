@@ -1,54 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab2GXPsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:48:50 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:38840 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740Ab2GXPsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 11:48:47 -0400
-From: Vivek Trivedi <vtrivedi018@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Vivek Trivedi <vtrivedi018@gmail.com>, Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH] nfsd4: fix cr_principal comparison check in same_creds
-Date: Tue, 24 Jul 2012 21:18:20 +0530
-Message-Id: <1343144900-4522-1-git-send-email-vtrivedi018@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755822Ab2GXPtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:49:10 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:40447
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754365Ab2GXPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 11:46:37 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        olaf@aepfle.de, apw@canonical.com, netdev@vger.kernel.org,
+        ben@decadent.org.uk
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 05/17] Tools: hv: Prepare to expand  kvp_get_ip_address() functionality
+Date: Tue, 24 Jul 2012 09:01:29 -0700
+Message-Id: <1343145701-3691-5-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1343145701-3691-1-git-send-email-kys@microsoft.com>
+References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
+ <1343145701-3691-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a wrong check for same cr_principal in same_creds
+kvp_get_ip_address() implemented the functionality to retrieve IP address info.
+Make this function more generic so that we could retrieve additional
+per-interface information.
 
-Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- fs/nfsd/nfs4state.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/hv/hv_kvp_daemon.c |  129 ++++++++++++++++++++++++++++++----------------
+ 1 files changed, 84 insertions(+), 45 deletions(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 94effd5..e8ead04 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1215,7 +1215,7 @@ static bool groups_equal(struct group_info *g1, struct group_info *g2)
- 	return true;
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 72f5fd3..2169f2f 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -492,7 +492,8 @@ done:
  }
  
--static int
-+static bool
- same_creds(struct svc_cred *cr1, struct svc_cred *cr2)
+ static int
+-kvp_get_ip_address(int family, char *buffer, int length)
++kvp_get_ip_address(int family, char *if_name, int op,
++		 void  *out_buffer, int length)
  {
- 	if ((cr1->cr_flavor != cr2->cr_flavor)
-@@ -1227,7 +1227,7 @@ same_creds(struct svc_cred *cr1, struct svc_cred *cr2)
- 		return true;
- 	if (!cr1->cr_principal || !cr2->cr_principal)
- 		return false;
--	return 0 == strcmp(cr1->cr_principal, cr1->cr_principal);
-+	return 0 == strcmp(cr1->cr_principal, cr2->cr_principal);
- }
+ 	struct ifaddrs *ifap;
+ 	struct ifaddrs *curp;
+@@ -502,10 +503,19 @@ kvp_get_ip_address(int family, char *buffer, int length)
+ 	const char *str;
+ 	char tmp[50];
+ 	int error = 0;
+-
++	char *buffer;
++	struct hv_kvp_ipaddr_value *ip_buffer;
++
++	if (op == KVP_OP_ENUMERATE) {
++		buffer = out_buffer;
++	} else {
++		ip_buffer = out_buffer;
++		buffer = (char *)ip_buffer->ip_addr;
++		ip_buffer->addr_family = 0;
++	}
+ 	/*
+ 	 * On entry into this function, the buffer is capable of holding the
+-	 * maximum key value (2048 bytes).
++	 * maximum key value.
+ 	 */
  
- static void gen_clid(struct nfs4_client *clp)
+ 	if (getifaddrs(&ifap)) {
+@@ -515,58 +525,87 @@ kvp_get_ip_address(int family, char *buffer, int length)
+ 
+ 	curp = ifap;
+ 	while (curp != NULL) {
+-		if ((curp->ifa_addr != NULL) &&
+-		   (curp->ifa_addr->sa_family == family)) {
+-			if (family == AF_INET) {
+-				struct sockaddr_in *addr =
+-				(struct sockaddr_in *) curp->ifa_addr;
+-
+-				str = inet_ntop(family, &addr->sin_addr,
+-						tmp, 50);
+-				if (str == NULL) {
+-					strcpy(buffer, "inet_ntop failed\n");
+-					error = 1;
+-					goto getaddr_done;
+-				}
+-				if (offset == 0)
+-					strcpy(buffer, tmp);
+-				else
+-					strcat(buffer, tmp);
+-				strcat(buffer, ";");
++		if (curp->ifa_addr == NULL) {
++			curp = curp->ifa_next;
++			continue;
++		}
+ 
+-				offset += strlen(str) + 1;
+-				if ((length - offset) < (ipv4_len + 1))
+-					goto getaddr_done;
++		if ((if_name != NULL) &&
++			(strncmp(curp->ifa_name, if_name, strlen(if_name)))) {
++			/*
++			 * We want info about a specific interface;
++			 * just continue.
++			 */
++			curp = curp->ifa_next;
++			continue;
++		}
+ 
+-			} else {
++		/*
++		 * We only support two address families: AF_INET and AF_INET6.
++		 * If a family value of 0 is specified, we collect both
++		 * supported address families; if not we gather info on
++		 * the specified address family.
++		 */
++		if ((family != 0) && (curp->ifa_addr->sa_family != family)) {
++			curp = curp->ifa_next;
++			continue;
++		}
++		if ((curp->ifa_addr->sa_family != AF_INET) &&
++			(curp->ifa_addr->sa_family != AF_INET6)) {
++			curp = curp->ifa_next;
++			continue;
++		}
++
++		if ((curp->ifa_addr->sa_family == AF_INET) &&
++			((family == AF_INET) || (family == 0))) {
++			struct sockaddr_in *addr =
++			(struct sockaddr_in *) curp->ifa_addr;
++
++			str = inet_ntop(AF_INET, &addr->sin_addr, tmp, 50);
++			if (str == NULL) {
++				strcpy(buffer, "inet_ntop failed\n");
++				error = 1;
++				goto getaddr_done;
++			}
++			if (offset == 0)
++				strcpy(buffer, tmp);
++			else
++				strcat(buffer, tmp);
++			strcat(buffer, ";");
++
++			offset += strlen(str) + 1;
++			if ((length - offset) < (ipv4_len + 1))
++				goto getaddr_done;
++
++		} else if ((family == AF_INET6) || (family == 0)) {
+ 
+ 			/*
+ 			 * We only support AF_INET and AF_INET6
+ 			 * and the list of addresses is separated by a ";".
+ 			 */
+-				struct sockaddr_in6 *addr =
++			struct sockaddr_in6 *addr =
+ 				(struct sockaddr_in6 *) curp->ifa_addr;
+ 
+-				str = inet_ntop(family,
++			str = inet_ntop(AF_INET6,
+ 					&addr->sin6_addr.s6_addr,
+ 					tmp, 50);
+-				if (str == NULL) {
+-					strcpy(buffer, "inet_ntop failed\n");
+-					error = 1;
+-					goto getaddr_done;
+-				}
+-				if (offset == 0)
+-					strcpy(buffer, tmp);
+-				else
+-					strcat(buffer, tmp);
+-				strcat(buffer, ";");
+-				offset += strlen(str) + 1;
+-				if ((length - offset) < (ipv6_len + 1))
+-					goto getaddr_done;
+-
++			if (str == NULL) {
++				strcpy(buffer, "inet_ntop failed\n");
++				error = 1;
++				goto getaddr_done;
+ 			}
++			if (offset == 0)
++				strcpy(buffer, tmp);
++			else
++				strcat(buffer, tmp);
++			strcat(buffer, ";");
++			offset += strlen(str) + 1;
++			if ((length - offset) < (ipv6_len + 1))
++				goto getaddr_done;
+ 
+ 		}
++
++
+ 		curp = curp->ifa_next;
+ 	}
+ 
+@@ -815,13 +854,13 @@ int main(void)
+ 			strcpy(key_value, lic_version);
+ 			break;
+ 		case NetworkAddressIPv4:
+-			kvp_get_ip_address(AF_INET, key_value,
+-					HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
++			kvp_get_ip_address(AF_INET, NULL, KVP_OP_ENUMERATE,
++				key_value, HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
+ 			strcpy(key_name, "NetworkAddressIPv4");
+ 			break;
+ 		case NetworkAddressIPv6:
+-			kvp_get_ip_address(AF_INET6, key_value,
+-					HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
++			kvp_get_ip_address(AF_INET6, NULL, KVP_OP_ENUMERATE,
++				key_value, HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
+ 			strcpy(key_name, "NetworkAddressIPv6");
+ 			break;
+ 		case OSBuildNumber:
 -- 
-1.7.1
+1.7.4.1
 
