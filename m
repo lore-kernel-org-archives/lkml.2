@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2GXI2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 04:28:33 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19281 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab2GXI2b (ORCPT
+	id S1755712Ab2GXI3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:29:30 -0400
+Received: from relay.parallels.com ([195.214.232.42]:32819 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755561Ab2GXI30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 04:28:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 24 Jul 2012 01:24:01 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
-        <swarren@wwwdotorg.org>
-CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] regulator: tps6586x: correct vin pin for sm0/sm1/sm2
-Date: Tue, 24 Jul 2012 13:48:00 +0530
-Message-ID: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Tue, 24 Jul 2012 04:29:26 -0400
+Message-ID: <500E5CDF.5000504@parallels.com>
+Date: Tue, 24 Jul 2012 12:29:19 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andre Przywara <andre.przywara@amd.com>
+CC: Borislav Petkov <bp@amd64.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
+References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com> <20120721103715.GA3632@aftab.osrc.amd.com> <500E4960.8040307@parallels.com> <500E5951.5020900@amd.com>
+In-Reply-To: <500E5951.5020900@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per datasheet, the vin pin for the regulator is named
-as vin_sm0, vin_sm1, vin_sm2 for sm0, sm1 and sm2 respectively.
+On 07/24/2012 12:14 PM, Andre Przywara wrote:
+> On 07/24/2012 09:06 AM, Vladimir Davydov wrote:
+>> On 07/21/2012 02:37 PM, Borislav Petkov wrote:
+>>> (+ Andre who's been doing some cross vendor stuff)
+>>>
+>>> On Fri, Jul 20, 2012 at 08:37:33PM +0400, Vladimir Davydov wrote:
+>>>> If 'clearcpuid=N' is specified in boot options, CPU feature #N won't be
+>>>> reported in /proc/cpuinfo and used by the kernel. However, if a
+>>>> userpsace process checks CPU features directly using the cpuid
+>>>> instruction, it will be reported about all features supported by the CPU
+>>>> irrespective of what features are cleared.
+>>>>
+>>>> The patch makes the clearcpuid boot option not only clear CPU features
+>>>> in kernel but also mask them in hardware for Intel and AMD CPUs that
+>>>> support it so that the features cleared won't be reported even by the
+>>>> cpuid instruction.
+>>>>
+>>>> This can be useful for migration of virtual machines managed by
+>>>> hypervisors that do not support/use Intel VT/AMD-V hardware-assisted
+>>>> virtualization technology.
+> But for this case you want it more fine-grained, say on a pre-process or
+> per-container level, right?
+> For hardware-assisted virtualization you simply don't need it, and for
+> Xen PV guests for instance this can be more safely done by the
+> hypervisor. I assume Parallels is similar in this respect, so you may
+> want to switch the MSRs on the guest's entry and exit by the VMM.
+> Also if you want to restrict a guest's CPUID features, you don't want to
+> do this at the guest's discretion, but better one level below where the
+> guest cannot revert this, right?
 
-Correcting the names in driver and documentation to match with
-datasheet.
+Actually I meant OS-level virtualization (no hypervisors) based on the 
+linux cgroup subsystem and namespaces like OpenVZ or LXC . Although the 
+latter does not have the container migration ability at present, there 
+is a project that will hopefully allow this soon (criu.org). For such 
+virtualization systems, per-kernel option would be enough because all 
+guests share the same kernel.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reported-by: Stephen Warren <swarren@nvidia.com>
----
- .../devicetree/bindings/regulator/tps6586x.txt     |   12 ++++++------
- drivers/regulator/tps6586x-regulator.c             |    8 +++++---
- 2 files changed, 11 insertions(+), 9 deletions(-)
+>
+> In general I am not reluctant to have this feature with a sane
+> interface, but I simply don't see the usefulness of having it per kernel.
+> Also note that AFAIK this masking only helps with the basic CPUID
+> features, namely leaf 1 and 0x80000001 for ECX and EDX. This does not
+> cover the more advanced features and not the new ones at leaf 7.
 
-diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
-index d156e1b..da80c2a 100644
---- a/Documentation/devicetree/bindings/regulator/tps6586x.txt
-+++ b/Documentation/devicetree/bindings/regulator/tps6586x.txt
-@@ -9,9 +9,9 @@ Required properties:
- - regulators: list of regulators provided by this controller, must have
-   property "regulator-compatible" to match their hardware counterparts:
-   sm[0-2], ldo[0-9] and ldo_rtc
--- sm0-supply: The input supply for the SM0.
--- sm1-supply: The input supply for the SM1.
--- sm2-supply: The input supply for the SM2.
-+- vin-sm0-supply: The input supply for the SM0.
-+- vin-sm1-supply: The input supply for the SM1.
-+- vin-sm2-supply: The input supply for the SM2.
- - vinldo01-supply: The input supply for the LDO1 and LDO2
- - vinldo23-supply: The input supply for the LDO2 and LDO3
- - vinldo4-supply: The input supply for the LDO4
-@@ -30,9 +30,9 @@ Example:
- 		#gpio-cells = <2>;
- 		gpio-controller;
- 
--		sm0-supply = <&some_reg>;
--		sm1-supply = <&some_reg>;
--		sm2-supply = <&some_reg>;
-+		vin-sm0-supply = <&some_reg>;
-+		vin-sm1-supply = <&some_reg>;
-+		vin-sm2-supply = <&some_reg>;
- 		vinldo01-supply = <...>;
- 		vinldo23-supply = <...>;
- 		vinldo4-supply = <...>;
-diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-index e6da90a..19241fc 100644
---- a/drivers/regulator/tps6586x-regulator.c
-+++ b/drivers/regulator/tps6586x-regulator.c
-@@ -240,14 +240,16 @@ static struct tps6586x_regulator tps6586x_regulator[] = {
- 	TPS6586X_LDO(LDO_9, "vinldo9", ldo, SUPPLYV6, 3, 3, ENE, 7, ENE, 7),
- 	TPS6586X_LDO(LDO_RTC, NULL, ldo, SUPPLYV4, 3, 3, V4, 7, V4, 7),
- 	TPS6586X_LDO(LDO_1, "vinldo01", dvm, SUPPLYV1, 0, 5, ENC, 1, END, 1),
--	TPS6586X_LDO(SM_2, "sm2", sm2, SUPPLYV2, 0, 5, ENC, 7, END, 7),
-+	TPS6586X_LDO(SM_2, "vin-sm2", sm2, SUPPLYV2, 0, 5, ENC, 7, END, 7),
- 
- 	TPS6586X_DVM(LDO_2, "vinldo23", dvm, LDO2BV1, 0, 5, ENA, 3,
- 					ENB, 3, VCC2, 6),
- 	TPS6586X_DVM(LDO_4, "vinldo4", ldo4, LDO4V1, 0, 5, ENC, 3,
- 					END, 3, VCC1, 6),
--	TPS6586X_DVM(SM_0, "sm0", dvm, SM0V1, 0, 5, ENA, 1, ENB, 1, VCC1, 2),
--	TPS6586X_DVM(SM_1, "sm1", dvm, SM1V1, 0, 5, ENA, 0, ENB, 0, VCC1, 0),
-+	TPS6586X_DVM(SM_0, "vin-sm0", dvm, SM0V1, 0, 5, ENA, 1,
-+					ENB, 1, VCC1, 2),
-+	TPS6586X_DVM(SM_1, "vin-sm1", dvm, SM1V1, 0, 5, ENA, 0,
-+					ENB, 0, VCC1, 0),
- };
- 
- /*
--- 
-1.7.1.1
+I guess that when the more advanced features become widely-used, vendors 
+will offer new MSRs and/or CPUID faulting.
+
+>>> So opening the floodgates to people fiddling with this (not only
+>>> migrators) makes me feel pretty uneasy. And I won't wonder if all of
+>>> a sudden strange failures start to appear because code is querying
+>>> cpuid features but some funny distro has disabled it in its kernel boot
+>>> options.
+> Actually these "strange failures" would be a bug then. If CPUID is not
+> there, the feature is not there. Full stop. In the past we had had
+> already some trouble with people ignoring CPUID and stating some funny
+> things like: "Every XYZ processor has this feature."
+> If someone disables MCE, then on purpose. Let the code cope with it.
+>
+> And Boris: I don't like this "majority of users" argument. If there is
+> some sense in this feature, why not have it (unless it significantly
+> hurts the code base)? Remember, this is Linux: If you want to shoot
+> yourself in the foot, we will not prevent you.
+>
+> Regards,
+> Andre.
+>
 
