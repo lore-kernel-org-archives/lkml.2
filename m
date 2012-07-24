@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab2GXS6a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 14:58:30 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59245 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab2GXS62 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 14:58:28 -0400
-Date: Tue, 24 Jul 2012 19:58:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Emulating level IRQs (was: Re: [PATCH] Input: eeti_ts: Mark as
- CONFIG_BROKEN)
-Message-ID: <20120724185825.GA32169@sirena.org.uk>
-References: <1333777207-4151-1-git-send-email-olof@lixom.net>
- <20120407070206.GA17623@core.coreip.homeip.net>
- <4F8089A9.6080704@raumfeld.com>
- <20120503043651.GA11830@core.coreip.homeip.net>
- <20120713070102.GA2223@core.coreip.homeip.net>
- <500561AF.9090901@gmail.com>
- <5008296C.5070709@gmail.com>
- <20120723165120.GB26577@core.coreip.homeip.net>
- <500EE314.7040708@gmail.com>
+	id S1756110Ab2GXTDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:03:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25892 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754238Ab2GXTDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 15:03:10 -0400
+Date: Tue, 24 Jul 2012 15:03:03 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, law@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc
+ definition
+Message-ID: <20120724190302.GE10534@zod.bos.redhat.com>
+References: <20120724181209.GA10534@zod.bos.redhat.com>
+ <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com>
+ <20120724182409.GB10534@zod.bos.redhat.com>
+ <20120724183230.GC10534@zod.bos.redhat.com>
+ <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <500EE314.7040708@gmail.com>
-X-Cookie: A rolling stone gathers momentum.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 08:01:56PM +0200, Daniel Mack wrote:
-> On 23.07.2012 18:51, Dmitry Torokhov wrote:
+On Tue, Jul 24, 2012 at 11:46:25AM -0700, Linus Torvalds wrote:
+> On Tue, Jul 24, 2012 at 11:32 AM, Josh Boyer <jwboyer@redhat.com> wrote:
+> > Recent glibc made a change to suppress sign-conversion warnings from FD_SET
+> > (glibc commit ceb9e56b3d1).  That patch solved the particular error it was
+> > aiming to, however applications that #include <linux/types.h> after
+> > including <sys/select.h> can now hit a build failure if -Werror=sign-compare
+> > and -D_FORTIFY_SOURCE=2 is passed to gcc.  This can be seen when building
+> > this trivial application against a recent enough glibc:
+> 
+> Looking more at this, I now hate it for *another* reason.
+> 
+> Making __NFDBITS be a signed value turns __FDELT() and __FDMASK() into
+> potentially pure and utter crap. Doing signed divisions (or modulus)
+> is a disaster - suddenly it's not just a bit shift any more.
+> 
+> Guys, the glibc people really seem to not have thought their change
+> through. Or maybe they fixed their __FDELT/__FDMASK at the same time?
 
-> > Hmm, but that would mean we need to restore reading the data in open()
-> > to make sure we re-arm IRQ in case somebody touched the screen before it
-> > was opened by userspace...
+Jeff can probably answer this better than I can, so likely best to wait
+for him.
 
-> I had another look at this and don't really know what to do here. We
-> definitely need level interrupts for this device as the interrupt line's
-> level is the only that tells us when we can stop reading from the
-> device. So it's not just the start condition that bites us here.
+FWIW, the definitions of __FD_ELT/__FD_MASK in glibc are:
 
-> I copied some people that might help find a solution.
+#define __FD_ELT(d)     ((d) / __NFDBITS)
+#define __FD_MASK(d)    ((__fd_mask) 1 << ((d) % __NFDBITS))
 
-I've raised the same issue myself, it's fairly common.
+where __fd_mask is 'typdef long int'.
 
-> So it boils down to the question: Is there any easy and generic way to
-> emulate level irq on chips that don't support that natively?
+__NFDBITS was changed to int type with glibc commit eb0b6cb6e in 2009,
+and __FDELT/__FDMASK were basically renamed with glibc commit
+e529793b508 in 2011.
 
-Nothing in core.  The nearest thing is to poll until you run out of work
-(which is rude but survivable for threaded IRQs that don't assert too
-much), ideally just reusing the level IRQ if it can report IRQ_NONE.
+josh
