@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab2GXQoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:44:25 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:58608 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab2GXQoW (ORCPT
+	id S1755981Ab2GXQof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:44:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33470 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753864Ab2GXQob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:44:22 -0400
+	Tue, 24 Jul 2012 12:44:31 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 30/32] PCI/tsi721: use PCIe capabilities access functions to simplify implementation
-Date: Wed, 25 Jul 2012 00:41:15 +0800
-Message-Id: <1343148077-25941-7-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v2 31/32] PCI/et131x: use PCIe capabilities access functions to simplify implementation
+Date: Wed, 25 Jul 2012 00:41:16 +0800
+Message-Id: <1343148077-25941-8-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343148077-25941-1-git-send-email-jiang.liu@huawei.com>
 References: <1343148077-25941-1-git-send-email-jiang.liu@huawei.com>
@@ -27,53 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe capabilities access functions to simplify tsi721 driver's
+Use PCIe capabilities access functions to simplify et131x driver's
 implementation.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/rapidio/devices/tsi721.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/staging/et131x/et131x.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
-index 722246c..4debfdc 100644
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -2212,7 +2212,7 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
- 				  const struct pci_device_id *id)
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index 5b11c5e..7410148 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -4001,7 +4001,6 @@ static void et131x_hwaddr_init(struct et131x_adapter *adapter)
+ static int et131x_pci_init(struct et131x_adapter *adapter,
+ 						struct pci_dev *pdev)
  {
- 	struct tsi721_device *priv;
--	int i, cap;
-+	int i;
- 	int err;
- 	u32 regval;
+-	int cap = pci_pcie_cap(pdev);
+ 	u16 max_payload;
+ 	u16 ctl;
+ 	int i, rc;
+@@ -4010,7 +4009,7 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
+ 	if (rc < 0)
+ 		goto out;
  
-@@ -2320,20 +2320,19 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
- 			dev_info(&pdev->dev, "Unable to set consistent DMA mask\n");
+-	if (!cap) {
++	if (!pci_is_pcie(pdev)) {
+ 		dev_err(&pdev->dev, "Missing PCIe capabilities\n");
+ 		goto err_out;
+ 	}
+@@ -4018,7 +4017,7 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
+ 	/* Let's set up the PORT LOGIC Register.  First we need to know what
+ 	 * the max_payload_size is
+ 	 */
+-	if (pci_read_config_word(pdev, cap + PCI_EXP_DEVCAP, &max_payload)) {
++	if (pci_pcie_capability_read_word(pdev, PCI_EXP_DEVCAP, &max_payload)) {
+ 		dev_err(&pdev->dev,
+ 		    "Could not read PCI config space for Max Payload Size\n");
+ 		goto err_out;
+@@ -4055,7 +4054,7 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
  	}
  
--	cap = pci_pcie_cap(pdev);
--	BUG_ON(cap == 0);
-+	BUG_ON(!pci_is_pcie(pdev));
+ 	/* Change the max read size to 2k */
+-	if (pci_read_config_word(pdev, cap + PCI_EXP_DEVCTL, &ctl)) {
++	if (pci_pcie_capability_read_word(pdev, PCI_EXP_DEVCTL, &ctl)) {
+ 		dev_err(&pdev->dev,
+ 			"Could not read PCI config space for Max read size\n");
+ 		goto err_out;
+@@ -4063,7 +4062,7 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
  
- 	/* Clear "no snoop" and "relaxed ordering" bits, use default MRRS. */
--	pci_read_config_dword(pdev, cap + PCI_EXP_DEVCTL, &regval);
-+	pci_pcie_capability_read_dword(pdev, PCI_EXP_DEVCTL, &regval);
- 	regval &= ~(PCI_EXP_DEVCTL_READRQ | PCI_EXP_DEVCTL_RELAX_EN |
- 		    PCI_EXP_DEVCTL_NOSNOOP_EN);
- 	regval |= 0x2 << MAX_READ_REQUEST_SZ_SHIFT;
--	pci_write_config_dword(pdev, cap + PCI_EXP_DEVCTL, regval);
-+	pci_pcie_capability_write_dword(pdev, PCI_EXP_DEVCTL, regval);
+ 	ctl = (ctl & ~PCI_EXP_DEVCTL_READRQ) | (0x04 << 12);
  
- 	/* Adjust PCIe completion timeout. */
--	pci_read_config_dword(pdev, cap + PCI_EXP_DEVCTL2, &regval);
-+	pci_pcie_capability_read_dword(pdev, PCI_EXP_DEVCTL2, &regval);
- 	regval &= ~(0x0f);
--	pci_write_config_dword(pdev, cap + PCI_EXP_DEVCTL2, regval | 0x2);
-+	pci_pcie_capability_write_dword(pdev, PCI_EXP_DEVCTL2, regval | 0x2);
- 
- 	/*
- 	 * FIXUP: correct offsets of MSI-X tables in the MSI-X Capability Block
+-	if (pci_write_config_word(pdev, cap + PCI_EXP_DEVCTL, ctl)) {
++	if (pci_pcie_capability_write_word(pdev, PCI_EXP_DEVCTL, ctl)) {
+ 		dev_err(&pdev->dev,
+ 		      "Could not write PCI config space for Max read size\n");
+ 		goto err_out;
 -- 
 1.7.9.5
 
