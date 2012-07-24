@@ -1,165 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab2GXUMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:12:22 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:46548 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab2GXUMD (ORCPT
+	id S932121Ab2GXUMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:12:33 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48091 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab2GXUMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:12:03 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: [PATCH v4 07/12] block: Rename bio_split() -> bio_pair_split()
-Date: Tue, 24 Jul 2012 13:11:24 -0700
-Message-Id: <1343160689-12378-8-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1343160689-12378-1-git-send-email-koverstreet@google.com>
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
+	Tue, 24 Jul 2012 16:12:31 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH v2 2/2] nconf: add u, d command keys in scroll windows
+Date: Tue, 24 Jul 2012 16:12:03 -0400
+Message-Id: <1343160723-14308-2-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1343160723-14308-1-git-send-email-bpoirier@suse.de>
+References: <500EDDAF.4040506@xenotime.net>
+ <1343160723-14308-1-git-send-email-bpoirier@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is prep work for introducing a more general bio_split()
+They function just like they do in less(1).
+Also correct some discrepancy between the help text and the code wrt
+function keys.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 ---
- drivers/block/drbd/drbd_req.c |    2 +-
- drivers/block/pktcdvd.c       |    2 +-
- drivers/block/rbd.c           |    3 ++-
- drivers/md/linear.c           |    2 +-
- drivers/md/raid0.c            |    6 +++---
- drivers/md/raid10.c           |    4 ++--
- fs/bio.c                      |    4 ++--
- include/linux/bio.h           |    2 +-
- 8 files changed, 13 insertions(+), 12 deletions(-)
+ scripts/kconfig/nconf.c     |    6 +++---
+ scripts/kconfig/nconf.gui.c |    8 +++++---
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 8e93a6a..b5cfa3b 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -1150,7 +1150,7 @@ void drbd_make_request(struct request_queue *q, struct bio *bio)
- 		const int sps = 1 << HT_SHIFT; /* sectors per slot */
- 		const int mask = sps - 1;
- 		const sector_t first_sectors = sps - (sect & mask);
--		bp = bio_split(bio, first_sectors);
-+		bp = bio_pair_split(bio, first_sectors);
- 
- 		/* we need to get a "reference count" (ap_bio_cnt)
- 		 * to avoid races with the disconnect/reconnect/suspend code.
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 6fe693a..12a14c0 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -2467,7 +2467,7 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
- 		if (last_zone != zone) {
- 			BUG_ON(last_zone != zone + pd->settings.size);
- 			first_sectors = last_zone - bio->bi_sector;
--			bp = bio_split(bio, first_sectors);
-+			bp = bio_pair_split(bio, first_sectors);
- 			BUG_ON(!bp);
- 			pkt_make_request(q, &bp->bio1);
- 			pkt_make_request(q, &bp->bio2);
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 8f428a8..e33c224 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -732,7 +732,8 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
- 
- 			/* split the bio. We'll release it either in the next
- 			   call, or it will have to be released outside */
--			bp = bio_split(old_chain, (len - total) / SECTOR_SIZE);
-+			bp = bio_pair_split(old_chain,
-+					    (len - total) / SECTOR_SIZE);
- 			if (!bp)
- 				goto err_out;
- 
-diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-index fa211d8..e860cb9 100644
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -314,7 +314,7 @@ static void linear_make_request(struct mddev *mddev, struct bio *bio)
- 
- 		rcu_read_unlock();
- 
--		bp = bio_split(bio, end_sector - bio->bi_sector);
-+		bp = bio_pair_split(bio, end_sector - bio->bi_sector);
- 
- 		linear_make_request(mddev, &bp->bio1);
- 		linear_make_request(mddev, &bp->bio2);
-diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-index de63a1f..c89c8aa 100644
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -516,11 +516,11 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
- 		 * refuse to split for us, so we need to split it.
- 		 */
- 		if (likely(is_power_of_2(chunk_sects)))
--			bp = bio_split(bio, chunk_sects - (sector &
-+			bp = bio_pair_split(bio, chunk_sects - (sector &
- 							   (chunk_sects-1)));
- 		else
--			bp = bio_split(bio, chunk_sects -
--				       sector_div(sector, chunk_sects));
-+			bp = bio_pair_split(bio, chunk_sects -
-+					    sector_div(sector, chunk_sects));
- 		raid0_make_request(mddev, &bp->bio1);
- 		raid0_make_request(mddev, &bp->bio2);
- 		bio_pair_release(bp);
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 8da6282..be75924 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1063,8 +1063,8 @@ static void make_request(struct mddev *mddev, struct bio * bio)
- 		/* This is a one page bio that upper layers
- 		 * refuse to split for us, so we need to split it.
- 		 */
--		bp = bio_split(bio,
--			       chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
-+		bp = bio_pair_split(bio,
-+				    chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
- 
- 		/* Each of these 'make_request' calls will call 'wait_barrier'.
- 		 * If the first succeeds but the second blocks due to the resync
-diff --git a/fs/bio.c b/fs/bio.c
-index 2631d0b..5d02aa5 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1493,7 +1493,7 @@ static void bio_pair_end_2(struct bio *bi, int err)
- /*
-  * split a bio - only worry about a bio with a single page in its iovec
-  */
--struct bio_pair *bio_split(struct bio *bi, int first_sectors)
-+struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
- {
- 	struct bio_pair *bp = mempool_alloc(bio_split_pool, GFP_NOIO);
- 
-@@ -1536,7 +1536,7 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 
- 	return bp;
- }
--EXPORT_SYMBOL(bio_split);
-+EXPORT_SYMBOL(bio_pair_split);
- 
- /**
-  *      bio_sector_offset - Find hardware sector offset in bio
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 484b96e..fdcc8dc 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -201,7 +201,7 @@ struct bio_pair {
- 	atomic_t			cnt;
- 	int				error;
- };
--extern struct bio_pair *bio_split(struct bio *bi, int first_sectors);
-+extern struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors);
- extern void bio_pair_release(struct bio_pair *dbio);
- 
- extern struct bio_set *bioset_create(unsigned int, unsigned int);
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index 8c0eb65..8087e4d 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -83,10 +83,10 @@ static const char nconf_readme[] = N_(
+ "Text Box    (Help Window)\n"
+ "--------\n"
+ "o  Use the cursor keys to scroll up/down/left/right.  The VI editor\n"
+-"   keys h,j,k,l function here as do <SPACE BAR> for those\n"
+-"   who are familiar with less and lynx.\n"
++"   keys h,j,k,l function here as do <u>, <d> and <SPACE BAR> for\n"
++"   those who are familiar with less and lynx.\n"
+ "\n"
+-"o  Press <Enter>, <F1>, <F5>, <F7> or <Esc> to exit.\n"
++"o  Press <Enter>, <F1>, <F5>, <F9>, <q> or <Esc> to exit.\n"
+ "\n"
+ "\n"
+ "Alternate Configuration Files\n"
+diff --git a/scripts/kconfig/nconf.gui.c b/scripts/kconfig/nconf.gui.c
+index 3b18dd8..379003c 100644
+--- a/scripts/kconfig/nconf.gui.c
++++ b/scripts/kconfig/nconf.gui.c
+@@ -604,9 +604,11 @@ void show_scroll_win(WINDOW *main_window,
+ 		switch (res) {
+ 		case KEY_NPAGE:
+ 		case ' ':
++		case 'd':
+ 			start_y += text_lines-2;
+ 			break;
+ 		case KEY_PPAGE:
++		case 'u':
+ 			start_y -= text_lines+2;
+ 			break;
+ 		case KEY_HOME:
+@@ -632,10 +634,10 @@ void show_scroll_win(WINDOW *main_window,
+ 			start_x++;
+ 			break;
+ 		}
+-		if (res == 10 || res == 27 || res == 'q'
+-		    || res == KEY_F(F_BACK) || res == KEY_F(F_EXIT)) {
++		if (res == 10 || res == 27 || res == 'q' ||
++			res == KEY_F(F_HELP) || res == KEY_F(F_BACK) ||
++			res == KEY_F(F_EXIT))
+ 			break;
+-		}
+ 		if (start_y < 0)
+ 			start_y = 0;
+ 		if (start_y >= total_lines-text_lines)
 -- 
-1.7.7.3
+1.7.7
 
