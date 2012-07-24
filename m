@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab2GXBqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:46:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38906 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755062Ab2GXBqQ (ORCPT
+	id S1755217Ab2GXBxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 21:53:07 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47068 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755091Ab2GXBxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 21:46:16 -0400
-Date: Mon, 23 Jul 2012 18:46:11 -0700
-From: Michel Lespinasse <walken@google.com>
-To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
-        aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/6] augmented rbtree changes
-Message-ID: <20120724014611.GA6974@google.com>
-References: <1342787467-5493-1-git-send-email-walken@google.com>
+	Mon, 23 Jul 2012 21:53:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342787467-5493-1-git-send-email-walken@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120723121411.GC16518@hmsreliant.think-freely.org>
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
+	<20120723004932.GB8040@neilslaptop.think-freely.org>
+	<500CB74A.4040300@windriver.com>
+	<20120723121411.GC16518@hmsreliant.think-freely.org>
+Date: Tue, 24 Jul 2012 09:53:02 +0800
+Message-ID: <CA+=dFziWBDQWyLDNDzgdz2deVpPMnBs6jnvA6iX_LLbckxdu9g@mail.gmail.com>
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK
+ when bundling
+From: Xufeng Zhang <xufengzhang.main@gmail.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: xufeng zhang <xufeng.zhang@windriver.com>, vyasevich@gmail.com,
+        sri@us.ibm.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 05:31:01AM -0700, Michel Lespinasse wrote:
-> Patch 5 speeds up the augmented rbtree erase. Here again we use a tree
-> rotation callback during rebalancing; however we also have to propagate
-> the augmented node information above nodes being erased and/or stitched,
-> and I haven't found a nice enough way to do that. So for now I am proposing
-> the simple-stupid way of propagating all the way to the root. More on
-> this later.
+On 7/23/12, Neil Horman <nhorman@tuxdriver.com> wrote:
+> On Mon, Jul 23, 2012 at 10:30:34AM +0800, xufeng zhang wrote:
+>> On 07/23/2012 08:49 AM, Neil Horman wrote:
+>> >
+>> >Not sure I understand how you came into this error.  If we get an
+>> > invalid
+>> >stream, we issue an SCTP_REPORT_TSN side effect, followed by an
+>> > SCTP_CMD_REPLY
+>> >which sends the error chunk.  The reply goes through
+>> >sctp_outq_tail->sctp_outq_chunk->sctp_outq_transmit_chunk->sctp_outq_append_chunk.
+>> >That last function checks to see if a sack is already part of the packet,
+>> > and if
+>> >there isn't one, appends one, using the updated tsn map.
+>> Yes, you are right, but consider the invalid stream identifier's
+>> DATA chunk is the first
+>> DATA chunk in the association which will need SACK immediately.
+>> Here is what I thought of the scenario:
+>>     sctp_sf_eat_data_6_2()
+>>         -->sctp_eat_data()
+>>             -->sctp_make_op_error()
+>>             -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(err))
+>>             -->sctp_outq_tail()          /* First enqueue ERROR chunk */
+>>         -->sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE())
+>>             -->sctp_gen_sack()
+>>                 -->sctp_make_sack()
+>>                 -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+>> SCTP_CHUNK(sack))
+>>                 -->sctp_outq_tail()          /* Then enqueue SACK chunk
+>> */
+>>
+>> So SACK chunk is enqueued after ERROR chunk.
+> Ah, I see.  Since the ERROR and SACK chunks are both control chunks, and
+> since
+> we explicitly add the SACK to the control queue instead of going through
+> the
+> bundle path in sctp_packet_append_chunk the ordering gets wrong.
+>
+> Ok, so the problem makes sense.  I think the soultion could be alot easier
+> though.  IIRC SACK chunks always live at the head of a packet, so why not
+> just
+> special case it in sctp_outq_tail?  I.e. instead of doing a list_add_tail,
+> in
+> the else clause of sctp_outq_tail check the chunk_hdr->type to see if its
+> SCTP_CID_SACK.  If it is, use list_add_head rather than list_add_tail.  I
+> think
+> that will fix up both the COOKIE_ECHO and ESTABLISHED cases, won't it?  And
+> then
+> you won't have keep track of extra state in the packet configuration.
 
-So, I looked at it again and finally figured out a decent way to avoid
-unnecessary propagation here. Going to resend patches 5/6 as replies to
-their original postings.
+(Please ignore the duplicate messages if you received, sorry for this!)
 
-> - The prio tree of all VMAs mapping a given file (struct address_space)
-> could be switched to an augmented rbtree based interval tree (thus removing
-> the prio tree library in favor of augmented rbtrees)
+Yes, it's a good idea, but I think the premise is not correct:
+RFC 4960 page 57:
+"D) Upon reception of the COOKIE ECHO chunk, endpoint "Z" will reply
+   with a COOKIE ACK chunk after building a TCB and moving to the
+   ESTABLISHED state. A COOKIE ACK chunk may be bundled with any
+   pending DATA chunks (and/or SACK chunks), but the COOKIE ACK chunk
+   MUST be the first chunk in the packet."
 
-I actually have a prototype for that already. The augmented rbtree based
-implementation is slightly faster than prio tree on insert/erase, and
-considerably faster on lookups. However, this is with a synthetic test
-exercising prio and rbtrees directly, not with a realistic workload going
-through the MM layers. Do we know of situations where prio tree performance
-is currently a concern ?
+So we can't put SACK chunk always at the head of the packet.
 
-> As they stand, patches 3-6 don't seem to make a difference for basic rbtree
-> support, and they improve my augmented rbtree insertion/erase benchmark
-> by a factor of ~2.1 to ~2.3 depending on test machines.
 
-After rewriting patches 5-6 as discussed above, augmented rbtrees are now
-~2.5 - ~2.7 times faster than before this patch series.
+Thanks,
+Xufeng Zhang
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+>
+> Regards
+> Neil
+>
+>
