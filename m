@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab2GXJHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 05:07:06 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53057 "EHLO
+	id S1753179Ab2GXJIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 05:08:10 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55075 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab2GXJG7 (ORCPT
+	with ESMTP id S1752916Ab2GXJHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 05:06:59 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-fb-500e65b17ae1
+	Tue, 24 Jul 2012 05:07:05 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-0d-500e65b2b56a
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 02/12] perf hist: Convert to struct he_stat
-Date: Tue, 24 Jul 2012 18:01:23 +0900
-Message-Id: <1343120493-23059-3-git-send-email-namhyung@kernel.org>
+        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 11/12] perf report: Show group description when event group is enabled
+Date: Tue, 24 Jul 2012 18:01:32 +0900
+Message-Id: <1343120493-23059-12-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
 References: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
@@ -25,359 +26,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we have struct he_stat, convert hist_entry's fields to he_stat.
-It'll make it easy to deal with group stats.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This is a mechinical change and should not have any functional changes.
+When using event group viewer, it's better to show the group
+description rather than the leader information alone.
+
+If a leader did not contain any children, it's a non-group event.
 
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c |    8 ++++----
- tools/perf/ui/gtk/browser.c    |    2 +-
- tools/perf/ui/hist.c           |   30 +++++++++++++--------------
- tools/perf/util/hist.c         |   44 ++++++++++++++++++++++------------------
- tools/perf/util/sort.h         |    7 +------
- 5 files changed, 45 insertions(+), 46 deletions(-)
+ tools/perf/builtin-report.c    |   18 ++++++++++++++++++
+ tools/perf/ui/browsers/hists.c |   31 +++++++++++++++++++++++++++++++
+ tools/perf/ui/gtk/browser.c    |   14 +++++++++++---
+ tools/perf/util/evsel.c        |   25 +++++++++++++++++++++++++
+ tools/perf/util/evsel.h        |    2 ++
+ 5 files changed, 87 insertions(+), 3 deletions(-)
 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 6f34a2d6e5a8..d7dfa2863ece 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -298,6 +298,24 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ 	char unit;
+ 	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
+ 	u64 nr_events = self->stats.total_period;
++	struct perf_evsel *evsel = hists_2_evsel(self);
++	char buf[512];
++	size_t size = sizeof(buf);
++
++	if (symbol_conf.report_group && evsel->nr_children) {
++		int i;
++		struct events_stats *stats;
++
++		perf_evsel__group_desc(evsel, buf, size);
++		evname = buf;
++
++		for (i = 0; i < evsel->nr_children; i++) {
++			stats = &self->group_stats[i];
++
++			nr_samples += stats->nr_events[PERF_RECORD_SAMPLE];
++			nr_events += stats->total_period;
++		}
++	}
+ 
+ 	nr_samples = convert_unit(nr_samples, &unit);
+ 	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
 diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index c261804f467c..69584d79097e 100644
+index dbd6995609bf..031d6eba83d9 100644
 --- a/tools/perf/ui/browsers/hists.c
 +++ b/tools/perf/ui/browsers/hists.c
-@@ -557,7 +557,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- static int hist_browser__hpp_color_ ## _name(struct hist_print_context *ctx,	\
- 					     struct hist_entry *he)		\
- {										\
--	double percent = 100.0 * he->_field / ctx->total_period;		\
-+	double percent = 100.0 * he->stat._field / ctx->total_period;		\
- 	*(double *)ctx->ptr = percent;						\
- 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);		\
- }
-@@ -976,7 +976,7 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 		folded_sign = hist_entry__folded(he);
+@@ -1114,6 +1114,24 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 	const struct thread *thread = hists->thread_filter;
+ 	unsigned long nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 	u64 nr_events = hists->stats.total_period;
++	struct perf_evsel *evsel = hists_2_evsel(hists);
++	char buf[512];
++	size_t buflen = sizeof(buf);
++
++	if (symbol_conf.report_group && evsel->nr_children) {
++		int i;
++		struct events_stats *stats;
++
++		perf_evsel__group_desc(evsel, buf, buflen);
++		ev_name = buf;
++
++		for (i = 0; i < evsel->nr_children; i++) {
++			stats = &hists->group_stats[i];
++
++			nr_samples += stats->nr_events[PERF_RECORD_SAMPLE];
++			nr_events += stats->total_period;
++		}
++	}
  
- 	hist_entry__sort_snprintf(he, s, sizeof(s), browser->hists);
--	percent = (he->period * 100.0) / browser->hists->stats.total_period;
-+	percent = (he->stat.period * 100.0) / browser->hists->stats.total_period;
+ 	nr_samples = convert_unit(nr_samples, &unit);
+ 	printed = scnprintf(bf, size,
+@@ -1458,6 +1476,19 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
+ 	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
+ 						       HE_COLORSET_NORMAL);
  
- 	if (symbol_conf.use_callchain)
- 		printed += fprintf(fp, "%c ", folded_sign);
-@@ -984,10 +984,10 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 	printed += fprintf(fp, " %5.2f%%", percent);
- 
- 	if (symbol_conf.show_nr_samples)
--		printed += fprintf(fp, " %11u", he->nr_events);
-+		printed += fprintf(fp, " %11u", he->stat.nr_events);
- 
- 	if (symbol_conf.show_total_period)
--		printed += fprintf(fp, " %12" PRIu64, he->period);
-+		printed += fprintf(fp, " %12" PRIu64, he->stat.period);
- 
- 	printed += fprintf(fp, "%s\n", rtrim(s));
- 
++	if (symbol_conf.report_group && evsel->nr_children) {
++		int i;
++		struct events_stats *stats;
++
++		ev_name = perf_evsel__group_name(evsel);
++
++		for (i = 0; i < evsel->nr_children; i++) {
++			stats = &evsel->hists.group_stats[i];
++
++			nr_events += stats->nr_events[PERF_RECORD_SAMPLE];
++		}
++	}
++
+ 	nr_events = convert_unit(nr_events, &unit);
+ 	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
+ 			   unit, unit == ' ' ? "" : " ", ev_name);
 diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 1e06d6a0ba34..91e11f7bffbf 100644
+index cc53a01ba14b..fddedb504d47 100644
 --- a/tools/perf/ui/gtk/browser.c
 +++ b/tools/perf/ui/gtk/browser.c
-@@ -48,7 +48,7 @@ static const char *perf_gtk__get_percent_color(double percent)
- static int perf_gtk__hpp_color_ ## _name(struct hist_print_context *ctx,	\
- 					 struct hist_entry *he)			\
- {										\
--	double percent = 100.0 * he->_field / ctx->total_period;		\
-+	double percent = 100.0 * he->stat._field / ctx->total_period;		\
- 	const char *markup;							\
- 	int ret = 0;								\
- 										\
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 7e3a5d67764a..8092a621bbec 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -21,14 +21,14 @@ static int hpp_width_overhead(struct hist_print_context *ctx __used)
- static int hpp_color_overhead(struct hist_print_context *ctx,
- 			      struct hist_entry *he)
- {
--	double percent = 100.0 * he->period / ctx->total_period;
-+	double percent = 100.0 * he->stat.period / ctx->total_period;
- 	return percent_color_snprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
+@@ -305,10 +305,18 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 		const char *evname = perf_evsel__name(pos);
+ 		GtkWidget *scrolled_window;
+ 		GtkWidget *tab_label;
++		char buf[512];
++		size_t size = sizeof(buf);
+ 
+-		if (symbol_conf.report_group &&
+-		    !perf_evsel__is_group_leader(pos))
+-			continue;
++		if (symbol_conf.report_group) {
++			if (!perf_evsel__is_group_leader(pos))
++				continue;
++
++			if (pos->nr_children) {
++				perf_evsel__group_desc(pos, buf, size);
++				evname = buf;
++			}
++		}
+ 
+ 		scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index fcb357c35649..f6ab9a1c2a46 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -324,6 +324,31 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
+ 	return evsel->name ?: "unknown";
  }
  
- static int hpp_entry_overhead(struct hist_print_context *ctx,
- 			      struct hist_entry *he)
++const char *perf_evsel__group_name(struct perf_evsel *evsel)
++{
++	return evsel->group_name ?: "anon_group";
++}
++
++int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size)
++{
++	int ret;
++	struct perf_evsel *pos;
++	const char *group_name = perf_evsel__group_name(evsel);
++
++	ret = scnprintf(buf, size, "%s", group_name);
++
++	ret += scnprintf(buf + ret, size - ret, " { %s",
++			 perf_evsel__name(evsel));
++
++	for_each_group_member(pos, evsel)
++		ret += scnprintf(buf + ret, size - ret, ", %s",
++				 perf_evsel__name(pos));
++
++	ret += scnprintf(buf + ret, size - ret, " }");
++
++	return ret;
++}
++
+ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 			struct perf_evsel *first)
  {
--	double percent = 100.0 * he->period / ctx->total_period;
-+	double percent = 100.0 * he->stat.period / ctx->total_period;
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
- }
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index efc9e5c42210..eeb2c38a1df7 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -119,6 +119,8 @@ const char *perf_evsel__hw_cache_result[PERF_COUNT_HW_CACHE_RESULT_MAX]
+ int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
+ 					    char *bf, size_t size);
+ const char *perf_evsel__name(struct perf_evsel *evsel);
++const char *perf_evsel__group_name(struct perf_evsel *evsel);
++int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
  
-@@ -45,14 +45,14 @@ static int hpp_width_overhead_sys(struct hist_print_context *ctx __used)
- static int hpp_color_overhead_sys(struct hist_print_context *ctx,
- 				  struct hist_entry *he)
- {
--	double percent = 100.0 * he->period_sys / ctx->total_period;
-+	double percent = 100.0 * he->stat.period_sys / ctx->total_period;
- 	return percent_color_snprintf(ctx->s, ctx->size, "%5.2f%%", percent);
- }
- 
- static int hpp_entry_overhead_sys(struct hist_print_context *ctx,
- 				  struct hist_entry *he)
- {
--	double percent = 100.0 * he->period_sys / ctx->total_period;
-+	double percent = 100.0 * he->stat.period_sys / ctx->total_period;
- 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
- }
- 
-@@ -69,14 +69,14 @@ static int hpp_width_overhead_us(struct hist_print_context *ctx __used)
- static int hpp_color_overhead_us(struct hist_print_context *ctx,
- 				 struct hist_entry *he)
- {
--	double percent = 100.0 * he->period_us / ctx->total_period;
-+	double percent = 100.0 * he->stat.period_us / ctx->total_period;
- 	return percent_color_snprintf(ctx->s, ctx->size, "%5.2f%%", percent);
- }
- 
- static int hpp_entry_overhead_us(struct hist_print_context *ctx,
- 				 struct hist_entry *he)
- {
--	double percent = 100.0 * he->period_us / ctx->total_period;
-+	double percent = 100.0 * he->stat.period_us / ctx->total_period;
- 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
- }
- 
-@@ -93,14 +93,14 @@ static int hpp_width_overhead_guest_sys(struct hist_print_context *ctx __used)
- static int hpp_color_overhead_guest_sys(struct hist_print_context *ctx,
- 					struct hist_entry *he)
- {
--	double percent = 100.0 * he->period_guest_sys / ctx->total_period;
-+	double percent = 100.0 * he->stat.period_guest_sys / ctx->total_period;
- 	return percent_color_snprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
- }
- 
- static int hpp_entry_overhead_guest_sys(struct hist_print_context *ctx,
- 					struct hist_entry *he)
- {
--	double percent = 100.0 * he->period_guest_sys / ctx->total_period;
-+	double percent = 100.0 * he->stat.period_guest_sys / ctx->total_period;
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
- }
- 
-@@ -117,14 +117,14 @@ static int hpp_width_overhead_guest_us(struct hist_print_context *ctx __used)
- static int hpp_color_overhead_guest_us(struct hist_print_context *ctx,
- 				       struct hist_entry *he)
- {
--	double percent = 100.0 * he->period_guest_us / ctx->total_period;
-+	double percent = 100.0 * he->stat.period_guest_us / ctx->total_period;
- 	return percent_color_snprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
- }
- 
- static int hpp_entry_overhead_guest_us(struct hist_print_context *ctx,
- 				       struct hist_entry *he)
- {
--	double percent = 100.0 * he->period_guest_us / ctx->total_period;
-+	double percent = 100.0 * he->stat.period_guest_us / ctx->total_period;
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
- }
- 
-@@ -141,7 +141,7 @@ static int hpp_width_samples(struct hist_print_context *ctx __used)
- static int hpp_entry_samples(struct hist_print_context *ctx,
- 			     struct hist_entry *he)
- {
--	return scnprintf(ctx->s, ctx->size, "%11" PRIu64, he->nr_events);
-+	return scnprintf(ctx->s, ctx->size, "%11" PRIu64, he->stat.nr_events);
- }
- 
- static int hpp_header_period(struct hist_print_context *ctx)
-@@ -157,7 +157,7 @@ static int hpp_width_period(struct hist_print_context *ctx __used)
- static int hpp_entry_period(struct hist_print_context *ctx,
- 			    struct hist_entry *he)
- {
--	return scnprintf(ctx->s, ctx->size, "%12" PRIu64, he->period);
-+	return scnprintf(ctx->s, ctx->size, "%12" PRIu64, he->stat.period);
- }
- 
- static int hpp_header_delta(struct hist_print_context *ctx)
-@@ -180,11 +180,11 @@ static int hpp_entry_delta(struct hist_print_context *ctx,
- 
- 	old_total = pair_hists->stats.total_period;
- 	if (old_total > 0)
--		old_percent = 100.0 * he->pair->period / old_total;
-+		old_percent = 100.0 * he->pair->stat.period / old_total;
- 
- 	new_total = ctx->total_period;
- 	if (new_total > 0)
--		new_percent = 100.0 * he->period / new_total;
-+		new_percent = 100.0 * he->stat.period / new_total;
- 
- 	diff = new_percent - old_percent;
- 	if (fabs(diff) < 0.01)
-@@ -535,7 +535,7 @@ static size_t callchain__fprintf(struct hist_entry *he,
- {
- 	switch (callchain_param.mode) {
- 	case CHAIN_GRAPH_REL:
--		return callchain__fprintf_graph(fp, &he->sorted_chain, he->period,
-+		return callchain__fprintf_graph(fp, &he->sorted_chain, he->stat.period,
- 						left_margin);
- 		break;
- 	case CHAIN_GRAPH_ABS:
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 84b577560d5e..d2a76d379f87 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -135,16 +135,16 @@ static void hist_entry__add_cpumode_period(struct hist_entry *he,
- {
- 	switch (cpumode) {
- 	case PERF_RECORD_MISC_KERNEL:
--		he->period_sys += period;
-+		he->stat.period_sys += period;
- 		break;
- 	case PERF_RECORD_MISC_USER:
--		he->period_us += period;
-+		he->stat.period_us += period;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_KERNEL:
--		he->period_guest_sys += period;
-+		he->stat.period_guest_sys += period;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_USER:
--		he->period_guest_us += period;
-+		he->stat.period_guest_us += period;
- 		break;
- 	default:
- 		break;
-@@ -153,13 +153,13 @@ static void hist_entry__add_cpumode_period(struct hist_entry *he,
- 
- static void hist_entry__decay(struct hist_entry *he)
- {
--	he->period = (he->period * 7) / 8;
--	he->nr_events = (he->nr_events * 7) / 8;
-+	he->stat.period = (he->stat.period * 7) / 8;
-+	he->stat.nr_events = (he->stat.nr_events * 7) / 8;
- }
- 
- static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- {
--	u64 prev_period = he->period;
-+	u64 prev_period = he->stat.period;
- 
- 	if (prev_period == 0)
- 		return true;
-@@ -167,9 +167,9 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 	hist_entry__decay(he);
- 
- 	if (!he->filtered)
--		hists->stats.total_period -= prev_period - he->period;
-+		hists->stats.total_period -= prev_period - he->stat.period;
- 
--	return he->period == 0;
-+	return he->stat.period == 0;
- }
- 
- static void __hists__decay_entries(struct hists *hists, bool zap_user,
-@@ -223,7 +223,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 
- 	if (he != NULL) {
- 		*he = *template;
--		he->nr_events = 1;
-+		he->stat.nr_events = 1;
- 		if (he->ms.map)
- 			he->ms.map->referenced = true;
- 		if (symbol_conf.use_callchain)
-@@ -238,7 +238,7 @@ static void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
- 	if (!h->filtered) {
- 		hists__calc_col_len(hists, h);
- 		++hists->nr_entries;
--		hists->stats.total_period += h->period;
-+		hists->stats.total_period += h->stat.period;
- 	}
- }
- 
-@@ -270,8 +270,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 		cmp = hist_entry__cmp(entry, he);
- 
- 		if (!cmp) {
--			he->period += period;
--			++he->nr_events;
-+			he->stat.period += period;
-+			++he->stat.nr_events;
- 
- 			/* If the map of an existing hist_entry has
- 			 * become out-of-date due to an exec() or
-@@ -321,7 +321,9 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
- 		.cpu	= al->cpu,
- 		.ip	= bi->to.addr,
- 		.level	= al->level,
--		.period	= period,
-+		.stat = {
-+			.period	= period,
-+		},
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
- 		.branch_info = bi,
-@@ -343,7 +345,9 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- 		.cpu	= al->cpu,
- 		.ip	= al->addr,
- 		.level	= al->level,
--		.period	= period,
-+		.stat = {
-+			.period	= period,
-+		},
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
- 	};
-@@ -410,8 +414,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __used,
- 		cmp = hist_entry__collapse(iter, he);
- 
- 		if (!cmp) {
--			iter->period += he->period;
--			iter->nr_events += he->nr_events;
-+			iter->stat.period += he->stat.period;
-+			iter->stat.nr_events += he->stat.nr_events;
- 			if (symbol_conf.use_callchain) {
- 				callchain_cursor_reset(&callchain_cursor);
- 				callchain_merge(&callchain_cursor,
-@@ -513,7 +517,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
- 		parent = *p;
- 		iter = rb_entry(parent, struct hist_entry, rb_node);
- 
--		if (he->period > iter->period)
-+		if (he->stat.period > iter->stat.period)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
-@@ -574,8 +578,8 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
- 	if (h->ms.unfolded)
- 		hists->nr_entries += h->nr_rows;
- 	h->row_offset = 0;
--	hists->stats.total_period += h->period;
--	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->nr_events;
-+	hists->stats.total_period += h->stat.period;
-+	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->stat.nr_events;
- 
- 	hists__calc_col_len(hists, h);
- }
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 9fdd5039339f..f7b05e0b41c7 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -61,17 +61,12 @@ struct he_stat {
- struct hist_entry {
- 	struct rb_node		rb_node_in;
- 	struct rb_node		rb_node;
--	u64			period;
--	u64			period_sys;
--	u64			period_us;
--	u64			period_guest_sys;
--	u64			period_guest_us;
-+	struct he_stat		stat;
- 	struct he_stat		*group_stats;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
- 	u64			ip;
- 	s32			cpu;
--	u32			nr_events;
- 
- 	/* XXX These two should move to some tree widget lib */
- 	u16			row_offset;
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
 -- 
 1.7.10.4
 
