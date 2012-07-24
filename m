@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab2GXU1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:27:47 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:41039 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755426Ab2GXU1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:27:45 -0400
-Date: Tue, 24 Jul 2012 16:27:38 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Rajat Sharma <fs.rajat@gmail.com>
-Cc: Ankit Jain <jankit@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        bcrl@kvack.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: [RFC][PATCH] Make io_submit non-blocking
-Message-ID: <20120724202738.GC29239@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Rajat Sharma <fs.rajat@gmail.com>, Ankit Jain <jankit@suse.de>,
-	Al Viro <viro@zeniv.linux.org.uk>, bcrl@kvack.org,
-	linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-	linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
-References: <500E89D1.9010303@suse.de>
- <CAAYFAvp7xDG8et_dyqSgEVOAr7ykNBkgBhs1m5gGjoOdQFkxGQ@mail.gmail.com>
+	id S932080Ab2GXU20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:28:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58450 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755738Ab2GXU2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 16:28:25 -0400
+Date: Tue, 24 Jul 2012 22:28:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
+Subject: Re: [PATCH] add blockconsole version 1.1
+Message-ID: <20120724202820.GA5167@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	=?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+	Steve Hodgson <steve@purestorage.com>
+References: <20120713130336.GC10298@x1.osrc.amd.com>
+ <20120713162009.GA10268@logfs.org>
+ <20120716124614.GA19497@x1.osrc.amd.com>
+ <20120718185335.GA1771@logfs.org>
+ <20120718214520.GA14067@liondog.tnic>
+ <20120723200459.GD17767@logfs.org>
+ <20120724154218.GB13753@x1.osrc.amd.com>
+ <20120724145334.GB24954@logfs.org>
+ <20120724162546.GC13753@x1.osrc.amd.com>
+ <20120724175232.GC24954@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAAYFAvp7xDG8et_dyqSgEVOAr7ykNBkgBhs1m5gGjoOdQFkxGQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120724175232.GC24954@logfs.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 06:04:23PM +0530, Rajat Sharma wrote:
-> >
-> > Currently, io_submit tries to execute the io requests on the
-> > same thread, which could block because of various reaons (eg.
-> > allocation of disk blocks). So, essentially, io_submit ends
-> > up being a blocking call.
+On Tue, Jul 24, 2012 at 01:52:32PM -0400, Jörn Engel wrote:
+> On Tue, 24 July 2012 18:25:47 +0200, Borislav Petkov wrote:
+> > > The advantage should be better robustness, in particular when dealing
+> > > with cheap flash devices.
+> > 
+> > In the sense that we flush the current sector after one second the
+> > latest so that we can lose as small amount of data as possible if the
+> > system crashes right at that point?
 > 
-> Ideally filesystem should take care of it e.g. by deferring such time
-> consuming allocations and return -EIOCBQUEUED immediately. But have
-> you seen such cases?
+> In the sense that cheap devices don't always handle rewrites of the
+> same sector well.  Often this results in the entire erase block being
+> rewritten, causing bad performance and wear-out.  Many cheap devices
+> aren't real block devices.  They are barely good enough to support
+> FAT and may die near-instantly with a different write pattern.
+> Blockconsole assumes utter crap as an underlying device.
+> 
+> The timer mainly ensures that, on a quiet system, those two lines of
+> output from half an hour ago actually make it to the device
+> eventually.  In the case of a crash, the panic notifier is supposed to
+> do the same for those messages you _really_ care about.
+> 
+> > Ok, I see what you mean. I see a red line in vim here. Ok, good to know,
+> > maybe this feature with the empty lines could be in the docs too so
+> > people don't ask that question again?
+> 
+> Last paragraph. ;)
+> 
+> > Or you issue a tag instead of an empty line like so:
+> > 
+> > [   10.498422] console [bcon0] enabled
+> > [   10.499899] blockconsole: now logging to /dev/sdc at 1
+> > [   10.594791] usb 5-2: new full-speed USB device number 3 using ohci_hcd
+> > <<LOG timeout of 1sec>>
+> > [   12.665911] xhci_hcd 0000:00:10.0: xHCI Host Controller
+> > [   12.668469] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
+> > 
+> > which explains everything.
+> 
+> That would only work if you have at least 26 bytes to pad.  Bunch of
+> spaces with a newline works for any value between 0 and 512.
 
-Oh, it happens all the time if you are using AIO.  If the file system
-needs to read or write any metadata block, AIO can become distinctly
-non-"A".  The workaround that I've chosen is to create a way to cache
-the information needed for the bmap() operation, triggered via an
-ioctl() issued at open time, so that this is not an issue, but that
-only works if the file is pre-allocated, and there is no need to do
-any block allocations.
+Ok, thanks for taking the time to explain this - very interesting stuff.
 
-It's all very well and good to say, "the file system should handle
-it", but that just pushes the problem onto the file system.  And since
-you need to potentially issue block I/O requests, which you can't do
-from an interrupt context (i.e., a block I/O completion handler), you
-really do need to create a workqueue in order to make things work.
+So, as far as I'm concerned blockconsole is ready for shipping! 8-)
 
-If you do it in the fs/direct_io.c layer, at least that way you can
-solve the problem once for all file systems....
-
-> With lots of application threads firing continuous IOs, workqueue
-> threads might become bottleneck and you might have to eventually
-> develop a priority scheduling. This workqueue was originally designed
-> for IO retries which is an error path, now consumers of workqueue
-> might easily increase by 100x.
-
-Yes, you definitely need to throttle how many outstanding AIO's can be
-allowed to be outstanding, either globally, or on a
-per-superblock/process/user/cgroup basis, and return EAGAIN if there
-are too many outstanding requests.
-
-Speaking of cgroups, one of the other challenges with running the AIO
-out of a workqueue is trying to respect cgroup restrictions.  In
-particular, the io-throttle cgroup (which is needed to provide
-Proportional I/O support), but also the memory cgroup.
-
-All of these complications is why I decided to simply go with the "pin
-metadata" approach, since I didn't need to worry (at least initially)
-with the allocating write case.  (These patches to ext4 haven't yet
-been published upstream, mainly because they need a lot of cleanup
-work and I haven't had time to do that cleanup; my intention is to get
-the "big extents" patchset upstream, though.)
-
-						- Ted
+-- 
+Regards/Gruss,
+    Boris.
