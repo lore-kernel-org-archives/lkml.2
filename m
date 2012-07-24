@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab2GXDWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 23:22:21 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53535 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab2GXDWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 23:22:20 -0400
-Message-ID: <1343100106.3715.2.camel@pasglop>
-Subject: Re: next/mmotm unbootable on G5: irqdomain
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Hugh Dickins <hughd@google.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Tue, 24 Jul 2012 13:21:46 +1000
-In-Reply-To: <CACxGe6udruWL7oo6Qp6jkwQYceduTO1h1gKFz9TFX1TPZoNFNQ@mail.gmail.com>
-References: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils>
-	 <1343011543.2957.2.camel@pasglop>
-	 <CACxGe6uFvtro7iR8FewgChLr_6PnZA-EaRMKQjrFEaEHg7SKRQ@mail.gmail.com>
-	 <1343082371.2957.39.camel@pasglop>
-	 <CACxGe6uo8jx3GQFQpQ5RTHF5JyN2hEgvcvdmSYfGyTQnzK9fOA@mail.gmail.com>
-	 <CACxGe6udruWL7oo6Qp6jkwQYceduTO1h1gKFz9TFX1TPZoNFNQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1755211Ab2GXD1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 23:27:34 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:57427 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab2GXD1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 23:27:32 -0400
+X-AuditID: 0ac90646-98cc4ba000003485-7e-500e16210ff2
+X-AuditID: 0ac90646-98cc4ba000003485-7e-500e16210ff2
+Message-ID: <500E161F.5020207@hitachi.com>
+Date: Tue, 24 Jul 2012 12:27:27 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>, Arnd Bergmann <arnd@arndb.de>,
+        Borislav Petkov <bp@amd64.org>, "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+In-Reply-To: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-23 at 16:32 -0600, Grant Likely wrote:
-> > As-is I'm backing off from the linear/legacy/tree merge patch as just
-> > too risky. I've already pulled that stuff out of linux-next.
-> 
-> Can I pull you pseries fix into my tree (my preference), or do I need
-> to rebase on top of yours? 
+(2012/07/24 11:36), Yoshihiro YUNOMAE wrote:
+> Therefore, we propose a new system "virtio-trace", which uses enhanced
+> virtio-serial and existing ring-buffer of ftrace, for collecting guest kernel
+> tracing data. In this system, there are 5 main components:
+>  (1) Ring-buffer of ftrace in a guest
+>      - When trace agent reads ring-buffer, a page is removed from ring-buffer.
+>  (2) Trace agent in the guest
+>      - Splice the page of ring-buffer to read_pipe using splice() without
+>        memory copying. Then, the page is spliced from write_pipe to virtio
+>        without memory copying.
+>  (3) Virtio-console driver in the guest
+>      - Pass the page to virtio-ring
+>  (4) Virtio-serial bus in QEMU
+>      - Copy the page to kernel pipe
+>  (5) Reader in the host
+>      - Read guest tracing data via FIFO(named pipe)
 
-The mpic fix for the g5 is in Linus tree already, I added it on top of
-powerpc -next before I asked Linus to pull.
+So, this is our answer for the argued points in previous thread.
+This virtio-serial and ftrace enhancements doesn't introduce new
+"ringbuffer" in the kernel, and just use virtio's ringbuffer.
+Also, using splice gives us a great advantage in the performance
+because of copy-less trace-data transfer.
 
-For pseries (ie the fix for irq_find_mapping vs. radix), I don't have a
-formal patch, just the one I hand typed in my previous email, so do
-whatever you want with it.
+Actually, one copy should occur in the host (to write it into the pipe),
+because removing physical pages of the guest is hard to track and may
+involve a TLB flush per page, even if it is done in background.
 
-Cheers,
-Ben.
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
