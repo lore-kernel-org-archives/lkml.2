@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab2GXA2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 20:28:35 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53275 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab2GXA2e (ORCPT
+	id S1754984Ab2GXAhw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 20:37:52 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:46688 "EHLO
+	homiemail-a48.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752824Ab2GXAhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 20:28:34 -0400
+	Mon, 23 Jul 2012 20:37:50 -0400
+X-Greylist: delayed 116954 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jul 2012 20:37:50 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=dkUdSRdn9YYBK8GSdDXFmgWQc7dEiNSoc5dX5cMxGPe1bt6BWp47jV/fN7F3l
+	vIDOUC1tUrx1XZlCLnmPmU0bRDXQG3ODuZYdMfUnciPHr1JBWkNnNJWWECNjM63i
+	bd6XA0owNvOfZNG8W6gEipH8xMYOfQMvj9P/tf2nJnp6Yk=
+Message-ID: <500DEE5B.9020504@shealevy.com>
+Date: Mon, 23 Jul 2012 20:37:47 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120703 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYayLaKzUSq5V9N5sRkV74a+nZ1CbLJzRW7RP=pOU9bfw@mail.gmail.com>
-References: <1342567672-29071-1-git-send-email-ccross@android.com>
-	<CACRpkdaHdCvx1HJNDsyJSZAN--sF+4-V1TbzXZL1v+7Asoe_oA@mail.gmail.com>
-	<CAMbhsRR2-VjUeL2XPKubeaG=iLV5NE-i_sVYbuMAryXLxsbo1g@mail.gmail.com>
-	<CACRpkdYayLaKzUSq5V9N5sRkV74a+nZ1CbLJzRW7RP=pOU9bfw@mail.gmail.com>
-Date: Mon, 23 Jul 2012 17:28:32 -0700
-X-Google-Sender-Auth: Ge8JCKAsp8Tkqtcfk2PGG6zSh4o
-Message-ID: <CAMbhsRQuXsytM9QLwjW1z1E=0XNztXP1xezbcDEj7Ra6deKLDQ@mail.gmail.com>
-Subject: Re: [RFC] ARM: sched_clock: update epoch_cyc on resume
-From: Colin Cross <ccross@android.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Krzysztof Halasa <khc@pm.waw.pl>, Nicolas Pitre <nico@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: "J.H." <warthog19@eaglescrag.net>
+CC: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ftpadmin@kernel.org
+Subject: Re: Release Announcements
+References: <1C17E3CE-50F0-4A56-BCCB-201C6E39E980@shealevy.com> <20120723082238.GB21615@liondog.tnic> <500D8F6A.2090703@eaglescrag.net>
+In-Reply-To: <500D8F6A.2090703@eaglescrag.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 5:14 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Jul 23, 2012 at 9:27 PM, Colin Cross <ccross@android.com> wrote:
->> On Mon, Jul 23, 2012 at 11:55 AM, Linus Walleij
->
->> Does the clock you use for sched_clock continue to run in all suspend
->> modes? All the SoC's I've used only have a 32kHz clock in the deepest
->> suspend mode,
->
-> Yes, and yes it is 32kHz.
->
->> which is not ideal for sched_clock.
->
-> Not that I know why scheduling with 32kHz is so bad compared to the
-> default system scheduling granularity which is HZ if you don't have
-> sched_clock() implemented.
->
-> Since this seems to be such an important point, what makes you
-> want MHz:es for scheduling granularity? To me the biggest impact
-> is actually the granularity of the timestamps in the printk:s.
->
-> (It's not that I doubt your needs, more curiosity.)
-
-There's a comment somewhere about higher resolution sched_clock
-providing fairer scheduling.  With 32 kHz sched_clock, every runtime
-measured by the scheduler will be wrong by up to 31.25 us.  Most
-systems have a faster clock, and if it's available it seems silly not
-to use it.
-
-It's also used for tracing, where 31.25 us resolution is a little low
-for function tracing or function graph tracing.
-
->>  For example, on
->> Tegra2 the faster 1MHz clock used for sched_clock resets in the
->> deepest suspend state (LP0) but not the shallowest suspend state
->> (LP2), and which suspend state the chip hits depends on which hardware
->> is active.  Opting out of this patch would cause Tegra's clock to
->> sometimes run in suspend, and sometimes not, which seems worse for
->> debugging than consistently not running in suspend.  I'd be surprised
->> if a similar situation didn't apply to your platform.
->
-> Well being able to switch between different sched_clock() providers
-> may be the ideal...
->
->>> - If it absolutely needs to be in the core code, also have a bool
->>>   field indicating whether the clock is going to die during suspend
->>>   and add new registration functions for setting that sched_clock
->>>   type, e.g. setup_sched_clock_nonsuspendable()
+On 07/23/2012 01:52 PM, J.H. wrote:
+> On 07/23/2012 02:22 AM, Borislav Petkov wrote:
+>> On Sun, Jul 22, 2012 at 12:08:34PM -0400, Shea Levy wrote:
+>>> The linux-kernel-announce doesn't seem to have had any traffic
+>>> since 3.1-rc4 (maybe due to the kernel.org break-in?). Is there a
+>>> recommended way to get email news of kernel releases without being
+>>> subscribed to the main kernel list?
+>> Let's CC some more people about this.
 >>
->> Sounds reasonable if some platforms need the extra complexity.
->
-> OK agreed.
->
-> A connecting theme is that of being avle to flag clock sources as
-> sched_clock providers. If all clocksources were tagged with
-> rating, and only clocksources were used for sched_clock(), the
-> kernel could select the highest-rated clock under all circumstances.
->
-> But that's quite intrusive, more of an idea. :-P
+> Follow the respective gitweb RSS feeds?
 
-sched_clock is supposed to be very low overhead compared to ktime_get,
-and has some strict  requirements if CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
-is not set (see kernel/sched/clock.c), but it might be possible.
+Fair enough, I'll do this until another solution is forthcoming.
+
+> I'll have to do some digging to
+> figure out where those e-mails got generated from.  I do want to say
+> that that *SHOULD* be working, but if the e-mails aren't showing up in
+> the archives that may have gotten broken somewhere.
+
+They're not just not showing up in the archives, I subscribed a week or 
+so before the 3.5 release and I've not gotten a single mail yet.
+
+Cheers,
+Shea
