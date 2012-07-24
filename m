@@ -1,70 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557Ab2GXSMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 14:12:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933293Ab2GXSMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 14:12:17 -0400
-Date: Tue, 24 Jul 2012 14:12:10 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: law@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] posix_types.h: make __NFDBITS match glibc definition
-Message-ID: <20120724181209.GA10534@zod.bos.redhat.com>
+	id S933701Ab2GXSNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 14:13:38 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:36008 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932923Ab2GXSEM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 14:04:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+qZnSRNAAN6erat3Umuk6U9VYuc5SiQYK6PL8bHYAOcQ+SnAw@mail.gmail.com>
+References: <CA+qZnSRNAAN6erat3Umuk6U9VYuc5SiQYK6PL8bHYAOcQ+SnAw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 Jul 2012 11:03:50 -0700
+X-Google-Sender-Auth: gr4TPTgbBVFfj99pIysATzvLsoA
+Message-ID: <CA+55aFztHJos8Lo0+0Ew1kAV90g91dt28JsUOzpiJ1eqWGA1jQ@mail.gmail.com>
+Subject: Re: Suse 11 SP1 kernel panic on HP hardware
+To: tingwei liu <tingw.liu@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent glibc made a change to suppress sign-conversion warnings from FD_SET
-(glibc commit ceb9e56b3d1).  That patch solved the particular error it was
-aiming to, however applications that #include <linux/types.h> after
-including <sys/select.h> can now hit a build failure if -Werror=sign-compare
-and -D_FORTIFY_SOURCE=2 is passed to gcc.  This can be seen when building
-this trivial application against a recent enough glibc:
+On Mon, Jul 23, 2012 at 4:39 PM, tingwei liu <tingw.liu@gmail.com> wrote:
+> Suse 11 SP1 kernel panic。
+>
+> I can't debug it without debuginfo. Who can give me a link of sels
+> 2.6.32.12-0.7.default.debug or give some advise.
+>
+> kernel: [3077010.856280] BUG: unable to handle kernel NULL pointer
+> dereference at 0000000000000008
+> kernel: [3077010.856291] IP: [<ffffffff81046958>] find_busiest_group+0x348/0x8b0
 
-| #include <sys/select.h>
-| #include <linux/types.h>
-|
-| int main(int argc, char **argv)
-| {
-|   fd_set fds;
-|   FD_ZERO(&fds);
-|   FD_SET(0, &fds);
-|   return FD_ISSET(0, &fds);
-| }
+We've had bugs in there in the past, but you really need to contact
+the suse people. That's a very old kernel.
 
-It was suggested the kernel should either match the glibc definition of
-__NFDBITS in linux/posix_types.h or remove it entirely.  Given that we
-don't know what applications may be relying on the header having a
-definition, we opt for the former.
-
-This resolves https://bugzilla.redhat.com/show_bug.cgi?id=837641
-
-Reported-by: Jeff Law <law@redhat.com>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
- include/linux/posix_types.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/posix_types.h b/include/linux/posix_types.h
-index f04c98c..cc8530e 100644
---- a/include/linux/posix_types.h
-+++ b/include/linux/posix_types.h
-@@ -19,7 +19,7 @@
-  * use the ones here. 
-  */
- #undef __NFDBITS
--#define __NFDBITS	(8 * sizeof(unsigned long))
-+#define __NFDBITS	(8 * (int) sizeof(long int))
- 
- #undef __FD_SETSIZE
- #define __FD_SETSIZE	1024
--- 
-1.7.10.4
-
+                   Linus
