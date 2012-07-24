@@ -1,97 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab2GXLDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 07:03:45 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59241 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab2GXLDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 07:03:43 -0400
-X-AuditID: b753bd60-932c5ba0000047ca-ae-500e810c7383
-X-AuditID: b753bd60-932c5ba0000047ca-ae-500e810c7383
-Message-ID: <500E810A.4030309@hitachi.com>
-Date: Tue, 24 Jul 2012 20:03:38 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753409Ab2GXLE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 07:04:59 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:57998 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753157Ab2GXLE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 07:04:58 -0400
+Date: Tue, 24 Jul 2012 13:04:53 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Andre Przywara <andre.przywara@amd.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
+Message-ID: <20120724110453.GA24893@aftab.osrc.amd.com>
+References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com>
+ <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
+ <20120721103715.GA3632@aftab.osrc.amd.com>
+ <500E4960.8040307@parallels.com>
+ <500E5951.5020900@amd.com>
+ <20120724095031.GA24393@aftab.osrc.amd.com>
+ <20120724113204.7f48efe6@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
-        Borislav Petkov <bp@amd64.org>,
-        virtualization@lists.linux-foundation.org,
-        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Shah <amit.shah@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>
-Subject: Re: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp> <CAJSP0QW_2JJ0nf=NW0y30VSid2HSxaqb=mRGV8CTtAKj0ujDWw@mail.gmail.com>
-In-Reply-To: <CAJSP0QW_2JJ0nf=NW0y30VSid2HSxaqb=mRGV8CTtAKj0ujDWw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724113204.7f48efe6@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/07/24 19:02), Stefan Hajnoczi wrote:
-> On Tue, Jul 24, 2012 at 3:36 AM, Yoshihiro YUNOMAE
-> <yoshihiro.yunomae.ez@hitachi.com> wrote:
->> The performance of each method is compared as follows:
->>  [1] Native
->>      - only recording trace data to ring-buffer on a guest
->>  [2] Virtio-trace
->>      - running a trace agent on a guest
->>      - a reader on a host opens FIFO using cat command
->>  [3] IVRing
->>      - A SystemTap script in a guest records trace data to IVRing.
->>        -- probe points are same as ftrace.
->>  [4] Virtio-serial(normal)
->>      - A reader(using cat) on a guest output trace data to a host using
->>        standard output via virtio-serial.
+On Tue, Jul 24, 2012 at 11:32:04AM +0100, Alan Cox wrote:
+> > So actually, making it straightforward to disable CPUID feature bits
+> > just for every whim is the bug.
 > 
-> The first time I read this I thought you are adding a new virtio-trace
-> device.  But it looks like this series really add splice support to
-> virtio-console and that yields a big performance improvement when
-> sending trace_pipe_raw.
+> Sometimes its needed to make stuff work. Expecting user space to go
+> digging in odd places
 
-Yes, sorry for the confusion. Actually this is an enhancement of
-virtio-serial. I'm working with Yoshihiro on this feature.
+Nah, not odd places. Simply doing "wrmsr... " as root would suffice.
 
-> Guest ftrace is useful and I like this.  Have you thought about
-> controlling ftrace from the host?  Perhaps a command could be added to
-> the QEMU guest agent which basically invokes trace-cmd/perf.
+> isn't good either but exposing *both* true/apparent cpuid bits might
+> not be a bad idea.
 
-As you can see, guest trace-agent can be controlled via a
-control channel. In our scenario, host tools can control that
-instead of guest one.
+I'm fine with the "might not be a bad idea" thing. I'm saying that it
+seems like a bad idea in certain cases...
 
-We are considering that exporting the tracing part of guest's
-debugfs to host via another virtio-serial channel by using
-9pfs, so that the host tools can refer that.
+> > I'd like to see a real valid reason why someone would even think that.
+> > Except virtualization folks who are crazy anyway, so that doesn't count :).
+> 
+> Which is a very large part of the x86 market. So they most definitely do
+> count. Virtualisation is somewhat different though. There you are trying
+> to define a subset of the features that all the systems in your
+> environment have so you can do migrations. Virtualisation you have rather
+> more different control of the cpuid and msrs anyway.
 
-(In this scenario, guest trace-agent will also provide 9pfs server.
-Since it means that the agent can handle writing a special file,
-trace-agent can be controlled via the special file on exported
-debugfs.)
+Right and best it would be if *only* virtualization had access to those
+MSRs and CPUID bits. IOW, you #GP when accessing them in the normal case
+and access is granted when in VMRUN context.
 
-Of course, this also requires modifying trace-cmd/perf to accept
-some options like guest-debugfs mount point, guest's serial
-channel pipe (or unix socket?), etc. However, it will be a small
-change.
+> > Majority of users is majority of users no matter how you look at it!
+> 
+> That's not a good argument. The majority of users don't have SCSI,
+> certain processors and so on ...
 
-Thank you,
+or coffee machines ... :-)
+
+> > Right, and how is giving the user a heavy, well-oiled AK-47 to do that,
+> > user-friendly?
+> 
+> It's a point and click interface
+
+Or rather, aim and squeeze :-)
+
+> > And this is exactly what I'm questioning: the usability, or rather, the
+> > mis-usability of such a feature.
+> 
+> What goes with that is "so how do you do it otherwise".
+
+Not much more harder using msr-tools and easily scriptable. See above.
+
+> Distros can certainly add patches for such features if needed but that
+> just makes it even more fun to debug.
+
+That's easy: the first question we ask from the bug reporter is (and you
+do that too, btw - I've seen you dozens of times :-)) "can you reproduce
+it with mainline"?
+
+> Does "bind mount your own cpuid file" cover this ?
+
+Well, AFAICU, the writes to the MSRs are globally visible. If you're
+asking whether through bind-mounting your own cpuid file we're making
+the process of toggling CPUID bits more involved versus using simply
+kernel command line options then this is probably a step in the right
+direction IMHO, BUT (!)...
+
+... there's still a software-only solution needed for CPUID leafs which
+cannot be toggled through MSR writes simply because there are no such
+MSRs.
+
+The solution to that situation could cover all issues without touching
+the kernel.
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
