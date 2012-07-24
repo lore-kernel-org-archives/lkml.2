@@ -1,84 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab2GXIH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 04:07:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63542 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755521Ab2GXIHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 04:07:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="170587947"
-Date: Tue, 24 Jul 2012 11:07:29 +0300
-From: andrei.emeltchenko.news@gmail.com
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        joe@perches.com, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCHv3 1/3] lib: printf: update documentation to cover all of
- %p[Mm][FR]
-Message-ID: <20120724080727.GA11502@aemeltch-MOBL1>
-References: <1341341280.2012.3.camel@joe2Laptop>
- <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1755609Ab2GXIIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:08:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53930 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543Ab2GXIIl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 04:08:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1343116855-6804-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1343116855-6804-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 24 Jul 2012 09:08:41 +0100
+X-Google-Sender-Auth: ZDCTu3R2StIvbvmyNie-Rrn-7i0
+Message-ID: <CAOh2x=nW=OUHGpaaYYxTN+rgnmF7Nb2R-wy=aSDfRhLPQeYSaQ@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: use devm_* functions to simplify code
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 11:45:50AM +0300, Andy Shevchenko wrote:
+On Tue, Jul 24, 2012 at 9:00 AM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> Use devm_kzalloc, devm_clk_get, devm_request_irq, and devm_request_and_ioremap
+> to reduce the code and to simplify the error path.
+>
 > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-
-Acked-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com> 
-
+> Cc: Viresh Kumar <viresh.linux@gmail.com>
 > ---
->  Documentation/printk-formats.txt |    1 +
->  lib/vsprintf.c                   |    5 ++++-
->  2 files changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-> index d8d168fa..90ff4d7 100644
-> --- a/Documentation/printk-formats.txt
-> +++ b/Documentation/printk-formats.txt
-> @@ -59,6 +59,7 @@ MAC/FDDI addresses:
->  	%pMR	05:04:03:02:01:00
->  	%pMF	00-01-02-03-04-05
->  	%pm	000102030405
-> +	%pmR	050403020100
->  
->  	For printing 6-byte MAC/FDDI addresses in hex notation. The 'M' and 'm'
->  	specifiers result in a printed address with ('M') or without ('m') byte
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index a0b5f15..e500158 100644
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -946,7 +946,7 @@ int kptr_restrict __read_mostly;
->   * - 'm' For a 6-byte MAC address, it prints the hex address without colons
->   * - 'MF' For a 6-byte MAC FDDI address, it prints the address
->   *       with a dash-separated hex notation
-> - * - '[mM]R For a 6-byte MAC address, Reverse order (Bluetooth)
-> + * - '[mM]R' For a 6-byte MAC address, Reverse order (Bluetooth)
->   * - 'I' [46] for IPv4/IPv6 addresses printed in the usual way
->   *       IPv4 uses dot-separated decimal without leading 0's (1.2.3.4)
->   *       IPv6 uses colon separated network-order 16 bit hex with leading 0's
-> @@ -1287,7 +1287,10 @@ qualifier:
->   * %pR output the address range in a struct resource with decoded flags
->   * %pr output the address range in a struct resource with raw flags
->   * %pM output a 6-byte MAC address with colons
-> + * %pMR output a 6-byte MAC address with colons in reversed order
-> + * %pMF output a 6-byte MAC address with dashes
->   * %pm output a 6-byte MAC address without colons
-> + * %pmR output a 6-byte MAC address without colons in reversed order
->   * %pI4 print an IPv4 address without leading zeros
->   * %pi4 print an IPv4 address with leading zeros
->   * %pI6 print an IPv6 address with colons
-> -- 
-> 1.7.10
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  drivers/dma/dw_dmac.c      |   53 +++++++++-----------------------------------
+>  drivers/dma/dw_dmac_regs.h |    2 --
+>  2 files changed, 10 insertions(+), 45 deletions(-)
+
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
