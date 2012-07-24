@@ -1,51 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2GXNRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:17:31 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:40658 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754144Ab2GXNR2 (ORCPT
+	id S1754152Ab2GXNR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:17:26 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44985 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164Ab2GXNRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:17:28 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AloMAAGgDlBbdWOb/2dsb2JhbABFhSxEqzIiiCaBB4IgAQEEASMPAQUdIwEFCwsaAgUWCwICCQMCAQIBRQYNAQUCAQGIAwqoJpMigSCQDIESA5VJkA2CYQ
-X-IronPort-AV: E=Sophos;i="4.77,646,1336341600"; 
-   d="scan'208";a="548313881"
-Message-ID: <500EA066.8000601@igalia.com>
-Date: Tue, 24 Jul 2012 15:17:26 +0200
-From: =?UTF-8?B?TWlndWVsIEfDs21leg==?= <magomez@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 24 Jul 2012 09:17:24 -0400
+Message-ID: <500E9FD0.6090300@linux.vnet.ibm.com>
+Date: Tue, 24 Jul 2012 18:44:56 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: =?UTF-8?B?TWlndWVsIEfDs21leg==?= <magomez@igalia.com>
-CC: cascardo@holoscopio.com, don@syst.com.br, mjg@redhat.com,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] classmate-laptop: Fix extra keys hardware id.
-References: <20120724030946.GA2742@nautilus.holoscopio.com> <1343135125-18733-1-git-send-email-magomez@igalia.com>
-In-Reply-To: <1343135125-18733-1-git-send-email-magomez@igalia.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Alexander Graf <agraf@suse.de>
+CC: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        KVM <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
+References: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com> <500E9161.209@suse.de>
+In-Reply-To: <500E9161.209@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072413-5490-0000-0000-000001D7181F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Since ACPI devices ids were changed to use always upper-case letters, the ACPI
-> id of the extra keys (FNBT0000) was not maching the one defined in the driver
-> (FnBT0000), causing the extra keys not to work.
+On 07/24/2012 05:43 PM, Alexander Graf wrote:
+> On 07/24/2012 10:53 AM, Raghavendra K T wrote:
+>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>
+>> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
+>> and Peter (HPA) for suggesting hypercall ABI addition.
+>>
+>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>> ---
+>> Please have a closer look at Hypercall ABI newly added
+>>
+>> Changes since last post:
+>> - Added hypercall ABI (Peter)
+>> - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
+>>
+>> TODO: We need to add history details of each hypercall as suggested by
+>> HPA,
+>> which I could not trace easily. Hope it is easy for hypercall authors
+>>
+>> Documentation/virtual/hypercalls.txt | 71
+>> ++++++++++++++++++++++++++++++++++
+>> 1 files changed, 71 insertions(+), 0 deletions(-)
+>> create mode 100644 Documentation/virtual/hypercalls.txt
+>>
+>> diff --git a/Documentation/virtual/hypercalls.txt
+>> b/Documentation/virtual/hypercalls.txt
+>> new file mode 100644
+>> index 0000000..caffc08
+>> --- /dev/null
+>> +++ b/Documentation/virtual/hypercalls.txt
+>> @@ -0,0 +1,71 @@
+>> +Hypercall ABI:
+>> +=============
+>> +A brief look at calling conventions of X86, S390 and PPC
+>> +X86:
+>> + KVM Hypercalls have a three-byte sequence of either the vmrun or the
+>> vmmrun
+>> + instruction. The hypervisor can replace it with instructions that are
+>> + guaranteed to be supported.
+>> +
+>> + Up to four arguments may be passed in rbx, rcx, rdx, and rsi
+>> respectively.
+>> + The hypercall number should be placed in rax and the return value
+>> will be
+>> + placed in rax. No other registers will be clobbered unless
+>> explicitly stated
+>> + by the particular hypercall.
+>> +
+>> +S390:
+>> + R2-R7 are used for parameters 1-6. In addition, R1 is used for
+>> hypercall
+>> + number. The return value is written to R2.
+>> +
+>> + S390 uses diagnose instruction as hypercall (0x500) along with
+>> hypercall
+>> + number in R1.
+>> +
+>> + PoewerPC:
 >
-> The patch replaces the driver id with the one reported by ACPI, fixing the
-> problem.
+> PowerPC
+
+Sorry for the typo.
+
 >
-> Signed-off-by: Miguel Gómez <magomez@igalia.com>
+>> + It uses R3-R10 and hypercall number in R11. R4-R11 are used as
+>> output registers.
+>> + Return value is placed in R3.
+>> +
+>> + KVM hypercalls uses 4 byte opcode, that are patched with
+>> 'hypercall-instructions'
+>> + property inside the device tree's /hypervisor node.
+>> + For more information refer to Documentation/virtual/kvm/ppc-pv.txt
+>
+> What exactly is this document supposed to cover? We have 3 different
+> hypercall ABIs in KVM on PowerPC:
 
-I've created this patch on top of linux-next, but it won't apply over 
-the patch I've just sent for the accelerometer (neither the later over 
-the former).
+Thanks for the detailed information on PPC hypercalls.
+My intention was to cover KVM specific hypercalls here.
 
-How do you want me to proceed? Should I sent this again over the 
-accelerometer patch?
+Patch is wrongly generated against Documentation/virtual/ instead of
+Documentation/virtual/kvm will correct that.
 
-Regards!
+Information you have provided should be very useful in understanding
+PPC hypercalls. Do you wish to have (2), (3) below goto some doc?
 
--- 
-Miguel Gómez
-Igalia - http://www.igalia.com
+
+> 1) KVM hypercalls (ePAPR)
+>
+> The ePAPR compliant hypercall implementation. This one is used for KVM
+> specific hypercalls. All hypercalls get a KVM vendor prefix (42) and
+> then the hypercall id. We also implement generic hypercalls here, like
+> the ePAPR idle hcall. The instruction sequence for these is listed in
+> the device tree, as you noted above. It's available on all targets.
+>
+> 2) PAPR hypercalls
+>
+> To run server PowerPC PAPR guests (-M pseries in QEMU), we need to
+> handle PAPR hypercalls. These are the same hypercalls that pHyp, the
+> POWER hypervisor implements. Some of them are handled in the kernel,
+> some are handled in user space. This is only available on book3s_64.
+>
+> 3) OSI hypercalls
+>
+> In parallel to QEMU, there is another user of KVM on PowerPC:
+> Mac-on-Linux. That project had its own hypercalls long before we came
+> along with KVM, so to maintain compatibility we also support their
+> hypercalls. All of these get forwarded to user space. This is only
+> useful on book3s_32, but can be used with book3s_64 as well.
+>
+>> +
+>> +KVM Hypercalls Documentation
+>> +===========================
+>> +The template for each hypercall is:
+>> +1. Hypercall name, value.
+>> +2. Architecture(s)
+>> +3. Status (deprecated, obsolete, active)
+>> +4. Purpose
+>> +
+>> +1. KVM_HC_VAPIC_POLL_IRQ
+>> +------------------------
+>> +Value: 1
+>
+> What are the value fields supposed to mean?
+
+Value field is just #define value of the hypercall in header.
+If that does not make much sense probably it can be dropped.
+
