@@ -1,60 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab2GXW4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 18:56:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43170 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748Ab2GXW4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 18:56:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="197599145"
-Date: Wed, 25 Jul 2012 00:56:19 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH -next] mfd: fix arizona-irq.c build by selecting
- REGMAP_IRQ
-Message-ID: <20120724225619.GE11304@sortiz-mobl>
-References: <20120723164036.52bc93caafcd165fc16f0284@canb.auug.org.au>
- <500D8ACA.4020501@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500D8ACA.4020501@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755930Ab2GXW4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 18:56:55 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:34046
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755077Ab2GXW4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 18:56:54 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        olaf@aepfle.de, apw@canonical.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: hv: Cleanup the guest ID computation
+Date: Tue, 24 Jul 2012 16:11:58 -0700
+Message-Id: <1343171518-15189-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+The current guest ID string in use in vmbus driver does not conform
+to the MSFT guidelines on guest ID. MSFT currently does not specify
+Linux specific guidelines. MSFT however has plans to publish Linux
+specific guidelines. This implementation conforms to the yet unpublished
+Linux specific guidelines for guest ID. This implementation also broadly
+conforms to the current guidelines as well.
 
-On Mon, Jul 23, 2012 at 10:32:58AM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> arizona-irq.c uses functions that are only available when
-> CONFIG_REGMAP_IRQ is enabled, so select that symbol for
-> arizona builds.
-> 
-> Fixes these build errors:
-> 
-> arizona-irq.c:(.text+0xb2d47): undefined reference to `regmap_irq_get_virq'
-> (.text+0xb2fe3): undefined reference to `regmap_add_irq_chip'
-> (.text+0xb3173): undefined reference to `regmap_del_irq_chip'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-Applied, thanks.
 
-Cheers,
-Samuel.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/hv/hv.c           |    9 +++++--
+ drivers/hv/hyperv_vmbus.h |   48 +++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 50 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
+index 86f8885..771e24f 100644
+--- a/drivers/hv/hv.c
++++ b/drivers/hv/hv.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/vmalloc.h>
+ #include <linux/hyperv.h>
++#include <linux/version.h>
+ #include <asm/hyperv.h>
+ #include "hyperv_vmbus.h"
+ 
+@@ -164,9 +165,11 @@ int hv_init(void)
+ 
+ 	max_leaf = query_hypervisor_info();
+ 
+-	/* Write our OS info */
+-	wrmsrl(HV_X64_MSR_GUEST_OS_ID, HV_LINUX_GUEST_ID);
+-	hv_context.guestid = HV_LINUX_GUEST_ID;
++	/*
++	 * Write our OS ID.
++	 */
++	hv_context.guestid = generate_guest_id(0, LINUX_VERSION_CODE, 0);
++	wrmsrl(HV_X64_MSR_GUEST_OS_ID, hv_context.guestid);
+ 
+ 	/* See if the hypercall page is already set */
+ 	rdmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
+diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
+index 0614ff3..108a441 100644
+--- a/drivers/hv/hyperv_vmbus.h
++++ b/drivers/hv/hyperv_vmbus.h
+@@ -410,10 +410,50 @@ enum {
+ 
+ #define HV_PRESENT_BIT			0x80000000
+ 
+-#define HV_LINUX_GUEST_ID_LO		0x00000000
+-#define HV_LINUX_GUEST_ID_HI		2976579765
+-#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI << 32) | \
+-					   HV_LINUX_GUEST_ID_LO)
++/*
++ * The guest OS needs to register the guest ID with the hypervisor.
++ * The guest ID is a 64 bit entity and the structure of this ID is
++ * specified in the Hyper-V specification:
++ *
++ * http://msdn.microsoft.com/en-us/library/windows/
++ * hardware/ff542653%28v=vs.85%29.aspx
++ *
++ * While the current guideline does not specify how Linux guest ID(s)
++ * need to be generated, our plan is to publish the guidelines for
++ * Linux and other guest operating systems that currently are hosted
++ * on Hyper-V. The implementation here conforms to this yet
++ * unpublished guidelines.
++ *
++ *
++ * Bit(s)
++ * 63 - Indicates if the OS is Open Source or not; 1 is Open Source
++ * 62:56 - Os Type; Linux is 0x100
++ * 55:48 - Distro specific identification
++ * 47:16 - Linux kernel version number
++ * 15:0  - Distro specific identification
++ *
++ *
++ */
++
++#define HV_LINUX_VENDOR_ID		0x8100
++
++/*
++ * Generate the guest ID based on the guideline described above.
++ */
++
++static inline  __u64 generate_guest_id(__u8 d_info1, __u32 kernel_version,
++					__u16 d_info2)
++{
++	__u64 guest_id = 0;
++
++	guest_id = (((__u64)HV_LINUX_VENDOR_ID) << 48);
++	guest_id |= (((__u64)(d_info1)) << 48);
++	guest_id |= (((__u64)(kernel_version)) << 16);
++	guest_id |= ((__u64)(d_info2));
++
++	return guest_id;
++}
++
+ 
+ #define HV_CPU_POWER_MANAGEMENT		(1 << 0)
+ #define HV_RECOMMENDATIONS_MAX		4
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.4.1
+
