@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab2GXOcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:32:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64758 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704Ab2GXOcv (ORCPT
+	id S1755225Ab2GXOjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:39:22 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:39934 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755116Ab2GXOjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:32:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [RFC 17/23] ARM: add machine desc hook for early memory/paging initialization
-Date: Tue, 24 Jul 2012 14:32:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        nico@linaro.org, will.deacon@arm.com, catalin.marinas@arm.com,
-        Vitaly Andrianov <vitalya@ti.com>
-References: <1343092165-9470-1-git-send-email-cyril@ti.com> <1343092165-9470-18-git-send-email-cyril@ti.com>
-In-Reply-To: <1343092165-9470-18-git-send-email-cyril@ti.com>
+	Tue, 24 Jul 2012 10:39:20 -0400
+Date: Tue, 24 Jul 2012 16:39:15 +0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH 09/11] perf top: error handling for counter creation
+ should parallel perf-record
+Message-ID: <20120724143915.GG6717@infradead.org>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+ <1342826756-64663-10-git-send-email-dsahern@gmail.com>
+ <20120723181521.GD6717@infradead.org>
+ <500EAAC2.2020802@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207241432.27790.arnd@arndb.de>
-X-Provags-ID: V02:K0:bwDiyTalmMvfsBFkEHQk9AnCgnbFuiOVO8qPMcd9gDV
- FHmDd2QyX4UI05TdwtL1nSUOJkGtpENhf5RPQIwVTIa7sOr/vk
- Z7VguENl2+d0EdoQ+GJ4tHAzBPftAfC9EFc+JxH87JrkjFjmci
- Co1jV+lzME2TG3/cmqOk5g0eP7u2dPkXIockwl2AQFFaY/43Nl
- htjgbG1FM3P4NrLinsz6VfQaUZqOS9HUAJsrybow5PCPcnK7oL
- U4KvoZfeOrt8WzPngN+3RSBpT7+zDKVm/HFD56AjtSmH+1Q3FX
- CkBE/y7sBX+Dfqy600qoYt7gIOqJze3FEDKzEabiVn++hmUISh
- T0DQVNIMrlaw9j1IkurA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500EAAC2.2020802@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 July 2012, Cyril Chemparathy wrote:
-> diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-> index 0b1c94b..49e9c2a 100644
-> --- a/arch/arm/include/asm/mach/arch.h
-> +++ b/arch/arm/include/asm/mach/arch.h
-> @@ -39,6 +39,7 @@ struct machine_desc {
->                                          struct meminfo *);
->         void                    (*reserve)(void);/* reserve mem blocks  */
->         void                    (*map_io)(void);/* IO mapping function  */
-> +       void                    (*init_meminfo)(void);
->         void                    (*init_early)(void);
->         void                    (*init_irq)(void);
->         struct sys_timer        *timer;         /* system tick timer    */
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index e15d83b..7cbe292 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -964,6 +964,9 @@ void __init setup_arch(char **cmdline_p)
->  
->         parse_early_param();
->  
-> +       if (mdesc->init_meminfo)
-> +               mdesc->init_meminfo();
-> +
->         sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
->         sanity_check_meminfo();
->         arm_memblock_init(&meminfo, mdesc);
+Em Tue, Jul 24, 2012 at 08:01:38AM -0600, David Ahern escreveu:
+> On 7/23/12 12:15 PM, Arnaldo Carvalho de Melo wrote:
+> >Em Fri, Jul 20, 2012 at 05:25:54PM -0600, David Ahern escreveu:
+> >>+			if ((err == ENOENT || err == ENXIO)
+> >>+				&& attr->type == PERF_TYPE_HARDWARE
+> >>+				&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
 
-The function pointers in that structure are ordered by execution time,
-and you call init_meminfo just before ->reserve, so it should go there.
+> >usual style:
+> >			if ((err == ENOENT || err == ENXIO) &&
+> >			    attr->type == PERF_TYPE_HARDWARE &&
+> >			    attr->config == PERF_COUNT_HW_CPU_CYCLES) {
 
-I wonder if it's better to just do the setup in the reserve callback,
-which would be a slight abuse of that interface but also keep down
-the number of early callbacks.
+> Right. I literally made it the same as builtin-record.c. I'll resubmit.
 
-	Arnd
+Ok, at some point we should fix that too, lowest prio tho, just trying
+to avoid adding more.
+
+- Arnaldo
