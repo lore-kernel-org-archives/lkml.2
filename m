@@ -1,102 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab2GXVBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 17:01:36 -0400
-Received: from smtp201.iad.emailsrvr.com ([207.97.245.201]:41065 "EHLO
-	smtp201.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755900Ab2GXVBe convert rfc822-to-8bit (ORCPT
+	id S1756166Ab2GXVBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 17:01:46 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62975 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab2GXVBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 17:01:34 -0400
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jul 2012 17:01:34 EDT
-From: Peter Hurley <peter@hurleysoftware.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jul 2012 16:51:12 -0400
-Subject: [RFC] x86: mtrr: Constrain WB MTRR to max phys mem prior to cleanup
-Thread-Topic: [RFC] x86: mtrr: Constrain WB MTRR to max phys mem prior to
- cleanup
-Thread-Index: Ac1p3g9fI7rSAE5aRQ6VuJdRbiQR3g==
-Message-ID: <1343163072.2229.5.camel@thor>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 24 Jul 2012 17:01:44 -0400
+Message-ID: <500F0D34.6000907@gmail.com>
+Date: Tue, 24 Jul 2012 16:01:40 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [GIT PULL] Devicetree for 3.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  If BIOS maps all or most of the phys address space as write-back,
-  regardless of the amount of actual RAM, then mtrr_cleanup may create
-  superfluous MTRR entries, or may be unable to create an optimal map
-  (or may use all MTRRs attempting to do so, thus making cleanup
-  pointless). Ideally, WB MTRRs should not be used for physical memory
-  addresses where memory does not exist (Intel SDM, Vol 3A, 11.11.2.1).
+Linus,
 
-  For example, Dell Precision T5400 wkstn w/ rev. A04 BIOS constructs
-  the following MTRR map for 10GB memory:
-   kernel: [    0.000000] MTRR variable ranges enabled:
-   kernel: [    0.000000]   0 base 0000000000 mask 2000000000 write-back
-   kernel: [    0.000000]   1 base 00CFF00000 mask 3FFFF00000 uncachable
-   kernel: [    0.000000]   2 base 00D0000000 mask 3FF0000000 uncachable
-   kernel: [    0.000000]   3 base 00E0000000 mask 3FE0000000 uncachable
-   kernel: [    0.000000]   4 base 1FF0000000 mask 3FF0000000 uncachable
-   kernel: [    0.000000]   5 disabled
-   kernel: [    0.000000]   6 disabled
-   kernel: [    0.000000]   7 disabled
-   kernel: [    0.000000] x86 PAT enabled: cpu 0 ......
-   kernel: [    0.000000] original variable MTRRs
-   kernel: [    0.000000] reg 0, base: 0GB, range: 128GB, type WB
-   kernel: [    0.000000] reg 1, base: 3327MB, range: 1MB, type UC
-   kernel: [    0.000000] reg 2, base: 3328MB, range: 256MB, type UC
-   kernel: [    0.000000] reg 3, base: 3584MB, range: 512MB, type UC
-   kernel: [    0.000000] reg 4, base: 130816MB, range: 256MB, type UC
-   kernel: [    0.000000] total RAM covered: 130047M
+While Grant's busy packing, please pull devicetree updates for 3.6.
 
-  mtrr_cleanup cannot construct an optimal map for this configuration.
-  Additionally, if the mtrr_gran_size/mtrr_chunk_size is specified,
-  mtrr_cleanup will use all entries attempting to map the full 128GB
-  phys address range.
+Rob
 
-  If a WB MTRR entry which maps phys addr range [0, > max_pfn) exists,
-  constrain the entry to [0, roundup_pow_of_two(max_pfn) ) prior to
-  generating potential solutions. The example MTRR map is optimized to:
-   kernel: [    0.000000] New variable MTRRs
-   kernel: [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
-   kernel: [    0.000000] reg 1, base: 2GB, range: 1GB, type WB
-   kernel: [    0.000000] reg 2, base: 3GB, range: 256MB, type WB
-   kernel: [    0.000000] reg 3, base: 3327MB, range: 1MB, type UC
-   kernel: [    0.000000] reg 4, base: 4GB, range: 4GB, type WB
-   kernel: [    0.000000] reg 5, base: 8GB, range: 8GB, type WB
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- arch/x86/kernel/cpu/mtrr/cleanup.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
 
-diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
-index bdda2e6..ee399c3 100644
---- a/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -714,6 +714,16 @@ int __init mtrr_cleanup(unsigned address_bits)
- 	if (mtrr_tom2)
- 		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
- 
-+	/* Constrain a WB entry that maps entire phys addr space to max mem */
-+	for (i = 0; i < num_var_ranges; i++) {
-+		if (range_state[i].type == MTRR_TYPE_WRBACK &&
-+		    range_state[i].base_pfn == 0 &&
-+		    range_state[i].size_pfn > max_pfn) {
-+			range_state[i].size_pfn = roundup_pow_of_two(max_pfn);
-+			break;
-+		}
-+	}
-+
- 	nr_range = x86_get_mtrr_mem_range(range, 0, x_remove_base, x_remove_size);
- 	/*
- 	 * [0, 1M) should always be covered by var mtrr with WB
--- 
-1.7.5.4
+are available in the git repository at:
 
+  git://sources.calxeda.com/kernel/linux.git tags/dt-for-3.6
+
+for you to fetch changes up to e95d8aafa5d911bf523bc47fe89f3336eb8a1b51:
+
+  of: mtd: nuke useless const qualifier (2012-07-10 10:32:06 -0500)
+
+----------------------------------------------------------------
+Devicetree updates for 3.6
+
+A small set of changes for devicetree:
+- Couple of Documentation fixes
+- Addition of new helper function of_node_full_name
+- Improve of_parse_phandle_with_args return values
+- Some NULL related sparse fixes
+
+----------------------------------------------------------------
+Alexandre Courbot (1):
+      of: return -ENOENT when no property
+
+Artem Bityutskiy (1):
+      of: mtd: nuke useless const qualifier
+
+Grant Likely (1):
+      devicetree: add helper inline for retrieving a node's full name
+
+Marek Vasut (1):
+      LED: Fix missing semicolon in OF documentation
+
+Richard Genoud (1):
+      usage-model.txt: fix typo machine_init->init_machine
+
+Rob Herring (1):
+      of: fix a few typos in the binding documentation
+
+Sachin Kamat (1):
+      of: Fix null pointer related warnings in base.c file
+
+ Documentation/devicetree/bindings/gpio/led.txt     |    2 +-
+ .../devicetree/bindings/mtd/partition.txt          |    2 +-
+ Documentation/devicetree/usage-model.txt           |    2 +-
+ arch/microblaze/pci/pci-common.c                   |    6 ++----
+ arch/powerpc/kernel/pci-common.c                   |    6 ++----
+ arch/powerpc/kernel/vio.c                          |    5 ++---
+ arch/powerpc/platforms/cell/iommu.c                |    3 +--
+ arch/powerpc/platforms/pseries/iommu.c             |    2 +-
+ arch/sparc/kernel/of_device_64.c                   |    2 +-
+ drivers/of/base.c                                  |   10 +++++-----
+ drivers/of/irq.c                                   |    2 +-
+ drivers/of/of_mtd.c                                |    2 +-
+ include/linux/of.h                                 |   10 ++++++++++
+ include/linux/of_mtd.h                             |    2 +-
+ kernel/irq/irqdomain.c                             |    8 ++++----
+ 15 files changed, 34 insertions(+), 30 deletions(-)
