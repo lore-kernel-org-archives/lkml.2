@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab2GXBKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:10:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37401 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755488Ab2GXBKa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 21:10:30 -0400
+	id S1755847Ab2GXBKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 21:10:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49241 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755591Ab2GXBKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 21:10:31 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <linux-kernel@vger.kernel.org>, <nico@linaro.org>, <will.deacon@arm.com>,
         <catalin.marinas@arm.com>, Cyril Chemparathy <cyril@ti.com>,
         Vitaly Andrianov <vitalya@ti.com>
-Subject: [RFC 22/23] ARM: keystone: enable SMP on Keystone machines
-Date: Mon, 23 Jul 2012 21:09:24 -0400
-Message-ID: <1343092165-9470-23-git-send-email-cyril@ti.com>
+Subject: [RFC 15/23] ARM: LPAE: allow proc override of TTB setup
+Date: Mon, 23 Jul 2012 21:09:17 -0400
+Message-ID: <1343092165-9470-16-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343092165-9470-1-git-send-email-cyril@ti.com>
 References: <1343092165-9470-1-git-send-email-cyril@ti.com>
@@ -24,154 +23,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic SMP support for Keystone machines.  Nothing very fancy
-here, just enough to get 4 CPUs booted up.  This does not include support for
-hotplug, etc.
+This patch allows ARM processor setup functions (*_setup in proc-*.S) to
+indicate that the page table has already been programmed.  This is
+done by setting r4 (page table pointer) to -1 before returning from the
+processor setup handler.
 
-Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+This capability is particularly needed on LPAE systems, where the translation
+table base needs to be programmed differently with 64-bit control
+register operations.
+
+Further, a few of the processors (arm1026, mohawk, xsc3) were programming the
+TTB twice.  This patch prevents the main head.S code from programming TTB the
+second time on these machines.
+
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/Kconfig                    |    1 +
- arch/arm/configs/keystone_defconfig |    2 +
- arch/arm/mach-keystone/Makefile     |    1 +
- arch/arm/mach-keystone/keystone.c   |    3 ++
- arch/arm/mach-keystone/platsmp.c    |   73 +++++++++++++++++++++++++++++++++++
- 5 files changed, 80 insertions(+)
- create mode 100644 arch/arm/mach-keystone/platsmp.c
+ arch/arm/kernel/head.S       |   11 ++++++-----
+ arch/arm/mm/proc-arm1026.S   |    1 +
+ arch/arm/mm/proc-mohawk.S    |    1 +
+ arch/arm/mm/proc-v6.S        |    2 ++
+ arch/arm/mm/proc-v7-2level.S |    3 ++-
+ arch/arm/mm/proc-v7-3level.S |    1 +
+ arch/arm/mm/proc-v7.S        |    1 +
+ arch/arm/mm/proc-xsc3.S      |    1 +
+ 8 files changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 04c846b..5b82879 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -372,6 +372,7 @@ config ARCH_KEYSTONE
- 	select SPARSE_IRQ
- 	select NEED_MACH_MEMORY_H
- 	select HAVE_SCHED_CLOCK
-+	select HAVE_SMP
- 	help
- 	  Support for boards based on the Texas Instruments Keystone family of
- 	  SoCs.
-diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
-index 7f2a04b..5f71e66 100644
---- a/arch/arm/configs/keystone_defconfig
-+++ b/arch/arm/configs/keystone_defconfig
-@@ -1,7 +1,9 @@
- CONFIG_EXPERIMENTAL=y
- CONFIG_BLK_DEV_INITRD=y
- CONFIG_ARCH_KEYSTONE=y
-+CONFIG_SMP=y
- CONFIG_ARM_ARCH_TIMER=y
-+CONFIG_NR_CPUS=4
- CONFIG_AEABI=y
- CONFIG_HIGHMEM=y
- CONFIG_VFP=y
-diff --git a/arch/arm/mach-keystone/Makefile b/arch/arm/mach-keystone/Makefile
-index d4671d5..3f6b8ab 100644
---- a/arch/arm/mach-keystone/Makefile
-+++ b/arch/arm/mach-keystone/Makefile
-@@ -1 +1,2 @@
- obj-y					:= keystone.o
-+obj-$(CONFIG_SMP)			+= platsmp.o
-diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
-index 9583dc4..650e202 100644
---- a/arch/arm/mach-keystone/keystone.c
-+++ b/arch/arm/mach-keystone/keystone.c
-@@ -26,6 +26,8 @@
- #include <asm/mach/time.h>
- #include <asm/hardware/gic.h>
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index 835898e..692e57f 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -411,17 +411,18 @@ __enable_mmu:
+ #ifdef CONFIG_CPU_ICACHE_DISABLE
+ 	bic	r0, r0, #CR_I
+ #endif
+-#ifdef CONFIG_ARM_LPAE
+-	mov	r5, #0
+-	mcrr	p15, 0, r4, r5, c2		@ load TTBR0
+-#else
++#ifndef CONFIG_ARM_LPAE
+ 	mov	r5, #(domain_val(DOMAIN_USER, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_KERNEL, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_TABLE, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_IO, DOMAIN_CLIENT))
+ 	mcr	p15, 0, r5, c3, c0, 0		@ load domain access register
+-	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
+ #endif
++
++	@ has the processor setup already programmed the page table pointer?
++	adds	r5, r4, #1
++	beq	__turn_mmu_on			@ yes!
++	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
+ 	b	__turn_mmu_on
+ ENDPROC(__enable_mmu)
  
-+extern struct smp_ops keystone_smp_ops;
-+
- static struct map_desc io_desc[] = {
- 	{
- 		.virtual        = 0xfe800000UL,
-@@ -73,6 +75,7 @@ static const char *keystone_match[] __initconst = {
- };
+diff --git a/arch/arm/mm/proc-arm1026.S b/arch/arm/mm/proc-arm1026.S
+index fbc1d5f..c28070e 100644
+--- a/arch/arm/mm/proc-arm1026.S
++++ b/arch/arm/mm/proc-arm1026.S
+@@ -404,6 +404,7 @@ __arm1026_setup:
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs on v4
+ 	mcr	p15, 0, r4, c2, c0		@ load page table pointer
++	mvn	r4, #0				@ do not set page table pointer
+ #endif
+ #ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
+ 	mov	r0, #4				@ explicitly disable writeback
+diff --git a/arch/arm/mm/proc-mohawk.S b/arch/arm/mm/proc-mohawk.S
+index fbb2124..a26303c 100644
+--- a/arch/arm/mm/proc-mohawk.S
++++ b/arch/arm/mm/proc-mohawk.S
+@@ -390,6 +390,7 @@ __mohawk_setup:
+ 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs
+ 	orr	r4, r4, #0x18			@ cache the page table in L2
+ 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
++	mvn	r4, #0				@ do not set page table pointer
  
- DT_MACHINE_START(KEYSTONE, "Keystone")
-+	smp_ops(keystone_smp_ops)
- 	.map_io		= keystone_map_io,
- 	.init_irq	= keystone_init_irq,
- 	.timer		= &keystone_timer,
-diff --git a/arch/arm/mach-keystone/platsmp.c b/arch/arm/mach-keystone/platsmp.c
-new file mode 100644
-index 0000000..437659a
---- /dev/null
-+++ b/arch/arm/mach-keystone/platsmp.c
-@@ -0,0 +1,73 @@
-+/*
-+ * Copyright 2012 Texas Instruments, Inc.
-+ *
-+ * Based on platsmp.c, Copyright 2010-2011 Calxeda, Inc.
-+ * Based on platsmp.c, Copyright (C) 2002 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/init.h>
-+#include <linux/smp.h>
-+#include <linux/io.h>
-+
-+#include <asm/smp_plat.h>
-+#include <asm/smp_ops.h>
-+#include <asm/hardware/gic.h>
-+#include <asm/cacheflush.h>
-+#include <asm/memory.h>
-+
-+extern void secondary_startup(void);
-+
-+static void __init keystone_smp_init_cpus(void)
-+{
-+	unsigned int i, ncores;
-+
-+	ncores = 4;
-+
-+	/* sanity check */
-+	if (ncores > NR_CPUS) {
-+		pr_warn("restricted to %d cpus\n", NR_CPUS);
-+		ncores = NR_CPUS;
-+	}
-+
-+	for (i = 0; i < ncores; i++)
-+		set_cpu_possible(i, true);
-+
-+	set_smp_cross_call(gic_raise_softirq);
-+}
-+
-+static void __init keystone_smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	/* nothing for now */
-+}
-+
-+static void __cpuinit keystone_secondary_init(unsigned int cpu)
-+{
-+	gic_secondary_init(0);
-+}
-+
-+static int __cpuinit
-+keystone_boot_secondary(unsigned int cpu, struct task_struct *idle)
-+{
-+	unsigned long *jump_ptr = phys_to_virt(0x800001f0);
-+
-+	jump_ptr[cpu] = virt_to_idmap(&secondary_startup);
-+	__cpuc_flush_dcache_area(jump_ptr, sizeof(jump_ptr) * 4);
-+
-+	return 0;
-+}
-+
-+struct smp_ops keystone_smp_ops __initdata = {
-+	smp_init_ops(keystone)
-+	smp_secondary_ops(keystone)
-+};
+ 	mov	r0, #0				@ don't allow CP access
+ 	mcr	p15, 0, r0, c15, c1, 0		@ write CP access register
+diff --git a/arch/arm/mm/proc-v6.S b/arch/arm/mm/proc-v6.S
+index 566c658..872156e 100644
+--- a/arch/arm/mm/proc-v6.S
++++ b/arch/arm/mm/proc-v6.S
+@@ -210,7 +210,9 @@ __v6_setup:
+ 	ALT_UP(orr	r4, r4, #TTB_FLAGS_UP)
+ 	ALT_SMP(orr	r8, r8, #TTB_FLAGS_SMP)
+ 	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
++	mcr	p15, 0, r4, c2, c0, 0		@ load TTB0
+ 	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
++	mvn	r4, #0				@ do not set page table pointer
+ #endif /* CONFIG_MMU */
+ 	adr	r5, v6_crval
+ 	ldmia	r5, {r5, r6}
+diff --git a/arch/arm/mm/proc-v7-2level.S b/arch/arm/mm/proc-v7-2level.S
+index 3397803..cc78c0c 100644
+--- a/arch/arm/mm/proc-v7-2level.S
++++ b/arch/arm/mm/proc-v7-2level.S
+@@ -139,7 +139,7 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 
+ 	/*
+ 	 * Macro for setting up the TTBRx and TTBCR registers.
+-	 * - \ttb0 and \ttb1 updated with the corresponding flags.
++	 * - \ttbr0 and \ttbr1 updated with the corresponding flags.
+ 	 */
+ 	.macro	v7_ttb_setup, zero, ttbr0, ttbr1, tmp
+ 	mcr	p15, 0, \zero, c2, c0, 2	@ TTB control register
+@@ -147,6 +147,7 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 	ALT_UP(orr	\ttbr0, \ttbr0, #TTB_FLAGS_UP)
+ 	ALT_SMP(orr	\ttbr1, \ttbr1, #TTB_FLAGS_SMP)
+ 	ALT_UP(orr	\ttbr1, \ttbr1, #TTB_FLAGS_UP)
++	mcr	p15, 0, \ttbr0, c2, c0, 0	@ load TTB0
+ 	mcr	p15, 0, \ttbr1, c2, c0, 1	@ load TTB1
+ 	.endm
+ 
+diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+index 3b1a745..5e3bed1 100644
+--- a/arch/arm/mm/proc-v7-3level.S
++++ b/arch/arm/mm/proc-v7-3level.S
+@@ -124,6 +124,7 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 	mcr	p15, 0, \tmp, c2, c0, 2				@ TTBCR
+ 	addls	\ttbr1, \ttbr1, #TTBR1_OFFSET
+ 	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
++	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
+ 	.endm
+ 
+ 	__CPUINIT
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index c2e2b66..8850194 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -250,6 +250,7 @@ __v7_setup:
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
+ 	v7_ttb_setup r10, r4, r8, r5		@ TTBCR, TTBRx setup
++	mvn	r4, #0				@ do not set page table pointer
+ 	ldr	r5, =PRRR			@ PRRR
+ 	ldr	r6, =NMRR			@ NMRR
+ 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
+diff --git a/arch/arm/mm/proc-xsc3.S b/arch/arm/mm/proc-xsc3.S
+index b0d5786..db3836b 100644
+--- a/arch/arm/mm/proc-xsc3.S
++++ b/arch/arm/mm/proc-xsc3.S
+@@ -455,6 +455,7 @@ __xsc3_setup:
+ 	mcr	p15, 0, ip, c8, c7, 0		@ invalidate I and D TLBs
+ 	orr	r4, r4, #0x18			@ cache the page table in L2
+ 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
++	mvn	r4, #0				@ do not set page table pointer
+ 
+ 	mov	r0, #1 << 6			@ cp6 access for early sched_clock
+ 	mcr	p15, 0, r0, c15, c1, 0		@ write CP access register
 -- 
 1.7.9.5
 
