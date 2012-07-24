@@ -1,66 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab2GXCYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 22:24:30 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42147 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab2GXCY3 (ORCPT
+	id S1755249Ab2GXC1x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 22:27:53 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44270 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab2GXC1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 22:24:29 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-e8-500e075b25f7
-Date: Tue, 24 Jul 2012 11:24:49 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] zsmalloc: s/firstpage/page in new copy map funcs
-Message-ID: <20120724022449.GA14411@bbox>
-References: <1342630556-28686-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <500DCBDF.5090800@linux.vnet.ibm.com>
- <20120723222749.GA25533@kroah.com>
+	Mon, 23 Jul 2012 22:27:51 -0400
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com> <500CDE35.6000009@windriver.com>
+User-Agent: SkitMail for Android
+In-Reply-To: <500CDE35.6000009@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120723222749.GA25533@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK when bundling
+From: Vlad Yasevich <vyasevich@gmail.com>
+Date: Mon, 23 Jul 2012 22:27:47 -0400
+To: xufeng zhang <xufeng.zhang@windriver.com>, sri@us.ibm.com,
+        davem@davemloft.net
+CC: xufengzhang.main@gmail.com, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+xufeng zhang <xufeng.zhang@windriver.com> wrote:
 
-On Mon, Jul 23, 2012 at 03:27:49PM -0700, Greg Kroah-Hartman wrote:
-> On Mon, Jul 23, 2012 at 05:10:39PM -0500, Seth Jennings wrote:
-> > Greg,
-> > 
-> > I know it's the first Monday after a kernel release and
-> > things are crazy for you.  I was hoping to get this zsmalloc
-> > stuff in before the merge window hit so I wouldn't have to
-> > bother you :-/  But, alas, it didn't happen that way.
-> 
-> Nope, sorry, it missed them.  It needed to be at least a week previous
-> to when the final kernel comes out to get into the next one.
-> 
-> > Minchan acked these yesterday.  When you get a chance, could
-> > you pull these 3 patches?  I'm wanting to send out a
-> > promotion patch for zsmalloc and zcache based on these.
-> 
-> Sorry, it will have to wait until after 3.6-rc1 is out before I will add
-> them to my tree for 3.7, that's the merge rules, that you well know :)
+>On 07/19/2012 01:57 PM, xufengzhang.main@gmail.com wrote:
+>> When "Invalid Stream Identifier" ERROR happens after process the
+>> received DATA chunks, this ERROR chunk is enqueued into outqueue
+>> before SACK chunk, so when bundling ERROR chunk with SACK chunk,
+>> the ERROR chunk is always placed first in the packet because of
+>> the chunk's position in the outqueue.
+>> This violates sctp specification:
+>>      RFC 4960 6.5. Stream Identifier and Stream Sequence Number
+>>      ...The endpoint may bundle the ERROR chunk in the same
+>>      packet as the SACK as long as the ERROR follows the SACK.
+>> So we must place SACK first when bundling "Invalid Stream Identifier"
+>> ERROR and SACK in one packet.
+>> Although we can do that by enqueue SACK chunk into outqueue before
+>> ERROR chunk, it will violate the side-effect interpreter processing.
+>> It's easy to do this job when dequeue chunks from the outqueue,
+>> by this way, we introduce a flag 'has_isi_err' which indicate
+>> whether or not the "Invalid Stream Identifier" ERROR happens.
+>>
+>> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
+>> ---
+>>   include/net/sctp/structs.h |    2 ++
+>>   net/sctp/output.c          |   26 ++++++++++++++++++++++++++
+>>   2 files changed, 28 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+>> index 88949a9..5adf4de 100644
+>> --- a/include/net/sctp/structs.h
+>> +++ b/include/net/sctp/structs.h
+>> @@ -842,6 +842,8 @@ struct sctp_packet {
+>>   	    has_sack:1,		/* This packet contains a SACK chunk. */
+>>   	    has_auth:1,		/* This packet contains an AUTH chunk */
+>>   	    has_data:1,		/* This packet contains at least 1 DATA chunk */
+>> +	    has_isi_err:1,	/* This packet contains a "Invalid Stream
+>> +				 * Identifier" ERROR chunk */
+>>   	    ipfragok:1,		/* So let ip fragment this packet */
+>>   	    malloced:1;		/* Is it malloced? */
+>>   };
+>> diff --git a/net/sctp/output.c b/net/sctp/output.c
+>> index 817174e..77fb1ae 100644
+>> --- a/net/sctp/output.c
+>> +++ b/net/sctp/output.c
+>> @@ -79,6 +79,7 @@ static void sctp_packet_reset(struct sctp_packet
+>*packet)
+>>   	packet->has_sack = 0;
+>>   	packet->has_data = 0;
+>>   	packet->has_auth = 0;
+>> +	packet->has_isi_err = 0;
+>>   	packet->ipfragok = 0;
+>>   	packet->auth = NULL;
+>>   }
+>> @@ -267,6 +268,7 @@ static sctp_xmit_t sctp_packet_bundle_sack(struct
+>sctp_packet *pkt,
+>>   sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
+>>   				     struct sctp_chunk *chunk)
+>>   {
+>> +	struct sctp_chunk *lchunk;
+>>   	sctp_xmit_t retval = SCTP_XMIT_OK;
+>>   	__u16 chunk_len = WORD_ROUND(ntohs(chunk->chunk_hdr->length));
+>>
+>> @@ -316,7 +318,31 @@ sctp_xmit_t sctp_packet_append_chunk(struct
+>sctp_packet *packet,
+>>   		packet->has_cookie_echo = 1;
+>>   		break;
+>>
+>> +	    case SCTP_CID_ERROR:
+>> +		if (chunk->subh.err_hdr->cause&  SCTP_ERROR_INV_STRM)
+>> +			packet->has_isi_err = 1;
+>> +		break;
+>> +
+>>   	    case SCTP_CID_SACK:
+>> +		/* RFC 4960
+>> +		 * 6.5 Stream Identifier and Stream Sequence Number
+>> +		 * The endpoint may bundle the ERROR chunk in the same
+>> +		 * packet as the SACK as long as the ERROR follows the SACK.
+>> +		 */
+>> +		if (packet->has_isi_err) {
+>> +			if (list_is_singular(&packet->chunk_list))
+>> +				list_add(&chunk->list,&packet->chunk_list);
+>> +			else {
+>> +				lchunk = list_first_entry(&packet->chunk_list,
+>> +						struct sctp_chunk, list);
+>> +				list_add(&chunk->list,&lchunk->list);
+>> +			}
+>>    
+>And I should clarify the above judgment code.
+>AFAIK, there should be two cases for the bundling when invalid stream 
+>identifier error happens:
+>1). COOKIE_ACK ERROR SACK
+>2). ERROR SACK
+>So I need to deal with the two cases differently.
+>
 
-I think it is good time that zram/zsmalloc is out of staging because of
-removing arch dependency and many clean up with some bug fix.
-I hope it's out of staging in this chance.
-If you have a concern about that, please let me know it.
+Sorry but I just don't buy that the above are the only 2 cases.  What if there are addip chunks as well?  What if there are some other extensions also.  This code has to be generic enough to handle any condition.
 
-Thanks!
+- vlad
+
+>
+>Thanks,
+>Xufeng Zhang
+>> +			packet->size += chunk_len;
+>> +			chunk->transport = packet->transport;
+>> +			packet->has_sack = 1;
+>> +			goto finish;
+>> +		}
+>> +
+>>   		packet->has_sack = 1;
+>>   		break;
+>>
+>>    
+
 
 -- 
-Kind regards,
-Minchan Kim
+Sent from my Android phone with SkitMail. Please excuse my brevity.
