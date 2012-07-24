@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab2GXUzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:55:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:39647 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755800Ab2GXUzD convert rfc822-to-8bit (ORCPT
+	id S932106Ab2GXU5i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:57:38 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:45198 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755800Ab2GXU5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:55:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="126440569"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>, Matthew Garrett <mjg@redhat.com>
-CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXAAAc9d8AAUbUAAAK5hfwAAONBtAAAN3tpg//+gaQCAAFnGIP//zcaAgABzfqA=
-Date: Tue, 24 Jul 2012 20:54:59 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19370D21@ORSMSX104.amr.corp.intel.com>
-References: <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
- <20120720030328.GC5637@redhat.com> <20120723141632.GB23047@srcf.ucam.org>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB33479@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F19370A1B@ORSMSX104.amr.corp.intel.com>
- <20120724181820.GA23820@srcf.ucam.org>
- <3908561D78D1C84285E8C5FCA982C28F19370CA2@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB346A4@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB346A4@USINDEM103.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jul 2012 16:57:37 -0400
+Date: Tue, 24 Jul 2012 22:57:46 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Ortwin =?utf-8?B?R2zDvGNr?= <odi@odi.ch>
+Cc: linux-kernel@vger.kernel.org, bskeggs@redhat.com,
+        dri-devel@lists.freedesktop.org
+Subject: Re: drm/nouveau: crash regression in 3.5
+Message-ID: <20120724205746.GA8707@joi.lan>
+References: <500D916A.60703@odi.ch>
+ <20120724170002.GA3129@joi.lan>
+ <500ED9EC.5040309@odi.ch>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <500ED9EC.5040309@odi.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So, we don't need to introduce a overwriting policy.
-> I will make a patch using QueryVariableInfo and just writing multiple logs.
+On Tue, Jul 24, 2012 at 07:22:52PM +0200, Ortwin Glück wrote:
+> On 24.07.2012 19:00, Marcin Slusarz wrote:
+> > Please post the crash log.
+> 
+> Sorry, I was not precise: it boots until drm performs modesetting (so it 
+> seems). The screen goes black and the machine is dead. So there is 
+> nothing I could post here, unfortunately.
+> 
+> This is a video of 3.5 booting:
+> http://www.odi.ch/VIDEO0010.3gp
 
-I don't think that's what Matthew said.
+Does it work if you boot without X and modprobe nouveau manually? If it does,
+can you disable page flipping in xorg.conf (Option "PageFlip" "0" in nouveau
+device section) and recheck with X?
 
-Here's the bad scenario he envisions:
+Does it work if you disable acceleration (nouveau.noaccel=1 in kernel command
+line)? Is there anything saved in /var/log/ from previous boot? Can you ssh
+into and check dmesg? Can you use netconsole and catch full log?
 
-System is running. It has an OOPs, which gets logged by pstore, and the system carries on running.
-
-The new daemon that we said we needed earlier in this e-mail thread finds the entry in pstore and
-copies it to some place in /var/log and removes the pstore entry - causing pstore to ask EFI (or ERST)
-backend to erase the record. Firmware does the erase, but doesn't put the space back into the
-free pool for use.
-
-Repeat with more OOPs until all the EFI (or ERST) space has been allocated and then lost into
-firmware limbo waiting for a reset.
-
-Now we panic. Pstore asks EFI "Do you have any space?" EFI replies "No". Pstore can't even overwrite
-one of the old OOPs records ... because it thinks they have all been erased. So we lose the panic
-log.
-
--Tony
+Marcin
