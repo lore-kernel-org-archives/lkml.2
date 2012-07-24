@@ -1,153 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab2GXH5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 03:57:09 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:43900 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434Ab2GXH5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 03:57:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <1343111387.10661.1.camel@phoenix>
-References: <1343111387.10661.1.camel@phoenix>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 24 Jul 2012 15:56:45 +0800
-X-Google-Sender-Auth: F4RUtFkKINnybr7lK-jiSLEEYmM
-Message-ID: <CAK5ve-KStwA6VWXMncSoehTf7JwHGq0Kj4fg8b3--6WaL+8T9w@mail.gmail.com>
-Subject: Re: [PATCH RFT] leds: max8997: Simplify max8997_led_set_mode implementation
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Donggeun Kim <dg77.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755570Ab2GXIBV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:01:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5463 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755084Ab2GXIBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 04:01:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="184770186"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Viresh Kumar <viresh.linux@gmail.com>
+Subject: [PATCH] dw_dmac: use devm_* functions to simplify code
+Date: Tue, 24 Jul 2012 11:00:55 +0300
+Message-Id: <1343116855-6804-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 2:29 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> It is not necessary to call max8997_update_reg() twice just for updating
-> MAX8997_REG_LEN_CNTL register. With proper val and mask arguments to
-> max8997_update_reg() call, this can be done in one max8997_update_reg() call.
-> And then we can remove max8997_led_clear_mode() function.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Use devm_kzalloc, devm_clk_get, devm_request_irq, and devm_request_and_ioremap
+to reduce the code and to simplify the error path.
 
-Fair enough, I've applied it to my for-next.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Viresh Kumar <viresh.linux@gmail.com>
+---
+ drivers/dma/dw_dmac.c      |   53 +++++++++-----------------------------------
+ drivers/dma/dw_dmac_regs.h |    2 --
+ 2 files changed, 10 insertions(+), 45 deletions(-)
 
-Thanks,
--Bryan
-
-> ---
->  drivers/leds/leds-max8997.c |   60 ++++++++++---------------------------------
->  1 file changed, 13 insertions(+), 47 deletions(-)
->
-> diff --git a/drivers/leds/leds-max8997.c b/drivers/leds/leds-max8997.c
-> index bf86d54..569e36d 100644
-> --- a/drivers/leds/leds-max8997.c
-> +++ b/drivers/leds/leds-max8997.c
-> @@ -49,71 +49,37 @@ struct max8997_led {
->         struct mutex mutex;
->  };
->
-> -static void max8997_led_clear_mode(struct max8997_led *led,
-> -                       enum max8997_led_mode mode)
-> -{
-> -       struct i2c_client *client = led->iodev->i2c;
-> -       u8 val = 0, mask = 0;
-> -       int ret;
-> -
-> -       switch (mode) {
-> -       case MAX8997_FLASH_MODE:
-> -               mask = led->id ?
-> -                     MAX8997_LED1_FLASH_MASK : MAX8997_LED0_FLASH_MASK;
-> -               break;
-> -       case MAX8997_MOVIE_MODE:
-> -               mask = led->id ?
-> -                     MAX8997_LED1_MOVIE_MASK : MAX8997_LED0_MOVIE_MASK;
-> -               break;
-> -       case MAX8997_FLASH_PIN_CONTROL_MODE:
-> -               mask = led->id ?
-> -                     MAX8997_LED1_FLASH_PIN_MASK : MAX8997_LED0_FLASH_PIN_MASK;
-> -               break;
-> -       case MAX8997_MOVIE_PIN_CONTROL_MODE:
-> -               mask = led->id ?
-> -                     MAX8997_LED1_MOVIE_PIN_MASK : MAX8997_LED0_MOVIE_PIN_MASK;
-> -               break;
-> -       default:
-> -               break;
-> -       }
-> -
-> -       if (mask) {
-> -               ret = max8997_update_reg(client,
-> -                               MAX8997_REG_LEN_CNTL, val, mask);
-> -               if (ret)
-> -                       dev_err(led->iodev->dev,
-> -                               "failed to update register(%d)\n", ret);
-> -       }
-> -}
-> -
->  static void max8997_led_set_mode(struct max8997_led *led,
->                         enum max8997_led_mode mode)
->  {
->         int ret;
->         struct i2c_client *client = led->iodev->i2c;
-> -       u8 mask = 0;
-> -
-> -       /* First, clear the previous mode */
-> -       max8997_led_clear_mode(led, led->led_mode);
-> +       u8 mask = 0, val;
->
->         switch (mode) {
->         case MAX8997_FLASH_MODE:
-> -               mask = led->id ?
-> +               mask = MAX8997_LED1_FLASH_MASK | MAX8997_LED0_FLASH_MASK;
-> +               val = led->id ?
->                       MAX8997_LED1_FLASH_MASK : MAX8997_LED0_FLASH_MASK;
->                 led->cdev.max_brightness = MAX8997_LED_FLASH_MAX_BRIGHTNESS;
->                 break;
->         case MAX8997_MOVIE_MODE:
-> -               mask = led->id ?
-> +               mask = MAX8997_LED1_MOVIE_MASK | MAX8997_LED0_MOVIE_MASK;
-> +               val = led->id ?
->                       MAX8997_LED1_MOVIE_MASK : MAX8997_LED0_MOVIE_MASK;
->                 led->cdev.max_brightness = MAX8997_LED_MOVIE_MAX_BRIGHTNESS;
->                 break;
->         case MAX8997_FLASH_PIN_CONTROL_MODE:
-> -               mask = led->id ?
-> +               mask = MAX8997_LED1_FLASH_PIN_MASK |
-> +                      MAX8997_LED0_FLASH_PIN_MASK;
-> +               val = led->id ?
->                       MAX8997_LED1_FLASH_PIN_MASK : MAX8997_LED0_FLASH_PIN_MASK;
->                 led->cdev.max_brightness = MAX8997_LED_FLASH_MAX_BRIGHTNESS;
->                 break;
->         case MAX8997_MOVIE_PIN_CONTROL_MODE:
-> -               mask = led->id ?
-> +               mask = MAX8997_LED1_MOVIE_PIN_MASK |
-> +                      MAX8997_LED0_MOVIE_PIN_MASK;
-> +               val = led->id ?
->                       MAX8997_LED1_MOVIE_PIN_MASK : MAX8997_LED0_MOVIE_PIN_MASK;
->                 led->cdev.max_brightness = MAX8997_LED_MOVIE_MAX_BRIGHTNESS;
->                 break;
-> @@ -123,8 +89,8 @@ static void max8997_led_set_mode(struct max8997_led *led,
->         }
->
->         if (mask) {
-> -               ret = max8997_update_reg(client,
-> -                               MAX8997_REG_LEN_CNTL, mask, mask);
-> +               ret = max8997_update_reg(client, MAX8997_REG_LEN_CNTL, val,
-> +                                        mask);
->                 if (ret)
->                         dev_err(led->iodev->dev,
->                                 "failed to update register(%d)\n", ret);
-> --
-> 1.7.9.5
->
->
->
-
-
-
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 3d061c6..832538c 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1394,26 +1394,17 @@ static int __devinit dw_probe(struct platform_device *pdev)
+ 
+ 	size = sizeof(struct dw_dma);
+ 	size += pdata->nr_channels * sizeof(struct dw_dma_chan);
+-	dw = kzalloc(size, GFP_KERNEL);
++	dw = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
+ 	if (!dw)
+ 		return -ENOMEM;
+ 
+-	if (!request_mem_region(io->start, DW_REGLEN, pdev->dev.driver->name)) {
+-		err = -EBUSY;
+-		goto err_kfree;
+-	}
+-
+-	dw->regs = ioremap(io->start, DW_REGLEN);
+-	if (!dw->regs) {
+-		err = -ENOMEM;
+-		goto err_release_r;
+-	}
++	dw->regs = devm_request_and_ioremap(&pdev->dev, io);
++	if (!dw->regs)
++		return -EBUSY;
+ 
+-	dw->clk = clk_get(&pdev->dev, "hclk");
+-	if (IS_ERR(dw->clk)) {
+-		err = PTR_ERR(dw->clk);
+-		goto err_clk;
+-	}
++	dw->clk = devm_clk_get(&pdev->dev, "hclk");
++	if (IS_ERR(dw->clk))
++		return PTR_ERR(dw->clk);
+ 	clk_prepare_enable(dw->clk);
+ 
+ 	/* Calculate all channel mask before DMA setup */
+@@ -1425,9 +1416,10 @@ static int __devinit dw_probe(struct platform_device *pdev)
+ 	/* disable BLOCK interrupts as well */
+ 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
+ 
+-	err = request_irq(irq, dw_dma_interrupt, 0, "dw_dmac", dw);
++	err = devm_request_irq(&pdev->dev, irq, dw_dma_interrupt, 0,
++			       "dw_dmac", dw);
+ 	if (err)
+-		goto err_irq;
++		return err;
+ 
+ 	platform_set_drvdata(pdev, dw);
+ 
+@@ -1493,30 +1485,16 @@ static int __devinit dw_probe(struct platform_device *pdev)
+ 	dma_async_device_register(&dw->dma);
+ 
+ 	return 0;
+-
+-err_irq:
+-	clk_disable_unprepare(dw->clk);
+-	clk_put(dw->clk);
+-err_clk:
+-	iounmap(dw->regs);
+-	dw->regs = NULL;
+-err_release_r:
+-	release_resource(io);
+-err_kfree:
+-	kfree(dw);
+-	return err;
+ }
+ 
+ static int __devexit dw_remove(struct platform_device *pdev)
+ {
+ 	struct dw_dma		*dw = platform_get_drvdata(pdev);
+ 	struct dw_dma_chan	*dwc, *_dwc;
+-	struct resource		*io;
+ 
+ 	dw_dma_off(dw);
+ 	dma_async_device_unregister(&dw->dma);
+ 
+-	free_irq(platform_get_irq(pdev, 0), dw);
+ 	tasklet_kill(&dw->tasklet);
+ 
+ 	list_for_each_entry_safe(dwc, _dwc, &dw->dma.channels,
+@@ -1525,17 +1503,6 @@ static int __devexit dw_remove(struct platform_device *pdev)
+ 		channel_clear_bit(dw, CH_EN, dwc->mask);
+ 	}
+ 
+-	clk_disable_unprepare(dw->clk);
+-	clk_put(dw->clk);
+-
+-	iounmap(dw->regs);
+-	dw->regs = NULL;
+-
+-	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(io->start, DW_REGLEN);
+-
+-	kfree(dw);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index 50830be..f6d92d7 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -140,8 +140,6 @@ struct dw_dma_regs {
+ /* Bitfields in CFG */
+ #define DW_CFG_DMA_EN		(1 << 0)
+ 
+-#define DW_REGLEN		0x400
+-
+ enum dw_dmac_flags {
+ 	DW_DMA_IS_CYCLIC = 0,
+ };
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+1.7.10.4
+
