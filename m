@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab2GXNlC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:41:02 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54337
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753140Ab2GXNlA (ORCPT
+	id S1754480Ab2GXNlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:41:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61832 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab2GXNlo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:41:00 -0400
-Date: Tue, 24 Jul 2012 09:40:59 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: XFS status update for June 2012
-Message-ID: <20120724134059.GA25901@infradead.org>
+	Tue, 24 Jul 2012 09:41:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <500E84D7.7060103@hitachi.com>
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+	<CAJSP0QW_2JJ0nf=NW0y30VSid2HSxaqb=mRGV8CTtAKj0ujDWw@mail.gmail.com>
+	<500E810A.4030309@hitachi.com>
+	<500E84D7.7060103@hitachi.com>
+Date: Tue, 24 Jul 2012 14:41:42 +0100
+Message-ID: <CAJSP0QVuQnE68n=jyW+AE=WF3yDHjgdn7tdiz7rPTbtqGYFL4w@mail.gmail.com>
+Subject: Re: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
+        Borislav Petkov <bp@amd64.org>,
+        virtualization@lists.linux-foundation.org,
+        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Shah <amit.shah@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-June has been a pretty slow month for XFS in Linus tree, as June saw the
-stabilization of the Linux 3.5 and thus only a handful of important XFS
-fixes.  Development of the tree destined for the next merge window has been
-a bit more busy with the addition of discontinuous buffers that replace the
-dabuf layer which has performance issues and isn't easy to deal with in the
-upcoming metadata checksumming as well as a few smaller cleanups.
+On Tue, Jul 24, 2012 at 12:19 PM, Yoshihiro YUNOMAE
+<yoshihiro.yunomae.ez@hitachi.com> wrote:
+>>> Are you using text formatted ftrace?
+> No, currently using raw format, but　we'd like to reformat it in text.
 
-The list saw various other patches not applied yet, most notable a
-refactoring and speedup of the inode allocator, and a heavily discussed
-rewrite of the mount option parsing.
+Capturing the info necessary to translate numbers into symbols is one
+of the problems of host<->guest tracing so I'm curious how you handle
+this :).
 
-On the user space side a small number of fixes to the handling of fragmented
-directories were applied to xfs_repair, and xfstests saw a fix for handling
-different versions of xfsdump.
+Apologies for my lack of ftrace knowledge but how useful is the raw
+tracing data on the host?  How do you pretty-print it in
+human-readable form?
+
+Stefan
