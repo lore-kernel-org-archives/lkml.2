@@ -1,141 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab2GXSzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 14:55:12 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:47776 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab2GXSzK (ORCPT
+	id S1756044Ab2GXS6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 14:58:30 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59245 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755506Ab2GXS62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 14:55:10 -0400
-Message-ID: <1343156106.25735.59.camel@ejdallLaptop>
-Subject: Re: [PATCH 5/5] block: genhd: add an interface to set disk's poll
- interval
-From: Betty Dall <betty.dall@hp.com>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Lin Ming <minggr@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
-Date: Tue, 24 Jul 2012 12:55:06 -0600
-In-Reply-To: <20120723235211.GB1965@localhost.localdomain>
-References: <1343026180-22236-1-git-send-email-aaron.lu@amd.com>
-	 <1343026180-22236-6-git-send-email-aaron.lu@amd.com>
-	 <1343069014.25735.28.camel@ejdallLaptop>
-	 <20120723235211.GB1965@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Jul 2012 14:58:28 -0400
+Date: Tue, 24 Jul 2012 19:58:26 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Emulating level IRQs (was: Re: [PATCH] Input: eeti_ts: Mark as
+ CONFIG_BROKEN)
+Message-ID: <20120724185825.GA32169@sirena.org.uk>
+References: <1333777207-4151-1-git-send-email-olof@lixom.net>
+ <20120407070206.GA17623@core.coreip.homeip.net>
+ <4F8089A9.6080704@raumfeld.com>
+ <20120503043651.GA11830@core.coreip.homeip.net>
+ <20120713070102.GA2223@core.coreip.homeip.net>
+ <500561AF.9090901@gmail.com>
+ <5008296C.5070709@gmail.com>
+ <20120723165120.GB26577@core.coreip.homeip.net>
+ <500EE314.7040708@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500EE314.7040708@gmail.com>
+X-Cookie: A rolling stone gathers momentum.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aaron,
+On Tue, Jul 24, 2012 at 08:01:56PM +0200, Daniel Mack wrote:
+> On 23.07.2012 18:51, Dmitry Torokhov wrote:
 
-On Tue, 2012-07-24 at 07:52 +0800, Aaron Lu wrote:
-> On Mon, Jul 23, 2012 at 12:43:34PM -0600, Betty Dall wrote:
-> > Hi Aaron,
-> 
-> Hi,
-> 
-> > 
-> > On Mon, 2012-07-23 at 14:49 +0800, Aaron Lu wrote:
-> > > Set the ODD's in kernel poll interval to 2s for the user in case the
-> > > user is using an old distro on which udev will not set the system wide
-> > > block parameter events_dfl_poll_msecs.
-> > Why did you pick 2 seconds? 
-> 
-> Just a random pick, no special meaning here.
-> On newer distros, udev will also pick 2s for the events_dfl_poll_msecs
-> parameter, so I just followed that :-)
-> Do you see any problem with this setting?
+> > Hmm, but that would mean we need to restore reading the data in open()
+> > to make sure we re-arm IRQ in case somebody touched the screen before it
+> > was opened by userspace...
 
-No problem, and I was curious as to why 2s, and the fact that is it used
-in udev for events_dfl_poll_msecs is a good reason.
+> I had another look at this and don't really know what to do here. We
+> definitely need level interrupts for this device as the interrupt line's
+> level is the only that tells us when we can stop reading from the
+> device. So it's not just the start condition that bites us here.
 
-> > 
-> > > 
-> > > Signed-off-by: Aaron Lu <aaron.lu@amd.com>
-> > > ---
-> > >  block/genhd.c         | 23 +++++++++++++++++------
-> > >  drivers/scsi/sr.c     |  1 +
-> > >  include/linux/genhd.h |  1 +
-> > >  3 files changed, 19 insertions(+), 6 deletions(-)
-> > > 
-> > > diff --git a/block/genhd.c b/block/genhd.c
-> > > index bdb3682..de9b9d9 100644
-> > > --- a/block/genhd.c
-> > > +++ b/block/genhd.c
-> > > @@ -1619,6 +1619,19 @@ static void disk_events_workfn(struct work_struct *work)
-> > >  		kobject_uevent_env(&disk_to_dev(disk)->kobj, KOBJ_CHANGE, envp);
-> > >  }
-> > >  
-> > > +int disk_events_set_poll_msecs(struct gendisk *disk, long intv)
-> > > +{
-> > > +	if (intv < 0 && intv != -1)
-> > > +		return -EINVAL;
-> > > +
-> > > +	disk_block_events(disk);
-> > > +	disk->ev->poll_msecs = intv;
-> > > +	__disk_unblock_events(disk, true);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +EXPORT_SYMBOL(disk_events_set_poll_msecs);
-> > > +
-> > >  /*
-> > >   * A disk events enabled device has the following sysfs nodes under
-> > >   * its /sys/block/X/ directory.
-> > > @@ -1675,16 +1688,14 @@ static ssize_t disk_events_poll_msecs_store(struct device *dev,
-> > >  {
-> > >  	struct gendisk *disk = dev_to_disk(dev);
-> > >  	long intv;
-> > > +	int ret;
-> > >  
-> > >  	if (!count || !sscanf(buf, "%ld", &intv))
-> > >  		return -EINVAL;
-> > >  
-> > > -	if (intv < 0 && intv != -1)
-> > > -		return -EINVAL;
-> > > -
-> > > -	disk_block_events(disk);
-> > > -	disk->ev->poll_msecs = intv;
-> > > -	__disk_unblock_events(disk, true);
-> > > +	ret = disk_events_set_poll_msecs(disk, intv);
-> > > +	if (ret)
-> > > +		return ret;
-> > >  
-> > >  	return count;
-> > >  }
-> > > diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-> > > index 2f159aa..78c4226 100644
-> > > --- a/drivers/scsi/sr.c
-> > > +++ b/drivers/scsi/sr.c
-> > > @@ -869,6 +869,7 @@ static int sr_probe(struct device *dev)
-> > >  	dev_set_drvdata(dev, cd);
-> > >  	disk->flags |= GENHD_FL_REMOVABLE;
-> > >  	add_disk(disk);
-> > > +	disk_events_set_poll_msecs(disk, 2000);
-> > 
-> > Could you check that disk event's poll_msecs is the default (-1) before
-> > setting it to 2s? I am thinking of a case when the probe happens after
-> > the call to disk_events_poll_msecs_store() and this code would overwrite
-> > the user specified value.
-> 
-> The block device sr0 is created by this driver in this probe function,
-> so the user should not be able to set the poll interval before probe,
-> right?
+> I copied some people that might help find a solution.
 
-The add_disk() call happens immediately before the new
-disk_events_set_poll_msecs() call. add_disk() is what eventually creates
-the sysfs files and calls your new disk_events_set_poll_msecs(). It
-makes more sense to me to have the new call to
-disk_events_set_poll_msecs(disk, 2000) before the call to add_disk().
-That way add_disk()could override the 2 second default based on user
-input. If a distro doesn't support udev setting events_dfl_poll_msecs,
-the add_disk() won't ever make a call to disk_events_set_poll_msecs()
-and the 2 second default will stand.
+I've raised the same issue myself, it's fairly common.
 
--Betty
+> So it boils down to the question: Is there any easy and generic way to
+> emulate level irq on chips that don't support that natively?
 
-
+Nothing in core.  The nearest thing is to poll until you run out of work
+(which is rude but survivable for threaded IRQs that don't assert too
+much), ideally just reusing the level IRQ if it can report IRQ_NONE.
