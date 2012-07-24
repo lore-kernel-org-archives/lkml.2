@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab2GXBJF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:09:05 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:36262 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab2GXBJD (ORCPT
+	id S1755449Ab2GXBJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 21:09:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37337 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab2GXBJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 21:09:03 -0400
-Date: Mon, 23 Jul 2012 18:08:05 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-In-Reply-To: <20120723114007.GU9222@suse.de>
-Message-ID: <alpine.LSU.2.00.1207231702440.1683@eggly.anvils>
-References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <20120723114007.GU9222@suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 23 Jul 2012 21:09:49 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <nico@linaro.org>, <will.deacon@arm.com>,
+        <catalin.marinas@arm.com>, Cyril Chemparathy <cyril@ti.com>,
+        Vitaly Andrianov <vitalya@ti.com>
+Subject: [RFC 14/23] ARM: LPAE: factor out T1SZ and TTBR1 computations
+Date: Mon, 23 Jul 2012 21:09:16 -0400
+Message-ID: <1343092165-9470-15-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343092165-9470-1-git-send-email-cyril@ti.com>
+References: <1343092165-9470-1-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Jul 2012, Mel Gorman wrote:
-> On Sun, Jul 22, 2012 at 09:04:33PM -0700, Hugh Dickins wrote:
-> > On Fri, 20 Jul 2012, Mel Gorman wrote:
-> > > On Fri, Jul 20, 2012 at 04:36:35PM +0200, Michal Hocko wrote:
-> 
-> I like it in that it's simple and I can confirm it works for the test case
-> of interest.
+This patch moves the TTBR1 offset calculation and the T1SZ calculation out
+of the TTB setup assembly code.  This should not affect functionality in
+any way, but improves code readability as well as readability of subsequent
+patches in this series.
 
-Phew, I'm glad to hear that, thanks.
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+---
+ arch/arm/include/asm/pgtable-3level-hwdef.h |   10 ++++++++++
+ arch/arm/mm/proc-v7-3level.S                |   16 ++++------------
+ 2 files changed, 14 insertions(+), 12 deletions(-)
 
-> 
-> However, is your patch not vunerable to truncate issues?
-> madvise()/truncate() issues was the main reason why I was wary of VMA tricks
-> as a solution. As it turns out, madvise(DONTNEED) is not a problem as it is
-> ignored for hugetlbfs but I think truncate is still problematic. Lets say
-> we mmap(MAP_SHARED) a hugetlbfs file and then truncate for whatever reason.
-> 
-> invalidate_inode_pages2
->   invalidate_inode_pages2_range
->     unmap_mapping_range_vma
->       zap_page_range_single
->         unmap_single_vma
-> 	  __unmap_hugepage_range (removes VM_MAYSHARE)
-> 
-> The VMA still exists so the consequences for this would be varied but
-> minimally fault is going to be "interesting".
+diff --git a/arch/arm/include/asm/pgtable-3level-hwdef.h b/arch/arm/include/asm/pgtable-3level-hwdef.h
+index d795282..b501650 100644
+--- a/arch/arm/include/asm/pgtable-3level-hwdef.h
++++ b/arch/arm/include/asm/pgtable-3level-hwdef.h
+@@ -74,4 +74,14 @@
+ #define PHYS_MASK_SHIFT		(40)
+ #define PHYS_MASK		((1ULL << PHYS_MASK_SHIFT) - 1)
+ 
++#if defined CONFIG_VMSPLIT_2G
++#define TTBR1_OFFSET	(1 << 4)		/* skip two L1 entries */
++#elif defined CONFIG_VMSPLIT_3G
++#define TTBR1_OFFSET	(4096 * (1 + 3))	/* only L2, skip pgd + 3*pmd */
++#else
++#define TTBR1_OFFSET	0
++#endif
++
++#define TTBR1_SIZE	(((PAGE_OFFSET >> 30) - 1) << 16)
++
+ #endif
+diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+index 0001581..3b1a745 100644
+--- a/arch/arm/mm/proc-v7-3level.S
++++ b/arch/arm/mm/proc-v7-3level.S
+@@ -120,18 +120,10 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 	 * booting secondary CPUs would end up using TTBR1 for the identity
+ 	 * mapping set up in TTBR0.
+ 	 */
+-	bhi	9001f				@ PHYS_OFFSET > PAGE_OFFSET?
+-	orr	\tmp, \tmp, #(((PAGE_OFFSET >> 30) - 1) << 16) @ TTBCR.T1SZ
+-#if defined CONFIG_VMSPLIT_2G
+-	/* PAGE_OFFSET == 0x80000000, T1SZ == 1 */
+-	add	\ttbr1, \ttbr1, #1 << 4		@ skip two L1 entries
+-#elif defined CONFIG_VMSPLIT_3G
+-	/* PAGE_OFFSET == 0xc0000000, T1SZ == 2 */
+-	add	\ttbr1, \ttbr1, #4096 * (1 + 3)	@ only L2 used, skip pgd+3*pmd
+-#endif
+-	/* CONFIG_VMSPLIT_1G does not need TTBR1 adjustment */
+-9001:	mcr	p15, 0, \tmp, c2, c0, 2		@ TTB control register
+-	mcrr	p15, 1, \ttbr1, \zero, c2	@ load TTBR1
++	orrls	\tmp, \tmp, #TTBR1_SIZE				@ TTBCR.T1SZ
++	mcr	p15, 0, \tmp, c2, c0, 2				@ TTBCR
++	addls	\ttbr1, \ttbr1, #TTBR1_OFFSET
++	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
+ 	.endm
+ 
+ 	__CPUINIT
+-- 
+1.7.9.5
 
-You had me worried there, I hadn't considered truncation or invalidation2
-at all.
-
-But actually, I don't think they do pose any problem for my patch.  They
-would indeed if I were removing VM_MAYSHARE in __unmap_hugepage_range()
-as you show above; but no, I'm removing it in unmap_hugepage_range().
-
-That's only called by unmap_single_vma(): which is called via
-unmap_vmas() by unmap_region() or exit_mmap() just before free_pgtables()
-(the problem cases); or by madvise_dontneed() via zap_page_range(), which
-as you note is disallowed on VM_HUGETLB; or by zap_page_range_single().
-
-zap_page_range_single() is called by zap_vma_ptes(), which is only
-allowed on VM_PFNMAP; or by unmap_mapping_range_vma(), which looked
-like it was going to deadlock on i_mmap_mutex (with or without my
-patch) until I realized that hugetlbfs has its own hugetlbfs_setattr()
-and hugetlb_vmtruncate() which don't use unmap_mapping_range() at all.
-
-invalidate_inode_pages2() (and _range()) do use unmap_mapping_range(),
-but hugetlbfs doesn't support direct_IO, and otherwise I think they're
-called by a filesystem directly on its own inodes, which hugetlbfs
-does not.  Anyway, if there's a deadlock on i_mmap_mutex somewhere
-in there, it's not introduced by the proposed patch.
-
-So, unmap_hugepage_range() is only being called in the problem cases,
-just before free_pgtables(), when unmapping a vma (with mmap_sem held),
-or when exiting (when we have the last reference to mm): in each case,
-the vma is on its way out, and VM_MAYSHARE no longer of interest to others.
-
-I spent a while concerned that I'd overlooked the truncation case, before
-realizing that it's not a problem: the issue comes when we free_pgtables(),
-which truncation makes no attempt to do.
-
-So, after a bout of anxiety, I think my &= ~VM_MAYSHARE remains good.
-
-Hugh
