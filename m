@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2GXTTd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 15:19:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755596Ab2GXTTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 15:19:32 -0400
-Message-ID: <500EF541.50009@redhat.com>
-Date: Tue, 24 Jul 2012 13:19:29 -0600
-From: Jeff Law <law@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756103Ab2GXTVi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:21:38 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:41015 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755872Ab2GXTVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 15:21:36 -0400
+Date: Tue, 24 Jul 2012 15:21:20 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, vapier@gentoo.org,
+        sonic.zhang@analog.com
+Subject: Re: [GIT PULL v2] Blackfin changes for 3.6-rc1
+Message-ID: <20120724192120.GB29239@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Bob Liu <lliubbo@gmail.com>, torvalds@linux-foundation.org,
+	linux-kernel@vger.kernel.org,
+	uclinux-dist-devel@blackfin.uclinux.org, vapier@gentoo.org,
+	sonic.zhang@analog.com
+References: <1343109280-22653-1-git-send-email-lliubbo@gmail.com>
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] posix_types.h: make __NFDBITS match glibc definition
-References: <20120724181209.GA10534@zod.bos.redhat.com> <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com> <20120724182409.GB10534@zod.bos.redhat.com>
-In-Reply-To: <20120724182409.GB10534@zod.bos.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343109280-22653-1-git-send-email-lliubbo@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/12 12:24, Josh Boyer wrote:
-> On Tue, Jul 24, 2012 at 11:20:11AM -0700, Linus Torvalds wrote:
->> On Tue, Jul 24, 2012 at 11:12 AM, Josh Boyer <jwboyer@redhat.com> wrote:
->>>
->>> +#define __NFDBITS      (8 * (int) sizeof(long int))
->>
->> I don't know if the type change is needed, but who the hell uses "long int"?
->
-> Not strictly, no.  I believe in my brief tests, just the int cast was
-> sufficient.  I can respin if you'd like.  I probably need to anyway to
-> CC stable on this.
-All that's strictly necessary is that cast to (int).  That avoids the 
-problem.
+On Tue, Jul 24, 2012 at 01:54:40PM +0800, Bob Liu wrote:
+> 
+> This is the new pull request about blackfin changes for 3.6-rc1.
+> I've rebased my tree to 3.5.
 
-Jeff
+To save Linus having to send you a chastising e-mail (and because I'll
+probably be more gentle about it than he would be :-), in general it's
+good not to rebase your the tree before submitting to Linus.  If you
+tested with your set of commits pon top of 3.5-rc3, then submit those
+patches that way.  Rebasing at least partially invalidates your
+testing, and causes other problems if someone else has based their
+tree off of yours.
+
+If the goal is to avoid merge conflicts, it's better to just resolve
+the conflict, and push the proposed merge resolution, and send Linus
+both the commit pre-merge, and post-merge, and let him decide if wants
+to use your merge resolution, or to fix things up in a slightly
+different way.
+
+Regards,
+
+						- Ted
