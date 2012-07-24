@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab2GXOBI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:01:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45734 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616Ab2GXOBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:01:07 -0400
-Subject: [GIT PULL] C6X changes for v3.6
-From: Mark Salter <msalter@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jul 2012 10:01:03 -0400
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
+	id S1754630Ab2GXOBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:01:44 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56697 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab2GXOBn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 10:01:43 -0400
+Message-ID: <500EAAC2.2020802@gmail.com>
+Date: Tue, 24 Jul 2012 08:01:38 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH 09/11] perf top: error handling for counter creation should
+ parallel perf-record
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com> <1342826756-64663-10-git-send-email-dsahern@gmail.com> <20120723181521.GD6717@infradead.org>
+In-Reply-To: <20120723181521.GD6717@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <1343138464.3672.12.camel@deneb.redhat.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c:
+On 7/23/12 12:15 PM, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jul 20, 2012 at 05:25:54PM -0600, David Ahern escreveu:
+>> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+>> index e3cab5f..0ce665c 100644
+>> --- a/tools/perf/builtin-top.c
+>> +++ b/tools/perf/builtin-top.c
+>> @@ -943,8 +943,10 @@ try_again:
+>>   			 * based cpu-clock-tick sw counter, which
+>>   			 * is always available even if no PMU support:
+>>   			 */
+>> -			if (attr->type == PERF_TYPE_HARDWARE &&
+>> -			    attr->config == PERF_COUNT_HW_CPU_CYCLES) {
+>> +			if ((err == ENOENT || err == ENXIO)
+>> +				&& attr->type == PERF_TYPE_HARDWARE
+>> +				&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
+>> +
+>
+> usual style:
+>
+> 			if ((err == ENOENT || err == ENXIO) &&
+> 			    attr->type == PERF_TYPE_HARDWARE &&
+> 			    attr->config == PERF_COUNT_HW_CPU_CYCLES) {
+>
 
-  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
+Right. I literally made it the same as builtin-record.c. I'll resubmit.
 
-are available in the git repository at:
-
-  git://linux-c6x.org/git/projects/linux-c6x-upstreaming.git tags/for-linus
-
-for you to fetch changes up to b9b8722d4704137d1c85b8e62364b487cbbe8bf0:
-
-  C6X: clean up compiler warning (2012-07-18 23:52:54 -0400)
-
-----------------------------------------------------------------
-C6X changes for 3.6 merge window.
-
-  - remove use of legacy irqs which really wasn't needed
-  - add support for C66x SoC on EVMC6678 board
-  - clean up compiler warning
-
-----------------------------------------------------------------
-Ken Cox (1):
-      C6X: add basic support for TMS320C6678 SoC
-
-Mark Salter (3):
-      C6X: remove megamod-pic requirement on direct-mapped core pic
-      C6X: remove dependence on legacy IRQs
-      C6X: clean up compiler warning
-
- arch/c6x/boot/dts/evmc6678.dts      |   83 ++++++++++++++++++++
- arch/c6x/boot/dts/tms320c6678.dtsi  |  146 +++++++++++++++++++++++++++++++++++
- arch/c6x/configs/evmc6678_defconfig |   42 ++++++++++
- arch/c6x/include/asm/irq.h          |    2 -
- arch/c6x/kernel/irq.c               |   21 +++---
- arch/c6x/kernel/setup.c             |    4 +
- arch/c6x/kernel/signal.c            |    2 -
- arch/c6x/platforms/Kconfig          |    4 +
- arch/c6x/platforms/megamod-pic.c    |   28 +++++--
- arch/c6x/platforms/plldata.c        |   65 ++++++++++++++++
- 10 files changed, 373 insertions(+), 24 deletions(-)
- create mode 100644 arch/c6x/boot/dts/evmc6678.dts
- create mode 100644 arch/c6x/boot/dts/tms320c6678.dtsi
- create mode 100644 arch/c6x/configs/evmc6678_defconfig
-
+David
 
