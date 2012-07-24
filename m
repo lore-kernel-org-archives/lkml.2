@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab2GXIpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 04:45:31 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19134 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab2GXIp3 (ORCPT
+	id S1751801Ab2GXIsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:48:05 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:59346 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab2GXIsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 04:45:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 24 Jul 2012 01:45:15 -0700
-Date: Tue, 24 Jul 2012 11:45:11 +0300
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "Joerg Roedel" <joerg.roedel@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH 5/7] drivers/iommu/tegra-smmu.c: remove invalid
- reference to list iterator variable
-Message-ID: <20120724114511.2315bf9f76165bad5af37ce6@nvidia.com>
-In-Reply-To: <500D90F9.7030909@wwwdotorg.org>
-References: <1341747464-1772-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1341747464-1772-6-git-send-email-Julia.Lawall@lip6.fr>
-	<500D90F9.7030909@wwwdotorg.org>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
+	Tue, 24 Jul 2012 04:48:03 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6O8lXLk002733, This message is released by code: ctaloc0852
+Message-ID: <500E6126.4060604@realsil.com.cn>
+Date: Tue, 24 Jul 2012 16:47:34 +0800
+From: wwang <wei_wang@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+To: Borislav Petkov <bp@alien8.de>, <gregkh@linuxfoundation.org>,
+        <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
+References: <1343036558-8189-1-git-send-email-wei_wang@realsil.com.cn> <20120723163340.GA4105@x1.osrc.amd.com> <500DF89E.6090501@realsil.com.cn> <20120724064409.GA15735@liondog.tnic>
+In-Reply-To: <20120724064409.GA15735@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+于 2012年07月24日 14:44, Borislav Petkov 写道:
+> Ok, thanks for explaining.
+>
+> Btw, the SDMMC part rtsx_sdmmc.c doesn't build here:
+> http://marc.info/?l=linux-kernel&m=134306261405814&w=2
+>
+> Thanks.
+Hi Borislav:
 
-On Mon, 23 Jul 2012 19:59:21 +0200
-Stephen Warren <swarren@wwwdotorg.org> wrote:
+This problem doesn't happen in my system. Can you tell me your kernel 
+version and give me your kernel config?
 
-> On 07/08/2012 05:37 AM, Julia Lawall wrote:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Julia,
-> 
-> It looks like this patch hasn't seen any replies since you didn't CC the
-> maintainers of this code. I've CC'd them now.
-> 
-> > If list_for_each_entry, etc complete a traversal of the list, the iterator
-> > variable ends up pointing to an address at an offset from the list head,
-> > and not a meaningful structure.  Thus this value should not be used after
-> > the end of the iterator.  Replace c->dev by dev, which is the value that
-> > c->dev has been compared to.
-> > 
-> > This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
-> > 
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-
-Acked-by: Hiroshi DOYU <hdoyu@nvidia.com>
-Ok to me too. Thanks.
+BR,
+wwang
