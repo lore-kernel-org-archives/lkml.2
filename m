@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab2GXLJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 07:09:58 -0400
-Received: from relay.parallels.com ([195.214.232.42]:35350 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab2GXLJ5 (ORCPT
+	id S1753146Ab2GXLMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 07:12:13 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47364 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752586Ab2GXLML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 07:09:57 -0400
-Message-ID: <500E8280.6050905@parallels.com>
-Date: Tue, 24 Jul 2012 15:09:52 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Tue, 24 Jul 2012 07:12:11 -0400
+Message-ID: <500E82D4.9090702@mvista.com>
+Date: Tue, 24 Jul 2012 15:11:16 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Andre Przywara <andre.przywara@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
-References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com> <20120721103715.GA3632@aftab.osrc.amd.com> <500E4960.8040307@parallels.com> <500E5951.5020900@amd.com> <500E5CDF.5000504@parallels.com> <20120724101041.GA24739@aftab.osrc.amd.com>
-In-Reply-To: <20120724101041.GA24739@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Afzal Mohammed <afzal@ti.com>
+CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, nsekhar@ti.com, khilman@ti.com,
+        a.zummo@towertech.it, tony@atomide.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH 2/6] ARM: davinci: remove rtc kicker release
+References: <cover.1343046707.git.afzal@ti.com> <f9e348c8cb7402b27b1a5633b06620266e369641.1343046707.git.afzal@ti.com>
+In-Reply-To: <f9e348c8cb7402b27b1a5633b06620266e369641.1343046707.git.afzal@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 02:10 PM, Borislav Petkov wrote:
-> On Tue, Jul 24, 2012 at 12:29:19PM +0400, Vladimir Davydov wrote:
->> I guess that when the more advanced features become widely-used,
->> vendors will offer new MSRs and/or CPUID faulting.
-> And this right there is the dealbreaker:
+Hello.
+
+On 23-07-2012 17:42, Afzal Mohammed wrote:
+
+> rtc-omap driver is now capable of handling kicker mechanism,
+> hence remove kicker handling at platform level, instead
+> provide proper device name so that driver can handle kicker
+> mechanism by itself
+
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> ---
+>   arch/arm/mach-davinci/devices-da8xx.c |   13 +------------
+>   1 files changed, 1 insertions(+), 12 deletions(-)
+
+> diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+> index d1624a3..c915bff 100644
+> --- a/arch/arm/mach-davinci/devices-da8xx.c
+> +++ b/arch/arm/mach-davinci/devices-da8xx.c
+> @@ -679,7 +679,7 @@ static struct resource da8xx_rtc_resources[] = {
+>   };
 >
-> So what are you doing for cpus which have the advanced CPUID features
-> leafs but there are no MSRs to turn those bits off?
+>   static struct platform_device da8xx_rtc_device = {
+> -	.name           = "omap_rtc",
+> +	.name           = "am1808-rtc",
 
-We have not encountered this situation in our environments and I hope we 
-won't :-)
+    Why not "da8xx-rtc". Kick registers exist startting with 
+DA830/OMAP-L137/AM1707, not only on AM1808.
 
-But look, these CPUID functions cover majority of CPU features, don't 
-they? So, most of "normal" apps inside VM will survive migration. 
-Perhaps, some low-level utils won't. I guess that's why there are no 
-MSRs for other levels provided by vendors.
-
-> You surely need some software-only solution for the migration to work,
-> no?
-
-Yes.
-
-> If so, why not apply that solution to your hypervisor without touching
-> the kernel at all?
-
-In most hypervisor-based virtualization products, this is already 
-implemented using VMM-exits, so that each VM can have arbitrary CPUID 
-mask set by the admin.
-
-The problem is that we have no hypervisor. "Virtualization" we want this 
-feature for is based on cgroups and namespaces (examples are OpenVZ and 
-mainstream LXC). Tasks are just grouped into virtual environments and 
-share the same kernel, which is proved to be more memory usage efficient 
-than traditional hypervisor-based approaches.
-
-> Thanks.
+>   	.id             = -1,
+>   	.num_resources	= ARRAY_SIZE(da8xx_rtc_resources),
+>   	.resource	= da8xx_rtc_resources,
+> @@ -688,17 +688,6 @@ static struct platform_device da8xx_rtc_device = {
+>   int da8xx_register_rtc(void)
+>   {
+>   	int ret;
+> -	void __iomem *base;
+> -
+> -	base = ioremap(DA8XX_RTC_BASE, SZ_4K);
+> -	if (WARN_ON(!base))
+> -		return -ENOMEM;
+> -
+> -	/* Unlock the rtc's registers */
+> -	__raw_writel(0x83e70b13, base + 0x6c);
+> -	__raw_writel(0x95a4f1e0, base + 0x70);
+> -
+> -	iounmap(base);
 >
+>   	ret = platform_device_register(&da8xx_rtc_device);
+>   	if (!ret)
+
+WBR, Sergei
 
