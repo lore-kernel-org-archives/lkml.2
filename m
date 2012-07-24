@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab2GXOSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:18:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42029 "EHLO
+	id S1754849Ab2GXOTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:19:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42052 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab2GXOSi (ORCPT
+	with ESMTP id S1754559Ab2GXOTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:18:38 -0400
-Date: Tue, 24 Jul 2012 07:18:20 -0700
-From: tip-bot for Mike Galbraith <efault@gmx.de>
-Message-ID: <tip-970e178985cadbca660feb02f4d2ee3a09f7fdda@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, efault@gmx.de, tglx@linutronix.de
-In-Reply-To: <1339471112.7352.32.camel@marge.simpson.net>
-References: <1339471112.7352.32.camel@marge.simpson.net>
+	Tue, 24 Jul 2012 10:19:31 -0400
+Date: Tue, 24 Jul 2012 07:19:13 -0700
+From: tip-bot for Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Message-ID: <tip-85c1e7dae165acd004429f81fe52bfbf55b57a98@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        prashanth@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, prashanth@linux.vnet.ibm.com
+In-Reply-To: <4FE06DDE.7000403@linux.vnet.ibm.com>
+References: <4FE06DDE.7000403@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Improve scalability via 'CPU buddies',
-  which withstand random perturbations
-Git-Commit-ID: 970e178985cadbca660feb02f4d2ee3a09f7fdda
+Subject: [tip:sched/core] sched: Reorder 'struct lb_env'
+  members to reduce its size
+Git-Commit-ID: 85c1e7dae165acd004429f81fe52bfbf55b57a98
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,167 +30,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:18:26 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:19:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  970e178985cadbca660feb02f4d2ee3a09f7fdda
-Gitweb:     http://git.kernel.org/tip/970e178985cadbca660feb02f4d2ee3a09f7fdda
-Author:     Mike Galbraith <efault@gmx.de>
-AuthorDate: Tue, 12 Jun 2012 05:18:32 +0200
+Commit-ID:  85c1e7dae165acd004429f81fe52bfbf55b57a98
+Gitweb:     http://git.kernel.org/tip/85c1e7dae165acd004429f81fe52bfbf55b57a98
+Author:     Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+AuthorDate: Tue, 19 Jun 2012 17:47:34 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 24 Jul 2012 13:53:34 +0200
+CommitDate: Tue, 24 Jul 2012 13:55:20 +0200
 
-sched: Improve scalability via 'CPU buddies', which withstand random perturbations
+sched: Reorder 'struct lb_env' members to reduce its size
 
-Traversing an entire package is not only expensive, it also leads to tasks
-bouncing all over a partially idle and possible quite large package.  Fix
-that up by assigning a 'buddy' CPU to try to motivate.  Each buddy may try
-to motivate that one other CPU, if it's busy, tough, it may then try its
-SMT sibling, but that's all this optimization is allowed to cost.
+Members of 'struct lb_env' are not in appropriate order to reuse compiler
+added padding on 64bit architectures. In this patch we reorder those struct
+members and help reduce the size of the structure from 96 bytes to 80
+bytes on 64 bit architectures.
 
-Sibling cache buddies are cross-wired to prevent bouncing.
-
-4 socket 40 core + SMT Westmere box, single 30 sec tbench runs, higher is better:
-
- clients     1       2       4        8       16       32       64      128
- ..........................................................................
- pre        30      41     118      645     3769     6214    12233    14312
- post      299     603    1211     2418     4697     6847    11606    14557
-
-A nice increase in performance.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+Suggested-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1339471112.7352.32.camel@marge.simpson.net
+Link: http://lkml.kernel.org/r/4FE06DDE.7000403@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |   39 ++++++++++++++++++++++++++++++++++++++-
- kernel/sched/fair.c   |   28 +++++++---------------------
- 3 files changed, 46 insertions(+), 22 deletions(-)
+ kernel/sched/fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4a1f493..bc99529 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -949,6 +949,7 @@ struct sched_domain {
- 	unsigned int smt_gain;
- 	int flags;			/* See SD_* */
- 	int level;
-+	int idle_buddy;			/* cpu assigned to select_idle_sibling() */
- 
- 	/* Runtime fields. */
- 	unsigned long last_balance;	/* init to jiffies. units in jiffies */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4b4a63d..536b213 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6024,6 +6024,11 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
-  * SD_SHARE_PKG_RESOURCE set (Last Level Cache Domain) for this
-  * allows us to avoid some pointer chasing select_idle_sibling().
-  *
-+ * Iterate domains and sched_groups downward, assigning CPUs to be
-+ * select_idle_sibling() hw buddy.  Cross-wiring hw makes bouncing
-+ * due to random perturbation self canceling, ie sw buddies pull
-+ * their counterpart to their CPU's hw counterpart.
-+ *
-  * Also keep a unique ID per domain (we use the first cpu number in
-  * the cpumask of the domain), this allows us to quickly tell if
-  * two cpus are in the same cache domain, see cpus_share_cache().
-@@ -6037,8 +6042,40 @@ static void update_top_cache_domain(int cpu)
- 	int id = cpu;
- 
- 	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
--	if (sd)
-+	if (sd) {
-+		struct sched_domain *tmp = sd;
-+		struct sched_group *sg, *prev;
-+		bool right;
-+
-+		/*
-+		 * Traverse to first CPU in group, and count hops
-+		 * to cpu from there, switching direction on each
-+		 * hop, never ever pointing the last CPU rightward.
-+		 */
-+		do {
-+			id = cpumask_first(sched_domain_span(tmp));
-+			prev = sg = tmp->groups;
-+			right = 1;
-+
-+			while (cpumask_first(sched_group_cpus(sg)) != id)
-+				sg = sg->next;
-+
-+			while (!cpumask_test_cpu(cpu, sched_group_cpus(sg))) {
-+				prev = sg;
-+				sg = sg->next;
-+				right = !right;
-+			}
-+
-+			/* A CPU went down, never point back to domain start. */
-+			if (right && cpumask_first(sched_group_cpus(sg->next)) == id)
-+				right = false;
-+
-+			sg = right ? sg->next : prev;
-+			tmp->idle_buddy = cpumask_first(sched_group_cpus(sg));
-+		} while ((tmp = tmp->child));
-+
- 		id = cpumask_first(sched_domain_span(sd));
-+	}
- 
- 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
- 	per_cpu(sd_llc_id, cpu) = id;
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c099cc6..dd00aaf 100644
+index dd00aaf..9361669 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2637,8 +2637,6 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	struct sched_domain *sd;
--	struct sched_group *sg;
--	int i;
+@@ -3058,8 +3058,8 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+ struct lb_env {
+ 	struct sched_domain	*sd;
  
- 	/*
- 	 * If the task is going to be woken-up on this cpu and if it is
-@@ -2655,29 +2653,17 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 		return prev_cpu;
+-	int			src_cpu;
+ 	struct rq		*src_rq;
++	int			src_cpu;
  
- 	/*
--	 * Otherwise, iterate the domains and find an elegible idle cpu.
-+	 * Otherwise, check assigned siblings to find an elegible idle cpu.
- 	 */
- 	sd = rcu_dereference(per_cpu(sd_llc, target));
--	for_each_lower_domain(sd) {
--		sg = sd->groups;
--		do {
--			if (!cpumask_intersects(sched_group_cpus(sg),
--						tsk_cpus_allowed(p)))
--				goto next;
--
--			for_each_cpu(i, sched_group_cpus(sg)) {
--				if (!idle_cpu(i))
--					goto next;
--			}
- 
--			target = cpumask_first_and(sched_group_cpus(sg),
--					tsk_cpus_allowed(p));
--			goto done;
--next:
--			sg = sg->next;
--		} while (sg != sd->groups);
-+	for_each_lower_domain(sd) {
-+		if (!cpumask_test_cpu(sd->idle_buddy, tsk_cpus_allowed(p)))
-+			continue;
-+		if (idle_cpu(sd->idle_buddy))
-+			return sd->idle_buddy;
- 	}
--done:
-+
- 	return target;
- }
- 
+ 	int			dst_cpu;
+ 	struct rq		*dst_rq;
