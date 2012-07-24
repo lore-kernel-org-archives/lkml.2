@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2GXTGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 15:06:19 -0400
-Received: from longford.logfs.org ([213.229.74.203]:41861 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756087Ab2GXTGS (ORCPT
+	id S1756234Ab2GXTKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:10:05 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37022 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755431Ab2GXTKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 15:06:18 -0400
-Date: Tue, 24 Jul 2012 13:52:32 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
-Subject: Re: [PATCH] add blockconsole version 1.1
-Message-ID: <20120724175232.GC24954@logfs.org>
-References: <20120712174633.GA7248@logfs.org>
- <20120713130336.GC10298@x1.osrc.amd.com>
- <20120713162009.GA10268@logfs.org>
- <20120716124614.GA19497@x1.osrc.amd.com>
- <20120718185335.GA1771@logfs.org>
- <20120718214520.GA14067@liondog.tnic>
- <20120723200459.GD17767@logfs.org>
- <20120724154218.GB13753@x1.osrc.amd.com>
- <20120724145334.GB24954@logfs.org>
- <20120724162546.GC13753@x1.osrc.amd.com>
+	Tue, 24 Jul 2012 15:10:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120724162546.GC13753@x1.osrc.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120724190302.GE10534@zod.bos.redhat.com>
+References: <20120724181209.GA10534@zod.bos.redhat.com> <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com>
+ <20120724182409.GB10534@zod.bos.redhat.com> <20120724183230.GC10534@zod.bos.redhat.com>
+ <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com> <20120724190302.GE10534@zod.bos.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 Jul 2012 12:09:41 -0700
+X-Google-Sender-Auth: 54FdIV0cofkv7cbn3Qi4fQ5RHRY
+Message-ID: <CA+55aFyn-yMUMdcY8jp65eeoGm3RPzy9p+St35-HGE_xXiVJag@mail.gmail.com>
+Subject: Re: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc definition
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, law@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 July 2012 18:25:47 +0200, Borislav Petkov wrote:
-> > The advantage should be better robustness, in particular when dealing
-> > with cheap flash devices.
-> 
-> In the sense that we flush the current sector after one second the
-> latest so that we can lose as small amount of data as possible if the
-> system crashes right at that point?
+On Tue, Jul 24, 2012 at 12:03 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+>
+> FWIW, the definitions of __FD_ELT/__FD_MASK in glibc are:
+>
+> #define __FD_ELT(d)     ((d) / __NFDBITS)
+> #define __FD_MASK(d)    ((__fd_mask) 1 << ((d) % __NFDBITS))
+>
+> where __fd_mask is 'typdef long int'.
 
-In the sense that cheap devices don't always handle rewrites of the
-same sector well.  Often this results in the entire erase block being
-rewritten, causing bad performance and wear-out.  Many cheap devices
-aren't real block devices.  They are barely good enough to support
-FAT and may die near-instantly with a different write pattern.
-Blockconsole assumes utter crap as an underlying device.
+Yeah, that's not good.
 
-The timer mainly ensures that, on a quiet system, those two lines of
-output from half an hour ago actually make it to the device
-eventually.  In the case of a crash, the panic notifier is supposed to
-do the same for those messages you _really_ care about.
+If __NFDBITS is signed (and it is), and "d" is a signed type, that
+division and modulus now create stupid extra code with conditionals
+(assuming 'd' isn't constant, of course).
 
-> Ok, I see what you mean. I see a red line in vim here. Ok, good to know,
-> maybe this feature with the empty lines could be in the docs too so
-> people don't ask that question again?
+So changing the sign of __NFDBITS has these kinds of subtle side
+effects that clearly the glibc people didn't actually think about.
 
-Last paragraph. ;)
+What was the *advantage* of that stupidity?
 
-> Or you issue a tag instead of an empty line like so:
-> 
-> [   10.498422] console [bcon0] enabled
-> [   10.499899] blockconsole: now logging to /dev/sdc at 1
-> [   10.594791] usb 5-2: new full-speed USB device number 3 using ohci_hcd
-> <<LOG timeout of 1sec>>
-> [   12.665911] xhci_hcd 0000:00:10.0: xHCI Host Controller
-> [   12.668469] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
-> 
-> which explains everything.
+Quite frankly, if you want to make NFDBITS be an "int", then it should
+have been done at that
 
-That would only work if you have at least 26 bytes to pad.  Bunch of
-spaces with a newline works for any value between 0 and 512.
+   #define NFDBITS ((int)__NFDBITS)
 
-Jörn
+level, not at "__NFDBITS". Exactly because the unsigned type there matters.
 
---
-Invincibility is in oneself, vulnerability is in the opponent.
--- Sun Tzu
+Does anybody in the glibc camp care about efficient and small code AT ALL?
+
+                  Linus
