@@ -1,47 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab2GXWxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 18:53:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52775 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755828Ab2GXWxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 18:53:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="197598299"
-Date: Wed, 25 Jul 2012 00:53:05 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <sameo@liniux.intel.com>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] mfd: arizona: Add debug trace on entering and leaving
- runtime suspend
-Message-ID: <20120724225305.GD11304@sortiz-mobl>
-References: <1342800552-10436-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342800552-10436-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755920Ab2GXWyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 18:54:20 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:1379 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab2GXWyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 18:54:19 -0400
+Message-ID: <1343170456.3165.14.camel@lorien2>
+Subject: [PATCH] mm: Restructure kmem_cache_create() to move debug cache
+ integrity checks into a new function
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: cl@linux.com, penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
+        David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Tue, 24 Jul 2012 16:54:16 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+kmem_cache_create() does cache integrity checks when CONFIG_DEBUG_VM
+is defined. These checks interspersed with the regular code path has
+lead to compile time warnings when compiled without CONFIG_DEBUG_VM
+defined. Restructuring the code to move the integrity checks in to a new
+function would eliminate the current compile warning problem and also
+will allow for future changes to the debug only code to evolve without
+introducing new warnings in the regular path. This restructuring work
+is based on the discussion in the following thread:
 
-On Fri, Jul 20, 2012 at 05:09:12PM +0100, Mark Brown wrote:
-> There doesn't appear to be any useful diagnostic information from the
-> core.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/arizona-core.c |    4 ++++
->  1 file changed, 4 insertions(+)
-Applied, thanks.
+https://lkml.org/lkml/2012/7/13/424
 
-Cheers,
-Samuel.
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ mm/slab_common.c |   74 ++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 38 insertions(+), 36 deletions(-)
 
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 12637ce..08bc2a4 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -23,6 +23,41 @@ enum slab_state slab_state;
+ LIST_HEAD(slab_caches);
+ DEFINE_MUTEX(slab_mutex);
+ 
++static int kmem_cache_sanity_check(const char *name, size_t size)
++{
++#ifdef CONFIG_DEBUG_VM
++	struct kmem_cache *s = NULL;
++
++	list_for_each_entry(s, &slab_caches, list) {
++		char tmp;
++		int res;
++
++		/*
++		 * This happens when the module gets unloaded and doesn't
++		 * destroy its slab cache and no-one else reuses the vmalloc
++		 * area of the module.  Print a warning.
++		 */
++		res = probe_kernel_address(s->name, tmp);
++		if (res) {
++			pr_err("Slab cache with size %d has lost its name\n",
++			       s->object_size);
++			continue;
++		}
++
++		if (!strcmp(s->name, name)) {
++			pr_err("%s (%s): Cache name already exists.\n",
++			       __func__, name);
++			dump_stack();
++			s = NULL;
++			return -EINVAL;
++		}
++	}
++
++	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
++#endif
++	return 0;
++}
++
+ /*
+  * kmem_cache_create - Create a cache.
+  * @name: A string which is used in /proc/slabinfo to identify this cache.
+@@ -53,48 +88,17 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
+ {
+ 	struct kmem_cache *s = NULL;
+ 
+-#ifdef CONFIG_DEBUG_VM
+ 	if (!name || in_interrupt() || size < sizeof(void *) ||
+ 		size > KMALLOC_MAX_SIZE) {
+-		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
+-			" failed\n", name);
++		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
+ 		goto out;
+ 	}
+-#endif
+ 
+ 	get_online_cpus();
+ 	mutex_lock(&slab_mutex);
+ 
+-#ifdef CONFIG_DEBUG_VM
+-	list_for_each_entry(s, &slab_caches, list) {
+-		char tmp;
+-		int res;
+-
+-		/*
+-		 * This happens when the module gets unloaded and doesn't
+-		 * destroy its slab cache and no-one else reuses the vmalloc
+-		 * area of the module.  Print a warning.
+-		 */
+-		res = probe_kernel_address(s->name, tmp);
+-		if (res) {
+-			printk(KERN_ERR
+-			       "Slab cache with size %d has lost its name\n",
+-			       s->object_size);
+-			continue;
+-		}
+-
+-		if (!strcmp(s->name, name)) {
+-			printk(KERN_ERR "kmem_cache_create(%s): Cache name"
+-				" already exists.\n",
+-				name);
+-			dump_stack();
+-			s = NULL;
+-			goto oops;
+-		}
+-	}
+-
+-	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
+-#endif
++	if (kmem_cache_sanity_check(name, size))
++		goto oops;
+ 
+ 	s = __kmem_cache_create(name, size, align, flags, ctor);
+ 
+@@ -102,9 +106,7 @@ oops:
+ 	mutex_unlock(&slab_mutex);
+ 	put_online_cpus();
+ 
+-#ifdef CONFIG_DEBUG_VM
+ out:
+-#endif
+ 	if (!s && (flags & SLAB_PANIC))
+ 		panic("kmem_cache_create: Failed to create slab '%s'\n", name);
+ 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9.5
+
+
+
