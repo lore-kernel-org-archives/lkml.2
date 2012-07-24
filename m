@@ -1,117 +1,374 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab2GXHdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 03:33:23 -0400
-Received: from gate.crashing.org ([63.228.1.57]:34542 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755084Ab2GXHdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 03:33:22 -0400
-Message-ID: <1343115193.3715.15.camel@pasglop>
-Subject: hvc_console: Better kernel console support
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jul 2012 17:33:13 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1755498Ab2GXHfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 03:35:05 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:53175 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084Ab2GXHfB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 03:35:01 -0400
+Date: Tue, 24 Jul 2012 09:34:52 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for the 3.6 merge window
+Message-ID: <20120724093452.0730b0c8@de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072407-0542-0000-0000-0000028BC539
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hvc_console has two methods to instanciate the consoles.
+Hi Linus,
 
-hvc_instanciate is meant to be called at early boot, while hvc_alloc is
-called for more dynamically probed objects.
+please pull from the 'for-linus' branch of
 
-Currently, it only deals with adding kernel consoles in the former case,
-which means for example that if a console only uses dynamic probing, it
-will never be usable as a kernel console even when specifying
-console=hvc0 explicitly, which could be considered annoying...
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
 
-More specifically, on pseries, we only do the early instanciate for the
-console currently used by the firmware, so if you have your firmware
-configured to go to a video card, for example, you cannot get your
-kernel console, oops messages, etc... on your serial port or hypervisor
-console, which would be handy to deal with oopses.
+to receive the s390 patches for the 3.6 merge window. No new functions,
+a few changes to make the code more robust, some cleanups and bug fixes.
+The shortlog:
 
-This fixes it by checking if hvc_console.flags & CON_ENABLED is set when
-registering a new dynamic console, and if not, redo the index check and
-re-register the console if the index matches, allowing console=hvcN to
-work.
+Christian Borntraeger (1):
+      s390/kvm: get rid of duplicate instruction
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index 2d691eb..f1d4d96 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -245,6 +245,20 @@ static void hvc_port_destruct(struct tty_port *port)
- 	kfree(hp);
- }
- 
-+static void hvc_check_console(int index)
-+{
-+	/* Already enabled, bail out */
-+	if (hvc_console.flags & CON_ENABLED)
-+		return;
-+
-+ 	/* If this index is what the user requested, then register
-+	 * now (setup won't fail at this point).  It's ok to just
-+	 * call register again if previously .setup failed.
-+	 */
-+	if (index == hvc_console.index)
-+		register_console(&hvc_console);
-+}
-+
- /*
-  * hvc_instantiate() is an early console discovery method which locates
-  * consoles * prior to the vio subsystem discovering them.  Hotplugged
-@@ -275,12 +289,8 @@ int hvc_instantiate(uint32_t vtermno, int index, const struct hv_ops *ops)
- 	if (last_hvc < index)
- 		last_hvc = index;
- 
--	/* if this index is what the user requested, then register
--	 * now (setup won't fail at this point).  It's ok to just
--	 * call register again if previously .setup failed.
--	 */
--	if (index == hvc_console.index)
--		register_console(&hvc_console);
-+	/* check if we need to re-register the kernel console */
-+	hvc_check_console(index);
- 
- 	return 0;
- }
-@@ -858,10 +868,15 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
- 		i = ++last_hvc;
- 
- 	hp->index = i;
-+	cons_ops[i] = ops;
-+	vtermnos[i] = vtermno;
- 
- 	list_add_tail(&(hp->next), &hvc_structs);
- 	spin_unlock(&hvc_structs_lock);
- 
-+	/* check if we need to re-register the kernel console */
-+	hvc_check_console(i);
-+
- 	return hp;
- }
- EXPORT_SYMBOL_GPL(hvc_alloc);
-@@ -874,8 +889,12 @@ int hvc_remove(struct hvc_struct *hp)
- 	tty = tty_port_tty_get(&hp->port);
- 
- 	spin_lock_irqsave(&hp->lock, flags);
--	if (hp->index < MAX_NR_HVC_CONSOLES)
-+	if (hp->index < MAX_NR_HVC_CONSOLES) {
-+		console_lock();
- 		vtermnos[hp->index] = -1;
-+		cons_ops[hp->index] = NULL;
-+		console_unlock();
-+	}
- 
- 	/* Don't whack hp->irq because tty_hangup() will need to free the irq. */
- 
+Cornelia Huck (1):
+      s390/dis: Add the servc instruction to the disassembler.
 
+Heiko Carstens (9):
+      s390/smp: remove redundant check
+      s390/smp/kvm: unifiy sigp definitions
+      s390/smp: use sigp cpu status definitions
+      s390/sigp: use sigp order code defines in assembly code
+      s390/smp: make absolute lowcore / cpu restart parameter accesses more robust
+      s390/idle: fix sequence handling vs cpu hotplug
+      s390/idle: reduce size of s390_idle_data structure
+      s390/cpu init: use __get_cpu_var instead of per_cpu
+      s390/comments: unify copyright messages and remove file names
+
+Holger Dengler (1):
+      s390/ap: resend enable adapter interrupt request.
+
+Martin Schwidefsky (1):
+      s390/vtimer: rework virtual timer interface
+
+Michael Holzheu (3):
+      s390/ipl: Fix ipib handling for "dumpreipl" shutdown action
+      s390/hypfs: Add missing get_next_ino()
+      s390/lgr: Add init check to lgr_info_log()
+
+Sebastian Ott (4):
+      s390/cio/chp: cleanup attribute usage
+      s390/ccwgroup: remove unused ccwgroup_device member
+      s390/vmlogrdr: cleanup device attribute usage
+      s390/vmlogrdr: cleanup driver attribute usage
+
+Stefan Haberland (1):
+      s390/dasd: add shutdown action
+
+ arch/s390/appldata/appldata.h         |    2 -
+ arch/s390/appldata/appldata_base.c    |  132 ++----------
+ arch/s390/appldata/appldata_mem.c     |    4 +-
+ arch/s390/appldata/appldata_net_sum.c |    4 +-
+ arch/s390/appldata/appldata_os.c      |    4 +-
+ arch/s390/crypto/aes_s390.c           |    2 +-
+ arch/s390/crypto/crypt_s390.h         |    2 +-
+ arch/s390/crypto/des_s390.c           |    2 +-
+ arch/s390/crypto/prng.c               |    2 +-
+ arch/s390/crypto/sha1_s390.c          |    2 +-
+ arch/s390/crypto/sha256_s390.c        |    2 +-
+ arch/s390/hypfs/hypfs.h               |    3 +-
+ arch/s390/hypfs/hypfs_dbfs.c          |    2 +-
+ arch/s390/hypfs/hypfs_diag.c          |    1 -
+ arch/s390/hypfs/hypfs_vm.c            |    2 +-
+ arch/s390/hypfs/inode.c               |    2 +-
+ arch/s390/include/asm/airq.h          |    4 +-
+ arch/s390/include/asm/appldata.h      |    4 +-
+ arch/s390/include/asm/atomic.h        |    8 +-
+ arch/s390/include/asm/bitops.h        |   10 +-
+ arch/s390/include/asm/bugs.h          |    4 +-
+ arch/s390/include/asm/cache.h         |    4 +-
+ arch/s390/include/asm/ccwdev.h        |    2 +-
+ arch/s390/include/asm/ccwgroup.h      |    2 -
+ arch/s390/include/asm/checksum.h      |   10 +-
+ arch/s390/include/asm/chpid.h         |    2 -
+ arch/s390/include/asm/chsc.h          |    2 +-
+ arch/s390/include/asm/cio.h           |    3 -
+ arch/s390/include/asm/cpcmd.h         |    4 +-
+ arch/s390/include/asm/cpu.h           |    2 +-
+ arch/s390/include/asm/cputime.h       |   12 +-
+ arch/s390/include/asm/crw.h           |    2 +-
+ arch/s390/include/asm/current.h       |    4 +-
+ arch/s390/include/asm/dasd.h          |    3 +-
+ arch/s390/include/asm/debug.h         |    4 +-
+ arch/s390/include/asm/delay.h         |    4 +-
+ arch/s390/include/asm/dma.h           |    2 -
+ arch/s390/include/asm/ebcdic.h        |    3 +-
+ arch/s390/include/asm/elf.h           |    2 -
+ arch/s390/include/asm/errno.h         |    2 -
+ arch/s390/include/asm/etr.h           |    2 -
+ arch/s390/include/asm/extmem.h        |    4 +-
+ arch/s390/include/asm/hardirq.h       |    4 +-
+ arch/s390/include/asm/idals.h         |    5 +-
+ arch/s390/include/asm/io.h            |    4 +-
+ arch/s390/include/asm/irqflags.h      |    2 +-
+ arch/s390/include/asm/kexec.h         |    4 +-
+ arch/s390/include/asm/kprobes.h       |    2 +-
+ arch/s390/include/asm/kvm.h           |    2 +-
+ arch/s390/include/asm/kvm_host.h      |    4 +-
+ arch/s390/include/asm/kvm_para.h      |    2 +-
+ arch/s390/include/asm/kvm_virtio.h    |    2 +-
+ arch/s390/include/asm/lowcore.h       |    9 +-
+ arch/s390/include/asm/mathemu.h       |    3 +-
+ arch/s390/include/asm/mman.h          |    2 -
+ arch/s390/include/asm/mmu_context.h   |    2 -
+ arch/s390/include/asm/monwriter.h     |    4 +-
+ arch/s390/include/asm/nmi.h           |    2 +-
+ arch/s390/include/asm/page.h          |    4 +-
+ arch/s390/include/asm/pgalloc.h       |    4 +-
+ arch/s390/include/asm/pgtable.h       |    4 +-
+ arch/s390/include/asm/posix_types.h   |    2 -
+ arch/s390/include/asm/processor.h     |   14 +-
+ arch/s390/include/asm/ptrace.h        |    4 +-
+ arch/s390/include/asm/qdio.h          |    4 +-
+ arch/s390/include/asm/qeth.h          |    4 +-
+ arch/s390/include/asm/reset.h         |    2 -
+ arch/s390/include/asm/resource.h      |    2 -
+ arch/s390/include/asm/rwsem.h         |    4 +-
+ arch/s390/include/asm/sclp.h          |    2 -
+ arch/s390/include/asm/scsw.h          |    2 +-
+ arch/s390/include/asm/setup.h         |    4 +-
+ arch/s390/include/asm/shmparam.h      |    2 -
+ arch/s390/include/asm/sigcontext.h    |    4 +-
+ arch/s390/include/asm/siginfo.h       |    2 -
+ arch/s390/include/asm/signal.h        |    2 -
+ arch/s390/include/asm/sigp.h          |   31 +++
+ arch/s390/include/asm/smp.h           |    2 +-
+ arch/s390/include/asm/socket.h        |    2 -
+ arch/s390/include/asm/spinlock.h      |    4 +-
+ arch/s390/include/asm/stat.h          |    2 -
+ arch/s390/include/asm/statfs.h        |    2 -
+ arch/s390/include/asm/string.h        |    4 +-
+ arch/s390/include/asm/swab.h          |    4 +-
+ arch/s390/include/asm/sysinfo.h       |    2 +-
+ arch/s390/include/asm/tape390.h       |    3 +-
+ arch/s390/include/asm/termios.h       |    2 -
+ arch/s390/include/asm/thread_info.h   |    4 +-
+ arch/s390/include/asm/timer.h         |   51 -----
+ arch/s390/include/asm/timex.h         |    4 +-
+ arch/s390/include/asm/types.h         |    2 -
+ arch/s390/include/asm/uaccess.h       |    6 +-
+ arch/s390/include/asm/ucontext.h      |    2 -
+ arch/s390/include/asm/unistd.h        |    2 -
+ arch/s390/include/asm/user.h          |    2 -
+ arch/s390/include/asm/vtimer.h        |   33 +++
+ arch/s390/include/asm/vtoc.h          |    4 +-
+ arch/s390/include/asm/zcrypt.h        |    2 +-
+ arch/s390/kernel/asm-offsets.c        |   12 +-
+ arch/s390/kernel/base.S               |    5 +-
+ arch/s390/kernel/bitmap.c             |    2 +-
+ arch/s390/kernel/compat_exec_domain.c |    2 +-
+ arch/s390/kernel/compat_linux.c       |    4 +-
+ arch/s390/kernel/compat_signal.c      |    4 +-
+ arch/s390/kernel/compat_wrapper.S     |    3 +-
+ arch/s390/kernel/cpcmd.c              |    4 +-
+ arch/s390/kernel/crash.c              |    4 +-
+ arch/s390/kernel/debug.c              |    1 -
+ arch/s390/kernel/dis.c                |    3 +-
+ arch/s390/kernel/early.c              |    2 -
+ arch/s390/kernel/ebcdic.c             |    3 +-
+ arch/s390/kernel/entry.S              |   49 ++---
+ arch/s390/kernel/entry.h              |    4 +-
+ arch/s390/kernel/entry64.S            |   52 ++---
+ arch/s390/kernel/head.S               |    2 +-
+ arch/s390/kernel/head31.S             |    4 +-
+ arch/s390/kernel/head64.S             |    4 +-
+ arch/s390/kernel/head_kdump.S         |    6 +-
+ arch/s390/kernel/ipl.c                |   16 +-
+ arch/s390/kernel/irq.c                |    2 +-
+ arch/s390/kernel/kprobes.c            |    2 +-
+ arch/s390/kernel/lgr.c                |   15 +-
+ arch/s390/kernel/machine_kexec.c      |    4 +-
+ arch/s390/kernel/mcount.S             |    2 +-
+ arch/s390/kernel/mcount64.S           |    2 +-
+ arch/s390/kernel/module.c             |    5 +-
+ arch/s390/kernel/nmi.c                |    2 +-
+ arch/s390/kernel/os_info.c            |    2 +-
+ arch/s390/kernel/process.c            |    4 +-
+ arch/s390/kernel/processor.c          |    6 +-
+ arch/s390/kernel/ptrace.c             |    2 +-
+ arch/s390/kernel/reipl.S              |    7 +-
+ arch/s390/kernel/reipl64.S            |    5 +-
+ arch/s390/kernel/relocate_kernel.S    |    7 +-
+ arch/s390/kernel/relocate_kernel64.S  |    9 +-
+ arch/s390/kernel/sclp.S               |    2 +-
+ arch/s390/kernel/setup.c              |   17 +-
+ arch/s390/kernel/signal.c             |    4 +-
+ arch/s390/kernel/smp.c                |  114 ++++------
+ arch/s390/kernel/stacktrace.c         |    4 +-
+ arch/s390/kernel/swsusp_asm64.S       |   13 +-
+ arch/s390/kernel/sys_s390.c           |    4 +-
+ arch/s390/kernel/time.c               |    3 +-
+ arch/s390/kernel/topology.c           |    2 +-
+ arch/s390/kernel/traps.c              |    4 +-
+ arch/s390/kernel/vtime.c              |  370 ++++++++++++---------------------
+ arch/s390/kvm/diag.c                  |    4 +-
+ arch/s390/kvm/gaccess.h               |    4 +-
+ arch/s390/kvm/intercept.c             |    4 +-
+ arch/s390/kvm/interrupt.c             |    2 +-
+ arch/s390/kvm/kvm-s390.c              |    4 +-
+ arch/s390/kvm/kvm-s390.h              |    4 +-
+ arch/s390/kvm/priv.c                  |    2 +-
+ arch/s390/kvm/sigp.c                  |   50 +----
+ arch/s390/lib/delay.c                 |    4 +-
+ arch/s390/lib/div64.c                 |    4 +-
+ arch/s390/lib/spinlock.c              |    3 +-
+ arch/s390/lib/string.c                |    3 +-
+ arch/s390/lib/uaccess.h               |    2 -
+ arch/s390/lib/uaccess_mvcos.c         |    4 +-
+ arch/s390/lib/uaccess_pt.c            |    2 -
+ arch/s390/lib/uaccess_std.c           |    4 +-
+ arch/s390/math-emu/math.c             |    4 +-
+ arch/s390/mm/cmm.c                    |    2 +-
+ arch/s390/mm/extmem.c                 |    3 +-
+ arch/s390/mm/fault.c                  |    4 +-
+ arch/s390/mm/hugetlbpage.c            |    2 +-
+ arch/s390/mm/init.c                   |    4 +-
+ arch/s390/mm/mmap.c                   |    2 -
+ arch/s390/mm/pgtable.c                |    2 +-
+ arch/s390/mm/vmem.c                   |    2 -
+ arch/s390/oprofile/backtrace.c        |    6 +-
+ arch/s390/oprofile/hwsampler.c        |    4 +-
+ arch/s390/oprofile/init.c             |    6 +-
+ arch/s390/oprofile/op_counter.h       |    6 +-
+ drivers/s390/block/dasd.c             |   35 +++-
+ drivers/s390/block/dasd_3990_erp.c    |    3 +-
+ drivers/s390/block/dasd_alias.c       |    2 +-
+ drivers/s390/block/dasd_devmap.c      |    3 +-
+ drivers/s390/block/dasd_diag.c        |    3 +-
+ drivers/s390/block/dasd_diag.h        |    3 +-
+ drivers/s390/block/dasd_eckd.c        |    2 +-
+ drivers/s390/block/dasd_eckd.h        |    3 +-
+ drivers/s390/block/dasd_eer.c         |    2 +-
+ drivers/s390/block/dasd_erp.c         |    3 +-
+ drivers/s390/block/dasd_fba.c         |    1 -
+ drivers/s390/block/dasd_fba.h         |    3 +-
+ drivers/s390/block/dasd_genhd.c       |    3 +-
+ drivers/s390/block/dasd_int.h         |    2 +-
+ drivers/s390/block/dasd_ioctl.c       |    3 +-
+ drivers/s390/block/dasd_proc.c        |    3 +-
+ drivers/s390/char/ctrlchar.c          |    3 +-
+ drivers/s390/char/ctrlchar.h          |    3 +-
+ drivers/s390/char/keyboard.c          |    3 +-
+ drivers/s390/char/keyboard.h          |    3 +-
+ drivers/s390/char/sclp_config.c       |    2 -
+ drivers/s390/char/sclp_cpi.c          |    1 -
+ drivers/s390/char/sclp_cpi_sys.c      |    1 -
+ drivers/s390/char/sclp_cpi_sys.h      |    1 -
+ drivers/s390/char/sclp_ocf.c          |    1 -
+ drivers/s390/char/sclp_quiesce.c      |    3 +-
+ drivers/s390/char/sclp_sdias.c        |    2 +-
+ drivers/s390/char/sclp_tty.c          |    3 +-
+ drivers/s390/char/sclp_tty.h          |    3 +-
+ drivers/s390/char/tape.h              |    1 -
+ drivers/s390/char/tape_34xx.c         |    1 -
+ drivers/s390/char/tape_3590.c         |    1 -
+ drivers/s390/char/tape_3590.h         |    3 +-
+ drivers/s390/char/tape_char.c         |    3 +-
+ drivers/s390/char/tape_class.c        |    5 +-
+ drivers/s390/char/tape_class.h        |    3 +-
+ drivers/s390/char/tape_core.c         |    1 -
+ drivers/s390/char/tape_proc.c         |    3 +-
+ drivers/s390/char/tape_std.c          |    3 +-
+ drivers/s390/char/tape_std.h          |    3 +-
+ drivers/s390/char/tty3270.c           |    3 +-
+ drivers/s390/char/tty3270.h           |    2 -
+ drivers/s390/char/vmcp.c              |    2 +-
+ drivers/s390/char/vmcp.h              |    2 +-
+ drivers/s390/char/vmlogrdr.c          |   45 ++--
+ drivers/s390/char/vmwatchdog.c        |    2 +-
+ drivers/s390/char/zcore.c             |    2 +-
+ drivers/s390/cio/airq.c               |    3 +-
+ drivers/s390/cio/blacklist.c          |    4 +-
+ drivers/s390/cio/chp.c                |   16 +-
+ drivers/s390/cio/chp.h                |    4 +-
+ drivers/s390/cio/chsc.c               |    3 +-
+ drivers/s390/cio/cio.c                |    3 +-
+ drivers/s390/cio/cmf.c                |    6 +-
+ drivers/s390/cio/crw.c                |    2 +-
+ drivers/s390/cio/device.c             |    3 +-
+ drivers/s390/cio/device_fsm.c         |    3 +-
+ drivers/s390/cio/device_id.c          |    2 +-
+ drivers/s390/cio/device_pgid.c        |    2 +-
+ drivers/s390/cio/device_status.c      |    5 +-
+ drivers/s390/cio/idset.c              |    2 -
+ drivers/s390/cio/idset.h              |    2 -
+ drivers/s390/cio/qdio.h               |    4 +-
+ drivers/s390/cio/qdio_debug.c         |    4 +-
+ drivers/s390/cio/qdio_debug.h         |    2 -
+ drivers/s390/cio/qdio_main.c          |    4 +-
+ drivers/s390/cio/qdio_setup.c         |    4 +-
+ drivers/s390/cio/qdio_thinint.c       |    4 +-
+ drivers/s390/crypto/ap_bus.c          |   12 +-
+ drivers/s390/crypto/ap_bus.h          |    4 +-
+ drivers/s390/crypto/zcrypt_api.c      |    6 +-
+ drivers/s390/crypto/zcrypt_api.h      |    4 +-
+ drivers/s390/crypto/zcrypt_cca_key.h  |    4 +-
+ drivers/s390/crypto/zcrypt_cex2a.c    |    6 +-
+ drivers/s390/crypto/zcrypt_cex2a.h    |    4 +-
+ drivers/s390/crypto/zcrypt_error.h    |    4 +-
+ drivers/s390/crypto/zcrypt_pcica.c    |    6 +-
+ drivers/s390/crypto/zcrypt_pcica.h    |    4 +-
+ drivers/s390/crypto/zcrypt_pcicc.c    |    6 +-
+ drivers/s390/crypto/zcrypt_pcicc.h    |    4 +-
+ drivers/s390/crypto/zcrypt_pcixcc.c   |    6 +-
+ drivers/s390/crypto/zcrypt_pcixcc.h   |    4 +-
+ drivers/s390/kvm/kvm_virtio.c         |    2 +-
+ drivers/s390/net/claw.c               |    3 +-
+ drivers/s390/net/ctcm_dbug.c          |    2 -
+ drivers/s390/net/ctcm_dbug.h          |    2 -
+ drivers/s390/net/ctcm_fsms.c          |    2 -
+ drivers/s390/net/ctcm_fsms.h          |    2 -
+ drivers/s390/net/ctcm_main.c          |    2 -
+ drivers/s390/net/ctcm_main.h          |    2 -
+ drivers/s390/net/ctcm_mpc.c           |    2 -
+ drivers/s390/net/ctcm_mpc.h           |    2 -
+ drivers/s390/net/ctcm_sysfs.c         |    2 -
+ drivers/s390/net/qeth_core.h          |    2 -
+ drivers/s390/net/qeth_core_main.c     |    2 -
+ drivers/s390/net/qeth_core_mpc.c      |    2 -
+ drivers/s390/net/qeth_core_mpc.h      |    2 -
+ drivers/s390/net/qeth_core_sys.c      |    2 -
+ drivers/s390/net/qeth_l2_main.c       |    2 -
+ drivers/s390/net/qeth_l3.h            |    2 -
+ drivers/s390/net/qeth_l3_main.c       |    2 -
+ drivers/s390/net/qeth_l3_sys.c        |    2 -
+ drivers/s390/net/smsgiucv.h           |    2 +-
+ drivers/s390/scsi/zfcp_aux.c          |    2 +-
+ drivers/s390/scsi/zfcp_ccw.c          |    2 +-
+ drivers/s390/scsi/zfcp_cfdc.c         |    2 +-
+ drivers/s390/scsi/zfcp_dbf.c          |    2 +-
+ drivers/s390/scsi/zfcp_def.h          |    2 +-
+ drivers/s390/scsi/zfcp_erp.c          |    2 +-
+ drivers/s390/scsi/zfcp_ext.h          |    2 +-
+ drivers/s390/scsi/zfcp_fc.c           |    2 +-
+ drivers/s390/scsi/zfcp_fc.h           |    2 +-
+ drivers/s390/scsi/zfcp_fsf.c          |    2 +-
+ drivers/s390/scsi/zfcp_fsf.h          |    2 +-
+ drivers/s390/scsi/zfcp_qdio.c         |    2 +-
+ drivers/s390/scsi/zfcp_qdio.h         |    2 +-
+ drivers/s390/scsi/zfcp_reqlist.h      |    2 +-
+ drivers/s390/scsi/zfcp_scsi.c         |    2 +-
+ drivers/s390/scsi/zfcp_sysfs.c        |    2 +-
+ drivers/s390/scsi/zfcp_unit.c         |    2 +-
+ 295 files changed, 678 insertions(+), 1251 deletions(-)
+ create mode 100644 arch/s390/include/asm/sigp.h
+ delete mode 100644 arch/s390/include/asm/timer.h
+ create mode 100644 arch/s390/include/asm/vtimer.h
 
