@@ -1,292 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab2GXBzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:55:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61215 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755091Ab2GXBzK (ORCPT
+	id S1755260Ab2GXB5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 21:57:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39205 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755091Ab2GXB53 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 21:55:10 -0400
-Date: Mon, 23 Jul 2012 18:55:05 -0700
-From: Michel Lespinasse <walken@google.com>
-To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
-        aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] rbtree: remove prior augmented rbtree
- implementation
-Message-ID: <20120724015505.GB9690@google.com>
-References: <1342787467-5493-1-git-send-email-walken@google.com>
- <1342787467-5493-7-git-send-email-walken@google.com>
+	Mon, 23 Jul 2012 21:57:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="170444781"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Do need keep mail in thread when sending a new version patch?
+Thread-Topic: Do need keep mail in thread when sending a new version patch?
+Thread-Index: Ac1ol4cFfqE+GdyeQrGiTu5FbxrAAv//2SuAgABi5wCAABT1gIAAIVGA//8kMnA=
+Date: Tue, 24 Jul 2012 01:57:06 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A0B3029@SHSMSX101.ccr.corp.intel.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A0B2DCF@SHSMSX101.ccr.corp.intel.com>
+ <20120723113449.GD9103@khazad-dum.debian.net>
+ <500D89D0.8080005@xenotime.net>
+ <20120723184349.GB22968@khazad-dum.debian.net>
+ <500DB757.2030200@xenotime.net>
+In-Reply-To: <500DB757.2030200@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342787467-5493-7-git-send-email-walken@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-convert arch/x86/mm/pat_rbtree.c to the proposed augmented rbtree api
-and remove the old augmented rbtree implementation.
+Thank you all. Maybe both of the two ideas are acceptable.
+Seeing your discussion, I prefer to group patches in thread if thread is
+not heavy, else I would like to start a new thread.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- arch/x86/mm/pat_rbtree.c |   63 ++++++++++++++++++++++++++++------------
- include/linux/rbtree.h   |    8 -----
- lib/rbtree.c             |   71 ----------------------------------------------
- lib/rbtree_test.c        |   11 ++-----
- 4 files changed, 47 insertions(+), 106 deletions(-)
+Thanks again.
+Du, Changbin
 
-diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-index 8acaddd..5b8c8b2 100644
---- a/arch/x86/mm/pat_rbtree.c
-+++ b/arch/x86/mm/pat_rbtree.c
-@@ -13,6 +13,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/rbtree.h>
-+#include <linux/rbtree_internal.h>
- #include <linux/sched.h>
- #include <linux/gfp.h>
- 
-@@ -54,27 +55,51 @@ static u64 get_subtree_max_end(struct rb_node *node)
- 	return ret;
- }
- 
--/* Update 'subtree_max_end' for a node, based on node and its children */
--static void memtype_rb_augment_cb(struct rb_node *node, void *__unused)
-+static u64 compute_subtree_max_end(struct memtype *data)
- {
--	struct memtype *data;
--	u64 max_end, child_max_end;
--
--	if (!node)
--		return;
--
--	data = container_of(node, struct memtype, rb);
--	max_end = data->end;
-+	u64 max_end = data->end, child_max_end;
- 
--	child_max_end = get_subtree_max_end(node->rb_right);
-+	child_max_end = get_subtree_max_end(data->rb.rb_right);
- 	if (child_max_end > max_end)
- 		max_end = child_max_end;
- 
--	child_max_end = get_subtree_max_end(node->rb_left);
-+	child_max_end = get_subtree_max_end(data->rb.rb_left);
- 	if (child_max_end > max_end)
- 		max_end = child_max_end;
- 
--	data->subtree_max_end = max_end;
-+	return max_end;
-+}
-+
-+/* Update 'subtree_max_end' after tree rotation. old and new are the
-+ * former and current subtree roots */
-+static void memtype_rb_rotate_cb(struct rb_node *old, struct rb_node *new)
-+{
-+	struct memtype *old_data = container_of(old, struct memtype, rb);
-+	struct memtype *new_data = container_of(new, struct memtype, rb);
-+
-+	new_data->subtree_max_end = old_data->subtree_max_end;
-+	old_data->subtree_max_end = compute_subtree_max_end(old_data);
-+}
-+
-+static void memtype_rb_copy_cb(struct rb_node *old, struct rb_node *new)
-+{
-+	struct memtype *old_data = container_of(old, struct memtype, rb);
-+	struct memtype *new_data = container_of(new, struct memtype, rb);
-+
-+	new_data->subtree_max_end = old_data->subtree_max_end;
-+}
-+
-+/* Update 'subtree_max_end' for node and its parents */
-+static void memtype_rb_propagate_cb(struct rb_node *node, struct rb_node *stop)
-+{
-+	while (node != stop) {
-+		struct memtype *data = container_of(node, struct memtype, rb);
-+		u64 subtree_max_end = compute_subtree_max_end(data);
-+		if (data->subtree_max_end == subtree_max_end)
-+			break;
-+		data->subtree_max_end = subtree_max_end;
-+		node = rb_parent(&data->rb);
-+	}
- }
- 
- /* Find the first (lowest start addr) overlapping range from rb tree */
-@@ -179,15 +204,17 @@ static void memtype_rb_insert(struct rb_root *root, struct memtype *newdata)
- 		struct memtype *data = container_of(*node, struct memtype, rb);
- 
- 		parent = *node;
-+		if (data->subtree_max_end < newdata->end)
-+			data->subtree_max_end = newdata->end;
- 		if (newdata->start <= data->start)
- 			node = &((*node)->rb_left);
- 		else if (newdata->start > data->start)
- 			node = &((*node)->rb_right);
- 	}
- 
-+	newdata->subtree_max_end = newdata->end;
- 	rb_link_node(&newdata->rb, parent, node);
--	rb_insert_color(&newdata->rb, root);
--	rb_augment_insert(&newdata->rb, memtype_rb_augment_cb, NULL);
-+	rb_insert_augmented(&newdata->rb, root, memtype_rb_rotate_cb);
- }
- 
- int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
-@@ -209,16 +236,14 @@ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
- 
- struct memtype *rbt_memtype_erase(u64 start, u64 end)
- {
--	struct rb_node *deepest;
- 	struct memtype *data;
- 
- 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
- 	if (!data)
- 		goto out;
- 
--	deepest = rb_augment_erase_begin(&data->rb);
--	rb_erase(&data->rb, &memtype_rbroot);
--	rb_augment_erase_end(deepest, memtype_rb_augment_cb, NULL);
-+	rb_erase_augmented(&data->rb, &memtype_rbroot, memtype_rb_copy_cb,
-+			   memtype_rb_propagate_cb, memtype_rb_rotate_cb);
- out:
- 	return data;
- }
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index bf836a2..487f00b 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -61,14 +61,6 @@ struct rb_root {
- extern void rb_insert_color(struct rb_node *, struct rb_root *);
- extern void rb_erase(struct rb_node *, struct rb_root *);
- 
--typedef void (*rb_augment_f)(struct rb_node *node, void *data);
--
--extern void rb_augment_insert(struct rb_node *node,
--			      rb_augment_f func, void *data);
--extern struct rb_node *rb_augment_erase_begin(struct rb_node *node);
--extern void rb_augment_erase_end(struct rb_node *node,
--				 rb_augment_f func, void *data);
--
- /* Find logical next and previous nodes in a tree */
- extern struct rb_node *rb_next(const struct rb_node *);
- extern struct rb_node *rb_prev(const struct rb_node *);
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 90349ec..62080ce 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -366,77 +366,6 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- }
- EXPORT_SYMBOL(rb_erase);
- 
--static void rb_augment_path(struct rb_node *node, rb_augment_f func, void *data)
--{
--	struct rb_node *parent;
--
--up:
--	func(node, data);
--	parent = rb_parent(node);
--	if (!parent)
--		return;
--
--	if (node == parent->rb_left && parent->rb_right)
--		func(parent->rb_right, data);
--	else if (parent->rb_left)
--		func(parent->rb_left, data);
--
--	node = parent;
--	goto up;
--}
--
--/*
-- * after inserting @node into the tree, update the tree to account for
-- * both the new entry and any damage done by rebalance
-- */
--void rb_augment_insert(struct rb_node *node, rb_augment_f func, void *data)
--{
--	if (node->rb_left)
--		node = node->rb_left;
--	else if (node->rb_right)
--		node = node->rb_right;
--
--	rb_augment_path(node, func, data);
--}
--EXPORT_SYMBOL(rb_augment_insert);
--
--/*
-- * before removing the node, find the deepest node on the rebalance path
-- * that will still be there after @node gets removed
-- */
--struct rb_node *rb_augment_erase_begin(struct rb_node *node)
--{
--	struct rb_node *deepest;
--
--	if (!node->rb_right && !node->rb_left)
--		deepest = rb_parent(node);
--	else if (!node->rb_right)
--		deepest = node->rb_left;
--	else if (!node->rb_left)
--		deepest = node->rb_right;
--	else {
--		deepest = rb_next(node);
--		if (deepest->rb_right)
--			deepest = deepest->rb_right;
--		else if (rb_parent(deepest) != node)
--			deepest = rb_parent(deepest);
--	}
--
--	return deepest;
--}
--EXPORT_SYMBOL(rb_augment_erase_begin);
--
--/*
-- * after removal, update the tree to account for the removed entry
-- * and any rebalance damage.
-- */
--void rb_augment_erase_end(struct rb_node *node, rb_augment_f func, void *data)
--{
--	if (node)
--		rb_augment_path(node, func, data);
--}
--EXPORT_SYMBOL(rb_augment_erase_end);
--
- /*
-  * This function returns the first node (in sort order) of the tree.
-  */
-diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-index 278dbfc..140e173 100644
---- a/lib/rbtree_test.c
-+++ b/lib/rbtree_test.c
-@@ -129,16 +129,11 @@ static void init(void)
- 	}
- }
- 
--static bool is_red(struct rb_node *rb)
--{
--	return !(rb->__rb_parent_color & 1);
--}
--
- static int black_path_count(struct rb_node *rb)
- {
- 	int count;
- 	for (count = 0; rb; rb = rb_parent(rb))
--		count += !is_red(rb);
-+		count += rb_is_black(rb);
- 	return count;
- }
- 
-@@ -152,8 +147,8 @@ static void check(int nr_nodes)
- 	for (rb = rb_first(&root); rb; rb = rb_next(rb)) {
- 		struct test_node *node = rb_entry(rb, struct test_node, rb);
- 		WARN_ON_ONCE(node->key < prev_key);
--		WARN_ON_ONCE(is_red(rb) &&
--			     (!rb_parent(rb) || is_red(rb_parent(rb))));
-+		WARN_ON_ONCE(rb_is_red(rb) &&
-+			     (!rb_parent(rb) || rb_is_red(rb_parent(rb))));
- 		if (!count)
- 			blacks = black_path_count(rb);
- 		else
--- 
-1.7.7.3
-
+> -----Original Message-----
+> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
+> Sent: Tuesday, July 24, 2012 4:43 AM
+> To: Henrique de Moraes Holschuh
+> Cc: Du, ChangbinX; linux-kernel@vger.kernel.org
+> Subject: Re: Do need keep mail in thread when sending a new version patch?
+> 
+> On 07/23/2012 11:43 AM, Henrique de Moraes Holschuh wrote:
+> 
+> > On Mon, 23 Jul 2012, Randy Dunlap wrote:
+> >> On 07/23/2012 04:34 AM, Henrique de Moraes Holschuh wrote:
+> >>> On Mon, 23 Jul 2012, Du, ChangbinX wrote:
+> >>>> Hi, developers!
+> >>>> 	I have a question about sending patch: If my patch have a new
+> version,
+> >>>> do I need set "--in-reply-to" option so keep them in the same thread when
+> >>>> sending it? And in which cases should "--in-reply-to" option be set?
+> Thanks!
+> >>>
+> >>> Yes, please do it when possible.  It groups patches nicely in theaded email
+> >>> readers, and it makes it easier for people who are interested in the subject
+> >>> to find the new version of your patchset (and all individual patches that
+> >>> are part of the same patchset), AND for people who are not interested to
+> >>> skip the entire thing.
+> >>
+> >>
+> >> Please compare to a proposed patch:
+> >>
+> >>   http://marc.info/?l=linux-doc&m=133539116205348&w=2
+> >
+> > This one (referenced by the commit changelog of the above) seems to be a
+> > better explanation:
+> >
+> > http://lists.infradead.org/pipermail/linux-arm-kernel/2012-April/096236.html
+> >
+> > Anyway, I stand corrected.
+> >
+> 
+> 
+> Well, that patch isn't merged into mainline yet, right?
+> and it is only one opinion.
+> 
+> I don't mind seeing the new versions of a patch sent as
+> replies to older versions, so I don't see a need to codify it.
+> 
+> 
+> --
+> ~Randy
