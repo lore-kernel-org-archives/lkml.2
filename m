@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab2GXQgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:36:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39412 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092Ab2GXQf7 (ORCPT
+	id S932155Ab2GXQgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:36:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50543 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932092Ab2GXQgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:35:59 -0400
+	Tue, 24 Jul 2012 12:36:08 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 16/32] PCI/broadcom: use PCIe capabilities access functions to simplify implementation
-Date: Wed, 25 Jul 2012 00:31:28 +0800
-Message-Id: <1343147504-25891-17-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v2 17/32] PCI/igb: use PCIe capabilities access functions to simplify implementation
+Date: Wed, 25 Jul 2012 00:31:29 +0800
+Message-Id: <1343147504-25891-18-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com>
 References: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com>
@@ -27,191 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe capabilities access functions to simplify broadcom ethernet drivers'
+Use PCIe capabilities access functions to simplify Intel ethernet drivers'
 implementation.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   24 +++--------
- drivers/net/ethernet/broadcom/tg3.c              |   46 +++++++++-------------
- 2 files changed, 24 insertions(+), 46 deletions(-)
+ drivers/net/ethernet/intel/e1000e/netdev.c |   20 ++++++++------------
+ drivers/net/ethernet/intel/igb/igb_main.c  |   12 ++++--------
+ 2 files changed, 12 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-index f755a66..be87aff 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@ -1142,14 +1142,9 @@ static int bnx2x_send_final_clnup(struct bnx2x *bp, u8 clnup_func,
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index a4b0435..180a795 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -5582,16 +5582,15 @@ static void e1000_complete_shutdown(struct pci_dev *pdev, bool sleep,
+ 	 */
+ 	if (adapter->flags & FLAG_IS_QUAD_PORT) {
+ 		struct pci_dev *us_dev = pdev->bus->self;
+-		int pos = pci_pcie_cap(us_dev);
+ 		u16 devctl;
  
- static u8 bnx2x_is_pcie_pending(struct pci_dev *dev)
+-		pci_read_config_word(us_dev, pos + PCI_EXP_DEVCTL, &devctl);
+-		pci_write_config_word(us_dev, pos + PCI_EXP_DEVCTL,
+-		                      (devctl & ~PCI_EXP_DEVCTL_CERE));
++		pci_pcie_capability_read_word(us_dev, PCI_EXP_DEVCTL, &devctl);
++		pci_pcie_capability_write_word(us_dev, PCI_EXP_DEVCTL,
++					       (devctl & ~PCI_EXP_DEVCTL_CERE));
+ 
+ 		e1000_power_off(pdev, sleep, wake);
+ 
+-		pci_write_config_word(us_dev, pos + PCI_EXP_DEVCTL, devctl);
++		pci_pcie_capability_write_word(us_dev, PCI_EXP_DEVCTL, devctl);
+ 	} else {
+ 		e1000_power_off(pdev, sleep, wake);
+ 	}
+@@ -5605,25 +5604,22 @@ static void __e1000e_disable_aspm(struct pci_dev *pdev, u16 state)
+ #else
+ static void __e1000e_disable_aspm(struct pci_dev *pdev, u16 state)
  {
 -	int pos;
- 	u16 status;
+ 	u16 reg16;
  
--	pos = pci_pcie_cap(dev);
--	if (!pos)
--		return false;
--
--	pci_read_config_word(dev, pos + PCI_EXP_DEVSTA, &status);
-+	pci_pcie_capability_read_word(dev, PCI_EXP_DEVSTA, &status);
- 	return status & PCI_EXP_DEVSTA_TRPND;
+ 	/*
+ 	 * Both device and parent should have the same ASPM setting.
+ 	 * Disable ASPM in downstream component first and then upstream.
+ 	 */
+-	pos = pci_pcie_cap(pdev);
+-	pci_read_config_word(pdev, pos + PCI_EXP_LNKCTL, &reg16);
++	pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &reg16);
+ 	reg16 &= ~state;
+-	pci_write_config_word(pdev, pos + PCI_EXP_LNKCTL, reg16);
++	pci_pcie_capability_write_word(pdev, PCI_EXP_LNKCTL, reg16);
+ 
+ 	if (!pdev->bus->self)
+ 		return;
+ 
+-	pos = pci_pcie_cap(pdev->bus->self);
+-	pci_read_config_word(pdev->bus->self, pos + PCI_EXP_LNKCTL, &reg16);
++	pci_pcie_capability_read_word(pdev->bus->self, PCI_EXP_LNKCTL, &reg16);
+ 	reg16 &= ~state;
+-	pci_write_config_word(pdev->bus->self, pos + PCI_EXP_LNKCTL, reg16);
++	pci_pcie_capability_write_word(pdev->bus->self, PCI_EXP_LNKCTL, reg16);
  }
- 
-@@ -6114,8 +6109,7 @@ static void bnx2x_init_pxp(struct bnx2x *bp)
- 	u16 devctl;
- 	int r_order, w_order;
- 
--	pci_read_config_word(bp->pdev,
--			     pci_pcie_cap(bp->pdev) + PCI_EXP_DEVCTL, &devctl);
-+	pci_pcie_capability_read_word(bp->pdev, PCI_EXP_DEVCTL, &devctl);
- 	DP(NETIF_MSG_HW, "read 0x%x from devctl\n", devctl);
- 	w_order = ((devctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5);
- 	if (bp->mrrs == -1)
-@@ -9330,15 +9324,10 @@ static int __devinit bnx2x_prev_mark_path(struct bnx2x *bp)
- 
- static bool __devinit bnx2x_can_flr(struct bnx2x *bp)
+ #endif
+ static void e1000e_disable_aspm(struct pci_dev *pdev, u16 state)
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index dd3bfe8..ef28e32 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6446,13 +6446,11 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
+ s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value)
  {
--	int pos;
- 	u32 cap;
- 	struct pci_dev *dev = bp->pdev;
+ 	struct igb_adapter *adapter = hw->back;
+-	u16 cap_offset;
  
--	pos = pci_pcie_cap(dev);
--	if (!pos)
--		return false;
--
--	pci_read_config_dword(dev, pos + PCI_EXP_DEVCAP, &cap);
-+	pci_pcie_capability_read_dword(dev, PCI_EXP_DEVCAP, &cap);
- 	if (!(cap & PCI_EXP_DEVCAP_FLR))
- 		return false;
+-	cap_offset = adapter->pdev->pcie_cap;
+-	if (!cap_offset)
++	if (!pci_is_pcie(adapter->pdev))
+ 		return -E1000_ERR_CONFIG;
  
-@@ -9347,7 +9336,7 @@ static bool __devinit bnx2x_can_flr(struct bnx2x *bp)
+-	pci_read_config_word(adapter->pdev, cap_offset + reg, value);
++	pci_pcie_capability_read_word(adapter->pdev, reg, value);
  
- static int __devinit bnx2x_do_flr(struct bnx2x *bp)
+ 	return 0;
+ }
+@@ -6460,13 +6458,11 @@ s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value)
+ s32 igb_write_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value)
  {
--	int i, pos;
-+	int i;
- 	u16 status;
- 	struct pci_dev *dev = bp->pdev;
+ 	struct igb_adapter *adapter = hw->back;
+-	u16 cap_offset;
  
-@@ -9355,8 +9344,7 @@ static int __devinit bnx2x_do_flr(struct bnx2x *bp)
- 	if (bnx2x_can_flr(bp))
- 		return -ENOTTY;
+-	cap_offset = adapter->pdev->pcie_cap;
+-	if (!cap_offset)
++	if (!pci_is_pcie(adapter->pdev))
+ 		return -E1000_ERR_CONFIG;
  
--	pos = pci_pcie_cap(dev);
--	if (!pos)
-+	if (!pci_is_pcie(dev))
- 		return -ENOTTY;
+-	pci_write_config_word(adapter->pdev, cap_offset + reg, *value);
++	pci_pcie_capability_write_word(adapter->pdev, reg, *value);
  
- 	/* Wait for Transaction Pending bit clean */
-@@ -9364,7 +9352,7 @@ static int __devinit bnx2x_do_flr(struct bnx2x *bp)
- 		if (i)
- 			msleep((1 << (i - 1)) * 100);
- 
--		pci_read_config_word(dev, pos + PCI_EXP_DEVSTA, &status);
-+		pci_pcie_capability_read_word(dev, PCI_EXP_DEVSTA, &status);
- 		if (!(status & PCI_EXP_DEVSTA_TRPND))
- 			goto clear;
- 	}
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 09fa3c6..1f613ec 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -3544,13 +3544,11 @@ static int tg3_power_down_prepare(struct tg3 *tp)
- 	if (tg3_flag(tp, CLKREQ_BUG)) {
- 		u16 lnkctl;
- 
--		pci_read_config_word(tp->pdev,
--				     pci_pcie_cap(tp->pdev) + PCI_EXP_LNKCTL,
--				     &lnkctl);
-+		pci_pcie_capability_read_word(tp->pdev,
-+					      PCI_EXP_LNKCTL, &lnkctl);
- 		lnkctl |= PCI_EXP_LNKCTL_CLKREQ_EN;
--		pci_write_config_word(tp->pdev,
--				      pci_pcie_cap(tp->pdev) + PCI_EXP_LNKCTL,
--				      lnkctl);
-+		pci_pcie_capability_write_word(tp->pdev,
-+					       PCI_EXP_LNKCTL, lnkctl);
- 	}
- 
- 	misc_host_ctrl = tr32(TG3PCI_MISC_HOST_CTRL);
-@@ -4324,18 +4322,16 @@ relink:
- 	if (tg3_flag(tp, CLKREQ_BUG)) {
- 		u16 oldlnkctl, newlnkctl;
- 
--		pci_read_config_word(tp->pdev,
--				     pci_pcie_cap(tp->pdev) + PCI_EXP_LNKCTL,
--				     &oldlnkctl);
-+		pci_pcie_capability_read_word(tp->pdev, PCI_EXP_LNKCTL,
-+					      &oldlnkctl);
- 		if (tp->link_config.active_speed == SPEED_100 ||
- 		    tp->link_config.active_speed == SPEED_10)
- 			newlnkctl = oldlnkctl & ~PCI_EXP_LNKCTL_CLKREQ_EN;
- 		else
- 			newlnkctl = oldlnkctl | PCI_EXP_LNKCTL_CLKREQ_EN;
- 		if (newlnkctl != oldlnkctl)
--			pci_write_config_word(tp->pdev,
--					      pci_pcie_cap(tp->pdev) +
--					      PCI_EXP_LNKCTL, newlnkctl);
-+			pci_pcie_capability_write_word(tp->pdev, PCI_EXP_LNKCTL,
-+						       newlnkctl);
- 	}
- 
- 	if (current_link_up != netif_carrier_ok(tp->dev)) {
-@@ -7942,7 +7938,7 @@ static int tg3_chip_reset(struct tg3 *tp)
- 
- 	udelay(120);
- 
--	if (tg3_flag(tp, PCI_EXPRESS) && pci_pcie_cap(tp->pdev)) {
-+	if (tg3_flag(tp, PCI_EXPRESS) && pci_is_pcie(tp->pdev)) {
- 		u16 val16;
- 
- 		if (tp->pci_chip_rev_id == CHIPREV_ID_5750_A0) {
-@@ -7959,9 +7955,7 @@ static int tg3_chip_reset(struct tg3 *tp)
- 		}
- 
- 		/* Clear the "no snoop" and "relaxed ordering" bits. */
--		pci_read_config_word(tp->pdev,
--				     pci_pcie_cap(tp->pdev) + PCI_EXP_DEVCTL,
--				     &val16);
-+		pci_pcie_capability_read_word(tp->pdev, PCI_EXP_DEVCTL, &val16);
- 		val16 &= ~(PCI_EXP_DEVCTL_RELAX_EN |
- 			   PCI_EXP_DEVCTL_NOSNOOP_EN);
- 		/*
-@@ -7970,17 +7964,14 @@ static int tg3_chip_reset(struct tg3 *tp)
- 		 */
- 		if (!tg3_flag(tp, CPMU_PRESENT))
- 			val16 &= ~PCI_EXP_DEVCTL_PAYLOAD;
--		pci_write_config_word(tp->pdev,
--				      pci_pcie_cap(tp->pdev) + PCI_EXP_DEVCTL,
--				      val16);
-+		pci_pcie_capability_write_word(tp->pdev, PCI_EXP_DEVCTL, val16);
- 
- 		/* Clear error status */
--		pci_write_config_word(tp->pdev,
--				      pci_pcie_cap(tp->pdev) + PCI_EXP_DEVSTA,
--				      PCI_EXP_DEVSTA_CED |
--				      PCI_EXP_DEVSTA_NFED |
--				      PCI_EXP_DEVSTA_FED |
--				      PCI_EXP_DEVSTA_URD);
-+		pci_pcie_capability_write_word(tp->pdev, PCI_EXP_DEVSTA,
-+					       PCI_EXP_DEVSTA_CED |
-+					       PCI_EXP_DEVSTA_NFED |
-+					       PCI_EXP_DEVSTA_FED |
-+					       PCI_EXP_DEVSTA_URD);
- 	}
- 
- 	tg3_restore_pci_state(tp);
-@@ -14303,9 +14294,8 @@ static int __devinit tg3_get_invariants(struct tg3 *tp)
- 
- 		tg3_flag_set(tp, PCI_EXPRESS);
- 
--		pci_read_config_word(tp->pdev,
--				     pci_pcie_cap(tp->pdev) + PCI_EXP_LNKCTL,
--				     &lnkctl);
-+		pci_pcie_capability_read_word(tp->pdev,
-+					      PCI_EXP_LNKCTL, &lnkctl);
- 		if (lnkctl & PCI_EXP_LNKCTL_CLKREQ_EN) {
- 			if (GET_ASIC_REV(tp->pci_chip_rev_id) ==
- 			    ASIC_REV_5906) {
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
