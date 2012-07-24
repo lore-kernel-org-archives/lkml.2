@@ -1,55 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab2GXAXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 20:23:23 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57367 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996Ab2GXAXV (ORCPT
+	id S1755027Ab2GXAXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 20:23:48 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62796 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754599Ab2GXAXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 20:23:21 -0400
+	Mon, 23 Jul 2012 20:23:47 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-66-500deb11e359
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andrew Watts <akwatts@ymail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [SEGFAULT: perf]
+References: <20120723135214.GA14465@ymail.com>
+Date: Tue, 24 Jul 2012 09:18:24 +0900
+In-Reply-To: <20120723135214.GA14465@ymail.com> (Andrew Watts's message of
+	"Mon, 23 Jul 2012 08:52:17 -0500")
+Message-ID: <878vea6mgf.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120722181956.GA4557@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
- <1342799346.5138.7.camel@lorien2> <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
- <20120722181956.GA4557@opensource.wolfsonmicro.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 24 Jul 2012 08:23:00 +0800
-X-Google-Sender-Auth: P-YrZA_RYbc3cDBYzUoWpAb2BYc
-Message-ID: <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
-Subject: Re: [PATCH v2] leds: add new lp8788 led driver
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 2:19 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Sat, Jul 21, 2012 at 02:48:49AM +0800, Bryan Wu wrote:
->
->> Actually cancel_work_sync() is quite similar to flush_work_sync()
->> here. For the timer thing, in fact it is NULL when cancel_work_sync()
->> call __cancel_work_timer().
->
->> And Mark, do you have any advice about the flush_work_sync() and
->> cancel_work_sync(). I saw you use flush in the
->> drivers/leds/leds-wm8350.c.
->
-> If the work is flushed then the state that userspace thought was set
-> when the driver is removed will actually be set before the driver is
-> removed.  This is fairly minor but might be useful.
+Hi, Andrew
 
-So what's kind of state you mentioned here that is cared by user
-space. I find these 2 functions are quite confused for use right now.
-Literally, canceling normally will remove pending work item and wait
-for running work item to finish. flushing will wait for both pending
-and running work item to finish.
+On Mon, 23 Jul 2012 08:52:17 -0500, Andrew Watts wrote:
+> perf report on 3.4.6 segfaults when certain pointers are null. Attached is
+> a patch that applies cleanly @3.4.6 and addresses (A). I am not comfortable
+> suggesting fixes for (B) and (C).
+>
+
+(A) has a fix already in the tip tree [1], and maybe in mainline too.
+
+And yes, I think this sort thing needs some love. It's on my TODO list
+but not have time to do it yet.
+
+[1] http://www.spinics.net/lists/linux-tip-commits/msg15695.html
 
 Thanks,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Namhyung
+
+
+> ~ Andy
+>
+> ===
+>
+> (A) perf report with sort on comm/pid/parent/dso:
+>
+> (gdb) run report --sort=comm
+> Program received signal SIGSEGV, Segmentation fault.
+> 0x0805c00b in perf_evsel__add_hist_entry (evsel=0x81c56a8, al=0xbfffe9b0,
+> sample=0xbfffea84, machine=0x81c3fa8) at builtin-report.c:171
+> 171             if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
+> #0  0x0805c00b in perf_evsel__add_hist_entry (evsel=0x81c56a8, al=0xbfffe9b0,
+>     sample=0xbfffea84, machine=0x81c3fa8) at builtin-report.c:171
+> #1  0x0805c234 in process_sample_event (tool=0xbffff27c, event=0xb6db1f38,
+>     sample=0xbfffea84, evsel=0x81c56a8, machine=0x81c3fa8)
+>     at builtin-report.c:216
+> #2  0x080a3097 in perf_session_deliver_event (session=0x81c3f50, event=
+>     0xb6db1f38, sample=0xbfffea84, tool=0xbffff27c, file_offset=339768)
+>     at util/session.c:885
+> #3  0x080a24d1 in flush_sample_queue (s=0x81c3f50, tool=0xbffff27c)
+>     at util/session.c:587
+> #4  0x080a40e3 in __perf_session__process_events (session=0x81c3f50,
+>     data_offset=280, data_size=419640, file_size=419920, tool=0xbffff27c)
+>     at util/session.c:1257
+> #5  0x080a41d3 in perf_session__process_events (self=0x81c3f50, tool=
+>     0xbffff27c) at util/session.c:1273
+> (gdb) print he->ms.sym
+> $1 = (struct symbol *) 0x0
+>
+> --
+>
+> (B) perf report segfaults on sorts of symbol_from/symbol_to:
+>
+> (gdb) run report --sort=symbol_from
+> Program received signal SIGSEGV, Segmentation fault.
+> 0x080b8777 in sort__sym_from_cmp (left=0xbfffe878, right=0x84dfde0)
+> at util/sort.c:334
+> 334             if (!from_l->sym && !from_r->sym
+> (gdb) bt
+> #0  0x080b8777 in sort__sym_from_cmp (left=0xbfffe878, right=0x84dfde0)
+>     at util/sort.c:334
+> #1  0x080ba0b8 in hist_entry__cmp (left=0xbfffe878, right=0x84dfde0)
+>     at util/hist.c:345
+> #2  0x080b9c31 in add_hist_entry (hists=0x81c571c, entry=0xbfffe878, al=
+>     0xbfffe9b0, period=333940) at util/hist.c:254
+> #3  0x080ba04c in __hists__add_entry (self=0x81c571c, al=0xbfffe9b0,
+>     sym_parent=0x0, period=333940) at util/hist.c:335
+> #4  0x0805bf50 in perf_evsel__add_hist_entry (evsel=0x81c56a8, al=0xbfffe9b0,
+>     sample=0xbfffea84, machine=0x81c3fa8) at builtin-report.c:149
+> #5  0x0805c234 in process_sample_event (tool=0xbffff27c, event=0xb6db1840,
+>     sample=0xbfffea84, evsel=0x81c56a8, machine=0x81c3fa8)
+>     at builtin-report.c:216
+> (gdb) print left->branch_info
+> $2 = (struct branch_info *) 0x0
+> (gdb) print right->branch_info
+> $3 = (struct branch_info *) 0x0
+>
+> --
+>
+> (C) perf report segfaults with dso_from/dso_to:
+>
+> (gdb) run report --sort=dso_to
+> Program received signal SIGSEGV, Segmentation fault.
+> sort__dso_to_cmp (left=0xbfffe878, right=0x82346f0) at util/sort.c:317
+> 317             return _sort__dso_cmp(left->branch_info->to.map,
+> (gdb) bt
+> #0  sort__dso_to_cmp (left=0xbfffe878, right=0x82346f0) at util/sort.c:317
+> #1  0x080ba0c8 in hist_entry__cmp (left=0xbfffe878, right=0x82346f0)
+>     at util/hist.c:345
+> #2  0x080b9c41 in add_hist_entry (hists=0x81c571c, entry=0xbfffe878, al=
+>     0xbfffe9b0, period=333331) at util/hist.c:254
+> #3  0x080ba05c in __hists__add_entry (self=0x81c571c, al=0xbfffe9b0,
+>     sym_parent=0x0, period=333331) at util/hist.c:335
+> #4  0x0805bf50 in perf_evsel__add_hist_entry (evsel=0x81c56a8, al=0xbfffe9b0,
+>     sample=0xbfffea84, machine=0x81c3fa8) at builtin-report.c:149
+> #5  0x0805c242 in process_sample_event (tool=0xbffff27c, event=0xb6dbf800,
+>     sample=0xbfffea84, evsel=0x81c56a8, machine=0x81c3fa8)
+>     at builtin-report.c:216
+> (gdb) print left->branch_info
+> $4 = (struct branch_info *) 0x0
+> (gdb) print right->branch_info
+> $5 = (struct branch_info *) 0x0
+>
+> ===
+>
+>
+> --- builtin-report.c.orig		2012-07-22
+> +++ builtin-report.c			2012-07-22
+> @@ -162,7 +162,7 @@ static int perf_evsel__add_hist_entry(st
+>  	 * so we don't allocated the extra space needed because the stdio
+>  	 * code will not use it.
+>  	 */
+> -	if (al->sym != NULL && use_browser > 0) {
+> +	if (al->sym != NULL && he->ms.sym != NULL && use_browser > 0) {
+>  		struct annotation *notes = symbol__annotation(he->ms.sym);
+>  
+>  		assert(evsel != NULL);
