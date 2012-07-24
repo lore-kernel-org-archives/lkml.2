@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab2GXOWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:22:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42098 "EHLO
+	id S1754995Ab2GXOXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:23:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42111 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2GXOWX (ORCPT
+	with ESMTP id S1754757Ab2GXOW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:22:23 -0400
-Date: Tue, 24 Jul 2012 07:21:52 -0700
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Message-ID: <tip-8323f26ce3425460769605a6aece7a174edaa7d1@git.kernel.org>
+	Tue, 24 Jul 2012 10:22:59 -0400
+Date: Tue, 24 Jul 2012 07:22:44 -0700
+From: tip-bot for Darren Hart <dvhart@linux.intel.com>
+Message-ID: <tip-b6070a8d9853eda010a549fa9a09eb8d7269b929@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
-        stefan.bader@canonical.com
+        dvhart@linux.intel.com, davej@redhat.com, tglx@linutronix.de,
+        dan.carpenter@oracle.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
-        stefan.bader@canonical.com
-In-Reply-To: <1340364965.18025.71.camel@twins>
-References: <1340364965.18025.71.camel@twins>
+        dvhart@linux.intel.com, tglx@linutronix.de, davej@redhat.com,
+        dan.carpenter@oracle.com
+In-Reply-To: <dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com>
+References: <dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix race in task_group()
-Git-Commit-ID: 8323f26ce3425460769605a6aece7a174edaa7d1
+Subject: [tip:core/urgent] futex:
+  Test for pi_mutex on fault in futex_wait_requeue_pi()
+Git-Commit-ID: b6070a8d9853eda010a549fa9a09eb8d7269b929
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,166 +30,44 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:21:58 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:22:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8323f26ce3425460769605a6aece7a174edaa7d1
-Gitweb:     http://git.kernel.org/tip/8323f26ce3425460769605a6aece7a174edaa7d1
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Fri, 22 Jun 2012 13:36:05 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 24 Jul 2012 13:58:20 +0200
+Commit-ID:  b6070a8d9853eda010a549fa9a09eb8d7269b929
+Gitweb:     http://git.kernel.org/tip/b6070a8d9853eda010a549fa9a09eb8d7269b929
+Author:     Darren Hart <dvhart@linux.intel.com>
+AuthorDate: Fri, 20 Jul 2012 11:53:29 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 24 Jul 2012 16:02:56 +0200
 
-sched: Fix race in task_group()
+futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
 
-Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
-Don't call task_group() too many times in set_task_rq()"), he
-found the reason to be that the multiple task_group()
-invocations in set_task_rq() returned different values.
+If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
+for pi_mutex != NULL before testing the owner against current
+and possibly unlocking it.
 
-Looking at all that I found a lack of serialization and plain
-wrong comments.
-
-The below tries to fix it using an extra pointer which is
-updated under the appropriate scheduler locks. Its not pretty,
-but I can't really see another way given how all the cgroup
-stuff works.
-
-Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/init_task.h |   12 +++++++++++-
- include/linux/sched.h     |    5 ++++-
- kernel/sched/core.c       |    9 ++++++++-
- kernel/sched/sched.h      |   23 ++++++++++-------------
- 4 files changed, 33 insertions(+), 16 deletions(-)
+ kernel/futex.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 9e65eff..b806b82 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -123,8 +123,17 @@ extern struct group_info init_groups;
- 
- extern struct cred init_cred;
- 
-+extern struct task_group root_task_group;
-+
-+#ifdef CONFIG_CGROUP_SCHED
-+# define INIT_CGROUP_SCHED(tsk)						\
-+	.sched_task_group = &root_task_group,
-+#else
-+# define INIT_CGROUP_SCHED(tsk)
-+#endif
-+
- #ifdef CONFIG_PERF_EVENTS
--# define INIT_PERF_EVENTS(tsk)					\
-+# define INIT_PERF_EVENTS(tsk)						\
- 	.perf_event_mutex = 						\
- 		 __MUTEX_INITIALIZER(tsk.perf_event_mutex),		\
- 	.perf_event_list = LIST_HEAD_INIT(tsk.perf_event_list),
-@@ -161,6 +170,7 @@ extern struct cred init_cred;
- 	},								\
- 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
- 	INIT_PUSHABLE_TASKS(tsk)					\
-+	INIT_CGROUP_SCHED(tsk)						\
- 	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
- 	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
- 	.real_parent	= &tsk,						\
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index bc99529..fd9436a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1245,6 +1245,9 @@ struct task_struct {
- 	const struct sched_class *sched_class;
- 	struct sched_entity se;
- 	struct sched_rt_entity rt;
-+#ifdef CONFIG_CGROUP_SCHED
-+	struct task_group *sched_task_group;
-+#endif
- 
- #ifdef CONFIG_PREEMPT_NOTIFIERS
- 	/* list of struct preempt_notifier: */
-@@ -2724,7 +2727,7 @@ extern int sched_group_set_rt_period(struct task_group *tg,
- extern long sched_group_rt_period(struct task_group *tg);
- extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
- #endif
--#endif
-+#endif /* CONFIG_CGROUP_SCHED */
- 
- extern int task_can_switch_user(struct user_struct *up,
- 					struct task_struct *tsk);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 536b213..5d011ef 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1096,7 +1096,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 	 * a task's CPU. ->pi_lock for waking tasks, rq->lock for runnable tasks.
- 	 *
- 	 * sched_move_task() holds both and thus holding either pins the cgroup,
--	 * see set_task_rq().
-+	 * see task_group().
- 	 *
- 	 * Furthermore, all task_rq users should acquire both locks, see
- 	 * task_rq_lock().
-@@ -7658,6 +7658,7 @@ void sched_destroy_group(struct task_group *tg)
-  */
- void sched_move_task(struct task_struct *tsk)
- {
-+	struct task_group *tg;
- 	int on_rq, running;
- 	unsigned long flags;
- 	struct rq *rq;
-@@ -7672,6 +7673,12 @@ void sched_move_task(struct task_struct *tsk)
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
- 
-+	tg = container_of(task_subsys_state_check(tsk, cpu_cgroup_subsys_id,
-+				lockdep_is_held(&tsk->sighand->siglock)),
-+			  struct task_group, css);
-+	tg = autogroup_task_group(tsk, tg);
-+	tsk->sched_task_group = tg;
-+
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	if (tsk->sched_class->task_move_group)
- 		tsk->sched_class->task_move_group(tsk, on_rq);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 55844f2..c35a1a7 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -538,22 +538,19 @@ extern int group_balance_cpu(struct sched_group *sg);
- /*
-  * Return the group to which this tasks belongs.
-  *
-- * We use task_subsys_state_check() and extend the RCU verification with
-- * pi->lock and rq->lock because cpu_cgroup_attach() holds those locks for each
-- * task it moves into the cgroup. Therefore by holding either of those locks,
-- * we pin the task to the current cgroup.
-+ * We cannot use task_subsys_state() and friends because the cgroup
-+ * subsystem changes that value before the cgroup_subsys::attach() method
-+ * is called, therefore we cannot pin it and might observe the wrong value.
-+ *
-+ * The same is true for autogroup's p->signal->autogroup->tg, the autogroup
-+ * core changes this before calling sched_move_task().
-+ *
-+ * Instead we use a 'copy' which is updated from sched_move_task() while
-+ * holding both task_struct::pi_lock and rq::lock.
-  */
- static inline struct task_group *task_group(struct task_struct *p)
- {
--	struct task_group *tg;
--	struct cgroup_subsys_state *css;
--
--	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
--			lockdep_is_held(&p->pi_lock) ||
--			lockdep_is_held(&task_rq(p)->lock));
--	tg = container_of(css, struct task_group, css);
--
--	return autogroup_task_group(p, tg);
-+	return p->sched_task_group;
- }
- 
- /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+diff --git a/kernel/futex.c b/kernel/futex.c
+index e2b0fb9..05018bf 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2370,7 +2370,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	 * fault, unlock the rt_mutex and return the fault to userspace.
+ 	 */
+ 	if (ret == -EFAULT) {
+-		if (rt_mutex_owner(pi_mutex) == current)
++		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
+ 			rt_mutex_unlock(pi_mutex);
+ 	} else if (ret == -EINTR) {
+ 		/*
