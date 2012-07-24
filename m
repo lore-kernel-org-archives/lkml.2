@@ -1,220 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753Ab2GXXDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 19:03:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:32042 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754780Ab2GXXDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 19:03:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172744043"
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
-        robert.richter@amd.com, andreas.herrmann3@amd.com
-Subject: [PATCH 1/3] x86, signal: cleanup ifdefs and is_ia32, is_x32
-Date: Tue, 24 Jul 2012 16:05:27 -0700
-Message-Id: <1343171129-2747-2-git-send-email-suresh.b.siddha@intel.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1343171129-2747-1-git-send-email-suresh.b.siddha@intel.com>
-References: <1343171129-2747-1-git-send-email-suresh.b.siddha@intel.com>
+	id S1755623Ab2GXXIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 19:08:18 -0400
+Received: from 50-193-208-193-static.hfc.comcastbusiness.net ([50.193.208.193]:54629
+	"EHLO tetsuo.zabbo.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab2GXXIR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 19:08:17 -0400
+Date: Tue, 24 Jul 2012 16:08:16 -0700
+From: Zach Brown <zab@zabbo.net>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>, Ankit Jain <jankit@suse.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, bcrl@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Make io_submit non-blocking
+Message-ID: <20120724230816.GC6723@lenny.home.zabbo.net>
+References: <500E89D1.9010303@suse.de>
+ <20120724223110.GQ23387@dastard>
+ <20120724225026.GA21691@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724225026.GA21691@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use config_enabled() to cleanup the definitions of is_ia32/is_x32. Move
-the function prototypes to the header file to cleanup ifdefs.
+> And most importantly block devices, as they are one of the biggest
+> use cases of AIO.  With an almost no-op get_blocks callback I can't
+> see how this change would provide any gain there.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/include/asm/fpu-internal.h |   29 ++++++++++++++++
- arch/x86/include/asm/signal.h       |    4 ++
- arch/x86/kernel/signal.c            |   62 +++++++---------------------------
- 3 files changed, 46 insertions(+), 49 deletions(-)
+Historically we'd often see submission stuck waiting for requests.
+Tasks often try to submit way more aio than the block layer is happy to
+have in flight.
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 75f4c6d..74dab61 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -12,6 +12,7 @@
- 
- #include <linux/kernel_stat.h>
- #include <linux/regset.h>
-+#include <linux/compat.h>
- #include <linux/slab.h>
- #include <asm/asm.h>
- #include <asm/cpufeature.h>
-@@ -49,12 +50,32 @@ extern int save_i387_xstate_ia32(void __user *buf);
- extern int restore_i387_xstate_ia32(void __user *buf);
- #endif
- 
-+int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
-+		       siginfo_t *info, compat_sigset_t *set,
-+		       struct pt_regs *regs);
-+
- #ifdef CONFIG_MATH_EMULATION
- extern void finit_soft_fpu(struct i387_soft_struct *soft);
- #else
- static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
- #endif
- 
-+static inline int is_ia32_compat_frame(void)
-+{
-+	return config_enabled(CONFIG_IA32_EMULATION) &&
-+	       test_thread_flag(TIF_IA32);
-+}
-+
-+static inline int is_ia32_frame(void)
-+{
-+	return config_enabled(CONFIG_X86_32) || is_ia32_compat_frame();
-+}
-+
-+static inline int is_x32_frame(void)
-+{
-+	return config_enabled(CONFIG_X86_X32_ABI) && test_thread_flag(TIF_X32);
-+}
-+
- #define X87_FSW_ES (1 << 7)	/* Exception Summary */
- 
- static __always_inline __pure bool use_xsaveopt(void)
-@@ -180,6 +201,11 @@ static inline void fpu_fxsave(struct fpu *fpu)
- #endif
- }
- 
-+int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
-+			compat_sigset_t *set, struct pt_regs *regs);
-+int ia32_setup_frame(int sig, struct k_sigaction *ka,
-+		     compat_sigset_t *set, struct pt_regs *regs);
-+
- #else  /* CONFIG_X86_32 */
- 
- /* perform fxrstor iff the processor has extended states, otherwise frstor */
-@@ -204,6 +230,9 @@ static inline void fpu_fxsave(struct fpu *fpu)
- 		     : [fx] "=m" (fpu->state->fxsave));
- }
- 
-+#define ia32_setup_frame	__setup_frame
-+#define ia32_setup_rt_frame	__setup_rt_frame
-+
- #endif	/* CONFIG_X86_64 */
- 
- /*
-diff --git a/arch/x86/include/asm/signal.h b/arch/x86/include/asm/signal.h
-index 598457c..323973f 100644
---- a/arch/x86/include/asm/signal.h
-+++ b/arch/x86/include/asm/signal.h
-@@ -31,6 +31,10 @@ typedef struct {
- 	unsigned long sig[_NSIG_WORDS];
- } sigset_t;
- 
-+#ifndef CONFIG_COMPAT
-+typedef sigset_t compat_sigset_t;
-+#endif
-+
- #else
- /* Here we must cater to libcs that poke about in kernel headers.  */
- 
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index b280908..9779084 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -209,24 +209,21 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size,
- 	unsigned long sp = regs->sp;
- 	int onsigstack = on_sig_stack(sp);
- 
--#ifdef CONFIG_X86_64
- 	/* redzone */
--	sp -= 128;
--#endif /* CONFIG_X86_64 */
-+	if (config_enabled(CONFIG_X86_64))
-+		sp -= 128;
- 
- 	if (!onsigstack) {
- 		/* This is the X/Open sanctioned signal stack switching.  */
- 		if (ka->sa.sa_flags & SA_ONSTACK) {
- 			if (current->sas_ss_size)
- 				sp = current->sas_ss_sp + current->sas_ss_size;
--		} else {
--#ifdef CONFIG_X86_32
--			/* This is the legacy signal stack switching. */
--			if ((regs->ss & 0xffff) != __USER_DS &&
--				!(ka->sa.sa_flags & SA_RESTORER) &&
--					ka->sa.sa_restorer)
-+		} else if (config_enabled(CONFIG_X86_32) &&
-+			   (regs->ss & 0xffff) != __USER_DS &&
-+			   !(ka->sa.sa_flags & SA_RESTORER) &&
-+			   ka->sa.sa_restorer) {
-+				/* This is the legacy signal stack switching. */
- 				sp = (unsigned long) ka->sa.sa_restorer;
--#endif /* CONFIG_X86_32 */
- 		}
- 	}
- 
-@@ -612,55 +609,22 @@ static int signr_convert(int sig)
- 	return sig;
- }
- 
--#ifdef CONFIG_X86_32
--
--#define is_ia32	1
--#define ia32_setup_frame	__setup_frame
--#define ia32_setup_rt_frame	__setup_rt_frame
--
--#else /* !CONFIG_X86_32 */
--
--#ifdef CONFIG_IA32_EMULATION
--#define is_ia32	test_thread_flag(TIF_IA32)
--#else /* !CONFIG_IA32_EMULATION */
--#define is_ia32	0
--#endif /* CONFIG_IA32_EMULATION */
--
--#ifdef CONFIG_X86_X32_ABI
--#define is_x32	test_thread_flag(TIF_X32)
--
--static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
--			      siginfo_t *info, compat_sigset_t *set,
--			      struct pt_regs *regs);
--#else /* !CONFIG_X86_X32_ABI */
--#define is_x32	0
--#endif /* CONFIG_X86_X32_ABI */
--
--int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
--		sigset_t *set, struct pt_regs *regs);
--int ia32_setup_frame(int sig, struct k_sigaction *ka,
--		sigset_t *set, struct pt_regs *regs);
--
--#endif /* CONFIG_X86_32 */
--
- static int
- setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		struct pt_regs *regs)
- {
- 	int usig = signr_convert(sig);
- 	sigset_t *set = sigmask_to_save();
-+	compat_sigset_t *cset = (compat_sigset_t *) set;
- 
- 	/* Set up the stack frame */
--	if (is_ia32) {
-+	if (is_ia32_frame()) {
- 		if (ka->sa.sa_flags & SA_SIGINFO)
--			return ia32_setup_rt_frame(usig, ka, info, set, regs);
-+			return ia32_setup_rt_frame(usig, ka, info, cset, regs);
- 		else
--			return ia32_setup_frame(usig, ka, set, regs);
--#ifdef CONFIG_X86_X32_ABI
--	} else if (is_x32) {
--		return x32_setup_rt_frame(usig, ka, info,
--					 (compat_sigset_t *)set, regs);
--#endif
-+			return ia32_setup_frame(usig, ka, cset, regs);
-+	} else if (is_x32_frame()) {
-+		return x32_setup_rt_frame(usig, ka, info, cset, regs);
- 	} else {
- 		return __setup_rt_frame(sig, ka, info, set, regs);
- 	}
--- 
-1.7.6.5
+Dunno if that's still a problem these days.
 
+- z
