@@ -1,464 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab2GXDlC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 23:41:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58826 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753426Ab2GXDlA (ORCPT
+	id S1755269Ab2GXDyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 23:54:35 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:44050 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753538Ab2GXDye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 23:41:00 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: omar.ramirez@ti.com
-Cc: gregkh@linuxfoundation.org, vjaquez@igalia.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH NEXT v2]staging: tidspbridge: Fix typos.
-Date: Mon, 23 Jul 2012 20:40:51 -0700
-Message-Id: <1343101251-5449-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 23 Jul 2012 23:54:34 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(zz936eI4015Izz1202hzz8275dhz2ei87h2a8h668h839hd24he5bhe96h107ahff4o)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Bob Liu <lliubbo@gmail.com>
+To: <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <uclinux-dist-devel@blackfin.uclinux.org>,
+        <vapier@gentoo.org>, <sonic.zhang@analog.com>,
+        Bob Liu <lliubbo@gmail.com>
+Subject: [GIT PULL] Blackfin changes for 3.6-rc1
+Date: Tue, 24 Jul 2012 11:54:55 +0800
+Message-ID: <1343102095-20664-1-git-send-email-lliubbo@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+Hi linus,
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Please pull blackfin changes for 3.6-rc1.
+The big changes are adding PM and HDMI support for bf60x, other patches are various
+bug fix and code cleanup.
 
----
+Thanks,
+-Bob
 
-The below patch fixes typos found while reading through staging: tidsbridge:
+The following changes since commit 97e7292ab5ccd30a13c3612835535fc3f3e59715:
 
- .../staging/tidspbridge/Documentation/error-codes  |    2 +-
- drivers/staging/tidspbridge/core/_tiomap.h         |    2 +-
- drivers/staging/tidspbridge/core/chnl_sm.c         |    6 +++---
- drivers/staging/tidspbridge/core/io_sm.c           |   10 +++++-----
- drivers/staging/tidspbridge/core/sync.c            |    2 +-
- drivers/staging/tidspbridge/core/tiomap3430.c      |    4 ++--
- drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |    2 +-
- drivers/staging/tidspbridge/dynload/tramp.c        |    8 ++++----
- drivers/staging/tidspbridge/hw/hw_mmu.c            |    6 +++---
- .../tidspbridge/include/dspbridge/dspioctl.h       |    2 +-
- .../staging/tidspbridge/include/dspbridge/mbx_sh.h |    2 +-
- .../staging/tidspbridge/include/dspbridge/node.h   |    2 +-
- .../staging/tidspbridge/include/dspbridge/ntfy.h   |    2 +-
- .../staging/tidspbridge/include/dspbridge/proc.h   |    2 +-
- .../staging/tidspbridge/include/dspbridge/strm.h   |    2 +-
- .../staging/tidspbridge/include/dspbridge/sync.h   |    4 ++--
- drivers/staging/tidspbridge/rmgr/dbdcd.c           |    2 +-
- drivers/staging/tidspbridge/rmgr/dspdrv.c          |    4 ++--
- drivers/staging/tidspbridge/rmgr/mgr.c             |    4 ++--
- drivers/staging/tidspbridge/rmgr/nldr.c            |    2 +-
- drivers/staging/tidspbridge/rmgr/node.c            |    2 +-
- drivers/staging/tidspbridge/rmgr/proc.c            |    2 +-
- 22 files changed, 37 insertions(+), 37 deletions(-)
+  Merge tag 'clk' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2012-07-23 17:51:03 -0700)
 
-diff --git a/drivers/staging/tidspbridge/Documentation/error-codes b/drivers/staging/tidspbridge/Documentation/error-codes
-index 12826e2..ad73cba 100644
---- a/drivers/staging/tidspbridge/Documentation/error-codes
-+++ b/drivers/staging/tidspbridge/Documentation/error-codes
-@@ -69,7 +69,7 @@ The error codes used by this driver are:
-     Invalid pointer or handler.
- 
- [EEXIST]
--    Attempted to create a channel manager  when one already exists.
-+    Attempted to create a channel manager when one already exists.
- 
- [EINVAL]
-     Invalid argument.
-diff --git a/drivers/staging/tidspbridge/core/_tiomap.h b/drivers/staging/tidspbridge/core/_tiomap.h
-index 7cb5871..543a127 100644
---- a/drivers/staging/tidspbridge/core/_tiomap.h
-+++ b/drivers/staging/tidspbridge/core/_tiomap.h
-@@ -219,7 +219,7 @@ static const struct map_l4_peripheral l4_peripheral_table[] = {
- /* MBX_PM_MAX_RESOURCES: CORE 2 Clock Resources. */
- #define MBX_CORE2_RESOURCES 1
- 
--/* MBX_PM_MAX_RESOURCES: TOTAL Clock Reosurces. */
-+/* MBX_PM_MAX_RESOURCES: TOTAL Clock Resources. */
- #define MBX_PM_MAX_RESOURCES 11
- 
- /*  Power Management Commands */
-diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
-index e0c7e4c..f38950e 100644
---- a/drivers/staging/tidspbridge/core/chnl_sm.c
-+++ b/drivers/staging/tidspbridge/core/chnl_sm.c
-@@ -20,7 +20,7 @@
-  *      The lower edge functions must be implemented by the Bridge driver
-  *      writer, and are declared in chnl_sm.h.
-  *
-- *      Care is taken in this code to prevent simulataneous access to channel
-+ *      Care is taken in this code to prevent simultaneous access to channel
-  *      queues from
-  *      1. Threads.
-  *      2. io_dpc(), scheduled from the io_isr() as an event.
-@@ -34,7 +34,7 @@
-  *  Channel Invariant:
-  *      There is an important invariant condition which must be maintained per
-  *      channel outside of bridge_chnl_get_ioc() and IO_Dispatch(), violation of
-- *      which may cause timeouts and/or failure offunction sync_wait_on_event.
-+ *      which may cause timeouts and/or failure of function sync_wait_on_event.
-  *      This invariant condition is:
-  *
-  *          list_empty(&pchnl->io_completions) ==> pchnl->sync_event is reset
-@@ -602,7 +602,7 @@ int bridge_chnl_get_ioc(struct chnl_object *chnl_obj, u32 timeout,
- 		/*  Since DSPStream_Reclaim() does not take a timeout
- 		 *  parameter, we pass the stream's timeout value to
- 		 *  bridge_chnl_get_ioc. We cannot determine whether or not
--		 *  we have waited in User mode. Since the stream's timeout
-+		 *  we have waited in user mode. Since the stream's timeout
- 		 *  value may be non-zero, we still have to set the event.
- 		 *  Therefore, this optimization is taken out.
- 		 *
-diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-index 480a384..e322fb7 100644
---- a/drivers/staging/tidspbridge/core/io_sm.c
-+++ b/drivers/staging/tidspbridge/core/io_sm.c
-@@ -837,8 +837,8 @@ static void io_dispatch_pm(struct io_mgr *pio_mgr)
- /*
-  *  ======== io_dpc ========
-  *      Deferred procedure call for shared memory channel driver ISR.  Carries
-- *      out the dispatch of I/O as a non-preemptible event.It can only be
-- *      pre-empted      by an ISR.
-+ *      out the dispatch of I/O as a non-preemptible event. It can only be
-+ *      pre-empted by an ISR.
-  */
- void io_dpc(unsigned long ref_data)
- {
-@@ -877,7 +877,7 @@ void io_dpc(unsigned long ref_data)
- 						  pio_mgr->intr_val);
- 			}
- 		}
--		/* Proc-copy chanel dispatch */
-+		/* Proc-copy channel dispatch */
- 		input_chnl(pio_mgr, NULL, IO_SERVICE);
- 		output_chnl(pio_mgr, NULL, IO_SERVICE);
- 
-@@ -938,7 +938,7 @@ int io_mbox_msg(struct notifier_block *self, unsigned long len, void *msg)
- /*
-  *  ======== io_request_chnl ========
-  *  Purpose:
-- *      Request chanenel I/O from the DSP. Sets flags in shared memory, then
-+ *      Request channel I/O from the DSP. Sets flags in shared memory, then
-  *      interrupts the DSP.
-  */
- void io_request_chnl(struct io_mgr *io_manager, struct chnl_object *pchnl,
-@@ -2208,7 +2208,7 @@ void dump_dl_modules(struct bridge_dev_context *bridge_context)
- 			module_struct->num_sects);
- 
- 		/*
--		 * The section name strings start immedialty following
-+		 * The section name strings start immediately following
- 		 * the array of dll_sect structures.
- 		 */
- 		sect_str = (char *) &module_struct->
-diff --git a/drivers/staging/tidspbridge/core/sync.c b/drivers/staging/tidspbridge/core/sync.c
-index 995986a..7bb550a 100644
---- a/drivers/staging/tidspbridge/core/sync.c
-+++ b/drivers/staging/tidspbridge/core/sync.c
-@@ -49,7 +49,7 @@ void sync_set_event(struct sync_object *event)
-  * @timeout	timeout on waiting for the evetns.
-  * @pu_index	index of the event set.
-  *
-- * This functios will wait until any of the array element is set or until
-+ * These functions will wait until any of the array element is set or until
-  * timeout. In case of success the function will return 0 and
-  * @pu_index will store the index of the array element set or in case
-  * of timeout the function will return -ETIME or in case of
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index f9609ce..a19bf5c 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -328,7 +328,7 @@ static int bridge_brd_read(struct bridge_dev_context *dev_ctxt,
- 					   ul_num_bytes, mem_type);
- 		return status;
- 	}
--	/* copy the data from  DSP memory, */
-+	/* copy the data from DSP memory */
- 	memcpy(host_buff, (void *)(dsp_base_addr + offset), ul_num_bytes);
- 	return status;
- }
-@@ -1745,7 +1745,7 @@ static int mem_map_vmalloc(struct bridge_dev_context *dev_context,
- 	pa_next = page_to_phys(page[0]);
- 	while (!status && (i < num_pages)) {
- 		/*
--		 * Reuse pa_next from the previous iteraion to avoid
-+		 * Reuse pa_next from the previous iteration to avoid
- 		 * an extra va2pa call
- 		 */
- 		pa_curr = pa_next;
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-index 16a4aaf..58a1d6d 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-@@ -356,7 +356,7 @@ int pre_scale_dsp(struct bridge_dev_context *dev_context, void *pargs)
- 		dev_dbg(bridge, "OPP: %s IVA in sleep. No message to DSP\n");
- 		return 0;
- 	} else if ((dev_context->brd_state == BRD_RUNNING)) {
--		/* Send a prenotificatio to DSP */
-+		/* Send a prenotification to DSP */
- 		dev_dbg(bridge, "OPP: %s sent notification to DSP\n", __func__);
- 		sm_interrupt_dsp(dev_context, MBX_PM_SETPOINT_PRENOTIFY);
- 		return 0;
-diff --git a/drivers/staging/tidspbridge/dynload/tramp.c b/drivers/staging/tidspbridge/dynload/tramp.c
-index 60d22ea..404af18 100644
---- a/drivers/staging/tidspbridge/dynload/tramp.c
-+++ b/drivers/staging/tidspbridge/dynload/tramp.c
-@@ -81,7 +81,7 @@ static u8 priv_h2a(u8 value)
-  * Description: Generate a trampoline symbol name (ASCII) using the value
-  *	  of the symbol.  This places the new name into the user buffer.
-  *	  The name is fixed in length and of the form: __$dbTR__xxxxxxxx
-- *	  (where "xxxxxxxx" is the hex value.
-+ *	  (where "xxxxxxxx" is the hex value).
-  */
- static void priv_tramp_sym_gen_name(u32 value, char *dst)
- {
-@@ -414,7 +414,7 @@ static int priv_tramp_sym_finalize(struct dload_state *dlthis)
- 			/*  Copy the symbol contents into the flat table */
- 			*new_sym = cur_sym->sym_info;
- 
--			/*  Now finaize the symbol.  If it is in the tramp
-+			/*  Now finalize the symbol.  If it is in the tramp
- 			 * section, we need to adjust for the section start.
- 			 * If it is external then we don't need to adjust at
- 			 * all.
-@@ -773,7 +773,7 @@ static int priv_img_pkt_dup(struct dload_state *dlthis,
- 	int ret_val = 0;
- 	struct tramp_img_dup_relo *dup_relo = NULL;
- 
--	/*  Determinne if this image packet is already being tracked in the
-+	/*  Determine if this image packet is already being tracked in the
- 	   dup list for other trampolines. */
- 	dup_pkt = priv_dup_find(dlthis, secnn, image_offset);
- 
-@@ -998,7 +998,7 @@ int dload_tramp_generate(struct dload_state *dlthis, s16 secnn,
- /*
-  * Function:	dload_tramp_pkt_update
-  * Description: Update the duplicate copy of this image packet, which the
-- *	  trampoline layer is already tracking.  This is call is critical
-+ *	  trampoline layer is already tracking.  This call is critical
-  *	  to make if trampolines were generated anywhere within the
-  *	  packet and first pass relo continued on the remainder.  The
-  *	  trampoline layer needs the updates image data so when 2nd
-diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.c b/drivers/staging/tidspbridge/hw/hw_mmu.c
-index 8a93d55..71cb822 100644
---- a/drivers/staging/tidspbridge/hw/hw_mmu.c
-+++ b/drivers/staging/tidspbridge/hw/hw_mmu.c
-@@ -61,7 +61,7 @@ enum hw_mmu_page_size_t {
-  *       Type		: hw_status
-  *       Description     : 0		 -- No errors occurred
-  *			 RET_BAD_NULL_PARAM     -- A Pointer
-- *						Paramater was set to NULL
-+ *						Parameter was set to NULL
-  *
-  * PURPOSE:	      : Flush the TLB entry pointed by the
-  *			lock counter register
-@@ -103,7 +103,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address);
-  *
-  *       Type	    	: hw_status
-  *       Description     : 0		 -- No errors occurred
-- *			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
-+ *			 RET_BAD_NULL_PARAM     -- A Pointer Parameter
-  *						   was set to NULL
-  *			 RET_PARAM_OUT_OF_RANGE -- Input Parameter out
-  *						   of Range
-@@ -148,7 +148,7 @@ static hw_status mmu_set_cam_entry(const void __iomem *base_address,
-  *
-  *       Type	    	: hw_status
-  *       Description     : 0		 -- No errors occurred
-- *			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
-+ *			 RET_BAD_NULL_PARAM     -- A Pointer Parameter
-  *							was set to NULL
-  *			 RET_PARAM_OUT_OF_RANGE -- Input Parameter
-  *							out of Range
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspioctl.h b/drivers/staging/tidspbridge/include/dspbridge/dspioctl.h
-index 0c7ec04..0fcda19 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dspioctl.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dspioctl.h
-@@ -51,7 +51,7 @@
- #define BRDIOCTL_POSTSCALE_NOTIFY (BRDIOCTL_PWRCONTROL + 0xA)
- #define BRDIOCTL_CONSTRAINT_REQUEST (BRDIOCTL_PWRCONTROL + 0xB)
- 
--/* Number of actual DSP-MMU TLB entrries */
-+/* Number of actual DSP-MMU TLB entries */
- #define BRDIOCTL_NUMOFMMUTLB        32
- 
- struct bridge_ioctl_extproc {
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h b/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-index 7424c88..d4cb394 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-@@ -22,7 +22,7 @@
-  *  mailbox interrupt's cmd value received. The class value are defined
-  *  as a bit (10 thru 15) being set.
-  *
-- *  Note: Only 16 bits of each  is used. Other 16 bit data reg available.
-+ *  Note: Only 16 bits of each is used. Other 16 bit data reg available.
-  *
-  *   16 bit Mbx bit defns:
-  *
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/node.h b/drivers/staging/tidspbridge/include/dspbridge/node.h
-index 7397b7a..68ed74a 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/node.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/node.h
-@@ -220,7 +220,7 @@ extern int node_create_mgr(struct node_mgr **node_man,
-  *  Parameters:
-  *      noderes:              Node resource info handle returned from
-  *                                 node_allocate().
-- *      pr_ctxt:                Poninter to process context data.
-+ *      pr_ctxt:                Pointer to process context data.
-  *  Returns:
-  *      0:            Success.
-  *      -EFAULT:        Invalid hnode.
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/ntfy.h b/drivers/staging/tidspbridge/include/dspbridge/ntfy.h
-index cbc8819..6bb94d2 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/ntfy.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/ntfy.h
-@@ -78,7 +78,7 @@ static inline void ntfy_init(struct ntfy_object *no)
-  * ntfy_delete() - delete list of nofy events registered.
-  * @ntfy_obj:	Pointer to the ntfy object structure.
-  *
-- * This function is used to remove all the notify events  registered.
-+ * This function is used to remove all the notify events registered.
-  * unregister function is not needed in this function, to unregister
-  * a ntfy_event please look at ntfy_register function.
-  *
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/proc.h b/drivers/staging/tidspbridge/include/dspbridge/proc.h
-index a82380e..851b356 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/proc.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/proc.h
-@@ -263,7 +263,7 @@ extern int proc_get_processor_id(void *proc, u32 * proc_id);
-  *  Returns:
-  *      0     :   Success.
-  *      -EFAULT :   Invalid processor handle.
-- *      -EPERM   :   General failure while retireving processor trace
-+ *      -EPERM   :   General failure while retrieving processor trace
-  *		      Buffer.
-  *  Requires:
-  *      pbuf is not NULL
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/strm.h b/drivers/staging/tidspbridge/include/dspbridge/strm.h
-index dacf0c2..97aee4c 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/strm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/strm.h
-@@ -203,7 +203,7 @@ extern int strm_issue(struct strm_object *stream_obj, u8 * pbuf,
-  *      index:         Stream index.
-  *      pattr:          Pointer to structure containing attributes to be
-  *                      applied to stream. Cannot be NULL.
-- *      strmres:     Location to store stream resuorce info handle on output.
-+ *      strmres:     Location to store stream resource info handle on output.
-  *  Returns:
-  *      0:        Success.
-  *      -EFAULT:    Invalid hnode.
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/sync.h b/drivers/staging/tidspbridge/include/dspbridge/sync.h
-index b1e75eb..58a0d5c 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/sync.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/sync.h
-@@ -78,7 +78,7 @@ void sync_set_event(struct sync_object *event);
-  * @event:	events to wait for it.
-  * @timeout	timeout on waiting for the evetn.
-  *
-- * This functios will wait until @event is set or until timeout. In case of
-+ * This function will wait until @event is set or until timeout. In case of
-  * success the function will return 0 and
-  * in case of timeout the function will return -ETIME
-  * in case of signal the function will return -ERESTARTSYS
-@@ -106,7 +106,7 @@ static inline int sync_wait_on_event(struct sync_object *event,
-  * @timeout	timeout on waiting for the evetns.
-  * @pu_index	index of the event set.
-  *
-- * This functios will wait until any of the array element is set or until
-+ * This function will wait until any of the array element is set or until
-  * timeout. In case of success the function will return 0 and
-  * @pu_index will store the index of the array element set and in case
-  * of timeout the function will return -ETIME.
-diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-index 12a1d34..7dd8b52 100644
---- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
-+++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-@@ -463,7 +463,7 @@ int dcd_get_object_def(struct dcd_manager *hdcd_mgr,
- 	status = cod_read_section(lib, sz_sect_name, psz_coff_buf, ul_len);
- #endif
- 	if (!status) {
--		/* Compres DSP buffer to conform to PC format. */
-+		/* Compress DSP buffer to conform to PC format. */
- 		if (strstr(dcd_key->path, "iva") == NULL) {
- 			compress_buf(psz_coff_buf, ul_len, DSPWORDSIZE);
- 		} else {
-diff --git a/drivers/staging/tidspbridge/rmgr/dspdrv.c b/drivers/staging/tidspbridge/rmgr/dspdrv.c
-index dc767b1..d460f58 100644
---- a/drivers/staging/tidspbridge/rmgr/dspdrv.c
-+++ b/drivers/staging/tidspbridge/rmgr/dspdrv.c
-@@ -72,7 +72,7 @@ u32 dsp_init(u32 *init_status)
- 
- 	/* Unwind whatever was loaded */
- 	if (status) {
--		/* irrespective of the status of dev_remove_device we conitinue
-+		/* irrespective of the status of dev_remove_device we continue
- 		 * unloading. Get the Driver Object iterate through and remove.
- 		 * Reset the status to E_FAIL to avoid going through
- 		 * api_init_complete2. */
-@@ -92,7 +92,7 @@ u32 dsp_init(u32 *init_status)
- func_cont:
- 	/* Attempt to Start the Board */
- 	if (!status) {
--		/* BRD_AutoStart could fail if the dsp execuetable is not the
-+		/* BRD_AutoStart could fail if the dsp executable is not the
- 		 * correct one. We should not propagate that error
- 		 * into the device loader. */
- 		(void)api_init_complete2();
-diff --git a/drivers/staging/tidspbridge/rmgr/mgr.c b/drivers/staging/tidspbridge/rmgr/mgr.c
-index 8a1e928..b32ba0a 100644
---- a/drivers/staging/tidspbridge/rmgr/mgr.c
-+++ b/drivers/staging/tidspbridge/rmgr/mgr.c
-@@ -262,8 +262,8 @@ int mgr_enum_processor_info(u32 processor_id,
- 				    IVAPROCTYPE_ARM7)
- 					proc_detect = true;
- 			}
--			/* User applciatiuons aonly check for chip type, so
--			 * this clumsy overwrite */
-+			/* User applications only check for chip type, so
-+			 * this is a clumsy overwrite */
- 			processor_info->processor_type = DSPTYPE64;
- 		} else {
- 			dev_dbg(bridge, "%s: Failed to get DCD processor info "
-diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
-index 30d5480..6309221 100644
---- a/drivers/staging/tidspbridge/rmgr/nldr.c
-+++ b/drivers/staging/tidspbridge/rmgr/nldr.c
-@@ -898,7 +898,7 @@ static int add_ovly_info(void *handle, struct dbll_sect_info *sect_info,
- 				nldr_obj->ovly_table[i].execute_sects++;
- 
- 		} else {
--			/* Put in "other" sectins */
-+			/* Put in "other" sections */
- 			status =
- 			    add_ovly_sect(nldr_obj,
- 					  &nldr_obj->
-diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-index 7fb426c..f17c128 100644
---- a/drivers/staging/tidspbridge/rmgr/node.c
-+++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -1613,7 +1613,7 @@ int node_get_attr(struct node_object *hnode,
- 		return -EFAULT;
- 
- 	hnode_mgr = hnode->node_mgr;
--	/* Enter hnode_mgr critical section (since we're accessing
-+	/* Enter hnode_mgr critical section since we're accessing
- 	 * data that could be changed by node_change_priority() and
- 	 * node_connect(). */
- 	mutex_lock(&hnode_mgr->node_mgr_lock);
-diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
-index 7e4f12f..5e43938 100644
---- a/drivers/staging/tidspbridge/rmgr/proc.c
-+++ b/drivers/staging/tidspbridge/rmgr/proc.c
-@@ -300,7 +300,7 @@ proc_attach(u32 processor_id,
- 	if (status)
- 		goto func_end;
- 
--	/* If we made it this far, create the Proceesor object: */
-+	/* If we made it this far, create the Processor object: */
- 	p_proc_object = kzalloc(sizeof(struct proc_object), GFP_KERNEL);
- 	/* Fill out the Processor Object: */
- 	if (p_proc_object == NULL) {
--- 
-1.7.5.4
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lliubbo/blackfin.git for-linus
+
+for you to fetch changes up to ff765054a1d6461a0724443084f806455320c2ef:
+
+  bf60x: fix build warning (2012-07-24 11:44:00 +0800)
+
+----------------------------------------------------------------
+Bob Liu (7):
+      bfin: reorg clock init steps for bf609
+      blackfin: Kconfig: fix ROM range for bf60x
+      blackfin: mach-common: ints-priority add irq_set_wake
+      blackfin: bf609-ezkit: add probe_type for norflash
+      blackfin: fix musb macro name
+      blackfin: cplb-nompu: fix ROM cplb size for bf609-ezkit
+      bf60x: fix build warning
+
+Scott Jiang (10):
+      bf609: change ad7877 cs and irq pin
+      bfin: add 32M, 16M and 8M uncached DMA region options
+      v4l2: add adv7842 video decoder driver
+      bf609: add ssm2602 support on bf609 platform
+      bf609: add CVBS and S-Video support for adv7842
+      bf609: add HDMI support for adv7842
+      bf609: convert vs6624 blank_clocks to black_pixels
+      bf561: add capabilities in adv7183_inputs
+      bf609: reuse bf5xx-i2s-pcm.c as i2s pcm driver
+      bf609: add adv7511 display support
+
+Sonic Zhang (16):
+      blackfin: Call sg_for_each to pass through the whole sg list.
+      bf609: crypto: Add blackfin crypto crc driver platform data.
+      bf60x: Enable Blackfin CRC crypto driver by default.
+      bf60x: bfin_crc: move structure bfin_crc out of head file.
+      bf609: bfin_crc: Remove unused CRC TX DMA platform resources.
+      bfin: pm: add deepsleep for bf60x
+      bf60x: Add wake up latency bench for deep sleep mode.
+      i2c: i2c-bfin-twi: Always access 16 bit MMR by bfin 16 bit access Macro.
+      bf60x: sec: Clean up interrupt initialization code for SEC.
+      bf60x: sec: Enable sec interrupt source priority configuration.
+      bf60x: update bf60x anomaly list.
+      bf60x: add default anomaly setting.
+      bf60x: update anomaly id in serial and twi driver headers.
+      bf60x: Add double fault, hardware error and NMI SEC handler
+      bf60x: cpufreq: fix anomaly 05000273
+      blackfin: twi: read twi mmr via bfin_read macro
+
+Steven Miao (14):
+      pm: dpmc macro typo fix
+      bfin-dma: only use MDMA3 on bf609
+      irq: set cgu event handle to fasteoi handle
+      cpufreq: change debug message level to show clock change error
+      cache: enable L2 sram icache in menuconfig
+      bfin: simple_timer: add READ_COUNTER ioctl and add NOIRQ timer mode
+      bf60x: pm: add smc nor flash syscore ops
+      bf60x: pm: pass wakeup param
+      gpiokeys: add gpio keyboard platform device
+      bf60x: pm: add pint suspend and resume support
+      bfin: pint: add pint suspend and resume
+      cleanup: sec and linkport only built on bf60x
+      dpm: deepsleep: reserve stack
+      PM: add BF60x flash suspend and resume support
+
+Vivi Li (1):
+      bf60x: vs6624 pin update
+
+ arch/blackfin/Kconfig                              |   16 +-
+ arch/blackfin/configs/BF609-EZKIT_defconfig        |    2 +
+ arch/blackfin/include/asm/bfin-global.h            |    8 +-
+ arch/blackfin/include/asm/bfin_crc.h               |   14 -
+ arch/blackfin/include/asm/bfin_serial.h            |    2 +-
+ arch/blackfin/include/asm/bfin_simple_timer.h      |    6 +
+ arch/blackfin/include/asm/bfin_twi.h               |   10 +-
+ arch/blackfin/include/asm/context.S                |    9 +
+ arch/blackfin/include/asm/dpmc.h                   |    2 +-
+ arch/blackfin/include/asm/gpio.h                   |    2 +
+ arch/blackfin/include/asm/irq.h                    |   10 +
+ arch/blackfin/include/asm/mem_init.h               |  212 +++++++++++++
+ arch/blackfin/include/asm/traps.h                  |    2 +
+ arch/blackfin/kernel/bfin_dma.c                    |    4 +-
+ arch/blackfin/kernel/cplb-nompu/cplbinit.c         |    8 +
+ arch/blackfin/kernel/dma-mapping.c                 |   10 +-
+ arch/blackfin/mach-bf527/boards/ezkit.c            |    4 +-
+ arch/blackfin/mach-bf548/boards/ezkit.c            |    4 +-
+ arch/blackfin/mach-bf548/include/mach/gpio.h       |    2 +
+ arch/blackfin/mach-bf561/boards/ezkit.c            |    3 +
+ arch/blackfin/mach-bf609/Kconfig                   |    8 +
+ arch/blackfin/mach-bf609/Makefile                  |    4 +-
+ arch/blackfin/mach-bf609/boards/ezkit.c            |  304 +++++++++++++++++-
+ arch/blackfin/mach-bf609/clock.c                   |    3 +-
+ arch/blackfin/mach-bf609/dpm.S                     |  157 ++++++++++
+ arch/blackfin/mach-bf609/hibernate.S               |   65 ----
+ arch/blackfin/mach-bf609/include/mach/anomaly.h    |  141 ++++-----
+ .../mach-bf609/include/mach/defBF60x_base.h        |    1 -
+ arch/blackfin/mach-bf609/include/mach/gpio.h       |    2 +
+ arch/blackfin/mach-bf609/include/mach/irq.h        |    4 +
+ arch/blackfin/mach-bf609/include/mach/pm.h         |    9 +-
+ arch/blackfin/mach-bf609/ints-priority.c           |  156 +++++++++
+ arch/blackfin/mach-bf609/pm.c                      |  130 ++++----
+ arch/blackfin/mach-common/clocks-init.c            |  139 +-------
+ arch/blackfin/mach-common/cpufreq.c                |    5 +-
+ arch/blackfin/mach-common/entry.S                  |    7 -
+ arch/blackfin/mach-common/ints-priority.c          |  331 ++++++++++++++------
+ arch/blackfin/mach-common/pm.c                     |    8 +
+ 38 files changed, 1298 insertions(+), 506 deletions(-)
+ create mode 100644 arch/blackfin/mach-bf609/dpm.S
+ delete mode 100644 arch/blackfin/mach-bf609/hibernate.S
+ create mode 100644 arch/blackfin/mach-bf609/ints-priority.c
 
