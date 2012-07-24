@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab2GXK2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 06:28:47 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45736 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab2GXK2q (ORCPT
+	id S1752791Ab2GXKf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 06:35:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33314 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab2GXKfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 06:28:46 -0400
-Date: Tue, 24 Jul 2012 11:32:04 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Andre Przywara <andre.przywara@amd.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
-Message-ID: <20120724113204.7f48efe6@pyramind.ukuu.org.uk>
-In-Reply-To: <20120724095031.GA24393@aftab.osrc.amd.com>
-References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com>
-	<dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
-	<20120721103715.GA3632@aftab.osrc.amd.com>
-	<500E4960.8040307@parallels.com>
-	<500E5951.5020900@amd.com>
-	<20120724095031.GA24393@aftab.osrc.amd.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 24 Jul 2012 06:35:25 -0400
+Message-ID: <1343126116.6033.1.camel@phoenix>
+Subject: [PATCH] gpio: msic: Fix calculating register address in
+ msic_gpio_to_oreg()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Tue, 24 Jul 2012 18:35:16 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So actually, making it straightforward to disable CPUID feature bits
-> just for every whim is the bug.
+In the case offset is 20 ... 23, the equation to get the register should be:
+        INTEL_MSIC_GPIO1HV0CTLO - offset + 20
 
-Sometimes its needed to make stuff work. Expecting user space to go
-digging in odd places isn't good either but exposing *both* true/apparent
-cpuid bits might not be a bad idea.
+With above equation, we can get below mapping between offset and the register:
+        offset is 20: INTEL_MSIC_GPIO1HV0CTLO
+        offset is 21: INTEL_MSIC_GPIO1HV1CTLO
+        offset is 22: INTEL_MSIC_GPIO1HV2CTLO
+        offset is 23: INTEL_MSIC_GPIO1HV3CTLO
 
-> I'd like to see a real valid reason why someone would even think that.
-> Except virtualization folks who are crazy anyway, so that doesn't count :).
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpio/gpio-msic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Which is a very large part of the x86 market. So they most definitely do
-count. Virtualisation is somewhat different though. There you are trying
-to define a subset of the features that all the systems in your
-environment have so you can do migrations. Virtualisation you have rather
-more different control of the cpuid and msrs anyway.
-
-> Majority of users is majority of users no matter how you look at it!
-
-That's not a good argument. The majority of users don't have SCSI,
-certain processors and so on ...
-
-> Right, and how is giving the user a heavy, well-oiled AK-47 to do that,
-> user-friendly?
-
-It's a point and click interface
-
-> And this is exactly what I'm questioning: the usability, or rather, the
-> mis-usability of such a feature.
-
-What goes with that is "so how do you do it otherwise". Distros can
-certainly add patches for such features if needed but that just makes it
-even more fun to debug.
+diff --git a/drivers/gpio/gpio-msic.c b/drivers/gpio/gpio-msic.c
+index 71a838f..b389862 100644
+--- a/drivers/gpio/gpio-msic.c
++++ b/drivers/gpio/gpio-msic.c
+@@ -99,7 +99,7 @@ static int msic_gpio_to_oreg(unsigned offset)
+ 	if (offset < 20)
+ 		return INTEL_MSIC_GPIO0HV0CTLO - offset + 16;
  
-Does "bind mount your own cpuid file" cover this ?
+-	return INTEL_MSIC_GPIO1HV0CTLO + offset + 20;
++	return INTEL_MSIC_GPIO1HV0CTLO - offset + 20;
+ }
+ 
+ static int msic_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+-- 
+1.7.9.5
 
-Alan
+
+
