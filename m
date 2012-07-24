@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab2GXNT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:19:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51159 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754109Ab2GXNT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:19:27 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com>
-References: <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com> <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de, tglx@linutronix.de,
-        mingo@kernel.org, davej@redhat.com
-Subject: Re: [PATCH 00/13] UAPI header file split
-Date: Tue, 24 Jul 2012 14:19:12 +0100
-Message-ID: <28702.1343135952@warthog.procyon.org.uk>
+	id S1754271Ab2GXNVq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:21:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:57052 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab2GXNVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 09:21:45 -0400
+Date: Tue, 24 Jul 2012 14:21:37 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Miguel =?iso-8859-1?Q?G=F3mez?= <magomez@igalia.com>
+Cc: cascardo@holoscopio.com, don@syst.com.br,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] classmate-laptop: Fix extra keys hardware id.
+Message-ID: <20120724132137.GA17118@srcf.ucam.org>
+References: <20120724030946.GA2742@nautilus.holoscopio.com>
+ <1343135125-18733-1-git-send-email-magomez@igalia.com>
+ <500EA066.8000601@igalia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <500EA066.8000601@igalia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+On Tue, Jul 24, 2012 at 03:17:26PM +0200, Miguel Gómez wrote:
+> I've created this patch on top of linux-next, but it won't apply
+> over the patch I've just sent for the accelerometer (neither the
+> later over the former).
+> 
+> How do you want me to proceed? Should I sent this again over the
+> accelerometer patch?
 
-> In the uapi-split branch, there are now 44 empty Kbuild files. Was
-> that intended? Or, should these files rather be removed by your
-> patches?
+I can merge them. Thanks for the patch!
 
-To be removed by a later patch, I think.  Getting rid of some of them isn't
-trivial - ones in arch/x/include/asm/Kbuild for example - because that Kbuild
-is referenced by common code IIRC as a function of the arch.
-
-David
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
