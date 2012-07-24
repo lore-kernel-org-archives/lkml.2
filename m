@@ -1,59 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab2GXMBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 08:01:03 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59775 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab2GXMBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 08:01:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL 00/15] arm-soc: changes for v3.6
-Date: Tue, 24 Jul 2012 12:00:10 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        linux-kernel@vger.kernel.org, "Mark A. Greer" <mgreer@animalcreek.com>,
-        arm@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>
-References: <1343075561-17446-1-git-send-email-arnd@arndb.de> <201207240751.39111.arnd@arndb.de> <20120724081246.GS6522@atomide.com>
-In-Reply-To: <20120724081246.GS6522@atomide.com>
+	id S1753609Ab2GXMBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 08:01:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35317 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753573Ab2GXMBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 08:01:13 -0400
+Date: Tue, 24 Jul 2012 14:01:05 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1207241355080.9707@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207241200.11190.arnd@arndb.de>
-X-Provags-ID: V02:K0:EBl1YfV2v1tUPyLqNptoAKIST1vmE20Zd84EBKsp6xs
- KVgKrjkr5uQNbWy7tIUdOVBIzHdHjpGbqDtu52tpsektI2Itf+
- 39VPiOeAjstaNa9NLPH1zkjW/5FPQaYOq/xVnQBICNL+M0Vqhu
- lvwYYS/axsd1Di87zSQXW2bHlx95qybcyBudRRpc45nOayI0xO
- l0ZR2ECz3fVgkfRd7r1wBLg70rvDAj5Vy8e+LdbkgpHI1ZuQrd
- S6p11eWWBqxl0R7kVyIh5jIJXU2usI4tmNhVvB24tR+zoGhFm6
- nIynIx8fYpldo/V9uZGvxsN74DFqkDrdICWGXJbEs1LX9dYQ25
- 0fIDksH4DN/IPan419+0=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 July 2012, Tony Lindgren wrote:
-> > I spent too much time fiddling with my scripts again in an attempt to
-> > get closer to the regular git-request-pull version. The older version
-> > got this right, but unfortunately I removed the part where I manually
-> > print the right pull address because that had caused other problems
-> > before.
-> 
-> FYI, this issue happens also with git request-pull if the tag has not
-> yet gotten mirrored but the branch is already mirrored.
+Linus,
 
-In this case it they were both there, but it picked up the branch
-anyway. I actually made sure that the tag description was included
-by git-request-pull, and the tag has a different name from the
-branch (no "next/" prefix), but the tool is not does not attempt
-to pick up the tag rather than the branch when both are available.
+please pull from
 
-Apparently, the problem is that it treats the branch "next/foo"
-as as exact match for a pull request on the "foo" tag even when
-that tag is present as "foo" on the server. If I either name the
-branch or the tag differently, or pass "tags/foo" as the
-argument to git-request-pull, it reports back the tag instead.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-	Arnd
+to receive 3.6 merge window updates for HID layer.
+
+The list of changes worth pointing out explicitly:
+
+- We are getting 'UHID', which is a new framework for implementing HID 
+  transport drivers in userspace (this is different from HIDRAW, which is
+  transport-independent and provides report parsing facilities; uhid is
+  for the other (transport) part of the pipeline).
+  It's needed for (and currently being used by) Bluetooth-LowEnergy, as
+  its specification mandates things we don't want in the kernel.
+  Written by David Herrmann.
+
+- there have been quite a few bugs in runtime suspend/resume paths 
+  (probably never reported to actually happen in the wild, but still).
+  Alan Stern fixed those.
+
+- a few other driver updates and fixes and random new device support.
+
+Thanks.
+
+Alan Stern (6):
+      HID: usbhid: fix use-after-free bug
+      HID: usbhid: fix autosuspend calls
+      HID: usbhid: inline some simple routines
+      HID: usbhid: replace HID_REPORTED_IDLE with HID_SUSPENDED
+      HID: usbhid: check for suspend or reset before restarting
+      HID: usbhid: fix error paths in suspend
+
+Austin Hendrix (1):
+      HID: multitouch: add support for Novatek touchscreen
+
+Benjamin Tissoires (2):
+      HID: hid-multitouch: fix input mode feature command
+      HID: hid-multitouch: add support for Zytronic panels
+
+Bernhard Seibold (1):
+      HID: Driver for Lenovo Keyboard with Trackpoint
+
+Bryan Wu (1):
+      HID: select NEW_LEDS for driver of Lenovo ThinkPad USB Keyboard with TrackPoint
+
+Cyrus Lien (1):
+      HID: add ASUS AIO keyboard model AK1D
+
+David Herrmann (17):
+      HID: uhid: introduce user-space I/O driver support for HID
+      HID: uhid: add internal message buffer
+      HID: uhid: allow poll()'ing on uhid devices
+      HID: uhid: implement read() on uhid devices
+      HID: uhid: implement write() on uhid devices
+      HID: uhid: add UHID_CREATE and UHID_DESTROY events
+      HID: uhid: allow feeding input data into uhid devices
+      HID: uhid: forward hid report-descriptor to hid core
+      HID: uhid: add UHID_START and UHID_STOP events
+      HID: uhid: forward open/close events to user-space
+      HID: uhid: forward output request to user-space
+      HID: uhid: forward raw output reports to user-space
+      HID: uhid: implement feature requests
+      HID: uhid: add documentation
+      HID: uhid: add example program
+      MAINTAINERS: add UHID entry
+      HID: Allow drivers to be their own listener
+
+Giuseppe Bilotta (1):
+      HID: wiimote-ext: comment spelling fix
+
+Jiri Kosina (2):
+      HID: multitouch: fix entry for Novatek Touchscreen
+      HID: uhid: silence gcc warning
+
+Keng-Yu Lin (1):
+      HID: Add suport for the brightness control keys on HP keyboards
+
+Lionel Vaux (1):
+      HID: add support for Cypress barcode scanner 04B4:ED81
+
+Matthieu CASTET (2):
+      HID: hidraw: fix list->buffer memleak
+      HID: hid-core: optimize in case of hidraw
+
+Stefan Achatz (5):
+      HID: roccat: add support for Roccat Savu
+      HID: roccat: move functionality to roccat-common
+      HID: roccat: fix wrong hid_err usage on struct usb_device
+      HID: roccat: rename roccat_common functions to roccat_common2
+      HID: roccat: added sensor sysfs attribute for Savu
+
+Tom Harwood (1):
+      HID: Add driver for Holtek based keyboards with broken HID
+
+Vinicius Costa Gomes (1):
+      HID: uhid: Fix sending events with invalid data
+
+Yufeng Shen (2):
+      HID: magicmouse: Removing report_touches switch
+      HID: magicmouse: Implement Multi-touch Protocol B (MT-B)
+
+ .../ABI/testing/sysfs-driver-hid-lenovo-tpkbd      |   38 ++
+ .../ABI/testing/sysfs-driver-hid-roccat-savu       |   77 +++
+ Documentation/hid/uhid.txt                         |  169 ++++++
+ MAINTAINERS                                        |    7 +
+ drivers/hid/Kconfig                                |   40 ++-
+ drivers/hid/Makefile                               |    6 +-
+ drivers/hid/hid-chicony.c                          |    1 +
+ drivers/hid/hid-core.c                             |   21 +-
+ drivers/hid/hid-cypress.c                          |    2 +
+ drivers/hid/hid-holtek-kbd.c                       |  183 +++++++
+ drivers/hid/hid-ids.h                              |   12 +
+ drivers/hid/hid-input.c                            |    9 +
+ drivers/hid/hid-lenovo-tpkbd.c                     |  564 +++++++++++++++++++
+ drivers/hid/hid-magicmouse.c                       |  157 +++----
+ drivers/hid/hid-multitouch.c                       |   18 +-
+ drivers/hid/hid-picolcd.c                          |    6 +-
+ drivers/hid/hid-roccat-arvo.c                      |   16 +-
+ drivers/hid/hid-roccat-common.c                    |   72 +++-
+ drivers/hid/hid-roccat-common.h                    |   16 +-
+ drivers/hid/hid-roccat-isku.c                      |   52 +--
+ drivers/hid/hid-roccat-isku.h                      |    7 -
+ drivers/hid/hid-roccat-kone.c                      |    6 +-
+ drivers/hid/hid-roccat-koneplus.c                  |   98 +---
+ drivers/hid/hid-roccat-koneplus.h                  |   22 -
+ drivers/hid/hid-roccat-kovaplus.c                  |   71 +--
+ drivers/hid/hid-roccat-kovaplus.h                  |   15 -
+ drivers/hid/hid-roccat-pyra.c                      |   59 +--
+ drivers/hid/hid-roccat-pyra.h                      |   12 -
+ drivers/hid/hid-roccat-savu.c                      |  316 +++++++++++
+ drivers/hid/hid-roccat-savu.h                      |   87 +++
+ drivers/hid/hid-wiimote-ext.c                      |    2 +-
+ drivers/hid/hidraw.c                               |   12 +-
+ drivers/hid/uhid.c                                 |  572 ++++++++++++++++++++
+ drivers/hid/usbhid/hid-core.c                      |  294 +++++-----
+ drivers/hid/usbhid/usbhid.h                        |    1 -
+ include/linux/Kbuild                               |    1 +
+ include/linux/hid.h                                |    1 +
+ include/linux/uhid.h                               |  104 ++++
+ samples/uhid/Makefile                              |   10 +
+ samples/uhid/uhid-example.c                        |  381 +++++++++++++
+ 40 files changed, 2983 insertions(+), 554 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-lenovo-tpkbd
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-roccat-savu
+ create mode 100644 Documentation/hid/uhid.txt
+ create mode 100644 drivers/hid/hid-holtek-kbd.c
+ create mode 100644 drivers/hid/hid-lenovo-tpkbd.c
+ create mode 100644 drivers/hid/hid-roccat-savu.c
+ create mode 100644 drivers/hid/hid-roccat-savu.h
+ create mode 100644 drivers/hid/uhid.c
+ create mode 100644 include/linux/uhid.h
+ create mode 100644 samples/uhid/Makefile
+ create mode 100644 samples/uhid/uhid-example.c
+
+-- 
+Jiri Kosina
+SUSE Labs
