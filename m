@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab2GXNB2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:01:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40543 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992Ab2GXNB1 (ORCPT
+	id S1754087Ab2GXNEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:04:35 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50745 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab2GXNEe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:01:27 -0400
-Message-ID: <500E9CC7.9020201@gmail.com>
-Date: Tue, 24 Jul 2012 15:01:59 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+	Tue, 24 Jul 2012 09:04:34 -0400
 MIME-Version: 1.0
-To: dlaor@redhat.com
-CC: Rusty Russell <rusty@rustcorp.com.au>, mst@redhat.com, penberg@kernel.org,
-        asias.hejun@gmail.com, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
-        anthony@codemonkey.ws, wency@cn.fujitsu.com
-Subject: Re: [RFC 0/2] virtio: provide a way for host to monitor critical
- events in the device
-References: <1343075561-29316-1-git-send-email-levinsasha928@gmail.com> <87a9yprc4v.fsf@rustcorp.com.au> <500E5C36.2070601@redhat.com> <500E954F.8090102@gmail.com> <500E9942.3080505@redhat.com>
-In-Reply-To: <500E9942.3080505@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1342922751.65328.YahooMailNeo@web120106.mail.ne1.yahoo.com>
+References: <1342922751.65328.YahooMailNeo@web120106.mail.ne1.yahoo.com>
+Date: Tue, 24 Jul 2012 21:04:32 +0800
+Message-ID: <CAJd=RBC24UXztNoKews5sE06DRvk_cBEYunHT7Zc-rdvAFF0ew@mail.gmail.com>
+Subject: Re: Direct I/O bug in kernel
+From: Hillf Danton <dhillf@gmail.com>
+To: Victor Meyerson <calculuspenguin@yahoo.com>
+Cc: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 02:46 PM, Dor Laor wrote:
-> On 07/24/2012 03:30 PM, Sasha Levin wrote:
->> On 07/24/2012 10:26 AM, Dor Laor wrote:
->>> On 07/24/2012 07:55 AM, Rusty Russell wrote:
->>>> On Mon, 23 Jul 2012 22:32:39 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
->>>>> As it was discussed recently, there's currently no way for the guest to notify
->>>>> the host about panics. Further more, there's no reasonable way to notify the
->>>>> host of other critical events such as an OOM kill.
->>>>
->>>> I clearly missed the discussion.  Is this actually useful?  In practice,
->>>
->>> Admit this is not a killer feature..
->>>
->>>> won't you want the log from the guest?  What makes a virtual guest
->>>> different from a physical guest?
->>>
->>> Most times virt guest can do better than a physical OS. In that sense, this is where virtualization shines (live migration, hotplug for any virtual resource including net/block/cpu/memory/..).
->>>
->>> There are plenty of niche but worth while small features such as the virtio-trace series and other that allow the host/virt-mgmt to get more insight into the guest w/o a need to configure the guest.
->>>
->>> In theory guest OOM can trigger a host memory hot plug action. Again, I don't see it as a key feature..
->>>
->>>>
->>>> Guest watchdog functionality might be useful, but that's simpler to
->>>
->>> There is already a fully emulated watchdog device in qemu.
->>
->> There is, but why emulate physical devices when you can take advantage of virtio?
->>
->> You could say the same about the rest of the virtio family - "There is already a fully emulated NIC device in qemu".
-> 
-> The single issue virtio-nic solves is performance enhancements that can be done w/ a fully emulated NIC. The reason is that such NIC tend to access pio/mmio space a lot while virtio is designed for virtualization.
+On Sun, Jul 22, 2012 at 10:05 AM, Victor Meyerson
+<calculuspenguin@yahoo.com> wrote:
+> Hi,
+>
+> I recently found a bug related to direct io in post 3.3 linux kernels.  Fortunately, my hardware (a Cobalt Qube2) is supported by the vanilla kernel so I did not need additional patch sets to get the machine to boot.  I ran git bisect on the main tree[1] and tested the various bisect results until git reported the first bad commit.  After several bisects and many reboots, git reported that [2] was the first bad commit.
+>
+> In testing this I came up with a repeatable process.  Unfortunately, I do not have any other MIPS hardware to test this on and I believe that based on the commit in question that it is MIPS related.  My procedure is as follows:
+>
+> 1) Create a random file to be used on the two kernels (one before the commit, and one that includes the commit)
+> $ dd if=/dev/urandom of=random-file bs=512 count=30720
+> 30720+0 records in
+> 30720+0 records out
+> 15728640 bytes (16 MB) copied, 60.7035 s, 259 kB/s
+> $ chmod -w random-file
+>
+> 2) Reboot to the kernel before the commit and run dd with direct io.  Repeat.
+> $ uname -a
+> Linux horadric 3.2.0-dirty #2 Fri Jul 13 06:20:22 PDT 2012 mips64 Nevada V10.0 FPU V10.0 Cobalt Qube2 GNU/Linux
+> $ dd if=random-file of=portion-of-random-3.2.0 bs=512 count=20480 iflag=direct
+> 20480+0 records in
+> 20480+0 records out
+> 10485760 bytes (10 MB) copied, 42.3636 s, 248 kB/s
+> $ reboot
+> $ dd if=random-file of=portion-of-random-3.2.0-2 bs=512 count=20480 iflag=direct
+> 20480+0 records in
+> 20480+0 records out
+> 10485760 bytes (10 MB) copied, 42.5252 s, 247 kB/s
+>
+> 3) Reboot to the kernel with the commit and run dd with direct io.  Repeat.
+> $ uname -a
+> Linux horadric 3.2.0-rc4-00003-gb1c10be-dirty #15 Fri Jul 20 15:05:13 PDT 2012 mips64 Nevada V10.0 FPU V10.0 Cobalt Qube2 GNU/Linux
+> $ dd if=random-file of=portion-of-random-3.2.0-rc4 bs=512 count=20480 iflag=direct
+> 20480+0 records in
+> 20480+0 records out
+> 10485760 bytes (10 MB) copied, 40.6226 s, 258 kB/s
+> $ reboot
+> $ dd if=random-file of=portion-of-random-3.2.0-rc4-2 bs=512 count=20480 iflag=direct
+> 20480+0 records in
+> 20480+0 records out
+> 10485760 bytes (10 MB) copied, 40.8856 s, 256 kB/s
+>
+Hi Victor,
 
-virtio on it's own was introduced to help solve the fragmentation around virtualized devices, so I don't think that the main purpose of doing virtio drivers is due to any performance benefits virtio may provide.
+Create files with
 
-Also consider virtio devices which don't exactly have strict performance considerations such as virtio-9p or virtio-rng.
+    dd if=random-file of=portion-of-random-3.2.0-rc4    bs=8k
+count=1280 iflag=direct
+    dd if=random-file of=portion-of-random-3.2.0-rc4-2 bs=8k
+count=1280 iflag=direct
 
-I mean, why implement virtio-rng when qemu could just emulate some sort of a hardware RNG and just grab randomness from the host?
+without reboot(why reboot needed?), then see the changes in checksums.
 
-> Standard watchdog device (isn't it time you'll try qemu?)  isn't about performance and if that's all the functionality you need it should work fine.
+Thanks
+Hillf
 
-Don't understand me wrong, I'm not saying that there's something with the watchdog driver in qemu. All I want is to write a watchdog driver for lkvm which can take advantage of the fact it runs within a guest.
-
-> btw: check the virtio-trace series that was just send in a parallel thread.
-
-Will do!
-
-> Cheers,
-> Dor
-> 
-> 
-> 
-
-
+> 4) Compare checksums of the resulting files.
+> $ sha256sum portion-of-random-3.2.0*
+> c98a6e949b36448842a21f68e7c6a5daff1f161e1eb3e3529176cf56bf5af89e  portion-of-random-3.2.0
+> c98a6e949b36448842a21f68e7c6a5daff1f161e1eb3e3529176cf56bf5af89e  portion-of-random-3.2.0-2
+> dca27da87a78580b8a34bbff2790ae80d3aa880d5d00fc2126f109d6fff9e056  portion-of-random-3.2.0-rc4
+> 703cf02d4fa90679d4a75900e7e5a3b8c3000a65bfc475610b10f17bb88bedbc  portion-of-random-3.2.0-rc4-2
+>
+> Notice how the last two files have different checksums between themselves and even different from the first two files.  This lead me to believe that there is a problem with direct io.  All the files are the same size and should include the same portion of the random file created in step 1).
+>
+> My configuration is the Cobalt Qube2 with a 64-bit kernel and an n32 userspace.  Hopefully someone with a much more deeper understanding of the kernel can confirm and provide a fix for this (assuming one has not been created yet).
+>
+> Thanks.  Let me know if there is any additional information that may help with the investigation.
+>
+> Victor
+>
+>
+> [1] http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> [2] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=b1c10bea620f79109b5cc9935267bea4f6f29ac6
