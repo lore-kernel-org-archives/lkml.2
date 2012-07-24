@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab2GXDKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 23:10:49 -0400
-Received: from trem.minaslivre.org ([74.50.53.205]:59779 "EHLO
-	grilo.cascardo.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab2GXDKr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 23:10:47 -0400
-Date: Tue, 24 Jul 2012 00:09:47 -0300
-From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-To: Miguel =?utf-8?B?R8OzbWV6?= <magomez@igalia.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, don@syst.com.br,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1 v2] classmate-laptop: Add support for Classmate V4
- accelerometer.
-Message-ID: <20120724030946.GA2742@nautilus.holoscopio.com>
-References: <cover.1340976795.git.magomez@igalia.com>
- <39ac42c709e498fbef4f0f0f24edc5331e5f4473.1340976795.git.magomez@igalia.com>
- <20120717224749.GA20813@nautilus.holoscopio.com>
- <5006BFEC.1010407@igalia.com>
- <20120723132841.GD21495@srcf.ucam.org>
- <500D52A7.8040606@igalia.com>
- <20120723133618.GC21838@srcf.ucam.org>
- <500D5549.3040109@igalia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
-Content-Disposition: inline
-In-Reply-To: <500D5549.3040109@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755199Ab2GXDWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 23:22:21 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53535 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753125Ab2GXDWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 23:22:20 -0400
+Message-ID: <1343100106.3715.2.camel@pasglop>
+Subject: Re: next/mmotm unbootable on G5: irqdomain
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Hugh Dickins <hughd@google.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Tue, 24 Jul 2012 13:21:46 +1000
+In-Reply-To: <CACxGe6udruWL7oo6Qp6jkwQYceduTO1h1gKFz9TFX1TPZoNFNQ@mail.gmail.com>
+References: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils>
+	 <1343011543.2957.2.camel@pasglop>
+	 <CACxGe6uFvtro7iR8FewgChLr_6PnZA-EaRMKQjrFEaEHg7SKRQ@mail.gmail.com>
+	 <1343082371.2957.39.camel@pasglop>
+	 <CACxGe6uo8jx3GQFQpQ5RTHF5JyN2hEgvcvdmSYfGyTQnzK9fOA@mail.gmail.com>
+	 <CACxGe6udruWL7oo6Qp6jkwQYceduTO1h1gKFz9TFX1TPZoNFNQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-07-23 at 16:32 -0600, Grant Likely wrote:
+> > As-is I'm backing off from the linear/legacy/tree merge patch as just
+> > too risky. I've already pulled that stuff out of linux-next.
+> 
+> Can I pull you pseries fix into my tree (my preference), or do I need
+> to rebase on top of yours? 
 
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The mpic fix for the g5 is in Linus tree already, I added it on top of
+powerpc -next before I asked Linus to pull.
 
-On Mon, Jul 23, 2012 at 03:44:41PM +0200, Miguel G=C3=B3mez wrote:
-> El 23/07/12 15:36, Matthew Garrett escribi=C3=B3:
-> >On Mon, Jul 23, 2012 at 03:33:27PM +0200, Miguel G=C3=B3mez wrote:
-> >
-> >>Names are upper-cased in acpica, so the device is reported as
-> >>FNBT0000. But in the driver it's named FnBT0000, and that's why it
-> >>doesn't match.
-> >
-> >So just change the existing entry in the driver to FNBT0000?
->=20
-> I'd go for it. I can send a patch if you want. But not sure about
-> Thadeu's opinion. In the old thread it seems that he wanted to
-> explore other options besides that.
->=20
-> Do you agree with that change Thadeu?
->=20
+For pseries (ie the fix for irq_find_mapping vs. radix), I don't have a
+formal patch, just the one I hand typed in my previous email, so do
+whatever you want with it.
 
-I'd say the other options were met with silence. So, go forward with the
-patch and I'll ack it.
+Cheers,
+Ben.
 
-Thanks.
-Cascardo.
 
->=20
-> --=20
-> Miguel G=C3=B3mez
-> Igalia - http://www.igalia.com
-
---TB36FDmn/VVEgNH/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQDhH5AAoJEAq6ZQNy/ZVxF7oQAKtYBBw92OeB7YkNSlG1Wram
-IHpCk5so8sYk0rz58NKg8JMgh5GD4A0UWHMGuEb1hRbkHzTbdF5Jdps8ldFH/6Sm
-HAOJ9Pf7kiAucDVCOojsR8391FFvxQFgHUOhpY0VAUFpJgD7obDXrCCl08dBlN70
-F075JqYsK3rh9enpJvUI5nDrA/h0/XUdRgstAagUmLhCAqEgToiF5j02bE+kdlpG
-wE0iqtco337Gczc1pidRQXwEm1wY8NXM++XGFtxUPG2ITGrgyzpEyCRQOH4zN0tB
-/Ozm+nhoMTqehxToFp1Q/Q+1DUYAG46oxXw7hN8hCJzJhiuQifcbawLVb/uGwUSy
-V/b9Dkv2JVihTvW8NBN0dtgUmsO/RfvNmGG+OBN96qHvuJ8/Wdyw8uunxFGIybjM
-M+ntunSPC5IfV7k2RBd0HD4RW3hjTFgPMTp5u3Onh//EfAWOJIliLzY1ThV/LjRA
-TkVMAXUs4sGc7T9PN1/j/d5IW+or7MD+QDAnkCE5ZsCwgAA8XyrbFGAJzB80P9td
-OuDA7VEZKbVidBj64o5JSUc9YdUoWnkD697xfZuPMfFf+hoIc9DTbeICT7giicST
-+pvqG4Zv0c7qBbxCzvGzCmLR2VKNRlmV5rxGSt26wWWK2Ypjt43CUbiFi1mc3v3r
-603qbYXV0iQaUy2dveBQ
-=82TM
------END PGP SIGNATURE-----
-
---TB36FDmn/VVEgNH/--
