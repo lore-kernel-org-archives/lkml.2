@@ -1,193 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab2GXU00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:26:26 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47537 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755667Ab2GXU0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:26:25 -0400
+	id S1755868Ab2GXU1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:27:47 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:41039 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755426Ab2GXU1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 16:27:45 -0400
+Date: Tue, 24 Jul 2012 16:27:38 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Rajat Sharma <fs.rajat@gmail.com>
+Cc: Ankit Jain <jankit@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        bcrl@kvack.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Make io_submit non-blocking
+Message-ID: <20120724202738.GC29239@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Rajat Sharma <fs.rajat@gmail.com>, Ankit Jain <jankit@suse.de>,
+	Al Viro <viro@zeniv.linux.org.uk>, bcrl@kvack.org,
+	linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+	linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+References: <500E89D1.9010303@suse.de>
+ <CAAYFAvp7xDG8et_dyqSgEVOAr7ykNBkgBhs1m5gGjoOdQFkxGQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
-From: Blue Swirl <blauwirbel@gmail.com>
-Date: Tue, 24 Jul 2012 20:26:03 +0000
-Message-ID: <CAAu8pHsfRBsfSCB5gBFX5pweN2j2PdNrQZyCfjJ3sYYmVjCRfA@mail.gmail.com>
-Subject: Re: [Qemu-devel] [RFC PATCH 0/6] virtio-trace: Support virtio-trace
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
-        Borislav Petkov <bp@amd64.org>,
-        virtualization@lists.linux-foundation.org,
-        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Shah <amit.shah@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAYFAvp7xDG8et_dyqSgEVOAr7ykNBkgBhs1m5gGjoOdQFkxGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 2:36 AM, Yoshihiro YUNOMAE
-<yoshihiro.yunomae.ez@hitachi.com> wrote:
-> Hi All,
->
-> The following patch set provides a low-overhead system for collecting kernel
-> tracing data of guests by a host in a virtualization environment.
->
-> A guest OS generally shares some devices with other guests or a host, so
-> reasons of any problems occurring in a guest may be from other guests or a host.
-> Then, to collect some tracing data of a number of guests and a host is needed
-> when some problems occur in a virtualization environment. One of methods to
-> realize that is to collect tracing data of guests in a host. To do this, network
-> is generally used. However, high load will be taken to applications on guests
-> using network I/O because there are many network stack layers. Therefore,
-> a communication method for collecting the data without using network is needed.
+On Tue, Jul 24, 2012 at 06:04:23PM +0530, Rajat Sharma wrote:
+> >
+> > Currently, io_submit tries to execute the io requests on the
+> > same thread, which could block because of various reaons (eg.
+> > allocation of disk blocks). So, essentially, io_submit ends
+> > up being a blocking call.
+> 
+> Ideally filesystem should take care of it e.g. by deferring such time
+> consuming allocations and return -EIOCBQUEUED immediately. But have
+> you seen such cases?
 
-I implemented something similar earlier by passing trace data from
-OpenBIOS to QEMU using the firmware configuration device. The data
-format was the same as QEMU used for simpletrace event structure
-instead of ftrace. I didn't commit it because of a few problems.
+Oh, it happens all the time if you are using AIO.  If the file system
+needs to read or write any metadata block, AIO can become distinctly
+non-"A".  The workaround that I've chosen is to create a way to cache
+the information needed for the bmap() operation, triggered via an
+ioctl() issued at open time, so that this is not an issue, but that
+only works if the file is pre-allocated, and there is no need to do
+any block allocations.
 
-I'm not familiar with ftrace, is it possible to trace two guest
-applications (BIOS and kernel) at the same time? Or could this be
-handled by opening two different virtio-serial pipes, one for BIOS and
-the other for the kernel?
+It's all very well and good to say, "the file system should handle
+it", but that just pushes the problem onto the file system.  And since
+you need to potentially issue block I/O requests, which you can't do
+from an interrupt context (i.e., a block I/O completion handler), you
+really do need to create a workqueue in order to make things work.
 
-In my version, the tracepoint ID would have been used to demultiplex
-QEMU tracepoints from BIOS tracepoints, but something like separate ID
-spaces would have been better.
+If you do it in the fs/direct_io.c layer, at least that way you can
+solve the problem once for all file systems....
 
->
-> We submitted a patch set of "IVRing", a ring-buffer driver constructed on
-> Inter-VM shared memory (IVShmem), to LKML http://lwn.net/Articles/500304/ in
-> this June. IVRing and the IVRing reader use POSIX shared memory each other
-> without using network, so a low-overhead system for collecting guest tracing
-> data is realized. However, this patch set has some problems as follows:
->  - use IVShmem instead of virtio
->  - create a new ring-buffer without using existing ring-buffer in kernel
->  - scalability
->    -- not support SMP environment
->    -- buffer size limitation
->    -- not support live migration (maybe difficult for realize this)
->
-> Therefore, we propose a new system "virtio-trace", which uses enhanced
-> virtio-serial and existing ring-buffer of ftrace, for collecting guest kernel
-> tracing data. In this system, there are 5 main components:
->  (1) Ring-buffer of ftrace in a guest
->      - When trace agent reads ring-buffer, a page is removed from ring-buffer.
->  (2) Trace agent in the guest
->      - Splice the page of ring-buffer to read_pipe using splice() without
->        memory copying. Then, the page is spliced from write_pipe to virtio
->        without memory copying.
->  (3) Virtio-console driver in the guest
->      - Pass the page to virtio-ring
->  (4) Virtio-serial bus in QEMU
->      - Copy the page to kernel pipe
->  (5) Reader in the host
->      - Read guest tracing data via FIFO(named pipe)
->
-> ***Evaluation***
-> When a host collects tracing data of a guest, the performance of using
-> virtio-trace is compared with that of using native(just running ftrace),
-> IVRing, and virtio-serial(normal method of read/write).
->
-> <environment>
-> The overview of this evaluation is as follows:
->  (a) A guest on a KVM is prepared.
->      - The guest is dedicated one physical CPU as a virtual CPU(VCPU).
->
->  (b) The guest starts to write tracing data to ring-buffer of ftrace.
->      - The probe points are all trace points of sched, timer, and kmem.
->
->  (c) Writing trace data, dhrystone 2 in UNIX bench is executed as a benchmark
->      tool in the guest.
->      - Dhrystone 2 intends system performance by repeating integer arithmetic
->        as a score.
->      - Since higher score equals to better system performance, if the score
->        decrease based on bare environment, it indicates that any operation
->        disturbs the integer arithmetic. Then, we define the overhead of
->        transporting trace data is calculated as follows:
->                 OVERHEAD = (1 - SCORE_OF_A_METHOD/NATIVE_SCORE) * 100.
->
-> The performance of each method is compared as follows:
->  [1] Native
->      - only recording trace data to ring-buffer on a guest
->  [2] Virtio-trace
->      - running a trace agent on a guest
->      - a reader on a host opens FIFO using cat command
->  [3] IVRing
->      - A SystemTap script in a guest records trace data to IVRing.
->        -- probe points are same as ftrace.
->  [4] Virtio-serial(normal)
->      - A reader(using cat) on a guest output trace data to a host using
->        standard output via virtio-serial.
->
-> Other information is as follows:
->  - host
->    kernel: 3.3.7-1 (Fedora16)
->    CPU: Intel Xeon x5660@2.80GHz(12core)
->    Memory: 48GB
->
->  - guest(only booting one guest)
->    kernel: 3.5.0-rc4+ (Fedora16)
->    CPU: 1VCPU(dedicated)
->    Memory: 1GB
->
-> <result>
-> 3 patterns based on the bare environment were indicated as follows:
->                            Scores      overhead against [0] Native
->     [0] Native:          28807569.5               -
->     [1] Virtio-trace:    28685049.5             0.43%
->     [2] IVRing:          28418595.5             1.35%
->     [3] Virtio-serial:   13262258.7            53.96%
->
->
-> ***Just enhancement ideas***
->  - Support for trace-cmd
->  - Support for 9pfs protocol
->  - Support for non-blocking mode in QEMU
->  - Make "vhost-serial"
->
-> Thank you,
->
-> ---
->
-> Masami Hiramatsu (5):
->       virtio/console: Allocate scatterlist according to the current pipe size
->       ftrace: Allow stealing pages from pipe buffer
->       virtio/console: Wait until the port is ready on splice
->       virtio/console: Add a failback for unstealable pipe buffer
->       virtio/console: Add splice_write support
->
-> Yoshihiro YUNOMAE (1):
->       tools: Add guest trace agent as a user tool
->
->
->  drivers/char/virtio_console.c               |  198 ++++++++++++++++++--
->  kernel/trace/trace.c                        |    8 -
->  tools/virtio/virtio-trace/Makefile          |   14 +
->  tools/virtio/virtio-trace/README            |  118 ++++++++++++
->  tools/virtio/virtio-trace/trace-agent-ctl.c |  137 ++++++++++++++
->  tools/virtio/virtio-trace/trace-agent-rw.c  |  192 +++++++++++++++++++
->  tools/virtio/virtio-trace/trace-agent.c     |  270 +++++++++++++++++++++++++++
->  tools/virtio/virtio-trace/trace-agent.h     |   75 ++++++++
->  8 files changed, 985 insertions(+), 27 deletions(-)
->  create mode 100644 tools/virtio/virtio-trace/Makefile
->  create mode 100644 tools/virtio/virtio-trace/README
->  create mode 100644 tools/virtio/virtio-trace/trace-agent-ctl.c
->  create mode 100644 tools/virtio/virtio-trace/trace-agent-rw.c
->  create mode 100644 tools/virtio/virtio-trace/trace-agent.c
->  create mode 100644 tools/virtio/virtio-trace/trace-agent.h
->
-> --
-> Yoshihiro YUNOMAE
-> Software Platform Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: yoshihiro.yunomae.ez@hitachi.com
->
->
+> With lots of application threads firing continuous IOs, workqueue
+> threads might become bottleneck and you might have to eventually
+> develop a priority scheduling. This workqueue was originally designed
+> for IO retries which is an error path, now consumers of workqueue
+> might easily increase by 100x.
+
+Yes, you definitely need to throttle how many outstanding AIO's can be
+allowed to be outstanding, either globally, or on a
+per-superblock/process/user/cgroup basis, and return EAGAIN if there
+are too many outstanding requests.
+
+Speaking of cgroups, one of the other challenges with running the AIO
+out of a workqueue is trying to respect cgroup restrictions.  In
+particular, the io-throttle cgroup (which is needed to provide
+Proportional I/O support), but also the memory cgroup.
+
+All of these complications is why I decided to simply go with the "pin
+metadata" approach, since I didn't need to worry (at least initially)
+with the allocating write case.  (These patches to ext4 haven't yet
+been published upstream, mainly because they need a lot of cleanup
+work and I haven't had time to do that cleanup; my intention is to get
+the "big extents" patchset upstream, though.)
+
+						- Ted
