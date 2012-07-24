@@ -1,46 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2GXOLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:11:16 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:34868 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384Ab2GXOLP (ORCPT
+	id S1754635Ab2GXOOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:14:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41949 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab2GXOOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:11:15 -0400
+	Tue, 24 Jul 2012 10:14:14 -0400
+Date: Tue, 24 Jul 2012 07:13:56 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        arjan@linux.intel.com, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, arjan@linux.intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1339594110.8980.38.camel@twins>
+References: <1339594110.8980.38.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/x86: Remove broken power estimation
+Git-Commit-ID: ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120724135340.GT9222@suse.de>
-References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
-	<1343109531.7412.47.camel@marge.simpson.net>
-	<CAJd=RBC835W52nsXCqhM_4KR3CuLF9zijh3416LiJLybTuR_YA@mail.gmail.com>
-	<20120724132741.GS9222@suse.de>
-	<CAJd=RBBvg-irMTOjAV60LUU9=bNm+9Z6YzpLe7LyWs=jjZdtFg@mail.gmail.com>
-	<20120724135340.GT9222@suse.de>
-Date: Tue, 24 Jul 2012 22:11:13 +0800
-Message-ID: <CAJd=RBCCueEWm7Kkfbarp-LiNQwsc5RT_o1xVqEE56+U+Ogg4g@mail.gmail.com>
-Subject: Re: [PATCH 00/34] Memory management performance backports for -stable V2
-From: Hillf Danton <dhillf@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Mike Galbraith <efault@gmx.de>, Stable <stable@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:14:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 9:53 PM, Mel Gorman <mgorman@suse.de> wrote:
-> On Tue, Jul 24, 2012 at 09:34:56PM +0800, Hillf Danton wrote:
->> On Tue, Jul 24, 2012 at 9:27 PM, Mel Gorman <mgorman@suse.de> wrote:
->> > I would suggest the user in question use the normal support channels for
->> > resolving a potentially SLES-specific bug.
->> >
->> Thanks, Mel.
->>
->> Is Mike busy in other fairs?
->
-> It's not for me whether to say whether he is or not. SUSE already provide
-> excellent support channel for handling bugs like the one. If the user uses
-> them, they are very likely to find that this particular bug was resolved
-> in February 2011 by Mike without you stamping your foot on LKML.
->
-If you pay for good products and service, you see why
-I forwarded the message to you, the SUSE gurus.
+Commit-ID:  ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
+Gitweb:     http://git.kernel.org/tip/ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 13 Jun 2012 15:24:45 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 24 Jul 2012 13:53:00 +0200
+
+sched/x86: Remove broken power estimation
+
+The x86 sched power implementation has been broken forever and gets in
+the way of other stuff, remove it.
+
+[ For archaeological interest, fixing this code would require dealing
+  with the cross-cpu calling of these functions and more importantly, we
+  need to filter idle time out of the a/m-perf stuff because the ratio
+  will go down to 0 when idle, giving a 0 capacity which is not what
+  we'd want. ]
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Link: http://lkml.kernel.org/r/1339594110.8980.38.camel@twins
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/Makefile |    2 +-
+ arch/x86/kernel/cpu/sched.c  |   55 ------------------------------------------
+ 2 files changed, 1 insertions(+), 56 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 6ab6aa2..c598126 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -14,7 +14,7 @@ CFLAGS_common.o		:= $(nostackp)
+ 
+ obj-y			:= intel_cacheinfo.o scattered.o topology.o
+ obj-y			+= proc.o capflags.o powerflags.o common.o
+-obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
++obj-y			+= vmware.o hypervisor.o mshyperv.o
+ obj-y			+= rdrand.o
+ obj-y			+= match.o
+ 
+diff --git a/arch/x86/kernel/cpu/sched.c b/arch/x86/kernel/cpu/sched.c
+deleted file mode 100644
+index a640ae5..0000000
+--- a/arch/x86/kernel/cpu/sched.c
++++ /dev/null
+@@ -1,55 +0,0 @@
+-#include <linux/sched.h>
+-#include <linux/math64.h>
+-#include <linux/percpu.h>
+-#include <linux/irqflags.h>
+-
+-#include <asm/cpufeature.h>
+-#include <asm/processor.h>
+-
+-#ifdef CONFIG_SMP
+-
+-static DEFINE_PER_CPU(struct aperfmperf, old_perf_sched);
+-
+-static unsigned long scale_aperfmperf(void)
+-{
+-	struct aperfmperf val, *old = &__get_cpu_var(old_perf_sched);
+-	unsigned long ratio, flags;
+-
+-	local_irq_save(flags);
+-	get_aperfmperf(&val);
+-	local_irq_restore(flags);
+-
+-	ratio = calc_aperfmperf_ratio(old, &val);
+-	*old = val;
+-
+-	return ratio;
+-}
+-
+-unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
+-{
+-	/*
+-	 * do aperf/mperf on the cpu level because it includes things
+-	 * like turbo mode, which are relevant to full cores.
+-	 */
+-	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
+-		return scale_aperfmperf();
+-
+-	/*
+-	 * maybe have something cpufreq here
+-	 */
+-
+-	return default_scale_freq_power(sd, cpu);
+-}
+-
+-unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
+-{
+-	/*
+-	 * aperf/mperf already includes the smt gain
+-	 */
+-	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
+-		return SCHED_LOAD_SCALE;
+-
+-	return default_scale_smt_power(sd, cpu);
+-}
+-
+-#endif
