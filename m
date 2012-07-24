@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab2GXAhw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 20:37:52 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:46688 "EHLO
-	homiemail-a48.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752824Ab2GXAhu (ORCPT
+	id S1755018Ab2GXAnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 20:43:49 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49520 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754681Ab2GXAns convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 20:37:50 -0400
-X-Greylist: delayed 116954 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Jul 2012 20:37:50 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=dkUdSRdn9YYBK8GSdDXFmgWQc7dEiNSoc5dX5cMxGPe1bt6BWp47jV/fN7F3l
-	vIDOUC1tUrx1XZlCLnmPmU0bRDXQG3ODuZYdMfUnciPHr1JBWkNnNJWWECNjM63i
-	bd6XA0owNvOfZNG8W6gEipH8xMYOfQMvj9P/tf2nJnp6Yk=
-Message-ID: <500DEE5B.9020504@shealevy.com>
-Date: Mon, 23 Jul 2012 20:37:47 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120703 Thunderbird/11.0.1
+	Mon, 23 Jul 2012 20:43:48 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-e6-500defc208c1
+From: Namhyung Kim <namhyung@kernel.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf: fix build error
+References: <1343055645-24083-1-git-send-email-kirill@shutemov.name>
+	<20120723180244.GB5418@infradead.org>
+	<20120723181608.GA24558@shutemov.name>
+	<20120723181849.GF6717@infradead.org>
+	<20120723195146.GA24938@shutemov.name>
+	<20120723210407.GA25186@shutemov.name>
+Date: Tue, 24 Jul 2012 09:38:24 +0900
+In-Reply-To: <20120723210407.GA25186@shutemov.name> (Kirill A. Shutemov's
+	message of "Tue, 24 Jul 2012 00:04:07 +0300")
+Message-ID: <874noy6lj3.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-To: "J.H." <warthog19@eaglescrag.net>
-CC: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ftpadmin@kernel.org
-Subject: Re: Release Announcements
-References: <1C17E3CE-50F0-4A56-BCCB-201C6E39E980@shealevy.com> <20120723082238.GB21615@liondog.tnic> <500D8F6A.2090703@eaglescrag.net>
-In-Reply-To: <500D8F6A.2090703@eaglescrag.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2012 01:52 PM, J.H. wrote:
-> On 07/23/2012 02:22 AM, Borislav Petkov wrote:
->> On Sun, Jul 22, 2012 at 12:08:34PM -0400, Shea Levy wrote:
->>> The linux-kernel-announce doesn't seem to have had any traffic
->>> since 3.1-rc4 (maybe due to the kernel.org break-in?). Is there a
->>> recommended way to get email news of kernel releases without being
->>> subscribed to the main kernel list?
->> Let's CC some more people about this.
->>
-> Follow the respective gitweb RSS feeds?
+Hi, Kirill
 
-Fair enough, I'll do this until another solution is forthcoming.
+On Tue, 24 Jul 2012 00:04:07 +0300, Kirill A. Shutemov wrote:
+> From 14f476dddcb36bca93a50ef1a3341e2c60836e0a Mon Sep 17 00:00:00 2001
+> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> Date: Mon, 23 Jul 2012 17:39:11 +0300
+> Subject: [PATCH 1/2] perf: fix build error
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+>
+> Bison 2.6 started to generate parse_events_parse() declaration in
+> header. In this case we have redundant redeclaration:
+>
+> util/parse-events.c:29:5: error: redundant redeclaration of ‘parse_events_parse’ [-Werror=redundant-decls]
+> In file included from util/parse-events.c:14:0:
+> util/parse-events-bison.h:99:5: note: previous declaration of ‘parse_events_parse’ was here
+> cc1: all warnings being treated as errors
+>
+> Let's disable -Wredundant-decls for util/parse-events.c since it
+> includes header we can't control.
+>
 
-> I'll have to do some digging to
-> figure out where those e-mails got generated from.  I do want to say
-> that that *SHOULD* be working, but if the e-mails aren't showing up in
-> the archives that may have gotten broken somewhere.
+It'd be better if the subject line is more descriptive. Like:
 
-They're not just not showing up in the archives, I subscribed a week or 
-so before the 3.5 release and I've not gotten a single mail yet.
+  "perf tools: fix a build error with bison 2.6"
 
-Cheers,
-Shea
+Other than that, looks good to me.
+
+Thanks,
+Namhyung
+
+
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> ---
+>  tools/perf/Makefile | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 75d74e5..1091192 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -803,6 +803,9 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+>  $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+>  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+>  
+> +$(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
+> +	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
+> +
+>  $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+>  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
