@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab2GXKf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 06:35:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33314 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab2GXKfZ (ORCPT
+	id S1752639Ab2GXKho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 06:37:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44308 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751751Ab2GXKhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 06:35:25 -0400
-Message-ID: <1343126116.6033.1.camel@phoenix>
-Subject: [PATCH] gpio: msic: Fix calculating register address in
- msic_gpio_to_oreg()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Tue, 24 Jul 2012 18:35:16 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Jul 2012 06:37:43 -0400
+Date: Tue, 24 Jul 2012 11:37:17 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nico@linaro.org" <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
+        Vitaly Andrianov <vitalya@ti.com>
+Subject: Re: [RFC 03/23] ARM: LPAE: use phys_addr_t on virt <--> phys
+ conversion
+Message-ID: <20120724103717.GF20132@arm.com>
+References: <1343092165-9470-1-git-send-email-cyril@ti.com>
+ <1343092165-9470-4-git-send-email-cyril@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343092165-9470-4-git-send-email-cyril@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case offset is 20 ... 23, the equation to get the register should be:
-        INTEL_MSIC_GPIO1HV0CTLO - offset + 20
+On Tue, Jul 24, 2012 at 02:09:05AM +0100, Cyril Chemparathy wrote:
+> This patch fixes up the types used when converting back and forth between
+> physical and virtual addresses.
+> 
+> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> ---
+>  arch/arm/include/asm/memory.h |   17 +++++++++++------
+>  1 file changed, 11 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> index fcb5757..7629dfe 100644
+> --- a/arch/arm/include/asm/memory.h
+> +++ b/arch/arm/include/asm/memory.h
+> @@ -169,22 +169,27 @@ extern unsigned long __pv_phys_offset;
+>  	: "=r" (to)					\
+>  	: "r" (from), "I" (type))
+>  
+> -static inline unsigned long __virt_to_phys(unsigned long x)
+> +static inline phys_addr_t __virt_to_phys(unsigned long x)
+>  {
+>  	unsigned long t;
+>  	__pv_stub(x, t, "add", __PV_BITS_31_24);
+>  	return t;
+>  }
+>  
+> -static inline unsigned long __phys_to_virt(unsigned long x)
+> +static inline unsigned long __phys_to_virt(phys_addr_t x)
+>  {
+>  	unsigned long t;
+>  	__pv_stub(x, t, "sub", __PV_BITS_31_24);
+>  	return t;
+>  }
 
-With above equation, we can get below mapping between offset and the register:
-        offset is 20: INTEL_MSIC_GPIO1HV0CTLO
-        offset is 21: INTEL_MSIC_GPIO1HV1CTLO
-        offset is 22: INTEL_MSIC_GPIO1HV2CTLO
-        offset is 23: INTEL_MSIC_GPIO1HV3CTLO
+BTW, I would prefer if the phys-to-virt patching was fixed as well. It
+shouldn't be difficult.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/gpio/gpio-msic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpio/gpio-msic.c b/drivers/gpio/gpio-msic.c
-index 71a838f..b389862 100644
---- a/drivers/gpio/gpio-msic.c
-+++ b/drivers/gpio/gpio-msic.c
-@@ -99,7 +99,7 @@ static int msic_gpio_to_oreg(unsigned offset)
- 	if (offset < 20)
- 		return INTEL_MSIC_GPIO0HV0CTLO - offset + 16;
- 
--	return INTEL_MSIC_GPIO1HV0CTLO + offset + 20;
-+	return INTEL_MSIC_GPIO1HV0CTLO - offset + 20;
- }
- 
- static int msic_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
 -- 
-1.7.9.5
-
-
-
+Catalin
