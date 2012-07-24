@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab2GXPWS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:22:18 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62436 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab2GXPWR (ORCPT
+	id S1755432Ab2GXP33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:29:29 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:36465 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab2GXP32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 11:22:17 -0400
-Message-ID: <500EBDA4.6020104@gmail.com>
-Date: Tue, 24 Jul 2012 17:22:12 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] gpiolib: fix chip->base handling in of_gpio_simple_xlate()
-References: <1342977052-7880-1-git-send-email-zonque@gmail.com> <201207241256.56535.arnd@arndb.de> <500E9D75.60002@gmail.com> <201207241408.44168.arnd@arndb.de>
-In-Reply-To: <201207241408.44168.arnd@arndb.de>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jul 2012 11:29:28 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>,
+        David Rientjes <rientjes@google.com>,
+        Brad Spengler <spender@grsecurity.net>
+Cc: Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH v2 0/2] proc: /proc/<pid>/environ offset fixes
+Date: Tue, 24 Jul 2012 16:29:00 +0100
+Message-Id: <1343143742-31229-1-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.07.2012 16:08, Arnd Bergmann wrote:
-> On Tuesday 24 July 2012, Daniel Mack wrote:
+Hi,
 
->>>>> diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
->>>>> index d18068a..51bc232 100644
->>>>> --- a/drivers/gpio/gpiolib-of.c
->>>>> +++ b/drivers/gpio/gpiolib-of.c
->>>>> @@ -147,13 +147,13 @@ int of_gpio_simple_xlate(struct gpio_chip *gc,
->>>>>     if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
->>>>>             return -EINVAL;
->>>>>  
->>>>> -   if (gpiospec->args[0] >= gc->ngpio)
->>>>> +   if (gpiospec->args[0] >= gc->ngpio + gc->base)
->>>>>             return -EINVAL;
->>>>>  
->>>>>     if (flags)
->>>>>             *flags = gpiospec->args[1];
->>>>>  
->>>>> -   return gpiospec->args[0];
->>>>> +   return gpiospec->args[0] - gc->base;
->>>>>  }
->>>>>  EXPORT_SYMBOL(of_gpio_simple_xlate);
->>>
->>> Where would that gc->base come from?
->>
->> It is set up when the chips are initialized. Let's put it that way: why
->> would we have this ->base if it is practically unusable in devicetree
->> environments?
-> 
-> The base gets used to put the gpiochip into the Linux gpio number space,
-> which is not necessarily the same as the number space used in the device
-> tree. You can dynamically add other gpio controllers that would get
-> some arbitrary base assigned at runtime, so you cannot subtract that
-> base from the hardware number to get a local one in the common code.
-> 
-> I fear you will have to provide your own xlate function for pxa if
-> you want to use this numbering. Something like this:?
+This is the V2 to correctly check offsets on /proc/<pid>/environ before
+reading. This was previously discussed here:
+http://lkml.org/lkml/2012/7/22/79
 
-I did my own xlate function in the first place, but then I thought it
-could be made working in a more general way. But your explanation makes
-sense, so I will add something that is based on your sniplet.
+Due to incorrect offset checks, currently one can read from aribtrary
+addresses on /proc/<pid>/environ, not only the environment address range
+as shown here (the same thread):
+http://lkml.org/lkml/2012/7/22/163
 
-Thanks,
-Daniel
+The bug is in environ_read().
+
+
+That first patch was not complete as noted by Oleg Nestrov, since even
+with positive offsets we can perhaps overflow the address from where to
+read the environment variables, or perhaps we can make multiple lseek()
+calls with a positive offset set to 0x7fffffff, this will pass the
+fs/read_write.c:lseek_execute() checks, and one can make the
+'mm->env_addr + offset' point to another VMA. This will make
+/proc/<pid>/environ to act like /proc/<pid>/mem.
+
+The first version removed only negative offsets which when converted to
+unsigned long will overflow the 'mm->env_addr + offset' the address from
+where to start to read the environment variables, and will also pass all
+the fs/read_write.c:lseek_execute() and environ_read() checks.
+
+As suggested by Oleg Nesterov this version makes sure to fix the offset
+checks, then it removes negative offsets support on /proc/<pid>/environ
+since it does not need them.
+
+
+Thanks to patch 'proc: clean up /proc/<pid>/environ handling'
+commit b409e578d9a4ec95913e ,this is not a security issue since at
+->open() there is: the ptrace check + save the current 'mm' for next
+operations.
+
+
+Djalal Harouni (2):
+  proc: environ_read() make sure offset points to environment address range
+  proc: do not allow negative offsets on /proc/<pid>/environ
+
+ fs/proc/base.c |   22 +++++++++++++---------
+  1 files changed, 13 insertions(+), 9 deletions(-)
+
+
+V2:
+ * Added the [PATCH 1/2] to make sure that the offset points to the
+   environment address range as suggested by Oleg Nesterov.
+ * Updated the [PATCH 2/2] changelog entry since we have added [PATCH 1/2]
