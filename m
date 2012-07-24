@@ -1,71 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab2GXNPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:15:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21644 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab2GXNPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:15:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="170704158"
-Date: Tue, 24 Jul 2012 16:15:27 +0300
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: Masatake YAMATO <yamato@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH v3 1/8] bluetooth: /proc/net/ entries for bluetooth
- protocols
-Message-ID: <20120724131520.GC11981@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	Masatake YAMATO <yamato@redhat.com>, linux-kernel@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org
-References: <20120629.020253.963694178693689545.yamato@redhat.com>
- <20120710140400.GA15795@aemeltch-MOBL1>
- <20120711.135831.1712662939552441872.yamato@redhat.com>
- <20120724.220831.1797978247249215593.yamato@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724.220831.1797978247249215593.yamato@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754168Ab2GXNPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:15:19 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38546 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab2GXNPR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 09:15:17 -0400
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [PATCH v2] usb: gadget: composite: parse dt values
+Date: Tue, 24 Jul 2012 10:15:20 -0300
+Message-Id: <1343135720-26559-1-git-send-email-aletes.xgr@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masatake,
+Grab the devicetree node properties to set VendorId, ProductId,
+bcdDevice, Manucacturer, Product and SerialNumber
 
-On Tue, Jul 24, 2012 at 10:08:31PM +0900, Masatake YAMATO wrote:
-> (I have got no reply since 11th Jul. So I resend this mail here.
->  Please, review this patch and merge it if no problem.)
-> 
-> (The patch sets are rebased to bluetooth-next. Unnecessary white
->  spaces are trimmed.)
-> 
-> lsof command can tell the type of socket processes are using.
-> Internal lsof uses inode numbers on socket fs to resolve the type of
-> sockets. Files under /proc/net/, such as tcp, udp, unix, etc provides
-> such inode information.
-> 
-> Unfortunately bluetooth related protocols don't provide such inode
-> information. This patch series introduces /proc/net files for the protocols.
-> 
-> This patch against af_bluetooth.c provides facility to the implementation
-> of protocols. This patch extends bt_sock_list and introduces two exported
-> function bt_procfs_init, bt_procfs_cleanup.
-> 
-> The type bt_sock_list is already used in some of implementation of
-> protocols. bt_procfs_init prepare seq_operations which converts
-> protocol own bt_sock_list data to protocol own proc entry when the
-> entry is accessed.
-> 
-> What I, lsof user, need is just inode number of bluetooth
-> socket. However, people may want more information. The bt_procfs_init
-> takes a function pointer for customizing the show handler of
-> seq_operations.
->  
-> Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+---
+Applies to v3.5
 
-Tested-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com> 
+Changes since V1:
+* Minor patch description and code comments updates
 
-Best regards 
-Andrei Emeltchenko 
+ Documentation/devicetree/bindings/usb/gadget.txt |   20 +++++++++++
+ drivers/usb/gadget/composite.c                   |   39 ++++++++++++++++++++++
+ 2 files changed, 59 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/gadget.txt
+
+diff --git a/Documentation/devicetree/bindings/usb/gadget.txt b/Documentation/devicetree/bindings/usb/gadget.txt
+new file mode 100644
+index 0000000..93388d3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/gadget.txt
+@@ -0,0 +1,20 @@
++Usb Gadget DeviceTree bindings
++
++These optional properties inside the usb device controller node are used to
++change some of the gadget drivers configuration:
++- vendor-id: Usb vendor id
++- product-id: Usb product id
++- release: Version of this device
++- vendor: Textual description of the vendor
++- device: Textual description of this device
++- serial: Textual representation of the device's serial number
++
++Binding Example:
++	usbd@31020000 {
++		vendor-id = <0x0525>;
++		product-id = <0xa4a6>;
++		release = <1>;
++		vendor = "Some Corp";
++		device = "Test Device";
++		serial = "12345";
++	};
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 390749b..a02be8c 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -17,6 +17,7 @@
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/utsname.h>
++#include <linux/of.h>
+ 
+ #include <linux/usb/composite.h>
+ #include <asm/unaligned.h>
+@@ -1419,10 +1420,44 @@ static u8 override_id(struct usb_composite_dev *cdev, u8 *desc)
+ 	return *desc;
+ }
+ 
++static void composite_parse_dt(struct usb_composite_dev *cdev,
++	struct device_node *np)
++{
++	u32 reg;
++
++	if (!idVendor && of_property_read_u32(np, "vendor-id", &reg) == 0)
++		idVendor = reg;
++
++	if (!idProduct && of_property_read_u32(np, "product-id", &reg) == 0)
++		idProduct = reg;
++
++	if (!bcdDevice && of_property_read_u32(np, "release", &reg) == 0)
++		bcdDevice = reg;
++
++	if (!iManufacturer)
++		if (of_property_read_string(np, "vendor",
++			&composite->iManufacturer) == 0)
++			cdev->manufacturer_override = override_id(cdev,
++				&cdev->desc.iManufacturer);
++
++	if (!iProduct)
++		if (of_property_read_string(np, "device",
++			&composite->iProduct) == 0)
++			cdev->product_override = override_id(cdev,
++				&cdev->desc.iProduct);
++
++	if (!iSerialNumber)
++		if (of_property_read_string(np, "serial",
++			&composite->iSerialNumber) == 0)
++			cdev->serial_override = override_id(cdev,
++				&cdev->desc.iSerialNumber);
++}
++
+ static int composite_bind(struct usb_gadget *gadget)
+ {
+ 	struct usb_composite_dev	*cdev;
+ 	int				status = -ENOMEM;
++	struct device_node		*np = gadget->dev.of_node;
+ 
+ 	cdev = kzalloc(sizeof *cdev, GFP_KERNEL);
+ 	if (!cdev)
+@@ -1470,6 +1505,10 @@ static int composite_bind(struct usb_gadget *gadget)
+ 
+ 	cdev->desc = *composite->dev;
+ 
++	/* grab values from devicetree */
++	if (np)
++		composite_parse_dt(cdev, np);
++
+ 	/* standardized runtime overrides for device ID data */
+ 	if (idVendor)
+ 		cdev->desc.idVendor = cpu_to_le16(idVendor);
+-- 
+1.7.10
+
