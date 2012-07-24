@@ -1,67 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab2GXQeq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:34:46 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33260 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab2GXQen (ORCPT
+	id S932071Ab2GXQfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:35:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44927 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755930Ab2GXQe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:34:43 -0400
-Date: Tue, 24 Jul 2012 17:34:26 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "H. Peter Anvin (hpa@linux.intel.com)" <hpa@linux.intel.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "Paul Gortmaker (paul.gortmaker@windriver.com)" 
-	<paul.gortmaker@windriver.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH]efi: initialize efi.runtime_version to make
- query_variable_info/update_capsule workable
-Message-ID: <20120724163426.GA20961@srcf.ucam.org>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2ED8D@USINDEM101.corp.hds.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2ED8D@USINDEM101.corp.hds.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 24 Jul 2012 12:34:59 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Subject: [RFC PATCH v2 10/32] PCI/AER: use PCIe capabilities access functions to simplify implementation
+Date: Wed, 25 Jul 2012 00:31:22 +0800
+Message-Id: <1343147504-25891-11-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com>
+References: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 01:27:23PM +0000, Seiji Aguchi wrote:
-> A value of efi.runtime_version is checked before calling 
-> update_capsule()/query_variable_info() as follows.
-> But it isn't initialized anywhere.
-> 
-> <snip>
-> static efi_status_t virt_efi_query_variable_info(u32 attr,
->                                                  u64 *storage_space,
->                                                  u64 *remaining_space,
->                                                  u64 *max_variable_size)
-> {
->         if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
->                 return EFI_UNSUPPORTED;
-> <snip>
-> 
-> This patch initializes a value of efi.runtime_version at boot time.
-> 
->  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+From: Jiang Liu <jiang.liu@huawei.com>
 
-I could have sworn that something equivalent had been posted before, 
-but:
+Use PCIe capabilities access functions to simplify PCIe AER implementation.
 
-Acked-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ drivers/pci/pcie/aer/aerdrv.c      |   16 +++++++---------
+ drivers/pci/pcie/aer/aerdrv_core.c |   25 ++++++++++---------------
+ 2 files changed, 17 insertions(+), 24 deletions(-)
 
+diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
+index f7c6245..cadee93 100644
+--- a/drivers/pci/pcie/aer/aerdrv.c
++++ b/drivers/pci/pcie/aer/aerdrv.c
+@@ -122,19 +122,18 @@ static void set_downstream_devices_error_reporting(struct pci_dev *dev,
+ static void aer_enable_rootport(struct aer_rpc *rpc)
+ {
+ 	struct pci_dev *pdev = rpc->rpd->port;
+-	int pos, aer_pos;
++	int aer_pos;
+ 	u16 reg16;
+ 	u32 reg32;
+ 
+-	pos = pci_pcie_cap(pdev);
+ 	/* Clear PCIe Capability's Device Status */
+-	pci_read_config_word(pdev, pos+PCI_EXP_DEVSTA, &reg16);
+-	pci_write_config_word(pdev, pos+PCI_EXP_DEVSTA, reg16);
++	pci_pcie_capability_read_word(pdev, PCI_EXP_DEVSTA, &reg16);
++	pci_pcie_capability_write_word(pdev, PCI_EXP_DEVSTA, reg16);
+ 
+ 	/* Disable system error generation in response to error messages */
+-	pci_read_config_word(pdev, pos + PCI_EXP_RTCTL, &reg16);
++	pci_pcie_capability_read_word(pdev, PCI_EXP_RTCTL, &reg16);
+ 	reg16 &= ~(SYSTEM_ERROR_INTR_ON_MESG_MASK);
+-	pci_write_config_word(pdev, pos + PCI_EXP_RTCTL, reg16);
++	pci_pcie_capability_write_word(pdev, PCI_EXP_RTCTL, reg16);
+ 
+ 	aer_pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ERR);
+ 	/* Clear error status */
+@@ -396,9 +395,8 @@ static void aer_error_resume(struct pci_dev *dev)
+ 	u16 reg16;
+ 
+ 	/* Clean up Root device status */
+-	pos = pci_pcie_cap(dev);
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVSTA, &reg16);
+-	pci_write_config_word(dev, pos + PCI_EXP_DEVSTA, reg16);
++	pci_pcie_capability_read_word(dev, PCI_EXP_DEVSTA, &reg16);
++	pci_pcie_capability_write_word(dev, PCI_EXP_DEVSTA, reg16);
+ 
+ 	/* Clean AER Root Error Status */
+ 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
+diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+index f551534..a37e277 100644
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -35,25 +35,22 @@ module_param(nosourceid, bool, 0);
+ int pci_enable_pcie_error_reporting(struct pci_dev *dev)
+ {
+ 	u16 reg16 = 0;
+-	int pos;
+ 
+ 	if (pcie_aer_get_firmware_first(dev))
+ 		return -EIO;
+ 
+-	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
+-	if (!pos)
++	if (!pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR))
+ 		return -EIO;
+ 
+-	pos = pci_pcie_cap(dev);
+-	if (!pos)
++	if (!pci_is_pcie(dev))
+ 		return -EIO;
+ 
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &reg16);
++	pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL, &reg16);
+ 	reg16 |= (PCI_EXP_DEVCTL_CERE |
+ 		PCI_EXP_DEVCTL_NFERE |
+ 		PCI_EXP_DEVCTL_FERE |
+ 		PCI_EXP_DEVCTL_URRE);
+-	pci_write_config_word(dev, pos + PCI_EXP_DEVCTL, reg16);
++	pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL, reg16);
+ 
+ 	return 0;
+ }
+@@ -62,21 +59,19 @@ EXPORT_SYMBOL_GPL(pci_enable_pcie_error_reporting);
+ int pci_disable_pcie_error_reporting(struct pci_dev *dev)
+ {
+ 	u16 reg16 = 0;
+-	int pos;
+ 
+ 	if (pcie_aer_get_firmware_first(dev))
+ 		return -EIO;
+ 
+-	pos = pci_pcie_cap(dev);
+-	if (!pos)
++	if (!pci_is_pcie(dev))
+ 		return -EIO;
+ 
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &reg16);
++	pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL, &reg16);
+ 	reg16 &= ~(PCI_EXP_DEVCTL_CERE |
+ 		PCI_EXP_DEVCTL_NFERE |
+ 		PCI_EXP_DEVCTL_FERE |
+ 		PCI_EXP_DEVCTL_URRE);
+-	pci_write_config_word(dev, pos + PCI_EXP_DEVCTL, reg16);
++	pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL, reg16);
+ 
+ 	return 0;
+ }
+@@ -151,18 +146,18 @@ static bool is_error_source(struct pci_dev *dev, struct aer_err_info *e_info)
+ 	 */
+ 	if (atomic_read(&dev->enable_cnt) == 0)
+ 		return false;
+-	pos = pci_pcie_cap(dev);
+-	if (!pos)
++	if (!pci_is_pcie(dev))
+ 		return false;
+ 
+ 	/* Check if AER is enabled */
+-	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &reg16);
++	pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL, &reg16);
+ 	if (!(reg16 & (
+ 		PCI_EXP_DEVCTL_CERE |
+ 		PCI_EXP_DEVCTL_NFERE |
+ 		PCI_EXP_DEVCTL_FERE |
+ 		PCI_EXP_DEVCTL_URRE)))
+ 		return false;
++
+ 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
+ 	if (!pos)
+ 		return false;
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.9.5
+
