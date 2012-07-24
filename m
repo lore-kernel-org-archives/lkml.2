@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab2GXQhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:37:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39412 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab2GXQhE (ORCPT
+	id S1755108Ab2GXQki (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:40:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57757 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753280Ab2GXQkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:37:04 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 23/32] PCI/atl1c: use PCIe capabilities access functions to simplify implementation
-Date: Wed, 25 Jul 2012 00:31:35 +0800
-Message-Id: <1343147504-25891-24-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com>
-References: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com>
+	Tue, 24 Jul 2012 12:40:36 -0400
+Date: Tue, 24 Jul 2012 17:40:16 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [07/36] AArch64: Assembly macros and definitions
+Message-ID: <20120724164016.GC29519@arm.com>
+References: <1341608777-12982-8-git-send-email-catalin.marinas@arm.com>
+ <5009698C.2020707@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5009698C.2020707@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+On Fri, Jul 20, 2012 at 03:22:04PM +0100, Christopher Covington wrote:
+> On 01/-10/-28163 02:59 PM, Catalin Marinas wrote:
+> > This patch introduces several assembly macros and definitions used in
+> > the .S files across arch/aarch64/ like IRQ disabling/enabling, together
+> > with asm-offsets.c.
+> 
+> [...]
+> 
+> > diff --git a/arch/aarch64/include/asm/assembler.h b/arch/aarch64/include/asm/assembler.h
+> > new file mode 100644
+> > index 0000000..c6ac3cf
+> > --- /dev/null
+> > +++ b/arch/aarch64/include/asm/assembler.h
+> 
+> [...]
+> 
+> > +#define USER(x...)				\
+> > +9999:	x;					\
+> > +	.section __ex_table,"a";		\
+> > +	.align	3;				\
+> > +	.quad	9999b,9001f;			\
+> > +	.previous
+> 
+> It appears that this macro depends on a 9001 label being defined in the
+> source file somewhere after the macro is used. It might be preferable to
+> incorporate the label into the macro if possible, or pass the label as
+> an argument to the macro.
 
-Use PCIe capabilities access functions to simplify atl1c driver's
-implementation.
+Good point, I changed to USER(l, x...).
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> > +/*
+> > + * User access macros.
+> > + */
+> > +	.macro	usracc, instr, reg, reg2, ptr, inc, rept, abort
+> > +	.rept	\rept
+> > +9999:
+> > +	.if	\inc == 1
+> > +	\instr\()b \reg, [\ptr], #\inc
+> > +	.elseif	\inc == 4
+> > +	\instr\() \reg, [\ptr], #\inc
+> > +	.elseif	\inc == 8
+> > +	\instr\() \reg, [\ptr], #\inc
+> > +	.elseif \inc == 16
+> > +	\instr\() \reg, \reg2, [\ptr], #\inc
+> > +	.else
+> > +	.error	"Unsupported inc macro argument"
+> > +	.endif
+> > +
+> > +	.section __ex_table,"a"
+> > +	.align	3
+> > +	.quad	9999b, \abort
+> > +	.previous
+> 
+> Could you use the USER preprocessor macro here to reduce this small
+> duplication of directives?
+> 
+> > +	.endr
+> > +	.endm
+> > +
+> > +	.macro	ldrusr, reg, ptr, inc, rept=1, abort=9001f
+> > +	 usracc	ldr, \reg, \reg, \ptr, \inc, \rept, \abort
+> > +	.endm
+> > +
+> > +	.macro	ldrpusr, reg, reg2, ptr, rept=1, abort=9001f
+> > +	 usracc	ldp, \reg, \reg2, \ptr, 16, \rept, \abort
+> > +	.endm
+> 
+> How about "ldpusr" to more directly match the assembly?
+> 
+> (Also, the 9001 label strikes again.)
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 9cc1570..1b7e1ff 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -149,7 +149,7 @@ static void atl1c_reset_pcie(struct atl1c_hw *hw, u32 flag)
- 	data &= ~(PCI_ERR_UNC_DLP | PCI_ERR_UNC_FCP);
- 	pci_write_config_dword(pdev, pos + PCI_ERR_UNCOR_SEVER, data);
- 	/* clear error status */
--	pci_write_config_word(pdev, pci_pcie_cap(pdev) + PCI_EXP_DEVSTA,
-+	pci_pcie_capability_write_word(pdev, PCI_EXP_DEVSTA,
- 			PCI_EXP_DEVSTA_NFED |
- 			PCI_EXP_DEVSTA_FED |
- 			PCI_EXP_DEVSTA_CED |
+For now I removed these entirely. I have additional patches for
+optimised library functions that make use of these but I don't plan to
+push any of them until I can benchmark on real hardware.
+
+Thanks.
+
 -- 
-1.7.9.5
-
+Catalin
