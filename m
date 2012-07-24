@@ -1,185 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab2GXOPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:15:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41974 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab2GXOPO (ORCPT
+	id S1754676Ab2GXOQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:16:11 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:64686
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754072Ab2GXOQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:15:14 -0400
-Date: Tue, 24 Jul 2012 07:14:49 -0700
-From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Message-ID: <tip-d35be8bab9b0ce44bed4b9453f86ebf64062721e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
-In-Reply-To: <20120524141611.3692.20155.stgit@srivatsabhat.in.ibm.com>
-References: <20120524141611.3692.20155.stgit@srivatsabhat.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] CPU hotplug, cpusets, suspend: Don'
- t modify cpusets during suspend/resume
-Git-Commit-ID: d35be8bab9b0ce44bed4b9453f86ebf64062721e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:14:54 -0700 (PDT)
+	Tue, 24 Jul 2012 10:16:10 -0400
+X-IronPort-AV: E=Sophos;i="4.77,646,1336341600"; 
+   d="scan'208";a="151568300"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
+Subject: [PATCH] drivers/iommu/intel-iommu.c: add missing free_domain_mem
+Date: Tue, 24 Jul 2012 16:16:04 +0200
+Message-Id: <1343139364-26936-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d35be8bab9b0ce44bed4b9453f86ebf64062721e
-Gitweb:     http://git.kernel.org/tip/d35be8bab9b0ce44bed4b9453f86ebf64062721e
-Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-AuthorDate: Thu, 24 May 2012 19:46:26 +0530
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 24 Jul 2012 13:53:14 +0200
+From: Julia Lawall <julia@diku.dk>
 
-CPU hotplug, cpusets, suspend: Don't modify cpusets during suspend/resume
+Add missing free_domain_mem on failure path after alloc_domain.
 
-In the event of CPU hotplug, the kernel modifies the cpusets' cpus_allowed
-masks as and when necessary to ensure that the tasks belonging to the cpusets
-have some place (online CPUs) to run on. And regular CPU hotplug is
-destructive in the sense that the kernel doesn't remember the original cpuset
-configurations set by the user, across hotplug operations.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-However, suspend/resume (which uses CPU hotplug) is a special case in which
-the kernel has the responsibility to restore the system (during resume), to
-exactly the same state it was in before suspend.
+// <smpl>
+@km exists@
+local idexpression e;
+expression e1,e2,e3;
+type T,T1;
+identifier f;
+@@
 
-In order to achieve that, do the following:
+* e = alloc_domain(...)
+... when any
+    when != e = e1
+    when != e1 = (T)e
+    when != e1(...,(T)e,...)
+    when != &e->f
+if(...) { ... when != e2(...,(T1)e,...)
+                 when != e3 = e
+                 when forall
+(
+             return <+...e...+>;
+|
+*             return ...;
+) }
+// </smpl>
 
-1. Don't modify cpusets during suspend/resume. At all.
-   In particular, don't move the tasks from one cpuset to another, and
-   don't modify any cpuset's cpus_allowed mask. So, simply ignore cpusets
-   during the CPU hotplug operations that are carried out in the
-   suspend/resume path.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-2. However, cpusets and sched domains are related. We just want to avoid
-   altering cpusets alone. So, to keep the sched domains updated, build
-   a single sched domain (containing all active cpus) during each of the
-   CPU hotplug operations carried out in s/r path, effectively ignoring
-   the cpusets' cpus_allowed masks.
-
-   (Since userspace is frozen while doing all this, it will go unnoticed.)
-
-3. During the last CPU online operation during resume, build the sched
-   domains by looking up the (unaltered) cpusets' cpus_allowed masks.
-   That will bring back the system to the same original state as it was in
-   before suspend.
-
-Ultimately, this will not only solve the cpuset problem related to suspend
-resume (ie., restores the cpusets to exactly what it was before suspend, by
-not touching it at all) but also speeds up suspend/resume because we avoid
-running cpuset update code for every CPU being offlined/onlined.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20120524141611.3692.20155.stgit@srivatsabhat.in.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/cpuset.c     |    3 +++
- kernel/sched/core.c |   40 ++++++++++++++++++++++++++++++++++++----
- 2 files changed, 39 insertions(+), 4 deletions(-)
+ drivers/iommu/intel-iommu.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 8c8bd65..746d1ee 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2054,6 +2054,9 @@ static void scan_for_empty_cpusets(struct cpuset *root)
-  * (of no affect) on systems that are actively using CPU hotplug
-  * but making no active use of cpusets.
-  *
-+ * The only exception to this is suspend/resume, where we don't
-+ * modify cpusets at all.
-+ *
-  * This routine ensures that top_cpuset.cpus_allowed tracks
-  * cpu_active_mask on each CPU hotplug (cpuhp) event.
-  *
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 468bdd4..4c1d80c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7097,34 +7097,66 @@ match2:
- 	mutex_unlock(&sched_domains_mutex);
- }
- 
-+static int num_cpus_frozen;	/* used to mark begin/end of suspend/resume */
-+
- /*
-  * Update cpusets according to cpu_active mask.  If cpusets are
-  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
-  * around partition_sched_domains().
-+ *
-+ * If we come here as part of a suspend/resume, don't touch cpusets because we
-+ * want to restore it back to its original state upon resume anyway.
-  */
- static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
- 			     void *hcpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
-+	case CPU_ONLINE_FROZEN:
-+	case CPU_DOWN_FAILED_FROZEN:
-+
-+		/*
-+		 * num_cpus_frozen tracks how many CPUs are involved in suspend
-+		 * resume sequence. As long as this is not the last online
-+		 * operation in the resume sequence, just build a single sched
-+		 * domain, ignoring cpusets.
-+		 */
-+		num_cpus_frozen--;
-+		if (likely(num_cpus_frozen)) {
-+			partition_sched_domains(1, NULL, NULL);
-+			break;
-+		}
-+
-+		/*
-+		 * This is the last CPU online operation. So fall through and
-+		 * restore the original sched domains by considering the
-+		 * cpuset configurations.
-+		 */
-+
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
- 		cpuset_update_active_cpus();
--		return NOTIFY_OK;
-+		break;
- 	default:
- 		return NOTIFY_DONE;
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 7469b53..0204b62 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2008,6 +2008,7 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
+ 	if (!drhd) {
+ 		printk(KERN_ERR "IOMMU: can't find DMAR for device %s\n",
+ 			pci_name(pdev));
++		free_domain_mem(domain);
+ 		return NULL;
  	}
-+	return NOTIFY_OK;
- }
- 
- static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
- 			       void *hcpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
- 	case CPU_DOWN_PREPARE:
- 		cpuset_update_active_cpus();
--		return NOTIFY_OK;
-+		break;
-+	case CPU_DOWN_PREPARE_FROZEN:
-+		num_cpus_frozen++;
-+		partition_sched_domains(1, NULL, NULL);
-+		break;
- 	default:
- 		return NOTIFY_DONE;
- 	}
-+	return NOTIFY_OK;
- }
- 
- void __init sched_init_smp(void)
+ 	iommu = drhd->iommu;
+
