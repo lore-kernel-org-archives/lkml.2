@@ -1,81 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab2GXUMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:12:48 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:46548 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075Ab2GXUMU (ORCPT
+	id S932071Ab2GXUMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:12:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37753 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755757Ab2GXUMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:12:20 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH v2 1/2] menuconfig: add u, d, q command keys in text boxes
-Date: Tue, 24 Jul 2012 16:12:02 -0400
-Message-Id: <1343160723-14308-1-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <500EDDAF.4040506@xenotime.net>
-References: <500EDDAF.4040506@xenotime.net>
+	Tue, 24 Jul 2012 16:12:07 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
+        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
+        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: [PATCH v4 11/12] block: Add bio_clone_bioset()
+Date: Tue, 24 Jul 2012 13:11:28 -0700
+Message-Id: <1343160689-12378-12-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1343160689-12378-1-git-send-email-koverstreet@google.com>
+References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They function just like they do in less(1).
+This consolidates some code, and will help in a later patch changing how
+bio cloning works.
 
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- scripts/kconfig/lxdialog/textbox.c |    3 +++
- scripts/kconfig/mconf.c            |    6 +++---
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ block/blk-core.c    |    8 +-------
+ drivers/md/dm.c     |    4 ++--
+ drivers/md/md.c     |   20 +-------------------
+ fs/bio.c            |   16 ++++++++++++----
+ include/linux/bio.h |    1 +
+ 5 files changed, 17 insertions(+), 32 deletions(-)
 
-diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
-index 154c2dd..4e5de60 100644
---- a/scripts/kconfig/lxdialog/textbox.c
-+++ b/scripts/kconfig/lxdialog/textbox.c
-@@ -129,6 +129,7 @@ do_resize:
- 		case 'e':
- 		case 'X':
- 		case 'x':
-+		case 'q':
- 			delwin(box);
- 			delwin(dialog);
- 			return 0;
-@@ -190,6 +191,7 @@ do_resize:
- 			break;
- 		case 'B':	/* Previous page */
- 		case 'b':
-+		case 'u':
- 		case KEY_PPAGE:
- 			if (begin_reached)
- 				break;
-@@ -214,6 +216,7 @@ do_resize:
- 			break;
- 		case KEY_NPAGE:	/* Next page */
- 		case ' ':
-+		case 'd':
- 			if (end_reached)
- 				break;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index e9058c2..10a6e08 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2768,16 +2768,10 @@ int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
+ 	blk_rq_init(NULL, rq);
  
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index f606738..f584a28 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -105,10 +105,10 @@ static const char mconf_readme[] = N_(
- "Text Box    (Help Window)\n"
- "--------\n"
- "o  Use the cursor keys to scroll up/down/left/right.  The VI editor\n"
--"   keys h,j,k,l function here as do <SPACE BAR> and <B> for those\n"
--"   who are familiar with less and lynx.\n"
-+"   keys h,j,k,l function here as do <u>, <d>, <SPACE BAR> and <B> for \n"
-+"   those who are familiar with less and lynx.\n"
- "\n"
--"o  Press <E>, <X>, <Enter> or <Esc><Esc> to exit.\n"
-+"o  Press <E>, <X>, <q>, <Enter> or <Esc><Esc> to exit.\n"
- "\n"
- "\n"
- "Alternate Configuration Files\n"
+ 	__rq_for_each_bio(bio_src, rq_src) {
+-		bio = bio_alloc_bioset(gfp_mask, bio_src->bi_max_vecs, bs);
++		bio = bio_clone_bioset(bio_src, gfp_mask, bs);
+ 		if (!bio)
+ 			goto free_and_out;
+ 
+-		__bio_clone(bio, bio_src);
+-
+-		if (bio_integrity(bio_src) &&
+-		    bio_integrity_clone(bio, bio_src, gfp_mask, bs))
+-			goto free_and_out;
+-
+ 		if (bio_ctr && bio_ctr(bio, bio_src, data))
+ 			goto free_and_out;
+ 
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 4014696..3f3c26e 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1101,8 +1101,8 @@ static void __issue_target_request(struct clone_info *ci, struct dm_target *ti,
+ 	 * ci->bio->bi_max_vecs is BIO_INLINE_VECS anyway, for both flush
+ 	 * and discard, so no need for concern about wasted bvec allocations.
+ 	 */
+-	clone = bio_alloc_bioset(GFP_NOIO, ci->bio->bi_max_vecs, ci->md->bs);
+-	__bio_clone(clone, ci->bio);
++	clone = bio_clone_bioset(ci->bio, GFP_NOIO, ci->md->bs);
++
+ 	if (len) {
+ 		clone->bi_sector = ci->sector;
+ 		clone->bi_size = to_bytes(len);
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index f9d16dc..069c3bc 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -173,28 +173,10 @@ EXPORT_SYMBOL_GPL(bio_alloc_mddev);
+ struct bio *bio_clone_mddev(struct bio *bio, gfp_t gfp_mask,
+ 			    struct mddev *mddev)
+ {
+-	struct bio *b;
+-
+ 	if (!mddev || !mddev->bio_set)
+ 		return bio_clone(bio, gfp_mask);
+ 
+-	b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, mddev->bio_set);
+-	if (!b)
+-		return NULL;
+-
+-	__bio_clone(b, bio);
+-	if (bio_integrity(bio)) {
+-		int ret;
+-
+-		ret = bio_integrity_clone(b, bio, gfp_mask, mddev->bio_set);
+-
+-		if (ret < 0) {
+-			bio_put(b);
+-			return NULL;
+-		}
+-	}
+-
+-	return b;
++	return bio_clone_bioset(bio, gfp_mask, mddev->bio_set);
+ }
+ EXPORT_SYMBOL_GPL(bio_clone_mddev);
+ 
+diff --git a/fs/bio.c b/fs/bio.c
+index 9d0ceb2..7a0801d 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -469,15 +469,17 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
+ EXPORT_SYMBOL(__bio_clone);
+ 
+ /**
+- *	bio_clone	-	clone a bio
++ *	bio_clone_bioset -	clone a bio
+  *	@bio: bio to clone
+  *	@gfp_mask: allocation priority
++ *	@bs: bio_set to allocate from
+  *
+  * 	Like __bio_clone, only also allocates the returned bio
+  */
+-struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
++struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
++			     struct bio_set *bs)
+ {
+-	struct bio *b = bio_alloc(gfp_mask, bio->bi_max_vecs);
++	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
+ 
+ 	if (!b)
+ 		return NULL;
+@@ -487,7 +489,7 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+ 	if (bio_integrity(bio)) {
+ 		int ret;
+ 
+-		ret = bio_integrity_clone(b, bio, gfp_mask, fs_bio_set);
++		ret = bio_integrity_clone(b, bio, gfp_mask, bs);
+ 
+ 		if (ret < 0) {
+ 			bio_put(b);
+@@ -497,6 +499,12 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+ 
+ 	return b;
+ }
++EXPORT_SYMBOL(bio_clone_bioset);
++
++struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
++{
++	return bio_clone_bioset(bio, gfp_mask, fs_bio_set);
++}
+ EXPORT_SYMBOL(bio_clone);
+ 
+ struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index e180f1d..fb90584 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -220,6 +220,7 @@ struct request_queue;
+ extern int bio_phys_segments(struct request_queue *, struct bio *);
+ 
+ extern void __bio_clone(struct bio *, struct bio *);
++extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
+ extern struct bio *bio_clone(struct bio *, gfp_t);
+ struct bio *bio_clone_kmalloc(struct bio *, gfp_t);
+ 
 -- 
-1.7.7
+1.7.7.3
 
