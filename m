@@ -1,44 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab2GXK4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 06:56:32 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33935 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab2GXK4b convert rfc822-to-8bit (ORCPT
+	id S1753402Ab2GXLDc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 07:03:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45310 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752502Ab2GXLDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 06:56:31 -0400
+	Tue, 24 Jul 2012 07:03:31 -0400
+Date: Tue, 24 Jul 2012 12:02:54 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nico@linaro.org" <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
+        Vitaly Andrianov <vitalya@ti.com>
+Subject: Re: [RFC 03/23] ARM: LPAE: use phys_addr_t on virt <--> phys
+ conversion
+Message-ID: <20120724110254.GG20132@arm.com>
+References: <1343092165-9470-1-git-send-email-cyril@ti.com>
+ <1343092165-9470-4-git-send-email-cyril@ti.com>
+ <20120724103717.GF20132@arm.com>
+ <500E7F22.9090803@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20120724115300.070d0ef7@pyramind.ukuu.org.uk>
-References: <CA+qZnSRNAAN6erat3Umuk6U9VYuc5SiQYK6PL8bHYAOcQ+SnAw@mail.gmail.com>
-	<CA+qZnSS2N4QZ13qATNFCbhJ6BRy4ZfpEBur45OUkuggPxYe4qA@mail.gmail.com>
-	<20120724115300.070d0ef7@pyramind.ukuu.org.uk>
-Date: Tue, 24 Jul 2012 18:56:30 +0800
-Message-ID: <CA+qZnSSazFWLKq5ao51JX=H-NCbwLD=6ypGXOeqQF72s7ZbTVA@mail.gmail.com>
-Subject: Re: Suse 11 SP1 kernel panic on HP hardware
-From: tingwei liu <tingw.liu@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, dhillf@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500E7F22.9090803@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 6:53 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Tue, 24 Jul 2012 18:39:20 +0800
-> tingwei liu <tingw.liu@gmail.com> wrote:
->
->> Suse 11 SP1 kernel panic。
->>
->> I can't debug it without debuginfo. Who can give me a link of sels
->> 2.6.32.12-0.7.default.debug or give some advise.
->
-> For distribution kernels (which tend to contain lots of other patches)
-> it is best to talk to your distribution support as a starter and/or their
-> forums.
->
-I have report bug on suse website, but I haven't got any response until now!
-Can you give some advice?
-I thought this maybe a kernel bug.
-Thanks!
-> Alan
+On Tue, Jul 24, 2012 at 11:55:30AM +0100, Cyril Chemparathy wrote:
+> On 7/24/2012 6:37 AM, Catalin Marinas wrote:
+> > On Tue, Jul 24, 2012 at 02:09:05AM +0100, Cyril Chemparathy wrote:
+> >> This patch fixes up the types used when converting back and forth between
+> >> physical and virtual addresses.
+> >>
+> >> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+> >> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> >> ---
+> >>   arch/arm/include/asm/memory.h |   17 +++++++++++------
+> >>   1 file changed, 11 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> >> index fcb5757..7629dfe 100644
+> >> --- a/arch/arm/include/asm/memory.h
+> >> +++ b/arch/arm/include/asm/memory.h
+> >> @@ -169,22 +169,27 @@ extern unsigned long __pv_phys_offset;
+> >>   	: "=r" (to)					\
+> >>   	: "r" (from), "I" (type))
+> >>
+> >> -static inline unsigned long __virt_to_phys(unsigned long x)
+> >> +static inline phys_addr_t __virt_to_phys(unsigned long x)
+> >>   {
+> >>   	unsigned long t;
+> >>   	__pv_stub(x, t, "add", __PV_BITS_31_24);
+> >>   	return t;
+> >>   }
+> >>
+> >> -static inline unsigned long __phys_to_virt(unsigned long x)
+> >> +static inline unsigned long __phys_to_virt(phys_addr_t x)
+> >>   {
+> >>   	unsigned long t;
+> >>   	__pv_stub(x, t, "sub", __PV_BITS_31_24);
+> >>   	return t;
+> >>   }
+> >
+> > BTW, I would prefer if the phys-to-virt patching was fixed as well. It
+> > shouldn't be difficult.
+> 
+> On that topic - yes, we have this on our radar, but in our case we;re 
+> talking about patching (in head.S) and then repatching (at switch over).
+> 
+> One of the ideas we've been bouncing around has been to convert the 
+> phys-virt patch code into arithmetic on PFNs.  This way we don't have to 
+> get too messy with 64-bit in the patch code, and we can use the same 
+> patch code for both phys_to_virt and virt_to_phys.  Thoughts on this 
+> approach?
+
+It may be slightly less efficient with Thumb-2 code as we can't have add
+and lsl in the same instruction. It may anyway be faster than reading a
+global variable.
+
+But I suspect you can just mask out the top 32-bit part of a physical
+address when converting to virtual. The opposite may also work, you just
+have some constant in the top 32-bit part of the phys address. Note that
+virt_to_phys is only valid for the lowmem, so 32-bit arithmetic with
+some constant for the top 32-bit should be enough.
+
+-- 
+Catalin
