@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab2GXW1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 18:27:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:39471 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab2GXW1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 18:27:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172731331"
-Date: Wed, 25 Jul 2012 00:27:47 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 0/2] MFD: twl6040: Version support fixes, additions
-Message-ID: <20120724222747.GA11304@sortiz-mobl>
-References: <1342432184-12046-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342432184-12046-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755263Ab2GXW2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 18:28:17 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34527 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755098Ab2GXW2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 18:28:15 -0400
+Message-ID: <1343168893.28520.8.camel@joe2Laptop>
+Subject: Re: [PATCH 0/3] dyndbg: dev_dbg bugfix + 2 trivials
+From: Joe Perches <joe@perches.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: Jason Baron <jbaron@redhat.com>, kay@vrfy.org,
+        linux-kernel@vger.kernel.org, greg@kroah.com
+Date: Tue, 24 Jul 2012 15:28:13 -0700
+In-Reply-To: <CAJfuBxzV-hct4wE+wPxrSabd_2oJ9DaH31Oxd-LVhuh1hFyoSw@mail.gmail.com>
+References: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
+	 <20120720203857.GD13835@redhat.com>
+	 <CAJfuBxzV-hct4wE+wPxrSabd_2oJ9DaH31Oxd-LVhuh1hFyoSw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Tue, 2012-07-24 at 15:40 -0600, Jim Cromie wrote:
+> On Fri, Jul 20, 2012 at 2:38 PM, Jason Baron <jbaron@redhat.com> wrote:
+> > On Thu, Jul 19, 2012 at 01:46:19PM -0600, Jim Cromie wrote:
+> >> 3 patches here, 1st is bugfix, others are trivial.
+> >>
+> >> 1- fix __dev_printk, which broke dev_dbg() prefix under CONFIG_DYNAMIC_DEBUG.
 
-On Mon, Jul 16, 2012 at 11:49:42AM +0200, Peter Ujfalusi wrote:
-> Hello,
+I'd rather what I posted be tested/implemented instead.
+It works with the printk changes already in -next via mm.
+
+Try your patch against -next and see it doesn't work.
+It requires additional changes for SOH handling.
+
+> >> 2- change dyndbg prefix interfield separator from ':' to '.'
+
+I think this part of the patch completely unnecessary.
+What value does changing the prefix from one char to another really add?
+Trying to parse  logfiles via cut will always be imperfect.
+
+dmesg -r|grep "^<7>" seems to work well enough for debug messages
+
+> Going forward, the proper priorities for dyndbg are IMO (CMIIW)
 > 
-> The following series fixes the revision information for twl6040 and adds support
-> for twl6041.
+> - get jumplabels working
 > 
-Both patches applied to my for-next branch, thanks.
+>   Ive coded this, and it looks ok, but Im stuck on the circular
+> include problem seen
+>   when I add #include <linux/jumplabel.h> needed for the ddebug.key field.
+>   Ive tried a few permutations, but I dont think thats gonna
+> illuminate a working fix.
+>   I think I'll post a minimal RF-Help patch to demonstrate the problem ..
 
-Cheers,
-Samuel.
+Seems reasonable.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> - propose a pr_debug_flags("flagchars", "fmt", ...)
+> 
+>   "flagchars" would be uppercase chars defined for each module
+>   DBG_DEFINE_FLAG( mod_debug_str, "A", "alpha flag controls .. blah blah..");
+
+what's the fmt,... for?
+Why not just a per-module set of flags?
+
+
