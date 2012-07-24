@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2GXTZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 15:25:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59695 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756296Ab2GXTZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 15:25:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: Re: [PATCH] ARM: vt8500: clk: Add clock support for arch-vt8500
-Date: Tue, 24 Jul 2012 19:25:02 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Tony Prisk <linux@prisktech.co.nz>, Mike Turquette <mturquette@ti.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Alexey Charkov <alchark@gmail.com>
-References: <1342969400-21123-1-git-send-email-linux@prisktech.co.nz>
-In-Reply-To: <1342969400-21123-1-git-send-email-linux@prisktech.co.nz>
+	id S1753819Ab2GXT0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:26:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28697 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752949Ab2GXT0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 15:26:40 -0400
+Message-ID: <500EF6EF.4080708@redhat.com>
+Date: Tue, 24 Jul 2012 13:26:39 -0600
+From: Jeff Law <law@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Josh Boyer <jwboyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc
+ definition
+References: <20120724181209.GA10534@zod.bos.redhat.com> <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com> <20120724182409.GB10534@zod.bos.redhat.com> <20120724183230.GC10534@zod.bos.redhat.com> <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com> <20120724190302.GE10534@zod.bos.redhat.com> <CA+55aFyn-yMUMdcY8jp65eeoGm3RPzy9p+St35-HGE_xXiVJag@mail.gmail.com> <500EF43C.3060200@redhat.com> <CA+55aFwvidWyBK5+U_4r5uibSkk4A-1jbnY-i9BtRgbx=Odo7w@mail.gmail.com>
+In-Reply-To: <CA+55aFwvidWyBK5+U_4r5uibSkk4A-1jbnY-i9BtRgbx=Odo7w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207241925.02594.arnd@arndb.de>
-X-Provags-ID: V02:K0:8ae1aFaz4bLySWMSzLynNyHuXM/NYzNoFl7ZWKXZUaB
- 3vT2nOq608ZjobtJaFRAJjXsobj58CTVM4ENs+Uk4xmid/yl7Z
- Zn4VLeSRrdBoEIFSCR57kFg3wqFnir6MqoINLsz26NSQpCPqwR
- wTs1hAuOV2M+1MgnAJ+oFTAyeD7nrA4LsHQZxe2VoatPyugrMN
- 1Ofjfb3Uz1Tbu1/DJRcbBHPzisLRIOTUOonPYye0oITujJyFJI
- 6cx6IYoR2kkGYOealo9h24Auy9IZirCf0/CpZjKVHwqzFZP740
- kiUHLN5W0fw9k/ahJCbfTYuPEvZcdXtdXSY6xIVkZf82ZuXP6f
- Zc4ihP2eYDdeM3+YFs5Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 22 July 2012, Tony Prisk wrote:
-> 
-> This patch adds common clock framework support for arch-vt8500.
-> WM8650 support is included in preparation for devicetree support.
-> Each SoC has a seperate initialization function due to no
-> devicetree support to identify SoCs at the moment. Once devicetree
-> is implemented, VT8500 and WM8505 should be combined. WM8650 uses
-> different functions for clocks.
-> 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+On 07/24/12 13:24, Linus Torvalds wrote:
+> On Tue, Jul 24, 2012 at 12:15 PM, Jeff Law <law@redhat.com> wrote:
+>>
+>> Please refer to the original discussion where they did evaluate the cost of
+>> this change and tested that the final change made no difference to the
+>> generated code.
+>
+> Umm. That bugzilla entry seems to be talking about a *sane* change, namely
+>
+> -  ({ unsigned long int __d = (d);					    \
+> +  ({ unsigned long int __d = (unsigned long int) (d);			    \
+>
+> in __FD_ELT(), which is totally different from the one Josh talks about.
+Right.  Josh's change is necessary to prevent warnings from folks 
+(incorrectly) using posix_types.h instead of select.h after the change 
+in that BZ was made.  That's why I originally stated that, arguably, 
+posix_types.h really should go away or just use the definitions provided 
+by glibc.
 
-arch/arm parts:
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Jeff
