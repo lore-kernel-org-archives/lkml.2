@@ -1,121 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab2GXUOF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:14:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54756 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab2GXUMJ (ORCPT
+	id S1755283Ab2GXUOD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:14:03 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44412 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab2GXUOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:12:09 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: [PATCH v4 12/12] block: Only clone bio vecs that are in use
-Date: Tue, 24 Jul 2012 13:11:29 -0700
-Message-Id: <1343160689-12378-13-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1343160689-12378-1-git-send-email-koverstreet@google.com>
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
+	Tue, 24 Jul 2012 16:14:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120724201045.GH10534@zod.bos.redhat.com>
+References: <20120724182409.GB10534@zod.bos.redhat.com> <20120724183230.GC10534@zod.bos.redhat.com>
+ <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com>
+ <20120724190302.GE10534@zod.bos.redhat.com> <CA+55aFyn-yMUMdcY8jp65eeoGm3RPzy9p+St35-HGE_xXiVJag@mail.gmail.com>
+ <500EF43C.3060200@redhat.com> <CA+55aFwvidWyBK5+U_4r5uibSkk4A-1jbnY-i9BtRgbx=Odo7w@mail.gmail.com>
+ <500EF6EF.4080708@redhat.com> <20120724194301.GG10534@zod.bos.redhat.com>
+ <CA+55aFygfHj3-PLPj2RZ6pg==7sf3=zKDATW3rVaE9jSOxCd_g@mail.gmail.com> <20120724201045.GH10534@zod.bos.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 Jul 2012 13:13:38 -0700
+X-Google-Sender-Auth: pxiaR8XWZIeunSXEORIAb2yPZKg
+Message-ID: <CA+55aFxG-C9VR0vTJ+dk+uoQp+ONYfYwSeS3zvVzOrD3zdVVrA@mail.gmail.com>
+Subject: Re: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc definition
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Jeff Law <law@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bcache creates large bios internally, and then splits them according to
-the device requirements before it sends them down. If a lower level
-device tries to clone the bio, and the original bio had more than
-BIO_MAX_PAGES, the clone will fail unecessarily.
+On Tue, Jul 24, 2012 at 1:10 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+>
+> Seems fine to me.  In addition to the s/__NFDBITS/BITS_PER_LONG change,
+> I'm guessing you'll want the odd FD_ISSET/CLR/ZERO/etc macros in
+> linux/time.h killed as well?
 
-We can fix this by only cloning the bio vecs that are actually in use.
+Yes. They don't make sense, since the kernel doesn't even *define*
+those underscore versions.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- drivers/block/rbd.c |    2 +-
- drivers/md/dm.c     |    5 ++---
- fs/bio.c            |   13 +++++++------
- 3 files changed, 10 insertions(+), 10 deletions(-)
+> If you don't get to it before me, I'll try whipping something up either
+> later this evening or first thing in the morning.
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 692cf05..21edfe5 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -714,7 +714,7 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
- 	}
- 
- 	while (old_chain && (total < len)) {
--		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
-+		tmp = bio_kmalloc(gfpmask, bio_segments(old_chain));
- 		if (!tmp)
- 			goto err_out;
- 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 3f3c26e..193fb19 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1057,11 +1057,10 @@ static struct bio *clone_bio(struct bio *bio, sector_t sector,
- {
- 	struct bio *clone;
- 
--	clone = bio_alloc_bioset(GFP_NOIO, bio->bi_max_vecs, bs);
-+	clone = bio_alloc_bioset(GFP_NOIO, bv_count, bs);
- 	__bio_clone(clone, bio);
- 	clone->bi_sector = sector;
--	clone->bi_idx = idx;
--	clone->bi_vcnt = idx + bv_count;
-+	clone->bi_vcnt = bv_count;
- 	clone->bi_size = to_bytes(len);
- 	clone->bi_flags &= ~(1 << BIO_SEG_VALID);
- 
-diff --git a/fs/bio.c b/fs/bio.c
-index 7a0801d..ec6a357 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -451,8 +451,9 @@ EXPORT_SYMBOL(bio_phys_segments);
-  */
- void __bio_clone(struct bio *bio, struct bio *bio_src)
- {
--	memcpy(bio->bi_io_vec, bio_src->bi_io_vec,
--		bio_src->bi_max_vecs * sizeof(struct bio_vec));
-+	memcpy(bio->bi_io_vec,
-+	       bio_iovec(bio_src),
-+	       bio_segments(bio_src) * sizeof(struct bio_vec));
- 
- 	/*
- 	 * most users will be overriding ->bi_bdev with a new target,
-@@ -461,10 +462,10 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
- 	bio->bi_sector = bio_src->bi_sector;
- 	bio->bi_bdev = bio_src->bi_bdev;
- 	bio->bi_flags |= 1 << BIO_CLONED;
-+	bio->bi_flags &= ~(1 << BIO_SEG_VALID);
- 	bio->bi_rw = bio_src->bi_rw;
--	bio->bi_vcnt = bio_src->bi_vcnt;
-+	bio->bi_vcnt = bio_segments(bio_src);
- 	bio->bi_size = bio_src->bi_size;
--	bio->bi_idx = bio_src->bi_idx;
- }
- EXPORT_SYMBOL(__bio_clone);
- 
-@@ -479,7 +480,7 @@ EXPORT_SYMBOL(__bio_clone);
- struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
- 			     struct bio_set *bs)
- {
--	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
-+	struct bio *b = bio_alloc_bioset(gfp_mask, bio_segments(bio), bs);
- 
- 	if (!b)
- 		return NULL;
-@@ -509,7 +510,7 @@ EXPORT_SYMBOL(bio_clone);
- 
- struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
- {
--	struct bio *b = bio_kmalloc(gfp_mask, bio->bi_max_vecs);
-+	struct bio *b = bio_kmalloc(gfp_mask, bio_segments(bio));
- 
- 	if (!b)
- 		return NULL;
--- 
-1.7.7.3
+Being the merge window, I already have spent more time than I should
+looking at kernel history of just *why* we do that odd thing. I'll go
+back to merging Xen stuff and let you play with this..
 
+               Linus
