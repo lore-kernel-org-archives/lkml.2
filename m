@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab2GXRkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 13:40:00 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:57932 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755255Ab2GXRj6 (ORCPT
+	id S1755835Ab2GXRlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 13:41:09 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:35647 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755255Ab2GXRlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 13:39:58 -0400
-Message-ID: <500EDDAF.4040506@xenotime.net>
-Date: Tue, 24 Jul 2012 10:38:55 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 24 Jul 2012 13:41:07 -0400
 MIME-Version: 1.0
-To: Benjamin Poirier <bpoirier@suse.de>
-CC: Michal Marek <mmarek@suse.cz>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] menuconfig: make keys u/d move to the previous/next dialog
- page
-References: <1343139783-22776-1-git-send-email-bpoirier@suse.de>
-In-Reply-To: <1343139783-22776-1-git-send-email-bpoirier@suse.de>
+In-Reply-To: <1343143742-31229-1-git-send-email-tixxdz@opendz.org>
+References: <1343143742-31229-1-git-send-email-tixxdz@opendz.org>
+Date: Tue, 24 Jul 2012 10:41:06 -0700
+X-Google-Sender-Auth: tB7H4enq4OonMR3fFJKnfDFRGhA
+Message-ID: <CAGXu5jJTJ2uz-GGCXhHtUnGiZy=ChXVWYey8d2XTa4gZjJ7w2w@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] proc: /proc/<pid>/environ offset fixes
+From: Kees Cook <keescook@chromium.org>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Solar Designer <solar@openwall.com>,
+        David Rientjes <rientjes@google.com>,
+        Brad Spengler <spender@grsecurity.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 07:23 AM, Benjamin Poirier wrote:
+Hi,
 
-> ... just like less(1) for example.
-> 
+On Tue, Jul 24, 2012 at 8:29 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> This is the V2 to correctly check offsets on /proc/<pid>/environ before
+> reading. This was previously discussed here:
+> http://lkml.org/lkml/2012/7/22/79
+>
+> Due to incorrect offset checks, currently one can read from aribtrary
+> addresses on /proc/<pid>/environ, not only the environment address range
+> as shown here (the same thread):
+> http://lkml.org/lkml/2012/7/22/163
+>
+> The bug is in environ_read().
+> [...]
+> Djalal Harouni (2):
+>   proc: environ_read() make sure offset points to environment address range
+>   proc: do not allow negative offsets on /proc/<pid>/environ
+>
+>  fs/proc/base.c |   22 +++++++++++++---------
+>   1 files changed, 13 insertions(+), 9 deletions(-)
 
+This looks good, thanks!
 
-Looks like some help text in mconf.c and nconf.c should be updated
-also...
+Acked-by: Kees Cook <keescook@chromium.org>
 
-
-> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-> ---
->  scripts/kconfig/lxdialog/textbox.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
-> index 154c2dd..805200f 100644
-> --- a/scripts/kconfig/lxdialog/textbox.c
-> +++ b/scripts/kconfig/lxdialog/textbox.c
-> @@ -190,6 +190,7 @@ do_resize:
->  			break;
->  		case 'B':	/* Previous page */
->  		case 'b':
-> +		case 'u':
->  		case KEY_PPAGE:
->  			if (begin_reached)
->  				break;
-> @@ -214,6 +215,7 @@ do_resize:
->  			break;
->  		case KEY_NPAGE:	/* Next page */
->  		case ' ':
-> +		case 'd':
->  			if (end_reached)
->  				break;
->  
-
-
+-Kees
 
 -- 
-~Randy
+Kees Cook
+Chrome OS Security
