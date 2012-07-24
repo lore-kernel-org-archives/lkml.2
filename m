@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab2GXIIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 04:08:45 -0400
+	id S1755637Ab2GXIJA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:09:00 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:53930 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755543Ab2GXIIl (ORCPT
+	with ESMTP id S1755562Ab2GXIIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 04:08:41 -0400
+	Tue, 24 Jul 2012 04:08:43 -0400
+Message-ID: <500E5808.1070607@gmail.com>
+Date: Tue, 24 Jul 2012 01:08:40 -0700
+From: bforce1729 <bforce1729@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1343116855-6804-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1343116855-6804-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Tue, 24 Jul 2012 09:08:41 +0100
-X-Google-Sender-Auth: ZDCTu3R2StIvbvmyNie-Rrn-7i0
-Message-ID: <CAOh2x=nW=OUHGpaaYYxTN+rgnmF7Nb2R-wy=aSDfRhLPQeYSaQ@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: use devm_* functions to simplify code
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: Need to know the size of data send from Kernel to USer Ap
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 9:00 AM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Use devm_kzalloc, devm_clk_get, devm_request_irq, and devm_request_and_ioremap
-> to reduce the code and to simplify the error path.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Viresh Kumar <viresh.linux@gmail.com>
-> ---
->  drivers/dma/dw_dmac.c      |   53 +++++++++-----------------------------------
->  drivers/dma/dw_dmac_regs.h |    2 --
->  2 files changed, 10 insertions(+), 45 deletions(-)
+Hi,
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+I am new to kernel programming so can anyone point me to the right 
+forum/reply for the question below.
+
+I would like to implement a character device and using a node of type 
+character  read and write data. However I am not sure of the length of 
+data from kernel which a user app will receive, so I would like to code 
+safely. If the data exceeds the application gets killed.
+Any idea or API to perform the task of knowing the data length when 
+passing data to and fro from kernel to user level would be appreciated.
+
+Kernel code:
+
+                 copy_to_user(buff, kernel_msg, strlen(kernel_msg));
+
+User App:
+                 fd=open("./my_device",O_RDONLY);
+ret=read(fd,buff,strlen(buf));                        //How can I know 
+the size of buff, which would be sent/filled from kernel???
+
+Regards
+bforce
