@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab2GXOa3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:30:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59203 "EHLO
+	id S1755183Ab2GXOcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:32:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64758 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab2GXOa1 (ORCPT
+	with ESMTP id S1754704Ab2GXOcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:30:27 -0400
-Date: Tue, 24 Jul 2012 16:30:23 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: linux-kernel@vger.kernel.org, nsekhar@ti.com
-Subject: Re: [PATCH v2] pwm: Add support for configuring the PWM polarity
-Message-ID: <20120724143023.GA22293@avionic-0098.mockup.avionic-design.de>
-References: <1343138732-12972-1-git-send-email-avinashphilip@ti.com>
+	Tue, 24 Jul 2012 10:32:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Cyril Chemparathy <cyril@ti.com>
+Subject: Re: [RFC 17/23] ARM: add machine desc hook for early memory/paging initialization
+Date: Tue, 24 Jul 2012 14:32:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        nico@linaro.org, will.deacon@arm.com, catalin.marinas@arm.com,
+        Vitaly Andrianov <vitalya@ti.com>
+References: <1343092165-9470-1-git-send-email-cyril@ti.com> <1343092165-9470-18-git-send-email-cyril@ti.com>
+In-Reply-To: <1343092165-9470-18-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-In-Reply-To: <1343138732-12972-1-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:Erq3jkLy8twNYTefiTfJ/wwOO6wQWRzlV+MwzsStoUO
- 35APHDGGR52yVXeh/uH/udHpoOsWJIeCJlpnYQzT1jByPU/A7f
- 8SkhQ4siBBdd/cDrJ8z2tjJ5cfwWBfFltRuqFwYZtWjEhlepNT
- c/VuJRbN5OGcE2Zh8SqTJIX2iiEGl+kvdXA6LP1j3KyYFUl0Kn
- A+JxosXRGIbOhj3GXd2zQt7NgwhC4DV/yf1peHL6zCoYhOuSyw
- EwiPUucE+7DHa/RHYLTuh3Bz6mztY3c0gDulslSFLdjC4n4zh5
- MmPNNzXYwmBowoPmJjNCVc5nfd7Nxn9yYqbEia808dkVsB635a
- GSjhXKARp9uX4G/F3NURvYaIHzBXc/ZYbLrJIQo0scQ0S2wBrV
- 0N3F2AUZk+fqQjf5X062X3M/1c3mQ4SfkPoGBxw2JvQV0xu6JD
- o/J7m
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207241432.27790.arnd@arndb.de>
+X-Provags-ID: V02:K0:bwDiyTalmMvfsBFkEHQk9AnCgnbFuiOVO8qPMcd9gDV
+ FHmDd2QyX4UI05TdwtL1nSUOJkGtpENhf5RPQIwVTIa7sOr/vk
+ Z7VguENl2+d0EdoQ+GJ4tHAzBPftAfC9EFc+JxH87JrkjFjmci
+ Co1jV+lzME2TG3/cmqOk5g0eP7u2dPkXIockwl2AQFFaY/43Nl
+ htjgbG1FM3P4NrLinsz6VfQaUZqOS9HUAJsrybow5PCPcnK7oL
+ U4KvoZfeOrt8WzPngN+3RSBpT7+zDKVm/HFD56AjtSmH+1Q3FX
+ CkBE/y7sBX+Dfqy600qoYt7gIOqJze3FEDKzEabiVn++hmUISh
+ T0DQVNIMrlaw9j1IkurA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 24 July 2012, Cyril Chemparathy wrote:
+> diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+> index 0b1c94b..49e9c2a 100644
+> --- a/arch/arm/include/asm/mach/arch.h
+> +++ b/arch/arm/include/asm/mach/arch.h
+> @@ -39,6 +39,7 @@ struct machine_desc {
+>                                          struct meminfo *);
+>         void                    (*reserve)(void);/* reserve mem blocks  */
+>         void                    (*map_io)(void);/* IO mapping function  */
+> +       void                    (*init_meminfo)(void);
+>         void                    (*init_early)(void);
+>         void                    (*init_irq)(void);
+>         struct sys_timer        *timer;         /* system tick timer    */
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index e15d83b..7cbe292 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -964,6 +964,9 @@ void __init setup_arch(char **cmdline_p)
+>  
+>         parse_early_param();
+>  
+> +       if (mdesc->init_meminfo)
+> +               mdesc->init_meminfo();
+> +
+>         sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
+>         sanity_check_meminfo();
+>         arm_memblock_init(&meminfo, mdesc);
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The function pointers in that structure are ordered by execution time,
+and you call init_meminfo just before ->reserve, so it should go there.
 
-On Tue, Jul 24, 2012 at 07:35:32PM +0530, Philip, Avinash wrote:
-> Some hardware supports inverting the polarity of the PWM signal. This
-> commit adds support to the PWM framework to allow users of the PWM API
-> to configure the polarity. Note that in order to reduce complexity,
-> changing the polarity of a PWM signal is only allowed while the PWM is
-> disabled.
->=20
-> A practical example where this can prove useful is to simulate inversion
-> of the duty cycle. While inversion of polarity and duty cycle are not
-> exactly the same, the differences for most use-cases are negligible.
->=20
-> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+I wonder if it's better to just do the setup in the reserve callback,
+which would be a slight abuse of that interface but also keep down
+the number of early callbacks.
 
-This looks good to me. I'll queue this for 3.7 once the 3.6 merge window
-closes.
-
-Thanks,
-Thierry
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQDrF/AAoJEN0jrNd/PrOhY9gP/3x5qKmO2yWz0cSFubxsjwFq
-/wC+PdTpZFoi0rb4Af+u2eeV2Y6sJPtdxycP2vKTf1+4V83HCpoFqn6IolvvPZiw
-s+HbYPB4bnnMZBZIWYk28GgGRM47AhyPj27TtrtOb9R/93DXZNaQgVxLgjQQmBvw
-lm0bUTdmq/AqkhWpcQOIF4L50Bw4usoOiPjtwqrur8G1YkpZQZeoYc4v4Mi4D6KM
-AOvGjpA2g4ONRsav+ETiedYuer6BD1yEzka77pjeOn/j6s9/lmroSKKU67/yB/r5
-TbavevE0le0Iju2nDJoZLVU4LDPexWFzZ8PP2MsLl1+X/fxHl63nuHPTRz3IIafA
-7VmUa94HTN5TBAXyIwnpPDPdPjljKoerZfqRSccXF2NZeGx38ZhG2VbLMX6EL9jP
-rACbY4sQ6yhDXfRSIqLxojxbsW40pTOSRZOoYELcQzXAbE/TxYMLIUGk7UTIHMBB
-PO+LahCBObTYr1gQRM4hcU7zpkKSAtUA0hWALNO30Nu10FpmI2rSFDC+/A3BnJXB
-A+sEEaJWYUb4SSi7APNBpZLGSz8voILh21eMUeW2wRFk9LeOACH2/4kWt4BKh/th
-mqQznnt6M6bfHbIwTBRtxQeziHcMYPjfKaQ0WiES3UNa6cciqojXRFXROOaD1/Ui
-9z7iAl20Ig43E4lQKRbq
-=XXFx
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
+	Arnd
