@@ -1,153 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2GXJIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 05:08:46 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55515 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab2GXJHD (ORCPT
+	id S1753300Ab2GXJJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 05:09:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40664 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752209Ab2GXJJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 05:07:03 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-08-500e65b27414
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 10/12] perf report: Show leader events only when event group is enabled
-Date: Tue, 24 Jul 2012 18:01:31 +0900
-Message-Id: <1343120493-23059-11-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
-References: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 24 Jul 2012 05:09:00 -0400
+Date: Tue, 24 Jul 2012 10:08:41 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [RFC 00/23] Introducing the TI Keystone platform
+Message-ID: <20120724090841.GA16435@mudshark.cambridge.arm.com>
+References: <1343092165-9470-1-git-send-email-cyril@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343092165-9470-1-git-send-email-cyril@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Cyril,
 
-Since we have all necessary information in the leader events and
-other members don't, show only leaders.
+Thanks for this, certainly looks like an interesting platform!
 
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c    |    4 ++++
- tools/perf/ui/browsers/hists.c |   38 ++++++++++++++++++++++++++++++++------
- tools/perf/ui/gtk/browser.c    |    4 ++++
- 3 files changed, 40 insertions(+), 6 deletions(-)
+Of course, in order to perform any sort of sensible review, I'll need some
+silicon to test it on :)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 46ed9c2ad4ed..6f34a2d6e5a8 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -318,6 +318,10 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 		struct hists *hists = &pos->hists;
- 		const char *evname = perf_evsel__name(pos);
- 
-+		if (symbol_conf.report_group &&
-+		    !perf_evsel__is_group_leader(pos))
-+			continue;
-+
- 		hists__fprintf_nr_sample_events(hists, evname, stdout);
- 		hists__fprintf(hists, NULL, false, true, 0, 0, stdout);
- 		fprintf(stdout, "\n\n");
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index bdb1b2f9f819..dbd6995609bf 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1567,8 +1567,18 @@ out:
- 	return key;
- }
- 
-+static bool filter_group_entries(struct ui_browser *self __used, void *entry)
-+{
-+	struct perf_evsel *evsel = list_entry(entry, struct perf_evsel, node);
-+
-+	if (symbol_conf.report_group && !perf_evsel__is_group_leader(evsel))
-+		return true;
-+
-+	return false;
-+}
-+
- static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
--					   const char *help,
-+					   int nr_entries, const char *help,
- 					   void(*timer)(void *arg), void *arg,
- 					   int delay_secs)
- {
-@@ -1579,7 +1589,8 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 			.refresh    = ui_browser__list_head_refresh,
- 			.seek	    = ui_browser__list_head_seek,
- 			.write	    = perf_evsel_menu__write,
--			.nr_entries = evlist->nr_entries,
-+			.filter	    = filter_group_entries,
-+			.nr_entries = nr_entries,
- 			.priv	    = evlist,
- 		},
- 	};
-@@ -1594,7 +1605,7 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 			menu.b.width = line_len;
- 	}
- 
--	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, timer,
-+	return perf_evsel_menu__run(&menu, nr_entries, help, timer,
- 				    arg, delay_secs);
- }
- 
-@@ -1602,15 +1613,30 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
- 				  void(*timer)(void *arg), void *arg,
- 				  int delay_secs)
- {
--	if (evlist->nr_entries == 1) {
-+	int nr_entries = evlist->nr_entries;
-+
-+single_entry:
-+	if (nr_entries == 1) {
- 		struct perf_evsel *first = list_entry(evlist->entries.next,
- 						      struct perf_evsel, node);
- 		const char *ev_name = perf_evsel__name(first);
--		return perf_evsel__hists_browse(first, evlist->nr_entries, help,
-+		return perf_evsel__hists_browse(first, nr_entries, help,
- 						ev_name, false, timer, arg,
- 						delay_secs);
- 	}
- 
--	return __perf_evlist__tui_browse_hists(evlist, help,
-+	if (symbol_conf.report_group) {
-+		struct perf_evsel *pos;
-+
-+		nr_entries = 0;
-+		list_for_each_entry(pos, &evlist->entries, node)
-+			if (perf_evsel__is_group_leader(pos))
-+				nr_entries++;
-+
-+		if (nr_entries == 1)
-+			goto single_entry;
-+	}
-+
-+	return __perf_evlist__tui_browse_hists(evlist, nr_entries, help,
- 					       timer, arg, delay_secs);
- }
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index e39c83cd5ac5..cc53a01ba14b 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -306,6 +306,10 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 		GtkWidget *scrolled_window;
- 		GtkWidget *tab_label;
- 
-+		if (symbol_conf.report_group &&
-+		    !perf_evsel__is_group_leader(pos))
-+			continue;
-+
- 		scrolled_window = gtk_scrolled_window_new(NULL, NULL);
- 
- 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
--- 
-1.7.10.4
+On Tue, Jul 24, 2012 at 02:09:02AM +0100, Cyril Chemparathy wrote:
+> TI's scalable KeyStone II architecture includes support for both TMS320C66x
+> floating point DSPs and ARM Cortex-A15 clusters, for a mixture of up to 32
+> cores per SoC.  The solution is optimized around a high performance chip
+> interconnect and a rich set of on chip peripherals.  Please refer [1] for
+> initial technical documentation on these devices.
 
+How many A15s can you have on such a SoC? It wasn't clear whether it was 1x4
+or 4x4 from the documentation.
+
+> This patch series provides a basic Linux port for these devices, including
+> support for SMP, and LPAE boot.  A majority of the patches in this series are
+> related to LPAE functionality, imposed by the device architecture which has
+> system memory mapped at an address above the 4G 32-bit addressable limit.
+
+I assume you have *some* memory in the bottom 32-bits though, right? Even if
+it's just a partial alias of a higher bank.
+
+> This patch series is based on the v3.5 kernel with the smp_ops patch set
+> applied on top.  This series is being posted to elicit early feedback, and so
+> that some of these fixes may get incorporated early on into the kernel code.
+> 
+>   [1] - http://www.ti.com/product/tms320tci6636
+
+This is marked as `TI confidential' but I guess that's an oversight [or will
+you have to kill me?].
+
+Will
