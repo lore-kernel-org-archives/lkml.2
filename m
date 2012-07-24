@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab2GXOHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:07:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41176 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754679Ab2GXOHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:07:17 -0400
-Message-ID: <1343138818.5132.98.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 028/108] sched/nohz: Rewrite and fix load-avg computation --
- again
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jul 2012 15:06:58 +0100
-In-Reply-To: <20120723010655.768372060@decadent.org.uk>
-References: <20120723010655.768372060@decadent.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-LEuQA681sV3Emeo79qI2"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1754863Ab2GXOH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:07:28 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47793 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754826Ab2GXOHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 10:07:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="172521586"
+Date: Tue, 24 Jul 2012 17:09:11 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
+        Jan Beulich <jbeulich@novell.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC 0/6] Avoid cache trashing on clearing huge/gigantic
+ page
+Message-ID: <20120724140911.GA8270@otc-wbsnb-06>
+References: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120723163020.5250e09e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
+Content-Disposition: inline
+In-Reply-To: <20120723163020.5250e09e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-LEuQA681sV3Emeo79qI2
-Content-Type: text/plain; charset="UTF-8"
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2012-07-23 at 02:07 +0100, Ben Hutchings wrote:
-> 3.2-stable review patch.  If anyone has any objections, please let me kno=
-w.
+On Mon, Jul 23, 2012 at 04:30:20PM -0700, Andrew Morton wrote:
+> On Fri, 20 Jul 2012 15:50:16 +0300
+> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 >=20
-> ------------------
+> > Clearing a 2MB huge page will typically blow away several levels of CPU
+> > caches.  To avoid this only cache clear the 4K area around the fault
+> > address and use a cache avoiding clears for the rest of the 2MB area.
+> >=20
+> > It would be nice to test the patchset with more workloads. Especially if
+> > you see performance regression with THP.
+> >=20
+> > Any feedback is appreciated.
 >=20
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> This all looks pretty sane to me.  Some detail-poking from the x86 guys
+> would be nice.
 >=20
-> commit 5167e8d5417bf5c322a703d2927daec727ea40dd upstream.
->=20
-> Thanks to Charles Wang for spotting the defects in the current code:
->=20
->  - If we go idle during the sample window -- after sampling, we get a
->    negative bias because we can negate our own sample.
->=20
->  - If we wake up during the sample window we get a positive bias
->    because we push the sample to a known active period.
->=20
-> So rewrite the entire nohz load-avg muck once again, now adding
-> copious documentation to the code.
-[...]
+> What do other architectures need to do?  Simply implement
+> clear_page_nocache()?
 
-Based on <http://bugs.debian.org/674153>, I think we also need:
+And define ARCH_HAS_USER_NOCACHE to 1.
 
-556061b sched/nohz: Fix rq->cpu_load[] calculations
-5aaa0b7 sched/nohz: Fix rq->cpu_load calculations some more
+> I believe that powerpc is one, not sure about
+> others.  Please update the changelogs to let arch maintainers know
+> what they should do and cc those people on future versions?
 
-Does this ('sched/nohz: Rewrite and fix load-avg computation -- again')
-depend in any way on those, or are they separate fixes?
-
-Ben.
+Okay.
 
 --=20
-Ben Hutchings
-If more than one person is responsible for a bug, no one is at fault.
+ Kirill A. Shutemov
 
---=-LEuQA681sV3Emeo79qI2
+--Nq2Wo0NMKNjxTN9z
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUA6sAue/yOyVhhEJAQo9Hw//R4WdJl6RWUusHnROyn2mg13+kq0COu7f
-AIUP+aEhQ9b+3gYXX6bYXfVy7SCDZY0ZkJizNq/jxF0VWJlFivyhmmEZb1Fg17Q4
-wKeShvdee39vdrRHzEPKMPSoUBSdPeuxn7EvtohX7D24qkCU+GKhGSdDARI13coV
-gUqfZwYAS1MZi+X/I/+PCPmQ3vrAQrKuuDL42s4PXrsan0l4si3uqIgOwUzKSLg0
-k7l3BsiWdQqgDD1FyCM580x5Uo0Pamc1ot2CGBtqjxM+J4XbErhIBdvoOa25nmqF
-a2NB1sYXOB0PlVIa4tz4OV3PHShHv/AvkEUI+tKHctuPR0k+pc6uZtu/wDvk86Nv
-QyHZfNeuUxSPPtMUhOMJRIYQF8mHivlnI33PR/SUhozulzHV819nx313hhJFKYRb
-cXwnPsNFPcYFjG6sA5xy/NY61i7EsYmla0deG9cgGHX+7y9EWBz5LQ2hlsCAdl8z
-FatbsUZ3E2FfWfYyhEpWNh0QZW8meLTP7oAvkUw24Mmtgr0iVSKDdtcmet7ZpGSN
-+rpc0ixPdgokAGsx2JbKCoqmM1VvgmtJAu+aQ8A/WsZK9gwDvNqIiYdRqJKsiclg
-LtRwLp9dHNuXu4WxuXyXx4acddMzjXLRXDKv4rUQ3MvclWlbMO5hCKiE9l39ZFoR
-nSGH9YUXNj0=
-=PciL
+iQIcBAEBAgAGBQJQDqyHAAoJEAd+omnVudOMLwkP/02InE8fF6zCcmRgu5I38Bn/
+/K+IZp7KCxy0ppv32lc8hc+wViesMFk8DcoqXnEsO44dDxqC3Krytx3KOqJD2sPj
+ssziLMclnpU2YcWBJQ4+fSZLWyLLjzH2h4boyN81IaG7tdvZ+Hksujys1WG3GPdU
+f6xuEhSqrgJaANtuhZUaVR9xrgS1IxJNPsB/MhyteAuKW1GUDLRVqMWHGd2yq+/0
+JArU5d532pPUsk0T+mYS7lbj25m0WBF5GfU8F11QmhbSjGUEyiQ5V5LPkszT+L9G
+6K8CgFkIO2q2uoTmxGoc8zXCLJaGtUTazMXQKohExpgAzcJAA0OsYMz693Z9uFkX
+Ap9nHAOmxAiPfqC2YWZlTmW+SHsAyLjh1XNqGRJAICykDm64xk1W0fKcl+uv3MRX
+MLVB/SVkAlK/ub+LtUR40xz6PeYd2I6FY1dmqfFX/G+quFe1K/ONXx8tjrIYUrke
+8ENLFL3NHBGB0aBCu731dShuzKkpi4lPo0WYstiI4cJOV+kDdM0E93e4aSMdkJjb
+vPDbaEcypWFCzKr5/kJZSO3AjLa9VfsXgnOdgsygySftJxOAdGG7oJbyGb0JVaI4
+SjLN2lTAbJvaWYivQl44vFd7S49c0jbmPKkvMPU/qrqtBNkssfOB1ZlOA4vp05Ki
+eEeGiq728CjRIkLdXrrb
+=bkw/
 -----END PGP SIGNATURE-----
 
---=-LEuQA681sV3Emeo79qI2--
+--Nq2Wo0NMKNjxTN9z--
