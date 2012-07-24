@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab2GXEh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 00:37:58 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:56367 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab2GXEh5 (ORCPT
+	id S1752089Ab2GXEjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 00:39:47 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19422 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab2GXEjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 00:37:57 -0400
+	Tue, 24 Jul 2012 00:39:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 23 Jul 2012 21:35:21 -0700
+Message-ID: <500E249F.4080700@nvidia.com>
+Date: Tue, 24 Jul 2012 09:59:19 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1343100106.3715.2.camel@pasglop>
-References: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils>
- <1343011543.2957.2.camel@pasglop> <CACxGe6uFvtro7iR8FewgChLr_6PnZA-EaRMKQjrFEaEHg7SKRQ@mail.gmail.com>
- <1343082371.2957.39.camel@pasglop> <CACxGe6uo8jx3GQFQpQ5RTHF5JyN2hEgvcvdmSYfGyTQnzK9fOA@mail.gmail.com>
- <CACxGe6udruWL7oo6Qp6jkwQYceduTO1h1gKFz9TFX1TPZoNFNQ@mail.gmail.com> <1343100106.3715.2.camel@pasglop>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 23 Jul 2012 22:37:35 -0600
-X-Google-Sender-Auth: HdpG26iRZrTLdBZ5FQQ0BFq43pE
-Message-ID: <CACxGe6vx0isTS6e9W6+QsYfYsMKNiqc8haGdmre2aFE91yhthQ@mail.gmail.com>
-Subject: Re: next/mmotm unbootable on G5: irqdomain
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Hugh Dickins <hughd@google.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>, "lrg@ti.com" <lrg@ti.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] regulator: tps6586x: add support for input supply
+References: <1342187432-18668-1-git-send-email-ldewangan@nvidia.com> <1342187432-18668-3-git-send-email-ldewangan@nvidia.com> <500DB960.6020802@wwwdotorg.org>
+In-Reply-To: <500DB960.6020802@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 9:21 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Mon, 2012-07-23 at 16:32 -0600, Grant Likely wrote:
->> > As-is I'm backing off from the linear/legacy/tree merge patch as just
->> > too risky. I've already pulled that stuff out of linux-next.
->>
->> Can I pull you pseries fix into my tree (my preference), or do I need
->> to rebase on top of yours?
+On Tuesday 24 July 2012 02:21 AM, Stephen Warren wrote:
+> On 07/13/2012 07:50 AM, Laxman Dewangan wrote:
+>>     sm[0-2], ldo[0-9] and ldo_rtc
+>> +- sm0-supply: The input supply for the SM0.
+>> +- sm1-supply: The input supply for the SM1.
+>> +- sm2-supply: The input supply for the SM2.
+>> +- vinldo01-supply: The input supply for the LDO1 and LDO2
+>> +- vinldo23-supply: The input supply for the LDO2 and LDO3
+>> +- vinldo4-supply: The input supply for the LDO4
+>> +- vinldo678-supply: The input supply for the LDO6, LDO7 and LDO8
+>> +- vinldo9-supply: The input supply for the LDO9
+> Hmm. The signal names in my data sheet are VIN_SMn and VINLDOn, so
+> having "vin" in just some of the property names seems a little inconsistent.
 >
-> The mpic fix for the g5 is in Linus tree already, I added it on top of
-> powerpc -next before I asked Linus to pull.
->
-> For pseries (ie the fix for irq_find_mapping vs. radix), I don't have a
-> formal patch, just the one I hand typed in my previous email, so do
-> whatever you want with it.
 
-Okay, I'll merge in Linus' tree at the appropriate point to protect
-against bisection, and I'll fix up the appropriate patch that touches
-irq_find_mapping.
+My bad, not sure why I missed it.  I will send the patch for correcting 
+this before Tegra's board ventana/harmony fills the dt entry.
 
-g.
