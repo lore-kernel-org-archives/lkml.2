@@ -1,73 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab2GXOQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:16:11 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:64686
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754072Ab2GXOQK (ORCPT
+	id S1754748Ab2GXORS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:17:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41998 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab2GXORR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:16:10 -0400
-X-IronPort-AV: E=Sophos;i="4.77,646,1336341600"; 
-   d="scan'208";a="151568300"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
-Subject: [PATCH] drivers/iommu/intel-iommu.c: add missing free_domain_mem
-Date: Tue, 24 Jul 2012 16:16:04 +0200
-Message-Id: <1343139364-26936-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Tue, 24 Jul 2012 10:17:17 -0400
+Date: Tue, 24 Jul 2012 07:15:41 -0700
+From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Message-ID: <tip-80d1fa6463d934969b7aebf04107fc133463f0f6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+In-Reply-To: <20120524141635.3692.893.stgit@srivatsabhat.in.ibm.com>
+References: <20120524141635.3692.893.stgit@srivatsabhat.in.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] cpusets, hotplug:
+  Implement cpuset tree traversal in a helper function
+Git-Commit-ID: 80d1fa6463d934969b7aebf04107fc133463f0f6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:15:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+Commit-ID:  80d1fa6463d934969b7aebf04107fc133463f0f6
+Gitweb:     http://git.kernel.org/tip/80d1fa6463d934969b7aebf04107fc133463f0f6
+Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+AuthorDate: Thu, 24 May 2012 19:46:41 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 24 Jul 2012 13:53:18 +0200
 
-Add missing free_domain_mem on failure path after alloc_domain.
+cpusets, hotplug: Implement cpuset tree traversal in a helper function
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+At present, the functions that deal with cpusets during CPU/Mem hotplug
+are quite messy, since a lot of the functionality is mixed up without clear
+separation. And this takes a toll on optimization as well. For example,
+the function cpuset_update_active_cpus() is called on both CPU offline and CPU
+online events; and it invokes scan_for_empty_cpusets(), which makes sense
+only for CPU offline events. And hence, the current code ends up unnecessarily
+traversing the cpuset tree during CPU online also.
 
-// <smpl>
-@km exists@
-local idexpression e;
-expression e1,e2,e3;
-type T,T1;
-identifier f;
-@@
+As a first step towards cleaning up those functions, encapsulate the cpuset
+tree traversal in a helper function, so as to facilitate upcoming changes.
 
-* e = alloc_domain(...)
-... when any
-    when != e = e1
-    when != e1 = (T)e
-    when != e1(...,(T)e,...)
-    when != &e->f
-if(...) { ... when != e2(...,(T1)e,...)
-                 when != e3 = e
-                 when forall
-(
-             return <+...e...+>;
-|
-*             return ...;
-) }
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/20120524141635.3692.893.stgit@srivatsabhat.in.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/iommu/intel-iommu.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/cpuset.c |   36 +++++++++++++++++++++++++++---------
+ 1 files changed, 27 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 7469b53..0204b62 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2008,6 +2008,7 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
- 	if (!drhd) {
- 		printk(KERN_ERR "IOMMU: can't find DMAR for device %s\n",
- 			pci_name(pdev));
-+		free_domain_mem(domain);
- 		return NULL;
- 	}
- 	iommu = drhd->iommu;
-
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 746d1ee..ba96349 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1990,6 +1990,32 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
+ }
+ 
+ /*
++ * Helper function to traverse cpusets.
++ * It can be used to walk the cpuset tree from top to bottom, completing
++ * one layer before dropping down to the next (thus always processing a
++ * node before any of its children).
++ */
++static struct cpuset *cpuset_next(struct list_head *queue)
++{
++	struct cpuset *cp;
++	struct cpuset *child;	/* scans child cpusets of cp */
++	struct cgroup *cont;
++
++	if (list_empty(queue))
++		return NULL;
++
++	cp = list_first_entry(queue, struct cpuset, stack_list);
++	list_del(queue->next);
++	list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
++		child = cgroup_cs(cont);
++		list_add_tail(&child->stack_list, queue);
++	}
++
++	return cp;
++}
++
++
++/*
+  * Walk the specified cpuset subtree and look for empty cpusets.
+  * The tasks of such cpuset must be moved to a parent cpuset.
+  *
+@@ -2008,19 +2034,11 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+ {
+ 	LIST_HEAD(queue);
+ 	struct cpuset *cp;	/* scans cpusets being updated */
+-	struct cpuset *child;	/* scans child cpusets of cp */
+-	struct cgroup *cont;
+ 	static nodemask_t oldmems;	/* protected by cgroup_mutex */
+ 
+ 	list_add_tail((struct list_head *)&root->stack_list, &queue);
+ 
+-	while (!list_empty(&queue)) {
+-		cp = list_first_entry(&queue, struct cpuset, stack_list);
+-		list_del(queue.next);
+-		list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
+-			child = cgroup_cs(cont);
+-			list_add_tail(&child->stack_list, &queue);
+-		}
++	while ((cp = cpuset_next(&queue)) != NULL) {
+ 
+ 		/* Continue past cpusets with all cpus, mems online */
+ 		if (cpumask_subset(cp->cpus_allowed, cpu_active_mask) &&
