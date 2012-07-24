@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab2GXBDs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:03:48 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:49051 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956Ab2GXBDr (ORCPT
+	id S1755420Ab2GXBJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 21:09:05 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36262 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755197Ab2GXBJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 21:03:47 -0400
+	Mon, 23 Jul 2012 21:09:03 -0400
+Date: Mon, 23 Jul 2012 18:08:05 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+In-Reply-To: <20120723114007.GU9222@suse.de>
+Message-ID: <alpine.LSU.2.00.1207231702440.1683@eggly.anvils>
+References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <20120723114007.GU9222@suse.de>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1343075561-17446-1-git-send-email-arnd@arndb.de>
-References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 23 Jul 2012 18:03:26 -0700
-X-Google-Sender-Auth: QIhfcelaf3PQMHcIyDtMSH9fMUQ
-Message-ID: <CA+55aFyObNFgsaVOsjVOcH+aLjDyOgcqpvckM29T3dvugekVwg@mail.gmail.com>
-Subject: Re: [GIT PULL 00/15] arm-soc: changes for v3.6
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 1:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->
-> There are about 600 changesets in here, and a bunch of simple
-> conflicts between the 15 branches, but so far no conflicts with
-> stuff that you have merged already. For reference, you can check
-> the "for-linus" branch in the same tree to see how we resolved
-> the conflicts.
+On Mon, 23 Jul 2012, Mel Gorman wrote:
+> On Sun, Jul 22, 2012 at 09:04:33PM -0700, Hugh Dickins wrote:
+> > On Fri, 20 Jul 2012, Mel Gorman wrote:
+> > > On Fri, Jul 20, 2012 at 04:36:35PM +0200, Michal Hocko wrote:
+> 
+> I like it in that it's simple and I can confirm it works for the test case
+> of interest.
 
-Ok, so I've merged some things a bit differently, but afaik it's all
-semantically identical *except* for the merge of the file
+Phew, I'm glad to hear that, thanks.
 
-  arch/arm/mach-omap2/clockdomains3xxx_data.c
+> 
+> However, is your patch not vunerable to truncate issues?
+> madvise()/truncate() issues was the main reason why I was wary of VMA tricks
+> as a solution. As it turns out, madvise(DONTNEED) is not a problem as it is
+> ignored for hugetlbfs but I think truncate is still problematic. Lets say
+> we mmap(MAP_SHARED) a hugetlbfs file and then truncate for whatever reason.
+> 
+> invalidate_inode_pages2
+>   invalidate_inode_pages2_range
+>     unmap_mapping_range_vma
+>       zap_page_range_single
+>         unmap_single_vma
+> 	  __unmap_hugepage_range (removes VM_MAYSHARE)
+> 
+> The VMA still exists so the consequences for this would be varied but
+> minimally fault is going to be "interesting".
 
-in my merge of your "general arm-soc cleanups" pull request.
+You had me worried there, I hadn't considered truncation or invalidation2
+at all.
 
-In your "for-linus" branch, "&mpu_3xxx_clkdm" remains in the
-clockdomains_common[] array. In my merge, it is gone. But I think I
-did the merge correctly, and you did it wrong. HOWEVER, I don't know
-the code, maybe there is some subtle reason why you did it like you
-did.
+But actually, I don't think they do pose any problem for my patch.  They
+would indeed if I were removing VM_MAYSHARE in __unmap_hugepage_range()
+as you show above; but no, I'm removing it in unmap_hugepage_range().
 
-Your "for-linus" branch also had that
+That's only called by unmap_single_vma(): which is called via
+unmap_vmas() by unmap_region() or exit_mmap() just before free_pgtables()
+(the problem cases); or by madvise_dontneed() via zap_page_range(), which
+as you note is disallowed on VM_HUGETLB; or by zap_page_range_single().
 
-   arch/arm/arm-soc-for-next-contents.txt
+zap_page_range_single() is called by zap_vma_ptes(), which is only
+allowed on VM_PFNMAP; or by unmap_mapping_range_vma(), which looked
+like it was going to deadlock on i_mmap_mutex (with or without my
+patch) until I realized that hugetlbfs has its own hugetlbfs_setattr()
+and hugetlb_vmtruncate() which don't use unmap_mapping_range() at all.
 
-file that shouldn't have been there, but whatever.
+invalidate_inode_pages2() (and _range()) do use unmap_mapping_range(),
+but hugetlbfs doesn't support direct_IO, and otherwise I think they're
+called by a filesystem directly on its own inodes, which hugetlbfs
+does not.  Anyway, if there's a deadlock on i_mmap_mutex somewhere
+in there, it's not introduced by the proposed patch.
 
-Anyway, apart from that "please check" comment, I also have small
-complaint: your pull requests didn't actually point to the tags, they
-pointed to the next/xyz commits. So every time I did a pull, I had to
-change "next/xyz" to "tags/xyz". That's just annoying make-work. I
-think it's because you just said "xyz" to the git request-pull script,
-and then git had to pick one of the things and picked next. Please
-disambiguate by just saying "tags/xyz" explicitly.
+So, unmap_hugepage_range() is only being called in the problem cases,
+just before free_pgtables(), when unmapping a vma (with mmap_sem held),
+or when exiting (when we have the last reference to mm): in each case,
+the vma is on its way out, and VM_MAYSHARE no longer of interest to others.
 
-                  Linus
+I spent a while concerned that I'd overlooked the truncation case, before
+realizing that it's not a problem: the issue comes when we free_pgtables(),
+which truncation makes no attempt to do.
+
+So, after a bout of anxiety, I think my &= ~VM_MAYSHARE remains good.
+
+Hugh
