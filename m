@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab2GXOOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:14:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41949 "EHLO
+	id S1754670Ab2GXOPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:15:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41974 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab2GXOOO (ORCPT
+	with ESMTP id S1754404Ab2GXOPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:14:14 -0400
-Date: Tue, 24 Jul 2012 07:13:56 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c@git.kernel.org>
+	Tue, 24 Jul 2012 10:15:14 -0400
+Date: Tue, 24 Jul 2012 07:14:49 -0700
+From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Message-ID: <tip-d35be8bab9b0ce44bed4b9453f86ebf64062721e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        arjan@linux.intel.com, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, arjan@linux.intel.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
         tglx@linutronix.de
-In-Reply-To: <1339594110.8980.38.camel@twins>
-References: <1339594110.8980.38.camel@twins>
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+In-Reply-To: <20120524141611.3692.20155.stgit@srivatsabhat.in.ibm.com>
+References: <20120524141611.3692.20155.stgit@srivatsabhat.in.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/x86: Remove broken power estimation
-Git-Commit-ID: ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
+Subject: [tip:sched/core] CPU hotplug, cpusets, suspend: Don'
+ t modify cpusets during suspend/resume
+Git-Commit-ID: d35be8bab9b0ce44bed4b9453f86ebf64062721e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,111 +32,154 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:14:02 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:14:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
-Gitweb:     http://git.kernel.org/tip/ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Wed, 13 Jun 2012 15:24:45 +0200
+Commit-ID:  d35be8bab9b0ce44bed4b9453f86ebf64062721e
+Gitweb:     http://git.kernel.org/tip/d35be8bab9b0ce44bed4b9453f86ebf64062721e
+Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+AuthorDate: Thu, 24 May 2012 19:46:26 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 24 Jul 2012 13:53:00 +0200
+CommitDate: Tue, 24 Jul 2012 13:53:14 +0200
 
-sched/x86: Remove broken power estimation
+CPU hotplug, cpusets, suspend: Don't modify cpusets during suspend/resume
 
-The x86 sched power implementation has been broken forever and gets in
-the way of other stuff, remove it.
+In the event of CPU hotplug, the kernel modifies the cpusets' cpus_allowed
+masks as and when necessary to ensure that the tasks belonging to the cpusets
+have some place (online CPUs) to run on. And regular CPU hotplug is
+destructive in the sense that the kernel doesn't remember the original cpuset
+configurations set by the user, across hotplug operations.
 
-[ For archaeological interest, fixing this code would require dealing
-  with the cross-cpu calling of these functions and more importantly, we
-  need to filter idle time out of the a/m-perf stuff because the ratio
-  will go down to 0 when idle, giving a 0 capacity which is not what
-  we'd want. ]
+However, suspend/resume (which uses CPU hotplug) is a special case in which
+the kernel has the responsibility to restore the system (during resume), to
+exactly the same state it was in before suspend.
 
+In order to achieve that, do the following:
+
+1. Don't modify cpusets during suspend/resume. At all.
+   In particular, don't move the tasks from one cpuset to another, and
+   don't modify any cpuset's cpus_allowed mask. So, simply ignore cpusets
+   during the CPU hotplug operations that are carried out in the
+   suspend/resume path.
+
+2. However, cpusets and sched domains are related. We just want to avoid
+   altering cpusets alone. So, to keep the sched domains updated, build
+   a single sched domain (containing all active cpus) during each of the
+   CPU hotplug operations carried out in s/r path, effectively ignoring
+   the cpusets' cpus_allowed masks.
+
+   (Since userspace is frozen while doing all this, it will go unnoticed.)
+
+3. During the last CPU online operation during resume, build the sched
+   domains by looking up the (unaltered) cpusets' cpus_allowed masks.
+   That will bring back the system to the same original state as it was in
+   before suspend.
+
+Ultimately, this will not only solve the cpuset problem related to suspend
+resume (ie., restores the cpusets to exactly what it was before suspend, by
+not touching it at all) but also speeds up suspend/resume because we avoid
+running cpuset update code for every CPU being offlined/onlined.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Link: http://lkml.kernel.org/r/1339594110.8980.38.camel@twins
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/20120524141611.3692.20155.stgit@srivatsabhat.in.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/Makefile |    2 +-
- arch/x86/kernel/cpu/sched.c  |   55 ------------------------------------------
- 2 files changed, 1 insertions(+), 56 deletions(-)
+ kernel/cpuset.c     |    3 +++
+ kernel/sched/core.c |   40 ++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 39 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6ab6aa2..c598126 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -14,7 +14,7 @@ CFLAGS_common.o		:= $(nostackp)
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 8c8bd65..746d1ee 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2054,6 +2054,9 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+  * (of no affect) on systems that are actively using CPU hotplug
+  * but making no active use of cpusets.
+  *
++ * The only exception to this is suspend/resume, where we don't
++ * modify cpusets at all.
++ *
+  * This routine ensures that top_cpuset.cpus_allowed tracks
+  * cpu_active_mask on each CPU hotplug (cpuhp) event.
+  *
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 468bdd4..4c1d80c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7097,34 +7097,66 @@ match2:
+ 	mutex_unlock(&sched_domains_mutex);
+ }
  
- obj-y			:= intel_cacheinfo.o scattered.o topology.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
--obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
-+obj-y			+= vmware.o hypervisor.o mshyperv.o
- obj-y			+= rdrand.o
- obj-y			+= match.o
++static int num_cpus_frozen;	/* used to mark begin/end of suspend/resume */
++
+ /*
+  * Update cpusets according to cpu_active mask.  If cpusets are
+  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
+  * around partition_sched_domains().
++ *
++ * If we come here as part of a suspend/resume, don't touch cpusets because we
++ * want to restore it back to its original state upon resume anyway.
+  */
+ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+ 			     void *hcpu)
+ {
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	switch (action) {
++	case CPU_ONLINE_FROZEN:
++	case CPU_DOWN_FAILED_FROZEN:
++
++		/*
++		 * num_cpus_frozen tracks how many CPUs are involved in suspend
++		 * resume sequence. As long as this is not the last online
++		 * operation in the resume sequence, just build a single sched
++		 * domain, ignoring cpusets.
++		 */
++		num_cpus_frozen--;
++		if (likely(num_cpus_frozen)) {
++			partition_sched_domains(1, NULL, NULL);
++			break;
++		}
++
++		/*
++		 * This is the last CPU online operation. So fall through and
++		 * restore the original sched domains by considering the
++		 * cpuset configurations.
++		 */
++
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+ 		cpuset_update_active_cpus();
+-		return NOTIFY_OK;
++		break;
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
++	return NOTIFY_OK;
+ }
  
-diff --git a/arch/x86/kernel/cpu/sched.c b/arch/x86/kernel/cpu/sched.c
-deleted file mode 100644
-index a640ae5..0000000
---- a/arch/x86/kernel/cpu/sched.c
-+++ /dev/null
-@@ -1,55 +0,0 @@
--#include <linux/sched.h>
--#include <linux/math64.h>
--#include <linux/percpu.h>
--#include <linux/irqflags.h>
--
--#include <asm/cpufeature.h>
--#include <asm/processor.h>
--
--#ifdef CONFIG_SMP
--
--static DEFINE_PER_CPU(struct aperfmperf, old_perf_sched);
--
--static unsigned long scale_aperfmperf(void)
--{
--	struct aperfmperf val, *old = &__get_cpu_var(old_perf_sched);
--	unsigned long ratio, flags;
--
--	local_irq_save(flags);
--	get_aperfmperf(&val);
--	local_irq_restore(flags);
--
--	ratio = calc_aperfmperf_ratio(old, &val);
--	*old = val;
--
--	return ratio;
--}
--
--unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
--{
--	/*
--	 * do aperf/mperf on the cpu level because it includes things
--	 * like turbo mode, which are relevant to full cores.
--	 */
--	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
--		return scale_aperfmperf();
--
--	/*
--	 * maybe have something cpufreq here
--	 */
--
--	return default_scale_freq_power(sd, cpu);
--}
--
--unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
--{
--	/*
--	 * aperf/mperf already includes the smt gain
--	 */
--	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
--		return SCHED_LOAD_SCALE;
--
--	return default_scale_smt_power(sd, cpu);
--}
--
--#endif
+ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+ 			       void *hcpu)
+ {
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	switch (action) {
+ 	case CPU_DOWN_PREPARE:
+ 		cpuset_update_active_cpus();
+-		return NOTIFY_OK;
++		break;
++	case CPU_DOWN_PREPARE_FROZEN:
++		num_cpus_frozen++;
++		partition_sched_domains(1, NULL, NULL);
++		break;
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
++	return NOTIFY_OK;
+ }
+ 
+ void __init sched_init_smp(void)
