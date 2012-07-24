@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab2GXCj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 22:39:27 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:53369 "EHLO
+	id S1753551Ab2GXCji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 22:39:38 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:53380 "EHLO
 	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912Ab2GXCjZ (ORCPT
+	with ESMTP id S1753370Ab2GXCjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 22:39:25 -0400
-X-AuditID: b753bd60-91ec3ba0000047ca-bf-500e0a5465ba
-X-AuditID: b753bd60-91ec3ba0000047ca-bf-500e0a5465ba
+	Mon, 23 Jul 2012 22:39:35 -0400
+X-AuditID: b753bd60-95ef6ba000004f2e-e6-500e0a5e3e8a
+X-AuditID: b753bd60-95ef6ba000004f2e-e6-500e0a5e3e8a
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+Subject: [RFC PATCH 1/6] virtio/console: Add splice_write support
 To: linux-kernel@vger.kernel.org
 Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
         Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
@@ -22,9 +22,14 @@ Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Date: Tue, 24 Jul 2012 11:36:57 +0900
-Message-ID: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Tue, 24 Jul 2012 11:37:07 +0900
+Message-ID: <20120724023707.6600.69536.stgit@ltc189.sdl.hitachi.co.jp>
+In-Reply-To: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -34,144 +39,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-The following patch set provides a low-overhead system for collecting kernel
-tracing data of guests by a host in a virtualization environment.
+Enable to use splice_write from pipe to virtio-console port.
+This steals pages from pipe and directly send it to host.
 
-A guest OS generally shares some devices with other guests or a host, so
-reasons of any problems occurring in a guest may be from other guests or a host.
-Then, to collect some tracing data of a number of guests and a host is needed
-when some problems occur in a virtualization environment. One of methods to
-realize that is to collect tracing data of guests in a host. To do this, network
-is generally used. However, high load will be taken to applications on guests
-using network I/O because there are many network stack layers. Therefore,
-a communication method for collecting the data without using network is needed.
+Note that this may accelerate only the guest to host path.
 
-We submitted a patch set of "IVRing", a ring-buffer driver constructed on
-Inter-VM shared memory (IVShmem), to LKML http://lwn.net/Articles/500304/ in
-this June. IVRing and the IVRing reader use POSIX shared memory each other
-without using network, so a low-overhead system for collecting guest tracing
-data is realized. However, this patch set has some problems as follows:
- - use IVShmem instead of virtio
- - create a new ring-buffer without using existing ring-buffer in kernel
- - scalability
-   -- not support SMP environment
-   -- buffer size limitation
-   -- not support live migration (maybe difficult for realize this)
-
-Therefore, we propose a new system "virtio-trace", which uses enhanced
-virtio-serial and existing ring-buffer of ftrace, for collecting guest kernel
-tracing data. In this system, there are 5 main components:
- (1) Ring-buffer of ftrace in a guest
-     - When trace agent reads ring-buffer, a page is removed from ring-buffer.
- (2) Trace agent in the guest
-     - Splice the page of ring-buffer to read_pipe using splice() without
-       memory copying. Then, the page is spliced from write_pipe to virtio
-       without memory copying.
- (3) Virtio-console driver in the guest
-     - Pass the page to virtio-ring
- (4) Virtio-serial bus in QEMU
-     - Copy the page to kernel pipe
- (5) Reader in the host
-     - Read guest tracing data via FIFO(named pipe) 
-
-***Evaluation***
-When a host collects tracing data of a guest, the performance of using
-virtio-trace is compared with that of using native(just running ftrace),
-IVRing, and virtio-serial(normal method of read/write).
-
-<environment>
-The overview of this evaluation is as follows:
- (a) A guest on a KVM is prepared.
-     - The guest is dedicated one physical CPU as a virtual CPU(VCPU).
-
- (b) The guest starts to write tracing data to ring-buffer of ftrace.
-     - The probe points are all trace points of sched, timer, and kmem.
-
- (c) Writing trace data, dhrystone 2 in UNIX bench is executed as a benchmark
-     tool in the guest.
-     - Dhrystone 2 intends system performance by repeating integer arithmetic
-       as a score.
-     - Since higher score equals to better system performance, if the score
-       decrease based on bare environment, it indicates that any operation
-       disturbs the integer arithmetic. Then, we define the overhead of
-       transporting trace data is calculated as follows:
-		OVERHEAD = (1 - SCORE_OF_A_METHOD/NATIVE_SCORE) * 100.
-
-The performance of each method is compared as follows:
- [1] Native
-     - only recording trace data to ring-buffer on a guest
- [2] Virtio-trace
-     - running a trace agent on a guest
-     - a reader on a host opens FIFO using cat command
- [3] IVRing
-     - A SystemTap script in a guest records trace data to IVRing.
-       -- probe points are same as ftrace.
- [4] Virtio-serial(normal)
-     - A reader(using cat) on a guest output trace data to a host using
-       standard output via virtio-serial.
-
-Other information is as follows:
- - host
-   kernel: 3.3.7-1 (Fedora16)
-   CPU: Intel Xeon x5660@2.80GHz(12core)
-   Memory: 48GB
-
- - guest(only booting one guest)
-   kernel: 3.5.0-rc4+ (Fedora16)
-   CPU: 1VCPU(dedicated)
-   Memory: 1GB
-
-<result>
-3 patterns based on the bare environment were indicated as follows:
-	                   Scores      overhead against [0] Native
-    [0] Native:          28807569.5               -
-    [1] Virtio-trace:    28685049.5             0.43%
-    [2] IVRing:          28418595.5             1.35%
-    [3] Virtio-serial:   13262258.7            53.96%
-
-
-***Just enhancement ideas***
- - Support for trace-cmd
- - Support for 9pfs protocol
- - Support for non-blocking mode in QEMU
- - Make "vhost-serial"
-
-Thank you,
-
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 
-Masami Hiramatsu (5):
-      virtio/console: Allocate scatterlist according to the current pipe size
-      ftrace: Allow stealing pages from pipe buffer
-      virtio/console: Wait until the port is ready on splice
-      virtio/console: Add a failback for unstealable pipe buffer
-      virtio/console: Add splice_write support
+ drivers/char/virtio_console.c |  136 +++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 128 insertions(+), 8 deletions(-)
 
-Yoshihiro YUNOMAE (1):
-      tools: Add guest trace agent as a user tool
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index cdf2f54..fe31b2f 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -24,6 +24,8 @@
+ #include <linux/err.h>
+ #include <linux/freezer.h>
+ #include <linux/fs.h>
++#include <linux/splice.h>
++#include <linux/pagemap.h>
+ #include <linux/init.h>
+ #include <linux/list.h>
+ #include <linux/poll.h>
+@@ -227,6 +229,7 @@ struct port {
+ 	bool guest_connected;
+ };
+ 
++#define MAX_SPLICE_PAGES	32
+ /* This is the very early arch-specified put chars function. */
+ static int (*early_put_chars)(u32, const char *, int);
+ 
+@@ -474,26 +477,52 @@ static ssize_t send_control_msg(struct port *port, unsigned int event,
+ 	return 0;
+ }
+ 
++struct buffer_token {
++	union {
++		void *buf;
++		struct scatterlist *sg;
++	} u;
++	bool sgpages;
++};
++
++static void reclaim_sg_pages(struct scatterlist *sg)
++{
++	int i;
++	struct page *page;
++
++	for (i = 0; i < MAX_SPLICE_PAGES; i++) {
++		page = sg_page(&sg[i]);
++		if (!page)
++			break;
++		put_page(page);
++	}
++	kfree(sg);
++}
++
+ /* Callers must take the port->outvq_lock */
+ static void reclaim_consumed_buffers(struct port *port)
+ {
+-	void *buf;
++	struct buffer_token *tok;
+ 	unsigned int len;
+ 
+ 	if (!port->portdev) {
+ 		/* Device has been unplugged.  vqs are already gone. */
+ 		return;
+ 	}
+-	while ((buf = virtqueue_get_buf(port->out_vq, &len))) {
+-		kfree(buf);
++	while ((tok = virtqueue_get_buf(port->out_vq, &len))) {
++		if (tok->sgpages)
++			reclaim_sg_pages(tok->u.sg);
++		else
++			kfree(tok->u.buf);
++		kfree(tok);
+ 		port->outvq_full = false;
+ 	}
+ }
+ 
+-static ssize_t send_buf(struct port *port, void *in_buf, size_t in_count,
+-			bool nonblock)
++static ssize_t __send_to_port(struct port *port, struct scatterlist *sg,
++			      int nents, size_t in_count,
++			      struct buffer_token *tok, bool nonblock)
+ {
+-	struct scatterlist sg[1];
+ 	struct virtqueue *out_vq;
+ 	ssize_t ret;
+ 	unsigned long flags;
+@@ -505,8 +534,7 @@ static ssize_t send_buf(struct port *port, void *in_buf, size_t in_count,
+ 
+ 	reclaim_consumed_buffers(port);
+ 
+-	sg_init_one(sg, in_buf, in_count);
+-	ret = virtqueue_add_buf(out_vq, sg, 1, 0, in_buf, GFP_ATOMIC);
++	ret = virtqueue_add_buf(out_vq, sg, nents, 0, tok, GFP_ATOMIC);
+ 
+ 	/* Tell Host to go! */
+ 	virtqueue_kick(out_vq);
+@@ -544,6 +572,37 @@ done:
+ 	return in_count;
+ }
+ 
++static ssize_t send_buf(struct port *port, void *in_buf, size_t in_count,
++			bool nonblock)
++{
++	struct scatterlist sg[1];
++	struct buffer_token *tok;
++
++	tok = kmalloc(sizeof(*tok), GFP_ATOMIC);
++	if (!tok)
++		return -ENOMEM;
++	tok->sgpages = false;
++	tok->u.buf = in_buf;
++
++	sg_init_one(sg, in_buf, in_count);
++
++	return __send_to_port(port, sg, 1, in_count, tok, nonblock);
++}
++
++static ssize_t send_pages(struct port *port, struct scatterlist *sg, int nents,
++			  size_t in_count, bool nonblock)
++{
++	struct buffer_token *tok;
++
++	tok = kmalloc(sizeof(*tok), GFP_ATOMIC);
++	if (!tok)
++		return -ENOMEM;
++	tok->sgpages = true;
++	tok->u.sg = sg;
++
++	return __send_to_port(port, sg, nents, in_count, tok, nonblock);
++}
++
+ /*
+  * Give out the data that's requested from the buffer that we have
+  * queued up.
+@@ -725,6 +784,66 @@ out:
+ 	return ret;
+ }
+ 
++struct sg_list {
++	unsigned int n;
++	size_t len;
++	struct scatterlist *sg;
++};
++
++static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
++			struct splice_desc *sd)
++{
++	struct sg_list *sgl = sd->u.data;
++	unsigned int len = 0;
++
++	if (sgl->n == MAX_SPLICE_PAGES)
++		return 0;
++
++	/* Try lock this page */
++	if (buf->ops->steal(pipe, buf) == 0) {
++		/* Get reference and unlock page for moving */
++		get_page(buf->page);
++		unlock_page(buf->page);
++
++		len = min(buf->len, sd->len);
++		sg_set_page(&(sgl->sg[sgl->n]), buf->page, len, buf->offset);
++		sgl->n++;
++		sgl->len += len;
++	}
++
++	return len;
++}
++
++/* Faster zero-copy write by splicing */
++static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
++				      struct file *filp, loff_t *ppos,
++				      size_t len, unsigned int flags)
++{
++	struct port *port = filp->private_data;
++	struct sg_list sgl;
++	ssize_t ret;
++	struct splice_desc sd = {
++		.total_len = len,
++		.flags = flags,
++		.pos = *ppos,
++		.u.data = &sgl,
++	};
++
++	sgl.n = 0;
++	sgl.len = 0;
++	sgl.sg = kmalloc(sizeof(struct scatterlist) * MAX_SPLICE_PAGES,
++			 GFP_ATOMIC);
++	if (unlikely(!sgl.sg))
++		return -ENOMEM;
++
++	sg_init_table(sgl.sg, MAX_SPLICE_PAGES);
++	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
++	if (likely(ret > 0))
++		ret = send_pages(port, sgl.sg, sgl.n, sgl.len, true);
++
++	return ret;
++}
++
+ static unsigned int port_fops_poll(struct file *filp, poll_table *wait)
+ {
+ 	struct port *port;
+@@ -856,6 +975,7 @@ static const struct file_operations port_fops = {
+ 	.open  = port_fops_open,
+ 	.read  = port_fops_read,
+ 	.write = port_fops_write,
++	.splice_write = port_fops_splice_write,
+ 	.poll  = port_fops_poll,
+ 	.release = port_fops_release,
+ 	.fasync = port_fops_fasync,
 
-
- drivers/char/virtio_console.c               |  198 ++++++++++++++++++--
- kernel/trace/trace.c                        |    8 -
- tools/virtio/virtio-trace/Makefile          |   14 +
- tools/virtio/virtio-trace/README            |  118 ++++++++++++
- tools/virtio/virtio-trace/trace-agent-ctl.c |  137 ++++++++++++++
- tools/virtio/virtio-trace/trace-agent-rw.c  |  192 +++++++++++++++++++
- tools/virtio/virtio-trace/trace-agent.c     |  270 +++++++++++++++++++++++++++
- tools/virtio/virtio-trace/trace-agent.h     |   75 ++++++++
- 8 files changed, 985 insertions(+), 27 deletions(-)
- create mode 100644 tools/virtio/virtio-trace/Makefile
- create mode 100644 tools/virtio/virtio-trace/README
- create mode 100644 tools/virtio/virtio-trace/trace-agent-ctl.c
- create mode 100644 tools/virtio/virtio-trace/trace-agent-rw.c
- create mode 100644 tools/virtio/virtio-trace/trace-agent.c
- create mode 100644 tools/virtio/virtio-trace/trace-agent.h
-
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
 
