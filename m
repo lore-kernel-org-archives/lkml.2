@@ -1,263 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab2GXVrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 17:47:35 -0400
-Received: from fieldses.org ([174.143.236.118]:35051 "EHLO fieldses.org"
+	id S1754516Ab2GXVsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 17:48:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24583 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753983Ab2GXVrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 17:47:33 -0400
-Date: Tue, 24 Jul 2012 17:47:31 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v3 03/11] NFS: move per-net callback thread
- initialization to nfs_callback_up_net()
-Message-ID: <20120724214731.GO8570@fieldses.org>
-References: <20120703161844.11911.92996.stgit@localhost.localdomain>
- <20120703161946.11911.85659.stgit@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120703161946.11911.85659.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754171Ab2GXVsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 17:48:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="197575812"
+Date: Tue, 24 Jul 2012 23:05:27 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ian Abbott <ian.abbott@mev.co.uk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: Oops after merge of tty-next
+Message-ID: <20120724230527.2135198e@bob.linux.org.uk>
+In-Reply-To: <500D64D7.3060902@mev.co.uk>
+References: <5009D68A.3050301@mev.co.uk>
+	<20120721234145.354e6ee9@pyramind.ukuu.org.uk>
+	<500D64D7.3060902@mev.co.uk>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 08:19:46PM +0400, Stanislav Kinsbursky wrote:
-> This new function in now called before nfs_minorversion_callback_svc_setup()).
-> 
-> Also few small changes:
-> 1) current network namespace in nfs_callback_up() was replaced by transport net.
-> 2) svc_shutdown_net() was moved prior to callback usage counter decrement
-> (because in case of per-net data allocation faulure svc_shutdown_net() have to
-> be skipped).
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->  fs/nfs/callback.c |  125 +++++++++++++++++++++++++++++++++--------------------
->  fs/nfs/client.c   |    2 -
->  2 files changed, 79 insertions(+), 48 deletions(-)
-> 
-> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-> index f8d0c21..b61ed61 100644
-> --- a/fs/nfs/callback.c
-> +++ b/fs/nfs/callback.c
-> @@ -63,6 +63,32 @@ static struct kernel_param_ops param_ops_portnr = {
->  
->  module_param_named(callback_tcpport, nfs_callback_set_tcpport, portnr, 0644);
->  
-> +static int nfs4_callback_up_net(struct svc_serv *serv, struct net *net)
-> +{
-> +	int ret;
-> +
-> +	ret = svc_create_xprt(serv, "tcp", net, PF_INET,
-> +				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
-> +	if (ret <= 0)
-> +		goto out_err;
-> +	nfs_callback_tcpport = ret;
-> +	dprintk("NFS: Callback listener port = %u (af %u, net %p)\n",
-> +			nfs_callback_tcpport, PF_INET, net);
-> +
-> +	ret = svc_create_xprt(serv, "tcp", net, PF_INET6,
-> +				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
-> +	if (ret > 0) {
-> +		nfs_callback_tcpport6 = ret;
-> +		dprintk("NFS: Callback listener port = %u (af %u, net %p)\n",
-> +				nfs_callback_tcpport6, PF_INET6, net);
-> +	} else if (ret != -EAFNOSUPPORT)
-> +		goto out_err;
-> +	return 0;
-> +
-> +out_err:
-> +	return (ret) ? ret : -ENOMEM;
-> +}
-> +
->  /*
->   * This is the NFSv4 callback kernel thread.
->   */
-> @@ -104,36 +130,21 @@ nfs4_callback_svc(void *vrqstp)
->  static struct svc_rqst *
->  nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->  {
-> -	int ret;
-> -
-> -	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
-> -				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
-> -	if (ret <= 0)
-> -		goto out_err;
-> -	nfs_callback_tcpport = ret;
-> -	dprintk("NFS: Callback listener port = %u (af %u)\n",
-> -			nfs_callback_tcpport, PF_INET);
-> -
-> -	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
-> -				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
-> -	if (ret > 0) {
-> -		nfs_callback_tcpport6 = ret;
-> -		dprintk("NFS: Callback listener port = %u (af %u)\n",
-> -				nfs_callback_tcpport6, PF_INET6);
-> -	} else if (ret == -EAFNOSUPPORT)
-> -		ret = 0;
-> -	else
-> -		goto out_err;
-> -
->  	return svc_prepare_thread(serv, &serv->sv_pools[0], NUMA_NO_NODE);
-> -
-> -out_err:
-> -	if (ret == 0)
-> -		ret = -ENOMEM;
-> -	return ERR_PTR(ret);
->  }
->  
->  #if defined(CONFIG_NFS_V4_1)
-> +static int nfs41_callback_up_net(struct svc_serv *serv, struct net *net)
-> +{
-> +	/*
-> +	 * Create an svc_sock for the back channel service that shares the
-> +	 * fore channel connection.
-> +	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
-> +	 */
-> +	return svc_create_xprt(serv, "tcp-bc", net, PF_INET, 0,
-> +			      SVC_SOCK_ANONYMOUS);
-> +}
-> +
->  /*
->   * The callback service for NFSv4.1 callbacks
->   */
-> @@ -176,19 +187,6 @@ static struct svc_rqst *
->  nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->  {
->  	struct svc_rqst *rqstp;
-> -	int ret;
-> -
-> -	/*
-> -	 * Create an svc_sock for the back channel service that shares the
-> -	 * fore channel connection.
-> -	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
-> -	 */
-> -	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
-> -			      SVC_SOCK_ANONYMOUS);
-> -	if (ret < 0) {
-> -		rqstp = ERR_PTR(ret);
-> -		goto out;
-> -	}
->  
->  	/*
->  	 * Save the svc_serv in the transport so that it can
-> @@ -204,7 +202,6 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->  		svc_xprt_put(serv->sv_bc_xprt);
->  		serv->sv_bc_xprt = NULL;
->  	}
-> -out:
->  	dprintk("--> %s return %ld\n", __func__,
->  		IS_ERR(rqstp) ? PTR_ERR(rqstp) : 0);
->  	return rqstp;
-> @@ -228,6 +225,11 @@ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
->  		xprt->bc_serv = cb_info->serv;
->  }
->  #else
-> +static int nfs41_callback_up_net(struct svc_serv *serv, struct net *net)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline int nfs_minorversion_callback_svc_setup(u32 minorversion,
->  		struct svc_serv *serv, struct rpc_xprt *xprt,
->  		struct svc_rqst **rqstpp, int (**callback_svc)(void *vrqstp))
-> @@ -241,6 +243,36 @@ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
->  }
->  #endif /* CONFIG_NFS_V4_1 */
->  
-> +static int nfs_callback_up_net(int minorversion, struct svc_serv *serv, struct net *net)
-> +{
-> +	int ret;
-> +
-> +	dprintk("NFS: create per-net callback data; net=%p\n", net);
-> +
-> +	ret = svc_bind(serv, net);
-> +	if (ret < 0) {
-> +		printk(KERN_WARNING "NFS: bind callback service failed\n");
-> +		goto err_bind;
-> +	}
-> +
-> +	if (minorversion) {
-> +		ret = nfs41_callback_up_net(serv, net);
-> +		if (ret < 0)
-> +			goto err_socks;
-> +	}
-> +
-> +	if (ret == 0)
-> +		ret = nfs4_callback_up_net(serv, net);
+On Mon, 23 Jul 2012 15:51:03 +0100
+Ian Abbott <abbotti@mev.co.uk> wrote:
 
-So in the minorversion 1 case, and in the absence of errors, you set up
-both the 4.1 and 4.0 callback xprts?
+> On 2012-07-21 23:41, Alan Cox wrote:
+> > On Fri, 20 Jul 2012 23:07:06 +0100
+> > Ian Abbott <abbotti@mev.co.uk> wrote:
+> >
+> >> I'm getting an Oops in the linux-next tree today after the merge
+> >> of the remote-tracking branch 'tty/tty-next'.  I bisected it down
+> >> to commit 36b3c070d2346c890d690d71f6eab02f8c511137 in
+> >> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git :
 
-That doesn't look right.  You should need only one or the other.
+Ok Greg you can you leave that one in -next but not push it for 3.6.
 
---b.
+I need to go over this in some detail and figure out the remaining
+race, and worse yet how to fix it without the mess of existing locks
+turning it into something nasty.
 
-> +	if (ret < 0)
-> +		goto err_socks;
-> +	return 0;
-> +
-> +err_socks:
-> +	svc_rpcb_cleanup(serv, net);
-> +err_bind:
-> +	return ret;
-> +}
-> +
->  static struct svc_serv *nfs_callback_create_svc(int minorversion)
->  {
->  	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
-> @@ -287,7 +319,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
->  	char svc_name[12];
->  	int ret = 0;
->  	int minorversion_setup;
-> -	struct net *net = &init_net;
-> +	struct net *net = xprt->xprt_net;
->  
->  	mutex_lock(&nfs_callback_mutex);
->  
-> @@ -302,11 +334,9 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
->  		goto out;
->  	}
->  
-> -	ret = svc_bind(serv, net);
-> -	if (ret < 0) {
-> -		printk(KERN_WARNING "NFS: bind callback service failed\n");
-> -		goto out_err;
-> -	}
-> +	ret = nfs_callback_up_net(minorversion, serv, net);
-> +	if (ret < 0)
-> +		goto err_net;
->  
->  	minorversion_setup =  nfs_minorversion_callback_svc_setup(minorversion,
->  					serv, xprt, &rqstp, &callback_svc);
-> @@ -346,10 +376,11 @@ err_create:
->  	mutex_unlock(&nfs_callback_mutex);
->  	return ret;
->  out_err:
-> +	svc_shutdown_net(serv, net);
-> +err_net:
->  	dprintk("NFS: Couldn't create callback socket or server thread; "
->  		"err = %d\n", ret);
->  	cb_info->users--;
-> -	svc_shutdown_net(serv, net);
->  	goto out;
->  }
->  
-> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-> index 28bc770..d8c918b 100644
-> --- a/fs/nfs/client.c
-> +++ b/fs/nfs/client.c
-> @@ -225,7 +225,7 @@ static void nfs4_shutdown_session(struct nfs_client *clp)
->  static void nfs4_destroy_callback(struct nfs_client *clp)
->  {
->  	if (__test_and_clear_bit(NFS_CS_CALLBACK, &clp->cl_res_state))
-> -		nfs_callback_down(clp->cl_mvops->minor_version, &init_net);
-> +		nfs_callback_down(clp->cl_mvops->minor_version, clp->cl_net);
->  }
->  
->  static void nfs4_shutdown_client(struct nfs_client *clp)
-> 
+I think I understand what is needed but I don't want to be doing it as
+a mad panic for 3.6. On the bright side I think it explains the other
+tty lock splitting mysteries.
+
+Alan
