@@ -1,111 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2GXCoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 22:44:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22217 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753009Ab2GXCoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 22:44:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="176355601"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V2] perf/x86: Fix format definition of SNB-EP uncore QPI box
-Date: Tue, 24 Jul 2012 10:44:10 +0800
-Message-Id: <1343097850-4348-1-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755118Ab2GXCzb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 22:55:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:43393 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab2GXCza (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 22:55:30 -0400
+Message-ID: <500E1057.3020509@windriver.com>
+Date: Tue, 24 Jul 2012 11:02:47 +0800
+From: xufeng zhang <xufeng.zhang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
+MIME-Version: 1.0
+To: Vlad Yasevich <vyasevich@gmail.com>
+CC: <sri@us.ibm.com>, <davem@davemloft.net>, <xufengzhang.main@gmail.com>,
+        <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
+ SACK when bundling
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com> <500CDE35.6000009@windriver.com> <42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com>
+In-Reply-To: <42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On 07/24/2012 10:27 AM, Vlad Yasevich wrote:
+> xufeng zhang<xufeng.zhang@windriver.com>  wrote:
+>
+>    
+>> On 07/19/2012 01:57 PM, xufengzhang.main@gmail.com wrote:
+>>      
+>>> When "Invalid Stream Identifier" ERROR happens after process the
+>>> received DATA chunks, this ERROR chunk is enqueued into outqueue
+>>> before SACK chunk, so when bundling ERROR chunk with SACK chunk,
+>>> the ERROR chunk is always placed first in the packet because of
+>>> the chunk's position in the outqueue.
+>>> This violates sctp specification:
+>>>       RFC 4960 6.5. Stream Identifier and Stream Sequence Number
+>>>       ...The endpoint may bundle the ERROR chunk in the same
+>>>       packet as the SACK as long as the ERROR follows the SACK.
+>>> So we must place SACK first when bundling "Invalid Stream Identifier"
+>>> ERROR and SACK in one packet.
+>>> Although we can do that by enqueue SACK chunk into outqueue before
+>>> ERROR chunk, it will violate the side-effect interpreter processing.
+>>> It's easy to do this job when dequeue chunks from the outqueue,
+>>> by this way, we introduce a flag 'has_isi_err' which indicate
+>>> whether or not the "Invalid Stream Identifier" ERROR happens.
+>>>
+>>> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
+>>> ---
+>>>    include/net/sctp/structs.h |    2 ++
+>>>    net/sctp/output.c          |   26 ++++++++++++++++++++++++++
+>>>    2 files changed, 28 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+>>> index 88949a9..5adf4de 100644
+>>> --- a/include/net/sctp/structs.h
+>>> +++ b/include/net/sctp/structs.h
+>>> @@ -842,6 +842,8 @@ struct sctp_packet {
+>>>    	    has_sack:1,		/* This packet contains a SACK chunk. */
+>>>    	    has_auth:1,		/* This packet contains an AUTH chunk */
+>>>    	    has_data:1,		/* This packet contains at least 1 DATA chunk */
+>>> +	    has_isi_err:1,	/* This packet contains a "Invalid Stream
+>>> +				 * Identifier" ERROR chunk */
+>>>    	    ipfragok:1,		/* So let ip fragment this packet */
+>>>    	    malloced:1;		/* Is it malloced? */
+>>>    };
+>>> diff --git a/net/sctp/output.c b/net/sctp/output.c
+>>> index 817174e..77fb1ae 100644
+>>> --- a/net/sctp/output.c
+>>> +++ b/net/sctp/output.c
+>>> @@ -79,6 +79,7 @@ static void sctp_packet_reset(struct sctp_packet
+>>>        
+>> *packet)
+>>      
+>>>    	packet->has_sack = 0;
+>>>    	packet->has_data = 0;
+>>>    	packet->has_auth = 0;
+>>> +	packet->has_isi_err = 0;
+>>>    	packet->ipfragok = 0;
+>>>    	packet->auth = NULL;
+>>>    }
+>>> @@ -267,6 +268,7 @@ static sctp_xmit_t sctp_packet_bundle_sack(struct
+>>>        
+>> sctp_packet *pkt,
+>>      
+>>>    sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
+>>>    				     struct sctp_chunk *chunk)
+>>>    {
+>>> +	struct sctp_chunk *lchunk;
+>>>    	sctp_xmit_t retval = SCTP_XMIT_OK;
+>>>    	__u16 chunk_len = WORD_ROUND(ntohs(chunk->chunk_hdr->length));
+>>>
+>>> @@ -316,7 +318,31 @@ sctp_xmit_t sctp_packet_append_chunk(struct
+>>>        
+>> sctp_packet *packet,
+>>      
+>>>    		packet->has_cookie_echo = 1;
+>>>    		break;
+>>>
+>>> +	    case SCTP_CID_ERROR:
+>>> +		if (chunk->subh.err_hdr->cause&   SCTP_ERROR_INV_STRM)
+>>> +			packet->has_isi_err = 1;
+>>> +		break;
+>>> +
+>>>    	    case SCTP_CID_SACK:
+>>> +		/* RFC 4960
+>>> +		 * 6.5 Stream Identifier and Stream Sequence Number
+>>> +		 * The endpoint may bundle the ERROR chunk in the same
+>>> +		 * packet as the SACK as long as the ERROR follows the SACK.
+>>> +		 */
+>>> +		if (packet->has_isi_err) {
+>>> +			if (list_is_singular(&packet->chunk_list))
+>>> +				list_add(&chunk->list,&packet->chunk_list);
+>>> +			else {
+>>> +				lchunk = list_first_entry(&packet->chunk_list,
+>>> +						struct sctp_chunk, list);
+>>> +				list_add(&chunk->list,&lchunk->list);
+>>> +			}
+>>>
+>>>        
+>> And I should clarify the above judgment code.
+>> AFAIK, there should be two cases for the bundling when invalid stream
+>> identifier error happens:
+>> 1). COOKIE_ACK ERROR SACK
+>> 2). ERROR SACK
+>> So I need to deal with the two cases differently.
+>>
+>>      
+> Sorry but I just don't buy that the above are the only 2 cases.  What if there are addip chunks as well?  What if there are some other extensions also.  This code has to be generic enough to handle any condition.
+>    
+Aha, you are right, this may happens.
+So I think the general solution is to fix this problem in the enqueue side.
+What do you think? any better suggestion!
 
-The event control register of SNB-EP uncore QPI box has a one bit
-extension at bit position 21.
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
-Changes since V1:
- - Define the extentsion bit together with event select field
-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   22 +++++++++++++++++++++-
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |    4 ++++
- 2 files changed, 25 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index a5de59f..2139fb0 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -18,6 +18,7 @@ static struct event_constraint constraint_empty =
- 	EVENT_CONSTRAINT(0, 0, 0);
- 
- DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(event_ext, event, "config:0-7,21");
- DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
- DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
- DEFINE_UNCORE_FORMAT_ATTR(tid_en, tid_en, "config:19");
-@@ -279,6 +280,15 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- 	NULL,
- };
- 
-+static struct attribute *snbep_uncore_qpi_formats_attr[] = {
-+	&format_attr_event_ext.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_thresh8.attr,
-+	NULL,
-+};
-+
- static struct uncore_event_desc snbep_uncore_imc_events[] = {
- 	INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0x00"),
- 	INTEL_UNCORE_EVENT_DESC(cas_count_read,  "event=0x04,umask=0x03"),
-@@ -314,6 +324,11 @@ static struct attribute_group snbep_uncore_pcu_format_group = {
- 	.attrs = snbep_uncore_pcu_formats_attr,
- };
- 
-+static struct attribute_group snbep_uncore_qpi_format_group = {
-+	.name = "format",
-+	.attrs = snbep_uncore_qpi_formats_attr,
-+};
-+
- static struct intel_uncore_ops snbep_uncore_msr_ops = {
- 	.init_box	= snbep_uncore_msr_init_box,
- 	.disable_box	= snbep_uncore_msr_disable_box,
-@@ -485,8 +500,13 @@ static struct intel_uncore_type snbep_uncore_qpi = {
- 	.num_counters   = 4,
- 	.num_boxes	= 2,
- 	.perf_ctr_bits	= 48,
-+	.perf_ctr	= SNBEP_PCI_PMON_CTR0,
-+	.event_ctl	= SNBEP_PCI_PMON_CTL0,
-+	.event_mask	= SNBEP_QPI_PCI_PMON_RAW_EVENT_MASK,
-+	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,
-+	.ops		= &snbep_uncore_pci_ops,
- 	.event_descs	= snbep_uncore_qpi_events,
--	SNBEP_UNCORE_PCI_COMMON_INIT(),
-+	.format_group	= &snbep_uncore_qpi_format_group,
- };
- 
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index b13e9ea..0f8a8ca 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -115,6 +115,10 @@
- 				 SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
- 				 SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET)
- 
-+#define SNBEP_QPI_PCI_PMON_RAW_EVENT_MASK	\
-+				(SNBEP_PMON_RAW_EVENT_MASK | \
-+				 SNBEP_PMON_CTL_EV_SEL_EXT)
-+
- /* SNB-EP pci control register */
- #define SNBEP_PCI_PMON_BOX_CTL			0xf4
- #define SNBEP_PCI_PMON_CTL0			0xd8
--- 
-1.7.10.4
+Thanks,
+Xufeng Zhang
+> - vlad
+>
+>    
+>> Thanks,
+>> Xufeng Zhang
+>>      
+>>> +			packet->size += chunk_len;
+>>> +			chunk->transport = packet->transport;
+>>> +			packet->has_sack = 1;
+>>> +			goto finish;
+>>> +		}
+>>> +
+>>>    		packet->has_sack = 1;
+>>>    		break;
+>>>
+>>>
+>>>        
+>
+>    
 
