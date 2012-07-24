@@ -1,44 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab2GXFpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 01:45:47 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56727 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab2GXFpq (ORCPT
+	id S1754897Ab2GXFyV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 01:54:21 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:22020
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754545Ab2GXFyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 01:45:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyDupTr=Z8Y=4EeeLzE88Nnc0o0cQDamxJy-1rvSSUSPg@mail.gmail.com>
-References: <1343102095-20664-1-git-send-email-lliubbo@gmail.com>
-	<CA+55aFyDupTr=Z8Y=4EeeLzE88Nnc0o0cQDamxJy-1rvSSUSPg@mail.gmail.com>
-Date: Tue, 24 Jul 2012 13:45:44 +0800
-Message-ID: <CAA_GA1dTEf6rRJ__JOk1L0vzktNaxhPo3+S7XQCHn0dxWV4haQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Blackfin changes for 3.6-rc1
+	Tue, 24 Jul 2012 01:54:20 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(zz936eI4015Izz1202hzz8275dhz2ei87h2a8h668h839hd24he5bhe96h107ahff4o)
+X-FB-DOMAIN-IP-MATCH: fail
 From: Bob Liu <lliubbo@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
-        vapier@gentoo.org, sonic.zhang@analog.com
-Content-Type: text/plain; charset=UTF-8
+To: <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <uclinux-dist-devel@blackfin.uclinux.org>,
+        <vapier@gentoo.org>, <sonic.zhang@analog.com>,
+        Bob Liu <lliubbo@gmail.com>
+Subject: [GIT PULL v2] Blackfin changes for 3.6-rc1
+Date: Tue, 24 Jul 2012 13:54:40 +0800
+Message-ID: <1343109280-22653-1-git-send-email-lliubbo@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi linus,
 
-On Tue, Jul 24, 2012 at 12:54 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Jul 23, 2012 at 8:54 PM, Bob Liu <lliubbo@gmail.com> wrote:
->>
->> Please pull blackfin changes for 3.6-rc1.
->
-> No.
->
-> These were clearly rebased today. And on top of random state in the
-> merge window.
->
+This is the new pull request about blackfin changes for 3.6-rc1.
+I've rebased my tree to 3.5.
 
-Sorry for that, i've rebased my tree to v3.5 and will send a new pull-request.
+The big changes are adding PM and HDMI support for bf60x, other patches are various
+bug fix and code cleanup.
 
--- 
-Regards,
---Bob
+Thanks,
+-Bob
+
+The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+
+  Linux 3.5 (2012-07-21 13:58:29 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lliubbo/blackfin.git for-linus
+
+for you to fetch changes up to 719154c6d1c1a3a404f4ff570c4b36bb2ef868ca:
+
+  bf60x: fix build warning (2012-07-24 13:39:53 +0800)
+
+----------------------------------------------------------------
+Bob Liu (7):
+      bfin: reorg clock init steps for bf609
+      blackfin: Kconfig: fix ROM range for bf60x
+      blackfin: mach-common: ints-priority add irq_set_wake
+      blackfin: bf609-ezkit: add probe_type for norflash
+      blackfin: fix musb macro name
+      blackfin: cplb-nompu: fix ROM cplb size for bf609-ezkit
+      bf60x: fix build warning
+
+Scott Jiang (10):
+      bf609: change ad7877 cs and irq pin
+      bfin: add 32M, 16M and 8M uncached DMA region options
+      v4l2: add adv7842 video decoder driver
+      bf609: add ssm2602 support on bf609 platform
+      bf609: add CVBS and S-Video support for adv7842
+      bf609: add HDMI support for adv7842
+      bf609: convert vs6624 blank_clocks to black_pixels
+      bf561: add capabilities in adv7183_inputs
+      bf609: reuse bf5xx-i2s-pcm.c as i2s pcm driver
+      bf609: add adv7511 display support
+
+Sonic Zhang (16):
+      blackfin: Call sg_for_each to pass through the whole sg list.
+      bf609: crypto: Add blackfin crypto crc driver platform data.
+      bf60x: Enable Blackfin CRC crypto driver by default.
+      bf60x: bfin_crc: move structure bfin_crc out of head file.
+      bf609: bfin_crc: Remove unused CRC TX DMA platform resources.
+      bfin: pm: add deepsleep for bf60x
+      bf60x: Add wake up latency bench for deep sleep mode.
+      i2c: i2c-bfin-twi: Always access 16 bit MMR by bfin 16 bit access Macro.
+      bf60x: sec: Clean up interrupt initialization code for SEC.
+      bf60x: sec: Enable sec interrupt source priority configuration.
+      bf60x: update bf60x anomaly list.
+      bf60x: add default anomaly setting.
+      bf60x: update anomaly id in serial and twi driver headers.
+      bf60x: Add double fault, hardware error and NMI SEC handler
+      bf60x: cpufreq: fix anomaly 05000273
+      blackfin: twi: read twi mmr via bfin_read macro
+
+Steven Miao (14):
+      pm: dpmc macro typo fix
+      bfin-dma: only use MDMA3 on bf609
+      irq: set cgu event handle to fasteoi handle
+      cpufreq: change debug message level to show clock change error
+      cache: enable L2 sram icache in menuconfig
+      bfin: simple_timer: add READ_COUNTER ioctl and add NOIRQ timer mode
+      bf60x: pm: add smc nor flash syscore ops
+      bf60x: pm: pass wakeup param
+      gpiokeys: add gpio keyboard platform device
+      bf60x: pm: add pint suspend and resume support
+      bfin: pint: add pint suspend and resume
+      cleanup: sec and linkport only built on bf60x
+      dpm: deepsleep: reserve stack
+      PM: add BF60x flash suspend and resume support
+
+Vivi Li (1):
+      bf60x: vs6624 pin update
+
+ arch/blackfin/Kconfig                              |   16 +-
+ arch/blackfin/configs/BF609-EZKIT_defconfig        |    2 +
+ arch/blackfin/include/asm/bfin-global.h            |    8 +-
+ arch/blackfin/include/asm/bfin_crc.h               |   14 -
+ arch/blackfin/include/asm/bfin_serial.h            |    2 +-
+ arch/blackfin/include/asm/bfin_simple_timer.h      |    6 +
+ arch/blackfin/include/asm/bfin_twi.h               |   10 +-
+ arch/blackfin/include/asm/context.S                |    9 +
+ arch/blackfin/include/asm/dpmc.h                   |    2 +-
+ arch/blackfin/include/asm/gpio.h                   |    2 +
+ arch/blackfin/include/asm/irq.h                    |   10 +
+ arch/blackfin/include/asm/mem_init.h               |  212 +++++++++++++
+ arch/blackfin/include/asm/traps.h                  |    2 +
+ arch/blackfin/kernel/bfin_dma.c                    |    4 +-
+ arch/blackfin/kernel/cplb-nompu/cplbinit.c         |    8 +
+ arch/blackfin/kernel/dma-mapping.c                 |   10 +-
+ arch/blackfin/mach-bf527/boards/ezkit.c            |    4 +-
+ arch/blackfin/mach-bf548/boards/ezkit.c            |    4 +-
+ arch/blackfin/mach-bf548/include/mach/gpio.h       |    2 +
+ arch/blackfin/mach-bf561/boards/ezkit.c            |    3 +
+ arch/blackfin/mach-bf609/Kconfig                   |    8 +
+ arch/blackfin/mach-bf609/Makefile                  |    4 +-
+ arch/blackfin/mach-bf609/boards/ezkit.c            |  304 +++++++++++++++++-
+ arch/blackfin/mach-bf609/clock.c                   |    3 +-
+ arch/blackfin/mach-bf609/dpm.S                     |  157 ++++++++++
+ arch/blackfin/mach-bf609/hibernate.S               |   65 ----
+ arch/blackfin/mach-bf609/include/mach/anomaly.h    |  141 ++++-----
+ .../mach-bf609/include/mach/defBF60x_base.h        |    1 -
+ arch/blackfin/mach-bf609/include/mach/gpio.h       |    2 +
+ arch/blackfin/mach-bf609/include/mach/irq.h        |    4 +
+ arch/blackfin/mach-bf609/include/mach/pm.h         |    9 +-
+ arch/blackfin/mach-bf609/ints-priority.c           |  156 +++++++++
+ arch/blackfin/mach-bf609/pm.c                      |  130 ++++----
+ arch/blackfin/mach-common/clocks-init.c            |  139 +-------
+ arch/blackfin/mach-common/cpufreq.c                |    5 +-
+ arch/blackfin/mach-common/entry.S                  |    7 -
+ arch/blackfin/mach-common/ints-priority.c          |  331 ++++++++++++++------
+ arch/blackfin/mach-common/pm.c                     |    8 +
+ 38 files changed, 1298 insertions(+), 506 deletions(-)
+ create mode 100644 arch/blackfin/mach-bf609/dpm.S
+ delete mode 100644 arch/blackfin/mach-bf609/hibernate.S
+ create mode 100644 arch/blackfin/mach-bf609/ints-priority.c
+
