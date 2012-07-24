@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab2GXE7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 00:59:41 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45269 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab2GXE7k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 00:59:40 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <500E2BA1.9010502@jp.fujitsu.com>
-Date: Tue, 24 Jul 2012 13:59:13 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <tglx@linutronix.de>, <mingo@kernel.org>, <hpa@zytor.com>, <tj@kernel.org>,
-        <akpm@linux-foundation.org>, <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH] firmware_map : unify argument of firmware_map_add_early/hotplug
-References: <5004CB4C.6080700@jp.fujitsu.com>
-In-Reply-To: <5004CB4C.6080700@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+	id S1752396Ab2GXFH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 01:07:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41459 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751350Ab2GXFHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 01:07:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="170506848"
+Subject: Re: [PATCH V2] dma: tegra: enable/disable dma clock
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: dan.j.williams@intel.com, swarren@nvidia.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1342771268-5252-1-git-send-email-ldewangan@nvidia.com>
+References: <1342771268-5252-1-git-send-email-ldewangan@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 24 Jul 2012 10:38:18 +0530
+Message-ID: <1343106498.1726.5974.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch is bugfix. So I want you to review it and merge into linux-3.6.
-
-2012/07/17 11:17, Yasuaki Ishimatsu wrote:
-> There are two ways to create /sys/firmware/memmap/X sysfs:
+On Fri, 2012-07-20 at 13:31 +0530, Laxman Dewangan wrote:
+> Enable the DMA clock when allocating channel and
+> disable clock when freeing channels.
 > 
->    - firmware_map_add_early
->      When the system starts, it is calledd from e820_reserve_resources()
->    - firmware_map_add_hotplug
->      When the memory is hot plugged, it is called from add_memory()
-> 
-> But these functions are called without unifying value of end argument as below:
-> 
->    - end argument of firmware_map_add_early()   : start + size - 1
->    - end argument of firmware_map_add_hogplug() : start + size
-> 
-> The patch unifies them to "start + size". Even if applying the patch,
-> /sys/firmware/memmap/X/end file content does not change.
-> 
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Ingo Molnar <mingo@kernel.org>
-> CC: H. Peter Anvin <hpa@zytor.com>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 > ---
->   arch/x86/kernel/e820.c    |    2 +-
->   drivers/firmware/memmap.c |    8 ++++----
->   2 files changed, 5 insertions(+), 5 deletions(-)
+> Changes from V1 to V2:
+> - Enable/disable clock when allocating/freeing channels.
+> - rewrite the description to reflect change.
 > 
-> Index: linux-next/arch/x86/kernel/e820.c
-> ===================================================================
-> --- linux-next.orig/arch/x86/kernel/e820.c	2012-07-02 09:50:23.000000000 +0900
-> +++ linux-next/arch/x86/kernel/e820.c	2012-07-12 13:30:45.942318179 +0900
-> @@ -944,7 +944,7 @@
->   	for (i = 0; i < e820_saved.nr_map; i++) {
->   		struct e820entry *entry = &e820_saved.map[i];
->   		firmware_map_add_early(entry->addr,
-> -			entry->addr + entry->size - 1,
-> +			entry->addr + entry->size,
->   			e820_type_to_string(entry->type));
->   	}
->   }
-> Index: linux-next/drivers/firmware/memmap.c
-> ===================================================================
-> --- linux-next.orig/drivers/firmware/memmap.c	2012-07-02 09:50:26.000000000 +0900
-> +++ linux-next/drivers/firmware/memmap.c	2012-07-12 13:40:53.823318481 +0900
-> @@ -98,7 +98,7 @@
->   /**
->    * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
->    * @start: Start of the memory range.
-> - * @end:   End of the memory range (inclusive).
-> + * @end:   End of the memory range.
->    * @type:  Type of the memory range.
->    * @entry: Pre-allocated (either kmalloc() or bootmem allocator), uninitialised
->    *         entry.
-> @@ -113,7 +113,7 @@
->   	BUG_ON(start > end);
->   
->   	entry->start = start;
-> -	entry->end = end;
-> +	entry->end = end - 1;
->   	entry->type = type;
->   	INIT_LIST_HEAD(&entry->list);
->   	kobject_init(&entry->kobj, &memmap_ktype);
-> @@ -148,7 +148,7 @@
->    * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
->    * memory hotplug.
->    * @start: Start of the memory range.
-> - * @end:   End of the memory range (inclusive).
-> + * @end:   End of the memory range.
->    * @type:  Type of the memory range.
->    *
->    * Adds a firmware mapping entry. This function is for memory hotplug, it is
-> @@ -175,7 +175,7 @@
->   /**
->    * firmware_map_add_early() - Adds a firmware mapping entry.
->    * @start: Start of the memory range.
-> - * @end:   End of the memory range (inclusive).
-> + * @end:   End of the memory range.
->    * @type:  Type of the memory range.
->    *
->    * Adds a firmware mapping entry. This function uses the bootmem allocator
+>  drivers/dma/tegra20-apb-dma.c |   18 +++++++++++++++++-
+>  1 files changed, 17 insertions(+), 1 deletions(-)
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+> index d52dbc6..24acd71 100644
+> --- a/drivers/dma/tegra20-apb-dma.c
+> +++ b/drivers/dma/tegra20-apb-dma.c
+> @@ -1119,15 +1119,21 @@ struct dma_async_tx_descriptor *tegra_dma_prep_dma_cyclic(
+>  static int tegra_dma_alloc_chan_resources(struct dma_chan *dc)
+>  {
+>  	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
+> +	struct tegra_dma *tdma = tdc->tdma;
+> +	int ret;
+>  
+>  	dma_cookie_init(&tdc->dma_chan);
+>  	tdc->config_init = false;
+> -	return 0;
+> +	ret = clk_prepare_enable(tdma->dma_clk);
+> +	if (ret < 0)
+> +		dev_err(tdc2dev(tdc), "clk_prepare_enable failed: %d\n", ret);
+> +	return ret;
+>  }
+>  
+>  static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+>  {
+>  	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
+> +	struct tegra_dma *tdma = tdc->tdma;
+>  
+>  	struct tegra_dma_desc *dma_desc;
+>  	struct tegra_dma_sg_req *sg_req;
+> @@ -1163,6 +1169,7 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+>  		list_del(&sg_req->node);
+>  		kfree(sg_req);
+>  	}
+> +	clk_disable_unprepare(tdma->dma_clk);
+What if another channel is active, disabling clock can cause bad
+behavior. You should check here if all channels are idle and then
+disable, or is this handled by clock API?
+>  }
+>  
+>  /* Tegra20 specific DMA controller information */
+> @@ -1255,6 +1262,13 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
+>  		}
+>  	}
+>  
+> +	/* Enable clock before accessing registers */
+> +	ret = clk_prepare_enable(tdma->dma_clk);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
+> +		goto err_pm_disable;
+> +	}
+> +
+>  	/* Reset DMA controller */
+>  	tegra_periph_reset_assert(tdma->dma_clk);
+>  	udelay(2);
+> @@ -1265,6 +1279,8 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
+>  	tdma_write(tdma, TEGRA_APBDMA_CONTROL, 0);
+>  	tdma_write(tdma, TEGRA_APBDMA_IRQ_MASK_SET, 0xFFFFFFFFul);
+>  
+> +	clk_disable_unprepare(tdma->dma_clk);
+> +
+>  	INIT_LIST_HEAD(&tdma->dma_dev.channels);
+>  	for (i = 0; i < cdata->nr_channels; i++) {
+>  		struct tegra_dma_channel *tdc = &tdma->channels[i];
 
+
+-- 
+~Vinod
 
