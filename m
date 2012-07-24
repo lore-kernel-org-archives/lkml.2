@@ -1,44 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab2GXMJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 08:09:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11144 "EHLO mx1.redhat.com"
+	id S1753781Ab2GXMNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 08:13:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36905 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571Ab2GXMJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 08:09:07 -0400
-Message-ID: <500E904F.8010004@redhat.com>
-Date: Tue, 24 Jul 2012 08:08:47 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753747Ab2GXMNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 08:13:31 -0400
+Message-ID: <500E9161.209@suse.de>
+Date: Tue, 24 Jul 2012 14:13:21 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] time: Fix casting issue in tk_set_xtime and tk_xtime_add
-References: <1343074957-16541-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1343074957-16541-1-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        KVM <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
+References: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/24/2012 10:53 AM, Raghavendra K T wrote:
+> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>
+> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
+> and Peter (HPA) for suggesting hypercall ABI addition.
+>
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> ---
+> Please have a closer look at Hypercall ABI newly added
+>
+> Changes since last post:
+>   - Added hypercall ABI (Peter)
+>   - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
+>
+> TODO: We need to add history details of each hypercall as suggested by HPA,
+> which I could not trace easily. Hope it is easy for hypercall authors
+>
+>   Documentation/virtual/hypercalls.txt |   71 ++++++++++++++++++++++++++++++++++
+>   1 files changed, 71 insertions(+), 0 deletions(-)
+>   create mode 100644 Documentation/virtual/hypercalls.txt
+>
+> diff --git a/Documentation/virtual/hypercalls.txt b/Documentation/virtual/hypercalls.txt
+> new file mode 100644
+> index 0000000..caffc08
+> --- /dev/null
+> +++ b/Documentation/virtual/hypercalls.txt
+> @@ -0,0 +1,71 @@
+> +Hypercall ABI:
+> +=============
+> +A brief look at calling conventions of X86, S390 and PPC
+> +X86:
+> + KVM Hypercalls have a three-byte sequence of either the vmrun or the vmmrun
+> + instruction. The hypervisor can replace it with instructions that are
+> + guaranteed to be supported.
+> +
+> + Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
+> + The hypercall number should be placed in rax and the return value will be
+> + placed in rax.  No other registers will be clobbered unless explicitly stated
+> + by the particular hypercall.
+> +
+> +S390:
+> +  R2-R7 are used for parameters 1-6. In addition, R1 is used for hypercall
+> +  number. The return value is written to R2.
+> +
+> +  S390 uses diagnose instruction as hypercall (0x500) along with hypercall
+> +  number in R1.
+> +
+> + PoewerPC:
+
+PowerPC
+
+> +  It uses R3-R10 and hypercall number in R11. R4-R11 are used as output registers.
+> +  Return value is placed in R3.
+> +
+> +  KVM hypercalls uses 4 byte opcode, that are patched with 'hypercall-instructions'
+> +  property inside the device tree's /hypervisor node.
+> +  For more information refer to Documentation/virtual/kvm/ppc-pv.txt
+
+What exactly is this document supposed to cover? We have 3 different 
+hypercall ABIs in KVM on PowerPC:
+
+   1) KVM hypercalls (ePAPR)
+
+The ePAPR compliant hypercall implementation. This one is used for KVM 
+specific hypercalls. All hypercalls get a KVM vendor prefix (42) and 
+then the hypercall id. We also implement generic hypercalls here, like 
+the ePAPR idle hcall. The instruction sequence for these is listed in 
+the device tree, as you noted above. It's available on all targets.
+
+   2) PAPR hypercalls
+
+To run server PowerPC PAPR guests (-M pseries in QEMU), we need to 
+handle PAPR hypercalls. These are the same hypercalls that pHyp, the 
+POWER hypervisor implements. Some of them are handled in the kernel, 
+some are handled in user space. This is only available on book3s_64.
+
+   3) OSI hypercalls
+
+In parallel to QEMU, there is another user of KVM on PowerPC: 
+Mac-on-Linux. That project had its own hypercalls long before we came 
+along with KVM, so to maintain compatibility we also support their 
+hypercalls. All of these get forwarded to user space. This is only 
+useful on book3s_32, but can be used with book3s_64 as well.
+
+> +
+> +KVM Hypercalls Documentation
+> +===========================
+> +The template for each hypercall is:
+> +1. Hypercall name, value.
+> +2. Architecture(s)
+> +3. Status (deprecated, obsolete, active)
+> +4. Purpose
+> +
+> +1. KVM_HC_VAPIC_POLL_IRQ
+> +------------------------
+> +Value: 1
+
+What are the value fields supposed to mean?
 
 
-On 07/23/2012 04:22 PM, John Stultz wrote:
-> Fix missing casts that can cause boot problems on 32bit systems,
-> most easily observed with Xen systems. This issue was introduced
-> w/ 1e75fa8be9fb61e1af46b5b3b176347a4c958ca1.
-> 
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Prarit Bhargava <prarit@redhat.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+Alex
 
-Acked-by: Prarit Bhargava <prarit@redhat.com>
+> +Architecture: x86
+> +Status: active
+> +Purpose: Trigger guest exit so that the host can check for pending
+> +interrupts on reentry.
+> +
+> +2. KVM_HC_MMU_OP
+> +------------------------
+> +Value: 2
+> +Architecture: x86
+> +Status: deprecated.
+> +Purpose: Support MMU operations such as writing to PTE,
+> +flushing TLB, release PT.
+> +
+> +3. KVM_HC_FEATURES
+> +------------------------
+> +Value: 3
+> +Architecture: PPC
+> +Status: active
+> +Purpose: Expose hypercall availability to the guest. On x86 platforms, cpuid
+> +used to enumerate which hypercalls are available. On PPC, either device tree
+> +based lookup ( which is also what EPAPR dictates) OR KVM specific enumeration
+> +mechanism (which is this hypercall) can be used.
+> +
+> +4. KVM_HC_PPC_MAP_MAGIC_PAGE
+> +------------------------
+> +Value: 4
+> +Architecture: PPC
+> +Status: active
+> +Purpose: To enable communication between the hypervisor and guest there is a
+> +shared page that contains parts of supervisor visible register state.
+> +The guest can map this shared page to access its supervisor register through
+> +memory using this hypercall.
+>
 
-P.
