@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab2GXV0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 17:26:24 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33745 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab2GXV0W (ORCPT
+	id S1753874Ab2GXV3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 17:29:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49363 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab2GXV3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 17:26:22 -0400
-Date: Tue, 24 Jul 2012 22:26:16 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-Subject: Re: [RFC][PATCH v2 2/3] Hold multiple logs
-Message-ID: <20120724212616.GA29546@srcf.ucam.org>
-References: <20120720030328.GC5637@redhat.com>
- <20120723141632.GB23047@srcf.ucam.org>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB33479@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F19370A1B@ORSMSX104.amr.corp.intel.com>
- <20120724181820.GA23820@srcf.ucam.org>
- <3908561D78D1C84285E8C5FCA982C28F19370CA2@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB346A4@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F19370D21@ORSMSX104.amr.corp.intel.com>
- <20120724210725.GA29109@srcf.ucam.org>
- <3908561D78D1C84285E8C5FCA982C28F19370D52@ORSMSX104.amr.corp.intel.com>
+	Tue, 24 Jul 2012 17:29:38 -0400
+Date: Tue, 24 Jul 2012 14:29:34 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        usb-storage@lists.one-eyed-alien.net
+Subject: Re: [PATCH] ene_ub6250: Use macros for firmware names
+Message-ID: <20120724212934.GA2180@kroah.com>
+References: <1343161869-129765-1-git-send-email-tim.gardner@canonical.com>
+ <20120724203448.GA1617@kroah.com>
+ <500F0CD6.7080907@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19370D52@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <500F0CD6.7080907@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 09:12:25PM +0000, Luck, Tony wrote:
-> > I think we inevitably lose in that scenario. I'd need to verify, but my 
-> > recollection is that overwriting existing variables may be equivalent to 
-> > a delete/create cycle.
+On Tue, Jul 24, 2012 at 03:00:06PM -0600, Tim Gardner wrote:
+> On 07/24/2012 02:34 PM, Greg Kroah-Hartman wrote:
+> >On Tue, Jul 24, 2012 at 02:31:09PM -0600, Tim Gardner wrote:
+> >>Advertise firmware files using MODULE_FIRMWARE macros.
+> >>
+> >>Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >>Cc: linux-usb@vger.kernel.org
+> >>Cc: usb-storage@lists.one-eyed-alien.net
+> >>Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> >>---
+> >>  drivers/usb/storage/ene_ub6250.c |   26 +++++++++++++++++++-------
+> >>  1 file changed, 19 insertions(+), 7 deletions(-)
+> >>
+> >>diff --git a/drivers/usb/storage/ene_ub6250.c b/drivers/usb/storage/ene_ub6250.c
+> >>index b28f2ad..3fec82f 100644
+> >>--- a/drivers/usb/storage/ene_ub6250.c
+> >>+++ b/drivers/usb/storage/ene_ub6250.c
+> >>@@ -29,9 +29,21 @@
+> >>  #include "protocol.h"
+> >>  #include "debug.h"
+> >>
+> >>+#define SD_INIT1_FIRMWARE "ene-ub6250/sd_init1.bin"
+> >>+#define SD_INIT2_FIRMWARE "ene-ub6250/sd_init2.bin"
+> >>+#define SD_RW_FIRMWARE "ene-ub6250/sd_rdwr.bin"
+> >>+#define MS_INIT_FIRMWARE "ene-ub6250/ms_init.bin"
+> >>+#define MSP_RW_FIRMWARE "ene-ub6250/msp_rdwr.bin"
+> >>+#define MS_RW_FIRMWARE "ene-ub6250/ms_rdwr.bin"
+> >>+
+> >>  MODULE_DESCRIPTION("Driver for ENE UB6250 reader");
+> >>  MODULE_LICENSE("GPL");
+> >>-
+> >>+MODULE_FIRMWARE(SD_INIT1_FIRMWARE);
+> >>+MODULE_FIRMWARE(SD_INIT2_FIRMWARE);
+> >>+MODULE_FIRMWARE(SD_RW_FIRMWARE);
+> >>+MODULE_FIRMWARE(MS_INIT_FIRMWARE);
+> >>+MODULE_FIRMWARE(MSP_RW_FIRMWARE);
+> >>+MODULE_FIRMWARE(MS_RW_FIRMWARE);
+> >
+> >Why do you need the #defines here at all?  What's wrong with just using
+> >the file names in the MODULE_FIRMWARE() macro directly?  That cuts the
+> >size of the patch in half :)
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
 > 
-> This would mean that EFI really wants the OS to treat EFI variables as pretty much
-> exclusively read-only.  Any activity which periodically updates a variable would
-> eventually run into problems in an EFI implementation that loses the old space
-> until a reset.
+> If the firmware file name ever changes, then you'll have to find and
+> modify it in 2 places.
 
-Sure. I'll test with a few implementations and see what I can figure 
-out. We may just want to reserve some space for pstore, then have delete 
-in pstore simply map to hiding the entries rather than deleting them.
+Oops, sorry, I missed the second place it was used in the file,
+nevermind, time for more coffee...
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+greg k-h
