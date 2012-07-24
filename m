@@ -1,77 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2GXOC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:02:57 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51382 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab2GXOC4 (ORCPT
+	id S1754722Ab2GXOFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:05:44 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:61853 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab2GXOFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:02:56 -0400
-Message-ID: <500EAB0C.8090504@gmail.com>
-Date: Tue, 24 Jul 2012 08:02:52 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Tue, 24 Jul 2012 10:05:42 -0400
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com> <500CDE35.6000009@windriver.com> <42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com> <500E1057.3020509@windriver.com>
+User-Agent: SkitMail for Android
+In-Reply-To: <500E1057.3020509@windriver.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 11/11] perf kvm top: limit guest kernel info message to
- once
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com> <1342826756-64663-12-git-send-email-dsahern@gmail.com> <20120723181708.GE6717@infradead.org>
-In-Reply-To: <20120723181708.GE6717@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK when bundling
+From: Vlad Yasevich <vyasevich@gmail.com>
+Date: Tue, 24 Jul 2012 10:05:36 -0400
+To: xufeng zhang <xufeng.zhang@windriver.com>
+CC: sri@us.ibm.com, davem@davemloft.net, xufengzhang.main@gmail.com,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/23/12 12:17 PM, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jul 20, 2012 at 05:25:56PM -0600, David Ahern escreveu:
->> 'perf kvm top' shows a continual flurry of:
->>      Can't find guest [5201]'s kernel information
+xufeng zhang <xufeng.zhang@windriver.com> wrote:
+
+>On 07/24/2012 10:27 AM, Vlad Yasevich wrote:
+>> xufeng zhang<xufeng.zhang@windriver.com>  wrote:
 >>
->> if it can't find the guest info and with a lot of VMs running a user
->> has no chance of reading them all. Limit message to once per guest.
->>
->> Signed-off-by: David Ahern <dsahern@gmail.com>
->> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> Cc: Namhyung Kim <namhyung@kernel.org>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> ---
->>   tools/perf/builtin-top.c |   14 ++++++++++++--
->>   1 file changed, 12 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
->> index 1706dc9..6285374 100644
->> --- a/tools/perf/builtin-top.c
->> +++ b/tools/perf/builtin-top.c
->> @@ -706,8 +706,18 @@ static void perf_event__process_sample(struct perf_tool *tool,
->>   	int err;
->>
->>   	if (!machine && perf_guest) {
->> -		pr_err("Can't find guest [%d]'s kernel information\n",
->> -			event->ip.pid);
->> +		static struct strlist *seen;
->> +		char pidstr[8];
->> +
->> +		if (!seen)
->> +			seen = strlist__new(true, NULL);
->> +
->> +		scnprintf(pidstr, sizeof(pidstr), "%d", event->ip.pid);
->> +		if (!strlist__has_entry(seen, pidstr)) {
->> +			pr_err("Can't find guest [%d]'s kernel information\n",
->> +				event->ip.pid);
->> +			strlist__add(seen, pidstr);
->> +		}
+>>    
+>>> On 07/19/2012 01:57 PM, xufengzhang.main@gmail.com wrote:
+>>>      
+>>>> When "Invalid Stream Identifier" ERROR happens after process the
+>>>> received DATA chunks, this ERROR chunk is enqueued into outqueue
+>>>> before SACK chunk, so when bundling ERROR chunk with SACK chunk,
+>>>> the ERROR chunk is always placed first in the packet because of
+>>>> the chunk's position in the outqueue.
+>>>> This violates sctp specification:
+>>>>       RFC 4960 6.5. Stream Identifier and Stream Sequence Number
+>>>>       ...The endpoint may bundle the ERROR chunk in the same
+>>>>       packet as the SACK as long as the ERROR follows the SACK.
+>>>> So we must place SACK first when bundling "Invalid Stream
+>Identifier"
+>>>> ERROR and SACK in one packet.
+>>>> Although we can do that by enqueue SACK chunk into outqueue before
+>>>> ERROR chunk, it will violate the side-effect interpreter
+>processing.
+>>>> It's easy to do this job when dequeue chunks from the outqueue,
+>>>> by this way, we introduce a flag 'has_isi_err' which indicate
+>>>> whether or not the "Invalid Stream Identifier" ERROR happens.
+>>>>
+>>>> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
+>>>> ---
+>>>>    include/net/sctp/structs.h |    2 ++
+>>>>    net/sctp/output.c          |   26 ++++++++++++++++++++++++++
+>>>>    2 files changed, 28 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/include/net/sctp/structs.h
+>b/include/net/sctp/structs.h
+>>>> index 88949a9..5adf4de 100644
+>>>> --- a/include/net/sctp/structs.h
+>>>> +++ b/include/net/sctp/structs.h
+>>>> @@ -842,6 +842,8 @@ struct sctp_packet {
+>>>>    	    has_sack:1,		/* This packet contains a SACK chunk. */
+>>>>    	    has_auth:1,		/* This packet contains an AUTH chunk */
+>>>>    	    has_data:1,		/* This packet contains at least 1 DATA chunk
+>*/
+>>>> +	    has_isi_err:1,	/* This packet contains a "Invalid Stream
+>>>> +				 * Identifier" ERROR chunk */
+>>>>    	    ipfragok:1,		/* So let ip fragment this packet */
+>>>>    	    malloced:1;		/* Is it malloced? */
+>>>>    };
+>>>> diff --git a/net/sctp/output.c b/net/sctp/output.c
+>>>> index 817174e..77fb1ae 100644
+>>>> --- a/net/sctp/output.c
+>>>> +++ b/net/sctp/output.c
+>>>> @@ -79,6 +79,7 @@ static void sctp_packet_reset(struct sctp_packet
+>>>>        
+>>> *packet)
+>>>      
+>>>>    	packet->has_sack = 0;
+>>>>    	packet->has_data = 0;
+>>>>    	packet->has_auth = 0;
+>>>> +	packet->has_isi_err = 0;
+>>>>    	packet->ipfragok = 0;
+>>>>    	packet->auth = NULL;
+>>>>    }
+>>>> @@ -267,6 +268,7 @@ static sctp_xmit_t
+>sctp_packet_bundle_sack(struct
+>>>>        
+>>> sctp_packet *pkt,
+>>>      
+>>>>    sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
+>>>>    				     struct sctp_chunk *chunk)
+>>>>    {
+>>>> +	struct sctp_chunk *lchunk;
+>>>>    	sctp_xmit_t retval = SCTP_XMIT_OK;
+>>>>    	__u16 chunk_len = WORD_ROUND(ntohs(chunk->chunk_hdr->length));
+>>>>
+>>>> @@ -316,7 +318,31 @@ sctp_xmit_t sctp_packet_append_chunk(struct
+>>>>        
+>>> sctp_packet *packet,
+>>>      
+>>>>    		packet->has_cookie_echo = 1;
+>>>>    		break;
+>>>>
+>>>> +	    case SCTP_CID_ERROR:
+>>>> +		if (chunk->subh.err_hdr->cause&   SCTP_ERROR_INV_STRM)
+>>>> +			packet->has_isi_err = 1;
+>>>> +		break;
+>>>> +
+>>>>    	    case SCTP_CID_SACK:
+>>>> +		/* RFC 4960
+>>>> +		 * 6.5 Stream Identifier and Stream Sequence Number
+>>>> +		 * The endpoint may bundle the ERROR chunk in the same
+>>>> +		 * packet as the SACK as long as the ERROR follows the SACK.
+>>>> +		 */
+>>>> +		if (packet->has_isi_err) {
+>>>> +			if (list_is_singular(&packet->chunk_list))
+>>>> +				list_add(&chunk->list,&packet->chunk_list);
+>>>> +			else {
+>>>> +				lchunk = list_first_entry(&packet->chunk_list,
+>>>> +						struct sctp_chunk, list);
+>>>> +				list_add(&chunk->list,&lchunk->list);
+>>>> +			}
+>>>>
+>>>>        
+>>> And I should clarify the above judgment code.
+>>> AFAIK, there should be two cases for the bundling when invalid
+>stream
+>>> identifier error happens:
+>>> 1). COOKIE_ACK ERROR SACK
+>>> 2). ERROR SACK
+>>> So I need to deal with the two cases differently.
+>>>
+>>>      
+>> Sorry but I just don't buy that the above are the only 2 cases.  What
+>if there are addip chunks as well?  What if there are some other
+>extensions also.  This code has to be generic enough to handle any
+>condition.
+>>    
+>Aha, you are right, this may happens.
+>So I think the general solution is to fix this problem in the enqueue
+>side.
+>What do you think? any better suggestion!
 >
-> Abuse of strlist? Can't we have an intlist?
 
-Use of existing facility. :-) I'll look at adding an intlist facility.
+Don't have code in front of me but what if we carry the error condition to where we queue the Sack and add the error side effect then?
 
-David
+-vlad
 
+>
+>Thanks,
+>Xufeng Zhang
+>> - vlad
+>>
+>>    
+>>> Thanks,
+>>> Xufeng Zhang
+>>>      
+>>>> +			packet->size += chunk_len;
+>>>> +			chunk->transport = packet->transport;
+>>>> +			packet->has_sack = 1;
+>>>> +			goto finish;
+>>>> +		}
+>>>> +
+>>>>    		packet->has_sack = 1;
+>>>>    		break;
+>>>>
+>>>>
+>>>>        
+>>
+>>    
+
+
+-- 
+Sent from my Android phone with SkitMail. Please excuse my brevity.
