@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab2GXGkP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 02:40:15 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:30001 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754240Ab2GXGkN (ORCPT
+	id S1754605Ab2GXGnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 02:43:50 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59312 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754467Ab2GXGnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 02:40:13 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6781"; a="213778240"
-From: "Yaniv Gardi" <ygardi@codeaurora.org>
-To: "'Chris Ball'" <cjb@laptop.org>
-Cc: <linux-mmc@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>, <merez@codeaurora.org>
-References: <1340872367-16206-1-git-send-email-ygardi@codeaurora.org>    <1340872367-16206-3-git-send-email-ygardi@codeaurora.org>    <87629k9rkc.fsf@octavius.laptop.org> <f5830acb2ddca29357a0125cd8f3d577.squirrel@www.codeaurora.org>
-In-Reply-To: <f5830acb2ddca29357a0125cd8f3d577.squirrel@www.codeaurora.org>
-Subject: RE: [PATCH RESEND v7 2/2] mmc: card: Adding support for sanitize      in eMMC 4.5
-Date: Tue, 24 Jul 2012 09:40:08 +0300
-Message-ID: <000001cd6967$2ce2a010$86a7e030$@codeaurora.org>
+	Tue, 24 Jul 2012 02:43:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHbbDwGtVR7542ubm/TS3EGnuY2sQDa9+k6AQmswqUCFNjQbZb8KT7Q
-Content-language: en-us
+In-Reply-To: <1342567672-29071-1-git-send-email-ccross@android.com>
+References: <1342567672-29071-1-git-send-email-ccross@android.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Tue, 24 Jul 2012 14:43:28 +0800
+Message-ID: <CAGsJ_4z_tF3LKy-vygr=kwah7q7U03Y2K2XKAkZTB1QC2pSYmw@mail.gmail.com>
+Subject: Re: [RFC] ARM: sched_clock: update epoch_cyc on resume
+To: Colin Cross <ccross@android.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Krzysztof Halasa <khc@pm.waw.pl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+2012/7/18 Colin Cross <ccross@android.com>:
+> Many clocks that are used to provide sched_clock will reset during
+> suspend.  If read_sched_clock returns 0 after suspend, sched_clock will
+> appear to jump forward.  This patch resets cd.epoch_cyc to the current
+> value of read_sched_clock during resume, which causes sched_clock() just
+> after suspend to return the same value as sched_clock() just before
+> suspend.
+>
+> In addition, during the window where epoch_ns has been updated before
+> suspend, but epoch_cyc has not been updated after suspend, it is unknown
+> whether the clock has reset or not, and sched_clock() could return a
+> bogus value.  Add a suspended flag, and return the pre-suspend epoch_ns
+> value during this period.
 
-Are there any additional open issues to discuss regarding the sanitize
-capability ?
-If not, we would like to see this patch pushed into mmc-next.
+Acked-by: Barry Song <21cnbao@gmail.com>
 
-Thanks,
-Yaniv
+this patch should also fix the issue that:
+1. launch some rt threads, rt threads sleep before suspend
+2. repeat to suspend/resume
+3. after resuming, waking up rt threads
 
-= > -----Original Message-----
-= > From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
-= > owner@vger.kernel.org] On Behalf Of merez@codeaurora.org
-= > Sent: Thursday, July 19, 2012 2:25 PM
-= > To: Chris Ball
-= > Cc: Yaniv Gardi; linux-mmc@vger.kernel.org; merez@codeaurora.org;
-= > linux-arm-msm@vger.kernel.org; open list
-= > Subject: Re: [PATCH RESEND v7 2/2] mmc: card: Adding support for
-= > sanitize in eMMC 4.5
-= > 
-= > On Wed, July 18, 2012 11:46 pm, Chris Ball wrote:
-= > > Hi Yaniv,
-= > >
-= > > On Thu, Jun 28 2012, Yaniv Gardi wrote:
-= > >> This feature delete the unmap memory region of the eMMC card, by
-= > >> writing to a specific register in the EXT_CSD unmap region is the
-= > >> memory region that were previously deleted (by erase, trim or discard
-= > >> operation)
-= > >>
-= > >> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
-= > >
-= > > Did you reply to Chuanxiao's review comments yet?  He said:
-= > >
-= > > "So to implement your scenario, how about only add
-= > > mmc_blk_issue_sanitize_rq() for REQ_SANITIZE but not touch
-= > > mmc_blk_issue_secdiscard_rq()? With your changes in
-= > > mmc_blk_issue_secdiscard_rq(), eMMC4.5 device will be failed to
-= > > operate secure trim/erase for REQ_SECURE request."
-= > >
-= > > at:
-= > http://thread.gmane.org/gmane.linux.kernel.mmc/14822/focus=14880
-= > >
-= > > Thanks,
-= > >
-= > > - Chris.
-= > > --
-= > > Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-= > > One Laptop Per Child
-= > >
-= > 
-= > Secure trim and secure erase were removed from eMMC4.5. Please refer
-= > to annex B at B.6 section in eMMC4.5 spec.
-= > Therefore, failure upon trying to do secure trim/erase is the expected
-= > behavior for eMMC4.5 devices.
-= > 
-= > Thanks,
-= > Maya
-= > --
-= > Sent by consultant of Qualcomm Innovation Center, Inc.
-= > Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-= > 
-= > --
-= > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-the
-= > body of a message to majordomo@vger.kernel.org More majordomo info
-= > at  http://vger.kernel.org/majordomo-info.html
+repeat 1-3 again and again, sometimes all rt threads will hang after
+resuming due to wrong sched_clock will make sched_rt think rt_time is
+much more than rt_runtime (default 950ms in 1s). then rt threads will
+lost cpu timeslot to run since the 95% threshold is there.
 
+>
+> This will have a side effect of causing SoCs that have clocks that
+> continue to count in suspend to appear to stop counting, reporting the
+> same sched_clock() value before and after suspend.
+>
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+>  arch/arm/kernel/sched_clock.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+> index 27d186a..46c7d32 100644
+> --- a/arch/arm/kernel/sched_clock.c
+> +++ b/arch/arm/kernel/sched_clock.c
+> @@ -21,6 +21,7 @@ struct clock_data {
+>         u32 epoch_cyc_copy;
+>         u32 mult;
+>         u32 shift;
+> +       bool suspended;
+>  };
+>
+>  static void sched_clock_poll(unsigned long wrap_ticks);
+> @@ -49,6 +50,9 @@ static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
+>         u64 epoch_ns;
+>         u32 epoch_cyc;
+>
+> +       if (cd.suspended)
+> +               return cd.epoch_ns;
+> +
+>         /*
+>          * Load the epoch_cyc and epoch_ns atomically.  We do this by
+>          * ensuring that we always write epoch_cyc, epoch_ns and
+> @@ -169,11 +173,20 @@ void __init sched_clock_postinit(void)
+>  static int sched_clock_suspend(void)
+>  {
+>         sched_clock_poll(sched_clock_timer.data);
+> +       cd.suspended = true;
+>         return 0;
+>  }
+>
+> +static void sched_clock_resume(void)
+> +{
+> +       cd.epoch_cyc = read_sched_clock();
+> +       cd.epoch_cyc_copy = cd.epoch_cyc;
+> +       cd.suspended = false;
+> +}
+> +
+>  static struct syscore_ops sched_clock_ops = {
+>         .suspend = sched_clock_suspend,
+> +       .resume = sched_clock_resume,
+>  };
+>
+>  static int __init sched_clock_syscore_init(void)
+
+
+-barry
