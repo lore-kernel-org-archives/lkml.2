@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab2GXBNB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 21:13:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49232 "EHLO arroyo.ext.ti.com"
+	id S1755574Ab2GXBNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 21:13:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49231 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755559Ab2GXBKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 21:10:17 -0400
+	id S1755444Ab2GXBKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 21:10:16 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <linux-kernel@vger.kernel.org>, <nico@linaro.org>, <will.deacon@arm.com>,
         <catalin.marinas@arm.com>, Cyril Chemparathy <cyril@ti.com>,
         Vitaly Andrianov <vitalya@ti.com>
-Subject: [RFC 17/23] ARM: add machine desc hook for early memory/paging initialization
-Date: Mon, 23 Jul 2012 21:09:19 -0400
-Message-ID: <1343092165-9470-18-git-send-email-cyril@ti.com>
+Subject: [RFC 12/23] ARM: mm: clean up membank size limit checks
+Date: Mon, 23 Jul 2012 21:09:14 -0400
+Message-ID: <1343092165-9470-13-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343092165-9470-1-git-send-email-cyril@ti.com>
 References: <1343092165-9470-1-git-send-email-cyril@ti.com>
@@ -23,45 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a machine descriptor hook that gives control to machine
-specific code prior to memory and paging initialization.
+This patch cleans up the highmem sanity check code by simplifying the range
+checks with a pre-calculated size_limit.  This patch should otherwise have no
+functional impact on behavior.
 
-On Keystone platforms, this hook is used to switch the PHYS_OFFSET over
-to the "real" non-32-bit-addressable address range.
+This patch also removes a redundant (bank->start < vmalloc_limit) check, since
+this is already covered by the !highmem condition.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/include/asm/mach/arch.h |    1 +
- arch/arm/kernel/setup.c          |    3 +++
- 2 files changed, 4 insertions(+)
+ arch/arm/mm/mmu.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index 0b1c94b..49e9c2a 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -39,6 +39,7 @@ struct machine_desc {
- 					 struct meminfo *);
- 	void			(*reserve)(void);/* reserve mem blocks	*/
- 	void			(*map_io)(void);/* IO mapping function	*/
-+	void			(*init_meminfo)(void);
- 	void			(*init_early)(void);
- 	void			(*init_irq)(void);
- 	struct sys_timer	*timer;		/* system tick timer	*/
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index e15d83b..7cbe292 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -964,6 +964,9 @@ void __init setup_arch(char **cmdline_p)
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 4840efa..6b0baf3 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -905,10 +905,15 @@ void __init sanity_check_meminfo(void)
  
- 	parse_early_param();
- 
-+	if (mdesc->init_meminfo)
-+		mdesc->init_meminfo();
+ 	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
+ 		struct membank *bank = &meminfo.bank[j];
++		phys_addr_t size_limit;
 +
- 	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
- 	sanity_check_meminfo();
- 	arm_memblock_init(&meminfo, mdesc);
+ 		*bank = meminfo.bank[i];
++		size_limit = bank->size;
+ 
+ 		if (bank->start >= vmalloc_limit)
+ 			highmem = 1;
++		else
++			size_limit = vmalloc_limit - bank->start;
+ 
+ 		bank->highmem = highmem;
+ 
+@@ -917,8 +922,7 @@ void __init sanity_check_meminfo(void)
+ 		 * Split those memory banks which are partially overlapping
+ 		 * the vmalloc area greatly simplifying things later.
+ 		 */
+-		if (!highmem && bank->start < vmalloc_limit &&
+-		    bank->size > vmalloc_limit - bank->start) {
++		if (!highmem && bank->size > size_limit) {
+ 			if (meminfo.nr_banks >= NR_BANKS) {
+ 				printk(KERN_CRIT "NR_BANKS too low, "
+ 						 "ignoring high memory\n");
+@@ -927,12 +931,12 @@ void __init sanity_check_meminfo(void)
+ 					(meminfo.nr_banks - i) * sizeof(*bank));
+ 				meminfo.nr_banks++;
+ 				i++;
+-				bank[1].size -= vmalloc_limit - bank->start;
++				bank[1].size -= size_limit;
+ 				bank[1].start = vmalloc_limit;
+ 				bank[1].highmem = highmem = 1;
+ 				j++;
+ 			}
+-			bank->size = vmalloc_limit - bank->start;
++			bank->size = size_limit;
+ 		}
+ #else
+ 		/*
+@@ -950,14 +954,13 @@ void __init sanity_check_meminfo(void)
+ 		 * Check whether this memory bank would partially overlap
+ 		 * the vmalloc area.
+ 		 */
+-		if (bank->start + bank->size > vmalloc_limit)
+-			unsigned long newsize = vmalloc_limit - bank->start;
++		if (bank->size > size_limit) {
+ 			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
+ 			       "to -%.8llx (vmalloc region overlap).\n",
+ 			       (unsigned long long)bank->start,
+ 			       (unsigned long long)bank->start + bank->size - 1,
+-			       (unsigned long long)bank->start + newsize - 1);
+-			bank->size = newsize;
++			       (unsigned long long)bank->start + size_limit - 1);
++			bank->size = size_limit;
+ 		}
+ #endif
+ 		if (!bank->highmem && bank->start + bank->size > arm_lowmem_limit)
 -- 
 1.7.9.5
 
