@@ -1,143 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab2GXAXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 20:23:48 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62796 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab2GXAXr (ORCPT
+	id S1754935Ab2GXA2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 20:28:35 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:53275 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab2GXA2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 20:23:47 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-66-500deb11e359
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andrew Watts <akwatts@ymail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [SEGFAULT: perf]
-References: <20120723135214.GA14465@ymail.com>
-Date: Tue, 24 Jul 2012 09:18:24 +0900
-In-Reply-To: <20120723135214.GA14465@ymail.com> (Andrew Watts's message of
-	"Mon, 23 Jul 2012 08:52:17 -0500")
-Message-ID: <878vea6mgf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	Mon, 23 Jul 2012 20:28:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CACRpkdYayLaKzUSq5V9N5sRkV74a+nZ1CbLJzRW7RP=pOU9bfw@mail.gmail.com>
+References: <1342567672-29071-1-git-send-email-ccross@android.com>
+	<CACRpkdaHdCvx1HJNDsyJSZAN--sF+4-V1TbzXZL1v+7Asoe_oA@mail.gmail.com>
+	<CAMbhsRR2-VjUeL2XPKubeaG=iLV5NE-i_sVYbuMAryXLxsbo1g@mail.gmail.com>
+	<CACRpkdYayLaKzUSq5V9N5sRkV74a+nZ1CbLJzRW7RP=pOU9bfw@mail.gmail.com>
+Date: Mon, 23 Jul 2012 17:28:32 -0700
+X-Google-Sender-Auth: Ge8JCKAsp8Tkqtcfk2PGG6zSh4o
+Message-ID: <CAMbhsRQuXsytM9QLwjW1z1E=0XNztXP1xezbcDEj7Ra6deKLDQ@mail.gmail.com>
+Subject: Re: [RFC] ARM: sched_clock: update epoch_cyc on resume
+From: Colin Cross <ccross@android.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Krzysztof Halasa <khc@pm.waw.pl>, Nicolas Pitre <nico@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andrew
+On Mon, Jul 23, 2012 at 5:14 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Jul 23, 2012 at 9:27 PM, Colin Cross <ccross@android.com> wrote:
+>> On Mon, Jul 23, 2012 at 11:55 AM, Linus Walleij
+>
+>> Does the clock you use for sched_clock continue to run in all suspend
+>> modes? All the SoC's I've used only have a 32kHz clock in the deepest
+>> suspend mode,
+>
+> Yes, and yes it is 32kHz.
+>
+>> which is not ideal for sched_clock.
+>
+> Not that I know why scheduling with 32kHz is so bad compared to the
+> default system scheduling granularity which is HZ if you don't have
+> sched_clock() implemented.
+>
+> Since this seems to be such an important point, what makes you
+> want MHz:es for scheduling granularity? To me the biggest impact
+> is actually the granularity of the timestamps in the printk:s.
+>
+> (It's not that I doubt your needs, more curiosity.)
 
-On Mon, 23 Jul 2012 08:52:17 -0500, Andrew Watts wrote:
-> perf report on 3.4.6 segfaults when certain pointers are null. Attached is
-> a patch that applies cleanly @3.4.6 and addresses (A). I am not comfortable
-> suggesting fixes for (B) and (C).
->
+There's a comment somewhere about higher resolution sched_clock
+providing fairer scheduling.  With 32 kHz sched_clock, every runtime
+measured by the scheduler will be wrong by up to 31.25 us.  Most
+systems have a faster clock, and if it's available it seems silly not
+to use it.
 
-(A) has a fix already in the tip tree [1], and maybe in mainline too.
+It's also used for tracing, where 31.25 us resolution is a little low
+for function tracing or function graph tracing.
 
-And yes, I think this sort thing needs some love. It's on my TODO list
-but not have time to do it yet.
+>>  For example, on
+>> Tegra2 the faster 1MHz clock used for sched_clock resets in the
+>> deepest suspend state (LP0) but not the shallowest suspend state
+>> (LP2), and which suspend state the chip hits depends on which hardware
+>> is active.  Opting out of this patch would cause Tegra's clock to
+>> sometimes run in suspend, and sometimes not, which seems worse for
+>> debugging than consistently not running in suspend.  I'd be surprised
+>> if a similar situation didn't apply to your platform.
+>
+> Well being able to switch between different sched_clock() providers
+> may be the ideal...
+>
+>>> - If it absolutely needs to be in the core code, also have a bool
+>>>   field indicating whether the clock is going to die during suspend
+>>>   and add new registration functions for setting that sched_clock
+>>>   type, e.g. setup_sched_clock_nonsuspendable()
+>>
+>> Sounds reasonable if some platforms need the extra complexity.
+>
+> OK agreed.
+>
+> A connecting theme is that of being avle to flag clock sources as
+> sched_clock providers. If all clocksources were tagged with
+> rating, and only clocksources were used for sched_clock(), the
+> kernel could select the highest-rated clock under all circumstances.
+>
+> But that's quite intrusive, more of an idea. :-P
 
-[1] http://www.spinics.net/lists/linux-tip-commits/msg15695.html
-
-Thanks,
-Namhyung
-
-
-> ~ Andy
->
-> ===
->
-> (A) perf report with sort on comm/pid/parent/dso:
->
-> (gdb) run report --sort=comm
-> Program received signal SIGSEGV, Segmentation fault.
-> 0x0805c00b in perf_evsel__add_hist_entry (evsel=0x81c56a8, al=0xbfffe9b0,
-> sample=0xbfffea84, machine=0x81c3fa8) at builtin-report.c:171
-> 171             if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
-> #0  0x0805c00b in perf_evsel__add_hist_entry (evsel=0x81c56a8, al=0xbfffe9b0,
->     sample=0xbfffea84, machine=0x81c3fa8) at builtin-report.c:171
-> #1  0x0805c234 in process_sample_event (tool=0xbffff27c, event=0xb6db1f38,
->     sample=0xbfffea84, evsel=0x81c56a8, machine=0x81c3fa8)
->     at builtin-report.c:216
-> #2  0x080a3097 in perf_session_deliver_event (session=0x81c3f50, event=
->     0xb6db1f38, sample=0xbfffea84, tool=0xbffff27c, file_offset=339768)
->     at util/session.c:885
-> #3  0x080a24d1 in flush_sample_queue (s=0x81c3f50, tool=0xbffff27c)
->     at util/session.c:587
-> #4  0x080a40e3 in __perf_session__process_events (session=0x81c3f50,
->     data_offset=280, data_size=419640, file_size=419920, tool=0xbffff27c)
->     at util/session.c:1257
-> #5  0x080a41d3 in perf_session__process_events (self=0x81c3f50, tool=
->     0xbffff27c) at util/session.c:1273
-> (gdb) print he->ms.sym
-> $1 = (struct symbol *) 0x0
->
-> --
->
-> (B) perf report segfaults on sorts of symbol_from/symbol_to:
->
-> (gdb) run report --sort=symbol_from
-> Program received signal SIGSEGV, Segmentation fault.
-> 0x080b8777 in sort__sym_from_cmp (left=0xbfffe878, right=0x84dfde0)
-> at util/sort.c:334
-> 334             if (!from_l->sym && !from_r->sym
-> (gdb) bt
-> #0  0x080b8777 in sort__sym_from_cmp (left=0xbfffe878, right=0x84dfde0)
->     at util/sort.c:334
-> #1  0x080ba0b8 in hist_entry__cmp (left=0xbfffe878, right=0x84dfde0)
->     at util/hist.c:345
-> #2  0x080b9c31 in add_hist_entry (hists=0x81c571c, entry=0xbfffe878, al=
->     0xbfffe9b0, period=333940) at util/hist.c:254
-> #3  0x080ba04c in __hists__add_entry (self=0x81c571c, al=0xbfffe9b0,
->     sym_parent=0x0, period=333940) at util/hist.c:335
-> #4  0x0805bf50 in perf_evsel__add_hist_entry (evsel=0x81c56a8, al=0xbfffe9b0,
->     sample=0xbfffea84, machine=0x81c3fa8) at builtin-report.c:149
-> #5  0x0805c234 in process_sample_event (tool=0xbffff27c, event=0xb6db1840,
->     sample=0xbfffea84, evsel=0x81c56a8, machine=0x81c3fa8)
->     at builtin-report.c:216
-> (gdb) print left->branch_info
-> $2 = (struct branch_info *) 0x0
-> (gdb) print right->branch_info
-> $3 = (struct branch_info *) 0x0
->
-> --
->
-> (C) perf report segfaults with dso_from/dso_to:
->
-> (gdb) run report --sort=dso_to
-> Program received signal SIGSEGV, Segmentation fault.
-> sort__dso_to_cmp (left=0xbfffe878, right=0x82346f0) at util/sort.c:317
-> 317             return _sort__dso_cmp(left->branch_info->to.map,
-> (gdb) bt
-> #0  sort__dso_to_cmp (left=0xbfffe878, right=0x82346f0) at util/sort.c:317
-> #1  0x080ba0c8 in hist_entry__cmp (left=0xbfffe878, right=0x82346f0)
->     at util/hist.c:345
-> #2  0x080b9c41 in add_hist_entry (hists=0x81c571c, entry=0xbfffe878, al=
->     0xbfffe9b0, period=333331) at util/hist.c:254
-> #3  0x080ba05c in __hists__add_entry (self=0x81c571c, al=0xbfffe9b0,
->     sym_parent=0x0, period=333331) at util/hist.c:335
-> #4  0x0805bf50 in perf_evsel__add_hist_entry (evsel=0x81c56a8, al=0xbfffe9b0,
->     sample=0xbfffea84, machine=0x81c3fa8) at builtin-report.c:149
-> #5  0x0805c242 in process_sample_event (tool=0xbffff27c, event=0xb6dbf800,
->     sample=0xbfffea84, evsel=0x81c56a8, machine=0x81c3fa8)
->     at builtin-report.c:216
-> (gdb) print left->branch_info
-> $4 = (struct branch_info *) 0x0
-> (gdb) print right->branch_info
-> $5 = (struct branch_info *) 0x0
->
-> ===
->
->
-> --- builtin-report.c.orig		2012-07-22
-> +++ builtin-report.c			2012-07-22
-> @@ -162,7 +162,7 @@ static int perf_evsel__add_hist_entry(st
->  	 * so we don't allocated the extra space needed because the stdio
->  	 * code will not use it.
->  	 */
-> -	if (al->sym != NULL && use_browser > 0) {
-> +	if (al->sym != NULL && he->ms.sym != NULL && use_browser > 0) {
->  		struct annotation *notes = symbol__annotation(he->ms.sym);
->  
->  		assert(evsel != NULL);
+sched_clock is supposed to be very low overhead compared to ktime_get,
+and has some strict  requirements if CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+is not set (see kernel/sched/clock.c), but it might be possible.
