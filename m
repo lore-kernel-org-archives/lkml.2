@@ -1,264 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab2GXTqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 15:46:33 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:40003 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592Ab2GXTqb (ORCPT
+	id S1754722Ab2GXT4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:56:00 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45894 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab2GXTz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 15:46:31 -0400
-Message-ID: <1343159187.3165.2.camel@lorien2>
-Subject: [PATCH RESEND] swiotlb: Disable swiotlb overflow support when
- CONFIG_ISA is disabled
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, rob@landley.net
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        shuahkhan@gmail.com
-Date: Tue, 24 Jul 2012 13:46:27 -0600
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 24 Jul 2012 15:55:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120724194301.GG10534@zod.bos.redhat.com>
+References: <20120724181209.GA10534@zod.bos.redhat.com> <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com>
+ <20120724182409.GB10534@zod.bos.redhat.com> <20120724183230.GC10534@zod.bos.redhat.com>
+ <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com>
+ <20120724190302.GE10534@zod.bos.redhat.com> <CA+55aFyn-yMUMdcY8jp65eeoGm3RPzy9p+St35-HGE_xXiVJag@mail.gmail.com>
+ <500EF43C.3060200@redhat.com> <CA+55aFwvidWyBK5+U_4r5uibSkk4A-1jbnY-i9BtRgbx=Odo7w@mail.gmail.com>
+ <500EF6EF.4080708@redhat.com> <20120724194301.GG10534@zod.bos.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 24 Jul 2012 12:55:38 -0700
+X-Google-Sender-Auth: u3hs_q2tvUZ-a2przPUI1ad8-jU
+Message-ID: <CA+55aFygfHj3-PLPj2RZ6pg==7sf3=zKDATW3rVaE9jSOxCd_g@mail.gmail.com>
+Subject: Re: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc definition
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Jeff Law <law@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disable iotlb overflow support when CONFIG_ISA is disabled. Add deprecation
-notice warning message and deprecation schedule documentation. This is the
-first step towards removing overflow support, to be consistent with other
-iommu implementations and return DMA_ERROR_CODE. This disabling step is for
-finding drivers that don't call dma_mapping_error to check for errors returned
-by the mapping interface. Once drivers are fixed overflow support can be
-removed.
+On Tue, Jul 24, 2012 at 12:43 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+>+  ({ long int __d = (d);                                                   \
+>      (__builtin_constant_p (__d)                                           \
+>-      ? (__d >= __FD_SETSIZE                                               \
+>-        ? __fdelt_warn (__d) : (__d / __NFDBITS))                          \
+>+      ? (0 <= __d && __d < __FD_SETSIZE                                            \
+>+        ? (__d / __NFDBITS)                                                \
+>+        : __fdelt_warn (__d))                                              \
+>       : __fdelt_chk (__d)); })
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- Documentation/feature-removal-schedule.txt |   22 ++++++--
- lib/swiotlb.c                              |   79 +++++++++++++++++++++-------
- 2 files changed, 79 insertions(+), 22 deletions(-)
+Ugh. This depends intimately on gcc doing the whole value range
+propagation thing, and probably generates horrible code when not
+optimizing, but whatever. It's irrelevant.
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 5979c3e..ce6c0ae 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -35,7 +35,7 @@ What:	x86_32 "no-hlt" cmdline param
- When:	2012
- Why:	remove a branch from idle path, simplify code used by everybody.
- 	This option disabled the use of HLT in idle and machine_halt()
--	for hardware that was flakey 15-years ago.  Today we have
-+	for hardware that was flaky 15-years ago.  Today we have
- 	"idle=poll" that removed HLT from idle, and so if such a machine
- 	is still running the upstream kernel, "idle=poll" is likely sufficient.
- Who:	Len Brown <len.brown@intel.com>
-@@ -160,7 +160,7 @@ Files:	arch/*/kernel/*_ksyms.c
- Check:	kernel_thread
- Why:	kernel_thread is a low-level implementation detail.  Drivers should
-         use the <linux/kthread.h> API instead which shields them from
--	implementation details and provides a higherlevel interface that
-+	implementation details and provides a higher level interface that
- 	prevents bugs and code duplication
- Who:	Christoph Hellwig <hch@lst.de>
- 
-@@ -236,7 +236,7 @@ Who:	David Brownell <dbrownell@users.sourceforge.net>
- 
- What:	b43 support for firmware revision < 410
- When:	The schedule was July 2008, but it was decided that we are going to keep the
--        code as long as there are no major maintanance headaches.
-+        code as long as there are no major maintenance headaches.
- 	So it _could_ be removed _any_ time now, if it conflicts with something new.
- Why:	The support code for the old firmware hurts code readability/maintainability
- 	and slightly hurts runtime performance. Bugfixes for the old firmware
-@@ -608,3 +608,19 @@ When:	June 2013
- Why:	Unsupported/unmaintained/unused since 2.6
- 
- ----------------------------
-+
-+What:	SWIOTLB overflow buffer support.
-+When:	3.8
-+Why:	Remove SWIOTLB overflow buffer support and return DMA_ERROR_CODE
-+	(a value of zero) to make it consistent with iommu implementation
-+	on Intel, AMD, and swiotlb-xen. In 3.6, Disable iotlb overflow
-+	support when CONFIG_ISA is disabled with the intent to find drivers
-+	that don't call dma_mapping_error to check for errors returned by the
-+	mapping interface. Once drivers are fixed overflow support can be
-+	removed.
-+	If you see any problems related to disabling SWIOTLB overflow buffer,
-+	please report to us!
-+	E-mail us at: linux-kernel@vger.kernel.org
-+Who:	Shuah Khan <shuah.khan@hp.com> <shuahkhan@gmail.com>
-+
-+----------------------------
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 45bc1f8..0123bb8 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -15,6 +15,9 @@
-  * 05/09/10 linville	Add support for syncing ranges, support syncing for
-  *			DMA_BIDIRECTIONAL mappings, miscellaneous cleanup.
-  * 08/12/11 beckyb	Add highmem support
-+ * 07/2012  shuahkhan	Disable iotlb overflow support when CONFIG_ISA
-+ *			is enabled. Remove it for all configs when drivers
-+ *			that don't check for mapping errors are fixed.
-  */
- 
- #include <linux/cache.h>
-@@ -68,7 +71,11 @@ static unsigned long io_tlb_nslabs;
- /*
-  * When the IOMMU overflows we return a fallback buffer. This sets the size.
-  */
-+#if defined(CONFIG_ISA)
- static unsigned long io_tlb_overflow = 32*1024;
-+#else
-+static unsigned long io_tlb_overflow;
-+#endif
- 
- static void *io_tlb_overflow_buffer;
- 
-@@ -92,6 +99,24 @@ static DEFINE_SPINLOCK(io_tlb_lock);
- 
- static int late_alloc;
- 
-+static void swiotlb_print_overflow_deprecation_notice(void)
-+{
-+	if (io_tlb_overflow) {
-+		pr_warn("SWIOTLB overflow buffer will be deprecated.\n"
-+			"  If you have a driver that depends on this feature\n"
-+			"  please Email us at: linux-kernel@vger.kernel.org,\n"
-+			"  Shuah Khan (shuahkhan@gmail.com), and\n"
-+			"  Konrad Wilk (konrad.wilk@oracle.com)\n");
-+	} else {
-+		pr_warn("SWIOTLB overflow buffer is disabled and will be\n"
-+			"  deprecated. Please report problems related to\n"
-+			"  disabling overflow buffer to\n"
-+			"  linux-kernel@vger.kernel.org,\n"
-+			"  Shuah Khan (shuahkhan@gmail.com), and\n"
-+			"  Konrad Wilk (konrad.wilk@oracle.com)\n");
-+	}
-+}
-+
- static int __init
- setup_io_tlb_npages(char *str)
- {
-@@ -108,7 +133,6 @@ setup_io_tlb_npages(char *str)
- 	return 1;
- }
- __setup("swiotlb=", setup_io_tlb_npages);
--/* make io_tlb_overflow tunable too? */
- 
- unsigned long swiotlb_nr_tbl(void)
- {
-@@ -156,12 +180,18 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
- 	io_tlb_index = 0;
- 	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
- 
--	/*
--	 * Get the overflow emergency buffer
--	 */
--	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
--	if (!io_tlb_overflow_buffer)
--		panic("Cannot allocate SWIOTLB overflow buffer!\n");
-+	if (io_tlb_overflow) {
-+		/*
-+		 * Get the overflow emergency buffer
-+		 */
-+		io_tlb_overflow_buffer = alloc_bootmem_low_pages(
-+						PAGE_ALIGN(io_tlb_overflow));
-+		if (!io_tlb_overflow_buffer)
-+			panic("Cannot allocate SWIOTLB overflow buffer!\n");
-+	}
-+
-+	swiotlb_print_overflow_deprecation_notice();
-+
- 	if (verbose)
- 		swiotlb_print_info();
- }
-@@ -264,14 +294,17 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 
- 	memset(io_tlb_orig_addr, 0, io_tlb_nslabs * sizeof(phys_addr_t));
- 
--	/*
--	 * Get the overflow emergency buffer
--	 */
--	io_tlb_overflow_buffer = (void *)__get_free_pages(GFP_DMA,
--	                                          get_order(io_tlb_overflow));
--	if (!io_tlb_overflow_buffer)
--		goto cleanup4;
-+	if (io_tlb_overflow) {
-+		/*
-+		 * Get the overflow emergency buffer
-+		 */
-+		io_tlb_overflow_buffer = (void *)
-+			__get_free_pages(GFP_DMA, get_order(io_tlb_overflow));
-+		if (!io_tlb_overflow_buffer)
-+			goto cleanup4;
-+	}
- 
-+	swiotlb_print_overflow_deprecation_notice();
- 	swiotlb_print_info();
- 
- 	late_alloc = 1;
-@@ -297,12 +330,13 @@ cleanup1:
- 
- void __init swiotlb_free(void)
- {
--	if (!io_tlb_overflow_buffer)
-+	if (!io_tlb_orig_addr)
- 		return;
- 
- 	if (late_alloc) {
--		free_pages((unsigned long)io_tlb_overflow_buffer,
--			   get_order(io_tlb_overflow));
-+		if (io_tlb_overflow_buffer)
-+			free_pages((unsigned long)io_tlb_overflow_buffer,
-+				   get_order(io_tlb_overflow));
- 		free_pages((unsigned long)io_tlb_orig_addr,
- 			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
- 		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
-@@ -310,8 +344,9 @@ void __init swiotlb_free(void)
- 		free_pages((unsigned long)io_tlb_start,
- 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
- 	} else {
--		free_bootmem_late(__pa(io_tlb_overflow_buffer),
--				  PAGE_ALIGN(io_tlb_overflow));
-+		if (io_tlb_overflow_buffer)
-+			free_bootmem_late(__pa(io_tlb_overflow_buffer),
-+					  PAGE_ALIGN(io_tlb_overflow));
- 		free_bootmem_late(__pa(io_tlb_orig_addr),
- 				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
- 		free_bootmem_late(__pa(io_tlb_list),
-@@ -681,6 +716,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
- 	map = map_single(dev, phys, size, dir);
- 	if (!map) {
- 		swiotlb_full(dev, size, dir, 1);
-+		if (!io_tlb_overflow)
-+			return DMA_ERROR_CODE;
- 		map = io_tlb_overflow_buffer;
- 	}
- 
-@@ -691,6 +728,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
- 	 */
- 	if (!dma_capable(dev, dev_addr, size)) {
- 		swiotlb_tbl_unmap_single(dev, map, size, dir);
-+		if (!io_tlb_overflow)
-+			return DMA_ERROR_CODE;
- 		dev_addr = swiotlb_virt_to_bus(dev, io_tlb_overflow_buffer);
- 	}
- 
-@@ -910,6 +949,8 @@ EXPORT_SYMBOL(swiotlb_sync_sg_for_device);
- int
- swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr)
- {
-+	if (!io_tlb_overflow)
-+		return DMA_ERROR_CODE;
- 	return (dma_addr == swiotlb_virt_to_bus(hwdev, io_tlb_overflow_buffer));
- }
- EXPORT_SYMBOL(swiotlb_dma_mapping_error);
--- 
-1.7.9.5
+I vote we get rid of the crap. We'll force-redefine __FD_SETSIZE,
+because that's the one we really care about. And then just use our
+internal names for anything else.
 
+IOW, just something like this (whitespace-damaged on purpose, because
+it won't even compile as-is: we'll also need to replace the few uses
+of __NFDBITS in the kernel with BITS_PER_LONG).
 
+   diff --git a/include/linux/posix_types.h b/include/linux/posix_types.h
+  index f04c98cf44f3..8a79a5021dc1 100644
+  --- a/include/linux/posix_types.h
+  +++ b/include/linux/posix_types.h
+  @@ -15,26 +15,14 @@
+    */
 
+   /*
+  - * Those macros may have been defined in <gnu/types.h>. But we always
+  - * use the ones here.
+  + * This macro may have been defined in <gnu/types.h>. But we always
+  + * use the one here.
+    */
+  -#undef __NFDBITS
+  -#define __NFDBITS	(8 * sizeof(unsigned long))
+  -
+   #undef __FD_SETSIZE
+   #define __FD_SETSIZE	1024
+
+  -#undef __FDSET_LONGS
+  -#define __FDSET_LONGS	(__FD_SETSIZE/__NFDBITS)
+  -
+  -#undef __FDELT
+  -#define	__FDELT(d)	((d) / __NFDBITS)
+  -
+  -#undef __FDMASK
+  -#define	__FDMASK(d)	(1UL << ((d) % __NFDBITS))
+  -
+   typedef struct {
+  -	unsigned long fds_bits [__FDSET_LONGS];
+  +	unsigned long fds_bits [__FD_SETSIZE / (8*sizeof(long))];
+   } __kernel_fd_set;
+
+   /* Type of a signal handler.  */
+
+Hmm?
+
+              Linus
