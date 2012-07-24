@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab2GXHsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 03:48:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33124 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755084Ab2GXHss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 03:48:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="184762575"
-Date: Tue, 24 Jul 2012 15:48:44 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: John David Anglin <dave.anglin@bell.net>
-Cc: Mel Gorman <mgorman@suse.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@parisc-linux.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>
-Subject: Re: [next:akpm 129/309] net/core/sock.c:274:36: error: initializer
- element is not constant
-Message-ID: <20120724074844.GA9519@localhost>
-References: <20120722163058.GB13376@localhost>
- <20120723111619.GT9222@suse.de>
- <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
- <20120723114258.GV9222@suse.de>
- <20120723122905.GA22476@localhost>
- <BLU0-SMTP2254F8872DDE5FA6035CDE97DD0@phx.gbl>
+	id S1755537Ab2GXHwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 03:52:25 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55324 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084Ab2GXHwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 03:52:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL 00/15] arm-soc: changes for v3.6
+Date: Tue, 24 Jul 2012 07:51:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, "Mark A. Greer" <mgreer@animalcreek.com>,
+        Paul Walmsley <paul@pwsan.com>
+References: <1343075561-17446-1-git-send-email-arnd@arndb.de> <CA+55aFyObNFgsaVOsjVOcH+aLjDyOgcqpvckM29T3dvugekVwg@mail.gmail.com>
+In-Reply-To: <CA+55aFyObNFgsaVOsjVOcH+aLjDyOgcqpvckM29T3dvugekVwg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BLU0-SMTP2254F8872DDE5FA6035CDE97DD0@phx.gbl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207240751.39111.arnd@arndb.de>
+X-Provags-ID: V02:K0:bhlh4QhUaDTq5Yo+M25yMMaiWc/YbDXdVDCCqYRMGxL
+ jfsjUxYhCcXlpL7SPQO3kCvWkqf4CvhyRXYeQDLPLD6Bod5Ev7
+ MNmT3buj/wRICn5GzUzBEnr1jFiPPFR5G4F3UoC1qNLWvMrcCu
+ r4Dc1QFbvYNTspdzIw4uarBI+ba51jfCiC+pNAgd2Yqzhg8CDd
+ de5jNp20gNisIbZVoEXmKPueB5bJQxVQ5VRlGOy6xbTRJGhil7
+ trf9k+M+4L8yLItUoF9Zh9JFgK/r9L0ul3t4iPZXEV8BVfy89R
+ qP4SRdY9SFYT80EQ2ysxAUecT7YPLryh3rCbmtJ5zC41yQls+I
+ gk5I95qw+ynI+HxYEPkw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It would be easier to see what's happening with preprocessed source.
+On Tuesday 24 July 2012, Linus Torvalds wrote:
 
-Here is the line in sock.i:
+> In your "for-linus" branch, "&mpu_3xxx_clkdm" remains in the
+> clockdomains_common[] array. In my merge, it is gone. But I think I
+> did the merge correctly, and you did it wrong. HOWEVER, I don't know
+> the code, maybe there is some subtle reason why you did it like you
+> did.
 
-struct static_key memalloc_socks = ((struct static_key) { .enabled = ((atomic_t) { (0) }) });
+Yes, I think you are right now that I look at it again. Paul Walmsley
+can have another look at the merge and send an update if we are both
+missing something now.
 
-Thanks,
-Fengguang
+> Your "for-linus" branch also had that
+> 
+>    arch/arm/arm-soc-for-next-contents.txt
+> 
+> file that shouldn't have been there, but whatever.
+
+That's the file I use for communication with Olof about stuff we
+merge. I briefly considered rebuilding a branch for your reference
+without it, but since you always do the merges yourself I figured there
+would be no need.
+We do leave this file in the for-next branch because it helps some
+people sending us patches to see what the existing branches and
+interdependencies are.
+
+> Anyway, apart from that "please check" comment, I also have small
+> complaint: your pull requests didn't actually point to the tags, they
+> pointed to the next/xyz commits. So every time I did a pull, I had to
+> change "next/xyz" to "tags/xyz". That's just annoying make-work. I
+> think it's because you just said "xyz" to the git request-pull script,
+> and then git had to pick one of the things and picked next. Please
+> disambiguate by just saying "tags/xyz" explicitly.
+
+I spent too much time fiddling with my scripts again in an attempt to
+get closer to the regular git-request-pull version. The older version
+got this right, but unfortunately I removed the part where I manually
+print the right pull address because that had caused other problems
+before.
+I did the trivial fix you suggested now.
+
+	Arnd
