@@ -1,448 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab2GXI1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 04:27:14 -0400
-Received: from nbd.name ([46.4.11.11]:41323 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755716Ab2GXI0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 04:26:47 -0400
-From: John Crispin <blogic@openwrt.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: John Crispin <blogic@openwrt.org>,
-        Thomas Langer <thomas.langer@lantiq.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 5/6] GPIO: MIPS: add gpio driver for falcon SoC
-Date: Tue, 24 Jul 2012 10:26:18 +0200
-Message-Id: <1343118378-8357-1-git-send-email-blogic@openwrt.org>
-X-Mailer: git-send-email 1.7.9.1
+	id S1755716Ab2GXI2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 04:28:33 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19281 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754758Ab2GXI2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 04:28:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 24 Jul 2012 01:24:01 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
+        <swarren@wwwdotorg.org>
+CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regulator: tps6586x: correct vin pin for sm0/sm1/sm2
+Date: Tue, 24 Jul 2012 13:48:00 +0530
+Message-ID: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add driver for GPIO blocks found on Lantiq FALCON SoC. The SoC has 5 banks of
-up to 32 pads. The GPIO blocks have a per pin IRQs.
+As per datasheet, the vin pin for the regulator is named
+as vin_sm0, vin_sm1, vin_sm2 for sm0, sm1 and sm2 respectively.
 
-Signed-off-by: John Crispin <blogic@openwrt.org>
-Signed-off-by: Thomas Langer <thomas.langer@lantiq.com>
-Cc: linux-kernel@vger.kernel.org
+Correcting the names in driver and documentation to match with
+datasheet.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reported-by: Stephen Warren <swarren@nvidia.com>
 ---
-Changes in V2
-* fix typo in the subject line
+ .../devicetree/bindings/regulator/tps6586x.txt     |   12 ++++++------
+ drivers/regulator/tps6586x-regulator.c             |    8 +++++---
+ 2 files changed, 11 insertions(+), 9 deletions(-)
 
- arch/mips/include/asm/mach-lantiq/gpio.h |    4 +
- drivers/gpio/Kconfig                     |    5 +
- drivers/gpio/Makefile                    |    1 +
- drivers/gpio/gpio-falcon.c               |  355 ++++++++++++++++++++++++++++++
- 4 files changed, 365 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/gpio-falcon.c
-
-diff --git a/arch/mips/include/asm/mach-lantiq/gpio.h b/arch/mips/include/asm/mach-lantiq/gpio.h
-index f79505b..fdc8638 100644
---- a/arch/mips/include/asm/mach-lantiq/gpio.h
-+++ b/arch/mips/include/asm/mach-lantiq/gpio.h
-@@ -1,10 +1,14 @@
- #ifndef __ASM_MIPS_MACH_LANTIQ_GPIO_H
- #define __ASM_MIPS_MACH_LANTIQ_GPIO_H
+diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+index d156e1b..da80c2a 100644
+--- a/Documentation/devicetree/bindings/regulator/tps6586x.txt
++++ b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+@@ -9,9 +9,9 @@ Required properties:
+ - regulators: list of regulators provided by this controller, must have
+   property "regulator-compatible" to match their hardware counterparts:
+   sm[0-2], ldo[0-9] and ldo_rtc
+-- sm0-supply: The input supply for the SM0.
+-- sm1-supply: The input supply for the SM1.
+-- sm2-supply: The input supply for the SM2.
++- vin-sm0-supply: The input supply for the SM0.
++- vin-sm1-supply: The input supply for the SM1.
++- vin-sm2-supply: The input supply for the SM2.
+ - vinldo01-supply: The input supply for the LDO1 and LDO2
+ - vinldo23-supply: The input supply for the LDO2 and LDO3
+ - vinldo4-supply: The input supply for the LDO4
+@@ -30,9 +30,9 @@ Example:
+ 		#gpio-cells = <2>;
+ 		gpio-controller;
  
-+#ifndef CONFIG_SOC_FALCON
- static inline int gpio_to_irq(unsigned int gpio)
- {
- 	return -1;
- }
-+#else
-+extern int gpio_to_irq(unsigned int gpio);
-+#endif
+-		sm0-supply = <&some_reg>;
+-		sm1-supply = <&some_reg>;
+-		sm2-supply = <&some_reg>;
++		vin-sm0-supply = <&some_reg>;
++		vin-sm1-supply = <&some_reg>;
++		vin-sm2-supply = <&some_reg>;
+ 		vinldo01-supply = <...>;
+ 		vinldo23-supply = <...>;
+ 		vinldo4-supply = <...>;
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index e6da90a..19241fc 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -240,14 +240,16 @@ static struct tps6586x_regulator tps6586x_regulator[] = {
+ 	TPS6586X_LDO(LDO_9, "vinldo9", ldo, SUPPLYV6, 3, 3, ENE, 7, ENE, 7),
+ 	TPS6586X_LDO(LDO_RTC, NULL, ldo, SUPPLYV4, 3, 3, V4, 7, V4, 7),
+ 	TPS6586X_LDO(LDO_1, "vinldo01", dvm, SUPPLYV1, 0, 5, ENC, 1, END, 1),
+-	TPS6586X_LDO(SM_2, "sm2", sm2, SUPPLYV2, 0, 5, ENC, 7, END, 7),
++	TPS6586X_LDO(SM_2, "vin-sm2", sm2, SUPPLYV2, 0, 5, ENC, 7, END, 7),
  
- #define gpio_get_value __gpio_get_value
- #define gpio_set_value __gpio_set_value
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 502b5ea..f083a8a 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -114,6 +114,11 @@ config GPIO_EP93XX
- 	depends on ARCH_EP93XX
- 	select GPIO_GENERIC
+ 	TPS6586X_DVM(LDO_2, "vinldo23", dvm, LDO2BV1, 0, 5, ENA, 3,
+ 					ENB, 3, VCC2, 6),
+ 	TPS6586X_DVM(LDO_4, "vinldo4", ldo4, LDO4V1, 0, 5, ENC, 3,
+ 					END, 3, VCC1, 6),
+-	TPS6586X_DVM(SM_0, "sm0", dvm, SM0V1, 0, 5, ENA, 1, ENB, 1, VCC1, 2),
+-	TPS6586X_DVM(SM_1, "sm1", dvm, SM1V1, 0, 5, ENA, 0, ENB, 0, VCC1, 0),
++	TPS6586X_DVM(SM_0, "vin-sm0", dvm, SM0V1, 0, 5, ENA, 1,
++					ENB, 1, VCC1, 2),
++	TPS6586X_DVM(SM_1, "vin-sm1", dvm, SM1V1, 0, 5, ENA, 0,
++					ENB, 0, VCC1, 0),
+ };
  
-+config GPIO_FALCON
-+	def_bool y
-+	depends on MIPS && SOC_FALCON
-+	select GPIO_GENERIC
-+
- config GPIO_MM_LANTIQ
- 	bool "Lantiq Memory mapped GPIOs"
- 	depends on LANTIQ && SOC_XWAY
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index d370481..fbf2c51 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -20,6 +20,7 @@ obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
- obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
- obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
- obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
-+obj-$(CONFIG_GPIO_FALCON)	+= gpio-falcon.o
- obj-$(CONFIG_GPIO_GE_FPGA)	+= gpio-ge.o
- obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
- obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
-diff --git a/drivers/gpio/gpio-falcon.c b/drivers/gpio/gpio-falcon.c
-new file mode 100644
-index 0000000..e0ff32c
---- /dev/null
-+++ b/drivers/gpio/gpio-falcon.c
-@@ -0,0 +1,355 @@
-+/*
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under the terms of the GNU General Public License version 2 as published
-+ *  by the Free Software Foundation.
-+ *
-+ *  Copyright (C) 2012 Thomas Langer <thomas.langer@lantiq.com>
-+ *  Copyright (C) 2012 John Crispin <blogic@openwrt.org>
-+ */
-+
-+#include <linux/gpio.h>
-+#include <linux/interrupt.h>
-+#include <linux/slab.h>
-+#include <linux/export.h>
-+#include <linux/err.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_irq.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/platform_device.h>
-+
-+#include <lantiq_soc.h>
-+
-+/* Data Output Register */
-+#define GPIO_OUT            0x00000000
-+/* Data Input Register */
-+#define GPIO_IN             0x00000004
-+/* Direction Register */
-+#define GPIO_DIR            0x00000008
-+/* External Interrupt Control Register 0 */
-+#define GPIO_EXINTCR0       0x00000018
-+/* External Interrupt Control Register 1 */
-+#define GPIO_EXINTCR1       0x0000001C
-+/* IRN Capture Register */
-+#define GPIO_IRNCR          0x00000020
-+/* IRN Interrupt Configuration Register */
-+#define GPIO_IRNCFG		0x0000002C
-+/* IRN Interrupt Enable Set Register */
-+#define GPIO_IRNRNSET       0x00000030
-+/* IRN Interrupt Enable Clear Register */
-+#define GPIO_IRNENCLR       0x00000034
-+/* Output Set Register */
-+#define GPIO_OUTSET         0x00000040
-+/* Output Cler Register */
-+#define GPIO_OUTCLR         0x00000044
-+/* Direction Clear Register */
-+#define GPIO_DIRSET         0x00000048
-+/* Direction Set Register */
-+#define GPIO_DIRCLR         0x0000004C
-+
-+/* turn a gpio_chip into a falcon_gpio_port */
-+#define ctop(c)		container_of(c, struct falcon_gpio_port, gpio_chip)
-+/* turn a irq_data into a falcon_gpio_port */
-+#define itop(i)		((struct falcon_gpio_port *) irq_get_chip_data(i->irq))
-+
-+#define port_r32(p, reg)	ltq_r32(p->port + reg)
-+#define port_w32(p, val, reg)	ltq_w32(val, p->port + reg)
-+#define port_w32_mask(p, clear, set, reg) \
-+		port_w32(p, (port_r32(p, reg) & ~(clear)) | (set), reg)
-+
-+#define MAX_PORTS		5
-+#define PINS_PER_PORT		32
-+
-+struct falcon_gpio_port {
-+	struct gpio_chip gpio_chip;
-+	void __iomem *port;
-+	unsigned int irq_base;
-+	unsigned int chained_irq;
-+	struct clk *clk;
-+	char name[6];
-+};
-+
-+int gpio_to_irq(unsigned int gpio)
-+{
-+	return __gpio_to_irq(gpio);
-+}
-+EXPORT_SYMBOL(gpio_to_irq);
-+
-+static int falcon_gpio_direction_input(struct gpio_chip *chip,
-+					unsigned int offset)
-+{
-+	port_w32(ctop(chip), 1 << offset, GPIO_DIRCLR);
-+
-+	return 0;
-+}
-+
-+static void falcon_gpio_set(struct gpio_chip *chip, unsigned int offset,
-+					int value)
-+{
-+	if (value)
-+		port_w32(ctop(chip), 1 << offset, GPIO_OUTSET);
-+	else
-+		port_w32(ctop(chip), 1 << offset, GPIO_OUTCLR);
-+}
-+
-+static int falcon_gpio_direction_output(struct gpio_chip *chip,
-+					unsigned int offset, int value)
-+{
-+	falcon_gpio_set(chip, offset, value);
-+	port_w32(ctop(chip), 1 << offset, GPIO_DIRSET);
-+
-+	return 0;
-+}
-+
-+static int falcon_gpio_get(struct gpio_chip *chip, unsigned int offset)
-+{
-+	if ((port_r32(ctop(chip), GPIO_DIR) >> offset) & 1)
-+		return (port_r32(ctop(chip), GPIO_OUT) >> offset) & 1;
-+	else
-+		return (port_r32(ctop(chip), GPIO_IN) >> offset) & 1;
-+}
-+
-+static int falcon_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	int gpio = chip->base + offset;
-+
-+	return pinctrl_request_gpio(gpio);
-+}
-+
-+static void falcon_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	int gpio = chip->base + offset;
-+
-+	pinctrl_free_gpio(gpio);
-+}
-+
-+static int falcon_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	return ctop(chip)->irq_base + offset;
-+}
-+
-+static void falcon_gpio_disable_irq(struct irq_data *d)
-+{
-+	unsigned int offset = d->irq - itop(d)->irq_base;
-+
-+	port_w32(itop(d), 1 << offset, GPIO_IRNENCLR);
-+}
-+
-+static void falcon_gpio_enable_irq(struct irq_data *d)
-+{
-+	unsigned int offset = d->irq - itop(d)->irq_base;
-+
-+	port_w32(itop(d), 1 << offset, GPIO_IRNRNSET);
-+}
-+
-+static void falcon_gpio_ack_irq(struct irq_data *d)
-+{
-+	unsigned int offset = d->irq - itop(d)->irq_base;
-+
-+	port_w32(itop(d), 1 << offset, GPIO_IRNCR);
-+}
-+
-+static void falcon_gpio_mask_and_ack_irq(struct irq_data *d)
-+{
-+	unsigned int offset = d->irq - itop(d)->irq_base;
-+
-+	port_w32(itop(d), 1 << offset, GPIO_IRNENCLR);
-+	port_w32(itop(d), 1 << offset, GPIO_IRNCR);
-+}
-+
-+static struct irq_chip falcon_gpio_irq_chip;
-+static int falcon_gpio_irq_type(struct irq_data *d, unsigned int type)
-+{
-+	unsigned int offset = d->irq - itop(d)->irq_base;
-+	unsigned int mask = 1 << offset;
-+
-+	if ((type & IRQ_TYPE_SENSE_MASK) == IRQ_TYPE_NONE)
-+		return 0;
-+
-+	if ((type & (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_LEVEL_LOW)) != 0) {
-+		/* level triggered */
-+		port_w32_mask(itop(d), 0, mask, GPIO_IRNCFG);
-+		irq_set_chip_and_handler_name(d->irq,
-+			&falcon_gpio_irq_chip, handle_level_irq, "mux");
-+	} else {
-+		/* edge triggered */
-+		port_w32_mask(itop(d), mask, 0, GPIO_IRNCFG);
-+		irq_set_chip_and_handler_name(d->irq,
-+			&falcon_gpio_irq_chip, handle_simple_irq, "mux");
-+	}
-+
-+	if ((type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH) {
-+		port_w32_mask(itop(d), mask, 0, GPIO_EXINTCR0);
-+		port_w32_mask(itop(d), 0, mask, GPIO_EXINTCR1);
-+	} else {
-+		if ((type & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_LEVEL_HIGH)) != 0)
-+			/* positive logic: rising edge, high level */
-+			port_w32_mask(itop(d), mask, 0, GPIO_EXINTCR0);
-+		else
-+			/* negative logic: falling edge, low level */
-+			port_w32_mask(itop(d), 0, mask, GPIO_EXINTCR0);
-+		port_w32_mask(itop(d), mask, 0, GPIO_EXINTCR1);
-+	}
-+
-+	return gpio_direction_input(itop(d)->gpio_chip.base + offset);
-+}
-+
-+static void falcon_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
-+{
-+	struct falcon_gpio_port *gpio_port = irq_desc_get_handler_data(desc);
-+	unsigned long irncr;
-+	int offset;
-+
-+	/* acknowledge interrupt */
-+	irncr = port_r32(gpio_port, GPIO_IRNCR);
-+	port_w32(gpio_port, irncr, GPIO_IRNCR);
-+
-+	desc->irq_data.chip->irq_ack(&desc->irq_data);
-+
-+	for_each_set_bit(offset, &irncr, gpio_port->gpio_chip.ngpio)
-+		generic_handle_irq(gpio_port->irq_base + offset);
-+}
-+
-+static int falcon_gpio_irq_map(struct irq_domain *d, unsigned int irq,
-+				irq_hw_number_t hw)
-+{
-+	struct falcon_gpio_port *port = d->host_data;
-+
-+	irq_set_chip_and_handler_name(irq, &falcon_gpio_irq_chip,
-+			handle_simple_irq, "mux");
-+	irq_set_chip_data(irq, port);
-+
-+	/* set to negative logic (falling edge, low level) */
-+	port_w32_mask(port, 0, 1 << hw, GPIO_EXINTCR0);
-+	return 0;
-+}
-+
-+static struct irq_chip falcon_gpio_irq_chip = {
-+	.name = "gpio_irq_mux",
-+	.irq_mask = falcon_gpio_disable_irq,
-+	.irq_unmask = falcon_gpio_enable_irq,
-+	.irq_ack = falcon_gpio_ack_irq,
-+	.irq_mask_ack = falcon_gpio_mask_and_ack_irq,
-+	.irq_set_type = falcon_gpio_irq_type,
-+};
-+
-+static const struct irq_domain_ops irq_domain_ops = {
-+	.xlate = irq_domain_xlate_onetwocell,
-+	.map = falcon_gpio_irq_map,
-+};
-+
-+static struct irqaction gpio_cascade = {
-+	.handler = no_action,
-+	.flags = IRQF_DISABLED,
-+	.name = "gpio_cascade",
-+};
-+
-+static int falcon_gpio_probe(struct platform_device *pdev)
-+{
-+	struct pinctrl_gpio_range *gpio_range;
-+	struct device_node *node = pdev->dev.of_node;
-+	const __be32 *bank = of_get_property(node, "lantiq,bank", NULL);
-+	struct falcon_gpio_port *gpio_port;
-+	struct resource *gpiores, irqres;
-+	int ret, size;
-+
-+	if (!bank || *bank >= MAX_PORTS)
-+		return -ENODEV;
-+
-+	size = pinctrl_falcon_get_range_size(*bank);
-+	if (size < 1) {
-+		dev_err(&pdev->dev, "pad not loaded for bank %d\n", *bank);
-+		return size;
-+	}
-+
-+	gpiores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!gpiores)
-+		return -ENODEV;
-+
-+	gpio_range = devm_kzalloc(&pdev->dev, sizeof(struct pinctrl_gpio_range),
-+				GFP_KERNEL);
-+	if (!gpio_range)
-+		return -ENOMEM;
-+
-+	gpio_port = devm_kzalloc(&pdev->dev, sizeof(struct falcon_gpio_port),
-+				GFP_KERNEL);
-+	if (!gpio_port)
-+		return -ENOMEM;
-+	snprintf(gpio_port->name, 6, "gpio%d", *bank);
-+	gpio_port->gpio_chip.label = gpio_port->name;
-+	gpio_port->gpio_chip.direction_input = falcon_gpio_direction_input;
-+	gpio_port->gpio_chip.direction_output = falcon_gpio_direction_output;
-+	gpio_port->gpio_chip.get = falcon_gpio_get;
-+	gpio_port->gpio_chip.set = falcon_gpio_set;
-+	gpio_port->gpio_chip.request = falcon_gpio_request;
-+	gpio_port->gpio_chip.free = falcon_gpio_free;
-+	gpio_port->gpio_chip.base = -1;
-+	gpio_port->gpio_chip.ngpio = size;
-+	gpio_port->gpio_chip.dev = &pdev->dev;
-+
-+	gpio_port->port = devm_request_and_ioremap(&pdev->dev, gpiores);
-+	if (!gpio_port->port) {
-+		dev_err(&pdev->dev, "Could not map io ranges\n");
-+		return -ENOMEM;
-+	}
-+
-+	gpio_port->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(gpio_port->clk)) {
-+		dev_err(&pdev->dev, "Could not get clock\n");
-+		return PTR_ERR(gpio_port->clk);
-+	}
-+	clk_enable(gpio_port->clk);
-+
-+	if (of_irq_to_resource_table(node, &irqres, 1) == 1) {
-+		gpio_port->irq_base = INT_NUM_EXTRA_START + (32 * *bank);
-+		gpio_port->gpio_chip.to_irq = falcon_gpio_to_irq;
-+		gpio_port->chained_irq = irqres.start;
-+		irq_domain_add_legacy(node, size, gpio_port->irq_base, 0,
-+					&irq_domain_ops, gpio_port);
-+		setup_irq(irqres.start, &gpio_cascade);
-+		irq_set_handler_data(irqres.start, gpio_port);
-+		irq_set_chained_handler(irqres.start, falcon_gpio_irq_handler);
-+	}
-+
-+	ret = gpiochip_add(&gpio_port->gpio_chip);
-+	if (!ret)
-+		platform_set_drvdata(pdev, gpio_port);
-+
-+	gpio_range->name = "FALCON GPIO";
-+	gpio_range->id = *bank;
-+	gpio_range->base = gpio_port->gpio_chip.base;
-+	gpio_range->npins = gpio_port->gpio_chip.ngpio;
-+	gpio_range->gc = &gpio_port->gpio_chip;
-+	pinctrl_falcon_add_gpio_range(gpio_range);
-+
-+	return ret;
-+}
-+
-+static const struct of_device_id falcon_gpio_match[] = {
-+	{ .compatible = "lantiq,gpio-falcon" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, falcon_gpio_match);
-+
-+static struct platform_driver falcon_gpio_driver = {
-+	.probe = falcon_gpio_probe,
-+	.driver = {
-+		.name = "gpio-falcon",
-+		.owner = THIS_MODULE,
-+		.of_match_table = falcon_gpio_match,
-+	},
-+};
-+
-+int __init falcon_gpio_init(void)
-+{
-+	int ret;
-+
-+	pr_info("FALC(tm) ON GPIO Driver, (C) 2012 Lantiq Deutschland Gmbh\n");
-+	ret = platform_driver_register(&falcon_gpio_driver);
-+	if (ret)
-+		pr_err("falcon_gpio: Error registering platform driver!");
-+	return ret;
-+}
-+
-+subsys_initcall(falcon_gpio_init);
+ /*
 -- 
-1.7.9.1
+1.7.1.1
 
