@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab2GXC1x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 22:27:53 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44270 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab2GXC1v (ORCPT
+	id S1755238Ab2GXC3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 22:29:12 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:25897
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755111Ab2GXC3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 22:27:51 -0400
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com> <500CDE35.6000009@windriver.com>
-User-Agent: SkitMail for Android
-In-Reply-To: <500CDE35.6000009@windriver.com>
+	Mon, 23 Jul 2012 22:29:11 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Tue, 24 Jul 2012 10:30:44 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: <linuxppc-dev@lists.ozlabs.org>, <galak@kernel.crashing.org>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Subject: Re: [PATCH] mpc85xx_defconfig: add IDE support for MPC85xxCDS
+Message-ID: <20120724023044.GA30275@localhost.localdomain>
+References: <1342788325-27609-1-git-send-email-chenhui.zhao@freescale.com>
+ <20120720150900.082afc7c@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK when bundling
-From: Vlad Yasevich <vyasevich@gmail.com>
-Date: Mon, 23 Jul 2012 22:27:47 -0400
-To: xufeng zhang <xufeng.zhang@windriver.com>, sri@us.ibm.com,
-        davem@davemloft.net
-CC: xufengzhang.main@gmail.com, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120720150900.082afc7c@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xufeng zhang <xufeng.zhang@windriver.com> wrote:
+On Fri, Jul 20, 2012 at 03:09:00PM +0100, Alan Cox wrote:
+> On Fri, 20 Jul 2012 20:45:25 +0800
+> Zhao Chenhui <chenhui.zhao@freescale.com> wrote:
+> 
+> > Add IDE support for MPC85xxCDS.
+> > 
+> > Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> > ---
+> >  arch/powerpc/configs/mpc85xx_defconfig |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/powerpc/configs/mpc85xx_defconfig b/arch/powerpc/configs/mpc85xx_defconfig
+> > index 03ee911..45eda33 100644
+> > --- a/arch/powerpc/configs/mpc85xx_defconfig
+> > +++ b/arch/powerpc/configs/mpc85xx_defconfig
+> > @@ -105,6 +105,8 @@ CONFIG_BLK_DEV_RAM=y
+> >  CONFIG_BLK_DEV_RAM_SIZE=131072
+> >  CONFIG_MISC_DEVICES=y
+> >  CONFIG_EEPROM_LEGACY=y
+> > +CONFIG_IDE=y
+> > +CONFIG_BLK_DEV_VIA82CXXX=y
+> 
+> CONFIG_IDE is obsolete we shouldn't be adding it to anything as it will
+> eventually go away. Please use the ATA drivers.
+> 
 
->On 07/19/2012 01:57 PM, xufengzhang.main@gmail.com wrote:
->> When "Invalid Stream Identifier" ERROR happens after process the
->> received DATA chunks, this ERROR chunk is enqueued into outqueue
->> before SACK chunk, so when bundling ERROR chunk with SACK chunk,
->> the ERROR chunk is always placed first in the packet because of
->> the chunk's position in the outqueue.
->> This violates sctp specification:
->>      RFC 4960 6.5. Stream Identifier and Stream Sequence Number
->>      ...The endpoint may bundle the ERROR chunk in the same
->>      packet as the SACK as long as the ERROR follows the SACK.
->> So we must place SACK first when bundling "Invalid Stream Identifier"
->> ERROR and SACK in one packet.
->> Although we can do that by enqueue SACK chunk into outqueue before
->> ERROR chunk, it will violate the side-effect interpreter processing.
->> It's easy to do this job when dequeue chunks from the outqueue,
->> by this way, we introduce a flag 'has_isi_err' which indicate
->> whether or not the "Invalid Stream Identifier" ERROR happens.
->>
->> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
->> ---
->>   include/net/sctp/structs.h |    2 ++
->>   net/sctp/output.c          |   26 ++++++++++++++++++++++++++
->>   2 files changed, 28 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
->> index 88949a9..5adf4de 100644
->> --- a/include/net/sctp/structs.h
->> +++ b/include/net/sctp/structs.h
->> @@ -842,6 +842,8 @@ struct sctp_packet {
->>   	    has_sack:1,		/* This packet contains a SACK chunk. */
->>   	    has_auth:1,		/* This packet contains an AUTH chunk */
->>   	    has_data:1,		/* This packet contains at least 1 DATA chunk */
->> +	    has_isi_err:1,	/* This packet contains a "Invalid Stream
->> +				 * Identifier" ERROR chunk */
->>   	    ipfragok:1,		/* So let ip fragment this packet */
->>   	    malloced:1;		/* Is it malloced? */
->>   };
->> diff --git a/net/sctp/output.c b/net/sctp/output.c
->> index 817174e..77fb1ae 100644
->> --- a/net/sctp/output.c
->> +++ b/net/sctp/output.c
->> @@ -79,6 +79,7 @@ static void sctp_packet_reset(struct sctp_packet
->*packet)
->>   	packet->has_sack = 0;
->>   	packet->has_data = 0;
->>   	packet->has_auth = 0;
->> +	packet->has_isi_err = 0;
->>   	packet->ipfragok = 0;
->>   	packet->auth = NULL;
->>   }
->> @@ -267,6 +268,7 @@ static sctp_xmit_t sctp_packet_bundle_sack(struct
->sctp_packet *pkt,
->>   sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
->>   				     struct sctp_chunk *chunk)
->>   {
->> +	struct sctp_chunk *lchunk;
->>   	sctp_xmit_t retval = SCTP_XMIT_OK;
->>   	__u16 chunk_len = WORD_ROUND(ntohs(chunk->chunk_hdr->length));
->>
->> @@ -316,7 +318,31 @@ sctp_xmit_t sctp_packet_append_chunk(struct
->sctp_packet *packet,
->>   		packet->has_cookie_echo = 1;
->>   		break;
->>
->> +	    case SCTP_CID_ERROR:
->> +		if (chunk->subh.err_hdr->cause&  SCTP_ERROR_INV_STRM)
->> +			packet->has_isi_err = 1;
->> +		break;
->> +
->>   	    case SCTP_CID_SACK:
->> +		/* RFC 4960
->> +		 * 6.5 Stream Identifier and Stream Sequence Number
->> +		 * The endpoint may bundle the ERROR chunk in the same
->> +		 * packet as the SACK as long as the ERROR follows the SACK.
->> +		 */
->> +		if (packet->has_isi_err) {
->> +			if (list_is_singular(&packet->chunk_list))
->> +				list_add(&chunk->list,&packet->chunk_list);
->> +			else {
->> +				lchunk = list_first_entry(&packet->chunk_list,
->> +						struct sctp_chunk, list);
->> +				list_add(&chunk->list,&lchunk->list);
->> +			}
->>    
->And I should clarify the above judgment code.
->AFAIK, there should be two cases for the bundling when invalid stream 
->identifier error happens:
->1). COOKIE_ACK ERROR SACK
->2). ERROR SACK
->So I need to deal with the two cases differently.
->
+Thanks. I will replace it with the ATA driver.
 
-Sorry but I just don't buy that the above are the only 2 cases.  What if there are addip chunks as well?  What if there are some other extensions also.  This code has to be generic enough to handle any condition.
+-Chenhui
 
-- vlad
-
->
->Thanks,
->Xufeng Zhang
->> +			packet->size += chunk_len;
->> +			chunk->transport = packet->transport;
->> +			packet->has_sack = 1;
->> +			goto finish;
->> +		}
->> +
->>   		packet->has_sack = 1;
->>   		break;
->>
->>    
-
-
--- 
-Sent from my Android phone with SkitMail. Please excuse my brevity.
