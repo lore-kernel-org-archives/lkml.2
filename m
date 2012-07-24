@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab2GXC3e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 22:29:34 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:52983 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751321Ab2GXC3c (ORCPT
+	id S1753200Ab2GXCiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 22:38:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36582 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752879Ab2GXCiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 22:29:32 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+XUvgUcYmXuk8fk0oGUUGgEHpPIpMqVl+39zmhnK
-	NoUYKVMG0rxsDP
-Message-ID: <1343096969.7412.21.camel@marge.simpson.net>
-Subject: Re: [MMTests] Sysbench read-only on ext3
-From: Mike Galbraith <efault@gmx.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Tue, 24 Jul 2012 04:29:29 +0200
-In-Reply-To: <20120723211334.GA9222@suse.de>
-References: <20120620113252.GE4011@suse.de> <20120629111932.GA14154@suse.de>
-	 <20120723211334.GA9222@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Jul 2012 22:38:02 -0400
+Message-ID: <1343097463.5132.89.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 00/11] 3.2-stable: Fix for leapsecond caused
+ hrtimer/futex issue
+From: Ben Hutchings <ben@decadent.org.uk>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>,
+        stable@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Jul 2012 03:37:43 +0100
+In-Reply-To: <500DAB3F.30606@us.ibm.com>
+References: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
+	 <50050FD9.3070403@us.ibm.com> <1342730535@msgid.manchmal.in-ulm.de>
+	 <500DAB3F.30606@us.ibm.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-9KcT/wAH+sVEHV1OkKJe"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-23 at 22:13 +0100, Mel Gorman wrote:
 
-> The backing database was postgres.
+--=-9KcT/wAH+sVEHV1OkKJe
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-FWIW, that wouldn't have been my choice.  I don't know if it still does,
-but it used to use userland spinlocks to achieve scalability.  Turning
-your CPUs into space heaters to combat concurrency issues makes a pretty
-flat graph, but probably doesn't test kernels as well as something that
-did not do that.
+On Mon, 2012-07-23 at 12:51 -0700, John Stultz wrote:
+> On 07/19/2012 01:48 PM, Christoph Biedl wrote:
+> > John Stultz wrote...
+> >
+> >> Attached is the test case I used to reproduce and test the solution
+> >> to the hard-hang deadlock.
+> > I was wondering whether anybody managed to crash a virtualbox guest
+> > using your program. No avail, using version 4.1.18 on the host and the
+> > guest kernel running several 3.0.x (x < 38) kernels on both x32 and
+> > x64, the guest utilies were stopped. Rather a fun fact I guess but I
+> > wanted to let you know.
+>=20
+> I've been able to crash a kvm guest with an unpatched kernel with my=20
+> test.  The issue requires that the adding of the hrtimer causes the=20
+> clockevent to be reprogrammed. This usually happens if there's no timers=
+=20
+> that expire sooner then the leapsecond timer. So if there are drivers=20
+> that set frequent timers, or set timers right before the leapsecond, it=
+=20
+> may be difficult to trigger this issue.
+>=20
+> Lowering HZ or adding more vcpus might help if you really want to be=20
+> able to trigger the issue.
+[...]
 
--Mike
+Your test program also made Linux 3.2.23 (or it may have been .21)
+lock-up for me in a KVM guest, while 3.2.24-rc1 seemed immune.
 
+Ben.
 
+--=20
+Ben Hutchings
+If more than one person is responsible for a bug, no one is at fault.
+
+--=-9KcT/wAH+sVEHV1OkKJe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUA4Kd+e/yOyVhhEJAQpsrBAAzefcbUOWvXhMv8OrJICWW3pcpZoxb57k
+c5l8h6XMyFBfOu6/CPu27aMaezjD87uZHG+BT+L05XkaDeKxtH5ybPI+f1QBUBNH
+1R05cye3wySBS4qn2tyqDLOXswOz/rPOnwk4V7Bfu45WiRCvPSMrKeKARUwQBE+8
+x9b/kzQjAMxOlH9w4N+o+OpgW1nBaWoGklTOAUIX8mamZNrBwxTw7PNXqMy52hYh
+phOXnfm3CpJ4jAW66o5wWqU/tY413QIitdxJl46n/28ImkYGLEWtP2/NyaDZx1/T
+mJFgF2IPBrJM5xK6FNX1ue8j9cffvtCGmfweaT0Mb/luHq+fRN8NzhpkoZx6FEuZ
+GWzsHAv9Byukjp2uKYmkBFFA0VLgEhiF4czsD/m1FIFrcGIf31MN/X2tSEUje1at
+92G+HsUG7WNSbuEKrjrqfAagdfg3Y34XWEMaeQunD5db7F76fJqF2SiBHZcJCEMm
+elJekckrHUs75bhEug0TUBuEBw1TDVL9rHXT6GMW+A96enfF924uTmm9lqCFUoBk
+U73sJnD9QzAI0N4G/ya15/cGQZsLNzjppOwaPVtDHnxja9X2D0xPCjxu6j/aKuS3
+GzY7d1DjGo2bXUzSgLwmx0SISyFY9/9VeX+QUqGFovtfnt4SLYwExxHK/CSw84CB
+9/nNWTHieT8=
+=Q0Z6
+-----END PGP SIGNATURE-----
+
+--=-9KcT/wAH+sVEHV1OkKJe--
