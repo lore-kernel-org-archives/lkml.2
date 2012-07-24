@@ -1,55 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2GXLTY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 07:19:24 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45796 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab2GXLTX convert rfc822-to-8bit (ORCPT
+	id S1753447Ab2GXLT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 07:19:57 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:60980 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab2GXLT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 07:19:23 -0400
-Date: Tue, 24 Jul 2012 12:23:09 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: tingwei liu <tingw.liu@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dhillf@gmail.com
-Subject: Re: Suse 11 SP1 kernel panic on HP hardware
-Message-ID: <20120724122309.66312b08@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+qZnSSazFWLKq5ao51JX=H-NCbwLD=6ypGXOeqQF72s7ZbTVA@mail.gmail.com>
-References: <CA+qZnSRNAAN6erat3Umuk6U9VYuc5SiQYK6PL8bHYAOcQ+SnAw@mail.gmail.com>
-	<CA+qZnSS2N4QZ13qATNFCbhJ6BRy4ZfpEBur45OUkuggPxYe4qA@mail.gmail.com>
-	<20120724115300.070d0ef7@pyramind.ukuu.org.uk>
-	<CA+qZnSSazFWLKq5ao51JX=H-NCbwLD=6ypGXOeqQF72s7ZbTVA@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 24 Jul 2012 07:19:56 -0400
+X-Greylist: delayed 31365 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Jul 2012 07:19:56 EDT
+X-AuditID: b753bd60-940f3ba000004f2e-98-500e84d9ddce
+X-AuditID: b753bd60-940f3ba000004f2e-98-500e84d9ddce
+Message-ID: <500E84D7.7060103@hitachi.com>
+Date: Tue, 24 Jul 2012 20:19:51 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+MIME-Version: 1.0
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
+        Borislav Petkov <bp@amd64.org>,
+        virtualization@lists.linux-foundation.org,
+        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Shah <amit.shah@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>
+Subject: Re: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp> <CAJSP0QW_2JJ0nf=NW0y30VSid2HSxaqb=mRGV8CTtAKj0ujDWw@mail.gmail.com> <500E810A.4030309@hitachi.com>
+In-Reply-To: <500E810A.4030309@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jul 2012 18:56:30 +0800
-tingwei liu <tingw.liu@gmail.com> wrote:
+Hi Stefan,
 
-> On Tue, Jul 24, 2012 at 6:53 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > On Tue, 24 Jul 2012 18:39:20 +0800
-> > tingwei liu <tingw.liu@gmail.com> wrote:
-> >
-> >> Suse 11 SP1 kernel panic。
-> >>
-> >> I can't debug it without debuginfo. Who can give me a link of sels
-> >> 2.6.32.12-0.7.default.debug or give some advise.
-> >
-> > For distribution kernels (which tend to contain lots of other patches)
-> > it is best to talk to your distribution support as a starter and/or their
-> > forums.
-> >
-> I have report bug on suse website, but I haven't got any response until now!
-> Can you give some advice?
-> I thought this maybe a kernel bug.
+Thank you for commenting on our patch set.
 
-It may well be a bug in the SuSE provided kernel. In which case you need
-to deal with SuSE or the SuSE forums. If you can reproduce it with a
-modern upstream kernel (eg 3.2 or 3.4) rather than a SuSE one then we
-might have an interest.
+(2012/07/24 20:03), Masami Hiramatsu wrote:
+> (2012/07/24 19:02), Stefan Hajnoczi wrote:
+>> On Tue, Jul 24, 2012 at 3:36 AM, Yoshihiro YUNOMAE
+>> <yoshihiro.yunomae.ez@hitachi.com> wrote:
+>>> The performance of each method is compared as follows:
+>>>   [1] Native
+>>>       - only recording trace data to ring-buffer on a guest
+>>>   [2] Virtio-trace
+>>>       - running a trace agent on a guest
+>>>       - a reader on a host opens FIFO using cat command
+>>>   [3] IVRing
+>>>       - A SystemTap script in a guest records trace data to IVRing.
+>>>         -- probe points are same as ftrace.
+>>>   [4] Virtio-serial(normal)
+>>>       - A reader(using cat) on a guest output trace data to a host using
+>>>         standard output via virtio-serial.
+>>
+>> The first time I read this I thought you are adding a new virtio-trace
+>> device.  But it looks like this series really add splice support to
+>> virtio-console and that yields a big performance improvement when
+>> sending trace_pipe_raw.
+>
+> Yes, sorry for the confusion. Actually this is an enhancement of
+> virtio-serial. I'm working with Yoshihiro on this feature.
+>
+>> Guest ftrace is useful and I like this.  Have you thought about
+>> controlling ftrace from the host?  Perhaps a command could be added to
+>> the QEMU guest agent which basically invokes trace-cmd/perf.
+>
+> As you can see, guest trace-agent can be controlled via a
+> control channel. In our scenario, host tools can control that
+> instead of guest one.
+>
+> We are considering that exporting the tracing part of guest's
+> debugfs to host via another virtio-serial channel by using
+> 9pfs, so that the host tools can refer that.
+>
+> (In this scenario, guest trace-agent will also provide 9pfs server.
+> Since it means that the agent can handle writing a special file,
+> trace-agent can be controlled via the special file on exported
+> debugfs.)
+>
+> Of course, this also requires modifying trace-cmd/perf to accept
+> some options like guest-debugfs mount point, guest's serial
+> channel pipe (or unix socket?), etc. However, it will be a small
+> change.
+>
+> Thank you,
+>
 
-Alan
+ >> Are you using text formatted ftrace?
+No, currently using raw format, but　we'd like to reformat it in text.
+
+Thank you,
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
