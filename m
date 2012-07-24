@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab2GXQSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:18:22 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39718
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755022Ab2GXQRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:17:21 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        olaf@aepfle.de, apw@canonical.com, netdev@vger.kernel.org,
-        ben@decadent.org.uk
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 14/17] Tools: hv: Rename the function kvp_get_ip_address()
-Date: Tue, 24 Jul 2012 09:01:38 -0700
-Message-Id: <1343145701-3691-14-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1343145701-3691-1-git-send-email-kys@microsoft.com>
-References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
- <1343145701-3691-1-git-send-email-kys@microsoft.com>
+	id S1755693Ab2GXQY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:24:26 -0400
+Received: from fieldses.org ([174.143.236.118]:43184 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755106Ab2GXQYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 12:24:24 -0400
+Date: Tue, 24 Jul 2012 12:24:20 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: SteveD@redhat.com, Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vivek Trivedi <vtrivedi018@gmail.com>
+Subject: Re: [PATCH] nfs-util: Add cache_flush in mountd UMNT procedure.
+Message-ID: <20120724162420.GG8570@fieldses.org>
+References: <1341717459-7297-1-git-send-email-linkinjeon@gmail.com>
+ <20120710145937.GA1947@fieldses.org>
+ <CAKYAXd97ir=tvxWTC4eVmrrXBEpK=XCX3-e8XUjCPy16eHoibQ@mail.gmail.com>
+ <20120711140944.GB11432@fieldses.org>
+ <CAKYAXd__BLFPOw=+tt=cqZgyM45y5mSOTamVaFTU26BNSNa=2A@mail.gmail.com>
+ <CAKYAXd9KLxDqXSqgk7Y1rNv9cw-r+PHPSenQCnkRh9_0_6HmAQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd9KLxDqXSqgk7Y1rNv9cw-r+PHPSenQCnkRh9_0_6HmAQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the function kvp_get_ip_address() to better reflect the functionality
-being implemented.
+On Thu, Jul 12, 2012 at 07:43:49AM +0900, Namjae Jeon wrote:
+> 2012/7/12, Namjae Jeon <linkinjeon@gmail.com>:
+> > 2012/7/11, J. Bruce Fields <bfields@fieldses.org>:
+> >> On Wed, Jul 11, 2012 at 01:10:53PM +0900, Namjae Jeon wrote:
+> >>> 2012/7/10, J. Bruce Fields <bfields@fieldses.org>:
+> >>> > On Sat, Jul 07, 2012 at 11:17:39PM -0400, Namjae Jeon wrote:
+> >>> >> For removing storage device - user needs to safely un-mount the
+> >>> >> device
+> >>> >> and then eject. But if 'EBUSY' occurs in umount then it will create
+> >>> >> confusion for the user as it will mean some I/O is in progress - and
+> >>> >> won't allow user to safely ejecting device.
+> >>> >
+> >>> Hi James.
+> >>> > The one drawback is that recovering from the cache flushes might be a
+> >>> > little expensive if you have a lot of exports in use.
+> >>> Good point. I will look for more there is the method flush only mount
+> >>> entry.
+> >>
+> >> I don't think there's a good way to flush only one entry.
+> >>
+> >> Also, this isn't going to help for NFSv4 since a v4 client won't do an
+> >> unmount call.
+> > Okay.
+> >>
+> >>> > I'm curious, since you said this was for a usb disk: are users
+> >>> > expected
+> >>> > to just unplug it (in which case--is it read only?) or do they have
+> >>> > some
+> >>> > way of unmounting before they pull the plug?
+> >>> Users expected to unplug it on both read only and read/write.
+> >>> And there is no way that system be prepared to know about the
+> >>> intelligence when the user is going to unplug.
+> >>> if the user really want to detach the device safely. There is an
+> >>> option like the desktop PC - where, we can say - umount/eject the
+> >>> device. There is a proper user interface for safe removal.
+> >>> but they can not unplug safely if usb device is mounted with nfs
+> >>> because of this issue.
+> >>
+> >> Ideal might be to get some way to notify nfsd when the device
+> >> diseappears or the filesystem wants to unmount.  I don't know how to do
+> >> that.
+> > Okay. I will look for good solution for this issue.
+> > Thanks.
+> Hi James.
+> I have a question.
+> If we found the method to notify nfs when unplugging device,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- tools/hv/hv_kvp_daemon.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+What's that?
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 090d6a2..87cfc64 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -773,7 +773,7 @@ static int kvp_process_ip_address(void *addrp,
- }
- 
- static int
--kvp_get_ip_address(int family, char *if_name, int op,
-+kvp_get_ip_info(int family, char *if_name, int op,
- 		 void  *out_buffer, int length)
- {
- 	struct ifaddrs *ifap;
-@@ -1479,12 +1479,12 @@ int main(void)
- 			strcpy(key_value, lic_version);
- 			break;
- 		case NetworkAddressIPv4:
--			kvp_get_ip_address(AF_INET, NULL, KVP_OP_ENUMERATE,
-+			kvp_get_ip_info(AF_INET, NULL, KVP_OP_ENUMERATE,
- 				key_value, HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
- 			strcpy(key_name, "NetworkAddressIPv4");
- 			break;
- 		case NetworkAddressIPv6:
--			kvp_get_ip_address(AF_INET6, NULL, KVP_OP_ENUMERATE,
-+			kvp_get_ip_info(AF_INET6, NULL, KVP_OP_ENUMERATE,
- 				key_value, HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
- 			strcpy(key_name, "NetworkAddressIPv6");
- 			break;
--- 
-1.7.4.1
+> Can nfsd
+> flush only entry of usb mount ?
 
+Hm, I don't think there's anything that does that now.  But I think if
+you look it up and set the cache item's expiry_time to the current unix
+time in seconds, that'd be at least a start.
+
+Come to think of it you should actually be able to do that from
+userspace if you want: just write a negative cache entry for that
+export.
+
+However you do this there may still be some brief delay while some
+thread finishes processing an rpc using the entry; I don't know what to
+do about that.  It's unlikely in your case (where clients have unmounted
+first).
+
+--b.
