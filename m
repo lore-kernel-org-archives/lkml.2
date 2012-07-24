@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab2GXXzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 19:55:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39772 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab2GXXzF (ORCPT
+	id S1753920Ab2GXX5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 19:57:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64750 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab2GXX5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 19:55:05 -0400
-Date: Tue, 24 Jul 2012 16:55:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Heiko Schocher <hs@denx.de>
-Cc: linux-arm-kernel@lists.infradead.org, Igor Lisitsin <igor@emcraft.com>,
-        Wolfgang Denk <wd@denx.de>, Grant Erickson <gerickson@nuovations.com>,
-        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC] kernel, logbuf: add support for external log buffer
-Message-Id: <20120724165502.17de8e13.akpm@linux-foundation.org>
-In-Reply-To: <1339395188-10166-1-git-send-email-hs@denx.de>
-References: <1339395188-10166-1-git-send-email-hs@denx.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Jul 2012 19:57:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANKRQni4SU=876iPtHJ2WC3Ub7QProJqHZ53Ru-n-njsdg8D5A@mail.gmail.com>
+References: <1342000670-1005-1-git-send-email-tomoya.rohm@gmail.com>
+	<201207111045.03275.arnd@arndb.de>
+	<CANKRQni4SU=876iPtHJ2WC3Ub7QProJqHZ53Ru-n-njsdg8D5A@mail.gmail.com>
+Date: Wed, 25 Jul 2012 08:57:41 +0900
+Message-ID: <CANKRQnhcFr+e1H5p==UUTWfYb2nzdt8aVnOn2NvmYAXFiDxqew@mail.gmail.com>
+Subject: Re: [PATCH] misc/pch_phub: Enable UART clock setting by module parameter
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012 08:13:08 +0200
-Heiko Schocher <hs@denx.de> wrote:
+Hi Arnd,
 
-> This merges support for the previously DENX-only kernel
-> feature of specifying an alternative, "external" buffer
-> for kernel printk messages and their associated metadata.
-> This patch is based on DENX-only kernel commit:
-> 
-> commit 212f61c7fd3b952a81d1459dd32a86a32ddfd4ce
-> Author: Igor Lisitsin <igor@emcraft.com>
-> Date:   Wed Apr 18 14:55:19 2007 +0400
-> 
-> Add support for external log buffer.
-> 
-> Add support for external log buffer, for example passed by U-Boot,
-> which may already contain messages (from the boot loader and/or POST).
-> 
-> Signed-off-by: Igor Lisitsin <igor@emcraft.com>
-> 
-> see:
-> http://git.denx.de/?p=linux-denx.git;a=commit;h=212f61c7fd3b952a81d1459dd32a86a32ddfd4ce
-> 
-> When this option is enabled, an architecture- or machine-specific log
-> buffer is used for all printk messages. This allows entities such as
-> boot loaders (e.g. U-Boot) to place printk-compatible messages into
-> this buffer and for the kernel to coalesce them with its normal
-> messages. This patch support this feature for arch/arm based
-> boards.
+Let me know this patch status.
+If you have still any concern, let me know.
 
-Why was it done this way, rather than adding a hook to permit
-architectures to insert data into the head of the existing kernel
-buffer?
+BTW, now I remember, Did you take part in LinuxConJapan last month ?
+I also took part in this event as volunteer staff.
+Additionally, I took charge of your session as time keeper.
 
-The latter approach would be quite simple, wouldn't it?  A single line
-added to printk.c which calls an arch function which locates the boot
-loader buffer and prints it, with printk.  And this is more flexible -
-for example, there might be more than one external message stream
-which we wish to capture.
+Thanks in advance.
+-- 
+ROHM Co., Ltd.
+tomoya
 
+On Thu, Jul 12, 2012 at 9:54 AM, Tomoya MORINAGA <tomoya.rohm@gmail.com> wrote:
+> On Wed, Jul 11, 2012 at 7:45 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> This looks like a rather nonscalable solution if you get to systems
+>> with lots of clocks.
+>
+> This "clock" is internal clock, not external clock.
+> This PacketHub provides clock to the UART module
+> Both the PacketHub and the UART is in 1 chip LSI which is EG20T.
+> So, selectable clock 1.8432MHz or 48MHz or 64MHz or 192MHz are enough.
+>
+>> Given that you are doing it for the uart clock, shouldn't that be
+>> set from the uart driver using an ioctl like other serial ports do?
+> PacketHub is not serial driver but special driver. So, ioctl doesn't
+> suit PacketHub.
+>
+>> What would be the use case for an end user to override the module
+>> parameter? Is it about platform specific settings or policy?
+> I show use case.
+> Currently, UART works with 1.8432MHz.
+> Using this clock, as you know, maximum speed is 115k.
+> A user wants to use 4M speed, the user need to modify pch_phun.c by hand.
+> If this patch is applied, a user can specify uart_clock via a modules
+> parameter and use 4M speed.
+>
+> My reference driver for this patch is drivers/tty/serial/pch_uart.c
+> This driver can set uart_clock via a module parameter(user_uartclk).
+>
+> Thanks.
+> --
+> ROHM Co., Ltd.
+> tomoya
