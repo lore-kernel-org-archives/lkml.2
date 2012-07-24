@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab2GXAWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 20:22:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39655 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab2GXAWF (ORCPT
+	id S1754989Ab2GXAXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 20:23:23 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57367 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab2GXAXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 20:22:05 -0400
-From: "Du, Changbin" <changbin.du@gmail.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ben@simtec.co.uk,
-        "Du, Changbin" <changbin.du@gmail.com>
-Subject: [Resend PATCH v2] usb: gadget: s3c-hsotg: fix core reset timeout failure
-Date: Tue, 24 Jul 2012 08:19:25 +0800
-Message-Id: <1343089166-5657-1-git-send-email-changbin.du@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20120723104145.GR8265@arwen.pp.htv.fi>
-References: <20120723104145.GR8265@arwen.pp.htv.fi>
+	Mon, 23 Jul 2012 20:23:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120722181956.GA4557@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+ <1342799346.5138.7.camel@lorien2> <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
+ <20120722181956.GA4557@opensource.wolfsonmicro.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Tue, 24 Jul 2012 08:23:00 +0800
+X-Google-Sender-Auth: P-YrZA_RYbc3cDBYzUoWpAb2BYc
+Message-ID: <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
+Subject: Re: [PATCH v2] leds: add new lp8788 led driver
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Du, Changbin" <changbin.du@gmail.com>
+On Mon, Jul 23, 2012 at 2:19 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Sat, Jul 21, 2012 at 02:48:49AM +0800, Bryan Wu wrote:
+>
+>> Actually cancel_work_sync() is quite similar to flush_work_sync()
+>> here. For the timer thing, in fact it is NULL when cancel_work_sync()
+>> call __cancel_work_timer().
+>
+>> And Mark, do you have any advice about the flush_work_sync() and
+>> cancel_work_sync(). I saw you use flush in the
+>> drivers/leds/leds-wm8350.c.
+>
+> If the work is flushed then the state that userspace thought was set
+> when the driver is removed will actually be set before the driver is
+> removed.  This is fairly minor but might be useful.
 
-The timeout values were 1000 and timeout issue occured many times on my
-s3c6410 Soc based board (mostly when booting whith USB cable not
-connected). This patch increase the values to 10000 to guarantee the
-success of reset.
+So what's kind of state you mentioned here that is cared by user
+space. I find these 2 functions are quite confused for use right now.
+Literally, canceling normally will remove pending work item and wait
+for running work item to finish. flushing will wait for both pending
+and running work item to finish.
 
-Having set timeout to 10000, I printed the remained timeout values
-which could cause timeout issue before this change (tested several
-times).
-the first timeout value remained:
-	timeout = 8079
-	timeout = 8079
-	timeout = 8078
-	timeout = 8081
-the second timeout value remained:
-	timeout = 7940
-	timeout = 7945
-	timeout = 7940
-	timeout = 7938
-Seeing from above values, I think the value 10000 is big enough.
-
-Signed-off-by: Du, Changbin <changbin.du@gmail.com>
----
-Changes for v2:
-	Fixed wrapped line done by my mail client
-
----
- drivers/usb/gadget/s3c-hsotg.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index f4abb0e..f3e2234 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -2215,7 +2215,7 @@ static int s3c_hsotg_corereset(struct s3c_hsotg *hsotg)
- 	/* issue soft reset */
- 	writel(GRSTCTL_CSftRst, hsotg->regs + GRSTCTL);
- 
--	timeout = 1000;
-+	timeout = 10000;
- 	do {
- 		grstctl = readl(hsotg->regs + GRSTCTL);
- 	} while ((grstctl & GRSTCTL_CSftRst) && timeout-- > 0);
-@@ -2225,7 +2225,7 @@ static int s3c_hsotg_corereset(struct s3c_hsotg *hsotg)
- 		return -EINVAL;
- 	}
- 
--	timeout = 1000;
-+	timeout = 10000;
- 
- 	while (1) {
- 		u32 grstctl = readl(hsotg->regs + GRSTCTL);
+Thanks,
 -- 
-1.7.9.5
-
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
