@@ -1,90 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2GXT4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 15:56:00 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45894 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab2GXTz7 (ORCPT
+	id S1755090Ab2GXT40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:56:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50686 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab2GXT4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 15:55:59 -0400
+	Tue, 24 Jul 2012 15:56:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC][PATCH 0/14] PM / shmobile: Pass power domain information via DT (was: Re: [RFD] PM: Device tree representation of power domains)
+Date: Tue, 24 Jul 2012 19:56:06 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>
+References: <201207032302.17805.rjw@sisk.pl> <201207241520.20674.arnd@arndb.de> <201207242134.00769.rjw@sisk.pl>
+In-Reply-To: <201207242134.00769.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <20120724194301.GG10534@zod.bos.redhat.com>
-References: <20120724181209.GA10534@zod.bos.redhat.com> <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com>
- <20120724182409.GB10534@zod.bos.redhat.com> <20120724183230.GC10534@zod.bos.redhat.com>
- <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com>
- <20120724190302.GE10534@zod.bos.redhat.com> <CA+55aFyn-yMUMdcY8jp65eeoGm3RPzy9p+St35-HGE_xXiVJag@mail.gmail.com>
- <500EF43C.3060200@redhat.com> <CA+55aFwvidWyBK5+U_4r5uibSkk4A-1jbnY-i9BtRgbx=Odo7w@mail.gmail.com>
- <500EF6EF.4080708@redhat.com> <20120724194301.GG10534@zod.bos.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Jul 2012 12:55:38 -0700
-X-Google-Sender-Auth: u3hs_q2tvUZ-a2przPUI1ad8-jU
-Message-ID: <CA+55aFygfHj3-PLPj2RZ6pg==7sf3=zKDATW3rVaE9jSOxCd_g@mail.gmail.com>
-Subject: Re: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc definition
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Jeff Law <law@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207241956.06986.arnd@arndb.de>
+X-Provags-ID: V02:K0:fHoPS0v3S/+9FJRhgmF3IEJonLDzF5v1YfFGXqHGoLF
+ Pf1hdN1z9wy1jSggJx94jv/aRL6dP6yUU5Lv8ubWF0wjzz2SQy
+ zoDwvUfmPEIl/pUTbb3R9y9Sd9rsjk4Q8ypFhBPLLYmQ2MsKAn
+ 8kFXEX7jKvSlPxwDtM8AsFdhvHbHiZi695G/6NOhSN1G7ztBXl
+ NZIR/yPVQGjvh+WOqbM51m5/MikiBrtD11PTxoyfojJf4YnRY+
+ SrfvEN+cmmfxY+Wv8ZJIPWbDeLm0wOydRVd72aKiIA+D1umgLd
+ CWT1MVmxUkXwF7wcP82MK/VzHBKRsjaxTkbH+AwvrF/DwpBcOV
+ ljoig7MoCaDpdKukDqxY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 12:43 PM, Josh Boyer <jwboyer@redhat.com> wrote:
->+  ({ long int __d = (d);                                                   \
->      (__builtin_constant_p (__d)                                           \
->-      ? (__d >= __FD_SETSIZE                                               \
->-        ? __fdelt_warn (__d) : (__d / __NFDBITS))                          \
->+      ? (0 <= __d && __d < __FD_SETSIZE                                            \
->+        ? (__d / __NFDBITS)                                                \
->+        : __fdelt_warn (__d))                                              \
->       : __fdelt_chk (__d)); })
+On Tuesday 24 July 2012, Rafael J. Wysocki wrote:
+> On Tuesday, July 24, 2012, Arnd Bergmann wrote:
+> > On Saturday 21 July 2012, Rafael J. Wysocki wrote:
 
-Ugh. This depends intimately on gcc doing the whole value range
-propagation thing, and probably generates horrible code when not
-optimizing, but whatever. It's irrelevant.
+> > 
+> > Sorry for taking so long to reply. I am really not that familiar with the
+> > power domain requirements, but I do have two comments on your approach:
+> > 
+> > * I think when we want to add a generic concept to the device tree such
+> >   as power domains, we should always make it specified in a generic way.
+> 
+> Do we really want that?  I'm a bit skeptical, because apparently nobody
+> cares, as the (zero) response to this patchset evidently indicates and
+> since nobody cares, it's probably better not to add such "generic" things
+> just yet.
 
-I vote we get rid of the crap. We'll force-redefine __FD_SETSIZE,
-because that's the one we really care about. And then just use our
-internal names for anything else.
+Well, the trouble with bindings is that they are much harder to change
+later, at least in incompatible ways. 
 
-IOW, just something like this (whitespace-damaged on purpose, because
-it won't even compile as-is: we'll also need to replace the few uses
-of __NFDBITS in the kernel with BITS_PER_LONG).
+> >   You have used the "renesas,pmdomain" attribute, which is specific to
+> >   one vendor and requires platform specific code to read it.
+> >   Is there any reason not to put the code into the generic
+> >   drivers/base/power/domain.c file (or near it) and make a binding that
+> >   works for everyone?
+> 
+> Yes, there is.  A couple of them in fact.
+> 
+> First off, power domains will always need platform-specific code to support
+> them, no matter what.  The problem is that they tend to require special
+> handling, even within the same SoC, let alone different SoCs, and that handling
+> has to be implemented in an SoC-specific way, because it has to know various
+> things about the platform (like what to write to what register(s) at what time
+> and so on).  Of course, that platform-specific code needs to know which
+> domain the given description corresponds to and there doesn't seem to be any
+> useful way to specify that through DTs.
 
-   diff --git a/include/linux/posix_types.h b/include/linux/posix_types.h
-  index f04c98cf44f3..8a79a5021dc1 100644
-  --- a/include/linux/posix_types.h
-  +++ b/include/linux/posix_types.h
-  @@ -15,26 +15,14 @@
-    */
+We have the same problem for a lot of other subsystems: clock, regulator,
+irq, gpio, pinctrl, dma, ...
 
-   /*
-  - * Those macros may have been defined in <gnu/types.h>. But we always
-  - * use the ones here.
-  + * This macro may have been defined in <gnu/types.h>. But we always
-  + * use the one here.
-    */
-  -#undef __NFDBITS
-  -#define __NFDBITS	(8 * sizeof(unsigned long))
-  -
-   #undef __FD_SETSIZE
-   #define __FD_SETSIZE	1024
+In each of these cases, we want a driver to be able to associate some
+property with a driver (or platform code) from another subsystem.
+We try to handle those using generic subsystem code that interprets
+regular property names.
 
-  -#undef __FDSET_LONGS
-  -#define __FDSET_LONGS	(__FD_SETSIZE/__NFDBITS)
-  -
-  -#undef __FDELT
-  -#define	__FDELT(d)	((d) / __NFDBITS)
-  -
-  -#undef __FDMASK
-  -#define	__FDMASK(d)	(1UL << ((d) % __NFDBITS))
-  -
-   typedef struct {
-  -	unsigned long fds_bits [__FDSET_LONGS];
-  +	unsigned long fds_bits [__FD_SETSIZE / (8*sizeof(long))];
-   } __kernel_fd_set;
+> Second, the generic code needed to support such a binding would have to be
+> quite complex and I don't see any advantage from adding it.
 
-   /* Type of a signal handler.  */
+The generic binding would only need to specify what the property
+looks like and how the possible values can be determined. We don't
+need to make that code generic right away but could wait until we
+have a couple of implementations before we pull out the common bits.
 
-Hmm?
+The important part to me is writing the binding in a way that allows
+us to do this.
 
-              Linus
+> 
+> > * Mark suggested two options (string and phandle), and (you guessed it),
+> 
+> To me, the Mark's suggestion was to follow the example of TI hwmods, which
+> I did.  In fact, the power domains on Renesas platforms are an analogous
+> concept, so in my opinion handling them in analogy with hwmods makes a lot of
+> sense.
+
+I had never seen the hwmod binding before and if I had I would have
+given them the same comments. I definitely don't think we should be
+using it as a good example for common code.
+
+> >   IMHO using phandle makes it much easier to do this in a generic way,
+> >   without having to document every possible string that this can be
+> >   set to in the binding document. Obviously the phandle requires having
+> >   a node in the device tree for each domain, but I think having that
+> >   node is actually an advantage because it lets you describe the
+> >   hierarchy of the domains there.
+> 
+> I don't quite see how it is better.  I could (and should in fact) represent
+> that hierarchy as an array of pairs of strings without adding any special
+> parsing code to the kernel (except for a simple routine walking that table
+> and calling pm_genpd_add_subdomain_names() for every pair).
+> 
+> The only disadvantage of the current approach I can see is that whoever
+> creates a dts for a board based on the given SoC has to know the names of the
+> power domains to use in there.  I don't think this is an overly burdensome
+> requirement.
+
+Well, it does mean that we need to maintain a separate binding document
+for each soc that has its own set of possible values.
+
+> The other way around, the platform code supposed to handle the power domains
+> would need a way to match DT nodes against the domains, which also would
+> require some string-based identification and that would have to be documented
+> as well.
+
+The part that matches the pm-domain device nodes can and should be
+specific to the platform implementing the pm-domain. We can easily
+do the same thing we did for regulators, where each regulator can
+be either identified through its "reg" property in cases where that
+makes sense or through a "regulator-compatible" property in cases
+where we need a string representation.
+
+	Arnd
