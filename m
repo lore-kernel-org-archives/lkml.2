@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2GXTnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 15:43:37 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63048 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271Ab2GXTng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 15:43:36 -0400
+	id S1754885Ab2GXTqM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 15:46:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29425 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753787Ab2GXTqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 15:46:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="176947874"
+Date: Tue, 24 Jul 2012 12:46:09 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Denis Turischev <denis@compulab.co.il>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/2] xhci: EHCI/XHCI ports switching on Intense-PC.
+Message-ID: <20120724194609.GA6681@xanatos>
+References: <5004454E.9030903@compulab.co.il>
+ <20120717045416.GJ7599@xanatos>
+ <50065E5A.2040103@compulab.co.il>
+ <20120718165916.GA30828@xanatos>
+ <500D3998.7010705@compulab.co.il>
+ <20120723174406.GG32758@xanatos>
+ <500E61E2.9080406@compulab.co.il>
 MIME-Version: 1.0
-In-Reply-To: <500EF6EF.4080708@redhat.com>
-References: <20120724181209.GA10534@zod.bos.redhat.com> <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com>
- <20120724182409.GB10534@zod.bos.redhat.com> <20120724183230.GC10534@zod.bos.redhat.com>
- <CA+55aFwFcWoH=QB5tKgVjWcUH3SLCDVNqJY-oXRYy7AWOJfLPA@mail.gmail.com>
- <20120724190302.GE10534@zod.bos.redhat.com> <CA+55aFyn-yMUMdcY8jp65eeoGm3RPzy9p+St35-HGE_xXiVJag@mail.gmail.com>
- <500EF43C.3060200@redhat.com> <CA+55aFwvidWyBK5+U_4r5uibSkk4A-1jbnY-i9BtRgbx=Odo7w@mail.gmail.com>
- <500EF6EF.4080708@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Jul 2012 12:43:14 -0700
-X-Google-Sender-Auth: 5-0UTjpScgPBWREDwqPRZSLQf6Y
-Message-ID: <CA+55aFzfQUYs3eo=O8BYBNPZB_ie5dAWSxCCcHWHNMeeozr7_g@mail.gmail.com>
-Subject: Re: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc definition
-To: Jeff Law <law@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500E61E2.9080406@compulab.co.il>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 12:26 PM, Jeff Law <law@redhat.com> wrote:
->
-> Right.  Josh's change is necessary to prevent warnings from folks
-> (incorrectly) using posix_types.h instead of select.h after the change in
-> that BZ was made.  That's why I originally stated that, arguably,
-> posix_types.h really should go away or just use the definitions provided by
-> glibc.
+On Tue, Jul 24, 2012 at 11:50:42AM +0300, Denis Turischev wrote:
+> On 07/23/2012 08:44 PM, Sarah Sharp wrote:
+> > Did you try disabling the wake on bits in the port status registers?  I
+> > would prefer that solution if it works.
+> No, I didn't. Why we need to disable wake on capabilities?
 
-I think we should likely keep __FD_SETSIZE, since that really is a
-valid kernel value (that the kernel actually uses). The rest looks
-*entirely* bogus.
+My theory was that the xHCI host controller was waking up the system
+because one of the wake on bits was set.  But you said that didn't help,
+so we'll just switch the ports over on shutdown.
 
-And the reason I emphasize the "entirely" is literally that the kernel
-headers don't even define the full __FD_SET/CLR/ISSET() functionality.
-We never use those inside the kernel itself, and we don't even
-*define* them. So it's not even useful to some non-glibc user, afaik,
-because the kernel only exports those really *odd* internal names. It
-really looks entirely like some remnant from long long long ago when
-the kernel headers actually used to have the whole functionality, but
-then the functionality was removed, and now only some building blocks
-are left - but not enough to really do anything useful with.
-
-Just enough to be annoying.
-
-                  Linus
+Sarah Sharp
