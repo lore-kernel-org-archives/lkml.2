@@ -1,39 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab2GXRzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 13:55:11 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51204 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab2GXRzJ (ORCPT
+	id S1755975Ab2GXR4o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 13:56:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50501 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173Ab2GXR4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 13:55:09 -0400
+	Tue, 24 Jul 2012 13:56:42 -0400
+Message-ID: <500EE1CD.6030701@ti.com>
+Date: Tue, 24 Jul 2012 13:56:29 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
- <CA+55aFzKu6xhTPmKPTg+p36Su0GkZgzGWpnvhpsFXJzhp=R16w@mail.gmail.com>
- <CACVXFVMeRQ-Fwk03uVg5LOH193PF+AyCoAAxmXDpqjeZXi7nxw@mail.gmail.com> <CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 24 Jul 2012 10:54:47 -0700
-X-Google-Sender-Auth: sp4_ALSNpI2xyLMUEVPYO5n1Rys
-Message-ID: <CA+55aFxeNNTacdhmBfy2Q3bitM92WNS2Gafv+D4eVRBb8nqKmA@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/13] firmware loader: introduce cache/uncache firmware
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <nico@linaro.org>, <will.deacon@arm.com>, <catalin.marinas@arm.com>,
+        Vitaly Andrianov <vitalya@ti.com>
+Subject: Re: [RFC 21/23] ARM: keystone: introducing TI Keystone platform
+References: <1343092165-9470-1-git-send-email-cyril@ti.com> <1343092165-9470-22-git-send-email-cyril@ti.com> <201207241446.53401.arnd@arndb.de>
+In-Reply-To: <201207241446.53401.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 10:53 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Arnd,
+
+Thanks for taking the time to dig through this.
+
+On 7/24/2012 10:46 AM, Arnd Bergmann wrote:
+> On Tuesday 24 July 2012, Cyril Chemparathy wrote:
 >
-> The fact that USB confuses resuming existing devices and probing new
-> ones is just an implementation issue, and is a bug.
+>> diff --git a/arch/arm/boot/dts/keystone-sim.dts b/arch/arm/boot/dts/keystone-sim.dts
+>> new file mode 100644
+>> index 0000000..118d631
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/keystone-sim.dts
+>> @@ -0,0 +1,77 @@
+>> +/dts-v1/;
+>> +/include/ "skeleton.dtsi"
+>> +
+>> +/ {
+>> +	model = "Texas Instruments Keystone 2 SoC";
+>> +	compatible = "ti,keystone-evm";
+>> +	#address-cells = <1>;
+>> +	#size-cells = <1>;
+>
+> I would assume that you need at least #address-cells=<2>, possibly
+> also #size-cells=<2>, in order to express large memory ranges.
+>
 
-Btw, I understand *why* it confuses the two. That doesn't make is less
-of a bug, though.
+Thanks, will fix.
 
-                Linus
+>> diff --git a/arch/arm/mach-keystone/include/mach/entry-macro.S b/arch/arm/mach-keystone/include/mach/entry-macro.S
+>> new file mode 100644
+>> index 0000000..7f486f3
+>> --- /dev/null
+>> +++ b/arch/arm/mach-keystone/include/mach/entry-macro.S
+>>
+>> +	.macro	disable_fiq
+>> +	.endm
+>> +
+>> +	.macro	arch_ret_to_user, tmp1, tmp2
+>> +	.endm
+>
+> I think it would be better to enable MULTI_IRQ_HANDLER and remove
+> this file.
+>
+
+Agreed.
+
+>> diff --git a/arch/arm/mach-keystone/include/mach/io.h b/arch/arm/mach-keystone/include/mach/io.h
+>> new file mode 100644
+>> index 0000000..844d659
+>> --- /dev/null
+>> +++ b/arch/arm/mach-keystone/include/mach/io.h
+>
+>> +#ifndef __MACH_IO_H
+>> +#define __MACH_IO_H
+>> +
+>> +#define __io(a)		({ (void)(a); __typesafe_io(0); })
+>> +#define __mem_pci(a)	(a)
+>> +
+>> +#endif
+>
+> This should also be removed.
+>
+
+Agreed.
+
+>> diff --git a/arch/arm/mach-keystone/include/mach/memory.h b/arch/arm/mach-keystone/include/mach/memory.h
+>> new file mode 100644
+>> index 0000000..7c78b1e
+>> --- /dev/null
+>> +++ b/arch/arm/mach-keystone/include/mach/memory.h
+>
+>> +#ifndef __ASM_MACH_MEMORY_H
+>> +#define __ASM_MACH_MEMORY_H
+>> +
+>> +#define MAX_PHYSMEM_BITS	36
+>> +#define SECTION_SIZE_BITS	34
+>> +
+>> +#endif /* __ASM_MACH_MEMORY_H */
+>
+> I wonder if there is anything we can do to make these generic. What you
+> have here is ok for now, but we will need to do this differently once
+> we are building multiplatform kernels with keystone and sparse memory.
+>
+
+Understood.  Any ideas on the general direction towards solving this?
+
+>> diff --git a/arch/arm/mach-keystone/include/mach/system.h b/arch/arm/mach-keystone/include/mach/system.h
+>> new file mode 100644
+>> index 0000000..4887b4c
+>> --- /dev/null
+>> +++ b/arch/arm/mach-keystone/include/mach/system.h
+>
+>> +#ifndef __MACH_SYSTEM_H
+>> +#define __MACH_SYSTEM_H
+>> +
+>> +static inline void arch_idle(void)
+>> +{
+>> +	cpu_do_idle();
+>> +}
+>> +
+>> +static inline void arch_reset(char mode, const char *cmd)
+>> +{
+>> +	while (1)
+>> +		;
+>> +}
+>> +
+>> +#endif
+>
+> These are no longer used, please remove the file.
+>
+
+Sure.
+
+>
+>> diff --git a/arch/arm/mach-keystone/include/mach/vmalloc.h b/arch/arm/mach-keystone/include/mach/vmalloc.h
+>> new file mode 100644
+>> index 0000000..9d34c09
+>> --- /dev/null
+>> +++ b/arch/arm/mach-keystone/include/mach/vmalloc.h
+>
+>> +
+>> +#define VMALLOC_END		0xFE800000UL
+>> +
+>> +#endif
+>
+> same here.
+>
+
+Sure.
+
+>> +DT_MACHINE_START(KEYSTONE, "Keystone")
+>> +	.map_io		= keystone_map_io,
+>> +	.init_irq	= keystone_init_irq,
+>> +	.timer		= &keystone_timer,
+>> +	.handle_irq	= gic_handle_irq,
+>> +	.init_machine	= keystone_init,
+>> +	.dt_compat	= keystone_match,
+>> +	.nr_irqs	= 480,
+>> +MACHINE_END
+>
+> IIRC, you don't need to set the nr_irqs this high in advance,
+> they will be allocated automatically since you have enabled
+> sparse IRQs.
+>
+
+We were seeing a complaint without nr_irqs set, but I'll dig into that 
+further.
+
+-- 
+Thanks
+- Cyril
