@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab2GXPrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:47:12 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39818
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1755695Ab2GXPrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:47:10 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39836
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755558Ab2GXPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755566Ab2GXPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Jul 2012 11:46:37 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
@@ -13,9 +13,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         olaf@aepfle.de, apw@canonical.com, netdev@vger.kernel.org,
         ben@decadent.org.uk
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 09/17] Tools: hv: Represent the ipv6 mask using CIDR notation
-Date: Tue, 24 Jul 2012 09:01:33 -0700
-Message-Id: <1343145701-3691-9-git-send-email-kys@microsoft.com>
+Subject: [PATCH 10/17] Tools: hv: Gather ipv[4,6] gateway information
+Date: Tue, 24 Jul 2012 09:01:34 -0700
+Message-Id: <1343145701-3691-10-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1343145701-3691-1-git-send-email-kys@microsoft.com>
 References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
@@ -24,89 +24,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Transform ipv6 subnet information to CIDR notation.
+Gather information on the default gateways - ipv4/ipv6.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- tools/hv/hv_kvp_daemon.c |   45 +++++++++++++++++++++++++++++++++++----------
- 1 files changed, 35 insertions(+), 10 deletions(-)
+ tools/hv/hv_kvp_daemon.c |   72 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 72 insertions(+), 0 deletions(-)
 
 diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 2c24ebf..007e698 100644
+index 007e698..b627236 100644
 --- a/tools/hv/hv_kvp_daemon.c
 +++ b/tools/hv/hv_kvp_daemon.c
-@@ -491,6 +491,15 @@ done:
+@@ -491,6 +491,72 @@ done:
  	return;
  }
  
-+static unsigned int hweight32(unsigned int *w)
++static void kvp_process_ipconfig_file(char *cmd,
++					char *config_buf, int len,
++					int element_size, int offset)
 +{
-+	unsigned int res = *w - ((*w >> 1) & 0x55555555);
-+	res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
-+	res = (res + (res >> 4)) & 0x0F0F0F0F;
-+	res = res + (res >> 8);
-+	return (res + (res >> 16)) & 0x000000FF;
++	char buf[256];
++	char *p;
++	char *x;
++	FILE *file;
++
++	/*
++	 * First execute the command.
++	 */
++	file = popen(cmd, "r");
++	if (file == NULL)
++		return;
++
++	if (offset == 0)
++		memset(config_buf, 0, len);
++	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
++		if ((len - strlen(config_buf)) < (element_size + 1))
++			break;
++
++		x = strchr(p, '\n');
++		*x = '\0';
++		strcat(config_buf, p);
++		strcat(config_buf, ";");
++	}
++	pclose(file);
 +}
 +
- static int kvp_process_ip_address(void *addrp,
- 				int family, char *buffer,
- 				int length,  int *offset)
-@@ -535,10 +544,15 @@ kvp_get_ip_address(int family, char *if_name, int op,
- 	struct ifaddrs *curp;
- 	int offset = 0;
- 	int sn_offset = 0;
--	const char *str;
- 	int error = 0;
- 	char *buffer;
- 	struct hv_kvp_ipaddr_value *ip_buffer;
-+	char cidr_mask[5]; /* /xyz */
-+	int weight;
-+	int i;
-+	unsigned int *w;
-+	char *sn_str;
-+	struct sockaddr_in6 *addr6;
- 
- 	if (op == KVP_OP_ENUMERATE) {
- 		buffer = out_buffer;
-@@ -612,17 +626,28 @@ kvp_get_ip_address(int family, char *if_name, int op,
- 			} else {
- 				ip_buffer->addr_family |= ADDR_FAMILY_IPV6;
- 				/*
--				 * Get subnet info.
-+				 * Get subnet info in CIDR format.
- 				 */
--				error = kvp_process_ip_address(
--							curp->ifa_netmask,
--							AF_INET6,
--							(char *)
--							ip_buffer->sub_net,
--							length,
--							&sn_offset);
--				if (error)
-+				weight = 0;
-+				sn_str = (char *)ip_buffer->sub_net;
-+				addr6 = (struct sockaddr_in6 *)
-+					curp->ifa_netmask;
-+				w = addr6->sin6_addr.s6_addr32;
++static void kvp_get_ipconfig_info(char *if_name,
++				 struct hv_kvp_ipaddr_value *buffer)
++{
++	char cmd[512];
 +
-+				for (i = 0; i < 4; i++)
-+					weight += hweight32(&w[i]);
++	/*
++	 * Get the address of default gateway (ipv4).
++	 */
++	memset(cmd, 0, sizeof(cmd));
++	strcat(cmd, "/sbin/ip -f inet  route | grep -w ");
++	strcat(cmd, if_name);
++	strcat(cmd, " | awk '/default/ {print $3 }'");
 +
-+				sprintf(cidr_mask, "/%d", weight);
-+				if ((length - sn_offset) <
-+					(strlen(cidr_mask) + 1))
- 					goto gather_ipaddr;
++	/*
++	 * Execute the command to gather gateway info.
++	 */
++	kvp_process_ipconfig_file(cmd, (char *)buffer->gate_way,
++				(MAX_GATEWAY_SIZE * 2), INET_ADDRSTRLEN, 0);
 +
-+				if (sn_offset == 0)
-+					strcpy(sn_str, cidr_mask);
-+				else
-+					strcat(sn_str, cidr_mask);
-+				strcat((char *)ip_buffer->sub_net, ";");
-+				sn_offset += strlen(sn_str) + 1;
++	/*
++	 * Get the address of default gateway (ipv6).
++	 */
++	memset(cmd, 0, sizeof(cmd));
++	strcat(cmd, "/sbin/ip -f inet6  route | grep -w ");
++	strcat(cmd, if_name);
++	strcat(cmd, " | awk '/default/ {print $3 }'");
++
++	/*
++	 * Execute the command to gather gateway info (ipv6).
++	 */
++	kvp_process_ipconfig_file(cmd, (char *)buffer->gate_way,
++				(MAX_GATEWAY_SIZE * 2), INET6_ADDRSTRLEN, 1);
++
++}
++
++
+ static unsigned int hweight32(unsigned int *w)
+ {
+ 	unsigned int res = *w - ((*w >> 1) & 0x55555555);
+@@ -649,6 +715,12 @@ kvp_get_ip_address(int family, char *if_name, int op,
+ 				strcat((char *)ip_buffer->sub_net, ";");
+ 				sn_offset += strlen(sn_str) + 1;
  			}
++
++			/*
++			 * Collect other ip related configuration info.
++			 */
++
++			kvp_get_ipconfig_info(if_name, ip_buffer);
  		}
  
+ gather_ipaddr:
 -- 
 1.7.4.1
 
