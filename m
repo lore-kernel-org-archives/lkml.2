@@ -1,90 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab2GXQAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:00:25 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:12819 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771Ab2GXQAX (ORCPT
+	id S1755090Ab2GXQAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:00:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36034 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754916Ab2GXQAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:00:23 -0400
-Message-ID: <1343145334.3010.334.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: shuah.khan@hp.com
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        shuahkhan@gmail.com
-Date: Tue, 24 Jul 2012 09:55:34 -0600
-In-Reply-To: <1342741437.3010.275.camel@misato.fc.hp.com>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342648771.5138.37.camel@lorien2>
-	 <1342650386.3010.55.camel@misato.fc.hp.com>
-	 <1342651257.5138.44.camel@lorien2>
-	 <1342651966.3010.66.camel@misato.fc.hp.com>
-	 <1342653482.5138.56.camel@lorien2>
-	 <1342658296.3010.136.camel@misato.fc.hp.com>
-	 <1342714515.3100.27.camel@lorien2>
-	 <1342718897.3010.188.camel@misato.fc.hp.com>
-	 <1342725950.5599.7.camel@lorien2>
-	 <1342731093.3010.245.camel@misato.fc.hp.com>
-	 <1342737168.6809.40.camel@lorien2>
-	 <1342741437.3010.275.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Tue, 24 Jul 2012 12:00:40 -0400
+Message-ID: <500EC6A6.80703@wwwdotorg.org>
+Date: Tue, 24 Jul 2012 10:00:38 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: broonie@opensource.wolfsonmicro.com, lrg@ti.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6586x: correct vin pin for sm0/sm1/sm2
+References: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 17:43 -0600, Toshi Kani wrote:
-> On Thu, 2012-07-19 at 16:32 -0600, Shuah Khan wrote:
-> > On Thu, 2012-07-19 at 14:51 -0600, Toshi Kani wrote:
-> > 
-> > > If your concern is actually a performance bottleneck in acpi_get_name()
-> > > you found in the code, you should report it to the ACPI CA team.
-> > 
-> > I have tried my best to get you to understand the problems in bigger
-> > picture your patch set can exacerbate. Looking to somebody else to fix
-> > the problems doesn't help. It doesn't look like we can come to an
-> > agreement here, we just have to agree to disagree.
+On 07/24/2012 02:18 AM, Laxman Dewangan wrote:
+> As per datasheet, the vin pin for the regulator is named
+> as vin_sm0, vin_sm1, vin_sm2 for sm0, sm1 and sm2 respectively.
 > 
-> I am not asking someone to fix it.  I tried my best to explain that
-> acpi_get_name() does not lead any performance issue when it is called in
-> the error paths of ACPI drivers, and why we have to call it to obtain an
-> object path info for error analysis.  If you still believe there is a
-> performance issue in calling acpi_get_name() under this context, please
-> help us understand where the performance bottleneck is in the code.  (I
-> hope you just concerned it because it has "acpi_" prefix...) I will then
-> work on the issue with the ACPI CA team.
-
-I have measured acpi_pr_<level>() to make sure my statement is correct.
-Here are the results:
-
-Avg. acpi_get_name()		 587 ns
-Avg. printk()			3420 ns
-Avg. kfree()			 238 ns
-Avg. acpi_get_time()+kfree()	 825 ns
-
-The results indicate that acpi_pr_<level>() has 20% increase of the time
-compared to the regular printk(), which is less than 1 us.  I believe
-the results endorse my statement, and may not cause any performance
-issue to the error paths of the ACPI drivers.
-
--Toshi
-
-
-> Thanks,
-> -Toshi
+> Correcting the names in driver and documentation to match with
+> datasheet.
 > 
-> 
-> 
-> > caio,
-> > -- Shuah
-> > 
-> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Reported-by: Stephen Warren <swarren@nvidia.com>
 
-
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
