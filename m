@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab2GXMrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 08:47:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64322 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753726Ab2GXMrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 08:47:18 -0400
-Message-ID: <500E9942.3080505@redhat.com>
-Date: Tue, 24 Jul 2012 15:46:58 +0300
-From: Dor Laor <dlaor@redhat.com>
-Reply-To: dlaor@redhat.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753983Ab2GXMtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 08:49:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:49128 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab2GXMs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 08:48:59 -0400
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, mst@redhat.com, penberg@kernel.org,
-        asias.hejun@gmail.com, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
-        anthony@codemonkey.ws, wency@cn.fujitsu.com
-Subject: Re: [RFC 0/2] virtio: provide a way for host to monitor critical
- events in the device
-References: <1343075561-29316-1-git-send-email-levinsasha928@gmail.com> <87a9yprc4v.fsf@rustcorp.com.au> <500E5C36.2070601@redhat.com> <500E954F.8090102@gmail.com>
-In-Reply-To: <500E954F.8090102@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
+References: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Tue, 24 Jul 2012 14:48:38 +0200
+X-Google-Sender-Auth: BteTxwWKr42KUhGcLgBgOeCIG6g
+Message-ID: <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com>
+Subject: Re: [PATCH 00/13] UAPI header file split
+To: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        tglx@linutronix.de, mingo@kernel.org, davej@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 03:30 PM, Sasha Levin wrote:
-> On 07/24/2012 10:26 AM, Dor Laor wrote:
->> On 07/24/2012 07:55 AM, Rusty Russell wrote:
->>> On Mon, 23 Jul 2012 22:32:39 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
->>>> As it was discussed recently, there's currently no way for the guest to notify
->>>> the host about panics. Further more, there's no reasonable way to notify the
->>>> host of other critical events such as an OOM kill.
->>>
->>> I clearly missed the discussion.  Is this actually useful?  In practice,
->>
->> Admit this is not a killer feature..
->>
->>> won't you want the log from the guest?  What makes a virtual guest
->>> different from a physical guest?
->>
->> Most times virt guest can do better than a physical OS. In that sense, this is where virtualization shines (live migration, hotplug for any virtual resource including net/block/cpu/memory/..).
->>
->> There are plenty of niche but worth while small features such as the virtio-trace series and other that allow the host/virt-mgmt to get more insight into the guest w/o a need to configure the guest.
->>
->> In theory guest OOM can trigger a host memory hot plug action. Again, I don't see it as a key feature..
->>
->>>
->>> Guest watchdog functionality might be useful, but that's simpler to
->>
->> There is already a fully emulated watchdog device in qemu.
+On Fri, Jul 20, 2012 at 11:56 PM, David Howells <dhowells@redhat.com> wrote:
+
+[...]
+
+> ===================
+> IMPLEMENTING STEP 1
+> ===================
 >
-> There is, but why emulate physical devices when you can take advantage of virtio?
+> The patches actually posted here are the manual preparation for the UAPI split
+> in step (1) above.  I haven't posted the patches that do the actual splitting
+> by email as the largest of them is in excess of 120,000 lines.  However, the
+> patches are available through GIT:
 >
-> You could say the same about the rest of the virtio family - "There is already a fully emulated NIC device in qemu".
+>         http://git.infradead.org/users/dhowells/linux-headers.git
+>
+> The patches are to be found on the uapi-split branch.  The patches posted here
+> are from the base of that branch up to the uapi-prep tag; the automated split
+> follows thereafter to the uapi-post-split tag.
 
-The single issue virtio-nic solves is performance enhancements that can 
-be done w/ a fully emulated NIC. The reason is that such NIC tend to 
-access pio/mmio space a lot while virtio is designed for virtualization.
+In the uapi-split branch, there are now 44 empty Kbuild files. Was
+that intended? Or, should these files rather be removed by your
+patches?
 
-Standard watchdog device (isn't it time you'll try qemu?)  isn't about 
-performance and if that's all the functionality you need it should work 
-fine.
+Thanks,
 
-btw: check the virtio-trace series that was just send in a parallel thread.
+Michael
 
-Cheers,
-Dor
-
-
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
