@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab2GXJJC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 05:09:02 -0400
+	id S1753430Ab2GXJJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 05:09:36 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53057 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab2GXJHC (ORCPT
+	with ESMTP id S1752961Ab2GXJHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 05:07:02 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-07-500e65b2f35d
+	Tue, 24 Jul 2012 05:07:01 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-03-500e65b22181
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 09/12] perf ui/gtk: Add support to group viewing
-Date: Tue, 24 Jul 2012 18:01:30 +0900
-Message-Id: <1343120493-23059-10-git-send-email-namhyung@kernel.org>
+        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 06/12] perf header: Reconstruct group relationship by parsing cmdline
+Date: Tue, 24 Jul 2012 18:01:27 +0900
+Message-Id: <1343120493-23059-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
 References: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
@@ -26,92 +25,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+In order to support the event group viewer, their group relationship
+is needed. Since it's not recorded explicitly anywhere in the perf.data
+we should parse saved cmdline and apply the result to the evlist. It is
+assumed that parsed entries are in a same order with the originals.
 
-Show group members' overhead also when showing the leader's.
+I know it's fragile but hard to find other way to do it in the current
+condition. :(
 
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/gtk/browser.c |   57 +++++++++++++++++++++++++++++++++----------
- 1 file changed, 44 insertions(+), 13 deletions(-)
+ tools/perf/util/header.c |  110 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 110 insertions(+)
 
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 91e11f7bffbf..e39c83cd5ac5 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -44,25 +44,56 @@ static const char *perf_gtk__get_percent_color(double percent)
- 	return NULL;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 0efbaa3c5a6b..9d9553fed8a6 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1404,6 +1404,40 @@ static int process_version(struct perf_file_section *section __used,
+ 	return ph->version ? 0 : -ENOMEM;
  }
  
-+static int perf_gtk__percent_color_snprintf(char *s, size_t size,
-+					    u64 period, u64 total_period)
++/*
++ * Reconstruct group relationship using parsed entries. It's assumed that
++ * the parsed entries are in a same order with the original entries.
++ */
++static void reconstruct_group_relation(struct list_head *parsed_head,
++				       struct list_head *orig_head)
 +{
-+	double percent = 100.0 * period / total_period;
-+	const char *markup;
-+	int ret = 0;
++	struct perf_evsel *pos, *orig;
++	struct perf_evsel *leader = NULL;
 +
-+	markup = perf_gtk__get_percent_color(percent);
-+	if (markup)
-+		ret += scnprintf(s, size, "%s", markup);
++	/* Fake first entry to use list_for_each_entry_continue */
++	orig = container_of(orig_head, struct perf_evsel, node);
 +
-+	ret += scnprintf(s + ret, size - ret, "%5.2f%%", percent);
++	list_for_each_entry(pos, parsed_head, node) {
++		list_for_each_entry_continue(orig, orig_head, node) {
++			BUG_ON(pos->attr.type != orig->attr.type);
++			BUG_ON(pos->attr.config != orig->attr.config);
 +
-+	if (markup)
-+		ret += scnprintf(s + ret, size - ret, "</span>");
++			if (pos->leader == NULL) {
++				orig->leader = NULL;
++				if (pos->group_name)
++					orig->group_name = strdup(pos->group_name);
++				orig->nr_children = pos->nr_children;
 +
-+	return ret;
-+}
-+
-+static int perf_gtk__hpp_color_overhead(struct hist_print_context *ctx,
-+					struct hist_entry *he)
-+{
-+	int ret;
-+
-+	ret = perf_gtk__percent_color_snprintf(ctx->s, ctx->size,
-+					he->stat.period, ctx->total_period);
-+
-+	if (symbol_conf.report_group) {
-+		int i;
-+		struct perf_evsel *evsel = hists_2_evsel(ctx->hists);
-+
-+		for (i = 0; i < evsel->nr_children; i++) {
-+			ret += scnprintf(ctx->s + ret, ctx->size - ret, "  ");
-+			ret += perf_gtk__percent_color_snprintf(ctx->s + ret,
-+					ctx->size - ret,
-+					he->group_stats[i].period,
-+					ctx->hists->group_stats[i].total_period);
++				leader = orig;
++			} else {
++				orig->leader = leader;
++				orig->group_idx = pos->group_idx;
++			}
++			break;
 +		}
 +	}
-+	return ret;
 +}
 +
- #define HPP_COLOR_FN(_name, _field)						\
- static int perf_gtk__hpp_color_ ## _name(struct hist_print_context *ctx,	\
- 					 struct hist_entry *he)			\
- {										\
--	double percent = 100.0 * he->stat._field / ctx->total_period;		\
--	const char *markup;							\
--	int ret = 0;								\
--										\
--	markup = perf_gtk__get_percent_color(percent);				\
--	if (markup)								\
--		ret += scnprintf(ctx->s, ctx->size, "%s", markup);		\
--	ret += scnprintf(ctx->s + ret, ctx->size - ret, "%5.2f%%", percent); 	\
--	if (markup)								\
--		ret += scnprintf(ctx->s + ret, ctx->size - ret, "</span>"); 	\
--										\
--	return ret;								\
-+	return perf_gtk__percent_color_snprintf(ctx->s, ctx->size,		\
-+					he->stat._field, ctx->total_period); 	\
- }
+ /* Each argv would be separated by a NULL character */
+ static int process_cmdline(struct perf_file_section *section __used,
+ 			   struct perf_header *ph, int fd, void *data __used)
+@@ -1413,6 +1447,11 @@ static int process_cmdline(struct perf_file_section *section __used,
+ 	u32 nr, i;
+ 	char *cmdline = NULL;
+ 	size_t len = 0;
++	LIST_HEAD(head);
++	struct perf_evlist *evlist = NULL;
++	int nr_entries = 0;
++	bool found = false;
++	bool regenerated = false;
  
--HPP_COLOR_FN(overhead, period)
- HPP_COLOR_FN(overhead_sys, period_sys)
- HPP_COLOR_FN(overhead_us, period_us)
- HPP_COLOR_FN(overhead_guest_sys, period_guest_sys)
+ 	ret = read(fd, &nr, sizeof(nr));
+ 	if (ret != (ssize_t)sizeof(nr))
+@@ -1421,6 +1460,25 @@ static int process_cmdline(struct perf_file_section *section __used,
+ 	if (ph->needs_swap)
+ 		nr = bswap_32(nr);
+ 
++	if (symbol_conf.report_group) {
++		struct perf_session *session;
++
++		session = container_of(ph, struct perf_session, header);
++		evlist = session->evlist;
++
++		/*
++		 * The evlist->entries will be regenerated by parsing cmdline
++		 * to track grouping information. However we cannot use the
++		 * generated entries since they lack sample id information.
++		 *
++		 * Save the original entries to 'head' and reconstruct group
++		 * information using parse entries.
++		 */
++		list_splice_init(&evlist->entries, &head);
++		nr_entries = evlist->nr_entries;
++		evlist->nr_entries = 0;
++	}
++
+ 	ph->cmdline_argc = nr;
+ 
+ 	for (i = 0; i < nr; i++) {
+@@ -1428,6 +1486,19 @@ static int process_cmdline(struct perf_file_section *section __used,
+ 		if (!str)
+ 			goto error;
+ 
++		if (symbol_conf.report_group) {
++			if (found) {
++				/* Regenerate evlist */
++				if (!parse_events(evlist, str, 0))
++					regenerated = true;
++			}
++
++			if (!strcmp(str, "-e"))
++				found = true;
++			else
++				found = false;
++		}
++
+ 		tmp = realloc(cmdline, len + strlen(str) + 1);
+ 		if (!tmp)
+ 			goto error;
+@@ -1439,10 +1510,49 @@ static int process_cmdline(struct perf_file_section *section __used,
+ 		len += strlen(str) + 1;
+ 		free(str);
+ 	}
++
++	if (symbol_conf.report_group) {
++		struct perf_evsel *pos, *orig;
++
++		if (regenerated) {
++			BUG_ON(evlist->nr_entries != nr_entries);
++
++			reconstruct_group_relation(&evlist->entries, &head);
++
++			/* Parsed entries are not needed anymore */
++			list_for_each_entry_safe(pos, orig, &evlist->entries, node) {
++				list_del_init(&pos->node);
++				perf_evsel__delete(pos);
++			}
++
++			/* Restore the original entries */
++			list_splice(&head, &evlist->entries);
++		} else {
++			/*
++			 * Indirect record command doesn't contain events on
++			 * the cmdline. Restore original entries.
++			 */
++			list_splice(&head, &evlist->entries);
++			evlist->nr_entries = nr_entries;
++		}
++	}
+ 	ph->cmdline = cmdline;
+ 	return 0;
+ 
+ error:
++	if (symbol_conf.report_group) {
++		struct perf_evsel *pos, *n;
++
++		/* Delete intermediate entries */
++		list_for_each_entry_safe(pos, n, &evlist->entries, node) {
++			list_del_init(&pos->node);
++			perf_evsel__delete(pos);
++		}
++
++		/* Restore original entries */
++		list_splice(&head, &evlist->entries);
++		evlist->nr_entries = nr_entries;
++	}
+ 	free(cmdline);
+ 	free(str);
+ 	return -1;
 -- 
 1.7.10.4
 
