@@ -1,44 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab2GXNmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 09:42:16 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:36577 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab2GXNmP (ORCPT
+	id S1754408Ab2GXNnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 09:43:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36858 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2GXNno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 09:42:15 -0400
+	Tue, 24 Jul 2012 09:43:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120724075459.GB9519@localhost>
-References: <CAMYGaxpusZsvVYdruSe4cYr9FWsAs2Eu-7tpoUJoU_GyL1QmXA@mail.gmail.com>
-	<20120724075459.GB9519@localhost>
-Date: Tue, 24 Jul 2012 19:12:14 +0530
-Message-ID: <CAFPAmTTmEYy5njMWvx_7AaAXYQ99Zrby7qnJE4LaSCDaY7VAQg@mail.gmail.com>
-Subject: Re: [QUERY]: Understanding the calculations in mm/page-writeback.c
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: rajman mekaco <rajman.mekaco@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+In-Reply-To: <500E810A.4030309@hitachi.com>
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+	<CAJSP0QW_2JJ0nf=NW0y30VSid2HSxaqb=mRGV8CTtAKj0ujDWw@mail.gmail.com>
+	<500E810A.4030309@hitachi.com>
+Date: Tue, 24 Jul 2012 14:43:43 +0100
+Message-ID: <CAJSP0QVU3_Y-ASC+G4pgGpBzym3+PZPD=adbYHVB5Uxs5kTr5g@mail.gmail.com>
+Subject: Re: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
+        Borislav Petkov <bp@amd64.org>,
+        virtualization@lists.linux-foundation.org,
+        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Shah <amit.shah@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 24, 2012 at 12:03 PM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+> (2012/07/24 19:02), Stefan Hajnoczi wrote:
+>> On Tue, Jul 24, 2012 at 3:36 AM, Yoshihiro YUNOMAE
+>> <yoshihiro.yunomae.ez@hitachi.com> wrote:
+>>> The performance of each method is compared as follows:
+>>>  [1] Native
+>>>      - only recording trace data to ring-buffer on a guest
+>>>  [2] Virtio-trace
+>>>      - running a trace agent on a guest
+>>>      - a reader on a host opens FIFO using cat command
+>>>  [3] IVRing
+>>>      - A SystemTap script in a guest records trace data to IVRing.
+>>>        -- probe points are same as ftrace.
+>>>  [4] Virtio-serial(normal)
+>>>      - A reader(using cat) on a guest output trace data to a host using
+>>>        standard output via virtio-serial.
+>>
+>> The first time I read this I thought you are adding a new virtio-trace
+>> device.  But it looks like this series really add splice support to
+>> virtio-console and that yields a big performance improvement when
+>> sending trace_pipe_raw.
 >
-> Here is the slides I used in LinuxCon Japan 2012, please feel free to
-> ask more specific questions on it :)
+> Yes, sorry for the confusion. Actually this is an enhancement of
+> virtio-serial. I'm working with Yoshihiro on this feature.
 >
-> http://events.linuxfoundation.org/images/stories/pdf/lcjp2012_wu.pdf
+>> Guest ftrace is useful and I like this.  Have you thought about
+>> controlling ftrace from the host?  Perhaps a command could be added to
+>> the QEMU guest agent which basically invokes trace-cmd/perf.
 >
+> As you can see, guest trace-agent can be controlled via a
+> control channel. In our scenario, host tools can control that
+> instead of guest one.
+>
+> We are considering that exporting the tracing part of guest's
+> debugfs to host via another virtio-serial channel by using
+> 9pfs, so that the host tools can refer that.
+>
+> (In this scenario, guest trace-agent will also provide 9pfs server.
+> Since it means that the agent can handle writing a special file,
+> trace-agent can be controlled via the special file on exported
+> debugfs.)
+>
+> Of course, this also requires modifying trace-cmd/perf to accept
+> some options like guest-debugfs mount point, guest's serial
+> channel pipe (or unix socket?), etc. However, it will be a small
+> change.
 
-Thanks for your help and early response !
-I shall definitely study this and ping you as and when doubts start
-arising in my mind. :-)
+Okay, thanks for explaining some of the ideas you have.  I won't ask
+more because it's out of scope for this patch series :).
 
-> Thanks,
-> Fengguang
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Stefan
