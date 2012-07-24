@@ -1,181 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2GXOFo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:05:44 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:61853 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab2GXOFm (ORCPT
+	id S1754737Ab2GXOGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:06:55 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:47666 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754683Ab2GXOGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:05:42 -0400
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com> <500CDE35.6000009@windriver.com> <42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com> <500E1057.3020509@windriver.com>
-User-Agent: SkitMail for Android
-In-Reply-To: <500E1057.3020509@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK when bundling
-From: Vlad Yasevich <vyasevich@gmail.com>
-Date: Tue, 24 Jul 2012 10:05:36 -0400
-To: xufeng zhang <xufeng.zhang@windriver.com>
-CC: sri@us.ibm.com, davem@davemloft.net, xufengzhang.main@gmail.com,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com>
+	Tue, 24 Jul 2012 10:06:54 -0400
+Date: Tue, 24 Jul 2012 16:06:45 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: joe shmoe <joeshmoeypeter@yahoo.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        daniel.kiper@oracle.com
+Subject: Re: kdump/kexec vmcore size doubles each time
+Message-ID: <20120724140645.GA17687@router-fw-old.local.net-space.pl>
+References: <1342735724.60460.YahooMailNeo@web160604.mail.bf1.yahoo.com> <20120720093648.GA3909@router-fw-old.local.net-space.pl> <1343087299.65126.YahooMailNeo@web160606.mail.bf1.yahoo.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343087299.65126.YahooMailNeo@web160606.mail.bf1.yahoo.com>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xufeng zhang <xufeng.zhang@windriver.com> wrote:
+On Mon, Jul 23, 2012 at 04:48:19PM -0700, joe shmoe wrote:
+> Hi,
+> Thank you for the reply.
 
->On 07/24/2012 10:27 AM, Vlad Yasevich wrote:
->> xufeng zhang<xufeng.zhang@windriver.com>  wrote:
->>
->>    
->>> On 07/19/2012 01:57 PM, xufengzhang.main@gmail.com wrote:
->>>      
->>>> When "Invalid Stream Identifier" ERROR happens after process the
->>>> received DATA chunks, this ERROR chunk is enqueued into outqueue
->>>> before SACK chunk, so when bundling ERROR chunk with SACK chunk,
->>>> the ERROR chunk is always placed first in the packet because of
->>>> the chunk's position in the outqueue.
->>>> This violates sctp specification:
->>>>       RFC 4960 6.5. Stream Identifier and Stream Sequence Number
->>>>       ...The endpoint may bundle the ERROR chunk in the same
->>>>       packet as the SACK as long as the ERROR follows the SACK.
->>>> So we must place SACK first when bundling "Invalid Stream
->Identifier"
->>>> ERROR and SACK in one packet.
->>>> Although we can do that by enqueue SACK chunk into outqueue before
->>>> ERROR chunk, it will violate the side-effect interpreter
->processing.
->>>> It's easy to do this job when dequeue chunks from the outqueue,
->>>> by this way, we introduce a flag 'has_isi_err' which indicate
->>>> whether or not the "Invalid Stream Identifier" ERROR happens.
->>>>
->>>> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
->>>> ---
->>>>    include/net/sctp/structs.h |    2 ++
->>>>    net/sctp/output.c          |   26 ++++++++++++++++++++++++++
->>>>    2 files changed, 28 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/include/net/sctp/structs.h
->b/include/net/sctp/structs.h
->>>> index 88949a9..5adf4de 100644
->>>> --- a/include/net/sctp/structs.h
->>>> +++ b/include/net/sctp/structs.h
->>>> @@ -842,6 +842,8 @@ struct sctp_packet {
->>>>    	    has_sack:1,		/* This packet contains a SACK chunk. */
->>>>    	    has_auth:1,		/* This packet contains an AUTH chunk */
->>>>    	    has_data:1,		/* This packet contains at least 1 DATA chunk
->*/
->>>> +	    has_isi_err:1,	/* This packet contains a "Invalid Stream
->>>> +				 * Identifier" ERROR chunk */
->>>>    	    ipfragok:1,		/* So let ip fragment this packet */
->>>>    	    malloced:1;		/* Is it malloced? */
->>>>    };
->>>> diff --git a/net/sctp/output.c b/net/sctp/output.c
->>>> index 817174e..77fb1ae 100644
->>>> --- a/net/sctp/output.c
->>>> +++ b/net/sctp/output.c
->>>> @@ -79,6 +79,7 @@ static void sctp_packet_reset(struct sctp_packet
->>>>        
->>> *packet)
->>>      
->>>>    	packet->has_sack = 0;
->>>>    	packet->has_data = 0;
->>>>    	packet->has_auth = 0;
->>>> +	packet->has_isi_err = 0;
->>>>    	packet->ipfragok = 0;
->>>>    	packet->auth = NULL;
->>>>    }
->>>> @@ -267,6 +268,7 @@ static sctp_xmit_t
->sctp_packet_bundle_sack(struct
->>>>        
->>> sctp_packet *pkt,
->>>      
->>>>    sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
->>>>    				     struct sctp_chunk *chunk)
->>>>    {
->>>> +	struct sctp_chunk *lchunk;
->>>>    	sctp_xmit_t retval = SCTP_XMIT_OK;
->>>>    	__u16 chunk_len = WORD_ROUND(ntohs(chunk->chunk_hdr->length));
->>>>
->>>> @@ -316,7 +318,31 @@ sctp_xmit_t sctp_packet_append_chunk(struct
->>>>        
->>> sctp_packet *packet,
->>>      
->>>>    		packet->has_cookie_echo = 1;
->>>>    		break;
->>>>
->>>> +	    case SCTP_CID_ERROR:
->>>> +		if (chunk->subh.err_hdr->cause&   SCTP_ERROR_INV_STRM)
->>>> +			packet->has_isi_err = 1;
->>>> +		break;
->>>> +
->>>>    	    case SCTP_CID_SACK:
->>>> +		/* RFC 4960
->>>> +		 * 6.5 Stream Identifier and Stream Sequence Number
->>>> +		 * The endpoint may bundle the ERROR chunk in the same
->>>> +		 * packet as the SACK as long as the ERROR follows the SACK.
->>>> +		 */
->>>> +		if (packet->has_isi_err) {
->>>> +			if (list_is_singular(&packet->chunk_list))
->>>> +				list_add(&chunk->list,&packet->chunk_list);
->>>> +			else {
->>>> +				lchunk = list_first_entry(&packet->chunk_list,
->>>> +						struct sctp_chunk, list);
->>>> +				list_add(&chunk->list,&lchunk->list);
->>>> +			}
->>>>
->>>>        
->>> And I should clarify the above judgment code.
->>> AFAIK, there should be two cases for the bundling when invalid
->stream
->>> identifier error happens:
->>> 1). COOKIE_ACK ERROR SACK
->>> 2). ERROR SACK
->>> So I need to deal with the two cases differently.
->>>
->>>      
->> Sorry but I just don't buy that the above are the only 2 cases.  What
->if there are addip chunks as well?  What if there are some other
->extensions also.  This code has to be generic enough to handle any
->condition.
->>    
->Aha, you are right, this may happens.
->So I think the general solution is to fix this problem in the enqueue
->side.
->What do you think? any better suggestion!
+You are welcome.
+
+> I ended up opting for writing to filesystem rather than
+> raw_device and this seems to have helped me sidestep the
+> problem for now.
+
+Good move.
+
+> Unfortunately, I can't quite make a jump to later sources.
 >
-
-Don't have code in front of me but what if we carry the error condition to where we queue the Sack and add the error side effect then?
-
--vlad
-
+> I do have another question, I see KDUMP_KEEP_OLD_DUMPS mentioned
+> to automatically clean up prior dumps (for ex: http://dedoimedo.com/computers/kdump.html
+> and other SUSE docs).
+> However, I cannot find any logic in sources to do this (and sure
+> enough I don't see older cores in my /var/crash/ path clean up
+> as new cores are dumped).
 >
->Thanks,
->Xufeng Zhang
->> - vlad
->>
->>    
->>> Thanks,
->>> Xufeng Zhang
->>>      
->>>> +			packet->size += chunk_len;
->>>> +			chunk->transport = packet->transport;
->>>> +			packet->has_sack = 1;
->>>> +			goto finish;
->>>> +		}
->>>> +
->>>>    		packet->has_sack = 1;
->>>>    		break;
->>>>
->>>>
->>>>        
->>
->>    
+> Could someone please comment if:
+> (i) KDUMP_KEEP_OLD_DUMPS is unsupported or not. If it IS supported,
+> could someone please help with the relevant source code so I could
+> debug why it isn't working? Yes, I did download kexec-tools git but
+> cannot find anything relevant.
+>
+> (ii) If there is NO explicit source code to achieve this -- then
+> do folks achieve such a cleanup through KDUMP_PRE and KDUMP_POST scripts?
+> If yes, is there a standard-ish script out there to achieve this?
 
+Sorry but I could not help because I do not use SUSE.
+But maybe guys from SUSE could point out something.
 
--- 
-Sent from my Android phone with SkitMail. Please excuse my brevity.
+Daniel
