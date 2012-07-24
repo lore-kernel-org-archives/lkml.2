@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab2GXPGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:06:23 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:35994 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755313Ab2GXPGU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 11:06:20 -0400
-X-IronPort-AV: E=Sophos;i="4.77,646,1336341600"; 
-   d="scan'208";a="167987675"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Tony Olech <tony.olech@elandigitalsystems.com>
-Cc: kernel-janitors@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] drivers/mmc/host/vub300.c: add missing usb_free_urb
-Date: Tue, 24 Jul 2012 17:06:10 +0200
-Message-Id: <1343142370-27876-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	id S1753787Ab2GXPMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:12:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753409Ab2GXPMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 11:12:53 -0400
+Date: Tue, 24 Jul 2012 11:12:22 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-mm@kvack.org
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH -mm] remove __GFP_NO_KSWAPD
+Message-ID: <20120724111222.2c5e6b30@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+When transparent huge pages were introduced, memory compaction and
+swap storms were an issue, and the kernel had to be careful to not
+make THP allocations cause pageout or compaction.
 
-Add missing usb_free_urb on failure path after usb_alloc_urb.
+Now that we have working compaction deferral, kswapd is smart enough
+to invoke compaction and the quadratic behaviour around isolate_free_pages
+has been fixed, it should be safe to remove __GFP_NO_KSWAPD.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-@km exists@
-local idexpression e;
-expression e1,e2,e3;
-type T,T1;
-identifier f;
-@@
-
-* e = usb_alloc_urb(...)
-... when any
-    when != e = e1
-    when != e1 = (T)e
-    when != e1(...,(T)e,...)
-    when != &e->f
-if(...) { ... when != e2(...,(T1)e,...)
-                 when != e3 = e
-                 when forall
-(
-             return <+...e...+>;
-|
-*             return ...;
-) }
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
+Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- drivers/mmc/host/vub300.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This has been running fine on my system for a while, but my system
+only has 12GB and moderate memory pressure. I propose we keep this
+in -mm and -next for a while, and merge it for 3.7 if nobody complains.
 
-diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
-index 3135a1a..6c39bf1 100644
---- a/drivers/mmc/host/vub300.c
-+++ b/drivers/mmc/host/vub300.c
-@@ -2358,9 +2358,9 @@ error5:
- 	 * which is contained at the end of struct mmc
+ include/linux/gfp.h |    5 +----
+ mm/page_alloc.c     |    7 +++----
+ 2 files changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 581e74b..4f3d4d2 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -34,7 +34,6 @@ struct vm_area_struct;
+ #else
+ #define ___GFP_NOTRACK		0
+ #endif
+-#define ___GFP_NO_KSWAPD	0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
+ 
+@@ -84,7 +83,6 @@ struct vm_area_struct;
+ #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
+ #define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)  /* Don't track with kmemcheck */
+ 
+-#define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
+ 
+@@ -114,8 +112,7 @@ struct vm_area_struct;
+ 				 __GFP_MOVABLE)
+ #define GFP_IOFS	(__GFP_IO | __GFP_FS)
+ #define GFP_TRANSHUGE	(GFP_HIGHUSER_MOVABLE | __GFP_COMP | \
+-			 __GFP_NOMEMALLOC | __GFP_NORETRY | __GFP_NOWARN | \
+-			 __GFP_NO_KSWAPD)
++			 __GFP_NOMEMALLOC | __GFP_NORETRY | __GFP_NOWARN)
+ 
+ #ifdef CONFIG_NUMA
+ #define GFP_THISNODE	(__GFP_THISNODE | __GFP_NOWARN | __GFP_NORETRY)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a13ded1..87b7721 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2217,9 +2217,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 		goto nopage;
+ 
+ restart:
+-	if (!(gfp_mask & __GFP_NO_KSWAPD))
+-		wake_all_kswapd(order, zonelist, high_zoneidx,
+-						zone_idx(preferred_zone));
++	wake_all_kswapd(order, zonelist, high_zoneidx,
++					zone_idx(preferred_zone));
+ 
+ 	/*
+ 	 * OK, we're below the kswapd watermark and have kicked background
+@@ -2286,7 +2285,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	 * has requested the system not be heavily disrupted, fail the
+ 	 * allocation now instead of entering direct reclaim
  	 */
- error4:
--	usb_free_urb(command_out_urb);
--error1:
- 	usb_free_urb(command_res_urb);
-+error1:
-+	usb_free_urb(command_out_urb);
- error0:
- 	return retval;
- }
-
+-	if (deferred_compaction && (gfp_mask & __GFP_NO_KSWAPD))
++	if (deferred_compaction)
+ 		goto nopage;
+ 
+ 	/* Try direct reclaim and then allocating */
