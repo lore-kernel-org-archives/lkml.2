@@ -1,185 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab2GXMCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 08:02:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35600 "EHLO mx2.suse.de"
+	id S1753643Ab2GXMF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 08:05:27 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33422 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753493Ab2GXMCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 08:02:44 -0400
-Date: Tue, 24 Jul 2012 14:02:38 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] trivial
-Message-ID: <alpine.LNX.2.00.1207241401081.9707@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+	id S1753536Ab2GXMFY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 08:05:24 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Nori, Sekhar" <nsekhar@ti.com>, "Hilman, Kevin" <khilman@ti.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Subject: RE: [PATCH 2/6] ARM: davinci: remove rtc kicker release
+Thread-Topic: [PATCH 2/6] ARM: davinci: remove rtc kicker release
+Thread-Index: AQHNaNkCMXmm6CaP6EaR8T5kRUa4eJc37DAAgABm2KA=
+Date: Tue, 24 Jul 2012 12:04:30 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93E9AD19E@DBDE01.ent.ti.com>
+References: <cover.1343046707.git.afzal@ti.com>
+ <f9e348c8cb7402b27b1a5633b06620266e369641.1343046707.git.afzal@ti.com>
+ <500E82D4.9090702@mvista.com>
+In-Reply-To: <500E82D4.9090702@mvista.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi Sergei,
 
-please pull from
+On Tue, Jul 24, 2012 at 16:41:16, Sergei Shtylyov wrote:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
+> >   static struct platform_device da8xx_rtc_device = {
+> > -	.name           = "omap_rtc",
+> > +	.name           = "am1808-rtc",
+> 
+>     Why not "da8xx-rtc". Kick registers exist startting with 
+> DA830/OMAP-L137/AM1707, not only on AM1808.
 
-to receive trivial+doc updates. Trivial updates all over the place as 
-usual.
+I would prefer to keep da830-rtc, even though it is not strictly
+a requirement; "da830-rtc" could be used for DT case too (as in
+DT, wild card compatibles are not recommended), hence allowing
+us to have a uniform name for DT & non-DT case.
 
-Thanks.
-
-
-
-Akinobu Mita (1):
-      lib: correct link to the original source for div64_u64
-
-Alan Cox (2):
-      lm8333: Fix check ordering
-      via: Remove bogus if check
-
-Christopher L. Simons (1):
-      Documentation: ManagementStyle: fixed typo
-
-Geert Uytterhoeven (2):
-      module.c: spelling s/postition/position/g
-      arm,unicore32: Remove obsolete "select MISC_DEVICES"
-
-Jan-Simon Möller (1):
-      Fix typo in include/linux/clk.h .
-
-Jesper Juhl (1):
-      Documentation: Add newline at end-of-file to files lacking one
-
-Jiri Kosina (1):
-      Merge branch 'master' into for-next
-
-Kazuo Moriwaka (1):
-      Doc: document max raw dev number
-
-Krzysztof Wilczynski (1):
-      scsi: aha152x: Fix sparse warning and make printing pointer address more portable.
-
-Liu Bo (2):
-      netprio_cgroup.c: fix comment typo
-      Btrfs: fix typo in convert_extent_bit
-
-Martlin Ettl (1):
-      backlight: fix memory leak on obscure error path
-
-Masanari Iida (5):
-      mach-omap2: Fix typo in debug message and comment
-      cpufreq: Fix typo in cpufreq driver
-      video: Fix typo in drivers/video
-      iommu: Fix typo in iommu
-      pci: hotplug: Fix typo in pci
-
-Masatake YAMATO (1):
-      trivial: typo in comment in mksysmap
-
-Paul Bolle (4):
-      renesas_usbhs: cleanup quoted includes
-      parisc: cleanup quoted include
-      treewide: Put a space between #include and FILE
-      ab8500-btemp: Fix typo 'AB5500'
-
-Paul Gortmaker (1):
-      Documentation: asus-laptop.txt references an obsolete Kconfig item
-
-Ralf Baechle (1):
-      Fix comment typo multipy -> multiply
-
-Steve Glendinning (1):
-      Change email address for Steve Glendinning
-
-Wanpeng Li (3):
-      mm: fix page reclaim comment error
-      mm: cleanup on the comments of zone_reclaim_stat
-      mm/vmscan: cleanup comment error in balance_pgdat
-
- Documentation/ABI/stable/vdso                      |    2 +-
- Documentation/ABI/testing/sysfs-block-zram         |    2 +-
- .../ABI/testing/sysfs-bus-usb-devices-usbsevseg    |    2 +-
- .../testing/sysfs-class-backlight-driver-adp8870   |    2 +-
- Documentation/ManagementStyle                      |    2 +-
- Documentation/arm/Samsung-S3C24XX/H1940.txt        |    2 +-
- Documentation/arm/Samsung-S3C24XX/SMDK2440.txt     |    2 +-
- Documentation/devices.txt                          |    2 ++
- Documentation/laptops/asus-laptop.txt              |    3 +--
- Documentation/sound/alsa/hdspm.txt                 |    2 +-
- Documentation/video4linux/cpia2_overview.txt       |    2 +-
- Documentation/video4linux/stv680.txt               |    2 +-
- MAINTAINERS                                        |   20 ++++++++++----------
- arch/arm/mach-davinci/Kconfig                      |    6 ------
- arch/arm/mach-omap2/board-apollon.c                |    2 +-
- arch/arm/mach-omap2/board-omap4panda.c             |    2 +-
- arch/arm/mach-omap2/omap-mpuss-lowpower.c          |    2 +-
- arch/arm/mach-omap2/sr_device.c                    |    2 +-
- arch/arm/mach-omap2/twl-common.c                   |    2 +-
- arch/arm/plat-samsung/include/plat/gpio-cfg.h      |    2 +-
- arch/ia64/kernel/ia64_ksyms.c                      |    2 +-
- arch/ia64/kvm/vmm.c                                |    6 +++---
- arch/m68k/kernel/module.c                          |    4 ++--
- arch/parisc/include/asm/compat_rt_sigframe.h       |    6 +++---
- arch/sh/boards/board-polaris.c                     |    2 +-
- arch/unicore32/Kconfig                             |    1 -
- arch/x86/kernel/module.c                           |    2 +-
- drivers/cpufreq/s3c2416-cpufreq.c                  |    4 ++--
- drivers/cpufreq/speedstep-ich.c                    |    2 +-
- drivers/hwmon/emc2103.c                            |    2 +-
- drivers/input/keyboard/lm8333.c                    |    2 +-
- drivers/input/misc/cma3000_d0x.c                   |    2 +-
- drivers/iommu/amd_iommu_v2.c                       |    2 +-
- drivers/iommu/exynos-iommu.c                       |    2 +-
- drivers/iommu/iova.c                               |   14 +++++++-------
- drivers/media/video/zoran/zr36016.c                |    4 ++--
- drivers/net/phy/smsc.c                             |    2 +-
- drivers/net/usb/smsc75xx.c                         |    2 +-
- drivers/net/usb/smsc95xx.c                         |    2 +-
- drivers/net/wireless/iwlwifi/iwl-io.c              |    2 +-
- drivers/parisc/iosapic.c                           |    2 +-
- drivers/pci/hotplug/ibmphp_core.c                  |    2 +-
- drivers/pci/hotplug/ibmphp_ebda.c                  |    2 +-
- drivers/pci/hotplug/ibmphp_pci.c                   |    2 +-
- drivers/pci/setup-bus.c                            |    2 +-
- drivers/power/Kconfig                              |    2 +-
- drivers/scsi/aha152x.c                             |    4 ++--
- drivers/scsi/aha1542.c                             |    2 +-
- drivers/staging/comedi/drivers/s626.h              |    2 +-
- drivers/usb/renesas_usbhs/common.c                 |    2 +-
- drivers/usb/renesas_usbhs/common.h                 |    4 ++--
- drivers/usb/renesas_usbhs/fifo.c                   |    4 ++--
- drivers/usb/renesas_usbhs/mod.c                    |    4 ++--
- drivers/usb/renesas_usbhs/mod.h                    |    2 +-
- drivers/usb/renesas_usbhs/pipe.c                   |    4 ++--
- drivers/usb/renesas_usbhs/pipe.h                   |    4 ++--
- drivers/video/arcfb.c                              |    4 ++--
- drivers/video/atmel_lcdfb.c                        |    2 +-
- drivers/video/aty/atyfb_base.c                     |    2 +-
- drivers/video/aty/radeon_base.c                    |    2 +-
- drivers/video/backlight/88pm860x_bl.c              |    1 +
- drivers/video/bfin_adv7393fb.c                     |    2 +-
- drivers/video/cirrusfb.c                           |    2 +-
- drivers/video/exynos/exynos_dp_reg.c               |    2 +-
- drivers/video/exynos/exynos_mipi_dsi.c             |    2 +-
- drivers/video/i740fb.c                             |    6 +++---
- drivers/video/s3c-fb.c                             |    2 +-
- drivers/video/savage/savagefb_driver.c             |    6 +++---
- drivers/video/sis/init.c                           |    3 ++-
- drivers/video/smscufx.c                            |    8 ++++----
- drivers/video/sunxvr500.c                          |    2 +-
- fs/btrfs/extent_io.c                               |    3 ++-
- include/linux/clk.h                                |    4 ++--
- include/linux/mmzone.h                             |    2 +-
- lib/div64.c                                        |    2 +-
- mm/vmscan.c                                        |    5 +++--
- net/core/netprio_cgroup.c                          |    2 +-
- scripts/mksysmap                                   |    2 +-
- sound/oss/vwsnd.c                                  |    2 +-
- 79 files changed, 119 insertions(+), 121 deletions(-)
-
--- 
-Jiri Kosina
-SUSE Labs
+Regards
+Afzal
