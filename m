@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab2GXFjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 01:39:46 -0400
-Received: from mail.bmail.ru ([194.67.1.203]:30487 "EHLO sovam.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378Ab2GXFjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 01:39:44 -0400
-X-SPIN-Class: auth_users
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Tue Jul 24 09:39:41 2012
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-Date: Tue, 24 Jul 2012 09:39:40 +0400 (MSK)
-From: kyak <bas@bmail.ru>
-X-X-Sender: bas@bas
-To: David Miller <davem@davemloft.net>
-cc: bas@bmail.ru, linux-kernel@vger.kernel.org, sshtylyov@mvista.com,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org, greg@kroah.com
-Subject: Re: [PATCH] USB: plusb: Add support for PL-2501
-In-Reply-To: <20120723.130835.1217772163295796220.davem@davemloft.net>
-Message-ID: <alpine.LNX.2.02.1207240930140.1183@bas>
-References: <alpine.LNX.2.02.1207231540580.1183@bas> <20120723.130835.1217772163295796220.davem@davemloft.net>
-User-Agent: Alpine 2.02 (LNX 1266 2009-07-14)
+	id S1753447Ab2GXFpr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 01:45:47 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56727 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab2GXFpq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 01:45:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <CA+55aFyDupTr=Z8Y=4EeeLzE88Nnc0o0cQDamxJy-1rvSSUSPg@mail.gmail.com>
+References: <1343102095-20664-1-git-send-email-lliubbo@gmail.com>
+	<CA+55aFyDupTr=Z8Y=4EeeLzE88Nnc0o0cQDamxJy-1rvSSUSPg@mail.gmail.com>
+Date: Tue, 24 Jul 2012 13:45:44 +0800
+Message-ID: <CAA_GA1dTEf6rRJ__JOk1L0vzktNaxhPo3+S7XQCHn0dxWV4haQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Blackfin changes for 3.6-rc1
+From: Bob Liu <lliubbo@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        vapier@gentoo.org, sonic.zhang@analog.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch was created against linux-3.5, but it applies perfectly 
-against net-next tree, i just checked..
+Hi linus,
 
-I'm sorry for not being able to submit the correct patch from the first 
-attempt (and not even from the third attempt). Could you be more specific 
-about "doesn't apply cleanly at all"? By the way, i'm perfectly fine if 
-you just make this trivial change by yourself and take the credit, because 
-our exchange of e-mails has become 20 times bigger than the patch 
-itself. Probably sending another version of this patch from my side would 
-be just another waste of (your) time.
-
-On Mon, 23 Jul 2012, David Miller wrote:
-
-> From: kyak <bas@bmail.ru>
-> Date: Mon, 23 Jul 2012 15:44:11 +0400 (MSK)
->
->> From: Mikhail Peselnik <peselnik@gmail.com>
+On Tue, Jul 24, 2012 at 12:54 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Jul 23, 2012 at 8:54 PM, Bob Liu <lliubbo@gmail.com> wrote:
 >>
->> This patch adds support for PL-2501 by adding the appropriate USB
->> ID's. This chip is used in several USB 'Easy Trasfer' Cables.
->>
->> Signed-off-by: Mikhail Peselnik <peselnik@gmail.com>
->> Tested-by: Mikhail Peselnik <peselnik@gmail.com>
+>> Please pull blackfin changes for 3.6-rc1.
 >
-> This does not apply cleanly to my net-next tree at all.
+> No.
 >
+> These were clearly rebased today. And on top of random state in the
+> merge window.
+>
+
+Sorry for that, i've rebased my tree to v3.5 and will send a new pull-request.
+
+-- 
+Regards,
+--Bob
