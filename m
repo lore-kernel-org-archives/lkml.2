@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2GXXD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 19:03:29 -0400
+	id S1755753Ab2GXXDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 19:03:55 -0400
 Received: from mga03.intel.com ([143.182.124.21]:32042 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755000Ab2GXXDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 19:03:17 -0400
+	id S1754780Ab2GXXDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 19:03:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172744050"
+   d="scan'208";a="172744043"
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Hans Rosenfeld <hans.rosenfeld@amd.com>,
         Ingo Molnar <mingo@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
         robert.richter@amd.com, andreas.herrmann3@amd.com
-Subject: [PATCH 2/3] x86, fpu: consolidate inline asm routines for saving/restoring fpu state
-Date: Tue, 24 Jul 2012 16:05:28 -0700
-Message-Id: <1343171129-2747-3-git-send-email-suresh.b.siddha@intel.com>
+Subject: [PATCH 1/3] x86, signal: cleanup ifdefs and is_ia32, is_x32
+Date: Tue, 24 Jul 2012 16:05:27 -0700
+Message-Id: <1343171129-2747-2-git-send-email-suresh.b.siddha@intel.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1343171129-2747-1-git-send-email-suresh.b.siddha@intel.com>
 References: <1343171129-2747-1-git-send-email-suresh.b.siddha@intel.com>
@@ -25,282 +25,196 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consolidate x86, x86_64 inline asm routines saving/restoring fpu state
-using config_enabled().
+Use config_enabled() to cleanup the definitions of is_ia32/is_x32. Move
+the function prototypes to the header file to cleanup ifdefs.
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- arch/x86/include/asm/fpu-internal.h |  182 +++++++++++++++--------------------
- arch/x86/include/asm/xsave.h        |    6 +-
- arch/x86/kernel/xsave.c             |    4 +-
- 3 files changed, 80 insertions(+), 112 deletions(-)
+ arch/x86/include/asm/fpu-internal.h |   29 ++++++++++++++++
+ arch/x86/include/asm/signal.h       |    4 ++
+ arch/x86/kernel/signal.c            |   62 +++++++---------------------------
+ 3 files changed, 46 insertions(+), 49 deletions(-)
 
 diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 74dab61..f4ee0b5 100644
+index 75f4c6d..74dab61 100644
 --- a/arch/x86/include/asm/fpu-internal.h
 +++ b/arch/x86/include/asm/fpu-internal.h
-@@ -102,34 +102,24 @@ static inline void sanitize_i387_state(struct task_struct *tsk)
- 	__sanitize_i387_state(tsk);
- }
+@@ -12,6 +12,7 @@
  
--#ifdef CONFIG_X86_64
--static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
--{
--	int err;
--
--	/* See comment in fxsave() below. */
--#ifdef CONFIG_AS_FXSAVEQ
--	asm volatile("1:  fxrstorq %[fx]\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err)
--		     : [fx] "m" (*fx), "0" (0));
--#else
--	asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err)
--		     : [fx] "R" (fx), "m" (*fx), "0" (0));
--#endif
--	return err;
-+#define check_insn(insn, output, input...)				\
-+({									\
-+	int err;							\
-+	asm volatile("1:" #insn "\n\t"					\
-+		     "2:\n"						\
-+		     ".section .fixup,\"ax\"\n"				\
-+		     "3:  movl $-1,%[err]\n"				\
-+		     "    jmp  2b\n"					\
-+		     ".previous\n"					\
-+		     _ASM_EXTABLE(1b, 3b)				\
-+		     : [err] "=r" (err), output				\
-+		     : "0"(0), input);					\
-+	err;								\
-+})
+ #include <linux/kernel_stat.h>
+ #include <linux/regset.h>
++#include <linux/compat.h>
+ #include <linux/slab.h>
+ #include <asm/asm.h>
+ #include <asm/cpufeature.h>
+@@ -49,12 +50,32 @@ extern int save_i387_xstate_ia32(void __user *buf);
+ extern int restore_i387_xstate_ia32(void __user *buf);
+ #endif
+ 
++int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
++		       siginfo_t *info, compat_sigset_t *set,
++		       struct pt_regs *regs);
 +
-+static inline int fsave_user(struct i387_fsave_struct __user *fx)
+ #ifdef CONFIG_MATH_EMULATION
+ extern void finit_soft_fpu(struct i387_soft_struct *soft);
+ #else
+ static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
+ #endif
+ 
++static inline int is_ia32_compat_frame(void)
 +{
-+	return check_insn(fnsave %[fx]; fwait,  [fx] "=m" (*fx), "m" (*fx));
- }
- 
- static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
-@@ -145,90 +135,73 @@ static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
- 	if (unlikely(err))
- 		return -EFAULT;
- 
--	/* See comment in fxsave() below. */
--#ifdef CONFIG_AS_FXSAVEQ
--	asm volatile("1:  fxsaveq %[fx]\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err), [fx] "=m" (*fx)
--		     : "0" (0));
--#else
--	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err), "=m" (*fx)
--		     : [fx] "R" (fx), "0" (0));
--#endif
--	if (unlikely(err) &&
--	    __clear_user(fx, sizeof(struct i387_fxsave_struct)))
--		err = -EFAULT;
--	/* No need to clear here because the caller clears USED_MATH */
--	return err;
-+	if (config_enabled(CONFIG_X86_32))
-+		return check_insn(fxsave %[fx], [fx] "=m" (*fx), "m" (*fx));
-+	else if (config_enabled(CONFIG_AS_FXSAVEQ))
-+		return check_insn(fxsaveq %[fx], [fx] "=m" (*fx), "m" (*fx));
++	return config_enabled(CONFIG_IA32_EMULATION) &&
++	       test_thread_flag(TIF_IA32);
++}
 +
-+	/* See comment in fpu_fxsave() below. */
-+	return check_insn(rex64/fxsave (%[fx]), "=m" (*fx), [fx] "R" (fx));
- }
- 
--static inline void fpu_fxsave(struct fpu *fpu)
-+static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
- {
--	/* Using "rex64; fxsave %0" is broken because, if the memory operand
--	   uses any extended registers for addressing, a second REX prefix
--	   will be generated (to the assembler, rex64 followed by semicolon
--	   is a separate instruction), and hence the 64-bitness is lost. */
-+	if (config_enabled(CONFIG_X86_32))
-+		return check_insn(fxrstor %[fx], "=m" (*fx), [fx] "m" (*fx));
-+	else if (config_enabled(CONFIG_AS_FXSAVEQ))
-+		return check_insn(fxrstorq %[fx], "=m" (*fx), [fx] "m" (*fx));
- 
--#ifdef CONFIG_AS_FXSAVEQ
--	/* Using "fxsaveq %0" would be the ideal choice, but is only supported
--	   starting with gas 2.16. */
--	__asm__ __volatile__("fxsaveq %0"
--			     : "=m" (fpu->state->fxsave));
--#else
--	/* Using, as a workaround, the properly prefixed form below isn't
--	   accepted by any binutils version so far released, complaining that
--	   the same type of prefix is used twice if an extended register is
--	   needed for addressing (fix submitted to mainline 2005-11-21).
--	asm volatile("rex64/fxsave %0"
--		     : "=m" (fpu->state->fxsave));
--	   This, however, we can work around by forcing the compiler to select
--	   an addressing mode that doesn't require extended registers. */
--	asm volatile("rex64/fxsave (%[fx])"
--		     : "=m" (fpu->state->fxsave)
--		     : [fx] "R" (&fpu->state->fxsave));
--#endif
-+	/* See comment in fpu_fxsave() below. */
-+	return check_insn(rex64/fxrstor (%[fx]), "=m" (*fx), [fx] "R" (fx),
-+			  "m" (*fx));
- }
- 
--int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
--			compat_sigset_t *set, struct pt_regs *regs);
--int ia32_setup_frame(int sig, struct k_sigaction *ka,
--		     compat_sigset_t *set, struct pt_regs *regs);
--
--#else  /* CONFIG_X86_32 */
--
--/* perform fxrstor iff the processor has extended states, otherwise frstor */
--static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
-+static inline int frstor_checking(struct i387_fsave_struct *fx)
- {
--	/*
--	 * The "nop" is needed to make the instructions the same
--	 * length.
--	 */
--	alternative_input(
--		"nop ; frstor %1",
--		"fxrstor %1",
--		X86_FEATURE_FXSR,
--		"m" (*fx));
--
--	return 0;
-+	return check_insn(frstor %[fx], "=m" (*fx), [fx] "m" (*fx));
- }
- 
- static inline void fpu_fxsave(struct fpu *fpu)
- {
--	asm volatile("fxsave %[fx]"
--		     : [fx] "=m" (fpu->state->fxsave));
-+	if (config_enabled(CONFIG_X86_32))
-+		asm volatile( "fxsave %[fx]" : [fx] "=m" (fpu->state->fxsave));
-+	else if (config_enabled(CONFIG_AS_FXSAVEQ))
-+		asm volatile("fxsaveq %0" : "=m" (fpu->state->fxsave));
-+	else {
-+		/* Using "rex64; fxsave %0" is broken because, if the memory
-+		 * operand uses any extended registers for addressing, a second
-+		 * REX prefix will be generated (to the assembler, rex64
-+		 * followed by semicolon is a separate instruction), and hence
-+		 * the 64-bitness is lost.
-+		 *
-+		 * Using "fxsaveq %0" would be the ideal choice, but is only
-+		 * supported starting with gas 2.16.
-+		 *
-+		 * Using, as a workaround, the properly prefixed form below
-+		 * isn't accepted by any binutils version so far released,
-+		 * complaining that the same type of prefix is used twice if
-+		 * an extended register is needed for addressing (fix submitted
-+		 * to mainline 2005-11-21).
-+		 *
-+		 *  asm volatile("rex64/fxsave %0" : "=m" (fpu->state->fxsave));
-+		 *
-+		 * This, however, we can work around by forcing the compiler to
-+		 * select an addressing mode that doesn't require extended
-+		 * registers.
-+		 */
-+		asm volatile( "rex64/fxsave (%[fx])"
-+			     : "=m" (fpu->state->fxsave)
-+			     : [fx] "R" (&fpu->state->fxsave));
-+	}
- }
-+#ifdef CONFIG_X86_64
++static inline int is_ia32_frame(void)
++{
++	return config_enabled(CONFIG_X86_32) || is_ia32_compat_frame();
++}
 +
++static inline int is_x32_frame(void)
++{
++	return config_enabled(CONFIG_X86_X32_ABI) && test_thread_flag(TIF_X32);
++}
++
+ #define X87_FSW_ES (1 << 7)	/* Exception Summary */
+ 
+ static __always_inline __pure bool use_xsaveopt(void)
+@@ -180,6 +201,11 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ #endif
+ }
+ 
 +int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
 +			compat_sigset_t *set, struct pt_regs *regs);
 +int ia32_setup_frame(int sig, struct k_sigaction *ka,
 +		     compat_sigset_t *set, struct pt_regs *regs);
 +
-+#else  /* CONFIG_X86_32 */
+ #else  /* CONFIG_X86_32 */
  
- #define ia32_setup_frame	__setup_frame
- #define ia32_setup_rt_frame	__setup_rt_frame
-@@ -277,17 +250,14 @@ static inline int __save_init_fpu(struct task_struct *tsk)
- 	return fpu_save_init(&tsk->thread.fpu);
+ /* perform fxrstor iff the processor has extended states, otherwise frstor */
+@@ -204,6 +230,9 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ 		     : [fx] "=m" (fpu->state->fxsave));
  }
  
--static inline int fpu_fxrstor_checking(struct fpu *fpu)
--{
--	return fxrstor_checking(&fpu->state->fxsave);
--}
++#define ia32_setup_frame	__setup_frame
++#define ia32_setup_rt_frame	__setup_rt_frame
++
+ #endif	/* CONFIG_X86_64 */
+ 
+ /*
+diff --git a/arch/x86/include/asm/signal.h b/arch/x86/include/asm/signal.h
+index 598457c..323973f 100644
+--- a/arch/x86/include/asm/signal.h
++++ b/arch/x86/include/asm/signal.h
+@@ -31,6 +31,10 @@ typedef struct {
+ 	unsigned long sig[_NSIG_WORDS];
+ } sigset_t;
+ 
++#ifndef CONFIG_COMPAT
++typedef sigset_t compat_sigset_t;
++#endif
++
+ #else
+ /* Here we must cater to libcs that poke about in kernel headers.  */
+ 
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index b280908..9779084 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -209,24 +209,21 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size,
+ 	unsigned long sp = regs->sp;
+ 	int onsigstack = on_sig_stack(sp);
+ 
+-#ifdef CONFIG_X86_64
+ 	/* redzone */
+-	sp -= 128;
+-#endif /* CONFIG_X86_64 */
++	if (config_enabled(CONFIG_X86_64))
++		sp -= 128;
+ 
+ 	if (!onsigstack) {
+ 		/* This is the X/Open sanctioned signal stack switching.  */
+ 		if (ka->sa.sa_flags & SA_ONSTACK) {
+ 			if (current->sas_ss_size)
+ 				sp = current->sas_ss_sp + current->sas_ss_size;
+-		} else {
+-#ifdef CONFIG_X86_32
+-			/* This is the legacy signal stack switching. */
+-			if ((regs->ss & 0xffff) != __USER_DS &&
+-				!(ka->sa.sa_flags & SA_RESTORER) &&
+-					ka->sa.sa_restorer)
++		} else if (config_enabled(CONFIG_X86_32) &&
++			   (regs->ss & 0xffff) != __USER_DS &&
++			   !(ka->sa.sa_flags & SA_RESTORER) &&
++			   ka->sa.sa_restorer) {
++				/* This is the legacy signal stack switching. */
+ 				sp = (unsigned long) ka->sa.sa_restorer;
+-#endif /* CONFIG_X86_32 */
+ 		}
+ 	}
+ 
+@@ -612,55 +609,22 @@ static int signr_convert(int sig)
+ 	return sig;
+ }
+ 
+-#ifdef CONFIG_X86_32
 -
- static inline int fpu_restore_checking(struct fpu *fpu)
+-#define is_ia32	1
+-#define ia32_setup_frame	__setup_frame
+-#define ia32_setup_rt_frame	__setup_rt_frame
+-
+-#else /* !CONFIG_X86_32 */
+-
+-#ifdef CONFIG_IA32_EMULATION
+-#define is_ia32	test_thread_flag(TIF_IA32)
+-#else /* !CONFIG_IA32_EMULATION */
+-#define is_ia32	0
+-#endif /* CONFIG_IA32_EMULATION */
+-
+-#ifdef CONFIG_X86_X32_ABI
+-#define is_x32	test_thread_flag(TIF_X32)
+-
+-static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
+-			      siginfo_t *info, compat_sigset_t *set,
+-			      struct pt_regs *regs);
+-#else /* !CONFIG_X86_X32_ABI */
+-#define is_x32	0
+-#endif /* CONFIG_X86_X32_ABI */
+-
+-int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-		sigset_t *set, struct pt_regs *regs);
+-int ia32_setup_frame(int sig, struct k_sigaction *ka,
+-		sigset_t *set, struct pt_regs *regs);
+-
+-#endif /* CONFIG_X86_32 */
+-
+ static int
+ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 		struct pt_regs *regs)
  {
- 	if (use_xsave())
--		return fpu_xrstor_checking(fpu);
-+		return fpu_xrstor_checking(&fpu->state->xsave);
-+	else if (use_fxsr())
-+		return fxrstor_checking(&fpu->state->fxsave);
- 	else
--		return fpu_fxrstor_checking(fpu);
-+		return frstor_checking(&fpu->state->fsave);
- }
+ 	int usig = signr_convert(sig);
+ 	sigset_t *set = sigmask_to_save();
++	compat_sigset_t *cset = (compat_sigset_t *) set;
  
- static inline int restore_fpu_checking(struct task_struct *tsk)
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 8a1b6f9..aaac810 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -42,9 +42,8 @@ extern int check_for_xstate(struct i387_fxsave_struct __user *buf,
- 			    void __user *fpstate,
- 			    struct _fpx_sw_bytes *sw);
- 
--static inline int fpu_xrstor_checking(struct fpu *fpu)
-+static inline int fpu_xrstor_checking(struct xsave_struct *fx)
- {
--	struct xsave_struct *fx = &fpu->state->xsave;
- 	int err;
- 
- 	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
-@@ -84,9 +83,6 @@ static inline int xsave_user(struct xsave_struct __user *buf)
- 			     : [err] "=r" (err)
- 			     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
- 			     : "memory");
--	if (unlikely(err) && __clear_user(buf, xstate_size))
--		err = -EFAULT;
--	/* No need to clear here because the caller clears USED_MATH */
- 	return err;
- }
- 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 3d3e207..9c03591 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -176,8 +176,10 @@ int save_i387_xstate(void __user *buf)
+ 	/* Set up the stack frame */
+-	if (is_ia32) {
++	if (is_ia32_frame()) {
+ 		if (ka->sa.sa_flags & SA_SIGINFO)
+-			return ia32_setup_rt_frame(usig, ka, info, set, regs);
++			return ia32_setup_rt_frame(usig, ka, info, cset, regs);
  		else
- 			err = fxsave_user(buf);
- 
--		if (err)
-+		if (unlikely(err)) {
-+			__clear_user(buf, xstate_size);
- 			return err;
-+		}
- 		user_fpu_end();
+-			return ia32_setup_frame(usig, ka, set, regs);
+-#ifdef CONFIG_X86_X32_ABI
+-	} else if (is_x32) {
+-		return x32_setup_rt_frame(usig, ka, info,
+-					 (compat_sigset_t *)set, regs);
+-#endif
++			return ia32_setup_frame(usig, ka, cset, regs);
++	} else if (is_x32_frame()) {
++		return x32_setup_rt_frame(usig, ka, info, cset, regs);
  	} else {
- 		sanitize_i387_state(tsk);
+ 		return __setup_rt_frame(sig, ka, info, set, regs);
+ 	}
 -- 
 1.7.6.5
 
