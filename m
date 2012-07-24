@@ -1,75 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab2GXOVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 10:21:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57403 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab2GXOVu (ORCPT
+	id S1754950Ab2GXOWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 10:22:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42098 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab2GXOWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 10:21:50 -0400
-Message-ID: <500EAF23.8060909@gmail.com>
-Date: Tue, 24 Jul 2012 08:20:19 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Tue, 24 Jul 2012 10:22:23 -0400
+Date: Tue, 24 Jul 2012 07:21:52 -0700
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Message-ID: <tip-8323f26ce3425460769605a6aece7a174edaa7d1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        stefan.bader@canonical.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        stefan.bader@canonical.com
+In-Reply-To: <1340364965.18025.71.camel@twins>
+References: <1340364965.18025.71.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Fix race in task_group()
+Git-Commit-ID: 8323f26ce3425460769605a6aece7a174edaa7d1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Robert Richter <robert.richter@amd.com>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com> <1342826756-64663-9-git-send-email-dsahern@gmail.com> <20120723181358.GC6717@infradead.org>
-In-Reply-To: <20120723181358.GC6717@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 24 Jul 2012 07:21:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/23/12 12:13 PM, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jul 20, 2012 at 05:25:53PM -0600, David Ahern escreveu:
->> PEBS cannot be used with guest mode. If user adds :p modifier set
->> exclude_guest as well.
->
-> Is this something Intel specific? Or can someone think of an arch where
-> this limitation wouldn't exist?
+Commit-ID:  8323f26ce3425460769605a6aece7a174edaa7d1
+Gitweb:     http://git.kernel.org/tip/8323f26ce3425460769605a6aece7a174edaa7d1
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 22 Jun 2012 13:36:05 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 24 Jul 2012 13:58:20 +0200
 
-Good point. So far precise_ip is used by arch/x86 only. I don't have an 
-AMD based server so I don't know if there is a conflict between 
-virtualization and IBS. Added Robert for advice.
+sched: Fix race in task_group()
 
-David
+Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
+Don't call task_group() too many times in set_task_rq()"), he
+found the reason to be that the multiple task_group()
+invocations in set_task_rq() returned different values.
 
->
->>
->> Signed-off-by: David Ahern <dsahern@gmail.com>
->> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> Cc: Namhyung Kim <namhyung@kernel.org>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Cc: Gleb Natapov <gleb@redhat.com>
->> Link: https://lkml.org/lkml/2012/7/9/264
->> ---
->>   tools/perf/util/parse-events.c |    3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
->> index 1aa721d..f34629b 100644
->> --- a/tools/perf/util/parse-events.c
->> +++ b/tools/perf/util/parse-events.c
->> @@ -653,6 +653,9 @@ int parse_events_modifier(struct list_head *list, char *str)
->>   			eH = 0;
->>   		} else if (*str == 'p') {
->>   			precise++;
->> +			/* use of precise requires exclude_guest */
->> +			if (!exclude_GH)
->> +				eG = 1;
->>   		} else
->>   			break;
->>
->> --
->> 1.7.10.1
+Looking at all that I found a lack of serialization and plain
+wrong comments.
 
+The below tries to fix it using an extra pointer which is
+updated under the appropriate scheduler locks. Its not pretty,
+but I can't really see another way given how all the cgroup
+stuff works.
+
+Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/init_task.h |   12 +++++++++++-
+ include/linux/sched.h     |    5 ++++-
+ kernel/sched/core.c       |    9 ++++++++-
+ kernel/sched/sched.h      |   23 ++++++++++-------------
+ 4 files changed, 33 insertions(+), 16 deletions(-)
+
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 9e65eff..b806b82 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -123,8 +123,17 @@ extern struct group_info init_groups;
+ 
+ extern struct cred init_cred;
+ 
++extern struct task_group root_task_group;
++
++#ifdef CONFIG_CGROUP_SCHED
++# define INIT_CGROUP_SCHED(tsk)						\
++	.sched_task_group = &root_task_group,
++#else
++# define INIT_CGROUP_SCHED(tsk)
++#endif
++
+ #ifdef CONFIG_PERF_EVENTS
+-# define INIT_PERF_EVENTS(tsk)					\
++# define INIT_PERF_EVENTS(tsk)						\
+ 	.perf_event_mutex = 						\
+ 		 __MUTEX_INITIALIZER(tsk.perf_event_mutex),		\
+ 	.perf_event_list = LIST_HEAD_INIT(tsk.perf_event_list),
+@@ -161,6 +170,7 @@ extern struct cred init_cred;
+ 	},								\
+ 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
+ 	INIT_PUSHABLE_TASKS(tsk)					\
++	INIT_CGROUP_SCHED(tsk)						\
+ 	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
+ 	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
+ 	.real_parent	= &tsk,						\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index bc99529..fd9436a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1245,6 +1245,9 @@ struct task_struct {
+ 	const struct sched_class *sched_class;
+ 	struct sched_entity se;
+ 	struct sched_rt_entity rt;
++#ifdef CONFIG_CGROUP_SCHED
++	struct task_group *sched_task_group;
++#endif
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	/* list of struct preempt_notifier: */
+@@ -2724,7 +2727,7 @@ extern int sched_group_set_rt_period(struct task_group *tg,
+ extern long sched_group_rt_period(struct task_group *tg);
+ extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
+ #endif
+-#endif
++#endif /* CONFIG_CGROUP_SCHED */
+ 
+ extern int task_can_switch_user(struct user_struct *up,
+ 					struct task_struct *tsk);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 536b213..5d011ef 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1096,7 +1096,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 	 * a task's CPU. ->pi_lock for waking tasks, rq->lock for runnable tasks.
+ 	 *
+ 	 * sched_move_task() holds both and thus holding either pins the cgroup,
+-	 * see set_task_rq().
++	 * see task_group().
+ 	 *
+ 	 * Furthermore, all task_rq users should acquire both locks, see
+ 	 * task_rq_lock().
+@@ -7658,6 +7658,7 @@ void sched_destroy_group(struct task_group *tg)
+  */
+ void sched_move_task(struct task_struct *tsk)
+ {
++	struct task_group *tg;
+ 	int on_rq, running;
+ 	unsigned long flags;
+ 	struct rq *rq;
+@@ -7672,6 +7673,12 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		tsk->sched_class->put_prev_task(rq, tsk);
+ 
++	tg = container_of(task_subsys_state_check(tsk, cpu_cgroup_subsys_id,
++				lockdep_is_held(&tsk->sighand->siglock)),
++			  struct task_group, css);
++	tg = autogroup_task_group(tsk, tg);
++	tsk->sched_task_group = tg;
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	if (tsk->sched_class->task_move_group)
+ 		tsk->sched_class->task_move_group(tsk, on_rq);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 55844f2..c35a1a7 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -538,22 +538,19 @@ extern int group_balance_cpu(struct sched_group *sg);
+ /*
+  * Return the group to which this tasks belongs.
+  *
+- * We use task_subsys_state_check() and extend the RCU verification with
+- * pi->lock and rq->lock because cpu_cgroup_attach() holds those locks for each
+- * task it moves into the cgroup. Therefore by holding either of those locks,
+- * we pin the task to the current cgroup.
++ * We cannot use task_subsys_state() and friends because the cgroup
++ * subsystem changes that value before the cgroup_subsys::attach() method
++ * is called, therefore we cannot pin it and might observe the wrong value.
++ *
++ * The same is true for autogroup's p->signal->autogroup->tg, the autogroup
++ * core changes this before calling sched_move_task().
++ *
++ * Instead we use a 'copy' which is updated from sched_move_task() while
++ * holding both task_struct::pi_lock and rq::lock.
+  */
+ static inline struct task_group *task_group(struct task_struct *p)
+ {
+-	struct task_group *tg;
+-	struct cgroup_subsys_state *css;
+-
+-	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
+-			lockdep_is_held(&p->pi_lock) ||
+-			lockdep_is_held(&task_rq(p)->lock));
+-	tg = container_of(css, struct task_group, css);
+-
+-	return autogroup_task_group(p, tg);
++	return p->sched_task_group;
+ }
+ 
+ /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
