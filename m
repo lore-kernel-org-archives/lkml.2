@@ -1,94 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab2GXCiF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 22:38:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36582 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752879Ab2GXCiC (ORCPT
+	id S1753336Ab2GXCj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 22:39:27 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:53369 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912Ab2GXCjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 22:38:02 -0400
-Message-ID: <1343097463.5132.89.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 00/11] 3.2-stable: Fix for leapsecond caused
- hrtimer/futex issue
-From: Ben Hutchings <ben@decadent.org.uk>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>,
-        stable@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 24 Jul 2012 03:37:43 +0100
-In-Reply-To: <500DAB3F.30606@us.ibm.com>
-References: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
-	 <50050FD9.3070403@us.ibm.com> <1342730535@msgid.manchmal.in-ulm.de>
-	 <500DAB3F.30606@us.ibm.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-9KcT/wAH+sVEHV1OkKJe"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 23 Jul 2012 22:39:25 -0400
+X-AuditID: b753bd60-91ec3ba0000047ca-bf-500e0a5465ba
+X-AuditID: b753bd60-91ec3ba0000047ca-bf-500e0a5465ba
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Subject: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+To: linux-kernel@vger.kernel.org
+Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
+        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
+        "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com
+Date: Tue, 24 Jul 2012 11:36:57 +0900
+Message-ID: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All,
 
---=-9KcT/wAH+sVEHV1OkKJe
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The following patch set provides a low-overhead system for collecting kernel
+tracing data of guests by a host in a virtualization environment.
 
-On Mon, 2012-07-23 at 12:51 -0700, John Stultz wrote:
-> On 07/19/2012 01:48 PM, Christoph Biedl wrote:
-> > John Stultz wrote...
-> >
-> >> Attached is the test case I used to reproduce and test the solution
-> >> to the hard-hang deadlock.
-> > I was wondering whether anybody managed to crash a virtualbox guest
-> > using your program. No avail, using version 4.1.18 on the host and the
-> > guest kernel running several 3.0.x (x < 38) kernels on both x32 and
-> > x64, the guest utilies were stopped. Rather a fun fact I guess but I
-> > wanted to let you know.
->=20
-> I've been able to crash a kvm guest with an unpatched kernel with my=20
-> test.  The issue requires that the adding of the hrtimer causes the=20
-> clockevent to be reprogrammed. This usually happens if there's no timers=
-=20
-> that expire sooner then the leapsecond timer. So if there are drivers=20
-> that set frequent timers, or set timers right before the leapsecond, it=
-=20
-> may be difficult to trigger this issue.
->=20
-> Lowering HZ or adding more vcpus might help if you really want to be=20
-> able to trigger the issue.
-[...]
+A guest OS generally shares some devices with other guests or a host, so
+reasons of any problems occurring in a guest may be from other guests or a host.
+Then, to collect some tracing data of a number of guests and a host is needed
+when some problems occur in a virtualization environment. One of methods to
+realize that is to collect tracing data of guests in a host. To do this, network
+is generally used. However, high load will be taken to applications on guests
+using network I/O because there are many network stack layers. Therefore,
+a communication method for collecting the data without using network is needed.
 
-Your test program also made Linux 3.2.23 (or it may have been .21)
-lock-up for me in a KVM guest, while 3.2.24-rc1 seemed immune.
+We submitted a patch set of "IVRing", a ring-buffer driver constructed on
+Inter-VM shared memory (IVShmem), to LKML http://lwn.net/Articles/500304/ in
+this June. IVRing and the IVRing reader use POSIX shared memory each other
+without using network, so a low-overhead system for collecting guest tracing
+data is realized. However, this patch set has some problems as follows:
+ - use IVShmem instead of virtio
+ - create a new ring-buffer without using existing ring-buffer in kernel
+ - scalability
+   -- not support SMP environment
+   -- buffer size limitation
+   -- not support live migration (maybe difficult for realize this)
 
-Ben.
+Therefore, we propose a new system "virtio-trace", which uses enhanced
+virtio-serial and existing ring-buffer of ftrace, for collecting guest kernel
+tracing data. In this system, there are 5 main components:
+ (1) Ring-buffer of ftrace in a guest
+     - When trace agent reads ring-buffer, a page is removed from ring-buffer.
+ (2) Trace agent in the guest
+     - Splice the page of ring-buffer to read_pipe using splice() without
+       memory copying. Then, the page is spliced from write_pipe to virtio
+       without memory copying.
+ (3) Virtio-console driver in the guest
+     - Pass the page to virtio-ring
+ (4) Virtio-serial bus in QEMU
+     - Copy the page to kernel pipe
+ (5) Reader in the host
+     - Read guest tracing data via FIFO(named pipe) 
 
---=20
-Ben Hutchings
-If more than one person is responsible for a bug, no one is at fault.
+***Evaluation***
+When a host collects tracing data of a guest, the performance of using
+virtio-trace is compared with that of using native(just running ftrace),
+IVRing, and virtio-serial(normal method of read/write).
 
---=-9KcT/wAH+sVEHV1OkKJe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+<environment>
+The overview of this evaluation is as follows:
+ (a) A guest on a KVM is prepared.
+     - The guest is dedicated one physical CPU as a virtual CPU(VCPU).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ (b) The guest starts to write tracing data to ring-buffer of ftrace.
+     - The probe points are all trace points of sched, timer, and kmem.
 
-iQIVAwUAUA4Kd+e/yOyVhhEJAQpsrBAAzefcbUOWvXhMv8OrJICWW3pcpZoxb57k
-c5l8h6XMyFBfOu6/CPu27aMaezjD87uZHG+BT+L05XkaDeKxtH5ybPI+f1QBUBNH
-1R05cye3wySBS4qn2tyqDLOXswOz/rPOnwk4V7Bfu45WiRCvPSMrKeKARUwQBE+8
-x9b/kzQjAMxOlH9w4N+o+OpgW1nBaWoGklTOAUIX8mamZNrBwxTw7PNXqMy52hYh
-phOXnfm3CpJ4jAW66o5wWqU/tY413QIitdxJl46n/28ImkYGLEWtP2/NyaDZx1/T
-mJFgF2IPBrJM5xK6FNX1ue8j9cffvtCGmfweaT0Mb/luHq+fRN8NzhpkoZx6FEuZ
-GWzsHAv9Byukjp2uKYmkBFFA0VLgEhiF4czsD/m1FIFrcGIf31MN/X2tSEUje1at
-92G+HsUG7WNSbuEKrjrqfAagdfg3Y34XWEMaeQunD5db7F76fJqF2SiBHZcJCEMm
-elJekckrHUs75bhEug0TUBuEBw1TDVL9rHXT6GMW+A96enfF924uTmm9lqCFUoBk
-U73sJnD9QzAI0N4G/ya15/cGQZsLNzjppOwaPVtDHnxja9X2D0xPCjxu6j/aKuS3
-GzY7d1DjGo2bXUzSgLwmx0SISyFY9/9VeX+QUqGFovtfnt4SLYwExxHK/CSw84CB
-9/nNWTHieT8=
-=Q0Z6
------END PGP SIGNATURE-----
+ (c) Writing trace data, dhrystone 2 in UNIX bench is executed as a benchmark
+     tool in the guest.
+     - Dhrystone 2 intends system performance by repeating integer arithmetic
+       as a score.
+     - Since higher score equals to better system performance, if the score
+       decrease based on bare environment, it indicates that any operation
+       disturbs the integer arithmetic. Then, we define the overhead of
+       transporting trace data is calculated as follows:
+		OVERHEAD = (1 - SCORE_OF_A_METHOD/NATIVE_SCORE) * 100.
 
---=-9KcT/wAH+sVEHV1OkKJe--
+The performance of each method is compared as follows:
+ [1] Native
+     - only recording trace data to ring-buffer on a guest
+ [2] Virtio-trace
+     - running a trace agent on a guest
+     - a reader on a host opens FIFO using cat command
+ [3] IVRing
+     - A SystemTap script in a guest records trace data to IVRing.
+       -- probe points are same as ftrace.
+ [4] Virtio-serial(normal)
+     - A reader(using cat) on a guest output trace data to a host using
+       standard output via virtio-serial.
+
+Other information is as follows:
+ - host
+   kernel: 3.3.7-1 (Fedora16)
+   CPU: Intel Xeon x5660@2.80GHz(12core)
+   Memory: 48GB
+
+ - guest(only booting one guest)
+   kernel: 3.5.0-rc4+ (Fedora16)
+   CPU: 1VCPU(dedicated)
+   Memory: 1GB
+
+<result>
+3 patterns based on the bare environment were indicated as follows:
+	                   Scores      overhead against [0] Native
+    [0] Native:          28807569.5               -
+    [1] Virtio-trace:    28685049.5             0.43%
+    [2] IVRing:          28418595.5             1.35%
+    [3] Virtio-serial:   13262258.7            53.96%
+
+
+***Just enhancement ideas***
+ - Support for trace-cmd
+ - Support for 9pfs protocol
+ - Support for non-blocking mode in QEMU
+ - Make "vhost-serial"
+
+Thank you,
+
+---
+
+Masami Hiramatsu (5):
+      virtio/console: Allocate scatterlist according to the current pipe size
+      ftrace: Allow stealing pages from pipe buffer
+      virtio/console: Wait until the port is ready on splice
+      virtio/console: Add a failback for unstealable pipe buffer
+      virtio/console: Add splice_write support
+
+Yoshihiro YUNOMAE (1):
+      tools: Add guest trace agent as a user tool
+
+
+ drivers/char/virtio_console.c               |  198 ++++++++++++++++++--
+ kernel/trace/trace.c                        |    8 -
+ tools/virtio/virtio-trace/Makefile          |   14 +
+ tools/virtio/virtio-trace/README            |  118 ++++++++++++
+ tools/virtio/virtio-trace/trace-agent-ctl.c |  137 ++++++++++++++
+ tools/virtio/virtio-trace/trace-agent-rw.c  |  192 +++++++++++++++++++
+ tools/virtio/virtio-trace/trace-agent.c     |  270 +++++++++++++++++++++++++++
+ tools/virtio/virtio-trace/trace-agent.h     |   75 ++++++++
+ 8 files changed, 985 insertions(+), 27 deletions(-)
+ create mode 100644 tools/virtio/virtio-trace/Makefile
+ create mode 100644 tools/virtio/virtio-trace/README
+ create mode 100644 tools/virtio/virtio-trace/trace-agent-ctl.c
+ create mode 100644 tools/virtio/virtio-trace/trace-agent-rw.c
+ create mode 100644 tools/virtio/virtio-trace/trace-agent.c
+ create mode 100644 tools/virtio/virtio-trace/trace-agent.h
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
