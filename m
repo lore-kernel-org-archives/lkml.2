@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab2GXPbb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 11:31:31 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:51147 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab2GXPba (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 11:31:30 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>,
-        David Rientjes <rientjes@google.com>,
-        Brad Spengler <spender@grsecurity.net>
-Cc: Djalal Harouni <tixxdz@opendz.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH v2 2/2] proc: do not allow negative offsets on /proc/<pid>/environ
-Date: Tue, 24 Jul 2012 16:29:02 +0100
-Message-Id: <1343143742-31229-3-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1343143742-31229-1-git-send-email-tixxdz@opendz.org>
-References: <1343143742-31229-1-git-send-email-tixxdz@opendz.org>
+	id S1755524Ab2GXPmW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 11:42:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59439 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754696Ab2GXPmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 11:42:21 -0400
+Date: Tue, 24 Jul 2012 17:42:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
+Subject: Re: [PATCH] add blockconsole version 1.1
+Message-ID: <20120724154218.GB13753@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	=?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+	Steve Hodgson <steve@purestorage.com>
+References: <x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
+ <20120425132513.GA23492@logfs.org>
+ <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com>
+ <20120712174633.GA7248@logfs.org>
+ <20120713130336.GC10298@x1.osrc.amd.com>
+ <20120713162009.GA10268@logfs.org>
+ <20120716124614.GA19497@x1.osrc.amd.com>
+ <20120718185335.GA1771@logfs.org>
+ <20120718214520.GA14067@liondog.tnic>
+ <20120723200459.GD17767@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120723200459.GD17767@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__mem_open() which is called by both /proc/<pid>/environ and
-/proc/<pid>/mem ->open() handlers will allow the use of negative offsets.
-/proc/<pid>/mem has negative offsets but not /proc/<pid>/environ.
+On Mon, Jul 23, 2012 at 04:04:59PM -0400, Jörn Engel wrote:
+> On Wed, 18 July 2012 23:45:21 +0200, Borislav Petkov wrote:
+> > 
+> > Something like the above, just slap it at the beginning of
+> > Documentation/block/blockconsole.txt for impatient people like me and
+> > that's it :-).
+> 
+> And below is an updated patch with your changes folded in.  I did a
+> few minor tweaks, so there is every possibility I may have messed it
+> up.
 
-Clean this by moving the 'force FMODE_UNSIGNED_OFFSET flag' to mem_open()
-to allow negative offsets only on /proc/<pid>/mem.
+Ok, everything seems to build and boot fine, logging works too.
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/proc/base.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+Just a minor nuisance: I have this in the log:
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 39ee093..1b6c84c 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -695,8 +695,6 @@ static int __mem_open(struct inode *inode, struct file *file, unsigned int mode)
- 		mmput(mm);
- 	}
- 
--	/* OK to pass negative loff_t, we can catch out-of-range */
--	file->f_mode |= FMODE_UNSIGNED_OFFSET;
- 	file->private_data = mm;
- 
- 	return 0;
-@@ -704,7 +702,12 @@ static int __mem_open(struct inode *inode, struct file *file, unsigned int mode)
- 
- static int mem_open(struct inode *inode, struct file *file)
- {
--	return __mem_open(inode, file, PTRACE_MODE_ATTACH);
-+	int ret = __mem_open(inode, file, PTRACE_MODE_ATTACH);
-+
-+	/* OK to pass negative loff_t, we can catch out-of-range */
-+	file->f_mode |= FMODE_UNSIGNED_OFFSET;
-+
-+	return ret;
- }
- 
- static ssize_t mem_rw(struct file *file, char __user *buf,
+...
+[   10.498422] console [bcon0] enabled
+[   10.499899] blockconsole: now logging to /dev/sdc at 1
+[   10.594791] usb 5-2: new full-speed USB device number 3 using ohci_hcd
+                                                                                                                                
+[   12.665911] xhci_hcd 0000:00:10.0: xHCI Host Controller
+[   12.668469] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
+...
+
+which doesn't have the empty line with a bunch of '\s' chars:
+
+...
+[   10.498422] console [bcon0] enabled
+[   10.499899] blockconsole: now logging to /dev/sdc at 1
+[   10.594791] usb 5-2: new full-speed USB device number 3 using ohci_hcd
+[   12.665911] xhci_hcd 0000:00:10.0: xHCI Host Controller
+[   12.668469] xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
+...
+
+Do you know per-chance why that happens? I have a couple more lines like
+that further in the log file which bcon_tail generated.
+
+Thanks.
+
 -- 
-1.7.1
-
+Regards/Gruss,
+Boris.
