@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab2GXQko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 12:40:44 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:38313 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755394Ab2GXQkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 12:40:41 -0400
-Date: Tue, 24 Jul 2012 08:58:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Question about tboot_wait_for_aps()
-Message-ID: <20120724155853.GA32362@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072416-3534-0000-0000-00000ABD959B
+	id S1755606Ab2GXQnU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 12:43:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64865 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754957Ab2GXQnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 12:43:18 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Subject: [RFC PATCH v2 24/32] PCI/ath9k: use PCIe capabilities access functions to simplify implementation
+Date: Wed, 25 Jul 2012 00:41:09 +0800
+Message-Id: <1343148077-25941-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Jiang Liu <jiang.liu@huawei.com>
 
-While taking another pass through the CPU_DYING notifiers, I came upon
-the following:
+Use PCIe capabilities access functions to simplify ath9k driver's
+implementation.
 
-	static int tboot_wait_for_aps(int num_aps)
-	{
-		unsigned long timeout;
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ drivers/net/wireless/ath/ath9k/pci.c |   18 +++++++-----------
+ 1 file changed, 7 insertions(+), 11 deletions(-)
 
-		timeout = AP_WAIT_TIMEOUT*HZ;
-		while (atomic_read((atomic_t *)&tboot->num_in_wfs) != num_aps &&
-		       timeout) {
-			mdelay(1);
-			timeout--;
-		}
-
-		if (timeout)
-			pr_warning("tboot wait for APs timeout\n");
-
-		return !(atomic_read((atomic_t *)&tboot->num_in_wfs) == num_aps);
-	}
-
-Questions:
-
-1.	Why AP_WAIT_TIMEOUT*HZ?  Given the mdelay(), shouldn't this
-	instead be AP_WAIT_TIMEOUT*1000?  The definition of AP_WAIT_TIMEOUT
-	indicates that it is in seconds.
-
-2.	Who changes ->num_in_wfs?  Any other CPUs are in stop_machine(),
-	plus I don't see any assignments to this field.  Does the boot
-	firmware run again to make this change, sort of like SMIs?
-
-I guess that the good news is that I don't seen anything that cares about
-stop_machine().  ;-)
-
-							Thanx, Paul
+diff --git a/drivers/net/wireless/ath/ath9k/pci.c b/drivers/net/wireless/ath/ath9k/pci.c
+index a856b51..f90342d 100644
+--- a/drivers/net/wireless/ath/ath9k/pci.c
++++ b/drivers/net/wireless/ath/ath9k/pci.c
+@@ -112,11 +112,9 @@ static void ath_pci_aspm_init(struct ath_common *common)
+ 	struct ath_hw *ah = sc->sc_ah;
+ 	struct pci_dev *pdev = to_pci_dev(sc->dev);
+ 	struct pci_dev *parent;
+-	int pos;
+-	u8 aspm;
++	u16 aspm;
+ 
+-	pos = pci_pcie_cap(pdev);
+-	if (!pos)
++	if (!pci_is_pcie(pdev))
+ 		return;
+ 
+ 	parent = pdev->bus->self;
+@@ -125,24 +123,22 @@ static void ath_pci_aspm_init(struct ath_common *common)
+ 
+ 	if (ath9k_hw_get_btcoex_scheme(ah) != ATH_BTCOEX_CFG_NONE) {
+ 		/* Bluetooth coexistance requires disabling ASPM. */
+-		pci_read_config_byte(pdev, pos + PCI_EXP_LNKCTL, &aspm);
++		pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &aspm);
+ 		aspm &= ~(PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1);
+-		pci_write_config_byte(pdev, pos + PCI_EXP_LNKCTL, aspm);
++		pci_pcie_capability_write_word(pdev, PCI_EXP_LNKCTL, aspm);
+ 
+ 		/*
+ 		 * Both upstream and downstream PCIe components should
+ 		 * have the same ASPM settings.
+ 		 */
+-		pos = pci_pcie_cap(parent);
+-		pci_read_config_byte(parent, pos + PCI_EXP_LNKCTL, &aspm);
++		pci_pcie_capability_read_word(parent, PCI_EXP_LNKCTL, &aspm);
+ 		aspm &= ~(PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1);
+-		pci_write_config_byte(parent, pos + PCI_EXP_LNKCTL, aspm);
++		pci_pcie_capability_write_word(parent, PCI_EXP_LNKCTL, aspm);
+ 
+ 		return;
+ 	}
+ 
+-	pos = pci_pcie_cap(parent);
+-	pci_read_config_byte(parent, pos +  PCI_EXP_LNKCTL, &aspm);
++	pci_pcie_capability_read_word(parent, PCI_EXP_LNKCTL, &aspm);
+ 	if (aspm & (PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1)) {
+ 		ah->aspm_enabled = true;
+ 		/* Initialize PCIe PM and SERDES registers. */
+-- 
+1.7.9.5
 
