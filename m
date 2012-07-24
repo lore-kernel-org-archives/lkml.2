@@ -1,69 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab2GXUex (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 16:34:53 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60138 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab2GXUew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 16:34:52 -0400
-Date: Tue, 24 Jul 2012 13:34:48 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        usb-storage@lists.one-eyed-alien.net
-Subject: Re: [PATCH] ene_ub6250: Use macros for firmware names
-Message-ID: <20120724203448.GA1617@kroah.com>
-References: <1343161869-129765-1-git-send-email-tim.gardner@canonical.com>
+	id S1756026Ab2GXUgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 16:36:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755294Ab2GXUgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 16:36:22 -0400
+Date: Tue, 24 Jul 2012 16:36:13 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: lockdep trace from posix timers
+Message-ID: <20120724203613.GA9637@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343161869-129765-1-git-send-email-tim.gardner@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 02:31:09PM -0600, Tim Gardner wrote:
-> Advertise firmware files using MODULE_FIRMWARE macros.
-> 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-usb@vger.kernel.org
-> Cc: usb-storage@lists.one-eyed-alien.net
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->  drivers/usb/storage/ene_ub6250.c |   26 +++++++++++++++++++-------
->  1 file changed, 19 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/usb/storage/ene_ub6250.c b/drivers/usb/storage/ene_ub6250.c
-> index b28f2ad..3fec82f 100644
-> --- a/drivers/usb/storage/ene_ub6250.c
-> +++ b/drivers/usb/storage/ene_ub6250.c
-> @@ -29,9 +29,21 @@
->  #include "protocol.h"
->  #include "debug.h"
->  
-> +#define SD_INIT1_FIRMWARE "ene-ub6250/sd_init1.bin"
-> +#define SD_INIT2_FIRMWARE "ene-ub6250/sd_init2.bin"
-> +#define SD_RW_FIRMWARE "ene-ub6250/sd_rdwr.bin"
-> +#define MS_INIT_FIRMWARE "ene-ub6250/ms_init.bin"
-> +#define MSP_RW_FIRMWARE "ene-ub6250/msp_rdwr.bin"
-> +#define MS_RW_FIRMWARE "ene-ub6250/ms_rdwr.bin"
-> +
->  MODULE_DESCRIPTION("Driver for ENE UB6250 reader");
->  MODULE_LICENSE("GPL");
-> -
-> +MODULE_FIRMWARE(SD_INIT1_FIRMWARE);
-> +MODULE_FIRMWARE(SD_INIT2_FIRMWARE);
-> +MODULE_FIRMWARE(SD_RW_FIRMWARE);
-> +MODULE_FIRMWARE(MS_INIT_FIRMWARE);
-> +MODULE_FIRMWARE(MSP_RW_FIRMWARE);
-> +MODULE_FIRMWARE(MS_RW_FIRMWARE);
+Linus tree as of 5fecc9d8f59e765c2a48379dd7c6f5cf88c7d75a
 
-Why do you need the #defines here at all?  What's wrong with just using
-the file names in the MODULE_FIRMWARE() macro directly?  That cuts the
-size of the patch in half :)
+	Dave
 
-thanks,
+======================================================
+[ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
+3.5.0+ #122 Not tainted
+------------------------------------------------------
+trinity-child2/5327 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+blocked:  (tasklist_lock){.+.+..}, instance: ffffffff81c05098, at: [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
 
-greg k-h
+and this task is already holding:
+blocked:  (&(&new_timer->it_lock)->rlock){-.-...}, instance: ffff880143bce170, at: [<ffffffff81093d49>] __lock_timer+0x89/0x1f0
+which would create a new lock dependency:
+ (&(&new_timer->it_lock)->rlock){-.-...} -> (tasklist_lock){.+.+..}
+
+but this new dependency connects a HARDIRQ-irq-safe lock:
+ (&(&new_timer->it_lock)->rlock){-.-...}
+... which became HARDIRQ-irq-safe at:
+  [<ffffffff810d8e31>] __lock_acquire+0x7e1/0x1ae0
+  [<ffffffff810da83d>] lock_acquire+0xad/0x220
+  [<ffffffff8168a15d>] _raw_spin_lock_irqsave+0x7d/0xd0
+  [<ffffffff81093c17>] posix_timer_fn+0x37/0xe0
+  [<ffffffff8109a534>] __run_hrtimer+0x94/0x4c0
+  [<ffffffff8109b157>] hrtimer_interrupt+0xf7/0x230
+  [<ffffffff816953a9>] smp_apic_timer_interrupt+0x69/0x99
+  [<ffffffff8169402f>] apic_timer_interrupt+0x6f/0x80
+  [<ffffffff811644e9>] __generic_file_aio_write+0x239/0x450
+  [<ffffffff81164773>] generic_file_aio_write+0x73/0xe0
+  [<ffffffff81258832>] ext4_file_write+0xc2/0x280
+  [<ffffffff811cfb76>] do_sync_write+0xe6/0x120
+  [<ffffffff811d04af>] vfs_write+0xaf/0x190
+  [<ffffffff811d07ed>] sys_write+0x4d/0x90
+  [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
+
+to a HARDIRQ-irq-unsafe lock:
+ (&(&p->alloc_lock)->rlock){+.+...}
+... which became HARDIRQ-irq-unsafe at:
+...  [<ffffffff810d8c37>] __lock_acquire+0x5e7/0x1ae0
+  [<ffffffff810da83d>] lock_acquire+0xad/0x220
+  [<ffffffff816895f6>] _raw_spin_lock+0x46/0x80
+  [<ffffffff811d8882>] set_task_comm+0x32/0x180
+  [<ffffffff81095848>] kthreadd+0x38/0x2e0
+  [<ffffffff81694934>] kernel_thread_helper+0x4/0x10
+
+other info that might help us debug this:
+
+Chain exists of:
+  &(&new_timer->it_lock)->rlock --> tasklist_lock --> &(&p->alloc_lock)->rlock
+
+ Possible interrupt unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(&(&p->alloc_lock)->rlock);
+                               local_irq_disable();
+                               lock(&(&new_timer->it_lock)->rlock);
+                               lock(tasklist_lock);
+  <Interrupt>
+    lock(&(&new_timer->it_lock)->rlock);
+
+ *** DEADLOCK ***
+
+1 lock on stack by trinity-child2/5327:
+ #0: blocked:  (&(&new_timer->it_lock)->rlock){-.-...}, instance: ffff880143bce170, at: [<ffffffff81093d49>] __lock_timer+0x89/0x1f0
+
+the dependencies between HARDIRQ-irq-safe lock and the holding lock:
+-> (&(&new_timer->it_lock)->rlock){-.-...} ops: 584 {
+   IN-HARDIRQ-W at:
+                    [<ffffffff810d8e31>] __lock_acquire+0x7e1/0x1ae0
+                    [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                    [<ffffffff8168a15d>] _raw_spin_lock_irqsave+0x7d/0xd0
+                    [<ffffffff81093c17>] posix_timer_fn+0x37/0xe0
+                    [<ffffffff8109a534>] __run_hrtimer+0x94/0x4c0
+                    [<ffffffff8109b157>] hrtimer_interrupt+0xf7/0x230
+                    [<ffffffff816953a9>] smp_apic_timer_interrupt+0x69/0x99
+                    [<ffffffff8169402f>] apic_timer_interrupt+0x6f/0x80
+                    [<ffffffff811644e9>] __generic_file_aio_write+0x239/0x450
+                    [<ffffffff81164773>] generic_file_aio_write+0x73/0xe0
+                    [<ffffffff81258832>] ext4_file_write+0xc2/0x280
+                    [<ffffffff811cfb76>] do_sync_write+0xe6/0x120
+                    [<ffffffff811d04af>] vfs_write+0xaf/0x190
+                    [<ffffffff811d07ed>] sys_write+0x4d/0x90
+                    [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
+   IN-SOFTIRQ-W at:
+                    [<ffffffff810d8bfe>] __lock_acquire+0x5ae/0x1ae0
+                    [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                    [<ffffffff8168a15d>] _raw_spin_lock_irqsave+0x7d/0xd0
+                    [<ffffffff81093c17>] posix_timer_fn+0x37/0xe0
+                    [<ffffffff8109a534>] __run_hrtimer+0x94/0x4c0
+                    [<ffffffff8109b157>] hrtimer_interrupt+0xf7/0x230
+                    [<ffffffff8109b2bb>] __hrtimer_peek_ahead_timers.part.27+0x2b/0x30
+                    [<ffffffff8109b309>] hrtimer_peek_ahead_timers+0x49/0xa0
+                    [<ffffffff8109b391>] run_hrtimer_softirq+0x31/0x40
+                    [<ffffffff810746e0>] __do_softirq+0xf0/0x400
+                    [<ffffffff81074b2c>] run_ksoftirqd+0x13c/0x230
+                    [<ffffffff81095517>] kthread+0xb7/0xc0
+                    [<ffffffff81694934>] kernel_thread_helper+0x4/0x10
+   INITIAL USE at:
+                   [<ffffffff810d8956>] __lock_acquire+0x306/0x1ae0
+                   [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                   [<ffffffff8168a15d>] _raw_spin_lock_irqsave+0x7d/0xd0
+                   [<ffffffff81093d49>] __lock_timer+0x89/0x1f0
+                   [<ffffffff810947a4>] sys_timer_delete+0x44/0x100
+                   [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
+ }
+ ... key      at: [<ffffffff820ac8a0>] __key.29841+0x0/0x8
+ ... acquired at:
+   [<ffffffff810d820b>] check_irq_usage+0x5b/0xe0
+   [<ffffffff810d93da>] __lock_acquire+0xd8a/0x1ae0
+   [<ffffffff810da83d>] lock_acquire+0xad/0x220
+   [<ffffffff81689b59>] _raw_read_lock+0x49/0x80
+   [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
+   [<ffffffff81094786>] sys_timer_delete+0x26/0x100
+   [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
+
+
+the dependencies between the lock to be acquired and HARDIRQ-irq-unsafe lock:
+ -> (&(&p->alloc_lock)->rlock){+.+...} ops: 1189942 {
+    HARDIRQ-ON-W at:
+                      [<ffffffff810d8c37>] __lock_acquire+0x5e7/0x1ae0
+                      [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                      [<ffffffff816895f6>] _raw_spin_lock+0x46/0x80
+                      [<ffffffff811d8882>] set_task_comm+0x32/0x180
+                      [<ffffffff81095848>] kthreadd+0x38/0x2e0
+                      [<ffffffff81694934>] kernel_thread_helper+0x4/0x10
+    SOFTIRQ-ON-W at:
+                      [<ffffffff810d8c6c>] __lock_acquire+0x61c/0x1ae0
+                      [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                      [<ffffffff816895f6>] _raw_spin_lock+0x46/0x80
+                      [<ffffffff811d8882>] set_task_comm+0x32/0x180
+                      [<ffffffff81095848>] kthreadd+0x38/0x2e0
+                      [<ffffffff81694934>] kernel_thread_helper+0x4/0x10
+    INITIAL USE at:
+                     [<ffffffff810d8956>] __lock_acquire+0x306/0x1ae0
+                     [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                     [<ffffffff816895f6>] _raw_spin_lock+0x46/0x80
+                     [<ffffffff811d8882>] set_task_comm+0x32/0x180
+                     [<ffffffff81095848>] kthreadd+0x38/0x2e0
+                     [<ffffffff81694934>] kernel_thread_helper+0x4/0x10
+  }
+  ... key      at: [<ffffffff820883a0>] __key.45832+0x0/0x8
+  ... acquired at:
+   [<ffffffff810da83d>] lock_acquire+0xad/0x220
+   [<ffffffff816895f6>] _raw_spin_lock+0x46/0x80
+   [<ffffffff812d5f2e>] keyctl_session_to_parent+0xde/0x490
+   [<ffffffff812d634d>] sys_keyctl+0x6d/0x1a0
+   [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
+
+-> (tasklist_lock){.+.+..} ops: 35423 {
+   HARDIRQ-ON-R at:
+                    [<ffffffff810d8b1e>] __lock_acquire+0x4ce/0x1ae0
+                    [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                    [<ffffffff81689b59>] _raw_read_lock+0x49/0x80
+                    [<ffffffff810701a2>] do_wait+0xb2/0x360
+                    [<ffffffff81072095>] sys_wait4+0x75/0xf0
+                    [<ffffffff8108a482>] wait_for_helper+0x82/0xb0
+                    [<ffffffff81694934>] kernel_thread_helper+0x4/0x10
+   SOFTIRQ-ON-R at:
+                    [<ffffffff810d8c6c>] __lock_acquire+0x61c/0x1ae0
+                    [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                    [<ffffffff81689b59>] _raw_read_lock+0x49/0x80
+                    [<ffffffff810701a2>] do_wait+0xb2/0x360
+                    [<ffffffff81072095>] sys_wait4+0x75/0xf0
+                    [<ffffffff8108a482>] wait_for_helper+0x82/0xb0
+                    [<ffffffff81694934>] kernel_thread_helper+0x4/0x10
+   INITIAL USE at:
+                   [<ffffffff810d8956>] __lock_acquire+0x306/0x1ae0
+                   [<ffffffff810da83d>] lock_acquire+0xad/0x220
+                   [<ffffffff81689f0c>] _raw_write_lock_irq+0x5c/0xa0
+                   [<ffffffff81068a41>] copy_process.part.22+0x1051/0x1750
+                   [<ffffffff810692d0>] do_fork+0x140/0x4e0
+                   [<ffffffff81024606>] kernel_thread+0x76/0x80
+                   [<ffffffff81664602>] rest_init+0x26/0x154
+                   [<ffffffff81efecb3>] start_kernel+0x3f8/0x405
+                   [<ffffffff81efe356>] x86_64_start_reservations+0x131/0x135
+                   [<ffffffff81efe4a2>] x86_64_start_kernel+0x148/0x157
+ }
+ ... key      at: [<ffffffff81c05098>] tasklist_lock+0x18/0x80
+ ... acquired at:
+   [<ffffffff810d820b>] check_irq_usage+0x5b/0xe0
+   [<ffffffff810d93da>] __lock_acquire+0xd8a/0x1ae0
+   [<ffffffff810da83d>] lock_acquire+0xad/0x220
+   [<ffffffff81689b59>] _raw_read_lock+0x49/0x80
+   [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
+   [<ffffffff81094786>] sys_timer_delete+0x26/0x100
+   [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
+
+
+stack backtrace:
+Pid: 5327, comm: trinity-child2 Not tainted 3.5.0+ #122
+Call Trace:
+ [<ffffffff810d8194>] check_usage+0x4e4/0x500
+ [<ffffffff81023729>] ? native_sched_clock+0x19/0x80
+ [<ffffffff810d59a8>] ? trace_hardirqs_off_caller+0x28/0xd0
+ [<ffffffff81023729>] ? native_sched_clock+0x19/0x80
+ [<ffffffff810d820b>] check_irq_usage+0x5b/0xe0
+ [<ffffffff810d93da>] __lock_acquire+0xd8a/0x1ae0
+ [<ffffffff810d8956>] ? __lock_acquire+0x306/0x1ae0
+ [<ffffffff810d59a8>] ? trace_hardirqs_off_caller+0x28/0xd0
+ [<ffffffff810da2a5>] ? lock_release_non_nested+0x175/0x320
+ [<ffffffff810da83d>] lock_acquire+0xad/0x220
+ [<ffffffff8109762b>] ? posix_cpu_timer_del+0x2b/0xe0
+ [<ffffffff81689b59>] _raw_read_lock+0x49/0x80
+ [<ffffffff8109762b>] ? posix_cpu_timer_del+0x2b/0xe0
+ [<ffffffff81093d95>] ? __lock_timer+0xd5/0x1f0
+ [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
+ [<ffffffff81094786>] sys_timer_delete+0x26/0x100
+ [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
+
