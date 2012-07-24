@@ -1,165 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab2GXMNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 08:13:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36905 "EHLO mx2.suse.de"
+	id S1753819Ab2GXMRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 08:17:20 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:50872 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753747Ab2GXMNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 08:13:31 -0400
-Message-ID: <500E9161.209@suse.de>
-Date: Tue, 24 Jul 2012 14:13:21 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1753763Ab2GXMRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 08:17:19 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: lkml <linux-kernel@vger.kernel.org>
+CC: Jan Kara <jack@suze.cz>, Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH] UDF: Add support for O_DIRECT
+Date: Tue, 24 Jul 2012 13:17:06 +0100
+Message-ID: <1343132226-3806-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 1.7.8.6
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        KVM <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
-References: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120724085359.11344.91022.sendpatchset@codeblue.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 10:53 AM, Raghavendra K T wrote:
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->
-> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ,
-> and Peter (HPA) for suggesting hypercall ABI addition.
->
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
-> Please have a closer look at Hypercall ABI newly added
->
-> Changes since last post:
->   - Added hypercall ABI (Peter)
->   - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
->
-> TODO: We need to add history details of each hypercall as suggested by HPA,
-> which I could not trace easily. Hope it is easy for hypercall authors
->
->   Documentation/virtual/hypercalls.txt |   71 ++++++++++++++++++++++++++++++++++
->   1 files changed, 71 insertions(+), 0 deletions(-)
->   create mode 100644 Documentation/virtual/hypercalls.txt
->
-> diff --git a/Documentation/virtual/hypercalls.txt b/Documentation/virtual/hypercalls.txt
-> new file mode 100644
-> index 0000000..caffc08
-> --- /dev/null
-> +++ b/Documentation/virtual/hypercalls.txt
-> @@ -0,0 +1,71 @@
-> +Hypercall ABI:
-> +=============
-> +A brief look at calling conventions of X86, S390 and PPC
-> +X86:
-> + KVM Hypercalls have a three-byte sequence of either the vmrun or the vmmrun
-> + instruction. The hypervisor can replace it with instructions that are
-> + guaranteed to be supported.
-> +
-> + Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
-> + The hypercall number should be placed in rax and the return value will be
-> + placed in rax.  No other registers will be clobbered unless explicitly stated
-> + by the particular hypercall.
-> +
-> +S390:
-> +  R2-R7 are used for parameters 1-6. In addition, R1 is used for hypercall
-> +  number. The return value is written to R2.
-> +
-> +  S390 uses diagnose instruction as hypercall (0x500) along with hypercall
-> +  number in R1.
-> +
-> + PoewerPC:
+Add support for the O_DIRECT flag.  There are two cases to deal with:
 
-PowerPC
+1. Small files stored in the ICB (inode control block?): just return 0
+from the new udf_adinicb_direct_IO() handler to fall back to buffered
+I/O.  For direct writes, there is a "gotcha" to deal with when
+generic_file_direct_write() in mm/filemap.c invalidates the pages.  In
+the udf_adinicb_writepage() handler, only part of the page data will be
+valid and the rest will be zeroed out, so only copy the valid part into
+the ICB.  (This is actually a bit inefficient as udf_adinicb_write_end()
+will have already copied the data into the ICB once, but it's pretty
+likely that the file will grow to the point where its data can no longer
+be stored in the ICB and will be moved to a different area of the file
+system.  At that point, a different direct_IO handler will be used - see
+below.)
 
-> +  It uses R3-R10 and hypercall number in R11. R4-R11 are used as output registers.
-> +  Return value is placed in R3.
-> +
-> +  KVM hypercalls uses 4 byte opcode, that are patched with 'hypercall-instructions'
-> +  property inside the device tree's /hypervisor node.
-> +  For more information refer to Documentation/virtual/kvm/ppc-pv.txt
+2. Larger files, not stored in the ICB: nothing special here.  Just call
+blockdev_direct_IO() from our new udf_direct_IO() handler and tidy up
+any blocks instantiated outside i_size on error.  This is pretty
+standard.
 
-What exactly is this document supposed to cover? We have 3 different 
-hypercall ABIs in KVM on PowerPC:
+Also change the whitespace in udf_aops and udf_adinicb_aops to make them
+a bit neater.
 
-   1) KVM hypercalls (ePAPR)
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ fs/udf/file.c  |   29 +++++++++++++++++++++++++----
+ fs/udf/inode.c |   31 +++++++++++++++++++++++++++++--
+ 2 files changed, 54 insertions(+), 6 deletions(-)
 
-The ePAPR compliant hypercall implementation. This one is used for KVM 
-specific hypercalls. All hypercalls get a KVM vendor prefix (42) and 
-then the hypercall id. We also implement generic hypercalls here, like 
-the ePAPR idle hcall. The instruction sequence for these is listed in 
-the device tree, as you noted above. It's available on all targets.
-
-   2) PAPR hypercalls
-
-To run server PowerPC PAPR guests (-M pseries in QEMU), we need to 
-handle PAPR hypercalls. These are the same hypercalls that pHyp, the 
-POWER hypervisor implements. Some of them are handled in the kernel, 
-some are handled in user space. This is only available on book3s_64.
-
-   3) OSI hypercalls
-
-In parallel to QEMU, there is another user of KVM on PowerPC: 
-Mac-on-Linux. That project had its own hypercalls long before we came 
-along with KVM, so to maintain compatibility we also support their 
-hypercalls. All of these get forwarded to user space. This is only 
-useful on book3s_32, but can be used with book3s_64 as well.
-
-> +
-> +KVM Hypercalls Documentation
-> +===========================
-> +The template for each hypercall is:
-> +1. Hypercall name, value.
-> +2. Architecture(s)
-> +3. Status (deprecated, obsolete, active)
-> +4. Purpose
-> +
-> +1. KVM_HC_VAPIC_POLL_IRQ
-> +------------------------
-> +Value: 1
-
-What are the value fields supposed to mean?
-
-
-Alex
-
-> +Architecture: x86
-> +Status: active
-> +Purpose: Trigger guest exit so that the host can check for pending
-> +interrupts on reentry.
-> +
-> +2. KVM_HC_MMU_OP
-> +------------------------
-> +Value: 2
-> +Architecture: x86
-> +Status: deprecated.
-> +Purpose: Support MMU operations such as writing to PTE,
-> +flushing TLB, release PT.
-> +
-> +3. KVM_HC_FEATURES
-> +------------------------
-> +Value: 3
-> +Architecture: PPC
-> +Status: active
-> +Purpose: Expose hypercall availability to the guest. On x86 platforms, cpuid
-> +used to enumerate which hypercalls are available. On PPC, either device tree
-> +based lookup ( which is also what EPAPR dictates) OR KVM specific enumeration
-> +mechanism (which is this hypercall) can be used.
-> +
-> +4. KVM_HC_PPC_MAP_MAGIC_PAGE
-> +------------------------
-> +Value: 4
-> +Architecture: PPC
-> +Status: active
-> +Purpose: To enable communication between the hypervisor and guest there is a
-> +shared page that contains parts of supervisor visible register state.
-> +The guest can map this shared page to access its supervisor register through
-> +memory using this hypercall.
->
+diff --git a/fs/udf/file.c b/fs/udf/file.c
+index 7f3f7ba..f5f9ddd 100644
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -34,6 +34,7 @@
+ #include <linux/errno.h>
+ #include <linux/pagemap.h>
+ #include <linux/buffer_head.h>
++#include <linux/writeback.h>
+ #include <linux/aio.h>
+ 
+ #include "udf_i.h"
+@@ -64,12 +65,23 @@ static int udf_adinicb_writepage(struct page *page,
+ 	struct inode *inode = page->mapping->host;
+ 	char *kaddr;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
++	loff_t start, end, page_start, page_offset;
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+ 	kaddr = kmap(page);
+-	memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr, kaddr, inode->i_size);
+-	mark_inode_dirty(inode);
++	/* The beginning and/or end of the page data is likely to be invalid
++	 * for O_DIRECT, so only copy the valid part. */
++	page_start = (loff_t)page->index << PAGE_CACHE_SHIFT;
++	start = max(page_start, wbc->range_start);
++	end = min3(page_start + (loff_t)PAGE_CACHE_SIZE - 1,
++		   wbc->range_end, inode->i_size - 1);
++	if (likely(start <= end)) {
++		page_offset = start - page_start;
++		memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr + start,
++		       kaddr + page_offset, (end + 1 - start));
++		mark_inode_dirty(inode);
++	}
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+ 	unlock_page(page);
+@@ -95,11 +107,20 @@ static int udf_adinicb_write_end(struct file *file,
+ 	return simple_write_end(file, mapping, pos, len, copied, page, fsdata);
+ }
+ 
++static ssize_t udf_adinicb_direct_IO(int rw, struct kiocb *iocb,
++				     const struct iovec *iov,
++				     loff_t offset, unsigned long nr_segs)
++{
++	/* Fallback to buffered I/O. */
++	return 0;
++}
++
+ const struct address_space_operations udf_adinicb_aops = {
+ 	.readpage	= udf_adinicb_readpage,
+ 	.writepage	= udf_adinicb_writepage,
+-	.write_begin = simple_write_begin,
+-	.write_end = udf_adinicb_write_end,
++	.write_begin	= simple_write_begin,
++	.write_end	= udf_adinicb_write_end,
++	.direct_IO	= udf_adinicb_direct_IO,
+ };
+ 
+ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+index fafaad7..5efad41 100644
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -136,6 +136,32 @@ static int udf_write_begin(struct file *file, struct address_space *mapping,
+ 	return ret;
+ }
+ 
++static ssize_t udf_direct_IO(int rw, struct kiocb *iocb,
++			     const struct iovec *iov,
++			     loff_t offset, unsigned long nr_segs)
++{
++	struct file *file = iocb->ki_filp;
++	struct inode *inode = file->f_path.dentry->d_inode;
++	ssize_t ret;
++
++	ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
++				  udf_get_block);
++
++	/*
++	 * In case of error extending write may have instantiated a few
++	 * blocks outside i_size. Trim these off again.
++	 */
++	if (unlikely((rw & WRITE) && ret < 0)) {
++		loff_t isize = i_size_read(inode);
++		loff_t end = offset + iov_length(iov, nr_segs);
++
++		if (end > isize)
++			vmtruncate(inode, isize);
++	}
++
++	return ret;
++}
++
+ static sector_t udf_bmap(struct address_space *mapping, sector_t block)
+ {
+ 	return generic_block_bmap(mapping, block, udf_get_block);
+@@ -145,8 +171,9 @@ const struct address_space_operations udf_aops = {
+ 	.readpage	= udf_readpage,
+ 	.readpages	= udf_readpages,
+ 	.writepage	= udf_writepage,
+-	.write_begin		= udf_write_begin,
+-	.write_end		= generic_write_end,
++	.write_begin	= udf_write_begin,
++	.write_end	= generic_write_end,
++	.direct_IO	= udf_direct_IO,
+ 	.bmap		= udf_bmap,
+ };
+ 
+-- 
+1.7.8.6
 
