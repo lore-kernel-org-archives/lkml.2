@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab2GXSci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 14:32:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11191 "EHLO mx1.redhat.com"
+	id S1756166Ab2GXSf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 14:35:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44283 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755774Ab2GXSch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 14:32:37 -0400
-Date: Tue, 24 Jul 2012 14:32:31 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, law@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] posix_types.h: make __NFDBITS compatible with glibc
- definition
-Message-ID: <20120724183230.GC10534@zod.bos.redhat.com>
-References: <20120724181209.GA10534@zod.bos.redhat.com>
- <CA+55aFw-=vY1eAubQAtbqL33nCrQ7mPgXTaHnEJfbKvFDVdHtw@mail.gmail.com>
- <20120724182409.GB10534@zod.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724182409.GB10534@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755973Ab2GXSf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 14:35:56 -0400
+Message-ID: <1343155010.29196.1.camel@dcbw.foobar.com>
+Subject: Re: [PATCH 10/17] Tools: hv: Gather ipv[4,6] gateway information
+From: Dan Williams <dcbw@redhat.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Olaf Hering <olaf@aepfle.de>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        apw@canonical.com, netdev@vger.kernel.org, ben@decadent.org.uk
+Date: Tue, 24 Jul 2012 13:36:50 -0500
+In-Reply-To: <20120724095659.5c869511@nehalam.linuxnetplumber.net>
+References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
+	 <1343145701-3691-1-git-send-email-kys@microsoft.com>
+	 <1343145701-3691-10-git-send-email-kys@microsoft.com>
+	 <20120724092914.60f3d90a@nehalam.linuxnetplumber.net>
+	 <20120724165359.GA8409@aepfle.de>
+	 <20120724095659.5c869511@nehalam.linuxnetplumber.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent glibc made a change to suppress sign-conversion warnings from FD_SET
-(glibc commit ceb9e56b3d1).  That patch solved the particular error it was
-aiming to, however applications that #include <linux/types.h> after
-including <sys/select.h> can now hit a build failure if -Werror=sign-compare
-and -D_FORTIFY_SOURCE=2 is passed to gcc.  This can be seen when building
-this trivial application against a recent enough glibc:
+On Tue, 2012-07-24 at 09:56 -0700, Stephen Hemminger wrote:
+> On Tue, 24 Jul 2012 18:53:59 +0200
+> Olaf Hering <olaf@aepfle.de> wrote:
+> 
+> > On Tue, Jul 24, Stephen Hemminger wrote:
+> > 
+> > > On Tue, 24 Jul 2012 09:01:34 -0700
+> > > "K. Y. Srinivasan" <kys@microsoft.com> wrote:
+> > > 
+> > > > +	memset(cmd, 0, sizeof(cmd));
+> > > > +	strcat(cmd, "/sbin/ip -f inet  route | grep -w ");
+> > > > +	strcat(cmd, if_name);
+> > > > +	strcat(cmd, " | awk '/default/ {print $3 }'");
+> > > 
+> > > 
+> > > Much simpler method:
+> > > 
+> > > ip route show match 0/0
+> > 
+> > This also has the benefit that ip is not called with absolute path, now
+> > that distros move binaries around.
+> > 
+> > Olaf
+> 
+> It is also not hard to do the same thing with a little function
+> using libmnl
 
-| #include <sys/select.h>
-| #include <linux/types.h>
-|
-| int main(int argc, char **argv)
-| {
-|   fd_set fds;
-|   FD_ZERO(&fds);
-|   FD_SET(0, &fds);
-|   return FD_ISSET(0, &fds);
-| }
+Yeah seriously, netlink anyone?  You'll even get nicer error reporting
+that way.
 
-It was suggested the kernel should either match the glibc definition of
-__NFDBITS in linux/posix_types.h or remove it entirely.  Given that we
-don't know what applications may be relying on the header having a
-definition, we make our definition compatible with glibc.
-
-This resolves https://bugzilla.redhat.com/show_bug.cgi?id=837641
-
-Reported-by: Jeff Law <law@redhat.com>
-CC: <stable@vger.kernel.org>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
-
-v2: Avoid the type change to long int
-
- include/linux/posix_types.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/posix_types.h b/include/linux/posix_types.h
-index f04c98c..0bfc9cc 100644
---- a/include/linux/posix_types.h
-+++ b/include/linux/posix_types.h
-@@ -19,7 +19,7 @@
-  * use the ones here. 
-  */
- #undef __NFDBITS
--#define __NFDBITS	(8 * sizeof(unsigned long))
-+#define __NFDBITS	(8 * (int) sizeof(unsigned long))
- 
- #undef __FD_SETSIZE
- #define __FD_SETSIZE	1024
--- 
-1.7.10.4
+Dan
 
