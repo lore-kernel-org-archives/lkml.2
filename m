@@ -1,198 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab2GXXIX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 19:08:23 -0400
-Received: from 8bytes.org ([85.214.48.195]:34036 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755696Ab2GXXIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 19:08:20 -0400
-Date: Wed, 25 Jul 2012 01:08:14 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU Updates for v3.6-rc1
-Message-ID: <20120724230814.GA2762@8bytes.org>
+	id S1755453Ab2GXXUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 19:20:42 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:1654
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754997Ab2GXXUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 19:20:40 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1202hzzz2fh2a8h668h839hd25hf0ah107ah10d2h)
+Message-ID: <500F2DB7.50403@am.sony.com>
+Date: Tue, 24 Jul 2012 16:20:23 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Jul 25 01:08:16 2012
-X-DSPAM-Confidence: 0.9990
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 500f2ae020422116921064
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>
+Subject: Re: [08/36] AArch64: Kernel booting and initialisation
+References: <1341608777-12982-9-git-send-email-catalin.marinas@arm.com> <500DB986.7090309@codeaurora.org> <20120724162404.GB29519@arm.com> <201207241853.16625.arnd@arndb.de>
+In-Reply-To: <201207241853.16625.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/24/12 11:53, Arnd Bergmann wrote:
+> On Tuesday 24 July 2012, Catalin Marinas wrote:
+>> On Mon, Jul 23, 2012 at 09:52:22PM +0100, Christopher Covington wrote:
+>>> Hi Catalin and Stephen,
+>>>
+>>> Catalin Marinas - July 8, 2012, 9:18 a.m.
+>>>> On Fri, Jul 06, 2012 at 10:32:54PM +0100, Stephen Warren wrote:
+>>>>
+>>>>> Also, on Tegra at least and perhaps OMAP too, there are a few parts
+>>>>> of earlyprintk serial port setup (i.e. port selection) which happen
+>>>>> as part of the decompressor rather than the main kernel image, so
+>>>>> we'd have to re-jig that too.
+>>>>
+>>>> Whatever we did on AArch32, if it was useful and we want to follow a
+>>>> similar model it needs porting given that the code cannot be shared. So
+>>>> there is nothing to re-jig but rather implement.
+>>>>
+>>>> As for earlyprintk, you can initialise it in the decompressed kernel
+>>>> anyway. But even though it's a useful debugging tool, it goes against
+>>>> the single Image aim (at least the current printascii/addruart
+>>>> implementation). I don't have a proper implementation yet.
+>>>
+>>> Would DCC [1] be a reasonably commonly available early printk mechanism
+>>> for the single image to provide?
+>>
+>> Yes, this can be implemented but I think it has its own restrictions,
+>> requiring a JTAG connection.
+> 
+> Right, which means that it's not generic and we still need to make
+> a decision for a how we want to solve the underlying problem. The
+> options I see are:
+> 
+> 1. Have no earlyprintk before loading the console drivers
+> 2. Make the series from Domenico architecture independent code
+> 3. Reimplement a layer like that, differently
+> 4. Make it a compile-time option and allow this only for
+>    low level debugging purposes but disable it in distro kernels.
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I have found earlyprintk to be very valuable for debugging the many
+times that boot fails for me.
 
-Hi Linus,
+Not having earlyprintk does not seem a good idea to me.  Option 4 is
+perfectly acceptable for my use cases.
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
-
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-u=
-pdates-v3.6-rc1
-
-for you to fetch changes up to 395e51f18d3b26619c1c462b7a1c0226846ac0a9:
-
-  Merge branches 'iommu/fixes', 'x86/amd', 'groups', 'arm/tegra' and 'api/d=
-omain-attr' into next (2012-07-23 12:17:00 +0200)
-
-----------------------------------------------------------------
-
-IOMMU Updates for Linux v3.6-rc1
-
-The most important part of these updates is the IOMMU groups code
-enhancement written by Alex Williamson. It abstracts the problem that a
-given hardware IOMMU can't isolate any given device from any other
-device (e.g. 32 bit PCI devices can't usually be isolated). Devices that
-can't be isolated are grouped together. This code is required for the
-upcoming VFIO framework.
-
-Another IOMMU-API change written by be is the introduction of domain
-attributes. This makes it easier to handle GART-like IOMMUs with the
-IOMMU-API because now the start-address and the size of the domain
-address space can be queried.
-
-Besides that there are a few cleanups and fixes for the NVidia Tegra
-IOMMU drivers and the reworked init-code for the AMD IOMMU. The later is
-=66rom my patch-set to support interrupt remapping. The rest of this
-patch-set requires x86 changes which are not mergabe yet. So full
-support for interrupt remapping with AMD IOMMUs will come in a future
-merge window.
-
-----------------------------------------------------------------
-Alex Williamson (12):
-      PCI: add PCI DMA source ID quirk
-      PCI: add ACS validation utility
-      PCI: export pci_user functions for use by other drivers
-      PCI: create common pcibios_err_to_errno
-      PCI: misc pci_reg additions
-      driver core: Add iommu_group tracking to struct device
-      iommu: IOMMU Groups
-      amd_iommu: Support IOMMU groups
-      intel-iommu: Support IOMMU groups
-      amd_iommu: Make use of DMA quirks and ACS checks in IOMMU groups
-      intel-iommu: Make use of DMA quirks and ACS checks in IOMMU groups
-      iommu: Remove group_mf
-
-Hiroshi DOYU (3):
-      iommu/tegra: Implement DOMAIN_ATTR_GEOMETRY attribute
-      iommu/tegra: smmu: Remove unnecessary sanity check at alloc_pdir()
-      iommu/tegra: smmu: Fix unsleepable memory allocation at alloc_pdir()
-
-Hiroshi Doyu (5):
-      iommu: Add DMA window parser, of_get_dma_window()
-      iommu/tegra: smmu: Add device tree support for SMMU
-      iommu/tegra: smmu: Simplify allocation at once
-      iommu/tegra: smmu: Remove unnecessary cleanups with devm_*()
-      iommu/tegra: smmu: Fix uninitialized var warning
-
-Joerg Roedel (21):
-      Merge remote-tracking branch 'pci-bjorn/topic/alex-vfio-prep' into gr=
-oups
-      iommu: Add domain-attribute handlers
-      iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-      iommu/vt-d: Implement DOMAIN_ATTR_GEOMETRY attribute
-      iommu/omap: Implement DOMAIN_ATTR_GEOMETRY attribute
-      iommu/msm: Implement DOMAIN_ATTR_GEOMETRY attribute
-      iommu/exynos: Implement DOMAIN_ATTR_GEOMETRY attribute
-      iommu/tegra: Don't call alloc_pdir with as->lock
-      Merge tag 'v3.5-rc7' into arm/tegra
-      iommu/amd: Fix sparse warnings
-      iommu/amd: Use acpi_get_table instead of acpi_table_parse
-      iommu/amd: Split out PCI related parts of IOMMU initialization
-      iommu/amd: Move informational prinks out of iommu_enable
-      iommu/amd: Introduce early_amd_iommu_init routine
-      iommu/amd: Split enable_iommus() routine
-      iommu/amd: Move unmap_flush message to amd_iommu_init_dma_ops()
-      iommu/amd: Introduce amd_iommu_init_dma routine
-      iommu/amd: Convert iommu initialization to state machine
-      iommu/amd: Add missing spin_lock initialization
-      iommu/amd: Fix hotplug with iommu=3Dpt
-      Merge branches 'iommu/fixes', 'x86/amd', 'groups', 'arm/tegra' and 'a=
-pi/domain-attr' into next
-
- .../ABI/testing/sysfs-kernel-iommu_groups          |   14 +
- .../bindings/iommu/nvidia,tegra30-smmu.txt         |   21 +
- Documentation/kernel-parameters.txt                |    1 -
- arch/ia64/include/asm/iommu.h                      |    2 -
- arch/ia64/kernel/pci-dma.c                         |    1 -
- arch/x86/include/asm/iommu.h                       |    1 -
- arch/x86/kernel/pci-dma.c                          |   11 -
- drivers/iommu/Kconfig                              |    6 +-
- drivers/iommu/Makefile                             |    1 +
- drivers/iommu/amd_iommu.c                          |   99 +++-
- drivers/iommu/amd_iommu_init.c                     |  569 ++++++++++------=
---
- drivers/iommu/amd_iommu_types.h                    |   13 +-
- drivers/iommu/amd_iommu_v2.c                       |    4 +-
- drivers/iommu/exynos-iommu.c                       |    4 +
- drivers/iommu/intel-iommu.c                        |   93 +--
- drivers/iommu/iommu.c                              |  611 ++++++++++++++++=
-+++-
- drivers/iommu/irq_remapping.c                      |    5 +
- drivers/iommu/msm_iommu.c                          |    5 +
- drivers/iommu/of_iommu.c                           |   90 +++
- drivers/iommu/omap-iommu.c                         |    4 +
- drivers/iommu/tegra-gart.c                         |    5 +
- drivers/iommu/tegra-smmu.c                         |  285 ++++-----
- drivers/pci/access.c                               |    6 +-
- drivers/pci/pci.c                                  |   69 +++
- drivers/pci/pci.h                                  |    7 -
- drivers/pci/quirks.c                               |   84 +++
- drivers/xen/xen-pciback/conf_space.c               |    6 +-
- include/linux/device.h                             |    2 +
- include/linux/iommu.h                              |  140 ++++-
- include/linux/of_iommu.h                           |   21 +
- include/linux/pci.h                                |   52 +-
- include/linux/pci_regs.h                           |  113 +++-
- 32 files changed, 1839 insertions(+), 506 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-iommu_groups
- create mode 100644 Documentation/devicetree/bindings/iommu/nvidia,tegra30-=
-smmu.txt
- create mode 100644 drivers/iommu/of_iommu.c
- create mode 100644 include/linux/of_iommu.h
-
-Please pull.
-
-Regards,
-
-	Joerg
-
-
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQDyreAAoJECvwRC2XARrjyS0P/12EOIx4FV2hJ5r4dICF1fCO
-XE6kUV8zW/GG/fQy+dmVBlJiEiNmSvjMK8LVJmRvNHdrOV0tbFHgAAisILGa1ucU
-Y4F0qS5cd+qiEVNhDO83QwiqT0tf3zeUleZwwb+X5TLexMbbbOADFqv4zeBqxn2q
-l0MKVGQiiQYZFPmvAUDxDkn62/5QyMjRWGHtQ5yS6+TasJbCfcH8XflRlovk9lP0
-Jr8hXACD5GROpHIapvcDOtjgUgMZEgFMHHJ9Rcrym+7VhOJUMQJcR0nMOfpooNIv
-gXTuCwBS4x9/T/0Y6O7JcsCwGrlJ3AKUAGWI5VmnvVR//y5s1Bm4yq2ohtJJ63cK
-NmC/MGtX39ALHVL9L0D6nUgnjQi9DTcMUbFORGkFbeBh8e4h+MXNWn7JJoT6TK+V
-eSG7YMYFkMBFKA+obuwO9ki8qZNdGhWgOUME78pI9tLXBSwy5yhZaK3RWs9iPpqV
-Tx3rou5yW5icQTQqEG0MPZYiZCM63zkqRZBaBlQDQIP8v2Xa9YPk8gz6HjbMYNfQ
-hh/KmInROoCyQwmUe9KKRB3Lxu6FX2S6wJdp2s+HBLR4PwrLnu9K+JyAvbRocJ71
-Dq48DB+vj+ogQ5hAi7U6zEKhebEn/nVfj76PKDX0PuvF4PkAxIR8AzBUkGm3jQY+
-Knu51FGgyJfpmJnMEug8
-=OgxB
------END PGP SIGNATURE-----
-
---y0ulUmNC+osPPQO6--
-
+-Frank
 
