@@ -1,204 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab2GXJG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 05:06:57 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55075 "EHLO
+	id S1753068Ab2GXJHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 05:07:04 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55515 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab2GXJGz (ORCPT
+	with ESMTP id S1752916Ab2GXJHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 05:06:55 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-da-500e65ad8edf
+	Tue, 24 Jul 2012 05:07:00 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-ff-500e65b1193e
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [RFC/PATCHSET 00/12] perf report: Add support to event group viewing (v1)
-Date: Tue, 24 Jul 2012 18:01:21 +0900
-Message-Id: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
+        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 04/12] perf hist: Maintain total periods of group members in the leader
+Date: Tue, 24 Jul 2012 18:01:25 +0900
+Message-Id: <1343120493-23059-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
+References: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This is a patchset to support event grouping on perf report.
+Like group_stats in hist_entry, total periods information also need
+to be known to the leader.
 
-It depends on other patches like refactoring hist print [1],
-processing file header feature [2] and (obviously) Jiri's event group
-management [3]. All of this need to be reviewed though. ;)
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/hist.c |   25 +++++++++++++++++++++++++
+ tools/perf/util/hist.h |    1 +
+ 2 files changed, 26 insertions(+)
 
-The basic idea is move group member's hist entries to a leader, and
-sort/collapse them on the leader's tree. The leader will have all of
-group members' stat in it. The output is sorted by the leader's period
-and in turn first child and so on.
-
-To use it, 'perf record' should group events when recording. And then
-perf report parses the saved command line and reconstruct the group
-relation. Currently only the '-e { event1,event2 }' syntax is supported
-(i.e. --group option is *NOT* supported) to make things easy. But it'd
-not be that hard to support --group also.
-
-But I think re-using event parsing routine (at least, in its current
-form) has some problems especially if perf report will not run on the
-same machine that runs perf record. I cannot find a better way than
-extending/changing the perf file format to let perf record know about
-the group relationship. Any thought?
-
-Here is an example:
-
-  $ ./perf record -e cycles:u -e '{cache-references,cache-misses}:u' noploop 1
-
-Without --group:
-
-  $ ./perf report --stdio
-  ...
-  # Samples: 4K of event 'cycles:u'
-  # Event count (approx.): 3692183905
-  #
-  # Overhead  Command       Shared Object                   Symbol
-  # ........  .......  ..................  .......................
-  #
-      99.98%  noploop  noploop             [.] main               
-       0.01%  noploop  ld-2.15.so          [.] _dl_relocate_object
-       0.00%  noploop  [kernel.kallsyms]   [k] page_fault         
-       0.00%  noploop  libc-2.15.so        [.] __execvpe          
-       0.00%  noploop  libpthread-2.15.so  [.] __read_nocancel    
-       0.00%  noploop  ld-2.15.so          [.] _start             
-  
-  
-  # Samples: 26  of event 'cache-references:u'
-  # Event count (approx.): 4229
-  #
-  # Overhead  Command       Shared Object                              Symbol
-  # ........  .......  ..................  ..................................
-  #
-      55.85%  noploop  ld-2.15.so          [.] do_lookup_x                   
-      19.18%  noploop  ld-2.15.so          [.] strlen                        
-      14.09%  noploop  libc-2.15.so        [.] getenv                        
-       3.17%  noploop  ld-2.15.so          [.] _dl_fini                      
-       2.65%  noploop  noploop             [.] main                          
-       1.44%  noploop  perf                [.] perf_evlist__prepare_workload 
-       1.44%  noploop  [kernel.kallsyms]   [k] page_fault                    
-       0.99%  noploop  [kernel.kallsyms]   [k] apic_timer_interrupt          
-       0.33%  noploop  noploop             [.] handler                       
-       0.33%  noploop  libc-2.15.so        [.] __run_exit_handlers           
-       0.33%  noploop  [kernel.kallsyms]   [k] call_function_single_interrupt
-       0.12%  noploop  ld-2.15.so          [.] _dl_start                     
-       0.05%  noploop  libpthread-2.15.so  [.] __read_nocancel               
-       0.02%  noploop  ld-2.15.so          [.] _start                        
-  
-  
-  # Samples: 23  of event 'cache-misses:u'
-  # Event count (approx.): 4312
-  #
-  # Overhead  Command       Shared Object                                Symbol
-  # ........  .......  ..................  ....................................
-  #
-      46.94%  noploop  ld-2.15.so          [.] do_lookup_x                     
-      21.78%  noploop  libc-2.15.so        [.] getenv                          
-      18.65%  noploop  ld-2.15.so          [.] calloc                          
-       6.05%  noploop  ld-2.15.so          [.] rtld_lock_default_lock_recursive
-       2.92%  noploop  noploop             [.] main                            
-       1.41%  noploop  [kernel.kallsyms]   [k] page_fault                      
-       1.32%  noploop  libc-2.15.so        [.] execvp                          
-       0.32%  noploop  libc-2.15.so        [.] __run_exit_handlers             
-       0.32%  noploop  ld-2.15.so          [.] _dl_fini                        
-       0.12%  noploop  perf                [.] perf_evlist__prepare_workload   
-       0.12%  noploop  ld-2.15.so          [.] _dl_start                       
-       0.02%  noploop  libpthread-2.15.so  [.] __read_nocancel                 
-       0.02%  noploop  ld-2.15.so          [.] _start                          
-  
-
-With --group:
-
-  $ ./perf report --group --stdio
-  ...
-  # Samples: 4K of event 'cycles:u'
-  # Event count (approx.): 7384367810
-  #
-  # Overhead  Command       Shared Object                   Symbol
-  # ........  .......  ..................  .......................
-  #
-      99.98%  noploop  noploop             [.] main               
-       0.01%  noploop  ld-2.15.so          [.] _dl_relocate_object
-       0.00%  noploop  [kernel.kallsyms]   [k] page_fault         
-       0.00%  noploop  libc-2.15.so        [.] __execvpe          
-       0.00%  noploop  libpthread-2.15.so  [.] __read_nocancel    
-       0.00%  noploop  ld-2.15.so          [.] _start             
-  
-  
-  # Samples: 49  of event 'anon_group { cache-references:u, cache-misses:u }'
-  # Event count (approx.): 12770
-  #
-  # Overhead          Command       Shared Object                                Symbol
-  # ................  .......  ..................  ....................................
-  #
-      55.85%  46.94%  noploop  ld-2.15.so          [.] do_lookup_x                     
-      19.18%   0.00%  noploop  ld-2.15.so          [.] strlen                          
-      14.09%  21.78%  noploop  libc-2.15.so        [.] getenv                          
-       3.17%   0.32%  noploop  ld-2.15.so          [.] _dl_fini                        
-       2.65%   2.92%  noploop  noploop             [.] main                            
-       1.44%   1.41%  noploop  [kernel.kallsyms]   [k] page_fault                      
-       1.44%   0.12%  noploop  perf                [.] perf_evlist__prepare_workload   
-       0.99%   0.00%  noploop  [kernel.kallsyms]   [k] apic_timer_interrupt            
-       0.33%   0.32%  noploop  libc-2.15.so        [.] __run_exit_handlers             
-       0.33%   0.00%  noploop  noploop             [.] handler                         
-       0.33%   0.00%  noploop  [kernel.kallsyms]   [k] call_function_single_interrupt  
-       0.12%   0.12%  noploop  ld-2.15.so          [.] _dl_start                       
-       0.05%   0.02%  noploop  libpthread-2.15.so  [.] __read_nocancel                 
-       0.02%   0.02%  noploop  ld-2.15.so          [.] _start                          
-       0.00%  18.65%  noploop  ld-2.15.so          [.] calloc                          
-       0.00%   6.05%  noploop  ld-2.15.so          [.] rtld_lock_default_lock_recursive
-       0.00%   1.32%  noploop  libc-2.15.so        [.] execvp                          
-  
-(Hmm.. looks like there's a bug in group event counting in the header
-area. But I believe the period value itself is intact.)
-
-You can access it via my tree as well (if you want to test it).
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git perf/report-group-v1
-
-Any comments are welcome, thanks.
-Namhyung
-
-[1] https://lkml.org/lkml/2012/7/19/263
-[2] https://lkml.org/lkml/2012/7/21/75
-[3] https://lkml.org/lkml/2012/7/19/419
-
-
-Namhyung Kim (12):
-  perf tools: Add a couple of helper routines to handle groups
-  perf hist: Convert to struct he_stat
-  perf hist: Collapse group hist_entries to a leader
-  perf hist: Maintain total periods of group members in the leader
-  perf report: Make another loop for output resorting
-  perf header: Reconstruct group relationship by parsing cmdline
-  perf ui/hist: Add support to group viewing
-  perf ui/browser: Add support to group viewing
-  perf ui/gtk: Add support to group viewing
-  perf report: Show leader events only when event group is enabled
-  perf report: Show group description when event group is enabled
-  perf report: Add --group option
-
- tools/perf/builtin-report.c    |   29 +++++++
- tools/perf/ui/browsers/hists.c |  105 +++++++++++++++++++++---
- tools/perf/ui/gtk/browser.c    |   69 +++++++++++++---
- tools/perf/ui/hist.c           |  158 +++++++++++++++++++++++++++++------
- tools/perf/util/evsel.c        |   25 ++++++
- tools/perf/util/evsel.h        |   21 +++++
- tools/perf/util/header.c       |  110 +++++++++++++++++++++++++
- tools/perf/util/hist.c         |  177 ++++++++++++++++++++++++++++++++++------
- tools/perf/util/hist.h         |    1 +
- tools/perf/util/parse-events.c |    6 +-
- tools/perf/util/sort.h         |   17 ++--
- tools/perf/util/symbol.c       |    4 +
- tools/perf/util/symbol.h       |    3 +-
- 13 files changed, 641 insertions(+), 84 deletions(-)
-
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index a8f4c56261a0..5ae71429ba53 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -427,6 +427,28 @@ static void hist_entry__add_group_stat(struct perf_evsel *evsel,
+ 		hist_entry__add_stat(&iter->stat, &he->stat);
+ }
+ 
++static void hists__add_group_stat(struct hists *hists)
++{
++	struct perf_evsel *evsel = hists_2_evsel(hists);
++	struct perf_evsel *leader = evsel->leader;
++	struct hists *leader_hists;
++
++	if (perf_evsel__is_group_leader(evsel))
++		return;
++
++	leader_hists = &leader->hists;
++
++	if (!leader_hists->group_stats) {
++		leader_hists->group_stats = calloc(leader->nr_children,
++						sizeof(struct events_stats));
++		if (!leader_hists->group_stats)
++			return;
++	}
++
++	memcpy(&leader_hists->group_stats[evsel->group_idx],
++	       &hists->stats, sizeof(struct events_stats));
++}
++
+ /*
+  * collapse the histogram
+  */
+@@ -546,6 +568,9 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
+ 			hists__apply_filters(hists, n);
+ 		}
+ 	}
++
++	if (symbol_conf.report_group)
++		hists__add_group_stat(hists);
+ }
+ 
+ void hists__collapse_resort(struct hists *hists)
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 8594459594d9..5f81ee723c77 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -66,6 +66,7 @@ struct hists {
+ 	const char		*symbol_filter_str;
+ 	pthread_mutex_t		lock;
+ 	struct events_stats	stats;
++	struct events_stats	*group_stats;
+ 	u64			event_stream;
+ 	u16			col_len[HISTC_NR_COLS];
+ };
 -- 
 1.7.10.4
 
