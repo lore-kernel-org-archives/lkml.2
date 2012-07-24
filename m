@@ -1,64 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab2GXGVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 02:21:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36187 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab2GXGV3 (ORCPT
+	id S1755427Ab2GXG36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 02:29:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35416 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755403Ab2GXG34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 02:21:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <500E39E2.6020604@intel.com>
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
-	<1339741902-8449-6-git-send-email-zheng.z.yan@intel.com>
-	<CABPqkBS8SULKGw5gvWd4fTup7NyrvsaM1ZejCtsq4ChCPEwXHg@mail.gmail.com>
-	<500E39E2.6020604@intel.com>
-Date: Tue, 24 Jul 2012 08:21:28 +0200
-Message-ID: <CABPqkBRcmZDKPN9RpR7TKAPC4orvCxd232Tt0QQt1mhzXVUfhA@mail.gmail.com>
-Subject: Re: [PATCH V6 05/13] perf: Generic intel uncore support
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Tue, 24 Jul 2012 02:29:56 -0400
+Message-ID: <1343111387.10661.1.camel@phoenix>
+Subject: [PATCH RFT] leds: max8997: Simplify max8997_led_set_mode
+ implementation
+From: Axel Lin <axel.lin@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Donggeun Kim <dg77.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 24 Jul 2012 14:29:47 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 8:00 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> [...snip...]
->>> +
->>> +static int __init intel_uncore_init(void)
->>> +{
->>> +       int ret;
->>> +
->>> +       if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
->>> +               return -ENODEV;
->>> +
->>> +       ret = uncore_cpu_init();
->>> +       if (ret)
->>> +               goto fail;
->>> +
->>> +       uncore_pmus_register();
->>> +       return 0;
->>> +fail:
->>> +       return ret;
->>> +}
->>> +device_initcall(intel_uncore_init);
->>
->>
->> You cannot use device_initcall() here. Otherwise you're subject
->> to linker ordering issues between intel_uncore_init() and the
->> perf_event_sysfs_init() initcall. You need the perf_event sysfs
->> support to be enabled BEFORE you init the uncore otherwise you
->> won't see the uncore sysfs entries. Given how perf now relies on
->> sysfs to parse the event, this is a showstopper.
->
-> I think the ordering makes no matter. perf_event_sysfs_init() checks
-> PMUs that were registered previously and allocates sysfs entries for
-> them.
->
-You're right, seems like I had a bad kernel that caused the problem
-to happen.
-Thanks for checking.
+It is not necessary to call max8997_update_reg() twice just for updating
+MAX8997_REG_LEN_CNTL register. With proper val and mask arguments to
+max8997_update_reg() call, this can be done in one max8997_update_reg() call.
+And then we can remove max8997_led_clear_mode() function.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/leds/leds-max8997.c |   60 ++++++++++---------------------------------
+ 1 file changed, 13 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/leds/leds-max8997.c b/drivers/leds/leds-max8997.c
+index bf86d54..569e36d 100644
+--- a/drivers/leds/leds-max8997.c
++++ b/drivers/leds/leds-max8997.c
+@@ -49,71 +49,37 @@ struct max8997_led {
+ 	struct mutex mutex;
+ };
+ 
+-static void max8997_led_clear_mode(struct max8997_led *led,
+-			enum max8997_led_mode mode)
+-{
+-	struct i2c_client *client = led->iodev->i2c;
+-	u8 val = 0, mask = 0;
+-	int ret;
+-
+-	switch (mode) {
+-	case MAX8997_FLASH_MODE:
+-		mask = led->id ?
+-		      MAX8997_LED1_FLASH_MASK : MAX8997_LED0_FLASH_MASK;
+-		break;
+-	case MAX8997_MOVIE_MODE:
+-		mask = led->id ?
+-		      MAX8997_LED1_MOVIE_MASK : MAX8997_LED0_MOVIE_MASK;
+-		break;
+-	case MAX8997_FLASH_PIN_CONTROL_MODE:
+-		mask = led->id ?
+-		      MAX8997_LED1_FLASH_PIN_MASK : MAX8997_LED0_FLASH_PIN_MASK;
+-		break;
+-	case MAX8997_MOVIE_PIN_CONTROL_MODE:
+-		mask = led->id ?
+-		      MAX8997_LED1_MOVIE_PIN_MASK : MAX8997_LED0_MOVIE_PIN_MASK;
+-		break;
+-	default:
+-		break;
+-	}
+-
+-	if (mask) {
+-		ret = max8997_update_reg(client,
+-				MAX8997_REG_LEN_CNTL, val, mask);
+-		if (ret)
+-			dev_err(led->iodev->dev,
+-				"failed to update register(%d)\n", ret);
+-	}
+-}
+-
+ static void max8997_led_set_mode(struct max8997_led *led,
+ 			enum max8997_led_mode mode)
+ {
+ 	int ret;
+ 	struct i2c_client *client = led->iodev->i2c;
+-	u8 mask = 0;
+-
+-	/* First, clear the previous mode */
+-	max8997_led_clear_mode(led, led->led_mode);
++	u8 mask = 0, val;
+ 
+ 	switch (mode) {
+ 	case MAX8997_FLASH_MODE:
+-		mask = led->id ?
++		mask = MAX8997_LED1_FLASH_MASK | MAX8997_LED0_FLASH_MASK;
++		val = led->id ?
+ 		      MAX8997_LED1_FLASH_MASK : MAX8997_LED0_FLASH_MASK;
+ 		led->cdev.max_brightness = MAX8997_LED_FLASH_MAX_BRIGHTNESS;
+ 		break;
+ 	case MAX8997_MOVIE_MODE:
+-		mask = led->id ?
++		mask = MAX8997_LED1_MOVIE_MASK | MAX8997_LED0_MOVIE_MASK;
++		val = led->id ?
+ 		      MAX8997_LED1_MOVIE_MASK : MAX8997_LED0_MOVIE_MASK;
+ 		led->cdev.max_brightness = MAX8997_LED_MOVIE_MAX_BRIGHTNESS;
+ 		break;
+ 	case MAX8997_FLASH_PIN_CONTROL_MODE:
+-		mask = led->id ?
++		mask = MAX8997_LED1_FLASH_PIN_MASK |
++		       MAX8997_LED0_FLASH_PIN_MASK;
++		val = led->id ?
+ 		      MAX8997_LED1_FLASH_PIN_MASK : MAX8997_LED0_FLASH_PIN_MASK;
+ 		led->cdev.max_brightness = MAX8997_LED_FLASH_MAX_BRIGHTNESS;
+ 		break;
+ 	case MAX8997_MOVIE_PIN_CONTROL_MODE:
+-		mask = led->id ?
++		mask = MAX8997_LED1_MOVIE_PIN_MASK |
++		       MAX8997_LED0_MOVIE_PIN_MASK;
++		val = led->id ?
+ 		      MAX8997_LED1_MOVIE_PIN_MASK : MAX8997_LED0_MOVIE_PIN_MASK;
+ 		led->cdev.max_brightness = MAX8997_LED_MOVIE_MAX_BRIGHTNESS;
+ 		break;
+@@ -123,8 +89,8 @@ static void max8997_led_set_mode(struct max8997_led *led,
+ 	}
+ 
+ 	if (mask) {
+-		ret = max8997_update_reg(client,
+-				MAX8997_REG_LEN_CNTL, mask, mask);
++		ret = max8997_update_reg(client, MAX8997_REG_LEN_CNTL, val,
++					 mask);
+ 		if (ret)
+ 			dev_err(led->iodev->dev,
+ 				"failed to update register(%d)\n", ret);
+-- 
+1.7.9.5
+
+
+
