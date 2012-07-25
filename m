@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab2GYJLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 05:11:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36013 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab2GYJLD (ORCPT
+	id S1756045Ab2GYJNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 05:13:18 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:57225 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab2GYJNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 05:11:03 -0400
+	Wed, 25 Jul 2012 05:13:17 -0400
+X-AuditID: b753bd60-914c2ba0000047ca-f6-500fb8a9f267
+X-AuditID: b753bd60-914c2ba0000047ca-f6-500fb8a9f267
+Message-ID: <500FB8A4.6060503@hitachi.com>
+Date: Wed, 25 Jul 2012 18:13:08 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <1343149145-22927-1-git-send-email-dianders@chromium.org>
-References: <CAD=FV=Wa1bCRvLNnFjhht6nvNorm3CRzX5zrn-YDA2Jec1K3Eg@mail.gmail.com>
-	<1343149145-22927-1-git-send-email-dianders@chromium.org>
-Date: Wed, 25 Jul 2012 10:11:02 +0100
-Message-ID: <CAFbHwiQuE75YPBPtOihtX4jOKP31n_mO6pu6VOTQkp9_jhjtRA@mail.gmail.com>
-Subject: Re: [PATCH v3] mmc: dw_mmc: Disable low power mode if SDIO interrupts
- are used
-From: Will Newton <will.newton@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org,
-        Grant Grundler <grundler@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, shashidharh@vayavyalabs.com,
-        ki0351.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
+        Borislav Petkov <bp@amd64.org>,
+        virtualization@lists.linux-foundation.org,
+        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Shah <amit.shah@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>
+Subject: Re: Re: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp> <CAJSP0QW_2JJ0nf=NW0y30VSid2HSxaqb=mRGV8CTtAKj0ujDWw@mail.gmail.com> <500E810A.4030309@hitachi.com> <500E84D7.7060103@hitachi.com> <CAJSP0QVuQnE68n=jyW+AE=WF3yDHjgdn7tdiz7rPTbtqGYFL4w@mail.gmail.com>
+In-Reply-To: <CAJSP0QVuQnE68n=jyW+AE=WF3yDHjgdn7tdiz7rPTbtqGYFL4w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 5:59 PM, Doug Anderson <dianders@chromium.org> wrote:
-> The documentation for the dw_mmc part says that the low power
-> mode should normally only be set for MMC and SD memory and should
-> be turned off for SDIO cards that need interrupts detected.
->
-> The best place I could find to do this is when the SDIO interrupt
-> was first enabled.  I rely on the fact that dw_mci_setup_bus()
-> will be called when it's time to reenable.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v3:
-> - Commenting fixes requested by Seungwoon Jeon and Jaehoon Chung.
-> - Only pass 'slot' to the low power disable function since whole mmc
->   structure wasn't needed.
->
-> Changes in v2:
-> - Commenting fixes requested by Grant Grundler.
-> - Be extra certain that we don't re-turn on the low power mode in
->   CLKENA in dw_mci_setup_bus() if SDIO interrupts are enabled.
->   There are no known instances of this happening but it's good to be safe.
->
->
->  drivers/mmc/host/dw_mmc.c |   41 ++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 38 insertions(+), 3 deletions(-)
+Hi Stefan,
 
-Acked-by: Will Newton <will.newton@imgtec.com>
+(2012/07/24 22:41), Stefan Hajnoczi wrote:
+> On Tue, Jul 24, 2012 at 12:19 PM, Yoshihiro YUNOMAE
+> <yoshihiro.yunomae.ez@hitachi.com> wrote:
+>>>> Are you using text formatted ftrace?
+>> No, currently using raw format, but　we'd like to reformat it in text.
+>
+> Capturing the info necessary to translate numbers into symbols is one
+> of the problems of host<->guest tracing so I'm curious how you handle
+> this :).
+
+Right, your consideration is true.
+
+> Apologies for my lack of ftrace knowledge but how useful is the raw
+> tracing data on the host?  How do you pretty-print it in
+> human-readable form?
+
+perf and trace-cmd can actually translate raw-formatted trace data to
+text-formatted trace data by using information of kernel or trace
+format under tracing/events directory in debugfs. In the same way, if
+the information of a guest is exported to a host, we can translate
+raw trace data of a guest to text trace data on a host. We will use
+9pfs to export that.
+
+Thank you,
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
