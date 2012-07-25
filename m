@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2GYUzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 16:55:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32246 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750854Ab2GYUzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 16:55:20 -0400
-Date: Wed, 25 Jul 2012 16:55:00 -0400
-From: David Teigland <teigland@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] dlm updates for 3.6
-Message-ID: <20120725205500.GD11597@redhat.com>
+	id S1752440Ab2GYVFJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 17:05:09 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:46924 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab2GYVFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 17:05:08 -0400
+Message-ID: <50105F60.8050707@panasas.com>
+Date: Thu, 26 Jul 2012 00:04:32 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
+        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
+        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com>
+In-Reply-To: <501051DF.5040907@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 07/25/2012 11:06 PM, Paolo Bonzini wrote:
 
-Please pull dlm updates from tag:
+> Il 25/07/2012 21:16, Boaz Harrosh ha scritto:
+>> The picture confused me. It looked like the first element is the virtio_scsi_cmd_req
+>> not an sgilist-element that points to the struct's buffer.
+>>
+>> In that case then yes your plan of making a two-elements fragment that points to the
+>> original scsi-sglist is perfect. All you have to do is that, and all you have to do
+>> at virtio is use the sg_for_each macro and you are done.
+>>
+>> You don't need any sglist allocation or reshaping. And you can easily support
+>> chaining. Looks like order of magnitude more simple then what you do now
+> 
+> It is.
+> 
+>> So what is the problem?
+> 
+> That not all architectures have ARCH_HAS_SG_CHAIN (though all those I
+> care about do).  So I need to go through all architectures and make sure
+> they use for_each_sg, or at least to change ARCH_HAS_SG_CHAIN to a
+> Kconfig define so that dependencies can be expressed properly.
+> 
 
-git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm.git dlm-3.6
 
-This set includes a major redesign of recording the master node for
-resources.  The old dir hash table, which just held the master node for
-each resource, has been removed.  The rsb hash table has always duplicated
-the master node value from the dir, and is now the single record of it.
+What is actually preventing ARCH_HAS_SG_CHAIN from all these ARCHES?
+is that the DMA drivers not using for_each_sg(). Sounds like easy
+to fix.
 
-Having two full hash tables of all resources has always been a waste,
-especially since one just duplicated a single value from the other.
-Local requests will now often require one instead of two lengthy hash
-table searches.
+But yes a deep change would convert ARCH_HAS_SG_CHAIN to a Kconfig.
 
-The other substantial change is made possible by the dirtbl removal, and
-fixes a long standing race between resource removal and lookup by
-reworking how removal is done.  At the same time it improves the
-efficiency of removal by avoiding repeated searches through a hash bucket.
+If you want to be lazy, like me, You might just put a BUILD_BUG_ON
+in code, requesting the user to disable the driver for this ARCH.
 
-The other commits include minor fixes and changes.
+I bet there is more things to do at ARCH to enable virtualization
+then just support ARCH_HAS_SG_CHAIN. Be it just another requirement.
 
-Thanks,
-Dave
+If you Document it and make sure current ARCHs are fine, it should
+not ever trigger.
 
-David Teigland (6):
-      dlm: use rsbtbl as resource directory
-      dlm: use idr instead of list for recovered rsbs
-      dlm: fix race between remove and lookup
-      dlm: use wait_event_timeout
-      dlm: fix conversion deadlock from recovery
-      dlm: fix missing dir remove
+>> And BTW you won't need that new __sg_set_page API anymore.
+> 
+> Kind of.
+> 
+>    sg_init_table(sg, 2);
+>    sg_set_buf(sg[0], req, sizeof(req));
+>    sg_chain(sg[1], scsi_out(sc));
+> 
+> is still a little bit worse than
+> 
+>    __sg_set_buf(sg[0], req, sizeof(req));
+>    __sg_chain(sg[1], scsi_out(sc));
+> 
 
- fs/dlm/config.c       |    7 -
- fs/dlm/config.h       |    1 -
- fs/dlm/debug_fs.c     |  103 +++-
- fs/dlm/dir.c          |  287 +++--------
- fs/dlm/dir.h          |    7 +-
- fs/dlm/dlm_internal.h |   62 ++-
- fs/dlm/lock.c         | 1292 ++++++++++++++++++++++++++++++++++++++++---------
- fs/dlm/lock.h         |    5 +-
- fs/dlm/lockspace.c    |   45 +-
- fs/dlm/rcom.c         |  147 ++++--
- fs/dlm/rcom.h         |    1 +
- fs/dlm/recover.c      |  295 +++++++----
- fs/dlm/recover.h      |    2 +-
- fs/dlm/recoverd.c     |   14 +-
- 14 files changed, 1600 insertions(+), 668 deletions(-)
 
+I believe they are the same, specially for the
+on the stack 2 elements array. Actually I think
+In both cases you need to at least call sg_init_table()
+once after allocation, No?
+
+Your old code with big array copy and re-shaping was
+a better example of the need for your new API. Which I agree.
+
+But please for my sake do not call it __sg_chain. Call it
+something like sg_chain_not_end(). I hate those "__" which
+for god sack means what? 
+(A good name is when I don't have to read the code, an "__"
+ means "fuck you go read the code")
+
+> Paolo
+
+
+Thanks
+Boaz
