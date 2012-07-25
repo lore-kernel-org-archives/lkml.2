@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756337Ab2GYQME (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:12:04 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56869 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab2GYQMA (ORCPT
+	id S1756358Ab2GYQMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:12:37 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49528 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab2GYQMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:12:00 -0400
-Date: Wed, 25 Jul 2012 18:11:53 +0200
+	Wed, 25 Jul 2012 12:12:36 -0400
+Date: Wed, 25 Jul 2012 18:12:31 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
@@ -16,29 +16,35 @@ Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         fche@redhat.com, linux-kernel@vger.kernel.org,
         masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
         benjamin.redelings@nescent.org
-Subject: Re: [PATCH 03/17] perf, x86: Add copy_from_user_nmi_nochk for best
- effort copy
-Message-ID: <20120725161150.GA1173@somewhere.redhat.com>
+Subject: Re: [PATCH 01/17] perf: Unified API to record selective sets of arch
+ registers
+Message-ID: <20120725161228.GB1173@somewhere.redhat.com>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
- <1342959280-5361-4-git-send-email-jolsa@redhat.com>
+ <1342959280-5361-2-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342959280-5361-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1342959280-5361-2-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 02:14:26PM +0200, Jiri Olsa wrote:
-> Adding copy_from_user_nmi_nochk that provides the best effort
-> copy regardless the requesting size crossing the task boundary.
+On Sun, Jul 22, 2012 at 02:14:24PM +0200, Jiri Olsa wrote:
+> This brings a new API to help the selective dump of registers on
+> event sampling, and its implementation for x86 arch.
 > 
-> This is going to be useful for stack dump we need in post
-> DWARF CFI based unwind, where we have predefined size of
-> the user stack to dump, and we need to store the most of
-> the requested dump size, regardless this size is crossing
-> the task boundary.
+> Added HAVE_PERF_REGS config option to determine if the architecture
+> provides perf registers ABI.
+> 
+> The information about desired registers will be passed in u64 mask.
+> It's up to the architecture to map the registers into the mask bits.
+> 
+> For the x86 arch implementation, both 32 and 64 bit registers
+> bits are defined within single enum to ensure 64 bit system can
+> provide register dump for compat task if needed in the future.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-What does that imply when we cross this limit? Are we still in the
-task stack?
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
