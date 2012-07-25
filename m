@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab2GYM6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:58:10 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:5037 "EHLO relay.sw.ru"
+	id S1756816Ab2GYM6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:58:18 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4180 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756366Ab2GYM6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:58:07 -0400
-Subject: [PATCH v2 07/15] LockD: manage grace period per network namespace
+	id S1756366Ab2GYM6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:58:14 -0400
+Subject: [PATCH v2 08/15] LockD: make lockd manager allocated per network
+	namespace
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 25 Jul 2012 16:56:43 +0400
-Message-ID: <20120725125643.24376.68151.stgit@localhost.localdomain>
+Date: Wed, 25 Jul 2012 16:56:50 +0400
+Message-ID: <20120725125650.24376.31606.stgit@localhost.localdomain>
 In-Reply-To: <20120725125258.24376.82525.stgit@localhost.localdomain>
 References: <20120725125258.24376.82525.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -26,79 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
  fs/lockd/netns.h |    2 ++
- fs/lockd/svc.c   |   17 +++++++++++------
- 2 files changed, 13 insertions(+), 6 deletions(-)
+ fs/lockd/svc.c   |   18 ++++++++++--------
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/fs/lockd/netns.h b/fs/lockd/netns.h
-index 44c8f0b..94653ae 100644
+index 94653ae..e78650c 100644
 --- a/fs/lockd/netns.h
 +++ b/fs/lockd/netns.h
-@@ -7,6 +7,8 @@ struct lockd_net {
- 	unsigned int nlmsvc_users;
- 	unsigned long next_gc;
+@@ -1,6 +1,7 @@
+ #ifndef __LOCKD_NETNS_H__
+ #define __LOCKD_NETNS_H__
+ 
++#include <linux/fs.h>
+ #include <net/netns/generic.h>
+ 
+ struct lockd_net {
+@@ -9,6 +10,7 @@ struct lockd_net {
  	unsigned long nrhosts;
-+
-+	struct delayed_work grace_period_end;
+ 
+ 	struct delayed_work grace_period_end;
++	struct lock_manager lockd_manager;
  };
  
  extern int lockd_net_id;
 diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index 80938fd..70c4177 100644
+index 70c4177..a9c436b 100644
 --- a/fs/lockd/svc.c
 +++ b/fs/lockd/svc.c
-@@ -95,21 +95,22 @@ static void grace_ender(struct work_struct *not_used)
- 	locks_end_grace(&lockd_manager);
+@@ -87,12 +87,14 @@ static unsigned long get_lockd_grace_period(void)
+ 		return nlm_timeout * 5 * HZ;
  }
  
--static DECLARE_DELAYED_WORK(grace_period_end, grace_ender);
+-static struct lock_manager lockd_manager = {
+-};
 -
- static void set_grace_period(void)
+-static void grace_ender(struct work_struct *not_used)
++static void grace_ender(struct work_struct *grace)
  {
- 	unsigned long grace_period = get_lockd_grace_period();
-+	struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
- 
- 	locks_start_grace(&lockd_manager);
--	cancel_delayed_work_sync(&grace_period_end);
--	schedule_delayed_work(&grace_period_end, grace_period);
-+	cancel_delayed_work_sync(&ln->grace_period_end);
-+	schedule_delayed_work(&ln->grace_period_end, grace_period);
+-	locks_end_grace(&lockd_manager);
++	struct delayed_work *dwork = container_of(grace, struct delayed_work,
++						  work);
++	struct lockd_net *ln = container_of(dwork, struct lockd_net,
++					    grace_period_end);
++
++	locks_end_grace(&ln->lockd_manager);
  }
  
- static void restart_grace(void)
- {
- 	if (nlmsvc_ops) {
--		cancel_delayed_work_sync(&grace_period_end);
-+		struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
-+
-+		cancel_delayed_work_sync(&ln->grace_period_end);
- 		locks_end_grace(&lockd_manager);
+ static void set_grace_period(void)
+@@ -100,7 +102,7 @@ static void set_grace_period(void)
+ 	unsigned long grace_period = get_lockd_grace_period();
+ 	struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
+ 
+-	locks_start_grace(&lockd_manager);
++	locks_start_grace(&ln->lockd_manager);
+ 	cancel_delayed_work_sync(&ln->grace_period_end);
+ 	schedule_delayed_work(&ln->grace_period_end, grace_period);
+ }
+@@ -111,7 +113,7 @@ static void restart_grace(void)
+ 		struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
+ 
+ 		cancel_delayed_work_sync(&ln->grace_period_end);
+-		locks_end_grace(&lockd_manager);
++		locks_end_grace(&ln->lockd_manager);
  		nlmsvc_invalidate_all();
  		set_grace_period();
-@@ -124,6 +125,7 @@ lockd(void *vrqstp)
- {
- 	int		err = 0, preverr = 0;
- 	struct svc_rqst *rqstp = vrqstp;
-+	struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
- 
- 	/* try_to_freeze() is called from svc_recv() */
- 	set_freezable();
-@@ -184,7 +186,7 @@ lockd(void *vrqstp)
- 		svc_process(rqstp);
+ 	}
+@@ -187,7 +189,7 @@ lockd(void *vrqstp)
  	}
  	flush_signals(current);
--	cancel_delayed_work_sync(&grace_period_end);
-+	cancel_delayed_work_sync(&ln->grace_period_end);
- 	locks_end_grace(&lockd_manager);
+ 	cancel_delayed_work_sync(&ln->grace_period_end);
+-	locks_end_grace(&lockd_manager);
++	locks_end_grace(&ln->lockd_manager);
  	if (nlmsvc_ops)
  		nlmsvc_invalidate_all();
-@@ -589,6 +591,9 @@ module_param(nlm_max_connections, uint, 0644);
- 
- static int lockd_init_net(struct net *net)
- {
-+	struct lockd_net *ln = net_generic(net, lockd_net_id);
-+
-+	INIT_DELAYED_WORK(&ln->grace_period_end, grace_ender);
- 	return 0;
- }
- 
+ 	nlm_shutdown_hosts();
 
