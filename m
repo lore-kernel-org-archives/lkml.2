@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab2GYPK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:10:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39255 "EHLO mga09.intel.com"
+	id S1030282Ab2GYPN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:13:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10088 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933404Ab2GYPK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:10:56 -0400
+	id S933452Ab2GYPKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:10:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="171267617"
+   d="scan'208";a="171267571"
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
         Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Subject: [PATCH 07/16] btrfs: nuke write_super from comments
-Date: Wed, 25 Jul 2012 18:12:05 +0300
-Message-Id: <1343229134-29487-8-git-send-email-artem.bityutskiy@linux.intel.com>
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Subject: [PATCH 05/16] ext4: nuke write_super from comments
+Date: Wed, 25 Jul 2012 18:12:03 +0300
+Message-Id: <1343229134-29487-6-git-send-email-artem.bityutskiy@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
 References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
@@ -28,49 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
 The '->write_super' superblock method is gone, and this patch removes all the
-references to 'write_super' from btrfs.
+references to 'write_super' from ext3.
 
-Cc: Chris Mason <chris.mason@fusionio.com>
-Cc: linux-btrfs@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
 
 I expect this patch to be merged via Al Viro's VFS tree.
 
- fs/btrfs/super.c   |    4 ----
- fs/btrfs/volumes.c |    4 ----
- 2 files changed, 8 deletions(-)
+ fs/ext4/inode.c |    8 --------
+ fs/ext4/super.c |   15 ---------------
+ 2 files changed, 23 deletions(-)
 
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index e239915..ad31627 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -100,10 +100,6 @@ static void __save_error_info(struct btrfs_fs_info *fs_info)
- 	fs_info->fs_state = BTRFS_SUPER_FLAG_ERROR;
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index b1bd96f..2ff8b9f 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4503,14 +4503,6 @@ static int ext4_expand_extra_isize(struct inode *inode,
+  * inode out, but prune_icache isn't a user-visible syncing function.
+  * Whenever the user wants stuff synced (sys_sync, sys_msync, sys_fsync)
+  * we start and wait on commits.
+- *
+- * Is this efficient/effective?  Well, we're being nice to the system
+- * by cleaning up our inodes proactively so they can be reaped
+- * without I/O.  But we are potentially leaving up to five seconds'
+- * worth of inodes floating about which prune_icache wants us to
+- * write out.  One way to fix that would be to get prune_icache()
+- * to do a write_super() to free up some memory.  It has the desired
+- * effect.
+  */
+ int ext4_mark_inode_dirty(handle_t *handle, struct inode *inode)
+ {
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 622d5c7..59ae7a0 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -326,15 +326,6 @@ static void ext4_put_nojournal(handle_t *handle)
+ 
+ /*
+  * Wrappers for jbd2_journal_start/end.
+- *
+- * The only special thing we need to do here is to make sure that all
+- * journal_end calls result in the superblock being marked dirty, so
+- * that sync() will call the filesystem's write_super callback if
+- * appropriate.
+- *
+- * To avoid j_barrier hold in userspace when a user calls freeze(),
+- * ext4 prevents a new handle from being started by s_frozen, which
+- * is in an upper layer.
+  */
+ handle_t *ext4_journal_start_sb(struct super_block *sb, int nblocks)
+ {
+@@ -372,12 +363,6 @@ handle_t *ext4_journal_start_sb(struct super_block *sb, int nblocks)
+ 	return jbd2_journal_start(journal, nblocks);
  }
  
--/* NOTE:
-- *	We move write_super stuff at umount in order to avoid deadlock
-- *	for umount hold all lock.
+-/*
+- * The only special thing we need to do here is to make sure that all
+- * jbd2_journal_stop calls result in the superblock being marked dirty, so
+- * that sync() will call the filesystem's write_super callback if
+- * appropriate.
 - */
- static void save_error_info(struct btrfs_fs_info *fs_info)
+ int __ext4_journal_stop(const char *where, unsigned int line, handle_t *handle)
  {
- 	__save_error_info(fs_info);
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index ecaad40..9f2416c 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1738,10 +1738,6 @@ int btrfs_init_new_device(struct btrfs_root *root, char *device_path)
- 
- 	device->fs_devices = root->fs_info->fs_devices;
- 
--	/*
--	 * we don't want write_supers to jump in here with our device
--	 * half setup
--	 */
- 	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
- 	list_add_rcu(&device->dev_list, &root->fs_info->fs_devices->devices);
- 	list_add(&device->dev_alloc_list,
+ 	struct super_block *sb;
 -- 
 1.7.10
 
