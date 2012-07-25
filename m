@@ -1,384 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2GYLzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:55:24 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:38221 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756660Ab2GYLzW (ORCPT
+	id S1756681Ab2GYL4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:56:04 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40949 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756619Ab2GYL4A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:55:22 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH 6/6] CPU hotplug: Invoke CPU offline notifiers in reverse
- order
-To: tglx@linutronix.de, mingo@kernel.org, peterz@infradead.org,
-        rusty@rustcorp.com.au, paulmck@linux.vnet.ibm.com, namhyung@kernel.org,
-        tj@kernel.org
-Cc: rjw@sisk.pl, srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jul 2012 17:25:13 +0530
-Message-ID: <20120725115502.3900.10942.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120725115224.3900.80783.stgit@srivatsabhat.in.ibm.com>
-References: <20120725115224.3900.80783.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Wed, 25 Jul 2012 07:56:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072511-8878-0000-0000-000003614D41
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <201207251257.50064.maciej.rutecki@gmail.com>
+References: <201207251020.47637.maciej.rutecki@gmail.com>
+	<201207251054.25498.maciej.rutecki@gmail.com>
+	<20120725092928.GD5396@phenom.ffwll.local>
+	<201207251257.50064.maciej.rutecki@gmail.com>
+Date: Wed, 25 Jul 2012 13:55:59 +0200
+X-Google-Sender-Auth: YGVay1uAKWVdzbfXt_rt6kYRXvg
+Message-ID: <CAKMK7uEZ+TYziN9tNDUc-UVeAzvVuivA869uwQYiWGoAKEq1jg@mail.gmail.com>
+Subject: Re: [REGRESSION] [KMS] [INTEL] Wrong resolution in console and XWindow
+From: Daniel Vetter <daniel@ffwll.ch>
+To: maciej.rutecki@gmail.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During CPU hotplug, we want to create the following effect:
- * During CPU online, the CPU incrementally grows the number of services
-   it offers.
- * During CPU offline, the services are incrementally retired, in the
-   reverse order of their growth during CPU online.
+On Wed, Jul 25, 2012 at 12:57 PM, Maciej Rutecki
+<maciej.rutecki@gmail.com> wrote:
+> On środa, 25 lipca 2012 o 11:29:28 Daniel Vetter wrote:
+>> On Wed, Jul 25, 2012 at 10:54:25AM +0200, Maciej Rutecki wrote:
+>> > On środa, 25 lipca 2012 o 10:29:26 Daniel Vetter wrote:
+>> > > On Wed, Jul 25, 2012 at 10:20:47AM +0200, Maciej Rutecki wrote:
+>> > > > Last known good: 3.4.4
+>> > > > First bad: 3.5.0
+>> > > >
+>> > > > When booting 3.5.0 resolution (in console, and after in KDE) is set
+>> > > > to 1024x768 (60Hz). In 3.4.4 was correct: 1440x900 (60Hz).
+>> > >
+>> > > Can you please attach the output of xrandr --verbose for both kernels?
+>> > > Also, please boot with drm.debug=0xe added to your kernel cmdline and
+>> > > grab the dmesg (again for both kernels).
+>> >
+>> > Thanks for the ansfer.
+>> >
+>> > Here xrandr and dmesg outputs for 3.4.4 and 3.5.0
+>> >
+>> > http://mrutecki.pl/download/kernel/3.5/swinka/debug/
+>>
+>> Can you please test this quick hack:
+>>
+>>
+>> diff --git a/drivers/gpu/drm/i915/intel_i2c.c
+>> b/drivers/gpu/drm/i915/intel_i2c.c index 1991a44..abe1611 100644
+>> --- a/drivers/gpu/drm/i915/intel_i2c.c
+>> +++ b/drivers/gpu/drm/i915/intel_i2c.c
+>> @@ -405,7 +405,7 @@ clear_err:
+>>        * timing out seems to happen when there _is_ a ddc chip present, but
+>>        * it's slow responding and only answers on the 2nd retry.
+>>        */
+>> -     ret = -ENXIO;
+>> +     ret = 0;
+>>       if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0,
+>>                    10)) {
+>>               DRM_DEBUG_KMS("GMBUS [%s] timed out after NAK\n",
+>>
+>>
+>> Thanks, Daniel
+>
+> Still the same.
 
-To achieve the above, invoke the registered CPU hotplug notifiers in the
-reverse order during CPU offline, with respect to the order in which they
-were invoked during CPU online.
+Hm, can you attach the dmesg again (with drm.debug=0xe)? If I haven't
+botched up something, we should now retry at least the ddc transfer
+...
+-Daniel
 
-This approach helps in making the hotplug path a lot more logically
-coherent: Services are started in a well-known order, perhaps with dependencies
-between them, while bringing up a CPU. While offlining the CPU, we honor
-many of the dependencies automatically by just backtracking the way we came;
-that is, by invoking the notifiers in the reverse order. Thus, this model of
-reverse notifier invocation helps us in avoiding the need for excessively
-messing with the notifier priorities while trying to get the ordering right.
+>
+> PS. Unfortunately, this afternoon I have small a surgical operation and
+> further tests will be possible only after 2-3 days.
+>
+> Regards
+> --
+> Maciej Rutecki
+> http://www.mrutecki.pl
 
-Notes:
-1. The workqueue code becomes simpler, since it now needs just a single CPU
-hotplug callback.
-2. The scheduler's sched_cpu_[in]active() callbacks can also be merged into
-a single callback.
-3. On similar lines, the cpusets' cpuset_cpu_[in]active() callbacks can also
-be merged.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
 
- include/linux/cpu.h |   37 ++++++++++++++++++++++++-------------
- kernel/cpu.c        |   34 ++++++++++++++++++++++++++--------
- kernel/sched/core.c |   48 ++++++++++++++----------------------------------
- kernel/workqueue.c  |   30 +++++++++++-------------------
- 4 files changed, 75 insertions(+), 74 deletions(-)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 88de47d..b27a046 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -55,26 +55,37 @@ extern ssize_t arch_print_cpu_modalias(struct device *dev,
-  */
- enum {
- 	/*
--	 * SCHED_ACTIVE marks a cpu which is coming up active during CPU_ONLINE
--	 * and CPU_DOWN_FAILED and must be the first notifier.  It then passes
--	 * control to the cpuset_cpu_active() notifier which adjusts cpusets
--	 * according to cpu_active mask. During CPU_DOWN_PREPARE, SCHED_INACTIVE
--	 * marks the cpu as inactive and passes control to the
--	 * cpuset_cpu_inactive() notifier in a similar way.
-+	 * sched_cpu_notify() marks a cpu which is coming up active during
-+	 * CPU_ONLINE and CPU_DOWN_FAILED and must be the first notifier.  It
-+	 * then passes control to the cpuset_cpu_active() notifier which adjusts
-+	 * cpusets according to cpu_active mask. During CPU_DOWN_PREPARE,
-+	 * sched_cpu_notify() marks the cpu as inactive and passes control to
-+	 * the cpuset_cpu_inactive() notifier in a similar way.
- 	 *
- 	 * This ordering guarantees consistent cpu_active mask and
- 	 * migration behavior to all cpu notifiers.
- 	 */
--	CPU_PRI_SCHED_ACTIVE	= INT_MAX,
--	CPU_PRI_SCHED_INACTIVE	= INT_MIN,
-+	CPU_PRI_SCHED		= INT_MAX,
- 
--	/* migration should happen before other stuff but after perf */
-+	/*
-+	 * Migration should happen before other stuff but after perf,
-+	 * in the CPU online path.
-+	 */
- 	CPU_PRI_PERF		= 20,
- 	CPU_PRI_MIGRATION_UP	= 10,
--	CPU_PRI_MIGRATION_DOWN	= 9,
--	/* bring up workqueues before normal notifiers and down after */
--	CPU_PRI_WORKQUEUE_UP	= 5,
--	CPU_PRI_WORKQUEUE_DOWN	= -5,
-+
-+	/*
-+	 * Bring up workqueues before normal notifiers in the CPU online
-+	 * path. Do the opposite in the CPU offline path.
-+	 */
-+	CPU_PRI_WORKQUEUE	= 5,
-+
-+	/*
-+	 * In the CPU offline path, the notifiers are invoked in the reverse
-+	 * order. So use a numerically low value for the priority, to ensure
-+	 * that we get invoked early.
-+	 */
-+	CPU_PRI_MIGRATION_DOWN	= -10,
- };
- 
- #define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 8ab33ae..30444c2 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -155,16 +155,32 @@ static int __cpu_notify(unsigned long val, void *v, int nr_to_call,
- 	return notifier_to_errno(ret);
- }
- 
-+static int __cpu_notify_reverse(unsigned long val, void *v, int nr_to_call,
-+			int *nr_calls)
-+{
-+	int ret;
-+
-+	ret = __raw_notifier_call_chain_reverse(&cpu_chain, val, v,
-+							nr_to_call, nr_calls);
-+
-+	return notifier_to_errno(ret);
-+}
-+
- static int cpu_notify(unsigned long val, void *v)
- {
- 	return __cpu_notify(val, v, -1, NULL);
- }
- 
-+static int cpu_notify_reverse(unsigned long val, void *v)
-+{
-+	return __cpu_notify_reverse(val, v, -1, NULL);
-+}
-+
- #ifdef CONFIG_HOTPLUG_CPU
- 
--static void cpu_notify_nofail(unsigned long val, void *v)
-+static void cpu_notify_reverse_nofail(unsigned long val, void *v)
- {
--	BUG_ON(cpu_notify(val, v));
-+	BUG_ON(cpu_notify_reverse(val, v));
- }
- EXPORT_SYMBOL(register_cpu_notifier);
- 
-@@ -249,7 +265,7 @@ static int __ref take_cpu_down(void *_param)
- 	if (err < 0)
- 		return err;
- 
--	cpu_notify(CPU_DYING | param->mod, param->hcpu);
-+	cpu_notify_reverse(CPU_DYING | param->mod, param->hcpu);
- 	return 0;
- }
- 
-@@ -272,10 +288,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 
- 	cpu_hotplug_begin();
- 
--	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
-+	err = __cpu_notify_reverse(CPU_DOWN_PREPARE | mod, hcpu, -1,
-+								&nr_calls);
- 	if (err) {
- 		nr_calls--;
--		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
-+		__cpu_notify_reverse(CPU_DOWN_FAILED | mod, hcpu, nr_calls,
-+									NULL);
- 		printk("%s: attempt to take down CPU %u failed\n",
- 				__func__, cpu);
- 		goto out_release;
-@@ -286,7 +304,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 	if (err) {
- 		/* CPU didn't die: tell everyone.  Can't complain. */
- 		smpboot_unpark_threads(cpu);
--		cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
-+		cpu_notify_reverse_nofail(CPU_DOWN_FAILED | mod, hcpu);
- 		goto out_release;
- 	}
- 	BUG_ON(cpu_online(cpu));
-@@ -305,14 +323,14 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 	__cpu_die(cpu);
- 
- 	/* CPU is completely dead: tell everyone.  Too late to complain. */
--	cpu_notify_nofail(CPU_DEAD | mod, hcpu);
-+	cpu_notify_reverse_nofail(CPU_DEAD | mod, hcpu);
- 
- 	check_for_tasks(cpu);
- 
- out_release:
- 	cpu_hotplug_done();
- 	if (!err)
--		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
-+		cpu_notify_reverse_nofail(CPU_POST_DEAD | mod, hcpu);
- 	return err;
- }
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 6a511f2..9dbcb11 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5477,6 +5477,9 @@ cpu_up_migration_call(struct notifier_block *nfb, unsigned long action,
- }
- 
- /*
-+ * CPU online path: Notifiers are invoked in normal order; that is, notifiers
-+ * with numerically higher priorities are invoked first.
-+ *
-  * Register at high priority so that task migration (migrate_tasks)
-  * happens before everything else.  This has to be lower priority than
-  * the notifier in the perf_event subsystem, though.
-@@ -5525,9 +5528,11 @@ cpu_down_migration_call(struct notifier_block *nfb, unsigned long action,
- }
- 
- /*
-- * Register at high priority so that task migration (migrate_tasks)
-- * happens before everything else.  This has to be lower priority than
-- * the notifier in the perf_event subsystem, though.
-+ * CPU offline path: Notifiers are invoked in reverse order; that is,
-+ * notifiers with numerically lower priorities are invoked first.
-+ *
-+ * Register at low priority so that task migration (migrate_tasks)
-+ * happens before everything else.
-  */
- static struct notifier_block __cpuinitdata cpu_down_migration_notifier = {
- 	.notifier_call = cpu_down_migration_call,
-@@ -5539,32 +5544,22 @@ static struct notifier_block __cpuinitdata cpu_down_migration_notifier = {
-  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
-  * around partition_sched_domains().
-  */
--static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
-+static int cpuset_cpu_notify(struct notifier_block *nfb, unsigned long action,
- 			     void *hcpu)
- {
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
--		cpuset_update_active_cpus();
--		return NOTIFY_OK;
--	default:
--		return NOTIFY_DONE;
--	}
--}
--
--static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
--			       void *hcpu)
--{
--	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_DOWN_PREPARE:
- 		cpuset_update_active_cpus();
- 		return NOTIFY_OK;
-+
- 	default:
- 		return NOTIFY_DONE;
- 	}
- }
- 
--static int __cpuinit sched_cpu_active(struct notifier_block *nfb,
-+static int __cpuinit sched_cpu_notify(struct notifier_block *nfb,
- 				      unsigned long action, void *hcpu)
- {
- 	int ret;
-@@ -5575,32 +5570,18 @@ static int __cpuinit sched_cpu_active(struct notifier_block *nfb,
- 		set_cpu_active((long)hcpu, true);
- 		ret = NOTIFY_OK;
- 		break;
--	default:
--		ret = NOTIFY_DONE;
--	}
--
--	if (likely(sched_smp_init_complete))
--		return cpuset_cpu_active(nfb, action, hcpu);
--
--	return ret;
--}
- 
--static int __cpuinit sched_cpu_inactive(struct notifier_block *nfb,
--					unsigned long action, void *hcpu)
--{
--	int ret;
--
--	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_DOWN_PREPARE:
- 		set_cpu_active((long)hcpu, false);
- 		ret = NOTIFY_OK;
- 		break;
-+
- 	default:
- 		ret = NOTIFY_DONE;
- 	}
- 
- 	if (likely(sched_smp_init_complete))
--		return cpuset_cpu_inactive(nfb, action, hcpu);
-+		return cpuset_cpu_notify(nfb, action, hcpu);
- 
- 	return ret;
- }
-@@ -5620,8 +5601,7 @@ static int __init migration_init(void)
- 	register_cpu_notifier(&cpu_down_migration_notifier);
- 
- 	/* Register cpu active notifiers */
--	cpu_notifier(sched_cpu_active, CPU_PRI_SCHED_ACTIVE);
--	cpu_notifier(sched_cpu_inactive, CPU_PRI_SCHED_INACTIVE);
-+	cpu_notifier(sched_cpu_notify, CPU_PRI_SCHED);
- 
- 	return 0;
- }
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 471996a..5fba1da 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3429,16 +3429,24 @@ static void gcwq_unbind_fn(struct work_struct *work)
- }
- 
- /*
-+ * CPU online:
-  * Workqueues should be brought up before normal priority CPU notifiers.
-- * This will be registered high priority CPU notifier.
-+ *
-+ * CPU offline:
-+ * Workqueues should be brought down after normal priority CPU notifiers.
-+ *
-+ * This will be registered as high priority CPU notifier. Then, the automatic
-+ * reverse invocation of notifiers in the CPU offline path will satisfy both
-+ * the above requirements.
-  */
--static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
-+static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 					       unsigned long action,
- 					       void *hcpu)
- {
- 	unsigned int cpu = (unsigned long)hcpu;
- 	struct global_cwq *gcwq = get_gcwq(cpu);
- 	struct worker_pool *pool;
-+	struct work_struct unbind_work;
- 
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
-@@ -3465,22 +3473,7 @@ static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
- 		rebind_workers(gcwq);
- 		gcwq_release_management_and_unlock(gcwq);
- 		break;
--	}
--	return NOTIFY_OK;
--}
- 
--/*
-- * Workqueues should be brought down after normal priority CPU notifiers.
-- * This will be registered as low priority CPU notifier.
-- */
--static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
--						 unsigned long action,
--						 void *hcpu)
--{
--	unsigned int cpu = (unsigned long)hcpu;
--	struct work_struct unbind_work;
--
--	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_DOWN_PREPARE:
- 		/* unbinding should happen on the local CPU */
- 		INIT_WORK_ONSTACK(&unbind_work, gcwq_unbind_fn);
-@@ -3686,8 +3679,7 @@ static int __init init_workqueues(void)
- 	unsigned int cpu;
- 	int i;
- 
--	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
--	cpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
-+	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
- 
- 	/* initialize gcwqs */
- 	for_each_gcwq_cpu(cpu) {
-
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 364 57 48 - http://blog.ffwll.ch
