@@ -1,44 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933121Ab2GYM7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:59:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57797 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932934Ab2GYM7g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:59:36 -0400
+	id S933039Ab2GYM6u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:58:50 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25162 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932983Ab2GYM6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:58:48 -0400
+Subject: [PATCH v2 09/15] NFSd: make nfsd4_manager allocated per network
+	namespace context.
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Wed, 25 Jul 2012 16:56:58 +0400
+Message-ID: <20120725125658.24376.70114.stgit@localhost.localdomain>
+In-Reply-To: <20120725125258.24376.82525.stgit@localhost.localdomain>
+References: <20120725125258.24376.82525.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVN8Zwk09m8ryZ4G8+ya24PjOw=sfrjhH_jbUkg9REY+0w@mail.gmail.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com>
-	<CACVXFVOiXRiqRsE46_xmOzK_dExNvkBaJVwjiZ9adhwqRRwY+g@mail.gmail.com>
-	<2841959.DtLAQqdt31@linux-lqwf.site>
-	<CACVXFVN8Zwk09m8ryZ4G8+ya24PjOw=sfrjhH_jbUkg9REY+0w@mail.gmail.com>
-Date: Wed, 25 Jul 2012 20:59:34 +0800
-Message-ID: <CACVXFVO9o-p7ikBqGijJqBc_vbsE+dYMZnLiUz4ZS5C-amJ6LQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/13] firmware loader: introduce cache/uncache firmware
-From: Ming Lei <ming.lei@canonical.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 8:50 PM, Ming Lei <ming.lei@canonical.com> wrote:
->      - no harm to thaw all user space tasks before thawing all kernel threads
->      (there isn't any dependency about the thawing order)
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfsd/netns.h     |    2 ++
+ fs/nfsd/nfs4state.c |   32 +++++++++++++++++++-------------
+ 2 files changed, 21 insertions(+), 13 deletions(-)
 
-Sorry, I mean there isn't any constraint about the order, but the 'dependency'
-may be just what the patch is introducing.
+diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+index 3936563..e99767d 100644
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -34,6 +34,8 @@ struct nfsd_net {
+ 
+ 	struct cache_detail *idtoname_cache;
+ 	struct cache_detail *nametoid_cache;
++
++	struct lock_manager nfsd4_manager;
+ };
+ 
+ extern int nfsd_net_id;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index ab0a02a..fad2408 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -45,6 +45,8 @@
+ #include "vfs.h"
+ #include "current_stateid.h"
+ 
++#include "netns.h"
++
+ #define NFSDDBG_FACILITY                NFSDDBG_PROC
+ 
+ /* Globals */
+@@ -3115,22 +3117,21 @@ out:
+ 	return status;
+ }
+ 
+-static struct lock_manager nfsd4_manager = {
+-};
+-
+ static bool grace_ended;
+ 
+ static void
+-nfsd4_end_grace(void)
++nfsd4_end_grace(struct net *net)
+ {
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
++
+ 	/* do nothing if grace period already ended */
+ 	if (grace_ended)
+ 		return;
+ 
+ 	dprintk("NFSD: end of grace period\n");
+ 	grace_ended = true;
+-	nfsd4_record_grace_done(&init_net, boot_time);
+-	locks_end_grace(&nfsd4_manager);
++	nfsd4_record_grace_done(net, boot_time);
++	locks_end_grace(&nn->nfsd4_manager);
+ 	/*
+ 	 * Now that every NFSv4 client has had the chance to recover and
+ 	 * to see the (possibly new, possibly shorter) lease time, we
+@@ -3153,7 +3154,7 @@ nfs4_laundromat(void)
+ 	nfs4_lock_state();
+ 
+ 	dprintk("NFSD: laundromat service - starting\n");
+-	nfsd4_end_grace();
++	nfsd4_end_grace(&init_net);
+ 	INIT_LIST_HEAD(&reaplist);
+ 	spin_lock(&client_lock);
+ 	list_for_each_safe(pos, next, &client_lru) {
+@@ -4687,6 +4688,8 @@ set_max_delegations(void)
+ int
+ nfs4_state_start(void)
+ {
++	struct net *net = &init_net;
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 	int ret;
+ 
+ 	/*
+@@ -4696,10 +4699,10 @@ nfs4_state_start(void)
+ 	 * to that instead and then do most of the rest of this on a per-net
+ 	 * basis.
+ 	 */
+-	get_net(&init_net);
+-	nfsd4_client_tracking_init(&init_net);
++	get_net(net);
++	nfsd4_client_tracking_init(net);
+ 	boot_time = get_seconds();
+-	locks_start_grace(&nfsd4_manager);
++	locks_start_grace(&nn->nfsd4_manager);
+ 	grace_ended = false;
+ 	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
+ 	       nfsd4_grace);
+@@ -4722,8 +4725,8 @@ nfs4_state_start(void)
+ out_free_laundry:
+ 	destroy_workqueue(laundry_wq);
+ out_recovery:
+-	nfsd4_client_tracking_exit(&init_net);
+-	put_net(&init_net);
++	nfsd4_client_tracking_exit(net);
++	put_net(net);
+ 	return ret;
+ }
+ 
+@@ -4764,9 +4767,12 @@ __nfs4_state_shutdown(void)
+ void
+ nfs4_state_shutdown(void)
+ {
++	struct net *net = &init_net;
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
++
+ 	cancel_delayed_work_sync(&laundromat_work);
+ 	destroy_workqueue(laundry_wq);
+-	locks_end_grace(&nfsd4_manager);
++	locks_end_grace(&nn->nfsd4_manager);
+ 	nfs4_lock_state();
+ 	__nfs4_state_shutdown();
+ 	nfs4_unlock_state();
 
-
-Thanks,
---
-Ming Lei
