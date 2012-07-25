@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab2GYXav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 19:30:51 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:41822 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab2GYXas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 19:30:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <50107A0D.3060003@pobox.com>
-References: <20120725203551.GA19762@havoc.gtf.org> <20120725204350.GA20530@havoc.gtf.org>
- <CA+55aFwCCctcmryQJMCT_3TDr60CYBQKu9HMyxOgS8482+w5Xw@mail.gmail.com>
- <50107297.305@pobox.com> <CA+55aFzun7GebfGZDa73MGLF_808+ROaei5Ag-9HvgUDp1bqLQ@mail.gmail.com>
- <50107A0D.3060003@pobox.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 Jul 2012 16:30:27 -0700
-X-Google-Sender-Auth: Khyje7av7PtFYw7cZAE5YLUDR-o
-Message-ID: <CA+55aFwi7wS3SFZA-45d+KwKi+hqn1GXqRExYmOw6gnSipv5Rg@mail.gmail.com>
-Subject: Re: [git patches] libata updates
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752184Ab2GYXbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 19:31:55 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52982 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751824Ab2GYXby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 19:31:54 -0400
+Message-ID: <1343259112.11398.4.camel@joe2Laptop>
+Subject: Re: [PATCH v3 0/4] ACPI: hotplug messages improvement
+From: Joe Perches <joe@perches.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
+Date: Wed, 25 Jul 2012 16:31:52 -0700
+In-Reply-To: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
+References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 3:58 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
->
-> What is the right course in when a post-merge change is needed?
+On Wed, 2012-07-25 at 17:12 -0600, Toshi Kani wrote:
+> This patchset improves logging messages for ACPI CPU, Memory, and
+> Container hotplug notify handlers.  The patchset introduces a set of
+> new macro interfaces, acpi_pr_<level>(), and updates the notify
+> handlers to use them.  acpi_pr_<level>() appends "ACPI" prefix and
+> ACPI object path to the messages, and its usage model is similar to
+> dev_<level>().  This improves diagnostics in hotplug operations
+> since it identifies an object that caused an issue in a log file.
+> 
+> v3:
+>  - Changed acpi_pr_debug() to NOP when !DEBUG and !DYNAMIC_DEBUG.
+>    DYNAMIC_DEBUG will be supported later.
+>  - Added const to a path variable in acpi_printk().
+>  - Added more descriptions to the change log of patch 1/4.
 
-Just describe the issue and the required change. Than I can just do it
-as part of the merge, and now the whole series is bisectable,
-including the merge itself.
+Thanks Toshi.
 
-Here's a (fairly bad) example:
+This seems sensible to me.  I've no more comments either.
 
-  http://www.spinics.net/lists/netdev/msg192349.html
-
-and the reason I call that a bad example is not because that's a bad
-pull request, but simply that those are all real data conflicts, not
-the more subtle kind of "it merges fine, but because new code
-introduced uses an interface that changed, you need to do xyz".
-
-I couldn't find an example of that in a quick look, it's fairly
-uncommon to have non-conflicting merges that had semantic - but not
-contextual - conflicts. (Although it does happen, and sometimes it's
-actually not the developer, but Stephen Rothwell who notices it in
--next and lets me know before the merge).
-
-                  Linus
