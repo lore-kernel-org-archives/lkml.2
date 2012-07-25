@@ -1,125 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933450Ab2GYPKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:10:50 -0400
+	id S933482Ab2GYPKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:10:54 -0400
 Received: from mga09.intel.com ([134.134.136.24]:30025 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933160Ab2GYPKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:10:48 -0400
+	id S933452Ab2GYPKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:10:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="171267477"
+   d="scan'208";a="171267510"
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
-Subject: R.I.P. pdflush
-Date: Wed, 25 Jul 2012 18:11:58 +0300
-Message-Id: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH 02/16] Documentation: get rid of write_super
+Date: Wed, 25 Jul 2012 18:12:00 +0300
+Message-Id: <1343229134-29487-3-git-send-email-artem.bityutskiy@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
+References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all file-systems have been modified to not use the '->write_super()'
-superblock method, we can kill the last pdflush leftover - the 'sync_supers'
-kernel thread.
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-The sync_supers kernel thread does a very simple thing: wake up every 5
-seconds (see [1]), iterate over all superblocks in the system and flush
-dirty superblocks by calling their '->write_super()' method.
+The '->write_super' superblock method is gone, and this patch removes all the
+references to 'write_super' from various pieces of the kernel documentation.
 
-The problem is that from power-efficiency point of view it is very wasteful
-to have a thread which wakes up every 5 seconds in the very core of the
-Linux kernel. Indeed, most of the time this thread wakes the CPU from a deep
-sleep state just to find out that there are no dirty superblocks. Besides,
-modern file-systems like btrfs and ext4 (journalled mode only) do not even
-register '->write_super()', so on many modern systems sync_super is completely
-useless.
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
 
-And as usually happens when trying to modify old code like that - removing
-sync_supers was a tedious job. It required changing 12 file-systems, including
-ancient ones. While changes were not that complex, testing all of them was the
-most difficult part. While testing the mainstream file-systems like ext4 was
-easy (just run xfstests and wait few hours), testing baroque file-systems was
-problematic because they simply oopsed or errored even before I modified them.
+I expect this patch to be merged via Al Viro's VFS tree.
 
-For example, reiserfs deadlocked quickly when I tested it using xfstests with
-resierfs quota support enabled. I spend several days trying to fix this, but
-reiserfs is quite complex and I'd say its locking is crazy (partially because
-of the BKL push-down). But I gave up after I realized that the dead-lock is
-related to the quota support. I disabled quotas and xfstests passed.
+ Documentation/DocBook/filesystems.tmpl |    4 ++--
+ Documentation/filesystems/Locking      |    2 --
+ Documentation/filesystems/porting      |    5 ++---
+ Documentation/filesystems/vfs.txt      |    4 ----
+ 4 files changed, 4 insertions(+), 11 deletions(-)
 
-I also had some adventures with affs and few other old file-systems.
+diff --git a/Documentation/DocBook/filesystems.tmpl b/Documentation/DocBook/filesystems.tmpl
+index 3fca32c..25b58ef 100644
+--- a/Documentation/DocBook/filesystems.tmpl
++++ b/Documentation/DocBook/filesystems.tmpl
+@@ -224,8 +224,8 @@ all your transactions.
+ </para>
+ 
+ <para>
+-Then at umount time , in your put_super() (2.4) or write_super() (2.5)
+-you can then call journal_destroy() to clean up your in-core journal object.
++Then at umount time , in your put_super() you can then call journal_destroy()
++to clean up your in-core journal object.
+ </para>
+ 
+ <para>
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index 8e2da1e..7feac7f 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -111,7 +111,6 @@ prototypes:
+ 	int (*drop_inode) (struct inode *);
+ 	void (*evict_inode) (struct inode *);
+ 	void (*put_super) (struct super_block *);
+-	void (*write_super) (struct super_block *);
+ 	int (*sync_fs)(struct super_block *sb, int wait);
+ 	int (*freeze_fs) (struct super_block *);
+ 	int (*unfreeze_fs) (struct super_block *);
+@@ -133,7 +132,6 @@ write_inode:
+ drop_inode:				!!!inode->i_lock!!!
+ evict_inode:
+ put_super:		write
+-write_super:		read
+ sync_fs:		read
+ freeze_fs:		read
+ unfreeze_fs:		read
+diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
+index 8c91d10..df6cfc0 100644
+--- a/Documentation/filesystems/porting
++++ b/Documentation/filesystems/porting
+@@ -94,9 +94,8 @@ protected.
+ ---
+ [mandatory]
+ 
+-BKL is also moved from around sb operations.  ->write_super() Is now called 
+-without BKL held.  BKL should have been shifted into individual fs sb_op
+-functions.  If you don't need it, remove it.  
++BKL is also moved from around sb operations. BKL should have been shifted into
++individual fs sb_op functions.  If you don't need it, remove it.
+ 
+ ---
+ [informational]
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index efd23f4..f3e9242 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -216,7 +216,6 @@ struct super_operations {
+         void (*drop_inode) (struct inode *);
+         void (*delete_inode) (struct inode *);
+         void (*put_super) (struct super_block *);
+-        void (*write_super) (struct super_block *);
+         int (*sync_fs)(struct super_block *sb, int wait);
+         int (*freeze_fs) (struct super_block *);
+         int (*unfreeze_fs) (struct super_block *);
+@@ -273,9 +272,6 @@ or bottom half).
+   put_super: called when the VFS wishes to free the superblock
+ 	(i.e. unmount). This is called with the superblock lock held
+ 
+-  write_super: called when the VFS superblock needs to be written to
+-	disc. This method is optional
+-
+   sync_fs: called when VFS is writing out all dirty data associated with
+   	a superblock. The second parameter indicates whether the method
+ 	should wait until the write out has been completed. Optional.
+-- 
+1.7.10
 
-The first patch of this patch-set removes the sync_supers thread and it is the
-most important one. All the other patches are minor clean-ups and they simply
-remove all references to 'write_super' and 'pdflush' from commentaries
-and the documentation.
-
-I suggest that all patches go in via Al's tree. However, not before the ext4,
-exofs and udf changes are merged, which I expect to happen before v3.6-rc1.
-The rest of the file-systems are merged already - here is the summary.
-
-1.  ext4 - changes sit in Ted Ts'o's tree
-    git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git dev
-2.  exofs - changes sit in Boaz Harrosh's tree
-    git://git.open-osd.org/linux-open-osd linux-next
-3.  udf - changes sit in Jan Kara's tree:
-    git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs for_next
-4.  sysv - merged upstream
-    9d46be2 fs/sysv: stop using write_super and s_dirt
-5.  ufs - merged upstream
-    9e9ad5f fs/ufs: get rid of write_super
-6.  affs - merged upstream:
-    3dd8478 affs: get rid of affs_sync_super
-7.  hfs - merged upstream:
-    5687b57 hfs: get rid of hfs_sync_super
-8.  hfsplus - merged upstream:
-    9e6c582 hfsplus: get rid of write_super
-9.  ext2 - merged upstream
-    f72cf5e ext2: do not register write_super within VFS
-10. vfat - merged upstream
-    7849118 fat: switch to fsinfo_inode
-11. jffs2 - merged upstream
-    208b14e jffs2: get rid of jffs2_sync_super
-12. reiserfs - merged upstream
-    033369d reiserfs: get rid of resierfs_sync_super
-
-These patches are also available here:
-git://git.infradead.org/users/dedekind/linux-misc.git sync_supers
-
-And just because this is the final pdflush removal, here is a brief historical
-reference.
-
-1. early days...2.6.31 - pdflush is the kernel daemon which periodically
-   wakes-up and flushes all dirty inodes and superblocks.
-2. 2.6.32 - Jens Axboe introduces per-block device BDI flusher threads which
-   are now responsible to flushing dirty inodes [2]. The pdflush thread becomes
-   very simple, it is re-named to sync_supers and it periodically wakes-up
-   and flushes superblocks. While overall Jens' change was good, it introduced
-   a regression: instead of one pdflush thread waking-up every 5 seconds [3]
-   we ended up with multiple threads waking up every 5 seconds - sync_supers
-   and several flusher threads.
-3. 2.6.36 - Artem Bityutskiy :-) fixes the wake-ups regression (see commit
-   6467716) and from now on flusher threads do not wake up unless there are
-   some dirty data for the corresponding block device.
-
-   Attempts are made to similarly optimize sync_supers, but they are vetoed
-   by Al Viro who wants sync_supers to be killed altogether instead [4].
-4. 3.6 - the sync_supers is hopefully finally killed. With this the last
-   piece of pdflush is also gone.
-
-I'd like to thank Intel OTC for supporting this project, Jan Kara for help
-with ext[24], Andrew Morton, Al Viro, Ted Ts'o, Nick Piggin.
-
-[1] 5 seconds is the default setting and major distributions do not change
-    it. But it is tunable via /proc/sys/vm/dirty_writeback_centisecs
-[2] http://lwn.net/Articles/326552/
-[3] pdflush thread was forking itself if there were a lot dirty date, but it
-    does not matter in this context.
-[4] https://lkml.org/lkml/2010/7/22/96
-
---
-Regards,
-Artem Bityutskiy
