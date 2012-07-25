@@ -1,223 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932906Ab2GYIhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 04:37:08 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:49045 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932818Ab2GYIg7 (ORCPT
+	id S932847Ab2GYIlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 04:41:55 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:49718 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932767Ab2GYIlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 04:36:59 -0400
-Message-ID: <500FB022.2020605@linux.vnet.ibm.com>
-Date: Wed, 25 Jul 2012 16:36:50 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 25 Jul 2012 04:41:51 -0400
+Date: Wed, 25 Jul 2012 16:41:43 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Update for 3.6
+Message-ID: <20120725084143.GA5192@gondor.apana.org.au>
+References: <20100804140448.GA4042@gondor.apana.org.au>
+ <20101024061625.GA23715@gondor.apana.org.au>
+ <20110106000157.GA16089@gondor.apana.org.au>
+ <20110315145940.GA15373@gondor.apana.org.au>
+ <20110520235409.GA1722@gondor.apana.org.au>
+ <20110724011752.GA14373@gondor.apana.org.au>
+ <20111031040952.GA19659@gondor.apana.org.au>
+ <20120106041250.GA7759@gondor.apana.org.au>
+ <20120320032736.GA21367@gondor.apana.org.au>
+ <20120523013528.GA20781@gondor.apana.org.au>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: paulmck@linux.vnet.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
-References: <500ED719.2010002@gmail.com>
-In-Reply-To: <500ED719.2010002@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072508-8878-0000-0000-00000360B8E0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120523013528.GA20781@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 01:10 AM, Sasha Levin wrote:
-> Hi all,
-> 
-> I was fuzzing with trinity inside a KVM tools guest, on the current 3.6, and stumbled on the following:
+Hi Linus:
 
-Hi, Sasha
+Here is the crypto update for 3.6:
 
-I'm currently trying to reproduce this issue on my machine but keep
-failing, it's really make me think the issue has been solved...
-
-Could you please provide more info about you environment? like the
-.config and is there some plugin devices which is rarely.
-
-It will be better if you can make your test environment as clean as
-possible (remove the devices which could be remove) and then see whether
-the issue still exist.
-
-Regards,
-Michael Wang
-
-> 
-> (Note that it also happens on -next).
-> 
-> [  215.034674] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [  215.035641] 	1: (0 ticks this GP) idle=3f5/140000000000001/0 drain=0 . timer=18446744073709551615
-> [  215.035641] 	(detected by 3, t=111886 jiffies)
-> [  215.035641] sending NMI to all CPUs:
-> [  214.959504] NMI backtrace for cpu 2
-> [  214.959504] CPU 2
-> [  214.959504] Pid: 6583, comm: trinity-child6 Tainted: G        W    3.5.0-sasha-01644-g824681b #267
-> [  214.959504] RIP: 0010:[<ffffffff81149aa3>]  [<ffffffff81149aa3>] check_flags+0x93/0x1d0
-> [  214.959504] RSP: 0018:ffff880025175b58  EFLAGS: 00000046
-> [  214.959504] RAX: ffff880027910000 RBX: ffff880027910000 RCX: 0000000000000000
-> [  214.959504] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000001
-> [  214.959504] RBP: ffff880025175b58 R08: 0000000000000000 R09: 0000000000000000
-> [  214.959504] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000000
-> [  214.959504] R13: 0000000000000002 R14: 0000000000000000 R15: 0000000000000000
-> [  214.959504] FS:  00007f754d198700(0000) GS:ffff880029800000(0000) knlGS:0000000000000000
-> [  214.959504] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  214.959504] CR2: 0000000000000008 CR3: 00000000251aa000 CR4: 00000000000406e0
-> [  214.959504] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  214.959504] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  214.959504] Process trinity-child6 (pid: 6583, threadinfo ffff880025174000, task ffff880027910000)
-> [  214.959504] Stack:
-> [  214.959504]  ffff880025175be8 ffffffff8114e610 ffff880027910000 0000000000000000
-> [  214.959504]  0000000000000286 ffffffffffffff10 ffffffff8114e51d 0000000000000010
-> [  214.959504]  0000000000000286 0000000025175bb8 ffff880019a767c8 0000000000000286
-> [  214.959504] Call Trace:
-> [  214.959504]  [<ffffffff8114e610>] lock_acquire+0x80/0x270
-> [  214.959504]  [<ffffffff8114e51d>] ? lock_release+0x1ad/0x220
-> [  214.959504]  [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
-> [  214.959504]  [<ffffffff8124a055>] ? __d_lookup+0x145/0x2e0
-> [  214.959504]  [<ffffffff8124a055>] __d_lookup+0x145/0x2e0
-> [  214.959504]  [<ffffffff8123d216>] lookup_fast+0x136/0x240
-> [  214.959504]  [<ffffffff8123be8b>] ? __inode_permission+0xbb/0xd0
-> [  214.959504]  [<ffffffff8123bea9>] ? inode_permission+0x9/0x50
-> [  214.959504]  [<ffffffff8123da1c>] link_path_walk+0x22c/0x8f0
-> [  214.959504]  [<ffffffff8123cc43>] ? path_init+0x213/0x550
-> [  214.959504]  [<ffffffff81976e38>] ? __raw_spin_lock_init+0x38/0x70
-> [  214.959504]  [<ffffffff8123faa8>] path_openat+0x98/0x400
-> [  214.959504]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
-> [  214.959504]  [<ffffffff8123fe4d>] do_filp_open+0x3d/0xa0
-> [  214.959504]  [<ffffffff819770c8>] ? do_raw_spin_unlock+0xc8/0xe0
-> [  214.959504]  [<ffffffff8124f703>] ? alloc_fd+0x1d3/0x1f0
-> [  214.959504]  [<ffffffff8124f531>] ? alloc_fd+0x1/0x1f0
-> [  214.959504]  [<ffffffff8122f125>] do_sys_open+0x115/0x1b0
-> [  214.959504]  [<ffffffff8122f1dc>] sys_open+0x1c/0x20
-> [  214.959504]  [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
-> [  214.959504] Code: a4 26 84 e8 70 e2 f8 ff e9 25 01 00 00 0f 1f 00 44 8b 05 61 1c 1e 04 45 85 c0 75 4c 65 48 8b 04 25 00 da 00 00 8b b8 b0 08 00 00 <85> ff 75 39 e8 64 b4 81 00 85 c0 0f 84 09 01 00 00 83 3d 45 bf
-> [  215.026612] NMI backtrace for cpu 1
-> [  215.026612] CPU 1
-> [  215.026612] Pid: 2395, comm: pageattr-test Tainted: G        W    3.5.0-sasha-01644-g824681b #267
-> [  215.026612] RIP: 0010:[<ffffffff8109bd5a>]  [<ffffffff8109bd5a>] native_write_msr_safe+0xa/0x10
-> [  215.026612] RSP: 0018:ffff88001b803f70  EFLAGS: 00000046
-> [  215.026612] RAX: 0000000000000000 RBX: 000000000000ef80 RCX: 000000000000080b
-> [  215.026612] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 000000000000080b
-> [  215.026612] RBP: ffff88001b803f70 R08: 00003ffffffff000 R09: ffff880000000000
-> [  215.026612] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
-> [  215.026612] R13: ffff880007a98000 R14: ffff88001fc3a4b8 R15: ffff880000000000
-> [  215.026612] FS:  0000000000000000(0000) GS:ffff88001b800000(0000) knlGS:0000000000000000
-> [  215.026612] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  215.026612] CR2: 000000000000000c CR3: 0000000019dcf000 CR4: 00000000000406e0
-> [  215.026612] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  215.026612] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  215.026612] Process pageattr-test (pid: 2395, threadinfo ffff88000ced0000, task ffff88000d773000)
-> [  215.026612] Stack:
-> [  215.026612]  ffff88001b803f88 ffffffff81095d07 000000000000ef80 ffff88001b803fa8
-> [  215.026612]  ffffffff810901c4 ffff88000ced1db0 0000000000007a98 ffff88000ced1d00
-> [  215.026612]  ffffffff8369c4af ffff88000ced1c78 <EOI>  ffff88000ced1d00 ffffffff8369aeb4
-> [  215.026612] Call Trace:
-> [  215.026612]  <IRQ>
-> [  215.026612]  [<ffffffff81095d07>] native_apic_msr_eoi_write+0x27/0x30
-> [  215.026612]  [<ffffffff810901c4>] smp_apic_timer_interrupt+0x34/0xa0
-> [  215.026612]  [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
-> [  215.026612]  <EOI>
-> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
-> [  215.026612]  [<ffffffff810a2cb2>] ? lookup_address+0x112/0x170
-> [  215.026612]  [<ffffffff810a32ae>] print_split+0x7e/0x200
-> [  215.026612]  [<ffffffff810a4300>] pageattr_test+0x80/0x4a0
-> [  215.026612]  [<ffffffff8114a2f8>] ? trace_hardirqs_on_caller+0x118/0x140
-> [  215.026612]  [<ffffffff83696cbe>] ? schedule_timeout+0x2ce/0x370
-> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
-> [  215.026612]  [<ffffffff810a4720>] ? pageattr_test+0x4a0/0x4a0
-> [  215.026612]  [<ffffffff810a473f>] do_pageattr_test+0x1f/0x50
-> [  215.026612]  [<ffffffff8110607d>] kthread+0xad/0xc0
-> [  215.026612]  [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
-> [  215.026612]  [<ffffffff81105fd0>] ? kthread_flush_work_fn+0x10/0x10
-> [  215.026612]  [<ffffffff8369cdb0>] ? gs_change+0x13/0x13
-> [  215.026612] Code: 00 55 89 f9 48 89 e5 0f 32 45 31 c0 89 c7 48 89 d0 44 89 06 48 c1 e0 20 89 f9 5d 48 09 c8 c3 66 90 55 89 f0 89 f9 48 89 e5 0f 30 <31> c0 5d c3 66 90 55 89 f9 48 89 e5 0f 33 89 c7 48 89 d0 5d 48
-> [  215.035641] NMI backtrace for cpu 3
-> [  215.035641] CPU 3
-> [  215.035641] Pid: 0, comm: swapper/3 Tainted: G        W    3.5.0-sasha-01644-g824681b #267
-> [  215.035641] RIP: 0010:[<ffffffff8109bd5a>]  [<ffffffff8109bd5a>] native_write_msr_safe+0xa/0x10
-> [  215.035641] RSP: 0018:ffff88000d5b5ce8  EFLAGS: 00000086
-> [  215.035641] RAX: 0000000000000400 RBX: 0000000000000003 RCX: 0000000000000830
-> [  215.035641] RDX: 0000000000000003 RSI: 0000000000000400 RDI: 0000000000000830
-> [  215.035641] RBP: ffff88000d5b5ce8 R08: ffffffff84edc9c0 R09: 0000000000000000
-> [  215.035641] R10: 000000000000739d R11: 0000000000025370 R12: ffffffff84edc9c0
-> [  215.035641] R13: 0000000000000003 R14: 000000000000f042 R15: 0000000000000002
-> [  215.035641] FS:  0000000000000000(0000) GS:ffff880035a00000(0000) knlGS:0000000000000000
-> [  215.035641] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  215.035641] CR2: 0000000000bc5958 CR3: 00000000278b0000 CR4: 00000000000406e0
-> [  215.035641] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  215.035641] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  215.035641] Process swapper/3 (pid: 0, threadinfo ffff88000d5b4000, task ffff88000d5b8000)
-> [  215.035641] Stack:
-> [  215.035641]  ffff88000d5b5d48 ffffffff81095e0d ffff88000d5b5d58 0000000000000086
-> [  215.035641]  0000000000000002 0008000000000008 ffff88000d5b5d68 0000000000002710
-> [  215.035641]  000000000001b50e 0000000000000001 ffffffff84966008 0000000000000086
-> [  215.035641] Call Trace:
-> [  215.035641]  [<ffffffff81095e0d>] __x2apic_send_IPI_mask+0xcd/0x190
-> [  215.035641]  [<ffffffff81095ee7>] x2apic_send_IPI_all+0x17/0x20
-> [  215.035641]  [<ffffffff810918c3>] arch_trigger_all_cpu_backtrace+0x63/0xa0
-> [  215.035641]  [<ffffffff81194513>] print_other_cpu_stall+0x223/0x290
-> [  215.035641]  [<ffffffff81194600>] __rcu_pending+0x80/0x200
-> [  215.035641]  [<ffffffff8110e1d8>] ? __atomic_notifier_call_chain+0xe8/0x120
-> [  215.035641]  [<ffffffff811947bf>] rcu_pending+0x3f/0x70
-> [  215.035641]  [<ffffffff811949c4>] rcu_prepare_for_idle+0x1d4/0x430
-> [  215.035641]  [<ffffffff81194e6c>] rcu_idle_enter_common+0x24c/0x400
-> [  215.035641]  [<ffffffff8110e1f5>] ? __atomic_notifier_call_chain+0x105/0x120
-> [  215.035641]  [<ffffffff8110e0f0>] ? atomic_notifier_chain_unregister+0x90/0x90
-> [  215.035641]  [<ffffffff8119530b>] rcu_idle_enter+0xdb/0x130
-> [  215.035641]  [<ffffffff81074636>] cpu_idle+0x106/0x160
-> [  215.035641]  [<ffffffff835d1bb0>] start_secondary+0xd0/0xd7
-> [  215.035641] Code: 00 55 89 f9 48 89 e5 0f 32 45 31 c0 89 c7 48 89 d0 44 89 06 48 c1 e0 20 89 f9 5d 48 09 c8 c3 66 90 55 89 f0 89 f9 48 89 e5 0f 30 <31> c0 5d c3 66 90 55 89 f9 48 89 e5 0f 33 89 c7 48 89 d0 5d 48
-> [  214.997077] NMI backtrace for cpu 0
-> [  214.997077] CPU 0
-> [  214.997077] Pid: 2277, comm: kworker/0:2 Tainted: G        W    3.5.0-sasha-01644-g824681b #267
-> [  214.997077] RIP: 0010:[<ffffffff8109bd5a>]  [<ffffffff8109bd5a>] native_write_msr_safe+0xa/0x10
-> [  214.997077] RSP: 0018:ffff88000d803f70  EFLAGS: 00000046
-> [  214.997077] RAX: 0000000000000000 RBX: 000000000000ef80 RCX: 000000000000080b
-> [  214.997077] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 000000000000080b
-> [  214.997077] RBP: ffff88000d803f70 R08: 0000000000000000 R09: 0000000000000000
-> [  214.997077] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000000
-> [  214.997077] R13: ffffffff84854840 R14: 0000000000000286 R15: 00000000000493e0
-> [  214.997077] FS:  0000000000000000(0000) GS:ffff88000d800000(0000) knlGS:0000000000000000
-> [  214.997077] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  214.997077] CR2: 0000000000000000 CR3: 0000000012f58000 CR4: 00000000000406f0
-> [  214.997077] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  214.997077] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  214.997077] Process kworker/0:2 (pid: 2277, threadinfo ffff88000d782000, task ffff88000d653000)
-> [  214.997077] Stack:
-> [  214.997077]  ffff88000d803f88 ffffffff81095d07 000000000000ef80 ffff88000d803fa8
-> [  214.997077]  ffffffff810901c4 0000000000000002 ffff88000d653000 ffff88000d783cf0
-> [  214.997077]  ffffffff8369c4af ffff88000d783c48 <EOI>  ffff88000d783cf0 ffffffff8369aeb4
-> [  214.997077] Call Trace:
-> [  214.997077]  <IRQ>
-> [  214.997077]  [<ffffffff81095d07>] native_apic_msr_eoi_write+0x27/0x30
-> [  214.997077]  [<ffffffff810901c4>] smp_apic_timer_interrupt+0x34/0xa0
-> [  214.997077]  [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
-> [  214.997077]  <EOI>
-> [  214.997077]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
-> [  214.997077]  [<ffffffff8114b46d>] ? lock_is_held+0xed/0x110
-> [  214.997077]  [<ffffffff8313ed87>] rt_check_expire+0x117/0x300
-> [  214.997077]  [<ffffffff8313ef79>] rt_worker_func+0x9/0x20
-> [  214.997077]  [<ffffffff810fa936>] process_one_work+0x376/0x700
-> [  214.997077]  [<ffffffff810fa7f0>] ? process_one_work+0x230/0x700
-> [  214.997077]  [<ffffffff8313ef70>] ? rt_check_expire+0x300/0x300
-> [  214.997077]  [<ffffffff810fb508>] ? worker_thread+0x48/0x320
-> [  214.997077]  [<ffffffff810fb69c>] worker_thread+0x1dc/0x320
-> [  214.997077]  [<ffffffff810fb4c0>] ? manage_workers.isra.11+0x120/0x120
-> [  214.997077]  [<ffffffff8110607d>] kthread+0xad/0xc0
-> [  214.997077]  [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-> [  214.997077]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
-> [  214.997077]  [<ffffffff81105fd0>] ? kthread_flush_work_fn+0x10/0x10
-> [  214.997077]  [<ffffffff8369cdb0>] ? gs_change+0x13/0x13
-> [  214.997077] Code: 00 55 89 f9 48 89 e5 0f 32 45 31 c0 89 c7 48 89 d0 44 89 06 48 c1 e0 20 89 f9 5d 48 09 c8 c3 66 90 55 89 f0 89 f9 48 89 e5 0f 30 <31> c0 5d c3 66 90 55 89 f9 48 89 e5 0f 33 89 c7 48 89 d0 5d 48
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+* Fixed algorithm construction hang when self-test fails.
+* Added SHA variants to talitos AEAD list.
+* New driver for Exynos random number generator.
+* Performance enhancements for arc4.
+* Added hwrng support to caam.
+* Added ahash support to caam.
+* Fixed bad kfree in aesni-intel.
+* Allow aesni-intel in FIPS mode.
+* Added atmel driver with support for AES/3DES/SHA.
+* Bug fixes for mv_cesa.
+* CRC hardware driver for BF60x family processors.
 
 
+Please pull from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Alex Porosanu (1):
+      crypto: caam - ERA retrieval and printing for SEC device
+
+Benoît Thébaudeau (1):
+      hwrng: mxc-rnga - fix data_present API
+
+Bharat Bhushan (1):
+      crypto: caam - Using alloc_coherent for caam job rings
+
+Hemant Agrawal (1):
+      crypto: caam - add PDB (Protocol Descriptor Block) definitions
+
+Herbert Xu (1):
+      crypto: algapi - Move larval completion into algboss
+
+Horia Geanta (4):
+      crypto: talitos - move talitos structures to header file
+      crypto: talitos - export the talitos_submit function
+      crypto: talitos - add sha224, sha384 and sha512 to existing AEAD algorithms
+      crypto: testmgr - add aead cbc aes hmac sha1,256,512 test vectors
+
+Johannes Goetzfried (4):
+      crypto: twofish - add x86_64/avx assembler implementation
+      crypto: testmgr - expand twofish test vectors
+      crypto: serpent - add x86_64/avx assembler implementation
+      crypto: twofish-avx - remove useless instruction
+
+Jonghwa Lee (1):
+      hwrng: exynos - Add support for Exynos random number generator
+
+Jussi Kivilinna (15):
+      crypto: testmgr - add ecb(arc4) speed tests
+      crypto: arc4 - improve performance by adding ecb(arc4)
+      crypto: arc4 - improve performance by using u32 for ctx and variables
+      crypto: serpent-sse2/avx - allow both to be built into kernel
+      crypto: ablk_helper - move ablk_* functions from serpent-sse2/avx glue code to shared module
+      crypto: twofish-avx - change to use shared ablk_* functions
+      crypto: aes_ni - change to use shared ablk_* functions
+      crypto: serpent-sse2 - prepare serpent-sse2 glue code into generic x86 glue code for 128bit block ciphers
+      crypto: serpent-sse2 - split generic glue code to new helper module
+      crypto: serpent-avx: remove duplicated glue code and use shared glue code from glue_helper
+      crypto: camellia-x86_64 - remove duplicated glue code and use shared glue code from glue_helper
+      crypto: twofish-x86_64-3way - remove duplicated glue code and use shared glue code from glue_helper
+      crypto: twofish-avx - remove duplicated glue code and use shared glue code from glue_helper
+      crypto: move arch/x86/include/asm/serpent-{sse2|avx}.h to arch/x86/include/asm/crypto/
+      crypto: move arch/x86/include/asm/aes.h to arch/x86/include/asm/crypto/
+
+Kim Phillips (10):
+      crypto: caam - remove line continuations from ablkcipher_append_src_dst
+      crypto: caam - fix input job ring element dma mapping size
+      crypto: caam - fix descriptor length adjustments for protocol descriptors
+      crypto: caam - assign 40-bit masks on SEC v5.0 and above
+      crypto: caam - add support for SEC v5.x RNG4
+      crypto: caam - disable IRQ coalescing by default
+      crypto: caam - use non-irq versions of spinlocks for job rings
+      crypto: caam - only query h/w in job ring dequeue path
+      crypto: caam - consolidate memory barriers from job ring en/dequeue
+      crypto: caam - one tasklet per job ring
+
+Mathias Krause (1):
+      crypto: sha1 - use Kbuild supplied flags for AVX test
+
+Milan Broz (2):
+      crypto: aesni-intel - fix wrong kfree pointer
+      crypto: testmgr - allow aesni-intel and ghash_clmulni-intel in fips mode
+
+Nicolas Royer (5):
+      ARM: AT91SAM9G45: add crypto peripherals
+      crypto: atmel - add Atmel AES driver
+      crypto: atmel - add Atmel DES/TDES driver
+      crypto: atmel - add Atmel SHA1/SHA256 driver
+      crypto: atmel - add new tests to tcrypt
+
+Paul Bolle (1):
+      crypto: s390 - clean up DES code a bit more
+
+Phil Sutter (3):
+      crypto: mv_cesa - add an expiry timer in case anything goes wrong
+      crypto: mv_cesa - initialise the interrupt status field to zero
+      crypto: mv_cesa - fix for hash finalisation with data
+
+Sebastian Andrzej Siewior (1):
+      crypto: arc4 - now arc needs blockcipher support
+
+Seth Jennings (2):
+      crypto: nx - move nx build to driver/crypto Makefile
+      crypto: nx - fix typo in nx driver config option
+
+Sonic Zhang (2):
+      crypto: testmgr - Add new test cases for Blackfin CRC crypto driver
+      crypto: bfin_crc - CRC hardware driver for BF60x family processors.
+
+Steffen Klassert (1):
+      crypto: algapi - Fix hang on crypto allocation
+
+Yashpal Dutta (1):
+      crypto: caam - fix start index for Protocol shared descriptors
+
+Yuan Kang (8):
+      crypto: caam - support external seq in/out lengths
+      crypto: caam - remove jr register/deregister
+      crypto: caam - refactor key_gen, sg
+      crypto: caam - link_tbl rename
+      crypto: caam - ahash hmac support
+      crypto: caam - unkeyed ahash support
+      crypto: caam - chaining support
+      crypto: caam - hwrng support
+
+ arch/arm/mach-at91/at91sam9g45.c                   |   13 +-
+ arch/arm/mach-at91/at91sam9g45_devices.c           |  128 ++
+ arch/arm/mach-at91/include/mach/at91sam9g45.h      |    2 +
+ arch/powerpc/Makefile                              |    1 -
+ arch/s390/crypto/crypto_des.h                      |   18 -
+ arch/x86/crypto/Makefile                           |   14 +-
+ arch/x86/crypto/ablk_helper.c                      |  149 ++
+ arch/x86/crypto/aes_glue.c                         |    2 +-
+ arch/x86/crypto/aesni-intel_glue.c                 |  110 +-
+ arch/x86/crypto/camellia_glue.c                    |  355 +---
+ arch/x86/crypto/glue_helper.c                      |  307 ++++
+ arch/x86/crypto/serpent-avx-x86_64-asm_64.S        |  704 ++++++++
+ .../{serpent_sse2_glue.c => serpent_avx_glue.c}    |  592 ++-----
+ arch/x86/crypto/serpent_sse2_glue.c                |  513 ++-----
+ arch/x86/crypto/sha1_ssse3_asm.S                   |    2 +-
+ arch/x86/crypto/sha1_ssse3_glue.c                  |    6 +-
+ arch/x86/crypto/twofish-avx-x86_64-asm_64.S        |  300 ++++
+ arch/x86/crypto/twofish_avx_glue.c                 |  624 +++++++
+ arch/x86/crypto/twofish_glue_3way.c                |  409 ++----
+ arch/x86/include/asm/crypto/ablk_helper.h          |   31 +
+ arch/x86/include/asm/{ => crypto}/aes.h            |    0
+ arch/x86/include/asm/crypto/glue_helper.h          |  115 ++
+ arch/x86/include/asm/crypto/serpent-avx.h          |   32 +
+ .../asm/{serpent.h => crypto/serpent-sse2.h}       |    4 +-
+ arch/x86/include/asm/crypto/twofish.h              |   46 +
+ crypto/Kconfig                                     |   67 +-
+ crypto/algapi.c                                    |   17 -
+ crypto/algboss.c                                   |   17 +-
+ crypto/arc4.c                                      |  115 +-
+ crypto/internal.h                                  |    1 -
+ crypto/tcrypt.c                                    |   86 +-
+ crypto/testmgr.c                                   |  203 +++
+ crypto/testmgr.h                                   | 1852 +++++++++++++++++++-
+ drivers/char/hw_random/Kconfig                     |   12 +
+ drivers/char/hw_random/Makefile                    |    1 +
+ drivers/char/hw_random/exynos-rng.c                |  182 ++
+ drivers/char/hw_random/mxc-rnga.c                  |   21 +-
+ drivers/crypto/Kconfig                             |   56 +-
+ drivers/crypto/Makefile                            |    7 +-
+ drivers/crypto/atmel-aes-regs.h                    |   62 +
+ drivers/crypto/atmel-aes.c                         | 1206 +++++++++++++
+ drivers/crypto/atmel-sha-regs.h                    |   46 +
+ drivers/crypto/atmel-sha.c                         | 1112 ++++++++++++
+ drivers/crypto/atmel-tdes-regs.h                   |   89 +
+ drivers/crypto/atmel-tdes.c                        | 1215 +++++++++++++
+ drivers/crypto/bfin_crc.c                          |  780 ++++++++
+ drivers/crypto/caam/Kconfig                        |   30 +-
+ drivers/crypto/caam/Makefile                       |    4 +-
+ drivers/crypto/caam/caamalg.c                      |  572 ++----
+ drivers/crypto/caam/caamhash.c                     | 1878 ++++++++++++++++++++
+ drivers/crypto/caam/caamrng.c                      |  309 ++++
+ drivers/crypto/caam/compat.h                       |    2 +
+ drivers/crypto/caam/ctrl.c                         |  179 ++-
+ drivers/crypto/caam/ctrl.h                         |   13 +
+ drivers/crypto/caam/desc.h                         |   31 +-
+ drivers/crypto/caam/desc_constr.h                  |   57 +-
+ drivers/crypto/caam/error.c                        |   44 +-
+ drivers/crypto/caam/intern.h                       |    6 +-
+ drivers/crypto/caam/jr.c                           |  115 +-
+ drivers/crypto/caam/key_gen.c                      |  122 ++
+ drivers/crypto/caam/key_gen.h                      |   17 +
+ drivers/crypto/caam/pdb.h                          |  401 +++++
+ drivers/crypto/caam/regs.h                         |   38 +-
+ drivers/crypto/caam/sg_sw_sec4.h                   |  156 ++
+ drivers/crypto/mv_cesa.c                           |   61 +-
+ drivers/crypto/talitos.c                           |  283 ++--
+ drivers/crypto/talitos.h                           |  123 ++
+ include/linux/platform_data/atmel-aes.h            |   22 +
+ 68 files changed, 13795 insertions(+), 2292 deletions(-)
+  
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
