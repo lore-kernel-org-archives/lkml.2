@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2GYTmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:42:21 -0400
-Received: from mail.windriver.com ([147.11.1.11]:33690 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab2GYTmU (ORCPT
+	id S1752336Ab2GYToY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:44:24 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38086 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752181Ab2GYToW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:42:20 -0400
-Message-ID: <50104C0A.8050607@windriver.com>
-Date: Wed, 25 Jul 2012 15:42:02 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 25 Jul 2012 15:44:22 -0400
+Date: Wed, 25 Jul 2012 15:44:21 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        <tglx@linutronix.de>, <mingo@kernel.org>, <peterz@infradead.org>,
+        <rusty@rustcorp.com.au>, <namhyung@kernel.org>, <tj@kernel.org>,
+        <rjw@sisk.pl>, <nikunj@linux.vnet.ibm.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
+ during CPU hotplug
+In-Reply-To: <20120725164331.GB2378@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1207251537300.2008-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: <linux-kernel@vger.kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH] firmware: Remove obsolete Myricom firmware
-References: <1343237441-102862-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1343237441-102862-1-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-07-25 01:30 PM, Tim Gardner wrote:
-> The Myricom GB driver firmware is no longer in use. Furthermore,
-> CONFIG_MYRI_SBUS is no longer defined.
+On Wed, 25 Jul 2012, Paul E. McKenney wrote:
 
-If there is going to be more of these, it is kind of nice to
-have in the commit header a reference to the commit when the
-original user(s) went away.
-
-In this case, it was:
-
----
-commit 1b9c4134c126aa8ae00a57672d4a4eaecc436b54
-Author: Jon Mason <mason@myri.com>
-Date:   Mon Jun 20 12:51:22 2011 -0700
-
-    myri_sbus: remove driver
-    
-    Remove the myri_sbus driver. Why?
-    * There is no possibility of ethernet mode on this adapter, so it's
-      Myrinet only.
-    * It won't inter-op with modern versions of Myrinet, and thus can only
-      work with legacy adapters.
-    * There are no in-kernel Linux drivers for the PCI version of this
-      adapter, so it only can work on ~15 year old Sun hardware.
-    
-    It's long in the tooth, let's take it to the knackers.
-    
-    Signed-off-by: Jon Mason <mason@myri.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-----
-
-Thanks,
-Paul.
-
+> > I think the best you can do is stop using notifiers and use something 
+> > else instead.  For example, a simple set of function calls (assuming 
+> > you know beforehand what callbacks need to be invoked).
 > 
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Ben Hutchings <ben@decadent.org.uk>
-> Cc: James Bottomley <JBottomley@Parallels.com>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> Unfortunately, we don't know beforehand.  There are loadable kernel
+> modules that need to be informed of CPU hotplug events.  So we do need
+> some runtime way to register to be notified CPU-hotplug events.
+> 
+> If it weren't for the modules, we might be able to use another data
+> section and get a contiguous list of functions that need to be called.
+> I suppose we could have such sections for modules and link/unlink them
+> at module load/unload time, but it is not at all clear to me that this
+> would be simpler than using notifiers.
+> 
+> But always happy to learn -- any specific suggestions?
+
+Not knowing the details of CPU hotplug, it's hard to answer in anything 
+but generalities.  :-)  (And FYI, I have no intention of learning the 
+details of CPU hotplug -- there's enough on my plate already.)
+
+Still, one possibility would be to organize matters by adding a couple
+of steps to Thomas's list that would be devoted purely to callbacks and
+associating a separate notifier chain to each of these steps.  That way
+most of the important work would be kept in the core kernel but modules
+could still step in where needed.  The different notifier chains would 
+then be strictly ordered with respect to each other, but events within 
+a particular chain would not have any specified ordering properties.
+
+Also, Thomas may have mentioned something about having separate 
+callbacks for the CPU-up and CPU-down events, instead of relying on one 
+list that would be called forwards and backwards.
+
+> > > One of the other ideas to improve the hotplug notifier stuff that came up during some
+> > > of the discussions was to implement explicit dependency tracking between the notifiers
+> > > and perhaps get rid of the priority numbers that are currently being used to provide
+> > > some sort of ordering between the callbacks. Links to some of the related discussions
+> > > are provided below.
+> > 
+> > This seems like misplaced over-engineering.
+> 
+> In fact, we have deferred dependency tracking.  If I remember correctly,
+> the main motivation was to execute notifiers in parallel, but the fraction
+> of time that hotplug spends executing notifiers proved to be quite small.
+> At this point, I would be surprised if we ever do much with dependency
+> tracking.
+> 
+> Again, any specific suggestions for improvement?
+
+If it works okay without dependency tracking, leave well enough alone.  
+:-)
+
+Alan Stern
+
