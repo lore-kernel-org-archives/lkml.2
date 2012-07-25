@@ -1,187 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196Ab2GYRhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:37:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57319 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab2GYRhj (ORCPT
+	id S1751081Ab2GYRjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:39:21 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:34112 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab2GYRjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:37:39 -0400
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: linux-kernel@vger.kernel.org, "Theodore T'so" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, w@1wt.edu, ewust@umich.edu,
-        zakir@umich.edu, greg@kroah.com, mpm@selenic.com, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
-        stable@vger.kernel.org, DJ Johnston <dj.johnston@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH] random: mix in architectural randomness in extract_buf()
-Date: Wed, 25 Jul 2012 10:37:02 -0700
-Message-Id: <1343237822-7789-1-git-send-email-hpa@zytor.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <20120725151000.GA30996@thunk.org>
-References: <20120725151000.GA30996@thunk.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 10:37:19 -0700 (PDT)
+	Wed, 25 Jul 2012 13:39:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342959280-5361-3-git-send-email-jolsa@redhat.com>
+References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+	<1342959280-5361-3-git-send-email-jolsa@redhat.com>
+Date: Wed, 25 Jul 2012 19:39:18 +0200
+Message-ID: <CABPqkBQONxpNAm=rE9JpQ8Pjdfzf6dc707UZWhSzM+E0AAXE-w@mail.gmail.com>
+Subject: Re: [PATCH 02/17] perf: Add ability to attach user level registers
+ dump to sample
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+On Sun, Jul 22, 2012 at 2:14 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> Introducing PERF_SAMPLE_REGS_USER sample type bit to trigger
+> the dump of user level registers on sample. Registers we want
+> to dump are specified by sample_regs_user bitmask.
+>
+> Only user level registers are dumped at the moment. Meaning the
+> register values of the user space context as it was before the
+> user entered the kernel for whatever reason (syscall, irq,
+> exception, or a PMI happening in userspace).
+>
+> The layout of the sample_regs_user bitmap is described in
+> asm/perf_regs.h for archs that support register dump.
+>
+> This is going to be useful to bring Dwarf CFI based stack
+> unwinding on top of samples.
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  include/linux/perf_event.h |   20 ++++++++++++--
+>  kernel/events/core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 78 insertions(+), 3 deletions(-)
+>
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 76c5c8b..57f209d 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -130,8 +130,9 @@ enum perf_event_sample_format {
+>         PERF_SAMPLE_STREAM_ID                   = 1U << 9,
+>         PERF_SAMPLE_RAW                         = 1U << 10,
+>         PERF_SAMPLE_BRANCH_STACK                = 1U << 11,
+> +       PERF_SAMPLE_REGS_USER                   = 1U << 12,
+>
+> -       PERF_SAMPLE_MAX = 1U << 12,             /* non-ABI */
+> +       PERF_SAMPLE_MAX = 1U << 13,             /* non-ABI */
+>  };
+>
+>  /*
+> @@ -194,6 +195,7 @@ enum perf_event_read_format {
+>  #define PERF_ATTR_SIZE_VER0    64      /* sizeof first published struct */
+>  #define PERF_ATTR_SIZE_VER1    72      /* add: config2 */
+>  #define PERF_ATTR_SIZE_VER2    80      /* add: branch_sample_type */
+> +#define PERF_ATTR_SIZE_VER3    88      /* add: sample_regs_user */
+>
+>  /*
+>   * Hardware event_id to monitor via a performance monitoring event:
+> @@ -271,7 +273,13 @@ struct perf_event_attr {
+>                 __u64           bp_len;
+>                 __u64           config2; /* extension of config1 */
+>         };
+> -       __u64   branch_sample_type; /* enum branch_sample_type */
+> +       __u64   branch_sample_type; /* enum perf_branch_sample_type */
+> +
+> +       /*
+> +        * Defines set of user regs to dump on samples.
+> +        * See asm/perf_regs.h for details.
+> +        */
+> +       __u64   sample_regs_user;
+>  };
+>
+>  /*
+> @@ -548,6 +556,9 @@ enum perf_event_type {
+>          *        char                  data[size];}&& PERF_SAMPLE_RAW
+>          *
+>          *      { u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
+> +        *
+> +        *      { u64                   available;
+> +        *        u64                   regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
+>          * };
+>          */
+>         PERF_RECORD_SAMPLE                      = 9,
+> @@ -609,6 +620,7 @@ struct perf_guest_info_callbacks {
+>  #include <linux/static_key.h>
+>  #include <linux/atomic.h>
+>  #include <linux/sysfs.h>
+> +#include <linux/perf_regs.h>
+>  #include <asm/local.h>
+>
+>  struct perf_callchain_entry {
+> @@ -1133,6 +1145,7 @@ struct perf_sample_data {
+>         struct perf_callchain_entry     *callchain;
+>         struct perf_raw_record          *raw;
+>         struct perf_branch_stack        *br_stack;
+> +       struct pt_regs                  *regs_user;
+>  };
+>
+>  static inline void perf_sample_data_init(struct perf_sample_data *data,
+> @@ -1142,7 +1155,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+>         data->addr = addr;
+>         data->raw  = NULL;
+>         data->br_stack = NULL;
+> -       data->period    = period;
+> +       data->period = period;
+> +       data->regs_user = NULL;
+>  }
+>
+>  extern void perf_output_sample(struct perf_output_handle *handle,
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index f1cf0ed..e817e32 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -3756,6 +3756,33 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
+>  }
+>  EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
+>
+> +static void
+> +perf_output_sample_regs(struct perf_output_handle *handle,
+> +                       struct pt_regs *regs, u64 mask)
+> +{
+> +       int bit;
+> +
+> +       for_each_set_bit(bit, (const unsigned long *) &mask,
+> +                        sizeof(mask) * BITS_PER_BYTE) {
+> +               u64 val;
+> +
+> +               val = perf_reg_value(regs, bit);
+> +               perf_output_put(handle, val);
+> +       }
+> +}
+> +
+> +static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
+> +{
+> +       if (!user_mode(regs)) {
+> +               if (current->mm)
+> +                       regs = task_pt_regs(current);
+> +               else
+> +                       regs = NULL;
+> +       }
+> +
+> +       return regs;
+> +}
+> +
+>  static void __perf_event_header__init_id(struct perf_event_header *header,
+>                                          struct perf_sample_data *data,
+>                                          struct perf_event *event)
+> @@ -4016,6 +4043,23 @@ void perf_output_sample(struct perf_output_handle *handle,
+>                         perf_output_put(handle, nr);
+>                 }
+>         }
+> +
+> +       if (sample_type & PERF_SAMPLE_REGS_USER) {
+> +               u64 avail = (data->regs_user != NULL);
+> +
+> +               /*
+> +                * If there are no regs to dump, notice it through
+> +                * first u64 being zero.
+> +                */
+> +               perf_output_put(handle, avail);
+> +
+The only role of avail is to report whether or not you've captured actual
+registers. Could it be used to report the sampled process ABI (32 vs. 64)
+instead? Something like:
+      PERF_SAMPLE_REGS_ABI_NONE -> no regs captured (emulate your
+current behavior)
+      PERF_SAMPLE_REGS_ABI_32 -> 32 bit ABI regs captured
+      PERF_SAMPLE_REGS_ABI_64 -> 64 bit ABI regs captured
 
-RDRAND is so much faster than the Linux pool system that we can
-always just mix in architectural randomness.
+That could help the tools interpret the register values.
 
-Doing this in extract_buf() lets us do this in one convenient
-place, unfortunately the output size (10 bytes) is maximally
-awkward.  That, plus the fact that every output byte will have
-passed through extract_buf() twice means we are not being very
-efficient with the RDRAND use.
+Other than that the patch looks good to me.
 
-Measurements show that RDRAND is 12-15 times faster than the Linux
-pool system.  Doing the math shows this corresponds to about an
-11.5% slowdown which is confirmed by measurements.
+Once it's in, I will piggyback on it to add and post a patch to add
+interrupted, pebs machine state sampling.
 
-Users who are very performance- or power-sensitive could definitely
-still benefit from being allowed to use RDRAND directly, but I
-believe this version should satisfy even the most hyper-paranoid
-crowd.
-
-[ v2: changed the final memcpy() from hash.w to hash in order to
-  make it more obvious that mucking with hash.l doesn't leave
-  hash.w unmodified.  This doesn't have any impact on the final
-  code as the Linux kernel is alwasy compiled with -fno-strict-aliasing
-  but it might make it more obvious to the human reader who might get
-  confused and think it is a structure. ]
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: DJ Johnston <dj.johnston@intel.com>
----
- drivers/char/random.c | 56 +++++++++++++++++++++++++++++----------------------
- 1 file changed, 32 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 9793b40..7bc0b36 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -277,6 +277,8 @@
- #define SEC_XFER_SIZE 512
- #define EXTRACT_SIZE 10
- 
-+#define LONGS(x) (((x) + sizeof(unsigned long) - 1)/sizeof(unsigned long))
-+
- /*
-  * The minimum number of bits of entropy before we wake up a read on
-  * /dev/random.  Should be enough to do a significant reseed.
-@@ -813,11 +815,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
-  */
- static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- {
--	union {
--		__u32	tmp[OUTPUT_POOL_WORDS];
--		long	hwrand[4];
--	} u;
--	int	i;
-+	__u32	tmp[OUTPUT_POOL_WORDS];
- 
- 	if (r->pull && r->entropy_count < nbytes * 8 &&
- 	    r->entropy_count < r->poolinfo->POOLBITS) {
-@@ -828,23 +826,17 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 		/* pull at least as many as BYTES as wakeup BITS */
- 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
- 		/* but never more than the buffer size */
--		bytes = min_t(int, bytes, sizeof(u.tmp));
-+		bytes = min_t(int, bytes, sizeof(tmp));
- 
- 		DEBUG_ENT("going to reseed %s with %d bits "
- 			  "(%d of %d requested)\n",
- 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
- 
--		bytes = extract_entropy(r->pull, u.tmp, bytes,
-+		bytes = extract_entropy(r->pull, tmp, bytes,
- 					random_read_wakeup_thresh / 8, rsvd);
--		mix_pool_bytes(r, u.tmp, bytes, NULL);
-+		mix_pool_bytes(r, tmp, bytes, NULL);
- 		credit_entropy_bits(r, bytes*8);
- 	}
--	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
--	for (i = 0; i < 4; i++)
--		if (arch_get_random_long(&u.hwrand[i]))
--			break;
--	if (i)
--		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
- }
- 
- /*
-@@ -901,15 +893,19 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- static void extract_buf(struct entropy_store *r, __u8 *out)
- {
- 	int i;
--	__u32 hash[5], workspace[SHA_WORKSPACE_WORDS];
-+	union {
-+		__u32 w[5];
-+		unsigned long l[LONGS(EXTRACT_SIZE)];
-+	} hash;
-+	__u32 workspace[SHA_WORKSPACE_WORDS];
- 	__u8 extract[64];
- 	unsigned long flags;
- 
- 	/* Generate a hash across the pool, 16 words (512 bits) at a time */
--	sha_init(hash);
-+	sha_init(hash.w);
- 	spin_lock_irqsave(&r->lock, flags);
- 	for (i = 0; i < r->poolinfo->poolwords; i += 16)
--		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
-+		sha_transform(hash.w, (__u8 *)(r->pool + i), workspace);
- 
- 	/*
- 	 * We mix the hash back into the pool to prevent backtracking
-@@ -920,14 +916,14 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	 * brute-forcing the feedback as hard as brute-forcing the
- 	 * hash.
- 	 */
--	__mix_pool_bytes(r, hash, sizeof(hash), extract);
-+	__mix_pool_bytes(r, hash.w, sizeof(hash.w), extract);
- 	spin_unlock_irqrestore(&r->lock, flags);
- 
- 	/*
- 	 * To avoid duplicates, we atomically extract a portion of the
- 	 * pool while mixing, and hash one final time.
- 	 */
--	sha_transform(hash, extract, workspace);
-+	sha_transform(hash.w, extract, workspace);
- 	memset(extract, 0, sizeof(extract));
- 	memset(workspace, 0, sizeof(workspace));
- 
-@@ -936,11 +932,23 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	 * pattern, we fold it in half. Thus, we always feed back
- 	 * twice as much data as we output.
- 	 */
--	hash[0] ^= hash[3];
--	hash[1] ^= hash[4];
--	hash[2] ^= rol32(hash[2], 16);
--	memcpy(out, hash, EXTRACT_SIZE);
--	memset(hash, 0, sizeof(hash));
-+	hash.w[0] ^= hash.w[3];
-+	hash.w[1] ^= hash.w[4];
-+	hash.w[2] ^= rol32(hash.w[2], 16);
-+
-+	/*
-+	 * If we have a architectural hardware random number
-+	 * generator, mix that in, too.
-+	 */
-+	for (i = 0; i < LONGS(EXTRACT_SIZE); i++) {
-+		unsigned long v;
-+		if (!arch_get_random_long(&v))
-+			break;
-+		hash.l[i] ^= v;
-+	}
-+
-+	memcpy(out, &hash, EXTRACT_SIZE);
-+	memset(&hash, 0, sizeof(hash));
- }
- 
- static ssize_t extract_entropy(struct entropy_store *r, void *buf,
--- 
-1.7.11.2
-
+> +               if (avail) {
+> +                       u64 mask = event->attr.sample_regs_user;
+> +                       perf_output_sample_regs(handle,
+> +                                               data->regs_user,
+> +                                               mask);
+> +               }
+> +       }
+>  }
+>
+>  void perf_prepare_sample(struct perf_event_header *header,
+> @@ -4067,6 +4111,19 @@ void perf_prepare_sample(struct perf_event_header *header,
+>                 }
+>                 header->size += size;
+>         }
+> +
+> +       if (sample_type & PERF_SAMPLE_REGS_USER) {
+> +               /* regs dump available bool */
+> +               int size = sizeof(u64);
+> +
+> +               data->regs_user = perf_sample_regs_user(regs);
+> +               if (data->regs_user) {
+> +                       u64 mask = event->attr.sample_regs_user;
+> +                       size += hweight64(mask) * sizeof(u64);
+> +               }
+> +
+> +               header->size += size;
+> +       }
+>  }
+>
+>  static void perf_event_output(struct perf_event *event,
+> @@ -6116,6 +6173,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+>                         attr->branch_sample_type = mask;
+>                 }
+>         }
+> +
+> +       if (attr->sample_type & PERF_SAMPLE_REGS_USER)
+> +               ret = perf_reg_validate(attr->sample_regs_user);
+> +
+>  out:
+>         return ret;
+>
+> --
+> 1.7.7.6
+>
