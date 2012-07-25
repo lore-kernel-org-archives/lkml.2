@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab2GYRox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:44:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55610 "EHLO
+	id S1751740Ab2GYRpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:45:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55605 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2GYRlo (ORCPT
+	with ESMTP id S1751506Ab2GYRln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:41:44 -0400
+	Wed, 25 Jul 2012 13:41:43 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jovi Zhang <bookjovi@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/19] perf tools: Make the breakpoint events sample period default to 1
-Date: Wed, 25 Jul 2012 14:41:29 -0300
-Message-Id: <1343238094-12481-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/19] perf kvm: Set name for VM process in guest machine
+Date: Wed, 25 Jul 2012 14:41:17 -0300
+Message-Id: <1343238094-12481-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1343238094-12481-1-git-send-email-acme@infradead.org>
 References: <1343238094-12481-1-git-send-email-acme@infradead.org>
@@ -25,41 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jovi Zhang <bookjovi@gmail.com>
+From: David Ahern <dsahern@gmail.com>
 
-There have one problem about hw_breakpoint perf event, as watched, the
-events reported to userspace is not correctly, sometime one trigger
-bp_event report several events, sometime bp_event cannot go through to
-user.
+COMM events are not generated in the context of a guest machine, so the
+thread name is never set for the VMM process. For example, the qemu-kvm
+name applies to the process in the host machine, not the guest machine.
+So, samples for guest machines are currently displayed as:
 
-The root cause is attr->freq is 1 passed to kernel defaultly in bp
-events, this make kernel calculate event period not as expect, make
-sample period to 1 will change attr->freq to 0, to fix this problem.
+    99.67%     :5671  [unknown]         [g] 0xffffffff81366b41
 
-This patch is similar with commit f92128 about tracepoint events:
-    perf: Make the trace events sample period default to 1
+where 5671 is the pid of the VMM. With this patch the samples in the guest
+machine are shown as:
 
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+    18.43%  [guest/5671]  [unknown]           [g] 0xffffffff810d68b7
+
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/CACV3sbLF8taiCq_VYW-sgRJyupeMzg58C7ZXfMe3xZUiH_Mx6w@mail.gmail.com
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1342826756-64663-3-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/perf/util/map.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index a729945..74a5af4 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -490,6 +490,7 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
- 		attr.bp_len = HW_BREAKPOINT_LEN_4;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index a1f4e36..8668569 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -7,6 +7,7 @@
+ #include <stdio.h>
+ #include <unistd.h>
+ #include "map.h"
++#include "thread.h"
  
- 	attr.type = PERF_TYPE_BREAKPOINT;
-+	attr.sample_period = 1;
- 
- 	return add_event(list, idx, &attr, NULL);
+ const char *map_type__name[MAP__NR_TYPES] = {
+ 	[MAP__FUNCTION] = "Functions",
+@@ -585,7 +586,21 @@ int machine__init(struct machine *self, const char *root_dir, pid_t pid)
+ 	self->kmaps.machine = self;
+ 	self->pid	    = pid;
+ 	self->root_dir      = strdup(root_dir);
+-	return self->root_dir == NULL ? -ENOMEM : 0;
++	if (self->root_dir == NULL)
++		return -ENOMEM;
++
++	if (pid != HOST_KERNEL_ID) {
++		struct thread *thread = machine__findnew_thread(self, pid);
++		char comm[64];
++
++		if (thread == NULL)
++			return -ENOMEM;
++
++		snprintf(comm, sizeof(comm), "[guest/%d]", pid);
++		thread__set_comm(thread, comm);
++	}
++
++	return 0;
  }
+ 
+ static void dsos__delete(struct list_head *self)
 -- 
 1.7.1
 
