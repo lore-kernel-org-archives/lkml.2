@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab2GYM5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:57:31 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:42943 "EHLO relay.sw.ru"
+	id S1756757Ab2GYM5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:57:39 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:1863 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756724Ab2GYM53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:57:29 -0400
-Subject: [PATCH v2 02/15] LockD: make garbage collector network namespace
-	aware.
+	id S1756366Ab2GYM5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:57:36 -0400
+Subject: [PATCH v2 03/15] LockD: manage garbage collection timeout per
+	networks namespace
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 25 Jul 2012 16:56:03 +0400
-Message-ID: <20120725125603.24376.90230.stgit@localhost.localdomain>
+Date: Wed, 25 Jul 2012 16:56:11 +0400
+Message-ID: <20120725125611.24376.76843.stgit@localhost.localdomain>
 In-Reply-To: <20120725125258.24376.82525.stgit@localhost.localdomain>
 References: <20120725125258.24376.82525.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -24,78 +24,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch moves next_gc to per-net data.
 
+Note: passed network can be NULL (when Lockd kthread is exiting of Lockd
+module is removing).
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/lockd/host.c |   22 +++++++++++++---------
- 1 files changed, 13 insertions(+), 9 deletions(-)
+ fs/lockd/host.c  |   12 +++++++++---
+ fs/lockd/netns.h |    1 +
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/fs/lockd/host.c b/fs/lockd/host.c
-index 2c5f41b..991274a 100644
+index 991274a..3636734 100644
 --- a/fs/lockd/host.c
 +++ b/fs/lockd/host.c
-@@ -45,7 +45,7 @@ static unsigned long		next_gc;
+@@ -21,6 +21,8 @@
+ 
+ #include <net/ipv6.h>
+ 
++#include "netns.h"
++
+ #define NLMDBG_FACILITY		NLMDBG_HOSTCACHE
+ #define NLM_HOST_NRHASH		32
+ #define NLM_HOST_REBIND		(60 * HZ)
+@@ -41,7 +43,6 @@ static struct hlist_head	nlm_client_hosts[NLM_HOST_NRHASH];
+ 		hlist_for_each_entry_safe((host), (pos), (next), \
+ 						(chain), h_hash)
+ 
+-static unsigned long		next_gc;
  static unsigned long		nrhosts;
  static DEFINE_MUTEX(nlm_host_mutex);
  
--static void			nlm_gc_hosts(void);
-+static void			nlm_gc_hosts(struct net *net);
+@@ -337,6 +338,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
+ 		.hostname_len	= hostname_len,
+ 		.net		= net,
+ 	};
++	struct lockd_net *ln = net_generic(net, lockd_net_id);
  
- struct nlm_lookup_host_info {
- 	const int		server;		/* search for server|client */
-@@ -345,7 +345,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
+ 	dprintk("lockd: %s(host='%*s', vers=%u, proto=%s)\n", __func__,
+ 			(int)hostname_len, hostname, rqstp->rq_vers,
+@@ -344,7 +346,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
+ 
  	mutex_lock(&nlm_host_mutex);
  
- 	if (time_after_eq(jiffies, next_gc))
--		nlm_gc_hosts();
-+		nlm_gc_hosts(net);
+-	if (time_after_eq(jiffies, next_gc))
++	if (time_after_eq(jiffies, ln->next_gc))
+ 		nlm_gc_hosts(net);
  
  	chain = &nlm_server_hosts[nlm_hash_address(ni.sap)];
- 	hlist_for_each_entry(host, pos, chain, h_hash) {
-@@ -588,7 +588,7 @@ nlm_shutdown_hosts_net(struct net *net)
+@@ -653,5 +655,9 @@ nlm_gc_hosts(struct net *net)
+ 		nlm_destroy_host_locked(host);
  	}
  
- 	/* Then, perform a garbage collection pass */
--	nlm_gc_hosts();
-+	nlm_gc_hosts(net);
- 	mutex_unlock(&nlm_host_mutex);
- }
- 
-@@ -623,27 +623,31 @@ nlm_shutdown_hosts(void)
-  * mark & sweep for resources held by remote clients.
-  */
- static void
--nlm_gc_hosts(void)
-+nlm_gc_hosts(struct net *net)
- {
- 	struct hlist_head *chain;
- 	struct hlist_node *pos, *next;
- 	struct nlm_host	*host;
--	struct net *net = &init_net;
- 
--	dprintk("lockd: host garbage collection\n");
--	for_each_host(host, pos, chain, nlm_server_hosts)
-+	dprintk("lockd: host garbage collection for net %p\n", net);
-+	for_each_host(host, pos, chain, nlm_server_hosts) {
-+		if (net && host->net != net)
-+			continue;
- 		host->h_inuse = 0;
+-	next_gc = jiffies + NLM_HOST_COLLECT;
++	if (net) {
++		struct lockd_net *ln = net_generic(net, lockd_net_id);
++
++		ln->next_gc = jiffies + NLM_HOST_COLLECT;
 +	}
+ }
+diff --git a/fs/lockd/netns.h b/fs/lockd/netns.h
+index ce227e0..97c6c77 100644
+--- a/fs/lockd/netns.h
++++ b/fs/lockd/netns.h
+@@ -5,6 +5,7 @@
  
- 	/* Mark all hosts that hold locks, blocks or shares */
- 	nlmsvc_mark_resources(net);
+ struct lockd_net {
+ 	unsigned int nlmsvc_users;
++	unsigned long next_gc;
+ };
  
- 	for_each_host_safe(host, pos, next, chain, nlm_server_hosts) {
-+		if (net && host->net != net)
-+			continue;
- 		if (atomic_read(&host->h_count) || host->h_inuse
- 		 || time_before(jiffies, host->h_expires)) {
- 			dprintk("nlm_gc_hosts skipping %s "
--				"(cnt %d use %d exp %ld)\n",
-+				"(cnt %d use %d exp %ld net %p)\n",
- 				host->h_name, atomic_read(&host->h_count),
--				host->h_inuse, host->h_expires);
-+				host->h_inuse, host->h_expires, host->net);
- 			continue;
- 		}
- 		nlm_destroy_host_locked(host);
+ extern int lockd_net_id;
 
