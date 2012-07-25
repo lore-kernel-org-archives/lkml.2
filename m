@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab2GYMfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:35:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57666 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932917Ab2GYMfb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:35:31 -0400
+	id S933010Ab2GYMi4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:38:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53160 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932917Ab2GYMiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:38:54 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <rpurdie@rpsys.net>
+CC: <broonie@opensource.wolfsonmicro.com>, <thierry.reding@avionic-design.de>,
+        <shawn.guo@linaro.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH] pwm_backlight: Add device tree support for Low Threshold Brightness
+Date: Wed, 25 Jul 2012 17:54:02 +0530
+Message-ID: <1343219042-4371-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<CA+55aFzKu6xhTPmKPTg+p36Su0GkZgzGWpnvhpsFXJzhp=R16w@mail.gmail.com>
-	<CACVXFVMeRQ-Fwk03uVg5LOH193PF+AyCoAAxmXDpqjeZXi7nxw@mail.gmail.com>
-	<CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com>
-Date: Wed, 25 Jul 2012 20:35:28 +0800
-Message-ID: <CACVXFVOiXRiqRsE46_xmOzK_dExNvkBaJVwjiZ9adhwqRRwY+g@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/13] firmware loader: introduce cache/uncache firmware
-From: Ming Lei <ming.lei@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC usb guys and list
+Low Threshold Brightness should be configured to have a linear relation
+in brightness scale. This patch adds device tree support for low
+threshold brightness as optional one for pwm_backlight.
 
-On Wed, Jul 25, 2012 at 1:53 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I really think the isight thing is a totally different thing entirely.
->
-> And quite frankly, that's just a BUG in the USB implementation. If the
-> USB ID changes, it shouldn't be considered a "resume" thing at all,
-> but a probe thing, and that should not be done in early resume - it
-> should be done *after* the resume is done.
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+:100644 100644 1e4fc72... 5c54380... M	Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+:100644 100644 995f016... 4965408... M	drivers/video/backlight/pwm_bl.c
+ .../bindings/video/backlight/pwm-backlight.txt     |   21 ++++++++++++++++++++
+ drivers/video/backlight/pwm_bl.c                   |    5 ++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-IMO, usbcore may have found the ID changes during resume(reset_resume),
-and make the device disconnect. The disconnect event will be handled
-in hubd kthread, which is woken up before usermodehelper_enable()(see
-thaw_processes), so request_firmware will return failure during probe()
-inside hubd kthread.
-
-The cache firmware patch set may not help the situation, because the
-original isight usb device for downloading firmware has been disconnected
-before system suspend, so firmware loader can't cache the firmware for
-the device.
-
-The below patch should fix the problem above.
-
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 19db29f..eb8355f 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -185,16 +185,18 @@ void thaw_processes(void)
-
- 	printk("Restarting tasks ... ");
-
--	thaw_workqueues();
--
- 	read_lock(&tasklist_lock);
- 	do_each_thread(g, p) {
--		__thaw_task(p);
-+		if (!(p->flags & (PF_KTHREAD | PF_WQ_WORKER)))
-+			__thaw_task(p);
- 	} while_each_thread(g, p);
- 	read_unlock(&tasklist_lock);
-
- 	usermodehelper_enable();
-
-+	/* let kthread see usermodehelper enabled flag */
-+	thaw_kernel_threads();
+diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+index 1e4fc72..5c54380 100644
+--- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+@@ -14,6 +14,8 @@ Required properties:
+ Optional properties:
+   - pwm-names: a list of names for the PWM devices specified in the
+                "pwms" property (see PWM binding[0])
++  - low_threshold_brightness: brightness threshold low level. (get linear
++		 scales in brightness in low end of brightness levels)
+ 
+ [0]: Documentation/devicetree/bindings/pwm/pwm.txt
+ 
+@@ -26,3 +28,22 @@ Example:
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+ 		default-brightness-level = <6>;
+ 	};
 +
- 	schedule();
- 	printk("done.\n");
- }
++Example for brightness_threshold_level:
++
++	backlight {
++		compatible	= "pwm-backlight";
++		pwms = <&pwm 0 50000>;
++
++		brightness-levels = <0 4 8 16 32 64 128 255>;
++		default-brightness-level = <6>;
++		low_threshold_brightness = <50>;
++	};
++};
++Note:
++Low threshold support is required to have linear brightness scale from
++0 to max. For some panels, backlight absent on low end of brightness
++scale. So support for Low Threshold been required. So that the scale of
++brightness changed from Low Threshold to Max in scales defined in
++brightness-levels. In this example 20% maximum brightness scale should
++be required to turn on panel backlight.
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 995f016..4965408 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -143,6 +143,11 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 
+ 		data->dft_brightness = value;
+ 		data->max_brightness--;
++
++		ret = of_property_read_u32(node, "low_threshold_brightness",
++					   &value);
++		if (!ret)
++			data->lth_brightness = value;
+ 	}
+ 
+ 	/*
+-- 
+1.7.1
 
-
-Thanks,
---
-Ming Lei
