@@ -1,44 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2GYQog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:44:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3130 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755866Ab2GYQof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:44:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="186028696"
-Date: Thu, 26 Jul 2012 00:44:30 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Coccinelle <cocci@diku.dk>, Nicolas Palix <npalix@diku.dk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Cocci] coccinelle hung on mini_lock.cocci
-Message-ID: <20120725164430.GA2421@localhost>
-References: <20120725114216.GA26741@localhost>
- <alpine.DEB.2.02.1207251613420.1818@hadrien>
- <20120725141844.GA761@localhost>
- <alpine.DEB.2.02.1207251641280.1818@hadrien>
- <20120725145011.GA1787@localhost>
- <alpine.DEB.2.02.1207251717300.1818@hadrien>
+	id S1756611Ab2GYQwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:52:07 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:49005 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755936Ab2GYQwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 12:52:04 -0400
+Message-ID: <50102424.5010301@linux.vnet.ibm.com>
+Date: Wed, 25 Jul 2012 22:21:48 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207251717300.1818@hadrien>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Alan Stern <stern@rowland.harvard.edu>, mingo@kernel.org,
+        peterz@infradead.org, rusty@rustcorp.com.au,
+        paulmck@linux.vnet.ibm.com, namhyung@kernel.org, tj@kernel.org,
+        rjw@sisk.pl, nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
+ during CPU hotplug
+References: <Pine.LNX.4.44L0.1207251054420.2008-100000@iolanthe.rowland.org> <50101733.4030205@linux.vnet.ibm.com> <alpine.LFD.2.02.1207251758340.32033@ionos>
+In-Reply-To: <alpine.LFD.2.02.1207251758340.32033@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072516-3568-0000-0000-0000023303C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 05:19:40PM +0200, Julia Lawall wrote:
-> I looked at it a bit more, and I think the timeout is the best solution.
-> The big jump backwards is under an if, and the pattern tries to match an
-> if up to a return, which tries to go across gotos.  So I think it is just
-> a pathologically bad case.
+On 07/25/2012 10:00 PM, Thomas Gleixner wrote:
+> On Wed, 25 Jul 2012, Srivatsa S. Bhat wrote:
+>> On 07/25/2012 08:27 PM, Alan Stern wrote:
+>> One of the other ideas to improve the hotplug notifier stuff that came up during some
+>> of the discussions was to implement explicit dependency tracking between the notifiers
+>> and perhaps get rid of the priority numbers that are currently being used to provide
+>> some sort of ordering between the callbacks. Links to some of the related discussions
+>> are provided below.
+> 
+> The current code which brings up/down a CPU (mostly architecture
+> specific) code is comnpletely asymetric.
+> 
+> We really want a fully symetric state machine here, which also gives
+> us the proper invocation points for the other subsystems callbacks.
+> 
 
-OK, Thanks for looking into this so quickly!  I've added the timeout
-shortly after your initial suggestion :)
+Right..
 
-Thanks,
-Fengguang
+> While I thought about having a full dependency tracking system, I'm
+> quite convinced by now, that hotplug is a rather linear sequence which
+> does not provide much room for paralell setup/teardown.
+>
+
+Pretty much, when considering hotplug of a single CPU.
+
+(But when considering booting, Arjan had proposed (while discussing about his asynchronous
+booting patch) that it would be good to split up physical vs logical parts of the
+booting/hotplug, so that the physical part can happen in parallel with other CPUs, while
+the logical online can be done serially, much later. Anyway, this is slightly off-topic
+here, since we are mainly talking about hotplug of a single cpu here. I just thought of
+putting a word about that here, since we are discussing hotplug redesign anyways..)
+ 
+> At least we should start with a simple linear chain.
+> 
+> The problem with the current notifiers is, that we only have ordering
+> for a few specific callbacks, but we don't have the faintest idea in
+> which order all other random stuff is brought up and torn down.
+> 
+
+Right, and moreover there are some strange dependencies/ordering between some of
+them considering facts such as, CPU_DOWN_PREPARE runs before CPU_DEAD for example,
+no matter what priority you give to your callback.. Some callbacks seem to miss
+this observation, IIRC.
+
+> So I started experimenting with the following:
+> 
+> struct hotplug_event {
+>        int (*bring_up)(unsigned int cpu);
+>        int (*tear_down)(unsigned int cpu);
+> };
+> 
+> enum hotplug_events {
+>      CPU_HOTPLUG_START,
+>      CPU_HOTPLUG_CREATE_THREADS,
+>      CPU_HOTPLUG_INIT_TIMERS,
+>      ...
+>      CPU_HOTPLUG_KICK_CPU,
+>      ...
+>      CPU_HOTPLUG_START_THREADS,
+>      ...
+>      CPU_HOTPLUG_SET_ONLINE,
+>      ...
+>      CPU_HOTPLUG_MAX_EVENTS,
+> };
+> 
+> Now I have two arrays:
+> 
+> struct hotplug_event hotplug_events_bp[CPU_HOTPLUG_MAX_EVENTS];
+> struct hotplug_event hotplug_events_ap[CPU_HOTPLUG_MAX_EVENTS];
+>    
+> The _bp one is the list of events which are executed on the active cpu
+> and the _ap ones are those executed on the hotplugged cpu.
+> 
+> The core code advances the events in sync steps, so both BP and AP can
+> issue a stop on the process and cause a rollback.
+> 
+
+Looks like a nice design!
+
+> Most of the callbacks can be added to the arrays at compile time, just
+> the stuff which is in modules requires an register/unregister
+> interface.
+> 
+> Though in any case the enum gives us a very explicit ordering of
+> setup/teardown, so rollback or partial online/offline should be simple
+> to achieve.
+> 
+> The only drawback is that it will prevent out of tree modules to use
+> the hotplug infrastructure, but I really couldn't care less.
+> 
+
+Heh ;-)
+
+Regards,
+Srivatsa S. Bhat
+
