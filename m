@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187Ab2GYOTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:19:19 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:56171 "EHLO
+	id S933196Ab2GYOUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:20:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57587 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933117Ab2GYOTR (ORCPT
+	with ESMTP id S933105Ab2GYOT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:19:17 -0400
-From: Ashish Sangwan <ashishsangwan2@gmail.com>
-To: Ted Tso <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        lczerner@redhat.com, a.sangwan@samsung.com, namjae.jeon@samsung.com,
-        Ashish Sangwan <ashish.sangwan2@gmail.com>,
-        Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH] Ext4: No need to add inode to orphan list during hole punch
-Date: Wed, 25 Jul 2012 19:48:28 +0530
-Message-Id: <1343225908-1997-1-git-send-email-ashish.sangwan2@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 25 Jul 2012 10:19:57 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@zeniv.linux.org.uk
+Cc: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] vfs: don't let do_last pass negative dentry to audit_inode
+Date: Wed, 25 Jul 2012 10:19:47 -0400
+Message-Id: <1343225987-6807-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I can reliably reproduce the following panic by simply setting an audit
+rule on a recent 3.5.0+ kernel:
 
-Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
+ IP: [<ffffffff810d1250>] audit_copy_inode+0x10/0x90
+ PGD 7acd9067 PUD 7b8fb067 PMD 0
+ Oops: 0000 [#86] SMP
+ Modules linked in: nfs nfs_acl auth_rpcgss fscache lockd sunrpc tpm_bios btrfs zlib_deflate libcrc32c kvm_amd kvm joydev virtio_net pcspkr i2c_piix4 floppy virtio_balloon microcode virtio_blk cirrus drm_kms_helper ttm drm i2c_core [last unloaded: scsi_wait_scan]
+ CPU 0
+ Pid: 1286, comm: abrt-dump-oops Tainted: G      D      3.5.0+ #1 Bochs Bochs
+ RIP: 0010:[<ffffffff810d1250>]  [<ffffffff810d1250>] audit_copy_inode+0x10/0x90
+ RSP: 0018:ffff88007aebfc38  EFLAGS: 00010282
+ RAX: 0000000000000000 RBX: ffff88003692d860 RCX: 00000000000038c4
+ RDX: 0000000000000000 RSI: ffff88006baf5d80 RDI: ffff88003692d860
+ RBP: ffff88007aebfc68 R08: 0000000000000000 R09: 0000000000000000
+ R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+ R13: ffff880036d30f00 R14: ffff88006baf5d80 R15: ffff88003692d800
+ FS:  00007f7562634740(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000000040 CR3: 000000003643d000 CR4: 00000000000006f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process abrt-dump-oops (pid: 1286, threadinfo ffff88007aebe000, task ffff880079614530)
+ Stack:
+  ffff88007aebfdf8 ffff88007aebff28 ffff88007aebfc98 ffffffff81211358
+  ffff88003692d860 0000000000000000 ffff88007aebfcc8 ffffffff810d4968
+  ffff88007aebfcc8 ffff8800000038c4 0000000000000000 0000000000000000
+ Call Trace:
+  [<ffffffff81211358>] ? ext4_lookup+0xe8/0x160
+  [<ffffffff810d4968>] __audit_inode+0x118/0x2d0
+  [<ffffffff811955a9>] do_last+0x999/0xe80
+  [<ffffffff81191fe8>] ? inode_permission+0x18/0x50
+  [<ffffffff81171efa>] ? kmem_cache_alloc_trace+0x11a/0x130
+  [<ffffffff81195b4a>] path_openat+0xba/0x420
+  [<ffffffff81196111>] do_filp_open+0x41/0xa0
+  [<ffffffff811a24bd>] ? alloc_fd+0x4d/0x120
+  [<ffffffff811855cd>] do_sys_open+0xed/0x1c0
+  [<ffffffff810d40cc>] ? __audit_syscall_entry+0xcc/0x300
+  [<ffffffff811856c1>] sys_open+0x21/0x30
+  [<ffffffff81611ca9>] system_call_fastpath+0x16/0x1b
+  RSP <ffff88007aebfc38>
+ CR2: 0000000000000040
+
+The problem is that do_last is passing a negative dentry to audit_inode.
+The comments on lookup_open note that it can pass back a negative dentry
+if O_CREAT is not set.
+
+This patch fixes the oops, but I'm not clear on whether there's a better
+approach.
+
+Cc: Miklos Szeredi <miklos@szeredi.hu>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/ext4/extents.c |    4 ----
- 1 file changed, 4 deletions(-)
+ fs/namei.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 91341ec..3e902f9 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4801,9 +4801,6 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
- 	if (IS_ERR(handle))
- 		return PTR_ERR(handle);
- 
--	err = ext4_orphan_add(handle, inode);
--	if (err)
--		goto out;
+diff --git a/fs/namei.c b/fs/namei.c
+index 2ccc35c..0b951d4 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2608,9 +2608,10 @@ retry_lookup:
+ 	}
  
  	/*
- 	 * Now we need to zero out the non-page-aligned data in the
-@@ -4889,7 +4886,6 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
- 	up_write(&EXT4_I(inode)->i_data_sem);
+-	 * It already exists.
++	 * create/update audit record if it already exists.
+ 	 */
+-	audit_inode(pathname, path->dentry);
++	if (path->dentry->d_inode)
++		audit_inode(pathname, path->dentry);
  
- out:
--	ext4_orphan_del(handle, inode);
- 	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
- 	ext4_mark_inode_dirty(handle, inode);
- 	ext4_journal_stop(handle);
+ 	/*
+ 	 * If atomic_open() acquired write access it is dropped now due to
 -- 
-1.7.10.4
+1.7.11.2
 
