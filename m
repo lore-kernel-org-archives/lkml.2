@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab2GYTbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:31:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58505 "EHLO
+	id S1752057Ab2GYTcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:32:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58523 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab2GYTbO (ORCPT
+	with ESMTP id S1751402Ab2GYTcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:31:14 -0400
-Date: Wed, 25 Jul 2012 12:30:56 -0700
-From: "tip-bot for Kirill A. Shutemov" <kirill@shutemov.name>
-Message-ID: <tip-043d1a5c14e95212dbf48251051804ede1ed1862@git.kernel.org>
+	Wed, 25 Jul 2012 15:32:14 -0400
+Date: Wed, 25 Jul 2012 12:31:49 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-52b5c0d485385d3c767d979496983ca2b6987f5c@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, tglx@linutronix.de,
-        kirill@shutemov.name
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, tglx@linutronix.de, kirill@shutemov.name
-In-Reply-To: <20120723210407.GA25186@shutemov.name>
-References: <20120723210407.GA25186@shutemov.name>
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1341559297-25725-2-git-send-email-namhyung@kernel.org>
+References: <1341559297-25725-2-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix build error with bison 2.6
-Git-Commit-ID: 043d1a5c14e95212dbf48251051804ede1ed1862
+Subject: [tip:perf/core] tools lib traceevent:
+  Detect build environment changes
+Git-Commit-ID: 52b5c0d485385d3c767d979496983ca2b6987f5c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,53 +32,80 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:31:02 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:31:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  043d1a5c14e95212dbf48251051804ede1ed1862
-Gitweb:     http://git.kernel.org/tip/043d1a5c14e95212dbf48251051804ede1ed1862
-Author:     Kirill A. Shutemov <kirill@shutemov.name>
-AuthorDate: Tue, 24 Jul 2012 00:04:07 +0300
+Commit-ID:  52b5c0d485385d3c767d979496983ca2b6987f5c
+Gitweb:     http://git.kernel.org/tip/52b5c0d485385d3c767d979496983ca2b6987f5c
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Fri, 6 Jul 2012 16:21:32 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 25 Jul 2012 11:49:19 -0300
+CommitDate: Wed, 25 Jul 2012 11:54:06 -0300
 
-perf tools: Fix build error with bison 2.6
+tools lib traceevent: Detect build environment changes
 
-Bison 2.6 started to generate parse_events_parse() declaration in header. In
-this case we have redundant redeclaration:
+Cross compiling perf requires setting ARCH and CROSS_COMPILE variables,
+but libtraceevent couldn't detect the changes so it ends up believing no
+recompiling is required. Thus the linker failed like:
 
-util/parse-events.c:29:5: error: redundant redeclaration of ‘parse_events_parse’ [-Werror=redundant-decls]
-In file included from util/parse-events.c:14:0:
-util/parse-events-bison.h:99:5: note: previous declaration of ‘parse_events_parse’ was here
-cc1: all warnings being treated as errors
+     LINK perf
+ ../lib/traceevent//libtraceevent.a: member ../lib/traceevent//libtraceevent.a(event-parse.o) in archive is not an object
+ collect2: ld returned 1 exit status
+ make: *** [perf] Error 1
 
-Let's disable -Wredundant-decls for util/parse-events.c since it includes
-header we can't control.
+This patch fixes this by adding TRACEEVENT-CFLAGS file like
+PERF-CFLAGS to track those changes.
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120723210407.GA25186@shutemov.name
+Link: http://lkml.kernel.org/r/1341559297-25725-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ tools/lib/traceevent/Makefile |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e8f0579..77f124f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -804,6 +804,9 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
- $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 46c2f6b..14131cb 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -207,7 +207,7 @@ libtraceevent.so: $(PEVENT_LIB_OBJS)
+ libtraceevent.a: $(PEVENT_LIB_OBJS)
+ 	$(Q)$(do_build_static_lib)
  
-+$(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
+-$(PEVENT_LIB_OBJS): %.o: $(src)/%.c
++$(PEVENT_LIB_OBJS): %.o: $(src)/%.c TRACEEVENT-CFLAGS
+ 	$(Q)$(do_fpic_compile)
+ 
+ define make_version.h
+@@ -272,6 +272,16 @@ ifneq ($(dep_includes),)
+  include $(dep_includes)
+ endif
+ 
++### Detect environment changes
++TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):$(ARCH):$(CROSS_COMPILE)
 +
- $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
++TRACEEVENT-CFLAGS: force
++	@FLAGS='$(TRACK_CFLAGS)'; \
++	    if test x"$$FLAGS" != x"`cat TRACEEVENT-CFLAGS 2>/dev/null`" ; then \
++		echo 1>&2 "    * new build flags or cross compiler"; \
++		echo "$$FLAGS" >TRACEEVENT-CFLAGS; \
++            fi
++
+ tags:	force
+ 	$(RM) tags
+ 	find . -name '*.[ch]' | xargs ctags --extra=+f --c-kinds=+px \
+@@ -297,7 +307,7 @@ install: install_lib
+ 
+ clean:
+ 	$(RM) *.o *~ $(TARGETS) *.a *.so $(VERSION_FILES) .*.d
+-	$(RM) tags TAGS
++	$(RM) TRACEEVENT-CFLAGS tags TAGS
+ 
+ endif # skip-makefile
  
