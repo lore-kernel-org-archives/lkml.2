@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030252Ab2GYPL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:11:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34632 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933552Ab2GYPLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933556Ab2GYPLI (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 25 Jul 2012 11:11:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44939 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933520Ab2GYPLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:11:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="171267816"
+   d="scan'208";a="171267702"
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
         Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 15/16] gfs2: nuke pdflush from comments
-Date: Wed, 25 Jul 2012 18:12:13 +0300
-Message-Id: <1343229134-29487-16-git-send-email-artem.bityutskiy@linux.intel.com>
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 11/16] hfs: nuke write_super from comments
+Date: Wed, 25 Jul 2012 18:12:09 +0300
+Message-Id: <1343229134-29487-12-git-send-email-artem.bityutskiy@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
 References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
@@ -27,31 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-The pdflush thread is long gone, so this patch removes references to pdflush
-from gfs comments.
+The '->write_super' superblock method is gone, and this patch removes all the
+references to 'write_super' from hfs.
 
-Cc: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
 
 I expect this patch to be merged via Al Viro's VFS tree.
 
- fs/gfs2/meta_io.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/hfs/mdb.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
-index 6c1e5d1..cdfe84c 100644
---- a/fs/gfs2/meta_io.c
-+++ b/fs/gfs2/meta_io.c
-@@ -52,7 +52,7 @@ static int gfs2_aspace_writepage(struct page *page, struct writeback_control *wb
- 		/*
- 		 * If it's a fully non-blocking write attempt and we cannot
- 		 * lock the buffer then redirty the page.  Note that this can
--		 * potentially cause a busy-wait loop from pdflush and kswapd
-+		 * potentially cause a busy-wait loop from flusher thread and kswapd
- 		 * activity, but those code paths have their own higher-level
- 		 * throttling.
- 		 */
+diff --git a/fs/hfs/mdb.c b/fs/hfs/mdb.c
+index 5fd51a5..b7ec224 100644
+--- a/fs/hfs/mdb.c
++++ b/fs/hfs/mdb.c
+@@ -236,10 +236,10 @@ out:
+  * hfs_mdb_commit()
+  *
+  * Description:
+- *   This updates the MDB on disk (look also at hfs_write_super()).
++ *   This updates the MDB on disk.
+  *   It does not check, if the superblock has been modified, or
+  *   if the filesystem has been mounted read-only. It is mainly
+- *   called by hfs_write_super() and hfs_btree_extend().
++ *   called by hfs_sync_fs() and flush_mdb().
+  * Input Variable(s):
+  *   struct hfs_mdb *mdb: Pointer to the hfs MDB
+  *   int backup;
 -- 
 1.7.10
 
