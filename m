@@ -1,60 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab2GYRxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:53:51 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:37939
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751345Ab2GYRxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:53:49 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [PATCH net-next,2/2] hyperv: Add error handling to rndis_filter_device_add()
-Date: Wed, 25 Jul 2012 11:08:42 -0700
-Message-Id: <1343239722-21328-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1343239722-21328-1-git-send-email-haiyangz@microsoft.com>
-References: <1343239722-21328-1-git-send-email-haiyangz@microsoft.com>
+	id S1752235Ab2GYRyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:54:06 -0400
+Received: from shutemov.name ([176.9.204.213]:44252 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345Ab2GYRyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 13:54:04 -0400
+Date: Wed, 25 Jul 2012 20:54:59 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ulrich Drepper <drepper@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 15/19] perf tools: use XSI-complaint version of
+ strerror_r() instead of GNU-specific
+Message-ID: <20120725175459.GA4878@shutemov.name>
+References: <1343238094-12481-1-git-send-email-acme@infradead.org>
+ <1343238094-12481-16-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343238094-12481-16-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reported-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/rndis_filter.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+Could you take subject from updated patch? This one:
 
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index fbf5394..e5d6146 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -804,18 +804,15 @@ int rndis_filter_device_add(struct hv_device *dev,
- 	/* Send the rndis initialization message */
- 	ret = rndis_filter_init_device(rndis_device);
- 	if (ret != 0) {
--		/*
--		 * TODO: If rndis init failed, we will need to shut down the
--		 * channel
--		 */
-+		rndis_filter_device_remove(dev);
-+		return ret;
- 	}
- 
- 	/* Get the mac address */
- 	ret = rndis_filter_query_device_mac(rndis_device);
- 	if (ret != 0) {
--		/*
--		 * TODO: shutdown rndis device and the channel
--		 */
-+		rndis_filter_device_remove(dev);
-+		return ret;
- 	}
- 
- 	memcpy(device_info->mac_adr, rndis_device->hw_mac_adr, ETH_ALEN);
+perf: fix strerror_r() usage
+
 -- 
-1.7.4.1
-
+ Kirill A. Shutemov
