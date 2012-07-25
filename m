@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab2GYIBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 04:01:24 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:32895 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755575Ab2GYIBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 04:01:23 -0400
-Message-ID: <1343203282.30161.29.camel@joe2Laptop>
-Subject: Re: [PATCH] fixed coding style issues
-From: Joe Perches <joe@perches.com>
-To: Baodong Chen <chenbdchenbd@gmail.com>
-Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 25 Jul 2012 01:01:22 -0700
-In-Reply-To: <CAEAuANO7itUw64z=w9ve_suvQBoPirnmZ_5WBbc=Tn=ESeG6OA@mail.gmail.com>
-References: <1343200277-14385-1-git-send-email-chenbdchenbd@gmail.com>
-	 <1343201406.30161.10.camel@joe2Laptop>
-	 <CAEAuANO7itUw64z=w9ve_suvQBoPirnmZ_5WBbc=Tn=ESeG6OA@mail.gmail.com>
+	id S1756422Ab2GYICi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 04:02:38 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45841 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754712Ab2GYICe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 04:02:34 -0400
+Message-ID: <1343203348.3139.16.camel@dabdike>
+Subject: Re: [PATCH] debug: Do not permit CONFIG_DEBUG_STACK_USAGE=y on IA64
+ or PARISC
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Helge Deller <deller@gmx.de>,
+        linux-parisc@vger.kernel.org, linux-ia64@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Date: Wed, 25 Jul 2012 12:02:28 +0400
+In-Reply-To: <20120725074501.GB27950@gmail.com>
+References: <4a613b26cc402fb3ed8130cd07a37e76f4c133ef.1342634029.git.tony.luck@intel.com>
+	 <20120725074501.GB27950@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-25 at 15:44 +0800, Baodong Chen wrote:
-> i want to participate in and to start from
-> fixing simple issues!
+On Wed, 2012-07-25 at 09:45 +0200, Ingo Molnar wrote:
+> * Tony Luck <tony.luck@intel.com> wrote:
+> 
+> > The stack_not_used() function in <linux/sched.h> assumes that stacks
+> > grow downwards. This is not true on IA64 or PARISC, so this function
+> > would walk off in the wrong direction and into the weeds.
+> > 
+> > Found on IA64 because of a compilation failure with recursive dependencies
+> > on IA64_TASKSIZE and IA64_THREAD_INFO_SIZE.
+> > 
+> > Fixing the code is possible, but should be combined with other
+> > infrastructure additions to set up the "canary" at the end of the stack.
+> > 
+> > Reported-by: Fengguang Wu <fengguang.wu@intel.com> (failed allmodconfig build)
+> > Signed-off-by: Tony Luck <tony.luck@intel.com>
+> > ---
+> >  lib/Kconfig.debug | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> > index ff5bdee..4a18650 100644
+> > --- a/lib/Kconfig.debug
+> > +++ b/lib/Kconfig.debug
+> > @@ -714,7 +714,7 @@ config STACKTRACE
+> >  
+> >  config DEBUG_STACK_USAGE
+> >  	bool "Stack utilization instrumentation"
+> > -	depends on DEBUG_KERNEL
+> > +	depends on DEBUG_KERNEL && !IA64 && !PARISC
+> 
+> The modern way of doing this is by adding an ARCH_SUPPORTS_ 
+> flag.
 
-That's fine Baodong.  Welcome.
+That's a bit daft, isn't it?  We'd have to add ARCH_SUPPORTS_ flags to
+about 25 separate architectures just to get it not supported on these
+two.
 
-> how could i choose issues form checkpatch's output to find which
-> should be fixed which are
-> not?
+Since the problem is an invalid assumption about how the stack grows,
+why not just condition it on that.  We actually have a config option for
+this: CONFIG_STACK_GROWSUP.  But for some reason ia64 doesn't define
+this, why not, Tony?  It looks deliberate because you have replaced a
+lot of
 
-checkpatch output is merely a guide for submission of patches
-to conform to some generic "kernel style".  I think there are
-times when really ugly code should have a pass to make it more
-"kernel style" like.  Most of those cleanup type changes should
-be done only to code in the "drivers/staging" directory.
+#ifdef CONFIG_STACK_GROWSUP
 
-I think most of the time, unless you are also fixing some other
-underlying code defect or shortcoming, checkpatch only cleanups
-to existing code are best avoided.
+with
 
-I suggest for now, until you are really comfortable with the
-preferred style, you confine yourself to drivers/staging.
+#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
 
-> or checkpatch.pl should be updated??
+but not all of them.
 
-You could work on that too.
+James
 
-One possibility is to write a utility to take checkpatch output
-and generate patches automatically, or perhaps extend checkpatch
-itself to do that.  (ie: add a --fix option)
 
-cheers, Joe
 
