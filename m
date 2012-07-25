@@ -1,149 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab2GYMzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:55:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58123 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751104Ab2GYMzo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:55:44 -0400
-Date: Wed, 25 Jul 2012 13:55:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Grant Likely <grant@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [GIT PULL] spi updates for 3.6
-Message-ID: <20120725125541.GK3099@opensource.wolfsonmicro.com>
+	id S1756385Ab2GYM5P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:57:15 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:41502 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801Ab2GYM5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:57:14 -0400
+Subject: [PATCH v2 00/15] Lockd: grace period containerization
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Wed, 25 Jul 2012 16:55:45 +0400
+Message-ID: <20120725125258.24376.82525.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W2ydbIOJmkm74tJ2"
-Content-Disposition: inline
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bruce, I feel this patch set is ready for inclusion.
 
---W2ydbIOJmkm74tJ2
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+v2:
+1) Rebase on Bruce's "for-3.6" branch.
 
-The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+This patch set makes grace period and hosts reclaiming network namespace
+aware.
 
-  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+Main ideas:
+1)  moving of 
 
-are available in the git repository at:
+	unsigned long next_gc;
+	unsigned long nrhosts;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/spi-3=
-=2E6
+	struct delayed_work grace_period_end;
+	struct lock_manager lockd_manager;
+	struct list_head grace_list;
 
-for you to fetch changes up to 8ceffa7c4a4c378d8e371fe2f444656e75390b34:
+to per-net Lockd data.
 
-  spi/orion: remove uneeded spi_info (2012-07-23 14:14:54 +0100)
+2) moving of 
 
-----------------------------------------------------------------
-spi: Updates for 3.6
+	struct lock_manager nfsd4_manager;
 
-Since Grant is even more specacularly busy than usual for the time being
-I've been collecting SPI patches for him for this release - probably
-things will revert back to Grant before the next release.  There's
-nothing too exciting here, mostly it's simple driver specific stuff:
+to per-net NFSd data.
 
-- Add spi: to the modaliases of SPI devices to provide namespacing.
-- A driver for AD-FMCOMMS1-EBZ.
-- DT binding for Orion.
-- Fixes and cleanups for i.MX, PL0022, OMAP and bitbang drivers.
+3) shutdown + gc of NLM hosts done now network namespace aware.
 
-There may be a few more fixes I've missed, people keep sending me new
-things.
+4) restart_grace() now works only for init_net.
 
-----------------------------------------------------------------
-Alexandre Pereira da Silva (1):
-      spi/pl022: cleanup pl022 header documentation
+The following series implements...
 
-Andrew Lunn (1):
-      spi/orion: add device tree binding
+---
 
-Arnd Bergmann (1):
-      spi/omap2: mark omap2_mcspi_master_setup as __devinit
+Stanislav Kinsbursky (15):
+      LockD: mark host per network namespace on garbage collect
+      LockD: make garbage collector network namespace aware.
+      LockD: manage garbage collection timeout per networks namespace
+      LockD: manage used host count per networks namespace
+      Lockd: host complaining function introduced
+      Lockd: add more debug to host shutdown functions
+      LockD: manage grace period per network namespace
+      LockD: make lockd manager allocated per network namespace
+      NFSd: make nfsd4_manager allocated per network namespace context.
+      SUNRPC: service request network namespace helper introduced
+      LockD: manage grace list per network namespace
+      LockD: pass actual network namespace to grace period management functions
+      Lockd: move grace period management from lockd() to per-net functions
+      NFSd: make grace end flag per network namespace
+      NFSd: make boot_time variable per network namespace
 
-Florian Fainelli (1):
-      spi/bcm63xx: fix clock configuration selection
 
-Grant Likely (1):
-      spi: Add "spi:" prefix to modalias attribute of spi devices
+ fs/lockd/grace.c            |   16 +++++--
+ fs/lockd/host.c             |   92 ++++++++++++++++++++++++++------------
+ fs/lockd/netns.h            |    7 +++
+ fs/lockd/svc.c              |   43 ++++++++++--------
+ fs/lockd/svc4proc.c         |   13 +++--
+ fs/lockd/svclock.c          |   16 +++----
+ fs/lockd/svcproc.c          |   15 ++++--
+ fs/lockd/svcsubs.c          |   19 +++++---
+ fs/nfs/callback_xdr.c       |    4 +-
+ fs/nfsd/export.c            |    4 +-
+ fs/nfsd/netns.h             |    4 ++
+ fs/nfsd/nfs4idmap.c         |    4 +-
+ fs/nfsd/nfs4proc.c          |   18 ++++---
+ fs/nfsd/nfs4state.c         |  104 ++++++++++++++++++++++++-------------------
+ fs/nfsd/state.h             |    4 +-
+ include/linux/fs.h          |    5 +-
+ include/linux/lockd/lockd.h |    6 +-
+ include/linux/sunrpc/svc.h  |    2 +
+ 18 files changed, 231 insertions(+), 145 deletions(-)
 
-Hui Wang (2):
-      spi/imx: remove redundant config.speed_hz setting
-      spi/imx: use gpio_is_valid to determine if a gpio is valid
-
-Lars-Peter Clausen (1):
-      spi: Add AD-FMCOMMS1-EBZ I2C-SPI bridge driver
-
-Laxman Dewangan (1):
-      spi: tegra: use dmaengine based dma driver
-
-Linus Walleij (2):
-      spi/pl022: delete DB5500 support
-      spi/pl022: enable runtime PM
-
-Mark Brown (1):
-      Merge branch 'pl022' of git://git.kernel.org/.../linusw/linux-sterics=
-son into spi-next
-
-Michael Walle (1):
-      spi/orion: remove uneeded spi_info
-
-Shubhrajyoti D (1):
-      spi: omap2-mcspi: Fix the below warning
-
-Uwe Kleine-K=F6nig (1):
-      spi/gpio: start with CS non-active
-
-Virupax Sadashivpetimath (1):
-      spi/pl022: disable port when unused
-
- .../devicetree/bindings/spi/spi-orion.txt          |   19 ++
- drivers/spi/Kconfig                                |    9 +-
- drivers/spi/Makefile                               |    1 +
- drivers/spi/spi-bcm63xx.c                          |    2 +-
- drivers/spi/spi-gpio.c                             |    3 +-
- drivers/spi/spi-imx.c                              |   14 +-
- drivers/spi/spi-omap2-mcspi.c                      |    8 +-
- drivers/spi/spi-orion.c                            |   22 +-
- drivers/spi/spi-pl022.c                            |   23 +-
- drivers/spi/spi-tegra.c                            |   89 ++++++-
- drivers/spi/spi-xcomm.c                            |  276 ++++++++++++++++=
-++++
- drivers/spi/spi.c                                  |    2 +-
- include/linux/amba/pl022.h                         |    9 +-
- 13 files changed, 430 insertions(+), 47 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-orion.txt
- create mode 100644 drivers/spi/spi-xcomm.c
-
---W2ydbIOJmkm74tJ2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQD+yQAAoJEBus8iNuMP3dy2wP/0uRGdBZpfqjeYTQgY/2QTeA
-iOD18+fHTgFFU3vfOz0UVJoyNXAcRlnSM0z7u4HgQPGy8H7FoQaP9FZS3DjkX43d
-VtbxMpe6dpprEq/DxncynsGgPoq/p4vA+lHl1GMxGN4KiLh65TIseJBRnj43AFbP
-RG0pma87IMtZCkLsXb/E1hGa85CO/WkWXen2myCGz4nmBMUUamcRJFmYAB342kve
-s/zMHXymQBxMi4kbSILBExHbtvdg/OOooItvBnPmF0lf8wH5bOCsStzcxQlTm5jF
-c/lXwRKjxEa5wYbf/1uAv3c2kGQd94nPmF1dsBarRHKGuBklfTsuGtHaUApL+A2d
-n9olHBAHgaJ9HW57dX42fz0Kwv4qMsp0eGJmLu45ddWH9n6NFon/epH8ivbMXco+
-hYvw8bJMpPdMKmkbBOVf6qw3B2Cu32uJTrmbNgtAoZb7vM5uifsxYtxur83bsjCo
-TxgaXItD1uCOyYyDrDz8UrNlwK49lcZY3kBCAYSa7zHiBlNDLq1KkEe3oihmqyiU
-SVhWBozxVpI210WOoePcUZ/tKkm0jqz2p8f7DJfMEndmeWGa0OiENGa68KAZpjAo
-CpMqJiKx354h/dfxd9Ze73eJ1aMgfjjqJ+VdI3xfBxgDOxvRE4cTTSBDWoZZLK+u
-ju4QMeTkFR2MKOMWgRBX
-=jS+V
------END PGP SIGNATURE-----
-
---W2ydbIOJmkm74tJ2--
