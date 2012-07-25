@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968Ab2GYGb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:31:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37584 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932866Ab2GYGbx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:31:53 -0400
-Date: Tue, 24 Jul 2012 23:31:49 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Alex Elsayed <eternaleye+usenet@gmail.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Subject: Re: [Bcache v15 07/16] Closures
-Message-ID: <20120725063148.GA24358@moria.home.lan>
-References: <1343087459-17645-1-git-send-email-koverstreet@google.com>
- <1343087459-17645-8-git-send-email-koverstreet@google.com>
- <20120723235544.GA17796@google.com>
- <jumh33$5op$2@dough.gmane.org>
+	id S1753780Ab2GYGdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:33:16 -0400
+Received: from aptos.arrl.org ([69.36.242.136]:45598 "EHLO aptos.arrl.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750792Ab2GYGdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 02:33:14 -0400
+X-Greylist: delayed 1666 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 02:33:14 EDT
+From: Contest Robot <unreplyable@kkn.net>
+To: linux-kernel@vger.kernel.org
+Subject: UNABLE TO PROCESS LOG SUBMISSION: hello
+In-Reply-To: <E1Stuaj-0006Ll-VK@arrlscan8.edgeni.net>
+References: <E1Stuaj-0006Ll-VK@arrlscan8.edgeni.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <mailbox-1928-1343196324-777465@aptos.arrl.org>
+Date: Tue, 24 Jul 2012 23:05:24 -0700
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <jumh33$5op$2@dough.gmane.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 09:04:50AM -0700, Alex Elsayed wrote:
-> Out of curiosity, have you seen Featherstitch[1]?. Valerie Aurora did a 
-> really nice article[2] about it for LWN a ways back.
+(This is an automatic reply.)
+ 
+Your message to iaruhf@iaru.org could not be processed because the
+Subject: of the message
+    
+        hello
 
-I don't think I had. Not sure if any of it is applicable, but
-interesting stuff :)
+is not a valid callsign.  Please resubmit your log with an email 
+Subject: header that looks like this
+ 
+        Subject: your-callsign
+ 
+If you are submitting a log for a special callsign (such as a 1x1 call
+like N6O), or if you are unsure why you were sent this error message
+please contact me at contests@arrl.org to make alternate arrangements.
+ 
+Thanks for your cooperation.  73.
+ 
+ARRL Contest Branch
 
-> 
-> 
-> [1] http://featherstitch.cs.ucla.edu/
-> [2] https://lwn.net/Articles/354861/
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
