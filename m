@@ -1,63 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab2GYGJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:09:39 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39735 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab2GYGJi (ORCPT
+	id S932766Ab2GYGJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:09:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:33841 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756398Ab2GYGJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:09:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120725053755.GA2100@core.coreip.homeip.net>
-References: <1343193656-2643-1-git-send-email-chenbdchenbd@gmail.com>
-	<20120725053755.GA2100@core.coreip.homeip.net>
-Date: Wed, 25 Jul 2012 14:09:36 +0800
-Message-ID: <CAEAuANPvc8bi2ezrrZPgCpm0zo_7vkHsX8W32Jv0uf-SiPsGTg@mail.gmail.com>
-Subject: Re: [PATCH] fixed a macro coding style issue
-From: Baodong Chen <chenbdchenbd@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Jul 2012 02:09:56 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-fa-500f8db2014a
+Message-id: <500F8DB4.30401@samsung.com>
+Date: Wed, 25 Jul 2012 15:09:56 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: arizona: Implement button detection support
+References: <1342800449-10328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-reply-to: <1342800449-10328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t9jAd1NvfwBBl0frSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG255WtoJ18hU/Dp9ha2A8ItHFyMkhIWAi8fDsGUYIW0ziwr31
+	bF2MXBxCAosYJZo29LNDOF1MEhOezmEHqeIV0JC4OeUUE4jNIqAq0XJzMQuIzSagJbH/xQ2g
+	bg4OUYEIiV/9HBDlghI/Jt9jAQmLAC37fb8SZCSzwGJGiT97HoAtFhbwkLjduQpsvJBAqMSD
+	ty/ZQeo5BcIkXp3XBAkzC+hI7G+dxgZhy0tsXvOWeQKjwCwkG2YhKZuFpGwBI/MqRtHUguSC
+	4qT0XEO94sTc4tK8dL3k/NxNjODweya1g3Flg8UhRgEORiUe3p9P+AKEWBPLiitzDzFKcDAr
+	ifAWhfEHCPGmJFZWpRblxxeV5qQWH2KU5mBREuc19v7qLySQnliSmp2aWpBaBJNl4uCUamA8
+	lSt8+5/ysmXWX+TllV4XdP2K2Ng2wzJ936KFtSJuZ+6s7Ly7S9T/7K5NGkq/72xSuz9bZOol
+	JRP1Xfob/cWPirTnFvusmZSulHlaPUBObl/dVNHJbBd5Gr/rdCmI7dtfv3c2W3FxZ0VBidOH
+	W0emKohUdYpuOL/wV4X8z44NN3Ml9KMaWnmVWIozEg21mIuKEwGE+3YoOwIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch definitely changes semantics.
-so please discard it, sorry about that!
+Hi Mark,
 
-On Wed, Jul 25, 2012 at 1:37 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Wed, Jul 25, 2012 at 01:20:56PM +0800, Baodong Chen wrote:
->> Fixed a coding style issue in driver/input/input.c
->>
->> Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
->> ---
->>  drivers/input/input.c |    6 ++++--
->>  1 files changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/input/input.c b/drivers/input/input.c
->> index 8921c61..c96e983 100644
->> --- a/drivers/input/input.c
->> +++ b/drivers/input/input.c
->> @@ -845,11 +845,13 @@ int input_set_keycode(struct input_dev *dev,
->>  EXPORT_SYMBOL(input_set_keycode);
->>
->>  #define MATCH_BIT(bit, max) \
->> +     do { \
->>               for (i = 0; i < BITS_TO_LONGS(max); i++) \
->>                       if ((id->bit[i] & dev->bit[i]) != id->bit[i]) \
->>                               break; \
->> -             if (i != BITS_TO_LONGS(max)) \
->> -                     continue;
->> +                     if (i != BITS_TO_LONGS(max)) \
->> +                             continue; \
->> +     } while (0)
->
-> This changes semantics. While current implementation of MATCH_BIT might
-> not be great style, it is not supposed to be used outside of
-> input_match_device(), and the replacement is completely broken.
->
-> Thanks.
->
-> --
-> Dmitry
+On 07/21/2012 01:07 AM, Mark Brown wrote:
+
+> As well as identifying accessories the accessory detection hardware on
+> Arizona class devices can also detect a number of buttons which we should
+> report via the input API.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/extcon/extcon-arizona.c |   72 +++++++++++++++++++++++++++++++++++----
+>  1 file changed, 65 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> index 427a289..fa2114f 100644
+> --- a/drivers/extcon/extcon-arizona.c
+> +++ b/drivers/extcon/extcon-arizona.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/err.h>
+>  #include <linux/gpio.h>
+> +#include <linux/input.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/pm_runtime.h>
+>  #include <linux/regulator/consumer.h>
+> @@ -30,11 +31,14 @@
+>  #include <linux/mfd/arizona/pdata.h>
+>  #include <linux/mfd/arizona/registers.h>
+>  
+> +#define ARIZONA_NUM_BUTTONS 6
+> +
+>  struct arizona_extcon_info {
+>  	struct device *dev;
+>  	struct arizona *arizona;
+>  	struct mutex lock;
+>  	struct regulator *micvdd;
+> +	struct input_dev *input;
+>  
+>  	int micd_mode;
+>  	const struct arizona_micd_config *micd_modes;
+> @@ -54,6 +58,18 @@ static const struct arizona_micd_config micd_default_modes[] = {
+>  	{ 0,                  2 << ARIZONA_MICD_BIAS_SRC_SHIFT, 1 },
+>  };
+>  
+> +static struct {
+> +	u16 status;
+> +	int report;
+> +} arizona_lvl_to_key[ARIZONA_NUM_BUTTONS] = {
+> +	{  0x1, BTN_0 },
+> +	{  0x2, BTN_1 },
+> +	{  0x4, BTN_2 },
+> +	{  0x8, BTN_3 },
+> +	{ 0x10, BTN_4 },
+> +	{ 0x20, BTN_5 },
+> +};
+> +
+>  #define ARIZONA_CABLE_MECHANICAL 0
+>  #define ARIZONA_CABLE_MICROPHONE 1
+>  #define ARIZONA_CABLE_HEADPHONE  2
+> @@ -133,6 +149,7 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+>  
+>  	if (change) {
+>  		regulator_disable(info->micvdd);
+> +		pm_runtime_mark_last_busy(info->dev);
+>  		pm_runtime_put_autosuspend(info->dev);
+>  	}
+>  }
+> @@ -141,8 +158,8 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+>  {
+>  	struct arizona_extcon_info *info = data;
+>  	struct arizona *arizona = info->arizona;
+> -	unsigned int val;
+> -	int ret;
+> +	unsigned int val, lvl;
+> +	int ret, i;
+>  
+>  	mutex_lock(&info->lock);
+>  
+> @@ -219,13 +236,22 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+>  
+>  	/*
+>  	 * If we're still detecting and we detect a short then we've
+> -	 * got a headphone.  Otherwise it's a button press, the
+> -	 * button reporting is stubbed out for now.
+> +	 * got a headphone.  Otherwise it's a button press.
+>  	 */
+>  	if (val & 0x3fc) {
+>  		if (info->mic) {
+>  			dev_dbg(arizona->dev, "Mic button detected\n");
+>  
+> +			lvl = val & ARIZONA_MICD_LVL_MASK;
+> +			lvl >>= ARIZONA_MICD_LVL_SHIFT;
+> +
+> +			for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
+> +				if (lvl & arizona_lvl_to_key[i].status)
+> +					input_report_key(info->input,
+> +							 arizona_lvl_to_key[i].report,
+> +							 1);
+> +			input_sync(info->input);
+> +
+>  		} else if (info->detecting) {
+>  			dev_dbg(arizona->dev, "Headphone detected\n");
+>  			info->detecting = false;
+> @@ -244,6 +270,10 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+>  		}
+>  	} else {
+>  		dev_dbg(arizona->dev, "Mic button released\n");
+> +		for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
+> +			input_report_key(info->input,
+> +					 arizona_lvl_to_key[i].report, 0);
+
+> +		input_sync(info->input);
+
+>  	}
+
+
+Why do you should report released event to all of buttons? I think that
+you should only
+report released event to previous pressed button. If user press two
+button on the headset
+at the same time and then user release only one button with pressed
+another button, extcon-arizona driver have to report released event to
+previous pressed button except for still pressed another button.
+
+Thank you,
+Chanwoo Choi
