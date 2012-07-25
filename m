@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab2GYSnI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 14:43:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58904 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750903Ab2GYSnG (ORCPT
+	id S1751917Ab2GYSnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 14:43:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41484 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab2GYSnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 14:43:06 -0400
-Date: Wed, 25 Jul 2012 19:43:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] leds: add new lp8788 led driver
-Message-ID: <20120725184302.GP3099@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
- <1342799346.5138.7.camel@lorien2>
- <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
- <20120722181956.GA4557@opensource.wolfsonmicro.com>
- <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
- <20120724125513.GG12438@opensource.wolfsonmicro.com>
- <CAK5ve-Lyk_EjOjSKHF-j0J1_8oey8wWKkVXAdqbKpRX2eZY+hg@mail.gmail.com>
+	Wed, 25 Jul 2012 14:43:40 -0400
+Date: Wed, 25 Jul 2012 20:43:22 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "Theodore Ts'o" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
+        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, davem@davemloft.net, stable@kernel.org
+Subject: Re: [PATCH 01/10] random: make 'add_interrupt_randomness()' do
+ something sane
+In-Reply-To: <CA+55aFw90o8btDJhztkS=2NXiZvXNAkCsZkx-p9+RRx-cMQc6A@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1207252015020.32033@ionos>
+References: <1341511933-11169-2-git-send-email-tytso@mit.edu> <1341514078.4020.1213.camel@calx> <CA+55aFyMYVLCW0OYTVttkjjOwyu9VgDM9haNC=BeoRCEiWWNPQ@mail.gmail.com> <1341524367.4020.1324.camel@calx> <CA+55aFxAe1pRN+jvdLveHQ+nNRNC6HDZ+S4Y9P202rxgNLN8pg@mail.gmail.com>
+ <20120705220040.GA15685@thunk.org> <CA+55aFzFMZpiDMJO9UxoXSjOCzvxn7tgvmAHLM36OmaiMasQhw@mail.gmail.com> <1341527482.4020.1355.camel@calx> <20120705232136.GD15685@thunk.org> <CA+55aFxhobNMY5RLmH+tKox8voqfH-bVqKVF03JeeVrHkhLcaQ@mail.gmail.com>
+ <20120706130127.GB10798@thunk.org> <CA+55aFw90o8btDJhztkS=2NXiZvXNAkCsZkx-p9+RRx-cMQc6A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wg9FEZT+WCTrEXgJ"
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-Lyk_EjOjSKHF-j0J1_8oey8wWKkVXAdqbKpRX2eZY+hg@mail.gmail.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 6 Jul 2012, Linus Torvalds wrote:
 
---wg9FEZT+WCTrEXgJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Fri, Jul 6, 2012 at 6:01 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> > What in the world is "fast count"?  I've grepped for it,
+> > and I can't find it.
+> 
+> It's your own fast-pool counter that Matt was talking about.
+> 
+> > I can simply not credit entropy of the timer is on the irq, but I
+> > think you and Matt were suggesting more subtle.  I just have no idea
+> > how to tell if there were non-timer interrupts during the last HZ
+> > cycle.  Can you give me a hint?
+> 
+> So instead of not calling the add_interrupt_randomness() at all if the
+> __IRQF_TIMER bit was set, just pass it in as an argument. That way you
+> can still use the cycle counter for mixing stuff, but the random.c
+> code could at least (perhaps in the future) decide that if all it has
+> seen is timer interrupts, and get_cycles() always returns zero (no
+> cycle counter), we won't count it as entropy.
+> 
+> At least with no-HZ there's still going to be *some* data there
+> because you won't get called for every tick, so things like random app
+> timers etc will affect even the timer interrupt distribution, but...
 
-On Wed, Jul 25, 2012 at 12:46:56PM +0800, Bryan Wu wrote:
+There is only one constellation which will not be able to deliver
+randomness via the timer interrupt and a "cycle counter":
 
-> I'm going to Ack this driver and Mark will you merge this as whole patchset?
+Systems, which do not have an usable fine granular clocksource and
+therefor are completely based on jiffies. Those systems have neither
+high resolution timers nor NOHZ idle for obvious reasons.
 
-> Acked-by: Bryan Wu <bryan.wu@canonical.com>
+Though almost all systems which we care about have a more or less
+useful clocksource and register it proper with the core.
 
-It's an MFD so Samuel would normally apply if it were going via the MFD
-tree, though if the dependencies are correct there should be no harm
-merging via LEDs (until the core is merged it won't be possible to
-enable the build in Kconfig).
+So we could do the following in the core code when a clocksource is
+registered:
 
---wg9FEZT+WCTrEXgJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Aside of considering it to handle the timekeeping stuff, which has
+different criteria, we could filter out the clocksource with the
+highest frequency and provide a function which allows us to access it
+for randomness and other purposes. IOW, a generic "get_cycles"
+implementation.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Now, if the only available clocksource is jiffies, which is completely
+useless, as it gets incremented once per timer interrupt (and there is
+no distribution possible due to the lack of NOHZ support) then the
+function returns 0 which allows the random code to discard it as a
+entropy source.
 
-iQIcBAEBAgAGBQJQED4eAAoJEBus8iNuMP3dD4kQAIYRDNEXblLNWxomXgJxSgrl
-54jweuEotma4pCAyCDAXPkOU2j/xlT8Wlm19J1VGPKEjms4QBMNIVIneD3/UyfOc
-1DVuuFzZs7OxaB5WaFwnpYkGyh5UHs/eZXHJwc9Ayl5kzazDxEkVV1Jv3OuGCC05
-yfMgVV4TktJ+YBubQdYSUxtGVRTE1zYEkbulr0koNCMUVbzdrzRy5cFvKlJsHDOy
-+mHPN8Ek7yT9BnuVB5wexGlFtv/FC0zTEv1eFCC3J4ImWhY/daFR/V113XAemdoR
-u87WA3oJwSmn+7OInlnWVJ8QL9gmP7DKMCoYKf9HqBqhE9KEWW//GFRe+Cne+IE2
-s5zDUAaOPshZgzec0PoajL+VKDun8DsZL20CB3D940NfEdtEtTVW/efL3gMEb8ic
-xONIn0YeHCcul9PzCbKmGhEb88m6wSizVPCyqQa4mTe1Af6UYE5Whc8wpnSKp2AK
-ihMSP5HNC0ArLaECRv1GmMOhntA1ZY6/HS3uyGNNVRc09F7ohR0gaUetRREg+IpC
-289j+9tcKt58TDbnjRCFWFuPG2hfVKwKbjnVgU6zmp9V+8M5PvzYuEDFCMCrwJKT
-zicPjVwvnKcDKXTpNmV7qt2sMkklB55Sm+TcS1sn3BGkiVNBjXWily3VLhFR17+o
-Bg72nvupA/R84mpHCzA9
-=f/9m
------END PGP SIGNATURE-----
+We might consider to put a low frequency limit into that selection
+process as well, but that needs some thought and experimentation.
 
---wg9FEZT+WCTrEXgJ--
+Thanks,
+
+	tglx
+
+
+
+
