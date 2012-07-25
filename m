@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2GYWva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 18:51:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37663 "EHLO
+	id S1752144Ab2GYWwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 18:52:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56904 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2GYWv3 (ORCPT
+	with ESMTP id S1751551Ab2GYWwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 18:51:29 -0400
-Date: Thu, 26 Jul 2012 08:51:27 +1000
+	Wed, 25 Jul 2012 18:52:19 -0400
+Date: Thu, 26 Jul 2012 08:52:16 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
         Alan Cox <alan@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-Id: <20120726085127.1205fa271d6c5d7c485c5397@canb.auug.org.au>
-In-Reply-To: <20120720133349.b71eeca40aa1758a12725dea@canb.auug.org.au>
-References: <20120720133349.b71eeca40aa1758a12725dea@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the final tree (tty
+ tree related)
+Message-Id: <20120726085216.2ee021b6e10aebe6a853d091@canb.auug.org.au>
+In-Reply-To: <20120720150237.af0d271624511fc18705f287@canb.auug.org.au>
+References: <20120720150237.af0d271624511fc18705f287@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Thu__26_Jul_2012_08_51_27_+1000_RnE4xSSBhyj_mksy"
+ boundary="Signature=_Thu__26_Jul_2012_08_52_16_+1000_XZA.4LYB6xqW6/Rj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__26_Jul_2012_08_51_27_+1000_RnE4xSSBhyj_mksy
+--Signature=_Thu__26_Jul_2012_08_52_16_+1000_XZA.4LYB6xqW6/Rj
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Greg, Alan,
 
-[Sorry, Alan, I forgot to cc you the first time around.]
-
-On Fri, 20 Jul 2012 13:33:49 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+On Fri, 20 Jul 2012 15:02:37 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
 wrote:
 >
-> After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 >=20
-> drivers/staging/serqt_usb2/serqt_usb2.c: In function 'qt_set_termios':
-> drivers/staging/serqt_usb2/serqt_usb2.c:1198:29: error: incompatible type=
-s when initializing type 'struct ktermios *' using type 'struct ktermios'
-> drivers/staging/serqt_usb2/serqt_usb2.c:1304:14: error: invalid type argu=
-ment of '->' (have 'struct ktermios')
+> drivers/usb/serial/console.c: In function 'usb_console_setup':
+> drivers/usb/serial/console.c:168:16: error: invalid type argument of '->'=
+ (have 'struct ktermios')
+> drivers/usb/serial/console.c:169:4: error: incompatible type for argument=
+ 1 of 'tty_termios_encode_baud_rate'
+> include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argume=
+nt is of type 'struct ktermios'
 >=20
-> Presumably caused by commit adc8d746caa6 ("tty: move the termios object
-> into the tty").
+> Caused by commit adc8d746caa6 ("tty: move the termios object into the
+> tty").  Hopefully this is the last of them.
 >=20
-> Under previous instructions about staging drivers, I have added the
-> following patch for today:
+> I have added the following fix patch for today:
 >=20
 > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 20 Jul 2012 13:31:39 +1000
-> Subject: [PATCH] disable USB_SERIAL_QUATECH2 broken by tty update
+> Date: Fri, 20 Jul 2012 14:58:31 +1000
+> Subject: [PATCH] tty: fix up usb serial console for termios change.
+>=20
+> fixes these errors:
+>=20
+> drivers/usb/serial/console.c: In function 'usb_console_setup':
+> drivers/usb/serial/console.c:168:16: error: invalid type argument of '->'=
+ (have 'struct ktermios')
+> drivers/usb/serial/console.c:169:4: error: incompatible type for argument=
+ 1 of 'tty_termios_encode_baud_rate'
+> include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argume=
+nt is of type 'struct ktermios'
 >=20
 > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
->  drivers/staging/serqt_usb2/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
+>  drivers/usb/serial/console.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 >=20
-> diff --git a/drivers/staging/serqt_usb2/Kconfig b/drivers/staging/serqt_u=
-sb2/Kconfig
-> index f4fed40..dc624a4 100644
-> --- a/drivers/staging/serqt_usb2/Kconfig
-> +++ b/drivers/staging/serqt_usb2/Kconfig
-> @@ -1,6 +1,7 @@
->  config USB_SERIAL_QUATECH2
->  	tristate "USB Quatech ESU-100 8 Port Serial Driver"
->  	depends on USB_SERIAL
-> +	depends on BROKEN
->  	help
->  	  Say Y here if you want to use the Quatech ESU-100 8 port usb to
->  	  serial adapter.
+> diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
+> index b9cca6d..9a56428 100644
+> --- a/drivers/usb/serial/console.c
+> +++ b/drivers/usb/serial/console.c
+> @@ -165,8 +165,8 @@ static int usb_console_setup(struct console *co, char=
+ *options)
+>  		}
+> =20
+>  		if (serial->type->set_termios) {
+> -			tty->termios->c_cflag =3D cflag;
+> -			tty_termios_encode_baud_rate(tty->termios, baud, baud);
+> +			tty->termios.c_cflag =3D cflag;
+> +			tty_termios_encode_baud_rate(&tty->termios, baud, baud);
+>  			memset(&dummy, 0, sizeof(struct ktermios));
+>  			serial->type->set_termios(tty, port, &dummy);
+> =20
 > --=20
 > 1.7.10.280.gaa39
 
@@ -82,25 +95,25 @@ Ping?
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__26_Jul_2012_08_51_27_+1000_RnE4xSSBhyj_mksy
+--Signature=_Thu__26_Jul_2012_08_52_16_+1000_XZA.4LYB6xqW6/Rj
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQEHhvAAoJEECxmPOUX5FEJRgP/R1cVP3ZgwdWC2CZ7JrhcT3U
-hYHGfwvrbBN3ART1HTMBw34cAUS+Bm6ejOz71lIuSHRHIwNUBpZJlBPUjB4Jn/DF
-A7bugC9ueP7npDIyX+Q+nxPL3ZMVeVKd6LPwpX2tPE7P4fQwikdB/IYKi7Vfouvt
-YDVN/RsaCCr8nYPIgT5iz7I7oKIRQlN/dXTuTW/qSySB7tHbr7n/tS0pib34ycDW
-3Z1YUIgsLn2wQevRsS0N2bGhs+o2FUPwiARd68sCzWlhOuqkR/I3zh1uPlrPBIFe
-SVohFAgjn/k+0tFG7smpl+/Y2PnmrNIuXPGRrFF+FuWh6tyCBzMXqnadE5A60FvW
-jBqqSPtzrR9S4s1d+MdDcUCLwRwOnKB/DtbCWFepX+wY/Ui6r0rVoXgGSWD8fDSb
-ZUquOoCPwPplTg8/3H9VXCmAwcHWp0S5oBFDvsoKEY0PRocAojsbKtxaCAVl6Ra3
-5eYCw/bpkE205BaPGijygRrE18xterqWWjWaeS/FE7ghpiIVCh7YWgj4yKxIFsEf
-WBrxkexrbbDSUa3T85YYW8QaDwhD0Mjt5c8Cp1gQzq7b/2FdHTUCdK6frSZ7Y8cU
-oy63BmwDP/dSF8Dj+jsQUJTJDpG3UWjbHcC5G9gAWXCJs5Xw2v01hDW4Uo9fo/Xy
-yki8jXkiRML0K8pglzkm
-=PZpA
+iQIcBAEBCAAGBQJQEHigAAoJEECxmPOUX5FE4HwQAJ5sD9rHD7NTBYV0CjRO8HC2
+mqMZYaTNH/lUET9XqTEOXH0Bq6GijP1xQtN1ZOMCbvzrkMOEu5bpT97Q1JyKZLEn
+Vdm3lZ3mh/RdHQz1CnqrLXyoE5GZQXDcAlPeIVNZWcWNElEP2PAgyZ9Z5HuG2xgc
+wNWPwzb3bUdkPD0CeUHMksM2FfypShxIPHVXmUYO1j1zfCGgm18uxJ9fQDAPwFLF
++OMdyS96GgRvaSBKA3c58hkJWkDmEPgxteCyTuXOZMAnrtEnccanQ5VzQ2wAG0VM
+dsuHHfLdJK1g2RfG0VGOtcvRm67B+peUxACvPUqm3l7A3dLdsfm/CJfI3+0VnovN
+rV6F1/z+7yCmkeZqBxp4ZF2O1cLYRUyVqi4bmX93hLTUHb3eD87E607evhtajS+D
+wiYXQnCWlJbY7B7duBoMuFX274ty8FMVhmSYRA7JAamIOmUYcmTD2DE4gM8fspBO
+s9/iPO8hcXaKw6MoLYFqDulTj+EfcXRj6UEvv3vACiMawMauPqKnCm8weXosJTkH
+0LlrmEjekNWRWk0ArJbe/Mo9ZxxbbtSYr6UguiV/QYCnC7JZAuwxbxsizQ5a6Q3+
+hLPLglIwyA7K2tqDG1GfFhxq4vuFSGp2FnCZ3b7cuFRtebYhsN7dJHUwaqdTEt6v
+6E5+179c5PBecJ/O/9wk
+=29QH
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__26_Jul_2012_08_51_27_+1000_RnE4xSSBhyj_mksy--
+--Signature=_Thu__26_Jul_2012_08_52_16_+1000_XZA.4LYB6xqW6/Rj--
