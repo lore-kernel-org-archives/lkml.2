@@ -1,51 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab2GYCt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 22:49:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55915 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab2GYCt2 (ORCPT
+	id S1756117Ab2GYCtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 22:49:52 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:57485 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab2GYCtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 22:49:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120724181044.GC25671@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<1343149213-10160-2-git-send-email-ming.lei@canonical.com>
-	<20120724181044.GC25671@aftab.osrc.amd.com>
-Date: Wed, 25 Jul 2012 10:49:24 +0800
-Message-ID: <CACVXFVMftSSvKkrXxV+PNSu2_sXeTTsY8ZMzdOHgK9bAE6z8pg@mail.gmail.com>
-Subject: Re: [RFC PATCH 01/13] driver core: firmware loader: simplify pages
- ownership transfer
-From: Ming Lei <ming.lei@canonical.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 24 Jul 2012 22:49:51 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Barry Song <21cnbao@gmail.com>, Vaibhav Bedia <vaibhav.bedia@ti.com>,
+        Colin Cross <ccross@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Krzysztof Halasa <khc@pm.waw.pl>, Nicolas Pitre <nico@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [RFC v2] ARM: sched_clock: update epoch_cyc on resume
+Date: Tue, 24 Jul 2012 19:49:44 -0700
+Message-Id: <1343184588-20239-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 2:10 AM, Borislav Petkov <bp@amd64.org> wrote:
->>
->> +/* transfer the ownership of pages to firmware */
->> +static void fw_set_page_data(struct firmware_priv *fw_priv)
->> +{
->> +     struct firmware *fw = fw_priv->fw;
->> +
->> +     fw_priv->data = vmap(fw_priv->pages, fw_priv->nr_pages,
->> +                             0, PAGE_KERNEL_RO);
->
-> We don't need to check the return value of vmap() here like we do above?
+Many clocks that are used to provide sched_clock will reset during
+suspend.  If read_sched_clock returns 0 after suspend, sched_clock will
+appear to jump forward.  This patch resets cd.epoch_cyc to the current
+value of read_sched_clock during resume, which causes sched_clock() just
+after suspend to return the same value as sched_clock() just before
+suspend.
 
-Good catch, it should be handled, otherwise may cause oops inside driver.
+In addition, during the window where epoch_ns has been updated before
+suspend, but epoch_cyc has not been updated after suspend, it is unknown
+whether the clock has reset or not, and sched_clock() could return a
+bogus value.  Add a suspended flag, and return the pre-suspend epoch_ns
+value during this period.
 
-If that happens, the pages buffer should be dropped and return failure
-from request_firmware or the callback of request_firmware_nowait.
+The new behavior is triggered by calling setup_sched_clock_needs_suspend
+instead of setup_sched_clock.
 
-I will fix it against this patch set if cache/uncache firmware can be
-accepted.
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ arch/arm/include/asm/sched_clock.h |    2 ++
+ arch/arm/kernel/sched_clock.c      |   24 ++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-Thanks,
---
-Ming Lei
+diff --git a/arch/arm/include/asm/sched_clock.h b/arch/arm/include/asm/sched_clock.h
+index e3f7572..05b8e82 100644
+--- a/arch/arm/include/asm/sched_clock.h
++++ b/arch/arm/include/asm/sched_clock.h
+@@ -10,5 +10,7 @@
+ 
+ extern void sched_clock_postinit(void);
+ extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
++extern void setup_sched_clock_needs_suspend(u32 (*read)(void), int bits,
++		unsigned long rate);
+ 
+ #endif
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index 27d186a..f451539 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -21,6 +21,8 @@ struct clock_data {
+ 	u32 epoch_cyc_copy;
+ 	u32 mult;
+ 	u32 shift;
++	bool suspended;
++	bool needs_suspend;
+ };
+ 
+ static void sched_clock_poll(unsigned long wrap_ticks);
+@@ -49,6 +51,9 @@ static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
+ 	u64 epoch_ns;
+ 	u32 epoch_cyc;
+ 
++	if (cd.suspended)
++		return cd.epoch_ns;
++
+ 	/*
+ 	 * Load the epoch_cyc and epoch_ns atomically.  We do this by
+ 	 * ensuring that we always write epoch_cyc, epoch_ns and
+@@ -98,6 +103,13 @@ static void sched_clock_poll(unsigned long wrap_ticks)
+ 	update_sched_clock();
+ }
+ 
++void __init setup_sched_clock_needs_suspend(u32 (*read)(void), int bits,
++		unsigned long rate)
++{
++	setup_sched_clock(read, bits, rate);
++	cd.needs_suspend = true;
++}
++
+ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
+ {
+ 	unsigned long r, w;
+@@ -169,11 +181,23 @@ void __init sched_clock_postinit(void)
+ static int sched_clock_suspend(void)
+ {
+ 	sched_clock_poll(sched_clock_timer.data);
++	if (cd.needs_suspend)
++		cd.suspended = true;
+ 	return 0;
+ }
+ 
++static void sched_clock_resume(void)
++{
++	if (cd.needs_suspend) {
++		cd.epoch_cyc = read_sched_clock();
++		cd.epoch_cyc_copy = cd.epoch_cyc;
++		cd.suspended = false;
++	}
++}
++
+ static struct syscore_ops sched_clock_ops = {
+ 	.suspend = sched_clock_suspend,
++	.resume = sched_clock_resume,
+ };
+ 
+ static int __init sched_clock_syscore_init(void)
+-- 
+1.7.7.3
+
