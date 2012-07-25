@@ -1,50 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab2GYT0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:26:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58520 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab2GYT0P (ORCPT
+	id S1752218Ab2GYT0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:26:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58421 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2GYT0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:26:15 -0400
-Date: Wed, 25 Jul 2012 12:26:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20120725122613.b971360b.akpm@linux-foundation.org>
-In-Reply-To: <20120725190351.GA4143@gmail.com>
-References: <20120725140827.4332a5448e4d8d200164ea2e@canb.auug.org.au>
-	<20120725071044.GA27535@gmail.com>
-	<20120725073503.GB1112@cmpxchg.org>
-	<20120725115713.e56239b5.akpm@linux-foundation.org>
-	<20120725190351.GA4143@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jul 2012 15:26:42 -0400
+Date: Wed, 25 Jul 2012 12:26:14 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-4dff624ae05bf3fb89f7653b3a55e7a5f1f1dadf@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org, gorcunov@openvz.org,
+        a.p.zijlstra@chello.nl, benjamin.redelings@nescent.org,
+        jolsa@redhat.com, drepper@gmail.com, robert.richter@amd.com,
+        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+        asharma@fb.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        fche@redhat.com, paulus@samba.org, tzanussi@gmail.com,
+        masami.hiramatsu.pt@hitachi.com
+Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com,
+        gorcunov@openvz.org, a.p.zijlstra@chello.nl,
+        benjamin.redelings@nescent.org, jolsa@redhat.com, fweisbec@gmail.com,
+        robert.richter@amd.com, drepper@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, asharma@fb.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
+        tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <1342959280-5361-17-git-send-email-jolsa@redhat.com>
+References: <1342959280-5361-17-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf symbols: Add dso data caching
+Git-Commit-ID: 4dff624ae05bf3fb89f7653b3a55e7a5f1f1dadf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:26:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jul 2012 21:03:51 +0200
-Ingo Molnar <mingo@kernel.org> wrote:
+Commit-ID:  4dff624ae05bf3fb89f7653b3a55e7a5f1f1dadf
+Gitweb:     http://git.kernel.org/tip/4dff624ae05bf3fb89f7653b3a55e7a5f1f1dadf
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Sun, 22 Jul 2012 14:14:39 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 25 Jul 2012 11:33:04 -0300
 
-> > This means that if the above code reappears in linux-next or 
-> > mainline, the current copy of 
-> > mm-memcg-fix-compaction-migration-failing-due-to-memcg-limits.patch 
-> > will no longer update it, and I probably won't notice that 
-> > omission.
-> 
-> Did you plan to send Johannes's memcg bits to Linus in this 
-> merge window?
+perf symbols: Add dso data caching
 
-Yes.  I was kinda thinking of starting the bombing run on Monday but I
-guess I could do the MM queue on Thursday.
+Adding dso data caching so we don't need to open/read/close, each time
+we want dso data.
 
+The DSO data caching affects following functions:
+  dso__data_read_offset
+  dso__data_read_addr
+
+Each DSO read tries to find the data (based on offset) inside the cache.
+If it's not present it fills the cache from file, and returns the data.
+If it is present, data are returned with no file read.
+
+Each data read is cached by reading cache page sized/aligned amount of
+DSO data. The cache page size is hardcoded to 4096.  The cache is using
+RB tree with file offset as a sort key.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Link: http://lkml.kernel.org/r/1342959280-5361-17-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c |  154 ++++++++++++++++++++++++++++++++++++++++------
+ tools/perf/util/symbol.h |   11 +++
+ 2 files changed, 147 insertions(+), 18 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 8131949..fdad4eee 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -29,6 +29,7 @@
+ #define NT_GNU_BUILD_ID 3
+ #endif
+ 
++static void dso_cache__free(struct rb_root *root);
+ static bool dso__build_id_equal(const struct dso *dso, u8 *build_id);
+ static int elf_read_build_id(Elf *elf, void *bf, size_t size);
+ static void dsos__add(struct list_head *head, struct dso *dso);
+@@ -343,6 +344,7 @@ struct dso *dso__new(const char *name)
+ 		dso__set_short_name(dso, dso->name);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
++		dso->cache = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+@@ -378,6 +380,7 @@ void dso__delete(struct dso *dso)
+ 		free((char *)dso->short_name);
+ 	if (dso->lname_alloc)
+ 		free(dso->long_name);
++	dso_cache__free(&dso->cache);
+ 	free(dso);
+ }
+ 
+@@ -3008,22 +3011,87 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 	return -EINVAL;
+ }
+ 
+-static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
+-			      u8 *data __used, ssize_t size __used)
++static void
++dso_cache__free(struct rb_root *root)
+ {
+-	return -EINVAL;
++	struct rb_node *next = rb_first(root);
++
++	while (next) {
++		struct dso_cache *cache;
++
++		cache = rb_entry(next, struct dso_cache, rb_node);
++		next = rb_next(&cache->rb_node);
++		rb_erase(&cache->rb_node, root);
++		free(cache);
++	}
+ }
+ 
+-static int dso_cache_add(struct dso *dso __used, u64 offset __used,
+-			 u8 *data __used, ssize_t size __used)
++static struct dso_cache*
++dso_cache__find(struct rb_root *root, u64 offset)
+ {
+-	return 0;
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct dso_cache *cache;
++
++	while (*p != NULL) {
++		u64 end;
++
++		parent = *p;
++		cache = rb_entry(parent, struct dso_cache, rb_node);
++		end = cache->offset + DSO__DATA_CACHE_SIZE;
++
++		if (offset < cache->offset)
++			p = &(*p)->rb_left;
++		else if (offset >= end)
++			p = &(*p)->rb_right;
++		else
++			return cache;
++	}
++	return NULL;
++}
++
++static void
++dso_cache__insert(struct rb_root *root, struct dso_cache *new)
++{
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct dso_cache *cache;
++	u64 offset = new->offset;
++
++	while (*p != NULL) {
++		u64 end;
++
++		parent = *p;
++		cache = rb_entry(parent, struct dso_cache, rb_node);
++		end = cache->offset + DSO__DATA_CACHE_SIZE;
++
++		if (offset < cache->offset)
++			p = &(*p)->rb_left;
++		else if (offset >= end)
++			p = &(*p)->rb_right;
++	}
++
++	rb_link_node(&new->rb_node, parent, p);
++	rb_insert_color(&new->rb_node, root);
++}
++
++static ssize_t
++dso_cache__memcpy(struct dso_cache *cache, u64 offset,
++		  u8 *data, u64 size)
++{
++	u64 cache_offset = offset - cache->offset;
++	u64 cache_size   = min(cache->size - cache_offset, size);
++
++	memcpy(data, cache->data + cache_offset, cache_size);
++	return cache_size;
+ }
+ 
+-static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
+-		     u64 offset, u8 *data, ssize_t size)
++static ssize_t
++dso_cache__read(struct dso *dso, struct machine *machine,
++		 u64 offset, u8 *data, ssize_t size)
+ {
+-	ssize_t rsize = -1;
++	struct dso_cache *cache;
++	ssize_t ret;
+ 	int fd;
+ 
+ 	fd = dso__data_fd(dso, machine);
+@@ -3031,28 +3099,78 @@ static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
+ 		return -1;
+ 
+ 	do {
+-		if (-1 == lseek(fd, offset, SEEK_SET))
++		u64 cache_offset;
++
++		ret = -ENOMEM;
++
++		cache = zalloc(sizeof(*cache) + DSO__DATA_CACHE_SIZE);
++		if (!cache)
+ 			break;
+ 
+-		rsize = read(fd, data, size);
+-		if (-1 == rsize)
++		cache_offset = offset & DSO__DATA_CACHE_MASK;
++		ret = -EINVAL;
++
++		if (-1 == lseek(fd, cache_offset, SEEK_SET))
+ 			break;
+ 
+-		if (dso_cache_add(dso, offset, data, size))
+-			pr_err("Failed to add data int dso cache.");
++		ret = read(fd, cache->data, DSO__DATA_CACHE_SIZE);
++		if (ret <= 0)
++			break;
++
++		cache->offset = cache_offset;
++		cache->size   = ret;
++		dso_cache__insert(&dso->cache, cache);
++
++		ret = dso_cache__memcpy(cache, offset, data, size);
+ 
+ 	} while (0);
+ 
++	if (ret <= 0)
++		free(cache);
++
+ 	close(fd);
+-	return rsize;
++	return ret;
++}
++
++static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size)
++{
++	struct dso_cache *cache;
++
++	cache = dso_cache__find(&dso->cache, offset);
++	if (cache)
++		return dso_cache__memcpy(cache, offset, data, size);
++	else
++		return dso_cache__read(dso, machine, offset, data, size);
+ }
+ 
+ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 			      u64 offset, u8 *data, ssize_t size)
+ {
+-	if (dso_cache_read(dso, offset, data, size))
+-		return read_dso_data(dso, machine, offset, data, size);
+-	return 0;
++	ssize_t r = 0;
++	u8 *p = data;
++
++	do {
++		ssize_t ret;
++
++		ret = dso_cache_read(dso, machine, offset, p, size);
++		if (ret < 0)
++			return ret;
++
++		/* Reached EOF, return what we have. */
++		if (!ret)
++			break;
++
++		BUG_ON(ret > size);
++
++		r      += ret;
++		p      += ret;
++		offset += ret;
++		size   -= ret;
++
++	} while (size);
++
++	return r;
+ }
+ 
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 9b9ea00..980d5f5 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -182,10 +182,21 @@ enum dso_swap_type {
+ 	DSO_SWAP__YES,
+ };
+ 
++#define DSO__DATA_CACHE_SIZE 4096
++#define DSO__DATA_CACHE_MASK ~(DSO__DATA_CACHE_SIZE - 1)
++
++struct dso_cache {
++	struct rb_node	rb_node;
++	u64 offset;
++	u64 size;
++	char data[0];
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
++	struct rb_root	 cache;
+ 	enum dso_kernel_type	kernel;
+ 	enum dso_swap_type	needs_swap;
+ 	enum dso_binary_type	symtab_type;
