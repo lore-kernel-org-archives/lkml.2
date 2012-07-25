@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab2GYJfW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 05:35:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39840 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751960Ab2GYJfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 05:35:21 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <linux-input@vger.kernel.org>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH] Input: omap4-keypad: Fix the probe error handling
-Date: Wed, 25 Jul 2012 15:05:16 +0530
-Message-ID: <1343208916-19149-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752619Ab2GYJgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 05:36:11 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38421 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab2GYJgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 05:36:09 -0400
+Date: Wed, 25 Jul 2012 11:29:28 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [REGRESSION] [KMS] [INTEL] Wrong resolution in console and
+ XWindow
+Message-ID: <20120725092928.GD5396@phenom.ffwll.local>
+Mail-Followup-To: Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org
+References: <201207251020.47637.maciej.rutecki@gmail.com>
+ <20120725082926.GB5396@phenom.ffwll.local>
+ <201207251054.25498.maciej.rutecki@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201207251054.25498.maciej.rutecki@gmail.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- pm_runtime_disable call is missed in some of the error cases
-  fix the same.
-- In the error path pm_runtime_put_sync is called after pm_runtime_disable
- fix the same.
-- keypad_data->keymap free was missed in one of the error path fix it.
+On Wed, Jul 25, 2012 at 10:54:25AM +0200, Maciej Rutecki wrote:
+> On środa, 25 lipca 2012 o 10:29:26 Daniel Vetter wrote:
+> > On Wed, Jul 25, 2012 at 10:20:47AM +0200, Maciej Rutecki wrote:
+> > > Last known good: 3.4.4
+> > > First bad: 3.5.0
+> > > 
+> > > When booting 3.5.0 resolution (in console, and after in KDE) is set to
+> > > 1024x768 (60Hz). In 3.4.4 was correct: 1440x900 (60Hz).
+> > 
+> > Can you please attach the output of xrandr --verbose for both kernels?
+> > Also, please boot with drm.debug=0xe added to your kernel cmdline and grab
+> > the dmesg (again for both kernels).
+> > 
+> 
+> Thanks for the ansfer.
+> 
+> Here xrandr and dmesg outputs for 3.4.4 and 3.5.0
+> 
+> http://mrutecki.pl/download/kernel/3.5/swinka/debug/
 
-Also while at it call pm_runtime_put_sync after the register access in probe
-instead of waiting for input registration etc.
+Can you please test this quick hack:
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/input/keyboard/omap4-keypad.c |   16 +++++++---------
- 1 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-index c05f98c..17efede 100644
---- a/drivers/input/keyboard/omap4-keypad.c
-+++ b/drivers/input/keyboard/omap4-keypad.c
-@@ -310,6 +310,7 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
- 		goto err_unmap;
- 	}
- 	rev = __raw_readl(keypad_data->base + OMAP4_KBD_REVISION);
-+	pm_runtime_put_sync(&pdev->dev);
- 	rev &= 0x03 << 30;
- 	rev >>= 30;
- 	switch (rev) {
-@@ -325,14 +326,14 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev,
- 			"Keypad reports unsupported revision %d", rev);
- 		error = -EINVAL;
--		goto err_pm_put_sync;
-+		goto err_unmap;
- 	}
- 
- 	/* input device allocation */
- 	keypad_data->input = input_dev = input_allocate_device();
- 	if (!input_dev) {
- 		error = -ENOMEM;
--		goto err_pm_put_sync;
-+		goto err_unmap;
- 	}
- 
- 	input_dev->name = pdev->name;
-@@ -374,30 +375,27 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
- 			     "omap4-keypad", keypad_data);
- 	if (error) {
- 		dev_err(&pdev->dev, "failed to register interrupt\n");
--		goto err_free_input;
-+		goto err_free_keymap;
- 	}
- 
--	pm_runtime_put_sync(&pdev->dev);
- 
- 	error = input_register_device(keypad_data->input);
- 	if (error < 0) {
- 		dev_err(&pdev->dev, "failed to register input device\n");
--		goto err_pm_disable;
-+		goto err_free_irq;
- 	}
- 
- 	platform_set_drvdata(pdev, keypad_data);
- 	return 0;
- 
--err_pm_disable:
--	pm_runtime_disable(&pdev->dev);
-+err_free_irq:
- 	free_irq(keypad_data->irq, keypad_data);
- err_free_keymap:
- 	kfree(keypad_data->keymap);
- err_free_input:
- 	input_free_device(input_dev);
--err_pm_put_sync:
--	pm_runtime_put_sync(&pdev->dev);
- err_unmap:
-+	pm_runtime_disable(&pdev->dev);
- 	iounmap(keypad_data->base);
- err_release_mem:
- 	release_mem_region(res->start, resource_size(res));
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index 1991a44..abe1611 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -405,7 +405,7 @@ clear_err:
+ 	 * timing out seems to happen when there _is_ a ddc chip present, but
+ 	 * it's slow responding and only answers on the 2nd retry.
+ 	 */
+-	ret = -ENXIO;
++	ret = 0;
+ 	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0,
+ 		     10)) {
+ 		DRM_DEBUG_KMS("GMBUS [%s] timed out after NAK\n",
+
+
+Thanks, Daniel
 -- 
-1.7.5.4
-
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
