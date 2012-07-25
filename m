@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab2GYRPa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:15:30 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43151 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab2GYRP3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:15:29 -0400
-Date: Wed, 25 Jul 2012 19:15:24 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
+	id S1751616Ab2GYRRR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:17:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56466 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722Ab2GYRRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 13:17:16 -0400
+Date: Wed, 25 Jul 2012 14:16:55 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
         masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
         benjamin.redelings@nescent.org
-Subject: Re: [PATCHv7 00/17] perf: Add backtrace post dwarf unwind
-Message-ID: <20120725171521.GG1173@somewhere.redhat.com>
+Subject: Re: [PATCH 14/17] perf, tool: Support for dwarf cfi unwinding on
+ post processing
+Message-ID: <20120725171655.GC17355@infradead.org>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+ <1342959280-5361-15-git-send-email-jolsa@redhat.com>
+ <20120725170530.GE1173@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120725170530.GE1173@somewhere.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 02:14:23PM +0200, Jiri Olsa wrote:
-> hi,
+Em Wed, Jul 25, 2012 at 07:05:33PM +0200, Frederic Weisbecker escreveu:
+> > +#ifdef ARCH_X86_64
+> > +int unwind__arch_reg_id(int regnum)
 > 
-> patches available also as tarball in here:
-> http://people.redhat.com/~jolsa/perf_post_unwind_v7.tar.bz2
-> 
-> v7 changes:
->    - omitted v6 patches 9 and 15
->      They need more work and will be sent separately. I dont want to hold off whole
->      patchset because of them. We could miss some related backtraces (syscall, vdso)
->      in this version.
->    - v6 patch 11, 14, 20 already in
+> Please try to avoid __ in function names. We used that convention
+> before but we gave up because that's actually more painful than
+> anything.
 
-I'm personally ok with the kernel bits. And the tool bits look like a nice
-base to work on.
+Well, I continue using it to separate the struct operated by the
+function from the function name.
 
-If nobody has a strong opposition, it would be nice to merge this in -tip.
-Either in perf/core or in some staging tree. So that we continue incrementally.
-
-Nice work overall, thanks!
+- Arnaldo
