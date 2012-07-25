@@ -1,173 +1,418 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab2GYL4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:56:24 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:35767 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756594Ab2GYL4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:56:20 -0400
-Message-ID: <500FDEBC.9050607@panasas.com>
-Date: Wed, 25 Jul 2012 14:55:40 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	id S1756691Ab2GYL4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:56:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29232 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756611Ab2GYL4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 07:56:21 -0400
+Date: Wed, 25 Jul 2012 13:58:18 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org
+Subject: [PATCH 1/1] x86, MSI: Support multiple MSIs in presense of IRQ
+ remapping
+Message-ID: <5204a17925886be95694c9625ce1e8dfc6513ff0.1343216955.git.agordeev@redhat.com>
+References: <cover.1343216955.git.agordeev@redhat.com>
 MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dm-devel@redhat.com>, <tj@kernel.org>, <axboe@kernel.dk>,
-        <agk@redhat.com>, <neilb@suse.de>, <drbd-dev@lists.linbit.com>,
-        <vgoyal@redhat.com>, <mpatocka@redhat.com>, <sage@newdream.net>,
-        <yehuda@hq.newdream.net>
-Subject: Re: [PATCH v4 08/12] block: Introduce new bio_split()
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com> <1343160689-12378-9-git-send-email-koverstreet@google.com>
-In-Reply-To: <1343160689-12378-9-git-send-email-koverstreet@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1343216955.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 11:11 PM, Kent Overstreet wrote:
+The MSI specification has several constraints in comparison with MSI-X,
+most notable of them is the inability to configure MSIs independently.
+As a result, it is impossible to dispatch interrupts from different
+queues to different CPUs. This is largely devalues the support of
+multiple MSIs in SMP systems.
 
-> The new bio_split() can split arbitrary bios - it's not restricted to
-> single page bios, like the old bio_split() (previously renamed to
-> bio_pair_split()). It also has different semantics - it doesn't allocate
-> a struct bio_pair, leaving it up to the caller to handle completions.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> ---
->  fs/bio.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 99 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/bio.c b/fs/bio.c
-> index 5d02aa5..a15e121 100644
-> --- a/fs/bio.c
-> +++ b/fs/bio.c
-> @@ -1539,6 +1539,105 @@ struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
->  EXPORT_SYMBOL(bio_pair_split);
->  
->  /**
-> + * bio_split - split a bio
-> + * @bio:	bio to split
-> + * @sectors:	number of sectors to split from the front of @bio
-> + * @gfp:	gfp mask
-> + * @bs:		bio set to allocate from
-> + *
-> + * Allocates and returns a new bio which represents @sectors from the start of
-> + * @bio, and updates @bio to represent the remaining sectors.
-> + *
-> + * If bio_sectors(@bio) was less than or equal to @sectors, returns @bio
-> + * unchanged.
-> + *
-> + * The newly allocated bio will point to @bio's bi_io_vec, if the split was on a
-> + * bvec boundry; it is the caller's responsibility to ensure that @bio is not
-> + * freed before the split.
-> + *
-> + * If bio_split() is running under generic_make_request(), it's not safe to
-> + * allocate more than one bio from the same bio set. Therefore, if it is running
-> + * under generic_make_request() it masks out __GFP_WAIT when doing the
-> + * allocation. The caller must check for failure if there's any possibility of
-> + * it being called from under generic_make_request(); it is then the caller's
-> + * responsibility to retry from a safe context (by e.g. punting to workqueue).
-> + */
-> +struct bio *bio_split(struct bio *bio, int sectors,
-> +		      gfp_t gfp, struct bio_set *bs)
-> +{
-> +	unsigned idx, vcnt = 0, nbytes = sectors << 9;
-> +	struct bio_vec *bv;
-> +	struct bio *ret = NULL;
-> +
-> +	BUG_ON(sectors <= 0);
-> +
-> +	/*
-> +	 * If we're being called from underneath generic_make_request() and we
-> +	 * already allocated any bios from this bio set, we risk deadlock if we
-> +	 * use the mempool. So instead, we possibly fail and let the caller punt
-> +	 * to workqueue or somesuch and retry in a safe context.
-> +	 */
-> +	if (current->bio_list)
-> +		gfp &= ~__GFP_WAIT;
+Also, a necessity to allocate a contiguous block of vector numbers for
+devices capable of multiple MSIs might cause a considerable pressure on
+x86 interrupt vector allocator and could lead to fragmentation of the
+interrupt vectors space.
+
+This patch overcomes both drawbacks in presense of IRQ remapping and
+lets devices take advantage of multiple queues and per-IRQ affinity
+assignments.
+
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ arch/x86/kernel/apic/io_apic.c |  166 +++++++++++++++++++++++++++++++++++++--
+ include/linux/irq.h            |    6 ++
+ kernel/irq/chip.c              |   30 +++++--
+ kernel/irq/irqdesc.c           |   31 ++++++++
+ 4 files changed, 216 insertions(+), 17 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index a951ef7..f083049 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -305,6 +305,11 @@ static int alloc_irq_from(unsigned int from, int node)
+ 	return irq_alloc_desc_from(from, node);
+ }
+ 
++static int alloc_irqs_from(unsigned int from, unsigned int count, int node)
++{
++	return irq_alloc_descs_from(from, count, node);
++}
++
+ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
+ {
+ 	free_irq_cfg(at, cfg);
+@@ -3030,6 +3035,55 @@ int create_irq(void)
+ 	return irq;
+ }
+ 
++unsigned int create_irqs(unsigned int from, unsigned int count, int node)
++{
++	struct irq_cfg **cfg;
++	unsigned long flags;
++	int irq, i;
++
++	if (from < nr_irqs_gsi)
++		from = nr_irqs_gsi;
++
++	cfg = kzalloc_node(count * sizeof(cfg[0]), GFP_KERNEL, node);
++	if (!cfg)
++		return 0;
++
++	irq = alloc_irqs_from(from, count, node);
++	if (irq < 0)
++		goto out_cfgs;
++
++	for (i = 0; i < count; i++) {
++		cfg[i] = alloc_irq_cfg(irq + i, node);
++		if (!cfg[i])
++			goto out_irqs;
++	}
++
++	raw_spin_lock_irqsave(&vector_lock, flags);
++	for (i = 0; i < count; i++)
++		if (__assign_irq_vector(irq + i, cfg[i], apic->target_cpus()))
++			goto out_vecs;
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++
++	for (i = 0; i < count; i++) {
++		irq_set_chip_data(irq + i, cfg[i]);
++		irq_clear_status_flags(irq + i, IRQ_NOREQUEST);
++	}
++
++	kfree(cfg);
++	return irq;
++
++out_vecs:
++	for (; i; i--)
++		__clear_irq_vector(irq + i - 1, cfg[i - 1]);
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++out_irqs:
++	for (i = 0; i < count; i++)
++		free_irq_at(irq + i, cfg[i]);
++out_cfgs:
++	kfree(cfg);
++	return 0;
++}
++
+ void destroy_irq(unsigned int irq)
+ {
+ 	struct irq_cfg *cfg = irq_get_chip_data(irq);
+@@ -3045,6 +3099,27 @@ void destroy_irq(unsigned int irq)
+ 	free_irq_at(irq, cfg);
+ }
+ 
++static inline void destroy_irqs(unsigned int irq, unsigned int count)
++{
++	unsigned int i;
++	for (i = 0; i < count; i++)
++		destroy_irq(irq + i);
++}
++
++static inline int
++can_create_pow_of_two_irqs(unsigned int from, unsigned int count)
++{
++	if ((count > 1) && (count % 2))
++		return -EINVAL;
++
++	for (; count; count = count / 2) {
++		if (!irq_can_alloc_irqs(from, count))
++			return count;
++	}
++
++	return -ENOSPC;
++}
++
+ /*
+  * MSI message composition
+  */
+@@ -3136,18 +3211,25 @@ static struct irq_chip msi_chip = {
+ 	.irq_retrigger		= ioapic_retrigger_irq,
+ };
+ 
+-static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
++static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
++			 unsigned int irq_base, unsigned int irq_offset)
+ {
+ 	struct irq_chip *chip = &msi_chip;
+ 	struct msi_msg msg;
++	unsigned int irq = irq_base + irq_offset;
+ 	int ret;
+ 
+ 	ret = msi_compose_msg(dev, irq, &msg, -1);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	irq_set_msi_desc(irq, msidesc);
+-	write_msi_msg(irq, &msg);
++	irq_set_msi_desc_off(irq_base, irq_offset, msidesc);
++
++	/* MSI-X message is written per-IRQ, the offset is always 0.
++	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
++	 */
++	if (!irq_offset)
++		write_msi_msg(irq, &msg);
+ 
+ 	if (irq_remapped(irq_get_chip_data(irq))) {
+ 		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+@@ -3161,16 +3243,12 @@ static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
+ 	return 0;
+ }
+ 
+-int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++int setup_msix_irqs(struct pci_dev *dev, int nvec)
+ {
+ 	int node, ret, sub_handle, index = 0;
+ 	unsigned int irq, irq_want;
+ 	struct msi_desc *msidesc;
+ 
+-	/* x86 doesn't support multiple MSI yet */
+-	if (type == PCI_CAP_ID_MSI && nvec > 1)
+-		return 1;
+-
+ 	node = dev_to_node(&dev->dev);
+ 	irq_want = nr_irqs_gsi;
+ 	sub_handle = 0;
+@@ -3199,7 +3277,7 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 				goto error;
+ 		}
+ no_ir:
+-		ret = setup_msi_irq(dev, msidesc, irq);
++		ret = setup_msi_irq(dev, msidesc, irq, 0);
+ 		if (ret < 0)
+ 			goto error;
+ 		sub_handle++;
+@@ -3211,6 +3289,76 @@ error:
+ 	return ret;
+ }
+ 
++int setup_msi_irqs(struct pci_dev *dev, int nvec)
++{
++	int node, ret, sub_handle, index = 0;
++	unsigned int irq;
++	struct msi_desc *msidesc;
++
++	if (nvec > 1 && !irq_remapping_enabled)
++		return 1;
++
++	nvec = __roundup_pow_of_two(nvec);
++	ret = can_create_pow_of_two_irqs(nr_irqs_gsi, nvec);
++	if (ret != nvec)
++		return ret;
++
++	WARN_ON(!list_is_singular(&dev->msi_list));
++	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
++	WARN_ON(msidesc->irq);
++	WARN_ON(msidesc->msi_attrib.multiple);
++
++	node = dev_to_node(&dev->dev);
++	irq = create_irqs(nr_irqs_gsi, nvec, node);
++	if (irq == 0)
++		return -ENOSPC;
++
++	if (!irq_remapping_enabled) {
++		ret = setup_msi_irq(dev, msidesc, irq, 0);
++		if (ret < 0)
++			goto error;
++		return 0;
++	}
++
++	msidesc->msi_attrib.multiple = ilog2(nvec);
++	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
++		if (!sub_handle) {
++			index = msi_alloc_remapped_irq(dev, irq, nvec);
++			if (index < 0) {
++				ret = index;
++				goto error;
++			}
++		} else {
++			ret = msi_setup_remapped_irq(dev, irq + sub_handle,
++						     index, sub_handle);
++			if (ret < 0)
++				goto error;
++		}
++		ret = setup_msi_irq(dev, msidesc, irq, sub_handle);
++		if (ret < 0)
++			goto error;
++	}
++	return 0;
++
++error:
++	destroy_irqs(irq, nvec);
++
++	/* Restore altered MSI descriptor fields and prevent just destroyed
++	 * IRQs from tearing down again in default_teardown_msi_irqs()
++	 */
++	msidesc->irq = 0;
++	msidesc->msi_attrib.multiple = 0;
++
++	return ret;
++}
++
++int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++{
++	if (type == PCI_CAP_ID_MSI)
++		return setup_msi_irqs(dev, nvec);
++	return setup_msix_irqs(dev, nvec);
++}
++
+ void native_teardown_msi_irq(unsigned int irq)
+ {
+ 	destroy_irq(irq);
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 47a937c..bccddc0 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -523,6 +523,8 @@ extern int irq_set_handler_data(unsigned int irq, void *data);
+ extern int irq_set_chip_data(unsigned int irq, void *data);
+ extern int irq_set_irq_type(unsigned int irq, unsigned int type);
+ extern int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry);
++extern int irq_set_msi_desc_off(unsigned int irq_base, unsigned int irq_offset,
++				struct msi_desc *entry);
+ extern struct irq_data *irq_get_irq_data(unsigned int irq);
+ 
+ static inline struct irq_chip *irq_get_chip(unsigned int irq)
+@@ -585,8 +587,12 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+ #define irq_alloc_desc_from(from, node)		\
+ 	irq_alloc_descs(-1, from, 1, node)
+ 
++#define irq_alloc_descs_from(from, cnt, node)	\
++	irq_alloc_descs(-1, from, cnt, node)
++
+ void irq_free_descs(unsigned int irq, unsigned int cnt);
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt);
++int irq_can_alloc_irqs(unsigned int from, unsigned int cnt);
+ 
+ static inline void irq_free_desc(unsigned int irq)
+ {
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index eebd6d5..dccbec1 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -90,27 +90,41 @@ int irq_set_handler_data(unsigned int irq, void *data)
+ EXPORT_SYMBOL(irq_set_handler_data);
+ 
+ /**
+- *	irq_set_msi_desc - set MSI descriptor data for an irq
+- *	@irq:	Interrupt number
+- *	@entry:	Pointer to MSI descriptor data
++ *	irq_set_msi_desc_off - set MSI descriptor data for an irq at offset
++ *	@irq_base:	Interrupt number base
++ *	@irq_offset:	Interrupt number offset
++ *	@entry:		Pointer to MSI descriptor data
+  *
+- *	Set the MSI descriptor entry for an irq
++ *	Set the MSI descriptor entry for an irq at offset
+  */
+-int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry)
++int irq_set_msi_desc_off(unsigned int irq_base, unsigned int irq_offset,
++			 struct msi_desc *entry)
+ {
+ 	unsigned long flags;
+-	struct irq_desc *desc = irq_get_desc_lock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
++	struct irq_desc *desc = irq_get_desc_lock(irq_base + irq_offset, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
+ 
+ 	if (!desc)
+ 		return -EINVAL;
+ 	desc->irq_data.msi_desc = entry;
+-	if (entry)
+-		entry->irq = irq;
++	if (entry && !irq_offset)
++		entry->irq = irq_base;
+ 	irq_put_desc_unlock(desc, flags);
+ 	return 0;
+ }
+ 
+ /**
++ *	irq_set_msi_desc - set MSI descriptor data for an irq
++ *	@irq:	Interrupt number
++ *	@entry:	Pointer to MSI descriptor data
++ *
++ *	Set the MSI descriptor entry for an irq
++ */
++int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry)
++{
++	return irq_set_msi_desc_off(irq, 0, entry);
++}
++
++/**
+  *	irq_set_chip_data - set irq chip data for an irq
+  *	@irq:	Interrupt number
+  *	@data:	Pointer to chip specific data
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 192a302..8287b78 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -210,6 +210,13 @@ static int irq_expand_nr_irqs(unsigned int nr)
+ 	return 0;
+ }
+ 
++static int irq_can_expand_nr_irqs(unsigned int nr)
++{
++	if (nr > IRQ_BITMAP_BITS)
++		return -ENOMEM;
++	return 0;
++}
++
+ int __init early_irq_init(void)
+ {
+ 	int i, initcnt, node = first_online_node;
+@@ -414,6 +421,30 @@ int irq_reserve_irqs(unsigned int from, unsigned int cnt)
+ }
+ 
+ /**
++ * irq_can_alloc_irqs - checks if a range of irqs could be allocated
++ * @from:	check from irq number
++ * @cnt:	number of irqs to check
++ *
++ * Returns 0 on success or an appropriate error code
++ */
++int irq_can_alloc_irqs(unsigned int from, unsigned int cnt)
++{
++	unsigned int start;
++	int ret = 0;
++
++	if (!cnt)
++		return -EINVAL;
++
++	mutex_lock(&sparse_irq_lock);
++	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
++					   from, cnt, 0);
++	mutex_unlock(&sparse_irq_lock);
++	if (start + cnt > nr_irqs)
++		ret = irq_can_expand_nr_irqs(start + cnt);
++	return ret;
++}
++
++/**
+  * irq_get_next_irq - get next allocated irq number
+  * @offset:	where to start the search
+  *
+-- 
+1.7.7.6
 
 
-NACK!
-
-If as you said above in the comment:
-	if there's any possibility of it being called from under generic_make_request();
-        it is then the caller's responsibility to ...
-
-So all the comment needs to say is: 
-	... caller's responsibility to not set __GFP_WAIT at gfp.
-
-And drop this here. It is up to the caller to decide. If the caller wants he can do
-"if (current->bio_list)" by his own.
-
-This is a general purpose utility you might not know it's context.
-for example with osdblk above will break.
-
-Thanks
-Boaz
-
-> +
-> +	if (sectors >= bio_sectors(bio))
-> +		return bio;
-> +
-> +	trace_block_split(bdev_get_queue(bio->bi_bdev), bio,
-> +			  bio->bi_sector + sectors);
-> +
-> +	bio_for_each_segment(bv, bio, idx) {
-> +		vcnt = idx - bio->bi_idx;
-> +
-> +		if (!nbytes) {
-> +			ret = bio_alloc_bioset(gfp, 0, bs);
-> +			if (!ret)
-> +				return NULL;
-> +
-> +			ret->bi_io_vec = bio_iovec(bio);
-> +			ret->bi_flags |= 1 << BIO_CLONED;
-> +			break;
-> +		} else if (nbytes < bv->bv_len) {
-> +			ret = bio_alloc_bioset(gfp, ++vcnt, bs);
-> +			if (!ret)
-> +				return NULL;
-> +
-> +			memcpy(ret->bi_io_vec, bio_iovec(bio),
-> +			       sizeof(struct bio_vec) * vcnt);
-> +
-> +			ret->bi_io_vec[vcnt - 1].bv_len = nbytes;
-> +			bv->bv_offset	+= nbytes;
-> +			bv->bv_len	-= nbytes;
-> +			break;
-> +		}
-> +
-> +		nbytes -= bv->bv_len;
-> +	}
-> +
-> +	ret->bi_bdev	= bio->bi_bdev;
-> +	ret->bi_sector	= bio->bi_sector;
-> +	ret->bi_size	= sectors << 9;
-> +	ret->bi_rw	= bio->bi_rw;
-> +	ret->bi_vcnt	= vcnt;
-> +	ret->bi_max_vecs = vcnt;
-> +	ret->bi_end_io	= bio->bi_end_io;
-> +	ret->bi_private	= bio->bi_private;
-> +
-> +	bio->bi_sector	+= sectors;
-> +	bio->bi_size	-= sectors << 9;
-> +	bio->bi_idx	 = idx;
-> +
-> +	if (bio_integrity(bio)) {
-> +		bio_integrity_clone(ret, bio, gfp, bs);
-> +		bio_integrity_trim(ret, 0, bio_sectors(ret));
-> +		bio_integrity_trim(bio, bio_sectors(ret), bio_sectors(bio));
-> +	}
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(bio_split);
-> +
-> +/**
->   *      bio_sector_offset - Find hardware sector offset in bio
->   *      @bio:           bio to inspect
->   *      @index:         bio_vec index
-
-
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
