@@ -1,442 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933277Ab2GYOiA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:38:00 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:35817 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933148Ab2GYOh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:37:56 -0400
-Date: Wed, 25 Jul 2012 16:37:50 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 06/13] driver core: firmware loader: always let
- firmware_buf own the pages buffer
-Message-ID: <20120725143750.GE11152@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
- <1343149213-10160-7-git-send-email-ming.lei@canonical.com>
+	id S933253Ab2GYOkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:40:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933148Ab2GYOkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 10:40:40 -0400
+Date: Wed, 25 Jul 2012 10:40:34 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: law@redhat.com, stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] posix_types.h: Cleanup stale __NFDBITS and related
+ definitions
+Message-ID: <20120725144033.GK10534@zod.bos.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1343149213-10160-7-git-send-email-ming.lei@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 01:00:06AM +0800, Ming Lei wrote:
-> This patch always let firmware_buf own the pages buffer allocated
-> inside firmware_data_write, also add all instances of firmware_buf
-> into the firmware cache global list. Also introduce one private field
-> in 'struct firmware', so release_firmware will see the instance of
-> firmware_buf associated with one firmware instance, then just 'free'
-> the instance of firmware_buf.
-> 
-> The firmware_buf instance represents one pages buffer for one
-> firmware image, so lots of firmware loading requests can share
-> the same firmware_buf instance if they request the same firmware
-> image file.
-> 
-> This patch will make introducing cache_firmware/uncache_firmware
-> easily.
-> 
-> In fact, the patch improves request_formware/release_firmware:
-> 
->         - only request userspace to write firmware image once if
-> 	several devices share one same firmware image and its drivers
-> 	call request_firmware concurrently.
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/base/firmware_class.c |  222 ++++++++++++++++++++++++++++-------------
->  include/linux/firmware.h      |    3 +
->  2 files changed, 157 insertions(+), 68 deletions(-)
-> 
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 986d9df..225898e 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -21,6 +21,7 @@
->  #include <linux/firmware.h>
->  #include <linux/slab.h>
->  #include <linux/sched.h>
-> +#include <linux/list.h>
->  
->  MODULE_AUTHOR("Manuel Estrada Sainz");
->  MODULE_DESCRIPTION("Multi purpose firmware loading support");
-> @@ -85,13 +86,18 @@ static inline long firmware_loading_timeout(void)
->  	return loading_timeout > 0 ? loading_timeout * HZ : MAX_SCHEDULE_TIMEOUT;
->  }
->  
-> -/* fw_lock could be moved to 'struct firmware_priv' but since it is just
-> - * guarding for corner cases a global lock should be OK */
-> -static DEFINE_MUTEX(fw_lock);
-> +struct firmware_cache {
-> +
-> +	/* firmware_buf instance will be added into the below list */
-> +	spinlock_t lock;
-> +	struct list_head head;
-> +};
->  
->  struct firmware_buf {
-> +	struct kref ref;
-> +	struct list_head list;
->  	struct completion completion;
-> -	struct firmware *fw;
-> +	struct firmware_cache *fwc;
->  	unsigned long status;
->  	void *data;
->  	size_t size;
-> @@ -106,8 +112,93 @@ struct firmware_priv {
->  	bool nowait;
->  	struct device dev;
->  	struct firmware_buf *buf;
-> +	struct firmware *fw;
->  };
->  
-> +#define to_fwbuf(d) container_of(d, struct firmware_buf, ref)
-> +
-> +/* fw_lock could be moved to 'struct firmware_priv' but since it is just
-> + * guarding for corner cases a global lock should be OK */
-> +static DEFINE_MUTEX(fw_lock);
-> +
-> +static struct firmware_cache fw_cache;
-> +
-> +static struct firmware_buf *__allocate_fw_buf(const char *fw_name,
-> +		struct firmware_cache *fwc)
+Recently, glibc made a change to suppress sign-conversion warnings in FD_SET
+(glibc commit ceb9e56b3d1).  This uncovered an issue with the kernel's
+definition of __NFDBITS if applications #include <linux/types.h> after
+including <sys/select.h>.  A build failure would be seen when passing the
+-Werror=sign-compare and -D_FORTIFY_SOURCE=2 flags to gcc.
 
-Please indent like so:
+It was suggested that the kernel should either match the glibc definition of
+__NFDBITS or remove that entirely.  The current in-kernel uses of __NFDBITS
+can be replaced with BITS_PER_LONG, and there are no uses of the related
+__FDELT and __FDMASK defines.  Given that, we'll continue the cleanup that
+was started with commit 8b3d1cda4f5f ("posix_types: Remove fd_set macros")
+and drop the remaining unused macros.
 
-static struct firmware_buf *__allocate_fw_buf(const char *fw_name,
-					      struct firmware_cache *fwc)
+Additionally, linux/time.h has similar macros defined that expand to nothing
+so we'll remove those at the same time.
 
-for better readability.
+Reported-by: Jeff Law <law@redhat.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+CC: <stable@vger.kernel.org>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+---
+ arch/mips/kernel/kspd.c     |  2 +-
+ fs/exec.c                   |  2 +-
+ fs/select.c                 | 10 +++++-----
+ include/linux/posix_types.h | 18 +++---------------
+ include/linux/time.h        |  8 --------
+ kernel/exit.c               |  2 +-
+ security/selinux/hooks.c    |  2 +-
+ 7 files changed, 12 insertions(+), 32 deletions(-)
 
-> +{
-> +	struct firmware_buf *buf;
-> +
-> +	buf = kzalloc(sizeof(*buf) + strlen(fw_name) + 1 , GFP_ATOMIC);
-> +
-> +	if (!buf)
-> +		return buf;
-> +
-> +	kref_init(&buf->ref);
-> +	strcpy(buf->fw_id, fw_name);
-> +	buf->fwc = fwc;
-> +	init_completion(&buf->completion);
-> +
-> +	pr_debug("%s: fw-%s buf=%p\n", __func__, fw_name, buf);
-> +
-> +	return buf;
-> +}
-> +
-> +static int fw_lookup_and_alloate_buf(const char *fw_name,
-> +		struct firmware_cache *fwc,
-> +		struct firmware_buf **buf)
-
-Ditto.
-
-> +{
-> +	struct firmware_buf *tmp;
-> +
-> +	spin_lock(&fwc->lock);
-> +	list_for_each_entry(tmp, &fwc->head, list)
-> +		if (!strcmp(tmp->fw_id, fw_name)) {
-> +			kref_get(&tmp->ref);
-> +			spin_unlock(&fwc->lock);
-> +			*buf = tmp;
-> +			return 1;
-> +		}
-> +
-> +	tmp = __allocate_fw_buf(fw_name, fwc);
-> +	if (tmp)
-> +		list_add(&tmp->list, &fwc->head);
-> +	spin_unlock(&fwc->lock);
-> +
-> +	*buf = tmp;
-> +
-> +	return tmp ? 0 : -1;
-> +}
-> +
-> +static void __fw_free_buf(struct kref *ref)
-> +{
-> +	struct firmware_buf *buf = to_fwbuf(ref);
-> +	struct firmware_cache *fwc = buf->fwc;
-> +	int i;
-> +
-> +	pr_debug("%s: fw-%s buf=%p nr_pages=%d\n",
-> +			__func__, buf->fw_id, buf, buf->nr_pages);
-
-Arg alignment:
-
-	pr_debug("%s: fw-%s buf=%p nr_pages=%d\n",
-		 __func__, buf->fw_id, buf, buf->nr_pages);
-
-> +	spin_lock(&fwc->lock);
-> +	list_del(&buf->list);
-> +	spin_unlock(&fwc->lock);
-> +
-> +	vunmap(buf->data);
-> +	for (i = 0; i < buf->nr_pages; i++)
-> +		__free_page(buf->pages[i]);
-> +	kfree(buf->pages);
-> +	kfree(buf);
-> +}
-> +
-> +static void fw_free_buf(struct firmware_buf *buf)
-> +{
-> +	kref_put(&buf->ref, __fw_free_buf);
-> +}
-> +
-> +static void fw_cache_init(void)
-> +{
-> +	spin_lock_init(&fw_cache.lock);
-> +	INIT_LIST_HEAD(&fw_cache.head);
-> +}
-> +
->  static struct firmware_priv *to_firmware_priv(struct device *dev)
->  {
->  	return container_of(dev, struct firmware_priv, dev);
-> @@ -118,7 +209,7 @@ static void fw_load_abort(struct firmware_priv *fw_priv)
->  	struct firmware_buf *buf = fw_priv->buf;
->  
->  	set_bit(FW_STATUS_ABORT, &buf->status);
-> -	complete(&buf->completion);
-> +	complete_all(&buf->completion);
->  }
->  
->  static ssize_t firmware_timeout_show(struct class *class,
-> @@ -158,23 +249,10 @@ static struct class_attribute firmware_class_attrs[] = {
->  	__ATTR_NULL
->  };
->  
-> -static void fw_free_buf(struct firmware_buf *buf)
-> -{
-> -	int i;
-> -
-> -	if (!buf)
-> -		return;
-> -
-> -	for (i = 0; i < buf->nr_pages; i++)
-> -		__free_page(buf->pages[i]);
-> -	kfree(buf->pages);
-> -}
-> -
->  static void fw_dev_release(struct device *dev)
->  {
->  	struct firmware_priv *fw_priv = to_firmware_priv(dev);
->  
-> -	kfree(fw_priv->buf);
->  	kfree(fw_priv);
->  
->  	module_put(THIS_MODULE);
-> @@ -213,13 +291,8 @@ static ssize_t firmware_loading_show(struct device *dev,
->  /* firmware holds the ownership of pages */
->  static void firmware_free_data(const struct firmware *fw)
->  {
-> -	int i;
-> -	vunmap(fw->data);
-> -	if (fw->pages) {
-> -		for (i = 0; i < PFN_UP(fw->size); i++)
-> -			__free_page(fw->pages[i]);
-> -		kfree(fw->pages);
-> -	}
-> +	WARN_ON(!fw->priv);
-> +	fw_free_buf(fw->priv);
-
-Why the WARN_ON?
-
-Maybe rather:
-
-	if (fw->priv)
-		fw_free_buf(fw->priv);
-
-?
-
->  /* Some architectures don't have PAGE_KERNEL_RO */
-> @@ -270,7 +343,7 @@ static ssize_t firmware_loading_store(struct device *dev,
->  		if (test_bit(FW_STATUS_LOADING, &fw_buf->status)) {
->  			set_bit(FW_STATUS_DONE, &fw_buf->status);
->  			clear_bit(FW_STATUS_LOADING, &fw_buf->status);
-> -			complete(&fw_buf->completion);
-> +			complete_all(&fw_buf->completion);
->  			break;
->  		}
->  		/* fallthrough */
-> @@ -446,10 +519,10 @@ static void firmware_class_timeout(u_long data)
->  
->  static struct firmware_priv *
->  fw_create_instance(struct firmware *firmware, const char *fw_name,
-> -		   struct device *device, bool uevent, bool nowait)
-> +			struct device *device, bool uevent, bool nowait)
-> +
-
-Wrong alignment and superfluous newline.
-
->  {
->  	struct firmware_priv *fw_priv;
-> -	struct firmware_buf *buf;
->  	struct device *f_dev;
->  
->  	fw_priv = kzalloc(sizeof(*fw_priv), GFP_KERNEL);
-> @@ -459,21 +532,10 @@ fw_create_instance(struct firmware *firmware, const char *fw_name,
->  		goto exit;
->  	}
->  
-> -	buf = kzalloc(sizeof(*buf) + strlen(fw_name) + 1, GFP_KERNEL);
-> -	if (!buf) {
-> -		dev_err(device, "%s: kmalloc failed\n", __func__);
-> -		kfree(fw_priv);
-> -		fw_priv = ERR_PTR(-ENOMEM);
-> -		goto exit;
-> -	}
-> -
-> -	buf->fw = firmware;
-> -	fw_priv->buf = buf;
->  	fw_priv->nowait = nowait;
-> +	fw_priv->fw = firmware;
->  	setup_timer(&fw_priv->timeout,
->  		    firmware_class_timeout, (u_long) fw_priv);
-> -	strcpy(buf->fw_id, fw_name);
-> -	init_completion(&buf->completion);
->  
->  	f_dev = &fw_priv->dev;
->  
-> @@ -485,12 +547,31 @@ exit:
->  	return fw_priv;
->  }
->  
-> +/* store the pages buffer info firmware from buf */
-> +static void fw_set_page_data(struct firmware_buf *buf, struct firmware *fw)
-> +{
-> +	buf->data = vmap(buf->pages, buf->nr_pages,
-> +				0, PAGE_KERNEL_RO);
-> +	fw->data = buf->data;
-> +	fw->pages = buf->pages;
-> +	fw->size = buf->size;
-> +	fw->priv = buf;
-> +}
-> +
-> +static void _request_firmware_cleanup(const struct firmware **firmware_p)
-> +{
-> +	release_firmware(*firmware_p);
-> +	*firmware_p = NULL;
-> +}
-> +
->  static struct firmware_priv *
->  _request_firmware_prepare(const struct firmware **firmware_p, const char *name,
->  			  struct device *device, bool uevent, bool nowait)
->  {
->  	struct firmware *firmware;
-> -	struct firmware_priv *fw_priv;
-> +	struct firmware_priv *fw_priv = NULL;
-> +	struct firmware_buf *buf;
-> +	int ret;
->  
->  	if (!firmware_p)
->  		return ERR_PTR(-EINVAL);
-> @@ -507,32 +588,40 @@ _request_firmware_prepare(const struct firmware **firmware_p, const char *name,
->  		return NULL;
->  	}
->  
-> -	fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
-> -	if (IS_ERR(fw_priv)) {
-> -		release_firmware(firmware);
-> -		*firmware_p = NULL;
-> -	}
-> -	return fw_priv;
-> -}
-> +	ret = fw_lookup_and_alloate_buf(name, &fw_cache, &buf);
->  
-> -static void _request_firmware_cleanup(const struct firmware **firmware_p)
-> -{
-> -	release_firmware(*firmware_p);
-> -	*firmware_p = NULL;
-> -}
-
-Superfluous newline here.
-
-> +	if (!ret)
-> +		fw_priv = fw_create_instance(firmware, name, device,
-> +				uevent, nowait);
->  
-> -/* transfer the ownership of pages to firmware */
-> -static void fw_set_page_data(struct firmware_buf *buf)
-> -{
-> -	struct firmware *fw = buf->fw;
-> +	if (IS_ERR(fw_priv) || ret == -1) {
-> +		kfree(firmware);
-> +		*firmware_p = NULL;
-> +		return ERR_PTR(-ENOMEM);
-> +	} else if (fw_priv) {
-> +		fw_priv->buf = buf;
-> +		return fw_priv;
-> +	}
->  
-> -	buf->data = vmap(buf->pages, buf->nr_pages,
-> -				0, PAGE_KERNEL_RO);
-> -	fw->data = buf->data;
-> -	fw->pages = buf->pages;
-> -	fw->size = buf->size;
-> +	/* share the cached buf, which is inprogessing or completed */
-
-					in progress
-
-> +check_status:
-
-One space in front of the label name.
-
-> +	mutex_lock(&fw_lock);
-> +	if (test_bit(FW_STATUS_ABORT, &buf->status)) {
-> +		fw_priv = ERR_PTR(-ENOENT);
-> +		_request_firmware_cleanup(firmware_p);
-> +		goto exit;
-> +	} else if (test_bit(FW_STATUS_DONE, &buf->status)) {
-> +		fw_priv = NULL;
-> +		fw_set_page_data(buf, firmware);
-> +		goto exit;
-> +	}
-> +	mutex_unlock(&fw_lock);
-> +	wait_for_completion(&buf->completion);
-> +	goto check_status;
-
-Better yet, this is a label with a reverse-jump to it. This can probably
-be simplified with a while loop:
-
-	while (true) {
-		if (test_bit(... ) {
-			...;
-			break;
-		} else if (test_bit(... ) {
-			...;
-			break;
-		}
-		mutex_unlock(...);
-		wait_for_completion(...);
-	}
-
-and this way you don't need the exit label either.
-
->  
-> -	WARN_ON(PFN_UP(fw->size) != buf->nr_pages);
-> +exit:
-> +	mutex_unlock(&fw_lock);
-> +	return fw_priv;
->  }
-
-[ … ]
-
-Thanks.
-
+diff --git a/arch/mips/kernel/kspd.c b/arch/mips/kernel/kspd.c
+index 84d0639..b77f56b 100644
+--- a/arch/mips/kernel/kspd.c
++++ b/arch/mips/kernel/kspd.c
+@@ -323,7 +323,7 @@ static void sp_cleanup(void)
+ 	fdt = files_fdtable(files);
+ 	for (;;) {
+ 		unsigned long set;
+-		i = j * __NFDBITS;
++		i = j * BITS_PER_LONG;
+ 		if (i >= fdt->max_fds)
+ 			break;
+ 		set = fdt->open_fds[j++];
+diff --git a/fs/exec.c b/fs/exec.c
+index da27b91..e95aeed 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1020,7 +1020,7 @@ static void flush_old_files(struct files_struct * files)
+ 		unsigned long set, i;
+ 
+ 		j++;
+-		i = j * __NFDBITS;
++		i = j * BITS_PER_LONG;
+ 		fdt = files_fdtable(files);
+ 		if (i >= fdt->max_fds)
+ 			break;
+diff --git a/fs/select.c b/fs/select.c
+index bae3215..db14c78 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -345,8 +345,8 @@ static int max_select_fd(unsigned long n, fd_set_bits *fds)
+ 	struct fdtable *fdt;
+ 
+ 	/* handle last in-complete long-word first */
+-	set = ~(~0UL << (n & (__NFDBITS-1)));
+-	n /= __NFDBITS;
++	set = ~(~0UL << (n & (BITS_PER_LONG-1)));
++	n /= BITS_PER_LONG;
+ 	fdt = files_fdtable(current->files);
+ 	open_fds = fdt->open_fds + n;
+ 	max = 0;
+@@ -373,7 +373,7 @@ get_max:
+ 			max++;
+ 			set >>= 1;
+ 		} while (set);
+-		max += n * __NFDBITS;
++		max += n * BITS_PER_LONG;
+ 	}
+ 
+ 	return max;
+@@ -435,11 +435,11 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 			in = *inp++; out = *outp++; ex = *exp++;
+ 			all_bits = in | out | ex;
+ 			if (all_bits == 0) {
+-				i += __NFDBITS;
++				i += BITS_PER_LONG;
+ 				continue;
+ 			}
+ 
+-			for (j = 0; j < __NFDBITS; ++j, ++i, bit <<= 1) {
++			for (j = 0; j < BITS_PER_LONG; ++j, ++i, bit <<= 1) {
+ 				int fput_needed;
+ 				if (i >= n)
+ 					break;
+diff --git a/include/linux/posix_types.h b/include/linux/posix_types.h
+index f04c98c..0eb4b4b 100644
+--- a/include/linux/posix_types.h
++++ b/include/linux/posix_types.h
+@@ -15,26 +15,14 @@
+  */
+ 
+ /*
+- * Those macros may have been defined in <gnu/types.h>. But we always
+- * use the ones here. 
++ * This macro may have been defined in <gnu/types.h>. But we always
++ * use the one here. 
+  */
+-#undef __NFDBITS
+-#define __NFDBITS	(8 * sizeof(unsigned long))
+-
+ #undef __FD_SETSIZE
+ #define __FD_SETSIZE	1024
+ 
+-#undef __FDSET_LONGS
+-#define __FDSET_LONGS	(__FD_SETSIZE/__NFDBITS)
+-
+-#undef __FDELT
+-#define	__FDELT(d)	((d) / __NFDBITS)
+-
+-#undef __FDMASK
+-#define	__FDMASK(d)	(1UL << ((d) % __NFDBITS))
+-
+ typedef struct {
+-	unsigned long fds_bits [__FDSET_LONGS];
++	unsigned long fds_bits [__FD_SETSIZE / (8 * sizeof(long))];
+ } __kernel_fd_set;
+ 
+ /* Type of a signal handler.  */
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 179f4d6..c81c5e4 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -257,14 +257,6 @@ static __always_inline void timespec_add_ns(struct timespec *a, u64 ns)
+ 
+ #endif /* __KERNEL__ */
+ 
+-#define NFDBITS			__NFDBITS
+-
+-#define FD_SETSIZE		__FD_SETSIZE
+-#define FD_SET(fd,fdsetp)	__FD_SET(fd,fdsetp)
+-#define FD_CLR(fd,fdsetp)	__FD_CLR(fd,fdsetp)
+-#define FD_ISSET(fd,fdsetp)	__FD_ISSET(fd,fdsetp)
+-#define FD_ZERO(fdsetp)		__FD_ZERO(fdsetp)
+-
+ /*
+  * Names of the interval timers, and structure
+  * defining a timer setting:
+diff --git a/kernel/exit.c b/kernel/exit.c
+index d17f6c4..f65345f 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -483,7 +483,7 @@ static void close_files(struct files_struct * files)
+ 	rcu_read_unlock();
+ 	for (;;) {
+ 		unsigned long set;
+-		i = j * __NFDBITS;
++		i = j * BITS_PER_LONG;
+ 		if (i >= fdt->max_fds)
+ 			break;
+ 		set = fdt->open_fds[j++];
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 689fe2d..94c45a1 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -2129,7 +2129,7 @@ static inline void flush_unauthorized_files(const struct cred *cred,
+ 		int fd;
+ 
+ 		j++;
+-		i = j * __NFDBITS;
++		i = j * BITS_PER_LONG;
+ 		fdt = files_fdtable(files);
+ 		if (i >= fdt->max_fds)
+ 			break;
 -- 
-Regards/Gruss,
-Boris.
+1.7.11.2
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
