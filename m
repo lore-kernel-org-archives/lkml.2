@@ -1,177 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab2GYLNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:13:47 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:34079 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502Ab2GYLNp (ORCPT
+	id S1756539Ab2GYLOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:14:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57344 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756466Ab2GYLOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:13:45 -0400
-Message-ID: <500FD32F.2010809@panasas.com>
-Date: Wed, 25 Jul 2012 14:06:23 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Wed, 25 Jul 2012 07:14:16 -0400
+Message-ID: <500FD4FA.7020904@canonical.com>
+Date: Wed, 25 Jul 2012 13:14:02 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dm-devel@redhat.com>, <tj@kernel.org>, <axboe@kernel.dk>,
-        <agk@redhat.com>, <neilb@suse.de>, <drbd-dev@lists.linbit.com>,
-        <vgoyal@redhat.com>, <mpatocka@redhat.com>, <sage@newdream.net>,
-        <yehuda@hq.newdream.net>
-Subject: Re: [PATCH v4 01/12] block: Generalized bio pool freeing
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com> <1343160689-12378-2-git-send-email-koverstreet@google.com>
-In-Reply-To: <1343160689-12378-2-git-send-email-koverstreet@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+To: Avi Kivity <avi@redhat.com>
+CC: Cong Wang <xiyou.wangcong@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: x86/mm: Limit 2/4M size calculation to x86_32
+References: <5000259D.9020303@canonical.com> <CAM_iQpVPzB69R1_4E_J5Yw=d1TncqHe0+dWEwOufQniNcpBVtg@mail.gmail.com> <500FCDF3.7080808@redhat.com>
+In-Reply-To: <500FCDF3.7080808@redhat.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig767F28A8F1EC5CA9043C70A1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 11:11 PM, Kent Overstreet wrote:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig767F28A8F1EC5CA9043C70A1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> With the old code, when you allocate a bio from a bio pool you have to
-> implement your own destructor that knows how to find the bio pool the
-> bio was originally allocated from.
-> 
-> This adds a new field to struct bio (bi_pool) and changes
-> bio_alloc_bioset() to use it. This makes various bio destructors
-> unnecessary, so they're then deleted.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+On 25.07.2012 12:44, Avi Kivity wrote:
+> On 07/24/2012 06:52 PM, Cong Wang wrote:
+>=20
+>>> From 6b679d1af20656929c0e829f29eed60b0a86a74f Mon Sep 17 00:00:00 200=
+1
+>>> From: Stefan Bader <stefan.bader@canonical.com>
+>>> Date: Fri, 13 Jul 2012 15:16:33 +0200
+>>> Subject: [PATCH] x86/mm: Limit 2/4M size calculation to x86_32
+>>>
+>>> commit 722bc6b (x86/mm: Fix the size calculation of mapping tables)
+>>> did modify the extra space calculation for mapping tables in order
+>>> to make up for the first 2/4M memory range using 4K pages.
+>>> However this setup is only used when compiling for 32bit. On 64bit
+>>> there is only the trailing area of 4K pages (which is already added).=
 
-<snip>
+>>>
+>>> The code was already adapted once for things went wrong on a 8TB
+>>> machine (bd2753b x86/mm: Only add extra pages count for the first mem=
+ory
+>>> range during pre-allocation early page table space), but it looks a b=
+it
+>>> like it currently would overdo things for 64bit.
+>>> I only noticed while bisecting for the reason I could not make a cras=
+h
+>>> kernel boot (which ended up on this patch).
+>>>
+>>> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+>>> Cc: WANG Cong <xiyou.wangcong@gmail.com>
+>>> Cc: Yinghai Lu <yinghai@kernel.org>
+>>> Cc: Tejun Heo <tj@kernel.org>
+>>
+>> Acked-by: Cong Wang <xiyou.wangcong@gmail.com>
+>>
+>> Sorry for that I was not aware of x86_64 is different with x86 in the
+>> first 2/4M.
+>=20
+> Why would there be a difference?
+>=20
+> Shouldn't the IO space at 0xa0000-0x100000 be mapped with uncacheable
+> attributes (or WC for VGA)?  If it's done later, it can be done later
+> for both.
+>=20
+arch/x86/mm/init.c
 
-> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-> index fd47950..be65582 100644
-> --- a/drivers/target/target_core_iblock.c
-> +++ b/drivers/target/target_core_iblock.c
-> @@ -447,14 +447,6 @@ static void iblock_complete_cmd(struct se_cmd *cmd)
->  	kfree(ibr);
->  }
->  
-> -static void iblock_bio_destructor(struct bio *bio)
-> -{
-> -	struct se_cmd *cmd = bio->bi_private;
-> -	struct iblock_dev *ib_dev = cmd->se_dev->dev_ptr;
-> -
-> -	bio_free(bio, ib_dev->ibd_bio_set);
-> -}
-> -
->  static struct bio *
->  iblock_get_bio(struct se_cmd *cmd, sector_t lba, u32 sg_num)
->  {
-> @@ -475,8 +467,15 @@ iblock_get_bio(struct se_cmd *cmd, sector_t lba, u32 sg_num)
->  	}
->  
->  	bio->bi_bdev = ib_dev->ibd_bd;
-> +<<<<<<< HEAD
->  	bio->bi_private = cmd;
->  	bio->bi_destructor = iblock_bio_destructor;
-> +||||||| merged common ancestors
-> +	bio->bi_private = task;
-> +	bio->bi_destructor = iblock_bio_destructor;
-> +=======
-> +	bio->bi_private = task;
-> +>>>>>>> block: Generalized bio pool freeing
->  	bio->bi_end_io = &iblock_bio_done;
->  	bio->bi_sector = lba;
->  	return bio;
-
-
-You left out a rebase merge conflict. Did you allmodconfig compile
-these patches?
-
-Boaz
-
-> diff --git a/fs/bio.c b/fs/bio.c
-> index 73922ab..1c6c8b7 100644
-> --- a/fs/bio.c
-> +++ b/fs/bio.c
-> @@ -271,10 +271,6 @@ EXPORT_SYMBOL(bio_init);
->   *   bio_alloc_bioset will try its own mempool to satisfy the allocation.
->   *   If %__GFP_WAIT is set then we will block on the internal pool waiting
->   *   for a &struct bio to become free.
-> - *
-> - *   Note that the caller must set ->bi_destructor on successful return
-> - *   of a bio, to do the appropriate freeing of the bio once the reference
-> - *   count drops to zero.
->   **/
->  struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  {
-> @@ -289,6 +285,7 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  	bio = p + bs->front_pad;
->  
->  	bio_init(bio);
-> +	bio->bi_pool = bs;
->  
->  	if (unlikely(!nr_iovecs))
->  		goto out_set;
-> @@ -315,11 +312,6 @@ err_free:
->  }
->  EXPORT_SYMBOL(bio_alloc_bioset);
->  
-> -static void bio_fs_destructor(struct bio *bio)
-> -{
-> -	bio_free(bio, fs_bio_set);
-> -}
-> -
->  /**
->   *	bio_alloc - allocate a new bio, memory pool backed
->   *	@gfp_mask: allocation mask to use
-> @@ -341,12 +333,7 @@ static void bio_fs_destructor(struct bio *bio)
->   */
->  struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
->  {
-> -	struct bio *bio = bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
-> -
-> -	if (bio)
-> -		bio->bi_destructor = bio_fs_destructor;
-> -
-> -	return bio;
-> +	return bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
->  }
->  EXPORT_SYMBOL(bio_alloc);
->  
-> @@ -422,7 +409,11 @@ void bio_put(struct bio *bio)
->  	if (atomic_dec_and_test(&bio->bi_cnt)) {
->  		bio_disassociate_task(bio);
->  		bio->bi_next = NULL;
-> -		bio->bi_destructor(bio);
-> +
-> +		if (bio->bi_pool)
-> +			bio_free(bio, bio->bi_pool);
-> +		else
-> +			bio->bi_destructor(bio);
->  	}
->  }
->  EXPORT_SYMBOL(bio_put);
-> @@ -473,12 +464,11 @@ EXPORT_SYMBOL(__bio_clone);
->   */
->  struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
->  {
-> -	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, fs_bio_set);
-> +	struct bio *b = bio_alloc(gfp_mask, bio->bi_max_vecs);
->  
->  	if (!b)
->  		return NULL;
->  
-> -	b->bi_destructor = bio_fs_destructor;
->  	__bio_clone(b, bio);
->  
->  	if (bio_integrity(bio)) {
-> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-> index 0edb65d..293547e 100644
-> --- a/include/linux/blk_types.h
-> +++ b/include/linux/blk_types.h
-> @@ -80,6 +80,9 @@ struct bio {
->  	struct bio_integrity_payload *bi_integrity;  /* data integrity */
->  #endif
->  
-> +	/* If bi_pool is non NULL, bi_destructor is not called */
-> +	struct bio_set		*bi_pool;
-> +
->  	bio_destructor_t	*bi_destructor;	/* destructor */
->  
->  	/*
+unsigned long __init_refok init_memory_mapping(...
+=2E..
+ifdef CONFIG_X86_32
+        /*
+         * Don't use a large page for the first 2/4MB of memory
+         * because there are often fixed size MTRRs in there
+         * and overlapping MTRRs into large pages can cause
+         * slowdowns.
+         */
 
 
+
+
+--------------enig767F28A8F1EC5CA9043C70A1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBCgAGBQJQD9UDAAoJEOhnXe7L7s6jxbMQAIlTD9oR2RXTB7Rx38wZeFdN
+DI+BuIUsCjZ/VjrCRfgchilPHLxKO7kboB+D+gDYElU3Ox4JZwIQbb99/sbrw65b
+DRurBFJts+8ks6AwA6fMZNKwE1SuJIMdthIoJfkJLq53H5wlycP7wViXbs4tNU7h
+o1u0f2kvYhskPLsM1MJQZTzyz6Qla2JYau61VlfTbIywA4cy+VAWfE5FBpafpXEL
+fq99j1kse5lfDx+zWtyxbeoNT3gqJHi3DQHT3wkCvheZL/PZveTqBXIZpYZFY5gQ
+O5P5ItZ7+CruU1CtDnjwU0DI7K9sCagGXMIOkypwMRGzwPJqdGQV5kEn2vqbiYGE
+uNyMlXvLxEaUA6wU5oemkhMsSL6UPo8CV1Y7B7D2XEgpgXL5Pt8YK+WNXLp9baDX
+zV/t9/j+lTQ3ve+2vm4bpxRJemjJrqgSMXafU5hAB87U7y9x/ycgh6gJ10ytzjj3
+hCfkXVpM5IdCXnJyrFPNvLBiA96ZmGJHUN81JImeI8W1+xs0N2S64HIFrTW9FS0q
+pp20JzDoKFL2/NyLYa5TbktzZqi+WjpDuSLEnqZ024T7EIkB9NlQ75fJtclSLqW1
+9QazLhxcFzWD+IXIGqekuvBn1w2rRZqyAMzw70uvSr/GWGP3JRl6q+57JItG1+1p
+YBa9zlM6ELNZzNeCyFFI
+=PCYK
+-----END PGP SIGNATURE-----
+
+--------------enig767F28A8F1EC5CA9043C70A1--
