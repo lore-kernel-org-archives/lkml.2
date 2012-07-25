@@ -1,63 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab2GYLkE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:40:04 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54177 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428Ab2GYLkB (ORCPT
+	id S1756572Ab2GYLlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:41:05 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:35188 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302Ab2GYLkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:40:01 -0400
-Message-ID: <500FDB0D.7010105@parallels.com>
-Date: Wed, 25 Jul 2012 15:39:57 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Wed, 25 Jul 2012 07:40:31 -0400
+Message-ID: <500FDB0D.4070605@panasas.com>
+Date: Wed, 25 Jul 2012 14:39:57 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Andre Przywara <andre.przywara@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
-References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com> <20120721103715.GA3632@aftab.osrc.amd.com> <500E4960.8040307@parallels.com> <500E5951.5020900@amd.com> <500E5CDF.5000504@parallels.com> <20120724101041.GA24739@aftab.osrc.amd.com> <500E8280.6050905@parallels.com> <500E9664.9030306@amd.com> <500FCAFB.4080301@parallels.com> <20120725104346.GA11152@aftab.osrc.amd.com>
-In-Reply-To: <20120725104346.GA11152@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Kent Overstreet <koverstreet@google.com>
+CC: <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dm-devel@redhat.com>, <tj@kernel.org>, <axboe@kernel.dk>,
+        <agk@redhat.com>, <neilb@suse.de>, <drbd-dev@lists.linbit.com>,
+        <vgoyal@redhat.com>, <mpatocka@redhat.com>, <sage@newdream.net>,
+        <yehuda@hq.newdream.net>
+Subject: Re: [PATCH v4 05/12] block: Kill bi_destructor
+References: <1343160689-12378-1-git-send-email-koverstreet@google.com> <1343160689-12378-6-git-send-email-koverstreet@google.com>
+In-Reply-To: <1343160689-12378-6-git-send-email-koverstreet@google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 02:43 PM, Borislav Petkov wrote:
-> On Wed, Jul 25, 2012 at 02:31:23PM +0400, Vladimir Davydov wrote:
->> So, you prefer adding some filtering of /proc/cpuinfo into the
->> mainstream kernel
-> That's already there right? And your 1/2 patch was making toggling those
-> bits easier.
->
->> (not now, later, for LXC to work) instead of enabling clearcpuid boot
->> option to mask CPUID features? IMO, the latter would look clearer.
-> Yes, but for reasons noted earlier, you cannot tweak all hardware CPUID
-> features as you want them.
->
-> So, having a software-only layer of tweaking /proc/cpuinfo or something
-> different you can come up with is the only option you have.
->
-> And even in that case, applications running in the container which
-> execute CPUID might fail in a strange manner when the corresponding
-> /proc/cpuinfo flag was cleared by you intentionally but the hardware
-> CPUID flag is there. In such situations, issues like that should
-> probably be sorted on a case-by-case basis I guess.
->
-> Thanks.
->
+On 07/24/2012 11:11 PM, Kent Overstreet wrote:
 
-We've agreed that tweaking CPUID bits in kernel is not a good idea and 
-it is better to think about virtualization of /proc/cpuinfo and using 
-msr-tools.
+> Now that we've got generic code for freeing bios allocated from bio
+> pools, this isn't needed anymore.
+> 
+> This also changes the semantics of bio_free() a bit - it now also frees
+> bios allocated by bio_kmalloc(). It's also no longer exported, as
+> without bi_destructor there should be no need for it to be called
+> anywhere else.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
 
-Thank you for your time and feedback.
+<snip>
+
+> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+> index be65582..9338d0602 100644
+> --- a/drivers/target/target_core_iblock.c
+> +++ b/drivers/target/target_core_iblock.c
+> @@ -467,15 +467,7 @@ iblock_get_bio(struct se_cmd *cmd, sector_t lba, u32 sg_num)
+>  	}
+>  
+>  	bio->bi_bdev = ib_dev->ibd_bd;
+> -<<<<<<< HEAD
+>  	bio->bi_private = cmd;
+> -	bio->bi_destructor = iblock_bio_destructor;
+> -||||||| merged common ancestors
+> -	bio->bi_private = task;
+> -	bio->bi_destructor = iblock_bio_destructor;
+> -=======
+> -	bio->bi_private = task;
+> ->>>>>>> block: Generalized bio pool freeing
+>  	bio->bi_end_io = &iblock_bio_done;
+>  	bio->bi_sector = lba;
+>  	return bio;
+
+
+Merge conflict allmodconfig compilation please?
+
+> diff --git a/fs/bio.c b/fs/bio.c
+> index 252e253..a301071 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -56,6 +56,9 @@ static struct biovec_slab bvec_slabs[BIOVEC_NR_POOLS] __read_mostly = {
+>   */
+>  struct bio_set *fs_bio_set;
+>  
+> +/* Only used as a sentinal value */
+> +static struct bio_set bio_kmalloc_pool;
+> +
+
+
+Id rather if you use a define like:
+#define BIO_KMALLOC_POOL ((void *)~0)
+
+So any code access actually crashes in the bug case where
+this leaks out. (And there is no actual unused storage allocated)
+
+BTW I like this reuse of the bi_pool member as a flag as well.
+
+Thanks
+Boaz
+
+>  /*
+>   * Our slab pool management
+>   */
+> @@ -232,10 +235,21 @@ fallback:
+>  	return bvl;
+>  }
+>  
+> -void bio_free(struct bio *bio, struct bio_set *bs)
+> +void bio_free(struct bio *bio)
+>  {
+> +	struct bio_set *bs = bio->bi_pool;
+>  	void *p;
+>  
+> +	BUG_ON(!bs);
+> +
+> +	if (bs == &bio_kmalloc_pool) {
+> +		/* Bio was allocated by bio_kmalloc() */
+> +		if (bio_integrity(bio))
+> +			bio_integrity_free(bio, fs_bio_set);
+> +		kfree(bio);
+> +		return;
+> +	}
+> +
+>  	if (bio_has_allocated_vec(bio))
+>  		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
+>  
+> @@ -347,13 +361,6 @@ struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
+>  }
+>  EXPORT_SYMBOL(bio_alloc);
+>  
+> -static void bio_kmalloc_destructor(struct bio *bio)
+> -{
+> -	if (bio_integrity(bio))
+> -		bio_integrity_free(bio, fs_bio_set);
+> -	kfree(bio);
+> -}
+> -
+>  /**
+>   * bio_kmalloc - allocate a bio for I/O using kmalloc()
+>   * @gfp_mask:   the GFP_ mask given to the slab allocator
+> @@ -380,7 +387,7 @@ struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
+>  	bio->bi_flags |= BIO_POOL_NONE << BIO_POOL_OFFSET;
+>  	bio->bi_max_vecs = nr_iovecs;
+>  	bio->bi_io_vec = bio->bi_inline_vecs;
+> -	bio->bi_destructor = bio_kmalloc_destructor;
+> +	bio->bi_pool = &bio_kmalloc_pool;
+>  
+>  	return bio;
+>  }
+> @@ -418,12 +425,7 @@ void bio_put(struct bio *bio)
+>  	 */
+>  	if (atomic_dec_and_test(&bio->bi_cnt)) {
+>  		bio_disassociate_task(bio);
+> -		bio->bi_next = NULL;
+> -
+> -		if (bio->bi_pool)
+> -			bio_free(bio, bio->bi_pool);
+> -		else
+> -			bio->bi_destructor(bio);
+> +		bio_free(bio);
+>  	}
+>  }
+>  EXPORT_SYMBOL(bio_put);
+> diff --git a/include/linux/bio.h b/include/linux/bio.h
+> index ba60319..393c87e 100644
+> --- a/include/linux/bio.h
+> +++ b/include/linux/bio.h
+> @@ -216,7 +216,7 @@ extern struct bio *bio_alloc(gfp_t, unsigned int);
+>  extern struct bio *bio_kmalloc(gfp_t, unsigned int);
+>  extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
+>  extern void bio_put(struct bio *);
+> -extern void bio_free(struct bio *, struct bio_set *);
+> +extern void bio_free(struct bio *);
+>  
+>  extern void bio_endio(struct bio *, int);
+>  struct request_queue;
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 40411e2..fa45a12 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -84,11 +84,8 @@ struct bio {
+>  	struct bio_integrity_payload *bi_integrity;  /* data integrity */
+>  #endif
+>  
+> -	/* If bi_pool is non NULL, bi_destructor is not called */
+>  	struct bio_set		*bi_pool;
+>  
+> -	bio_destructor_t	*bi_destructor;	/* destructor */
+> -
+>  	/*
+>  	 * We can inline a number of vecs at the end of the bio, to avoid
+>  	 * double allocations for a small number of bio_vecs. This member
+
+
