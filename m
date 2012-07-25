@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751104Ab2GYSxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 14:53:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62637 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab2GYSxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 14:53:18 -0400
-Date: Wed, 25 Jul 2012 14:51:19 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-mm@kvack.org
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH -mm] remove __GFP_NO_KSWAPD fixes
-Message-ID: <20120725145119.75be021d@cuia.bos.redhat.com>
-In-Reply-To: <20120724111222.2c5e6b30@annuminas.surriel.com>
-References: <20120724111222.2c5e6b30@annuminas.surriel.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751445Ab2GYSyi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 14:54:38 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51674 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab2GYSyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 14:54:35 -0400
+Date: Wed, 25 Jul 2012 20:54:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ulrich Drepper <drepper@gmail.com>
+Subject: Re: [PATCH 15/19] perf tools: use XSI-complaint version of
+ strerror_r() instead of GNU-specific
+Message-ID: <20120725185430.GA1662@gmail.com>
+References: <1343238094-12481-1-git-send-email-acme@infradead.org>
+ <1343238094-12481-16-git-send-email-acme@infradead.org>
+ <20120725175459.GA4878@shutemov.name>
+ <20120725182355.GD17355@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120725182355.GD17355@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Turns out I missed two spots where __GFP_NO_KSWAPD is used.
 
-The removal from the trace code is obvious, since the flag
-got removed there is no need to print it.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-For mtdcore.c, now that memory compaction has been fixed,
-we should no longer see large swap storms from an attempt
-to allocate a large buffer, removing the need to specify
-__GFP_NO_KSWAPD.
+> Em Wed, Jul 25, 2012 at 08:54:59PM +0300, Kirill A. Shutemov escreveu:
+> > Could you take subject from updated patch? This one:
+> > 
+> > perf: fix strerror_r() usage
+> 
+> Sorry, missed that :-\ I think it was because you didn't send 
+> the new patch on its own, but keeping the old subject line and 
+> inlining the new patch at the end of the message, please do it 
+> next time.
+> 
+> Ingo, what is your take on this, do you want me to fix this up 
+> and resubmit?
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- drivers/mtd/mtdcore.c           |    3 +--
- include/trace/events/gfpflags.h |    1 -
- 2 files changed, 1 insertions(+), 3 deletions(-)
+I already pulled this one - the old title was usable as well so 
+I don't think we want to rebase it just for that reason.
 
-diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
-index 9a9ce71..af1e932 100644
---- a/drivers/mtd/mtdcore.c
-+++ b/drivers/mtd/mtdcore.c
-@@ -761,8 +761,7 @@ EXPORT_SYMBOL_GPL(mtd_writev);
-  */
- void *mtd_kmalloc_up_to(const struct mtd_info *mtd, size_t *size)
- {
--	gfp_t flags = __GFP_NOWARN | __GFP_WAIT |
--		       __GFP_NORETRY | __GFP_NO_KSWAPD;
-+	gfp_t flags = __GFP_NOWARN | __GFP_WAIT | __GFP_NORETRY;
- 	size_t min_alloc = max_t(size_t, mtd->writesize, PAGE_SIZE);
- 	void *kbuf;
- 
-diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
-index 9fe3a36..8ffc050 100644
---- a/include/trace/events/gfpflags.h
-+++ b/include/trace/events/gfpflags.h
-@@ -35,7 +35,6 @@
- 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
- 	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
- 	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
--	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"},	\
- 	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
- 	) : "GFP_NOWAIT"
- 
+Thanks,
 
+	Ingo
