@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab2GYPdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:33:00 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:34438 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab2GYPc6 (ORCPT
+	id S1754601Ab2GYPdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:33:19 -0400
+Received: from mail.ch.keymile.com ([193.17.201.103]:32234 "HELO
+	mail.ch.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751860Ab2GYPdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:32:58 -0400
+	Wed, 25 Jul 2012 11:33:17 -0400
+X-Greylist: delayed 719 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 11:33:16 EDT
+Message-ID: <50100EDC.3010109@keymile.com>
+Date: Wed, 25 Jul 2012 17:21:00 +0200
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120717 Thunderbird/10.0.6
 MIME-Version: 1.0
-In-Reply-To: <500FC428.8030305@samsung.com>
-References: <CAD=FV=Wa1bCRvLNnFjhht6nvNorm3CRzX5zrn-YDA2Jec1K3Eg@mail.gmail.com>
-	<1343149145-22927-1-git-send-email-dianders@chromium.org>
-	<500FC428.8030305@samsung.com>
-Date: Wed, 25 Jul 2012 08:32:57 -0700
-X-Google-Sender-Auth: nbLCAn0JgXdt_dcRyTvmY2YQRYQ
-Message-ID: <CAD=FV=V0Z=f+DNZKnaX9cJqS3MTmPdF8G3wmbYJYW34bUZqoXg@mail.gmail.com>
-Subject: Re: [PATCH v3] mmc: dw_mmc: Disable low power mode if SDIO interrupts
- are used
-From: Doug Anderson <dianders@chromium.org>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Will Newton <will.newton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
-        Grant Grundler <grundler@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, shashidharh@vayavyalabs.com,
-        ki0351.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Artem Bityutskiy <dedekind1@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DavidWoodhouse <dwmw2@infradead.org>
+Subject: Re: linux-next: manual merge of the l2-mtd tree with the mtd tree
+References: <20120717110025.35e6d8404104e77019bef6ce@canb.auug.org.au>
+In-Reply-To: <20120717110025.35e6d8404104e77019bef6ce@canb.auug.org.au>
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Jul 2012 15:21:00.0401 (UTC) FILETIME=[18D80610:01CD6A79]
+X-ESAFE-STATUS: [srvchber1306.keymile.net] Mail allowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 3:02 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> Just use the slot. slot is already assigned to mmc_priv(mmc)
+Hi folks, Stepehen,
 
-Oops.  Now I feel sheepish.  Done.  :)
+On 07/17/2012 03:00 AM, Stephen Rothwell wrote:
+> Hi Artem,
+>
+> Today's linux-next merge of the l2-mtd tree got a conflict in
+> drivers/mtd/chips/cfi_cmdset_0002.c between commit 420962884379 ("mtd:
+> cfi_cmdset_0002: Micron M29EW bugfixes as per TN-13-07") from the mtd
+> tree and commit 39c0c188e160 ("mtd: cfi_cmdset_0002: Micron M29EW
+> bugfixes as per TN-13-07") from the l2-mtd tree.
+>
+> I just used the version in the mtd tree.
+
+I have no clue how the whole linux integration process works, so please 
+forgive me if what I'm about to say will sound silly to all of you...
+
+I'm just reading the above mail (a few days later than the original 
+post) and I can't figure out what happened.
+At first I could not find commit 39c0c188e160 out of the master branch 
+in l2-mtd (http://git.infradead.org/users/dedekind/l2-mtd.git), then I 
+tried again with the commit ID and found it, but now I can't figure out 
+what branch it belongs to (looks like an orphaned branch).
+Except that it differs from the "good" commit 420962884379 in that it 
+has been commited by Artem (as opposed to David), and *not* 
+signed-off-by David.
+
+So could someone please spend a few words on what happened in the meantime?
+To me it looks like the l2-mtd tree got rebased at some point, but I'm 
+quite at loss about this whole back-and-forth between trees.
+I'm sure a few words could make my life much easier... :-)
+
+Thanks a lot!
+Gerlando
