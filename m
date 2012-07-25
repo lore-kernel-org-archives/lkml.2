@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab2GYToY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:44:24 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38086 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752181Ab2GYToW (ORCPT
+	id S1752384Ab2GYTqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:46:50 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:38379 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab2GYTqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:44:22 -0400
-Date: Wed, 25 Jul 2012 15:44:21 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        <tglx@linutronix.de>, <mingo@kernel.org>, <peterz@infradead.org>,
-        <rusty@rustcorp.com.au>, <namhyung@kernel.org>, <tj@kernel.org>,
-        <rjw@sisk.pl>, <nikunj@linux.vnet.ibm.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
- during CPU hotplug
-In-Reply-To: <20120725164331.GB2378@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.44L0.1207251537300.2008-100000@iolanthe.rowland.org>
+	Wed, 25 Jul 2012 15:46:49 -0400
+Message-ID: <201207251946.q6PJklUm016228@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 25 Jul 2012 15:40:50 -0400
+Subject: [PATCH] tilegx pci: fix semantic merge conflict with 3527ed81c
+To: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jul 2012, Paul E. McKenney wrote:
+Yinghai Lu removed pci_bus.subordinate in pci-next, which meant that
+the tile-next changes to add tilegx PCI support don't build.  This
+was expected (seen in linux-next) and this one-line fix is along
+the same lines as commit b918c62e for all other architectures.
 
-> > I think the best you can do is stop using notifiers and use something 
-> > else instead.  For example, a simple set of function calls (assuming 
-> > you know beforehand what callbacks need to be invoked).
-> 
-> Unfortunately, we don't know beforehand.  There are loadable kernel
-> modules that need to be informed of CPU hotplug events.  So we do need
-> some runtime way to register to be notified CPU-hotplug events.
-> 
-> If it weren't for the modules, we might be able to use another data
-> section and get a contiguous list of functions that need to be called.
-> I suppose we could have such sections for modules and link/unlink them
-> at module load/unload time, but it is not at all clear to me that this
-> would be simpler than using notifiers.
-> 
-> But always happy to learn -- any specific suggestions?
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/pci_gx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Not knowing the details of CPU hotplug, it's hard to answer in anything 
-but generalities.  :-)  (And FYI, I have no intention of learning the 
-details of CPU hotplug -- there's enough on my plate already.)
-
-Still, one possibility would be to organize matters by adding a couple
-of steps to Thomas's list that would be devoted purely to callbacks and
-associating a separate notifier chain to each of these steps.  That way
-most of the important work would be kept in the core kernel but modules
-could still step in where needed.  The different notifier chains would 
-then be strictly ordered with respect to each other, but events within 
-a particular chain would not have any specified ordering properties.
-
-Also, Thomas may have mentioned something about having separate 
-callbacks for the CPU-up and CPU-down events, instead of relying on one 
-list that would be called forwards and backwards.
-
-> > > One of the other ideas to improve the hotplug notifier stuff that came up during some
-> > > of the discussions was to implement explicit dependency tracking between the notifiers
-> > > and perhaps get rid of the priority numbers that are currently being used to provide
-> > > some sort of ordering between the callbacks. Links to some of the related discussions
-> > > are provided below.
-> > 
-> > This seems like misplaced over-engineering.
-> 
-> In fact, we have deferred dependency tracking.  If I remember correctly,
-> the main motivation was to execute notifiers in parallel, but the fraction
-> of time that hotplug spends executing notifiers proved to be quite small.
-> At this point, I would be surprised if we ever do much with dependency
-> tracking.
-> 
-> Again, any specific suggestions for improvement?
-
-If it works okay without dependency tracking, leave well enough alone.  
-:-)
-
-Alan Stern
+diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
+index fa75264..0e213e3 100644
+--- a/arch/tile/kernel/pci_gx.c
++++ b/arch/tile/kernel/pci_gx.c
+@@ -853,7 +853,7 @@ int __init pcibios_init(void)
+ 		bus = pci_scan_root_bus(NULL, next_busno, controller->ops,
+ 					controller, &resources);
+ 		controller->root_bus = bus;
+-		next_busno = bus->subordinate + 1;
++		next_busno = bus->busn_res.end + 1;
+ 
+ 	}
+ 
+-- 
+1.7.10.3
 
