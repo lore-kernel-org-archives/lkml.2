@@ -1,154 +1,619 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933311Ab2GYOwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:52:04 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:24633
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932943Ab2GYOwB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:52:01 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I936eI542M1432Izz1202hzz8275bh8275dhz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH 03/17] Drivers: hv: kvp: Cleanup error handling in KVP
-Thread-Topic: [PATCH 03/17] Drivers: hv: kvp: Cleanup error handling in KVP
-Thread-Index: AQHNabOMVUyc1R5/kU2T3KG86DWCqpc5MToAgADZT6CAAArfgIAAAG4w
-Date: Wed, 25 Jul 2012 14:51:43 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236A8BEA@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
- <1343145701-3691-1-git-send-email-kys@microsoft.com>
- <1343145701-3691-3-git-send-email-kys@microsoft.com>
- <1343178644.5132.103.camel@deadeye.wl.decadent.org.uk>
- <426367E2313C2449837CD2DE46E7EAF9236A8B61@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120725144724.GD1894@decadent.org.uk>
-In-Reply-To: <20120725144724.GD1894@decadent.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.24.39.100]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933337Ab2GYOxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:53:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48563 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933160Ab2GYOxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 10:53:13 -0400
+Date: Wed, 25 Jul 2012 16:53:07 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/efi changes for v3.6
+Message-ID: <20120725145307.GA31782@gmail.com>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
+
+Please pull the latest x86-efi-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-efi-for-linus
+
+   HEAD: 9ca8f72a9297f2052d806bd1111e176533aa69bd x86, efi: Handover Protocol
+
+This tree adds an EFI bootloader handover protocol, which, once 
+supported on the bootloader side, will make bootup faster and 
+might result in simpler bootloaders. The other change activates 
+the EFI wall clock time accessors on x86-64 as well, instead of 
+the legacy RTC readout.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Jan Beulich (1):
+      x86-64/efi: Use EFI to deal with platform wall clock
+
+Matt Fleming (1):
+      x86, efi: Handover Protocol
 
 
-> -----Original Message-----
-> From: Ben Hutchings [mailto:ben@decadent.org.uk]
-> Sent: Wednesday, July 25, 2012 10:47 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; olaf@aepfle.de;
-> apw@canonical.com; netdev@vger.kernel.org
-> Subject: Re: [PATCH 03/17] Drivers: hv: kvp: Cleanup error handling in KVP
-> 
-> On Wed, Jul 25, 2012 at 02:10:05PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Ben Hutchings [mailto:ben@decadent.org.uk]
-> > > Sent: Tuesday, July 24, 2012 9:11 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; olaf@aepfle.de;
-> > > apw@canonical.com; netdev@vger.kernel.org
-> > > Subject: Re: [PATCH 03/17] Drivers: hv: kvp: Cleanup error handling in KVP
-> > >
-> > > On Tue, 2012-07-24 at 09:01 -0700, K. Y. Srinivasan wrote:
-> > > > In preparation to implementing IP injection, cleanup the way we propagate
-> > > > and handle errors both in the driver as well as in the user level daemon.
-> > > >
-> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > ---
-> > > >  drivers/hv/hv_kvp.c      |  112
-> +++++++++++++++++++++++++++++++++++++-
-> > > --------
-> > > >  include/linux/hyperv.h   |   17 +++++---
-> > > >  tools/hv/hv_kvp_daemon.c |   70 +++++++++++++++-------------
-> > > >  3 files changed, 138 insertions(+), 61 deletions(-)
-> > > >
-> > > > diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
-> > > > index 0012eed..9b7fc4a 100644
-> > > > --- a/drivers/hv/hv_kvp.c
-> > > > +++ b/drivers/hv/hv_kvp.c
-> > > [...]
-> > > > @@ -109,27 +154,52 @@ kvp_cn_callback(struct cn_msg *msg, struct
-> > > netlink_skb_parms *nsp)
-> > > >  {
-> > > >  	struct hv_kvp_msg *message;
-> > > >  	struct hv_kvp_msg_enumerate *data;
-> > > > +	int	error = 0;
-> > > >
-> > > >  	message = (struct hv_kvp_msg *)msg->data;
-> > > > -	switch (message->kvp_hdr.operation) {
-> > > > +
-> > > > +	/*
-> > > > +	 * If we are negotiating the version information
-> > > > +	 * with the daemon; handle that first.
-> > > > +	 */
-> > > > +
-> > > > +	if (in_hand_shake) {
-> > > > +		if (kvp_handle_handshake(message))
-> > > > +			in_hand_shake = false;
-> > > > +		return;
-> > > > +	}
-> > > > +
-> > > > +	/*
-> > > > +	 * Based on the version of the daemon, we propagate errors from the
-> > > > +	 * daemon differently.
-> > > > +	 */
-> > > > +
-> > > > +	data = &message->body.kvp_enum_data;
-> > > > +
-> > > > +	switch (dm_reg_value) {
-> > > >  	case KVP_OP_REGISTER:
-> > > > -		pr_info("KVP: user-mode registering done.\n");
-> > > > -		kvp_register();
-> > > > -		kvp_transaction.active = false;
-> > > > -		hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
-> > > > +		/*
-> > > > +		 * Null string is used to pass back error condition.
-> > > > +		 */
-> > > > +		if (!strlen(data->data.key))
-> > >
-> > > Do we know that the key is null-terminated here?  Shouldn't we just
-> > > check whether data->data.key[0] == 0?
-> >
-> > Yes, currently we do return null string to indicate error.
-> [...]
-> 
-> So the kernel should assume userland input is always valid?
+ Documentation/x86/boot.txt         |   41 ++++++++
+ arch/x86/boot/compressed/eboot.c   |  198 ++++++++++++++++++++++--------------
+ arch/x86/boot/compressed/head_32.S |   10 ++
+ arch/x86/boot/compressed/head_64.S |   10 ++
+ arch/x86/boot/header.S             |    4 +-
+ arch/x86/include/asm/bootparam.h   |    1 +
+ arch/x86/mm/pageattr.c             |   10 +-
+ arch/x86/platform/efi/efi.c        |   30 +-----
+ include/linux/efi.h                |    2 -
+ init/main.c                        |    8 +-
+ 10 files changed, 199 insertions(+), 115 deletions(-)
 
-Good point! This is the existing code and this patch-set cleans up all
-the error handling and would not have this problem.
-
-K. Y
-
-
-
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index 7c3a880..c6539a4 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -54,6 +54,9 @@ Protocol 2.10:	(Kernel 2.6.31) Added a protocol for relaxed alignment
+ 		beyond the kernel_alignment added, new init_size and
+ 		pref_address fields.  Added extended boot loader IDs.
+ 
++Protocol 2.11:	(Kernel 3.6) Added a field for offset of EFI handover
++		protocol entry point.
++
+ **** MEMORY LAYOUT
+ 
+ The traditional memory map for the kernel loader, used for Image or
+@@ -189,6 +192,7 @@ Offset	Proto	Name		Meaning
+ 				of struct setup_data
+ 0258/8	2.10+	pref_address	Preferred loading address
+ 0260/4	2.10+	init_size	Linear memory required during initialization
++0264/4	2.11+	handover_offset	Offset of handover entry point
+ 
+ (1) For backwards compatibility, if the setup_sects field contains 0, the
+     real value is 4.
+@@ -690,6 +694,16 @@ Offset/size:	0x260/4
+   else
+ 	runtime_start = pref_address
+ 
++Field name:	handover_offset
++Type:		read
++Offset/size:	0x264/4
++
++  This field is the offset from the beginning of the kernel image to
++  the EFI handover protocol entry point. Boot loaders using the EFI
++  handover protocol to boot the kernel should jump to this offset.
++
++  See EFI HANDOVER PROTOCOL below for more details.
++
+ 
+ **** THE IMAGE CHECKSUM
+ 
+@@ -1010,3 +1024,30 @@ segment; __BOOS_CS must have execute/read permission, and __BOOT_DS
+ must have read/write permission; CS must be __BOOT_CS and DS, ES, SS
+ must be __BOOT_DS; interrupt must be disabled; %esi must hold the base
+ address of the struct boot_params; %ebp, %edi and %ebx must be zero.
++
++**** EFI HANDOVER PROTOCOL
++
++This protocol allows boot loaders to defer initialisation to the EFI
++boot stub. The boot loader is required to load the kernel/initrd(s)
++from the boot media and jump to the EFI handover protocol entry point
++which is hdr->handover_offset bytes from the beginning of
++startup_{32,64}.
++
++The function prototype for the handover entry point looks like this,
++
++    efi_main(void *handle, efi_system_table_t *table, struct boot_params *bp)
++
++'handle' is the EFI image handle passed to the boot loader by the EFI
++firmware, 'table' is the EFI system table - these are the first two
++arguments of the "handoff state" as described in section 2.3 of the
++UEFI specification. 'bp' is the boot loader-allocated boot params.
++
++The boot loader *must* fill out the following fields in bp,
++
++    o hdr.code32_start
++    o hdr.cmd_line_ptr
++    o hdr.cmdline_size
++    o hdr.ramdisk_image (if applicable)
++    o hdr.ramdisk_size  (if applicable)
++
++All other fields should be zero.
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 4e85f5f..b3e0227 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -729,32 +729,68 @@ fail:
+  * need to create one ourselves (usually the bootloader would create
+  * one for us).
+  */
+-static efi_status_t make_boot_params(struct boot_params *boot_params,
+-				     efi_loaded_image_t *image,
+-				     void *handle)
++struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ {
+-	struct efi_info *efi = &boot_params->efi_info;
+-	struct apm_bios_info *bi = &boot_params->apm_bios_info;
+-	struct sys_desc_table *sdt = &boot_params->sys_desc_table;
+-	struct e820entry *e820_map = &boot_params->e820_map[0];
+-	struct e820entry *prev = NULL;
+-	struct setup_header *hdr = &boot_params->hdr;
+-	unsigned long size, key, desc_size, _size;
+-	efi_memory_desc_t *mem_map;
+-	void *options = image->load_options;
+-	u32 load_options_size = image->load_options_size / 2; /* ASCII */
++	struct boot_params *boot_params;
++	struct sys_desc_table *sdt;
++	struct apm_bios_info *bi;
++	struct setup_header *hdr;
++	struct efi_info *efi;
++	efi_loaded_image_t *image;
++	void *options;
++	u32 load_options_size;
++	efi_guid_t proto = LOADED_IMAGE_PROTOCOL_GUID;
+ 	int options_size = 0;
+ 	efi_status_t status;
+-	__u32 desc_version;
+ 	unsigned long cmdline;
+-	u8 nr_entries;
+ 	u16 *s2;
+ 	u8 *s1;
+ 	int i;
+ 
++	sys_table = _table;
++
++	/* Check if we were booted by the EFI firmware */
++	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
++		return NULL;
++
++	status = efi_call_phys3(sys_table->boottime->handle_protocol,
++				handle, &proto, (void *)&image);
++	if (status != EFI_SUCCESS) {
++		efi_printk("Failed to get handle for LOADED_IMAGE_PROTOCOL\n");
++		return NULL;
++	}
++
++	status = low_alloc(0x4000, 1, (unsigned long *)&boot_params);
++	if (status != EFI_SUCCESS) {
++		efi_printk("Failed to alloc lowmem for boot params\n");
++		return NULL;
++	}
++
++	memset(boot_params, 0x0, 0x4000);
++
++	hdr = &boot_params->hdr;
++	efi = &boot_params->efi_info;
++	bi = &boot_params->apm_bios_info;
++	sdt = &boot_params->sys_desc_table;
++
++	/* Copy the second sector to boot_params */
++	memcpy(&hdr->jump, image->image_base + 512, 512);
++
++	/*
++	 * Fill out some of the header fields ourselves because the
++	 * EFI firmware loader doesn't load the first sector.
++	 */
++	hdr->root_flags = 1;
++	hdr->vid_mode = 0xffff;
++	hdr->boot_flag = 0xAA55;
++
++	hdr->code32_start = (__u64)(unsigned long)image->image_base;
++
+ 	hdr->type_of_loader = 0x21;
+ 
+ 	/* Convert unicode cmdline to ascii */
++	options = image->load_options;
++	load_options_size = image->load_options_size / 2; /* ASCII */
+ 	cmdline = 0;
+ 	s2 = (u16 *)options;
+ 
+@@ -791,18 +827,36 @@ static efi_status_t make_boot_params(struct boot_params *boot_params,
+ 	hdr->ramdisk_image = 0;
+ 	hdr->ramdisk_size = 0;
+ 
+-	status = handle_ramdisks(image, hdr);
+-	if (status != EFI_SUCCESS)
+-		goto free_cmdline;
+-
+-	setup_graphics(boot_params);
+-
+ 	/* Clear APM BIOS info */
+ 	memset(bi, 0, sizeof(*bi));
+ 
+ 	memset(sdt, 0, sizeof(*sdt));
+ 
+-	memcpy(&efi->efi_loader_signature, EFI_LOADER_SIGNATURE, sizeof(__u32));
++	status = handle_ramdisks(image, hdr);
++	if (status != EFI_SUCCESS)
++		goto fail2;
++
++	return boot_params;
++fail2:
++	if (options_size)
++		low_free(options_size, hdr->cmd_line_ptr);
++fail:
++	low_free(0x4000, (unsigned long)boot_params);
++	return NULL;
++}
++
++static efi_status_t exit_boot(struct boot_params *boot_params,
++			      void *handle)
++{
++	struct efi_info *efi = &boot_params->efi_info;
++	struct e820entry *e820_map = &boot_params->e820_map[0];
++	struct e820entry *prev = NULL;
++	unsigned long size, key, desc_size, _size;
++	efi_memory_desc_t *mem_map;
++	efi_status_t status;
++	__u32 desc_version;
++	u8 nr_entries;
++	int i;
+ 
+ 	size = sizeof(*mem_map) * 32;
+ 
+@@ -811,7 +865,7 @@ again:
+ 	_size = size;
+ 	status = low_alloc(size, 1, (unsigned long *)&mem_map);
+ 	if (status != EFI_SUCCESS)
+-		goto free_cmdline;
++		return status;
+ 
+ 	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
+ 				mem_map, &key, &desc_size, &desc_version);
+@@ -823,6 +877,7 @@ again:
+ 	if (status != EFI_SUCCESS)
+ 		goto free_mem_map;
+ 
++	memcpy(&efi->efi_loader_signature, EFI_LOADER_SIGNATURE, sizeof(__u32));
+ 	efi->efi_systab = (unsigned long)sys_table;
+ 	efi->efi_memdesc_size = desc_size;
+ 	efi->efi_memdesc_version = desc_version;
+@@ -906,61 +961,13 @@ again:
+ 
+ free_mem_map:
+ 	low_free(_size, (unsigned long)mem_map);
+-free_cmdline:
+-	if (options_size)
+-		low_free(options_size, hdr->cmd_line_ptr);
+-fail:
+ 	return status;
+ }
+ 
+-/*
+- * On success we return a pointer to a boot_params structure, and NULL
+- * on failure.
+- */
+-struct boot_params *efi_main(void *handle, efi_system_table_t *_table)
++static efi_status_t relocate_kernel(struct setup_header *hdr)
+ {
+-	struct boot_params *boot_params;
+ 	unsigned long start, nr_pages;
+-	struct desc_ptr *gdt, *idt;
+-	efi_loaded_image_t *image;
+-	struct setup_header *hdr;
+ 	efi_status_t status;
+-	efi_guid_t proto = LOADED_IMAGE_PROTOCOL_GUID;
+-	struct desc_struct *desc;
+-
+-	sys_table = _table;
+-
+-	/* Check if we were booted by the EFI firmware */
+-	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
+-		goto fail;
+-
+-	status = efi_call_phys3(sys_table->boottime->handle_protocol,
+-				handle, &proto, (void *)&image);
+-	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to get handle for LOADED_IMAGE_PROTOCOL\n");
+-		goto fail;
+-	}
+-
+-	status = low_alloc(0x4000, 1, (unsigned long *)&boot_params);
+-	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to alloc lowmem for boot params\n");
+-		goto fail;
+-	}
+-
+-	memset(boot_params, 0x0, 0x4000);
+-
+-	hdr = &boot_params->hdr;
+-
+-	/* Copy the second sector to boot_params */
+-	memcpy(&hdr->jump, image->image_base + 512, 512);
+-
+-	/*
+-	 * Fill out some of the header fields ourselves because the
+-	 * EFI firmware loader doesn't load the first sector.
+-	 */
+-	hdr->root_flags = 1;
+-	hdr->vid_mode = 0xffff;
+-	hdr->boot_flag = 0xAA55;
+ 
+ 	/*
+ 	 * The EFI firmware loader could have placed the kernel image
+@@ -978,16 +985,40 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table)
+ 	if (status != EFI_SUCCESS) {
+ 		status = low_alloc(hdr->init_size, hdr->kernel_alignment,
+ 				   &start);
+-		if (status != EFI_SUCCESS) {
++		if (status != EFI_SUCCESS)
+ 			efi_printk("Failed to alloc mem for kernel\n");
+-			goto fail;
+-		}
+ 	}
+ 
++	if (status == EFI_SUCCESS)
++		memcpy((void *)start, (void *)(unsigned long)hdr->code32_start,
++		       hdr->init_size);
++
++	hdr->pref_address = hdr->code32_start;
+ 	hdr->code32_start = (__u32)start;
+-	hdr->pref_address = (__u64)(unsigned long)image->image_base;
+ 
+-	memcpy((void *)start, image->image_base, image->image_size);
++	return status;
++}
++
++/*
++ * On success we return a pointer to a boot_params structure, and NULL
++ * on failure.
++ */
++struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
++			     struct boot_params *boot_params)
++{
++	struct desc_ptr *gdt, *idt;
++	efi_loaded_image_t *image;
++	struct setup_header *hdr = &boot_params->hdr;
++	efi_status_t status;
++	struct desc_struct *desc;
++
++	sys_table = _table;
++
++	/* Check if we were booted by the EFI firmware */
++	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
++		goto fail;
++
++	setup_graphics(boot_params);
+ 
+ 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
+ 				EFI_LOADER_DATA, sizeof(*gdt),
+@@ -1015,7 +1046,18 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table)
+ 	idt->size = 0;
+ 	idt->address = 0;
+ 
+-	status = make_boot_params(boot_params, image, handle);
++	/*
++	 * If the kernel isn't already loaded at the preferred load
++	 * address, relocate it.
++	 */
++	if (hdr->pref_address != hdr->code32_start) {
++		status = relocate_kernel(hdr);
++
++		if (status != EFI_SUCCESS)
++			goto fail;
++	}
++
++	status = exit_boot(boot_params, handle);
+ 	if (status != EFI_SUCCESS)
+ 		goto fail;
+ 
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index c85e3ac..aa4aaf1 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -42,6 +42,16 @@ ENTRY(startup_32)
+ 	 */
+ 	add	$0x4, %esp
+ 
++	call	make_boot_params
++	cmpl	$0, %eax
++	je	1f
++	movl	0x4(%esp), %esi
++	movl	(%esp), %ecx
++	pushl	%eax
++	pushl	%esi
++	pushl	%ecx
++
++	.org 0x30,0x90
+ 	call	efi_main
+ 	cmpl	$0, %eax
+ 	movl	%eax, %esi
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 87e03a1..2c4b171 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -209,6 +209,16 @@ ENTRY(startup_64)
+ 	.org 0x210
+ 	mov	%rcx, %rdi
+ 	mov	%rdx, %rsi
++	pushq	%rdi
++	pushq	%rsi
++	call	make_boot_params
++	cmpq	$0,%rax
++	je	1f
++	mov	%rax, %rdx
++	popq	%rsi
++	popq	%rdi
++
++	.org 0x230,0x90
+ 	call	efi_main
+ 	movq	%rax,%rsi
+ 	cmpq	$0,%rax
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 8bbea6a..097f476 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -263,7 +263,7 @@ _start:
+ 	# Part 2 of the header, from the old setup.S
+ 
+ 		.ascii	"HdrS"		# header signature
+-		.word	0x020a		# header version number (>= 0x0105)
++		.word	0x020b		# header version number (>= 0x0105)
+ 					# or else old loadlin-1.5 will fail)
+ 		.globl realmode_swtch
+ realmode_swtch:	.word	0, 0		# default_switch, SETUPSEG
+@@ -381,6 +381,8 @@ pref_address:		.quad LOAD_PHYSICAL_ADDR	# preferred load addr
+ #define INIT_SIZE VO_INIT_SIZE
+ #endif
+ init_size:		.long INIT_SIZE		# kernel initialization size
++handover_offset:	.long 0x30		# offset to the handover
++						# protocol entry point
+ 
+ # End of setup header #####################################################
+ 
+diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
+index eb45aa6..2ad874c 100644
+--- a/arch/x86/include/asm/bootparam.h
++++ b/arch/x86/include/asm/bootparam.h
+@@ -66,6 +66,7 @@ struct setup_header {
+ 	__u64	setup_data;
+ 	__u64	pref_address;
+ 	__u32	init_size;
++	__u32	handover_offset;
+ } __attribute__((packed));
+ 
+ struct sys_desc_table {
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index e1ebde3..ee09aca 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -919,11 +919,13 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
+ 
+ 	/*
+ 	 * On success we use clflush, when the CPU supports it to
+-	 * avoid the wbindv. If the CPU does not support it and in the
+-	 * error case we fall back to cpa_flush_all (which uses
+-	 * wbindv):
++	 * avoid the wbindv. If the CPU does not support it, in the
++	 * error case, and during early boot (for EFI) we fall back
++	 * to cpa_flush_all (which uses wbinvd):
+ 	 */
+-	if (!ret && cpu_has_clflush) {
++	if (early_boot_irqs_disabled)
++		__cpa_flush_all((void *)(long)cache);
++	else if (!ret && cpu_has_clflush) {
+ 		if (cpa.flags & (CPA_PAGES_ARRAY | CPA_ARRAY)) {
+ 			cpa_flush_array(addr, numpages, cache,
+ 					cpa.flags, pages);
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 92660eda..2dc29f5 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -234,22 +234,7 @@ static efi_status_t __init phys_efi_set_virtual_address_map(
+ 	return status;
+ }
+ 
+-static efi_status_t __init phys_efi_get_time(efi_time_t *tm,
+-					     efi_time_cap_t *tc)
+-{
+-	unsigned long flags;
+-	efi_status_t status;
+-
+-	spin_lock_irqsave(&rtc_lock, flags);
+-	efi_call_phys_prelog();
+-	status = efi_call_phys2(efi_phys.get_time, virt_to_phys(tm),
+-				virt_to_phys(tc));
+-	efi_call_phys_epilog();
+-	spin_unlock_irqrestore(&rtc_lock, flags);
+-	return status;
+-}
+-
+-int efi_set_rtc_mmss(unsigned long nowtime)
++static int efi_set_rtc_mmss(unsigned long nowtime)
+ {
+ 	int real_seconds, real_minutes;
+ 	efi_status_t 	status;
+@@ -278,7 +263,7 @@ int efi_set_rtc_mmss(unsigned long nowtime)
+ 	return 0;
+ }
+ 
+-unsigned long efi_get_time(void)
++static unsigned long efi_get_time(void)
+ {
+ 	efi_status_t status;
+ 	efi_time_t eft;
+@@ -621,18 +606,13 @@ static int __init efi_runtime_init(void)
+ 	}
+ 	/*
+ 	 * We will only need *early* access to the following
+-	 * two EFI runtime services before set_virtual_address_map
++	 * EFI runtime service before set_virtual_address_map
+ 	 * is invoked.
+ 	 */
+-	efi_phys.get_time = (efi_get_time_t *)runtime->get_time;
+ 	efi_phys.set_virtual_address_map =
+ 		(efi_set_virtual_address_map_t *)
+ 		runtime->set_virtual_address_map;
+-	/*
+-	 * Make efi_get_time can be called before entering
+-	 * virtual mode.
+-	 */
+-	efi.get_time = phys_efi_get_time;
++
+ 	early_iounmap(runtime, sizeof(efi_runtime_services_t));
+ 
+ 	return 0;
+@@ -720,12 +700,10 @@ void __init efi_init(void)
+ 		efi_enabled = 0;
+ 		return;
+ 	}
+-#ifdef CONFIG_X86_32
+ 	if (efi_native) {
+ 		x86_platform.get_wallclock = efi_get_time;
+ 		x86_platform.set_wallclock = efi_set_rtc_mmss;
+ 	}
+-#endif
+ 
+ #if EFI_DEBUG
+ 	print_efi_memmap();
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index ec45ccd..103adc6 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -503,8 +503,6 @@ extern u64 efi_mem_attribute (unsigned long phys_addr, unsigned long size);
+ extern int __init efi_uart_console_only (void);
+ extern void efi_initialize_iomem_resources(struct resource *code_resource,
+ 		struct resource *data_resource, struct resource *bss_resource);
+-extern unsigned long efi_get_time(void);
+-extern int efi_set_rtc_mmss(unsigned long nowtime);
+ extern void efi_reserve_boot_services(void);
+ extern struct efi_memory_map memmap;
+ 
+diff --git a/init/main.c b/init/main.c
+index 1ca6b32..eef3012 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -460,6 +460,10 @@ static void __init mm_init(void)
+ 	percpu_init_late();
+ 	pgtable_cache_init();
+ 	vmalloc_init();
++#ifdef CONFIG_X86
++	if (efi_enabled)
++		efi_enter_virtual_mode();
++#endif
+ }
+ 
+ asmlinkage void __init start_kernel(void)
+@@ -601,10 +605,6 @@ asmlinkage void __init start_kernel(void)
+ 	calibrate_delay();
+ 	pidmap_init();
+ 	anon_vma_init();
+-#ifdef CONFIG_X86
+-	if (efi_enabled)
+-		efi_enter_virtual_mode();
+-#endif
+ 	thread_info_cache_init();
+ 	cred_init();
+ 	fork_init(totalram_pages);
