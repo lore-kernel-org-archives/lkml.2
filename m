@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab2GYXB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 19:01:57 -0400
-Received: from mail-hostigation.familyross.net ([69.85.93.112]:56097 "EHLO
-	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab2GYXBy (ORCPT
+	id S1751468Ab2GYXOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 19:14:52 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:42304 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab2GYXOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 19:01:54 -0400
-X-Greylist: delayed 559 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 19:01:54 EDT
-Message-ID: <501078B2.8070707@familyross.net>
-Date: Wed, 25 Jul 2012 15:52:34 -0700
-From: Kevin Ross <kevin@familyross.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Wed, 25 Jul 2012 19:14:51 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Aristeu Rozanski <aris@ruivo.org>
+Cc: aris@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20120725161120.GA5478@cathedrallabs.org> (Aristeu Rozanski's
+	message of "Wed, 25 Jul 2012 12:11:20 -0400")
+References: <1342033282-24933-1-git-send-email-arozansk@redhat.com>
+	<20120725161120.GA5478@cathedrallabs.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Date: Wed, 25 Jul 2012 16:14:41 -0700
+Message-ID: <87wr1r77ry.fsf@xmission.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: RAID extremely slow
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/eZMh+tSr1CPKfOtKWJwqGwjaf/OhNuro=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Aristeu Rozanski <aris@ruivo.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/5] userns: convert some filesystems to kuid/kgid
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Aristeu Rozanski <aris@ruivo.org> writes:
 
-I'm having a problem.  After a while, my software RAID rebuild becomes 
-extremely slow, and the filesystem on the RAID is essentially blocked.  
-I don't know what is causing this.  I guess it could be a bad drive, but 
-how can I find out?
+> Hi Eric,
+> On Wed, Jul 11, 2012 at 03:01:17PM -0400, Aristeu Rozanski wrote:
+>> Hi,
+>> this patchset converts 9p, ADFS, AFFS, AFS and autofs4 to use kuid and kgid.
+>> I plan to work on the other pending filesystems too but wanted some feedback
+>> on the first ones first.
+>
+> had any chance to look at these?
 
-I used atop to show the transfer speeds to each drive. Here's a 
-screenshot: 
-http://img402.imageshack.us/img402/6484/screenshotfrom201207251.png
+Sorry no.  I have unfortunately been a bit out of it for the last few
+weeks and I have patches to address this already in my development tree.
 
-"smartctl -a" for all the drives looks good to me, no pending failures, 
-or errors logged.  dmesg doesn't report anything wrong with any of the 
-drives.  It does, however, report lots of hung tasks, which are trying 
-to access the RAID volume.  For example:
-
-[51000.672064] INFO: task mythbackend:10677 blocked for more than 120 
-seconds.
-[51000.672098] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" 
-disables this message.
-[51000.672143] mythbackend     D 0000000e     0 10677      1 0x00000000
-[51000.672146]  f38bea00 00000086 c1095415 0000000e 00000002 00000000 
-00000000 c147aac0
-[51000.672152]  f38bebac c147aac0 eb2cff04 003d2f4b 00000000 c109cacb 
-01872f02 eb2cfe50
-[51000.672157]  c100f28b c13df480 01872f02 eb2cfe68 c10532b1 0069a8d0 
-f79d6ac0 00000000
-[51000.672162] Call Trace:
-[51000.672169]  [<c1095415>] ? find_get_pages_tag+0x2f/0xa2
-[51000.672173]  [<c109cacb>] ? pagevec_lookup_tag+0x18/0x1e
-[51000.672176]  [<c100f28b>] ? read_tsc+0xa/0x28
-[51000.672179]  [<c10532b1>] ? timekeeping_get_ns+0x11/0x55
-[51000.672182]  [<c10536a4>] ? ktime_get_ts+0x7a/0x82
-[51000.672186]  [<c12bea8b>] ? io_schedule+0x4a/0x5f
-[51000.672188]  [<c1095659>] ? sleep_on_page+0x5/0x8
-[51000.672191]  [<c12bedeb>] ? __wait_on_bit+0x2f/0x54
-[51000.672193]  [<c1095654>] ? lock_page+0x1d/0x1d
-[51000.672196]  [<c1095754>] ? wait_on_page_bit+0x57/0x5e
-[51000.672199]  [<c104d171>] ? autoremove_wake_function+0x29/0x29
-[51000.672201]  [<c1095823>] ? filemap_fdatawait_range+0x71/0x11e
-[51000.672205]  [<c109630f>] ? filemap_write_and_wait_range+0x3e/0x4c
-[51000.672232]  [<f86bfb39>] ? xfs_file_fsync+0x68/0x214 [xfs]
-[51000.672246]  [<f86bfad1>] ? xfs_file_splice_write+0x144/0x144 [xfs]
-[51000.672249]  [<c10e7e3b>] ? vfs_fsync_range+0x27/0x2d
-[51000.672252]  [<c10e7e52>] ? vfs_fsync+0x11/0x15
-[51000.672254]  [<c10e80b8>] ? sys_fdatasync+0x20/0x2e
-[51000.672258]  [<c12c409f>] ? sysenter_do_call+0x12/0x28
-[51000.672261]  [<c12b0000>] ? quirk_usb_early_handoff+0x4a9/0x522
-
-Here is some other possibly relevant info:
-
-# cat /proc/mdstat
-Personalities : [raid6] [raid5] [raid4]
-md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4] 
-sdf1[3] sdg1[8] sdj1[1]
-       6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 
-[9/9] [UUUUUUUUU]
-       [==========>..........]  resync = 51.3% (501954432/976758784) 
-finish=28755.6min speed=275K/sec
-
-unused devices: <none>
-
-# cat /proc/sys/dev/raid/speed_limit_min
-10000
-# cat /proc/sys/dev/raid/speed_limit_max
-200000
-
-Thanks in advance!
--- Kevin
+Eric
 
