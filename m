@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab2GYW4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 18:56:35 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:63932 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab2GYW4c (ORCPT
+	id S1752284Ab2GYW63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 18:58:29 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40968 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab2GYW6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 18:56:32 -0400
-From: Salar Ali Mumtaz <salaarali@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Salar Ali Mumtaz <salaarali@gmail.com>
-Subject: [PATCH] xconfig: Display dependency values in debug_info
-Date: Wed, 25 Jul 2012 18:56:22 -0400
-Message-Id: <1343256982-11421-1-git-send-email-salaarali@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Wed, 25 Jul 2012 18:58:25 -0400
+Message-ID: <50107A0D.3060003@pobox.com>
+Date: Wed, 25 Jul 2012 18:58:21 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates
+References: <20120725203551.GA19762@havoc.gtf.org> <20120725204350.GA20530@havoc.gtf.org> <CA+55aFwCCctcmryQJMCT_3TDr60CYBQKu9HMyxOgS8482+w5Xw@mail.gmail.com> <50107297.305@pobox.com> <CA+55aFzun7GebfGZDa73MGLF_808+ROaei5Ag-9HvgUDp1bqLQ@mail.gmail.com>
+In-Reply-To: <CA+55aFzun7GebfGZDa73MGLF_808+ROaei5Ag-9HvgUDp1bqLQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Displays the current value of each of the dependencies of a menu item.
-Before, you needed to do tedious searching to find out the current values
-of the dependences. Now they all are included in the debug_info, making
-the task easier
+On 07/25/2012 06:31 PM, Linus Torvalds wrote:
+> On Wed, Jul 25, 2012 at 3:26 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
+>>
+>> Even so, separately, it still needed that post-merge compile fix.
+>
+> And that's yet another example of how *NOT* to do things.
+>
+> If the merge has errors like that, then they should be fixed up in the merge.
+>
+> Please. Don't do this. Let me merge stuff, and you explain in the pull
+> request why it gets merge problems. Not this mess.
+>
+> That merge itself was *trivial*. I do those kinds of fixups in my
+> sleep and you don't even need to explain those. The non-trivial part
+> you did as a separate commit. But neither of those should have been
+> "I'll pre-merge for Linus so that he doesn't see these problems".
 
-Signed-off-by: Salar Ali Mumtaz <salaarali@gmail.com>
----
- scripts/kconfig/qconf.cc |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+What is the right course in when a post-merge change is needed?
 
-diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
-index df274fe..abd500f 100644
---- a/scripts/kconfig/qconf.cc
-+++ b/scripts/kconfig/qconf.cc
-@@ -1073,8 +1073,10 @@ QString ConfigInfoView::debug_info(struct symbol *sym)
- 		debug += " (choice)";
- 	debug += "<br>";
- 	if (sym->rev_dep.expr) {
--		debug += "reverse dep: ";
-+		debug += "reverse dep: (";
- 		expr_print(sym->rev_dep.expr, expr_print_help, &debug, E_NONE);
-+		debug += " )  =";
-+		debug += print_filter(sym_get_string_value(sym));
- 		debug += "<br>";
- 	}
- 	for (struct property *prop = sym->prop; prop; prop = prop->next) {
-@@ -1108,7 +1110,10 @@ QString ConfigInfoView::debug_info(struct symbol *sym)
- 		}
- 		if (prop->visible.expr) {
- 			debug += "&nbsp;&nbsp;&nbsp;&nbsp;dep: ";
-+			debug += " ( ";
- 			expr_print(prop->visible.expr, expr_print_help, &debug, E_NONE);
-+			debug += " )  =";
-+			debug += print_filter(sym_get_string_value(sym));
- 			debug += "<br>";
- 		}
- 	}
-@@ -1157,6 +1162,9 @@ void ConfigInfoView::expr_print_help(void *data, struct symbol *sym, const char
- 		*text += QString().sprintf("<a href=\"s%p\">", sym);
- 		*text += str2;
- 		*text += "</a>";
-+		*text += "<b>   ";
-+		*text += print_filter(sym_get_string_value(sym));
-+		*text += "</b>";
- 	} else
- 		*text += str2;
- }
--- 
-1.7.5.4
+	Jeff
+
+
+
+
 
