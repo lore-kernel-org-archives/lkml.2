@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304Ab2GYTFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:05:42 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:23193 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab2GYTFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:05:41 -0400
-Date: Wed, 25 Jul 2012 21:05:39 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
+	id S1751298Ab2GYTIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:08:15 -0400
+Received: from mail.tpi.com ([70.99.223.143]:1613 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750803Ab2GYTIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 15:08:14 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
 To: linux-kernel@vger.kernel.org
-cc: netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Rick Jones <rick.jones2@hp.com>, John Ronciak <john.ronciak@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] igb: correct hardware type (i210/i211) check in
- igb_loopback_test()
-Message-ID: <alpine.LNX.2.00.1207252059320.11754@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Mike McCormack <mikem@ring3k.org>, wlanfae <wlanfae@realtek.com>,
+        Sean MacLennan <seanm@seanm.ca>, devel@driverdev.osuosl.org
+Subject: [PATCH] staging rtl8192e: Declare MODULE_FIRMWARE usage
+Date: Wed, 25 Jul 2012 13:08:47 -0600
+Message-Id: <1343243327-6153-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the original code
-...
- 	if ((adapter->hw.mac.type == e1000_i210)
-		|| (adapter->hw.mac.type == e1000_i210)) {
-...
-the second check of 'adapter->hw.mac.type' is pointless since it tests
-for the exact same value as the first.
-
-After reading through a few other parts of the driver I believe that
-the second check was actually intended to check for 'e1000_i211'
-rather than 'e1000_i210', but I admit that I'm not certain so someone
-with more knowledge about this driver should ACK the patch before it
-gets merged.
-
-Unfortunately I have no hardware to actually test this on, so it is
-compile tested only.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Mike McCormack <mikem@ring3k.org>
+Cc: wlanfae <wlanfae@realtek.com>
+Cc: Sean MacLennan <seanm@seanm.ca>
+Cc: devel@driverdev.osuosl.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
- drivers/net/ethernet/intel/igb/igb_ethtool.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ .../staging/rtl8192e/rtl8192e/r8192E_firmware.c    |    9 +++++----
+ .../staging/rtl8192e/rtl8192e/r8192E_firmware.h    |    4 ++++
+ drivers/staging/rtl8192e/rtl8192e/rtl_core.c       |    3 +++
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-index a19c84c..ad489b7 100644
---- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
-+++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-@@ -1783,7 +1783,7 @@ static int igb_loopback_test(struct igb_adapter *adapter, u64 *data)
- 		goto out;
- 	}
- 	if ((adapter->hw.mac.type == e1000_i210)
--		|| (adapter->hw.mac.type == e1000_i210)) {
-+		|| (adapter->hw.mac.type == e1000_i211)) {
- 		dev_err(&adapter->pdev->dev,
- 			"Loopback test not supported "
- 			"on this part at this time.\n");
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+index b526fa4..dd2a96b 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
++++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+@@ -265,10 +265,11 @@ bool init_firmware(struct net_device *dev)
+ 			case FW_SOURCE_IMG_FILE:
+ 			{
+ 				if (pfirmware->firmware_buf_size[init_step] == 0) {
+-					const char *fw_name[3] = { "RTL8192E/boot.img",
+-							   "RTL8192E/main.img",
+-							   "RTL8192E/data.img"
+-							 };
++					const char *fw_name[3] = {
++							RTL8192E_BOOT_IMG_FW,
++							RTL8192E_MAIN_IMG_FW,
++							RTL8192E_DATA_IMG_FW
++					};
+ 					const struct firmware	*fw_entry;
+ 					int rc;
+ 					rc = request_firmware(&fw_entry,
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.h b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.h
+index caa8788..06d6abc 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.h
++++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.h
+@@ -23,6 +23,10 @@
+ 
+ #define GET_COMMAND_PACKET_FRAG_THRESHOLD(v)	(4*(v/4) - 8)
+ 
++#define RTL8192E_BOOT_IMG_FW	"RTL8192E/boot.img"
++#define RTL8192E_MAIN_IMG_FW	"RTL8192E/main.img"
++#define RTL8192E_DATA_IMG_FW	"RTL8192E/data.img"
++
+ enum firmware_init_step {
+ 	FW_INIT_STEP0_BOOT = 0,
+ 	FW_INIT_STEP1_MAIN = 1,
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+index 4f602b2..42e5c5c 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+@@ -3125,6 +3125,9 @@ MODULE_DESCRIPTION("Linux driver for Realtek RTL819x WiFi cards");
+ MODULE_AUTHOR(DRV_COPYRIGHT " " DRV_AUTHOR);
+ MODULE_VERSION(DRV_VERSION);
+ MODULE_LICENSE("GPL");
++MODULE_FIRMWARE(RTL8192E_BOOT_IMG_FW);
++MODULE_FIRMWARE(RTL8192E_MAIN_IMG_FW);
++MODULE_FIRMWARE(RTL8192E_DATA_IMG_FW);
+ 
+ module_param(ifname, charp, S_IRUGO|S_IWUSR);
+ module_param(hwwep, int, S_IRUGO|S_IWUSR);
 -- 
-1.7.11.3
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.9.5
 
