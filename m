@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab2GYDt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 23:49:59 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46154 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932916Ab2GYDmw (ORCPT
+	id S932908Ab2GYDmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 23:42:50 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:52413 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932845Ab2GYDmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 23:42:52 -0400
+	Tue, 24 Jul 2012 23:42:47 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 27/52] intel_idle: initial IVB support
-Date: Tue, 24 Jul 2012 23:41:23 -0400
-Message-Id: <6edab08c24f9141d69cfa4683a0a027d86ab303e.1343187617.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 24/52] ACPI: Add _OST support for ACPI container hotplug
+Date: Tue, 24 Jul 2012 23:41:20 -0400
+Message-Id: <0c67dc242cf73b9c99a05bfd0122fc9ba1970d37.1343187617.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.rc0
 In-Reply-To: <1343187708-19532-1-git-send-email-lenb@kernel.org>
 References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
@@ -24,77 +25,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+From: Toshi Kani <toshi.kani@hp.com>
 
->From an OS point of view, IVB looks like SNB, but quicker.
+Changed container_notify_cb() to call ACPI _OST method when ACPI
+container hotplug operation has completed. Slightly restructured
+the code with the same logic. The function sets eject_pending bit
+for an eject request since it does not initiate hot-remove operation.
+This bit is checked by the sysfs eject handler to determine if the
+request is originated from an ACPI eject notification.
 
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/idle/intel_idle.c | 37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+ drivers/acpi/container.c | 43 ++++++++++++++++++++++++++++---------------
+ 1 file changed, 28 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index d0f59c3..a759a4c 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -169,6 +169,38 @@ static struct cpuidle_state snb_cstates[MWAIT_MAX_NUM_CSTATES] = {
- 		.enter = &intel_idle },
- };
+diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+index 45cd03b..1f9f7d7 100644
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -158,9 +158,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 	int result;
+ 	int present;
+ 	acpi_status status;
+-
+-
+-	present = is_device_present(handle);
++	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
  
-+static struct cpuidle_state ivb_cstates[MWAIT_MAX_NUM_CSTATES] = {
-+	{ /* MWAIT C0 */ },
-+	{ /* MWAIT C1 */
-+		.name = "C1-IVB",
-+		.desc = "MWAIT 0x00",
-+		.flags = CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 1,
-+		.target_residency = 1,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C2 */
-+		.name = "C3-IVB",
-+		.desc = "MWAIT 0x10",
-+		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 59,
-+		.target_residency = 156,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C3 */
-+		.name = "C6-IVB",
-+		.desc = "MWAIT 0x20",
-+		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 80,
-+		.target_residency = 300,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C4 */
-+		.name = "C7-IVB",
-+		.desc = "MWAIT 0x30",
-+		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 87,
-+		.target_residency = 300,
-+		.enter = &intel_idle },
-+};
+ 	switch (type) {
+ 	case ACPI_NOTIFY_BUS_CHECK:
+@@ -169,32 +167,47 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 		printk(KERN_WARNING "Container driver received %s event\n",
+ 		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+ 		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
 +
- static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
- 	{ /* MWAIT C0 */ },
- 	{ /* MWAIT C1 */
-@@ -347,6 +379,10 @@ static const struct idle_cpu idle_cpu_snb = {
- 	.state_table = snb_cstates,
- };
- 
-+static const struct idle_cpu idle_cpu_ivb = {
-+	.state_table = ivb_cstates,
-+};
++		present = is_device_present(handle);
+ 		status = acpi_bus_get_device(handle, &device);
+-		if (present) {
+-			if (ACPI_FAILURE(status) || !device) {
+-				result = container_device_add(&device, handle);
+-				if (!result)
+-					kobject_uevent(&device->dev.kobj,
+-						       KOBJ_ONLINE);
+-				else
+-					printk(KERN_WARNING
+-					       "Failed to add container\n");
+-			}
+-		} else {
++		if (!present) {
+ 			if (ACPI_SUCCESS(status)) {
+ 				/* device exist and this is a remove request */
++				device->flags.eject_pending = 1;
+ 				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
++				return;
+ 			}
++			break;
++		}
 +
- #define ICPU(model, cpu) \
- 	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
++		if (!ACPI_FAILURE(status) || device)
++			break;
++
++		result = container_device_add(&device, handle);
++		if (result) {
++			printk(KERN_WARNING "Failed to add container\n");
++			break;
+ 		}
++
++		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
++		ost_code = ACPI_OST_SC_SUCCESS;
+ 		break;
++
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+ 		if (!acpi_bus_get_device(handle, &device) && device) {
++			device->flags.eject_pending = 1;
+ 			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
++			return;
+ 		}
+ 		break;
++
+ 	default:
+-		break;
++		/* non-hotplug event; possibly handled by other handler */
++		return;
+ 	}
++
++	/* Inform firmware that the hotplug operation has completed */
++	(void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+ 	return;
+ }
  
-@@ -362,6 +398,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
- 	ICPU(0x2f, idle_cpu_nehalem),
- 	ICPU(0x2a, idle_cpu_snb),
- 	ICPU(0x2d, idle_cpu_snb),
-+	ICPU(0x3a, idle_cpu_ivb),
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
 -- 
 1.7.12.rc0
 
