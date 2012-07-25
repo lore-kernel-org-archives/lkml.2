@@ -1,158 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab2GYCeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 22:34:36 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55559 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab2GYCed (ORCPT
+	id S1755769Ab2GYCry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 22:47:54 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:27257
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754480Ab2GYCrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 22:34:33 -0400
+	Tue, 24 Jul 2012 22:47:51 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202hzzz2dh668h839h944hd25hf0ah107ah)
+X-WSS-ID: 0M7P3RJ-01-5FK-02
+X-M-MSG: 
+Date: Wed, 25 Jul 2012 10:47:38 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Betty Dall <betty.dall@hp.com>
+CC: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Lin Ming <minggr@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>
+Subject: Re: [PATCH 5/5] block: genhd: add an interface to set disk's poll
+ interval
+Message-ID: <20120725024737.GA2395@aarontestpc.amd.com>
+References: <1343026180-22236-1-git-send-email-aaron.lu@amd.com>
+ <1343026180-22236-6-git-send-email-aaron.lu@amd.com>
+ <1343069014.25735.28.camel@ejdallLaptop>
+ <20120723235211.GB1965@localhost.localdomain>
+ <1343156106.25735.59.camel@ejdallLaptop>
 MIME-Version: 1.0
-In-Reply-To: <20120724113802.GA30142@hmsreliant.think-freely.org>
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
-	<20120723004932.GB8040@neilslaptop.think-freely.org>
-	<500CB74A.4040300@windriver.com>
-	<20120723121411.GC16518@hmsreliant.think-freely.org>
-	<500DFF5A.20203@windriver.com>
-	<20120724113802.GA30142@hmsreliant.think-freely.org>
-Date: Wed, 25 Jul 2012 10:34:32 +0800
-Message-ID: <CA+=dFzjW_=T6DwtRrSCxjzE9HKKvpQ=LUmGpAggJEujZT+VX+g@mail.gmail.com>
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK
- when bundling
-From: Xufeng Zhang <xufengzhang.main@gmail.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: xufeng zhang <xufeng.zhang@windriver.com>, vyasevich@gmail.com,
-        sri@us.ibm.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1343156106.25735.59.camel@ejdallLaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 25 Jul 2012 02:47:37.0776 (UTC) FILETIME=[D9FAD300:01CD6A0F]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/24/12, Neil Horman <nhorman@tuxdriver.com> wrote:
-> On Tue, Jul 24, 2012 at 09:50:18AM +0800, xufeng zhang wrote:
->> On 07/23/2012 08:14 PM, Neil Horman wrote:
->> >On Mon, Jul 23, 2012 at 10:30:34AM +0800, xufeng zhang wrote:
->> >>On 07/23/2012 08:49 AM, Neil Horman wrote:
->> >>>Not sure I understand how you came into this error.  If we get an
->> >>> invalid
->> >>>stream, we issue an SCTP_REPORT_TSN side effect, followed by an
->> >>> SCTP_CMD_REPLY
->> >>>which sends the error chunk.  The reply goes through
->> >>>sctp_outq_tail->sctp_outq_chunk->sctp_outq_transmit_chunk->sctp_outq_append_chunk.
->> >>>That last function checks to see if a sack is already part of the
->> >>> packet, and if
->> >>>there isn't one, appends one, using the updated tsn map.
->> >>Yes, you are right, but consider the invalid stream identifier's
->> >>DATA chunk is the first
->> >>DATA chunk in the association which will need SACK immediately.
->> >>Here is what I thought of the scenario:
->> >>     sctp_sf_eat_data_6_2()
->> >>         -->sctp_eat_data()
->> >>             -->sctp_make_op_error()
->> >>             -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
->> >> SCTP_CHUNK(err))
->> >>             -->sctp_outq_tail()          /* First enqueue ERROR chunk
->> >> */
->> >>         -->sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE())
->> >>             -->sctp_gen_sack()
->> >>                 -->sctp_make_sack()
->> >>                 -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
->> >>SCTP_CHUNK(sack))
->> >>                 -->sctp_outq_tail()          /* Then enqueue SACK chunk
->> >> */
->> >>
->> >>So SACK chunk is enqueued after ERROR chunk.
->> >Ah, I see.  Since the ERROR and SACK chunks are both control chunks, and
->> > since
->> >we explicitly add the SACK to the control queue instead of going through
->> > the
->> >bundle path in sctp_packet_append_chunk the ordering gets wrong.
->> >
->> >Ok, so the problem makes sense.  I think the soultion could be alot
->> > easier
->> >though.  IIRC SACK chunks always live at the head of a packet, so why not
->> > just
->> >special case it in sctp_outq_tail?  I.e. instead of doing a
->> > list_add_tail, in
->> >the else clause of sctp_outq_tail check the chunk_hdr->type to see if
->> > its
->> >SCTP_CID_SACK.  If it is, use list_add_head rather than list_add_tail.  I
->> > think
->> >that will fix up both the COOKIE_ECHO and ESTABLISHED cases, won't it?
->> > And then
->> >you won't have keep track of extra state in the packet configuration.
->> Yes, it's a good idea, but I think the premise is not correct:
->> RFC 4960 page 57:
->> "D) Upon reception of the COOKIE ECHO chunk, endpoint "Z" will reply
->>    with a COOKIE ACK chunk after building a TCB and moving to the
->>    ESTABLISHED state. A COOKIE ACK chunk may be bundled with any
->>    pending DATA chunks (and/or SACK chunks), *but the COOKIE ACK chunk
->>    MUST be the first chunk in the packet*."
->>
->> So we can't put SACK chunk always at the head of the packet.
->>
-> Ok, Fair point, but that just changes the ordering a bit to:
-> COOKIE_ACK
-> SACK
-> OTHER CONTROL CHUNKS
->
-> What about something like this?  Its completely untested, and I'm sure it
-> can be
-> cleaned up a bunch, but this keeps us from having to add additional state to
-> the
-> packet structure.
-Yeah! I like this modification, thank you very much for your work!
-I'll try to send a V2 patch based on your changes and run some tests.
+Hi Betty,
+
+On Tue, Jul 24, 2012 at 12:55:06PM -0600, Betty Dall wrote:
+> > > > diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+> > > > index 2f159aa..78c4226 100644
+> > > > --- a/drivers/scsi/sr.c
+> > > > +++ b/drivers/scsi/sr.c
+> > > > @@ -869,6 +869,7 @@ static int sr_probe(struct device *dev)
+> > > >  	dev_set_drvdata(dev, cd);
+> > > >  	disk->flags |= GENHD_FL_REMOVABLE;
+> > > >  	add_disk(disk);
+> > > > +	disk_events_set_poll_msecs(disk, 2000);
+> > > 
+> > > Could you check that disk event's poll_msecs is the default (-1) before
+> > > setting it to 2s? I am thinking of a case when the probe happens after
+> > > the call to disk_events_poll_msecs_store() and this code would overwrite
+> > > the user specified value.
+> > 
+> > The block device sr0 is created by this driver in this probe function,
+> > so the user should not be able to set the poll interval before probe,
+> > right?
+> 
+> The add_disk() call happens immediately before the new
+> disk_events_set_poll_msecs() call. add_disk() is what eventually creates
+> the sysfs files
+
+Right, and it's disk_add_events in add_disk that adds these sysfs files.
+
+> and calls your new disk_events_set_poll_msecs().
+
+No... there is no call to disk_events_set_poll_msecs in add_disk, when
+the events for the disk is created by disk_alloc_events, the poll_msecs
+of the event is initialized to the default value -1. And then
+disk_add_events will create the sysfs files and add_disk will return,
+and I'll change the default value of -1 to 2000 with the new function
+I've made.
+
+> It makes more sense to me to have the new call to
+> disk_events_set_poll_msecs(disk, 2000) before the call to add_disk().
+
+This is too early, since the events of the disk is not allocated yet.
+
+I hope I've explained this clearly, if you see a problem, please let me
+know, thanks.
+
+-Aaron
 
 
-Thanks,
-Xufeng Zhang
->
->
-> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-> index e7aa177c..eeac32f 100644
-> --- a/net/sctp/outqueue.c
-> +++ b/net/sctp/outqueue.c
-> @@ -300,7 +300,7 @@ void sctp_outq_free(struct sctp_outq *q)
->  int sctp_outq_tail(struct sctp_outq *q, struct sctp_chunk *chunk)
->  {
->  	int error = 0;
-> -
-> +	struct sctp_chunk *cptr;
->  	SCTP_DEBUG_PRINTK("sctp_outq_tail(%p, %p[%s])\n",
->  			  q, chunk, chunk && chunk->chunk_hdr ?
->  			  sctp_cname(SCTP_ST_CHUNK(chunk->chunk_hdr->type))
-> @@ -344,7 +344,21 @@ int sctp_outq_tail(struct sctp_outq *q, struct
-> sctp_chunk *chunk)
->  			break;
->  		}
->  	} else {
-> -		list_add_tail(&chunk->list, &q->control_chunk_list);
-> +		list_del_init(&chunk->list);
-> +		if (chunk->chunk_hdr->type == SCTP_CID_COOKIE_ACK)
-> +			list_add_head(&chunk->list, &q->control_chunk_list);
-> +		else if (!list_empty(&q->control_chunk_list) &&
-> +		    chunk->chunk_hdr->type == SCTP_CID_SACK) {
-> +			list_for_each_entry(cptr, &q->control_chunk_list, list) {
-> +				if (cptr->chunk_hdr->type == SCTP_CID_COOKIE_ACK)
-> +					continue;
-> +				list_add(&chunk->list, &cptr->list);
-> +				break;
-> +			}
-> +		}
-> +
-> +		if (list_empty(&chunk->list))
-> +			list_add_tail(&chunk->list, &q->control_chunk_list);
->  		SCTP_INC_STATS(SCTP_MIB_OUTCTRLCHUNKS);
->  	}
->
->>
->> Thanks,
->> Xufeng Zhang
->> >Regards
->> >Neil
->> >
->> >
->>
->
