@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab2GYSmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 14:42:03 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49478 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751123Ab2GYSl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 14:41:59 -0400
-Message-ID: <1343241718.7045.3.camel@joe2Laptop>
-Subject: RE: [PATCH] ia64: rename platform_* to ia64_platform_*
-From: Joe Perches <joe@perches.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Date: Wed, 25 Jul 2012 11:41:58 -0700
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1937113E@ORSMSX104.amr.corp.intel.com>
-References: <20120725080653.GA18233@localhost>
-	 <1343204319.1693.6.camel@joe2Laptop> <20120725133950.GA30512@localhost>
-	 <3908561D78D1C84285E8C5FCA982C28F1937113E@ORSMSX104.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751735Ab2GYSnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 14:43:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58904 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750903Ab2GYSnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 14:43:06 -0400
+Date: Wed, 25 Jul 2012 19:43:02 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] leds: add new lp8788 led driver
+Message-ID: <20120725184302.GP3099@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+ <1342799346.5138.7.camel@lorien2>
+ <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
+ <20120722181956.GA4557@opensource.wolfsonmicro.com>
+ <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
+ <20120724125513.GG12438@opensource.wolfsonmicro.com>
+ <CAK5ve-Lyk_EjOjSKHF-j0J1_8oey8wWKkVXAdqbKpRX2eZY+hg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wg9FEZT+WCTrEXgJ"
+Content-Disposition: inline
+In-Reply-To: <CAK5ve-Lyk_EjOjSKHF-j0J1_8oey8wWKkVXAdqbKpRX2eZY+hg@mail.gmail.com>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-25 at 18:37 +0000, Luck, Tony wrote:
-> >> Is platform_name particularly special?
-> 
-> Yes. It is the symbol that is currently colliding with other subsystem namespace.
-> 
-> >> Perhaps it's be better to rename all the other
-> >> platform_<foo> uses to ia64_platform_<foo>
-> >
-> > That's good point in general, oh well I just wanted to make the minimal change..
-> 
-> Following that logic there isn't anything special about symbols starting with
-> "platform" ... and we should hunt down every global symbol in every architecture
-> that is local to the architecture and replace it with $arch_$symbol.
-> 
-> I think I'll just take the minimal patch to fix "platform_name" and continue to
-> use a "fix as problems occur" algorithm to the namespace pollution problem.
 
-That can lead to a lot of naming inconsistencies.
+--wg9FEZT+WCTrEXgJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Jul 25, 2012 at 12:46:56PM +0800, Bryan Wu wrote:
+
+> I'm going to Ack this driver and Mark will you merge this as whole patchset?
+
+> Acked-by: Bryan Wu <bryan.wu@canonical.com>
+
+It's an MFD so Samuel would normally apply if it were going via the MFD
+tree, though if the dependencies are correct there should be no harm
+merging via LEDs (until the core is merged it won't be possible to
+enable the build in Kconfig).
+
+--wg9FEZT+WCTrEXgJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQED4eAAoJEBus8iNuMP3dD4kQAIYRDNEXblLNWxomXgJxSgrl
+54jweuEotma4pCAyCDAXPkOU2j/xlT8Wlm19J1VGPKEjms4QBMNIVIneD3/UyfOc
+1DVuuFzZs7OxaB5WaFwnpYkGyh5UHs/eZXHJwc9Ayl5kzazDxEkVV1Jv3OuGCC05
+yfMgVV4TktJ+YBubQdYSUxtGVRTE1zYEkbulr0koNCMUVbzdrzRy5cFvKlJsHDOy
++mHPN8Ek7yT9BnuVB5wexGlFtv/FC0zTEv1eFCC3J4ImWhY/daFR/V113XAemdoR
+u87WA3oJwSmn+7OInlnWVJ8QL9gmP7DKMCoYKf9HqBqhE9KEWW//GFRe+Cne+IE2
+s5zDUAaOPshZgzec0PoajL+VKDun8DsZL20CB3D940NfEdtEtTVW/efL3gMEb8ic
+xONIn0YeHCcul9PzCbKmGhEb88m6wSizVPCyqQa4mTe1Af6UYE5Whc8wpnSKp2AK
+ihMSP5HNC0ArLaECRv1GmMOhntA1ZY6/HS3uyGNNVRc09F7ohR0gaUetRREg+IpC
+289j+9tcKt58TDbnjRCFWFuPG2hfVKwKbjnVgU6zmp9V+8M5PvzYuEDFCMCrwJKT
+zicPjVwvnKcDKXTpNmV7qt2sMkklB55Sm+TcS1sn3BGkiVNBjXWily3VLhFR17+o
+Bg72nvupA/R84mpHCzA9
+=f/9m
+-----END PGP SIGNATURE-----
+
+--wg9FEZT+WCTrEXgJ--
