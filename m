@@ -1,135 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab2GYITS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 04:19:18 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49294 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932501Ab2GYITN (ORCPT
+	id S932772Ab2GYIUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 04:20:54 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35724 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab2GYIUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 04:19:13 -0400
-Date: Wed, 25 Jul 2012 10:17:33 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PULL] drm-intel-fixes for 3.6
-Message-ID: <20120725081733.GA5396@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	Wed, 25 Jul 2012 04:20:51 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [REGRESSION] [KMS] [INTEL] Wrong resolution in console and XWindow
+Date: Wed, 25 Jul 2012 10:20:47 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5.0-rc3; KDE/4.8.4; x86_64; ; )
+Cc: dri-devel@lists.freedesktop.org, airlied@linux.ie
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207251020.47637.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Last known good: 3.4.4
+First bad: 3.5.0
 
-First pile of fixes for 3.6 already, and I'm afraid it's a bit larger than
-what I'd wish for. But I've moved all the feature-y stuff to -next, so
-this really is all -fixes. Most of it is handling fallout from the hw
-context stuff, discovered now that mesa git has started using them for
-real. Otherwise all just small fixes:
-- unbreak modeset=0 on gen6+ (regressed in next)
-- const mismatch fix for ->mode_fixup
-- simplify overly clever lvds modeset code (current code can totally
-  confuse backlights, resulting in broken panels until a full power draw
-  restores them).
-- fix some fallout from the flushing_list disabling (regression only
-  introduced in -next)
-- DP link train improvements (this also kills the last 3.2 dp regression
-  afaik)
-- bugfix for the new ddc VGA detection on newer platforms
-- minor backlight fixes (one of them a -next regression)
-- only enable the required PM interrupts (to avoid waking up the cpu
-  unnecessarily)
-- some really minor bits (workaround clarification, make coverty happy,
-  hsw init fix)
+When booting 3.5.0 resolution (in console, and after in KDE) is set to 
+1024x768 (60Hz). In 3.4.4 was correct: 1440x900 (60Hz).
 
-Fyi I'll be on vacation next week, so you need to yell at someone else if
-stuff blows up ;-) But with this -fixes pile I'm not aware of any issues
-in the patches for 3.6, so I don't expect anything to blow up ...
+Dmesg from 3.5.0:
+http://mrutecki.pl/download/kernel/3.5/swinka/dmesg-3.5.0.txt
 
-Yours, Daniel
+Dmesg from 3.4.4:
+http://mrutecki.pl/download/kernel/3.5/swinka/dmesg-3.4.4.txt
 
-The following changes since commit 83bc5fd29afff5898cadf87fb29eb9260eecc63e:
+Config 3.5.0:
+http://mrutecki.pl/download/kernel/3.5/swinka/config-3.5.0
 
-  drm/sis: fixup sis_mm ioctl structs (2012-07-19 22:51:58 -0400)
+lspci:
+http://mrutecki.pl/download/kernel/3.5/swinka/lspci.txt
 
-are available in the git repository at:
-
-  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
-
-for you to fetch changes up to 18e0a7dd17db91c207f3d37f1e409c48fe02663e:
-
-  drm/i915: unbreak lastclose for failed driver init (2012-07-23 22:34:29 +0200)
-
-----------------------------------------------------------------
-Ander Conselvan de Oliveira (1):
-      drm/i915: mask tiled bit when updating ILK sprites
-
-Ben Widawsky (3):
-      drm/i915/context/: s/CTX/CXT
-      drm/i915/context: Add missing IVB context sizes
-      drm/i915: missing error case in init status page
-
-Chris Wilson (9):
-      drm/i915: Only request PM interrupts for the events we handled
-      drm/i915: Disable the BLT on pre-production SNB hardware
-      drm/i915: Add comments to explain the BSD tail write workaround
-      drm/i915: Insert a flush between batches if the breadcrumb was dropped
-      drm/i915: Make the lock for pageflips interruptible
-      drm/i915: Workaround hang with BSD and forcewake on SandyBridge
-      drm/i915: Flush the context object from the CPU caches upon switching
-      drm/i915: Add -EIO to the list of known errors for __wait_seqno
-      drm/i915: fix invalid reference handling of the default ctx obj
-
-Dan Carpenter (1):
-      drm/i915: dereferencing an error pointer
-
-Daniel Vetter (6):
-      drm/i915: fix up PCH backlight #define mixup
-      drm/i915: check whether we actually received an edid in detect_ddc
-      drm/i915: kill intel_ddc_probe
-      drm/i915/lvds: ditch ->prepare special case
-      drm/i915: constify mode in crtc_mode_fixup
-      drm/i915: unbreak lastclose for failed driver init
-
-Eric Anholt (1):
-      drm/i915: Set the context before setting up regs for the context.
-
-Eugeni Dodonov (1):
-      drm/i915: initialize power wells in modeset_init_hw
-
-Paulo Zanoni (2):
-      drm/i915: try to train DP even harder
-      drm/i915: don't forget the PCH backlight registers
-
- drivers/gpu/drm/i915/i915_debugfs.c        |    1 +
- drivers/gpu/drm/i915/i915_dma.c            |    8 +++++-
- drivers/gpu/drm/i915/i915_drv.h            |    1 +
- drivers/gpu/drm/i915/i915_gem.c            |   19 +++++++++++++-
- drivers/gpu/drm/i915/i915_gem_context.c    |   37 +++++++++++++++-------------
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |   17 ++++++++-----
- drivers/gpu/drm/i915/i915_irq.c            |    1 +
- drivers/gpu/drm/i915/i915_reg.h            |   32 +++++++++++++-----------
- drivers/gpu/drm/i915/intel_crt.c           |   33 +++++++++++--------------
- drivers/gpu/drm/i915/intel_display.c       |   12 +++++++--
- drivers/gpu/drm/i915/intel_dp.c            |    2 +-
- drivers/gpu/drm/i915/intel_drv.h           |   21 ++++++++--------
- drivers/gpu/drm/i915/intel_lvds.c          |    8 +-----
- drivers/gpu/drm/i915/intel_modes.c         |   28 ---------------------
- drivers/gpu/drm/i915/intel_panel.c         |   15 ++++++++++-
- drivers/gpu/drm/i915/intel_pm.c            |   14 +----------
- drivers/gpu/drm/i915/intel_ringbuffer.c    |   28 +++++++++++++++------
- drivers/gpu/drm/i915/intel_sprite.c        |    1 +
- 18 files changed, 150 insertions(+), 128 deletions(-)
+Regards
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Maciej Rutecki
+http://www.mrutecki.pl
