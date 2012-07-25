@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab2GYLoc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:44:32 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35649 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab2GYLo3 (ORCPT
+	id S1756577Ab2GYLnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:43:20 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55033 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302Ab2GYLnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:44:29 -0400
+	Wed, 25 Jul 2012 07:43:19 -0400
+Message-ID: <500FDBD2.1050906@parallels.com>
+Date: Wed, 25 Jul 2012 15:43:14 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <500FB1DE.1000100@redhat.com>
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com>
-	<500FB1DE.1000100@redhat.com>
-Date: Wed, 25 Jul 2012 19:44:28 +0800
-Message-ID: <CAKviJvVrrtyjFOzu7jmmD7cpXZcXtyQ+7HDy1G1o2_a0JRss5w@mail.gmail.com>
-Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
- HighMem pages used by sg list
-From: Sen Wang <kelvin.xupt@gmail.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
-        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andre Przywara <andre.przywara@amd.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Borislav Petkov <bp@amd64.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
+References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com> <20120721103715.GA3632@aftab.osrc.amd.com>	<500E4960.8040307@parallels.com> <500E5951.5020900@amd.com>	<500E5CDF.5000504@parallels.com> <20120724101041.GA24739@aftab.osrc.amd.com>	<500E8280.6050905@parallels.com> <500E9664.9030306@amd.com> <20120724134405.7a42b5bd@pyramind.ukuu.org.uk> <500FCB02.2080603@parallels.com> <500FD158.2070503@amd.com> <500FD24B.4040703@parallels.com> <500FD5C3.1070100@amd.com>
+In-Reply-To: <500FD5C3.1070100@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/25 Paolo Bonzini <pbonzini@redhat.com>:
-> Il 25/07/2012 10:29, Wang Sen ha scritto:
->> When using the commands below to write some data to a virtio-scsi LUN of the
->> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
->>
->>       # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
->>       # sudo mount /dev/sdb /mnt
->>       # dd if=/dev/zero of=/mnt/file bs=1M count=1024
->>
->> In current implementation, sg_set_buf is called to add buffers to sg list which
->> is put into the virtqueue eventually. But there are some HighMem pages in
->> table->sgl can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
->> return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
->> in QEMU because an invalid GPA is passed by virtqueue.
+On 07/25/2012 03:17 PM, Andre Przywara wrote:
+> On 07/25/2012 01:02 PM, Vladimir Davydov wrote:
+>> On 07/25/2012 02:58 PM, Andre Przywara wrote:
+>>> On 07/25/2012 12:31 PM, Vladimir Davydov wrote:
+>>>> On 07/24/2012 04:44 PM, Alan Cox wrote:
+>>>>>> This approach does not need any kernel support (except for the
+>>>>>> /proc/cpuinfo filtering). Does this address the issues you have?
+>>>>> You can do the /proc/cpuinfo filtering in user space too
+>>>>>
+>>>> How?
+>>> I wanted to write the same reply yesterday, but followed the hint in
+>>> Alan's previous mail:
+>>> # mount --bind /dev/shm/faked_cpuinfo /somepath/proc/cpuinfo
+>>>
+>>> I checked it, it works even with chroots and is not visible from within.
+>> If CPUs go online/offline?
+> Do you support CPU offlining from within the guest? My OpenVZ guest only
+> has /sys/class and nothing else, so I cannot offline any CPU.
 >
-> Heh, I was compiling (almost) the same patch as we speak. :)
+> So you setup a "hand-crafted" cpuinfo for the guest and this should stay
+> valid for the whole guest's runtime, right?
+>
+> And since it is a dumped file, "host" CPU off/onlining does not affect
+> it. Or do you want to propagate this to the guests?
 
-Uh, what a coincidence! :)
+A guest cannot have more CPUs than the host in container virtualization 
+(at least in OpenVZ). So yes, we will have to propagate.
 
->
-> I've never seen QEMU crash; the VM would more likely just fail to boot
-> with a panic.  But it's the same bug anyway.
+Anyway, we've agreed that you were right and are going to think about 
+/proc/cpuinfo virtualization.
 
-I never met this before. How this situation happens?
+Thank you for your time and feedback.
 
+> (Sorry, but my thinking is more Xen/KVM oriented, where guests can only
+> do most things if they are explicitly allowed to do it and separation
+> between guests and host is much stricter).
 >
->> My solution is using sg_set_page instead of sg_set_buf.
->>
->> I have tested the patch on my workstation. QEMU would not crash any more.
->>
->> Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
->> ---
->>  drivers/scsi/virtio_scsi.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
->> index 1b38431..fc5c88a 100644
->> --- a/drivers/scsi/virtio_scsi.c
->> +++ b/drivers/scsi/virtio_scsi.c
->> @@ -198,7 +198,8 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
->>       int i;
->>
->>       for_each_sg(table->sgl, sg_elem, table->nents, i)
->> -             sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
->> +             sg_set_page(&sg[idx++], sg_page(sg_elem), sg_elem->length,
->> +                     sg_elem->offset);
 >
-> This can simply be
->
->    sg[idx++] = *sg_elem;
+> Regards,
+> Andre.
 >
 
-Yes, I saw your another E-mail. I think you're right. Simply calling
-sg_set_page can not handle
-the flag bits correctly. So, I'll repost the patch soon. Thank you!
-
-> Can you repost it with this change, and also add stable@vger.kernel.org
-> to the Cc?  Thanks very much!
->
-> Paolo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-------------------------------------------
-Wang Sen
-Addr: XUPT,Xi'an,Shaanxi,China
-Email: kelvin.xupt@gmail.com
-------------------------------------------
