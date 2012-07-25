@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab2GYAJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 20:09:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41281 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab2GYAJG (ORCPT
+	id S1754278Ab2GYAMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 20:12:22 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56603 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab2GYAMV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 20:09:06 -0400
-Date: Tue, 24 Jul 2012 17:09:01 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Peter Boonstoppel <pboonstoppel@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Diwakar Tundlam <dtundlam@nvidia.com>
-Subject: Re: [PATCH 1/1] kthread: disable preemption during complete()
-Message-ID: <20120725000901.GA5304@google.com>
-References: <5FBF8E85CA34454794F0F7ECBA79798F379D364859@HQMAIL04.nvidia.com>
+	Tue, 24 Jul 2012 20:12:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5FBF8E85CA34454794F0F7ECBA79798F379D364859@HQMAIL04.nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <500F18E7.2040809@suse.cz>
+References: <CA+qZnSRNAAN6erat3Umuk6U9VYuc5SiQYK6PL8bHYAOcQ+SnAw@mail.gmail.com>
+	<CA+qZnSS2N4QZ13qATNFCbhJ6BRy4ZfpEBur45OUkuggPxYe4qA@mail.gmail.com>
+	<20120724115300.070d0ef7@pyramind.ukuu.org.uk>
+	<CA+qZnSSazFWLKq5ao51JX=H-NCbwLD=6ypGXOeqQF72s7ZbTVA@mail.gmail.com>
+	<500F18E7.2040809@suse.cz>
+Date: Wed, 25 Jul 2012 08:12:20 +0800
+Message-ID: <CA+qZnSQ5N2pE1F8gvJuNP1dkxcBvfVehAD9qb81yV+2pZRwQ3A@mail.gmail.com>
+Subject: Re: Suse 11 SP1 kernel panic on HP hardware
+From: tingwei liu <tingw.liu@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        dhillf@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Jul 24, 2012 at 05:05:32PM -0700, Peter Boonstoppel wrote:
-> After a kthread is created it signals the requester using complete()
-> and enters TASK_UNINTERRUPTIBLE. However, since complete() wakes up
-> the requesting thread this can cause a preemption. The preemption will
-> not remove the task from the runqueue (for that schedule() has to be
-> invoked directly).
-> 
-> This is a problem if directly after kthread creation you try to do a
-> kthread_bind(), which will block in HZ steps until the thread is off
-> the runqueue.
-> 
-> This patch disables preemption during complete(), since we call
-> schedule() directly afterwards, so it will correctly enter
-> TASK_UNINTERRUPTIBLE. This speeds up kthread creation/binding during
-> cpu hotplug significantly.
-> 
-> Change-Id: I856ddd4e01ebdb198ba90f343b4a0c5933fd2b23
-
-Is this from internal gerrit?  Can you please remove it before sending
-things upstream?
-
->  #include <linux/mutex.h>
->  #include <linux/slab.h>
->  #include <linux/freezer.h>
-> +#include <linux/preempt.h>
-> +#include <linux/thread_info.h>
->  #include <trace/events/sched.h>
->  
->  static DEFINE_SPINLOCK(kthread_create_lock);
-> @@ -113,7 +115,10 @@ static int kthread(void *_create)
->  	/* OK, tell user we're spawned, wait for stop or wakeup */
->  	__set_current_state(TASK_UNINTERRUPTIBLE);
->  	create->result = current;
-> +	preempt_disable();
->  	complete(&create->done);
-> +	clear_need_resched();
-
-Is the above really necessary given that you're calling
-preempt_enable_no_resched() right after?
-
-> +	preempt_enable_no_resched();
->  	schedule();
-
-Some comments would be really nice.
-
-Thanks.
-
--- 
-tejun
+On Wed, Jul 25, 2012 at 5:51 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 07/24/2012 12:56 PM, tingwei liu wrote:
+>> On Tue, Jul 24, 2012 at 6:53 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>> On Tue, 24 Jul 2012 18:39:20 +0800
+>>> tingwei liu <tingw.liu@gmail.com> wrote:
+>>>
+>>>> Suse 11 SP1 kernel panic。
+>>>>
+>>>> I can't debug it without debuginfo. Who can give me a link of sels
+>>>> 2.6.32.12-0.7.default.debug or give some advise.
+>>>
+>>> For distribution kernels (which tend to contain lots of other patches)
+>>> it is best to talk to your distribution support as a starter and/or their
+>>> forums.
+>>>
+>> I have report bug on suse website, but I haven't got any response until now!
+>
+> Well, where exactly?
+>
+I report a bug in this page
+http://support.novell.com/additional/bugreport.html with username
+tingweiliu.
+>> Can you give some advice?
+>> I thought this maybe a kernel bug.
+>
+> Yes, first upgrade to the latest kernel provided by Suse (2.6.32.59).
+But I want to find the reason.
+Thanks!
+>
+> You can also try to reproduce with -vanilla flavour. This is a pure
+> upstream version with no suse patches (you will lose apparmor for example):
+> http://download.opensuse.org/repositories/Kernel:/SLE11-SP1/SUSE_SLE-11_SP1/
+>
+> thanks,
+> --
+> js
+> suse labs
