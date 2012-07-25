@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab2GYD4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 23:56:20 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:33308 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756284Ab2GYDmD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 23:42:03 -0400
-From: Len Brown <lenb@kernel.org>
-To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Bob Moore <robert.moore@intel.com>, Lin Ming <ming.m.lin@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 01/52] ACPICA: AML Parser: Fix two possible memory leaks in error path
-Date: Tue, 24 Jul 2012 23:40:57 -0400
-Message-Id: <6af1c4fc5227af65092ebc848989693562bfa3e8.1343187617.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.12.rc0
-In-Reply-To: <1343187708-19532-1-git-send-email-lenb@kernel.org>
-References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
-Reply-To: Len Brown <lenb@kernel.org>
-Organization: Intel Open Source Technology Center
+	id S1756403Ab2GYD7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 23:59:49 -0400
+Received: from linux-sh.org ([111.68.239.195]:56550 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756284Ab2GYD7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Jul 2012 23:59:47 -0400
+Date: Wed, 25 Jul 2012 12:59:36 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 9/9 v3] dma: shdma: convert to the shdma base library
+Message-ID: <20120725035935.GA30468@linux-sh.org>
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de>
+ <1336576161-27082-10-git-send-email-g.liakhovetski@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336576161-27082-10-git-send-email-g.liakhovetski@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
+On Wed, May 09, 2012 at 05:09:21PM +0200, Guennadi Liakhovetski wrote:
+> The shdma base library has originally been extracted from the shdma driver,
+> which now can be converted to actually use it.
+> 
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+>  drivers/dma/sh/shdma.c | 1122 ++++++++++++------------------------------------
+>  drivers/dma/sh/shdma.h |   44 +-
+>  include/linux/sh_dma.h |   33 +-
+>  3 files changed, 302 insertions(+), 897 deletions(-)
+> 
+Now that this has hit mainline, the sh-sci with DMA enabled build is
+broken:
 
-Fixes a couple of memory leaks in the error recovery path.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/acpi/acpica/psargs.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/acpi/acpica/psargs.c b/drivers/acpi/acpica/psargs.c
-index 5ac36ab..a683d66 100644
---- a/drivers/acpi/acpica/psargs.c
-+++ b/drivers/acpi/acpica/psargs.c
-@@ -618,6 +618,7 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
- 
- 				arg = acpi_ps_alloc_op(AML_INT_BYTELIST_OP);
- 				if (!arg) {
-+					acpi_ps_free_op(field);
- 					return_PTR(NULL);
- 				}
- 
-@@ -662,6 +663,7 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
- 		} else {
- 			arg = acpi_ps_alloc_op(AML_INT_NAMEPATH_OP);
- 			if (!arg) {
-+				acpi_ps_free_op(field);
- 				return_PTR(NULL);
- 			}
- 
--- 
-1.7.12.rc0
-
+  CC      drivers/tty/serial/sh-sci.o
+drivers/tty/serial/sh-sci.c: In function 'work_fn_rx':
+drivers/tty/serial/sh-sci.c:1413:67: error: dereferencing pointer to incomplete type
+drivers/tty/serial/sh-sci.c:1413:81: warning: type defaults to 'int' in declaration of '__mptr'
+drivers/tty/serial/sh-sci.c:1413:90: warning: initialization from incompatible pointer type
+drivers/tty/serial/sh-sci.c:1413:161: error: invalid use of undefined type 'struct sh_desc'
+drivers/tty/serial/sh-sci.c:1419:83: error: dereferencing pointer to incomplete type
+drivers/tty/serial/sh-sci.c:1419:101: error: dereferencing pointer to incomplete type
+drivers/tty/serial/sh-sci.c:1423:42: error: dereferencing pointer to incomplete type
