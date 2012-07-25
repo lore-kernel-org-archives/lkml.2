@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab2GYTWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:22:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58307 "EHLO
+	id S1752092Ab2GYTXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:23:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58323 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789Ab2GYTWJ (ORCPT
+	with ESMTP id S1750722Ab2GYTW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:22:09 -0400
-Date: Wed, 25 Jul 2012 12:21:50 -0700
+	Wed, 25 Jul 2012 15:22:59 -0400
+Date: Wed, 25 Jul 2012 12:22:43 -0700
 From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Message-ID: <tip-8760db726e2afcd1a78e2ff58965c6b35a5826cb@git.kernel.org>
+Message-ID: <tip-0983cc0dbca45250cbb5984bec7c303ac265b8e5@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, fweisbec@gmail.com, a.p.zijlstra@chello.nl,
         dsahern@gmail.com, tglx@linutronix.de, namhyung@gmail.com,
         jolsa@redhat.com
-In-Reply-To: <1342631456-7233-2-git-send-email-fweisbec@gmail.com>
-References: <1342631456-7233-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1342631456-7233-1-git-send-email-fweisbec@gmail.com>
+References: <1342631456-7233-1-git-send-email-fweisbec@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf hists:
-  Return correct number of characters printed in callchain
-Git-Commit-ID: 8760db726e2afcd1a78e2ff58965c6b35a5826cb
+Subject: [tip:perf/core] perf tools:
+  Fix trace events storms due to weight demux
+Git-Commit-ID: 0983cc0dbca45250cbb5984bec7c303ac265b8e5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,57 +32,113 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:21:56 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:22:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8760db726e2afcd1a78e2ff58965c6b35a5826cb
-Gitweb:     http://git.kernel.org/tip/8760db726e2afcd1a78e2ff58965c6b35a5826cb
+Commit-ID:  0983cc0dbca45250cbb5984bec7c303ac265b8e5
+Gitweb:     http://git.kernel.org/tip/0983cc0dbca45250cbb5984bec7c303ac265b8e5
 Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Wed, 18 Jul 2012 19:10:55 +0200
+AuthorDate: Wed, 18 Jul 2012 19:10:54 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 25 Jul 2012 11:31:37 -0300
+CommitDate: Wed, 25 Jul 2012 11:32:06 -0300
 
-perf hists: Return correct number of characters printed in callchain
+perf tools: Fix trace events storms due to weight demux
 
-Include the omitted number of characters printed for the first entry.
+Trace events have a period (weight) of 1 by default. This can be
+overriden on events definition by using the __perf_count() macro.
 
-Not that it really matters because nobody seem to care about the number
-of printed characters for now. But just in case.
+For example, the sched_stat_runtime() is weighted with the runtime of
+the task that fired the event.
+
+By default, perf handles such weighted event by dividing it into
+individual events carrying a weight of 1. For example if
+sched_stat_runtime is fired and the task has run 5000000 nsecs, perf
+divides it into 5000000 events in the buffer.
+
+This behaviour makes weighted events unusable because they quickly
+fullfill the buffers and we lose most events.
+
+The commit 5d81e5cfb37a174e8ddc0413e2e70cdf05807ace ("events: Don't
+divide events if it has field period") solves this problem by sending
+only one event when PERF_SAMPLE_PERIOD flag is set. The weight is
+carried in the sample itself such that we don't need to demultiplex it
+anymore.
+
+This patch provides the last missing piece to use this feature by
+setting PERF_SAMPLE_PERIOD from perf tools when we deal with trace
+events.
+
+Before:
+	$ ./perf record -e sched:* -a sleep 1
+	[ perf record: Woken up 3 times to write data ]
+	[ perf record: Captured and wrote 1.619 MB perf.data (~70749 samples) ]
+	Warning:
+	Processed 16909 events and lost 1 chunks!
+
+	Check IO/CPU overload!
+
+	$ ./perf script
+	perf  1894 [003]   824.898327: sched_migrate_task: comm=perf pid=1898 prio=120 orig_cpu=2 dest_cpu=0
+	perf  1894 [003]   824.898335: sched_stat_sleep: comm=perf pid=1898 delay=113179500 [ns]
+	perf  1894 [003]   824.898336: sched_stat_sleep: comm=perf pid=1898 delay=113179500 [ns]
+	perf  1894 [003]   824.898337: sched_stat_sleep: comm=perf pid=1898 delay=113179500 [ns]
+	perf  1894 [003]   824.898338: sched_stat_sleep: comm=perf pid=1898 delay=113179500 [ns]
+	perf  1894 [003]   824.898339: sched_stat_sleep: comm=perf pid=1898 delay=113179500 [ns]
+	perf  1894 [003]   824.898340: sched_stat_sleep: comm=perf pid=1898 delay=113179500 [ns]
+	perf  1894 [003]   824.898341: sched_stat_sleep: comm=perf pid=1898 delay=113179500 [ns]
+	[...]
+
+After:
+	$ ./perf record -e sched:* -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.074 MB perf.data (~3228 samples) ]
+
+	$ ./perf script
+
+	perf  1461 [000]   554.286957: sched_migrate_task: comm=perf pid=1465 prio=120 orig_cpu=3 dest_cpu=1
+	perf  1461 [000]   554.286964: sched_stat_sleep: comm=perf pid=1465 delay=133047190 [ns]
+	perf  1461 [000]   554.286967: sched_wakeup: comm=perf pid=1465 prio=120 success=1 target_cpu=001
+	swapper     0 [001]   554.286976: sched_stat_wait: comm=perf pid=1465 delay=0 [ns]
+	swapper     0 [001]   554.286983: sched_switch: prev_comm=swapper/1 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=perf
+	[...]
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1342631456-7233-2-git-send-email-fweisbec@gmail.com
+Link: http://lkml.kernel.org/r/1342631456-7233-1-git-send-email-fweisbec@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/hist.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ tools/perf/util/evlist.c       |    2 +-
+ tools/perf/util/parse-events.c |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 514e2a4..90dc35a 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -708,7 +708,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 	bool printed = false;
- 	struct rb_node *node;
- 	int i = 0;
--	int ret;
-+	int ret = 0;
- 
- 	/*
- 	 * If have one single callchain root, don't bother printing
-@@ -747,8 +747,9 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 		root = &cnode->rb_root;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index f74e956..3edfd34 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -214,7 +214,7 @@ int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
+ 		attrs[i].type	       = PERF_TYPE_TRACEPOINT;
+ 		attrs[i].config	       = err;
+ 	        attrs[i].sample_type   = (PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
+-					  PERF_SAMPLE_CPU);
++					  PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD);
+ 		attrs[i].sample_period = 1;
  	}
  
--	return __callchain__fprintf_graph(fp, root, total_samples,
-+	ret += __callchain__fprintf_graph(fp, root, total_samples,
- 					  1, 1, left_margin);
-+	return ret;
- }
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 1aa721d..a729945 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -377,6 +377,7 @@ static int add_tracepoint(struct list_head **list, int *idx,
+ 	attr.sample_type |= PERF_SAMPLE_RAW;
+ 	attr.sample_type |= PERF_SAMPLE_TIME;
+ 	attr.sample_type |= PERF_SAMPLE_CPU;
++	attr.sample_type |= PERF_SAMPLE_PERIOD;
+ 	attr.sample_period = 1;
  
- static size_t __callchain__fprintf_flat(FILE *fp,
+ 	snprintf(name, MAX_NAME_LEN, "%s:%s", sys_name, evt_name);
