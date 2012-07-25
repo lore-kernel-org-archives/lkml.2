@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab2GYJgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 05:36:11 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38421 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab2GYJgJ (ORCPT
+	id S1753568Ab2GYJju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 05:39:50 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:44252 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab2GYJjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 05:36:09 -0400
-Date: Wed, 25 Jul 2012 11:29:28 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Maciej Rutecki <maciej.rutecki@gmail.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [REGRESSION] [KMS] [INTEL] Wrong resolution in console and
- XWindow
-Message-ID: <20120725092928.GD5396@phenom.ffwll.local>
-Mail-Followup-To: Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org
-References: <201207251020.47637.maciej.rutecki@gmail.com>
- <20120725082926.GB5396@phenom.ffwll.local>
- <201207251054.25498.maciej.rutecki@gmail.com>
+	Wed, 25 Jul 2012 05:39:48 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6782"; a="211907566"
+From: "Yaniv Gardi" <ygardi@codeaurora.org>
+To: "'Chris Ball'" <cjb@laptop.org>, <axboe@kernel.dk>
+Cc: <linux-mmc@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>, <merez@codeaurora.org>,
+        "'Girish K S'" <girish.shivananjappa@linaro.org>,
+        "'S, Venkatraman'" <svenkatr@ti.com>,
+        "'Dong, Chuanxiao'" <chuanxiao.dong@intel.com>,
+        "'Stephen Boyd'" <sboyd@codeaurora.org>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
+        "'Kyungmin Park'" <kmpark@infradead.org>, <merez@codeaurora.org>
+References: <1340872367-16206-1-git-send-email-ygardi@codeaurora.org>	<1340872367-16206-3-git-send-email-ygardi@codeaurora.org>	<87629k9rkc.fsf@octavius.laptop.org>	<f5830acb2ddca29357a0125cd8f3d577.squirrel@www.codeaurora.org>	<000001cd6967$2ce2a010$86a7e030$@codeaurora.org> <87obn5y7e6.fsf_-_@octavius.laptop.org>
+In-Reply-To: <87obn5y7e6.fsf_-_@octavius.laptop.org>
+Subject: RE: [PATCH RESEND v7 2/2] mmc: card: Adding support for sanitize in eMMC 4.5
+Date: Wed, 25 Jul 2012 12:39:43 +0300
+Message-ID: <000401cd6a49$6e74aef0$4b5e0cd0$@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201207251054.25498.maciej.rutecki@gmail.com>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQHbbDwGtVR7542ubm/TS3EGnuY2sQDa9+k6AQmswqUCFNjQbQFZOIVVApupRT+W3kX98A==
+Content-language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 10:54:25AM +0200, Maciej Rutecki wrote:
-> On środa, 25 lipca 2012 o 10:29:26 Daniel Vetter wrote:
-> > On Wed, Jul 25, 2012 at 10:20:47AM +0200, Maciej Rutecki wrote:
-> > > Last known good: 3.4.4
-> > > First bad: 3.5.0
-> > > 
-> > > When booting 3.5.0 resolution (in console, and after in KDE) is set to
-> > > 1024x768 (60Hz). In 3.4.4 was correct: 1440x900 (60Hz).
-> > 
-> > Can you please attach the output of xrandr --verbose for both kernels?
-> > Also, please boot with drm.debug=0xe added to your kernel cmdline and grab
-> > the dmesg (again for both kernels).
-> > 
-> 
-> Thanks for the ansfer.
-> 
-> Here xrandr and dmesg outputs for 3.4.4 and 3.5.0
-> 
-> http://mrutecki.pl/download/kernel/3.5/swinka/debug/
++ Jens Axboe
 
-Can you please test this quick hack:
+Hi Jens,
+Can you please review the v8 patch and refer to it? As seen below,
+everything is all set to push the change in the mmc layer,
+But it's better to push the feature to both modules
+
+Hi Chris,
+I just uploaded a v8, which has small fix in the block layer. It has no
+changes at all, in the mmc layer.
+Hope we soon have a reply from Jens regarding when the sanitize patch can be
+pushed in to linux-next in the block layer.
 
 
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 1991a44..abe1611 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -405,7 +405,7 @@ clear_err:
- 	 * timing out seems to happen when there _is_ a ddc chip present, but
- 	 * it's slow responding and only answers on the 2nd retry.
- 	 */
--	ret = -ENXIO;
-+	ret = 0;
- 	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0,
- 		     10)) {
- 		DRM_DEBUG_KMS("GMBUS [%s] timed out after NAK\n",
+Thanks,
+Yaniv
 
+= > -----Original Message-----
+= > From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
+= > owner@vger.kernel.org] On Behalf Of Chris Ball
+= > Sent: Tuesday, July 24, 2012 9:56 AM
+= > To: Yaniv Gardi
+= > Cc: linux-mmc@vger.kernel.org; linux-arm-msm@vger.kernel.org; 'open
+= > list'; merez@codeaurora.org; Girish K S; S, Venkatraman; Dong,
+Chuanxiao;
+= > Stephen Boyd; Jaehoon Chung; Kyungmin Park
+= > Subject: Re: [PATCH RESEND v7 2/2] mmc: card: Adding support for
+= > sanitize in eMMC 4.5
+= > 
+= > Hi Yaniv,
+= > 
+= > On Tue, Jul 24 2012, Yaniv Gardi wrote:
+= > > Are there any additional open issues to discuss regarding the sanitize
+= > > capability ?
+= > > If not, we would like to see this patch pushed into mmc-next.
+= > 
+= > I think you've responded to all of the open issues, thanks -- I'm adding
+= > everyone who made a review comment to the CC list for this mail, so that
+= > they can check whether v7 addresses their concerns, and consider asking
+= > more questions or providing a Reviewed-by.
+= > 
+= > How are you doing with getting the block layer patches merged?  I'd like
+to
+= > get both layers into linux-next around the same time, if we can.
+= > 
+= > I wonder if there's any way to test whether sanitize has had an effect.
+= > It would be good to know whether it actually does anything on a specific
+= > eMMC, although I'm sure it's difficult to tell.
+= > 
+= > Thanks!
+= > 
+= > - Chris.
+= > --
+= > Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+= > One Laptop Per Child
+= > --
+= > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+the
+= > body of a message to majordomo@vger.kernel.org More majordomo info
+= > at  http://vger.kernel.org/majordomo-info.html
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
