@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab2GYRIR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:08:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756354Ab2GYRIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:08:16 -0400
-Date: Wed, 25 Jul 2012 14:00:08 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+	id S1751193Ab2GYRLK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:11:10 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:47861 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab2GYRLH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 13:11:07 -0400
+Date: Wed, 25 Jul 2012 19:11:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
         tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
         fche@redhat.com, linux-kernel@vger.kernel.org,
         masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
         benjamin.redelings@nescent.org
-Subject: Re: [PATCH 02/17] perf: Add ability to attach user level registers
- dump to sample
-Message-ID: <20120725170008.GB17355@infradead.org>
+Subject: Re: [PATCH 16/17] perf, tool: Add dso data caching
+Message-ID: <20120725171059.GF1173@somewhere.redhat.com>
 References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
- <1342959280-5361-3-git-send-email-jolsa@redhat.com>
- <20120725161302.GC1173@somewhere.redhat.com>
+ <1342959280-5361-17-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120725161302.GC1173@somewhere.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1342959280-5361-17-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jul 25, 2012 at 06:13:06PM +0200, Frederic Weisbecker escreveu:
-> On Sun, Jul 22, 2012 at 02:14:25PM +0200, Jiri Olsa wrote:
-> > Introducing PERF_SAMPLE_REGS_USER sample type bit to trigger
-> > the dump of user level registers on sample. Registers we want
-> > to dump are specified by sample_regs_user bitmask.
-> > 
-> > Only user level registers are dumped at the moment. Meaning the
-> > register values of the user space context as it was before the
-> > user entered the kernel for whatever reason (syscall, irq,
-> > exception, or a PMI happening in userspace).
-> > 
-> > The layout of the sample_regs_user bitmap is described in
-> > asm/perf_regs.h for archs that support register dump.
-> > 
-> > This is going to be useful to bring Dwarf CFI based stack
-> > unwinding on top of samples.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+On Sun, Jul 22, 2012 at 02:14:39PM +0200, Jiri Olsa wrote:
+> Adding dso data caching so we don't need to open/read/close,
+> each time we want dso data.
 > 
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> The DSO data caching affects following functions:
+>   dso__data_read_offset
+>   dso__data_read_addr
+> 
+> Each DSO read tries to find the data (based on offset) inside
+> the cache. If it's not present it fills the cache from file,
+> and returns the data. If it is present, data are returned
+> with no file read.
+> 
+> Each data read is cached by reading cache page sized/aligned
+> amount of DSO data. The cache page size is hardcoded to 4096.
+> The cache is using RB tree with file offset as a sort key.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 
-Cool, Stephane, Peter, are you ok with it? Can I get your Acked-by or
-even Reviewed-by?
+Nice idea.
 
-- Arnaldo
+> ---
+>  tools/perf/util/symbol.c |  154 ++++++++++++++++++++++++++++++++++++++++------
+
+There seem to be an increasing need to move dso related things
+to some util/dso.c file. Just suggesting.
