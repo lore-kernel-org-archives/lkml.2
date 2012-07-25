@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933396Ab2GYOoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:44:09 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:8706 "EHLO relay.sw.ru"
+	id S933408Ab2GYOoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:44:44 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:24538 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933350Ab2GYOnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:43:04 -0400
+	id S933322Ab2GYOmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 10:42:53 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -13,13 +13,13 @@ Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        <cgroups@vger.kernel.org>, Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
+        <cgroups@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 08/10] memcg/sl[au]b Track all the memcg children of a kmem_cache.
-Date: Wed, 25 Jul 2012 18:38:19 +0400
-Message-Id: <1343227101-14217-9-git-send-email-glommer@parallels.com>
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [PATCH 04/10] memcg: skip memcg kmem allocations in specified code regions
+Date: Wed, 25 Jul 2012 18:38:15 +0400
+Message-Id: <1343227101-14217-5-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1343227101-14217-1-git-send-email-glommer@parallels.com>
 References: <1343227101-14217-1-git-send-email-glommer@parallels.com>
@@ -27,142 +27,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables us to remove all the children of a kmem_cache being
-destroyed, if for example the kernel module it's being used in
-gets unloaded. Otherwise, the children will still point to the
-destroyed parent.
+This patch creates a mechanism that skip memcg allocations during
+certain pieces of our core code. It basically works in the same way
+as preempt_disable()/preempt_enable(): By marking a region under
+which all allocations will be accounted to the root memcg.
 
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+We need this to prevent races in early cache creation, when we
+allocate data using caches that are not necessarily created already.
+
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Michal Hocko <mhocko@suse.cz>
 CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
 ---
- include/linux/memcontrol.h |    1 +
- include/linux/slab.h       |    1 +
- mm/memcontrol.c            |   16 +++++++++++++++-
- mm/slab_common.c           |   31 +++++++++++++++++++++++++++++++
- 4 files changed, 48 insertions(+), 1 deletion(-)
+ include/linux/sched.h |    1 +
+ mm/memcontrol.c       |   27 +++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 247019f..f8d63f2 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -426,6 +426,7 @@ void memcg_release_cache(struct kmem_cache *cachep);
- struct kmem_cache *
- __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
- void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
-+void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id);
- #else
- static inline void memcg_register_cache(struct mem_cgroup *memcg,
- 					     struct kmem_cache *s)
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index b9310a4..3cfd784 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -189,6 +189,7 @@ struct mem_cgroup_cache_params {
- 	bool dead;
- 	atomic_t nr_pages;
- 	struct list_head destroyed_list; /* Used when deleting memcg cache */
-+	struct list_head sibling_list;
- };
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index c350e60..c09cd1b 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1562,6 +1562,7 @@ struct task_struct {
+ 		unsigned long nr_pages;	/* uncharged usage */
+ 		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
+ 	} memcg_batch;
++	unsigned int memcg_kmem_skip_account;
  #endif
- 
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 	atomic_t ptrace_bp_refcnt;
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1231d86..d92d963 100644
+index 8d012c7..854f6cc 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -586,8 +586,11 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
- 
- 	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
- 				      (s->flags & ~SLAB_PANIC), s->ctor, s);
--	if (new)
-+	if (new) {
- 		new->allocflags |= __GFP_KMEMCG;
-+		list_add(&new->memcg_params.sibling_list,
-+			 &s->memcg_params.sibling_list);
-+	}
- 
- 	kfree(name);
- 	return new;
-@@ -600,6 +603,7 @@ void memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *cachep)
- 	int id = -1;
- 
- 	INIT_LIST_HEAD(&cachep->memcg_params.destroyed_list);
-+	INIT_LIST_HEAD(&cachep->memcg_params.sibling_list);
- 
- 	if (!memcg)
- 		id = ida_simple_get(&cache_types, 0, MAX_KMEM_CACHE_TYPES,
-@@ -611,6 +615,9 @@ void memcg_release_cache(struct kmem_cache *cachep)
- {
- 	if (cachep->memcg_params.id != -1)
- 		ida_simple_remove(&cache_types, cachep->memcg_params.id);
-+	else
-+		list_del(&cachep->memcg_params.sibling_list);
-+
+@@ -541,6 +541,22 @@ static inline bool memcg_kmem_enabled(struct mem_cgroup *memcg)
+ 		memcg->kmem_accounted;
  }
  
- /*
-@@ -944,6 +951,13 @@ static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
- 	schedule_work(&memcg_create_cache_work);
- }
- 
-+void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
++static void memcg_stop_kmem_account(void)
 +{
-+	mutex_lock(&memcg_cache_mutex);
-+	cachep->memcg_params.memcg->slabs[id] = NULL;
-+	mutex_unlock(&memcg_cache_mutex);
-+}
-+
- /*
-  * Return the kmem_cache we're supposed to use for a slab allocation.
-  * We try to use the current memcg's version of the cache.
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 562146b..6504557 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -189,8 +189,39 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
- }
- EXPORT_SYMBOL(kmem_cache_create);
- 
-+static void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+{
-+#ifdef CONFIG_MEMCG_KMEM
-+	struct kmem_cache *c;
-+	struct mem_cgroup_cache_params *p, *tmp;
-+	int id = s->memcg_params.id;
-+
-+	if (id == -1)
++	if (!current->mm)
 +		return;
 +
-+	mutex_lock(&slab_mutex);
-+	list_for_each_entry_safe(p, tmp,
-+	    &s->memcg_params.sibling_list, sibling_list) {
-+		c = container_of(p, struct kmem_cache, memcg_params);
-+		if (WARN_ON(c == s))
-+			continue;
-+
-+		mutex_unlock(&slab_mutex);
-+		BUG_ON(c->memcg_params.id != -1);
-+		mem_cgroup_remove_child_kmem_cache(c, id);
-+		kmem_cache_destroy(c);
-+		mutex_lock(&slab_mutex);
-+	}
-+	mutex_unlock(&slab_mutex);
-+#endif /* CONFIG_MEMCG_KMEM */
++	current->memcg_kmem_skip_account++;
 +}
 +
- void kmem_cache_destroy(struct kmem_cache *s)
++static void memcg_resume_kmem_account(void)
++{
++	if (!current->mm)
++		return;
++
++	current->memcg_kmem_skip_account--;
++}
++
+ static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
  {
+ 	char *name;
+@@ -614,6 +630,10 @@ bool __memcg_kmem_new_page(gfp_t gfp, void *_handle, int order)
+ 	struct task_struct *p;
+ 
+ 	*handle = NULL;
 +
-+	/* Destroy all the children caches if we aren't a memcg cache */
-+	kmem_cache_destroy_memcg_children(s);
++	if (current->memcg_kmem_skip_account)
++		return true;
 +
- 	get_online_cpus();
- 	mutex_lock(&slab_mutex);
- 	list_del(&s->list);
+ 	rcu_read_lock();
+ 	p = rcu_dereference(current->mm->owner);
+ 	memcg = mem_cgroup_from_task(p);
+@@ -734,7 +754,9 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 	if (new_cachep)
+ 		goto out;
+ 
++	memcg_stop_kmem_account();
+ 	new_cachep = kmem_cache_dup(memcg, cachep);
++	memcg_resume_kmem_account();
+ 
+ 	if (new_cachep == NULL) {
+ 		new_cachep = cachep;
+@@ -824,7 +846,9 @@ static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+ 	if (!css_tryget(&memcg->css))
+ 		return;
+ 
++	memcg_stop_kmem_account();
+ 	cw = kmalloc(sizeof(struct create_work), GFP_NOWAIT);
++	memcg_resume_kmem_account();
+ 	if (cw == NULL) {
+ 		css_put(&memcg->css);
+ 		return;
+@@ -859,6 +883,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 	int idx;
+ 	struct task_struct *p;
+ 
++	if (!current->mm || current->memcg_kmem_skip_account)
++		return cachep;
++
+ 	if (cachep->memcg_params.memcg)
+ 		return cachep;
+ 
 -- 
 1.7.10.4
 
