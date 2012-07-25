@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab2GYMOU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:14:20 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56688 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756605Ab2GYMOR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:14:17 -0400
-From: Wang Sen <senwang@linux.vnet.ibm.com>
-To: linux-scsi@vger.kernel.org
-Cc: JBottomley@parallels.com, pbonzini@redhat.com, stefanha@linux.vnet.ibm.com,
-        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Wang Sen <senwang@linux.vnet.ibm.com>
-Subject: [PATCH v2] scsi: virtio-scsi: Fix address translation failure of HighMem pages used by sg list
-Date: Wed, 25 Jul 2012 20:13:10 +0800
-Message-Id: <1343218390-24310-1-git-send-email-senwang@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-x-cbid: 12072512-3568-0000-0000-00000232D17A
+	id S1756666Ab2GYMT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:19:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756555Ab2GYMT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:19:56 -0400
+Date: Wed, 25 Jul 2012 14:16:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Solar Designer <solar@openwall.com>, Kees Cook <keescook@chromium.org>,
+        David Rientjes <rientjes@google.com>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [PATCH v2 2/2] proc: do not allow negative offsets on
+	/proc/<pid>/environ
+Message-ID: <20120725121644.GA6584@redhat.com>
+References: <1343143742-31229-1-git-send-email-tixxdz@opendz.org> <1343143742-31229-3-git-send-email-tixxdz@opendz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343143742-31229-3-git-send-email-tixxdz@opendz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the commands below to write some data to a virtio-scsi LUN of the
-QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
+On 07/24, Djalal Harouni wrote:
+>
+>  static int mem_open(struct inode *inode, struct file *file)
+>  {
+> -	return __mem_open(inode, file, PTRACE_MODE_ATTACH);
+> +	int ret = __mem_open(inode, file, PTRACE_MODE_ATTACH);
+> +
+> +	/* OK to pass negative loff_t, we can catch out-of-range */
+> +	file->f_mode |= FMODE_UNSIGNED_OFFSET;
+> +
+> +	return ret;
+>  }
 
-        # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
-        # sudo mount /dev/sdb /mnt
-        # dd if=/dev/zero of=/mnt/file bs=1M count=1024
+It could be even simpler, I meant
 
-In current implementation, sg_set_buf is called to add buffers to sg list which
-is put into the virtqueue eventually. But if there are some HighMem pages in
-table->sgl you can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
-return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
-in QEMU because an invalid GPA is passed by virtqueue.
+	file->f_mode |= FMODE_UNSIGNED_OFFSET;
+	return __mem_open(inode, file, PTRACE_MODE_ATTACH);
 
-I take Paolo's solution mentioned in last thread to avoid failure on handling 
-flag bits.
+Never mind, this is very minor and the patch is already in -mm.
 
-I have tested the patch on my workstation. QEMU would not crash any more.
-
-Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
----
- drivers/scsi/virtio_scsi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 1b38431..6661610 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -198,7 +198,7 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
- 	int i;
- 
- 	for_each_sg(table->sgl, sg_elem, table->nents, i)
--		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
-+		sg[idx++] = *sg_elem;
- 
- 	*p_idx = idx;
- }
--- 
-1.7.9.5
+Oleg.
 
