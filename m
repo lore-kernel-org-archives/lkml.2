@@ -1,208 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab2GYXBs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 19:01:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41216 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab2GYXBq (ORCPT
+	id S1752547Ab2GYXB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 19:01:57 -0400
+Received: from mail-hostigation.familyross.net ([69.85.93.112]:56097 "EHLO
+	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752249Ab2GYXBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 19:01:46 -0400
-Date: Wed, 25 Jul 2012 16:01:42 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk, agk@redhat.com,
-        neilb@suse.de, drbd-dev@lists.linbit.com, vgoyal@redhat.com,
-        mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v4 04/12] pktcdvd: Switch to bio_kmalloc()
-Message-ID: <20120725230142.GB8673@moria.home.lan>
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
- <1343160689-12378-5-git-send-email-koverstreet@google.com>
- <500FD8B7.9040701@panasas.com>
+	Wed, 25 Jul 2012 19:01:54 -0400
+X-Greylist: delayed 559 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 19:01:54 EDT
+Message-ID: <501078B2.8070707@familyross.net>
+Date: Wed, 25 Jul 2012 15:52:34 -0700
+From: Kevin Ross <kevin@familyross.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500FD8B7.9040701@panasas.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: RAID extremely slow
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 02:29:59PM +0300, Boaz Harrosh wrote:
-> On 07/24/2012 11:11 PM, Kent Overstreet wrote:
-> 
-> > This is prep work for killing bi_destructor - previously, pktcdvd had
-> > its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-> > necessitating its own bi_destructor implementation.
-> > 
-> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > ---
-> >  drivers/block/pktcdvd.c |  115 ++++++++++++++++-------------------------------
-> >  1 files changed, 39 insertions(+), 76 deletions(-)
-> > 
-> > diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-> > index ba66e44..6fe693a 100644
-> > --- a/drivers/block/pktcdvd.c
-> > +++ b/drivers/block/pktcdvd.c
-> > @@ -522,36 +522,38 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
-> >  	}
-> >  }
-> >  
-> > -static void pkt_bio_destructor(struct bio *bio)
-> > +static void pkt_end_io_read(struct bio *bio, int err)
-> >  {
-> > -	kfree(bio->bi_io_vec);
-> > -	kfree(bio);
-> > -}
-> 
-> 
-> Again here, you decided to move the pkt_end_io_read && pkt_end_io_packet_write
-> functions from below, to above here. Which makes it impossible to find
-> any bugs by just reviewing the patch.
-> 
-> So I have not reviewed it. 
-> 
-> I know that you wanted so you can reference them at pkt_alloc_packet_data.
-> I'd use a forward reference, in this case. And a move in a next patch. But
-> this is just me. Perhaps the owner of this code can review it?
+Hello,
 
-Yeah, I tend to be pretty anal about unnecessary forward declarations.
-Overly anal in this case, I suppose. Here's a better patch:
+I'm having a problem.  After a while, my software RAID rebuild becomes 
+extremely slow, and the filesystem on the RAID is essentially blocked.  
+I don't know what is causing this.  I guess it could be a bad drive, but 
+how can I find out?
 
+I used atop to show the transfer speeds to each drive. Here's a 
+screenshot: 
+http://img402.imageshack.us/img402/6484/screenshotfrom201207251.png
 
-commit 88cb170314bfa6cc90af37e433c07927b3b79ed2
-Author: Kent Overstreet <koverstreet@google.com>
-Date:   Wed Jul 25 16:00:00 2012 -0700
+"smartctl -a" for all the drives looks good to me, no pending failures, 
+or errors logged.  dmesg doesn't report anything wrong with any of the 
+drives.  It does, however, report lots of hung tasks, which are trying 
+to access the RAID volume.  For example:
 
-    pktcdvd: Switch to bio_kmalloc()
-    
-    This is prep work for killing bi_destructor - previously, pktcdvd had
-    its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-    necessitating its own bi_destructor implementation.
-    
-    Signed-off-by: Kent Overstreet <koverstreet@google.com>
+[51000.672064] INFO: task mythbackend:10677 blocked for more than 120 
+seconds.
+[51000.672098] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" 
+disables this message.
+[51000.672143] mythbackend     D 0000000e     0 10677      1 0x00000000
+[51000.672146]  f38bea00 00000086 c1095415 0000000e 00000002 00000000 
+00000000 c147aac0
+[51000.672152]  f38bebac c147aac0 eb2cff04 003d2f4b 00000000 c109cacb 
+01872f02 eb2cfe50
+[51000.672157]  c100f28b c13df480 01872f02 eb2cfe68 c10532b1 0069a8d0 
+f79d6ac0 00000000
+[51000.672162] Call Trace:
+[51000.672169]  [<c1095415>] ? find_get_pages_tag+0x2f/0xa2
+[51000.672173]  [<c109cacb>] ? pagevec_lookup_tag+0x18/0x1e
+[51000.672176]  [<c100f28b>] ? read_tsc+0xa/0x28
+[51000.672179]  [<c10532b1>] ? timekeeping_get_ns+0x11/0x55
+[51000.672182]  [<c10536a4>] ? ktime_get_ts+0x7a/0x82
+[51000.672186]  [<c12bea8b>] ? io_schedule+0x4a/0x5f
+[51000.672188]  [<c1095659>] ? sleep_on_page+0x5/0x8
+[51000.672191]  [<c12bedeb>] ? __wait_on_bit+0x2f/0x54
+[51000.672193]  [<c1095654>] ? lock_page+0x1d/0x1d
+[51000.672196]  [<c1095754>] ? wait_on_page_bit+0x57/0x5e
+[51000.672199]  [<c104d171>] ? autoremove_wake_function+0x29/0x29
+[51000.672201]  [<c1095823>] ? filemap_fdatawait_range+0x71/0x11e
+[51000.672205]  [<c109630f>] ? filemap_write_and_wait_range+0x3e/0x4c
+[51000.672232]  [<f86bfb39>] ? xfs_file_fsync+0x68/0x214 [xfs]
+[51000.672246]  [<f86bfad1>] ? xfs_file_splice_write+0x144/0x144 [xfs]
+[51000.672249]  [<c10e7e3b>] ? vfs_fsync_range+0x27/0x2d
+[51000.672252]  [<c10e7e52>] ? vfs_fsync+0x11/0x15
+[51000.672254]  [<c10e80b8>] ? sys_fdatasync+0x20/0x2e
+[51000.672258]  [<c12c409f>] ? sysenter_do_call+0x12/0x28
+[51000.672261]  [<c12b0000>] ? quirk_usb_early_handoff+0x4a9/0x522
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index ba66e44..ae55f08 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -101,6 +101,8 @@ static struct dentry	*pkt_debugfs_root = NULL; /* /sys/kernel/debug/pktcdvd */
- static int pkt_setup_dev(dev_t dev, dev_t* pkt_dev);
- static int pkt_remove_dev(dev_t pkt_dev);
- static int pkt_seq_show(struct seq_file *m, void *p);
-+static void pkt_end_io_read(struct bio *bio, int err);
-+static void pkt_end_io_packet_write(struct bio *bio, int err);
- 
- 
- 
-@@ -522,38 +524,6 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
- 	}
- }
- 
--static void pkt_bio_destructor(struct bio *bio)
--{
--	kfree(bio->bi_io_vec);
--	kfree(bio);
--}
--
--static struct bio *pkt_bio_alloc(int nr_iovecs)
--{
--	struct bio_vec *bvl = NULL;
--	struct bio *bio;
--
--	bio = kmalloc(sizeof(struct bio), GFP_KERNEL);
--	if (!bio)
--		goto no_bio;
--	bio_init(bio);
--
--	bvl = kcalloc(nr_iovecs, sizeof(struct bio_vec), GFP_KERNEL);
--	if (!bvl)
--		goto no_bvl;
--
--	bio->bi_max_vecs = nr_iovecs;
--	bio->bi_io_vec = bvl;
--	bio->bi_destructor = pkt_bio_destructor;
--
--	return bio;
--
-- no_bvl:
--	kfree(bio);
-- no_bio:
--	return NULL;
--}
--
- /*
-  * Allocate a packet_data struct
-  */
-@@ -567,10 +537,13 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
- 		goto no_pkt;
- 
- 	pkt->frames = frames;
--	pkt->w_bio = pkt_bio_alloc(frames);
-+	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
- 	if (!pkt->w_bio)
- 		goto no_bio;
- 
-+	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
-+	pkt->w_bio->bi_private = pkt;
-+
- 	for (i = 0; i < frames / FRAMES_PER_PAGE; i++) {
- 		pkt->pages[i] = alloc_page(GFP_KERNEL|__GFP_ZERO);
- 		if (!pkt->pages[i])
-@@ -581,9 +554,12 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
- 	bio_list_init(&pkt->orig_bios);
- 
- 	for (i = 0; i < frames; i++) {
--		struct bio *bio = pkt_bio_alloc(1);
-+		struct bio *bio = bio_kmalloc(GFP_KERNEL, 1);
- 		if (!bio)
- 			goto no_rd_bio;
-+
-+		bio->bi_end_io = pkt_end_io_read;
-+		bio->bi_private = pkt;
- 		pkt->r_bios[i] = bio;
- 	}
- 
-@@ -1111,21 +1087,15 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	 * Schedule reads for missing parts of the packet.
- 	 */
- 	for (f = 0; f < pkt->frames; f++) {
--		struct bio_vec *vec;
--
- 		int p, offset;
-+
- 		if (written[f])
- 			continue;
-+
- 		bio = pkt->r_bios[f];
--		vec = bio->bi_io_vec;
--		bio_init(bio);
--		bio->bi_max_vecs = 1;
--		bio->bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
--		bio->bi_bdev = pd->bdev;
--		bio->bi_end_io = pkt_end_io_read;
--		bio->bi_private = pkt;
--		bio->bi_io_vec = vec;
--		bio->bi_destructor = pkt_bio_destructor;
-+		bio_reset(bio);
-+		bio->bi_sector	= pkt->sector + f * (CD_FRAMESIZE >> 9);
-+		bio->bi_bdev	= pd->bdev;
- 
- 		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
- 		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
-@@ -1418,14 +1388,9 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	}
- 
- 	/* Start the write request */
--	bio_init(pkt->w_bio);
--	pkt->w_bio->bi_max_vecs = PACKET_MAX_SIZE;
-+	bio_reset(pkt->w_bio);
- 	pkt->w_bio->bi_sector = pkt->sector;
- 	pkt->w_bio->bi_bdev = pd->bdev;
--	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
--	pkt->w_bio->bi_private = pkt;
--	pkt->w_bio->bi_io_vec = bvec;
--	pkt->w_bio->bi_destructor = pkt_bio_destructor;
- 	for (f = 0; f < pkt->frames; f++)
- 		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
- 			BUG();
+Here is some other possibly relevant info:
+
+# cat /proc/mdstat
+Personalities : [raid6] [raid5] [raid4]
+md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4] 
+sdf1[3] sdg1[8] sdj1[1]
+       6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 
+[9/9] [UUUUUUUUU]
+       [==========>..........]  resync = 51.3% (501954432/976758784) 
+finish=28755.6min speed=275K/sec
+
+unused devices: <none>
+
+# cat /proc/sys/dev/raid/speed_limit_min
+10000
+# cat /proc/sys/dev/raid/speed_limit_max
+200000
+
+Thanks in advance!
+-- Kevin
+
