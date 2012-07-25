@@ -1,41 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab2GYWGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 18:06:41 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:49089 "EHLO
+	id S1752904Ab2GYWKn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 18:10:43 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:58905 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab2GYWGj (ORCPT
+	with ESMTP id S1752774Ab2GYWKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 18:06:39 -0400
+	Wed, 25 Jul 2012 18:10:41 -0400
+Date: Wed, 25 Jul 2012 15:09:48 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] page-table walkers vs memory order
+In-Reply-To: <20120725211217.GR2378@linux.vnet.ibm.com>
+Message-ID: <alpine.LSU.2.00.1207251452160.2084@eggly.anvils>
+References: <1343064870.26034.23.camel@twins> <alpine.LSU.2.00.1207241356350.2094@eggly.anvils> <20120725175628.GH2378@linux.vnet.ibm.com> <alpine.LSU.2.00.1207251313180.1942@eggly.anvils> <20120725211217.GR2378@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120725204350.GA20530@havoc.gtf.org>
-References: <20120725203551.GA19762@havoc.gtf.org> <20120725204350.GA20530@havoc.gtf.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 Jul 2012 15:06:17 -0700
-X-Google-Sender-Auth: 4hgThN2tnmZMThhmF3YG5_ZUwBo
-Message-ID: <CA+55aFwCCctcmryQJMCT_3TDr60CYBQKu9HMyxOgS8482+w5Xw@mail.gmail.com>
-Subject: Re: [git patches] libata updates
-To: Jeff Garzik <jeff@garzik.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 1:43 PM, Jeff Garzik <jeff@garzik.org> wrote:
-> On Wed, Jul 25, 2012 at 04:35:51PM -0400, Jeff Garzik wrote:
->> Please pull 641589bff714f39b33ef1d7f02eaa009f2993b64 from
->> git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git tags/upstream
->>
->
-> Oh, I forgot to point out the merge commit, making my HEAD more recent
-> than might be expected.  There was a merge conflict and an API change
-> that needed to be dealt with, in order for your pull to be correct.
+On Wed, 25 Jul 2012, Paul E. McKenney wrote:
+> On Wed, Jul 25, 2012 at 01:26:43PM -0700, Hugh Dickins wrote:
+> > On Wed, 25 Jul 2012, Paul E. McKenney wrote:
+> > > On Tue, Jul 24, 2012 at 02:51:05PM -0700, Hugh Dickins wrote:
+> > > > 
+> > > > I'm totally unclear whether the kernel ever gets built with these
+> > > > 'creative' compilers that you refer to.  Is ACCESS_ONCE() a warning
+> > > > of where some future compiler would be permitted to mess with our
+> > > > assumptions?  Or is it actually saving us already today?  Would we
+> > > > know?  Could there be a boottime test that would tell us?  Is it
+> > > > likely that a future compiler would have an "--access_once"
+> > > > option that the kernel build would want to turn on?
+> > > 
+> > > The problem is that, unless you tell it otherwise, the compiler is
+> > > permitted to assume that the code that it is generating is the only thing
+> > > active in that address space at that time.  So the compiler might know
+> > > that it already has a perfectly good copy of that value somewhere in
+> > > its registers, or it might decide to fetch the value twice rather than
+> > > once due to register pressure, either of which can be fatal in SMP code.
+> > > And then there are more aggressive optimizations as well.
+> > > 
+> > > ACCESS_ONCE() is a way of telling the compiler to access the value
+> > > once, regardless of what cute single-threaded optimizations that it
+> > > otherwise might want to apply.
+> > 
+> > Right, but you say "might": I have never heard it asserted, that we do
+> > build the kernel with a compiler which actually makes such optimizations.
+> 
+> The compiler we use today can and has hurt us with double-fetching
+> and old-value-reuse optimizations.  There have been several that have
+> "optimized" things like "while (foo)" into "tmp = foo; while (tmp)"
+> in the Linux kernel, which have been dealt with by recoding.
 
-So I'd *much* rather see an explanation of what the conflict is when
-you ask me to pull, and let me handle it, rather than you pre-merging
-things for me. I *want* to see conflicts between subsystems.
-Seriously.
+Ah yes, those: I think we need ACCESS_EVERY_TIME() for those ones ;)
 
-                   Linus
+I consider the double-fetching ones more insidious,
+less obviously in need of the volatile cast.
+
+> 
+> You might argue that the compiler cannot reasonably apply such an
+> optimization in some given case, but the compiler does much more detailed
+> analysis of the code than most people are willing to do (certainly more
+> than I am usually willing to do!), so I believe that a little paranoia is
+> quite worthwhile.
+> 
+> > There's a lot of other surprising things which a compiler is permitted
+> > to do, but we would simply not use such a compiler to build the kernel.
+> 
+> Unless we get the gcc folks to build and boot the Linux kernel as part
+> of their test suite (maybe they already do, but not that I know of),
+> how would either they or we know that they had deployed a destructive
+> optimization?
+
+We find out after it hits us, and someone studies the disassembly -
+if we're lucky enough to crash near the origin of the problem.
+
+> 
+> > Does some version of gcc, under the options which we insist upon,
+> > make such optimizations on any of the architectures which we support?
+> 
+> Pretty much any production-quality compiler will do double-fetch
+> and old-value-reuse optimizations, the former especially on 32-bit
+> x86.
+
+That makes good sense, yes: so, under register pressure, they may
+refetch from global memory, instead of using a temporary on local stack.
+
+> I don't know of any production-quality compilers that do value
+> speculation, which would make the compiler act like DEC Alpha hardware,
+> and I would hope that if this does appear, (1) we would have warning
+> and (2) it could be turned off.  But there has been a lot of work on
+> this topic, so we would be foolish to rule it out.
+
+I think you're justified in expecting both (1) and (2) there.
+
+> 
+> But the currently deployed optimizations can already cause enough trouble.
+> 
+> > Or is there some other compiler in use on the kernel, which makes
+> > such optimizations?  It seems a long time since I heard of building
+> > the kernel with icc.  clang?
+> > 
+> > I don't mind the answer "Yes, you idiot" - preferably with an example
+> > or two of which compiler and which piece of code it has bitten us on.
+> > I don't mind the answer "We just don't know" if that's the case.
+> > 
+> > But I'd like a better idea of how much to worry: is ACCESS_ONCE
+> > demonstrably needed today, or rather future-proofing and documentation?
+> 
+> Both.  If you are coding "while (foo)" where "foo" can be changed by an
+> interrupt handler, you had better instead write "while (ACCESS_ONCE(foo))"
+> or something similar, because most compilers are happy to optimize your
+> loop into an infinite loop in that case.  There are places in the Linux
+> kernel that would have problems if the compiler decided to refetch a
+> value -- if a pointer was changed in the meantime, part of your code
+> might be working on the old structure, and part on the new structure.
+> This really can happen today, and this is why rcu_dereference() contains
+> an ACCESS_ONCE().
+> 
+> If you are making lockless non-atomic access to a variable, I strongly
+> suggest ACCESS_ONCE() or something similar even if you cannot see how
+> the compiler can mess you up, especially in cases involving a lot of
+> inline functions.  In this case, the compiler can be looking at quite
+> a bit of code and optimizing across the entire mess.
+
+Thank you for your fuller reply, Paul: I should be able to hold that
+i386 register pressure example in mind in future (not, of course,
+that it would be limited to i386 at all).
+
+> 
+> /me wonders what he stepped into with this email thread.  ;-)
+> 
+> 							Thanx, Paul
+
+Come on, it wasn't that painful, was it?
+Just a quick extraction of info ;-)
+
+Thanks,
+Hugh
