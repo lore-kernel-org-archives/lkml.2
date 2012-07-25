@@ -1,84 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030295Ab2GYPOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:14:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12104 "EHLO mx1.redhat.com"
+	id S1030301Ab2GYPO7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:14:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30025 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933467Ab2GYPKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:10:53 -0400
-Message-ID: <50100C37.1060408@redhat.com>
-Date: Wed, 25 Jul 2012 17:09:43 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
-        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: performance improvements for the sglist API (Re: [PATCH] scsi: virtio-scsi:
- Fix address translation failure of HighMem pages used by sg list)
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <500FF656.6000203@redhat.com> <5010047D.6070807@panasas.com>
-In-Reply-To: <5010047D.6070807@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933160Ab2GYPKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:10:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="171267537"
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH 03/16] Documentation: fix the VM knobs descritpion WRT pdflush
+Date: Wed, 25 Jul 2012 18:12:01 +0300
+Message-Id: <1343229134-29487-4-git-send-email-artem.bityutskiy@linux.intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
+References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/07/2012 16:36, Boaz Harrosh ha scritto:
->> > 
->> > I did test the patch with value-assignment.
->> > 
-> 
-> Still you should use the sg_set_page()!!
-> 1. It is not allowed to directly manipulate sg entries. One should always
->    use the proper accessor. Even if open coding does work and is not a bug
->    it should not be used anyway!
-> 2. Future code that will support chaining will need to do as I say so why
->    change it then, again?
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Future code that will support chaining will not copy anything at all.
+The pdflush thread is long gone, however we still mention it incorrectly in the
+kernel documentation. This patch fixes the situation.
 
-Also, and more important, note that I am _not_ calling sg_init_table
-before the loop, only once in the driver initialization.  That's because
-memset in sg_init_table is an absolute performance killer, especially if
-you have to do it in a critical section; and I'm not making this up, see
-blk_rq_map_sg:
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
 
-                          * If the driver previously mapped a shorter
-                          * list, we could see a termination bit
-                          * prematurely unless it fully inits the sg
-                          * table on each mapping. We KNOW that there
-                          * must be more entries here or the driver
-                          * would be buggy, so force clear the
-                          * termination bit to avoid doing a full
-                          * sg_init_table() in drivers for each command.
-                          */
-                          sg->page_link &= ~0x02;
-                          sg = sg_next(sg);
+I expect this patch to be merged via Al Viro's VFS tree.
 
-So let's instead fix the API so that I (and blk-merge.c) can touch
-memory just once.  For example you could add __sg_set_page and
-__sg_set_buf, basically the equivalent of
+ Documentation/laptops/laptop-mode.txt |   12 ++++++------
+ Documentation/sysctl/vm.txt           |   25 ++++++++++++++-----------
+ 2 files changed, 20 insertions(+), 17 deletions(-)
 
-    memset(sg, 0, sizeof(*sg));
-    sg_set_{page,buf}(sg, page, len, offset);
+diff --git a/Documentation/laptops/laptop-mode.txt b/Documentation/laptops/laptop-mode.txt
+index 0bf25ee..4ebbfc3 100644
+--- a/Documentation/laptops/laptop-mode.txt
++++ b/Documentation/laptops/laptop-mode.txt
+@@ -262,9 +262,9 @@ MINIMUM_BATTERY_MINUTES=10
+ 
+ #
+ # Allowed dirty background ratio, in percent.  Once DIRTY_RATIO has been
+-# exceeded, the kernel will wake pdflush which will then reduce the amount
+-# of dirty memory to dirty_background_ratio.  Set this nice and low, so once
+-# some writeout has commenced, we do a lot of it.
++# exceeded, the kernel will wake flusher threads which will then reduce the
++# amount of dirty memory to dirty_background_ratio.  Set this nice and low,
++# so once some writeout has commenced, we do a lot of it.
+ #
+ #DIRTY_BACKGROUND_RATIO=5
+ 
+@@ -384,9 +384,9 @@ CPU_MAXFREQ=${CPU_MAXFREQ:-'slowest'}
+ 
+ #
+ # Allowed dirty background ratio, in percent.  Once DIRTY_RATIO has been
+-# exceeded, the kernel will wake pdflush which will then reduce the amount
+-# of dirty memory to dirty_background_ratio.  Set this nice and low, so once
+-# some writeout has commenced, we do a lot of it.
++# exceeded, the kernel will wake flusher threads which will then reduce the
++# amount of dirty memory to dirty_background_ratio.  Set this nice and low,
++# so once some writeout has commenced, we do a lot of it.
+ #
+ DIRTY_BACKGROUND_RATIO=${DIRTY_BACKGROUND_RATIO:-'5'}
+ 
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 96f0ee8..cec12bb 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -77,8 +77,8 @@ huge pages although processes will also directly compact memory as required.
+ 
+ dirty_background_bytes
+ 
+-Contains the amount of dirty memory at which the pdflush background writeback
+-daemon will start writeback.
++Contains the amount of dirty memory at which the background kernel
++flusher threads will start writeback.
+ 
+ Note: dirty_background_bytes is the counterpart of dirty_background_ratio. Only
+ one of them may be specified at a time. When one sysctl is written it is
+@@ -90,7 +90,7 @@ other appears as 0 when read.
+ dirty_background_ratio
+ 
+ Contains, as a percentage of total system memory, the number of pages at which
+-the pdflush background writeback daemon will start writing out dirty data.
++the background kernel flusher threads will start writing out dirty data.
+ 
+ ==============================================================
+ 
+@@ -113,9 +113,9 @@ retained.
+ dirty_expire_centisecs
+ 
+ This tunable is used to define when dirty data is old enough to be eligible
+-for writeout by the pdflush daemons.  It is expressed in 100'ths of a second.
+-Data which has been dirty in-memory for longer than this interval will be
+-written out next time a pdflush daemon wakes up.
++for writeout by the kernel flusher threads.  It is expressed in 100'ths
++of a second.  Data which has been dirty in-memory for longer than this
++interval will be written out next time a flusher thread wakes up.
+ 
+ ==============================================================
+ 
+@@ -129,7 +129,7 @@ data.
+ 
+ dirty_writeback_centisecs
+ 
+-The pdflush writeback daemons will periodically wake up and write `old' data
++The kernel flusher threads will periodically wake up and write `old' data
+ out to disk.  This tunable expresses the interval between those wakeups, in
+ 100'ths of a second.
+ 
+@@ -428,11 +428,14 @@ See Documentation/vm/hugetlbpage.txt
+ 
+ nr_pdflush_threads
+ 
+-The current number of pdflush threads.  This value is read-only.
+-The value changes according to the number of dirty pages in the system.
++This is not used by the kernel since version 2.6.32, this is read-only
++and is always set to 1.  Preserve for backward-compatibility reasons.
+ 
+-When necessary, additional pdflush threads are created, one per second, up to
+-nr_pdflush_threads_max.
++In the past, it contained the current number of pdflush threads.  The
++value changed according to the number of dirty pages in the system.
++When necessary, additional pdflush threads were created, one per second.
++However, in kernel version 2.6.32 the pdflush thread was removed in
++favour of per-block device bdi flusher threads.
+ 
+ ==============================================================
+ 
+-- 
+1.7.10
 
-Calling these functions would be fine if you later add a manual call to
-sg_mark_end, again the same as blk-merge.c does.  See the attached
-untested/uncompiled patch.
-
-And value assignment would be the same as a
-
-    __sg_set_page(sg, sg_page(page), sg->length, sg->offset);
-
-> Please don't change two things in one patch. The fix is for high-pages
-> please fix only that here. You can blasphemy open-code the sg manipulation
-> in a separate patch.
-
-The blasphemy is already there (the scatterlist that is handed to virtio
-won't have the right end-of-chain marker).  If anything,
-value-assignment is trading a subtle blasphemy for a blatant one.
-That's already an improvement, but let's just fix the API instead.
-
-Paolo
