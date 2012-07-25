@@ -1,237 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2GYAfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 20:35:16 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34451 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab2GYAfP (ORCPT
+	id S1756134Ab2GYAv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 20:51:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45450 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756102Ab2GYAvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 20:35:15 -0400
-Date: Tue, 24 Jul 2012 21:35:07 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Masatake YAMATO <yamato@redhat.com>
-Cc: andrei.emeltchenko.news@gmail.com, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH v4 1/8] bluetooth: /proc/net/ entries for bluetooth
- protocols
-Message-ID: <20120725003507.GR20029@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Masatake YAMATO <yamato@redhat.com>,
-	andrei.emeltchenko.news@gmail.com, linux-kernel@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org
-References: <20120711112308.GA3044@aemeltch-MOBL1>
- <20120711.211906.1087916687452547370.yamato@redhat.com>
- <20120712074200.GA12931@aemeltch-MOBL1>
- <20120716.222018.2029110835026223294.yamato@redhat.com>
- <20120725001214.GP20029@joana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120725001214.GP20029@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 24 Jul 2012 20:51:55 -0400
+Message-ID: <1343177504.9132.3.camel@phoenix>
+Subject: [PATCH RFT] regulator: tps6586x: Convert to
+ regulator_[enable|disable|is_enabled|get_voltage_sel]_regmap
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mike Rapoport <mike@compulab.co.il>, Danny Huang <dahuang@nvidia.com>,
+        Liam Girdwood <lrg@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 25 Jul 2012 08:51:44 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Gustavo Padovan <gustavo@padovan.org> [2012-07-24 21:12:14 -0300]:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch depends on Laxman's patches converting tps6586x mfd driver to use
+regmap APIs. ( merged in mfd tree )
 
-> Hi Masatake,
-> 
-> * Masatake YAMATO <yamato@redhat.com> [2012-07-16 22:20:18 +0900]:
-> 
-> > (I resend this mail becasue I got some troubles in mail sending.
-> >  Andrei, [PATCH v4 [2-8]/8] are the same as [PATCH v3 [2-8]/8]. So
-> >  I send [PATCH v4 1/8] only here. If I should the rest of v4 patches,
-> >  please, let me know that.)
-> 
-> Please keep this kind of information after the --- line, so git am
-> automatically skip this when applying, otherwise I have to edit the commit
-> message by hand.
-> 
-> > 
-> > lsof command can tell the type of socket processes are using.
-> > Internal lsof uses inode numbers on socket fs to resolve the type of
-> > sockets. Files under /proc/net/, such as tcp, udp, unix, etc provides
-> > such inode information.
-> > 
-> > Unfortunately bluetooth related protocols don't provide such inode
-> > information. This patch series introduces /proc/net files for the protocols.
-> > 
-> > This patch against af_bluetooth.c provides facility to the implementation
-> > of protocols. This patch extends bt_sock_list and introduces two exported
-> > function bt_procfs_init, bt_procfs_cleanup.
-> > 
-> > The type bt_sock_list is already used in some of implementation of
-> > protocols. bt_procfs_init prepare seq_operations which converts
-> > protocol own bt_sock_list data to protocol own proc entry when the
-> > entry is accessed.
-> > 
-> > What I, lsof user, need is just inode number of bluetooth
-> > socket. However, people may want more information. The bt_procfs_init
-> > takes a function pointer for customizing the show handler of
-> > seq_operations.
-> > 
-> > In v4 patch, __acquires and __releases attributes are added to suppress
-> > sparse warning. Suggested by Andrei Emeltchenko.
-> > 
-> > Signed-off-by: Masatake YAMATO <yamato@redhat.com>
-> > ---
-> >  include/net/bluetooth/bluetooth.h |   10 +++
-> >  net/bluetooth/af_bluetooth.c      |  138 +++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 148 insertions(+)
-> 
-> Patch has been applied to bluetooth-next, however I had to fix a minor
-> issue...
-> 
-> > 
-> > diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
-> > index 565d4be..ede0369 100644
-> > --- a/include/net/bluetooth/bluetooth.h
-> > +++ b/include/net/bluetooth/bluetooth.h
-> > @@ -27,6 +27,7 @@
-> >  
-> >  #include <linux/poll.h>
-> >  #include <net/sock.h>
-> > +#include <linux/seq_file.h>
-> >  
-> >  #ifndef AF_BLUETOOTH
-> >  #define AF_BLUETOOTH	31
-> > @@ -202,6 +203,10 @@ enum {
-> >  struct bt_sock_list {
-> >  	struct hlist_head head;
-> >  	rwlock_t          lock;
-> > +#ifdef CONFIG_PROC_FS
-> > +        struct file_operations   fops;
-> > +        int (* custom_seq_show)(struct seq_file *, void *);
-> > +#endif
-> >  };
-> >  
-> >  int  bt_sock_register(int proto, const struct net_proto_family *ops);
-> > @@ -292,6 +297,11 @@ extern void hci_sock_cleanup(void);
-> >  extern int bt_sysfs_init(void);
-> >  extern void bt_sysfs_cleanup(void);
-> >  
-> > +extern int  bt_procfs_init(struct module* module, struct net *net, const char *name,
-> > +			   struct bt_sock_list* sk_list,
-> > +			   int (* seq_show)(struct seq_file *, void *));
-> > +extern void bt_procfs_cleanup(struct net *net, const char *name);
-> > +
-> >  extern struct dentry *bt_debugfs;
-> >  
-> >  int l2cap_init(void);
-> > diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
-> > index f7db579..f76cf2f 100644
-> > --- a/net/bluetooth/af_bluetooth.c
-> > +++ b/net/bluetooth/af_bluetooth.c
-> > @@ -532,6 +532,144 @@ int bt_sock_wait_state(struct sock *sk, int state, unsigned long timeo)
-> >  }
-> >  EXPORT_SYMBOL(bt_sock_wait_state);
-> >  
-> > +#ifdef CONFIG_PROC_FS
-> > +struct bt_seq_state {
-> > +	struct bt_sock_list *l;
-> > +};
-> > +
-> > +static void *bt_seq_start(struct seq_file *seq, loff_t *pos)
-> > +	__acquires(seq->private->l->lock)
-> > +{
-> > +	struct bt_seq_state *s = seq->private;
-> > +	struct bt_sock_list *l = s->l;
-> > +
-> > +	read_lock(&l->lock);
-> > +	return seq_hlist_start_head(&l->head, *pos);
-> > +}
-> > +
-> > +static void *bt_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-> > +{
-> > +	struct bt_seq_state *s = seq->private;
-> > +	struct bt_sock_list *l = s->l;
-> > +
-> > +	return seq_hlist_next(v, &l->head, pos);
-> > +}
-> > +
-> > +static void bt_seq_stop(struct seq_file *seq, void *v)
-> > +	__releases(seq->private->l->lock)
-> > +{
-> > +	struct bt_seq_state *s = seq->private;
-> > +	struct bt_sock_list *l = s->l;
-> > +
-> > +	read_unlock(&l->lock);
-> > +}
-> > +
-> > +static int bt_seq_show(struct seq_file *seq, void *v)
-> > +{
-> > +	struct sock *sk;
-> > +	struct bt_sock *bt;
-> > +	struct bt_seq_state *s = seq->private;
-> > +	struct bt_sock_list *l = s->l;
-> > +	bdaddr_t src_baswapped, dst_baswapped;
-> > +
-> > +	if (v == SEQ_START_TOKEN) {
-> > +		seq_puts(seq ,"sk               RefCnt Rmem   Wmem   User   Inode  Src Dst Parent");
-> > +
-> > +		if (l->custom_seq_show) {
-> > +			seq_putc(seq, ' ');
-> > +			l->custom_seq_show(seq, v);
-> > +		}
-> > +
-> > +		seq_putc(seq, '\n');
-> > +	} else {
-> > +		sk = sk_entry(v);
-> > +		bt = bt_sk(sk);
-> > +		baswap(&src_baswapped, &bt->src);
-> > +		baswap(&dst_baswapped, &bt->dst);
-> > +
-> > +		seq_printf(seq, "%pK %-6d %-6u %-6u %-6u %-6lu %pM %pM %-6lu",
-> > +			   sk,
-> > +			   atomic_read(&sk->sk_refcnt),
-> > +			   sk_rmem_alloc_get(sk),
-> > +			   sk_wmem_alloc_get(sk),
-> > +			   sock_i_uid(sk),
-> > +			   sock_i_ino(sk),
-> > +			   &src_baswapped,
-> > +			   &dst_baswapped,
-> > +			   bt->parent? sock_i_ino(bt->parent): 0LU);
-> > +
-> > +		if (l->custom_seq_show) {
-> > +			seq_putc(seq, ' ');
-> > +			l->custom_seq_show(seq, v);
-> > +		}
-> > +
-> > +		seq_putc(seq, '\n');
-> > +	}
-> > +	return 0;
-> > +}
-> > +
-> > +static struct seq_operations bt_seq_ops = {
-> > +	.start = bt_seq_start,
-> > +	.next  = bt_seq_next,
-> > +	.stop  = bt_seq_stop,
-> > +	.show  = bt_seq_show,
-> > +};
-> > +
-> > +static int bt_seq_open(struct inode *inode, struct file *file)
-> > +{
-> > +	struct bt_sock_list *sk_list;
-> > +	struct bt_seq_state *s;
-> > +
-> > +	sk_list = PDE(inode)->data;
-> > +	s = __seq_open_private(file, &bt_seq_ops,
-> > +			       sizeof(struct bt_seq_state));
-> > +	if (s == NULL)
-> > +		return -ENOMEM;
-> > +
-> > +	s->l = sk_list;
-> > +	return 0;
-> > +}
-> > +
-> > +int bt_procfs_init(struct module* module, struct net *net, const char *name, struct bt_sock_list* sk_list,
-> > +		   int (* seq_show)(struct seq_file *, void *))
-> 
-> ... the identation here is a bit wrong, I fixed it. Thanks for doing this
-> work.
+ drivers/regulator/tps6586x-regulator.c |   76 +++++---------------------------
+ 1 file changed, 11 insertions(+), 65 deletions(-)
 
-I reverted this patch, it is not building.
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index e6da90a..2855d0c 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -57,9 +57,6 @@
+ struct tps6586x_regulator {
+ 	struct regulator_desc desc;
+ 
+-	int volt_reg;
+-	int volt_shift;
+-	int volt_nbits;
+ 	int enable_bit[2];
+ 	int enable_reg[2];
+ 
+@@ -81,10 +78,10 @@ static int tps6586x_set_voltage_sel(struct regulator_dev *rdev,
+ 	int ret, val, rid = rdev_get_id(rdev);
+ 	uint8_t mask;
+ 
+-	val = selector << ri->volt_shift;
+-	mask = ((1 << ri->volt_nbits) - 1) << ri->volt_shift;
++	val = selector << (ffs(rdev->desc->vsel_mask) - 1);
++	mask = rdev->desc->vsel_mask;
+ 
+-	ret = tps6586x_update(parent, ri->volt_reg, val, mask);
++	ret = tps6586x_update(parent, rdev->desc->vsel_reg, val, mask);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -100,66 +97,14 @@ static int tps6586x_set_voltage_sel(struct regulator_dev *rdev,
+ 	return ret;
+ }
+ 
+-static int tps6586x_get_voltage_sel(struct regulator_dev *rdev)
+-{
+-	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
+-	struct device *parent = to_tps6586x_dev(rdev);
+-	uint8_t val, mask;
+-	int ret;
+-
+-	ret = tps6586x_read(parent, ri->volt_reg, &val);
+-	if (ret)
+-		return ret;
+-
+-	mask = ((1 << ri->volt_nbits) - 1) << ri->volt_shift;
+-	val = (val & mask) >> ri->volt_shift;
+-
+-	if (val >= ri->desc.n_voltages)
+-		BUG();
+-
+-	return val;
+-}
+-
+-static int tps6586x_regulator_enable(struct regulator_dev *rdev)
+-{
+-	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
+-	struct device *parent = to_tps6586x_dev(rdev);
+-
+-	return tps6586x_set_bits(parent, ri->enable_reg[0],
+-				 1 << ri->enable_bit[0]);
+-}
+-
+-static int tps6586x_regulator_disable(struct regulator_dev *rdev)
+-{
+-	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
+-	struct device *parent = to_tps6586x_dev(rdev);
+-
+-	return tps6586x_clr_bits(parent, ri->enable_reg[0],
+-				 1 << ri->enable_bit[0]);
+-}
+-
+-static int tps6586x_regulator_is_enabled(struct regulator_dev *rdev)
+-{
+-	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
+-	struct device *parent = to_tps6586x_dev(rdev);
+-	uint8_t reg_val;
+-	int ret;
+-
+-	ret = tps6586x_read(parent, ri->enable_reg[0], &reg_val);
+-	if (ret)
+-		return ret;
+-
+-	return !!(reg_val & (1 << ri->enable_bit[0]));
+-}
+-
+ static struct regulator_ops tps6586x_regulator_ops = {
+ 	.list_voltage = regulator_list_voltage_table,
+-	.get_voltage_sel = tps6586x_get_voltage_sel,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel = tps6586x_set_voltage_sel,
+ 
+-	.is_enabled = tps6586x_regulator_is_enabled,
+-	.enable = tps6586x_regulator_enable,
+-	.disable = tps6586x_regulator_disable,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
+ };
+ 
+ static const unsigned int tps6586x_ldo0_voltages[] = {
+@@ -202,10 +147,11 @@ static const unsigned int tps6586x_dvm_voltages[] = {
+ 		.n_voltages = ARRAY_SIZE(tps6586x_##vdata##_voltages),	\
+ 		.volt_table = tps6586x_##vdata##_voltages,		\
+ 		.owner	= THIS_MODULE,					\
++		.enable_reg = TPS6586X_SUPPLY##ereg0,			\
++		.enable_mask = 1 << (ebit0),				\
++		.vsel_reg = TPS6586X_##vreg,				\
++		.vsel_mask = ((1 << (nbits)) - 1) << (shift),		\
+ 	},								\
+-	.volt_reg	= TPS6586X_##vreg,				\
+-	.volt_shift	= (shift),					\
+-	.volt_nbits	= (nbits),					\
+ 	.enable_reg[0]	= TPS6586X_SUPPLY##ereg0,			\
+ 	.enable_bit[0]	= (ebit0),					\
+ 	.enable_reg[1]	= TPS6586X_SUPPLY##ereg1,			\
+-- 
+1.7.9.5
 
-	Gustavo
+
 
