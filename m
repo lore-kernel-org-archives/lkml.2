@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab2GYTfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:35:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58565 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab2GYTfQ (ORCPT
+	id S1752228Ab2GYTiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:38:09 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:26958 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751880Ab2GYTiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:35:16 -0400
-Date: Wed, 25 Jul 2012 12:33:37 -0700
-From: tip-bot for Cody Schafer <cody@linux.vnet.ibm.com>
-Message-ID: <tip-8696329b7bcf32e69ad12d5975ad1497936d43ec@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, cody@linux.vnet.ibm.com,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, tglx@linutronix.de,
-        sukadev@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, cody@linux.vnet.ibm.com,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, tglx@linutronix.de,
-        sukadev@linux.vnet.ibm.com
-In-Reply-To: <1342753525-4521-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1342753525-4521-1-git-send-email-cody@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate:
-  Prevent overflow in size calculation
-Git-Commit-ID: 8696329b7bcf32e69ad12d5975ad1497936d43ec
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 25 Jul 2012 15:38:07 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ou9TbqIVM1k04N8F4Bk7YL8rTW36gAlAvrm0fqI8VlmnRoG
+ khH5OPGeAu5MszHB.hEQQzkJEJZhfG2YP0xPGbdRQag2ickrKX26H8MRQslE
+ JvHMMENlu0swbI72qgC.ztMta9SwYxqUVZIT4n6pcOqAdNOQUP7EbCsaL1BF
+ je9CxB1NSbyNPJUs95Bf7Aj.6p.GRZTePmWfUXSyYxUqNKgzYCI8hkx6YJni
+ HSwfDYv0EfGCayHiJlzREXj0j3wXv7TH_6tKt.QBwr6qMK6f6QqLCKLsR2AC
+ 8uhFNJyoP6HYFW2GM83swzaa63XMKbx5AkZPT4XOBulM2vQMG1ARdiF0KYx4
+ Ya6EP5dDpR3YM6VfMqi.4KPpuH_O2oU0B4lA07XBjZVhJXQkpg2dWncPJqBf
+ RdNvL4UCF07s.Xz4f
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 25 Jul 2012 14:38:00 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andi Kleen <ak@linux.intel.com>
+cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
+        Jan Beulich <jbeulich@novell.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC 0/6] Avoid cache trashing on clearing huge/gigantic
+ page
+In-Reply-To: <20120725192850.GA4952@tassilo.jf.intel.com>
+Message-ID: <alpine.DEB.2.00.1207251434280.4995@router.home>
+References: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com> <alpine.DEB.2.00.1207251346250.4995@router.home> <20120725192850.GA4952@tassilo.jf.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:33:46 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8696329b7bcf32e69ad12d5975ad1497936d43ec
-Gitweb:     http://git.kernel.org/tip/8696329b7bcf32e69ad12d5975ad1497936d43ec
-Author:     Cody Schafer <cody@linux.vnet.ibm.com>
-AuthorDate: Thu, 19 Jul 2012 20:05:25 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 25 Jul 2012 13:06:42 -0300
+On Wed, 25 Jul 2012, Andi Kleen wrote:
 
-perf annotate: Prevent overflow in size calculation
+> > why exempt the 4K around the fault address? Is there a regression if that
+> > is not exempted?
+>
+> You would get an immediate cache miss when the faulting instruction
+> is reexecuted.
 
-A large enough symbol size causes an overflow in the size parameter to
-the histogram allocation, leading to a segfault in
-symbol__inc_addr_samples later on when this histogram is accessed.
+Nope. You would not get cache misses for all cachelines in the 4k range.
+Only one.
 
-In the case of being called via perf-report, this returns back and
-gracefully ignores the sample, eventually ignoring the chained return
-value of perf_session_deliver_event in flush_sample_queue.
+> > I guess for anonymous huge pages one may assume that there will be at
+> > least one write to one cache line in the 4k page. Is it useful to get all
+> > the cachelines in the page in the cache.
+>
+> We did some measurements -- comparing 4K and 2MB with some tracing
+> of fault patterns -- and a lot of apps don't use the full 2MB area.
+> The apps with THP regressions usually used less than others.
+> The patchkit significantly reduced some of the regressions.
 
-Signed-off-by: Cody Schafer <cody@linux.vnet.ibm.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1342753525-4521-1-git-send-email-cody@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+Yup they wont use the full 2MB area. But are they using all the cache
+lines of the 4k page that we are making hot?
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 7d3641f..3a282c0 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -426,7 +426,18 @@ int symbol__alloc_hist(struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
- 	const size_t size = symbol__size(sym);
--	size_t sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
-+	size_t sizeof_sym_hist;
-+
-+	/* Check for overflow when calculating sizeof_sym_hist */
-+	if (size > (SIZE_MAX - sizeof(struct sym_hist)) / sizeof(u64))
-+		return -1;
-+
-+	sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
-+
-+	/* Check for overflow in zalloc argument */
-+	if (sizeof_sym_hist > (SIZE_MAX - sizeof(*notes->src))
-+				/ symbol_conf.nr_events)
-+		return -1;
- 
- 	notes->src = zalloc(sizeof(*notes->src) + symbol_conf.nr_events * sizeof_sym_hist);
- 	if (notes->src == NULL)
+
