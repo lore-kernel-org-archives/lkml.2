@@ -1,302 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab2GYMqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:46:01 -0400
-Received: from svenfoo.org ([82.94.215.22]:41652 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755483Ab2GYMp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:45:59 -0400
-From: Daniel Mack <zonque@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: eric.piel@tremplin-utc.net, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, Daniel Mack <zonque@gmail.com>
-Subject: [PATCH v2 1/2] lis3: add generic DT matching code
-Date: Wed, 25 Jul 2012 14:45:51 +0200
-Message-Id: <1343220351-20290-1-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343217734-10438-1-git-send-email-zonque@gmail.com>
-References: <1343217734-10438-1-git-send-email-zonque@gmail.com>
+	id S1756720Ab2GYMr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:47:28 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:37880 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab2GYMr0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:47:26 -0400
+Message-ID: <500FEAC7.2050803@panasas.com>
+Date: Wed, 25 Jul 2012 15:47:03 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
+        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
+        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH v2] scsi: virtio-scsi: Fix address translation failure
+ of HighMem pages used by sg list
+References: <1343218390-24310-1-git-send-email-senwang@linux.vnet.ibm.com> <500FE7C9.3000703@redhat.com>
+In-Reply-To: <500FE7C9.3000703@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds logic to parse lis3 properties from a device tree node
-and store them in a freshly allocated lis3lv02d_platform_data.
+On 07/25/2012 03:34 PM, Paolo Bonzini wrote:
 
-Note that the actual match tables are left out here. This part should
-happen in the drivers that bind to the individual busses (SPI/I2C/PCI).
+> Il 25/07/2012 14:13, Wang Sen ha scritto:
+>> When using the commands below to write some data to a virtio-scsi LUN of the
+>> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
+>>
+>>         # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
+>>         # sudo mount /dev/sdb /mnt
+>>         # dd if=/dev/zero of=/mnt/file bs=1M count=1024
+>>
+>> In current implementation, sg_set_buf is called to add buffers to sg list which
+>> is put into the virtqueue eventually. But if there are some HighMem pages in
+>> table->sgl you can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
+>> return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
+>> in QEMU because an invalid GPA is passed by virtqueue.
+>>
+>> I take Paolo's solution mentioned in last thread to avoid failure on handling 
+>> flag bits.
+> 
+> Please include an URL or (better) summarize the reason why sg_set_page
+> is not correct in the commit message.  For example, replace this
+> paragraph with the following:
+> 
+> "To fix this, we can simply copy the original scatterlist entries into
+> virtio-scsi's; we need to copy the entries entirely, including the flag
+> bits, so using sg_set_page is not correct".
+> 
 
-Also adds some DT bindinds documentation.
+> Please send v3 with this change and I'll add my Acked-by.
+> 
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
----
 
-v2 of this patch adds some documentation as well, and while writing it,
-I found two minor copy'n paste issues that I also fixed.
+NACK-by: Boaz Harrosh
 
- Documentation/devicetree/bindings/misc/lis302.txt |   74 +++++++++++
- drivers/misc/lis3lv02d/lis3lv02d.c                |  137 +++++++++++++++++++++
- drivers/misc/lis3lv02d/lis3lv02d.h                |    4 +
- 3 files changed, 215 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/lis302.txt
 
-diff --git a/Documentation/devicetree/bindings/misc/lis302.txt b/Documentation/devicetree/bindings/misc/lis302.txt
-new file mode 100644
-index 0000000..66230fd
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/lis302.txt
-@@ -0,0 +1,74 @@
-+LIS302 accelerometer devicetree bindings
-+
-+This device is matched via its bus drivers, and has a number of properties
-+that apply in on the generic device (independent from the bus).
-+
-+
-+Required properties for the SPI bindings:
-+ - compatible: 		should be set to "st,lis3lv02d_spi"
-+ - reg:			the chipselect index
-+ - spi-max-frequency:	maximal bus speed, should be set to 1000000 unless
-+			constrained by external circuitry
-+ - interrupts:		the interrupt generated by the device
-+
-+
-+Optional properties for all bus drivers:
-+
-+ - st,click-single-{x,y,z}:	if present, tells the device to issue an
-+				interrupt on single click events on the
-+				x/y/z axis.
-+ - st,click-double-{x,y,z}:	if present, tells the device to issue an
-+				interrupt on double click events on the
-+				x/y/z axis.
-+ - st,click-thresh-{x,y,z}:	set the x/y/z axis threshold
-+ - st,click-click-time-limit:	click time limit, from 0 to 127.5msec
-+				with step of 0.5 msec
-+ - st,click-latency:		click latency, from 0 to 255 msec with
-+				step of 1 msec.
-+ - st,click-window:		click window, from 0 to 255 msec with
-+				step of 1 msec.
-+ - st,irq{1,2}-disable:		disable IRQ 1/2
-+ - st,irq{1,2}-ff-wu-1:		raise IRQ 1/2 on FF_WU_1 condition
-+ - st,irq{1,2}-ff-wu-2:		raise IRQ 1/2 on FF_WU_2 condition
-+ - st,irq{1,2}-data-ready:	raise IRQ 1/2 on data ready contition
-+ - st,irq{1,2}-click:		raise IRQ 1/2 on click condition
-+ - st,irq-open-drain:		consider IRQ lines open-drain
-+ - st,irq-active-low:		make IRQ lines active low
-+ - st,wu-duration-1:		duration register for Free-Fall/Wake-Up
-+				interrupt 1
-+ - st,wu-duration-2:		duration register for Free-Fall/Wake-Up
-+				interrupt 2
-+ - st,wakeup-{x,y,z}-{lo,hi}:	set wakeup condition on x/y/z axis for
-+				upper/lower limit
-+ - st,highpass-cutoff-hz=:	1, 2, 4 or 8 for 1Hz, 2Hz, 4Hz or 8Hz of
-+				highpass cut-off frequency
-+ - st,hipass{1,2}-disable:	disable highpass 1/2.
-+ - st,default-rate=:		set the default rate
-+ - st,axis-{x,y,z}=:		set the axis to map to the three coordinates
-+
-+
-+Example for a SPI device node:
-+
-+	lis302@0 {
-+		compatible = "st,lis302dl-spi";
-+		reg = <0>;
-+		spi-max-frequency = <1000000>;
-+		interrupt-parent = <&gpio>;
-+		interrupts = <104 0>;
-+
-+		st,click-single-x;
-+		st,click-single-y;
-+		st,click-single-z;
-+		st,click-thresh-x = <10>;
-+		st,click-thresh-y = <10>;
-+		st,click-thresh-z = <10>;
-+		st,irq1-click;
-+		st,irq2-click;
-+		st,wakeup-x-lo;
-+		st,wakeup-x-hi;
-+		st,wakeup-y-lo;
-+		st,wakeup-y-hi;
-+		st,wakeup-z-lo;
-+		st,wakeup-z-hi;
-+	};
-+
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
-index a981e2a..22f7d65 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.c
-@@ -39,6 +39,7 @@
- #include <linux/miscdevice.h>
- #include <linux/pm_runtime.h>
- #include <linux/atomic.h>
-+#include <linux/of_device.h>
- #include "lis3lv02d.h"
- 
- #define DRIVER_NAME     "lis3lv02d"
-@@ -912,6 +913,138 @@ static void lis3lv02d_8b_configure(struct lis3lv02d *lis3,
- 	}
- }
- 
-+#ifdef CONFIG_OF
-+static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
-+{
-+	struct lis3lv02d_platform_data *pdata;
-+	struct device_node *np = lis3->of_node;
-+	u32 tmp;
-+
-+	if (!lis3->of_node)
-+		return 0;
-+
-+	pdata = kzalloc(sizeof(*lis3->pdata), GFP_KERNEL);
-+	if (!lis3->pdata)
-+		return -ENOMEM;
-+
-+	if (of_get_property(np, "st,click-single-x", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_X;
-+	if (of_get_property(np, "st,click-double-x", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_X;
-+
-+	if (of_get_property(np, "st,click-single-y", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_Y;
-+	if (of_get_property(np, "st,click-double-y", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_Y;
-+
-+	if (of_get_property(np, "st,click-single-z", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_Z;
-+	if (of_get_property(np, "st,click-double-z", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_Z;
-+
-+	if (!of_property_read_u32(np, "st,click-threshold-x", &tmp))
-+		pdata->click_thresh_x = tmp;
-+	if (!of_property_read_u32(np, "st,click-threshold-y", &tmp))
-+		pdata->click_thresh_y = tmp;
-+	if (!of_property_read_u32(np, "st,click-threshold-z", &tmp))
-+		pdata->click_thresh_z = tmp;
-+
-+	if (!of_property_read_u32(np, "st,click-time-limit", &tmp))
-+		pdata->click_time_limit = tmp;
-+	if (!of_property_read_u32(np, "st,click-latency", &tmp))
-+		pdata->click_latency = tmp;
-+	if (!of_property_read_u32(np, "st,click-window", &tmp))
-+		pdata->click_window = tmp;
-+
-+	if (of_get_property(np, "st,irq1-disable", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_DISABLE;
-+	if (of_get_property(np, "st,irq1-ff-wu-1", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_1;
-+	if (of_get_property(np, "st,irq1-ff-wu-2", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_2;
-+	if (of_get_property(np, "st,irq1-data-ready", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_DATA_READY;
-+	if (of_get_property(np, "st,irq1-click", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_CLICK;
-+
-+	if (of_get_property(np, "st,irq2-disable", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_DISABLE;
-+	if (of_get_property(np, "st,irq2-ff-wu-1", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_1;
-+	if (of_get_property(np, "st,irq2-ff-wu-2", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_2;
-+	if (of_get_property(np, "st,irq2-data-ready", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_DATA_READY;
-+	if (of_get_property(np, "st,irq2-click", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_CLICK;
-+
-+	if (of_get_property(np, "st,irq-open-drain", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ_OPEN_DRAIN;
-+	if (of_get_property(np, "st,irq-active-low", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ_ACTIVE_LOW;
-+
-+	if (!of_property_read_u32(np, "st,wu-duration-1", &tmp))
-+		pdata->duration1 = tmp;
-+	if (!of_property_read_u32(np, "st,wu-duration-2", &tmp))
-+		pdata->duration2 = tmp;
-+
-+	if (of_get_property(np, "st,wakeup-x-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_X_LO;
-+	if (of_get_property(np, "st,wakeup-x-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_X_HI;
-+	if (of_get_property(np, "st,wakeup-y-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Y_LO;
-+	if (of_get_property(np, "st,wakeup-y-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Y_HI;
-+	if (of_get_property(np, "st,wakeup-z-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Z_LO;
-+	if (of_get_property(np, "st,wakeup-z-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Z_HI;
-+
-+	if (!of_property_read_u32(np, "st,highpass-cutoff-hz", &tmp)) {
-+		switch (tmp) {
-+		case 1:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_1HZ;
-+			break;
-+		case 2:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_2HZ;
-+			break;
-+		case 4:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_4HZ;
-+			break;
-+		case 8:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_8HZ;
-+			break;
-+		}
-+	}
-+
-+	if (of_get_property(np, "st,hipass1-disable", NULL))
-+		pdata->hipass_ctrl |= LIS3_HIPASS1_DISABLE;
-+	if (of_get_property(np, "st,hipass2-disable", NULL))
-+		pdata->hipass_ctrl |= LIS3_HIPASS2_DISABLE;
-+
-+	if (of_get_property(np, "st,axis-x", NULL))
-+		pdata->axis_x = tmp;
-+	if (of_get_property(np, "st,axis-y", NULL))
-+		pdata->axis_y = tmp;
-+	if (of_get_property(np, "st,axis-z", NULL))
-+		pdata->axis_z = tmp;
-+
-+	if (of_get_property(np, "st,default-rate", NULL))
-+		pdata->default_rate = tmp;
-+
-+	lis3->pdata = pdata;
-+
-+	return 0;
-+}
-+
-+#else
-+static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
-+{
-+	return 0;
-+}
-+#endif
-+
- /*
-  * Initialise the accelerometer and the various subsystems.
-  * Should be rather independent of the bus system.
-@@ -922,6 +1055,10 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
- 	irq_handler_t thread_fn;
- 	int irq_flags = 0;
- 
-+	err = lis3lv02d_init_dt(lis3);
-+	if (err < 0)
-+		return err;
-+
- 	lis3->whoami = lis3lv02d_read_8(lis3, WHO_AM_I);
- 
- 	switch (lis3->whoami) {
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.h b/drivers/misc/lis3lv02d/lis3lv02d.h
-index 2b1482a..a296f1d 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.h
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.h
-@@ -282,6 +282,10 @@ struct lis3lv02d {
- 
- 	struct lis3lv02d_platform_data *pdata;	/* for passing board config */
- 	struct mutex		mutex;     /* Serialize poll and selftest */
-+
-+#ifdef CONFIG_OF
-+	struct device_node	*of_node;
-+#endif
- };
- 
- int lis3lv02d_init_device(struct lis3lv02d *lis3);
--- 
-1.7.10.4
+Apart from the HighMem pages problem, where in previous sg_set_buf()
+code was the marker copied? It was not because it is not needed because
+the allocation of sg took care of that. For example in 64bit the is no
+bugs, right?
+
+If there was a destination sg_list termination bug, it should be fixed
+as a separate patch from this "HighMem pages problem". But I bet if
+you inspect the code carefully there isn't such a bug.
+
+Cheers
+Boaz
+
+> Paolo
+> 
+>>
+>> I have tested the patch on my workstation. QEMU would not crash any more.
+>>
+>> Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
+>> ---
+>>  drivers/scsi/virtio_scsi.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+>> index 1b38431..6661610 100644
+>> --- a/drivers/scsi/virtio_scsi.c
+>> +++ b/drivers/scsi/virtio_scsi.c
+>> @@ -198,7 +198,7 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+>>  	int i;
+>>  
+>>  	for_each_sg(table->sgl, sg_elem, table->nents, i)
+>> -		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
+>> +		sg[idx++] = *sg_elem;
+>>  
+>>  	*p_idx = idx;
+>>  }
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
