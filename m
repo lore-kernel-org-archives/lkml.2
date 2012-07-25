@@ -1,215 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab2GYOs6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:48:58 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:55220
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933101Ab2GYOs4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:48:56 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I936eI542M1432Izz1202hzz8275dhz2fh2a8h683h839h93fhd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH 13/17] Tools: hv: Implement the KVP verb -
- KVP_OP_SET_IP_INFO
-Thread-Topic: [PATCH 13/17] Tools: hv: Implement the KVP verb -
- KVP_OP_SET_IP_INFO
-Thread-Index: AQHNabffApGkoXQ/oEyNNUVPYtB2bpc5NSOAgADYO8A=
-Date: Wed, 25 Jul 2012 14:48:14 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236A8BD0@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
-	 <1343145701-3691-1-git-send-email-kys@microsoft.com>
-	 <1343145701-3691-13-git-send-email-kys@microsoft.com>
- <1343179491.5132.112.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1343179491.5132.112.camel@deadeye.wl.decadent.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.24.39.100]
-Content-Type: text/plain; charset="utf-8"
+	id S933325Ab2GYOuU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:50:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3993 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932943Ab2GYOuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 10:50:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="185951698"
+Date: Wed, 25 Jul 2012 22:50:11 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Coccinelle <cocci@diku.dk>, Nicolas Palix <npalix@diku.dk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Cocci] coccinelle hung on mini_lock.cocci
+Message-ID: <20120725145011.GA1787@localhost>
+References: <20120725114216.GA26741@localhost>
+ <alpine.DEB.2.02.1207251613420.1818@hadrien>
+ <20120725141844.GA761@localhost>
+ <alpine.DEB.2.02.1207251641280.1818@hadrien>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1207251641280.1818@hadrien>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6PEnIGd015952
 
-Ben,
+On Wed, Jul 25, 2012 at 04:43:04PM +0200, Julia Lawall wrote:
+> On Wed, 25 Jul 2012, Fengguang Wu wrote:
+> 
+> > Hi Julia,
+> >
+> > On Wed, Jul 25, 2012 at 04:15:19PM +0200, Julia Lawall wrote:
+> > > Do you use a timeout when you run Coccinelle  You could put the argument
+> > > --timeout 120.
+> >
+> > Good to know that! I'll definitely try it.
+> 
+> Are you using the existing framework within the Linux makefiles?  Nicolas,
+> is there a timeout in there?  If you are not using it, you could write
+> some code to grep for the Options: line, which has some options that can
+> often make things go faster.
 
-At the outset I want to thank you for taking the time to review this code. Given that Greg
-has indicated that he will not be able to look at this patch set till 3.6 and the nature of review
-comments I have gotten from you and others, I will re-spin this patch set to address all the
-comments I have gotten to date. Specific responses to your comments are in-line.
+Yes, I run coccinelle though the kbuild's C=1 CHECK= options.
+scripts/coccicheck seems to do that option grep for me, however it
+does not specify any timeout. Actually I didn't see the --timeout
+option in manual. "spatch --help" does show it.
 
-Regards,
+Thanks,
+Fengguang
 
-K. Y 
-
-> -----Original Message-----
-> From: Ben Hutchings [mailto:ben@decadent.org.uk]
-> Sent: Tuesday, July 24, 2012 9:25 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; olaf@aepfle.de;
-> apw@canonical.com; netdev@vger.kernel.org
-> Subject: Re: [PATCH 13/17] Tools: hv: Implement the KVP verb -
-> KVP_OP_SET_IP_INFO
-> 
-> On Tue, 2012-07-24 at 09:01 -0700, K. Y. Srinivasan wrote:
-> > Implement the KVP verb - KVP_OP_SET_IP_INFO. This operation configures
-> the
-> > specified interface based on the given configuration. Since configuring
-> > an interface is very distro specific, we invoke an external script to
-> > configure the interface.
-> [...]
-> > +static int kvp_write_file(FILE *f, char *s1, char *s2, char *s3)
-> > +{
-> > +	char str[256];
-> > +	int error;
-> > +
-> > +	memset(str, 0, sizeof(str));
-> > +	strcat(str, s1);
-> > +	if (s2 != NULL)
-> > +		strcat(str, s2);
-> > +	strcat(str, "=");
-> > +	strcat(str, s3);
-> > +	strcat(str, "\n");
-> > +
-> > +	error = fputs(str, f);
-> 
-> This style of string pasting is crazy; have you never heard of
-> fprintf()?
-> 
-> [...]
-> > +	/*
-> > +	 * Set the configuration for the specified interface with
-> > +	 * the information provided. Since there is no standard
-> > +	 * way to configure an interface, we will have an external
-> > +	 * script that does the job of configuring the interface and
-> > +	 * flushing the configuration.
-> > +	 *
-> > +	 * The parameters passed to this external script are:
-> > +	 * 1. A configuration file that has the specified configuration.
-> > +	 *
-> > +	 * We will embed the name of the interface in the configuration
-> > +	 * file: ifcfg-ethx (where ethx is the interface name).
-> > +	 *
-> > +	 * Here is the format of the ip configuration file:
-> > +	 *
-> > +	 * HWADDR=macaddr
-> 
-> Is the interface supposed to be matched by name or by MAC address?
-
-I do not dictate that. My plan was to package all the information I have about
-the interface and the desired configuration in a file and invoke the external
-distro specific script to do its magic. This external  script is free to ignore 
-what it does not need.
-
-> 
-> > +	 * BOOTPROTO=dhcp (dhcp enabled for the interface)
-> 
-> The BOOTPROTO line may or may not appear.
-> 
-> > +	 * NM_CONTROLLED=no (this interface will not be controlled by NM)
-> > +	 * PEERDNS=yes
-> 
-> I wonder what the point is of including constant lines in the file.
-> What is the external script supposed to do if it these apparent
-> constants change in future?
-
-As you can see, I did my testing on a RHEL system and I was too lazy to create
-a RHEL specific config file in the external script and so I ended up creating pretty much
-the config file needed by RHEL in this daemon. All the external script had to do was to
-simply copy this file into the right location and bring up the interface. So, if you prefer
-that we not populate the config file with these constant lines, I can get rid of them.
-As I noted earlier external scripts may not choose to use all the information in the file
-that this daemon generates. What I have done here, simplifies the external script
-at least for one distro.
-
-> 
-> > +	 * IPADDR_x=ipaddr
-> > +	 * NETMASK_x=netmask
-> > +	 * GATEWAY_x=gateway
-> > +	 * DNSx=dns
-> 
-> A strangely familiar format...
-> 
-> > +	 * IPV6 addresses will be tagged as IPV6ADDR, IPV6 gateway will be
-> > +	 * tagged as IPV6_DEFAULTGW and IPV6 NETMASK will be tagged as
-> > +	 * IPV6NETMASK.
-> > +	 */
-> > +
-> > +	memset(if_file, 0, sizeof(if_file));
-> > +	strcat(if_file, "/var/opt/hyperv/ifcfg-");
-> 
-> Like I said before about the key-value files, this should be under
-> /var/lib if the daemon is included in a distribution.  You should
-> perhaps use a macro for the "/var/opt" part so it can be overridden
-> depending on whether it's built as a distribution or add-on package.
-
-I will make this a macro.
-
-> 
-> > +	strcat(if_file, if_name);
-> > +
-> > +	file = fopen(if_file, "w");
-> > +
-> > +	if (file == NULL) {
-> > +		syslog(LOG_ERR, "Failed to open config file");
-> > +		return HV_E_FAIL;
-> > +	}
-> > +
-> > +	/*
-> > +	 * First write out the MAC address.
-> > +	 */
-> > +
-> > +	mac_addr = kvp_if_name_to_mac(if_name);
-> > +	if (mac_addr == NULL) {
-> > +		error = HV_E_FAIL;
-> > +		goto setval_error;
-> > +	}
-> > +
-> > +	error = kvp_write_file(file, "HWADDR", NULL, mac_addr);
-> > +	if (error)
-> > +		goto setval_error;
-> > +
-> > +	error = kvp_write_file(file, "ONBOOT", NULL, "yes");
-> > +	if (error)
-> > +		goto setval_error;
-> > +
-> > +	error = kvp_write_file(file, "IPV6INIT", NULL, "yes");
-> > +	if (error)
-> > +		goto setval_error;
-> [...]
-> 
-> This line isn't mentioned in the above comment.
-> 
-> Ben.
-> 
-> --
-> Ben Hutchings
-> If more than one person is responsible for a bug, no one is at fault.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> > > The function has a goto from the very end to the very beginning, and there
+> > > are a lot of ifs in between.  It seems possible that there is too much
+> > > information, and it gets too slow.  I will look further.
+> >
+> > Ah OK, yeah this coccinelle case is a bit complex.
+> >
+> > Thanks,
+> > Fengguang
+> >
+> > > On Wed, 25 Jul 2012, Fengguang Wu wrote:
+> > >
+> > > > Hi all,
+> > > >
+> > > > This command seem to hang for ever on the current linus/master.
+> > > > It happens only on mini_lock.cocci _and_ mm/shmem.c
+> > > > I've updated coccinelle to its git release, however it didn't help..
+> > > >
+> > > > % spatch -debug  -D report -I /c/kernel-tests/src/linux/include -sp_file /c/kernel-tests/src/linux/scripts/coccinelle/locks/mini_lock.cocci -no_includes -include_headers /c/kernel-tests/src/linux/mm/shmem.c -no_show_diff
+> > > > init_defs_builtins: /usr/share/coccinelle/standard.h
+> > > > -----------------------------------------------------------------------
+> > > > processing semantic patch file: /c/kernel-tests/src/linux/scripts/coccinelle/locks/mini_lock.cocci
+> > > > with isos from: /usr/share/coccinelle/standard.iso
+> > > > -----------------------------------------------------------------------
+> > > > /// Find missing unlocks.  This semantic match considers the specific case
+> > > > /// where the unlock is missing from an if branch, and there is a lock
+> > > > /// before the if and an unlock after the if.  False positives are due to
+> > > > /// cases where the if branch represents a case where the function is
+> > > > /// supposed to exit with the lock held, or where there is some preceding
+> > > > /// function call that releases the lock.
+> > > > ///
+> > > > // Confidence: Moderate
+> > > > // Copyright: (C) 2010-2012 Nicolas Palix.  GPLv2.
+> > > > // Copyright: (C) 2010-2012 Julia Lawall, INRIA/LIP6.  GPLv2.
+> > > > // Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+> > > > // URL: http://coccinelle.lip6.fr/
+> > > > // Comments:
+> > > > // Options: -no_includes -include_headers
+> > > >
+> > > > virtual context
+> > > > virtual org
+> > > > virtual report
+> > > >
+> > > > @prelocked@
+> > > > position p1,p;
+> > > > expression E1;
+> > > > @@
+> > > >
+> > > > (
+> > > > mutex_lock@p1
+> > > > |
+> > > > mutex_trylock@p1
+> > > > |
+> > > > spin_lock@p1
+> > > > |
+> > > > spin_trylock@p1
+> > > > |
+> > > > read_lock@p1
+> > > > |
+> > > > read_trylock@p1
+> > > > |
+> > > > write_lock@p1
+> > > > |
+> > > > write_trylock@p1
+> > > > |
+> > > > read_lock_irq@p1
+> > > > |
+> > > > write_lock_irq@p1
+> > > > |
+> > > > read_lock_irqsave@p1
+> > > > |
+> > > > write_lock_irqsave@p1
+> > > > |
+> > > > spin_lock_irq@p1
+> > > > |
+> > > > spin_lock_irqsave@p1
+> > > > ) (E1@p,...);
+> > > >
+> > > > @looped@
+> > > > position r;
+> > > > @@
+> > > >
+> > > > for(...;...;...) { <+... return@r ...; ...+> }
+> > > >
+> > > > @err exists@
+> > > > expression E1;
+> > > > position prelocked.p;
+> > > > position up != prelocked.p1;
+> > > > position r!=looped.r;
+> > > > identifier lock,unlock;
+> > > > @@
+> > > >
+> > > > *lock(E1@p,...);
+> > > > <+... when != E1
+> > > > if (...) {
+> > > >   ... when != E1
+> > > > *  return@r ...;
+> > > > }
+> > > > ...+>
+> > > > *unlock@up(E1,...);
+> > > >
+> > > > @script:python depends on org@
+> > > > p << prelocked.p1;
+> > > > lock << err.lock;
+> > > > unlock << err.unlock;
+> > > > p2 << err.r;
+> > > > @@
+> > > >
+> > > > cocci.print_main(lock,p)
+> > > > cocci.print_secs(unlock,p2)
+> > > >
+> > > > @script:python depends on report@
+> > > > p << prelocked.p1;
+> > > > lock << err.lock;
+> > > > unlock << err.unlock;
+> > > > p2 << err.r;
+> > > > @@
+> > > >
+> > > > msg = "preceding lock on line %s" % (p[0].line)
+> > > > coccilib.report.print_report(p2[0],msg)
+> > > >
+> > > > -----------------------------------------------------------------------
+> > > > script rule -1 =
+> > > > -----------------------------------------------------------------------
+> > > > dependencies for script satisfied:
+> > > > binding in = []
+> > > > HANDLING: /c/kernel-tests/src/linux/mm/shmem.c
+> > > > -----------------------------------------------------------------------
+> > > > let's go
+> > > > -----------------------------------------------------------------------
+> > > > Defined virtual rules: report
+> > > > -----------------------------------------------------------------------
+> > > > CFG: orphelin nodes, maybe something weird happened
+> > > > -----------------------------------------------------------------------
+> > > > prelocked =
+> > > > -----------------------------------------------------------------------
+> > > > dependencies for rule prelocked satisfied:
+> > > > binding in = []
+> > > > binding relevant in = []
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_reserve_inode,(194,2),(194,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_reserve_inode,(194,12),(194,30))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,2),(209,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,12),(209,30))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,1),(300,14))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,15),(300,34))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,1),(327,14))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,15),(327,34))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,1),(397,14))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,15),(397,34))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_undo_range,(589,1),(589,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_undo_range,(589,11),(589,22))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,3),(646,13))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,14),(646,35))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse_inode,(692,2),(692,12))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse_inode,(692,13),(692,34))]]
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse_inode,(731,3),(731,12))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse_inode,(731,13),(731,24))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse,(768,1),(768,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse,(768,12),(768,33))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(836,3),(836,12))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(836,13),(836,27))]]
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(865,1),(865,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(865,12),(865,33))]]
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(873,2),(873,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(873,12),(873,23))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,2),(912,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,12),(912,30))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_replace_page,(1033,1),(1033,14))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_replace_page,(1033,15),(1033,39))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,2),(1163,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,12),(1163,23))]]
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1210,2),(1210,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1210,12),(1210,23))]]
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1256,1),(1256,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1256,11),(1256,22))]]
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1277,2),(1277,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1277,12),(1277,23))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_lock,(1328,1),(1328,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_lock,(1328,11),(1328,22))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,1),(1719,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,12),(1719,27))]]
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,1),(1752,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,11),(1752,25))]]
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,1),(1803,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,11),(1803,25))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2112,2),(2112,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2112,12),(2112,23))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_get,(2129,1),(2129,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_get,(2129,11),(2129,22))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_set,(2168,1),(2168,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_set,(2168,11),(2168,22))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_listxattr,(2301,1),(2301,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_listxattr,(2301,11),(2301,22))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,2),(2398,11))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,12),(2398,17))]]
+> > > >      transformation info is empty
+> > > >      binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_remount_fs,(2527,1),(2527,10))];
+> > > >                    prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_remount_fs,(2527,11),(2527,29))]]
+> > > > -----------------------------------------------------------------------
+> > > > looped =
+> > > > -----------------------------------------------------------------------
+> > > > dependencies for rule looped satisfied:
+> > > > binding in = [prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,15),(300,34))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,1),(300,14))]]
+> > > > binding relevant in = []
+> > > >      transformation info is empty
+> > > >      binding out = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))]]
+> > > >      binding out = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9))]]
+> > > >      transformation info is empty
+> > > >      binding out = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10))]]
+> > > >      binding out = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))]]
+> > > > -----------------------------------------------------------------------
+> > > > err =
+> > > > -----------------------------------------------------------------------
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,15),(300,34))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,1),(300,14))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,15),(300,34))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,1),(300,14))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,15),(327,34))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,1),(327,14))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,15),(327,34))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,1),(327,14))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,12),(2398,17))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,2),(2398,11))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,12),(2398,17))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,2),(2398,11))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,14),(646,35))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,3),(646,13))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,14),(646,35))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,3),(646,13))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,12),(1719,27))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,1),(1719,11))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,12),(1719,27))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,1),(1719,11))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,11),(1752,25))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,1),(1752,10))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,11),(1752,25))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,1),(1752,10))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,11),(1803,25))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,1),(1803,10))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,11),(1803,25))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,1),(1803,10))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,12),(209,30))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,2),(209,11))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,12),(209,30))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,2),(209,11))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,15),(397,34))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,1),(397,14))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,15),(397,34))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,1),(397,14))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,12),(912,30))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,2),(912,11))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,12),(912,30))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,2),(912,11))]]
+> > > > dependencies for rule err satisfied:
+> > > > binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+> > > >              prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,12),(1163,23))];
+> > > >              prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,2),(1163,11))]]
+> > > > binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+> > > >                       prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,12),(1163,23))];
+> > > >                       prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,2),(1163,11))]]
+> > > >
+> > > > _______________________________________________
+> > > > Cocci mailing list
+> > > > Cocci@diku.dk
+> > > > http://lists.diku.dk/mailman/listinfo/cocci
+> > > > (Web access from inside DIKUs LAN only)
+> > > >
+> >
