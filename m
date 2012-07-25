@@ -1,150 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab2GYTzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:55:54 -0400
-Received: from xes-mad.com ([216.165.139.218]:2399 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432Ab2GYTzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:55:52 -0400
-X-Greylist: delayed 2583 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 15:55:52 EDT
-Date: Wed, 25 Jul 2012 14:12:44 -0500 (CDT)
-From: Andrew Martin <amartin@xes-inc.com>
-To: linux-kernel@vger.kernel.org
-Subject: idr_layer_cache eating almost 5GB of RAM
-Message-ID: <fdbdd3a3-6424-45fc-bf36-cb7028afb109@zimbra>
-In-Reply-To: <9c6d0041-4bd2-462d-a7f2-920513a0a67f@zimbra>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752570Ab2GYT4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:56:42 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:9169 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab2GYT4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 15:56:40 -0400
+Message-ID: <201207251956.q6PJudJi016693@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 25 Jul 2012 15:49:23 -0400
+Subject: [PATCH] tilepro pci: fix pci_bus.subordinate bad bombing from b918c62e
+To: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
 MIME-Version: 1.0
-X-Originating-IP: [10.52.0.96]
-X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC20 (Linux)/7.1.3_GA_3346)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, 
+The bombing to convert pci_bus.subordinate to busn_res.end accidentally
+modified a "struct pci_dev" site, causing this file not to compile.
+This commit reverts that code to use dev->subordinate again.
 
-I am running a fileserver with Ubuntu 12.04 Server amd64 with 3.2.0-25-generic on an Intel Xeon E5520 with 6GB RAM. Installed services include nfs-kernel-server, samba, drbd, and corosync/pacemaker. The DRBD device and corosync/pacemaker configuration are running but not actively used right now (planned for a future upgrade). The fileserver servers files over NFS and CIFS from a hardware RAID5 array. The / partition is on a separate hardware RAID1 array. This morning the server's load was very high, around 15-20, yet all processes in userspace totaled around 40MB RAM used with practically no load on the CPU.  The output of free revealed that most of the RAM (5670MB out of 5960MB) was in-fact used: 
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-# free -m
-             total       used       free     shared    buffers     cached
-Mem:          5960       5795        165          0         57         67
--/+ buffers/cache:       5670        290
-Swap:        11659        136      11523
+diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
+index 0fdd99d..33c1086 100644
+--- a/arch/tile/kernel/pci.c
++++ b/arch/tile/kernel/pci.c
+@@ -369,7 +369,7 @@ int __init pcibios_init(void)
+ 				 */
+ 				if ((dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
+ 					(PCI_SLOT(dev->devfn) == 0)) {
+-					next_bus = dev->busn_res.end;
++					next_bus = dev->subordinate;
+ 					controllers[i].mem_resources[0] =
+ 						*next_bus->resource[0];
+ 					controllers[i].mem_resources[1] =
+-- 
+1.7.10.3
 
-Looking at slabtop reveals that idr_layer_cache appears to be consuming most of this memory:
-# slabtop -s C -o
- Active / Total Objects (% used)    : 10649155 / 10684888 (99.7%)
- Active / Total Slabs (% used)      : 351256 / 351256 (100.0%)
- Active / Total Caches (% used)     : 72 / 108 (66.7%)
- Active / Total Size (% used)       : 5437600.23K / 5448341.04K (99.8%)
- Minimum / Average / Maximum Object : 0.01K / 0.51K / 8.00K
-
-  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   
-10077291 10077103  99%    0.53K 338718       30   5419488K idr_layer_cache        
- 71936  71936 100%    0.02K    281      256      1124K kmalloc-16             
- 70958  70066  98%    0.12K   2087       34      8348K fsnotify_event         
- 47794  47544  99%    0.17K   1039       46      8312K vm_area_struct         
- 47515  47515 100%    0.05K    559       85      2236K shared_policy_node     
- 46950  46835  99%    0.13K   1565       30      6260K ext4_allocation_context
- 36352  33791  92%    0.01K     71      512       284K kmalloc-8              
- 32682  29590  90%    0.10K    838       39      3352K buffer_head            
-
-Am I correct in that calculating the total usage of idr_layer_cache is 10077103 * 0.5KB? If so, the total is 4900MB, the majority of the 5670MB used as reported by free. For a period of time there appeared to be a lot of disk I/O on the / partition, but then it returned to normal with the RAM usage still remaining this high. /var/log/kern.log contains the following type of messages repeated constantly:
-kernel: [2513998.894176] Mem-Info:
-kernel: [2513998.894178] Node 0 DMA per-cpu:
-kernel: [2513998.894180] CPU    0: hi:    0, btch:   1 usd:   0
-kernel: [2513998.894181] CPU    1: hi:    0, btch:   1 usd:   0
-kernel: [2513998.894186] CPU    2: hi:    0, btch:   1 usd:   0
-kernel: [2513998.894188] CPU    3: hi:    0, btch:   1 usd:   0
-kernel: [2513998.894191] CPU    4: hi:    0, btch:   1 usd:   0
-kernel: [2513998.894193] CPU    5: hi:    0, btch:   1 usd:   0
-kernel: [2513998.894195] CPU    6: hi:    0, btch:   1 usd:   0
-kernel: [2513998.894197] CPU    7: hi:    0, btch:   1 usd:   0
-kernel: [2513998.894198] Node 0 DMA32 per-cpu:
-kernel: [2513998.894201] CPU    0: hi:  186, btch:  31 usd:  55
-kernel: [2513998.894203] CPU    1: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894205] CPU    2: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894207] CPU    3: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894209] CPU    4: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894211] CPU    5: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894213] CPU    6: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894215] CPU    7: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894216] Node 0 Normal per-cpu:
-kernel: [2513998.894221] CPU    0: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894223] CPU    1: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894224] CPU    2: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894226] CPU    3: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894228] CPU    4: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894229] CPU    5: hi:  186, btch:  31 usd:  30
-kernel: [2513998.894231] CPU    6: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894233] CPU    7: hi:  186, btch:  31 usd:   0
-kernel: [2513998.894236] active_anon:128809 inactive_anon:31335 isolated_anon:0
-kernel: [2513998.894237]  active_file:17654 inactive_file:115777 isolated_file:0
-kernel: [2513998.894238]  unevictable:0 dirty:4783 writeback:4009 unstable:0
-kernel: [2513998.894239]  free:39852 slab_reclaimable:13595 slab_unreclaimable:1055766
-kernel: [2513998.894240]  mapped:103026 shmem:2673 pagetables:15245 bounce:0
-kernel: [2513998.894242] Node 0 DMA free:15896kB min:168kB low:208kB high:252kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15640kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-kernel: [2513998.894250] lowmem_reserve[]: 0 3495 6015 6015
-kernel: [2513998.894253] Node 0 DMA32 free:107828kB min:39172kB low:48964kB high:58756kB active_anon:333064kB inactive_anon:68768kB active_file:8720kB inactive_file:399040kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:3579648kB mlocked:0kB dirty:16756kB writeback:15676kB mapped:303640kB shmem:20kB slab_reclaimable:33512kB slab_unreclaimable:2345264kB kernel_stack:1376kB pagetables:11076kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-kernel: [2513998.894262] lowmem_reserve[]: 0 0 2520 2520
-kernel: [2513998.894264] Node 0 Normal free:35684kB min:28236kB low:35292kB high:42352kB active_anon:182172kB inactive_anon:56572kB active_file:61896kB inactive_file:64068kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:2580480kB mlocked:0kB dirty:2376kB writeback:360kB mapped:108464kB shmem:10672kB slab_reclaimable:20868kB slab_unreclaimable:1877800kB kernel_stack:1856kB pagetables:49904kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-kernel: [2513998.894273] lowmem_reserve[]: 0 0 0 0
-kernel: [2513998.894276] Node 0 DMA: 0*4kB 1*8kB 1*16kB 0*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15896kB
-kernel: [2513998.894283] Node 0 DMA32: 26131*4kB 0*8kB 0*16kB 2*32kB 1*64kB 1*128kB 0*256kB 0*512kB 1*1024kB 1*2048kB 0*4096kB = 107852kB
-kernel: [2513998.894291] Node 0 Normal: 7770*4kB 138*8kB 3*16kB 4*32kB 3*64kB 2*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 0*4096kB = 36136kB
-kernel: [2513998.894298] 144474 total pagecache pages
-kernel: [2513998.894299] 8391 pages in swap cache
-kernel: [2513998.894301] Swap cache stats: add 1024199, delete 1015808, find 3527748/3678208
-kernel: [2513998.894303] Free swap  = 11457968kB
-kernel: [2513998.894304] Total swap = 11939836kB
-kernel: [2513998.910512] 1572848 pages RAM
-kernel: [2513998.910514] 46845 pages reserved
-kernel: [2513998.910516] 200778 pages shared
-kernel: [2513998.910517] 1343875 pages non-shared
-kernel: [2513998.950135] kworker/3:1: page allocation failure: order:2, mode:0x4020
-kernel: [2513998.950141] Pid: 28366, comm: kworker/3:1 Not tainted 3.2.0-25-generic #40-Ubuntu
-kernel: [2513998.950144] Call Trace:
-kernel: [2513998.950146]  <IRQ>  [<ffffffff8111cf16>] warn_alloc_failed+0xf6/0x150
-kernel: [2513998.950160]  [<ffffffff81120d7b>] __alloc_pages_nodemask+0x64b/0x820
-kernel: [2513998.950176]  [<ffffffffa0022ee4>] ? ixgbe_xmit_frame+0x24/0x30 [ixgbe]
-kernel: [2513998.950182]  [<ffffffff8165d62e>] ? _raw_spin_lock+0xe/0x20
-kernel: [2513998.950187]  [<ffffffff81648e63>] kmalloc_large_node+0x57/0x85
-kernel: [2513998.950193]  [<ffffffff81165bd5>] __kmalloc_node_track_caller+0x195/0x1e0
-kernel: [2513998.950199]  [<ffffffff8153298b>] ? __alloc_skb+0x4b/0x240
-kernel: [2513998.950203]  [<ffffffff81533004>] ? __netdev_alloc_skb+0x24/0x50
-kernel: [2513998.950207]  [<ffffffff815329b8>] __alloc_skb+0x78/0x240
-kernel: [2513998.950212]  [<ffffffff81533004>] __netdev_alloc_skb+0x24/0x50
-kernel: [2513998.950219]  [<ffffffffa001e909>] ixgbe_alloc_rx_buffers+0x289/0x350 [ixgbe]
-kernel: [2513998.950223]  [<ffffffff815333a6>] ? __kfree_skb+0x26/0x30
-kernel: [2513998.950228]  [<ffffffff815333ed>] ? consume_skb+0x3d/0xb0
-kernel: [2513998.950234]  [<ffffffffa001f1bb>] ixgbe_clean_rx_irq+0x7eb/0x8a0 [ixgbe]
-kernel: [2513998.950242]  [<ffffffffa001f9ee>] ixgbe_poll+0xae/0x1a0 [ixgbe]
-kernel: [2513998.950247]  [<ffffffff815417d4>] net_rx_action+0x134/0x290
-kernel: [2513998.950254]  [<ffffffff8106ea58>] __do_softirq+0xa8/0x210
-kernel: [2513998.950260]  [<ffffffff8165d62e>] ? _raw_spin_lock+0xe/0x20
-kernel: [2513998.950264]  [<ffffffff81667eac>] call_softirq+0x1c/0x30
-kernel: [2513998.950268]  [<ffffffff81015305>] do_softirq+0x65/0xa0
-kernel: [2513998.950271]  [<ffffffff8106ee3e>] irq_exit+0x8e/0xb0
-kernel: [2513998.950274]  [<ffffffff81668763>] do_IRQ+0x63/0xe0
-kernel: [2513998.950276]  [<ffffffff8165daee>] common_interrupt+0x6e/0x6e
-kernel: [2513998.950278]  <EOI>  [<ffffffff814fdb18>] ? cpufreq_notify_transition+0x88/0x1c0
-kernel: [2513998.950284]  [<ffffffff815038b0>] ? cpufreq_get_measured_perf+0xa0/0xa0
-kernel: [2513998.950287]  [<ffffffff815043e1>] acpi_cpufreq_target+0x121/0x2a0
-kernel: [2513998.950290]  [<ffffffff814fd2d2>] __cpufreq_driver_target+0x42/0x50
-kernel: [2513998.950292]  [<ffffffff81501445>] dbs_check_cpu+0x2f5/0x330
-kernel: [2513998.950295]  [<ffffffff81501480>] ? dbs_check_cpu+0x330/0x330
-kernel: [2513998.950298]  [<ffffffff81501521>] do_dbs_timer+0xa1/0x110
-kernel: [2513998.950301]  [<ffffffff81084f9a>] process_one_work+0x11a/0x480
-kernel: [2513998.950304]  [<ffffffff81085d44>] worker_thread+0x164/0x370
-kernel: [2513998.950306]  [<ffffffff81085be0>] ? manage_workers.isra.29+0x130/0x130
-kernel: [2513998.950309]  [<ffffffff8108a59c>] kthread+0x8c/0xa0
-kernel: [2513998.950312]  [<ffffffff81667db4>] kernel_thread_helper+0x4/0x10
-kernel: [2513998.950314]  [<ffffffff8108a510>] ? flush_kthread_worker+0xa0/0xa0
-kernel: [2513998.950317]  [<ffffffff81667db0>] ? gs_change+0x13/0x13
-
-I have stopped DRBD and restarted nfs-kernel-server and samba to no improvement. What can I try to correct this problem and bring memory usage under control? 
-
-Thanks,
-
-Andrew Martin
