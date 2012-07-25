@@ -1,85 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab2GYQPo (ORCPT <rfc822;w@1wt.eu>);
+	id S1756528Ab2GYQPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:15:45 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:36580 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756432Ab2GYQPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Jul 2012 12:15:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13096 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357Ab2GYQPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:15:42 -0400
-Message-ID: <50101A77.3070407@redhat.com>
-Date: Wed, 25 Jul 2012 12:10:31 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+Date: Wed, 25 Jul 2012 18:15:39 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 09/13] driver core: firmware loader: store firmware
+ name into devres list
+Message-ID: <20120725161539.GM11152@aftab.osrc.amd.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+ <1343149213-10160-10-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: peterz@infradead.org, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] rbtree: faster augmented insert
-References: <1342787467-5493-1-git-send-email-walken@google.com> <1342787467-5493-5-git-send-email-walken@google.com>
-In-Reply-To: <1342787467-5493-5-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343149213-10160-10-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 08:31 AM, Michel Lespinasse wrote:
+On Wed, Jul 25, 2012 at 01:00:09AM +0800, Ming Lei wrote:
+> This patch will store firmware name into devres list of the device
+> which is requesting firmware loading, so that we can implement
+> auto cache firmware for devices in need.
 
-> +++ b/lib/rbtree.c
-> @@ -88,7 +88,8 @@ __rb_rotate_set_parents(struct rb_node *old, struct rb_node *new,
->   		root->rb_node = new;
->   }
->
-> -void rb_insert_color(struct rb_node *node, struct rb_root *root)
-> +inline void rb_insert_augmented(struct rb_node *node, struct rb_root *root,
-> +				rb_augment_rotate *augment)
->   {
->   	struct rb_node *parent = rb_red_parent(node), *gparent, *tmp;
->
-> @@ -152,6 +153,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
->   					rb_set_parent_color(tmp, parent,
->   							    RB_BLACK);
->   				rb_set_parent_color(parent, node, RB_RED);
-> +				augment(parent, node);
+Stupid question: does this mean that once the firmware name is in the
+devres list, it is being cached automatically and device drivers which
+don't want that need to explicitly uncache it?
 
-> +static inline void dummy(struct rb_node *old, struct rb_node *new) {}
+> 
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/base/firmware_class.c |   66 +++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 66 insertions(+)
+> 
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 540b2e1..c181e6d 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -115,6 +115,11 @@ struct firmware_priv {
+>  	struct firmware *fw;
+>  };
+>  
+> +struct fw_name_devm {
+> +	unsigned long magic;
+> +	char name[];
+> +};
 > +
-> +void rb_insert_color(struct rb_node *node, struct rb_root *root) {
-> +	rb_insert_augmented(node, root, dummy);
-> +}
->   EXPORT_SYMBOL(rb_insert_color);
-
-While the above is what I would have done, the
-question remains "what if the compiler decides
-to not inline the function after all, and does
-not remove the call to the dummy function in
-rb_insert_color as a result?
-
-Do we have some way to force inlining, so the
-compiler is more likely to optimize out the
-dummy call?
-
->   static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
-> diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-> index 2dfafe4..5ace332 100644
-> --- a/lib/rbtree_test.c
-> +++ b/lib/rbtree_test.c
-> @@ -67,22 +67,37 @@ static void augment_callback(struct rb_node *rb, void *unused)
->   	node->augmented = augment_recompute(node);
->   }
->
-> +static void augment_rotate(struct rb_node *rb_old, struct rb_node *rb_new)
+>  #define to_fwbuf(d) container_of(d, struct firmware_buf, ref)
+>  
+>  /* fw_lock could be moved to 'struct firmware_priv' but since it is just
+> @@ -574,6 +579,56 @@ static void fw_set_page_data(struct firmware_buf *buf, struct firmware *fw)
+>  	fw->priv = buf;
+>  }
+>  
+> +static void fw_name_devm_release(struct device *dev, void *res)
 > +{
-> +	struct test_node *old = rb_entry(rb_old, struct test_node, rb);
-> +	struct test_node *new = rb_entry(rb_new, struct test_node, rb);
+> +	struct fw_name_devm *fwn = res;
 > +
-> +	/* Rotation doesn't change subtree's augmented value */
-> +	new->augmented = old->augmented;
-> +	old->augmented = augment_recompute(old);
+> +	if (fwn->magic == (unsigned long)&fw_cache)
+> +		pr_debug("%s: fw_name-%s devm-%p released\n",
+> +				__func__, fwn->name, res);
 > +}
+> +
+> +static int fw_devm_match(struct device *dev, void *res,
+> +		void *match_data)
+> +{
+> +	struct fw_name_devm *fwn = res;
+> +
+> +	return (fwn->magic == (unsigned long)&fw_cache) &&
+> +		!strcmp(fwn->name, match_data);
+> +}
+> +
+> +static struct fw_name_devm *fw_find_devm_name(struct device *dev,
+> +		const char *name)
+> +{
+> +	struct fw_name_devm *fwn;
+> +
+> +	fwn = devres_find(dev, fw_name_devm_release,
+> +			fw_devm_match, (void *)name);
+> +	return fwn;
+> +}
+> +
+> +/* add firmware name into devres list */
+> +static int fw_add_devm_name(struct device *dev, const char *name)
+> +{
+> +	struct fw_name_devm *fwn;
+> +
+> +	fwn = fw_find_devm_name(dev, name);
+> +	if (fwn)
+> +		return 1;
+> +
+> +	fwn = devres_alloc(fw_name_devm_release, sizeof(struct fw_name_devm) +
+> +			strlen(name) + 1, GFP_KERNEL);
 
-Is it worth documenting that rb_old is always the
-parent of rb_new (at least, it seems to be in this
-patch) ?
+Alignment and stray newline.
 
+> +
+> +	if (!fwn)
+> +		return -ENOMEM;
+> +
+> +	fwn->magic = (unsigned long)&fw_cache;
+> +	strcpy(fwn->name, name);
+> +	devres_add(dev, fwn);
+> +
+> +	return 0;
+> +}
+> +
+>  static void _request_firmware_cleanup(const struct firmware **firmware_p)
+>  {
+>  	release_firmware(*firmware_p);
+> @@ -690,6 +745,17 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+>  
+>  	fw_set_page_data(buf, fw_priv->fw);
+>  
+> +	/*
+> +	 * add firmware name into devres list so that we can auto cache
+> +	 * firmware for device.
+> +	 *
+> +	 * f_dev->parent may has been deleted already, but the problem
+> +	 * should be fixed in devres.
+> +	 *
+> +	 */
+> +	if (!retval && f_dev->parent)
+> +		fw_add_devm_name(f_dev->parent, buf->fw_id);
+> +
+>  	fw_priv->buf = NULL;
+>  	mutex_unlock(&fw_lock);
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
