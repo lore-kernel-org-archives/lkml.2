@@ -1,146 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab2GYIGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 04:06:44 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49430 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712Ab2GYIGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 04:06:38 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-37-500fa90b9fca
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Pierre Ossman <drzeus@drzeus.cx>, raphael.andy.lee@gmail.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [PATCH RESEND] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-Date: Wed, 25 Jul 2012 17:06:18 +0900
-Message-Id: <1343203578-21874-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: AAAAAA==
+	id S1756495Ab2GYIHK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 04:07:10 -0400
+Received: from mga14.intel.com ([143.182.124.37]:48282 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756458Ab2GYIG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 04:06:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="126645753"
+Date: Wed, 25 Jul 2012 16:06:53 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: linux-ia64@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, alsa-devel@alsa-project.org
+Subject: [PATCH] ia64: rename platform_name to ia64_platform_name
+Message-ID: <20120725080653.GA18233@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that Extended CSD register(the size of this register
-is larger than CID/CSD) will be referenced more frequently as more
-fields have been added to Extended CSD and it seems that it is not
-a good option to double the memory used.
+The macro name is too generic and conflicts with
+snd_soc_dai_link.platform_name, which triggers lots of ALSA build errors.
 
-This patch is intended to avoid the use of bounce buffer for reading
-Extended CSD register in mmc_send_cxd_data().
-
-Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
- drivers/mmc/core/mmc_ops.c |   45 ++++++++++++++++++++++++++++---------------
- 1 files changed, 29 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index 0ed2cc5..95d94a0 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -238,14 +238,6 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 	struct mmc_command cmd = {0};
- 	struct mmc_data data = {0};
- 	struct scatterlist sg;
--	void *data_buf;
--
--	/* dma onto stack is unsafe/nonportable, but callers to this
--	 * routine normally provide temporary on-stack buffers ...
--	 */
--	data_buf = kmalloc(len, GFP_KERNEL);
--	if (data_buf == NULL)
--		return -ENOMEM;
+(not sure if the previous sent was successful, so resend)
+
+ arch/ia64/include/asm/machvec.h               |    2 +-
+ arch/ia64/include/asm/machvec_dig.h           |    2 +-
+ arch/ia64/include/asm/machvec_dig_vtd.h       |    2 +-
+ arch/ia64/include/asm/machvec_hpsim.h         |    2 +-
+ arch/ia64/include/asm/machvec_hpzx1.h         |    2 +-
+ arch/ia64/include/asm/machvec_hpzx1_swiotlb.h |    2 +-
+ arch/ia64/include/asm/machvec_sn2.h           |    2 +-
+ arch/ia64/include/asm/machvec_uv.h            |    2 +-
+ arch/ia64/include/asm/machvec_xen.h           |    2 +-
+ arch/ia64/include/asm/processor.h             |    2 +-
+ arch/ia64/pci/fixup.c                         |    4 ++--
+ 11 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/arch/ia64/include/asm/machvec.h b/arch/ia64/include/asm/machvec.h
+index 367d299..2d1ad4b1 100644
+--- a/arch/ia64/include/asm/machvec.h
++++ b/arch/ia64/include/asm/machvec.h
+@@ -120,7 +120,7 @@ extern void machvec_tlb_migrate_finish (struct mm_struct *);
+ # ifdef MACHVEC_PLATFORM_HEADER
+ #  include MACHVEC_PLATFORM_HEADER
+ # else
+-#  define platform_name		ia64_mv.name
++#  define ia64_platform_name	ia64_mv.name
+ #  define platform_setup	ia64_mv.setup
+ #  define platform_cpu_init	ia64_mv.cpu_init
+ #  define platform_irq_init	ia64_mv.irq_init
+diff --git a/arch/ia64/include/asm/machvec_dig.h b/arch/ia64/include/asm/machvec_dig.h
+index 8a0752f..1f7403a 100644
+--- a/arch/ia64/include/asm/machvec_dig.h
++++ b/arch/ia64/include/asm/machvec_dig.h
+@@ -10,7 +10,7 @@ extern ia64_mv_setup_t dig_setup;
+  * platform's machvec structure.  When compiling a non-generic kernel,
+  * the macros are used directly.
+  */
+-#define platform_name		"dig"
++#define ia64_platform_name	"dig"
+ #define platform_setup		dig_setup
  
- 	mrq.cmd = &cmd;
- 	mrq.data = &data;
-@@ -266,7 +258,7 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 	data.sg = &sg;
- 	data.sg_len = 1;
+ #endif /* _ASM_IA64_MACHVEC_DIG_h */
+diff --git a/arch/ia64/include/asm/machvec_dig_vtd.h b/arch/ia64/include/asm/machvec_dig_vtd.h
+index 6ab1de5..44308b4 100644
+--- a/arch/ia64/include/asm/machvec_dig_vtd.h
++++ b/arch/ia64/include/asm/machvec_dig_vtd.h
+@@ -11,7 +11,7 @@ extern ia64_mv_dma_init			pci_iommu_alloc;
+  * platform's machvec structure.  When compiling a non-generic kernel,
+  * the macros are used directly.
+  */
+-#define platform_name				"dig_vtd"
++#define ia64_platform_name			"dig_vtd"
+ #define platform_setup				dig_setup
+ #define platform_dma_init			pci_iommu_alloc
  
--	sg_init_one(&sg, data_buf, len);
-+	sg_init_one(&sg, buf, len);
+diff --git a/arch/ia64/include/asm/machvec_hpsim.h b/arch/ia64/include/asm/machvec_hpsim.h
+index cf72fc8..e757112 100644
+--- a/arch/ia64/include/asm/machvec_hpsim.h
++++ b/arch/ia64/include/asm/machvec_hpsim.h
+@@ -11,7 +11,7 @@ extern ia64_mv_irq_init_t hpsim_irq_init;
+  * platform's machvec structure.  When compiling a non-generic kernel,
+  * the macros are used directly.
+  */
+-#define platform_name		"hpsim"
++#define ia64_platform_name	"hpsim"
+ #define platform_setup		hpsim_setup
+ #define platform_irq_init	hpsim_irq_init
  
- 	if (opcode == MMC_SEND_CSD || opcode == MMC_SEND_CID) {
- 		/*
-@@ -280,9 +272,6 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+diff --git a/arch/ia64/include/asm/machvec_hpzx1.h b/arch/ia64/include/asm/machvec_hpzx1.h
+index 3bd83d7..c74d315 100644
+--- a/arch/ia64/include/asm/machvec_hpzx1.h
++++ b/arch/ia64/include/asm/machvec_hpzx1.h
+@@ -11,7 +11,7 @@ extern ia64_mv_dma_init			sba_dma_init;
+  * platform's machvec structure.  When compiling a non-generic kernel,
+  * the macros are used directly.
+  */
+-#define platform_name				"hpzx1"
++#define ia64_platform_name			"hpzx1"
+ #define platform_setup				dig_setup
+ #define platform_dma_init			sba_dma_init
  
- 	mmc_wait_for_req(host, &mrq);
+diff --git a/arch/ia64/include/asm/machvec_hpzx1_swiotlb.h b/arch/ia64/include/asm/machvec_hpzx1_swiotlb.h
+index 1091ac3..906ef62 100644
+--- a/arch/ia64/include/asm/machvec_hpzx1_swiotlb.h
++++ b/arch/ia64/include/asm/machvec_hpzx1_swiotlb.h
+@@ -11,7 +11,7 @@ extern ia64_mv_dma_get_ops			hwsw_dma_get_ops;
+  * platform's machvec structure.  When compiling a non-generic kernel,
+  * the macros are used directly.
+  */
+-#define platform_name				"hpzx1_swiotlb"
++#define ia64_platform_name			"hpzx1_swiotlb"
+ #define platform_setup				dig_setup
+ #define platform_dma_init			machvec_noop
+ #define platform_dma_get_ops			hwsw_dma_get_ops
+diff --git a/arch/ia64/include/asm/machvec_sn2.h b/arch/ia64/include/asm/machvec_sn2.h
+index f061a30..ece9fa8 100644
+--- a/arch/ia64/include/asm/machvec_sn2.h
++++ b/arch/ia64/include/asm/machvec_sn2.h
+@@ -71,7 +71,7 @@ extern ia64_mv_pci_fixup_bus_t		sn_pci_fixup_bus;
+  * platform's machvec structure.  When compiling a non-generic kernel,
+  * the macros are used directly.
+  */
+-#define platform_name			"sn2"
++#define ia64_platform_name		"sn2"
+ #define platform_setup			sn_setup
+ #define platform_cpu_init		sn_cpu_init
+ #define platform_irq_init		sn_irq_init
+diff --git a/arch/ia64/include/asm/machvec_uv.h b/arch/ia64/include/asm/machvec_uv.h
+index 2931447..2c50853 100644
+--- a/arch/ia64/include/asm/machvec_uv.h
++++ b/arch/ia64/include/asm/machvec_uv.h
+@@ -20,7 +20,7 @@ extern ia64_mv_setup_t uv_setup;
+  * platform's machvec structure.  When compiling a non-generic kernel,
+  * the macros are used directly.
+  */
+-#define platform_name			"uv"
++#define ia64_platform_name		"uv"
+ #define platform_setup			uv_setup
  
--	memcpy(buf, data_buf, len);
--	kfree(data_buf);
--
- 	if (cmd.error)
- 		return cmd.error;
- 	if (data.error)
-@@ -294,24 +283,37 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- int mmc_send_csd(struct mmc_card *card, u32 *csd)
- {
- 	int ret, i;
-+	u32 *csd_tmp;
+ #endif /* _ASM_IA64_MACHVEC_UV_H */
+diff --git a/arch/ia64/include/asm/machvec_xen.h b/arch/ia64/include/asm/machvec_xen.h
+index 55f9228..8b8bd0e 100644
+--- a/arch/ia64/include/asm/machvec_xen.h
++++ b/arch/ia64/include/asm/machvec_xen.h
+@@ -13,7 +13,7 @@ extern ia64_mv_send_ipi_t		xen_platform_send_ipi;
+  * platform's machvec structure.  When compiling a non-generic kernel,
+  * the macros are used directly.
+  */
+-#define platform_name				"xen"
++#define ia64_platform_name			"xen"
+ #define platform_setup				dig_setup
+ #define platform_cpu_init			xen_cpu_init
+ #define platform_irq_init			xen_irq_init
+diff --git a/arch/ia64/include/asm/processor.h b/arch/ia64/include/asm/processor.h
+index 832dd37..944152a 100644
+--- a/arch/ia64/include/asm/processor.h
++++ b/arch/ia64/include/asm/processor.h
+@@ -719,7 +719,7 @@ enum idle_boot_override {IDLE_NO_OVERRIDE=0, IDLE_HALT, IDLE_FORCE_MWAIT,
  
- 	if (!mmc_host_is_spi(card->host))
- 		return mmc_send_cxd_native(card->host, card->rca << 16,
- 				csd, MMC_SEND_CSD);
+ void default_idle(void);
  
--	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
-+	csd_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!csd_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
-+
-+	memcpy(csd, csd_tmp, 16);
+-#define ia64_platform_is(x) (strcmp(x, platform_name) == 0)
++#define ia64_platform_is(x) (strcmp(x, ia64_platform_name) == 0)
  
- 	for (i = 0;i < 4;i++)
- 		csd[i] = be32_to_cpu(csd[i]);
+ #endif /* !__ASSEMBLY__ */
  
-+	kfree(csd_tmp);
- 	return 0;
-+
-+err:
-+	kfree(csd_tmp);
-+	return ret;
- }
+diff --git a/arch/ia64/pci/fixup.c b/arch/ia64/pci/fixup.c
+index f5959c0..eab28e3 100644
+--- a/arch/ia64/pci/fixup.c
++++ b/arch/ia64/pci/fixup.c
+@@ -30,8 +30,8 @@ static void __devinit pci_fixup_video(struct pci_dev *pdev)
+ 	struct pci_bus *bus;
+ 	u16 config;
  
- int mmc_send_cid(struct mmc_host *host, u32 *cid)
- {
- 	int ret, i;
-+	u32 *cid_tmp;
+-	if ((strcmp(platform_name, "dig") != 0)
+-	    && (strcmp(platform_name, "hpzx1")  != 0))
++	if ((strcmp(ia64_platform_name, "dig") != 0)
++	    && (strcmp(ia64_platform_name, "hpzx1")  != 0))
+ 		return;
+ 	/* Maybe, this machine supports legacy memory map. */
  
- 	if (!mmc_host_is_spi(host)) {
- 		if (!host->card)
-@@ -320,14 +322,25 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
- 				cid, MMC_SEND_CID);
- 	}
- 
--	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
-+	cid_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!cid_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
-+
-+	memcpy(cid, cid_tmp, 16);
- 
- 	for (i = 0;i < 4;i++)
- 		cid[i] = be32_to_cpu(cid[i]);
- 
-+	kfree(cid_tmp);
- 	return 0;
-+
-+err:
-+	kfree(cid_tmp);
-+	return ret;
- }
- 
- int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
 -- 
-1.7.0.4
+1.7.10
 
