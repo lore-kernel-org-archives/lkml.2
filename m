@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab2GYRfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:35:11 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49156 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab2GYRfJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:35:09 -0400
-Date: Wed, 25 Jul 2012 19:35:05 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Subject: Re: [PATCH 03/17] perf, x86: Add copy_from_user_nmi_nochk for best
- effort copy
-Message-ID: <20120725173502.GJ1173@somewhere.redhat.com>
-References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
- <1342959280-5361-4-git-send-email-jolsa@redhat.com>
- <20120725161150.GA1173@somewhere.redhat.com>
- <20120725171643.GF946@krava.brq.redhat.com>
- <20120725173031.GA14996@krava.brq.redhat.com>
+	id S1751752Ab2GYRgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:36:22 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3259 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751222Ab2GYRgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 13:36:21 -0400
+Message-ID: <50102E13.4010907@canonical.com>
+Date: Wed, 25 Jul 2012 11:34:11 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120725173031.GA14996@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        James Bottomley <JBottomley@parallels.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] firmware: remove computone driver firmware and documentation
+References: <1343234526-105460-1-git-send-email-tim.gardner@canonical.com> <50102D23.3010503@windriver.com>
+In-Reply-To: <50102D23.3010503@windriver.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 07:30:31PM +0200, Jiri Olsa wrote:
-> On Wed, Jul 25, 2012 at 07:16:43PM +0200, Jiri Olsa wrote:
-> > On Wed, Jul 25, 2012 at 06:11:53PM +0200, Frederic Weisbecker wrote:
-> > > On Sun, Jul 22, 2012 at 02:14:26PM +0200, Jiri Olsa wrote:
-> > > > Adding copy_from_user_nmi_nochk that provides the best effort
-> > > > copy regardless the requesting size crossing the task boundary.
-> > > > 
-> > > > This is going to be useful for stack dump we need in post
-> > > > DWARF CFI based unwind, where we have predefined size of
-> > > > the user stack to dump, and we need to store the most of
-> > > > the requested dump size, regardless this size is crossing
-> > > > the task boundary.
-> > > 
-> > > What does that imply when we cross this limit? Are we still in the
-> > > task stack?
-> > 
-> > We store all we could from 'stack pointer' to 'stack pointer' + dump size.
-> > 
-> > I discussed this with Oleg and we could probably find vma for the 'stack pointer'
-> > and check for its size and narrow the dump - maybe more complex, but probably faster
-> > in comparison with dumping pages we're not interested in.
-> > 
-> > thanks,
-> > jirka
+On 07/25/2012 11:30 AM, Paul Gortmaker wrote:
 > 
-> I can send this update later together with vdso
-> and 'syscall regs storage' features ;)
+> For future reference, the option "--irreversible-delete" to
+> format-patch is a nice way to avoid sending hundreds of lines
+> of meaningless binary data in e-mail.
+> 
 
-Sure! As long as we are fine with the kernel ABI, the rest can be done
-incrementally.
+Noted. There'll be more to come...
+
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
