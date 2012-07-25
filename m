@@ -1,191 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab2GYJeC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 05:34:02 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:53010 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932889Ab2GYJdd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 05:33:33 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6782"; a="214233629"
-From: Yaniv Gardi <ygardi@codeaurora.org>
-To: linux-mmc@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Yaniv Gardi <ygardi@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v8 2/2] mmc: card: Adding support for sanitize in eMMC 4.5
-Date: Wed, 25 Jul 2012 12:32:46 +0300
-Message-Id: <1343208766-8046-3-git-send-email-ygardi@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1343208766-8046-1-git-send-email-ygardi@codeaurora.org>
-References: <1343208766-8046-1-git-send-email-ygardi@codeaurora.org>
+	id S1752755Ab2GYJfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 05:35:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39840 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751960Ab2GYJfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 05:35:21 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <linux-input@vger.kernel.org>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCH] Input: omap4-keypad: Fix the probe error handling
+Date: Wed, 25 Jul 2012 15:05:16 +0530
+Message-ID: <1343208916-19149-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This feature delete the unmap memory region of the eMMC card,
-by writing to a specific register in the EXT_CSD
-unmap region is the memory region that were previously deleted
-(by erase, trim or discard operation)
+- pm_runtime_disable call is missed in some of the error cases
+  fix the same.
+- In the error path pm_runtime_put_sync is called after pm_runtime_disable
+ fix the same.
+- keypad_data->keymap free was missed in one of the error path fix it.
 
-Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+Also while at it call pm_runtime_put_sync after the register access in probe
+instead of waiting for input registration etc.
 
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/mmc/card/block.c |   72 +++++++++++++++++++++++++++++++++-------------
- drivers/mmc/card/queue.c |   10 ++++++-
- include/linux/mmc/host.h |    1 +
- 3 files changed, 62 insertions(+), 21 deletions(-)
+ drivers/input/keyboard/omap4-keypad.c |   16 +++++++---------
+ 1 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index dd2d374..139971e 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -874,10 +874,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- {
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
--	unsigned int from, nr, arg, trim_arg, erase_arg;
-+	unsigned int from, nr, arg;
- 	int err = 0, type = MMC_BLK_SECDISCARD;
- 
--	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-+	if (!(mmc_can_secure_erase_trim(card))) {
- 		err = -EOPNOTSUPP;
- 		goto out;
+diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+index c05f98c..17efede 100644
+--- a/drivers/input/keyboard/omap4-keypad.c
++++ b/drivers/input/keyboard/omap4-keypad.c
+@@ -310,6 +310,7 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+ 		goto err_unmap;
  	}
-@@ -885,23 +885,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- 	from = blk_rq_pos(req);
- 	nr = blk_rq_sectors(req);
- 
--	/* The sanitize operation is supported at v4.5 only */
--	if (mmc_can_sanitize(card)) {
--		erase_arg = MMC_ERASE_ARG;
--		trim_arg = MMC_TRIM_ARG;
--	} else {
--		erase_arg = MMC_SECURE_ERASE_ARG;
--		trim_arg = MMC_SECURE_TRIM1_ARG;
--	}
--
--	if (mmc_erase_group_aligned(card, from, nr))
--		arg = erase_arg;
--	else if (mmc_can_trim(card))
--		arg = trim_arg;
--	else {
--		err = -EINVAL;
--		goto out;
--	}
-+	if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
-+		arg = MMC_SECURE_TRIM1_ARG;
-+	else
-+		arg = MMC_SECURE_ERASE_ARG;
- retry:
- 	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
- 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-@@ -953,6 +940,46 @@ out:
- 	return err ? 0 : 1;
- }
- 
-+static int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
-+				      struct request *req)
-+{
-+	struct mmc_blk_data *md = mq->data;
-+	struct mmc_card *card = md->queue.card;
-+	int err = 0;
-+
-+	BUG_ON(!card);
-+	BUG_ON(!card->host);
-+
-+	if (!(mmc_can_sanitize(card) &&
-+	     (card->host->caps2 & MMC_CAP2_SANITIZE))) {
-+			pr_warning("%s: %s - SANITIZE is not supported\n",
-+				   mmc_hostname(card->host), __func__);
-+			err = -EOPNOTSUPP;
-+			goto out;
-+	}
-+
-+	pr_debug("%s: %s - SANITIZE IN PROGRESS...\n",
-+		mmc_hostname(card->host), __func__);
-+
-+	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+					 EXT_CSD_SANITIZE_START, 1, 0);
-+
-+	if (err)
-+		pr_err("%s: %s - mmc_switch() with "
-+		       "EXT_CSD_SANITIZE_START failed. err=%d\n",
-+		       mmc_hostname(card->host), __func__, err);
-+
-+	pr_debug("%s: %s - SANITIZE COMPLETED\n", mmc_hostname(card->host),
-+					     __func__);
-+
-+out:
-+	spin_lock_irq(&md->lock);
-+	__blk_end_request(req, err, blk_rq_bytes(req));
-+	spin_unlock_irq(&md->lock);
-+
-+	return err ? 0 : 1;
-+}
-+
- static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
- {
- 	struct mmc_blk_data *md = mq->data;
-@@ -1437,7 +1464,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 		goto out;
+ 	rev = __raw_readl(keypad_data->base + OMAP4_KBD_REVISION);
++	pm_runtime_put_sync(&pdev->dev);
+ 	rev &= 0x03 << 30;
+ 	rev >>= 30;
+ 	switch (rev) {
+@@ -325,14 +326,14 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev,
+ 			"Keypad reports unsupported revision %d", rev);
+ 		error = -EINVAL;
+-		goto err_pm_put_sync;
++		goto err_unmap;
  	}
  
--	if (req && req->cmd_flags & REQ_DISCARD) {
-+	if (req && req->cmd_flags & REQ_SANITIZE) {
-+		/* complete ongoing async transfer before issuing sanitize */
-+		if (card->host && card->host->areq)
-+			mmc_blk_issue_rw_rq(mq, NULL);
-+		ret = mmc_blk_issue_sanitize_rq(mq, req);
-+	} else if (req && req->cmd_flags & REQ_DISCARD) {
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index e360a97..4f3250e 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -145,10 +145,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
- 	/* granularity must not be greater than max. discard */
- 	if (card->pref_erase > max_discard)
- 		q->limits.discard_granularity = 0;
--	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
-+	if (mmc_can_secure_erase_trim(card))
- 		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
- }
+ 	/* input device allocation */
+ 	keypad_data->input = input_dev = input_allocate_device();
+ 	if (!input_dev) {
+ 		error = -ENOMEM;
+-		goto err_pm_put_sync;
++		goto err_unmap;
+ 	}
  
-+static void mmc_queue_setup_sanitize(struct request_queue *q)
-+{
-+	queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, q);
-+}
-+
- /**
-  * mmc_init_queue - initialise a queue structure.
-  * @mq: mmc queue
-@@ -184,6 +189,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 	if (mmc_can_erase(card))
- 		mmc_queue_setup_discard(mq->queue, card);
+ 	input_dev->name = pdev->name;
+@@ -374,30 +375,27 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+ 			     "omap4-keypad", keypad_data);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "failed to register interrupt\n");
+-		goto err_free_input;
++		goto err_free_keymap;
+ 	}
  
-+	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
-+		mmc_queue_setup_sanitize(mq->queue);
-+
- #ifdef CONFIG_MMC_BLOCK_BOUNCE
- 	if (host->max_segs == 1) {
- 		unsigned int bouncesz;
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 0707d22..be2b89f 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -238,6 +238,7 @@ struct mmc_host {
- #define MMC_CAP2_BROKEN_VOLTAGE	(1 << 7)	/* Use the broken voltage */
- #define MMC_CAP2_DETECT_ON_ERR	(1 << 8)	/* On I/O err check card removal */
- #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
-+#define MMC_CAP2_SANITIZE	(1 << 10)		/* Support Sanitize */
+-	pm_runtime_put_sync(&pdev->dev);
  
- 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
- 	unsigned int        power_notify_type;
+ 	error = input_register_device(keypad_data->input);
+ 	if (error < 0) {
+ 		dev_err(&pdev->dev, "failed to register input device\n");
+-		goto err_pm_disable;
++		goto err_free_irq;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, keypad_data);
+ 	return 0;
+ 
+-err_pm_disable:
+-	pm_runtime_disable(&pdev->dev);
++err_free_irq:
+ 	free_irq(keypad_data->irq, keypad_data);
+ err_free_keymap:
+ 	kfree(keypad_data->keymap);
+ err_free_input:
+ 	input_free_device(input_dev);
+-err_pm_put_sync:
+-	pm_runtime_put_sync(&pdev->dev);
+ err_unmap:
++	pm_runtime_disable(&pdev->dev);
+ 	iounmap(keypad_data->base);
+ err_release_mem:
+ 	release_mem_region(res->start, resource_size(res));
 -- 
-1.7.6
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+1.7.5.4
+
