@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab2GYGSU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:18:20 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:45651 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932736Ab2GYGSS convert rfc822-to-8bit (ORCPT
+	id S932806Ab2GYGTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:19:07 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:38871 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932736Ab2GYGTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:18:18 -0400
-From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-To: "Kani, Toshimitsu" <toshi.kani@hp.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "liuj97@gmail.com" <liuj97@gmail.com>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "imammedo@redhat.com" <imammedo@redhat.com>
-Subject: RE: [PATCH v2 0/4] ACPI: hotplug messages improvement
-Thread-Topic: [PATCH v2 0/4] ACPI: hotplug messages improvement
-Thread-Index: AQHNZpj6k3qCjO+Hpkan+GnBrah0bZc5jArg
-Date: Wed, 25 Jul 2012 06:15:40 +0000
-Message-ID: <EC847C0FC42FF046B94E60B168774B173164314F@G9W0337.americas.hpqcorp.net>
-References: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 25 Jul 2012 02:19:04 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-8c-500f8fd76147
+Message-id: <500F8FD9.1080601@samsung.com>
+Date: Wed, 25 Jul 2012 15:19:05 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Lockwood <lockwood@android.com>
+Subject: Re: [PATCH] extcon: extcon_gpio: Replace gpio_request_one by
+ devm_gpio_request_one
+References: <1343093217.7556.1.camel@phoenix>
+In-reply-to: <1343093217.7556.1.camel@phoenix>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t9jAd3r/fwBBl1rFS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGzMcr2QtOsFec3vSAtYFxClsXIyeHhICJxJuWG4wQtpjEhXvr
+	geJcHEICixglHszqBCsSEuhiklhwMh3E5hXQkvg0/SkziM0ioCox+etKsBo2oPj+FzeAbA4O
+	UYEIiV/9HBDlghI/Jt9jAbFFBBQl+t89ZAeZzyywhFHiUd8HVpCEsECsxMUNW6B26Uoc2v8G
+	zOYU0JNYs/4RWDOzgLrEpHmLmCFseYnNa94yT2AUmIVkxywkZbOQlC1gZF7FKJpakFxQnJSe
+	a6hXnJhbXJqXrpecn7uJERyAz6R2MK5ssDjEKMDBqMTD+/MJX4AQa2JZcWXuIUYJDmYlEd6i
+	MP4AId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rzG3l/9hQTSE0tSs1NTC1KLYLJMHJxSDYwtbSYf
+	g8xCPCzOnk75/Z15tozm8V/TZnDYid5ROf5Z5XxR//O0peX7Zworb9uh4dfPmLf/s+1eu2d/
+	zydwv599bMXZiDSj5XGBTvq83scXpur4/2Q7JrwyU7RGXln4S8ZXNpulSk/d/1evO1dxyyBp
+	/8SZXKv3nA87vc5e3NNhetnX7LtxbYVKLMUZiYZazEXFiQAYKVMwPAIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+On 07/24/2012 10:26 AM, Axel Lin wrote:
 
-Tested your patches on a KVM setup. Since all your acpi_pr* macros are in the error path, I didn't see an easy way to trigger them. Instead added an acpi_pr_err() message in the success path and tested out vcpu addition/deletion sequence. No regressions seen in the functional tests and the ACPI err message comes out on the console and message buffer with a valid ACPI device path.
+> commit 01eaf24 "extcon: Convert extcon_gpio to devm_gpio_request_one"
+> missed the replacement for devm_gpio_request_one. fix it.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/extcon/extcon_gpio.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/extcon/extcon_gpio.c b/drivers/extcon/extcon_gpio.c
+> index fe3db45..3cc152e 100644
+> --- a/drivers/extcon/extcon_gpio.c
+> +++ b/drivers/extcon/extcon_gpio.c
+> @@ -107,7 +107,8 @@ static int __devinit gpio_extcon_probe(struct platform_device *pdev)
+>  	if (ret < 0)
+>  		return ret;
+>  
+> -	ret = gpio_request_one(extcon_data->gpio, GPIOF_DIR_IN, pdev->name);
+> +	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
+> +				    pdev->name);
+>  	if (ret < 0)
+>  		goto err;
+>  
 
-Vijay
+It is right.
 
-Tested-by: Vijay Mohan Pandarathil<vijaymohan.pandarathil@hp.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-
------Original Message-----
-From: Kani, Toshimitsu 
-Sent: Friday, July 20, 2012 9:54 AM
-To: lenb@kernel.org; linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org; joe@perches.com; bhelgaas@google.com; isimatu.yasuaki@jp.fujitsu.com; liuj97@gmail.com; srivatsa.bhat@linux.vnet.ibm.com; prarit@redhat.com; imammedo@redhat.com; Pandarathil, Vijaymohan R; Kani, Toshimitsu
-Subject: [PATCH v2 0/4] ACPI: hotplug messages improvement
-
-This patchset improves logging messages for ACPI CPU, Memory, and
-Container hotplug notify handlers.  The patchset introduces a set of
-new macro interfaces, acpi_pr_<level>(), and updates the notify
-handlers to use them.  acpi_pr_<level>() appends "ACPI" prefix and
-ACPI object path to the messages.  This improves diagnostics in
-hotplug operations since it identifies an object that caused an
-issue in a log file.
-
-v2:
- - Set buffer.pointer to NULL in acpi_printk().
- - Added acpi_pr_debug().
-
----
-This patchset applies on top of the patch below.
-
-[PATCH] ACPI: Add ACPI CPU hot-remove support
-http://marc.info/?l=linux-acpi&m=134098193327362&w=2
-
----
-Toshi Kani (4):
- ACPI: Add acpi_pr_<level>() interfaces
- ACPI: Update CPU hotplug messages
- ACPI: Update Memory hotplug messages
- ACPI: Update Container hotplug messages
-
----
- drivers/acpi/acpi_memhotplug.c  |   24 ++++++++++++------------
- drivers/acpi/container.c        |    6 +++---
- drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
- drivers/acpi/utils.c            |   34 ++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h         |   20 ++++++++++++++++++++
- 5 files changed, 90 insertions(+), 30 deletions(-)
+Thank you,
+Chanwoo Choi
