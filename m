@@ -1,83 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab2GYBJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 21:09:56 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59462 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab2GYBJz (ORCPT
+	id S1756143Ab2GYBLD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 21:11:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45727 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751853Ab2GYBLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 21:09:55 -0400
-Date: Wed, 25 Jul 2012 11:09:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>
-Subject: Re: [GIT PULL] KVM updates for the 3.6 merge window
-Message-Id: <20120725110943.e0c429afbffd2cf8b6c92aac@canb.auug.org.au>
-In-Reply-To: <1343169516.3715.25.camel@pasglop>
-References: <500D1573.3030406@redhat.com>
-	<CA+55aFygKruOf1G5bjfE3mpvaMP3B7Eg3Hh2=HpMO=M8fDX=tw@mail.gmail.com>
-	<1343169516.3715.25.camel@pasglop>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Tue, 24 Jul 2012 21:11:00 -0400
+Message-ID: <1343178644.5132.103.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 03/17] Drivers: hv: kvp: Cleanup error handling in KVP
+From: Ben Hutchings <ben@decadent.org.uk>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        olaf@aepfle.de, apw@canonical.com, netdev@vger.kernel.org
+Date: Wed, 25 Jul 2012 02:10:44 +0100
+In-Reply-To: <1343145701-3691-3-git-send-email-kys@microsoft.com>
+References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
+	 <1343145701-3691-1-git-send-email-kys@microsoft.com>
+	 <1343145701-3691-3-git-send-email-kys@microsoft.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-dVLjE4k0PQLzniyVIprS"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__25_Jul_2012_11_09_43_+1000_Trx_OL2QHlHKa7oH"
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__25_Jul_2012_11_09_43_+1000_Trx_OL2QHlHKa7oH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-dVLjE4k0PQLzniyVIprS
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 25 Jul 2012 08:38:36 +1000 Benjamin Herrenschmidt <benh@kernel.cras=
-hing.org> wrote:
->
-> On Tue, 2012-07-24 at 12:04 -0700, Linus Torvalds wrote:
-> > Ok, this caused conflicts with the s390 and ppc trees. I think I fixed
-> > them correctly, but the respective arch people really should take a
-> > look.
+On Tue, 2012-07-24 at 09:01 -0700, K. Y. Srinivasan wrote:
+> In preparation to implementing IP injection, cleanup the way we propagate
+> and handle errors both in the driver as well as in the user level daemon.
 >=20
-> A quick peek at the merge commit looks allright, but Alex mentioned that
-> there's some more fallover that needs an actual patch to fix (the
-> changes to enforce a cleaner ASM syntax need to be applied to some new
-> code from Avi's tree that didn't actually trigger merge conflicts).
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/hv/hv_kvp.c      |  112 +++++++++++++++++++++++++++++++++++++---=
+------
+>  include/linux/hyperv.h   |   17 +++++---
+>  tools/hv/hv_kvp_daemon.c |   70 +++++++++++++++-------------
+>  3 files changed, 138 insertions(+), 61 deletions(-)
 >=20
-> I'll follow up with Alex and send you the relevant patches if any.
+> diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+> index 0012eed..9b7fc4a 100644
+> --- a/drivers/hv/hv_kvp.c
+> +++ b/drivers/hv/hv_kvp.c
+[...]
+> @@ -109,27 +154,52 @@ kvp_cn_callback(struct cn_msg *msg, struct netlink_=
+skb_parms *nsp)
+>  {
+>  	struct hv_kvp_msg *message;
+>  	struct hv_kvp_msg_enumerate *data;
+> +	int	error =3D 0;
+> =20
+>  	message =3D (struct hv_kvp_msg *)msg->data;
+> -	switch (message->kvp_hdr.operation) {
+> +
+> +	/*
+> +	 * If we are negotiating the version information
+> +	 * with the daemon; handle that first.
+> +	 */
+> +
+> +	if (in_hand_shake) {
+> +		if (kvp_handle_handshake(message))
+> +			in_hand_shake =3D false;
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * Based on the version of the daemon, we propagate errors from the
+> +	 * daemon differently.
+> +	 */
+> +
+> +	data =3D &message->body.kvp_enum_data;
+> +
+> +	switch (dm_reg_value) {
+>  	case KVP_OP_REGISTER:
+> -		pr_info("KVP: user-mode registering done.\n");
+> -		kvp_register();
+> -		kvp_transaction.active =3D false;
+> -		hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
+> +		/*
+> +		 * Null string is used to pass back error condition.
+> +		 */
+> +		if (!strlen(data->data.key))
 
-There was at least one, but Linus got it (I checked all the mentions of
-VCPU_GPR).  His merge resolution matches the one that has been in
-linux-next for quite some time.
+Do we know that the key is null-terminated here?  Shouldn't we just
+check whether data->data.key[0] =3D=3D 0?
+
+> +			error =3D HV_S_CONT;
+>  		break;
+> =20
+> -	default:
+> -		data =3D &message->body.kvp_enum_data;
+> +	case KVP_OP_REGISTER1:
+>  		/*
+> -		 * Complete the transaction by forwarding the key value
+> -		 * to the host. But first, cancel the timeout.
+> +		 * We use the message header information from
+> +		 * the user level daemon to transmit errors.
+>  		 */
+> -		if (cancel_delayed_work_sync(&kvp_work))
+> -			kvp_respond_to_host(data->data.key,
+> -					 data->data.value,
+> -					!strlen(data->data.key));
+> +		error =3D *((int *)(&message->kvp_hdr.operation));
+[...]
+
+What's with the casting (repeated in many other places)?  Wouldn't it be
+better to redefine struct hv_kvp_msg to start with something like:
+
+	union {
+		struct hv_kvp_hdr	request;
+		int			error;
+	} kvp_hdr;
+
+Ben.
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben Hutchings
+If more than one person is responsible for a bug, no one is at fault.
 
---Signature=_Wed__25_Jul_2012_11_09_43_+1000_Trx_OL2QHlHKa7oH
-Content-Type: application/pgp-signature
+--=-dVLjE4k0PQLzniyVIprS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQD0dXAAoJEECxmPOUX5FEwSMP/jdugUT1BvLgJHnnwlqloZ1y
-rvViuVPRWbO++oAE5I5K6Tj/9velKetCpDTVLq7JXAlHNwmnk+bUwq+YQW7tWZLh
-B74OJIwNxd25A+KwweyJS1wX6Vj5xXIlwzotIDcf9lnezwjxwDOIq0YiBtBZZ/We
-EFNBU+UoLia4JyDUgjVRBlutMbHiG5MDxUTH806DCRW+RLxx6LuKESKUsBDrGWth
-0bi2U6JsIf4G+FajbcO/TqIJeXcdraQLSd1sAEQ4w4DVtnsSELsCt1bX/APvcoSh
-44rJJXzQp3IAYX0OruVbptAzosOVJyZ9Wg0Uci0u630ISMZa2eBcM+cEE5N75tmv
-HVFAEJDdsoECVjvN9iX88yzGodMTYqOCRYVd/JasJmmbbCDWziTudbF5Lj182QNV
-p7DwC6Nh+Je+T5ZPyFJiWmVLu0+6tP8/z0dmG/VQxVKpXPnSHChTzVetnv1YiJPy
-/smWq+xTJHRHiEaYnOlLwOBTR7i60Ry2o7o92/jL42QpaRKWGUAer2dbt0gYZpuG
-7Z9DiaLN9k1v/IEfKWpnJERWLx4jslvIOB24pROIObEgO1INBUPHA27hPIV5TsVV
-pN1N3N08+c13lNux9sBfVgyHPzK1VyyvE3x32vuIriGdyoKeKluy6/yMtXKlSEnn
-PiMQfNJyK55rqfBRH67b
-=oLHm
+iQIVAwUAUA9Hlee/yOyVhhEJAQouXw//ahPlqa1CElOe4nmUzBItnMKsMz4rfsTK
+SbfYiVQh7VCrbXzBCvB/I/C7/fJKThIGxIRFJmkTUKAneRtHoXkteIW4RmhBPGRz
+aieXq/kK+blC4BbBQnnw4ZG5TCemBd5DUFvmaG6M5APnq2W9ljlGcMb5W2ezUNle
+3z6zAN/MGy+Qw99b3nWhJC2oI6jkxcZ1wfyvSOus1T1dgIOVLmrlyvqIyBthnrAK
+bdPfFnRDaJDXHR4g08F1HdarXZew3nttY8Cd41xrv2O4cpSLdCJTLeM9AqlW3QEq
+fxnugoe7Fr64VxVDXLv/Wdua9Ip7TVZvBp/6MwmMbA8TFdIbq8u/7hJJQREWPg/W
+7fD+AiJRvjrTI5Hdz/wnWxKZd6N0Xuwc++VtTXYV2seDAQ1v6WfhwBg1XMJ1A6wH
+QpR9w5CdCRk9bKyRya6D4FyJJfTqTZdKuugNceGQf5Ga/xN5KXGfRLbfHPV8Fu9/
+3Ti/Fa3A/Dp0j4Cm4ienZxC5HaC+yRuDeylhmfMa98G6IxQ9LngqkqIdupzEP4wq
+NMM+zO6zHZZOwBQZkfWF6qfrm1c/Aj/zZQkDh8QMSVi33vDOalkOIeSquSU2cM7M
+K8XvlJ66f53ytcrbc5UiwQor62l+IYaROBUR7LECUf0MNlWQrB+XD5WwlPpZktJ7
+nFK1HJJoVFk=
+=hjHy
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__25_Jul_2012_11_09_43_+1000_Trx_OL2QHlHKa7oH--
+--=-dVLjE4k0PQLzniyVIprS--
