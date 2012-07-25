@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab2GYM6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:58:35 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20074 "EHLO relay.sw.ru"
+	id S932978Ab2GYM6k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:58:40 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4547 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756715Ab2GYM6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:58:31 -0400
-Subject: [PATCH v2 10/15] SUNRPC: service request network namespace helper
-	introduced
+	id S1756715Ab2GYM6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:58:38 -0400
+Subject: [PATCH v2 11/15] LockD: manage grace list per network namespace
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 25 Jul 2012 16:57:06 +0400
-Message-ID: <20120725125705.24376.11721.stgit@localhost.localdomain>
+Date: Wed, 25 Jul 2012 16:57:13 +0400
+Message-ID: <20120725125713.24376.40630.stgit@localhost.localdomain>
 In-Reply-To: <20120725125258.24376.82525.stgit@localhost.localdomain>
 References: <20120725125258.24376.82525.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -24,108 +23,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cleanup patch - makes code looks simplier.
-It replaces widely used rqstp->rq_xprt->xpt_net by introduced SVC_NET(rqstp).
-
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/lockd/host.c            |    2 +-
- fs/nfs/callback_xdr.c      |    4 ++--
- fs/nfsd/export.c           |    4 ++--
- fs/nfsd/nfs4idmap.c        |    4 ++--
- include/linux/sunrpc/svc.h |    2 ++
- 5 files changed, 9 insertions(+), 7 deletions(-)
+ fs/lockd/grace.c |   14 +++++++++++---
+ fs/lockd/netns.h |    1 +
+ fs/lockd/svc.c   |    1 +
+ 3 files changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/fs/lockd/host.c b/fs/lockd/host.c
-index 0084ab8..f9b22e5 100644
---- a/fs/lockd/host.c
-+++ b/fs/lockd/host.c
-@@ -331,7 +331,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
- 	struct nsm_handle *nsm = NULL;
- 	struct sockaddr *src_sap = svc_daddr(rqstp);
- 	size_t src_len = rqstp->rq_daddrlen;
--	struct net *net = rqstp->rq_xprt->xpt_net;
-+	struct net *net = SVC_NET(rqstp);
- 	struct nlm_lookup_host_info ni = {
- 		.server		= 1,
- 		.sap		= svc_addr(rqstp),
-diff --git a/fs/nfs/callback_xdr.c b/fs/nfs/callback_xdr.c
-index e64b01d..742ff4f 100644
---- a/fs/nfs/callback_xdr.c
-+++ b/fs/nfs/callback_xdr.c
-@@ -863,7 +863,7 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp, void *argp, void *r
- 		.drc_status = 0,
- 		.clp = NULL,
- 		.slotid = NFS4_NO_SLOT,
--		.net = rqstp->rq_xprt->xpt_net,
-+		.net = SVC_NET(rqstp),
- 	};
- 	unsigned int nops = 0;
+diff --git a/fs/lockd/grace.c b/fs/lockd/grace.c
+index 183cc1f..8dbaff7 100644
+--- a/fs/lockd/grace.c
++++ b/fs/lockd/grace.c
+@@ -4,8 +4,10 @@
  
-@@ -879,7 +879,7 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp, void *argp, void *r
- 		return rpc_garbage_args;
+ #include <linux/module.h>
+ #include <linux/lockd/bind.h>
++#include <net/net_namespace.h>
++
++#include "netns.h"
  
- 	if (hdr_arg.minorversion == 0) {
--		cps.clp = nfs4_find_client_ident(rqstp->rq_xprt->xpt_net, hdr_arg.cb_ident);
-+		cps.clp = nfs4_find_client_ident(SVC_NET(rqstp), hdr_arg.cb_ident);
- 		if (!cps.clp || !check_gss_callback_principal(cps.clp, rqstp))
- 			return rpc_drop_reply;
- 	}
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index ba23349..d77acd0 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -929,7 +929,7 @@ struct svc_export *
- rqst_exp_get_by_name(struct svc_rqst *rqstp, struct path *path)
+-static LIST_HEAD(grace_list);
+ static DEFINE_SPINLOCK(grace_lock);
+ 
+ /**
+@@ -21,8 +23,11 @@ static DEFINE_SPINLOCK(grace_lock);
+  */
+ void locks_start_grace(struct lock_manager *lm)
  {
- 	struct svc_export *gssexp, *exp = ERR_PTR(-ENOENT);
--	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
-+	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
- 	struct cache_detail *cd = nn->svc_export_cache;
- 
- 	if (rqstp->rq_client == NULL)
-@@ -960,7 +960,7 @@ struct svc_export *
- rqst_exp_find(struct svc_rqst *rqstp, int fsid_type, u32 *fsidv)
++	struct net *net = &init_net;
++	struct lockd_net *ln = net_generic(net, lockd_net_id);
++
+ 	spin_lock(&grace_lock);
+-	list_add(&lm->list, &grace_list);
++	list_add(&lm->list, &ln->grace_list);
+ 	spin_unlock(&grace_lock);
+ }
+ EXPORT_SYMBOL_GPL(locks_start_grace);
+@@ -54,6 +59,9 @@ EXPORT_SYMBOL_GPL(locks_end_grace);
+  */
+ int locks_in_grace(void)
  {
- 	struct svc_export *gssexp, *exp = ERR_PTR(-ENOENT);
--	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
-+	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
- 	struct cache_detail *cd = nn->svc_export_cache;
+-	return !list_empty(&grace_list);
++	struct net *net = &init_net;
++	struct lockd_net *ln = net_generic(net, lockd_net_id);
++
++	return !list_empty(&ln->grace_list);
+ }
+ EXPORT_SYMBOL_GPL(locks_in_grace);
+diff --git a/fs/lockd/netns.h b/fs/lockd/netns.h
+index e78650c..4eee248 100644
+--- a/fs/lockd/netns.h
++++ b/fs/lockd/netns.h
+@@ -11,6 +11,7 @@ struct lockd_net {
  
- 	if (rqstp->rq_client == NULL)
-diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index dae36f1..fdc91a6 100644
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -546,7 +546,7 @@ idmap_name_to_id(struct svc_rqst *rqstp, int type, const char *name, u32 namelen
- 		.type = type,
- 	};
- 	int ret;
--	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
-+	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
- 
- 	if (namelen + 1 > sizeof(key.name))
- 		return nfserr_badowner;
-@@ -571,7 +571,7 @@ idmap_id_to_name(struct svc_rqst *rqstp, int type, uid_t id, char *name)
- 		.type = type,
- 	};
- 	int ret;
--	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
-+	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
- 
- 	strlcpy(key.authname, rqst_authname(rqstp), sizeof(key.authname));
- 	ret = idmap_lookup(rqstp, idtoname_lookup, &key, nn->idtoname_cache, &item);
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 40e0a27..d83db80 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -278,6 +278,8 @@ struct svc_rqst {
- 	struct task_struct	*rq_task;	/* service thread */
+ 	struct delayed_work grace_period_end;
+ 	struct lock_manager lockd_manager;
++	struct list_head grace_list;
  };
  
-+#define SVC_NET(svc_rqst)	(svc_rqst->rq_xprt->xpt_net)
-+
- /*
-  * Rigorous type checking on sockaddr type conversions
-  */
+ extern int lockd_net_id;
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index a9c436b..834dfe2 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -596,6 +596,7 @@ static int lockd_init_net(struct net *net)
+ 	struct lockd_net *ln = net_generic(net, lockd_net_id);
+ 
+ 	INIT_DELAYED_WORK(&ln->grace_period_end, grace_ender);
++	INIT_LIST_HEAD(&ln->grace_list);
+ 	return 0;
+ }
+ 
 
