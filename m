@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab2GYGPP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:15:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51060 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932744Ab2GYGPN (ORCPT
+	id S932799Ab2GYGSU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:18:20 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:45651 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932736Ab2GYGSS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:15:13 -0400
-Date: Wed, 25 Jul 2012 07:15:12 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Baodong Chen <chenbdchenbd@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fixed a macro coding style issue
-Message-ID: <20120725061512.GB6481@ZenIV.linux.org.uk>
-References: <no>
- <1343193656-2643-1-git-send-email-chenbdchenbd@gmail.com>
- <20120725053755.GA2100@core.coreip.homeip.net>
+	Wed, 25 Jul 2012 02:18:18 -0400
+From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+To: "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "liuj97@gmail.com" <liuj97@gmail.com>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "prarit@redhat.com" <prarit@redhat.com>,
+        "imammedo@redhat.com" <imammedo@redhat.com>
+Subject: RE: [PATCH v2 0/4] ACPI: hotplug messages improvement
+Thread-Topic: [PATCH v2 0/4] ACPI: hotplug messages improvement
+Thread-Index: AQHNZpj6k3qCjO+Hpkan+GnBrah0bZc5jArg
+Date: Wed, 25 Jul 2012 06:15:40 +0000
+Message-ID: <EC847C0FC42FF046B94E60B168774B173164314F@G9W0337.americas.hpqcorp.net>
+References: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120725053755.GA2100@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 10:37:55PM -0700, Dmitry Torokhov wrote:
-> On Wed, Jul 25, 2012 at 01:20:56PM +0800, Baodong Chen wrote:
-> > Fixed a coding style issue in driver/input/input.c
-> > 
-> > Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
-> > ---
-> >  drivers/input/input.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/input/input.c b/drivers/input/input.c
-> > index 8921c61..c96e983 100644
-> > --- a/drivers/input/input.c
-> > +++ b/drivers/input/input.c
-> > @@ -845,11 +845,13 @@ int input_set_keycode(struct input_dev *dev,
-> >  EXPORT_SYMBOL(input_set_keycode);
-> >  
-> >  #define MATCH_BIT(bit, max) \
-> > +	do { \
-> >  		for (i = 0; i < BITS_TO_LONGS(max); i++) \
-> >  			if ((id->bit[i] & dev->bit[i]) != id->bit[i]) \
-> >  				break; \
-> > -		if (i != BITS_TO_LONGS(max)) \
-> > -			continue;
-> > +			if (i != BITS_TO_LONGS(max)) \
-> > +				continue; \
-> > +	} while (0)
-> 
-> This changes semantics. While current implementation of MATCH_BIT might
-> not be great style, it is not supposed to be used outside of
-> input_match_device(), and the replacement is completely broken.
+Hi Toshi,
 
-Replacement is certainly completely broken, but "might not be great style"
-is quite an understatement.  Everything else aside, it's too obfuscated
-and ugly for anything outside of IOCCC and too verbose for IOCCC.
+Tested your patches on a KVM setup. Since all your acpi_pr* macros are in the error path, I didn't see an easy way to trigger them. Instead added an acpi_pr_err() message in the success path and tested out vcpu addition/deletion sequence. No regressions seen in the functional tests and the ACPI err message comes out on the console and message buffer with a valid ACPI device path.
 
-Damnit, at least turn that into
-static inline int is_subset(unsigned long *bitmap1, unsigned long *bitmap2, size_t bits)
-{
-	int i;
-	for (i = BITS_TO_LONGS(bits); i; bitmap1++, bitmap2++, i--)
-		if ((*bitmap1 & *bitmap2) != *bitmap1)
-			return 0;
-	return 1;
-}
-and just before your loop
-/* ignore ones that don't have bits required by id */
-#define MATCH_BIT(array, bits) if (!is_subset(id->array, dev->array, bits)) continue;
-with #undef MATCH_BIT right after the loop, to make it damn clean that it's local.
-And frankly, I'd consider expanding that variant and killing the macro off.
-Macros that affect control flow are vile and actively confusing for reader.
+Vijay
+
+Tested-by: Vijay Mohan Pandarathil<vijaymohan.pandarathil@hp.com>
+
+
+-----Original Message-----
+From: Kani, Toshimitsu 
+Sent: Friday, July 20, 2012 9:54 AM
+To: lenb@kernel.org; linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org; joe@perches.com; bhelgaas@google.com; isimatu.yasuaki@jp.fujitsu.com; liuj97@gmail.com; srivatsa.bhat@linux.vnet.ibm.com; prarit@redhat.com; imammedo@redhat.com; Pandarathil, Vijaymohan R; Kani, Toshimitsu
+Subject: [PATCH v2 0/4] ACPI: hotplug messages improvement
+
+This patchset improves logging messages for ACPI CPU, Memory, and
+Container hotplug notify handlers.  The patchset introduces a set of
+new macro interfaces, acpi_pr_<level>(), and updates the notify
+handlers to use them.  acpi_pr_<level>() appends "ACPI" prefix and
+ACPI object path to the messages.  This improves diagnostics in
+hotplug operations since it identifies an object that caused an
+issue in a log file.
+
+v2:
+ - Set buffer.pointer to NULL in acpi_printk().
+ - Added acpi_pr_debug().
+
+---
+This patchset applies on top of the patch below.
+
+[PATCH] ACPI: Add ACPI CPU hot-remove support
+http://marc.info/?l=linux-acpi&m=134098193327362&w=2
+
+---
+Toshi Kani (4):
+ ACPI: Add acpi_pr_<level>() interfaces
+ ACPI: Update CPU hotplug messages
+ ACPI: Update Memory hotplug messages
+ ACPI: Update Container hotplug messages
+
+---
+ drivers/acpi/acpi_memhotplug.c  |   24 ++++++++++++------------
+ drivers/acpi/container.c        |    6 +++---
+ drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
+ drivers/acpi/utils.c            |   34 ++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h         |   20 ++++++++++++++++++++
+ 5 files changed, 90 insertions(+), 30 deletions(-)
