@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547Ab2GYRYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:24:05 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:43841 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab2GYRYC (ORCPT
+	id S1751524Ab2GYRZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:25:10 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34142 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab2GYRZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:24:02 -0400
+	Wed, 25 Jul 2012 13:25:08 -0400
+Date: Wed, 25 Jul 2012 19:25:03 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 03/17] perf, x86: Add copy_from_user_nmi_nochk for best
+ effort copy
+Message-ID: <20120725172500.GI1173@somewhere.redhat.com>
+References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+ <1342959280-5361-4-git-send-email-jolsa@redhat.com>
+ <20120725161150.GA1173@somewhere.redhat.com>
+ <20120725171643.GF946@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVOiXRiqRsE46_xmOzK_dExNvkBaJVwjiZ9adhwqRRwY+g@mail.gmail.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
- <CA+55aFzKu6xhTPmKPTg+p36Su0GkZgzGWpnvhpsFXJzhp=R16w@mail.gmail.com>
- <CACVXFVMeRQ-Fwk03uVg5LOH193PF+AyCoAAxmXDpqjeZXi7nxw@mail.gmail.com>
- <CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com> <CACVXFVOiXRiqRsE46_xmOzK_dExNvkBaJVwjiZ9adhwqRRwY+g@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 25 Jul 2012 10:23:40 -0700
-X-Google-Sender-Auth: 9KqzdKVDoeqTmy2i58_ra4JTaLA
-Message-ID: <CA+55aFxF_nSEZGp8h4oXhusJgQ+dvjNL2eMurJMaJFQMPCbu9g@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/13] firmware loader: introduce cache/uncache firmware
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120725171643.GF946@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 5:35 AM, Ming Lei <ming.lei@canonical.com> wrote:
->
-> The below patch should fix the problem above.
+On Wed, Jul 25, 2012 at 07:16:43PM +0200, Jiri Olsa wrote:
+> On Wed, Jul 25, 2012 at 06:11:53PM +0200, Frederic Weisbecker wrote:
+> > On Sun, Jul 22, 2012 at 02:14:26PM +0200, Jiri Olsa wrote:
+> > > Adding copy_from_user_nmi_nochk that provides the best effort
+> > > copy regardless the requesting size crossing the task boundary.
+> > > 
+> > > This is going to be useful for stack dump we need in post
+> > > DWARF CFI based unwind, where we have predefined size of
+> > > the user stack to dump, and we need to store the most of
+> > > the requested dump size, regardless this size is crossing
+> > > the task boundary.
+> > 
+> > What does that imply when we cross this limit? Are we still in the
+> > task stack?
+> 
+> We store all we could from 'stack pointer' to 'stack pointer' + dump size.
+> 
+> I discussed this with Oleg and we could probably find vma for the 'stack pointer'
+> and check for its size and narrow the dump - maybe more complex, but probably faster
+> in comparison with dumping pages we're not interested in.
 
-Actually, I think we could make this even simpler.
+Ah, that's because the user stack can be larger than TASK_SIZE, right?
 
-There's nothing wrong with saying "user mode is enabled" *just* before
-we unthaw things, if we also simply guarantee that there is no
-sleeping lock or similar that we might get caught on (causing a
-deadlock or other untimely waking) before we've actually thawed
-everything.
-
-So *if* the only problem wrt the USB hub code comes from this area,
-then I think the solution might be as simple as just moving the
-"usermodehelper_enable()" up a few lines, with a comment. Something
-like the *untested* and whitespace-damaged thing below..
-
-Rafael? Who has one of those isight things and has seen the warning to test?
-
-               Linus
-
----
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 19db29f67558..5bf50e488196 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -181,6 +181,12 @@ void thaw_processes(void)
-        pm_freezing = false;
-        pm_nosig_freezing = false;
-
-+       /*
-+        * User mode helper are available again (or will be,
-+        * modulo scheduling)
-+        */
-+       usermodehelper_enable();
-+
-        oom_killer_enable();
-
-        printk("Restarting tasks ... ");
-@@ -193,8 +199,6 @@ void thaw_processes(void)
-        } while_each_thread(g, p);
-        read_unlock(&tasklist_lock);
-
--       usermodehelper_enable();
--
-        schedule();
-        printk("done.\n");
- }
+Ok then.
