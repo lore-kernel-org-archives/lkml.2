@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300Ab2GYOsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:48:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51011 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933180Ab2GYOsN (ORCPT
+	id S933368Ab2GYOs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:48:59 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48899 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933153Ab2GYOs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:48:13 -0400
-Date: Wed, 25 Jul 2012 16:48:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cpufeature change for v3.6
-Message-ID: <20120725144808.GA31637@gmail.com>
+	Wed, 25 Jul 2012 10:48:56 -0400
+Date: Wed, 25 Jul 2012 10:43:01 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tech Board Discuss 
+	<Tech-board-discuss@lists.linux-foundation.org>,
+        "ksummit-2012-discuss@lists.linux-foundation.org" 
+	<ksummit-2012-discuss@lists.linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] Linux Foundation Technical Advisory Board
+ Elections and Nomination process
+Message-ID: <20120725144301.GC3272@tuxdriver.com>
+References: <1341582590.2941.11.camel@dabdike>
+ <4FF7297C.90606@xenotime.net>
+ <500B1D33.5020408@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <500B1D33.5020408@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sat, Jul 21, 2012 at 02:20:51PM -0700, Randy Dunlap wrote:
+> On 07/06/2012 11:07 AM, Randy Dunlap wrote:
+> 
+> > On 07/06/2012 06:49 AM, James Bottomley wrote:
+> > 
+> >> The elections for five of the ten members of the Linux Foundation
+> >> Technical Advisory Board[TAB] are held every year. Currently the
+> >> election will be at the 2011 Kernel Summit at one of the Joint events
+> >> (probably on the Wednesday 29 August) and will be open to all attendees
+> >> of the Weeks events (Kernel Summit, LinuxCon and Plumbers).
+> > 
+> > 
+> > 
+> > Will you please summarize what the TAB has done (i.e.,
+> > accomplishments) in the past year?
+> > 
+> > thanks,
+> 
+> 
+> 
+> Was this too much to ask?
 
-Please pull the latest x86-cpufeature-for-linus git tree from:
+No, of course not! :-)
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpufeature-for-linus
+You probably realize that the TAB tends to keep a low profile.  We have
+tended to prefer "soft diplomacy" where possible, at least so long as
+I've been on the TAB.  I think this is a good policy overall, and it
+is conducive to the non-partisan, 'all for the benefit of Linux' nature
+of the TAB.  But, it isn't necessarily great for self-promotion...
 
-   HEAD: 30d5c4546a7dae29a1aa76abdb69a78bb00136be x86, cpufeature: Add the RDSEED and ADX features
+In general, the TAB does the following:
 
-A single commit that adds new CPU feature names.
+	-- provides some oversight/assistance/feedback to the KS/LPC
+	organizers;
 
- Thanks,
+	-- provides feedback to LF staff on event planning;
 
-	Ingo
+	-- provides a source of community/technical contacts for LF
+	members that want a hand to hold;
 
------------------->
-H. Peter Anvin (1):
-      x86, cpufeature: Add the RDSEED and ADX features
+	-- provides a pool of 'volunteers' to help the LF fill
+	last-minute speaking slots or other random requests;
 
+More specifically, in the past year we reviewed the plans for LF to
+take over the kernel.org administration.  We were also quite involved
+with the discussions about what services needed to be prioritized
+to bring kernel.org back on-line in a timely and secure fashion.
+You can also blame us for the 'web of trust' (aka key signing) stuff
+from last Fall.  Greg provided a great deal of leadership on all the
+kernel.org bits, of course.
 
- arch/x86/include/asm/cpufeature.h |    2 ++
- 1 file changed, 2 insertions(+)
+Another point of interest during the last year were some discussions
+between the TAB and the Software Freedom Conservancy to address some
+concerns that had been raised about GPL enforcement, particularly
+regarding such enforcement for the kernel.  After some back-and-forth,
+I think those issues were mostly addressed in an amicable fashion.
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index f91e80f..6b7ee5f 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -207,6 +207,8 @@
- #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
- #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
- #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
-+#define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
-+#define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
- 
- #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
- 
+Also during the last year, the TAB has spent a lot of time grappling
+with the UEFI secure boot thing and discussing how the Linux community
+can influence and/or deal with the ramifications of it.  Some of that
+is still on-going, of course.
+
+So, anyway...I think that provides a rough overview of the types of
+things the TAB does.  I'm sorry if it lacks some specifics -- there is
+a lot of details that really amount to a bunch of long discussions and
+talking on the phone.  Still, I think the TAB fulfills an important
+role in the community even if it isn't always particularly visible.
+
+Hth!
+
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
