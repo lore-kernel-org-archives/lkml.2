@@ -1,171 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab2GYUcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 16:32:35 -0400
-Received: from mail.tpi.com ([70.99.223.143]:2890 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab2GYUce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 16:32:34 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Matthieu CASTET <castet.matthieu@free.fr>,
-        Stanislaw Gruszka <stf_xl@wp.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH] ueagle-atm: Declare MODULE_FIRMWARE usage
-Date: Wed, 25 Jul 2012 14:32:50 -0600
-Message-Id: <1343248370-57021-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752771Ab2GYUgU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 16:36:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49911 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344Ab2GYUgT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 16:36:19 -0400
+Message-ID: <1343248546.26034.68.camel@twins>
+Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Date: Wed, 25 Jul 2012 22:35:46 +0200
+In-Reply-To: <20120724161507.GG3732@erda.amd.com>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+	 <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+	 <20120723181358.GC6717@infradead.org> <500EAF23.8060909@gmail.com>
+	 <20120724161507.GG3732@erda.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Matthieu CASTET <castet.matthieu@free.fr>
-Cc: Stanislaw Gruszka <stf_xl@wp.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/usb/atm/ueagle-atm.c |   79 +++++++++++++++++++++++++++++++++++-------
- 1 file changed, 66 insertions(+), 13 deletions(-)
+On Tue, 2012-07-24 at 18:15 +0200, Robert Richter wrote:
+> David,
+> 
+> On 24.07.12 08:20:19, David Ahern wrote:
+> > On 7/23/12 12:13 PM, Arnaldo Carvalho de Melo wrote:
+> > > Em Fri, Jul 20, 2012 at 05:25:53PM -0600, David Ahern escreveu:
+> > >> PEBS cannot be used with guest mode. If user adds :p modifier set
+> > >> exclude_guest as well.
+> > >
+> > > Is this something Intel specific? Or can someone think of an arch where
+> > > this limitation wouldn't exist?
+> > 
+> > Good point. So far precise_ip is used by arch/x86 only. I don't have an 
+> > AMD based server so I don't know if there is a conflict between 
+> > virtualization and IBS. Added Robert for advice.
+> 
+> thanks for this hint.
+> 
+> On AMD cpus precise_ip maps to IBS, which does not support hardware
+> options as perfctrs do. Thus, following attr flags are not supported:
+> 
+>  exclude_user, exclude_kernel, exclude_host, exclude_guest
+> 
+> Counting in guest mode is possible with IBS, but not the exclusion of
+> a certain mode. If precise_ip counting is enabled on AMD we may not
+> set the exclude_guest flag.
 
-diff --git a/drivers/usb/atm/ueagle-atm.c b/drivers/usb/atm/ueagle-atm.c
-index d7e422d..e1f8b2c 100644
---- a/drivers/usb/atm/ueagle-atm.c
-+++ b/drivers/usb/atm/ueagle-atm.c
-@@ -307,6 +307,34 @@ enum {
- #define FW_GET_BYTE(p) (*((__u8 *) (p)))
- 
- #define FW_DIR "ueagle-atm/"
-+#define EAGLE_FIRMWARE FW_DIR "eagle.fw"
-+#define ADI930_FIRMWARE FW_DIR "adi930.fw"
-+#define EAGLE_I_FIRMWARE FW_DIR "eagleI.fw"
-+#define EAGLE_II_FIRMWARE FW_DIR "eagleII.fw"
-+#define EAGLE_III_FIRMWARE FW_DIR "eagleIII.fw"
-+#define EAGLE_IV_FIRMWARE FW_DIR "eagleIV.fw"
-+
-+#define DSP4I_FIRMWARE FW_DIR "DSP4i.bin"
-+#define DSP4P_FIRMWARE FW_DIR "DSP4p.bin"
-+#define DSP9I_FIRMWARE FW_DIR "DSP9i.bin"
-+#define DSP9P_FIRMWARE FW_DIR "DSP9p.bin"
-+#define DSPEI_FIRMWARE FW_DIR "DSPei.bin"
-+#define DSPEP_FIRMWARE FW_DIR "DSPep.bin"
-+#define FPGA930_FIRMWARE FW_DIR "930-fpga.bin"
-+
-+#define CMV4P_FIRMWARE FW_DIR "CMV4p.bin"
-+#define CMV4PV2_FIRMWARE FW_DIR "CMV4p.bin.v2"
-+#define CMV4I_FIRMWARE FW_DIR "CMV4i.bin"
-+#define CMV4IV2_FIRMWARE FW_DIR "CMV4i.bin.v2"
-+#define CMV9P_FIRMWARE FW_DIR "CMV9p.bin"
-+#define CMV9PV2_FIRMWARE FW_DIR "CMV9p.bin.v2"
-+#define CMV9I_FIRMWARE FW_DIR "CMV9i.bin"
-+#define CMV9IV2_FIRMWARE FW_DIR "CMV9i.bin.v2"
-+#define CMVEP_FIRMWARE FW_DIR "CMVep.bin"
-+#define CMVEPV2_FIRMWARE FW_DIR "CMVep.bin.v2"
-+#define CMVEI_FIRMWARE FW_DIR "CMVei.bin"
-+#define CMVEIV2_FIRMWARE FW_DIR "CMVei.bin.v2"
-+
- #define UEA_FW_NAME_MAX 30
- #define NB_MODEM 4
- 
-@@ -694,26 +722,26 @@ err:
- static int uea_load_firmware(struct usb_device *usb, unsigned int ver)
- {
- 	int ret;
--	char *fw_name = FW_DIR "eagle.fw";
-+	char *fw_name = EAGLE_FIRMWARE;
- 
- 	uea_enters(usb);
- 	uea_info(usb, "pre-firmware device, uploading firmware\n");
- 
- 	switch (ver) {
- 	case ADI930:
--		fw_name = FW_DIR "adi930.fw";
-+		fw_name = ADI930_FIRMWARE;
- 		break;
- 	case EAGLE_I:
--		fw_name = FW_DIR "eagleI.fw";
-+		fw_name = EAGLE_I_FIRMWARE;
- 		break;
- 	case EAGLE_II:
--		fw_name = FW_DIR "eagleII.fw";
-+		fw_name = EAGLE_II_FIRMWARE;
- 		break;
- 	case EAGLE_III:
--		fw_name = FW_DIR "eagleIII.fw";
-+		fw_name = EAGLE_III_FIRMWARE;
- 		break;
- 	case EAGLE_IV:
--		fw_name = FW_DIR "eagleIV.fw";
-+		fw_name = EAGLE_IV_FIRMWARE;
- 		break;
- 	}
- 
-@@ -869,19 +897,19 @@ static int request_dsp(struct uea_softc *sc)
- 
- 	if (UEA_CHIP_VERSION(sc) == EAGLE_IV) {
- 		if (IS_ISDN(sc))
--			dsp_name = FW_DIR "DSP4i.bin";
-+			dsp_name = DSP4I_FIRMWARE;
- 		else
--			dsp_name = FW_DIR "DSP4p.bin";
-+			dsp_name = DSP4P_FIRMWARE;
- 	} else if (UEA_CHIP_VERSION(sc) == ADI930) {
- 		if (IS_ISDN(sc))
--			dsp_name = FW_DIR "DSP9i.bin";
-+			dsp_name = DSP9I_FIRMWARE;
- 		else
--			dsp_name = FW_DIR "DSP9p.bin";
-+			dsp_name = DSP9P_FIRMWARE;
- 	} else {
- 		if (IS_ISDN(sc))
--			dsp_name = FW_DIR "DSPei.bin";
-+			dsp_name = DSPEI_FIRMWARE;
- 		else
--			dsp_name = FW_DIR "DSPep.bin";
-+			dsp_name = DSPEP_FIRMWARE;
- 	}
- 
- 	ret = request_firmware(&sc->dsp_firm, dsp_name, &sc->usb_dev->dev);
-@@ -1925,7 +1953,7 @@ static int load_XILINX_firmware(struct uea_softc *sc)
- 	int ret, size, u, ln;
- 	const u8 *pfw;
- 	u8 value;
--	char *fw_name = FW_DIR "930-fpga.bin";
-+	char *fw_name = FPGA930_FIRMWARE;
- 
- 	uea_enters(INS_TO_USBDEV(sc));
- 
-@@ -2753,3 +2781,28 @@ module_usb_driver(uea_driver);
- MODULE_AUTHOR("Damien Bergamini/Matthieu Castet/Stanislaw W. Gruszka");
- MODULE_DESCRIPTION("ADI 930/Eagle USB ADSL Modem driver");
- MODULE_LICENSE("Dual BSD/GPL");
-+MODULE_FIRMWARE(EAGLE_FIRMWARE);
-+MODULE_FIRMWARE(ADI930_FIRMWARE);
-+MODULE_FIRMWARE(EAGLE_I_FIRMWARE);
-+MODULE_FIRMWARE(EAGLE_II_FIRMWARE);
-+MODULE_FIRMWARE(EAGLE_III_FIRMWARE);
-+MODULE_FIRMWARE(EAGLE_IV_FIRMWARE);
-+MODULE_FIRMWARE(DSP4I_FIRMWARE);
-+MODULE_FIRMWARE(DSP4P_FIRMWARE);
-+MODULE_FIRMWARE(DSP9I_FIRMWARE);
-+MODULE_FIRMWARE(DSP9P_FIRMWARE);
-+MODULE_FIRMWARE(DSPEI_FIRMWARE);
-+MODULE_FIRMWARE(DSPEP_FIRMWARE);
-+MODULE_FIRMWARE(FPGA930_FIRMWARE);
-+MODULE_FIRMWARE(CMV4P_FIRMWARE);
-+MODULE_FIRMWARE(CMV4PV2_FIRMWARE);
-+MODULE_FIRMWARE(CMV4I_FIRMWARE);
-+MODULE_FIRMWARE(CMV4IV2_FIRMWARE);
-+MODULE_FIRMWARE(CMV9P_FIRMWARE);
-+MODULE_FIRMWARE(CMV9PV2_FIRMWARE);
-+MODULE_FIRMWARE(CMV9I_FIRMWARE);
-+MODULE_FIRMWARE(CMV9IV2_FIRMWARE);
-+MODULE_FIRMWARE(CMVEP_FIRMWARE);
-+MODULE_FIRMWARE(CMVEPV2_FIRMWARE);
-+MODULE_FIRMWARE(CMVEI_FIRMWARE);
-+MODULE_FIRMWARE(CMVEIV2_FIRMWARE);
--- 
-1.7.9.5
+IIRC we have SVM enter/exit hooks in kvm/perf already, we could use
+those to implement exclude_guest for IBS.
 
+Now I've been trying to find the patches that introduced that, but I'm
+failing horridly. Gleb, got us a pointer here?
