@@ -1,143 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab2GYQZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:25:37 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:36626 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab2GYQZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:25:36 -0400
-Date: Wed, 25 Jul 2012 18:25:29 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 10/13] driver core: devres: introduce
- devres_for_each_res
-Message-ID: <20120725162529.GN11152@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
- <1343149213-10160-11-git-send-email-ming.lei@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343149213-10160-11-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755505Ab2GYQ0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:26:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752610Ab2GYQ0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 12:26:38 -0400
+Date: Thu, 26 Jul 2012 01:26:32 +0900 (JST)
+Message-Id: <20120726.012632.1236473140838656188.yamato@redhat.com>
+To: gustavo@padovan.org
+Cc: andrei.emeltchenko.news@gmail.com, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org
+Subject: [PATCH v5 1/8] Bluetooth: /proc/net/ entries for bluetooth
+ protocols
+From: Masatake YAMATO <yamato@redhat.com>
+In-Reply-To: <20120725003507.GR20029@joana>
+References: <20120716.222018.2029110835026223294.yamato@redhat.com>
+	<20120725001214.GP20029@joana>
+	<20120725003507.GR20029@joana>
+Organization: Red Hat Japan, Inc.
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 01:00:10AM +0800, Ming Lei wrote:
-> This patch introduces one devres API of devres_for_each_res
-> so that the device's driver can iterate each resource it has
-> interest in.
-> 
-> The firmware loader will use the API to get each firmware name
-> from the device instance.
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/base/devres.c  |   42 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/device.h |    3 +++
->  2 files changed, 45 insertions(+)
-> 
-> diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-> index 2360adb..8273ba5 100644
-> --- a/drivers/base/devres.c
-> +++ b/drivers/base/devres.c
-> @@ -144,6 +144,48 @@ EXPORT_SYMBOL_GPL(devres_alloc);
->  #endif
->  
->  /**
-> + * devres_for_each_res - Resource iterator
-> + * @dev: Device to iterate resource from
-> + * @release: Look for resources associated with this release function
-> + * @match: Match function (optional)
-> + * @match_data: Data for the match function
-> + * @fn: function to be called for each matched resource.
-> + *
-> + * Call @fn for each devres of @dev which is associated with @release
-> + * and for which @match returns 1.
-> + *
-> + * RETURNS:
-> + * 	void
-> + */
-> +void devres_for_each_res(struct device *dev, dr_release_t release,
-> +			dr_match_t match, void *match_data,
-> +			void (*fn)(struct device *, void *))
-> +{
-> +	struct devres_node *node;
-> +	struct devres_node *tmp;
-> +	unsigned long flags;
-> +
-> +	if (!fn)
-> +		return;
-> +
-> +	spin_lock_irqsave(&dev->devres_lock, flags);
-> +	list_for_each_entry_safe_reverse(node, tmp,
-> +			&dev->devres_head, entry) {
+lsof command can tell the type of socket processes are using.
+Internal lsof uses inode numbers on socket fs to resolve the type of
+sockets. Files under /proc/net/, such as tcp, udp, unix, etc provides
+such inode information.
 
-Why break this line?
+Unfortunately bluetooth related protocols don't provide such inode
+information. This patch series introduces /proc/net files for the protocols.
 
-	list_for_each_entry_safe_reverse(node, tmp, &dev->devres_head, entry) {
+This patch against af_bluetooth.c provides facility to the implementation
+of protocols. This patch extends bt_sock_list and introduces two exported
+function bt_procfs_init, bt_procfs_cleanup.
 
-is perfectly fine.
+The type bt_sock_list is already used in some of implementation of
+protocols. bt_procfs_init prepare seq_operations which converts
+protocol own bt_sock_list data to protocol own proc entry when the
+entry is accessed.
 
-> +		struct devres *dr = container_of(node, struct devres, node);
-> +
-> +		if (node->release != release)
-> +			continue;
-> +		if (match && !match(dev, dr->data, match_data))
-> +			continue;
-> +		spin_unlock_irqrestore(&dev->devres_lock, flags);
-> +		fn(dev, dr->data);
-> +		spin_lock_irqsave(&dev->devres_lock, flags);
-> +	}
-> +	spin_unlock_irqrestore(&dev->devres_lock, flags);
+What I, lsof user, need is just inode number of bluetooth
+socket. However, people may want more information. The bt_procfs_init
+takes a function pointer for customizing the show handler of
+seq_operations.
 
-This looks strange. For the last node on the list, we're grabbing the
-lock and releasing it right after.
+In v4 patch, __acquires and __releases attributes are added to suppress
+sparse warning. Suggested by Andrei Emeltchenko.
 
-Probably check whether node is the last element and only re-grab the
-lock if it isn't?
+In v5 patch, linux/proc_fs.h is included to use PDE. Build error is
+reported by Fengguang Wu.
 
-And btw, don't we need to hold the ->devres_lock during the whole search
-like callers of find_dr do, for example?
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+---
+ include/net/bluetooth/bluetooth.h |   10 +++
+ net/bluetooth/af_bluetooth.c      |  139 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 149 insertions(+)
 
-> +}
-> +EXPORT_SYMBOL_GPL(devres_for_each_res);
-> +
-> +/**
->   * devres_free - Free device resource data
->   * @res: Pointer to devres data to free
->   *
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index 52a5f15..34dc1f8 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -536,6 +536,9 @@ extern void *__devres_alloc(dr_release_t release, size_t size, gfp_t gfp,
->  #else
->  extern void *devres_alloc(dr_release_t release, size_t size, gfp_t gfp);
->  #endif
-> +extern void devres_for_each_res(struct device *dev, dr_release_t release,
-> +			dr_match_t match, void *match_data,
-> +			void (*fn)(struct device *, void *));
-
-Args alignment.
-
->  extern void devres_free(void *res);
->  extern void devres_add(struct device *dev, void *res);
->  extern void *devres_find(struct device *dev, dr_release_t release,
-> -- 
-> 1.7.9.5
-> 
-> 
-
+diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
+index 565d4be..ede0369 100644
+--- a/include/net/bluetooth/bluetooth.h
++++ b/include/net/bluetooth/bluetooth.h
+@@ -27,6 +27,7 @@
+ 
+ #include <linux/poll.h>
+ #include <net/sock.h>
++#include <linux/seq_file.h>
+ 
+ #ifndef AF_BLUETOOTH
+ #define AF_BLUETOOTH	31
+@@ -202,6 +203,10 @@ enum {
+ struct bt_sock_list {
+ 	struct hlist_head head;
+ 	rwlock_t          lock;
++#ifdef CONFIG_PROC_FS
++        struct file_operations   fops;
++        int (* custom_seq_show)(struct seq_file *, void *);
++#endif
+ };
+ 
+ int  bt_sock_register(int proto, const struct net_proto_family *ops);
+@@ -292,6 +297,11 @@ extern void hci_sock_cleanup(void);
+ extern int bt_sysfs_init(void);
+ extern void bt_sysfs_cleanup(void);
+ 
++extern int  bt_procfs_init(struct module* module, struct net *net, const char *name,
++			   struct bt_sock_list* sk_list,
++			   int (* seq_show)(struct seq_file *, void *));
++extern void bt_procfs_cleanup(struct net *net, const char *name);
++
+ extern struct dentry *bt_debugfs;
+ 
+ int l2cap_init(void);
+diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
+index f7db579..1a03c81 100644
+--- a/net/bluetooth/af_bluetooth.c
++++ b/net/bluetooth/af_bluetooth.c
+@@ -28,6 +28,7 @@
+ #include <asm/ioctls.h>
+ 
+ #include <net/bluetooth/bluetooth.h>
++#include <linux/proc_fs.h>
+ 
+ #define VERSION "2.16"
+ 
+@@ -532,6 +533,144 @@ int bt_sock_wait_state(struct sock *sk, int state, unsigned long timeo)
+ }
+ EXPORT_SYMBOL(bt_sock_wait_state);
+ 
++#ifdef CONFIG_PROC_FS
++struct bt_seq_state {
++	struct bt_sock_list *l;
++};
++
++static void *bt_seq_start(struct seq_file *seq, loff_t *pos)
++	__acquires(seq->private->l->lock)
++{
++	struct bt_seq_state *s = seq->private;
++	struct bt_sock_list *l = s->l;
++
++	read_lock(&l->lock);
++	return seq_hlist_start_head(&l->head, *pos);
++}
++
++static void *bt_seq_next(struct seq_file *seq, void *v, loff_t *pos)
++{
++	struct bt_seq_state *s = seq->private;
++	struct bt_sock_list *l = s->l;
++
++	return seq_hlist_next(v, &l->head, pos);
++}
++
++static void bt_seq_stop(struct seq_file *seq, void *v)
++	__releases(seq->private->l->lock)
++{
++	struct bt_seq_state *s = seq->private;
++	struct bt_sock_list *l = s->l;
++
++	read_unlock(&l->lock);
++}
++
++static int bt_seq_show(struct seq_file *seq, void *v)
++{
++	struct sock *sk;
++	struct bt_sock *bt;
++	struct bt_seq_state *s = seq->private;
++	struct bt_sock_list *l = s->l;
++	bdaddr_t src_baswapped, dst_baswapped;
++
++	if (v == SEQ_START_TOKEN) {
++		seq_puts(seq ,"sk               RefCnt Rmem   Wmem   User   Inode  Src Dst Parent");
++
++		if (l->custom_seq_show) {
++			seq_putc(seq, ' ');
++			l->custom_seq_show(seq, v);
++		}
++
++		seq_putc(seq, '\n');
++	} else {
++		sk = sk_entry(v);
++		bt = bt_sk(sk);
++		baswap(&src_baswapped, &bt->src);
++		baswap(&dst_baswapped, &bt->dst);
++
++		seq_printf(seq, "%pK %-6d %-6u %-6u %-6u %-6lu %pM %pM %-6lu",
++			   sk,
++			   atomic_read(&sk->sk_refcnt),
++			   sk_rmem_alloc_get(sk),
++			   sk_wmem_alloc_get(sk),
++			   sock_i_uid(sk),
++			   sock_i_ino(sk),
++			   &src_baswapped,
++			   &dst_baswapped,
++			   bt->parent? sock_i_ino(bt->parent): 0LU);
++
++		if (l->custom_seq_show) {
++			seq_putc(seq, ' ');
++			l->custom_seq_show(seq, v);
++		}
++
++		seq_putc(seq, '\n');
++	}
++	return 0;
++}
++
++static struct seq_operations bt_seq_ops = {
++	.start = bt_seq_start,
++	.next  = bt_seq_next,
++	.stop  = bt_seq_stop,
++	.show  = bt_seq_show,
++};
++
++static int bt_seq_open(struct inode *inode, struct file *file)
++{
++	struct bt_sock_list *sk_list;
++	struct bt_seq_state *s;
++
++	sk_list = PDE(inode)->data;
++	s = __seq_open_private(file, &bt_seq_ops,
++			       sizeof(struct bt_seq_state));
++	if (s == NULL)
++		return -ENOMEM;
++
++	s->l = sk_list;
++	return 0;
++}
++
++int bt_procfs_init(struct module* module, struct net *net, const char *name, struct bt_sock_list* sk_list,
++			int (* seq_show)(struct seq_file *, void *))
++{
++	struct proc_dir_entry * pde;
++
++	sk_list->custom_seq_show = seq_show;
++
++	sk_list->fops.owner     = module;
++	sk_list->fops.open      = bt_seq_open;
++	sk_list->fops.read      = seq_read;
++	sk_list->fops.llseek    = seq_lseek;
++	sk_list->fops.release   = seq_release_private;
++
++	pde = proc_net_fops_create(net, name, 0, &sk_list->fops);
++	if (pde == NULL)
++		return -ENOMEM;
++
++	pde->data = sk_list;
++
++	return 0;
++}
++
++void bt_procfs_cleanup(struct net *net, const char *name)
++{
++	proc_net_remove(net, name);
++}
++#else
++int bt_procfs_init(struct module* module, struct net *net, const char *name, struct bt_sock_list* sk_list,
++			int (* seq_show)(struct seq_file *, void *))
++{
++	return 0;
++}
++
++void bt_procfs_cleanup(struct net *net, const char *name)
++{
++}
++#endif
++EXPORT_SYMBOL(bt_procfs_init);
++EXPORT_SYMBOL(bt_procfs_cleanup);
++
+ static struct net_proto_family bt_sock_family_ops = {
+ 	.owner	= THIS_MODULE,
+ 	.family	= PF_BLUETOOTH,
 -- 
-Regards/Gruss,
-Boris.
+1.7.10.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
