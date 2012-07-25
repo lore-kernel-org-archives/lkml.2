@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab2GYLQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:16:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:57630 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756459Ab2GYLQG convert rfc822-to-8bit (ORCPT
+	id S1756563Ab2GYLQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:16:18 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46296 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756542Ab2GYLQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:16:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172976047"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        Durgadoss R <dugardoss.r@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>
-Subject: RE: [linux-pm] [PATCH 50/52] Thermal: Make Thermal trip points
-	writeable
-Thread-Topic: [linux-pm] [PATCH 50/52] Thermal: Make Thermal trip points
-	writeable
-Thread-Index: AQHNalWzq0SMSimuR0+GK+RWK7Xnx5c52OUw
-Date: Wed, 25 Jul 2012 11:15:59 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5916B222@BGSMSX101.gar.corp.intel.com>
-References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
-	<c56f5c0342dfee11a1a13d2f5bb7618de5b17590.1343187618.git.len.brown@intel.com>
- <201207251313.11061.rjw@sisk.pl>
-In-Reply-To: <201207251313.11061.rjw@sisk.pl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jul 2012 07:16:13 -0400
+Date: Wed, 25 Jul 2012 07:15:37 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Xufeng Zhang <xufengzhang.main@gmail.com>
+Cc: xufeng zhang <xufeng.zhang@windriver.com>, vyasevich@gmail.com,
+        sri@us.ibm.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows
+ SACK when bundling
+Message-ID: <20120725111537.GA4366@hmsreliant.think-freely.org>
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
+ <20120723004932.GB8040@neilslaptop.think-freely.org>
+ <500CB74A.4040300@windriver.com>
+ <20120723121411.GC16518@hmsreliant.think-freely.org>
+ <500DFF5A.20203@windriver.com>
+ <20120724113802.GA30142@hmsreliant.think-freely.org>
+ <CA+=dFzjW_=T6DwtRrSCxjzE9HKKvpQ=LUmGpAggJEujZT+VX+g@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+=dFzjW_=T6DwtRrSCxjzE9HKKvpQ=LUmGpAggJEujZT+VX+g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
-
-
-> -----Original Message-----
-> From: linux-pm-bounces@lists.linux-foundation.org [mailto:linux-pm-
-> bounces@lists.linux-foundation.org] On Behalf Of Rafael J. Wysocki
-> Sent: Wednesday, July 25, 2012 4:43 PM
-> To: Len Brown; Zhang, Rui
-> Cc: linux-acpi@vger.kernel.org; linux-pm@lists.linux-foundation.org; Durgadoss
-> R; linux-kernel@vger.kernel.org; Brown, Len
-> Subject: Re: [linux-pm] [PATCH 50/52] Thermal: Make Thermal trip points
-> writeable
-> 
-> On Wednesday, July 25, 2012, Len Brown wrote:
-> > From: Durgadoss R <dugardoss.r@intel.com>
+On Wed, Jul 25, 2012 at 10:34:32AM +0800, Xufeng Zhang wrote:
+> On 7/24/12, Neil Horman <nhorman@tuxdriver.com> wrote:
+> > On Tue, Jul 24, 2012 at 09:50:18AM +0800, xufeng zhang wrote:
+> >> On 07/23/2012 08:14 PM, Neil Horman wrote:
+> >> >On Mon, Jul 23, 2012 at 10:30:34AM +0800, xufeng zhang wrote:
+> >> >>On 07/23/2012 08:49 AM, Neil Horman wrote:
+> >> >>>Not sure I understand how you came into this error.  If we get an
+> >> >>> invalid
+> >> >>>stream, we issue an SCTP_REPORT_TSN side effect, followed by an
+> >> >>> SCTP_CMD_REPLY
+> >> >>>which sends the error chunk.  The reply goes through
+> >> >>>sctp_outq_tail->sctp_outq_chunk->sctp_outq_transmit_chunk->sctp_outq_append_chunk.
+> >> >>>That last function checks to see if a sack is already part of the
+> >> >>> packet, and if
+> >> >>>there isn't one, appends one, using the updated tsn map.
+> >> >>Yes, you are right, but consider the invalid stream identifier's
+> >> >>DATA chunk is the first
+> >> >>DATA chunk in the association which will need SACK immediately.
+> >> >>Here is what I thought of the scenario:
+> >> >>     sctp_sf_eat_data_6_2()
+> >> >>         -->sctp_eat_data()
+> >> >>             -->sctp_make_op_error()
+> >> >>             -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+> >> >> SCTP_CHUNK(err))
+> >> >>             -->sctp_outq_tail()          /* First enqueue ERROR chunk
+> >> >> */
+> >> >>         -->sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE())
+> >> >>             -->sctp_gen_sack()
+> >> >>                 -->sctp_make_sack()
+> >> >>                 -->sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+> >> >>SCTP_CHUNK(sack))
+> >> >>                 -->sctp_outq_tail()          /* Then enqueue SACK chunk
+> >> >> */
+> >> >>
+> >> >>So SACK chunk is enqueued after ERROR chunk.
+> >> >Ah, I see.  Since the ERROR and SACK chunks are both control chunks, and
+> >> > since
+> >> >we explicitly add the SACK to the control queue instead of going through
+> >> > the
+> >> >bundle path in sctp_packet_append_chunk the ordering gets wrong.
+> >> >
+> >> >Ok, so the problem makes sense.  I think the soultion could be alot
+> >> > easier
+> >> >though.  IIRC SACK chunks always live at the head of a packet, so why not
+> >> > just
+> >> >special case it in sctp_outq_tail?  I.e. instead of doing a
+> >> > list_add_tail, in
+> >> >the else clause of sctp_outq_tail check the chunk_hdr->type to see if
+> >> > its
+> >> >SCTP_CID_SACK.  If it is, use list_add_head rather than list_add_tail.  I
+> >> > think
+> >> >that will fix up both the COOKIE_ECHO and ESTABLISHED cases, won't it?
+> >> > And then
+> >> >you won't have keep track of extra state in the packet configuration.
+> >> Yes, it's a good idea, but I think the premise is not correct:
+> >> RFC 4960 page 57:
+> >> "D) Upon reception of the COOKIE ECHO chunk, endpoint "Z" will reply
+> >>    with a COOKIE ACK chunk after building a TCB and moving to the
+> >>    ESTABLISHED state. A COOKIE ACK chunk may be bundled with any
+> >>    pending DATA chunks (and/or SACK chunks), *but the COOKIE ACK chunk
+> >>    MUST be the first chunk in the packet*."
+> >>
+> >> So we can't put SACK chunk always at the head of the packet.
+> >>
+> > Ok, Fair point, but that just changes the ordering a bit to:
+> > COOKIE_ACK
+> > SACK
+> > OTHER CONTROL CHUNKS
 > >
-> > Some of the thermal drivers using the Generic Thermal Framework
-> > require (all/some) trip points to be writeable. This patch makes
-> > the trip point temperatures writeable on a per-trip point basis,
-> > and modifies the required function call in thermal.c. This patch
-> > also updates the Documentation to reflect the new change.
-> >
-> > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > Signed-off-by: Len Brown <len.brown@intel.com>
+> > What about something like this?  Its completely untested, and I'm sure it
+> > can be
+> > cleaned up a bunch, but this keeps us from having to add additional state to
+> > the
+> > packet structure.
+> Yeah! I like this modification, thank you very much for your work!
+> I'll try to send a V2 patch based on your changes and run some tests.
 > 
-> There was a broken build report related to this patch (or a previous version
-> of it):
-> 
-> http://marc.info/?l=linux-kernel&m=134294496105083&w=2
-> 
-> Do I think correctly that it has been fixed already?
+Awesome, thank you!
+Neil
 
-Yes you are right. It has been fixed in this patch.
-
-Thanks,
-Durga
