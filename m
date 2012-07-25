@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab2GYS1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 14:27:50 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:42702 "EHLO mx2.parallels.com"
+	id S1752548Ab2GYS2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 14:28:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36674 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab2GYS1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 14:27:49 -0400
-Message-ID: <501039F9.7040309@parallels.com>
-Date: Wed, 25 Jul 2012 22:24:57 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751126Ab2GYS2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 14:28:37 -0400
+Date: Wed, 25 Jul 2012 20:27:47 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 02/17] perf: Add ability to attach user level registers
+ dump to sample
+Message-ID: <20120725182747.GB14996@krava.brq.redhat.com>
+References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+ <1342959280-5361-3-git-send-email-jolsa@redhat.com>
+ <CABPqkBQONxpNAm=rE9JpQ8Pjdfzf6dc707UZWhSzM+E0AAXE-w@mail.gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        <cgroups@vger.kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 05/10] slab: allow enable_cpu_cache to use preset values
- for its tunables
-References: <1343227101-14217-1-git-send-email-glommer@parallels.com> <1343227101-14217-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1207251204450.3543@router.home>
-In-Reply-To: <alpine.DEB.2.00.1207251204450.3543@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.1.99]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQONxpNAm=rE9JpQ8Pjdfzf6dc707UZWhSzM+E0AAXE-w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 09:05 PM, Christoph Lameter wrote:
-> On Wed, 25 Jul 2012, Glauber Costa wrote:
-> 
->> SLAB allows us to tune a particular cache behavior with tunables.
->> When creating a new memcg cache copy, we'd like to preserve any tunables
->> the parent cache already had.
-> 
-> So does SLUB but I do not see a patch for that allocator.
-> 
-It is certainly not through does the same method as SLAB, right ?
-Writing to /proc/slabinfo gives me an I/O error
-I assume it is something through sysfs, but schiming through the code
-now, I can't find any per-cache tunables. Would you mind pointing me to
-them?
+On Wed, Jul 25, 2012 at 07:39:18PM +0200, Stephane Eranian wrote:
+> On Sun, Jul 22, 2012 at 2:14 PM, Jiri Olsa <jolsa@redhat.com> wrote:
 
-In any case, are you happy with the SLAB one, and how they are propagated?
+SNIP
 
+> > +       if (sample_type & PERF_SAMPLE_REGS_USER) {
+> > +               u64 avail = (data->regs_user != NULL);
+> > +
+> > +               /*
+> > +                * If there are no regs to dump, notice it through
+> > +                * first u64 being zero.
+> > +                */
+> > +               perf_output_put(handle, avail);
+> > +
+> The only role of avail is to report whether or not you've captured actual
+> registers. Could it be used to report the sampled process ABI (32 vs. 64)
+> instead? Something like:
+>       PERF_SAMPLE_REGS_ABI_NONE -> no regs captured (emulate your
+> current behavior)
+>       PERF_SAMPLE_REGS_ABI_32 -> 32 bit ABI regs captured
+>       PERF_SAMPLE_REGS_ABI_64 -> 64 bit ABI regs captured
+> 
+> That could help the tools interpret the register values.
+
+Yes, I think that could help once we start dealing with compat tasks.
+
+The current userspace code stays untouched, because it checks for
+'avail != 0', which stays even with your change.
+
+I think this could be sent later with all other fixes I'm already
+working on. But I can work/send it preferentially before whole patchset
+is taken if you like.
+
+thanks,
+jirka
