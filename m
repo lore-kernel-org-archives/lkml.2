@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab2GYTEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:04:05 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61673 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab2GYTED (ORCPT
+	id S1751304Ab2GYTFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:05:42 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:23193 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2GYTFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:04:03 -0400
-Date: Wed, 25 Jul 2012 21:03:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the akpm tree with the tip tree
-Message-ID: <20120725190351.GA4143@gmail.com>
-References: <20120725140827.4332a5448e4d8d200164ea2e@canb.auug.org.au>
- <20120725071044.GA27535@gmail.com>
- <20120725073503.GB1112@cmpxchg.org>
- <20120725115713.e56239b5.akpm@linux-foundation.org>
+	Wed, 25 Jul 2012 15:05:41 -0400
+Date: Wed, 25 Jul 2012 21:05:39 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Rick Jones <rick.jones2@hp.com>, John Ronciak <john.ronciak@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] igb: correct hardware type (i210/i211) check in
+ igb_loopback_test()
+Message-ID: <alpine.LNX.2.00.1207252059320.11754@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120725115713.e56239b5.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In the original code
+...
+ 	if ((adapter->hw.mac.type == e1000_i210)
+		|| (adapter->hw.mac.type == e1000_i210)) {
+...
+the second check of 'adapter->hw.mac.type' is pointless since it tests
+for the exact same value as the first.
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+After reading through a few other parts of the driver I believe that
+the second check was actually intended to check for 'e1000_i211'
+rather than 'e1000_i210', but I admit that I'm not certain so someone
+with more knowledge about this driver should ACK the patch before it
+gets merged.
 
-> On Wed, 25 Jul 2012 09:35:03 +0200
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > As this is unlikely to reappear in this merge window, the conflict
-> > resolution is quite simple.  All that's needed is remove the 3 hunks
-> > from my patch that converted a user in Peter's patch to a new API.  I
-> > can resend the series if needed, but it's probably easier to just
-> > remove the hunks against mm/migrate.c::migrate_misplaced_page():
-> > 
-> > @@ -1519,10 +1512,9 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
-> >  {
-> >  	struct page *oldpage = page, *newpage;
-> >  	struct address_space *mapping = page_mapping(page);
-> > -	struct mem_cgroup *mcg;
-> > +	struct mem_cgroup *memcg;
-> >  	unsigned int gfp;
-> >  	int rc = 0;
-> > -	int charge = -ENOMEM;
-> >  
-> >  	VM_BUG_ON(!PageLocked(page));
-> >  	VM_BUG_ON(page_mapcount(page));
-> > @@ -1556,12 +1548,7 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
-> >  	if (!trylock_page(newpage))
-> >  		BUG();		/* new page should be unlocked!!! */
-> >  
-> > -	// XXX hnaz, is this right?
-> > -	charge = mem_cgroup_prepare_migration(page, newpage, &mcg, gfp);
-> > -	if (charge == -ENOMEM) {
-> > -		rc = charge;
-> > -		goto out;
-> > -	}
-> > +	mem_cgroup_prepare_migration(page, newpage, &memcg);
-> >  
-> >  	newpage->index = page->index;
-> >  	newpage->mapping = page->mapping;
-> > @@ -1581,11 +1568,9 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
-> >  		page = newpage;
-> >  	}
-> >  
-> > +	mem_cgroup_end_migration(memcg, oldpage, newpage, !rc);
-> >  out:
-> > -	if (!charge)
-> > -		mem_cgroup_end_migration(mcg, oldpage, newpage, !rc);
-> > -
-> > -       if (oldpage != page)
-> > +	if (oldpage != page)
-> >                 put_page(oldpage);
-> >  
-> >  	if (rc) {
-> 
-> Yes, that worked out OK.
-> 
-> This means that if the above code reappears in linux-next or 
-> mainline, the current copy of 
-> mm-memcg-fix-compaction-migration-failing-due-to-memcg-limits.patch 
-> will no longer update it, and I probably won't notice that 
-> omission.
+Unfortunately I have no hardware to actually test this on, so it is
+compile tested only.
 
-Did you plan to send Johannes's memcg bits to Linus in this 
-merge window? If yes then I'll delay pushing out anything that 
-might interfere.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/net/ethernet/intel/igb/igb_ethtool.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
+diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+index a19c84c..ad489b7 100644
+--- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
++++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+@@ -1783,7 +1783,7 @@ static int igb_loopback_test(struct igb_adapter *adapter, u64 *data)
+ 		goto out;
+ 	}
+ 	if ((adapter->hw.mac.type == e1000_i210)
+-		|| (adapter->hw.mac.type == e1000_i210)) {
++		|| (adapter->hw.mac.type == e1000_i211)) {
+ 		dev_err(&adapter->pdev->dev,
+ 			"Loopback test not supported "
+ 			"on this part at this time.\n");
+-- 
+1.7.11.3
 
-	Ingo
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
