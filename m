@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab2GYLqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:46:21 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:46047 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab2GYLqT (ORCPT
+	id S1756600Ab2GYLqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:46:45 -0400
+Received: from relay.parallels.com ([195.214.232.42]:56005 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535Ab2GYLqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:46:19 -0400
+	Wed, 25 Jul 2012 07:46:43 -0400
+Message-ID: <500FDC9E.3010504@parallels.com>
+Date: Wed, 25 Jul 2012 15:46:38 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <ccef753fa6fd0ce145611de514e75018@sf-mail.de>
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com>
-	<ccef753fa6fd0ce145611de514e75018@sf-mail.de>
-Date: Wed, 25 Jul 2012 19:46:18 +0800
-Message-ID: <CAKviJvW5w_9_wMazs3HQigosuk+W-iQipb_0pZxr0-bu3xhGbg@mail.gmail.com>
-Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
- HighMem pages used by sg list
-From: Sen Wang <kelvin.xupt@gmail.com>
-To: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Cc: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
-        jbottomley@parallels.com, pbonzini@redhat.com,
-        stefanha@linux.vnet.ibm.com, mc@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Andre Przywara <andre.przywara@amd.com>, Borislav Petkov <bp@amd64.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
+References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com> <20120721103715.GA3632@aftab.osrc.amd.com>	<500E4960.8040307@parallels.com> <500E5951.5020900@amd.com>	<500E5CDF.5000504@parallels.com> <20120724101041.GA24739@aftab.osrc.amd.com>	<500E8280.6050905@parallels.com> <500E9664.9030306@amd.com>	<20120724134405.7a42b5bd@pyramind.ukuu.org.uk> <500FCB02.2080603@parallels.com> <20120725123132.7a43399b@pyramind.ukuu.org.uk>
+In-Reply-To: <20120725123132.7a43399b@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/25 Rolf Eike Beer <eike-kernel@sf-tec.de>:
-> Am 25.07.2012 10:29, schrieb Wang Sen:
+On 07/25/2012 03:31 PM, Alan Cox wrote:
+> On Wed, 25 Jul 2012 14:31:30 +0400
+> Vladimir Davydov<vdavydov@parallels.com>  wrote:
 >
->> When using the commands below to write some data to a virtio-scsi LUN of
->> the
->> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu
->> will crash.
->>
->>         # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
->>         # sudo mount /dev/sdb /mnt
->>         # dd if=/dev/zero of=/mnt/file bs=1M count=1024
->>
->> In current implementation, sg_set_buf is called to add buffers to sg
->> list which
->> is put into the virtqueue eventually.
->
->
-> The next sentence is somehow broken:
->
->
->> But there are some HighMem pages in
->> table->sgl can not get virtual address by sg_virt.
->
->
-> Maybe something like "But _if_ there are ... _you_ can not get ..."?
+>> On 07/24/2012 04:44 PM, Alan Cox wrote:
+>>>> This approach does not need any kernel support (except for the
+>>>> /proc/cpuinfo filtering). Does this address the issues you have?
+>>> You can do the /proc/cpuinfo filtering in user space too
+>>>
+>> How?
+> bind mount your own normal file over the top or a FUSE file
 
-Thanks, I'll pay attention in next post.
+In general, we've agreed that wiring CPUID masking into the kernel was 
+not a good idea.
 
->
-> Eike
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+We will try to virtualize /proc/cpuinfo as well as other /proc stuff in 
+mainstream.
 
-
-
--- 
-------------------------------------------
-Wang Sen
-Addr: XUPT,Xi'an,Shaanxi,China
-Email: kelvin.xupt@gmail.com
-------------------------------------------
+Thank you for your time and feedback.
