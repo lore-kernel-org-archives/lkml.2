@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2GYQ0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:26:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29291 "EHLO mx1.redhat.com"
+	id S1755837Ab2GYQ1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:27:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30483 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752610Ab2GYQ0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:26:38 -0400
-Date: Thu, 26 Jul 2012 01:26:32 +0900 (JST)
-Message-Id: <20120726.012632.1236473140838656188.yamato@redhat.com>
+	id S1754047Ab2GYQ1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 12:27:39 -0400
+Date: Thu, 26 Jul 2012 01:27:35 +0900 (JST)
+Message-Id: <20120726.012735.647529463170231681.yamato@redhat.com>
 To: gustavo@padovan.org
 Cc: andrei.emeltchenko.news@gmail.com, linux-kernel@vger.kernel.org,
         linux-bluetooth@vger.kernel.org
-Subject: [PATCH v5 1/8] Bluetooth: /proc/net/ entries for bluetooth
- protocols
+Subject: [PATCH v5 2/8] Bluetooth: Added /proc/net/bnep via bt_procfs_init()
 From: Masatake YAMATO <yamato@redhat.com>
 In-Reply-To: <20120725003507.GR20029@joana>
 References: <20120716.222018.2029110835026223294.yamato@redhat.com>
@@ -26,232 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lsof command can tell the type of socket processes are using.
-Internal lsof uses inode numbers on socket fs to resolve the type of
-sockets. Files under /proc/net/, such as tcp, udp, unix, etc provides
-such inode information.
-
-Unfortunately bluetooth related protocols don't provide such inode
-information. This patch series introduces /proc/net files for the protocols.
-
-This patch against af_bluetooth.c provides facility to the implementation
-of protocols. This patch extends bt_sock_list and introduces two exported
-function bt_procfs_init, bt_procfs_cleanup.
-
-The type bt_sock_list is already used in some of implementation of
-protocols. bt_procfs_init prepare seq_operations which converts
-protocol own bt_sock_list data to protocol own proc entry when the
-entry is accessed.
-
-What I, lsof user, need is just inode number of bluetooth
-socket. However, people may want more information. The bt_procfs_init
-takes a function pointer for customizing the show handler of
-seq_operations.
-
-In v4 patch, __acquires and __releases attributes are added to suppress
-sparse warning. Suggested by Andrei Emeltchenko.
-
-In v5 patch, linux/proc_fs.h is included to use PDE. Build error is
-reported by Fengguang Wu.
+Added /proc/net/bnep via bt_procfs_init().
 
 Signed-off-by: Masatake YAMATO <yamato@redhat.com>
 ---
- include/net/bluetooth/bluetooth.h |   10 +++
- net/bluetooth/af_bluetooth.c      |  139 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 149 insertions(+)
+ net/bluetooth/bnep/sock.c |   22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
-index 565d4be..ede0369 100644
---- a/include/net/bluetooth/bluetooth.h
-+++ b/include/net/bluetooth/bluetooth.h
-@@ -27,6 +27,7 @@
+diff --git a/net/bluetooth/bnep/sock.c b/net/bluetooth/bnep/sock.c
+index 5e5f5b4..5b6cc0b 100644
+--- a/net/bluetooth/bnep/sock.c
++++ b/net/bluetooth/bnep/sock.c
+@@ -29,6 +29,10 @@
  
- #include <linux/poll.h>
- #include <net/sock.h>
-+#include <linux/seq_file.h>
+ #include "bnep.h"
  
- #ifndef AF_BLUETOOTH
- #define AF_BLUETOOTH	31
-@@ -202,6 +203,10 @@ enum {
- struct bt_sock_list {
- 	struct hlist_head head;
- 	rwlock_t          lock;
-+#ifdef CONFIG_PROC_FS
-+        struct file_operations   fops;
-+        int (* custom_seq_show)(struct seq_file *, void *);
-+#endif
- };
- 
- int  bt_sock_register(int proto, const struct net_proto_family *ops);
-@@ -292,6 +297,11 @@ extern void hci_sock_cleanup(void);
- extern int bt_sysfs_init(void);
- extern void bt_sysfs_cleanup(void);
- 
-+extern int  bt_procfs_init(struct module* module, struct net *net, const char *name,
-+			   struct bt_sock_list* sk_list,
-+			   int (* seq_show)(struct seq_file *, void *));
-+extern void bt_procfs_cleanup(struct net *net, const char *name);
++static struct bt_sock_list bnep_sk_list = {
++	.lock = __RW_LOCK_UNLOCKED(bnep_sk_list.lock)
++};
 +
- extern struct dentry *bt_debugfs;
+ static int bnep_sock_release(struct socket *sock)
+ {
+ 	struct sock *sk = sock->sk;
+@@ -38,6 +42,8 @@ static int bnep_sock_release(struct socket *sock)
+ 	if (!sk)
+ 		return 0;
  
- int l2cap_init(void);
-diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
-index f7db579..1a03c81 100644
---- a/net/bluetooth/af_bluetooth.c
-+++ b/net/bluetooth/af_bluetooth.c
-@@ -28,6 +28,7 @@
- #include <asm/ioctls.h>
++	bt_sock_unlink(&bnep_sk_list, sk);
++
+ 	sock_orphan(sk);
+ 	sock_put(sk);
+ 	return 0;
+@@ -204,6 +210,7 @@ static int bnep_sock_create(struct net *net, struct socket *sock, int protocol,
+ 	sk->sk_protocol = protocol;
+ 	sk->sk_state	= BT_OPEN;
  
- #include <net/bluetooth/bluetooth.h>
-+#include <linux/proc_fs.h>
- 
- #define VERSION "2.16"
- 
-@@ -532,6 +533,144 @@ int bt_sock_wait_state(struct sock *sk, int state, unsigned long timeo)
++	bt_sock_link(&bnep_sk_list, sk);
+ 	return 0;
  }
- EXPORT_SYMBOL(bt_sock_wait_state);
  
-+#ifdef CONFIG_PROC_FS
-+struct bt_seq_state {
-+	struct bt_sock_list *l;
-+};
-+
-+static void *bt_seq_start(struct seq_file *seq, loff_t *pos)
-+	__acquires(seq->private->l->lock)
-+{
-+	struct bt_seq_state *s = seq->private;
-+	struct bt_sock_list *l = s->l;
-+
-+	read_lock(&l->lock);
-+	return seq_hlist_start_head(&l->head, *pos);
-+}
-+
-+static void *bt_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct bt_seq_state *s = seq->private;
-+	struct bt_sock_list *l = s->l;
-+
-+	return seq_hlist_next(v, &l->head, pos);
-+}
-+
-+static void bt_seq_stop(struct seq_file *seq, void *v)
-+	__releases(seq->private->l->lock)
-+{
-+	struct bt_seq_state *s = seq->private;
-+	struct bt_sock_list *l = s->l;
-+
-+	read_unlock(&l->lock);
-+}
-+
-+static int bt_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct sock *sk;
-+	struct bt_sock *bt;
-+	struct bt_seq_state *s = seq->private;
-+	struct bt_sock_list *l = s->l;
-+	bdaddr_t src_baswapped, dst_baswapped;
-+
-+	if (v == SEQ_START_TOKEN) {
-+		seq_puts(seq ,"sk               RefCnt Rmem   Wmem   User   Inode  Src Dst Parent");
-+
-+		if (l->custom_seq_show) {
-+			seq_putc(seq, ' ');
-+			l->custom_seq_show(seq, v);
-+		}
-+
-+		seq_putc(seq, '\n');
-+	} else {
-+		sk = sk_entry(v);
-+		bt = bt_sk(sk);
-+		baswap(&src_baswapped, &bt->src);
-+		baswap(&dst_baswapped, &bt->dst);
-+
-+		seq_printf(seq, "%pK %-6d %-6u %-6u %-6u %-6lu %pM %pM %-6lu",
-+			   sk,
-+			   atomic_read(&sk->sk_refcnt),
-+			   sk_rmem_alloc_get(sk),
-+			   sk_wmem_alloc_get(sk),
-+			   sock_i_uid(sk),
-+			   sock_i_ino(sk),
-+			   &src_baswapped,
-+			   &dst_baswapped,
-+			   bt->parent? sock_i_ino(bt->parent): 0LU);
-+
-+		if (l->custom_seq_show) {
-+			seq_putc(seq, ' ');
-+			l->custom_seq_show(seq, v);
-+		}
-+
-+		seq_putc(seq, '\n');
+@@ -222,19 +229,30 @@ int __init bnep_sock_init(void)
+ 		return err;
+ 
+ 	err = bt_sock_register(BTPROTO_BNEP, &bnep_sock_family_ops);
+-	if (err < 0)
++	if (err < 0) {
++		BT_ERR("Can't register BNEP socket");
+ 		goto error;
 +	}
-+	return 0;
-+}
 +
-+static struct seq_operations bt_seq_ops = {
-+	.start = bt_seq_start,
-+	.next  = bt_seq_next,
-+	.stop  = bt_seq_stop,
-+	.show  = bt_seq_show,
-+};
++	err = bt_procfs_init(THIS_MODULE, &init_net, "bnep", &bnep_sk_list, NULL);
++	if (err < 0) {
++		BT_ERR("Failed to create BNEP proc file");
++		bt_sock_unregister(BTPROTO_BNEP);
++		goto error;
++	}
 +
-+static int bt_seq_open(struct inode *inode, struct file *file)
-+{
-+	struct bt_sock_list *sk_list;
-+	struct bt_seq_state *s;
-+
-+	sk_list = PDE(inode)->data;
-+	s = __seq_open_private(file, &bt_seq_ops,
-+			       sizeof(struct bt_seq_state));
-+	if (s == NULL)
-+		return -ENOMEM;
-+
-+	s->l = sk_list;
-+	return 0;
-+}
-+
-+int bt_procfs_init(struct module* module, struct net *net, const char *name, struct bt_sock_list* sk_list,
-+			int (* seq_show)(struct seq_file *, void *))
-+{
-+	struct proc_dir_entry * pde;
-+
-+	sk_list->custom_seq_show = seq_show;
-+
-+	sk_list->fops.owner     = module;
-+	sk_list->fops.open      = bt_seq_open;
-+	sk_list->fops.read      = seq_read;
-+	sk_list->fops.llseek    = seq_lseek;
-+	sk_list->fops.release   = seq_release_private;
-+
-+	pde = proc_net_fops_create(net, name, 0, &sk_list->fops);
-+	if (pde == NULL)
-+		return -ENOMEM;
-+
-+	pde->data = sk_list;
-+
-+	return 0;
-+}
-+
-+void bt_procfs_cleanup(struct net *net, const char *name)
-+{
-+	proc_net_remove(net, name);
-+}
-+#else
-+int bt_procfs_init(struct module* module, struct net *net, const char *name, struct bt_sock_list* sk_list,
-+			int (* seq_show)(struct seq_file *, void *))
-+{
-+	return 0;
-+}
-+
-+void bt_procfs_cleanup(struct net *net, const char *name)
-+{
-+}
-+#endif
-+EXPORT_SYMBOL(bt_procfs_init);
-+EXPORT_SYMBOL(bt_procfs_cleanup);
-+
- static struct net_proto_family bt_sock_family_ops = {
- 	.owner	= THIS_MODULE,
- 	.family	= PF_BLUETOOTH,
++	BT_INFO("BNEP socket layer initialized");
+ 
+ 	return 0;
+ 
+ error:
+-	BT_ERR("Can't register BNEP socket");
+ 	proto_unregister(&bnep_proto);
+ 	return err;
+ }
+ 
+ void __exit bnep_sock_cleanup(void)
+ {
++	bt_procfs_cleanup(&init_net, "bnep");
+ 	if (bt_sock_unregister(BTPROTO_BNEP) < 0)
+ 		BT_ERR("Can't unregister BNEP socket");
+ 
 -- 
 1.7.10.4
 
