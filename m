@@ -1,119 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab2GYWwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 18:52:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56904 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab2GYWwT (ORCPT
+	id S1752217Ab2GYW41 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 18:56:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54930 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab2GYW4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 18:52:19 -0400
-Date: Thu, 26 Jul 2012 08:52:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the final tree (tty
- tree related)
-Message-Id: <20120726085216.2ee021b6e10aebe6a853d091@canb.auug.org.au>
-In-Reply-To: <20120720150237.af0d271624511fc18705f287@canb.auug.org.au>
-References: <20120720150237.af0d271624511fc18705f287@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__26_Jul_2012_08_52_16_+1000_XZA.4LYB6xqW6/Rj"
+	Wed, 25 Jul 2012 18:56:25 -0400
+Date: Wed, 25 Jul 2012 15:56:20 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk, agk@redhat.com,
+        neilb@suse.de, drbd-dev@lists.linbit.com, vgoyal@redhat.com,
+        mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v4 03/12] block: Add bio_reset()
+Message-ID: <20120725225620.GA8673@moria.home.lan>
+References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
+ <1343160689-12378-4-git-send-email-koverstreet@google.com>
+ <500FD63F.7050501@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500FD63F.7050501@panasas.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__26_Jul_2012_08_52_16_+1000_XZA.4LYB6xqW6/Rj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 25, 2012 at 02:19:27PM +0300, Boaz Harrosh wrote:
+> On 07/24/2012 11:11 PM, Kent Overstreet wrote:
+> 
+> > Reusing bios is something that's been highly frowned upon in the past,
+> > but driver code keeps doing it anyways. If it's going to happen anyways,
+> > we should provide a generic method.
+> > 
+> > This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
+> > was open coding it, by doing a bio_init() and resetting bi_destructor.
+> > 
+> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > ---
+> >  fs/bio.c                  |   10 ++++++++++
+> >  include/linux/bio.h       |    1 +
+> >  include/linux/blk_types.h |    6 ++++++
+> >  3 files changed, 17 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/fs/bio.c b/fs/bio.c
+> > index 1c6c8b7..252e253 100644
+> > --- a/fs/bio.c
+> > +++ b/fs/bio.c
+> > @@ -261,6 +261,16 @@ void bio_init(struct bio *bio)
+> >  }
+> >  EXPORT_SYMBOL(bio_init);
+> >  
+> > +void bio_reset(struct bio *bio)
+> > +{
+> > +	/* Clear all flags below BIO_OWNS_VEC */
+> > +	unsigned long flags = bio->bi_flags & (~0UL << BIO_OWNS_VEC);
+> > +
+> 
+> 
+> Hey I have not seen these FLAGS thing before. Are these new?
+> 
+> Anyway. Please NO!!! for one you need to put a big fat comment
+> over at flags definitions. And two what happens when one adds
+> a new flag. Is it reset or not reset?
+> 
+> I'd rather you define a flags mask for those that need to be
+> preserved, at header, plus a comment that any needed-to-be-preserved
+> cross init flags, must be added to the mask.
 
-Hi Greg, Alan,
+Yeah, that's a much better idea. Do you think this is clear enough?
 
-On Fri, 20 Jul 2012 15:02:37 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
->=20
-> drivers/usb/serial/console.c: In function 'usb_console_setup':
-> drivers/usb/serial/console.c:168:16: error: invalid type argument of '->'=
- (have 'struct ktermios')
-> drivers/usb/serial/console.c:169:4: error: incompatible type for argument=
- 1 of 'tty_termios_encode_baud_rate'
-> include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argume=
-nt is of type 'struct ktermios'
->=20
-> Caused by commit adc8d746caa6 ("tty: move the termios object into the
-> tty").  Hopefully this is the last of them.
->=20
-> I have added the following fix patch for today:
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 20 Jul 2012 14:58:31 +1000
-> Subject: [PATCH] tty: fix up usb serial console for termios change.
->=20
-> fixes these errors:
->=20
-> drivers/usb/serial/console.c: In function 'usb_console_setup':
-> drivers/usb/serial/console.c:168:16: error: invalid type argument of '->'=
- (have 'struct ktermios')
-> drivers/usb/serial/console.c:169:4: error: incompatible type for argument=
- 1 of 'tty_termios_encode_baud_rate'
-> include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argume=
-nt is of type 'struct ktermios'
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/usb/serial/console.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
-> index b9cca6d..9a56428 100644
-> --- a/drivers/usb/serial/console.c
-> +++ b/drivers/usb/serial/console.c
-> @@ -165,8 +165,8 @@ static int usb_console_setup(struct console *co, char=
- *options)
->  		}
-> =20
->  		if (serial->type->set_termios) {
-> -			tty->termios->c_cflag =3D cflag;
-> -			tty_termios_encode_baud_rate(tty->termios, baud, baud);
-> +			tty->termios.c_cflag =3D cflag;
-> +			tty_termios_encode_baud_rate(&tty->termios, baud, baud);
->  			memset(&dummy, 0, sizeof(struct ktermios));
->  			serial->type->set_termios(tty, port, &dummy);
-> =20
-> --=20
-> 1.7.10.280.gaa39
-
-Ping?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__26_Jul_2012_08_52_16_+1000_XZA.4LYB6xqW6/Rj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQEHigAAoJEECxmPOUX5FE4HwQAJ5sD9rHD7NTBYV0CjRO8HC2
-mqMZYaTNH/lUET9XqTEOXH0Bq6GijP1xQtN1ZOMCbvzrkMOEu5bpT97Q1JyKZLEn
-Vdm3lZ3mh/RdHQz1CnqrLXyoE5GZQXDcAlPeIVNZWcWNElEP2PAgyZ9Z5HuG2xgc
-wNWPwzb3bUdkPD0CeUHMksM2FfypShxIPHVXmUYO1j1zfCGgm18uxJ9fQDAPwFLF
-+OMdyS96GgRvaSBKA3c58hkJWkDmEPgxteCyTuXOZMAnrtEnccanQ5VzQ2wAG0VM
-dsuHHfLdJK1g2RfG0VGOtcvRm67B+peUxACvPUqm3l7A3dLdsfm/CJfI3+0VnovN
-rV6F1/z+7yCmkeZqBxp4ZF2O1cLYRUyVqi4bmX93hLTUHb3eD87E607evhtajS+D
-wiYXQnCWlJbY7B7duBoMuFX274ty8FMVhmSYRA7JAamIOmUYcmTD2DE4gM8fspBO
-s9/iPO8hcXaKw6MoLYFqDulTj+EfcXRj6UEvv3vACiMawMauPqKnCm8weXosJTkH
-0LlrmEjekNWRWk0ArJbe/Mo9ZxxbbtSYr6UguiV/QYCnC7JZAuwxbxsizQ5a6Q3+
-hLPLglIwyA7K2tqDG1GfFhxq4vuFSGp2FnCZ3b7cuFRtebYhsN7dJHUwaqdTEt6v
-6E5+179c5PBecJ/O/9wk
-=29QH
------END PGP SIGNATURE-----
-
---Signature=_Thu__26_Jul_2012_08_52_16_+1000_XZA.4LYB6xqW6/Rj--
+diff --git a/fs/bio.c b/fs/bio.c
+index 1c6c8b7..c7f3442 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -261,6 +261,15 @@ void bio_init(struct bio *bio)
+ }
+ EXPORT_SYMBOL(bio_init);
+ 
++void bio_reset(struct bio *bio)
++{
++	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
++
++	memset(bio, 0, BIO_RESET_BYTES);
++	bio->bi_flags = flags|(1 << BIO_UPTODATE);
++}
++EXPORT_SYMBOL(bio_reset);
++
+ /**
+  * bio_alloc_bioset - allocate a bio for I/O
+  * @gfp_mask:   the GFP_ mask given to the slab allocator
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 2643589..ba60319 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -226,6 +226,7 @@ extern void __bio_clone(struct bio *, struct bio *);
+ extern struct bio *bio_clone(struct bio *, gfp_t);
+ 
+ extern void bio_init(struct bio *);
++extern void bio_reset(struct bio *);
+ 
+ extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
+ extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 293547e..769799f 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -59,6 +59,10 @@ struct bio {
+ 	unsigned int		bi_seg_front_size;
+ 	unsigned int		bi_seg_back_size;
+ 
++	/*
++	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
++	 */
++
+ 	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
+ 
+ 	atomic_t		bi_cnt;		/* pin count */
+@@ -93,6 +97,8 @@ struct bio {
+ 	struct bio_vec		bi_inline_vecs[0];
+ };
+ 
++#define BIO_RESET_BYTES		offsetof(struct bio, bi_max_vecs)
++
+ /*
+  * bio flags
+  */
+@@ -108,6 +114,9 @@ struct bio {
+ #define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
+ #define BIO_QUIET	10	/* Make BIO Quiet */
+ #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
++
++#define BIO_RESET_BITS 12	/* Flags starting here get preserved by bio_reset() */
++
+ #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 
+ /*
