@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933010Ab2GYMi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:38:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53160 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932917Ab2GYMiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:38:54 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <rpurdie@rpsys.net>
-CC: <broonie@opensource.wolfsonmicro.com>, <thierry.reding@avionic-design.de>,
-        <shawn.guo@linaro.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH] pwm_backlight: Add device tree support for Low Threshold Brightness
-Date: Wed, 25 Jul 2012 17:54:02 +0530
-Message-ID: <1343219042-4371-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S933024Ab2GYMlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:41:12 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:37648 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932934Ab2GYMlK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:41:10 -0400
+Message-ID: <500FE952.9030001@panasas.com>
+Date: Wed, 25 Jul 2012 15:40:50 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sen Wang <kelvin.xupt@gmail.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, Wang Sen <senwang@linux.vnet.ibm.com>,
+        <linux-scsi@vger.kernel.org>, <JBottomley@parallels.com>,
+        <stefanha@linux.vnet.ibm.com>, <mc@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
+ HighMem pages used by sg list
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <CAKviJvVrrtyjFOzu7jmmD7cpXZcXtyQ+7HDy1G1o2_a0JRss5w@mail.gmail.com>
+In-Reply-To: <CAKviJvVrrtyjFOzu7jmmD7cpXZcXtyQ+7HDy1G1o2_a0JRss5w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Low Threshold Brightness should be configured to have a linear relation
-in brightness scale. This patch adds device tree support for low
-threshold brightness as optional one for pwm_backlight.
+On 07/25/2012 02:44 PM, Sen Wang wrote:
 
-Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
----
-:100644 100644 1e4fc72... 5c54380... M	Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-:100644 100644 995f016... 4965408... M	drivers/video/backlight/pwm_bl.c
- .../bindings/video/backlight/pwm-backlight.txt     |   21 ++++++++++++++++++++
- drivers/video/backlight/pwm_bl.c                   |    5 ++++
- 2 files changed, 26 insertions(+), 0 deletions(-)
+> 2012/7/25 Paolo Bonzini <pbonzini@redhat.com>:
+>> Il 25/07/2012 10:29, Wang Sen ha scritto:
+>>> When using the commands below to write some data to a virtio-scsi LUN of the
+>>> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
+>>>
+>>>       # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
+>>>       # sudo mount /dev/sdb /mnt
+>>>       # dd if=/dev/zero of=/mnt/file bs=1M count=1024
+>>>
+>>> In current implementation, sg_set_buf is called to add buffers to sg list which
+>>> is put into the virtqueue eventually. But there are some HighMem pages in
+>>> table->sgl can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
+>>> return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
+>>> in QEMU because an invalid GPA is passed by virtqueue.
+>>
+>> Heh, I was compiling (almost) the same patch as we speak. :)
+> 
+> Uh, what a coincidence! :)
+> 
+>>
+>> I've never seen QEMU crash; the VM would more likely just fail to boot
+>> with a panic.  But it's the same bug anyway.
+> 
+> I never met this before. How this situation happens?
+> 
+>>
+>>> My solution is using sg_set_page instead of sg_set_buf.
+>>>
+>>> I have tested the patch on my workstation. QEMU would not crash any more.
+>>>
+>>> Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
+>>> ---
+>>>  drivers/scsi/virtio_scsi.c |    3 ++-
+>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+>>> index 1b38431..fc5c88a 100644
+>>> --- a/drivers/scsi/virtio_scsi.c
+>>> +++ b/drivers/scsi/virtio_scsi.c
+>>> @@ -198,7 +198,8 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+>>>       int i;
+>>>
+>>>       for_each_sg(table->sgl, sg_elem, table->nents, i)
+>>> -             sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
+>>> +             sg_set_page(&sg[idx++], sg_page(sg_elem), sg_elem->length,
+>>> +                     sg_elem->offset);
+>>
+>> This can simply be
+>>
+>>    sg[idx++] = *sg_elem;
+>>
+> 
+> Yes, I saw your another E-mail. I think you're right. Simply calling
+> sg_set_page can not handle
+> the flag bits correctly. So, I'll repost the patch soon. Thank you!
+> 
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-index 1e4fc72..5c54380 100644
---- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -14,6 +14,8 @@ Required properties:
- Optional properties:
-   - pwm-names: a list of names for the PWM devices specified in the
-                "pwms" property (see PWM binding[0])
-+  - low_threshold_brightness: brightness threshold low level. (get linear
-+		 scales in brightness in low end of brightness levels)
- 
- [0]: Documentation/devicetree/bindings/pwm/pwm.txt
- 
-@@ -26,3 +28,22 @@ Example:
- 		brightness-levels = <0 4 8 16 32 64 128 255>;
- 		default-brightness-level = <6>;
- 	};
-+
-+Example for brightness_threshold_level:
-+
-+	backlight {
-+		compatible	= "pwm-backlight";
-+		pwms = <&pwm 0 50000>;
-+
-+		brightness-levels = <0 4 8 16 32 64 128 255>;
-+		default-brightness-level = <6>;
-+		low_threshold_brightness = <50>;
-+	};
-+};
-+Note:
-+Low threshold support is required to have linear brightness scale from
-+0 to max. For some panels, backlight absent on low end of brightness
-+scale. So support for Low Threshold been required. So that the scale of
-+brightness changed from Low Threshold to Max in scales defined in
-+brightness-levels. In this example 20% maximum brightness scale should
-+be required to turn on panel backlight.
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 995f016..4965408 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -143,6 +143,11 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 
- 		data->dft_brightness = value;
- 		data->max_brightness--;
-+
-+		ret = of_property_read_u32(node, "low_threshold_brightness",
-+					   &value);
-+		if (!ret)
-+			data->lth_brightness = value;
- 	}
- 
- 	/*
--- 
-1.7.1
+
+No this code is correct, though you will need to make sure to properly
+terminate the destination sg_list.
+
+But since old code was using sg_set_buf(), than it means it was properly
+terminated before, and there for this code is good as is please don't
+touch it.
+
+Thanks
+Boaz
+
+>> Can you repost it with this change, and also add stable@vger.kernel.org
+>> to the Cc?  Thanks very much!
+>>
+>> Paolo
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> 
 
