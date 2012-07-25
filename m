@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2GYUSW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 16:18:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58869 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751974Ab2GYUSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 16:18:21 -0400
-Message-ID: <5010547E.2090404@zytor.com>
-Date: Wed, 25 Jul 2012 13:18:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
+	id S1752721Ab2GYU1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 16:27:39 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35154 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab2GYU1h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 16:27:37 -0400
+Date: Wed, 25 Jul 2012 13:26:43 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/build change for v3.6
-References: <20120722134451.GA7099@gmail.com> <20120722135807.GA17513@shutemov.name> <20120722142204.GA9085@gmail.com> <20120725201511.GA888@merkur.ravnborg.org>
-In-Reply-To: <20120725201511.GA888@merkur.ravnborg.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] page-table walkers vs memory order
+In-Reply-To: <20120725175628.GH2378@linux.vnet.ibm.com>
+Message-ID: <alpine.LSU.2.00.1207251313180.1942@eggly.anvils>
+References: <1343064870.26034.23.camel@twins> <alpine.LSU.2.00.1207241356350.2094@eggly.anvils> <20120725175628.GH2378@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 01:15 PM, Sam Ravnborg wrote:
->
-> This is not as expected....
-> In this silly example it is maybe obvious but I have lost hours tracking
-> down bugs due to this.
-> You add a new target and suddenly someting unrelated breaks.
->
-> What happens is that make consider the assignment a command due to the leading
-> tab - and because is follows a target (or other commands).
->
-> I hope this makes it clear why many makefiles in the kernel uses tabs for indent.
->
+On Wed, 25 Jul 2012, Paul E. McKenney wrote:
+> On Tue, Jul 24, 2012 at 02:51:05PM -0700, Hugh Dickins wrote:
+> > 
+> > I'm totally unclear whether the kernel ever gets built with these
+> > 'creative' compilers that you refer to.  Is ACCESS_ONCE() a warning
+> > of where some future compiler would be permitted to mess with our
+> > assumptions?  Or is it actually saving us already today?  Would we
+> > know?  Could there be a boottime test that would tell us?  Is it
+> > likely that a future compiler would have an "--access_once"
+> > option that the kernel build would want to turn on?
+> 
+> The problem is that, unless you tell it otherwise, the compiler is
+> permitted to assume that the code that it is generating is the only thing
+> active in that address space at that time.  So the compiler might know
+> that it already has a perfectly good copy of that value somewhere in
+> its registers, or it might decide to fetch the value twice rather than
+> once due to register pressure, either of which can be fatal in SMP code.
+> And then there are more aggressive optimizations as well.
+> 
+> ACCESS_ONCE() is a way of telling the compiler to access the value
+> once, regardless of what cute single-threaded optimizations that it
+> otherwise might want to apply.
 
-This is also a good reason why not to indent assignments in Makefiles by 
-full tab stops.  A smaller indent can't be scrambled this way.
+Right, but you say "might": I have never heard it asserted, that we do
+build the kernel with a compiler which actually makes such optimizations.
 
-	-hpa
+There's a lot of other surprising things which a compiler is permitted
+to do, but we would simply not use such a compiler to build the kernel.
 
+Does some version of gcc, under the options which we insist upon,
+make such optimizations on any of the architectures which we support?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Or is there some other compiler in use on the kernel, which makes
+such optimizations?  It seems a long time since I heard of building
+the kernel with icc.  clang?
 
+I don't mind the answer "Yes, you idiot" - preferably with an example
+or two of which compiler and which piece of code it has bitten us on.
+I don't mind the answer "We just don't know" if that's the case.
+
+But I'd like a better idea of how much to worry: is ACCESS_ONCE
+demonstrably needed today, or rather future-proofing and documentation?
+
+Thanks,
+Hugh
