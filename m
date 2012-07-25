@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab2GYOY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:24:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54246 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933138Ab2GYOYy (ORCPT
+	id S933227Ab2GYOZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:25:22 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:55003 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933105Ab2GYOZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:24:54 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] iommu: Include linux/types.h
-Date: Wed, 25 Jul 2012 16:24:49 +0200
-Message-Id: <1343226290-32511-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.7.11.2
-X-Provags-ID: V02:K0:Grt1pHj1v3b12qGJUqEYD21D6osik2c4EFTUCbTRmXl
- aSBMeXSal1RIqL/MVjVxynacNDrts9fUpCCIt3WUch6rN2JWnq
- EOxURJa7OJjEsCV3rIMe/ZOdkec3asgaHQI7lrJgpItBUxMdvx
- Bu86cygJL3TiV2T2P7WQ0TCJRfSJ2Wr1S4eGbtTkGtZ0HRave1
- JQBqKco9ZYBPK17hKWnifU4++YhBYgTn+IbPGNn86fetxylj/5
- qXmM96E7SVDDpP+pbMvOxqf/EDV7QVS7UfoCn1MqTxgx1uXoMg
- PFZC1MhIhdsMEhWHucGSTFPtxFthPTu4T/RkuR/pmmtM5SMInx
- /8GxBJEkJZGUxHhB+d+ZiGD5WV8/0eGZJUOfpnRjnd1GdIepgv
- 65hrzFh4yRY3/6J15pBeFRp4YEcNUa2jM18CwMfovuEpdkqZkT
- 2ItoM
+	Wed, 25 Jul 2012 10:25:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120716103749.122800930@linutronix.de>
+References: <20120716103749.122800930@linutronix.de>
+Date: Wed, 25 Jul 2012 23:25:19 +0900
+Message-ID: <CAAmzW4OPOCeotTesZy14vSxP+g1=D+KAeaLJQJKdJZqTpKTTgw@mail.gmail.com>
+Subject: Re: [Patch 0/7] Per cpu thread hotplug infrastructure - V3
+From: JoonSoo Kim <js1304@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The linux/iommu.h header uses types defined in linux/types.h but doesn't
-include it.
+2012/7/16 Thomas Gleixner <tglx@linutronix.de>:
+> The following series implements the infrastructure for parking and
+> unparking kernel threads to avoid the full teardown and fork on cpu
+> hotplug operations along with management infrastructure for hotplug
+> and users.
+>
+> Changes vs. V2:
+>
+>  Use callbacks for all functionality. Thanks to Rusty for pointing
+>  that out. It makes the use sites nice and simple and keeps all the
+>  code which would be duplicated otherwise on the core.
+>
+> Thanks,
+>
+>         tglx
+>
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- include/linux/iommu.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index a71df92..9cbcc6a 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -20,6 +20,7 @@
- #define __LINUX_IOMMU_H
- 
- #include <linux/errno.h>
-+#include <linux/types.h>
- 
- #define IOMMU_READ	(1)
- #define IOMMU_WRITE	(2)
--- 
-1.7.11.2
-
+I'm just a kernel newbie, so I have a dumb question.
+Why this patchset doesn't include patch for migrationd in kernel/stop_machine.c?
+Is there any reason for that?
