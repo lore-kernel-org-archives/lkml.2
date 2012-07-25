@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab2GYWuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 18:50:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33872 "EHLO
+	id S1752043Ab2GYWva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 18:51:30 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37663 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab2GYWuA (ORCPT
+	with ESMTP id S1751548Ab2GYWv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 18:50:00 -0400
-Date: Thu, 26 Jul 2012 08:49:51 +1000
+	Wed, 25 Jul 2012 18:51:29 -0400
+Date: Thu, 26 Jul 2012 08:51:27 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
         Alan Cox <alan@linux.intel.com>
 Subject: Re: linux-next: build failure after merge of the tty tree
-Message-Id: <20120726084951.911c5a620846be2eb6770ae5@canb.auug.org.au>
-In-Reply-To: <20120720132840.f8269e2c3658daa010904dca@canb.auug.org.au>
-References: <20120720132840.f8269e2c3658daa010904dca@canb.auug.org.au>
+Message-Id: <20120726085127.1205fa271d6c5d7c485c5397@canb.auug.org.au>
+In-Reply-To: <20120720133349.b71eeca40aa1758a12725dea@canb.auug.org.au>
+References: <20120720133349.b71eeca40aa1758a12725dea@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Thu__26_Jul_2012_08_49_51_+1000_1dvi_G2TrXwhl6L/"
+ boundary="Signature=_Thu__26_Jul_2012_08_51_27_+1000_RnE4xSSBhyj_mksy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__26_Jul_2012_08_49_51_+1000_1dvi_G2TrXwhl6L/
+--Signature=_Thu__26_Jul_2012_08_51_27_+1000_RnE4xSSBhyj_mksy
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Greg, Alan,
 
-On Fri, 20 Jul 2012 13:28:40 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+[Sorry, Alan, I forgot to cc you the first time around.]
+
+On Fri, 20 Jul 2012 13:33:49 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
 wrote:
 >
 > After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
 > failed like this:
 >=20
-> drivers/staging/ipack/devices/ipoctal.c: In function 'ipoctal_set_termios=
-':
-> drivers/staging/ipack/devices/ipoctal.c:614:22: error: invalid type argum=
-ent of '->' (have 'struct ktermios')
-> drivers/staging/ipack/devices/ipoctal.c:640:15: error: invalid type argum=
-ent of '->' (have 'struct ktermios')
-> drivers/staging/ipack/devices/ipoctal.c:654:14: error: invalid type argum=
-ent of '->' (have 'struct ktermios')
-> drivers/staging/ipack/devices/ipoctal.c:691:2: error: incompatible type f=
-or argument 1 of 'tty_termios_encode_baud_rate'
-> include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argume=
-nt is of type 'struct ktermios'
-> drivers/staging/ipack/devices/ipoctal.c:694:22: error: invalid type argum=
-ent of '->' (have 'struct ktermios')
-> drivers/staging/ipack/devices/ipoctal.c:735:3: error: incompatible type f=
-or argument 1 of 'tty_termios_encode_baud_rate'
-> include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argume=
-nt is of type 'struct ktermios'
+> drivers/staging/serqt_usb2/serqt_usb2.c: In function 'qt_set_termios':
+> drivers/staging/serqt_usb2/serqt_usb2.c:1198:29: error: incompatible type=
+s when initializing type 'struct ktermios *' using type 'struct ktermios'
+> drivers/staging/serqt_usb2/serqt_usb2.c:1304:14: error: invalid type argu=
+ment of '->' (have 'struct ktermios')
 >=20
 > Presumably caused by commit adc8d746caa6 ("tty: move the termios object
 > into the tty").
@@ -63,30 +52,28 @@ nt is of type 'struct ktermios'
 > Under previous instructions about staging drivers, I have added the
 > following patch for today:
 >=20
-> From c4bc70a8fc9cc687690aaf51865561ffcd6190f9 Mon Sep 17 00:00:00 2001
 > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 20 Jul 2012 13:25:12 +1000
-> Subject: [PATCH] disable SERIAL_IPOCTAL broken by tty updates
+> Date: Fri, 20 Jul 2012 13:31:39 +1000
+> Subject: [PATCH] disable USB_SERIAL_QUATECH2 broken by tty update
 >=20
 > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
->  drivers/staging/ipack/devices/Kconfig |    1 +
+>  drivers/staging/serqt_usb2/Kconfig |    1 +
 >  1 file changed, 1 insertion(+)
 >=20
-> diff --git a/drivers/staging/ipack/devices/Kconfig b/drivers/staging/ipac=
-k/devices/Kconfig
-> index 39f7188..8d69ce3 100644
-> --- a/drivers/staging/ipack/devices/Kconfig
-> +++ b/drivers/staging/ipack/devices/Kconfig
+> diff --git a/drivers/staging/serqt_usb2/Kconfig b/drivers/staging/serqt_u=
+sb2/Kconfig
+> index f4fed40..dc624a4 100644
+> --- a/drivers/staging/serqt_usb2/Kconfig
+> +++ b/drivers/staging/serqt_usb2/Kconfig
 > @@ -1,6 +1,7 @@
->  config SERIAL_IPOCTAL
->  	tristate "IndustryPack IP-OCTAL uart support"
->  	depends on IPACK_BUS
+>  config USB_SERIAL_QUATECH2
+>  	tristate "USB Quatech ESU-100 8 Port Serial Driver"
+>  	depends on USB_SERIAL
 > +	depends on BROKEN
 >  	help
->  	  This driver supports the IPOCTAL serial port device for the IndustryP=
-ack bus.
->  	default n
+>  	  Say Y here if you want to use the Quatech ESU-100 8 port usb to
+>  	  serial adapter.
 > --=20
 > 1.7.10.280.gaa39
 
@@ -95,25 +82,25 @@ Ping?
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__26_Jul_2012_08_49_51_+1000_1dvi_G2TrXwhl6L/
+--Signature=_Thu__26_Jul_2012_08_51_27_+1000_RnE4xSSBhyj_mksy
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQEHgPAAoJEECxmPOUX5FErGoP/0UpXKpF4/vLEt/2ZH5SIdoV
-vtekSGBKn3LBd+vY1F2dc/4ZybDWpc6GpAjB5rj049sLlpM+1s2eGb2L7MVsifef
-dOaS2cilQNcMcPc1rV7cBtNHdfxuQumyhIX1qZSKrg/S31bIPiIlTI+ett3+In/0
-6Q+SCjqbuYkcuL1dOdmvTw4ddCnUl0KcbfnpZPbnig7tBB9/gxbbTUOb8FyPV3+H
-nc6tehj10upkwdjBB6BFX0+rKkNs25b+gu7qki6WPlgeEWbWqg3rhFbQA1xEN+5D
-ktK9CT3GzppRYzmZDkAUyNGA+fMQWGe7iF+HD7fIeuGlW0bgtuZzIAQtW9uRNJhr
-FDDtplBqnW6VNJLWEYVI/AOh274hLPGW6iEkAbKEnXenv8fE2Sgv0fQmhx3Cldx/
-0u3pZHnCO3P5GmyoJJIgHORCedS13hLPfCvneUcFXpSwBWRwHuFYahZehXSfYvuv
-uzWylrEGz/jWhTVSJzX9HY22mn2gVDBEAkfb5l2ZtmhdKANItZxLVusQpt1vU/RP
-jJDbjbwKOW6mN5oarWnl8ZgD5OA0LhI3k8zLnJRLCtJ13ezAEkHlQz1bx8e2XDNh
-V/tyEZaMwu+SGhA4stU3NFvKf/Kih6bKOJlh6RbTFcQaXyM5Vj+Q4jamgZUUK/jt
-ehEZGvu5I62R1ecNRCqp
-=1aLN
+iQIcBAEBCAAGBQJQEHhvAAoJEECxmPOUX5FEJRgP/R1cVP3ZgwdWC2CZ7JrhcT3U
+hYHGfwvrbBN3ART1HTMBw34cAUS+Bm6ejOz71lIuSHRHIwNUBpZJlBPUjB4Jn/DF
+A7bugC9ueP7npDIyX+Q+nxPL3ZMVeVKd6LPwpX2tPE7P4fQwikdB/IYKi7Vfouvt
+YDVN/RsaCCr8nYPIgT5iz7I7oKIRQlN/dXTuTW/qSySB7tHbr7n/tS0pib34ycDW
+3Z1YUIgsLn2wQevRsS0N2bGhs+o2FUPwiARd68sCzWlhOuqkR/I3zh1uPlrPBIFe
+SVohFAgjn/k+0tFG7smpl+/Y2PnmrNIuXPGRrFF+FuWh6tyCBzMXqnadE5A60FvW
+jBqqSPtzrR9S4s1d+MdDcUCLwRwOnKB/DtbCWFepX+wY/Ui6r0rVoXgGSWD8fDSb
+ZUquOoCPwPplTg8/3H9VXCmAwcHWp0S5oBFDvsoKEY0PRocAojsbKtxaCAVl6Ra3
+5eYCw/bpkE205BaPGijygRrE18xterqWWjWaeS/FE7ghpiIVCh7YWgj4yKxIFsEf
+WBrxkexrbbDSUa3T85YYW8QaDwhD0Mjt5c8Cp1gQzq7b/2FdHTUCdK6frSZ7Y8cU
+oy63BmwDP/dSF8Dj+jsQUJTJDpG3UWjbHcC5G9gAWXCJs5Xw2v01hDW4Uo9fo/Xy
+yki8jXkiRML0K8pglzkm
+=PZpA
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__26_Jul_2012_08_49_51_+1000_1dvi_G2TrXwhl6L/--
+--Signature=_Thu__26_Jul_2012_08_51_27_+1000_RnE4xSSBhyj_mksy--
