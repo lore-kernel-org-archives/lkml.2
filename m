@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933081Ab2GYM64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:58:56 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:14961 "EHLO relay.sw.ru"
+	id S933099Ab2GYM7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:59:06 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:17532 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932980Ab2GYM6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:58:53 -0400
-Subject: [PATCH v2 13/15] Lockd: move grace period management from lockd() to
-	per-net functions
+	id S932934Ab2GYM7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:59:02 -0400
+Subject: [PATCH v2 14/15] NFSd: make grace end flag per network namespace
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 25 Jul 2012 16:57:29 +0400
-Message-ID: <20120725125729.24376.11266.stgit@localhost.localdomain>
+Date: Wed, 25 Jul 2012 16:57:37 +0400
+Message-ID: <20120725125737.24376.62359.stgit@localhost.localdomain>
 In-Reply-To: <20120725125258.24376.82525.stgit@localhost.localdomain>
 References: <20120725125258.24376.82525.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -26,55 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/lockd/svc.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+ fs/nfsd/netns.h     |    1 +
+ fs/nfsd/nfs4state.c |    8 +++-----
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index 68271c2..31a63f8 100644
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -128,8 +128,6 @@ lockd(void *vrqstp)
- {
- 	int		err = 0, preverr = 0;
- 	struct svc_rqst *rqstp = vrqstp;
--	struct net *net = &init_net;
--	struct lockd_net *ln = net_generic(net, lockd_net_id);
+diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+index e99767d..b6deebd 100644
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -36,6 +36,7 @@ struct nfsd_net {
+ 	struct cache_detail *nametoid_cache;
  
- 	/* try_to_freeze() is called from svc_recv() */
- 	set_freezable();
-@@ -143,8 +141,6 @@ lockd(void *vrqstp)
- 		nlm_timeout = LOCKD_DFLT_TIMEO;
- 	nlmsvc_timeout = nlm_timeout * HZ;
+ 	struct lock_manager nfsd4_manager;
++	bool grace_ended;
+ };
  
--	set_grace_period(net);
+ extern int nfsd_net_id;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index b926e00..2c53447 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3118,19 +3118,17 @@ out:
+ 	return status;
+ }
+ 
+-static bool grace_ended;
 -
- 	/*
- 	 * The main request loop. We don't terminate until the last
- 	 * NFS mount or NFS daemon has gone away.
-@@ -190,8 +186,6 @@ lockd(void *vrqstp)
- 		svc_process(rqstp);
- 	}
- 	flush_signals(current);
--	cancel_delayed_work_sync(&ln->grace_period_end);
--	locks_end_grace(&ln->lockd_manager);
- 	if (nlmsvc_ops)
- 		nlmsvc_invalidate_all();
- 	nlm_shutdown_hosts();
-@@ -272,6 +266,7 @@ static int lockd_up_net(struct svc_serv *serv, struct net *net)
- 	error = make_socks(serv, net);
- 	if (error < 0)
- 		goto err_socks;
-+	set_grace_period(net);
- 	dprintk("lockd_up_net: per-net data created; net=%p\n", net);
- 	return 0;
+ static void
+ nfsd4_end_grace(struct net *net)
+ {
+ 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
  
-@@ -289,6 +284,8 @@ static void lockd_down_net(struct svc_serv *serv, struct net *net)
- 	if (ln->nlmsvc_users) {
- 		if (--ln->nlmsvc_users == 0) {
- 			nlm_shutdown_hosts_net(net);
-+			cancel_delayed_work_sync(&ln->grace_period_end);
-+			locks_end_grace(&ln->lockd_manager);
- 			svc_shutdown_net(serv, net);
- 			dprintk("lockd_down_net: per-net data destroyed; net=%p\n", net);
- 		}
+ 	/* do nothing if grace period already ended */
+-	if (grace_ended)
++	if (nn->grace_ended)
+ 		return;
+ 
+ 	dprintk("NFSD: end of grace period\n");
+-	grace_ended = true;
++	nn->grace_ended = true;
+ 	nfsd4_record_grace_done(net, boot_time);
+ 	locks_end_grace(&nn->nfsd4_manager);
+ 	/*
+@@ -4704,7 +4702,7 @@ nfs4_state_start(void)
+ 	nfsd4_client_tracking_init(net);
+ 	boot_time = get_seconds();
+ 	locks_start_grace(net, &nn->nfsd4_manager);
+-	grace_ended = false;
++	nn->grace_ended = false;
+ 	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
+ 	       nfsd4_grace);
+ 	ret = set_callback_cred();
 
