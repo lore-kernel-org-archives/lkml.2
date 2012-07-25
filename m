@@ -1,279 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab2GYGlv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:41:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46572 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab2GYGlt (ORCPT
+	id S1751889Ab2GYGrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:47:13 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64173 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750918Ab2GYGrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:41:49 -0400
-Message-ID: <500F954B.4010206@gmail.com>
-Date: Wed, 25 Jul 2012 08:42:19 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+	Wed, 25 Jul 2012 02:47:11 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, tglx@linutronix.de
-CC: davej@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: tasklist_lock lockdep warnings on 3.6
+In-Reply-To: <1343187708-19532-1-git-send-email-lenb@kernel.org>
+References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
+Date: Wed, 25 Jul 2012 12:17:09 +0530
+Message-ID: <CAK44p218dhQxSt_B-Suup0VeJs2YJjH=+80+f3rEaXoiFgvwwg@mail.gmail.com>
+Subject: Re: [linux-pm] ACPI & Power Management Patches for Linux-3.6-merge -
+ part 1
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 25 July 2012 09:10, Len Brown <lenb@kernel.org> wrote:
+> Here is my initial queue of patches for Linux 3.6.
+> Please let me know if you see troubles with any of them.
 
-I've stumbled on the following while fuzzing with trinity inside a KVM tools guest on 3.6 kernel:
+Hi Len,
 
-[  250.495512] ======================================================
-[  250.496020] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-[  250.496020] 3.5.0-sasha-01646-g39c0dda #269 Tainted: G        W
-[  250.496020] ------------------------------------------------------
-[  250.496020] trinity-child15/6956 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[  250.496020]  (tasklist_lock){.+.+..}, at: [<ffffffff811089da>] posix_cpu_timer_del+0x2a/0x110
-[  250.496020]
-[  250.496020] and this task is already holding:
-[  250.496020]  (&(&new_timer->it_lock)->rlock){-.-...}, at: [<ffffffff81105a10>] exit_itimers+0x50/0x140
-[  250.496020] which would create a new lock dependency:
-[  250.496020]  (&(&new_timer->it_lock)->rlock){-.-...} -> (tasklist_lock){.+.+..}
-[  250.496020]
-[  250.496020] but this new dependency connects a HARDIRQ-irq-safe lock:
-[  250.496020]  (&(&new_timer->it_lock)->rlock){-.-...}
-... which became HARDIRQ-irq-safe at:
-[  250.496020]   [<ffffffff81149e3c>] mark_irqflags+0x7c/0x190
-[  250.496020]   [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
-[  250.496020]   [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.496020]   [<ffffffff83699e79>] _raw_spin_lock_irqsave+0x79/0xc0
-[  250.496020]   [<ffffffff81104ee2>] posix_timer_fn+0x32/0xd0
-[  250.496020]   [<ffffffff8110b25e>] __run_hrtimer+0x27e/0x4d0
-[  250.496020]   [<ffffffff8110c299>] hrtimer_interrupt+0x119/0x220
-[  250.496020]   [<ffffffff81090215>] smp_apic_timer_interrupt+0x85/0xa0
-[  250.496020]   [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
-[  250.496020]   [<ffffffff8118ec1e>] rcu_lockdep_current_cpu_online+0x6e/0xa0
-[  250.496020]   [<ffffffff812a57be>] proc_sys_compare+0x7e/0x130
-[  250.496020]   [<ffffffff8124a09c>] __d_lookup+0x18c/0x2e0
-[  250.496020]   [<ffffffff8123d216>] lookup_fast+0x136/0x240
-[  250.496020]   [<ffffffff8123da1c>] link_path_walk+0x22c/0x8f0
-[  250.496020]   [<ffffffff8123e137>] path_lookupat+0x57/0x720
-[  250.496020]   [<ffffffff8123e82c>] do_path_lookup+0x2c/0xc0
-[  250.496020]   [<ffffffff8123ee14>] user_path_at_empty+0x64/0xa0
-[  250.496020]   [<ffffffff8123ee5c>] user_path_at+0xc/0x10
-[  250.496020]   [<ffffffff8122e6be>] sys_chdir+0x1e/0x70
-[  250.496020]   [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
-[  250.496020]
-[  250.496020] to a HARDIRQ-irq-unsafe lock:
-[  250.496020]  (&(&p->alloc_lock)->rlock){+.+...}
-... which became HARDIRQ-irq-unsafe at:
-[  250.496020] ...  [<ffffffff81149ec0>] mark_irqflags+0x100/0x190
-[  250.496020]   [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
-[  250.496020]   [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.496020]   [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
-[  250.496020]   [<ffffffff81237ed1>] set_task_comm+0x31/0x1c0
-[  250.496020]   [<ffffffff8110665c>] kthreadd+0x2c/0x170
-[  250.496020]   [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-[  250.496020]
-[  250.496020] other info that might help us debug this:
-[  250.496020]
-[  250.496020] Chain exists of:
-  &(&new_timer->it_lock)->rlock --> tasklist_lock --> &(&p->alloc_lock)->rlock
+I cannot see my patches (V5)
+http://www.spinics.net/lists/linux-pm/msg27866.html in your list. V4
+version was part of your pull request for the last merge window. Also
+because of Durgadoss's "Thermal trip points writeable" patch present
+in this list one small rework is needed. I will update it and resend
+it shortly.
 
-[  250.496020]  Possible interrupt unsafe locking scenario:
-[  250.496020]
-[  250.496020]        CPU0                    CPU1
-[  250.496020]        ----                    ----
-[  250.496020]   lock(&(&p->alloc_lock)->rlock);
-[  250.496020]                                local_irq_disable();
-[  250.496020]                                lock(&(&new_timer->it_lock)->rlock);
-[  250.496020]                                lock(tasklist_lock);
-[  250.496020]   <Interrupt>
-[  250.496020]     lock(&(&new_timer->it_lock)->rlock);
-[  250.496020]
-[  250.496020]  *** DEADLOCK ***
-[  250.496020]
-[  250.496020] 1 lock held by trinity-child15/6956:
-[  250.496020]  #0:  (&(&new_timer->it_lock)->rlock){-.-...}, at: [<ffffffff81105a10>] exit_itimers+0x50/0x140
-[  250.496020]
-the dependencies between HARDIRQ-irq-safe lock and the holding lock:
-[  250.496020] -> (&(&new_timer->it_lock)->rlock){-.-...} ops: 6221 {
-[  250.496020]    IN-HARDIRQ-W at:
-[  250.496020]                     [<ffffffff81149e3c>] mark_irqflags+0x7c/0x190
-[  250.496020]                     [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
-[  250.496020]                     [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.496020]                     [<ffffffff83699e79>] _raw_spin_lock_irqsave+0x79/0xc0
-[  250.496020]                     [<ffffffff81104ee2>] posix_timer_fn+0x32/0xd0
-[  250.496020]                     [<ffffffff8110b25e>] __run_hrtimer+0x27e/0x4d0
-[  250.496020]                     [<ffffffff8110c299>] hrtimer_interrupt+0x119/0x220
-[  250.496020]                     [<ffffffff81090215>] smp_apic_timer_interrupt+0x85/0xa0
-[  250.496020]                     [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
-[  250.496020]                     [<ffffffff8118ec1e>] rcu_lockdep_current_cpu_online+0x6e/0xa0
-[  250.496020]                     [<ffffffff812a57be>] proc_sys_compare+0x7e/0x130
-[  250.496020]                     [<ffffffff8124a09c>] __d_lookup+0x18c/0x2e0
-[  250.496020]                     [<ffffffff8123d216>] lookup_fast+0x136/0x240
-[  250.496020]                     [<ffffffff8123da1c>] link_path_walk+0x22c/0x8f0
-[  250.496020]                     [<ffffffff8123e137>] path_lookupat+0x57/0x720
-[  250.496020]                     [<ffffffff8123e82c>] do_path_lookup+0x2c/0xc0
-[  250.496020]                     [<ffffffff8123ee14>] user_path_at_empty+0x64/0xa0
-[  250.496020]                     [<ffffffff8123ee5c>] user_path_at+0xc/0x10
-[  250.496020]                     [<ffffffff8122e6be>] sys_chdir+0x1e/0x70
-[  250.496020]                     [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
-[  250.496020]    IN-SOFTIRQ-W at:
-[  250.496020]                     [<ffffffff81149e67>] mark_irqflags+0xa7/0x190
-[  250.496020]                     [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
-[  250.496020]                     [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.496020]                     [<ffffffff83699e79>] _raw_spin_lock_irqsave+0x79/0xc0
-[  250.496020]                     [<ffffffff81104ee2>] posix_timer_fn+0x32/0xd0
-[  250.496020]                     [<ffffffff8110b25e>] __run_hrtimer+0x27e/0x4d0
-[  250.496020]                     [<ffffffff8110c299>] hrtimer_interrupt+0x119/0x220
-[  250.561155]                     [<ffffffff81090215>] smp_apic_timer_interrupt+0x85/0xa0
-[  250.561155]                     [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
-[  250.561155]                     [<ffffffff81190d27>] rcu_start_gp+0x467/0x500
-[  250.561155]                     [<ffffffff811932c3>] rcu_report_qs_rsp+0x223/0x290
-[  250.561155]                     [<ffffffff81193581>] rcu_report_qs_rnp+0x251/0x2b0
-[  250.561155]                     [<ffffffff8119543b>] rcu_check_quiescent_state+0x9b/0xc0
-[  250.561155]                     [<ffffffff811954e6>] __rcu_process_callbacks+0x86/0xe0
-[  250.561155]                     [<ffffffff81195618>] rcu_process_callbacks+0xd8/0x210
-[  250.561155]                     [<ffffffff810e1b95>] __do_softirq+0x1c5/0x450
-[  250.561155]                     [<ffffffff810e1f25>] run_ksoftirqd+0x105/0x250
-[  250.561155]                     [<ffffffff8110607d>] kthread+0xad/0xc0
-[  250.561155]                     [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-[  250.561155]    INITIAL USE at:
-[  250.561155]                    [<ffffffff8114c0dc>] __lock_acquire+0x95c/0xb60
-[  250.561155]                    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]                    [<ffffffff83699e79>] _raw_spin_lock_irqsave+0x79/0xc0
-[  250.561155]                    [<ffffffff81104bb7>] __lock_timer+0xa7/0x1a0
-[  250.561155]                    [<ffffffff81105662>] sys_timer_getoverrun+0x12/0x50
-[  250.561155]                    [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
-[  250.561155]  }
-[  250.561155]  ... key      at: [<ffffffff8536f7a0>] __key.29517+0x0/0x8
-[  250.561155]  ... acquired at:
-[  250.561155]    [<ffffffff8114886d>] check_usage+0x1bd/0x1e0
-[  250.561155]    [<ffffffff811488fa>] check_irq_usage+0x6a/0xe0
-[  250.561155]    [<ffffffff81148abb>] check_prev_add+0x14b/0x640
-[  250.561155]    [<ffffffff8114906a>] check_prevs_add+0xba/0x1a0
-[  250.561155]    [<ffffffff811497f0>] validate_chain.isra.22+0x6a0/0x7b0
-[  250.561155]    [<ffffffff8114c221>] __lock_acquire+0xaa1/0xb60
-[  250.561155]    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]    [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
-[  250.561155]    [<ffffffff811089da>] posix_cpu_timer_del+0x2a/0x110
-[  250.561155]    [<ffffffff81105a8d>] exit_itimers+0xcd/0x140
-[  250.561155]    [<ffffffff810deea8>] do_exit+0x1b8/0x580
-[  250.561155]    [<ffffffff810df33a>] do_group_exit+0x8a/0xc0
-[  250.561155]    [<ffffffff810df382>] sys_exit_group+0x12/0x20
-[  250.561155]    [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
-[  250.561155]
-[  250.561155]
-[  250.561155] the dependencies between the lock to be acquired and HARDIRQ-irq-unsafe lock:
-[  250.561155]  -> (&(&p->alloc_lock)->rlock){+.+...} ops: 921205 {
-[  250.561155]     HARDIRQ-ON-W at:
-[  250.561155]                       [<ffffffff81149ec0>] mark_irqflags+0x100/0x190
-[  250.561155]                       [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
-[  250.561155]                       [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]                       [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
-[  250.561155]                       [<ffffffff81237ed1>] set_task_comm+0x31/0x1c0
-[  250.561155]                       [<ffffffff8110665c>] kthreadd+0x2c/0x170
-[  250.561155]                       [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-[  250.561155]     SOFTIRQ-ON-W at:
-[  250.561155]                       [<ffffffff81149ee3>] mark_irqflags+0x123/0x190
-[  250.561155]                       [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
-[  250.561155]                       [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]                       [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
-[  250.561155]                       [<ffffffff81237ed1>] set_task_comm+0x31/0x1c0
-[  250.561155]                       [<ffffffff8110665c>] kthreadd+0x2c/0x170
-[  250.561155]                       [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-[  250.561155]     INITIAL USE at:
-[  250.561155]                      [<ffffffff8114c0dc>] __lock_acquire+0x95c/0xb60
-[  250.561155]                      [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]                      [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
-[  250.561155]                      [<ffffffff81237ed1>] set_task_comm+0x31/0x1c0
-[  250.561155]                      [<ffffffff8110665c>] kthreadd+0x2c/0x170
-[  250.561155]                      [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-[  250.561155]   }
-[  250.561155]   ... key      at: [<ffffffff8532b228>] __key.45219+0x0/0x8
-[  250.561155]   ... acquired at:
-[  250.561155]    [<ffffffff8114906a>] check_prevs_add+0xba/0x1a0
-[  250.561155]    [<ffffffff811497f0>] validate_chain.isra.22+0x6a0/0x7b0
-[  250.561155]    [<ffffffff8114c221>] __lock_acquire+0xaa1/0xb60
-[  250.561155]    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]    [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
-[  250.561155]    [<ffffffff8189c7e5>] keyctl_session_to_parent+0x105/0x3f0
-[  250.561155]    [<ffffffff8189cc25>] sys_keyctl+0x155/0x1a0
-[  250.561155]    [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
-[  250.561155]
-[  250.561155] -> (tasklist_lock){.+.+..} ops: 81487 {
-[  250.561155]    HARDIRQ-ON-R at:
-[  250.561155]                     [<ffffffff81149e8c>] mark_irqflags+0xcc/0x190
-[  250.561155]                     [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
-[  250.561155]                     [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]                     [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
-[  250.561155]                     [<ffffffff810de1b8>] do_wait+0x178/0x3b0
-[  250.561155]                     [<ffffffff810df64b>] sys_wait4+0xbb/0xe0
-[  250.561155]                     [<ffffffff810f81b0>] wait_for_helper+0x80/0xa0
-[  250.561155]                     [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-[  250.561155]    SOFTIRQ-ON-R at:
-[  250.561155]                     [<ffffffff81149ee3>] mark_irqflags+0x123/0x190
-[  250.561155]                     [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
-[  250.561155]                     [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]                     [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
-[  250.561155]                     [<ffffffff810de1b8>] do_wait+0x178/0x3b0
-[  250.561155]                     [<ffffffff810df64b>] sys_wait4+0xbb/0xe0
-[  250.561155]                     [<ffffffff810f81b0>] wait_for_helper+0x80/0xa0
-[  250.561155]                     [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
-[  250.561155]    INITIAL USE at:
-[  250.561155]                    [<ffffffff8114c0dc>] __lock_acquire+0x95c/0xb60
-[  250.561155]                    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]                    [<ffffffff8369a859>] _raw_write_lock_irq+0x59/0x90
-[  250.561155]                    [<ffffffff810d686d>] copy_process+0xb0d/0x11a0
-[  250.561155]                    [<ffffffff810d7034>] do_fork+0x104/0x3d0
-[  250.561155]                    [<ffffffff81074451>] kernel_thread+0x71/0x80
-[  250.561155]                    [<ffffffff834f4bed>] rest_init+0x21/0x144
-[  250.561155]                    [<ffffffff850cbc24>] start_kernel+0x378/0x385
-[  250.561155]                    [<ffffffff850cb397>] x86_64_start_reservations+0x101/0x105
-[  250.561155]                    [<ffffffff850cb480>] x86_64_start_kernel+0xe5/0xf4
-[  250.561155]  }
-[  250.561155]  ... key      at: [<ffffffff8481e018>] tasklist_lock+0x18/0x80
-[  250.561155]  ... acquired at:
-[  250.561155]    [<ffffffff8114886d>] check_usage+0x1bd/0x1e0
-[  250.561155]    [<ffffffff811488fa>] check_irq_usage+0x6a/0xe0
-[  250.561155]    [<ffffffff81148abb>] check_prev_add+0x14b/0x640
-[  250.561155]    [<ffffffff8114906a>] check_prevs_add+0xba/0x1a0
-[  250.561155]    [<ffffffff811497f0>] validate_chain.isra.22+0x6a0/0x7b0
-[  250.561155]    [<ffffffff8114c221>] __lock_acquire+0xaa1/0xb60
-[  250.561155]    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]    [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
-[  250.561155]    [<ffffffff811089da>] posix_cpu_timer_del+0x2a/0x110
-[  250.561155]    [<ffffffff81105a8d>] exit_itimers+0xcd/0x140
-[  250.561155]    [<ffffffff810deea8>] do_exit+0x1b8/0x580
-[  250.561155]    [<ffffffff810df33a>] do_group_exit+0x8a/0xc0
-[  250.561155]    [<ffffffff810df382>] sys_exit_group+0x12/0x20
-[  250.561155]    [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
-[  250.561155]
-[  250.561155]
-[  250.561155] stack backtrace:
-[  250.561155] Pid: 6956, comm: trinity-child15 Tainted: G        W    3.5.0-sasha-01646-g39c0dda #269
-[  250.561155] Call Trace:
-[  250.561155]  [<ffffffff8114868a>] print_bad_irq_dependency+0x2ea/0x310
-[  250.561155]  [<ffffffff8114886d>] check_usage+0x1bd/0x1e0
-[  250.561155]  [<ffffffff8109cc55>] ? pvclock_clocksource_read+0x55/0xe0
-[  250.561155]  [<ffffffff811488fa>] check_irq_usage+0x6a/0xe0
-[  250.561155]  [<ffffffff81148abb>] check_prev_add+0x14b/0x640
-[  250.561155]  [<ffffffff8109cc55>] ? pvclock_clocksource_read+0x55/0xe0
-[  250.561155]  [<ffffffff8114906a>] check_prevs_add+0xba/0x1a0
-[  250.561155]  [<ffffffff81071a15>] ? sched_clock+0x15/0x20
-[  250.561155]  [<ffffffff811497f0>] validate_chain.isra.22+0x6a0/0x7b0
-[  250.561155]  [<ffffffff8114c221>] __lock_acquire+0xaa1/0xb60
-[  250.561155]  [<ffffffff8114c245>] ? __lock_acquire+0xac5/0xb60
-[  250.561155]  [<ffffffff8369a0ac>] ? _raw_spin_unlock_irqrestore+0x7c/0xa0
-[  250.561155]  [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
-[  250.561155]  [<ffffffff811089da>] ? posix_cpu_timer_del+0x2a/0x110
-[  250.561155]  [<ffffffff8114dfde>] ? __lock_acquired+0x2ce/0x360
-[  250.561155]  [<ffffffff81105a10>] ? exit_itimers+0x50/0x140
-[  250.561155]  [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
-[  250.561155]  [<ffffffff811089da>] ? posix_cpu_timer_del+0x2a/0x110
-[  250.561155]  [<ffffffff811089da>] posix_cpu_timer_del+0x2a/0x110
-[  250.561155]  [<ffffffff81105a8d>] exit_itimers+0xcd/0x140
-[  250.561155]  [<ffffffff810deea8>] do_exit+0x1b8/0x580
-[  250.561155]  [<ffffffff810df33a>] do_group_exit+0x8a/0xc0
-[  250.561155]  [<ffffffff810df382>] sys_exit_group+0x12/0x20
-[  250.561155]  [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
+Thanks,
+Amit Daniel
+
+>
+> thanks,
+> Len Brown, Intel Open Source Technology Center
+>
