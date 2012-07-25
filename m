@@ -1,200 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253Ab2GYOkl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:40:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25780 "EHLO mx1.redhat.com"
+	id S933272Ab2GYOlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:41:50 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:39411 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933148Ab2GYOkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:40:40 -0400
-Date: Wed, 25 Jul 2012 10:40:34 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: law@redhat.com, stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] posix_types.h: Cleanup stale __NFDBITS and related
- definitions
-Message-ID: <20120725144033.GK10534@zod.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933148Ab2GYOlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 10:41:49 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
+        <cgroups@vger.kernel.org>
+Subject: [PATCH 00/10] memcg kmem limitation - slab.
+Date: Wed, 25 Jul 2012 18:38:11 +0400
+Message-Id: <1343227101-14217-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, glibc made a change to suppress sign-conversion warnings in FD_SET
-(glibc commit ceb9e56b3d1).  This uncovered an issue with the kernel's
-definition of __NFDBITS if applications #include <linux/types.h> after
-including <sys/select.h>.  A build failure would be seen when passing the
--Werror=sign-compare and -D_FORTIFY_SOURCE=2 flags to gcc.
+Hi,
 
-It was suggested that the kernel should either match the glibc definition of
-__NFDBITS or remove that entirely.  The current in-kernel uses of __NFDBITS
-can be replaced with BITS_PER_LONG, and there are no uses of the related
-__FDELT and __FDMASK defines.  Given that, we'll continue the cleanup that
-was started with commit 8b3d1cda4f5f ("posix_types: Remove fd_set macros")
-and drop the remaining unused macros.
+This is the slab part of the kmem limitation mechanism in its last form.  I
+would like to have comments on it to see if we can agree in its form. I
+consider it mature, since it doesn't change much in essence over the last
+forms. However, I would still prefer to defer merging it and merge the
+stack-only patchset first (even if inside the same merge window). That patchset
+contains most of the infrastructure needed here, and merging them separately
+would not only reduce the complexity for reviewers, but allow us a chance to
+have independent testing on them both. I would also likely benefit from some
+extra testing, to make sure the recent changes didn't introduce anything bad.
 
-Additionally, linux/time.h has similar macros defined that expand to nothing
-so we'll remove those at the same time.
+A general explanation of what this is all about follows:
 
-Reported-by: Jeff Law <law@redhat.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <stable@vger.kernel.org>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
- arch/mips/kernel/kspd.c     |  2 +-
- fs/exec.c                   |  2 +-
- fs/select.c                 | 10 +++++-----
- include/linux/posix_types.h | 18 +++---------------
- include/linux/time.h        |  8 --------
- kernel/exit.c               |  2 +-
- security/selinux/hooks.c    |  2 +-
- 7 files changed, 12 insertions(+), 32 deletions(-)
+The kernel memory limitation mechanism for memcg concerns itself with
+disallowing potentially non-reclaimable allocations to happen in exagerate
+quantities by a particular set of processes (cgroup). Those allocations could
+create pressure that affects the behavior of a different and unrelated set of
+processes.
 
-diff --git a/arch/mips/kernel/kspd.c b/arch/mips/kernel/kspd.c
-index 84d0639..b77f56b 100644
---- a/arch/mips/kernel/kspd.c
-+++ b/arch/mips/kernel/kspd.c
-@@ -323,7 +323,7 @@ static void sp_cleanup(void)
- 	fdt = files_fdtable(files);
- 	for (;;) {
- 		unsigned long set;
--		i = j * __NFDBITS;
-+		i = j * BITS_PER_LONG;
- 		if (i >= fdt->max_fds)
- 			break;
- 		set = fdt->open_fds[j++];
-diff --git a/fs/exec.c b/fs/exec.c
-index da27b91..e95aeed 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1020,7 +1020,7 @@ static void flush_old_files(struct files_struct * files)
- 		unsigned long set, i;
- 
- 		j++;
--		i = j * __NFDBITS;
-+		i = j * BITS_PER_LONG;
- 		fdt = files_fdtable(files);
- 		if (i >= fdt->max_fds)
- 			break;
-diff --git a/fs/select.c b/fs/select.c
-index bae3215..db14c78 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -345,8 +345,8 @@ static int max_select_fd(unsigned long n, fd_set_bits *fds)
- 	struct fdtable *fdt;
- 
- 	/* handle last in-complete long-word first */
--	set = ~(~0UL << (n & (__NFDBITS-1)));
--	n /= __NFDBITS;
-+	set = ~(~0UL << (n & (BITS_PER_LONG-1)));
-+	n /= BITS_PER_LONG;
- 	fdt = files_fdtable(current->files);
- 	open_fds = fdt->open_fds + n;
- 	max = 0;
-@@ -373,7 +373,7 @@ get_max:
- 			max++;
- 			set >>= 1;
- 		} while (set);
--		max += n * __NFDBITS;
-+		max += n * BITS_PER_LONG;
- 	}
- 
- 	return max;
-@@ -435,11 +435,11 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 			in = *inp++; out = *outp++; ex = *exp++;
- 			all_bits = in | out | ex;
- 			if (all_bits == 0) {
--				i += __NFDBITS;
-+				i += BITS_PER_LONG;
- 				continue;
- 			}
- 
--			for (j = 0; j < __NFDBITS; ++j, ++i, bit <<= 1) {
-+			for (j = 0; j < BITS_PER_LONG; ++j, ++i, bit <<= 1) {
- 				int fput_needed;
- 				if (i >= n)
- 					break;
-diff --git a/include/linux/posix_types.h b/include/linux/posix_types.h
-index f04c98c..0eb4b4b 100644
---- a/include/linux/posix_types.h
-+++ b/include/linux/posix_types.h
-@@ -15,26 +15,14 @@
-  */
- 
- /*
-- * Those macros may have been defined in <gnu/types.h>. But we always
-- * use the ones here. 
-+ * This macro may have been defined in <gnu/types.h>. But we always
-+ * use the one here. 
-  */
--#undef __NFDBITS
--#define __NFDBITS	(8 * sizeof(unsigned long))
--
- #undef __FD_SETSIZE
- #define __FD_SETSIZE	1024
- 
--#undef __FDSET_LONGS
--#define __FDSET_LONGS	(__FD_SETSIZE/__NFDBITS)
--
--#undef __FDELT
--#define	__FDELT(d)	((d) / __NFDBITS)
--
--#undef __FDMASK
--#define	__FDMASK(d)	(1UL << ((d) % __NFDBITS))
--
- typedef struct {
--	unsigned long fds_bits [__FDSET_LONGS];
-+	unsigned long fds_bits [__FD_SETSIZE / (8 * sizeof(long))];
- } __kernel_fd_set;
- 
- /* Type of a signal handler.  */
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 179f4d6..c81c5e4 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -257,14 +257,6 @@ static __always_inline void timespec_add_ns(struct timespec *a, u64 ns)
- 
- #endif /* __KERNEL__ */
- 
--#define NFDBITS			__NFDBITS
--
--#define FD_SETSIZE		__FD_SETSIZE
--#define FD_SET(fd,fdsetp)	__FD_SET(fd,fdsetp)
--#define FD_CLR(fd,fdsetp)	__FD_CLR(fd,fdsetp)
--#define FD_ISSET(fd,fdsetp)	__FD_ISSET(fd,fdsetp)
--#define FD_ZERO(fdsetp)		__FD_ZERO(fdsetp)
--
- /*
-  * Names of the interval timers, and structure
-  * defining a timer setting:
-diff --git a/kernel/exit.c b/kernel/exit.c
-index d17f6c4..f65345f 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -483,7 +483,7 @@ static void close_files(struct files_struct * files)
- 	rcu_read_unlock();
- 	for (;;) {
- 		unsigned long set;
--		i = j * __NFDBITS;
-+		i = j * BITS_PER_LONG;
- 		if (i >= fdt->max_fds)
- 			break;
- 		set = fdt->open_fds[j++];
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 689fe2d..94c45a1 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2129,7 +2129,7 @@ static inline void flush_unauthorized_files(const struct cred *cred,
- 		int fd;
- 
- 		j++;
--		i = j * __NFDBITS;
-+		i = j * BITS_PER_LONG;
- 		fdt = files_fdtable(files);
- 		if (i >= fdt->max_fds)
- 			break;
+Its basic working mechanism is to annotate some allocations with the
+_GFP_KMEMCG flag. When this flag is set, the current process allocating will
+have its memcg identified and charged against. When reaching a specific limit,
+further allocations will be denied.
+
+One example of such problematic pressure that can be prevented by this work is
+a fork bomb conducted in a shell. We prevent it by noting that processes use a
+limited amount of stack pages. Seen this way, a fork bomb is just a special
+case of resource abuse. If the offender is unable to grab more pages for the
+stack, no new processes can be created.
+
+There are also other things the general mechanism protects against. For
+example, using too much of pinned dentry and inode cache, by touching files an
+leaving them in memory forever.
+
+In fact, a simple:
+
+while true; do mkdir x; cd x; done
+
+can halt your system easily, because the file system limits are hard to reach
+(big disks), but the kernel memory is not. Those are examples, but the list
+certainly don't stop here.
+
+An important use case for all that is concerned with people offering hosting
+services through containers. In a physical box, we can put a limit to some
+resources, like total number of processes or threads. But in an environment
+where each independent user gets its own piece of the machine, we don't want a
+potentially malicious user to destroy good users' services.
+
+This might be true for systemd as well, that now groups services inside
+cgroups. They generally want to put forward a set of guarantees that limits the
+running service in a variety of ways, so that if they become badly behaved,
+they won't interfere with the rest of the system.
+
+There is, of course, there is a cost for that. To attempt to mitigate that,
+static branches are used to make sure that even if the feature is compiled in
+with potentially a lot of memory cgroups deployed this code will only be
+enabled after the first user of this service configures any limit. Limits lower
+than the user limit effectively means there is a separate kernel memory limit
+that may be reached independently than the user limit. Values equal or greater
+than the user limit implies only that kernel memory is tracked. This provides a
+unified vision of "maximum memory", be it kernel or user memory. Because this
+is all default-off, existing deployments will see no change in behavior.
+
+Glauber Costa (10):
+  slab/slub: struct memcg_params
+  consider a memcg parameter in kmem_create_cache
+  memcg: infrastructure to  match an allocation to the right cache
+  memcg: skip memcg kmem allocations in specified code regions
+  slab: allow enable_cpu_cache to use preset values for its tunables
+  sl[au]b: Allocate objects from memcg cache
+  memcg: destroy memcg caches
+  memcg/sl[au]b Track all the memcg children of a kmem_cache.
+  slab: slab-specific propagation changes.
+  memcg/sl[au]b: shrink dead caches
+
+ include/linux/memcontrol.h |   54 ++++++
+ include/linux/sched.h      |    1 +
+ include/linux/slab.h       |   25 +++
+ include/linux/slab_def.h   |    4 +
+ include/linux/slub_def.h   |   21 ++-
+ init/Kconfig               |    2 +-
+ mm/memcontrol.c            |  414 +++++++++++++++++++++++++++++++++++++++++++-
+ mm/slab.c                  |   57 +++++-
+ mm/slab.h                  |   55 +++++-
+ mm/slab_common.c           |   69 +++++++-
+ mm/slub.c                  |   25 ++-
+ 11 files changed, 702 insertions(+), 25 deletions(-)
+
 -- 
-1.7.11.2
+1.7.10.4
 
