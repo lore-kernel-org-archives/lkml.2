@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871Ab2GYDml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 23:42:41 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46154 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932845Ab2GYDmi (ORCPT
+	id S932888Ab2GYDmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 23:42:45 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:33308 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932845Ab2GYDmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 23:42:38 -0400
+	Tue, 24 Jul 2012 23:42:42 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.linux@gmail.com>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 19/52] drivers/thermal/spear_thermal.c: add Device Tree probing capability
-Date: Tue, 24 Jul 2012 23:41:15 -0400
-Message-Id: <b9c7aff481f19dd655ae3ce6513817d625e2d47c.1343187617.git.len.brown@intel.com>
+Subject: [PATCH 21/52] ACPI: Add _OST support for sysfs eject
+Date: Tue, 24 Jul 2012 23:41:17 -0400
+Message-Id: <c4753e57b78b213f2384fa0dbafa348b087114fa.1343187617.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.rc0
 In-Reply-To: <1343187708-19532-1-git-send-email-lenb@kernel.org>
 References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
@@ -28,168 +25,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viresh Kumar <viresh.linux@gmail.com>
+From: Toshi Kani <toshi.kani@hp.com>
 
-SPEAr platforms now support DT and so must convert all drivers to support
-DT.  This patch adds DT probing support for SPEAr thermal sensor driver
-and updates its documentation too.
+Changed acpi_bus_hot_remove_device() to support _OST. This function is
+also changed to global so that it can be called from hotplug notify
+handlers to perform hot-remove operation.
 
-Also, as SPEAr is the only user of this driver and is only available with
-DT, make this an only DT driver.  So, platform_data is completely removed
-and passed via DT now.
+Changed acpi_eject_store(), which is the sysfs eject handler. It checks
+eject_pending to see if the request was originated from ACPI eject
+notification. If not, it calls _OST(0x103,84,) per Figure 6-37 in ACPI
+5.0 spec.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Vincenzo Frascino <vincenzo.frascino@st.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Added eject_pending bit to acpi_device_flags. This bit is set when the
+kernel has received an ACPI eject notification, but does not initiate
+its hot-remove operation by itself.
+
+Added struct acpi_eject_event. This structure is used to pass extended
+information to acpi_bus_hot_remove_device(), which has a single argument
+to support asynchronous call
+
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- .../devicetree/bindings/thermal/spear-thermal.txt  | 14 ++++++++++++
- drivers/thermal/Kconfig                            |  1 +
- drivers/thermal/spear_thermal.c                    | 26 +++++++++++++---------
- include/linux/platform_data/spear_thermal.h        | 26 ----------------------
- 4 files changed, 31 insertions(+), 36 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/thermal/spear-thermal.txt
- delete mode 100644 include/linux/platform_data/spear_thermal.h
+ drivers/acpi/scan.c     | 58 +++++++++++++++++++++++++++++++++++++++++--------
+ include/acpi/acpi_bus.h |  9 +++++++-
+ 2 files changed, 57 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/thermal/spear-thermal.txt b/Documentation/devicetree/bindings/thermal/spear-thermal.txt
-new file mode 100644
-index 0000000..93e3b67
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/spear-thermal.txt
-@@ -0,0 +1,14 @@
-+* SPEAr Thermal
-+
-+Required properties:
-+- compatible : "st,thermal-spear1340"
-+- reg : Address range of the thermal registers
-+- st,thermal-flags: flags used to enable thermal sensor
-+
-+Example:
-+
-+	thermal@fc000000 {
-+		compatible = "st,thermal-spear1340";
-+		reg = <0xfc000000 0x1000>;
-+		st,thermal-flags = <0x7000>;
-+	};
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 514a691..3ab2bd5 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -23,6 +23,7 @@ config SPEAR_THERMAL
- 	bool "SPEAr thermal sensor driver"
- 	depends on THERMAL
- 	depends on PLAT_SPEAR
-+	depends on OF
- 	help
- 	  Enable this to plug the SPEAr thermal sensor driver into the Linux
- 	  thermal framework
-diff --git a/drivers/thermal/spear_thermal.c b/drivers/thermal/spear_thermal.c
-index c2e32df..ca40d36 100644
---- a/drivers/thermal/spear_thermal.c
-+++ b/drivers/thermal/spear_thermal.c
-@@ -20,9 +20,9 @@
- #include <linux/err.h>
- #include <linux/io.h>
- #include <linux/kernel.h>
-+#include <linux/of.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
--#include <linux/platform_data/spear_thermal.h>
- #include <linux/thermal.h>
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 85cbfdc..bea3ab6 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -83,19 +83,29 @@ acpi_device_modalias_show(struct device *dev, struct device_attribute *attr, cha
+ }
+ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
  
- #define MD_FACTOR	1000
-@@ -103,21 +103,20 @@ static int spear_thermal_probe(struct platform_device *pdev)
+-static void acpi_bus_hot_remove_device(void *context)
++/**
++ * acpi_bus_hot_remove_device: hot-remove a device and its children
++ * @context: struct acpi_eject_event pointer (freed in this func)
++ *
++ * Hot-remove a device and its children. This function frees up the
++ * memory space passed by arg context, so that the caller may call
++ * this function asynchronously through acpi_os_hotplug_execute().
++ */
++void acpi_bus_hot_remove_device(void *context)
  {
- 	struct thermal_zone_device *spear_thermal = NULL;
- 	struct spear_thermal_dev *stdev;
--	struct spear_thermal_pdata *pdata;
--	int ret = 0;
-+	struct device_node *np = pdev->dev.of_node;
- 	struct resource *stres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	int ret = 0, val;
-+
-+	if (!np || !of_property_read_u32(np, "st,thermal-flags", &val)) {
-+		dev_err(&pdev->dev, "Failed: DT Pdata not passed\n");
-+		return -EINVAL;
++	struct acpi_eject_event *ej_event = (struct acpi_eject_event *) context;
+ 	struct acpi_device *device;
+-	acpi_handle handle = context;
++	acpi_handle handle = ej_event->handle;
+ 	struct acpi_object_list arg_list;
+ 	union acpi_object arg;
+ 	acpi_status status = AE_OK;
++	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+ 
+ 	if (acpi_bus_get_device(handle, &device))
+-		return;
++		goto err_out;
+ 
+ 	if (!device)
+-		return;
++		goto err_out;
+ 
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 		"Hot-removing device %s...\n", dev_name(&device->dev)));
+@@ -103,7 +113,7 @@ static void acpi_bus_hot_remove_device(void *context)
+ 	if (acpi_bus_trim(device, 1)) {
+ 		printk(KERN_ERR PREFIX
+ 				"Removing device failed\n");
+-		return;
++		goto err_out;
+ 	}
+ 
+ 	/* power off device */
+@@ -129,10 +139,21 @@ static void acpi_bus_hot_remove_device(void *context)
+ 	 * TBD: _EJD support.
+ 	 */
+ 	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
+-	if (ACPI_FAILURE(status))
+-		printk(KERN_WARNING PREFIX
+-				"Eject device failed\n");
++	if (ACPI_FAILURE(status)) {
++		if (status != AE_NOT_FOUND)
++			printk(KERN_WARNING PREFIX
++					"Eject device failed\n");
++		goto err_out;
 +	}
++
++	kfree(context);
++	return;
  
- 	if (!stres) {
- 		dev_err(&pdev->dev, "memory resource missing\n");
- 		return -ENODEV;
- 	}
- 
--	pdata = dev_get_platdata(&pdev->dev);
--	if (!pdata) {
--		dev_err(&pdev->dev, "platform data is NULL\n");
--		return -EINVAL;
--	}
--
- 	stdev = devm_kzalloc(&pdev->dev, sizeof(*stdev), GFP_KERNEL);
- 	if (!stdev) {
- 		dev_err(&pdev->dev, "kzalloc fail\n");
-@@ -144,7 +143,7 @@ static int spear_thermal_probe(struct platform_device *pdev)
- 		goto put_clk;
- 	}
- 
--	stdev->flags = pdata->thermal_flags;
-+	stdev->flags = val;
- 	writel_relaxed(stdev->flags, stdev->thermal_base);
- 
- 	spear_thermal = thermal_zone_device_register("spear_thermal", 0,
-@@ -189,6 +188,12 @@ static int spear_thermal_exit(struct platform_device *pdev)
- 	return 0;
++err_out:
++	/* Inform firmware the hot-remove operation has completed w/ error */
++	(void) acpi_evaluate_hotplug_ost(handle,
++				ej_event->event, ost_code, NULL);
++	kfree(context);
+ 	return;
  }
  
-+static const struct of_device_id spear_thermal_id_table[] = {
-+	{ .compatible = "st,thermal-spear1340" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, spear_thermal_id_table);
+@@ -144,6 +165,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+ 	acpi_status status;
+ 	acpi_object_type type = 0;
+ 	struct acpi_device *acpi_device = to_acpi_device(d);
++	struct acpi_eject_event *ej_event;
+ 
+ 	if ((!count) || (buf[0] != '1')) {
+ 		return -EINVAL;
+@@ -160,7 +182,25 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+ 		goto err;
+ 	}
+ 
+-	acpi_os_hotplug_execute(acpi_bus_hot_remove_device, acpi_device->handle);
++	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
++	if (!ej_event) {
++		ret = -ENOMEM;
++		goto err;
++	}
 +
- static struct platform_driver spear_thermal_driver = {
- 	.probe = spear_thermal_probe,
- 	.remove = spear_thermal_exit,
-@@ -196,6 +201,7 @@ static struct platform_driver spear_thermal_driver = {
- 		.name = "spear_thermal",
- 		.owner = THIS_MODULE,
- 		.pm = &spear_thermal_pm_ops,
-+		.of_match_table = of_match_ptr(spear_thermal_id_table),
- 	},
++	ej_event->handle = acpi_device->handle;
++	if (acpi_device->flags.eject_pending) {
++		/* event originated from ACPI eject notification */
++		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
++		acpi_device->flags.eject_pending = 0;
++	} else {
++		/* event originated from user */
++		ej_event->event = ACPI_OST_EC_OSPM_EJECT;
++		(void) acpi_evaluate_hotplug_ost(ej_event->handle,
++			ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
++	}
++
++	acpi_os_hotplug_execute(acpi_bus_hot_remove_device, (void *)ej_event);
+ err:
+ 	return ret;
+ }
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 1139f3a..62eb514 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -182,7 +182,8 @@ struct acpi_device_flags {
+ 	u32 suprise_removal_ok:1;
+ 	u32 power_manageable:1;
+ 	u32 performance_manageable:1;
+-	u32 reserved:24;
++	u32 eject_pending:1;
++	u32 reserved:23;
  };
  
-diff --git a/include/linux/platform_data/spear_thermal.h b/include/linux/platform_data/spear_thermal.h
-deleted file mode 100644
-index 724f2e1..0000000
---- a/include/linux/platform_data/spear_thermal.h
-+++ /dev/null
-@@ -1,26 +0,0 @@
--/*
-- * SPEAr thermal driver platform data.
-- *
-- * Copyright (C) 2011-2012 ST Microelectronics
-- * Author: Vincenzo Frascino <vincenzo.frascino@st.com>
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--#ifndef SPEAR_THERMAL_H
--#define SPEAR_THERMAL_H
--
--/* SPEAr Thermal Sensor Platform Data */
--struct spear_thermal_pdata {
--	/* flags used to enable thermal sensor */
--	unsigned int thermal_flags;
--};
--
--#endif /* SPEAR_THERMAL_H */
+ /* File System */
+@@ -334,6 +335,11 @@ struct acpi_bus_event {
+ 	u32 data;
+ };
+ 
++struct acpi_eject_event {
++	acpi_handle	handle;
++	u32		event;
++};
++
+ extern struct kobject *acpi_kobj;
+ extern int acpi_bus_generate_netlink_event(const char*, const char*, u8, int);
+ void acpi_bus_private_data_handler(acpi_handle, void *);
+@@ -371,6 +377,7 @@ int acpi_bus_register_driver(struct acpi_driver *driver);
+ void acpi_bus_unregister_driver(struct acpi_driver *driver);
+ int acpi_bus_add(struct acpi_device **child, struct acpi_device *parent,
+ 		 acpi_handle handle, int type);
++void acpi_bus_hot_remove_device(void *context);
+ int acpi_bus_trim(struct acpi_device *start, int rmdevice);
+ int acpi_bus_start(struct acpi_device *device);
+ acpi_status acpi_bus_get_ejd(acpi_handle handle, acpi_handle * ejd);
 -- 
 1.7.12.rc0
 
