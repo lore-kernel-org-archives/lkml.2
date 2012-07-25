@@ -1,76 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab2GYU1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 16:27:39 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35154 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab2GYU1h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 16:27:37 -0400
-Date: Wed, 25 Jul 2012 13:26:43 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] page-table walkers vs memory order
-In-Reply-To: <20120725175628.GH2378@linux.vnet.ibm.com>
-Message-ID: <alpine.LSU.2.00.1207251313180.1942@eggly.anvils>
-References: <1343064870.26034.23.camel@twins> <alpine.LSU.2.00.1207241356350.2094@eggly.anvils> <20120725175628.GH2378@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752752Ab2GYUcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 16:32:35 -0400
+Received: from mail.tpi.com ([70.99.223.143]:2890 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752086Ab2GYUce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 16:32:34 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Matthieu CASTET <castet.matthieu@free.fr>,
+        Stanislaw Gruszka <stf_xl@wp.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH] ueagle-atm: Declare MODULE_FIRMWARE usage
+Date: Wed, 25 Jul 2012 14:32:50 -0600
+Message-Id: <1343248370-57021-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jul 2012, Paul E. McKenney wrote:
-> On Tue, Jul 24, 2012 at 02:51:05PM -0700, Hugh Dickins wrote:
-> > 
-> > I'm totally unclear whether the kernel ever gets built with these
-> > 'creative' compilers that you refer to.  Is ACCESS_ONCE() a warning
-> > of where some future compiler would be permitted to mess with our
-> > assumptions?  Or is it actually saving us already today?  Would we
-> > know?  Could there be a boottime test that would tell us?  Is it
-> > likely that a future compiler would have an "--access_once"
-> > option that the kernel build would want to turn on?
-> 
-> The problem is that, unless you tell it otherwise, the compiler is
-> permitted to assume that the code that it is generating is the only thing
-> active in that address space at that time.  So the compiler might know
-> that it already has a perfectly good copy of that value somewhere in
-> its registers, or it might decide to fetch the value twice rather than
-> once due to register pressure, either of which can be fatal in SMP code.
-> And then there are more aggressive optimizations as well.
-> 
-> ACCESS_ONCE() is a way of telling the compiler to access the value
-> once, regardless of what cute single-threaded optimizations that it
-> otherwise might want to apply.
+Cc: Matthieu CASTET <castet.matthieu@free.fr>
+Cc: Stanislaw Gruszka <stf_xl@wp.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/usb/atm/ueagle-atm.c |   79 +++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 66 insertions(+), 13 deletions(-)
 
-Right, but you say "might": I have never heard it asserted, that we do
-build the kernel with a compiler which actually makes such optimizations.
+diff --git a/drivers/usb/atm/ueagle-atm.c b/drivers/usb/atm/ueagle-atm.c
+index d7e422d..e1f8b2c 100644
+--- a/drivers/usb/atm/ueagle-atm.c
++++ b/drivers/usb/atm/ueagle-atm.c
+@@ -307,6 +307,34 @@ enum {
+ #define FW_GET_BYTE(p) (*((__u8 *) (p)))
+ 
+ #define FW_DIR "ueagle-atm/"
++#define EAGLE_FIRMWARE FW_DIR "eagle.fw"
++#define ADI930_FIRMWARE FW_DIR "adi930.fw"
++#define EAGLE_I_FIRMWARE FW_DIR "eagleI.fw"
++#define EAGLE_II_FIRMWARE FW_DIR "eagleII.fw"
++#define EAGLE_III_FIRMWARE FW_DIR "eagleIII.fw"
++#define EAGLE_IV_FIRMWARE FW_DIR "eagleIV.fw"
++
++#define DSP4I_FIRMWARE FW_DIR "DSP4i.bin"
++#define DSP4P_FIRMWARE FW_DIR "DSP4p.bin"
++#define DSP9I_FIRMWARE FW_DIR "DSP9i.bin"
++#define DSP9P_FIRMWARE FW_DIR "DSP9p.bin"
++#define DSPEI_FIRMWARE FW_DIR "DSPei.bin"
++#define DSPEP_FIRMWARE FW_DIR "DSPep.bin"
++#define FPGA930_FIRMWARE FW_DIR "930-fpga.bin"
++
++#define CMV4P_FIRMWARE FW_DIR "CMV4p.bin"
++#define CMV4PV2_FIRMWARE FW_DIR "CMV4p.bin.v2"
++#define CMV4I_FIRMWARE FW_DIR "CMV4i.bin"
++#define CMV4IV2_FIRMWARE FW_DIR "CMV4i.bin.v2"
++#define CMV9P_FIRMWARE FW_DIR "CMV9p.bin"
++#define CMV9PV2_FIRMWARE FW_DIR "CMV9p.bin.v2"
++#define CMV9I_FIRMWARE FW_DIR "CMV9i.bin"
++#define CMV9IV2_FIRMWARE FW_DIR "CMV9i.bin.v2"
++#define CMVEP_FIRMWARE FW_DIR "CMVep.bin"
++#define CMVEPV2_FIRMWARE FW_DIR "CMVep.bin.v2"
++#define CMVEI_FIRMWARE FW_DIR "CMVei.bin"
++#define CMVEIV2_FIRMWARE FW_DIR "CMVei.bin.v2"
++
+ #define UEA_FW_NAME_MAX 30
+ #define NB_MODEM 4
+ 
+@@ -694,26 +722,26 @@ err:
+ static int uea_load_firmware(struct usb_device *usb, unsigned int ver)
+ {
+ 	int ret;
+-	char *fw_name = FW_DIR "eagle.fw";
++	char *fw_name = EAGLE_FIRMWARE;
+ 
+ 	uea_enters(usb);
+ 	uea_info(usb, "pre-firmware device, uploading firmware\n");
+ 
+ 	switch (ver) {
+ 	case ADI930:
+-		fw_name = FW_DIR "adi930.fw";
++		fw_name = ADI930_FIRMWARE;
+ 		break;
+ 	case EAGLE_I:
+-		fw_name = FW_DIR "eagleI.fw";
++		fw_name = EAGLE_I_FIRMWARE;
+ 		break;
+ 	case EAGLE_II:
+-		fw_name = FW_DIR "eagleII.fw";
++		fw_name = EAGLE_II_FIRMWARE;
+ 		break;
+ 	case EAGLE_III:
+-		fw_name = FW_DIR "eagleIII.fw";
++		fw_name = EAGLE_III_FIRMWARE;
+ 		break;
+ 	case EAGLE_IV:
+-		fw_name = FW_DIR "eagleIV.fw";
++		fw_name = EAGLE_IV_FIRMWARE;
+ 		break;
+ 	}
+ 
+@@ -869,19 +897,19 @@ static int request_dsp(struct uea_softc *sc)
+ 
+ 	if (UEA_CHIP_VERSION(sc) == EAGLE_IV) {
+ 		if (IS_ISDN(sc))
+-			dsp_name = FW_DIR "DSP4i.bin";
++			dsp_name = DSP4I_FIRMWARE;
+ 		else
+-			dsp_name = FW_DIR "DSP4p.bin";
++			dsp_name = DSP4P_FIRMWARE;
+ 	} else if (UEA_CHIP_VERSION(sc) == ADI930) {
+ 		if (IS_ISDN(sc))
+-			dsp_name = FW_DIR "DSP9i.bin";
++			dsp_name = DSP9I_FIRMWARE;
+ 		else
+-			dsp_name = FW_DIR "DSP9p.bin";
++			dsp_name = DSP9P_FIRMWARE;
+ 	} else {
+ 		if (IS_ISDN(sc))
+-			dsp_name = FW_DIR "DSPei.bin";
++			dsp_name = DSPEI_FIRMWARE;
+ 		else
+-			dsp_name = FW_DIR "DSPep.bin";
++			dsp_name = DSPEP_FIRMWARE;
+ 	}
+ 
+ 	ret = request_firmware(&sc->dsp_firm, dsp_name, &sc->usb_dev->dev);
+@@ -1925,7 +1953,7 @@ static int load_XILINX_firmware(struct uea_softc *sc)
+ 	int ret, size, u, ln;
+ 	const u8 *pfw;
+ 	u8 value;
+-	char *fw_name = FW_DIR "930-fpga.bin";
++	char *fw_name = FPGA930_FIRMWARE;
+ 
+ 	uea_enters(INS_TO_USBDEV(sc));
+ 
+@@ -2753,3 +2781,28 @@ module_usb_driver(uea_driver);
+ MODULE_AUTHOR("Damien Bergamini/Matthieu Castet/Stanislaw W. Gruszka");
+ MODULE_DESCRIPTION("ADI 930/Eagle USB ADSL Modem driver");
+ MODULE_LICENSE("Dual BSD/GPL");
++MODULE_FIRMWARE(EAGLE_FIRMWARE);
++MODULE_FIRMWARE(ADI930_FIRMWARE);
++MODULE_FIRMWARE(EAGLE_I_FIRMWARE);
++MODULE_FIRMWARE(EAGLE_II_FIRMWARE);
++MODULE_FIRMWARE(EAGLE_III_FIRMWARE);
++MODULE_FIRMWARE(EAGLE_IV_FIRMWARE);
++MODULE_FIRMWARE(DSP4I_FIRMWARE);
++MODULE_FIRMWARE(DSP4P_FIRMWARE);
++MODULE_FIRMWARE(DSP9I_FIRMWARE);
++MODULE_FIRMWARE(DSP9P_FIRMWARE);
++MODULE_FIRMWARE(DSPEI_FIRMWARE);
++MODULE_FIRMWARE(DSPEP_FIRMWARE);
++MODULE_FIRMWARE(FPGA930_FIRMWARE);
++MODULE_FIRMWARE(CMV4P_FIRMWARE);
++MODULE_FIRMWARE(CMV4PV2_FIRMWARE);
++MODULE_FIRMWARE(CMV4I_FIRMWARE);
++MODULE_FIRMWARE(CMV4IV2_FIRMWARE);
++MODULE_FIRMWARE(CMV9P_FIRMWARE);
++MODULE_FIRMWARE(CMV9PV2_FIRMWARE);
++MODULE_FIRMWARE(CMV9I_FIRMWARE);
++MODULE_FIRMWARE(CMV9IV2_FIRMWARE);
++MODULE_FIRMWARE(CMVEP_FIRMWARE);
++MODULE_FIRMWARE(CMVEPV2_FIRMWARE);
++MODULE_FIRMWARE(CMVEI_FIRMWARE);
++MODULE_FIRMWARE(CMVEIV2_FIRMWARE);
+-- 
+1.7.9.5
 
-There's a lot of other surprising things which a compiler is permitted
-to do, but we would simply not use such a compiler to build the kernel.
-
-Does some version of gcc, under the options which we insist upon,
-make such optimizations on any of the architectures which we support?
-
-Or is there some other compiler in use on the kernel, which makes
-such optimizations?  It seems a long time since I heard of building
-the kernel with icc.  clang?
-
-I don't mind the answer "Yes, you idiot" - preferably with an example
-or two of which compiler and which piece of code it has bitten us on.
-I don't mind the answer "We just don't know" if that's the case.
-
-But I'd like a better idea of how much to worry: is ACCESS_ONCE
-demonstrably needed today, or rather future-proofing and documentation?
-
-Thanks,
-Hugh
