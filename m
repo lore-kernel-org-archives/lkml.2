@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751193Ab2GYRLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:11:10 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:47861 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab2GYRLH (ORCPT
+	id S1751542Ab2GYRN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:13:29 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:29770 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750961Ab2GYRN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:11:07 -0400
-Date: Wed, 25 Jul 2012 19:11:02 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Subject: Re: [PATCH 16/17] perf, tool: Add dso data caching
-Message-ID: <20120725171059.GF1173@somewhere.redhat.com>
-References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
- <1342959280-5361-17-git-send-email-jolsa@redhat.com>
+	Wed, 25 Jul 2012 13:13:28 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: rzg1zs4VM1kEcmr1SbAjMhLpqb_U7wdt358ppfFsW7ao1qF
+ peVYMKAYR3M3H0GsmYa5N4hxZj8iBqXzZ6dQsjab9xjWWloXBk0EEpVrcnPE
+ IIy4UONQAYfnq_rlrm5oypGXzb.HoNeNGEjvjvmywT25KeBAmO4VRtilg_S1
+ kQoR27wa9Yg8rnA0vBExL5btO.rEtVq1QZ3zNXjuLkfQJkLaUq9wBM9ni1iz
+ sd0J1NVDWxc9UrI04Bnigp_3pZ.QnIlX7idFPN0uluw195411Dv0JEsnb4S.
+ L_tlv72NfOUYsVTOENanYIveB.Q.VOnnq1pTluOwvrlrw02NaY0AOBRS5vck
+ LBUitWmVSeH.d6q351TPhj_lyfpzPVqZb1VYvm139Cn9gI4XpNVNLx_5BoZ7
+ TMAIoNzVDDFZ_VuFP
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 25 Jul 2012 12:13:23 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org,
+        cgroups@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 10/10] memcg/sl[au]b: shrink dead caches
+In-Reply-To: <1343227101-14217-11-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1207251207180.3543@router.home>
+References: <1343227101-14217-1-git-send-email-glommer@parallels.com> <1343227101-14217-11-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342959280-5361-17-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 02:14:39PM +0200, Jiri Olsa wrote:
-> Adding dso data caching so we don't need to open/read/close,
-> each time we want dso data.
-> 
-> The DSO data caching affects following functions:
->   dso__data_read_offset
->   dso__data_read_addr
-> 
-> Each DSO read tries to find the data (based on offset) inside
-> the cache. If it's not present it fills the cache from file,
-> and returns the data. If it is present, data are returned
-> with no file read.
-> 
-> Each data read is cached by reading cache page sized/aligned
-> amount of DSO data. The cache page size is hardcoded to 4096.
-> The cache is using RB tree with file offset as a sort key.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+On Wed, 25 Jul 2012, Glauber Costa wrote:
 
-Nice idea.
+> In the slub allocator, when the last object of a page goes away, we
+> don't necessarily free it - there is not necessarily a test for empty
+> page in any slab_free path.
 
-> ---
->  tools/perf/util/symbol.c |  154 ++++++++++++++++++++++++++++++++++++++++------
+That is true for the slab allocator as well. In either case calling
+kmem_cache_shrink() will make the objects go away by draining the cached
+objects and freeing the pages used for the objects back to the page
+allocator. You do not need this patch. Just call the proper functions to
+drop the objecgts in the caches in either allocator.
 
-There seem to be an increasing need to move dso related things
-to some util/dso.c file. Just suggesting.
+> The slab allocator has a time based reaper that would eventually get rid
+> of the objects, but we can also call it explicitly, since dead caches
+> are not a likely event.
+
+So this is already for both allocators?
