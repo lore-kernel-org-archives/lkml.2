@@ -1,116 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933272Ab2GYOlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:41:50 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39411 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933148Ab2GYOlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:41:49 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        <cgroups@vger.kernel.org>
-Subject: [PATCH 00/10] memcg kmem limitation - slab.
-Date: Wed, 25 Jul 2012 18:38:11 +0400
-Message-Id: <1343227101-14217-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S933284Ab2GYOmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:42:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43053 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933228Ab2GYOmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 10:42:20 -0400
+Date: Wed, 25 Jul 2012 16:42:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/cleanups for v3.6
+Message-ID: <20120725144214.GA31167@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus,
 
-This is the slab part of the kmem limitation mechanism in its last form.  I
-would like to have comments on it to see if we can agree in its form. I
-consider it mature, since it doesn't change much in essence over the last
-forms. However, I would still prefer to defer merging it and merge the
-stack-only patchset first (even if inside the same merge window). That patchset
-contains most of the infrastructure needed here, and merging them separately
-would not only reduce the complexity for reviewers, but allow us a chance to
-have independent testing on them both. I would also likely benefit from some
-extra testing, to make sure the recent changes didn't introduce anything bad.
+Please pull the latest x86-cleanups-for-linus git tree from:
 
-A general explanation of what this is all about follows:
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cleanups-for-linus
 
-The kernel memory limitation mechanism for memcg concerns itself with
-disallowing potentially non-reclaimable allocations to happen in exagerate
-quantities by a particular set of processes (cgroup). Those allocations could
-create pressure that affects the behavior of a different and unrelated set of
-processes.
+   HEAD: e5a7286b5f1b0b5beb97275f2152bf10c4aa4204 x86, boot: Remove ancient, unconditionally #ifdef'd out dead code
 
-Its basic working mechanism is to annotate some allocations with the
-_GFP_KMEMCG flag. When this flag is set, the current process allocating will
-have its memcg identified and charged against. When reaching a specific limit,
-further allocations will be denied.
+Just a single cleanup.
 
-One example of such problematic pressure that can be prevented by this work is
-a fork bomb conducted in a shell. We prevent it by noting that processes use a
-limited amount of stack pages. Seen this way, a fork bomb is just a special
-case of resource abuse. If the offender is unable to grab more pages for the
-stack, no new processes can be created.
+ Thanks,
 
-There are also other things the general mechanism protects against. For
-example, using too much of pinned dentry and inode cache, by touching files an
-leaving them in memory forever.
+	Ingo
 
-In fact, a simple:
+------------------>
+Paul Bolle (1):
+      x86, boot: Remove ancient, unconditionally #ifdef'd out dead code
 
-while true; do mkdir x; cd x; done
 
-can halt your system easily, because the file system limits are hard to reach
-(big disks), but the kernel memory is not. Those are examples, but the list
-certainly don't stop here.
+ arch/x86/boot/header.S |    7 -------
+ 1 file changed, 7 deletions(-)
 
-An important use case for all that is concerned with people offering hosting
-services through containers. In a physical box, we can put a limit to some
-resources, like total number of processes or threads. But in an environment
-where each independent user gets its own piece of the machine, we don't want a
-potentially malicious user to destroy good users' services.
-
-This might be true for systemd as well, that now groups services inside
-cgroups. They generally want to put forward a set of guarantees that limits the
-running service in a variety of ways, so that if they become badly behaved,
-they won't interfere with the rest of the system.
-
-There is, of course, there is a cost for that. To attempt to mitigate that,
-static branches are used to make sure that even if the feature is compiled in
-with potentially a lot of memory cgroups deployed this code will only be
-enabled after the first user of this service configures any limit. Limits lower
-than the user limit effectively means there is a separate kernel memory limit
-that may be reached independently than the user limit. Values equal or greater
-than the user limit implies only that kernel memory is tracked. This provides a
-unified vision of "maximum memory", be it kernel or user memory. Because this
-is all default-off, existing deployments will see no change in behavior.
-
-Glauber Costa (10):
-  slab/slub: struct memcg_params
-  consider a memcg parameter in kmem_create_cache
-  memcg: infrastructure to  match an allocation to the right cache
-  memcg: skip memcg kmem allocations in specified code regions
-  slab: allow enable_cpu_cache to use preset values for its tunables
-  sl[au]b: Allocate objects from memcg cache
-  memcg: destroy memcg caches
-  memcg/sl[au]b Track all the memcg children of a kmem_cache.
-  slab: slab-specific propagation changes.
-  memcg/sl[au]b: shrink dead caches
-
- include/linux/memcontrol.h |   54 ++++++
- include/linux/sched.h      |    1 +
- include/linux/slab.h       |   25 +++
- include/linux/slab_def.h   |    4 +
- include/linux/slub_def.h   |   21 ++-
- init/Kconfig               |    2 +-
- mm/memcontrol.c            |  414 +++++++++++++++++++++++++++++++++++++++++++-
- mm/slab.c                  |   57 +++++-
- mm/slab.h                  |   55 +++++-
- mm/slab_common.c           |   69 +++++++-
- mm/slub.c                  |   25 ++-
- 11 files changed, 702 insertions(+), 25 deletions(-)
-
--- 
-1.7.10.4
-
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 8bbea6a..fde5bde 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -386,13 +386,6 @@ init_size:		.long INIT_SIZE		# kernel initialization size
+ 
+ 	.section ".entrytext", "ax"
+ start_of_setup:
+-#ifdef SAFE_RESET_DISK_CONTROLLER
+-# Reset the disk controller.
+-	movw	$0x0000, %ax		# Reset disk controller
+-	movb	$0x80, %dl		# All disks
+-	int	$0x13
+-#endif
+-
+ # Force %es = %ds
+ 	movw	%ds, %ax
+ 	movw	%ax, %es
