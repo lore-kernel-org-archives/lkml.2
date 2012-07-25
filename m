@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042Ab2GYNML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 09:12:11 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:25362 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933007Ab2GYNMI (ORCPT
+	id S933007Ab2GYNNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 09:13:24 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:41694
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754130Ab2GYNNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 09:12:08 -0400
-Date: Wed, 25 Jul 2012 09:03:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 48/52] tools/power: turbostat: fix large c1% issue
-Message-ID: <20120725130314.GB4783@phenom.dumpdata.com>
-References: <6af1c4fc5227af65092ebc848989693562bfa3e8.1343187617.git.len.brown@intel.com>
- <c3ae331d1c2fe25edfbece73fda0bb312445b636.1343187618.git.len.brown@intel.com>
+	Wed, 25 Jul 2012 09:13:23 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -13
+X-BigFish: VS-13(zz98dI9371I542M1432Izz1202hzz8275bh186Mz2fh2a8h683h839h93fhd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>
+Subject: RE: [PATCH 1/1] Drivers: hv: Cleanup the guest ID computation
+Thread-Topic: [PATCH 1/1] Drivers: hv: Cleanup the guest ID computation
+Thread-Index: AQHNae+sL9Mcy5ytHkK/2crRs+eVQZc5p8uAgABSL0A=
+Date: Wed, 25 Jul 2012 13:12:20 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9236A8ADA@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1343171518-15189-1-git-send-email-kys@microsoft.com>
+ <20120725081647.GB22443@aepfle.de>
+In-Reply-To: <20120725081647.GB22443@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [108.24.39.100]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c3ae331d1c2fe25edfbece73fda0bb312445b636.1343187618.git.len.brown@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC101.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6PDDU4d015425
 
-On Tue, Jul 24, 2012 at 11:41:44PM -0400, Len Brown wrote:
-> From: Len Brown <len.brown@intel.com>
-> 
-> Under some conditions, c1% was displayed as very large number,
-> much higher than 100%.
-> 
-> c1% is not measured, it is derived as "that, which is left over"
-> from other counters.  However, the other counters are not collected
-> atomically, and so it is possible for c1% to be calaculagted as
 
-calculated.
 
-> a small negative number -- displayed as very large positive.
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Wednesday, July 25, 2012 4:17 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com
+> Subject: Re: [PATCH 1/1] Drivers: hv: Cleanup the guest ID computation
 > 
-> There was a check for mperf vs tsc for this already,
-> but it needed to also include the other counters
-> that are used to calculate c1.
+> On Tue, Jul 24, K. Y. Srinivasan wrote:
 > 
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> ---
->  tools/power/x86/turbostat/turbostat.c | 12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
 > 
-> diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-> index b815a12..861d771 100644
-> --- a/tools/power/x86/turbostat/turbostat.c
-> +++ b/tools/power/x86/turbostat/turbostat.c
-> @@ -444,6 +444,9 @@ delta_core(struct core_data *new, struct core_data *old)
->  	old->c7 = new->c7 - old->c7;
->  }
->  
-> +/*
-> + * old = new - old
-> + */
->  void
->  delta_thread(struct thread_data *new, struct thread_data *old,
->  	struct core_data *core_delta)
-> @@ -482,19 +485,20 @@ delta_thread(struct thread_data *new, struct thread_data *old,
->  
->  
->  	/*
-> -	 * As mperf and tsc collection are not atomic,
-> -	 * it is possible for mperf's non-halted cycles
-> +	 * As counter collection is not atomic,
-> +	 * it is possible for mperf's non-halted cycles + idle states
->  	 * to exceed TSC's all cycles: show c1 = 0% in that case.
->  	 */
-> -	if (old->mperf > old->tsc)
-> +	if ((old->mperf + core_delta->c3 + core_delta->c6 + core_delta->c7) > old->tsc)
->  		old->c1 = 0;
->  	else {
->  		/* normal case, derive c1 */
->  		old->c1 = old->tsc - old->mperf - core_delta->c3
->  				- core_delta->c6 - core_delta->c7;
->  	}
-> +
->  	if (old->mperf == 0) {
-> -		if (verbose) fprintf(stderr, "cpu%d MPERF 0!\n", old->cpu_id);
-> +		if (verbose > 1) fprintf(stderr, "cpu%d MPERF 0!\n", old->cpu_id);
->  		old->mperf = 1;	/* divide by 0 protection */
->  	}
->  
-> -- 
-> 1.7.12.rc0
+> > +/*
+> > + * The guest OS needs to register the guest ID with the hypervisor.
+> > + * The guest ID is a 64 bit entity and the structure of this ID is
+> > + * specified in the Hyper-V specification:
+> > + *
+> > + * http://msdn.microsoft.com/en-us/library/windows/
+> > + * hardware/ff542653%28v=vs.85%29.aspx
+> > + *
+> > + * While the current guideline does not specify how Linux guest ID(s)
+> > + * need to be generated, our plan is to publish the guidelines for
+> > + * Linux and other guest operating systems that currently are hosted
+> > + * on Hyper-V. The implementation here conforms to this yet
+> > + * unpublished guidelines.
+> > + *
+> > + *
+> > + * Bit(s)
+> > + * 63 - Indicates if the OS is Open Source or not; 1 is Open Source
+> > + * 62:56 - Os Type; Linux is 0x100
+> > + * 55:48 - Distro specific identification
+> > + * 47:16 - Linux kernel version number
+> > + * 15:0  - Distro specific identification
+> > + *
+> > + *
+> > + */
+> > +
+> > +#define HV_LINUX_VENDOR_ID		0x8100
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I suggest to drop bit 63, why would the hypervisor care about that
+> weird detail?
+
+Hypervisor does not care, but on the host side we plan to use this to track
+the kind of guest operating systems currently hosted.
+
+Regards,
+
+K. Y
+ 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
