@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab2GYQHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:07:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54401 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091Ab2GYQHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:07:53 -0400
-Date: Wed, 25 Jul 2012 17:07:49 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Stable <stable@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/34] mm: compaction: Allow compaction to isolate dirty
- pages
-Message-ID: <20120725160749.GD9222@suse.de>
-References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
- <1343050727-3045-17-git-send-email-mgorman@suse.de>
- <20120725154745.GB18901@kroah.com>
+	id S1755990Ab2GYQKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:10:44 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38030 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755497Ab2GYQKm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 12:10:42 -0400
+Date: Wed, 25 Jul 2012 12:10:41 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: tglx@linutronix.de, <mingo@kernel.org>, <peterz@infradead.org>,
+        <rusty@rustcorp.com.au>, <paulmck@linux.vnet.ibm.com>,
+        <namhyung@kernel.org>, <tj@kernel.org>, <rjw@sisk.pl>,
+        <nikunj@linux.vnet.ibm.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
+ during CPU hotplug
+In-Reply-To: <50101733.4030205@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1207251205500.2008-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120725154745.GB18901@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 08:47:45AM -0700, Greg KH wrote:
-> On Mon, Jul 23, 2012 at 02:38:29PM +0100, Mel Gorman wrote:
-> > commit a77ebd333cd810d7b680d544be88c875131c2bd3 upstream.
-> > 
-> > Stable note: Not tracked in Bugzilla. A fix aimed at preserving page aging
-> > 	information by reducing LRU list churning had the side-effect of
-> > 	reducing THP allocation success rates. This was part of a series
-> > 	to restore the success rates while preserving the reclaim fix.
-> > 
-> > Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
-> > noted that compaction does not migrate dirty or writeback pages and
-> > that is was meaningless to pick the page and re-add it to the LRU list.
-> > 
-> > What was missed during review is that asynchronous migration moves
-> > dirty pages if their ->migratepage callback is migrate_page() because
-> > these can be moved without blocking. This potentially impacted
-> > hugepage allocation success rates by a factor depending on how many
-> > dirty pages are in the system.
-> > 
-> > This patch partially reverts 39deaf85 to allow migration to isolate
-> > dirty pages again. This increases how much compaction disrupts the
-> > LRU but that is addressed later in the series.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-> > Reviewed-by: Rik van Riel <riel@redhat.com>
-> > Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> 
-> Note, the changelog here differs from what is in Linus's tree by a LOT.
-> I took the version in Linus's tree instead.
-> 
+On Wed, 25 Jul 2012, Srivatsa S. Bhat wrote:
 
-Yet another case of where the distribution kernel got the patch first
-and I mucked up the transfer back.  In this case the mainline changelog
-includes the patch leader with a lot of additional information.
+> On 07/25/2012 08:27 PM, Alan Stern wrote:
+> > On Wed, 25 Jul 2012, Srivatsa S. Bhat wrote:
+> > 
+> >> Hi,
+> >>
+> >> This patchset implements the approach of invoking the CPU hotplug callbacks
+> >> (notifiers) in one order during CPU online and in the reverse order during CPU
+> >> offline. The rationale behind this is that services for a CPU are started in a
+> >> particular order (perhaps, with implicit dependencies between them) while
+> >> bringing up the CPU, and hence, it makes sense to tear down the services in
+> >> the opposite order, thereby honoring most of the dependencies automatically
+> >> (and also correctly). This is explained in more detail in Patch 6.
+> > 
+> > This strongly suggests that a notifier chain may be the wrong mechanism
+> > to use here.  Notifiers provide only limited guarantees about ordering,
+> > and it's hard to say much about the services a particular chain will
+> > provide since callbacks can be added from anywhere.
+> > 
+> 
+> True, the ability to register any random callback from anywhere is still a
+> problem that we are fighting... The zillions of callbacks that we have today
+> makes the hotplug process quite entangled.. we can't even roll-back from a
+> failure easily!
+> 
+> > Instead of adding all this complication to the notifier mechanism, how 
+> > about using something else for CPU hotplug?
+> > 
+> 
+> The problem is that today, many different subsystems need to know about CPUs coming
+> up or going down.. And CPU hotplug is not atomic, it happens in stages, and the
+> coordination between those subsystems is what actually drives CPU hotplug, in a way.
 
--- 
-Mel Gorman
-SUSE Labs
+All this reinforces the idea that notifiers are the wrong mechanism for 
+CPU hotplug.
+
+> At present, I think that the best we can do is to redesign the hotplug code such that
+> the number of callbacks that are needed can be reduced to a minimum amount and then
+> have good control over what those callbacks do. For example, Thomas Gleixner posted
+> the park/unpark patchset[1], which not only speeds-up CPU hotplug by avoiding destruction
+> and creation of per-cpu kthreads on every hotplug operation, but also gets rid of quite
+> a few notifiers by providing a framework to manage those per-cpu kthreads...
+
+I think the best you can do is stop using notifiers and use something 
+else instead.  For example, a simple set of function calls (assuming 
+you know beforehand what callbacks need to be invoked).
+
+> One of the other ideas to improve the hotplug notifier stuff that came up during some
+> of the discussions was to implement explicit dependency tracking between the notifiers
+> and perhaps get rid of the priority numbers that are currently being used to provide
+> some sort of ordering between the callbacks. Links to some of the related discussions
+> are provided below.
+
+This seems like misplaced over-engineering.
+
+Alan Stern
+
