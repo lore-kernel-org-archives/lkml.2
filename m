@@ -1,236 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab2GYLac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:30:32 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:34740 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448Ab2GYLab (ORCPT
+	id S1756557Ab2GYLcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:32:09 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3941 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935Ab2GYLcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:30:31 -0400
-Message-ID: <500FD8B7.9040701@panasas.com>
-Date: Wed, 25 Jul 2012 14:29:59 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
-MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dm-devel@redhat.com>, <tj@kernel.org>, <axboe@kernel.dk>,
-        <agk@redhat.com>, <neilb@suse.de>, <drbd-dev@lists.linbit.com>,
-        <vgoyal@redhat.com>, <mpatocka@redhat.com>, <sage@newdream.net>,
-        <yehuda@hq.newdream.net>
-Subject: Re: [PATCH v4 04/12] pktcdvd: Switch to bio_kmalloc()
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com> <1343160689-12378-5-git-send-email-koverstreet@google.com>
-In-Reply-To: <1343160689-12378-5-git-send-email-koverstreet@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Jul 2012 07:32:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6782"; a="211930536"
+From: Yaniv Gardi <ygardi@codeaurora.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Yaniv Gardi <ygardi@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH RESEND v8 1/2] block: ioctl support for sanitize in eMMC 4.5
+Date: Wed, 25 Jul 2012 14:31:39 +0300
+Message-Id: <1343215901-15430-2-git-send-email-ygardi@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1343215901-15430-1-git-send-email-ygardi@codeaurora.org>
+References: <1343215901-15430-1-git-send-email-ygardi@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 11:11 PM, Kent Overstreet wrote:
+Adding a new ioctl to support sanitize operation in eMMC
+cards version 4.5.
+The sanitize ioctl support helps performing this operation
+via user application.
 
-> This is prep work for killing bi_destructor - previously, pktcdvd had
-> its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-> necessitating its own bi_destructor implementation.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> ---
->  drivers/block/pktcdvd.c |  115 ++++++++++++++++-------------------------------
->  1 files changed, 39 insertions(+), 76 deletions(-)
-> 
-> diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-> index ba66e44..6fe693a 100644
-> --- a/drivers/block/pktcdvd.c
-> +++ b/drivers/block/pktcdvd.c
-> @@ -522,36 +522,38 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
->  	}
->  }
->  
-> -static void pkt_bio_destructor(struct bio *bio)
-> +static void pkt_end_io_read(struct bio *bio, int err)
->  {
-> -	kfree(bio->bi_io_vec);
-> -	kfree(bio);
-> -}
+Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
 
+---
+ block/blk-core.c          |   15 ++++++++++--
+ block/blk-lib.c           |   51 +++++++++++++++++++++++++++++++++++++++++++++
+ block/blk-merge.c         |    4 +++
+ block/elevator.c          |    2 +-
+ block/ioctl.c             |    9 ++++++++
+ include/linux/blk_types.h |    5 +++-
+ include/linux/blkdev.h    |    3 ++
+ include/linux/fs.h        |    1 +
+ kernel/trace/blktrace.c   |    2 +
+ 9 files changed, 87 insertions(+), 5 deletions(-)
 
-Again here, you decided to move the pkt_end_io_read && pkt_end_io_packet_write
-functions from below, to above here. Which makes it impossible to find
-any bugs by just reviewing the patch.
-
-So I have not reviewed it. 
-
-I know that you wanted so you can reference them at pkt_alloc_packet_data.
-I'd use a forward reference, in this case. And a move in a next patch. But
-this is just me. Perhaps the owner of this code can review it?
-
-Cheers
-Boaz
-
-> +	struct packet_data *pkt = bio->bi_private;
-> +	struct pktcdvd_device *pd = pkt->pd;
-> +	BUG_ON(!pd);
->  
-> -static struct bio *pkt_bio_alloc(int nr_iovecs)
-> -{
-> -	struct bio_vec *bvl = NULL;
-> -	struct bio *bio;
-> +	VPRINTK("pkt_end_io_read: bio=%p sec0=%llx sec=%llx err=%d\n", bio,
-> +		(unsigned long long)pkt->sector, (unsigned long long)bio->bi_sector, err);
->  
-> -	bio = kmalloc(sizeof(struct bio), GFP_KERNEL);
-> -	if (!bio)
-> -		goto no_bio;
-> -	bio_init(bio);
-> +	if (err)
-> +		atomic_inc(&pkt->io_errors);
-> +	if (atomic_dec_and_test(&pkt->io_wait)) {
-> +		atomic_inc(&pkt->run_sm);
-> +		wake_up(&pd->wqueue);
-> +	}
-> +	pkt_bio_finished(pd);
-> +}
->  
-> -	bvl = kcalloc(nr_iovecs, sizeof(struct bio_vec), GFP_KERNEL);
-> -	if (!bvl)
-> -		goto no_bvl;
-> +static void pkt_end_io_packet_write(struct bio *bio, int err)
-> +{
-> +	struct packet_data *pkt = bio->bi_private;
-> +	struct pktcdvd_device *pd = pkt->pd;
-> +	BUG_ON(!pd);
->  
-> -	bio->bi_max_vecs = nr_iovecs;
-> -	bio->bi_io_vec = bvl;
-> -	bio->bi_destructor = pkt_bio_destructor;
-> +	VPRINTK("pkt_end_io_packet_write: id=%d, err=%d\n", pkt->id, err);
->  
-> -	return bio;
-> +	pd->stats.pkt_ended++;
->  
-> - no_bvl:
-> -	kfree(bio);
-> - no_bio:
-> -	return NULL;
-> +	pkt_bio_finished(pd);
-> +	atomic_dec(&pkt->io_wait);
-> +	atomic_inc(&pkt->run_sm);
-> +	wake_up(&pd->wqueue);
->  }
->  
->  /*
-> @@ -567,10 +569,13 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
->  		goto no_pkt;
->  
->  	pkt->frames = frames;
-> -	pkt->w_bio = pkt_bio_alloc(frames);
-> +	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
->  	if (!pkt->w_bio)
->  		goto no_bio;
->  
-> +	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
-> +	pkt->w_bio->bi_private = pkt;
-> +
->  	for (i = 0; i < frames / FRAMES_PER_PAGE; i++) {
->  		pkt->pages[i] = alloc_page(GFP_KERNEL|__GFP_ZERO);
->  		if (!pkt->pages[i])
-> @@ -581,9 +586,12 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
->  	bio_list_init(&pkt->orig_bios);
->  
->  	for (i = 0; i < frames; i++) {
-> -		struct bio *bio = pkt_bio_alloc(1);
-> +		struct bio *bio = bio_kmalloc(GFP_KERNEL, 1);
->  		if (!bio)
->  			goto no_rd_bio;
-> +
-> +		bio->bi_end_io = pkt_end_io_read;
-> +		bio->bi_private = pkt;
->  		pkt->r_bios[i] = bio;
->  	}
->  
-> @@ -1036,40 +1044,6 @@ static void pkt_make_local_copy(struct packet_data *pkt, struct bio_vec *bvec)
->  	}
->  }
->  
-> -static void pkt_end_io_read(struct bio *bio, int err)
-> -{
-> -	struct packet_data *pkt = bio->bi_private;
-> -	struct pktcdvd_device *pd = pkt->pd;
-> -	BUG_ON(!pd);
-> -
-> -	VPRINTK("pkt_end_io_read: bio=%p sec0=%llx sec=%llx err=%d\n", bio,
-> -		(unsigned long long)pkt->sector, (unsigned long long)bio->bi_sector, err);
-> -
-> -	if (err)
-> -		atomic_inc(&pkt->io_errors);
-> -	if (atomic_dec_and_test(&pkt->io_wait)) {
-> -		atomic_inc(&pkt->run_sm);
-> -		wake_up(&pd->wqueue);
-> -	}
-> -	pkt_bio_finished(pd);
-> -}
-> -
-> -static void pkt_end_io_packet_write(struct bio *bio, int err)
-> -{
-> -	struct packet_data *pkt = bio->bi_private;
-> -	struct pktcdvd_device *pd = pkt->pd;
-> -	BUG_ON(!pd);
-> -
-> -	VPRINTK("pkt_end_io_packet_write: id=%d, err=%d\n", pkt->id, err);
-> -
-> -	pd->stats.pkt_ended++;
-> -
-> -	pkt_bio_finished(pd);
-> -	atomic_dec(&pkt->io_wait);
-> -	atomic_inc(&pkt->run_sm);
-> -	wake_up(&pd->wqueue);
-> -}
-> -
->  /*
->   * Schedule reads for the holes in a packet
->   */
-> @@ -1111,21 +1085,15 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
->  	 * Schedule reads for missing parts of the packet.
->  	 */
->  	for (f = 0; f < pkt->frames; f++) {
-> -		struct bio_vec *vec;
-> -
->  		int p, offset;
-> +
->  		if (written[f])
->  			continue;
-> +
->  		bio = pkt->r_bios[f];
-> -		vec = bio->bi_io_vec;
-> -		bio_init(bio);
-> -		bio->bi_max_vecs = 1;
-> -		bio->bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
-> -		bio->bi_bdev = pd->bdev;
-> -		bio->bi_end_io = pkt_end_io_read;
-> -		bio->bi_private = pkt;
-> -		bio->bi_io_vec = vec;
-> -		bio->bi_destructor = pkt_bio_destructor;
-> +		bio_reset(bio);
-> +		bio->bi_sector	= pkt->sector + f * (CD_FRAMESIZE >> 9);
-> +		bio->bi_bdev	= pd->bdev;
->  
->  		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
->  		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
-> @@ -1418,14 +1386,9 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
->  	}
->  
->  	/* Start the write request */
-> -	bio_init(pkt->w_bio);
-> -	pkt->w_bio->bi_max_vecs = PACKET_MAX_SIZE;
-> +	bio_reset(pkt->w_bio);
->  	pkt->w_bio->bi_sector = pkt->sector;
->  	pkt->w_bio->bi_bdev = pd->bdev;
-> -	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
-> -	pkt->w_bio->bi_private = pkt;
-> -	pkt->w_bio->bi_io_vec = bvec;
-> -	pkt->w_bio->bi_destructor = pkt_bio_destructor;
->  	for (f = 0; f < pkt->frames; f++)
->  		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
->  			BUG();
-
-
+diff --git a/block/blk-core.c b/block/blk-core.c
+index c3b17c3..55cb0da 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1654,7 +1654,7 @@ generic_make_request_checks(struct bio *bio)
+ 		goto end_io;
+ 	}
+ 
+-	if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
++	if (unlikely(!(bio->bi_rw & (REQ_DISCARD | REQ_SANITIZE)) &&
+ 		     nr_sectors > queue_max_hw_sectors(q))) {
+ 		printk(KERN_ERR "bio too big device %s (%u > %u)\n",
+ 		       bdevname(bio->bi_bdev, b),
+@@ -1702,6 +1702,14 @@ generic_make_request_checks(struct bio *bio)
+ 		goto end_io;
+ 	}
+ 
++	if ((bio->bi_rw & REQ_SANITIZE) &&
++	    (!blk_queue_sanitize(q))) {
++		pr_info("%s - got a SANITIZE request but the queue "
++		       "doesn't support sanitize requests", __func__);
++		err = -EOPNOTSUPP;
++		goto end_io;
++	}
++
+ 	if (blk_throtl_bio(q, bio))
+ 		return false;	/* throttled, will be resubmitted later */
+ 
+@@ -1807,7 +1815,8 @@ void submit_bio(int rw, struct bio *bio)
+ 	 * If it's a regular read/write or a barrier with data attached,
+ 	 * go through the normal accounting stuff before submission.
+ 	 */
+-	if (bio_has_data(bio) && !(rw & REQ_DISCARD)) {
++	if (bio_has_data(bio) &&
++	    (!(rw & (REQ_DISCARD | REQ_SANITIZE)))) {
+ 		if (rw & WRITE) {
+ 			count_vm_events(PGPGOUT, count);
+ 		} else {
+@@ -1853,7 +1862,7 @@ EXPORT_SYMBOL(submit_bio);
+  */
+ int blk_rq_check_limits(struct request_queue *q, struct request *rq)
+ {
+-	if (rq->cmd_flags & REQ_DISCARD)
++	if (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))
+ 		return 0;
+ 
+ 	if (blk_rq_sectors(rq) > queue_max_sectors(q) ||
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 2b461b4..280d63e 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -115,6 +115,57 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ EXPORT_SYMBOL(blkdev_issue_discard);
+ 
+ /**
++ * blkdev_issue_sanitize - queue a sanitize request
++ * @bdev:	blockdev to issue sanitize for
++ * @gfp_mask:	memory allocation flags (for bio_alloc)
++ *
++ * Description:
++ *    Issue a sanitize request for the specified block device
++ */
++int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask)
++{
++	DECLARE_COMPLETION_ONSTACK(wait);
++	struct request_queue *q = bdev_get_queue(bdev);
++	int type = REQ_WRITE | REQ_SANITIZE;
++	struct bio_batch bb;
++	struct bio *bio;
++	int ret = 0;
++
++	if (!q)
++		return -ENXIO;
++
++	if (!blk_queue_sanitize(q)) {
++		pr_err("%s - card doesn't support sanitize", __func__);
++		return -EOPNOTSUPP;
++	}
++
++	bio = bio_alloc(gfp_mask, 1);
++	if (!bio)
++		return -ENOMEM;
++
++	atomic_set(&bb.done, 1);
++	bb.flags = 1 << BIO_UPTODATE;
++	bb.wait = &wait;
++
++	bio->bi_end_io = bio_batch_end_io;
++	bio->bi_bdev = bdev;
++	bio->bi_private = &bb;
++
++	atomic_inc(&bb.done);
++	submit_bio(type, bio);
++
++	/* Wait for bios in-flight */
++	if (!atomic_dec_and_test(&bb.done))
++		wait_for_completion(&wait);
++
++	if (!test_bit(BIO_UPTODATE, &bb.flags))
++		ret = -EIO;
++
++	return ret;
++}
++EXPORT_SYMBOL(blkdev_issue_sanitize);
++
++/**
+  * blkdev_issue_zeroout - generate number of zero filed write bios
+  * @bdev:	blockdev to issue
+  * @sector:	start sector
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index 160035f..ef93b23 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -477,6 +477,10 @@ bool blk_rq_merge_ok(struct request *rq, struct bio *bio)
+ 	if (!rq_mergeable(rq))
+ 		return false;
+ 
++	/* don't merge file system requests and sanitize requests */
++	if ((bio->bi_rw & REQ_SANITIZE) != (rq->bio->bi_rw & REQ_SANITIZE))
++		return false;
++
+ 	/* don't merge file system requests and discard requests */
+ 	if ((bio->bi_rw & REQ_DISCARD) != (rq->bio->bi_rw & REQ_DISCARD))
+ 		return false;
+diff --git a/block/elevator.c b/block/elevator.c
+index 6a55d41..91f1de1 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -563,7 +563,7 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+ 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
+ 		/* barriers are scheduling boundary, update end_sector */
+ 		if (rq->cmd_type == REQ_TYPE_FS ||
+-		    (rq->cmd_flags & REQ_DISCARD)) {
++		    (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))) {
+ 			q->end_sector = rq_end_sector(rq);
+ 			q->boundary_rq = rq;
+ 		}
+diff --git a/block/ioctl.c b/block/ioctl.c
+index ba15b2d..dd76ba0 100644
+--- a/block/ioctl.c
++++ b/block/ioctl.c
+@@ -132,6 +132,11 @@ static int blk_ioctl_discard(struct block_device *bdev, uint64_t start,
+ 	return blkdev_issue_discard(bdev, start, len, GFP_KERNEL, flags);
+ }
+ 
++static int blk_ioctl_sanitize(struct block_device *bdev)
++{
++	return blkdev_issue_sanitize(bdev, GFP_KERNEL);
++}
++
+ static int put_ushort(unsigned long arg, unsigned short val)
+ {
+ 	return put_user(val, (unsigned short __user *)arg);
+@@ -234,6 +239,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+ 		set_device_ro(bdev, n);
+ 		return 0;
+ 
++	case BLKSANITIZE:
++		ret = blk_ioctl_sanitize(bdev);
++		break;
++
+ 	case BLKDISCARD:
+ 	case BLKSECDISCARD: {
+ 		uint64_t range[2];
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 7b7ac9c..52c94d0 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -161,6 +161,7 @@ enum rq_flag_bits {
+ 	__REQ_IO_STAT,		/* account I/O stat */
+ 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
+ 	__REQ_KERNEL, 		/* direct IO to kernel pages */
++	__REQ_SANITIZE,		/* sanitize */
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
+@@ -172,13 +173,15 @@ enum rq_flag_bits {
+ #define REQ_META		(1 << __REQ_META)
+ #define REQ_PRIO		(1 << __REQ_PRIO)
+ #define REQ_DISCARD		(1 << __REQ_DISCARD)
++#define REQ_SANITIZE		(1 << __REQ_SANITIZE)
+ #define REQ_NOIDLE		(1 << __REQ_NOIDLE)
+ 
+ #define REQ_FAILFAST_MASK \
+ 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
+ #define REQ_COMMON_MASK \
+ 	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_PRIO | \
+-	 REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
++	 REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE | \
++	 REQ_SANITIZE)
+ #define REQ_CLONE_MASK		REQ_COMMON_MASK
+ 
+ #define REQ_RAHEAD		(1 << __REQ_RAHEAD)
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 2698866..77a43ad 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -438,6 +438,7 @@ struct request_queue {
+ #define QUEUE_FLAG_ADD_RANDOM  16	/* Contributes to random pool */
+ #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
+ #define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
++#define QUEUE_FLAG_SANITIZE    19	/* supports SANITIZE */
+ 
+ #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
+ 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
+@@ -518,6 +519,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
+ #define blk_queue_stackable(q)	\
+ 	test_bit(QUEUE_FLAG_STACKABLE, &(q)->queue_flags)
+ #define blk_queue_discard(q)	test_bit(QUEUE_FLAG_DISCARD, &(q)->queue_flags)
++#define blk_queue_sanitize(q)	test_bit(QUEUE_FLAG_SANITIZE, &(q)->queue_flags)
+ #define blk_queue_secdiscard(q)	(blk_queue_discard(q) && \
+ 	test_bit(QUEUE_FLAG_SECDISCARD, &(q)->queue_flags))
+ 
+@@ -974,6 +976,7 @@ static inline struct request *blk_map_queue_find_tag(struct blk_queue_tag *bqt,
+ extern int blkdev_issue_flush(struct block_device *, gfp_t, sector_t *);
+ extern int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags);
++extern int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask);
+ extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 			sector_t nr_sects, gfp_t gfp_mask);
+ static inline int sb_issue_discard(struct super_block *sb, sector_t block,
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c8667f8..293e9a7 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -335,6 +335,7 @@ struct inodes_stat_t {
+ #define BLKDISCARDZEROES _IO(0x12,124)
+ #define BLKSECDISCARD _IO(0x12,125)
+ #define BLKROTATIONAL _IO(0x12,126)
++#define BLKSANITIZE _IO(0x12, 127)
+ 
+ #define BMAP_IOCTL 1		/* obsolete - kept for compatibility */
+ #define FIBMAP	   _IO(0x00,1)	/* bmap access */
+diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+index c0bd030..06f7940 100644
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -1788,6 +1788,8 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
+ 		rwbs[i++] = 'W';
+ 	else if (rw & REQ_DISCARD)
+ 		rwbs[i++] = 'D';
++	else if (rw & REQ_SANITIZE)
++		rwbs[i++] = 'Z';
+ 	else if (bytes)
+ 		rwbs[i++] = 'R';
+ 	else
+-- 
+1.7.6
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
