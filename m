@@ -1,67 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab2GYS2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 14:28:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36674 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab2GYS2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 14:28:37 -0400
-Date: Wed, 25 Jul 2012 20:27:47 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Subject: Re: [PATCH 02/17] perf: Add ability to attach user level registers
- dump to sample
-Message-ID: <20120725182747.GB14996@krava.brq.redhat.com>
-References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
- <1342959280-5361-3-git-send-email-jolsa@redhat.com>
- <CABPqkBQONxpNAm=rE9JpQ8Pjdfzf6dc707UZWhSzM+E0AAXE-w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQONxpNAm=rE9JpQ8Pjdfzf6dc707UZWhSzM+E0AAXE-w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752571Ab2GYS30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 14:29:26 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:6196 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab2GYS3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 14:29:24 -0400
+Message-ID: <1343240674.3010.411.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] acpi : create sun sysfs file in container device
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 25 Jul 2012 12:24:34 -0600
+In-Reply-To: <500F6739.8090506@jp.fujitsu.com>
+References: <500F6739.8090506@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 07:39:18PM +0200, Stephane Eranian wrote:
-> On Sun, Jul 22, 2012 at 2:14 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-
-SNIP
-
-> > +       if (sample_type & PERF_SAMPLE_REGS_USER) {
-> > +               u64 avail = (data->regs_user != NULL);
-> > +
-> > +               /*
-> > +                * If there are no regs to dump, notice it through
-> > +                * first u64 being zero.
-> > +                */
-> > +               perf_output_put(handle, avail);
-> > +
-> The only role of avail is to report whether or not you've captured actual
-> registers. Could it be used to report the sampled process ABI (32 vs. 64)
-> instead? Something like:
->       PERF_SAMPLE_REGS_ABI_NONE -> no regs captured (emulate your
-> current behavior)
->       PERF_SAMPLE_REGS_ABI_32 -> 32 bit ABI regs captured
->       PERF_SAMPLE_REGS_ABI_64 -> 64 bit ABI regs captured
+Yasuaki Ishimatsu wrote:
+> There is no comment on the patch about a month. But I want to merge the patch
+> into linux-3.6. So I resend it. 
 > 
-> That could help the tools interpret the register values.
+> ---
+> Even if container device has _SUN method, the method is ignored. So we cannot
+> know slot-unique ID number of the container device. The patch creates "sun"
+> file in sysfs so that we can recognize it.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Yes, I think that could help once we start dealing with compat tasks.
+Hi Yasuaki,
 
-The current userspace code stays untouched, because it checks for
-'avail != 0', which stays even with your change.
+The patch works fine on my setup.  However, it may be better to
+implement this feature in acpi_device_setup_files(), so that we can
+generally support it for any ACPI objects with _SUN.  We might also be
+able to put sun value into acpi_device_pnp since it is a static value.
+This way, we don't have to call _SUN at every sysfs access, and it could
+be useful for debugging as well.
 
-I think this could be sent later with all other fixes I'm already
-working on. But I can work/send it preferentially before whole patchset
-is taken if you like.
+Thanks,
+-Toshi
 
-thanks,
-jirka
+> ---
+>  drivers/acpi/container.c |   36 +++++++++++++++++++++++++++++++++---
+>  1 file changed, 33 insertions(+), 3 deletions(-)
+> 
+> Index: linux-3.5-rc1/drivers/acpi/container.c
+> ===================================================================
+> --- linux-3.5-rc1.orig/drivers/acpi/container.c	2012-06-14 15:35:31.045500166 +0900
+> +++ linux-3.5-rc1/drivers/acpi/container.c	2012-06-14 16:40:13.010405144 +0900
+> @@ -32,6 +32,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/types.h>
+>  #include <linux/acpi.h>
+> +#include <linux/device.h>
+>  #include <acpi/acpi_bus.h>
+>  #include <acpi/acpi_drivers.h>
+>  #include <acpi/container.h>
+> @@ -93,10 +94,30 @@ static int is_device_present(acpi_handle
+>  }
+> 
+>  /*******************************************************************/
+> +
+> +static ssize_t acpi_device_sun_show(struct device *dev,
+> +				    struct device_attribute *attr, char *buf) {
+> +	struct acpi_device *device = to_acpi_device(dev);
+> +	acpi_status status;
+> +	unsigned long long sun;
+> +
+> +	status = acpi_evaluate_integer(device->handle, "_SUN", NULL,  &sun);
+> +	if (ACPI_FAILURE(status))
+> +		return 0;
+> +
+> +	return sprintf(buf, "%llu\n", sun);
+> +}
+> +
+> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
+> +
+> +/*******************************************************************/
+> +
+>  static int acpi_container_add(struct acpi_device *device)
+>  {
+>  	struct acpi_container *container;
+> -
+> +	acpi_status status;
+> +	acpi_handle temp;
+> +	int result = 0;
+> 
+>  	if (!device) {
+>  		printk(KERN_ERR PREFIX "device is NULL\n");
+> @@ -115,13 +136,22 @@ static int acpi_container_add(struct acp
+>  	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device <%s> bid <%s>\n",
+>  			  acpi_device_name(device), acpi_device_bid(device)));
+> 
+> -	return 0;
+> +	status = acpi_get_handle(device->handle, "_SUN", &temp);
+> +	if (ACPI_SUCCESS(status))
+> +		result = device_create_file(&device->dev, &dev_attr_sun);
+> +
+> +	return result;
+>  }
+> 
+>  static int acpi_container_remove(struct acpi_device *device, int type)
+>  {
+> -	acpi_status status = AE_OK;
+> +	acpi_status status;
+>  	struct acpi_container *pc = NULL;
+> +	acpi_handle temp;
+> +
+> +	status = acpi_get_handle(device->handle, "_SUN", &temp);
+> +	if (ACPI_SUCCESS(status))
+> +		device_remove_file(&device->dev, &dev_attr_sun);
+> 
+>  	pc = acpi_driver_data(device);
+>  	kfree(pc);
+> 
+
+
