@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098Ab2GYDpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 23:45:15 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:43079 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933046Ab2GYDnd (ORCPT
+	id S933115Ab2GYDpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 23:45:55 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46154 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932928Ab2GYDn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 23:43:33 -0400
+	Tue, 24 Jul 2012 23:43:29 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 47/52] tools/power: turbostat v2 - re-write for efficiency
-Date: Tue, 24 Jul 2012 23:41:43 -0400
-Message-Id: <c98d5d9444732a032bc55d1a496bfa8439da9199.1343187618.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
+        Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 45/52] ACPICA: AcpiSrc: Fix some translation issues for Linux conversion
+Date: Tue, 24 Jul 2012 23:41:41 -0400
+Message-Id: <ba494beeaa69bc0fb01eb89464ad5d57d26e3901.1343187617.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.rc0
 In-Reply-To: <1343187708-19532-1-git-send-email-lenb@kernel.org>
 References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
@@ -24,1788 +25,5281 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+From: Bob Moore <robert.moore@intel.com>
 
-Measuring large profoundly-idle configurations
-requires turbostat to be more lightweight.
-Otherwise, the operation of turbostat itself
-can interfere with the measurements.
+Fixes issues like this:
 
-This re-write makes turbostat topology aware.
-Hardware is accessed in "topology order".
-Redundant hardware accesses are deleted.
-Redundant output is deleted.
-Also, output is buffered and
-local RDTSC use replaces remote MSR access for TSC.
+i_aSL -> iASL
+00-7_f -> 00-7F
+local_fADT -> local_FADT
+execute_oSI -> execute_OSI
 
->From a feature point of view, the output
-looks different since redundant figures are absent.
-Also, there are now -c and -p options -- to restrict
-output to the 1st thread in each core, and the 1st
-thread in each package, respectively.  This is helpful
-to reduce output on big systems, where more detail
-than the "-s" system summary is desired.
-Finally, periodic mode output is now on stdout, not stderr.
+Also, in function headers, the parameters are now translated to
+lower case (with underscores if necessary.)
 
-Turbostat v2 is also slightly more robust in
-handling run-time CPU online/offline events,
-as it now checks the actual map of on-line cpus rather
-than just the total number of on-line cpus.
-
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- tools/power/x86/turbostat/Makefile    |    1 +
- tools/power/x86/turbostat/turbostat.8 |   77 +-
- tools/power/x86/turbostat/turbostat.c | 1329 ++++++++++++++++++++-------------
- 3 files changed, 868 insertions(+), 539 deletions(-)
+ drivers/acpi/acpica/acevents.h  |  2 +-
+ drivers/acpi/acpica/aclocal.h   |  4 ++--
+ drivers/acpi/acpica/acmacros.h  |  2 +-
+ drivers/acpi/acpica/acobject.h  |  2 +-
+ drivers/acpi/acpica/acpredef.h  |  2 +-
+ drivers/acpi/acpica/acstruct.h  |  2 +-
+ drivers/acpi/acpica/amlcode.h   |  4 ++--
+ drivers/acpi/acpica/amlresrc.h  |  4 ++--
+ drivers/acpi/acpica/dsargs.c    |  2 +-
+ drivers/acpi/acpica/dscontrol.c |  4 ++--
+ drivers/acpi/acpica/dsfield.c   | 30 ++++++++++++++--------------
+ drivers/acpi/acpica/dsinit.c    |  4 ++--
+ drivers/acpi/acpica/dsmethod.c  |  6 +++---
+ drivers/acpi/acpica/dsmthdat.c  | 32 +++++++++++++++---------------
+ drivers/acpi/acpica/dsobject.c  | 14 ++++++-------
+ drivers/acpi/acpica/dsopcode.c  | 12 +++++------
+ drivers/acpi/acpica/dsutils.c   |  6 +++---
+ drivers/acpi/acpica/dswscope.c  |  4 ++--
+ drivers/acpi/acpica/dswstate.c  | 20 +++++++++----------
+ drivers/acpi/acpica/evevent.c   |  2 +-
+ drivers/acpi/acpica/evglock.c   |  4 ++--
+ drivers/acpi/acpica/evgpeblk.c  |  2 +-
+ drivers/acpi/acpica/evgpeutil.c |  2 +-
+ drivers/acpi/acpica/evmisc.c    |  6 +++---
+ drivers/acpi/acpica/evregion.c  | 24 +++++++++++-----------
+ drivers/acpi/acpica/evrgnini.c  | 28 +++++++++++++-------------
+ drivers/acpi/acpica/evsci.c     |  4 ++--
+ drivers/acpi/acpica/evxface.c   | 30 ++++++++++++++--------------
+ drivers/acpi/acpica/evxfevnt.c  |  8 ++++----
+ drivers/acpi/acpica/evxfgpe.c   |  6 +++---
+ drivers/acpi/acpica/evxfregn.c  | 18 ++++++++---------
+ drivers/acpi/acpica/exconfig.c  |  8 ++++----
+ drivers/acpi/acpica/exconvrt.c  | 10 +++++-----
+ drivers/acpi/acpica/excreate.c  |  2 +-
+ drivers/acpi/acpica/exdebug.c   |  4 ++--
+ drivers/acpi/acpica/exdump.c    | 22 ++++++++++-----------
+ drivers/acpi/acpica/exfldio.c   | 14 ++++++-------
+ drivers/acpi/acpica/exmisc.c    | 26 ++++++++++++------------
+ drivers/acpi/acpica/exmutex.c   |  6 +++---
+ drivers/acpi/acpica/exprep.c    |  2 +-
+ drivers/acpi/acpica/exregion.c  | 38 +++++++++++++++++------------------
+ drivers/acpi/acpica/exresolv.c  |  2 +-
+ drivers/acpi/acpica/exresop.c   | 10 +++++-----
+ drivers/acpi/acpica/exstore.c   |  2 +-
+ drivers/acpi/acpica/exstorob.c  |  2 +-
+ drivers/acpi/acpica/exsystem.c  |  8 ++++----
+ drivers/acpi/acpica/exutils.c   |  8 ++++----
+ drivers/acpi/acpica/hwacpi.c    |  2 +-
+ drivers/acpi/acpica/hwesleep.c  |  6 +++---
+ drivers/acpi/acpica/hwregs.c    | 22 ++++++++++-----------
+ drivers/acpi/acpica/hwsleep.c   |  6 +++---
+ drivers/acpi/acpica/hwtimer.c   |  4 ++--
+ drivers/acpi/acpica/hwvalid.c   |  4 ++--
+ drivers/acpi/acpica/hwxface.c   | 12 +++++------
+ drivers/acpi/acpica/hwxfsleep.c |  6 +++---
+ drivers/acpi/acpica/nsaccess.c  |  8 ++++----
+ drivers/acpi/acpica/nsalloc.c   | 10 +++++-----
+ drivers/acpi/acpica/nsdump.c    | 18 ++++++++---------
+ drivers/acpi/acpica/nsdumpdv.c  |  6 +++---
+ drivers/acpi/acpica/nseval.c    | 10 +++++-----
+ drivers/acpi/acpica/nsinit.c    |  6 +++---
+ drivers/acpi/acpica/nsload.c    |  4 ++--
+ drivers/acpi/acpica/nsnames.c   | 10 +++++-----
+ drivers/acpi/acpica/nsobject.c  | 28 +++++++++++++-------------
+ drivers/acpi/acpica/nspredef.c  | 38 +++++++++++++++++------------------
+ drivers/acpi/acpica/nsrepair.c  | 14 ++++++-------
+ drivers/acpi/acpica/nsrepair2.c | 26 ++++++++++++------------
+ drivers/acpi/acpica/nssearch.c  | 12 +++++------
+ drivers/acpi/acpica/nsutils.c   | 26 ++++++++++++------------
+ drivers/acpi/acpica/nswalk.c    |  8 ++++----
+ drivers/acpi/acpica/nsxfeval.c  | 26 ++++++++++++------------
+ drivers/acpi/acpica/nsxfname.c  | 16 +++++++--------
+ drivers/acpi/acpica/nsxfobj.c   |  8 ++++----
+ drivers/acpi/acpica/psargs.c    |  4 ++--
+ drivers/acpi/acpica/psloop.c    | 16 +++++++--------
+ drivers/acpi/acpica/psopcode.c  |  4 ++--
+ drivers/acpi/acpica/psparse.c   |  6 +++---
+ drivers/acpi/acpica/psscope.c   |  6 +++---
+ drivers/acpi/acpica/pstree.c    | 14 ++++++-------
+ drivers/acpi/acpica/psutils.c   |  8 ++++----
+ drivers/acpi/acpica/psxface.c   | 16 +++++++--------
+ drivers/acpi/acpica/rsaddr.c    | 14 ++++++-------
+ drivers/acpi/acpica/rscalc.c    |  2 +-
+ drivers/acpi/acpica/rsdump.c    | 10 +++++-----
+ drivers/acpi/acpica/rslist.c    |  2 +-
+ drivers/acpi/acpica/rsmisc.c    | 22 ++++++++++-----------
+ drivers/acpi/acpica/rsutils.c   | 44 ++++++++++++++++++++---------------------
+ drivers/acpi/acpica/rsxface.c   | 14 ++++++-------
+ drivers/acpi/acpica/tbfadt.c    | 10 +++++-----
+ drivers/acpi/acpica/tbfind.c    |  2 +-
+ drivers/acpi/acpica/tbinstal.c  |  8 ++++----
+ drivers/acpi/acpica/tbutils.c   | 24 +++++++++++-----------
+ drivers/acpi/acpica/tbxface.c   | 18 ++++++++---------
+ drivers/acpi/acpica/tbxfroot.c  | 10 +++++-----
+ drivers/acpi/acpica/utaddress.c | 10 +++++-----
+ drivers/acpi/acpica/utalloc.c   | 20 +++++++++----------
+ drivers/acpi/acpica/utcopy.c    |  2 +-
+ drivers/acpi/acpica/utdebug.c   | 32 +++++++++++++++---------------
+ drivers/acpi/acpica/utdecode.c  | 14 ++++++-------
+ drivers/acpi/acpica/utdelete.c  | 14 ++++++-------
+ drivers/acpi/acpica/uteval.c    |  6 +++---
+ drivers/acpi/acpica/utglobal.c  |  2 +-
+ drivers/acpi/acpica/utids.c     |  2 +-
+ drivers/acpi/acpica/utlock.c    |  6 +++---
+ drivers/acpi/acpica/utmath.c    |  4 ++--
+ drivers/acpi/acpica/utmisc.c    | 38 +++++++++++++++++------------------
+ drivers/acpi/acpica/utmutex.c   |  8 ++++----
+ drivers/acpi/acpica/utobject.c  |  8 ++++----
+ drivers/acpi/acpica/utosi.c     |  2 +-
+ drivers/acpi/acpica/utresrc.c   | 34 +++++++++++++++----------------
+ drivers/acpi/acpica/utstate.c   | 16 +++++++--------
+ drivers/acpi/acpica/utxface.c   | 18 ++++++++---------
+ drivers/acpi/acpica/utxferror.c | 22 ++++++++++-----------
+ drivers/acpi/acpica/utxfmutex.c | 14 ++++++-------
+ drivers/acpi/processor_idle.c   | 12 +++++------
+ include/acpi/acrestyp.h         |  4 ++--
+ include/acpi/actbl.h            |  8 ++++----
+ include/acpi/actbl1.h           |  8 ++++----
+ include/acpi/actbl2.h           |  8 ++++----
+ include/acpi/actypes.h          |  4 ++--
+ 120 files changed, 680 insertions(+), 680 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
-index fd8e1f1..f856495 100644
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -1,4 +1,5 @@
- turbostat : turbostat.c
-+CFLAGS +=	-Wall
+diff --git a/drivers/acpi/acpica/acevents.h b/drivers/acpi/acpica/acevents.h
+index d700f63..c0a43b3 100644
+--- a/drivers/acpi/acpica/acevents.h
++++ b/drivers/acpi/acpica/acevents.h
+@@ -237,7 +237,7 @@ u32 acpi_ev_install_sci_handler(void);
  
- clean :
- 	rm -f turbostat
-diff --git a/tools/power/x86/turbostat/turbostat.8 b/tools/power/x86/turbostat/turbostat.8
-index adf175f..74e4450 100644
---- a/tools/power/x86/turbostat/turbostat.8
-+++ b/tools/power/x86/turbostat/turbostat.8
-@@ -27,7 +27,11 @@ supports an "invariant" TSC, plus the APERF and MPERF MSRs.
- on processors that additionally support C-state residency counters.
+ acpi_status acpi_ev_remove_sci_handler(void);
  
- .SS Options
--The \fB-s\fP option prints only a 1-line summary for each sample interval.
-+The \fB-s\fP option limits output to a 1-line system summary for each interval.
-+.PP
-+The \fB-c\fP option limits output to the 1st thread in each core.
-+.PP
-+The \fB-p\fP option limits output to the 1st thread in each package.
- .PP
- The \fB-v\fP option increases verbosity.
- .PP
-@@ -65,19 +69,19 @@ Subsequent rows show per-CPU statistics.
- .nf
- [root@x980]# ./turbostat
- cor CPU    %c0  GHz  TSC    %c1    %c3    %c6   %pc3   %pc6
--          0.60 1.63 3.38   2.91   0.00  96.49   0.00  76.64
--  0   0   0.59 1.62 3.38   4.51   0.00  94.90   0.00  76.64
--  0   6   1.13 1.64 3.38   3.97   0.00  94.90   0.00  76.64
--  1   2   0.08 1.62 3.38   0.07   0.00  99.85   0.00  76.64
--  1   8   0.03 1.62 3.38   0.12   0.00  99.85   0.00  76.64
--  2   4   0.01 1.62 3.38   0.06   0.00  99.93   0.00  76.64
--  2  10   0.04 1.62 3.38   0.02   0.00  99.93   0.00  76.64
--  8   1   2.85 1.62 3.38  11.71   0.00  85.44   0.00  76.64
--  8   7   1.98 1.62 3.38  12.58   0.00  85.44   0.00  76.64
--  9   3   0.36 1.62 3.38   0.71   0.00  98.93   0.00  76.64
--  9   9   0.09 1.62 3.38   0.98   0.00  98.93   0.00  76.64
-- 10   5   0.03 1.62 3.38   0.09   0.00  99.87   0.00  76.64
-- 10  11   0.07 1.62 3.38   0.06   0.00  99.87   0.00  76.64
-+          0.09 1.62 3.38   1.83   0.32  97.76   1.26  83.61
-+  0   0   0.15 1.62 3.38  10.23   0.05  89.56   1.26  83.61
-+  0   6   0.05 1.62 3.38  10.34
-+  1   2   0.03 1.62 3.38   0.07   0.05  99.86
-+  1   8   0.03 1.62 3.38   0.06
-+  2   4   0.21 1.62 3.38   0.10   1.49  98.21
-+  2  10   0.02 1.62 3.38   0.29
-+  8   1   0.04 1.62 3.38   0.04   0.08  99.84
-+  8   7   0.01 1.62 3.38   0.06
-+  9   3   0.53 1.62 3.38   0.10   0.20  99.17
-+  9   9   0.02 1.62 3.38   0.60
-+ 10   5   0.01 1.62 3.38   0.02   0.04  99.92
-+ 10  11   0.02 1.62 3.38   0.02
- .fi
- .SH SUMMARY EXAMPLE
- The "-s" option prints the column headers just once,
-@@ -86,9 +90,10 @@ and then the one line system summary for each sample interval.
- .nf
- [root@x980]# ./turbostat -s
-    %c0  GHz  TSC    %c1    %c3    %c6   %pc3   %pc6
--  0.61 1.89 3.38   5.95   0.00  93.44   0.00  66.33
--  0.52 1.62 3.38   6.83   0.00  92.65   0.00  61.11
--  0.62 1.92 3.38   5.47   0.00  93.91   0.00  67.31
-+  0.23 1.67 3.38   2.00   0.30  97.47   1.07  82.12
-+  0.10 1.62 3.38   1.87   2.25  95.77  12.02  72.60
-+  0.20 1.64 3.38   1.98   0.11  97.72   0.30  83.36
-+  0.11 1.70 3.38   1.86   1.81  96.22   9.71  74.90
- .fi
- .SH VERBOSE EXAMPLE
- The "-v" option adds verbosity to the output:
-@@ -120,30 +125,28 @@ until ^C while the other CPUs are mostly idle:
- [root@x980 lenb]# ./turbostat cat /dev/zero > /dev/null
- ^C
- cor CPU    %c0  GHz  TSC    %c1    %c3    %c6   %pc3   %pc6
--          8.63 3.64 3.38  14.46   0.49  76.42   0.00   0.00
--  0   0   0.34 3.36 3.38  99.66   0.00   0.00   0.00   0.00
--  0   6  99.96 3.64 3.38   0.04   0.00   0.00   0.00   0.00
--  1   2   0.14 3.50 3.38   1.75   2.04  96.07   0.00   0.00
--  1   8   0.38 3.57 3.38   1.51   2.04  96.07   0.00   0.00
--  2   4   0.01 2.65 3.38   0.06   0.00  99.93   0.00   0.00
--  2  10   0.03 2.12 3.38   0.04   0.00  99.93   0.00   0.00
--  8   1   0.91 3.59 3.38  35.27   0.92  62.90   0.00   0.00
--  8   7   1.61 3.63 3.38  34.57   0.92  62.90   0.00   0.00
--  9   3   0.04 3.38 3.38   0.20   0.00  99.76   0.00   0.00
--  9   9   0.04 3.29 3.38   0.20   0.00  99.76   0.00   0.00
-- 10   5   0.03 3.08 3.38   0.12   0.00  99.85   0.00   0.00
-- 10  11   0.05 3.07 3.38   0.10   0.00  99.85   0.00   0.00
--4.907015 sec
--
-+          8.86 3.61 3.38  15.06  31.19  44.89   0.00   0.00
-+  0   0   1.46 3.22 3.38  16.84  29.48  52.22   0.00   0.00
-+  0   6   0.21 3.06 3.38  18.09
-+  1   2   0.53 3.33 3.38   2.80  46.40  50.27
-+  1   8   0.89 3.47 3.38   2.44
-+  2   4   1.36 3.43 3.38   9.04  23.71  65.89
-+  2  10   0.18 2.86 3.38  10.22
-+  8   1   0.04 2.87 3.38  99.96   0.01   0.00
-+  8   7  99.72 3.63 3.38   0.27
-+  9   3   0.31 3.21 3.38   7.64  56.55  35.50
-+  9   9   0.08 2.95 3.38   7.88
-+ 10   5   1.42 3.43 3.38   2.14  30.99  65.44
-+ 10  11   0.16 2.88 3.38   3.40
- .fi
--Above the cycle soaker drives cpu6 up 3.6 Ghz turbo limit
-+Above the cycle soaker drives cpu7 up its 3.6 Ghz turbo limit
- while the other processors are generally in various states of idle.
+-u32 acpi_ev_initialize_sCI(u32 program_sCI);
++u32 acpi_ev_initialize_SCI(u32 program_SCI);
  
--Note that cpu0 is an HT sibling sharing core0
--with cpu6, and thus it is unable to get to an idle state
--deeper than c1 while cpu6 is busy.
-+Note that cpu1 and cpu7 are HT siblings within core8.
-+As cpu7 is very busy, it prevents its sibling, cpu1,
-+from entering a c-state deeper than c1.
- 
--Note that turbostat reports average GHz of 3.64, while
-+Note that turbostat reports average GHz of 3.63, while
- the arithmetic average of the GHz column above is lower.
- This is a weighted average, where the weight is %c0.  ie. it is the total number of
- un-halted cycles elapsed per time divided by the number of CPUs.
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index 16de7ad..b815a12 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -67,92 +67,119 @@ double bclk;
- unsigned int show_pkg;
- unsigned int show_core;
- unsigned int show_cpu;
-+unsigned int show_pkg_only;
-+unsigned int show_core_only;
-+char *output_buffer, *outp;
- 
- int aperf_mperf_unstable;
- int backwards_count;
- char *progname;
- 
--int num_cpus;
--cpu_set_t *cpu_present_set, *cpu_mask;
--size_t cpu_present_setsize, cpu_mask_size;
--
--struct counters {
--	unsigned long long tsc;		/* per thread */
--	unsigned long long aperf;	/* per thread */
--	unsigned long long mperf;	/* per thread */
--	unsigned long long c1;	/* per thread (calculated) */
--	unsigned long long c3;	/* per core */
--	unsigned long long c6;	/* per core */
--	unsigned long long c7;	/* per core */
--	unsigned long long pc2;	/* per package */
--	unsigned long long pc3;	/* per package */
--	unsigned long long pc6;	/* per package */
--	unsigned long long pc7;	/* per package */
--	unsigned long long extra_msr;	/* per thread */
--	int pkg;
--	int core;
--	int cpu;
--	struct counters *next;
--};
--
--struct counters *cnt_even;
--struct counters *cnt_odd;
--struct counters *cnt_delta;
--struct counters *cnt_average;
--struct timeval tv_even;
--struct timeval tv_odd;
--struct timeval tv_delta;
--
--int mark_cpu_present(int pkg, int core, int cpu)
-+cpu_set_t *cpu_present_set, *cpu_affinity_set;
-+size_t cpu_present_setsize, cpu_affinity_setsize;
-+
-+struct thread_data {
-+	unsigned long long tsc;
-+	unsigned long long aperf;
-+	unsigned long long mperf;
-+	unsigned long long c1;	/* derived */
-+	unsigned long long extra_msr;
-+	unsigned int cpu_id;
-+	unsigned int flags;
-+#define CPU_IS_FIRST_THREAD_IN_CORE	0x2
-+#define CPU_IS_FIRST_CORE_IN_PACKAGE	0x4
-+} *thread_even, *thread_odd;
-+
-+struct core_data {
-+	unsigned long long c3;
-+	unsigned long long c6;
-+	unsigned long long c7;
-+	unsigned int core_id;
-+} *core_even, *core_odd;
-+
-+struct pkg_data {
-+	unsigned long long pc2;
-+	unsigned long long pc3;
-+	unsigned long long pc6;
-+	unsigned long long pc7;
-+	unsigned int package_id;
-+} *package_even, *package_odd;
-+
-+#define ODD_COUNTERS thread_odd, core_odd, package_odd
-+#define EVEN_COUNTERS thread_even, core_even, package_even
-+
-+#define GET_THREAD(thread_base, thread_no, core_no, pkg_no) \
-+	(thread_base + (pkg_no) * topo.num_cores_per_pkg * \
-+		topo.num_threads_per_core + \
-+		(core_no) * topo.num_threads_per_core + (thread_no))
-+#define GET_CORE(core_base, core_no, pkg_no) \
-+	(core_base + (pkg_no) * topo.num_cores_per_pkg + (core_no))
-+#define GET_PKG(pkg_base, pkg_no) (pkg_base + pkg_no)
-+
-+struct system_summary {
-+	struct thread_data threads;
-+	struct core_data cores;
-+	struct pkg_data packages;
-+} sum, average;
-+
-+
-+struct topo_params {
-+	int num_packages;
-+	int num_cpus;
-+	int num_cores;
-+	int max_cpu_num;
-+	int num_cores_per_pkg;
-+	int num_threads_per_core;
-+} topo;
-+
-+struct timeval tv_even, tv_odd, tv_delta;
-+
-+void setup_all_buffers(void);
-+
-+int cpu_is_not_present(int cpu)
- {
--	CPU_SET_S(cpu, cpu_present_setsize, cpu_present_set);
--	return 0;
-+	return !CPU_ISSET_S(cpu, cpu_present_setsize, cpu_present_set);
- }
--
- /*
-- * cpu_mask_init(ncpus)
-- *
-- * allocate and clear cpu_mask
-- * set cpu_mask_size
-+ * run func(thread, core, package) in topology order
-+ * skip non-present cpus
+ ACPI_HW_DEPENDENT_RETURN_VOID(void acpi_ev_terminate(void))
+ #endif				/* __ACEVENTS_H__  */
+diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
+index 6b225e8..cc80fe1 100644
+--- a/drivers/acpi/acpica/aclocal.h
++++ b/drivers/acpi/acpica/aclocal.h
+@@ -299,7 +299,7 @@ acpi_status(*ACPI_INTERNAL_METHOD) (struct acpi_walk_state * walk_state);
+  * Information structure for ACPI predefined names.
+  * Each entry in the table contains the following items:
+  *
+- * Name                 - The ACPI reserved name
++ * name                 - The ACPI reserved name
+  * param_count          - Number of arguments to the method
+  * expected_return_btypes - Allowed type(s) for the return value
   */
--void cpu_mask_init(int ncpus)
-+
-+int for_all_cpus(int (func)(struct thread_data *, struct core_data *, struct pkg_data *),
-+	struct thread_data *thread_base, struct core_data *core_base, struct pkg_data *pkg_base)
- {
--	cpu_mask = CPU_ALLOC(ncpus);
--	if (cpu_mask == NULL) {
--		perror("CPU_ALLOC");
--		exit(3);
--	}
--	cpu_mask_size = CPU_ALLOC_SIZE(ncpus);
--	CPU_ZERO_S(cpu_mask_size, cpu_mask);
-+	int retval, pkg_no, core_no, thread_no;
+@@ -734,7 +734,7 @@ struct acpi_parse_obj_named {
+ 	u32 name;		/* 4-byte name or zero if no name */
+ };
  
--	/*
--	 * Allocate and initialize cpu_present_set
--	 */
--	cpu_present_set = CPU_ALLOC(ncpus);
--	if (cpu_present_set == NULL) {
--		perror("CPU_ALLOC");
--		exit(3);
--	}
--	cpu_present_setsize = CPU_ALLOC_SIZE(ncpus);
--	CPU_ZERO_S(cpu_present_setsize, cpu_present_set);
--	for_all_cpus(mark_cpu_present);
--}
-+	for (pkg_no = 0; pkg_no < topo.num_packages; ++pkg_no) {
-+		for (core_no = 0; core_no < topo.num_cores_per_pkg; ++core_no) {
-+			for (thread_no = 0; thread_no <
-+				topo.num_threads_per_core; ++thread_no) {
-+				struct thread_data *t;
-+				struct core_data *c;
-+				struct pkg_data *p;
+-/* This version is used by the i_aSL compiler only */
++/* This version is used by the iASL compiler only */
  
--void cpu_mask_uninit()
--{
--	CPU_FREE(cpu_mask);
--	cpu_mask = NULL;
--	cpu_mask_size = 0;
--	CPU_FREE(cpu_present_set);
--	cpu_present_set = NULL;
--	cpu_present_setsize = 0;
-+				t = GET_THREAD(thread_base, thread_no, core_no, pkg_no);
-+
-+				if (cpu_is_not_present(t->cpu_id))
-+					continue;
-+
-+				c = GET_CORE(core_base, core_no, pkg_no);
-+				p = GET_PKG(pkg_base, pkg_no);
-+
-+				retval = func(t, c, p);
-+				if (retval)
-+					return retval;
-+			}
-+		}
-+	}
-+	return 0;
- }
+ #define ACPI_MAX_PARSEOP_NAME   20
  
- int cpu_migrate(int cpu)
- {
--	CPU_ZERO_S(cpu_mask_size, cpu_mask);
--	CPU_SET_S(cpu, cpu_mask_size, cpu_mask);
--	if (sched_setaffinity(0, cpu_mask_size, cpu_mask) == -1)
-+	CPU_ZERO_S(cpu_affinity_setsize, cpu_affinity_set);
-+	CPU_SET_S(cpu, cpu_affinity_setsize, cpu_affinity_set);
-+	if (sched_setaffinity(0, cpu_affinity_setsize, cpu_affinity_set) == -1)
- 		return -1;
- 	else
- 		return 0;
-@@ -181,67 +208,72 @@ int get_msr(int cpu, off_t offset, unsigned long long *msr)
- void print_header(void)
- {
- 	if (show_pkg)
--		fprintf(stderr, "pk");
-+		outp += sprintf(outp, "pk");
- 	if (show_pkg)
--		fprintf(stderr, " ");
-+		outp += sprintf(outp, " ");
- 	if (show_core)
--		fprintf(stderr, "cor");
-+		outp += sprintf(outp, "cor");
- 	if (show_cpu)
--		fprintf(stderr, " CPU");
-+		outp += sprintf(outp, " CPU");
- 	if (show_pkg || show_core || show_cpu)
--		fprintf(stderr, " ");
-+		outp += sprintf(outp, " ");
- 	if (do_nhm_cstates)
--		fprintf(stderr, "   %%c0");
-+		outp += sprintf(outp, "   %%c0");
- 	if (has_aperf)
--		fprintf(stderr, "  GHz");
--	fprintf(stderr, "  TSC");
-+		outp += sprintf(outp, "  GHz");
-+	outp += sprintf(outp, "  TSC");
- 	if (do_nhm_cstates)
--		fprintf(stderr, "    %%c1");
-+		outp += sprintf(outp, "    %%c1");
- 	if (do_nhm_cstates)
--		fprintf(stderr, "    %%c3");
-+		outp += sprintf(outp, "    %%c3");
- 	if (do_nhm_cstates)
--		fprintf(stderr, "    %%c6");
-+		outp += sprintf(outp, "    %%c6");
- 	if (do_snb_cstates)
--		fprintf(stderr, "    %%c7");
-+		outp += sprintf(outp, "    %%c7");
- 	if (do_snb_cstates)
--		fprintf(stderr, "   %%pc2");
-+		outp += sprintf(outp, "   %%pc2");
- 	if (do_nhm_cstates)
--		fprintf(stderr, "   %%pc3");
-+		outp += sprintf(outp, "   %%pc3");
- 	if (do_nhm_cstates)
--		fprintf(stderr, "   %%pc6");
-+		outp += sprintf(outp, "   %%pc6");
- 	if (do_snb_cstates)
--		fprintf(stderr, "   %%pc7");
-+		outp += sprintf(outp, "   %%pc7");
- 	if (extra_msr_offset)
--		fprintf(stderr, "        MSR 0x%x ", extra_msr_offset);
-+		outp += sprintf(outp, "        MSR 0x%x ", extra_msr_offset);
+diff --git a/drivers/acpi/acpica/acmacros.h b/drivers/acpi/acpica/acmacros.h
+index 087b466..832b619 100644
+--- a/drivers/acpi/acpica/acmacros.h
++++ b/drivers/acpi/acpica/acmacros.h
+@@ -62,7 +62,7 @@
+  * printf() format helpers
+  */
  
--	putc('\n', stderr);
-+	outp += sprintf(outp, "\n");
- }
+-/* Split 64-bit integer into two 32-bit values. Use with %8.8_x%8.8_x */
++/* Split 64-bit integer into two 32-bit values. Use with %8.8X%8.8X */
  
--void dump_cnt(struct counters *cnt)
-+int dump_counters(struct thread_data *t, struct core_data *c,
-+	struct pkg_data *p)
- {
--	if (!cnt)
--		return;
--	if (cnt->pkg) fprintf(stderr, "package: %d ", cnt->pkg);
--	if (cnt->core) fprintf(stderr, "core:: %d ", cnt->core);
--	if (cnt->cpu) fprintf(stderr, "CPU: %d ", cnt->cpu);
--	if (cnt->tsc) fprintf(stderr, "TSC: %016llX\n", cnt->tsc);
--	if (cnt->c3) fprintf(stderr, "c3: %016llX\n", cnt->c3);
--	if (cnt->c6) fprintf(stderr, "c6: %016llX\n", cnt->c6);
--	if (cnt->c7) fprintf(stderr, "c7: %016llX\n", cnt->c7);
--	if (cnt->aperf) fprintf(stderr, "aperf: %016llX\n", cnt->aperf);
--	if (cnt->pc2) fprintf(stderr, "pc2: %016llX\n", cnt->pc2);
--	if (cnt->pc3) fprintf(stderr, "pc3: %016llX\n", cnt->pc3);
--	if (cnt->pc6) fprintf(stderr, "pc6: %016llX\n", cnt->pc6);
--	if (cnt->pc7) fprintf(stderr, "pc7: %016llX\n", cnt->pc7);
--	if (cnt->extra_msr) fprintf(stderr, "msr0x%x: %016llX\n", extra_msr_offset, cnt->extra_msr);
--}
-+	fprintf(stderr, "t %p, c %p, p %p\n", t, c, p);
-+
-+	if (t) {
-+		fprintf(stderr, "CPU: %d flags 0x%x\n", t->cpu_id, t->flags);
-+		fprintf(stderr, "TSC: %016llX\n", t->tsc);
-+		fprintf(stderr, "aperf: %016llX\n", t->aperf);
-+		fprintf(stderr, "mperf: %016llX\n", t->mperf);
-+		fprintf(stderr, "c1: %016llX\n", t->c1);
-+		fprintf(stderr, "msr0x%x: %016llX\n",
-+			extra_msr_offset, t->extra_msr);
-+	}
+ #define ACPI_FORMAT_UINT64(i)           ACPI_HIDWORD(i), ACPI_LODWORD(i)
  
--void dump_list(struct counters *cnt)
--{
--	printf("dump_list 0x%p\n", cnt);
-+	if (c) {
-+		fprintf(stderr, "core: %d\n", c->core_id);
-+		fprintf(stderr, "c3: %016llX\n", c->c3);
-+		fprintf(stderr, "c6: %016llX\n", c->c6);
-+		fprintf(stderr, "c7: %016llX\n", c->c7);
-+	}
+diff --git a/drivers/acpi/acpica/acobject.h b/drivers/acpi/acpica/acobject.h
+index b85802d..364a130 100644
+--- a/drivers/acpi/acpica/acobject.h
++++ b/drivers/acpi/acpica/acobject.h
+@@ -381,7 +381,7 @@ struct acpi_object_cache_list {
  
--	for (; cnt; cnt = cnt->next)
--		dump_cnt(cnt);
-+	if (p) {
-+		fprintf(stderr, "package: %d\n", p->package_id);
-+		fprintf(stderr, "pc2: %016llX\n", p->pc2);
-+		fprintf(stderr, "pc3: %016llX\n", p->pc3);
-+		fprintf(stderr, "pc6: %016llX\n", p->pc6);
-+		fprintf(stderr, "pc7: %016llX\n", p->pc7);
-+	}
-+	return 0;
- }
+ /******************************************************************************
+  *
+- * union acpi_operand_object Descriptor - a giant union of all of the above
++ * union acpi_operand_object descriptor - a giant union of all of the above
+  *
+  *****************************************************************************/
+ 
+diff --git a/drivers/acpi/acpica/acpredef.h b/drivers/acpi/acpica/acpredef.h
+index c8e5756..3080c01 100644
+--- a/drivers/acpi/acpica/acpredef.h
++++ b/drivers/acpi/acpica/acpredef.h
+@@ -140,7 +140,7 @@ enum acpi_return_package_types {
+  *
+  * The main entries in the table each contain the following items:
+  *
+- * Name                 - The ACPI reserved name
++ * name                 - The ACPI reserved name
+  * param_count          - Number of arguments to the method
+  * expected_btypes      - Allowed type(s) for the return value.
+  *                        0 means that no return value is expected.
+diff --git a/drivers/acpi/acpica/acstruct.h b/drivers/acpi/acpica/acstruct.h
+index 0404df6..f196e2c 100644
+--- a/drivers/acpi/acpica/acstruct.h
++++ b/drivers/acpi/acpica/acstruct.h
+@@ -68,7 +68,7 @@
+ #define ACPI_WALK_METHOD            0x01
+ #define ACPI_WALK_METHOD_RESTART    0x02
+ 
+-/* Flags for i_aSL compiler only */
++/* Flags for iASL compiler only */
+ 
+ #define ACPI_WALK_CONST_REQUIRED    0x10
+ #define ACPI_WALK_CONST_OPTIONAL    0x20
+diff --git a/drivers/acpi/acpica/amlcode.h b/drivers/acpi/acpica/amlcode.h
+index 905280f..c26f8ff 100644
+--- a/drivers/acpi/acpica/amlcode.h
++++ b/drivers/acpi/acpica/amlcode.h
+@@ -182,7 +182,7 @@
  
  /*
-@@ -253,321 +285,385 @@ void dump_list(struct counters *cnt)
-  * TSC: "TSC" 3 columns %3.2
-  * percentage " %pc3" %6.2
+  * Combination opcodes (actually two one-byte opcodes)
+- * Used by the disassembler and i_aSL compiler
++ * Used by the disassembler and iASL compiler
   */
--void print_cnt(struct counters *p)
-+int format_counters(struct thread_data *t, struct core_data *c,
-+	struct pkg_data *p)
- {
- 	double interval_float;
+ #define AML_LGREATEREQUAL_OP        (u16) 0x9295
+ #define AML_LLESSEQUAL_OP           (u16) 0x9294
+@@ -280,7 +280,7 @@
  
-+	 /* if showing only 1st thread in core and this isn't one, bail out */
-+	if (show_core_only && !(t->flags & CPU_IS_FIRST_THREAD_IN_CORE))
-+		return 0;
-+
-+	 /* if showing only 1st thread in pkg and this isn't one, bail out */
-+	if (show_pkg_only && !(t->flags & CPU_IS_FIRST_CORE_IN_PACKAGE))
-+		return 0;
-+
- 	interval_float = tv_delta.tv_sec + tv_delta.tv_usec/1000000.0;
+ /* Multiple/complex types */
  
--	/* topology columns, print blanks on 1st (average) line */
--	if (p == cnt_average) {
-+	/* topo columns, print blanks on 1st (average) line */
-+	if (t == &average.threads) {
- 		if (show_pkg)
--			fprintf(stderr, "  ");
-+			outp += sprintf(outp, "  ");
- 		if (show_pkg && show_core)
--			fprintf(stderr, " ");
-+			outp += sprintf(outp, " ");
- 		if (show_core)
--			fprintf(stderr, "   ");
-+			outp += sprintf(outp, "   ");
- 		if (show_cpu)
--			fprintf(stderr, " " "   ");
-+			outp += sprintf(outp, " " "   ");
+-#define ARGI_DATAOBJECT             0x12	/* Buffer, String, package or reference to a Node - Used only by size_of operator */
++#define ARGI_DATAOBJECT             0x12	/* Buffer, String, package or reference to a node - Used only by size_of operator */
+ #define ARGI_COMPLEXOBJ             0x13	/* Buffer, String, or package (Used by INDEX op only) */
+ #define ARGI_REF_OR_STRING          0x14	/* Reference or String (Used by DEREFOF op only) */
+ #define ARGI_REGION_OR_BUFFER       0x15	/* Used by LOAD op only */
+diff --git a/drivers/acpi/acpica/amlresrc.h b/drivers/acpi/acpica/amlresrc.h
+index 7b2128f..af49479 100644
+--- a/drivers/acpi/acpica/amlresrc.h
++++ b/drivers/acpi/acpica/amlresrc.h
+@@ -98,7 +98,7 @@
+ #define ACPI_RESTAG_TRANSLATION                 "_TRA"
+ #define ACPI_RESTAG_TRANSTYPE                   "_TRS"	/* Sparse(1), Dense(0) */
+ #define ACPI_RESTAG_TYPE                        "_TTP"	/* Translation(1), Static (0) */
+-#define ACPI_RESTAG_XFERTYPE                    "_SIZ"	/* 8(0), 8_and16(1), 16(2) */
++#define ACPI_RESTAG_XFERTYPE                    "_SIZ"	/* 8(0), 8And16(1), 16(2) */
+ #define ACPI_RESTAG_VENDORDATA                  "_VEN"
+ 
+ /* Default sizes for "small" resource descriptors */
+@@ -235,7 +235,7 @@ AML_RESOURCE_LARGE_HEADER_COMMON AML_RESOURCE_ADDRESS_COMMON};
+ 
+ struct aml_resource_extended_address64 {
+ 	AML_RESOURCE_LARGE_HEADER_COMMON
+-	    AML_RESOURCE_ADDRESS_COMMON u8 revision_iD;
++	    AML_RESOURCE_ADDRESS_COMMON u8 revision_ID;
+ 	u8 reserved;
+ 	u64 granularity;
+ 	u64 minimum;
+diff --git a/drivers/acpi/acpica/dsargs.c b/drivers/acpi/acpica/dsargs.c
+index 80eb190..c8b5e25 100644
+--- a/drivers/acpi/acpica/dsargs.c
++++ b/drivers/acpi/acpica/dsargs.c
+@@ -62,7 +62,7 @@ acpi_ds_execute_arguments(struct acpi_namespace_node *node,
+  *
+  * FUNCTION:    acpi_ds_execute_arguments
+  *
+- * PARAMETERS:  Node                - Object NS node
++ * PARAMETERS:  node                - Object NS node
+  *              scope_node          - Parent NS node
+  *              aml_length          - Length of executable AML
+  *              aml_start           - Pointer to the AML
+diff --git a/drivers/acpi/acpica/dscontrol.c b/drivers/acpi/acpica/dscontrol.c
+index effe4ca..465f021 100644
+--- a/drivers/acpi/acpica/dscontrol.c
++++ b/drivers/acpi/acpica/dscontrol.c
+@@ -56,7 +56,7 @@ ACPI_MODULE_NAME("dscontrol")
+  * FUNCTION:    acpi_ds_exec_begin_control_op
+  *
+  * PARAMETERS:  walk_list       - The list that owns the walk stack
+- *              Op              - The control Op
++ *              op              - The control Op
+  *
+  * RETURN:      Status
+  *
+@@ -153,7 +153,7 @@ acpi_ds_exec_begin_control_op(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_exec_end_control_op
+  *
+  * PARAMETERS:  walk_list       - The list that owns the walk stack
+- *              Op              - The control Op
++ *              op              - The control Op
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/dsfield.c b/drivers/acpi/acpica/dsfield.c
+index 8098439..3da6fd8 100644
+--- a/drivers/acpi/acpica/dsfield.c
++++ b/drivers/acpi/acpica/dsfield.c
+@@ -71,13 +71,13 @@ acpi_ds_get_field_names(struct acpi_create_field_info *info,
+ #ifdef ACPI_ASL_COMPILER
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_ds_create_external_region (i_aSL Disassembler only)
++ * FUNCTION:    acpi_ds_create_external_region (iASL Disassembler only)
+  *
+  * PARAMETERS:  lookup_status   - Status from ns_lookup operation
+- *              Op              - Op containing the Field definition and args
+- *              Path            - Pathname of the region
++ *              op              - Op containing the Field definition and args
++ *              path            - Pathname of the region
+  *  `           walk_state      - Current method state
+- *              Node            - Where the new region node is returned
++ *              node            - Where the new region node is returned
+  *
+  * RETURN:      Status
+  *
+@@ -130,7 +130,7 @@ acpi_ds_create_external_region(acpi_status lookup_status,
+  *
+  * FUNCTION:    acpi_ds_create_buffer_field
+  *
+- * PARAMETERS:  Op                  - Current parse op (create_xXField)
++ * PARAMETERS:  op                  - Current parse op (create_XXField)
+  *              walk_state          - Current state
+  *
+  * RETURN:      Status
+@@ -167,7 +167,7 @@ acpi_ds_create_buffer_field(union acpi_parse_object *op,
+ 
+ 		arg = acpi_ps_get_arg(op, 3);
  	} else {
--		if (show_pkg)
--			fprintf(stderr, "%2d", p->pkg);
-+		if (show_pkg) {
-+			if (p)
-+				outp += sprintf(outp, "%2d", p->package_id);
-+			else
-+				outp += sprintf(outp, "  ");
-+		}
- 		if (show_pkg && show_core)
--			fprintf(stderr, " ");
--		if (show_core)
--			fprintf(stderr, "%3d", p->core);
-+			outp += sprintf(outp, " ");
-+		if (show_core) {
-+			if (c)
-+				outp += sprintf(outp, "%3d", c->core_id);
-+			else
-+				outp += sprintf(outp, "   ");
-+		}
- 		if (show_cpu)
--			fprintf(stderr, " %3d", p->cpu);
-+			outp += sprintf(outp, " %3d", t->cpu_id);
+-		/* For all other create_xXXField operators, name is the 3rd argument */
++		/* For all other create_XXXField operators, name is the 3rd argument */
+ 
+ 		arg = acpi_ps_get_arg(op, 2);
  	}
- 
- 	/* %c0 */
- 	if (do_nhm_cstates) {
- 		if (show_pkg || show_core || show_cpu)
--			fprintf(stderr, " ");
-+			outp += sprintf(outp, " ");
- 		if (!skip_c0)
--			fprintf(stderr, "%6.2f", 100.0 * p->mperf/p->tsc);
-+			outp += sprintf(outp, "%6.2f", 100.0 * t->mperf/t->tsc);
- 		else
--			fprintf(stderr, "  ****");
-+			outp += sprintf(outp, "  ****");
- 	}
- 
- 	/* GHz */
- 	if (has_aperf) {
- 		if (!aperf_mperf_unstable) {
--			fprintf(stderr, " %3.2f",
--				1.0 * p->tsc / units * p->aperf /
--				p->mperf / interval_float);
-+			outp += sprintf(outp, " %3.2f",
-+				1.0 * t->tsc / units * t->aperf /
-+				t->mperf / interval_float);
- 		} else {
--			if (p->aperf > p->tsc || p->mperf > p->tsc) {
--				fprintf(stderr, " ***");
-+			if (t->aperf > t->tsc || t->mperf > t->tsc) {
-+				outp += sprintf(outp, " ***");
- 			} else {
--				fprintf(stderr, "%3.1f*",
--					1.0 * p->tsc /
--					units * p->aperf /
--					p->mperf / interval_float);
-+				outp += sprintf(outp, "%3.1f*",
-+					1.0 * t->tsc /
-+					units * t->aperf /
-+					t->mperf / interval_float);
- 			}
- 		}
- 	}
- 
- 	/* TSC */
--	fprintf(stderr, "%5.2f", 1.0 * p->tsc/units/interval_float);
-+	outp += sprintf(outp, "%5.2f", 1.0 * t->tsc/units/interval_float);
- 
- 	if (do_nhm_cstates) {
- 		if (!skip_c1)
--			fprintf(stderr, " %6.2f", 100.0 * p->c1/p->tsc);
-+			outp += sprintf(outp, " %6.2f", 100.0 * t->c1/t->tsc);
- 		else
--			fprintf(stderr, "  ****");
-+			outp += sprintf(outp, "  ****");
- 	}
-+
-+	/* print per-core data only for 1st thread in core */
-+	if (!(t->flags & CPU_IS_FIRST_THREAD_IN_CORE))
-+		goto done;
-+
- 	if (do_nhm_cstates)
--		fprintf(stderr, " %6.2f", 100.0 * p->c3/p->tsc);
-+		outp += sprintf(outp, " %6.2f", 100.0 * c->c3/t->tsc);
- 	if (do_nhm_cstates)
--		fprintf(stderr, " %6.2f", 100.0 * p->c6/p->tsc);
-+		outp += sprintf(outp, " %6.2f", 100.0 * c->c6/t->tsc);
- 	if (do_snb_cstates)
--		fprintf(stderr, " %6.2f", 100.0 * p->c7/p->tsc);
-+		outp += sprintf(outp, " %6.2f", 100.0 * c->c7/t->tsc);
-+
-+	/* print per-package data only for 1st core in package */
-+	if (!(t->flags & CPU_IS_FIRST_CORE_IN_PACKAGE))
-+		goto done;
-+
- 	if (do_snb_cstates)
--		fprintf(stderr, " %6.2f", 100.0 * p->pc2/p->tsc);
-+		outp += sprintf(outp, " %6.2f", 100.0 * p->pc2/t->tsc);
- 	if (do_nhm_cstates)
--		fprintf(stderr, " %6.2f", 100.0 * p->pc3/p->tsc);
-+		outp += sprintf(outp, " %6.2f", 100.0 * p->pc3/t->tsc);
- 	if (do_nhm_cstates)
--		fprintf(stderr, " %6.2f", 100.0 * p->pc6/p->tsc);
-+		outp += sprintf(outp, " %6.2f", 100.0 * p->pc6/t->tsc);
- 	if (do_snb_cstates)
--		fprintf(stderr, " %6.2f", 100.0 * p->pc7/p->tsc);
-+		outp += sprintf(outp, " %6.2f", 100.0 * p->pc7/t->tsc);
-+done:
- 	if (extra_msr_offset)
--		fprintf(stderr, "  0x%016llx", p->extra_msr);
--	putc('\n', stderr);
-+		outp += sprintf(outp, "  0x%016llx", t->extra_msr);
-+	outp += sprintf(outp, "\n");
-+
-+	return 0;
- }
- 
--void print_counters(struct counters *counters)
-+void flush_stdout()
-+{
-+	fputs(output_buffer, stdout);
-+	outp = output_buffer;
-+}
-+void flush_stderr()
-+{
-+	fputs(output_buffer, stderr);
-+	outp = output_buffer;
-+}
-+void format_all_counters(struct thread_data *t, struct core_data *c, struct pkg_data *p)
- {
--	struct counters *cnt;
- 	static int printed;
- 
--
- 	if (!printed || !summary_only)
- 		print_header();
- 
--	if (num_cpus > 1)
--		print_cnt(cnt_average);
-+	if (topo.num_cpus > 1)
-+		format_counters(&average.threads, &average.cores,
-+			&average.packages);
- 
- 	printed = 1;
- 
- 	if (summary_only)
- 		return;
- 
--	for (cnt = counters; cnt != NULL; cnt = cnt->next)
--		print_cnt(cnt);
--
-+	for_all_cpus(format_counters, t, c, p);
- }
- 
--#define SUBTRACT_COUNTER(after, before, delta) (delta = (after - before), (before > after))
-+void
-+delta_package(struct pkg_data *new, struct pkg_data *old)
-+{
-+	old->pc2 = new->pc2 - old->pc2;
-+	old->pc3 = new->pc3 - old->pc3;
-+	old->pc6 = new->pc6 - old->pc6;
-+	old->pc7 = new->pc7 - old->pc7;
-+}
- 
--int compute_delta(struct counters *after,
--	struct counters *before, struct counters *delta)
-+void
-+delta_core(struct core_data *new, struct core_data *old)
- {
--	int errors = 0;
--	int perf_err = 0;
-+	old->c3 = new->c3 - old->c3;
-+	old->c6 = new->c6 - old->c6;
-+	old->c7 = new->c7 - old->c7;
-+}
- 
--	skip_c0 = skip_c1 = 0;
-+void
-+delta_thread(struct thread_data *new, struct thread_data *old,
-+	struct core_data *core_delta)
-+{
-+	old->tsc = new->tsc - old->tsc;
-+
-+	/* check for TSC < 1 Mcycles over interval */
-+	if (old->tsc < (1000 * 1000)) {
-+		fprintf(stderr, "Insanely slow TSC rate, TSC stops in idle?\n");
-+		fprintf(stderr, "You can disable all c-states by booting with \"idle=poll\"\n");
-+		fprintf(stderr, "or just the deep ones with \"processor.max_cstate=1\"\n");
-+		exit(-3);
-+	}
- 
--	for ( ; after && before && delta;
--		after = after->next, before = before->next, delta = delta->next) {
--		if (before->cpu != after->cpu) {
--			printf("cpu configuration changed: %d != %d\n",
--				before->cpu, after->cpu);
--			return -1;
--		}
-+	old->c1 = new->c1 - old->c1;
- 
--		if (SUBTRACT_COUNTER(after->tsc, before->tsc, delta->tsc)) {
--			fprintf(stderr, "cpu%d TSC went backwards %llX to %llX\n",
--				before->cpu, before->tsc, after->tsc);
--			errors++;
--		}
--		/* check for TSC < 1 Mcycles over interval */
--		if (delta->tsc < (1000 * 1000)) {
--			fprintf(stderr, "Insanely slow TSC rate,"
--				" TSC stops in idle?\n");
--			fprintf(stderr, "You can disable all c-states"
--				" by booting with \"idle=poll\"\n");
--			fprintf(stderr, "or just the deep ones with"
--				" \"processor.max_cstate=1\"\n");
--			exit(-3);
--		}
--		if (SUBTRACT_COUNTER(after->c3, before->c3, delta->c3)) {
--			fprintf(stderr, "cpu%d c3 counter went backwards %llX to %llX\n",
--				before->cpu, before->c3, after->c3);
--			errors++;
--		}
--		if (SUBTRACT_COUNTER(after->c6, before->c6, delta->c6)) {
--			fprintf(stderr, "cpu%d c6 counter went backwards %llX to %llX\n",
--				before->cpu, before->c6, after->c6);
--			errors++;
--		}
--		if (SUBTRACT_COUNTER(after->c7, before->c7, delta->c7)) {
--			fprintf(stderr, "cpu%d c7 counter went backwards %llX to %llX\n",
--				before->cpu, before->c7, after->c7);
--			errors++;
--		}
--		if (SUBTRACT_COUNTER(after->pc2, before->pc2, delta->pc2)) {
--			fprintf(stderr, "cpu%d pc2 counter went backwards %llX to %llX\n",
--				before->cpu, before->pc2, after->pc2);
--			errors++;
--		}
--		if (SUBTRACT_COUNTER(after->pc3, before->pc3, delta->pc3)) {
--			fprintf(stderr, "cpu%d pc3 counter went backwards %llX to %llX\n",
--				before->cpu, before->pc3, after->pc3);
--			errors++;
--		}
--		if (SUBTRACT_COUNTER(after->pc6, before->pc6, delta->pc6)) {
--			fprintf(stderr, "cpu%d pc6 counter went backwards %llX to %llX\n",
--				before->cpu, before->pc6, after->pc6);
--			errors++;
--		}
--		if (SUBTRACT_COUNTER(after->pc7, before->pc7, delta->pc7)) {
--			fprintf(stderr, "cpu%d pc7 counter went backwards %llX to %llX\n",
--				before->cpu, before->pc7, after->pc7);
--			errors++;
--		}
-+	if ((new->aperf > old->aperf) && (new->mperf > old->mperf)) {
-+		old->aperf = new->aperf - old->aperf;
-+		old->mperf = new->mperf - old->mperf;
-+	} else {
- 
--		perf_err = SUBTRACT_COUNTER(after->aperf, before->aperf, delta->aperf);
--		if (perf_err) {
--			fprintf(stderr, "cpu%d aperf counter went backwards %llX to %llX\n",
--				before->cpu, before->aperf, after->aperf);
--		}
--		perf_err |= SUBTRACT_COUNTER(after->mperf, before->mperf, delta->mperf);
--		if (perf_err) {
--			fprintf(stderr, "cpu%d mperf counter went backwards %llX to %llX\n",
--				before->cpu, before->mperf, after->mperf);
--		}
--		if (perf_err) {
--			if (!aperf_mperf_unstable) {
--				fprintf(stderr, "%s: APERF or MPERF went backwards *\n", progname);
--				fprintf(stderr, "* Frequency results do not cover entire interval *\n");
--				fprintf(stderr, "* fix this by running Linux-2.6.30 or later *\n");
-+		if (!aperf_mperf_unstable) {
-+			fprintf(stderr, "%s: APERF or MPERF went backwards *\n", progname);
-+			fprintf(stderr, "* Frequency results do not cover entire interval *\n");
-+			fprintf(stderr, "* fix this by running Linux-2.6.30 or later *\n");
- 
--				aperf_mperf_unstable = 1;
--			}
--			/*
--			 * mperf delta is likely a huge "positive" number
--			 * can not use it for calculating c0 time
--			 */
--			skip_c0 = 1;
--			skip_c1 = 1;
-+			aperf_mperf_unstable = 1;
- 		}
--
+@@ -271,9 +271,9 @@ acpi_ds_create_buffer_field(union acpi_parse_object *op,
+  *
+  * FUNCTION:    acpi_ds_get_field_names
+  *
+- * PARAMETERS:  Info            - create_field info structure
++ * PARAMETERS:  info            - create_field info structure
+  *  `           walk_state      - Current method state
+- *              Arg             - First parser arg for the field name list
++ *              arg             - First parser arg for the field name list
+  *
+  * RETURN:      Status
+  *
+@@ -302,10 +302,10 @@ acpi_ds_get_field_names(struct acpi_create_field_info *info,
+ 	while (arg) {
  		/*
--		 * As mperf and tsc collection are not atomic,
--		 * it is possible for mperf's non-halted cycles
--		 * to exceed TSC's all cycles: show c1 = 0% in that case.
-+		 * mperf delta is likely a huge "positive" number
-+		 * can not use it for calculating c0 time
+ 		 * Four types of field elements are handled:
+-		 * 1) Name - Enters a new named field into the namespace
+-		 * 2) Offset - specifies a bit offset
++		 * 1) name - Enters a new named field into the namespace
++		 * 2) offset - specifies a bit offset
+ 		 * 3) access_as - changes the access mode/attributes
+-		 * 4) Connection - Associate a resource template with the field
++		 * 4) connection - Associate a resource template with the field
  		 */
--		if (delta->mperf > delta->tsc)
--			delta->c1 = 0;
--		else /* normal case, derive c1 */
--			delta->c1 = delta->tsc - delta->mperf
--				- delta->c3 - delta->c6 - delta->c7;
-+		skip_c0 = 1;
-+		skip_c1 = 1;
-+	}
+ 		switch (arg->common.aml_opcode) {
+ 		case AML_INT_RESERVEDFIELD_OP:
+@@ -457,7 +457,7 @@ acpi_ds_get_field_names(struct acpi_create_field_info *info,
+  *
+  * FUNCTION:    acpi_ds_create_field
+  *
+- * PARAMETERS:  Op              - Op containing the Field definition and args
++ * PARAMETERS:  op              - Op containing the Field definition and args
+  *              region_node     - Object for the containing Operation Region
+  *  `           walk_state      - Current method state
+  *
+@@ -521,7 +521,7 @@ acpi_ds_create_field(union acpi_parse_object *op,
+  *
+  * FUNCTION:    acpi_ds_init_field_objects
+  *
+- * PARAMETERS:  Op              - Op containing the Field definition and args
++ * PARAMETERS:  op              - Op containing the Field definition and args
+  *  `           walk_state      - Current method state
+  *
+  * RETURN:      Status
+@@ -636,7 +636,7 @@ acpi_ds_init_field_objects(union acpi_parse_object *op,
+  *
+  * FUNCTION:    acpi_ds_create_bank_field
+  *
+- * PARAMETERS:  Op              - Op containing the Field definition and args
++ * PARAMETERS:  op              - Op containing the Field definition and args
+  *              region_node     - Object for the containing Operation Region
+  *              walk_state      - Current method state
+  *
+@@ -726,7 +726,7 @@ acpi_ds_create_bank_field(union acpi_parse_object *op,
+  *
+  * FUNCTION:    acpi_ds_create_index_field
+  *
+- * PARAMETERS:  Op              - Op containing the Field definition and args
++ * PARAMETERS:  op              - Op containing the Field definition and args
+  *              region_node     - Object for the containing Operation Region
+  *  `           walk_state      - Current method state
+  *
+diff --git a/drivers/acpi/acpica/dsinit.c b/drivers/acpi/acpica/dsinit.c
+index 9e5ac7f..87eff70 100644
+--- a/drivers/acpi/acpica/dsinit.c
++++ b/drivers/acpi/acpica/dsinit.c
+@@ -60,8 +60,8 @@ acpi_ds_init_one_object(acpi_handle obj_handle,
+  * FUNCTION:    acpi_ds_init_one_object
+  *
+  * PARAMETERS:  obj_handle      - Node for the object
+- *              Level           - Current nesting level
+- *              Context         - Points to a init info struct
++ *              level           - Current nesting level
++ *              context         - Points to a init info struct
+  *              return_value    - Not used
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/dsmethod.c b/drivers/acpi/acpica/dsmethod.c
+index 00f5dab..aa9a5d4 100644
+--- a/drivers/acpi/acpica/dsmethod.c
++++ b/drivers/acpi/acpica/dsmethod.c
+@@ -61,7 +61,7 @@ acpi_ds_create_method_mutex(union acpi_operand_object *method_desc);
+  *
+  * FUNCTION:    acpi_ds_method_error
+  *
+- * PARAMETERS:  Status          - Execution status
++ * PARAMETERS:  status          - Execution status
+  *              walk_state      - Current state
+  *
+  * RETURN:      Status
+@@ -306,9 +306,9 @@ acpi_ds_begin_method_execution(struct acpi_namespace_node *method_node,
+  *
+  * FUNCTION:    acpi_ds_call_control_method
+  *
+- * PARAMETERS:  Thread              - Info for this thread
++ * PARAMETERS:  thread              - Info for this thread
+  *              this_walk_state     - Current walk state
+- *              Op                  - Current Op to be walked
++ *              op                  - Current Op to be walked
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/dsmthdat.c b/drivers/acpi/acpica/dsmthdat.c
+index b40bd50..8d55ceb 100644
+--- a/drivers/acpi/acpica/dsmthdat.c
++++ b/drivers/acpi/acpica/dsmthdat.c
+@@ -177,7 +177,7 @@ void acpi_ds_method_data_delete_all(struct acpi_walk_state *walk_state)
+  *
+  * FUNCTION:    acpi_ds_method_data_init_args
+  *
+- * PARAMETERS:  *Params         - Pointer to a parameter list for the method
++ * PARAMETERS:  *params         - Pointer to a parameter list for the method
+  *              max_param_count - The arg count for this method
+  *              walk_state      - Current walk state object
+  *
+@@ -232,11 +232,11 @@ acpi_ds_method_data_init_args(union acpi_operand_object **params,
+  *
+  * FUNCTION:    acpi_ds_method_data_get_node
+  *
+- * PARAMETERS:  Type                - Either ACPI_REFCLASS_LOCAL or
++ * PARAMETERS:  type                - Either ACPI_REFCLASS_LOCAL or
+  *                                    ACPI_REFCLASS_ARG
+- *              Index               - Which Local or Arg whose type to get
++ *              index               - Which Local or Arg whose type to get
+  *              walk_state          - Current walk state object
+- *              Node                - Where the node is returned.
++ *              node                - Where the node is returned.
+  *
+  * RETURN:      Status and node
+  *
+@@ -296,10 +296,10 @@ acpi_ds_method_data_get_node(u8 type,
+  *
+  * FUNCTION:    acpi_ds_method_data_set_value
+  *
+- * PARAMETERS:  Type                - Either ACPI_REFCLASS_LOCAL or
++ * PARAMETERS:  type                - Either ACPI_REFCLASS_LOCAL or
+  *                                    ACPI_REFCLASS_ARG
+- *              Index               - Which Local or Arg to get
+- *              Object              - Object to be inserted into the stack entry
++ *              index               - Which Local or Arg to get
++ *              object              - Object to be inserted into the stack entry
+  *              walk_state          - Current walk state object
+  *
+  * RETURN:      Status
+@@ -336,7 +336,7 @@ acpi_ds_method_data_set_value(u8 type,
+ 	 * Increment ref count so object can't be deleted while installed.
+ 	 * NOTE: We do not copy the object in order to preserve the call by
+ 	 * reference semantics of ACPI Control Method invocation.
+-	 * (See ACPI Specification 2.0_c)
++	 * (See ACPI Specification 2.0C)
+ 	 */
+ 	acpi_ut_add_reference(object);
  
--		if (delta->mperf == 0)
--			delta->mperf = 1;	/* divide by 0 protection */
+@@ -350,9 +350,9 @@ acpi_ds_method_data_set_value(u8 type,
+  *
+  * FUNCTION:    acpi_ds_method_data_get_value
+  *
+- * PARAMETERS:  Type                - Either ACPI_REFCLASS_LOCAL or
++ * PARAMETERS:  type                - Either ACPI_REFCLASS_LOCAL or
+  *                                    ACPI_REFCLASS_ARG
+- *              Index               - Which local_var or argument to get
++ *              index               - Which localVar or argument to get
+  *              walk_state          - Current walk state object
+  *              dest_desc           - Where Arg or Local value is returned
+  *
+@@ -458,9 +458,9 @@ acpi_ds_method_data_get_value(u8 type,
+  *
+  * FUNCTION:    acpi_ds_method_data_delete_value
+  *
+- * PARAMETERS:  Type                - Either ACPI_REFCLASS_LOCAL or
++ * PARAMETERS:  type                - Either ACPI_REFCLASS_LOCAL or
+  *                                    ACPI_REFCLASS_ARG
+- *              Index               - Which local_var or argument to delete
++ *              index               - Which localVar or argument to delete
+  *              walk_state          - Current walk state object
+  *
+  * RETURN:      None
+@@ -515,9 +515,9 @@ acpi_ds_method_data_delete_value(u8 type,
+  *
+  * FUNCTION:    acpi_ds_store_object_to_local
+  *
+- * PARAMETERS:  Type                - Either ACPI_REFCLASS_LOCAL or
++ * PARAMETERS:  type                - Either ACPI_REFCLASS_LOCAL or
+  *                                    ACPI_REFCLASS_ARG
+- *              Index               - Which Local or Arg to set
++ *              index               - Which Local or Arg to set
+  *              obj_desc            - Value to be stored
+  *              walk_state          - Current walk state
+  *
+@@ -670,8 +670,8 @@ acpi_ds_store_object_to_local(u8 type,
+  *
+  * FUNCTION:    acpi_ds_method_data_get_type
+  *
+- * PARAMETERS:  Opcode              - Either AML_LOCAL_OP or AML_ARG_OP
+- *              Index               - Which Local or Arg whose type to get
++ * PARAMETERS:  opcode              - Either AML_LOCAL_OP or AML_ARG_OP
++ *              index               - Which Local or Arg whose type to get
+  *              walk_state          - Current walk state object
+  *
+  * RETURN:      Data type of current value of the selected Arg or Local
+diff --git a/drivers/acpi/acpica/dsobject.c b/drivers/acpi/acpica/dsobject.c
+index d7045ca..68592dd 100644
+--- a/drivers/acpi/acpica/dsobject.c
++++ b/drivers/acpi/acpica/dsobject.c
+@@ -64,7 +64,7 @@ acpi_ds_build_internal_object(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_build_internal_object
+  *
+  * PARAMETERS:  walk_state      - Current walk state
+- *              Op              - Parser object to be translated
++ *              op              - Parser object to be translated
+  *              obj_desc_ptr    - Where the ACPI internal object is returned
+  *
+  * RETURN:      Status
+@@ -250,7 +250,7 @@ acpi_ds_build_internal_object(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_build_internal_buffer_obj
+  *
+  * PARAMETERS:  walk_state      - Current walk state
+- *              Op              - Parser object to be translated
++ *              op              - Parser object to be translated
+  *              buffer_length   - Length of the buffer
+  *              obj_desc_ptr    - Where the ACPI internal object is returned
+  *
+@@ -354,7 +354,7 @@ acpi_ds_build_internal_buffer_obj(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_build_internal_package_obj
+  *
+  * PARAMETERS:  walk_state      - Current walk state
+- *              Op              - Parser object to be translated
++ *              op              - Parser object to be translated
+  *              element_count   - Number of elements in the package - this is
+  *                                the num_elements argument to Package()
+  *              obj_desc_ptr    - Where the ACPI internal object is returned
+@@ -547,8 +547,8 @@ acpi_ds_build_internal_package_obj(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_create_node
+  *
+  * PARAMETERS:  walk_state      - Current walk state
+- *              Node            - NS Node to be initialized
+- *              Op              - Parser object to be translated
++ *              node            - NS Node to be initialized
++ *              op              - Parser object to be translated
+  *
+  * RETURN:      Status
+  *
+@@ -611,8 +611,8 @@ acpi_ds_create_node(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_init_object_from_op
+  *
+  * PARAMETERS:  walk_state      - Current walk state
+- *              Op              - Parser op used to init the internal object
+- *              Opcode          - AML opcode associated with the object
++ *              op              - Parser op used to init the internal object
++ *              opcode          - AML opcode associated with the object
+  *              ret_obj_desc    - Namespace object to be initialized
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/dsopcode.c b/drivers/acpi/acpica/dsopcode.c
+index e5eff75..aa34d89 100644
+--- a/drivers/acpi/acpica/dsopcode.c
++++ b/drivers/acpi/acpica/dsopcode.c
+@@ -286,7 +286,7 @@ acpi_ds_init_buffer_field(u16 aml_opcode,
+  * FUNCTION:    acpi_ds_eval_buffer_field_operands
+  *
+  * PARAMETERS:  walk_state      - Current walk
+- *              Op              - A valid buffer_field Op object
++ *              op              - A valid buffer_field Op object
+  *
+  * RETURN:      Status
+  *
+@@ -370,7 +370,7 @@ acpi_ds_eval_buffer_field_operands(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_eval_region_operands
+  *
+  * PARAMETERS:  walk_state      - Current walk
+- *              Op              - A valid region Op object
++ *              op              - A valid region Op object
+  *
+  * RETURN:      Status
+  *
+@@ -397,7 +397,7 @@ acpi_ds_eval_region_operands(struct acpi_walk_state *walk_state,
+ 	 */
+ 	node = op->common.node;
  
--		/*
--		 * for "extra msr", just copy the latest w/o subtracting
--		 */
--		delta->extra_msr = after->extra_msr;
--		if (errors) {
--			fprintf(stderr, "ERROR cpu%d before:\n", before->cpu);
--			dump_cnt(before);
--			fprintf(stderr, "ERROR cpu%d after:\n", before->cpu);
--			dump_cnt(after);
--			errors = 0;
--		}
-+	/*
-+	 * As mperf and tsc collection are not atomic,
-+	 * it is possible for mperf's non-halted cycles
-+	 * to exceed TSC's all cycles: show c1 = 0% in that case.
-+	 */
-+	if (old->mperf > old->tsc)
-+		old->c1 = 0;
-+	else {
-+		/* normal case, derive c1 */
-+		old->c1 = old->tsc - old->mperf - core_delta->c3
-+				- core_delta->c6 - core_delta->c7;
-+	}
-+	if (old->mperf == 0) {
-+		if (verbose) fprintf(stderr, "cpu%d MPERF 0!\n", old->cpu_id);
-+		old->mperf = 1;	/* divide by 0 protection */
+-	/* next_op points to the op that holds the space_iD */
++	/* next_op points to the op that holds the space_ID */
+ 
+ 	next_op = op->common.value.arg;
+ 
+@@ -461,7 +461,7 @@ acpi_ds_eval_region_operands(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_eval_table_region_operands
+  *
+  * PARAMETERS:  walk_state      - Current walk
+- *              Op              - A valid region Op object
++ *              op              - A valid region Op object
+  *
+  * RETURN:      Status
+  *
+@@ -560,7 +560,7 @@ acpi_ds_eval_table_region_operands(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_eval_data_object_operands
+  *
+  * PARAMETERS:  walk_state      - Current walk
+- *              Op              - A valid data_object Op object
++ *              op              - A valid data_object Op object
+  *              obj_desc        - data_object
+  *
+  * RETURN:      Status
+@@ -662,7 +662,7 @@ acpi_ds_eval_data_object_operands(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ds_eval_bank_field_operands
+  *
+  * PARAMETERS:  walk_state      - Current walk
+- *              Op              - A valid bank_field Op object
++ *              op              - A valid bank_field Op object
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/dsutils.c b/drivers/acpi/acpica/dsutils.c
+index 1abcda3..73a5447 100644
+--- a/drivers/acpi/acpica/dsutils.c
++++ b/drivers/acpi/acpica/dsutils.c
+@@ -157,7 +157,7 @@ acpi_ds_do_implicit_return(union acpi_operand_object *return_desc,
+  *
+  * FUNCTION:    acpi_ds_is_result_used
+  *
+- * PARAMETERS:  Op                  - Current Op
++ * PARAMETERS:  op                  - Current Op
+  *              walk_state          - Current State
+  *
+  * RETURN:      TRUE if result is used, FALSE otherwise
+@@ -323,7 +323,7 @@ acpi_ds_is_result_used(union acpi_parse_object * op,
+  *
+  * FUNCTION:    acpi_ds_delete_result_if_not_used
+  *
+- * PARAMETERS:  Op              - Current parse Op
++ * PARAMETERS:  op              - Current parse Op
+  *              result_obj      - Result of the operation
+  *              walk_state      - Current state
+  *
+@@ -445,7 +445,7 @@ void acpi_ds_clear_operands(struct acpi_walk_state *walk_state)
+  * FUNCTION:    acpi_ds_create_operand
+  *
+  * PARAMETERS:  walk_state      - Current walk state
+- *              Arg             - Parse object for the argument
++ *              arg             - Parse object for the argument
+  *              arg_index       - Which argument (zero based)
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/dswscope.c b/drivers/acpi/acpica/dswscope.c
+index 9e9490a..f6c4295 100644
+--- a/drivers/acpi/acpica/dswscope.c
++++ b/drivers/acpi/acpica/dswscope.c
+@@ -85,8 +85,8 @@ void acpi_ds_scope_stack_clear(struct acpi_walk_state *walk_state)
+  *
+  * FUNCTION:    acpi_ds_scope_stack_push
+  *
+- * PARAMETERS:  Node            - Name to be made current
+- *              Type            - Type of frame being pushed
++ * PARAMETERS:  node            - Name to be made current
++ *              type            - Type of frame being pushed
+  *              walk_state      - Current state
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/dswstate.c b/drivers/acpi/acpica/dswstate.c
+index c9c2ac1..d0e6555 100644
+--- a/drivers/acpi/acpica/dswstate.c
++++ b/drivers/acpi/acpica/dswstate.c
+@@ -58,7 +58,7 @@ static acpi_status acpi_ds_result_stack_pop(struct acpi_walk_state *ws);
+  *
+  * FUNCTION:    acpi_ds_result_pop
+  *
+- * PARAMETERS:  Object              - Where to return the popped object
++ * PARAMETERS:  object              - Where to return the popped object
+  *              walk_state          - Current Walk state
+  *
+  * RETURN:      Status
+@@ -132,7 +132,7 @@ acpi_ds_result_pop(union acpi_operand_object **object,
+  *
+  * FUNCTION:    acpi_ds_result_push
+  *
+- * PARAMETERS:  Object              - Where to return the popped object
++ * PARAMETERS:  object              - Where to return the popped object
+  *              walk_state          - Current Walk state
+  *
+  * RETURN:      Status
+@@ -296,7 +296,7 @@ static acpi_status acpi_ds_result_stack_pop(struct acpi_walk_state *walk_state)
+  *
+  * FUNCTION:    acpi_ds_obj_stack_push
+  *
+- * PARAMETERS:  Object              - Object to push
++ * PARAMETERS:  object              - Object to push
+  *              walk_state          - Current Walk state
+  *
+  * RETURN:      Status
+@@ -433,7 +433,7 @@ acpi_ds_obj_stack_pop_and_delete(u32 pop_count,
+  *
+  * FUNCTION:    acpi_ds_get_current_walk_state
+  *
+- * PARAMETERS:  Thread          - Get current active state for this Thread
++ * PARAMETERS:  thread          - Get current active state for this Thread
+  *
+  * RETURN:      Pointer to the current walk state
+  *
+@@ -462,7 +462,7 @@ struct acpi_walk_state *acpi_ds_get_current_walk_state(struct acpi_thread_state
+  * FUNCTION:    acpi_ds_push_walk_state
+  *
+  * PARAMETERS:  walk_state      - State to push
+- *              Thread          - Thread state object
++ *              thread          - Thread state object
+  *
+  * RETURN:      None
+  *
+@@ -486,7 +486,7 @@ acpi_ds_push_walk_state(struct acpi_walk_state *walk_state,
+  *
+  * FUNCTION:    acpi_ds_pop_walk_state
+  *
+- * PARAMETERS:  Thread      - Current thread state
++ * PARAMETERS:  thread      - Current thread state
+  *
+  * RETURN:      A walk_state object popped from the thread's stack
+  *
+@@ -525,9 +525,9 @@ struct acpi_walk_state *acpi_ds_pop_walk_state(struct acpi_thread_state *thread)
+  * FUNCTION:    acpi_ds_create_walk_state
+  *
+  * PARAMETERS:  owner_id        - ID for object creation
+- *              Origin          - Starting point for this walk
++ *              origin          - Starting point for this walk
+  *              method_desc     - Method object
+- *              Thread          - Current thread state
++ *              thread          - Current thread state
+  *
+  * RETURN:      Pointer to the new walk state.
+  *
+@@ -578,11 +578,11 @@ struct acpi_walk_state *acpi_ds_create_walk_state(acpi_owner_id owner_id, union
+  * FUNCTION:    acpi_ds_init_aml_walk
+  *
+  * PARAMETERS:  walk_state      - New state to be initialized
+- *              Op              - Current parse op
++ *              op              - Current parse op
+  *              method_node     - Control method NS node, if any
+  *              aml_start       - Start of AML
+  *              aml_length      - Length of AML
+- *              Info            - Method info block (params, etc.)
++ *              info            - Method info block (params, etc.)
+  *              pass_number     - 1, 2, or 3
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/evevent.c b/drivers/acpi/acpica/evevent.c
+index 07e4dc4..d4acfbb 100644
+--- a/drivers/acpi/acpica/evevent.c
++++ b/drivers/acpi/acpica/evevent.c
+@@ -251,7 +251,7 @@ u32 acpi_ev_fixed_event_detect(void)
+  *
+  * FUNCTION:    acpi_ev_fixed_event_dispatch
+  *
+- * PARAMETERS:  Event               - Event type
++ * PARAMETERS:  event               - Event type
+  *
+  * RETURN:      INTERRUPT_HANDLED or INTERRUPT_NOT_HANDLED
+  *
+diff --git a/drivers/acpi/acpica/evglock.c b/drivers/acpi/acpica/evglock.c
+index cfeab38..af14a71 100644
+--- a/drivers/acpi/acpica/evglock.c
++++ b/drivers/acpi/acpica/evglock.c
+@@ -135,7 +135,7 @@ acpi_status acpi_ev_remove_global_lock_handler(void)
+  *
+  * FUNCTION:    acpi_ev_global_lock_handler
+  *
+- * PARAMETERS:  Context         - From thread interface, not used
++ * PARAMETERS:  context         - From thread interface, not used
+  *
+  * RETURN:      ACPI_INTERRUPT_HANDLED
+  *
+@@ -182,7 +182,7 @@ static u32 acpi_ev_global_lock_handler(void *context)
+  *
+  * FUNCTION:    acpi_ev_acquire_global_lock
+  *
+- * PARAMETERS:  Timeout         - Max time to wait for the lock, in millisec.
++ * PARAMETERS:  timeout         - Max time to wait for the lock, in millisec.
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/evgpeblk.c b/drivers/acpi/acpica/evgpeblk.c
+index 23a3ca8..8cf4c10 100644
+--- a/drivers/acpi/acpica/evgpeblk.c
++++ b/drivers/acpi/acpica/evgpeblk.c
+@@ -318,7 +318,7 @@ acpi_ev_create_gpe_info_blocks(struct acpi_gpe_block_info *gpe_block)
+  * FUNCTION:    acpi_ev_create_gpe_block
+  *
+  * PARAMETERS:  gpe_device          - Handle to the parent GPE block
+- *              gpe_block_address   - Address and space_iD
++ *              gpe_block_address   - Address and space_ID
+  *              register_count      - Number of GPE register pairs in the block
+  *              gpe_block_base_number - Starting GPE number for the block
+  *              interrupt_number    - H/W interrupt for the block
+diff --git a/drivers/acpi/acpica/evgpeutil.c b/drivers/acpi/acpica/evgpeutil.c
+index 0c33c62..cb50dd9 100644
+--- a/drivers/acpi/acpica/evgpeutil.c
++++ b/drivers/acpi/acpica/evgpeutil.c
+@@ -54,7 +54,7 @@ ACPI_MODULE_NAME("evgpeutil")
+  * FUNCTION:    acpi_ev_walk_gpe_list
+  *
+  * PARAMETERS:  gpe_walk_callback   - Routine called for each GPE block
+- *              Context             - Value passed to callback
++ *              context             - Value passed to callback
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/evmisc.c b/drivers/acpi/acpica/evmisc.c
+index 381fce9..51f5379 100644
+--- a/drivers/acpi/acpica/evmisc.c
++++ b/drivers/acpi/acpica/evmisc.c
+@@ -56,7 +56,7 @@ static void ACPI_SYSTEM_XFACE acpi_ev_notify_dispatch(void *context);
+  *
+  * FUNCTION:    acpi_ev_is_notify_object
+  *
+- * PARAMETERS:  Node            - Node to check
++ * PARAMETERS:  node            - Node to check
+  *
+  * RETURN:      TRUE if notifies allowed on this object
+  *
+@@ -86,7 +86,7 @@ u8 acpi_ev_is_notify_object(struct acpi_namespace_node *node)
+  *
+  * FUNCTION:    acpi_ev_queue_notify_request
+  *
+- * PARAMETERS:  Node            - NS node for the notified object
++ * PARAMETERS:  node            - NS node for the notified object
+  *              notify_value    - Value from the Notify() request
+  *
+  * RETURN:      Status
+@@ -181,7 +181,7 @@ acpi_ev_queue_notify_request(struct acpi_namespace_node * node,
+  *
+  * FUNCTION:    acpi_ev_notify_dispatch
+  *
+- * PARAMETERS:  Context         - To be passed to the notify handler
++ * PARAMETERS:  context         - To be passed to the notify handler
+  *
+  * RETURN:      None.
+  *
+diff --git a/drivers/acpi/acpica/evregion.c b/drivers/acpi/acpica/evregion.c
+index 1b0180a..0cc6a16 100644
+--- a/drivers/acpi/acpica/evregion.c
++++ b/drivers/acpi/acpica/evregion.c
+@@ -150,7 +150,7 @@ acpi_status acpi_ev_install_region_handlers(void)
+  *
+  * FUNCTION:    acpi_ev_has_default_handler
+  *
+- * PARAMETERS:  Node                - Namespace node for the device
++ * PARAMETERS:  node                - Namespace node for the device
+  *              space_id            - The address space ID
+  *
+  * RETURN:      TRUE if default handler is installed, FALSE otherwise
+@@ -244,7 +244,7 @@ acpi_status acpi_ev_initialize_op_regions(void)
+  * FUNCTION:    acpi_ev_execute_reg_method
+  *
+  * PARAMETERS:  region_obj          - Region object
+- *              Function            - Passed to _REG: On (1) or Off (0)
++ *              function            - Passed to _REG: On (1) or Off (0)
+  *
+  * RETURN:      Status
+  *
+@@ -286,10 +286,10 @@ acpi_ev_execute_reg_method(union acpi_operand_object *region_obj, u32 function)
+ 	/*
+ 	 * The _REG method has two arguments:
+ 	 *
+-	 * Arg0 - Integer:
++	 * arg0 - Integer:
+ 	 *  Operation region space ID Same value as region_obj->Region.space_id
+ 	 *
+-	 * Arg1 - Integer:
++	 * arg1 - Integer:
+ 	 *  connection status 1 for connecting the handler, 0 for disconnecting
+ 	 *  the handler (Passed as a parameter)
+ 	 */
+@@ -330,10 +330,10 @@ acpi_ev_execute_reg_method(union acpi_operand_object *region_obj, u32 function)
+  *
+  * PARAMETERS:  region_obj          - Internal region object
+  *              field_obj           - Corresponding field. Can be NULL.
+- *              Function            - Read or Write operation
++ *              function            - Read or Write operation
+  *              region_offset       - Where in the region to read or write
+  *              bit_width           - Field width in bits (8, 16, 32, or 64)
+- *              Value               - Pointer to in or out value, must be
++ *              value               - Pointer to in or out value, must be
+  *                                    a full 64-bit integer
+  *
+  * RETURN:      Status
+@@ -840,11 +840,11 @@ acpi_ev_install_handler(acpi_handle obj_handle,
+  *
+  * FUNCTION:    acpi_ev_install_space_handler
+  *
+- * PARAMETERS:  Node            - Namespace node for the device
++ * PARAMETERS:  node            - Namespace node for the device
+  *              space_id        - The address space ID
+- *              Handler         - Address of the handler
+- *              Setup           - Address of the setup function
+- *              Context         - Value passed to the handler on each access
++ *              handler         - Address of the handler
++ *              setup           - Address of the setup function
++ *              context         - Value passed to the handler on each access
+  *
+  * RETURN:      Status
+  *
+@@ -1061,7 +1061,7 @@ acpi_ev_install_space_handler(struct acpi_namespace_node * node,
+  *
+  * FUNCTION:    acpi_ev_execute_reg_methods
+  *
+- * PARAMETERS:  Node            - Namespace node for the device
++ * PARAMETERS:  node            - Namespace node for the device
+  *              space_id        - The address space ID
+  *
+  * RETURN:      Status
+@@ -1104,7 +1104,7 @@ acpi_ev_execute_reg_methods(struct acpi_namespace_node *node,
+  *
+  * PARAMETERS:  walk_namespace callback
+  *
+- * DESCRIPTION: Run _REG method for region objects of the requested space_iD
++ * DESCRIPTION: Run _REG method for region objects of the requested spaceID
+  *
+  ******************************************************************************/
+ 
+diff --git a/drivers/acpi/acpica/evrgnini.c b/drivers/acpi/acpica/evrgnini.c
+index 819c17f..4c1c826 100644
+--- a/drivers/acpi/acpica/evrgnini.c
++++ b/drivers/acpi/acpica/evrgnini.c
+@@ -56,8 +56,8 @@ static u8 acpi_ev_is_pci_root_bridge(struct acpi_namespace_node *node);
+  *
+  * FUNCTION:    acpi_ev_system_memory_region_setup
+  *
+- * PARAMETERS:  Handle              - Region we are interested in
+- *              Function            - Start or stop
++ * PARAMETERS:  handle              - Region we are interested in
++ *              function            - Start or stop
+  *              handler_context     - Address space handler context
+  *              region_context      - Region specific context
+  *
+@@ -118,8 +118,8 @@ acpi_ev_system_memory_region_setup(acpi_handle handle,
+  *
+  * FUNCTION:    acpi_ev_io_space_region_setup
+  *
+- * PARAMETERS:  Handle              - Region we are interested in
+- *              Function            - Start or stop
++ * PARAMETERS:  handle              - Region we are interested in
++ *              function            - Start or stop
+  *              handler_context     - Address space handler context
+  *              region_context      - Region specific context
+  *
+@@ -149,8 +149,8 @@ acpi_ev_io_space_region_setup(acpi_handle handle,
+  *
+  * FUNCTION:    acpi_ev_pci_config_region_setup
+  *
+- * PARAMETERS:  Handle              - Region we are interested in
+- *              Function            - Start or stop
++ * PARAMETERS:  handle              - Region we are interested in
++ *              function            - Start or stop
+  *              handler_context     - Address space handler context
+  *              region_context      - Region specific context
+  *
+@@ -338,7 +338,7 @@ acpi_ev_pci_config_region_setup(acpi_handle handle,
+  *
+  * FUNCTION:    acpi_ev_is_pci_root_bridge
+  *
+- * PARAMETERS:  Node            - Device node being examined
++ * PARAMETERS:  node            - Device node being examined
+  *
+  * RETURN:      TRUE if device is a PCI/PCI-Express Root Bridge
+  *
+@@ -393,14 +393,14 @@ static u8 acpi_ev_is_pci_root_bridge(struct acpi_namespace_node *node)
+  *
+  * FUNCTION:    acpi_ev_pci_bar_region_setup
+  *
+- * PARAMETERS:  Handle              - Region we are interested in
+- *              Function            - Start or stop
++ * PARAMETERS:  handle              - Region we are interested in
++ *              function            - Start or stop
+  *              handler_context     - Address space handler context
+  *              region_context      - Region specific context
+  *
+  * RETURN:      Status
+  *
+- * DESCRIPTION: Setup a pci_bAR operation region
++ * DESCRIPTION: Setup a pci_BAR operation region
+  *
+  * MUTEX:       Assumes namespace is not locked
+  *
+@@ -420,8 +420,8 @@ acpi_ev_pci_bar_region_setup(acpi_handle handle,
+  *
+  * FUNCTION:    acpi_ev_cmos_region_setup
+  *
+- * PARAMETERS:  Handle              - Region we are interested in
+- *              Function            - Start or stop
++ * PARAMETERS:  handle              - Region we are interested in
++ *              function            - Start or stop
+  *              handler_context     - Address space handler context
+  *              region_context      - Region specific context
+  *
+@@ -447,8 +447,8 @@ acpi_ev_cmos_region_setup(acpi_handle handle,
+  *
+  * FUNCTION:    acpi_ev_default_region_setup
+  *
+- * PARAMETERS:  Handle              - Region we are interested in
+- *              Function            - Start or stop
++ * PARAMETERS:  handle              - Region we are interested in
++ *              function            - Start or stop
+  *              handler_context     - Address space handler context
+  *              region_context      - Region specific context
+  *
+diff --git a/drivers/acpi/acpica/evsci.c b/drivers/acpi/acpica/evsci.c
+index 6a57aa2..f9661e2 100644
+--- a/drivers/acpi/acpica/evsci.c
++++ b/drivers/acpi/acpica/evsci.c
+@@ -56,7 +56,7 @@ static u32 ACPI_SYSTEM_XFACE acpi_ev_sci_xrupt_handler(void *context);
+  *
+  * FUNCTION:    acpi_ev_sci_xrupt_handler
+  *
+- * PARAMETERS:  Context   - Calling Context
++ * PARAMETERS:  context   - Calling Context
+  *
+  * RETURN:      Status code indicates whether interrupt was handled.
+  *
+@@ -96,7 +96,7 @@ static u32 ACPI_SYSTEM_XFACE acpi_ev_sci_xrupt_handler(void *context)
+  *
+  * FUNCTION:    acpi_ev_gpe_xrupt_handler
+  *
+- * PARAMETERS:  Context   - Calling Context
++ * PARAMETERS:  context   - Calling Context
+  *
+  * RETURN:      Status code indicates whether interrupt was handled.
+  *
+diff --git a/drivers/acpi/acpica/evxface.c b/drivers/acpi/acpica/evxface.c
+index 6a8b537..7587eb6 100644
+--- a/drivers/acpi/acpica/evxface.c
++++ b/drivers/acpi/acpica/evxface.c
+@@ -342,7 +342,7 @@ ACPI_EXPORT_SYMBOL(acpi_remove_notify_handler)
+  *
+  * FUNCTION:    acpi_install_exception_handler
+  *
+- * PARAMETERS:  Handler         - Pointer to the handler function for the
++ * PARAMETERS:  handler         - Pointer to the handler function for the
+  *                                event
+  *
+  * RETURN:      Status
+@@ -386,8 +386,8 @@ ACPI_EXPORT_SYMBOL(acpi_install_exception_handler)
+  *
+  * FUNCTION:    acpi_install_global_event_handler
+  *
+- * PARAMETERS:  Handler         - Pointer to the global event handler function
+- *              Context         - Value passed to the handler on each event
++ * PARAMETERS:  handler         - Pointer to the global event handler function
++ *              context         - Value passed to the handler on each event
+  *
+  * RETURN:      Status
+  *
+@@ -436,10 +436,10 @@ ACPI_EXPORT_SYMBOL(acpi_install_global_event_handler)
+  *
+  * FUNCTION:    acpi_install_fixed_event_handler
+  *
+- * PARAMETERS:  Event           - Event type to enable.
+- *              Handler         - Pointer to the handler function for the
++ * PARAMETERS:  event           - Event type to enable.
++ *              handler         - Pointer to the handler function for the
+  *                                event
+- *              Context         - Value passed to the handler on each GPE
++ *              context         - Value passed to the handler on each GPE
+  *
+  * RETURN:      Status
+  *
+@@ -506,8 +506,8 @@ ACPI_EXPORT_SYMBOL(acpi_install_fixed_event_handler)
+  *
+  * FUNCTION:    acpi_remove_fixed_event_handler
+  *
+- * PARAMETERS:  Event           - Event type to disable.
+- *              Handler         - Address of the handler
++ * PARAMETERS:  event           - Event type to disable.
++ *              handler         - Address of the handler
+  *
+  * RETURN:      Status
+  *
+@@ -563,10 +563,10 @@ ACPI_EXPORT_SYMBOL(acpi_remove_fixed_event_handler)
+  * PARAMETERS:  gpe_device      - Namespace node for the GPE (NULL for FADT
+  *                                defined GPEs)
+  *              gpe_number      - The GPE number within the GPE block
+- *              Type            - Whether this GPE should be treated as an
++ *              type            - Whether this GPE should be treated as an
+  *                                edge- or level-triggered interrupt.
+- *              Address         - Address of the handler
+- *              Context         - Value passed to the handler on each GPE
++ *              address         - Address of the handler
++ *              context         - Value passed to the handler on each GPE
+  *
+  * RETURN:      Status
+  *
+@@ -673,7 +673,7 @@ ACPI_EXPORT_SYMBOL(acpi_install_gpe_handler)
+  * PARAMETERS:  gpe_device      - Namespace node for the GPE (NULL for FADT
+  *                                defined GPEs)
+  *              gpe_number      - The event to remove a handler
+- *              Address         - Address of the handler
++ *              address         - Address of the handler
+  *
+  * RETURN:      Status
+  *
+@@ -769,8 +769,8 @@ ACPI_EXPORT_SYMBOL(acpi_remove_gpe_handler)
+  *
+  * FUNCTION:    acpi_acquire_global_lock
+  *
+- * PARAMETERS:  Timeout         - How long the caller is willing to wait
+- *              Handle          - Where the handle to the lock is returned
++ * PARAMETERS:  timeout         - How long the caller is willing to wait
++ *              handle          - Where the handle to the lock is returned
+  *                                (if acquired)
+  *
+  * RETURN:      Status
+@@ -817,7 +817,7 @@ ACPI_EXPORT_SYMBOL(acpi_acquire_global_lock)
+  *
+  * FUNCTION:    acpi_release_global_lock
+  *
+- * PARAMETERS:  Handle      - Returned from acpi_acquire_global_lock
++ * PARAMETERS:  handle      - Returned from acpi_acquire_global_lock
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/evxfevnt.c b/drivers/acpi/acpica/evxfevnt.c
+index 77cee5a..35520c6 100644
+--- a/drivers/acpi/acpica/evxfevnt.c
++++ b/drivers/acpi/acpica/evxfevnt.c
+@@ -153,8 +153,8 @@ ACPI_EXPORT_SYMBOL(acpi_disable)
+  *
+  * FUNCTION:    acpi_enable_event
+  *
+- * PARAMETERS:  Event           - The fixed eventto be enabled
+- *              Flags           - Reserved
++ * PARAMETERS:  event           - The fixed eventto be enabled
++ *              flags           - Reserved
+  *
+  * RETURN:      Status
+  *
+@@ -265,7 +265,7 @@ ACPI_EXPORT_SYMBOL(acpi_disable_event)
+  *
+  * FUNCTION:    acpi_clear_event
+  *
+- * PARAMETERS:  Event           - The fixed event to be cleared
++ * PARAMETERS:  event           - The fixed event to be cleared
+  *
+  * RETURN:      Status
+  *
+@@ -301,7 +301,7 @@ ACPI_EXPORT_SYMBOL(acpi_clear_event)
+  *
+  * FUNCTION:    acpi_get_event_status
+  *
+- * PARAMETERS:  Event           - The fixed event
++ * PARAMETERS:  event           - The fixed event
+  *              event_status    - Where the current status of the event will
+  *                                be returned
+  *
+diff --git a/drivers/acpi/acpica/evxfgpe.c b/drivers/acpi/acpica/evxfgpe.c
+index 2ce4409..6affbdb 100644
+--- a/drivers/acpi/acpica/evxfgpe.c
++++ b/drivers/acpi/acpica/evxfgpe.c
+@@ -315,7 +315,7 @@ ACPI_EXPORT_SYMBOL(acpi_setup_gpe_for_wake)
+  *
+  * PARAMETERS:  gpe_device      - Parent GPE Device. NULL for GPE0/GPE1
+  *              gpe_number      - GPE level within the GPE block
+- *              Action          - Enable or Disable
++ *              action              - Enable or Disable
+  *
+  * RETURN:      Status
+  *
+@@ -540,7 +540,7 @@ ACPI_EXPORT_SYMBOL(acpi_enable_all_runtime_gpes)
+  * FUNCTION:    acpi_install_gpe_block
+  *
+  * PARAMETERS:  gpe_device          - Handle to the parent GPE Block Device
+- *              gpe_block_address   - Address and space_iD
++ *              gpe_block_address   - Address and space_ID
+  *              register_count      - Number of GPE register pairs in the block
+  *              interrupt_number    - H/W interrupt for the block
+  *
+@@ -685,7 +685,7 @@ ACPI_EXPORT_SYMBOL(acpi_remove_gpe_block)
+  *
+  * FUNCTION:    acpi_get_gpe_device
+  *
+- * PARAMETERS:  Index               - System GPE index (0-current_gpe_count)
++ * PARAMETERS:  index               - System GPE index (0-current_gpe_count)
+  *              gpe_device          - Where the parent GPE Device is returned
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/evxfregn.c b/drivers/acpi/acpica/evxfregn.c
+index 6019208c..96b412d 100644
+--- a/drivers/acpi/acpica/evxfregn.c
++++ b/drivers/acpi/acpica/evxfregn.c
+@@ -55,11 +55,11 @@ ACPI_MODULE_NAME("evxfregn")
+  *
+  * FUNCTION:    acpi_install_address_space_handler
+  *
+- * PARAMETERS:  Device          - Handle for the device
++ * PARAMETERS:  device          - Handle for the device
+  *              space_id        - The address space ID
+- *              Handler         - Address of the handler
+- *              Setup           - Address of the setup function
+- *              Context         - Value passed to the handler on each access
++ *              handler         - Address of the handler
++ *              setup           - Address of the setup function
++ *              context         - Value passed to the handler on each access
+  *
+  * RETURN:      Status
+  *
+@@ -112,16 +112,16 @@ acpi_install_address_space_handler(acpi_handle device,
  	}
-+
-+	/*
-+	 * for "extra msr", just copy the latest w/o subtracting
-+	 */
-+	old->extra_msr = new->extra_msr;
-+}
-+
-+int delta_cpu(struct thread_data *t, struct core_data *c,
-+	struct pkg_data *p, struct thread_data *t2,
-+	struct core_data *c2, struct pkg_data *p2)
-+{
-+	/* calculate core delta only for 1st thread in core */
-+	if (t->flags & CPU_IS_FIRST_THREAD_IN_CORE)
-+		delta_core(c, c2);
-+
-+	/* always calculate thread delta */
-+	delta_thread(t, t2, c2);	/* c2 is core delta */
-+
-+	/* calculate package delta only for 1st core in package */
-+	if (t->flags & CPU_IS_FIRST_CORE_IN_PACKAGE)
-+		delta_package(p, p2);
-+
- 	return 0;
- }
  
--void compute_average(struct counters *delta, struct counters *avg)
-+void clear_counters(struct thread_data *t, struct core_data *c, struct pkg_data *p)
-+{
-+	t->tsc = 0;
-+	t->aperf = 0;
-+	t->mperf = 0;
-+	t->c1 = 0;
-+
-+	/* tells format_counters to dump all fields from this set */
-+	t->flags = CPU_IS_FIRST_THREAD_IN_CORE | CPU_IS_FIRST_CORE_IN_PACKAGE;
-+
-+	c->c3 = 0;
-+	c->c6 = 0;
-+	c->c7 = 0;
-+
-+	p->pc2 = 0;
-+	p->pc3 = 0;
-+	p->pc6 = 0;
-+	p->pc7 = 0;
-+}
-+int sum_counters(struct thread_data *t, struct core_data *c,
-+	struct pkg_data *p)
- {
--	struct counters *sum;
-+	average.threads.tsc += t->tsc;
-+	average.threads.aperf += t->aperf;
-+	average.threads.mperf += t->mperf;
-+	average.threads.c1 += t->c1;
+ 	/*
+-	 * For the default space_iDs, (the IDs for which there are default region handlers
++	 * For the default space_IDs, (the IDs for which there are default region handlers
+ 	 * installed) Only execute the _REG methods if the global initialization _REG
+ 	 * methods have already been run (via acpi_initialize_objects). In other words,
+-	 * we will defer the execution of the _REG methods for these space_iDs until
++	 * we will defer the execution of the _REG methods for these space_IDs until
+ 	 * execution of acpi_initialize_objects. This is done because we need the handlers
+ 	 * for the default spaces (mem/io/pci/table) to be installed before we can run
+ 	 * any control methods (or _REG methods). There is known BIOS code that depends
+ 	 * on this.
+ 	 *
+-	 * For all other space_iDs, we can safely execute the _REG methods immediately.
++	 * For all other space_IDs, we can safely execute the _REG methods immediately.
+ 	 * This means that for IDs like embedded_controller, this function should be called
+ 	 * only after acpi_enable_subsystem has been called.
+ 	 */
+@@ -157,9 +157,9 @@ ACPI_EXPORT_SYMBOL(acpi_install_address_space_handler)
+  *
+  * FUNCTION:    acpi_remove_address_space_handler
+  *
+- * PARAMETERS:  Device          - Handle for the device
++ * PARAMETERS:  device          - Handle for the device
+  *              space_id        - The address space ID
+- *              Handler         - Address of the handler
++ *              handler         - Address of the handler
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/exconfig.c b/drivers/acpi/acpica/exconfig.c
+index c86d44e..16219bd 100644
+--- a/drivers/acpi/acpica/exconfig.c
++++ b/drivers/acpi/acpica/exconfig.c
+@@ -66,7 +66,7 @@ acpi_ex_region_read(union acpi_operand_object *obj_desc,
+  *
+  * FUNCTION:    acpi_ex_add_table
+  *
+- * PARAMETERS:  Table               - Pointer to raw table
++ * PARAMETERS:  table               - Pointer to raw table
+  *              parent_node         - Where to load the table (scope)
+  *              ddb_handle          - Where to return the table handle.
+  *
+@@ -276,8 +276,8 @@ acpi_ex_load_table_op(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ex_region_read
+  *
+  * PARAMETERS:  obj_desc        - Region descriptor
+- *              Length          - Number of bytes to read
+- *              Buffer          - Pointer to where to put the data
++ *              length          - Number of bytes to read
++ *              buffer          - Pointer to where to put the data
+  *
+  * RETURN:      Status
+  *
+@@ -318,7 +318,7 @@ acpi_ex_region_read(union acpi_operand_object *obj_desc, u32 length, u8 *buffer)
+  *
+  * PARAMETERS:  obj_desc        - Region or Buffer/Field where the table will be
+  *                                obtained
+- *              Target          - Where a handle to the table will be stored
++ *              target          - Where a handle to the table will be stored
+  *              walk_state      - Current state
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/exconvrt.c b/drivers/acpi/acpica/exconvrt.c
+index e385436..bfb062e 100644
+--- a/drivers/acpi/acpica/exconvrt.c
++++ b/drivers/acpi/acpica/exconvrt.c
+@@ -60,7 +60,7 @@ acpi_ex_convert_to_ascii(u64 integer, u16 base, u8 *string, u8 max_length);
+  * PARAMETERS:  obj_desc        - Object to be converted. Must be an
+  *                                Integer, Buffer, or String
+  *              result_desc     - Where the new Integer object is returned
+- *              Flags           - Used for string conversion
++ *              flags           - Used for string conversion
+  *
+  * RETURN:      Status
+  *
+@@ -272,9 +272,9 @@ acpi_ex_convert_to_buffer(union acpi_operand_object *obj_desc,
+  *
+  * FUNCTION:    acpi_ex_convert_to_ascii
+  *
+- * PARAMETERS:  Integer         - Value to be converted
+- *              Base            - ACPI_STRING_DECIMAL or ACPI_STRING_HEX
+- *              String          - Where the string is returned
++ * PARAMETERS:  integer         - Value to be converted
++ *              base            - ACPI_STRING_DECIMAL or ACPI_STRING_HEX
++ *              string          - Where the string is returned
+  *              data_width      - Size of data item to be converted, in bytes
+  *
+  * RETURN:      Actual string length
+@@ -385,7 +385,7 @@ acpi_ex_convert_to_ascii(u64 integer, u16 base, u8 *string, u8 data_width)
+  * PARAMETERS:  obj_desc        - Object to be converted. Must be an
+  *                                Integer, Buffer, or String
+  *              result_desc     - Where the string object is returned
+- *              Type            - String flags (base and conversion type)
++ *              type            - String flags (base and conversion type)
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/excreate.c b/drivers/acpi/acpica/excreate.c
+index 3f5bc99..691d476 100644
+--- a/drivers/acpi/acpica/excreate.c
++++ b/drivers/acpi/acpica/excreate.c
+@@ -369,7 +369,7 @@ acpi_ex_create_region(u8 * aml_start,
+  *
+  * DESCRIPTION: Create a new processor object and populate the fields
+  *
+- *              Processor (Name[0], cpu_iD[1], pblock_addr[2], pblock_length[3])
++ *              Processor (Name[0], cpu_ID[1], pblock_addr[2], pblock_length[3])
+  *
+  ******************************************************************************/
  
--	sum = calloc(1, sizeof(struct counters));
--	if (sum == NULL) {
--		perror("calloc sum");
--		exit(1);
--	}
-+	/* sum per-core values only for 1st thread in core */
-+	if (!(t->flags & CPU_IS_FIRST_THREAD_IN_CORE))
-+		return 0;
+diff --git a/drivers/acpi/acpica/exdebug.c b/drivers/acpi/acpica/exdebug.c
+index e211e9c..bc5b9a6 100644
+--- a/drivers/acpi/acpica/exdebug.c
++++ b/drivers/acpi/acpica/exdebug.c
+@@ -54,8 +54,8 @@ ACPI_MODULE_NAME("exdebug")
+  * FUNCTION:    acpi_ex_do_debug_object
+  *
+  * PARAMETERS:  source_desc         - Object to be output to "Debug Object"
+- *              Level               - Indentation level (used for packages)
+- *              Index               - Current package element, zero if not pkg
++ *              level               - Indentation level (used for packages)
++ *              index               - Current package element, zero if not pkg
+  *
+  * RETURN:      None
+  *
+diff --git a/drivers/acpi/acpica/exdump.c b/drivers/acpi/acpica/exdump.c
+index 26c5654..213c081 100644
+--- a/drivers/acpi/acpica/exdump.c
++++ b/drivers/acpi/acpica/exdump.c
+@@ -323,7 +323,7 @@ static struct acpi_exdump_info *acpi_ex_dump_info[] = {
+  * FUNCTION:    acpi_ex_dump_object
+  *
+  * PARAMETERS:  obj_desc            - Descriptor to dump
+- *              Info                - Info table corresponding to this object
++ *              info                - Info table corresponding to this object
+  *                                    type
+  *
+  * RETURN:      None
+@@ -449,7 +449,7 @@ acpi_ex_dump_object(union acpi_operand_object *obj_desc,
+  * FUNCTION:    acpi_ex_dump_operand
+  *
+  * PARAMETERS:  *obj_desc       - Pointer to entry to be dumped
+- *              Depth           - Current nesting depth
++ *              depth           - Current nesting depth
+  *
+  * RETURN:      None
+  *
+@@ -731,7 +731,7 @@ void acpi_ex_dump_operand(union acpi_operand_object *obj_desc, u32 depth)
+  *
+  * FUNCTION:    acpi_ex_dump_operands
+  *
+- * PARAMETERS:	Operands	    - A list of Operand objects
++ * PARAMETERS:  operands            - A list of Operand objects
+  *		opcode_name	    - AML opcode name
+  *		num_operands	    - Operand count for this opcode
+  *
+@@ -774,8 +774,8 @@ acpi_ex_dump_operands(union acpi_operand_object **operands,
+  *
+  * FUNCTION:    acpi_ex_out* functions
+  *
+- * PARAMETERS:  Title               - Descriptive text
+- *              Value               - Value to be displayed
++ * PARAMETERS:  title               - Descriptive text
++ *              value               - Value to be displayed
+  *
+  * DESCRIPTION: Object dump output formatting functions.  These functions
+  *              reduce the number of format strings required and keeps them
+@@ -797,8 +797,8 @@ static void acpi_ex_out_pointer(char *title, void *value)
+  *
+  * FUNCTION:    acpi_ex_dump_namespace_node
+  *
+- * PARAMETERS:  Node                - Descriptor to dump
+- *              Flags               - Force display if TRUE
++ * PARAMETERS:  node                - Descriptor to dump
++ *              flags               - Force display if TRUE
+  *
+  * DESCRIPTION: Dumps the members of the given.Node
+  *
+@@ -830,7 +830,7 @@ void acpi_ex_dump_namespace_node(struct acpi_namespace_node *node, u32 flags)
+  *
+  * FUNCTION:    acpi_ex_dump_reference_obj
+  *
+- * PARAMETERS:  Object              - Descriptor to dump
++ * PARAMETERS:  object              - Descriptor to dump
+  *
+  * DESCRIPTION: Dumps a reference object
+  *
+@@ -887,8 +887,8 @@ static void acpi_ex_dump_reference_obj(union acpi_operand_object *obj_desc)
+  * FUNCTION:    acpi_ex_dump_package_obj
+  *
+  * PARAMETERS:  obj_desc            - Descriptor to dump
+- *              Level               - Indentation Level
+- *              Index               - Package index for this object
++ *              level               - Indentation Level
++ *              index               - Package index for this object
+  *
+  * DESCRIPTION: Dumps the elements of the package
+  *
+@@ -980,7 +980,7 @@ acpi_ex_dump_package_obj(union acpi_operand_object *obj_desc,
+  * FUNCTION:    acpi_ex_dump_object_descriptor
+  *
+  * PARAMETERS:  obj_desc            - Descriptor to dump
+- *              Flags               - Force display if TRUE
++ *              flags               - Force display if TRUE
+  *
+  * DESCRIPTION: Dumps the members of the object descriptor given.
+  *
+diff --git a/drivers/acpi/acpica/exfldio.c b/drivers/acpi/acpica/exfldio.c
+index 149de45..a778415 100644
+--- a/drivers/acpi/acpica/exfldio.c
++++ b/drivers/acpi/acpica/exfldio.c
+@@ -222,9 +222,9 @@ acpi_ex_setup_region(union acpi_operand_object *obj_desc,
+  * PARAMETERS:  obj_desc                - Field to be read
+  *              field_datum_byte_offset - Byte offset of this datum within the
+  *                                        parent field
+- *              Value                   - Where to store value (must at least
++ *              value                   - Where to store value (must at least
+  *                                        64 bits)
+- *              Function                - Read or Write flag plus other region-
++ *              function                - Read or Write flag plus other region-
+  *                                        dependent flags
+  *
+  * RETURN:      Status
+@@ -315,7 +315,7 @@ acpi_ex_access_region(union acpi_operand_object *obj_desc,
+  * FUNCTION:    acpi_ex_register_overflow
+  *
+  * PARAMETERS:  obj_desc                - Register(Field) to be written
+- *              Value                   - Value to be stored
++ *              value                   - Value to be stored
+  *
+  * RETURN:      TRUE if value overflows the field, FALSE otherwise
+  *
+@@ -365,7 +365,7 @@ acpi_ex_register_overflow(union acpi_operand_object *obj_desc, u64 value)
+  * PARAMETERS:  obj_desc                - Field to be read
+  *              field_datum_byte_offset - Byte offset of this datum within the
+  *                                        parent field
+- *              Value                   - Where to store value (must be 64 bits)
++ *              value                   - Where to store value (must be 64 bits)
+  *              read_write              - Read or Write flag
+  *
+  * RETURN:      Status
+@@ -574,7 +574,7 @@ acpi_ex_field_datum_io(union acpi_operand_object *obj_desc,
+  * FUNCTION:    acpi_ex_write_with_update_rule
+  *
+  * PARAMETERS:  obj_desc                - Field to be written
+- *              Mask                    - bitmask within field datum
++ *              mask                    - bitmask within field datum
+  *              field_value             - Value to write
+  *              field_datum_byte_offset - Offset of datum within field
+  *
+@@ -678,7 +678,7 @@ acpi_ex_write_with_update_rule(union acpi_operand_object *obj_desc,
+  * FUNCTION:    acpi_ex_extract_from_field
+  *
+  * PARAMETERS:  obj_desc            - Field to be read
+- *              Buffer              - Where to store the field data
++ *              buffer              - Where to store the field data
+  *              buffer_length       - Length of Buffer
+  *
+  * RETURN:      Status
+@@ -823,7 +823,7 @@ acpi_ex_extract_from_field(union acpi_operand_object *obj_desc,
+  * FUNCTION:    acpi_ex_insert_into_field
+  *
+  * PARAMETERS:  obj_desc            - Field to be written
+- *              Buffer              - Data to be written
++ *              buffer              - Data to be written
+  *              buffer_length       - Length of Buffer
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/exmisc.c b/drivers/acpi/acpica/exmisc.c
+index 0a08933..271c0c5 100644
+--- a/drivers/acpi/acpica/exmisc.c
++++ b/drivers/acpi/acpica/exmisc.c
+@@ -144,8 +144,8 @@ acpi_ex_get_object_reference(union acpi_operand_object *obj_desc,
+  *
+  * FUNCTION:    acpi_ex_concat_template
+  *
+- * PARAMETERS:  Operand0            - First source object
+- *              Operand1            - Second source object
++ * PARAMETERS:  operand0            - First source object
++ *              operand1            - Second source object
+  *              actual_return_desc  - Where to place the return object
+  *              walk_state          - Current walk state
+  *
+@@ -229,8 +229,8 @@ acpi_ex_concat_template(union acpi_operand_object *operand0,
+  *
+  * FUNCTION:    acpi_ex_do_concatenate
+  *
+- * PARAMETERS:  Operand0            - First source object
+- *              Operand1            - Second source object
++ * PARAMETERS:  operand0            - First source object
++ *              operand1            - Second source object
+  *              actual_return_desc  - Where to place the return object
+  *              walk_state          - Current walk state
+  *
+@@ -397,9 +397,9 @@ acpi_ex_do_concatenate(union acpi_operand_object *operand0,
+  *
+  * FUNCTION:    acpi_ex_do_math_op
+  *
+- * PARAMETERS:  Opcode              - AML opcode
+- *              Integer0            - Integer operand #0
+- *              Integer1            - Integer operand #1
++ * PARAMETERS:  opcode              - AML opcode
++ *              integer0            - Integer operand #0
++ *              integer1            - Integer operand #1
+  *
+  * RETURN:      Integer result of the operation
+  *
+@@ -479,9 +479,9 @@ u64 acpi_ex_do_math_op(u16 opcode, u64 integer0, u64 integer1)
+  *
+  * FUNCTION:    acpi_ex_do_logical_numeric_op
+  *
+- * PARAMETERS:  Opcode              - AML opcode
+- *              Integer0            - Integer operand #0
+- *              Integer1            - Integer operand #1
++ * PARAMETERS:  opcode              - AML opcode
++ *              integer0            - Integer operand #0
++ *              integer1            - Integer operand #1
+  *              logical_result      - TRUE/FALSE result of the operation
+  *
+  * RETURN:      Status
+@@ -534,9 +534,9 @@ acpi_ex_do_logical_numeric_op(u16 opcode,
+  *
+  * FUNCTION:    acpi_ex_do_logical_op
+  *
+- * PARAMETERS:  Opcode              - AML opcode
+- *              Operand0            - operand #0
+- *              Operand1            - operand #1
++ * PARAMETERS:  opcode              - AML opcode
++ *              operand0            - operand #0
++ *              operand1            - operand #1
+  *              logical_result      - TRUE/FALSE result of the operation
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/exmutex.c b/drivers/acpi/acpica/exmutex.c
+index 60933e9..bcceda5 100644
+--- a/drivers/acpi/acpica/exmutex.c
++++ b/drivers/acpi/acpica/exmutex.c
+@@ -102,7 +102,7 @@ void acpi_ex_unlink_mutex(union acpi_operand_object *obj_desc)
+  * FUNCTION:    acpi_ex_link_mutex
+  *
+  * PARAMETERS:  obj_desc            - The mutex to be linked
+- *              Thread              - Current executing thread object
++ *              thread              - Current executing thread object
+  *
+  * RETURN:      None
+  *
+@@ -138,7 +138,7 @@ acpi_ex_link_mutex(union acpi_operand_object *obj_desc,
+  *
+  * FUNCTION:    acpi_ex_acquire_mutex_object
+  *
+- * PARAMETERS:  Timeout             - Timeout in milliseconds
++ * PARAMETERS:  timeout             - Timeout in milliseconds
+  *              obj_desc            - Mutex object
+  *              thread_id           - Current thread state
+  *
+@@ -443,7 +443,7 @@ acpi_ex_release_mutex(union acpi_operand_object *obj_desc,
+  *
+  * FUNCTION:    acpi_ex_release_all_mutexes
+  *
+- * PARAMETERS:  Thread              - Current executing thread object
++ * PARAMETERS:  thread              - Current executing thread object
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/exprep.c b/drivers/acpi/acpica/exprep.c
+index ae62038..81eca60 100644
+--- a/drivers/acpi/acpica/exprep.c
++++ b/drivers/acpi/acpica/exprep.c
+@@ -391,7 +391,7 @@ acpi_ex_prep_common_field_object(union acpi_operand_object *obj_desc,
+  *
+  * FUNCTION:    acpi_ex_prep_field_value
+  *
+- * PARAMETERS:  Info    - Contains all field creation info
++ * PARAMETERS:  info    - Contains all field creation info
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/exregion.c b/drivers/acpi/acpica/exregion.c
+index 12d51df..1f1ce0c 100644
+--- a/drivers/acpi/acpica/exregion.c
++++ b/drivers/acpi/acpica/exregion.c
+@@ -53,10 +53,10 @@ ACPI_MODULE_NAME("exregion")
+  *
+  * FUNCTION:    acpi_ex_system_memory_space_handler
+  *
+- * PARAMETERS:  Function            - Read or Write operation
+- *              Address             - Where in the space to read or write
++ * PARAMETERS:  function            - Read or Write operation
++ *              address             - Where in the space to read or write
+  *              bit_width           - Field width in bits (8, 16, or 32)
+- *              Value               - Pointer to in or out value
++ *              value               - Pointer to in or out value
+  *              handler_context     - Pointer to Handler's context
+  *              region_context      - Pointer to context specific to the
+  *                                    accessed region
+@@ -270,10 +270,10 @@ acpi_ex_system_memory_space_handler(u32 function,
+  *
+  * FUNCTION:    acpi_ex_system_io_space_handler
+  *
+- * PARAMETERS:  Function            - Read or Write operation
+- *              Address             - Where in the space to read or write
++ * PARAMETERS:  function            - Read or Write operation
++ *              address             - Where in the space to read or write
+  *              bit_width           - Field width in bits (8, 16, or 32)
+- *              Value               - Pointer to in or out value
++ *              value               - Pointer to in or out value
+  *              handler_context     - Pointer to Handler's context
+  *              region_context      - Pointer to context specific to the
+  *                                    accessed region
+@@ -329,10 +329,10 @@ acpi_ex_system_io_space_handler(u32 function,
+  *
+  * FUNCTION:    acpi_ex_pci_config_space_handler
+  *
+- * PARAMETERS:  Function            - Read or Write operation
+- *              Address             - Where in the space to read or write
++ * PARAMETERS:  function            - Read or Write operation
++ *              address             - Where in the space to read or write
+  *              bit_width           - Field width in bits (8, 16, or 32)
+- *              Value               - Pointer to in or out value
++ *              value               - Pointer to in or out value
+  *              handler_context     - Pointer to Handler's context
+  *              region_context      - Pointer to context specific to the
+  *                                    accessed region
+@@ -365,7 +365,7 @@ acpi_ex_pci_config_space_handler(u32 function,
+ 	 *  pci_function is the PCI device function number
+ 	 *  pci_register is the Config space register range 0-255 bytes
+ 	 *
+-	 *  Value - input value for write, output address for read
++	 *  value - input value for write, output address for read
+ 	 *
+ 	 */
+ 	pci_id = (struct acpi_pci_id *)region_context;
+@@ -402,10 +402,10 @@ acpi_ex_pci_config_space_handler(u32 function,
+  *
+  * FUNCTION:    acpi_ex_cmos_space_handler
+  *
+- * PARAMETERS:  Function            - Read or Write operation
+- *              Address             - Where in the space to read or write
++ * PARAMETERS:  function            - Read or Write operation
++ *              address             - Where in the space to read or write
+  *              bit_width           - Field width in bits (8, 16, or 32)
+- *              Value               - Pointer to in or out value
++ *              value               - Pointer to in or out value
+  *              handler_context     - Pointer to Handler's context
+  *              region_context      - Pointer to context specific to the
+  *                                    accessed region
+@@ -434,10 +434,10 @@ acpi_ex_cmos_space_handler(u32 function,
+  *
+  * FUNCTION:    acpi_ex_pci_bar_space_handler
+  *
+- * PARAMETERS:  Function            - Read or Write operation
+- *              Address             - Where in the space to read or write
++ * PARAMETERS:  function            - Read or Write operation
++ *              address             - Where in the space to read or write
+  *              bit_width           - Field width in bits (8, 16, or 32)
+- *              Value               - Pointer to in or out value
++ *              value               - Pointer to in or out value
+  *              handler_context     - Pointer to Handler's context
+  *              region_context      - Pointer to context specific to the
+  *                                    accessed region
+@@ -466,10 +466,10 @@ acpi_ex_pci_bar_space_handler(u32 function,
+  *
+  * FUNCTION:    acpi_ex_data_table_space_handler
+  *
+- * PARAMETERS:  Function            - Read or Write operation
+- *              Address             - Where in the space to read or write
++ * PARAMETERS:  function            - Read or Write operation
++ *              address             - Where in the space to read or write
+  *              bit_width           - Field width in bits (8, 16, or 32)
+- *              Value               - Pointer to in or out value
++ *              value               - Pointer to in or out value
+  *              handler_context     - Pointer to Handler's context
+  *              region_context      - Pointer to context specific to the
+  *                                    accessed region
+diff --git a/drivers/acpi/acpica/exresolv.c b/drivers/acpi/acpica/exresolv.c
+index c6f0ad4..bbf40ac 100644
+--- a/drivers/acpi/acpica/exresolv.c
++++ b/drivers/acpi/acpica/exresolv.c
+@@ -321,7 +321,7 @@ acpi_ex_resolve_object_to_value(union acpi_operand_object **stack_ptr,
+  * FUNCTION:    acpi_ex_resolve_multiple
+  *
+  * PARAMETERS:  walk_state          - Current state (contains AML opcode)
+- *              Operand             - Starting point for resolution
++ *              operand             - Starting point for resolution
+  *              return_type         - Where the object type is returned
+  *              return_desc         - Where the resolved object is returned
+  *
+diff --git a/drivers/acpi/acpica/exresop.c b/drivers/acpi/acpica/exresop.c
+index a67b1d9..f232fba 100644
+--- a/drivers/acpi/acpica/exresop.c
++++ b/drivers/acpi/acpica/exresop.c
+@@ -113,7 +113,7 @@ acpi_ex_check_object_type(acpi_object_type type_needed,
+  *
+  * FUNCTION:    acpi_ex_resolve_operands
+  *
+- * PARAMETERS:  Opcode              - Opcode being interpreted
++ * PARAMETERS:  opcode              - Opcode being interpreted
+  *              stack_ptr           - Pointer to the operand stack to be
+  *                                    resolved
+  *              walk_state          - Current state
+@@ -307,7 +307,7 @@ acpi_ex_resolve_operands(u16 opcode,
+ 		case ARGI_DEVICE_REF:
+ 		case ARGI_TARGETREF:	/* Allows implicit conversion rules before store */
+ 		case ARGI_FIXED_TARGET:	/* No implicit conversion before store to target */
+-		case ARGI_SIMPLE_TARGET:	/* Name, Local, or Arg - no implicit conversion  */
++		case ARGI_SIMPLE_TARGET:	/* Name, Local, or arg - no implicit conversion  */
  
--	for (; delta; delta = delta->next) {
--		sum->tsc += delta->tsc;
--		sum->c1 += delta->c1;
--		sum->c3 += delta->c3;
--		sum->c6 += delta->c6;
--		sum->c7 += delta->c7;
--		sum->aperf += delta->aperf;
--		sum->mperf += delta->mperf;
--		sum->pc2 += delta->pc2;
--		sum->pc3 += delta->pc3;
--		sum->pc6 += delta->pc6;
--		sum->pc7 += delta->pc7;
--	}
--	avg->tsc = sum->tsc/num_cpus;
--	avg->c1 = sum->c1/num_cpus;
--	avg->c3 = sum->c3/num_cpus;
--	avg->c6 = sum->c6/num_cpus;
--	avg->c7 = sum->c7/num_cpus;
--	avg->aperf = sum->aperf/num_cpus;
--	avg->mperf = sum->mperf/num_cpus;
--	avg->pc2 = sum->pc2/num_cpus;
--	avg->pc3 = sum->pc3/num_cpus;
--	avg->pc6 = sum->pc6/num_cpus;
--	avg->pc7 = sum->pc7/num_cpus;
--
--	free(sum);
-+	average.cores.c3 += c->c3;
-+	average.cores.c6 += c->c6;
-+	average.cores.c7 += c->c7;
-+
-+	/* sum per-pkg values only for 1st core in pkg */
-+	if (!(t->flags & CPU_IS_FIRST_CORE_IN_PACKAGE))
-+		return 0;
-+
-+	average.packages.pc2 += p->pc2;
-+	average.packages.pc3 += p->pc3;
-+	average.packages.pc6 += p->pc6;
-+	average.packages.pc7 += p->pc7;
-+
-+	return 0;
-+}
-+/*
-+ * sum the counters for all cpus in the system
-+ * compute the weighted average
-+ */
-+void compute_average(struct thread_data *t, struct core_data *c,
-+	struct pkg_data *p)
-+{
-+	clear_counters(&average.threads, &average.cores, &average.packages);
-+
-+	for_all_cpus(sum_counters, t, c, p);
-+
-+	average.threads.tsc /= topo.num_cpus;
-+	average.threads.aperf /= topo.num_cpus;
-+	average.threads.mperf /= topo.num_cpus;
-+	average.threads.c1 /= topo.num_cpus;
-+
-+	average.cores.c3 /= topo.num_cores;
-+	average.cores.c6 /= topo.num_cores;
-+	average.cores.c7 /= topo.num_cores;
-+
-+	average.packages.pc2 /= topo.num_packages;
-+	average.packages.pc3 /= topo.num_packages;
-+	average.packages.pc6 /= topo.num_packages;
-+	average.packages.pc7 /= topo.num_packages;
- }
+ 			/*
+ 			 * Need an operand of type ACPI_TYPE_LOCAL_REFERENCE
+@@ -410,7 +410,7 @@ acpi_ex_resolve_operands(u16 opcode,
+ 			/*
+ 			 * Need an operand of type ACPI_TYPE_INTEGER,
+ 			 * But we can implicitly convert from a STRING or BUFFER
+-			 * Aka - "Implicit Source Operand Conversion"
++			 * aka - "Implicit Source Operand Conversion"
+ 			 */
+ 			status =
+ 			    acpi_ex_convert_to_integer(obj_desc, stack_ptr, 16);
+@@ -437,7 +437,7 @@ acpi_ex_resolve_operands(u16 opcode,
+ 			/*
+ 			 * Need an operand of type ACPI_TYPE_BUFFER,
+ 			 * But we can implicitly convert from a STRING or INTEGER
+-			 * Aka - "Implicit Source Operand Conversion"
++			 * aka - "Implicit Source Operand Conversion"
+ 			 */
+ 			status = acpi_ex_convert_to_buffer(obj_desc, stack_ptr);
+ 			if (ACPI_FAILURE(status)) {
+@@ -463,7 +463,7 @@ acpi_ex_resolve_operands(u16 opcode,
+ 			/*
+ 			 * Need an operand of type ACPI_TYPE_STRING,
+ 			 * But we can implicitly convert from a BUFFER or INTEGER
+-			 * Aka - "Implicit Source Operand Conversion"
++			 * aka - "Implicit Source Operand Conversion"
+ 			 */
+ 			status = acpi_ex_convert_to_string(obj_desc, stack_ptr,
+ 							   ACPI_IMPLICIT_CONVERT_HEX);
+diff --git a/drivers/acpi/acpica/exstore.c b/drivers/acpi/acpica/exstore.c
+index 38c5048..5fffe7a 100644
+--- a/drivers/acpi/acpica/exstore.c
++++ b/drivers/acpi/acpica/exstore.c
+@@ -361,7 +361,7 @@ acpi_ex_store_object_to_index(union acpi_operand_object *source_desc,
+  * FUNCTION:    acpi_ex_store_object_to_node
+  *
+  * PARAMETERS:  source_desc             - Value to be stored
+- *              Node                    - Named object to receive the value
++ *              node                    - Named object to receive the value
+  *              walk_state              - Current walk state
+  *              implicit_conversion     - Perform implicit conversion (yes/no)
+  *
+diff --git a/drivers/acpi/acpica/exstorob.c b/drivers/acpi/acpica/exstorob.c
+index 65a45d8..53c2484 100644
+--- a/drivers/acpi/acpica/exstorob.c
++++ b/drivers/acpi/acpica/exstorob.c
+@@ -110,7 +110,7 @@ acpi_ex_store_buffer_to_buffer(union acpi_operand_object *source_desc,
+ 		 * NOTE: ACPI versions up to 3.0 specified that the buffer must be
+ 		 * truncated if the string is smaller than the buffer.  However, "other"
+ 		 * implementations of ACPI never did this and thus became the defacto
+-		 * standard. ACPI 3.0_a changes this behavior such that the buffer
++		 * standard. ACPI 3.0A changes this behavior such that the buffer
+ 		 * is no longer truncated.
+ 		 */
  
--int get_counters(struct counters *cnt)
-+static unsigned long long rdtsc(void)
- {
--	for ( ; cnt; cnt = cnt->next) {
-+	unsigned int low, high;
+diff --git a/drivers/acpi/acpica/exsystem.c b/drivers/acpi/acpica/exsystem.c
+index 191a129..b760641 100644
+--- a/drivers/acpi/acpica/exsystem.c
++++ b/drivers/acpi/acpica/exsystem.c
+@@ -53,8 +53,8 @@ ACPI_MODULE_NAME("exsystem")
+  *
+  * FUNCTION:    acpi_ex_system_wait_semaphore
+  *
+- * PARAMETERS:  Semaphore       - Semaphore to wait on
+- *              Timeout         - Max time to wait
++ * PARAMETERS:  semaphore       - Semaphore to wait on
++ *              timeout         - Max time to wait
+  *
+  * RETURN:      Status
+  *
+@@ -98,8 +98,8 @@ acpi_status acpi_ex_system_wait_semaphore(acpi_semaphore semaphore, u16 timeout)
+  *
+  * FUNCTION:    acpi_ex_system_wait_mutex
+  *
+- * PARAMETERS:  Mutex           - Mutex to wait on
+- *              Timeout         - Max time to wait
++ * PARAMETERS:  mutex           - Mutex to wait on
++ *              timeout         - Max time to wait
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/exutils.c b/drivers/acpi/acpica/exutils.c
+index 7482400..d1ab791 100644
+--- a/drivers/acpi/acpica/exutils.c
++++ b/drivers/acpi/acpica/exutils.c
+@@ -317,8 +317,8 @@ void acpi_ex_release_global_lock(u32 field_flags)
+  *
+  * FUNCTION:    acpi_ex_digits_needed
+  *
+- * PARAMETERS:  Value           - Value to be represented
+- *              Base            - Base of representation
++ * PARAMETERS:  value           - Value to be represented
++ *              base            - Base of representation
+  *
+  * RETURN:      The number of digits.
+  *
+@@ -408,7 +408,7 @@ void acpi_ex_eisa_id_to_string(char *out_string, u64 compressed_id)
+  * PARAMETERS:  out_string      - Where to put the converted string. At least
+  *                                21 bytes are needed to hold the largest
+  *                                possible 64-bit integer.
+- *              Value           - Value to be converted
++ *              value           - Value to be converted
+  *
+  * RETURN:      None, string
+  *
+@@ -443,7 +443,7 @@ void acpi_ex_integer_to_string(char *out_string, u64 value)
+  *
+  * RETURN:      TRUE if valid/supported ID.
+  *
+- * DESCRIPTION: Validate an operation region space_iD.
++ * DESCRIPTION: Validate an operation region space_ID.
+  *
+  ******************************************************************************/
  
--		if (cpu_migrate(cnt->cpu))
--			return -1;
-+	asm volatile("rdtsc" : "=a" (low), "=d" (high));
- 
--		if (get_msr(cnt->cpu, MSR_TSC, &cnt->tsc))
--			return -1;
-+	return low | ((unsigned long long)high) << 32;
-+}
- 
--		if (has_aperf) {
--			if (get_msr(cnt->cpu, MSR_APERF, &cnt->aperf))
--				return -1;
--			if (get_msr(cnt->cpu, MSR_MPERF, &cnt->mperf))
--				return -1;
--		}
- 
--		if (do_nhm_cstates) {
--			if (get_msr(cnt->cpu, MSR_CORE_C3_RESIDENCY, &cnt->c3))
--				return -1;
--			if (get_msr(cnt->cpu, MSR_CORE_C6_RESIDENCY, &cnt->c6))
--				return -1;
--		}
-+/*
-+ * get_counters(...)
-+ * migrate to cpu
-+ * acquire and record local counters for that cpu
-+ */
-+int get_counters(struct thread_data *t, struct core_data *c, struct pkg_data *p)
-+{
-+	int cpu = t->cpu_id;
- 
--		if (do_snb_cstates)
--			if (get_msr(cnt->cpu, MSR_CORE_C7_RESIDENCY, &cnt->c7))
--				return -1;
-+	if (cpu_migrate(cpu))
-+		return -1;
- 
--		if (do_nhm_cstates) {
--			if (get_msr(cnt->cpu, MSR_PKG_C3_RESIDENCY, &cnt->pc3))
--				return -1;
--			if (get_msr(cnt->cpu, MSR_PKG_C6_RESIDENCY, &cnt->pc6))
--				return -1;
--		}
--		if (do_snb_cstates) {
--			if (get_msr(cnt->cpu, MSR_PKG_C2_RESIDENCY, &cnt->pc2))
--				return -1;
--			if (get_msr(cnt->cpu, MSR_PKG_C7_RESIDENCY, &cnt->pc7))
--				return -1;
--		}
--		if (extra_msr_offset)
--			if (get_msr(cnt->cpu, extra_msr_offset, &cnt->extra_msr))
--				return -1;
-+	t->tsc = rdtsc();	/* we are running on local CPU of interest */
-+
-+	if (has_aperf) {
-+		if (get_msr(cpu, MSR_APERF, &t->aperf))
-+			return -3;
-+		if (get_msr(cpu, MSR_MPERF, &t->mperf))
-+			return -4;
-+	}
-+
-+	if (extra_msr_offset)
-+		if (get_msr(cpu, extra_msr_offset, &t->extra_msr))
-+			return -5;
-+
-+	/* collect core counters only for 1st thread in core */
-+	if (!(t->flags & CPU_IS_FIRST_THREAD_IN_CORE))
-+		return 0;
-+
-+	if (do_nhm_cstates) {
-+		if (get_msr(cpu, MSR_CORE_C3_RESIDENCY, &c->c3))
-+			return -6;
-+		if (get_msr(cpu, MSR_CORE_C6_RESIDENCY, &c->c6))
-+			return -7;
-+	}
-+
-+	if (do_snb_cstates)
-+		if (get_msr(cpu, MSR_CORE_C7_RESIDENCY, &c->c7))
-+			return -8;
-+
-+	/* collect package counters only for 1st core in package */
-+	if (!(t->flags & CPU_IS_FIRST_CORE_IN_PACKAGE))
-+		return 0;
-+
-+	if (do_nhm_cstates) {
-+		if (get_msr(cpu, MSR_PKG_C3_RESIDENCY, &p->pc3))
-+			return -9;
-+		if (get_msr(cpu, MSR_PKG_C6_RESIDENCY, &p->pc6))
-+			return -10;
-+	}
-+	if (do_snb_cstates) {
-+		if (get_msr(cpu, MSR_PKG_C2_RESIDENCY, &p->pc2))
-+			return -11;
-+		if (get_msr(cpu, MSR_PKG_C7_RESIDENCY, &p->pc7))
-+			return -12;
+diff --git a/drivers/acpi/acpica/hwacpi.c b/drivers/acpi/acpica/hwacpi.c
+index d0b9ed5..a1e71d0 100644
+--- a/drivers/acpi/acpica/hwacpi.c
++++ b/drivers/acpi/acpica/hwacpi.c
+@@ -53,7 +53,7 @@ ACPI_MODULE_NAME("hwacpi")
+  *
+  * FUNCTION:    acpi_hw_set_mode
+  *
+- * PARAMETERS:  Mode            - SYS_MODE_ACPI or SYS_MODE_LEGACY
++ * PARAMETERS:  mode            - SYS_MODE_ACPI or SYS_MODE_LEGACY
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
+index 3680c45..48518da 100644
+--- a/drivers/acpi/acpica/hwesleep.c
++++ b/drivers/acpi/acpica/hwesleep.c
+@@ -90,7 +90,7 @@ void acpi_hw_execute_sleep_method(char *method_pathname, u32 integer_argument)
+  * FUNCTION:    acpi_hw_extended_sleep
+  *
+  * PARAMETERS:  sleep_state         - Which sleep state to enter
+- *              Flags               - ACPI_EXECUTE_GTS to run optional method
++ *              flags               - ACPI_EXECUTE_GTS to run optional method
+  *
+  * RETURN:      Status
+  *
+@@ -172,7 +172,7 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state, u8 flags)
+  * FUNCTION:    acpi_hw_extended_wake_prep
+  *
+  * PARAMETERS:  sleep_state         - Which sleep state we just exited
+- *              Flags               - ACPI_EXECUTE_BFS to run optional method
++ *              flags               - ACPI_EXECUTE_BFS to run optional method
+  *
+  * RETURN:      Status
+  *
+@@ -213,7 +213,7 @@ acpi_status acpi_hw_extended_wake_prep(u8 sleep_state, u8 flags)
+  * FUNCTION:    acpi_hw_extended_wake
+  *
+  * PARAMETERS:  sleep_state         - Which sleep state we just exited
+- *              Flags               - Reserved, set to zero
++ *              flags               - Reserved, set to zero
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
+index 6b6c83b..4af6d20 100644
+--- a/drivers/acpi/acpica/hwregs.c
++++ b/drivers/acpi/acpica/hwregs.c
+@@ -69,9 +69,9 @@ acpi_hw_write_multiple(u32 value,
+  *
+  * FUNCTION:    acpi_hw_validate_register
+  *
+- * PARAMETERS:  Reg                 - GAS register structure
++ * PARAMETERS:  reg                 - GAS register structure
+  *              max_bit_width       - Max bit_width supported (32 or 64)
+- *              Address             - Pointer to where the gas->address
++ *              address             - Pointer to where the gas->address
+  *                                    is returned
+  *
+  * RETURN:      Status
+@@ -102,7 +102,7 @@ acpi_hw_validate_register(struct acpi_generic_address *reg,
+ 		return (AE_BAD_ADDRESS);
  	}
- 	return 0;
+ 
+-	/* Validate the space_iD */
++	/* Validate the space_ID */
+ 
+ 	if ((reg->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY) &&
+ 	    (reg->space_id != ACPI_ADR_SPACE_SYSTEM_IO)) {
+@@ -137,8 +137,8 @@ acpi_hw_validate_register(struct acpi_generic_address *reg,
+  *
+  * FUNCTION:    acpi_hw_read
+  *
+- * PARAMETERS:  Value               - Where the value is returned
+- *              Reg                 - GAS register structure
++ * PARAMETERS:  value               - Where the value is returned
++ *              reg                 - GAS register structure
+  *
+  * RETURN:      Status
+  *
+@@ -148,7 +148,7 @@ acpi_hw_validate_register(struct acpi_generic_address *reg,
+  *
+  * LIMITATIONS: <These limitations also apply to acpi_hw_write>
+  *      bit_width must be exactly 8, 16, or 32.
+- *      space_iD must be system_memory or system_iO.
++ *      space_ID must be system_memory or system_IO.
+  *      bit_offset and access_width are currently ignored, as there has
+  *          not been a need to implement these.
+  *
+@@ -200,8 +200,8 @@ acpi_status acpi_hw_read(u32 *value, struct acpi_generic_address *reg)
+  *
+  * FUNCTION:    acpi_hw_write
+  *
+- * PARAMETERS:  Value               - Value to be written
+- *              Reg                 - GAS register structure
++ * PARAMETERS:  value               - Value to be written
++ *              reg                 - GAS register structure
+  *
+  * RETURN:      Status
+  *
+@@ -439,7 +439,7 @@ acpi_hw_register_read(u32 register_id, u32 * return_value)
+  * FUNCTION:    acpi_hw_register_write
+  *
+  * PARAMETERS:  register_id         - ACPI Register ID
+- *              Value               - The value to write
++ *              value               - The value to write
+  *
+  * RETURN:      Status
+  *
+@@ -571,7 +571,7 @@ acpi_status acpi_hw_register_write(u32 register_id, u32 value)
+  *
+  * FUNCTION:    acpi_hw_read_multiple
+  *
+- * PARAMETERS:  Value               - Where the register value is returned
++ * PARAMETERS:  value               - Where the register value is returned
+  *              register_a           - First ACPI register (required)
+  *              register_b           - Second ACPI register (optional)
+  *
+@@ -624,7 +624,7 @@ acpi_hw_read_multiple(u32 *value,
+  *
+  * FUNCTION:    acpi_hw_write_multiple
+  *
+- * PARAMETERS:  Value               - The value to write
++ * PARAMETERS:  value               - The value to write
+  *              register_a           - First ACPI register (required)
+  *              register_b           - Second ACPI register (optional)
+  *
+diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+index 0ed85ca..8049fbe 100644
+--- a/drivers/acpi/acpica/hwsleep.c
++++ b/drivers/acpi/acpica/hwsleep.c
+@@ -56,7 +56,7 @@ ACPI_MODULE_NAME("hwsleep")
+  * FUNCTION:    acpi_hw_legacy_sleep
+  *
+  * PARAMETERS:  sleep_state         - Which sleep state to enter
+- *              Flags               - ACPI_EXECUTE_GTS to run optional method
++ *              flags               - ACPI_EXECUTE_GTS to run optional method
+  *
+  * RETURN:      Status
+  *
+@@ -226,7 +226,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state, u8 flags)
+  * FUNCTION:    acpi_hw_legacy_wake_prep
+  *
+  * PARAMETERS:  sleep_state         - Which sleep state we just exited
+- *              Flags               - ACPI_EXECUTE_BFS to run optional method
++ *              flags               - ACPI_EXECUTE_BFS to run optional method
+  *
+  * RETURN:      Status
+  *
+@@ -300,7 +300,7 @@ acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state, u8 flags)
+  * FUNCTION:    acpi_hw_legacy_wake
+  *
+  * PARAMETERS:  sleep_state         - Which sleep state we just exited
+- *              Flags               - Reserved, set to zero
++ *              flags               - Reserved, set to zero
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/hwtimer.c b/drivers/acpi/acpica/hwtimer.c
+index f1b2c3b..b6411f1 100644
+--- a/drivers/acpi/acpica/hwtimer.c
++++ b/drivers/acpi/acpica/hwtimer.c
+@@ -54,7 +54,7 @@ ACPI_MODULE_NAME("hwtimer")
+  *
+  * FUNCTION:    acpi_get_timer_resolution
+  *
+- * PARAMETERS:  Resolution          - Where the resolution is returned
++ * PARAMETERS:  resolution          - Where the resolution is returned
+  *
+  * RETURN:      Status and timer resolution
+  *
+@@ -84,7 +84,7 @@ ACPI_EXPORT_SYMBOL(acpi_get_timer_resolution)
+  *
+  * FUNCTION:    acpi_get_timer
+  *
+- * PARAMETERS:  Ticks               - Where the timer value is returned
++ * PARAMETERS:  ticks               - Where the timer value is returned
+  *
+  * RETURN:      Status and current timer value (ticks)
+  *
+diff --git a/drivers/acpi/acpica/hwvalid.c b/drivers/acpi/acpica/hwvalid.c
+index 6e5c43a..c99d546 100644
+--- a/drivers/acpi/acpica/hwvalid.c
++++ b/drivers/acpi/acpica/hwvalid.c
+@@ -58,7 +58,7 @@ acpi_hw_validate_io_request(acpi_io_address address, u32 bit_width);
+  *
+  * The table is used to implement the Microsoft port access rules that
+  * first appeared in Windows XP. Some ports are always illegal, and some
+- * ports are only illegal if the BIOS calls _OSI with a win_xP string or
++ * ports are only illegal if the BIOS calls _OSI with a win_XP string or
+  * later (meaning that the BIOS itelf is post-XP.)
+  *
+  * This provides ACPICA with the desired port protections and
+@@ -66,7 +66,7 @@ acpi_hw_validate_io_request(acpi_io_address address, u32 bit_width);
+  *
+  * Description of port entries:
+  *  DMA:   DMA controller
+- *  PIC0:  Programmable Interrupt Controller (8259_a)
++ *  PIC0:  Programmable Interrupt Controller (8259A)
+  *  PIT1:  System Timer 1
+  *  PIT2:  System Timer 2 failsafe
+  *  RTC:   Real-time clock
+diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
+index a716fed..7bfd649 100644
+--- a/drivers/acpi/acpica/hwxface.c
++++ b/drivers/acpi/acpica/hwxface.c
+@@ -104,8 +104,8 @@ ACPI_EXPORT_SYMBOL(acpi_reset)
+  *
+  * FUNCTION:    acpi_read
+  *
+- * PARAMETERS:  Value               - Where the value is returned
+- *              Reg                 - GAS register structure
++ * PARAMETERS:  value               - Where the value is returned
++ *              reg                 - GAS register structure
+  *
+  * RETURN:      Status
+  *
+@@ -113,7 +113,7 @@ ACPI_EXPORT_SYMBOL(acpi_reset)
+  *
+  * LIMITATIONS: <These limitations also apply to acpi_write>
+  *      bit_width must be exactly 8, 16, 32, or 64.
+- *      space_iD must be system_memory or system_iO.
++ *      space_ID must be system_memory or system_IO.
+  *      bit_offset and access_width are currently ignored, as there has
+  *          not been a need to implement these.
+  *
+@@ -196,8 +196,8 @@ ACPI_EXPORT_SYMBOL(acpi_read)
+  *
+  * FUNCTION:    acpi_write
+  *
+- * PARAMETERS:  Value               - Value to be written
+- *              Reg                 - GAS register structure
++ * PARAMETERS:  value               - Value to be written
++ *              reg                 - GAS register structure
+  *
+  * RETURN:      Status
+  *
+@@ -441,7 +441,7 @@ ACPI_EXPORT_SYMBOL(acpi_write_bit_register)
+  *              *sleep_type_a        - Where SLP_TYPa is returned
+  *              *sleep_type_b        - Where SLP_TYPb is returned
+  *
+- * RETURN:      Status - ACPI status
++ * RETURN:      status - ACPI status
+  *
+  * DESCRIPTION: Obtain the SLP_TYPa and SLP_TYPb values for the requested sleep
+  *              state.
+diff --git a/drivers/acpi/acpica/hwxfsleep.c b/drivers/acpi/acpica/hwxfsleep.c
+index 762d059..f8684bf 100644
+--- a/drivers/acpi/acpica/hwxfsleep.c
++++ b/drivers/acpi/acpica/hwxfsleep.c
+@@ -205,7 +205,7 @@ acpi_status asmlinkage acpi_enter_sleep_state_s4bios(void)
+ 	ACPI_FLUSH_CPU_CACHE();
+ 
+ 	status = acpi_hw_write_port(acpi_gbl_FADT.smi_command,
+-				    (u32)acpi_gbl_FADT.S4bios_request, 8);
++				    (u32)acpi_gbl_FADT.s4_bios_request, 8);
+ 
+ 	do {
+ 		acpi_os_stall(1000);
+@@ -349,7 +349,7 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state_prep)
+  * FUNCTION:    acpi_enter_sleep_state
+  *
+  * PARAMETERS:  sleep_state         - Which sleep state to enter
+- *              Flags               - ACPI_EXECUTE_GTS to run optional method
++ *              flags               - ACPI_EXECUTE_GTS to run optional method
+  *
+  * RETURN:      Status
+  *
+@@ -382,7 +382,7 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state)
+  * FUNCTION:    acpi_leave_sleep_state_prep
+  *
+  * PARAMETERS:  sleep_state         - Which sleep state we are exiting
+- *              Flags               - ACPI_EXECUTE_BFS to run optional method
++ *              flags               - ACPI_EXECUTE_BFS to run optional method
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/nsaccess.c b/drivers/acpi/acpica/nsaccess.c
+index 61623f3..23db53c 100644
+--- a/drivers/acpi/acpica/nsaccess.c
++++ b/drivers/acpi/acpica/nsaccess.c
+@@ -157,7 +157,7 @@ acpi_status acpi_ns_root_initialize(void)
+ 
+ #if defined (ACPI_ASL_COMPILER)
+ 
+-				/* Save the parameter count for the i_aSL compiler */
++				/* Save the parameter count for the iASL compiler */
+ 
+ 				new_node->value = obj_desc->method.param_count;
+ #else
+@@ -258,11 +258,11 @@ acpi_status acpi_ns_root_initialize(void)
+  * FUNCTION:    acpi_ns_lookup
+  *
+  * PARAMETERS:  scope_info      - Current scope info block
+- *              Pathname        - Search pathname, in internal format
++ *              pathname        - Search pathname, in internal format
+  *                                (as represented in the AML stream)
+- *              Type            - Type associated with name
++ *              type            - Type associated with name
+  *              interpreter_mode - IMODE_LOAD_PASS2 => add name if not found
+- *              Flags           - Flags describing the search restrictions
++ *              flags           - Flags describing the search restrictions
+  *              walk_state      - Current state of the walk
+  *              return_node     - Where the Node is placed (if found
+  *                                or created successfully)
+diff --git a/drivers/acpi/acpica/nsalloc.c b/drivers/acpi/acpica/nsalloc.c
+index 7c3d3ce..ac389e5 100644
+--- a/drivers/acpi/acpica/nsalloc.c
++++ b/drivers/acpi/acpica/nsalloc.c
+@@ -52,7 +52,7 @@ ACPI_MODULE_NAME("nsalloc")
+  *
+  * FUNCTION:    acpi_ns_create_node
+  *
+- * PARAMETERS:  Name            - Name of the new node (4 char ACPI name)
++ * PARAMETERS:  name            - Name of the new node (4 char ACPI name)
+  *
+  * RETURN:      New namespace node (Null on failure)
+  *
+@@ -92,7 +92,7 @@ struct acpi_namespace_node *acpi_ns_create_node(u32 name)
+  *
+  * FUNCTION:    acpi_ns_delete_node
+  *
+- * PARAMETERS:  Node            - Node to be deleted
++ * PARAMETERS:  node            - Node to be deleted
+  *
+  * RETURN:      None
+  *
+@@ -143,7 +143,7 @@ void acpi_ns_delete_node(struct acpi_namespace_node *node)
+  *
+  * FUNCTION:    acpi_ns_remove_node
+  *
+- * PARAMETERS:  Node            - Node to be removed/deleted
++ * PARAMETERS:  node            - Node to be removed/deleted
+  *
+  * RETURN:      None
+  *
+@@ -196,8 +196,8 @@ void acpi_ns_remove_node(struct acpi_namespace_node *node)
+  *
+  * PARAMETERS:  walk_state      - Current state of the walk
+  *              parent_node     - The parent of the new Node
+- *              Node            - The new Node to install
+- *              Type            - ACPI object type of the new Node
++ *              node            - The new Node to install
++ *              type            - ACPI object type of the new Node
+  *
+  * RETURN:      None
+  *
+diff --git a/drivers/acpi/acpica/nsdump.c b/drivers/acpi/acpica/nsdump.c
+index 3f7f3f6..7ee4e6a 100644
+--- a/drivers/acpi/acpica/nsdump.c
++++ b/drivers/acpi/acpica/nsdump.c
+@@ -63,7 +63,7 @@ acpi_ns_dump_one_device(acpi_handle obj_handle,
+  * FUNCTION:    acpi_ns_print_pathname
+  *
+  * PARAMETERS:  num_segments        - Number of ACPI name segments
+- *              Pathname            - The compressed (internal) path
++ *              pathname            - The compressed (internal) path
+  *
+  * RETURN:      None
+  *
+@@ -107,10 +107,10 @@ void acpi_ns_print_pathname(u32 num_segments, char *pathname)
+  *
+  * FUNCTION:    acpi_ns_dump_pathname
+  *
+- * PARAMETERS:  Handle              - Object
+- *              Msg                 - Prefix message
+- *              Level               - Desired debug level
+- *              Component           - Caller's component ID
++ * PARAMETERS:  handle              - Object
++ *              msg                 - Prefix message
++ *              level               - Desired debug level
++ *              component           - Caller's component ID
+  *
+  * RETURN:      None
+  *
+@@ -143,8 +143,8 @@ acpi_ns_dump_pathname(acpi_handle handle, char *msg, u32 level, u32 component)
+  * FUNCTION:    acpi_ns_dump_one_object
+  *
+  * PARAMETERS:  obj_handle          - Node to be dumped
+- *              Level               - Nesting level of the handle
+- *              Context             - Passed into walk_namespace
++ *              level               - Nesting level of the handle
++ *              context             - Passed into walk_namespace
+  *              return_value        - Not used
+  *
+  * RETURN:      Status
+@@ -615,7 +615,7 @@ acpi_ns_dump_one_object(acpi_handle obj_handle,
+  *
+  * FUNCTION:    acpi_ns_dump_objects
+  *
+- * PARAMETERS:  Type                - Object type to be dumped
++ * PARAMETERS:  type                - Object type to be dumped
+  *              display_type        - 0 or ACPI_DISPLAY_SUMMARY
+  *              max_depth           - Maximum depth of dump. Use ACPI_UINT32_MAX
+  *                                    for an effectively unlimited depth.
+@@ -671,7 +671,7 @@ acpi_ns_dump_objects(acpi_object_type type,
+  *
+  * FUNCTION:    acpi_ns_dump_entry
+  *
+- * PARAMETERS:  Handle              - Node to be dumped
++ * PARAMETERS:  handle              - Node to be dumped
+  *              debug_level         - Output level
+  *
+  * RETURN:      None
+diff --git a/drivers/acpi/acpica/nsdumpdv.c b/drivers/acpi/acpica/nsdumpdv.c
+index 3b5acb0..944d4c8 100644
+--- a/drivers/acpi/acpica/nsdumpdv.c
++++ b/drivers/acpi/acpica/nsdumpdv.c
+@@ -55,9 +55,9 @@ ACPI_MODULE_NAME("nsdumpdv")
+  *
+  * FUNCTION:    acpi_ns_dump_one_device
+  *
+- * PARAMETERS:  Handle              - Node to be dumped
+- *              Level               - Nesting level of the handle
+- *              Context             - Passed into walk_namespace
++ * PARAMETERS:  handle              - Node to be dumped
++ *              level               - Nesting level of the handle
++ *              context             - Passed into walk_namespace
+  *              return_value        - Not used
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/nseval.c b/drivers/acpi/acpica/nseval.c
+index f375cb8..69074be 100644
+--- a/drivers/acpi/acpica/nseval.c
++++ b/drivers/acpi/acpica/nseval.c
+@@ -59,11 +59,11 @@ acpi_ns_exec_module_code(union acpi_operand_object *method_obj,
+  *
+  * FUNCTION:    acpi_ns_evaluate
+  *
+- * PARAMETERS:  Info            - Evaluation info block, contains:
++ * PARAMETERS:  info            - Evaluation info block, contains:
+  *                  prefix_node     - Prefix or Method/Object Node to execute
+- *                  Pathname        - Name of method to execute, If NULL, the
++ *                  pathname        - Name of method to execute, If NULL, the
+  *                                    Node is the object to execute
+- *                  Parameters      - List of parameters to pass to the method,
++ *                  parameters      - List of parameters to pass to the method,
+  *                                    terminated by NULL. Params itself may be
+  *                                    NULL if no parameters are being passed.
+  *                  return_object   - Where to put method's return value (if
+@@ -71,7 +71,7 @@ acpi_ns_exec_module_code(union acpi_operand_object *method_obj,
+  *                  parameter_type  - Type of Parameter list
+  *                  return_object   - Where to put method's return value (if
+  *                                    any). If NULL, no value is returned.
+- *                  Flags           - ACPI_IGNORE_RETURN_VALUE to delete return
++ *                  flags           - ACPI_IGNORE_RETURN_VALUE to delete return
+  *
+  * RETURN:      Status
+  *
+@@ -351,7 +351,7 @@ void acpi_ns_exec_module_code_list(void)
+  * FUNCTION:    acpi_ns_exec_module_code
+  *
+  * PARAMETERS:  method_obj          - Object container for the module-level code
+- *              Info                - Info block for method evaluation
++ *              info                - Info block for method evaluation
+  *
+  * RETURN:      None. Exceptions during method execution are ignored, since
+  *              we cannot abort a table load.
+diff --git a/drivers/acpi/acpica/nsinit.c b/drivers/acpi/acpica/nsinit.c
+index 9d84ec2..95ffe8d 100644
+--- a/drivers/acpi/acpica/nsinit.c
++++ b/drivers/acpi/acpica/nsinit.c
+@@ -224,8 +224,8 @@ acpi_status acpi_ns_initialize_devices(void)
+  * FUNCTION:    acpi_ns_init_one_object
+  *
+  * PARAMETERS:  obj_handle      - Node
+- *              Level           - Current nesting level
+- *              Context         - Points to a init info struct
++ *              level           - Current nesting level
++ *              context         - Points to a init info struct
+  *              return_value    - Not used
+  *
+  * RETURN:      Status
+@@ -530,7 +530,7 @@ acpi_ns_init_one_device(acpi_handle obj_handle,
+ 			 * we will not run _INI, but we continue to examine the children
+ 			 * of this device.
+ 			 *
+-			 * From the ACPI spec, description of _STA: (Note - no mention
++			 * From the ACPI spec, description of _STA: (note - no mention
+ 			 * of whether to run _INI or not on the device in question)
+ 			 *
+ 			 * "_STA may return bit 0 clear (not present) with bit 3 set
+diff --git a/drivers/acpi/acpica/nsload.c b/drivers/acpi/acpica/nsload.c
+index 5cbf15f..76935ff 100644
+--- a/drivers/acpi/acpica/nsload.c
++++ b/drivers/acpi/acpica/nsload.c
+@@ -63,7 +63,7 @@ static acpi_status acpi_ns_delete_subtree(acpi_handle start_handle);
+  * FUNCTION:    acpi_ns_load_table
+  *
+  * PARAMETERS:  table_index     - Index for table to be loaded
+- *              Node            - Owning NS node
++ *              node            - Owning NS node
+  *
+  * RETURN:      Status
+  *
+@@ -278,7 +278,7 @@ static acpi_status acpi_ns_delete_subtree(acpi_handle start_handle)
+  *
+  *  FUNCTION:       acpi_ns_unload_name_space
+  *
+- *  PARAMETERS:     Handle          - Root of namespace subtree to be deleted
++ *  PARAMETERS:     handle          - Root of namespace subtree to be deleted
+  *
+  *  RETURN:         Status
+  *
+diff --git a/drivers/acpi/acpica/nsnames.c b/drivers/acpi/acpica/nsnames.c
+index b20e7c8..96e0eb6 100644
+--- a/drivers/acpi/acpica/nsnames.c
++++ b/drivers/acpi/acpica/nsnames.c
+@@ -53,8 +53,8 @@ ACPI_MODULE_NAME("nsnames")
+  *
+  * FUNCTION:    acpi_ns_build_external_path
+  *
+- * PARAMETERS:  Node            - NS node whose pathname is needed
+- *              Size            - Size of the pathname
++ * PARAMETERS:  node            - NS node whose pathname is needed
++ *              size            - Size of the pathname
+  *              *name_buffer    - Where to return the pathname
+  *
+  * RETURN:      Status
+@@ -120,7 +120,7 @@ acpi_ns_build_external_path(struct acpi_namespace_node *node,
+  *
+  * FUNCTION:    acpi_ns_get_external_pathname
+  *
+- * PARAMETERS:  Node            - Namespace node whose pathname is needed
++ * PARAMETERS:  node            - Namespace node whose pathname is needed
+  *
+  * RETURN:      Pointer to storage containing the fully qualified name of
+  *              the node, In external format (name segments separated by path
+@@ -168,7 +168,7 @@ char *acpi_ns_get_external_pathname(struct acpi_namespace_node *node)
+  *
+  * FUNCTION:    acpi_ns_get_pathname_length
+  *
+- * PARAMETERS:  Node        - Namespace node
++ * PARAMETERS:  node        - Namespace node
+  *
+  * RETURN:      Length of path, including prefix
+  *
+@@ -214,7 +214,7 @@ acpi_size acpi_ns_get_pathname_length(struct acpi_namespace_node *node)
+  *
+  * PARAMETERS:  target_handle           - Handle of named object whose name is
+  *                                        to be found
+- *              Buffer                  - Where the pathname is returned
++ *              buffer                  - Where the pathname is returned
+  *
+  * RETURN:      Status, Buffer is filled with pathname if status is AE_OK
+  *
+diff --git a/drivers/acpi/acpica/nsobject.c b/drivers/acpi/acpica/nsobject.c
+index dd77a3c..d6c9a3c 100644
+--- a/drivers/acpi/acpica/nsobject.c
++++ b/drivers/acpi/acpica/nsobject.c
+@@ -53,9 +53,9 @@ ACPI_MODULE_NAME("nsobject")
+  *
+  * FUNCTION:    acpi_ns_attach_object
+  *
+- * PARAMETERS:  Node                - Parent Node
+- *              Object              - Object to be attached
+- *              Type                - Type of object, or ACPI_TYPE_ANY if not
++ * PARAMETERS:  node                - Parent Node
++ *              object              - Object to be attached
++ *              type                - Type of object, or ACPI_TYPE_ANY if not
+  *                                    known
+  *
+  * RETURN:      Status
+@@ -191,7 +191,7 @@ acpi_ns_attach_object(struct acpi_namespace_node *node,
+  *
+  * FUNCTION:    acpi_ns_detach_object
+  *
+- * PARAMETERS:  Node           - A Namespace node whose object will be detached
++ * PARAMETERS:  node           - A Namespace node whose object will be detached
+  *
+  * RETURN:      None.
+  *
+@@ -250,7 +250,7 @@ void acpi_ns_detach_object(struct acpi_namespace_node *node)
+  *
+  * FUNCTION:    acpi_ns_get_attached_object
+  *
+- * PARAMETERS:  Node             - Namespace node
++ * PARAMETERS:  node             - Namespace node
+  *
+  * RETURN:      Current value of the object field from the Node whose
+  *              handle is passed
+@@ -285,7 +285,7 @@ union acpi_operand_object *acpi_ns_get_attached_object(struct
+  *
+  * FUNCTION:    acpi_ns_get_secondary_object
+  *
+- * PARAMETERS:  Node             - Namespace node
++ * PARAMETERS:  node             - Namespace node
+  *
+  * RETURN:      Current value of the object field from the Node whose
+  *              handle is passed.
+@@ -315,9 +315,9 @@ union acpi_operand_object *acpi_ns_get_secondary_object(union
+  *
+  * FUNCTION:    acpi_ns_attach_data
+  *
+- * PARAMETERS:  Node            - Namespace node
+- *              Handler         - Handler to be associated with the data
+- *              Data            - Data to be attached
++ * PARAMETERS:  node            - Namespace node
++ *              handler         - Handler to be associated with the data
++ *              data            - Data to be attached
+  *
+  * RETURN:      Status
+  *
+@@ -372,8 +372,8 @@ acpi_ns_attach_data(struct acpi_namespace_node *node,
+  *
+  * FUNCTION:    acpi_ns_detach_data
+  *
+- * PARAMETERS:  Node            - Namespace node
+- *              Handler         - Handler associated with the data
++ * PARAMETERS:  node            - Namespace node
++ *              handler         - Handler associated with the data
+  *
+  * RETURN:      Status
+  *
+@@ -416,9 +416,9 @@ acpi_ns_detach_data(struct acpi_namespace_node * node,
+  *
+  * FUNCTION:    acpi_ns_get_attached_data
+  *
+- * PARAMETERS:  Node            - Namespace node
+- *              Handler         - Handler associated with the data
+- *              Data            - Where the data is returned
++ * PARAMETERS:  node            - Namespace node
++ *              handler         - Handler associated with the data
++ *              data            - Where the data is returned
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/nspredef.c b/drivers/acpi/acpica/nspredef.c
+index 23ce096..10b85ae 100644
+--- a/drivers/acpi/acpica/nspredef.c
++++ b/drivers/acpi/acpica/nspredef.c
+@@ -116,7 +116,7 @@ static const char *acpi_rtype_names[] = {
+  *
+  * FUNCTION:    acpi_ns_check_predefined_names
+  *
+- * PARAMETERS:  Node            - Namespace node for the method/object
++ * PARAMETERS:  node            - Namespace node for the method/object
+  *              user_param_count - Number of parameters actually passed
+  *              return_status   - Status from the object evaluation
+  *              return_object_ptr - Pointer to the object returned from the
+@@ -275,10 +275,10 @@ cleanup:
+  *
+  * FUNCTION:    acpi_ns_check_parameter_count
+  *
+- * PARAMETERS:  Pathname        - Full pathname to the node (for error msgs)
+- *              Node            - Namespace node for the method/object
++ * PARAMETERS:  pathname        - Full pathname to the node (for error msgs)
++ *              node            - Namespace node for the method/object
+  *              user_param_count - Number of args passed in by the caller
+- *              Predefined      - Pointer to entry in predefined name table
++ *              predefined      - Pointer to entry in predefined name table
+  *
+  * RETURN:      None
+  *
+@@ -364,7 +364,7 @@ acpi_ns_check_parameter_count(char *pathname,
+  *
+  * FUNCTION:    acpi_ns_check_for_predefined_name
+  *
+- * PARAMETERS:  Node            - Namespace node for the method/object
++ * PARAMETERS:  node            - Namespace node for the method/object
+  *
+  * RETURN:      Pointer to entry in predefined table. NULL indicates not found.
+  *
+@@ -410,7 +410,7 @@ const union acpi_predefined_info *acpi_ns_check_for_predefined_name(struct
+  *
+  * FUNCTION:    acpi_ns_check_package
+  *
+- * PARAMETERS:  Data            - Pointer to validation data structure
++ * PARAMETERS:  data            - Pointer to validation data structure
+  *              return_object_ptr - Pointer to the object returned from the
+  *                                evaluation of a method or object
+  *
+@@ -685,11 +685,11 @@ package_too_small:
+  *
+  * FUNCTION:    acpi_ns_check_package_list
+  *
+- * PARAMETERS:  Data            - Pointer to validation data structure
+- *              Package         - Pointer to package-specific info for method
+- *              Elements        - Element list of parent package. All elements
++ * PARAMETERS:  data            - Pointer to validation data structure
++ *              package         - Pointer to package-specific info for method
++ *              elements        - Element list of parent package. All elements
+  *                                of this list should be of type Package.
+- *              Count           - Count of subpackages
++ *              count           - Count of subpackages
+  *
+  * RETURN:      Status
+  *
+@@ -911,12 +911,12 @@ package_too_small:
+  *
+  * FUNCTION:    acpi_ns_check_package_elements
+  *
+- * PARAMETERS:  Data            - Pointer to validation data structure
+- *              Elements        - Pointer to the package elements array
+- *              Type1           - Object type for first group
+- *              Count1          - Count for first group
+- *              Type2           - Object type for second group
+- *              Count2          - Count for second group
++ * PARAMETERS:  data            - Pointer to validation data structure
++ *              elements        - Pointer to the package elements array
++ *              type1           - Object type for first group
++ *              count1          - Count for first group
++ *              type2           - Object type for second group
++ *              count2          - Count for second group
+  *              start_index     - Start of the first group of elements
+  *
+  * RETURN:      Status
+@@ -968,7 +968,7 @@ acpi_ns_check_package_elements(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_check_object_type
+  *
+- * PARAMETERS:  Data            - Pointer to validation data structure
++ * PARAMETERS:  data            - Pointer to validation data structure
+  *              return_object_ptr - Pointer to the object returned from the
+  *                                evaluation of a method or object
+  *              expected_btypes - Bitmap of expected return type(s)
+@@ -1102,7 +1102,7 @@ acpi_ns_check_object_type(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_check_reference
+  *
+- * PARAMETERS:  Data            - Pointer to validation data structure
++ * PARAMETERS:  data            - Pointer to validation data structure
+  *              return_object   - Object returned from the evaluation of a
+  *                                method or object
+  *
+@@ -1140,7 +1140,7 @@ acpi_ns_check_reference(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_get_expected_types
+  *
+- * PARAMETERS:  Buffer          - Pointer to where the string is returned
++ * PARAMETERS:  buffer          - Pointer to where the string is returned
+  *              expected_btypes - Bitmap of expected return type(s)
+  *
+  * RETURN:      Buffer is populated with type names.
+diff --git a/drivers/acpi/acpica/nsrepair.c b/drivers/acpi/acpica/nsrepair.c
+index 5519a64..8c5f292 100644
+--- a/drivers/acpi/acpica/nsrepair.c
++++ b/drivers/acpi/acpica/nsrepair.c
+@@ -94,7 +94,7 @@ acpi_ns_convert_to_buffer(union acpi_operand_object *original_object,
+  *
+  * FUNCTION:    acpi_ns_repair_object
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              expected_btypes     - Object types expected
+  *              package_index       - Index of object within parent package (if
+  *                                    applicable - ACPI_NOT_PACKAGE_ELEMENT
+@@ -470,7 +470,7 @@ acpi_ns_convert_to_buffer(union acpi_operand_object *original_object,
+  *
+  * FUNCTION:    acpi_ns_repair_null_element
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              expected_btypes     - Object types expected
+  *              package_index       - Index of object within parent package (if
+  *                                    applicable - ACPI_NOT_PACKAGE_ELEMENT
+@@ -509,17 +509,17 @@ acpi_ns_repair_null_element(struct acpi_predefined_data *data,
+ 	 */
+ 	if (expected_btypes & ACPI_RTYPE_INTEGER) {
+ 
+-		/* Need an Integer - create a zero-value integer */
++		/* Need an integer - create a zero-value integer */
+ 
+ 		new_object = acpi_ut_create_integer_object((u64)0);
+ 	} else if (expected_btypes & ACPI_RTYPE_STRING) {
+ 
+-		/* Need a String - create a NULL string */
++		/* Need a string - create a NULL string */
+ 
+ 		new_object = acpi_ut_create_string_object(0);
+ 	} else if (expected_btypes & ACPI_RTYPE_BUFFER) {
+ 
+-		/* Need a Buffer - create a zero-length buffer */
++		/* Need a buffer - create a zero-length buffer */
+ 
+ 		new_object = acpi_ut_create_buffer_object(0);
+ 	} else {
+@@ -552,7 +552,7 @@ acpi_ns_repair_null_element(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_remove_null_elements
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              package_type        - An acpi_return_package_types value
+  *              obj_desc            - A Package object
+  *
+@@ -635,7 +635,7 @@ acpi_ns_remove_null_elements(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_wrap_with_package
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              original_object     - Pointer to the object to repair.
+  *              obj_desc_ptr        - The new package object is returned here
+  *
+diff --git a/drivers/acpi/acpica/nsrepair2.c b/drivers/acpi/acpica/nsrepair2.c
+index 726bc8e..9018925 100644
+--- a/drivers/acpi/acpica/nsrepair2.c
++++ b/drivers/acpi/acpica/nsrepair2.c
+@@ -149,8 +149,8 @@ static const struct acpi_repair_info acpi_ns_repairable_names[] = {
+  *
+  * FUNCTION:    acpi_ns_complex_repairs
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
+- *              Node                - Namespace node for the method/object
++ * PARAMETERS:  data                - Pointer to validation data structure
++ *              node                - Namespace node for the method/object
+  *              validate_status     - Original status of earlier validation
+  *              return_object_ptr   - Pointer to the object returned from the
+  *                                    evaluation of a method or object
+@@ -187,7 +187,7 @@ acpi_ns_complex_repairs(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_match_repairable_name
+  *
+- * PARAMETERS:  Node                - Namespace node for the method/object
++ * PARAMETERS:  node                - Namespace node for the method/object
+  *
+  * RETURN:      Pointer to entry in repair table. NULL indicates not found.
+  *
+@@ -218,7 +218,7 @@ static const struct acpi_repair_info *acpi_ns_match_repairable_name(struct
+  *
+  * FUNCTION:    acpi_ns_repair_ALR
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              return_object_ptr   - Pointer to the object returned from the
+  *                                    evaluation of a method or object
+  *
+@@ -247,7 +247,7 @@ acpi_ns_repair_ALR(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_repair_FDE
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              return_object_ptr   - Pointer to the object returned from the
+  *                                    evaluation of a method or object
+  *
+@@ -335,7 +335,7 @@ acpi_ns_repair_FDE(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_repair_CID
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              return_object_ptr   - Pointer to the object returned from the
+  *                                    evaluation of a method or object
+  *
+@@ -405,7 +405,7 @@ acpi_ns_repair_CID(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_repair_HID
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              return_object_ptr   - Pointer to the object returned from the
+  *                                    evaluation of a method or object
+  *
+@@ -487,7 +487,7 @@ acpi_ns_repair_HID(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_repair_TSS
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              return_object_ptr   - Pointer to the object returned from the
+  *                                    evaluation of a method or object
+  *
+@@ -531,7 +531,7 @@ acpi_ns_repair_TSS(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_repair_PSS
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              return_object_ptr   - Pointer to the object returned from the
+  *                                    evaluation of a method or object
+  *
+@@ -600,7 +600,7 @@ acpi_ns_repair_PSS(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_check_sorted_list
+  *
+- * PARAMETERS:  Data                - Pointer to validation data structure
++ * PARAMETERS:  data                - Pointer to validation data structure
+  *              return_object       - Pointer to the top-level returned object
+  *              expected_count      - Minimum length of each sub-package
+  *              sort_index          - Sub-package entry to sort on
+@@ -707,9 +707,9 @@ acpi_ns_check_sorted_list(struct acpi_predefined_data *data,
+  *
+  * FUNCTION:    acpi_ns_sort_list
+  *
+- * PARAMETERS:  Elements            - Package object element list
+- *              Count               - Element count for above
+- *              Index               - Sort by which package element
++ * PARAMETERS:  elements            - Package object element list
++ *              count               - Element count for above
++ *              index               - Sort by which package element
+  *              sort_direction      - Ascending or Descending sort
+  *
+  * RETURN:      None
+diff --git a/drivers/acpi/acpica/nssearch.c b/drivers/acpi/acpica/nssearch.c
+index 507043d..456cc85 100644
+--- a/drivers/acpi/acpica/nssearch.c
++++ b/drivers/acpi/acpica/nssearch.c
+@@ -65,7 +65,7 @@ acpi_ns_search_parent_tree(u32 target_name,
+  *
+  * PARAMETERS:  target_name     - Ascii ACPI name to search for
+  *              parent_node     - Starting node where search will begin
+- *              Type            - Object type to match
++ *              type            - Object type to match
+  *              return_node     - Where the matched Named obj is returned
+  *
+  * RETURN:      Status
+@@ -175,8 +175,8 @@ acpi_ns_search_one_scope(u32 target_name,
+  * FUNCTION:    acpi_ns_search_parent_tree
+  *
+  * PARAMETERS:  target_name     - Ascii ACPI name to search for
+- *              Node            - Starting node where search will begin
+- *              Type            - Object type to match
++ *              node            - Starting node where search will begin
++ *              type            - Object type to match
+  *              return_node     - Where the matched Node is returned
+  *
+  * RETURN:      Status
+@@ -264,11 +264,11 @@ acpi_ns_search_parent_tree(u32 target_name,
+  *
+  * PARAMETERS:  target_name         - Ascii ACPI name to search for (4 chars)
+  *              walk_state          - Current state of the walk
+- *              Node                - Starting node where search will begin
++ *              node                - Starting node where search will begin
+  *              interpreter_mode    - Add names only in ACPI_MODE_LOAD_PASS_x.
+  *                                    Otherwise,search only.
+- *              Type                - Object type to match
+- *              Flags               - Flags describing the search restrictions
++ *              type                - Object type to match
++ *              flags               - Flags describing the search restrictions
+  *              return_node         - Where the Node is returned
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/nsutils.c b/drivers/acpi/acpica/nsutils.c
+index 7511375..ef753a4 100644
+--- a/drivers/acpi/acpica/nsutils.c
++++ b/drivers/acpi/acpica/nsutils.c
+@@ -62,8 +62,8 @@ acpi_name acpi_ns_find_parent_name(struct acpi_namespace_node *node_to_search);
+  *
+  * FUNCTION:    acpi_ns_print_node_pathname
+  *
+- * PARAMETERS:  Node            - Object
+- *              Message         - Prefix message
++ * PARAMETERS:  node            - Object
++ *              message         - Prefix message
+  *
+  * DESCRIPTION: Print an object's full namespace pathname
+  *              Manages allocation/freeing of a pathname buffer
+@@ -101,7 +101,7 @@ acpi_ns_print_node_pathname(struct acpi_namespace_node *node,
+  *
+  * FUNCTION:    acpi_ns_valid_root_prefix
+  *
+- * PARAMETERS:  Prefix          - Character to be checked
++ * PARAMETERS:  prefix          - Character to be checked
+  *
+  * RETURN:      TRUE if a valid prefix
+  *
+@@ -119,7 +119,7 @@ u8 acpi_ns_valid_root_prefix(char prefix)
+  *
+  * FUNCTION:    acpi_ns_valid_path_separator
+  *
+- * PARAMETERS:  Sep         - Character to be checked
++ * PARAMETERS:  sep         - Character to be checked
+  *
+  * RETURN:      TRUE if a valid path separator
+  *
+@@ -137,7 +137,7 @@ static u8 acpi_ns_valid_path_separator(char sep)
+  *
+  * FUNCTION:    acpi_ns_get_type
+  *
+- * PARAMETERS:  Node        - Parent Node to be examined
++ * PARAMETERS:  node        - Parent Node to be examined
+  *
+  * RETURN:      Type field from Node whose handle is passed
+  *
+@@ -161,7 +161,7 @@ acpi_object_type acpi_ns_get_type(struct acpi_namespace_node * node)
+  *
+  * FUNCTION:    acpi_ns_local
+  *
+- * PARAMETERS:  Type        - A namespace object type
++ * PARAMETERS:  type        - A namespace object type
+  *
+  * RETURN:      LOCAL if names must be found locally in objects of the
+  *              passed type, 0 if enclosing scopes should be searched
+@@ -189,7 +189,7 @@ u32 acpi_ns_local(acpi_object_type type)
+  *
+  * FUNCTION:    acpi_ns_get_internal_name_length
+  *
+- * PARAMETERS:  Info            - Info struct initialized with the
++ * PARAMETERS:  info            - Info struct initialized with the
+  *                                external name pointer.
+  *
+  * RETURN:      None
+@@ -260,7 +260,7 @@ void acpi_ns_get_internal_name_length(struct acpi_namestring_info *info)
+  *
+  * FUNCTION:    acpi_ns_build_internal_name
+  *
+- * PARAMETERS:  Info            - Info struct fully initialized
++ * PARAMETERS:  info            - Info struct fully initialized
+  *
+  * RETURN:      Status
+  *
+@@ -371,7 +371,7 @@ acpi_status acpi_ns_build_internal_name(struct acpi_namestring_info *info)
+  * FUNCTION:    acpi_ns_internalize_name
+  *
+  * PARAMETERS:  *external_name          - External representation of name
+- *              **Converted Name        - Where to return the resulting
++ *              **Converted name        - Where to return the resulting
+  *                                        internal represention of the name
+  *
+  * RETURN:      Status
+@@ -575,7 +575,7 @@ acpi_ns_externalize_name(u32 internal_name_length,
+  *
+  * FUNCTION:    acpi_ns_validate_handle
+  *
+- * PARAMETERS:  Handle          - Handle to be validated and typecast to a
++ * PARAMETERS:  handle          - Handle to be validated and typecast to a
+  *                                namespace node.
+  *
+  * RETURN:      A pointer to a namespace node
+@@ -651,7 +651,7 @@ void acpi_ns_terminate(void)
+  *
+  * FUNCTION:    acpi_ns_opens_scope
+  *
+- * PARAMETERS:  Type        - A valid namespace type
++ * PARAMETERS:  type        - A valid namespace type
+  *
+  * RETURN:      NEWSCOPE if the passed type "opens a name scope" according
+  *              to the ACPI specification, else 0
+@@ -677,14 +677,14 @@ u32 acpi_ns_opens_scope(acpi_object_type type)
+  *
+  * FUNCTION:    acpi_ns_get_node
+  *
+- * PARAMETERS:  *Pathname   - Name to be found, in external (ASL) format. The
++ * PARAMETERS:  *pathname   - Name to be found, in external (ASL) format. The
+  *                            \ (backslash) and ^ (carat) prefixes, and the
+  *                            . (period) to separate segments are supported.
+  *              prefix_node  - Root of subtree to be searched, or NS_ALL for the
+  *                            root of the name space.  If Name is fully
+  *                            qualified (first s8 is '\'), the passed value
+  *                            of Scope will not be accessed.
+- *              Flags       - Used to indicate whether to perform upsearch or
++ *              flags       - Used to indicate whether to perform upsearch or
+  *                            not.
+  *              return_node - Where the Node is returned
+  *
+diff --git a/drivers/acpi/acpica/nswalk.c b/drivers/acpi/acpica/nswalk.c
+index f69895a..730bccc 100644
+--- a/drivers/acpi/acpica/nswalk.c
++++ b/drivers/acpi/acpica/nswalk.c
+@@ -88,7 +88,7 @@ struct acpi_namespace_node *acpi_ns_get_next_node(struct acpi_namespace_node
+  *
+  * FUNCTION:    acpi_ns_get_next_node_typed
+  *
+- * PARAMETERS:  Type                - Type of node to be searched for
++ * PARAMETERS:  type                - Type of node to be searched for
+  *              parent_node         - Parent node whose children we are
+  *                                    getting
+  *              child_node          - Previous child that was found.
+@@ -151,16 +151,16 @@ struct acpi_namespace_node *acpi_ns_get_next_node_typed(acpi_object_type type,
+  *
+  * FUNCTION:    acpi_ns_walk_namespace
+  *
+- * PARAMETERS:  Type                - acpi_object_type to search for
++ * PARAMETERS:  type                - acpi_object_type to search for
+  *              start_node          - Handle in namespace where search begins
+  *              max_depth           - Depth to which search is to reach
+- *              Flags               - Whether to unlock the NS before invoking
++ *              flags               - Whether to unlock the NS before invoking
+  *                                    the callback routine
+  *              pre_order_visit     - Called during tree pre-order visit
+  *                                    when an object of "Type" is found
+  *              post_order_visit    - Called during tree post-order visit
+  *                                    when an object of "Type" is found
+- *              Context             - Passed to user function(s) above
++ *              context             - Passed to user function(s) above
+  *              return_value        - from the user_function if terminated
+  *                                    early. Otherwise, returns NULL.
+  * RETURNS:     Status
+diff --git a/drivers/acpi/acpica/nsxfeval.c b/drivers/acpi/acpica/nsxfeval.c
+index 71d15f6..9692e67 100644
+--- a/drivers/acpi/acpica/nsxfeval.c
++++ b/drivers/acpi/acpica/nsxfeval.c
+@@ -58,8 +58,8 @@ static void acpi_ns_resolve_references(struct acpi_evaluate_info *info);
+  *
+  * FUNCTION:    acpi_evaluate_object_typed
+  *
+- * PARAMETERS:  Handle              - Object handle (optional)
+- *              Pathname            - Object pathname (optional)
++ * PARAMETERS:  handle              - Object handle (optional)
++ *              pathname            - Object pathname (optional)
+  *              external_params     - List of parameters to pass to method,
+  *                                    terminated by NULL.  May be NULL
+  *                                    if no parameters are being passed.
+@@ -152,8 +152,8 @@ ACPI_EXPORT_SYMBOL(acpi_evaluate_object_typed)
+  *
+  * FUNCTION:    acpi_evaluate_object
+  *
+- * PARAMETERS:  Handle              - Object handle (optional)
+- *              Pathname            - Object pathname (optional)
++ * PARAMETERS:  handle              - Object handle (optional)
++ *              pathname            - Object pathname (optional)
+  *              external_params     - List of parameters to pass to method,
+  *                                    terminated by NULL.  May be NULL
+  *                                    if no parameters are being passed.
+@@ -364,7 +364,7 @@ ACPI_EXPORT_SYMBOL(acpi_evaluate_object)
+  *
+  * FUNCTION:    acpi_ns_resolve_references
+  *
+- * PARAMETERS:  Info                    - Evaluation info block
++ * PARAMETERS:  info                    - Evaluation info block
+  *
+  * RETURN:      Info->return_object is replaced with the dereferenced object
+  *
+@@ -431,14 +431,14 @@ static void acpi_ns_resolve_references(struct acpi_evaluate_info *info)
+  *
+  * FUNCTION:    acpi_walk_namespace
+  *
+- * PARAMETERS:  Type                - acpi_object_type to search for
++ * PARAMETERS:  type                - acpi_object_type to search for
+  *              start_object        - Handle in namespace where search begins
+  *              max_depth           - Depth to which search is to reach
+  *              pre_order_visit     - Called during tree pre-order visit
+  *                                    when an object of "Type" is found
+  *              post_order_visit    - Called during tree post-order visit
+  *                                    when an object of "Type" is found
+- *              Context             - Passed to user function(s) above
++ *              context             - Passed to user function(s) above
+  *              return_value        - Location where return value of
+  *                                    user_function is put if terminated early
+  *
+@@ -646,7 +646,7 @@ acpi_ns_get_device_callback(acpi_handle obj_handle,
+  *
+  * PARAMETERS:  HID                 - HID to search for. Can be NULL.
+  *              user_function       - Called when a matching object is found
+- *              Context             - Passed to user function
++ *              context             - Passed to user function
+  *              return_value        - Location where return value of
+  *                                    user_function is put if terminated early
+  *
+@@ -716,8 +716,8 @@ ACPI_EXPORT_SYMBOL(acpi_get_devices)
+  * FUNCTION:    acpi_attach_data
+  *
+  * PARAMETERS:  obj_handle          - Namespace node
+- *              Handler             - Handler for this attachment
+- *              Data                - Pointer to data to be attached
++ *              handler             - Handler for this attachment
++ *              data                - Pointer to data to be attached
+  *
+  * RETURN:      Status
+  *
+@@ -764,7 +764,7 @@ ACPI_EXPORT_SYMBOL(acpi_attach_data)
+  * FUNCTION:    acpi_detach_data
+  *
+  * PARAMETERS:  obj_handle          - Namespace node handle
+- *              Handler             - Handler used in call to acpi_attach_data
++ *              handler             - Handler used in call to acpi_attach_data
+  *
+  * RETURN:      Status
+  *
+@@ -810,8 +810,8 @@ ACPI_EXPORT_SYMBOL(acpi_detach_data)
+  * FUNCTION:    acpi_get_data
+  *
+  * PARAMETERS:  obj_handle          - Namespace node
+- *              Handler             - Handler used in call to attach_data
+- *              Data                - Where the data is returned
++ *              handler             - Handler used in call to attach_data
++ *              data                - Where the data is returned
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/nsxfname.c b/drivers/acpi/acpica/nsxfname.c
+index af401c9..08e9610 100644
+--- a/drivers/acpi/acpica/nsxfname.c
++++ b/drivers/acpi/acpica/nsxfname.c
+@@ -61,8 +61,8 @@ static char *acpi_ns_copy_device_id(struct acpica_device_id *dest,
+  *
+  * FUNCTION:    acpi_get_handle
+  *
+- * PARAMETERS:  Parent          - Object to search under (search scope).
+- *              Pathname        - Pointer to an asciiz string containing the
++ * PARAMETERS:  parent          - Object to search under (search scope).
++ *              pathname        - Pointer to an asciiz string containing the
+  *                                name
+  *              ret_handle      - Where the return handle is returned
+  *
+@@ -142,9 +142,9 @@ ACPI_EXPORT_SYMBOL(acpi_get_handle)
+  *
+  * FUNCTION:    acpi_get_name
+  *
+- * PARAMETERS:  Handle          - Handle to be converted to a pathname
++ * PARAMETERS:  handle          - Handle to be converted to a pathname
+  *              name_type       - Full pathname or single segment
+- *              Buffer          - Buffer for returned path
++ *              buffer          - Buffer for returned path
+  *
+  * RETURN:      Pointer to a string containing the fully qualified Name.
+  *
+@@ -219,8 +219,8 @@ ACPI_EXPORT_SYMBOL(acpi_get_name)
+  *
+  * FUNCTION:    acpi_ns_copy_device_id
+  *
+- * PARAMETERS:  Dest                - Pointer to the destination DEVICE_ID
+- *              Source              - Pointer to the source DEVICE_ID
++ * PARAMETERS:  dest                - Pointer to the destination DEVICE_ID
++ *              source              - Pointer to the source DEVICE_ID
+  *              string_area         - Pointer to where to copy the dest string
+  *
+  * RETURN:      Pointer to the next string area
+@@ -247,7 +247,7 @@ static char *acpi_ns_copy_device_id(struct acpica_device_id *dest,
+  *
+  * FUNCTION:    acpi_get_object_info
+  *
+- * PARAMETERS:  Handle              - Object Handle
++ * PARAMETERS:  handle              - Object Handle
+  *              return_buffer       - Where the info is returned
+  *
+  * RETURN:      Status
+@@ -493,7 +493,7 @@ ACPI_EXPORT_SYMBOL(acpi_get_object_info)
+  *
+  * FUNCTION:    acpi_install_method
+  *
+- * PARAMETERS:  Buffer         - An ACPI table containing one control method
++ * PARAMETERS:  buffer         - An ACPI table containing one control method
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/nsxfobj.c b/drivers/acpi/acpica/nsxfobj.c
+index 880a605..6766fc4 100644
+--- a/drivers/acpi/acpica/nsxfobj.c
++++ b/drivers/acpi/acpica/nsxfobj.c
+@@ -98,7 +98,7 @@ ACPI_EXPORT_SYMBOL(acpi_get_id)
+  *
+  * FUNCTION:    acpi_get_type
+  *
+- * PARAMETERS:  Handle          - Handle of object whose type is desired
++ * PARAMETERS:  handle          - Handle of object whose type is desired
+  *              ret_type        - Where the type will be placed
+  *
+  * RETURN:      Status
+@@ -151,7 +151,7 @@ ACPI_EXPORT_SYMBOL(acpi_get_type)
+  *
+  * FUNCTION:    acpi_get_parent
+  *
+- * PARAMETERS:  Handle          - Handle of object whose parent is desired
++ * PARAMETERS:  handle          - Handle of object whose parent is desired
+  *              ret_handle      - Where the parent handle will be placed
+  *
+  * RETURN:      Status
+@@ -212,8 +212,8 @@ ACPI_EXPORT_SYMBOL(acpi_get_parent)
+  *
+  * FUNCTION:    acpi_get_next_object
+  *
+- * PARAMETERS:  Type            - Type of object to be searched for
+- *              Parent          - Parent object whose children we are getting
++ * PARAMETERS:  type            - Type of object to be searched for
++ *              parent          - Parent object whose children we are getting
+  *              last_child      - Previous child that was found.
+  *                                The NEXT child will be returned
+  *              ret_handle      - Where handle to the next object is placed
+diff --git a/drivers/acpi/acpica/psargs.c b/drivers/acpi/acpica/psargs.c
+index a683d66..844464c 100644
+--- a/drivers/acpi/acpica/psargs.c
++++ b/drivers/acpi/acpica/psargs.c
+@@ -210,7 +210,7 @@ char *acpi_ps_get_next_namestring(struct acpi_parse_state *parser_state)
+  * FUNCTION:    acpi_ps_get_next_namepath
+  *
+  * PARAMETERS:  parser_state        - Current parser state object
+- *              Arg                 - Where the namepath will be stored
++ *              arg                 - Where the namepath will be stored
+  *              arg_count           - If the namepath points to a control method
+  *                                    the method's argument is returned here.
+  *              possible_method_call - Whether the namepath can possibly be the
+@@ -379,7 +379,7 @@ acpi_ps_get_next_namepath(struct acpi_walk_state *walk_state,
+  *
+  * PARAMETERS:  parser_state        - Current parser state object
+  *              arg_type            - The argument type (AML_*_ARG)
+- *              Arg                 - Where the argument is returned
++ *              arg                 - Where the argument is returned
+  *
+  * RETURN:      None
+  *
+diff --git a/drivers/acpi/acpica/psloop.c b/drivers/acpi/acpica/psloop.c
+index 9547ad8..799162c 100644
+--- a/drivers/acpi/acpica/psloop.c
++++ b/drivers/acpi/acpica/psloop.c
+@@ -167,7 +167,7 @@ static acpi_status acpi_ps_get_aml_opcode(struct acpi_walk_state *walk_state)
+  * PARAMETERS:  walk_state          - Current state
+  *              aml_op_start        - Begin of named Op in AML
+  *              unnamed_op          - Early Op (not a named Op)
+- *              Op                  - Returned Op
++ *              op                  - Returned Op
+  *
+  * RETURN:      Status
+  *
+@@ -323,7 +323,7 @@ acpi_ps_create_op(struct acpi_walk_state *walk_state,
+ 
+ 	if (walk_state->op_info->flags & AML_CREATE) {
+ 		/*
+-		 * Backup to beginning of create_xXXfield declaration
++		 * Backup to beginning of create_XXXfield declaration
+ 		 * body_length is unknown until we parse the body
+ 		 */
+ 		op->named.data = aml_op_start;
+@@ -380,7 +380,7 @@ acpi_ps_create_op(struct acpi_walk_state *walk_state,
+  *
+  * PARAMETERS:  walk_state          - Current state
+  *              aml_op_start        - Op start in AML
+- *              Op                  - Current Op
++ *              op                  - Current Op
+  *
+  * RETURN:      Status
+  *
+@@ -679,8 +679,8 @@ acpi_ps_link_module_code(union acpi_parse_object *parent_op,
+  * FUNCTION:    acpi_ps_complete_op
+  *
+  * PARAMETERS:  walk_state          - Current state
+- *              Op                  - Returned Op
+- *              Status              - Parse status before complete Op
++ *              op                  - Returned Op
++ *              status              - Parse status before complete Op
+  *
+  * RETURN:      Status
+  *
+@@ -853,8 +853,8 @@ acpi_ps_complete_op(struct acpi_walk_state *walk_state,
+  * FUNCTION:    acpi_ps_complete_final_op
+  *
+  * PARAMETERS:  walk_state          - Current state
+- *              Op                  - Current Op
+- *              Status              - Current parse status before complete last
++ *              op                  - Current Op
++ *              status              - Current parse status before complete last
+  *                                    Op
+  *
+  * RETURN:      Status
+@@ -1165,7 +1165,7 @@ acpi_status acpi_ps_parse_loop(struct acpi_walk_state *walk_state)
+ 
+ 		if (walk_state->op_info->flags & AML_CREATE) {
+ 			/*
+-			 * Backup to beginning of create_xXXfield declaration (1 for
++			 * Backup to beginning of create_XXXfield declaration (1 for
+ 			 * Opcode)
+ 			 *
+ 			 * body_length is unknown until we parse the body
+diff --git a/drivers/acpi/acpica/psopcode.c b/drivers/acpi/acpica/psopcode.c
+index a0226fd..ed1d457 100644
+--- a/drivers/acpi/acpica/psopcode.c
++++ b/drivers/acpi/acpica/psopcode.c
+@@ -724,7 +724,7 @@ static const u8 acpi_gbl_long_op_index[NUM_EXTENDED_OPCODE] = {
+  *
+  * FUNCTION:    acpi_ps_get_opcode_info
+  *
+- * PARAMETERS:  Opcode              - The AML opcode
++ * PARAMETERS:  opcode              - The AML opcode
+  *
+  * RETURN:      A pointer to the info about the opcode.
+  *
+@@ -769,7 +769,7 @@ const struct acpi_opcode_info *acpi_ps_get_opcode_info(u16 opcode)
+  *
+  * FUNCTION:    acpi_ps_get_opcode_name
+  *
+- * PARAMETERS:  Opcode              - The AML opcode
++ * PARAMETERS:  opcode              - The AML opcode
+  *
+  * RETURN:      A pointer to the name of the opcode (ASCII String)
+  *              Note: Never returns NULL.
+diff --git a/drivers/acpi/acpica/psparse.c b/drivers/acpi/acpica/psparse.c
+index 2ff9c35..0198570 100644
+--- a/drivers/acpi/acpica/psparse.c
++++ b/drivers/acpi/acpica/psparse.c
+@@ -64,7 +64,7 @@ ACPI_MODULE_NAME("psparse")
+  *
+  * FUNCTION:    acpi_ps_get_opcode_size
+  *
+- * PARAMETERS:  Opcode          - An AML opcode
++ * PARAMETERS:  opcode          - An AML opcode
+  *
+  * RETURN:      Size of the opcode, in bytes (1 or 2)
+  *
+@@ -121,7 +121,7 @@ u16 acpi_ps_peek_opcode(struct acpi_parse_state * parser_state)
+  * FUNCTION:    acpi_ps_complete_this_op
+  *
+  * PARAMETERS:  walk_state      - Current State
+- *              Op              - Op to complete
++ *              op              - Op to complete
+  *
+  * RETURN:      Status
+  *
+@@ -311,7 +311,7 @@ acpi_ps_complete_this_op(struct acpi_walk_state * walk_state,
+  * FUNCTION:    acpi_ps_next_parse_state
+  *
+  * PARAMETERS:  walk_state          - Current state
+- *              Op                  - Current parse op
++ *              op                  - Current parse op
+  *              callback_status     - Status from previous operation
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/psscope.c b/drivers/acpi/acpica/psscope.c
+index c872aa4..608dc20 100644
+--- a/drivers/acpi/acpica/psscope.c
++++ b/drivers/acpi/acpica/psscope.c
+@@ -93,7 +93,7 @@ u8 acpi_ps_has_completed_scope(struct acpi_parse_state * parser_state)
+  * FUNCTION:    acpi_ps_init_scope
+  *
+  * PARAMETERS:  parser_state        - Current parser state object
+- *              Root                - the Root Node of this new scope
++ *              root                - the Root Node of this new scope
+  *
+  * RETURN:      Status
+  *
+@@ -131,7 +131,7 @@ acpi_ps_init_scope(struct acpi_parse_state * parser_state,
+  * FUNCTION:    acpi_ps_push_scope
+  *
+  * PARAMETERS:  parser_state        - Current parser state object
+- *              Op                  - Current op to be pushed
++ *              op                  - Current op to be pushed
+  *              remaining_args      - List of args remaining
+  *              arg_count           - Fixed or variable number of args
+  *
+@@ -184,7 +184,7 @@ acpi_ps_push_scope(struct acpi_parse_state *parser_state,
+  * FUNCTION:    acpi_ps_pop_scope
+  *
+  * PARAMETERS:  parser_state        - Current parser state object
+- *              Op                  - Where the popped op is returned
++ *              op                  - Where the popped op is returned
+  *              arg_list            - Where the popped "next argument" is
+  *                                    returned
+  *              arg_count           - Count of objects in arg_list
+diff --git a/drivers/acpi/acpica/pstree.c b/drivers/acpi/acpica/pstree.c
+index 2b03cdb..fdb2e71 100644
+--- a/drivers/acpi/acpica/pstree.c
++++ b/drivers/acpi/acpica/pstree.c
+@@ -58,8 +58,8 @@ union acpi_parse_object *acpi_ps_get_child(union acpi_parse_object *op);
+  *
+  * FUNCTION:    acpi_ps_get_arg
+  *
+- * PARAMETERS:  Op              - Get an argument for this op
+- *              Argn            - Nth argument to get
++ * PARAMETERS:  op              - Get an argument for this op
++ *              argn            - Nth argument to get
+  *
+  * RETURN:      The argument (as an Op object). NULL if argument does not exist
+  *
+@@ -114,8 +114,8 @@ union acpi_parse_object *acpi_ps_get_arg(union acpi_parse_object *op, u32 argn)
+  *
+  * FUNCTION:    acpi_ps_append_arg
+  *
+- * PARAMETERS:  Op              - Append an argument to this Op.
+- *              Arg             - Argument Op to append
++ * PARAMETERS:  op              - Append an argument to this Op.
++ *              arg             - Argument Op to append
+  *
+  * RETURN:      None.
+  *
+@@ -188,8 +188,8 @@ acpi_ps_append_arg(union acpi_parse_object *op, union acpi_parse_object *arg)
+  *
+  * FUNCTION:    acpi_ps_get_depth_next
+  *
+- * PARAMETERS:  Origin          - Root of subtree to search
+- *              Op              - Last (previous) Op that was found
++ * PARAMETERS:  origin          - Root of subtree to search
++ *              op              - Last (previous) Op that was found
+  *
+  * RETURN:      Next Op found in the search.
+  *
+@@ -261,7 +261,7 @@ union acpi_parse_object *acpi_ps_get_depth_next(union acpi_parse_object *origin,
+  *
+  * FUNCTION:    acpi_ps_get_child
+  *
+- * PARAMETERS:  Op              - Get the child of this Op
++ * PARAMETERS:  op              - Get the child of this Op
+  *
+  * RETURN:      Child Op, Null if none is found.
+  *
+diff --git a/drivers/acpi/acpica/psutils.c b/drivers/acpi/acpica/psutils.c
+index 13bb131..8736ad5 100644
+--- a/drivers/acpi/acpica/psutils.c
++++ b/drivers/acpi/acpica/psutils.c
+@@ -77,8 +77,8 @@ union acpi_parse_object *acpi_ps_create_scope_op(void)
+  *
+  * FUNCTION:    acpi_ps_init_op
+  *
+- * PARAMETERS:  Op              - A newly allocated Op object
+- *              Opcode          - Opcode to store in the Op
++ * PARAMETERS:  op              - A newly allocated Op object
++ *              opcode          - Opcode to store in the Op
+  *
+  * RETURN:      None
+  *
+@@ -103,7 +103,7 @@ void acpi_ps_init_op(union acpi_parse_object *op, u16 opcode)
+  *
+  * FUNCTION:    acpi_ps_alloc_op
+  *
+- * PARAMETERS:  Opcode          - Opcode that will be stored in the new Op
++ * PARAMETERS:  opcode          - Opcode that will be stored in the new Op
+  *
+  * RETURN:      Pointer to the new Op, null on failure
+  *
+@@ -160,7 +160,7 @@ union acpi_parse_object *acpi_ps_alloc_op(u16 opcode)
+  *
+  * FUNCTION:    acpi_ps_free_op
+  *
+- * PARAMETERS:  Op              - Op to be freed
++ * PARAMETERS:  op              - Op to be freed
+  *
+  * RETURN:      None.
+  *
+diff --git a/drivers/acpi/acpica/psxface.c b/drivers/acpi/acpica/psxface.c
+index 9d98c5f..963e162 100644
+--- a/drivers/acpi/acpica/psxface.c
++++ b/drivers/acpi/acpica/psxface.c
+@@ -66,7 +66,7 @@ acpi_ps_update_parameter_list(struct acpi_evaluate_info *info, u16 action);
+  * PARAMETERS:  method_name     - Valid ACPI name string
+  *              debug_level     - Optional level mask. 0 to use default
+  *              debug_layer     - Optional layer mask. 0 to use default
+- *              Flags           - bit 1: one shot(1) or persistent(0)
++ *              flags           - bit 1: one shot(1) or persistent(0)
+  *
+  * RETURN:      Status
+  *
+@@ -105,7 +105,7 @@ acpi_debug_trace(char *name, u32 debug_level, u32 debug_layer, u32 flags)
+  *
+  * FUNCTION:    acpi_ps_start_trace
+  *
+- * PARAMETERS:  Info        - Method info struct
++ * PARAMETERS:  info        - Method info struct
+  *
+  * RETURN:      None
+  *
+@@ -150,7 +150,7 @@ static void acpi_ps_start_trace(struct acpi_evaluate_info *info)
+  *
+  * FUNCTION:    acpi_ps_stop_trace
+  *
+- * PARAMETERS:  Info        - Method info struct
++ * PARAMETERS:  info        - Method info struct
+  *
+  * RETURN:      None
+  *
+@@ -193,10 +193,10 @@ static void acpi_ps_stop_trace(struct acpi_evaluate_info *info)
+  *
+  * FUNCTION:    acpi_ps_execute_method
+  *
+- * PARAMETERS:  Info            - Method info block, contains:
+- *                  Node            - Method Node to execute
++ * PARAMETERS:  info            - Method info block, contains:
++ *                  node            - Method Node to execute
+  *                  obj_desc        - Method object
+- *                  Parameters      - List of parameters to pass to the method,
++ *                  parameters      - List of parameters to pass to the method,
+  *                                    terminated by NULL. Params itself may be
+  *                                    NULL if no parameters are being passed.
+  *                  return_object   - Where to put method's return value (if
+@@ -361,9 +361,9 @@ acpi_status acpi_ps_execute_method(struct acpi_evaluate_info *info)
+  *
+  * FUNCTION:    acpi_ps_update_parameter_list
+  *
+- * PARAMETERS:  Info            - See struct acpi_evaluate_info
++ * PARAMETERS:  info            - See struct acpi_evaluate_info
+  *                                (Used: parameter_type and Parameters)
+- *              Action          - Add or Remove reference
++ *              action          - Add or Remove reference
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/rsaddr.c b/drivers/acpi/acpica/rsaddr.c
+index a030565..856ff07 100644
+--- a/drivers/acpi/acpica/rsaddr.c
++++ b/drivers/acpi/acpica/rsaddr.c
+@@ -182,8 +182,8 @@ struct acpi_rsconvert_info acpi_rs_convert_ext_address64[5] = {
+ 
+ 	/* Revision ID */
+ 
+-	{ACPI_RSC_MOVE8, ACPI_RS_OFFSET(data.ext_address64.revision_iD),
+-	 AML_OFFSET(ext_address64.revision_iD),
++	{ACPI_RSC_MOVE8, ACPI_RS_OFFSET(data.ext_address64.revision_ID),
++	 AML_OFFSET(ext_address64.revision_ID),
+ 	 1},
+ 	/*
+ 	 * These fields are contiguous in both the source and destination:
+@@ -215,7 +215,7 @@ static struct acpi_rsconvert_info acpi_rs_convert_general_flags[6] = {
+ 	 AML_OFFSET(address.resource_type),
+ 	 1},
+ 
+-	/* General Flags - Consume, Decode, min_fixed, max_fixed */
++	/* General flags - Consume, Decode, min_fixed, max_fixed */
+ 
+ 	{ACPI_RSC_1BITFLAG, ACPI_RS_OFFSET(data.address.producer_consumer),
+ 	 AML_OFFSET(address.flags),
+@@ -293,8 +293,8 @@ static struct acpi_rsconvert_info acpi_rs_convert_io_flags[4] = {
+  *
+  * FUNCTION:    acpi_rs_get_address_common
+  *
+- * PARAMETERS:  Resource            - Pointer to the internal resource struct
+- *              Aml                 - Pointer to the AML resource descriptor
++ * PARAMETERS:  resource            - Pointer to the internal resource struct
++ *              aml                 - Pointer to the AML resource descriptor
+  *
+  * RETURN:      TRUE if the resource_type field is OK, FALSE otherwise
+  *
+@@ -343,8 +343,8 @@ acpi_rs_get_address_common(struct acpi_resource *resource,
+  *
+  * FUNCTION:    acpi_rs_set_address_common
+  *
+- * PARAMETERS:  Aml                 - Pointer to the AML resource descriptor
+- *              Resource            - Pointer to the internal resource struct
++ * PARAMETERS:  aml                 - Pointer to the AML resource descriptor
++ *              resource            - Pointer to the internal resource struct
+  *
+  * RETURN:      None
+  *
+diff --git a/drivers/acpi/acpica/rscalc.c b/drivers/acpi/acpica/rscalc.c
+index 3c6df4b..de12469 100644
+--- a/drivers/acpi/acpica/rscalc.c
++++ b/drivers/acpi/acpica/rscalc.c
+@@ -173,7 +173,7 @@ acpi_rs_stream_option_length(u32 resource_length,
+  *
+  * FUNCTION:    acpi_rs_get_aml_length
+  *
+- * PARAMETERS:  Resource            - Pointer to the resource linked list
++ * PARAMETERS:  resource            - Pointer to the resource linked list
+  *              size_needed         - Where the required size is returned
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/rsdump.c b/drivers/acpi/acpica/rsdump.c
+index b4c5811..4d11b072 100644
+--- a/drivers/acpi/acpica/rsdump.c
++++ b/drivers/acpi/acpica/rsdump.c
+@@ -703,7 +703,7 @@ acpi_rs_dump_resource_source(struct acpi_resource_source *resource_source)
+  *
+  * FUNCTION:    acpi_rs_dump_address_common
+  *
+- * PARAMETERS:  Resource        - Pointer to an internal resource descriptor
++ * PARAMETERS:  resource        - Pointer to an internal resource descriptor
+  *
+  * RETURN:      None
+  *
+@@ -850,8 +850,8 @@ void acpi_rs_dump_irq_list(u8 * route_table)
+  *
+  * FUNCTION:    acpi_rs_out*
+  *
+- * PARAMETERS:  Title       - Name of the resource field
+- *              Value       - Value of the resource field
++ * PARAMETERS:  title       - Name of the resource field
++ *              value       - Value of the resource field
+  *
+  * RETURN:      None
+  *
+@@ -898,8 +898,8 @@ static void acpi_rs_out_title(char *title)
+  *
+  * FUNCTION:    acpi_rs_dump*List
+  *
+- * PARAMETERS:  Length      - Number of elements in the list
+- *              Data        - Start of the list
++ * PARAMETERS:  length      - Number of elements in the list
++ *              data        - Start of the list
+  *
+  * RETURN:      None
+  *
+diff --git a/drivers/acpi/acpica/rslist.c b/drivers/acpi/acpica/rslist.c
+index 9be129f..46b5324 100644
+--- a/drivers/acpi/acpica/rslist.c
++++ b/drivers/acpi/acpica/rslist.c
+@@ -139,7 +139,7 @@ acpi_rs_convert_aml_to_resources(u8 * aml,
+  *
+  * FUNCTION:    acpi_rs_convert_resources_to_aml
+  *
+- * PARAMETERS:  Resource            - Pointer to the resource linked list
++ * PARAMETERS:  resource            - Pointer to the resource linked list
+  *              aml_size_needed     - Calculated size of the byte stream
+  *                                    needed from calling acpi_rs_get_aml_length()
+  *                                    The size of the output_buffer is
+diff --git a/drivers/acpi/acpica/rsmisc.c b/drivers/acpi/acpica/rsmisc.c
+index 8073b37..c6f291c 100644
+--- a/drivers/acpi/acpica/rsmisc.c
++++ b/drivers/acpi/acpica/rsmisc.c
+@@ -57,9 +57,9 @@ ACPI_MODULE_NAME("rsmisc")
+  *
+  * FUNCTION:    acpi_rs_convert_aml_to_resource
+  *
+- * PARAMETERS:  Resource            - Pointer to the resource descriptor
+- *              Aml                 - Where the AML descriptor is returned
+- *              Info                - Pointer to appropriate conversion table
++ * PARAMETERS:  resource            - Pointer to the resource descriptor
++ *              aml                 - Where the AML descriptor is returned
++ *              info                - Pointer to appropriate conversion table
+  *
+  * RETURN:      Status
+  *
+@@ -406,7 +406,7 @@ acpi_rs_convert_aml_to_resource(struct acpi_resource *resource,
+ 
+ 		case ACPI_RSC_EXIT_NE:
+ 			/*
+-			 * Control - Exit conversion if not equal
++			 * control - Exit conversion if not equal
+ 			 */
+ 			switch (info->resource_offset) {
+ 			case ACPI_RSC_COMPARE_AML_LENGTH:
+@@ -454,9 +454,9 @@ acpi_rs_convert_aml_to_resource(struct acpi_resource *resource,
+  *
+  * FUNCTION:    acpi_rs_convert_resource_to_aml
+  *
+- * PARAMETERS:  Resource            - Pointer to the resource descriptor
+- *              Aml                 - Where the AML descriptor is returned
+- *              Info                - Pointer to appropriate conversion table
++ * PARAMETERS:  resource            - Pointer to the resource descriptor
++ *              aml                 - Where the AML descriptor is returned
++ *              info                - Pointer to appropriate conversion table
+  *
+  * RETURN:      Status
+  *
+@@ -726,7 +726,7 @@ acpi_rs_convert_resource_to_aml(struct acpi_resource *resource,
+ 
+ 		case ACPI_RSC_EXIT_LE:
+ 			/*
+-			 * Control - Exit conversion if less than or equal
++			 * control - Exit conversion if less than or equal
+ 			 */
+ 			if (item_count <= info->value) {
+ 				goto exit;
+@@ -735,7 +735,7 @@ acpi_rs_convert_resource_to_aml(struct acpi_resource *resource,
+ 
+ 		case ACPI_RSC_EXIT_NE:
+ 			/*
+-			 * Control - Exit conversion if not equal
++			 * control - Exit conversion if not equal
+ 			 */
+ 			switch (COMPARE_OPCODE(info)) {
+ 			case ACPI_RSC_COMPARE_VALUE:
+@@ -757,7 +757,7 @@ acpi_rs_convert_resource_to_aml(struct acpi_resource *resource,
+ 
+ 		case ACPI_RSC_EXIT_EQ:
+ 			/*
+-			 * Control - Exit conversion if equal
++			 * control - Exit conversion if equal
+ 			 */
+ 			if (*ACPI_ADD_PTR(u8, resource,
+ 					  COMPARE_TARGET(info)) ==
+@@ -783,7 +783,7 @@ acpi_rs_convert_resource_to_aml(struct acpi_resource *resource,
+ #if 0
+ /* Previous resource validations */
+ 
+-if (aml->ext_address64.revision_iD != AML_RESOURCE_EXTENDED_ADDRESS_REVISION) {
++if (aml->ext_address64.revision_ID != AML_RESOURCE_EXTENDED_ADDRESS_REVISION) {
+ 	return_ACPI_STATUS(AE_SUPPORT);
  }
  
--void print_nehalem_info(void)
-+void print_verbose_header(void)
- {
- 	unsigned long long msr;
- 	unsigned int ratio;
-@@ -615,143 +711,82 @@ void print_nehalem_info(void)
+diff --git a/drivers/acpi/acpica/rsutils.c b/drivers/acpi/acpica/rsutils.c
+index 433a375..37d5241 100644
+--- a/drivers/acpi/acpica/rsutils.c
++++ b/drivers/acpi/acpica/rsutils.c
+@@ -53,8 +53,8 @@ ACPI_MODULE_NAME("rsutils")
+  *
+  * FUNCTION:    acpi_rs_decode_bitmask
+  *
+- * PARAMETERS:  Mask            - Bitmask to decode
+- *              List            - Where the converted list is returned
++ * PARAMETERS:  mask            - Bitmask to decode
++ *              list            - Where the converted list is returned
+  *
+  * RETURN:      Count of bits set (length of list)
+  *
+@@ -86,8 +86,8 @@ u8 acpi_rs_decode_bitmask(u16 mask, u8 * list)
+  *
+  * FUNCTION:    acpi_rs_encode_bitmask
+  *
+- * PARAMETERS:  List            - List of values to encode
+- *              Count           - Length of list
++ * PARAMETERS:  list            - List of values to encode
++ *              count           - Length of list
+  *
+  * RETURN:      Encoded bitmask
+  *
+@@ -115,8 +115,8 @@ u16 acpi_rs_encode_bitmask(u8 * list, u8 count)
+  *
+  * FUNCTION:    acpi_rs_move_data
+  *
+- * PARAMETERS:  Destination         - Pointer to the destination descriptor
+- *              Source              - Pointer to the source descriptor
++ * PARAMETERS:  destination         - Pointer to the destination descriptor
++ *              source              - Pointer to the source descriptor
+  *              item_count          - How many items to move
+  *              move_type           - Byte width
+  *
+@@ -183,7 +183,7 @@ acpi_rs_move_data(void *destination, void *source, u16 item_count, u8 move_type)
+  *
+  * PARAMETERS:  total_length        - Length of the AML descriptor, including
+  *                                    the header and length fields.
+- *              Aml                 - Pointer to the raw AML descriptor
++ *              aml                 - Pointer to the raw AML descriptor
+  *
+  * RETURN:      None
+  *
+@@ -235,7 +235,7 @@ acpi_rs_set_resource_length(acpi_rsdesc_size total_length,
+  * PARAMETERS:  descriptor_type     - Byte to be inserted as the type
+  *              total_length        - Length of the AML descriptor, including
+  *                                    the header and length fields.
+- *              Aml                 - Pointer to the raw AML descriptor
++ *              aml                 - Pointer to the raw AML descriptor
+  *
+  * RETURN:      None
+  *
+@@ -265,8 +265,8 @@ acpi_rs_set_resource_header(u8 descriptor_type,
+  *
+  * FUNCTION:    acpi_rs_strcpy
+  *
+- * PARAMETERS:  Destination         - Pointer to the destination string
+- *              Source              - Pointer to the source string
++ * PARAMETERS:  destination         - Pointer to the destination string
++ *              source              - Pointer to the source string
+  *
+  * RETURN:      String length, including NULL terminator
+  *
+@@ -300,7 +300,7 @@ static u16 acpi_rs_strcpy(char *destination, char *source)
+  *              minimum_length      - Minimum length of the descriptor (minus
+  *                                    any optional fields)
+  *              resource_source     - Where the resource_source is returned
+- *              Aml                 - Pointer to the raw AML descriptor
++ *              aml                 - Pointer to the raw AML descriptor
+  *              string_ptr          - (optional) where to store the actual
+  *                                    resource_source string
+  *
+@@ -386,7 +386,7 @@ acpi_rs_get_resource_source(acpi_rs_length resource_length,
+  *
+  * FUNCTION:    acpi_rs_set_resource_source
+  *
+- * PARAMETERS:  Aml                 - Pointer to the raw AML descriptor
++ * PARAMETERS:  aml                 - Pointer to the raw AML descriptor
+  *              minimum_length      - Minimum length of the descriptor (minus
+  *                                    any optional fields)
+  *              resource_source     - Internal resource_source
+@@ -445,7 +445,7 @@ acpi_rs_set_resource_source(union aml_resource * aml,
+  *
+  * FUNCTION:    acpi_rs_get_prt_method_data
+  *
+- * PARAMETERS:  Node            - Device node
++ * PARAMETERS:  node            - Device node
+  *              ret_buffer      - Pointer to a buffer structure for the
+  *                                results
+  *
+@@ -494,7 +494,7 @@ acpi_rs_get_prt_method_data(struct acpi_namespace_node * node,
+  *
+  * FUNCTION:    acpi_rs_get_crs_method_data
+  *
+- * PARAMETERS:  Node            - Device node
++ * PARAMETERS:  node            - Device node
+  *              ret_buffer      - Pointer to a buffer structure for the
+  *                                results
+  *
+@@ -534,7 +534,7 @@ acpi_rs_get_crs_method_data(struct acpi_namespace_node *node,
+ 	 */
+ 	status = acpi_rs_create_resource_list(obj_desc, ret_buffer);
  
- }
+-	/* On exit, we must delete the object returned by evaluate_object */
++	/* On exit, we must delete the object returned by evaluateObject */
  
--void free_counter_list(struct counters *list)
-+void free_all_buffers(void)
- {
--	struct counters *p;
-+	CPU_FREE(cpu_present_set);
-+	cpu_present_set = NULL;
-+	cpu_present_set = 0;
+ 	acpi_ut_remove_reference(obj_desc);
+ 	return_ACPI_STATUS(status);
+@@ -544,7 +544,7 @@ acpi_rs_get_crs_method_data(struct acpi_namespace_node *node,
+  *
+  * FUNCTION:    acpi_rs_get_prs_method_data
+  *
+- * PARAMETERS:  Node            - Device node
++ * PARAMETERS:  node            - Device node
+  *              ret_buffer      - Pointer to a buffer structure for the
+  *                                results
+  *
+@@ -585,7 +585,7 @@ acpi_rs_get_prs_method_data(struct acpi_namespace_node *node,
+ 	 */
+ 	status = acpi_rs_create_resource_list(obj_desc, ret_buffer);
  
--	for (p = list; p; ) {
--		struct counters *free_me;
-+	CPU_FREE(cpu_affinity_set);
-+	cpu_affinity_set = NULL;
-+	cpu_affinity_setsize = 0;
+-	/* On exit, we must delete the object returned by evaluate_object */
++	/* On exit, we must delete the object returned by evaluateObject */
  
--		free_me = p;
--		p = p->next;
--		free(free_me);
--	}
--}
-+	free(thread_even);
-+	free(core_even);
-+	free(package_even);
+ 	acpi_ut_remove_reference(obj_desc);
+ 	return_ACPI_STATUS(status);
+@@ -596,7 +596,7 @@ acpi_rs_get_prs_method_data(struct acpi_namespace_node *node,
+  *
+  * FUNCTION:    acpi_rs_get_aei_method_data
+  *
+- * PARAMETERS:  Node            - Device node
++ * PARAMETERS:  node            - Device node
+  *              ret_buffer      - Pointer to a buffer structure for the
+  *                                results
+  *
+@@ -636,7 +636,7 @@ acpi_rs_get_aei_method_data(struct acpi_namespace_node *node,
+ 	 */
+ 	status = acpi_rs_create_resource_list(obj_desc, ret_buffer);
  
--void free_all_counters(void)
--{
--	free_counter_list(cnt_even);
--	cnt_even = NULL;
-+	thread_even = NULL;
-+	core_even = NULL;
-+	package_even = NULL;
+-	/* On exit, we must delete the object returned by evaluate_object */
++	/* On exit, we must delete the object returned by evaluateObject */
  
--	free_counter_list(cnt_odd);
--	cnt_odd = NULL;
-+	free(thread_odd);
-+	free(core_odd);
-+	free(package_odd);
- 
--	free_counter_list(cnt_delta);
--	cnt_delta = NULL;
-+	thread_odd = NULL;
-+	core_odd = NULL;
-+	package_odd = NULL;
- 
--	free_counter_list(cnt_average);
--	cnt_average = NULL;
-+	free(output_buffer);
-+	output_buffer = NULL;
-+	outp = NULL;
- }
- 
--void insert_counters(struct counters **list,
--	struct counters *new)
-+/*
-+ * cpu_is_first_sibling_in_core(cpu)
-+ * return 1 if given CPU is 1st HT sibling in the core
-+ */
-+int cpu_is_first_sibling_in_core(int cpu)
- {
--	struct counters *prev;
--
--	/*
--	 * list was empty
--	 */
--	if (*list == NULL) {
--		new->next = *list;
--		*list = new;
--		return;
--	}
--
--	if (!summary_only)
--		show_cpu = 1;	/* there is more than one CPU */
--
--	/*
--	 * insert on front of list.
--	 * It is sorted by ascending package#, core#, cpu#
--	 */
--	if (((*list)->pkg > new->pkg) ||
--	    (((*list)->pkg == new->pkg) && ((*list)->core > new->core)) ||
--	    (((*list)->pkg == new->pkg) && ((*list)->core == new->core) && ((*list)->cpu > new->cpu))) {
--		new->next = *list;
--		*list = new;
--		return;
--	}
--
--	prev = *list;
--
--	while (prev->next && (prev->next->pkg < new->pkg)) {
--		prev = prev->next;
--		if (!summary_only)
--			show_pkg = 1;	/* there is more than 1 package */
--	}
--
--	while (prev->next && (prev->next->pkg == new->pkg)
--		&& (prev->next->core < new->core)) {
--		prev = prev->next;
--		if (!summary_only)
--			show_core = 1;	/* there is more than 1 core */
--	}
-+	char path[64];
-+	FILE *filep;
-+	int first_cpu;
- 
--	while (prev->next && (prev->next->pkg == new->pkg)
--		&& (prev->next->core == new->core)
--		&& (prev->next->cpu < new->cpu)) {
--		prev = prev->next;
-+	sprintf(path, "/sys/devices/system/cpu/cpu%d/topology/thread_siblings_list", cpu);
-+	filep = fopen(path, "r");
-+	if (filep == NULL) {
-+		perror(path);
-+		exit(1);
+ 	acpi_ut_remove_reference(obj_desc);
+ 	return_ACPI_STATUS(status);
+@@ -646,8 +646,8 @@ acpi_rs_get_aei_method_data(struct acpi_namespace_node *node,
+  *
+  * FUNCTION:    acpi_rs_get_method_data
+  *
+- * PARAMETERS:  Handle          - Handle to the containing object
+- *              Path            - Path to method, relative to Handle
++ * PARAMETERS:  handle          - Handle to the containing object
++ *              path            - Path to method, relative to Handle
+  *              ret_buffer      - Pointer to a buffer structure for the
+  *                                results
+  *
+@@ -697,7 +697,7 @@ acpi_rs_get_method_data(acpi_handle handle,
+  *
+  * FUNCTION:    acpi_rs_set_srs_method_data
+  *
+- * PARAMETERS:  Node            - Device node
++ * PARAMETERS:  node            - Device node
+  *              in_buffer       - Pointer to a buffer structure of the
+  *                                parameter
+  *
+diff --git a/drivers/acpi/acpica/rsxface.c b/drivers/acpi/acpica/rsxface.c
+index f58c098..5aad744 100644
+--- a/drivers/acpi/acpica/rsxface.c
++++ b/drivers/acpi/acpica/rsxface.c
+@@ -79,7 +79,7 @@ acpi_rs_validate_parameters(acpi_handle device_handle,
+  * FUNCTION:    acpi_rs_validate_parameters
+  *
+  * PARAMETERS:  device_handle   - Handle to a device
+- *              Buffer          - Pointer to a data buffer
++ *              buffer          - Pointer to a data buffer
+  *              return_node     - Pointer to where the device node is returned
+  *
+  * RETURN:      Status
+@@ -351,8 +351,8 @@ ACPI_EXPORT_SYMBOL(acpi_get_event_resources)
+  *
+  * FUNCTION:    acpi_resource_to_address64
+  *
+- * PARAMETERS:  Resource        - Pointer to a resource
+- *              Out             - Pointer to the users's return buffer
++ * PARAMETERS:  resource        - Pointer to a resource
++ *              out             - Pointer to the users's return buffer
+  *                                (a struct acpi_resource_address64)
+  *
+  * RETURN:      Status
+@@ -415,9 +415,9 @@ ACPI_EXPORT_SYMBOL(acpi_resource_to_address64)
+  * FUNCTION:    acpi_get_vendor_resource
+  *
+  * PARAMETERS:  device_handle   - Handle for the parent device object
+- *              Name            - Method name for the parent resource
++ *              name            - Method name for the parent resource
+  *                                (METHOD_NAME__CRS or METHOD_NAME__PRS)
+- *              Uuid            - Pointer to the UUID to be matched.
++ *              uuid            - Pointer to the UUID to be matched.
+  *                                includes both subtype and 16-byte UUID
+  *              ret_buffer      - Where the vendor resource is returned
+  *
+@@ -526,11 +526,11 @@ acpi_rs_match_vendor_resource(struct acpi_resource *resource, void *context)
+  *
+  * PARAMETERS:  device_handle   - Handle to the device object for the
+  *                                device we are querying
+- *              Name            - Method name of the resources we want.
++ *              name            - Method name of the resources we want.
+  *                                (METHOD_NAME__CRS, METHOD_NAME__PRS, or
+  *                                METHOD_NAME__AEI)
+  *              user_function   - Called for each resource
+- *              Context         - Passed to user_function
++ *              context         - Passed to user_function
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/tbfadt.c b/drivers/acpi/acpica/tbfadt.c
+index b3e3fd03..3906518 100644
+--- a/drivers/acpi/acpica/tbfadt.c
++++ b/drivers/acpi/acpica/tbfadt.c
+@@ -173,7 +173,7 @@ static struct acpi_fadt_pm_info fadt_pm_info_table[] = {
+  *
+  * PARAMETERS:  generic_address     - GAS struct to be initialized
+  *              byte_width          - Width of this register
+- *              Address             - Address of the register
++ *              address             - Address of the register
+  *
+  * RETURN:      None
+  *
+@@ -283,8 +283,8 @@ void acpi_tb_parse_fadt(u32 table_index)
+  *
+  * FUNCTION:    acpi_tb_create_local_fadt
+  *
+- * PARAMETERS:  Table               - Pointer to BIOS FADT
+- *              Length              - Length of the table
++ * PARAMETERS:  table               - Pointer to BIOS FADT
++ *              length              - Length of the table
+  *
+  * RETURN:      None
+  *
+@@ -484,7 +484,7 @@ static void acpi_tb_convert_fadt(void)
+  *
+  * FUNCTION:    acpi_tb_validate_fadt
+  *
+- * PARAMETERS:  Table           - Pointer to the FADT to be validated
++ * PARAMETERS:  table           - Pointer to the FADT to be validated
+  *
+  * RETURN:      None
+  *
+@@ -583,7 +583,7 @@ static void acpi_tb_validate_fadt(void)
+ 			}
+ 		} else if (fadt_info_table[i].type & ACPI_FADT_SEPARATE_LENGTH) {
+ 			/*
+-			 * Field is optional (PM2Control, GPE0, GPE1) AND has its own
++			 * Field is optional (Pm2_control, GPE0, GPE1) AND has its own
+ 			 * length field. If present, both the address and length must
+ 			 * be valid.
+ 			 */
+diff --git a/drivers/acpi/acpica/tbfind.c b/drivers/acpi/acpica/tbfind.c
+index 4903e36..57deae1 100644
+--- a/drivers/acpi/acpica/tbfind.c
++++ b/drivers/acpi/acpica/tbfind.c
+@@ -52,7 +52,7 @@ ACPI_MODULE_NAME("tbfind")
+  *
+  * FUNCTION:    acpi_tb_find_table
+  *
+- * PARAMETERS:  Signature           - String with ACPI table signature
++ * PARAMETERS:  signature           - String with ACPI table signature
+  *              oem_id              - String with the table OEM ID
+  *              oem_table_id        - String with the OEM Table ID
+  *              table_index         - Where the table index is returned
+diff --git a/drivers/acpi/acpica/tbinstal.c b/drivers/acpi/acpica/tbinstal.c
+index a265d4a..74f97d7 100644
+--- a/drivers/acpi/acpica/tbinstal.c
++++ b/drivers/acpi/acpica/tbinstal.c
+@@ -397,10 +397,10 @@ acpi_status acpi_tb_resize_root_table_list(void)
+  *
+  * FUNCTION:    acpi_tb_store_table
+  *
+- * PARAMETERS:  Address             - Table address
+- *              Table               - Table header
+- *              Length              - Table length
+- *              Flags               - flags
++ * PARAMETERS:  address             - Table address
++ *              table               - Table header
++ *              length              - Table length
++ *              flags               - flags
+  *
+  * RETURN:      Status and table index.
+  *
+diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
+index 6818b31..b6cea30 100644
+--- a/drivers/acpi/acpica/tbutils.c
++++ b/drivers/acpi/acpica/tbutils.c
+@@ -178,8 +178,8 @@ u8 acpi_tb_tables_loaded(void)
+  *
+  * FUNCTION:    acpi_tb_fix_string
+  *
+- * PARAMETERS:  String              - String to be repaired
+- *              Length              - Maximum length
++ * PARAMETERS:  string              - String to be repaired
++ *              length              - Maximum length
+  *
+  * RETURN:      None
+  *
+@@ -205,7 +205,7 @@ static void acpi_tb_fix_string(char *string, acpi_size length)
+  * FUNCTION:    acpi_tb_cleanup_table_header
+  *
+  * PARAMETERS:  out_header          - Where the cleaned header is returned
+- *              Header              - Input ACPI table header
++ *              header              - Input ACPI table header
+  *
+  * RETURN:      Returns the cleaned header in out_header
+  *
+@@ -231,8 +231,8 @@ acpi_tb_cleanup_table_header(struct acpi_table_header *out_header,
+  *
+  * FUNCTION:    acpi_tb_print_table_header
+  *
+- * PARAMETERS:  Address             - Table physical address
+- *              Header              - Table header
++ * PARAMETERS:  address             - Table physical address
++ *              header              - Table header
+  *
+  * RETURN:      None
+  *
+@@ -296,8 +296,8 @@ acpi_tb_print_table_header(acpi_physical_address address,
+  *
+  * FUNCTION:    acpi_tb_validate_checksum
+  *
+- * PARAMETERS:  Table               - ACPI table to verify
+- *              Length              - Length of entire table
++ * PARAMETERS:  table               - ACPI table to verify
++ *              length              - Length of entire table
+  *
+  * RETURN:      Status
+  *
+@@ -336,8 +336,8 @@ acpi_status acpi_tb_verify_checksum(struct acpi_table_header *table, u32 length)
+  *
+  * FUNCTION:    acpi_tb_checksum
+  *
+- * PARAMETERS:  Buffer          - Pointer to memory region to be checked
+- *              Length          - Length of this memory region
++ * PARAMETERS:  buffer          - Pointer to memory region to be checked
++ *              length          - Length of this memory region
+  *
+  * RETURN:      Checksum (u8)
+  *
+@@ -440,8 +440,8 @@ struct acpi_table_header *acpi_tb_copy_dsdt(u32 table_index)
+  *
+  * FUNCTION:    acpi_tb_install_table
+  *
+- * PARAMETERS:  Address                 - Physical address of DSDT or FACS
+- *              Signature               - Table signature, NULL if no need to
++ * PARAMETERS:  address                 - Physical address of DSDT or FACS
++ *              signature               - Table signature, NULL if no need to
+  *                                        match
+  *              table_index             - Index into root table array
+  *
+@@ -606,7 +606,7 @@ acpi_tb_get_root_table_entry(u8 *table_entry, u32 table_entry_size)
+  *
+  * FUNCTION:    acpi_tb_parse_root_table
+  *
+- * PARAMETERS:  Rsdp                    - Pointer to the RSDP
++ * PARAMETERS:  rsdp                    - Pointer to the RSDP
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
+index 9bf34f7..ea4c6d5 100644
+--- a/drivers/acpi/acpica/tbxface.c
++++ b/drivers/acpi/acpica/tbxface.c
+@@ -59,7 +59,7 @@ ACPI_MODULE_NAME("tbxface")
+  *
+  * RETURN:      Status
+  *
+- * DESCRIPTION: Allocate a root table array. Used by i_aSL compiler and
++ * DESCRIPTION: Allocate a root table array. Used by iASL compiler and
+  *              acpi_initialize_tables.
+  *
+  ******************************************************************************/
+@@ -217,8 +217,8 @@ acpi_status acpi_reallocate_root_table(void)
+  *
+  * FUNCTION:    acpi_get_table_header
+  *
+- * PARAMETERS:  Signature           - ACPI signature of needed table
+- *              Instance            - Which instance (for SSDTs)
++ * PARAMETERS:  signature           - ACPI signature of needed table
++ *              instance            - Which instance (for SSDTs)
+  *              out_table_header    - The pointer to the table header to fill
+  *
+  * RETURN:      Status and pointer to mapped table header
+@@ -333,8 +333,8 @@ ACPI_EXPORT_SYMBOL(acpi_unload_table_id)
+  *
+  * FUNCTION:    acpi_get_table_with_size
+  *
+- * PARAMETERS:  Signature           - ACPI signature of needed table
+- *              Instance            - Which instance (for SSDTs)
++ * PARAMETERS:  signature           - ACPI signature of needed table
++ *              instance            - Which instance (for SSDTs)
+  *              out_table           - Where the pointer to the table is returned
+  *
+  * RETURN:      Status and pointer to table
+@@ -404,7 +404,7 @@ ACPI_EXPORT_SYMBOL(acpi_get_table)
+  * FUNCTION:    acpi_get_table_by_index
+  *
+  * PARAMETERS:  table_index         - Table index
+- *              Table               - Where the pointer to the table is returned
++ *              table               - Where the pointer to the table is returned
+  *
+  * RETURN:      Status and pointer to the table
+  *
+@@ -458,8 +458,8 @@ ACPI_EXPORT_SYMBOL(acpi_get_table_by_index)
+  *
+  * FUNCTION:    acpi_install_table_handler
+  *
+- * PARAMETERS:  Handler         - Table event handler
+- *              Context         - Value passed to the handler on each event
++ * PARAMETERS:  handler         - Table event handler
++ *              context         - Value passed to the handler on each event
+  *
+  * RETURN:      Status
+  *
+@@ -505,7 +505,7 @@ ACPI_EXPORT_SYMBOL(acpi_install_table_handler)
+  *
+  * FUNCTION:    acpi_remove_table_handler
+  *
+- * PARAMETERS:  Handler         - Table event handler that was installed
++ * PARAMETERS:  handler         - Table event handler that was installed
+  *                                previously.
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/tbxfroot.c b/drivers/acpi/acpica/tbxfroot.c
+index 5f6f744..74e7208 100644
+--- a/drivers/acpi/acpica/tbxfroot.c
++++ b/drivers/acpi/acpica/tbxfroot.c
+@@ -57,7 +57,7 @@ static acpi_status acpi_tb_validate_rsdp(struct acpi_table_rsdp *rsdp);
+  *
+  * FUNCTION:    acpi_tb_validate_rsdp
+  *
+- * PARAMETERS:  Rsdp                - Pointer to unvalidated RSDP
++ * PARAMETERS:  rsdp                - Pointer to unvalidated RSDP
+  *
+  * RETURN:      Status
+  *
+@@ -107,10 +107,10 @@ static acpi_status acpi_tb_validate_rsdp(struct acpi_table_rsdp *rsdp)
+  *
+  * RETURN:      Status, RSDP physical address
+  *
+- * DESCRIPTION: Search lower 1_mbyte of memory for the root system descriptor
++ * DESCRIPTION: Search lower 1Mbyte of memory for the root system descriptor
+  *              pointer structure.  If it is found, set *RSDP to point to it.
+  *
+- * NOTE1:       The RSDP must be either in the first 1_k of the Extended
++ * NOTE1:       The RSDP must be either in the first 1K of the Extended
+  *              BIOS Data Area or between E0000 and FFFFF (From ACPI Spec.)
+  *              Only a 32-bit physical address is necessary.
+  *
+@@ -152,7 +152,7 @@ acpi_status acpi_find_root_pointer(acpi_size *table_address)
+ 	if (physical_address > 0x400) {
+ 		/*
+ 		 * 1b) Search EBDA paragraphs (EBDA is required to be a
+-		 *     minimum of 1_k length)
++		 *     minimum of 1K length)
+ 		 */
+ 		table_ptr = acpi_os_map_memory((acpi_physical_address)
+ 					       physical_address,
+@@ -225,7 +225,7 @@ acpi_status acpi_find_root_pointer(acpi_size *table_address)
+  * FUNCTION:    acpi_tb_scan_memory_for_rsdp
+  *
+  * PARAMETERS:  start_address       - Starting pointer for search
+- *              Length              - Maximum length to search
++ *              length              - Maximum length to search
+  *
+  * RETURN:      Pointer to the RSDP if found, otherwise NULL.
+  *
+diff --git a/drivers/acpi/acpica/utaddress.c b/drivers/acpi/acpica/utaddress.c
+index 67932ae..6488030 100644
+--- a/drivers/acpi/acpica/utaddress.c
++++ b/drivers/acpi/acpica/utaddress.c
+@@ -53,8 +53,8 @@ ACPI_MODULE_NAME("utaddress")
+  * FUNCTION:    acpi_ut_add_address_range
+  *
+  * PARAMETERS:  space_id            - Address space ID
+- *              Address             - op_region start address
+- *              Length              - op_region length
++ *              address             - op_region start address
++ *              length              - op_region length
+  *              region_node         - op_region namespace node
+  *
+  * RETURN:      Status
+@@ -186,9 +186,9 @@ acpi_ut_remove_address_range(acpi_adr_space_type space_id,
+  * FUNCTION:    acpi_ut_check_address_range
+  *
+  * PARAMETERS:  space_id            - Address space ID
+- *              Address             - Start address
+- *              Length              - Length of address range
+- *              Warn                - TRUE if warning on overlap desired
++ *              address             - Start address
++ *              length              - Length of address range
++ *              warn                - TRUE if warning on overlap desired
+  *
+  * RETURN:      Count of the number of conflicts detected. Zero is always
+  *              returned for Space IDs other than Memory or I/O.
+diff --git a/drivers/acpi/acpica/utalloc.c b/drivers/acpi/acpica/utalloc.c
+index 9982d2ea..ed29d47 100644
+--- a/drivers/acpi/acpica/utalloc.c
++++ b/drivers/acpi/acpica/utalloc.c
+@@ -189,7 +189,7 @@ acpi_status acpi_ut_delete_caches(void)
+  *
+  * FUNCTION:    acpi_ut_validate_buffer
+  *
+- * PARAMETERS:  Buffer              - Buffer descriptor to be validated
++ * PARAMETERS:  buffer              - Buffer descriptor to be validated
+  *
+  * RETURN:      Status
+  *
+@@ -227,7 +227,7 @@ acpi_status acpi_ut_validate_buffer(struct acpi_buffer * buffer)
+  *
+  * FUNCTION:    acpi_ut_initialize_buffer
+  *
+- * PARAMETERS:  Buffer              - Buffer to be validated
++ * PARAMETERS:  buffer              - Buffer to be validated
+  *              required_length     - Length needed
+  *
+  * RETURN:      Status
+@@ -308,10 +308,10 @@ acpi_ut_initialize_buffer(struct acpi_buffer * buffer,
+  *
+  * FUNCTION:    acpi_ut_allocate
+  *
+- * PARAMETERS:  Size                - Size of the allocation
+- *              Component           - Component type of caller
+- *              Module              - Source file name of caller
+- *              Line                - Line number of caller
++ * PARAMETERS:  size                - Size of the allocation
++ *              component           - Component type of caller
++ *              module              - Source file name of caller
++ *              line                - Line number of caller
+  *
+  * RETURN:      Address of the allocated memory on success, NULL on failure.
+  *
+@@ -352,10 +352,10 @@ void *acpi_ut_allocate(acpi_size size,
+  *
+  * FUNCTION:    acpi_ut_allocate_zeroed
+  *
+- * PARAMETERS:  Size                - Size of the allocation
+- *              Component           - Component type of caller
+- *              Module              - Source file name of caller
+- *              Line                - Line number of caller
++ * PARAMETERS:  size                - Size of the allocation
++ *              component           - Component type of caller
++ *              module              - Source file name of caller
++ *              line                - Line number of caller
+  *
+  * RETURN:      Address of the allocated memory on success, NULL on failure.
+  *
+diff --git a/drivers/acpi/acpica/utcopy.c b/drivers/acpi/acpica/utcopy.c
+index 3317c0a..294692a 100644
+--- a/drivers/acpi/acpica/utcopy.c
++++ b/drivers/acpi/acpica/utcopy.c
+@@ -317,7 +317,7 @@ acpi_ut_copy_ielement_to_eelement(u8 object_type,
+  * FUNCTION:    acpi_ut_copy_ipackage_to_epackage
+  *
+  * PARAMETERS:  internal_object     - Pointer to the object we are returning
+- *              Buffer              - Where the object is returned
++ *              buffer              - Where the object is returned
+  *              space_used          - Where the object length is returned
+  *
+  * RETURN:      Status
+diff --git a/drivers/acpi/acpica/utdebug.c b/drivers/acpi/acpica/utdebug.c
+index a0998a8..e810894 100644
+--- a/drivers/acpi/acpica/utdebug.c
++++ b/drivers/acpi/acpica/utdebug.c
+@@ -145,7 +145,7 @@ static const char *acpi_ut_trim_function_name(const char *function_name)
+  *              function_name       - Caller's procedure name
+  *              module_name         - Caller's module name
+  *              component_id        - Caller's component ID
+- *              Format              - Printf format field
++ *              format              - Printf format field
+  *              ...                 - Optional printf arguments
+  *
+  * RETURN:      None
+@@ -217,7 +217,7 @@ ACPI_EXPORT_SYMBOL(acpi_debug_print)
+  *              function_name       - Caller's procedure name
+  *              module_name         - Caller's module name
+  *              component_id        - Caller's component ID
+- *              Format              - Printf format field
++ *              format              - Printf format field
+  *              ...                 - Optional printf arguments
+  *
+  * RETURN:      None
+@@ -286,7 +286,7 @@ ACPI_EXPORT_SYMBOL(acpi_ut_trace)
+  *              function_name       - Caller's procedure name
+  *              module_name         - Caller's module name
+  *              component_id        - Caller's component ID
+- *              Pointer             - Pointer to display
++ *              pointer             - Pointer to display
+  *
+  * RETURN:      None
+  *
+@@ -315,7 +315,7 @@ acpi_ut_trace_ptr(u32 line_number,
+  *              function_name       - Caller's procedure name
+  *              module_name         - Caller's module name
+  *              component_id        - Caller's component ID
+- *              String              - Additional string to display
++ *              string              - Additional string to display
+  *
+  * RETURN:      None
+  *
+@@ -346,7 +346,7 @@ acpi_ut_trace_str(u32 line_number,
+  *              function_name       - Caller's procedure name
+  *              module_name         - Caller's module name
+  *              component_id        - Caller's component ID
+- *              Integer             - Integer to display
++ *              integer             - Integer to display
+  *
+  * RETURN:      None
+  *
+@@ -408,7 +408,7 @@ ACPI_EXPORT_SYMBOL(acpi_ut_exit)
+  *              function_name       - Caller's procedure name
+  *              module_name         - Caller's module name
+  *              component_id        - Caller's component ID
+- *              Status              - Exit status code
++ *              status              - Exit status code
+  *
+  * RETURN:      None
+  *
+@@ -449,7 +449,7 @@ ACPI_EXPORT_SYMBOL(acpi_ut_status_exit)
+  *              function_name       - Caller's procedure name
+  *              module_name         - Caller's module name
+  *              component_id        - Caller's component ID
+- *              Value               - Value to be printed with exit msg
++ *              value               - Value to be printed with exit msg
+  *
+  * RETURN:      None
+  *
+@@ -481,7 +481,7 @@ ACPI_EXPORT_SYMBOL(acpi_ut_value_exit)
+  *              function_name       - Caller's procedure name
+  *              module_name         - Caller's module name
+  *              component_id        - Caller's component ID
+- *              Ptr                 - Pointer to display
++ *              ptr                 - Pointer to display
+  *
+  * RETURN:      None
+  *
+@@ -508,10 +508,10 @@ acpi_ut_ptr_exit(u32 line_number,
+  *
+  * FUNCTION:    acpi_ut_dump_buffer
+  *
+- * PARAMETERS:  Buffer              - Buffer to dump
+- *              Count               - Amount to dump, in bytes
+- *              Display             - BYTE, WORD, DWORD, or QWORD display
+- *              component_iD        - Caller's component ID
++ * PARAMETERS:  buffer              - Buffer to dump
++ *              count               - Amount to dump, in bytes
++ *              display             - BYTE, WORD, DWORD, or QWORD display
++ *              component_ID        - Caller's component ID
+  *
+  * RETURN:      None
+  *
+@@ -625,10 +625,10 @@ void acpi_ut_dump_buffer2(u8 * buffer, u32 count, u32 display)
+  *
+  * FUNCTION:    acpi_ut_dump_buffer
+  *
+- * PARAMETERS:  Buffer              - Buffer to dump
+- *              Count               - Amount to dump, in bytes
+- *              Display             - BYTE, WORD, DWORD, or QWORD display
+- *              component_iD        - Caller's component ID
++ * PARAMETERS:  buffer              - Buffer to dump
++ *              count               - Amount to dump, in bytes
++ *              display             - BYTE, WORD, DWORD, or QWORD display
++ *              component_ID        - Caller's component ID
+  *
+  * RETURN:      None
+  *
+diff --git a/drivers/acpi/acpica/utdecode.c b/drivers/acpi/acpica/utdecode.c
+index 28134ae..60a1584 100644
+--- a/drivers/acpi/acpica/utdecode.c
++++ b/drivers/acpi/acpica/utdecode.c
+@@ -91,8 +91,8 @@ const u8 acpi_gbl_ns_properties[ACPI_NUM_NS_TYPES] = {
+  *
+  * FUNCTION:    acpi_ut_hex_to_ascii_char
+  *
+- * PARAMETERS:  Integer             - Contains the hex digit
+- *              Position            - bit position of the digit within the
++ * PARAMETERS:  integer             - Contains the hex digit
++ *              position            - bit position of the digit within the
+  *                                    integer (multiple of 4)
+  *
+  * RETURN:      The converted Ascii character
+@@ -194,7 +194,7 @@ char *acpi_ut_get_event_name(u32 event_id)
+  *
+  * FUNCTION:    acpi_ut_get_type_name
+  *
+- * PARAMETERS:  Type                - An ACPI object type
++ * PARAMETERS:  type                - An ACPI object type
+  *
+  * RETURN:      Decoded ACPI object type name
+  *
+@@ -272,7 +272,7 @@ char *acpi_ut_get_object_type_name(union acpi_operand_object *obj_desc)
+  *
+  * FUNCTION:    acpi_ut_get_node_name
+  *
+- * PARAMETERS:  Object               - A namespace node
++ * PARAMETERS:  object               - A namespace node
+  *
+  * RETURN:      ASCII name of the node
+  *
+@@ -317,7 +317,7 @@ char *acpi_ut_get_node_name(void *object)
+  *
+  * FUNCTION:    acpi_ut_get_descriptor_name
+  *
+- * PARAMETERS:  Object               - An ACPI object
++ * PARAMETERS:  object               - An ACPI object
+  *
+  * RETURN:      Decoded name of the descriptor type
+  *
+@@ -367,7 +367,7 @@ char *acpi_ut_get_descriptor_name(void *object)
+  *
+  * FUNCTION:    acpi_ut_get_reference_name
+  *
+- * PARAMETERS:  Object               - An ACPI reference object
++ * PARAMETERS:  object               - An ACPI reference object
+  *
+  * RETURN:      Decoded name of the type of reference
+  *
+@@ -498,7 +498,7 @@ const char *acpi_ut_get_notify_name(u32 notify_value)
+  *
+  * FUNCTION:    acpi_ut_valid_object_type
+  *
+- * PARAMETERS:  Type            - Object type to be validated
++ * PARAMETERS:  type            - Object type to be validated
+  *
+  * RETURN:      TRUE if valid object type, FALSE otherwise
+  *
+diff --git a/drivers/acpi/acpica/utdelete.c b/drivers/acpi/acpica/utdelete.c
+index 0d50f2c..7981054 100644
+--- a/drivers/acpi/acpica/utdelete.c
++++ b/drivers/acpi/acpica/utdelete.c
+@@ -60,7 +60,7 @@ acpi_ut_update_ref_count(union acpi_operand_object *object, u32 action);
+  *
+  * FUNCTION:    acpi_ut_delete_internal_obj
+  *
+- * PARAMETERS:  Object         - Object to be deleted
++ * PARAMETERS:  object         - Object to be deleted
+  *
+  * RETURN:      None
+  *
+@@ -358,8 +358,8 @@ void acpi_ut_delete_internal_object_list(union acpi_operand_object **obj_list)
+  *
+  * FUNCTION:    acpi_ut_update_ref_count
+  *
+- * PARAMETERS:  Object          - Object whose ref count is to be updated
+- *              Action          - What to do
++ * PARAMETERS:  object          - Object whose ref count is to be updated
++ *              action          - What to do
+  *
+  * RETURN:      New ref count
+  *
+@@ -456,9 +456,9 @@ acpi_ut_update_ref_count(union acpi_operand_object *object, u32 action)
+  *
+  * FUNCTION:    acpi_ut_update_object_reference
+  *
+- * PARAMETERS:  Object              - Increment ref count for this object
++ * PARAMETERS:  object              - Increment ref count for this object
+  *                                    and all sub-objects
+- *              Action              - Either REF_INCREMENT or REF_DECREMENT or
++ *              action              - Either REF_INCREMENT or REF_DECREMENT or
+  *                                    REF_FORCE_DELETE
+  *
+  * RETURN:      Status
+@@ -640,7 +640,7 @@ acpi_ut_update_object_reference(union acpi_operand_object *object, u16 action)
+  *
+  * FUNCTION:    acpi_ut_add_reference
+  *
+- * PARAMETERS:  Object          - Object whose reference count is to be
++ * PARAMETERS:  object          - Object whose reference count is to be
+  *                                incremented
+  *
+  * RETURN:      None
+@@ -674,7 +674,7 @@ void acpi_ut_add_reference(union acpi_operand_object *object)
+  *
+  * FUNCTION:    acpi_ut_remove_reference
+  *
+- * PARAMETERS:  Object         - Object whose ref count will be decremented
++ * PARAMETERS:  object         - Object whose ref count will be decremented
+  *
+  * RETURN:      None
+  *
+diff --git a/drivers/acpi/acpica/uteval.c b/drivers/acpi/acpica/uteval.c
+index 479f32b..a9c65fb 100644
+--- a/drivers/acpi/acpica/uteval.c
++++ b/drivers/acpi/acpica/uteval.c
+@@ -53,7 +53,7 @@ ACPI_MODULE_NAME("uteval")
+  * FUNCTION:    acpi_ut_evaluate_object
+  *
+  * PARAMETERS:  prefix_node         - Starting node
+- *              Path                - Path to object from starting node
++ *              path                - Path to object from starting node
+  *              expected_return_types - Bitmap of allowed return types
+  *              return_desc         - Where a return value is stored
+  *
+@@ -187,7 +187,7 @@ acpi_ut_evaluate_object(struct acpi_namespace_node *prefix_node,
+  *
+  * PARAMETERS:  object_name         - Object name to be evaluated
+  *              device_node         - Node for the device
+- *              Value               - Where the value is returned
++ *              value               - Where the value is returned
+  *
+  * RETURN:      Status
+  *
+@@ -229,7 +229,7 @@ acpi_ut_evaluate_numeric_object(char *object_name,
+  * FUNCTION:    acpi_ut_execute_STA
+  *
+  * PARAMETERS:  device_node         - Node for the device
+- *              Flags               - Where the status flags are returned
++ *              flags               - Where the status flags are returned
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/utglobal.c b/drivers/acpi/acpica/utglobal.c
+index 9bd5b4c..ed18931 100644
+--- a/drivers/acpi/acpica/utglobal.c
++++ b/drivers/acpi/acpica/utglobal.c
+@@ -285,7 +285,7 @@ acpi_status acpi_ut_init_globals(void)
+ 		acpi_gbl_owner_id_mask[i] = 0;
  	}
--
--	/*
--	 * insert after "prev"
--	 */
--	new->next = prev->next;
--	prev->next = new;
-+	fscanf(filep, "%d", &first_cpu);
-+	fclose(filep);
-+	return (cpu == first_cpu);
- }
  
--void alloc_new_counters(int pkg, int core, int cpu)
-+/*
-+ * cpu_is_first_core_in_package(cpu)
-+ * return 1 if given CPU is 1st core in package
-+ */
-+int cpu_is_first_core_in_package(int cpu)
- {
--	struct counters *new;
--
--	if (verbose > 1)
--		printf("pkg%d core%d, cpu%d\n", pkg, core, cpu);
--
--	new = (struct counters *)calloc(1, sizeof(struct counters));
--	if (new == NULL) {
--		perror("calloc");
--		exit(1);
--	}
--	new->pkg = pkg;
--	new->core = core;
--	new->cpu = cpu;
--	insert_counters(&cnt_odd, new);
--
--	new = (struct counters *)calloc(1,
--		sizeof(struct counters));
--	if (new == NULL) {
--		perror("calloc");
--		exit(1);
--	}
--	new->pkg = pkg;
--	new->core = core;
--	new->cpu = cpu;
--	insert_counters(&cnt_even, new);
--
--	new = (struct counters *)calloc(1, sizeof(struct counters));
--	if (new == NULL) {
--		perror("calloc");
--		exit(1);
--	}
--	new->pkg = pkg;
--	new->core = core;
--	new->cpu = cpu;
--	insert_counters(&cnt_delta, new);
-+	char path[64];
-+	FILE *filep;
-+	int first_cpu;
+-	/* Last owner_iD is never valid */
++	/* Last owner_ID is never valid */
  
--	new = (struct counters *)calloc(1, sizeof(struct counters));
--	if (new == NULL) {
--		perror("calloc");
-+	sprintf(path, "/sys/devices/system/cpu/cpu%d/topology/core_siblings_list", cpu);
-+	filep = fopen(path, "r");
-+	if (filep == NULL) {
-+		perror(path);
- 		exit(1);
- 	}
--	new->pkg = pkg;
--	new->core = core;
--	new->cpu = cpu;
--	cnt_average = new;
-+	fscanf(filep, "%d", &first_cpu);
-+	fclose(filep);
-+	return (cpu == first_cpu);
- }
+ 	acpi_gbl_owner_id_mask[ACPI_NUM_OWNERID_MASKS - 1] = 0x80000000;
  
- int get_physical_package_id(int cpu)
- {
--	char path[64];
-+	char path[80];
- 	FILE *filep;
- 	int pkg;
+diff --git a/drivers/acpi/acpica/utids.c b/drivers/acpi/acpica/utids.c
+index c92eb1d..5d84e19 100644
+--- a/drivers/acpi/acpica/utids.c
++++ b/drivers/acpi/acpica/utids.c
+@@ -1,6 +1,6 @@
+ /******************************************************************************
+  *
+- * Module Name: utids - support for device IDs - HID, UID, CID
++ * Module Name: utids - support for device Ids - HID, UID, CID
+  *
+  *****************************************************************************/
  
-@@ -768,7 +803,7 @@ int get_physical_package_id(int cpu)
+diff --git a/drivers/acpi/acpica/utlock.c b/drivers/acpi/acpica/utlock.c
+index 155fd78..b1eb7f1 100644
+--- a/drivers/acpi/acpica/utlock.c
++++ b/drivers/acpi/acpica/utlock.c
+@@ -52,7 +52,7 @@ ACPI_MODULE_NAME("utlock")
+  * FUNCTION:    acpi_ut_create_rw_lock
+  *              acpi_ut_delete_rw_lock
+  *
+- * PARAMETERS:  Lock                - Pointer to a valid RW lock
++ * PARAMETERS:  lock                - Pointer to a valid RW lock
+  *
+  * RETURN:      Status
+  *
+@@ -89,7 +89,7 @@ void acpi_ut_delete_rw_lock(struct acpi_rw_lock *lock)
+  * FUNCTION:    acpi_ut_acquire_read_lock
+  *              acpi_ut_release_read_lock
+  *
+- * PARAMETERS:  Lock                - Pointer to a valid RW lock
++ * PARAMETERS:  lock                - Pointer to a valid RW lock
+  *
+  * RETURN:      Status
+  *
+@@ -149,7 +149,7 @@ acpi_status acpi_ut_release_read_lock(struct acpi_rw_lock *lock)
+  * FUNCTION:    acpi_ut_acquire_write_lock
+  *              acpi_ut_release_write_lock
+  *
+- * PARAMETERS:  Lock                - Pointer to a valid RW lock
++ * PARAMETERS:  lock                - Pointer to a valid RW lock
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/utmath.c b/drivers/acpi/acpica/utmath.c
+index 2491a55..d88a8aa 100644
+--- a/drivers/acpi/acpica/utmath.c
++++ b/drivers/acpi/acpica/utmath.c
+@@ -73,8 +73,8 @@ typedef union uint64_overlay {
+  *
+  * FUNCTION:    acpi_ut_short_divide
+  *
+- * PARAMETERS:  Dividend            - 64-bit dividend
+- *              Divisor             - 32-bit divisor
++ * PARAMETERS:  dividend            - 64-bit dividend
++ *              divisor             - 32-bit divisor
+  *              out_quotient        - Pointer to where the quotient is returned
+  *              out_remainder       - Pointer to where the remainder is returned
+  *
+diff --git a/drivers/acpi/acpica/utmisc.c b/drivers/acpi/acpica/utmisc.c
+index e30c060..33c6cf7 100644
+--- a/drivers/acpi/acpica/utmisc.c
++++ b/drivers/acpi/acpica/utmisc.c
+@@ -55,7 +55,7 @@ ACPI_MODULE_NAME("utmisc")
+  *
+  * FUNCTION:    ut_convert_backslashes
+  *
+- * PARAMETERS:  Pathname        - File pathname string to be converted
++ * PARAMETERS:  pathname        - File pathname string to be converted
+  *
+  * RETURN:      Modifies the input Pathname
+  *
+@@ -84,7 +84,7 @@ void ut_convert_backslashes(char *pathname)
+  *
+  * FUNCTION:    acpi_ut_is_pci_root_bridge
+  *
+- * PARAMETERS:  Id              - The HID/CID in string format
++ * PARAMETERS:  id              - The HID/CID in string format
+  *
+  * RETURN:      TRUE if the Id is a match for a PCI/PCI-Express Root Bridge
+  *
+@@ -112,7 +112,7 @@ u8 acpi_ut_is_pci_root_bridge(char *id)
+  *
+  * FUNCTION:    acpi_ut_is_aml_table
+  *
+- * PARAMETERS:  Table               - An ACPI table
++ * PARAMETERS:  table               - An ACPI table
+  *
+  * RETURN:      TRUE if table contains executable AML; FALSE otherwise
+  *
+@@ -246,7 +246,7 @@ acpi_status acpi_ut_allocate_owner_id(acpi_owner_id * owner_id)
+  *
+  * FUNCTION:    acpi_ut_release_owner_id
+  *
+- * PARAMETERS:  owner_id_ptr        - Pointer to a previously allocated owner_iD
++ * PARAMETERS:  owner_id_ptr        - Pointer to a previously allocated owner_ID
+  *
+  * RETURN:      None. No error is returned because we are either exiting a
+  *              control method or unloading a table. Either way, we would
+@@ -269,7 +269,7 @@ void acpi_ut_release_owner_id(acpi_owner_id * owner_id_ptr)
  
- int get_core_id(int cpu)
- {
--	char path[64];
-+	char path[80];
- 	FILE *filep;
- 	int core;
+ 	*owner_id_ptr = 0;
  
-@@ -783,14 +818,87 @@ int get_core_id(int cpu)
- 	return core;
- }
+-	/* Zero is not a valid owner_iD */
++	/* Zero is not a valid owner_ID */
  
-+int get_num_ht_siblings(int cpu)
-+{
-+	char path[80];
-+	FILE *filep;
-+	int sib1, sib2;
-+	int matches;
-+	char character;
-+
-+	sprintf(path, "/sys/devices/system/cpu/cpu%d/topology/thread_siblings_list", cpu);
-+	filep = fopen(path, "r");
-+	if (filep == NULL) {
-+		perror(path);
-+		exit(1);
-+	}
-+	/*
-+	 * file format:
-+	 * if a pair of number with a character between: 2 siblings (eg. 1-2, or 1,4)
-+	 * otherwinse 1 sibling (self).
-+	 */
-+	matches = fscanf(filep, "%d%c%d\n", &sib1, &character, &sib2);
-+
-+	fclose(filep);
-+
-+	if (matches == 3)
-+		return 2;
-+	else
-+		return 1;
-+}
-+
+ 	if (owner_id == 0) {
+ 		ACPI_ERROR((AE_INFO, "Invalid OwnerId: 0x%2.2X", owner_id));
+@@ -343,7 +343,7 @@ void acpi_ut_strupr(char *src_string)
+  *
+  * FUNCTION:    acpi_ut_print_string
+  *
+- * PARAMETERS:  String          - Null terminated ASCII string
++ * PARAMETERS:  string          - Null terminated ASCII string
+  *              max_length      - Maximum output length
+  *
+  * RETURN:      None
+@@ -429,7 +429,7 @@ void acpi_ut_print_string(char *string, u8 max_length)
+  *
+  * FUNCTION:    acpi_ut_dword_byte_swap
+  *
+- * PARAMETERS:  Value           - Value to be converted
++ * PARAMETERS:  value           - Value to be converted
+  *
+  * RETURN:      u32 integer with bytes swapped
+  *
+@@ -499,9 +499,9 @@ void acpi_ut_set_integer_width(u8 revision)
+  *
+  * FUNCTION:    acpi_ut_display_init_pathname
+  *
+- * PARAMETERS:  Type                - Object type of the node
++ * PARAMETERS:  type                - Object type of the node
+  *              obj_handle          - Handle whose pathname will be displayed
+- *              Path                - Additional path string to be appended.
++ *              path                - Additional path string to be appended.
+  *                                      (NULL if no extra path)
+  *
+  * RETURN:      acpi_status
+@@ -566,8 +566,8 @@ acpi_ut_display_init_pathname(u8 type,
+  *
+  * FUNCTION:    acpi_ut_valid_acpi_char
+  *
+- * PARAMETERS:  Char            - The character to be examined
+- *              Position        - Byte position (0-3)
++ * PARAMETERS:  char            - The character to be examined
++ *              position        - Byte position (0-3)
+  *
+  * RETURN:      TRUE if the character is valid, FALSE otherwise
+  *
+@@ -602,7 +602,7 @@ u8 acpi_ut_valid_acpi_char(char character, u32 position)
+  *
+  * FUNCTION:    acpi_ut_valid_acpi_name
+  *
+- * PARAMETERS:  Name            - The name to be examined
++ * PARAMETERS:  name            - The name to be examined
+  *
+  * RETURN:      TRUE if the name is valid, FALSE otherwise
+  *
+@@ -633,7 +633,7 @@ u8 acpi_ut_valid_acpi_name(u32 name)
+  *
+  * FUNCTION:    acpi_ut_repair_name
+  *
+- * PARAMETERS:  Name            - The ACPI name to be repaired
++ * PARAMETERS:  name            - The ACPI name to be repaired
+  *
+  * RETURN:      Repaired version of the name
+  *
+@@ -667,8 +667,8 @@ acpi_name acpi_ut_repair_name(char *name)
+  *
+  * FUNCTION:    acpi_ut_strtoul64
+  *
+- * PARAMETERS:  String          - Null terminated string
+- *              Base            - Radix of the string: 16 or ACPI_ANY_BASE;
++ * PARAMETERS:  string          - Null terminated string
++ *              base            - Radix of the string: 16 or ACPI_ANY_BASE;
+  *                                ACPI_ANY_BASE means 'in behalf of to_integer'
+  *              ret_integer     - Where the converted integer is returned
+  *
+@@ -717,7 +717,7 @@ acpi_status acpi_ut_strtoul64(char *string, u32 base, u64 * ret_integer)
+ 
+ 	if (to_integer_op) {
+ 		/*
+-		 * Base equal to ACPI_ANY_BASE means 'to_integer operation case'.
++		 * Base equal to ACPI_ANY_BASE means 'ToInteger operation case'.
+ 		 * We need to determine if it is decimal or hexadecimal.
+ 		 */
+ 		if ((*string == '0') && (ACPI_TOLOWER(*(string + 1)) == 'x')) {
+@@ -840,8 +840,8 @@ acpi_status acpi_ut_strtoul64(char *string, u32 base, u64 * ret_integer)
+  *
+  * FUNCTION:    acpi_ut_create_update_state_and_push
+  *
+- * PARAMETERS:  Object          - Object to be added to the new state
+- *              Action          - Increment/Decrement
++ * PARAMETERS:  object          - Object to be added to the new state
++ *              action          - Increment/Decrement
+  *              state_list      - List the state will be added to
+  *
+  * RETURN:      Status
+@@ -881,7 +881,7 @@ acpi_ut_create_update_state_and_push(union acpi_operand_object *object,
+  * PARAMETERS:  source_object       - The package to walk
+  *              target_object       - Target object (if package is being copied)
+  *              walk_callback       - Called once for each package element
+- *              Context             - Passed to the callback function
++ *              context             - Passed to the callback function
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/utmutex.c b/drivers/acpi/acpica/utmutex.c
+index 43174df..296baa6 100644
+--- a/drivers/acpi/acpica/utmutex.c
++++ b/drivers/acpi/acpica/utmutex.c
+@@ -147,7 +147,7 @@ void acpi_ut_mutex_terminate(void)
+  *
+  * FUNCTION:    acpi_ut_create_mutex
+  *
+- * PARAMETERS:  mutex_iD        - ID of the mutex to be created
++ * PARAMETERS:  mutex_ID        - ID of the mutex to be created
+  *
+  * RETURN:      Status
+  *
+@@ -176,7 +176,7 @@ static acpi_status acpi_ut_create_mutex(acpi_mutex_handle mutex_id)
+  *
+  * FUNCTION:    acpi_ut_delete_mutex
+  *
+- * PARAMETERS:  mutex_iD        - ID of the mutex to be deleted
++ * PARAMETERS:  mutex_ID        - ID of the mutex to be deleted
+  *
+  * RETURN:      Status
+  *
+@@ -199,7 +199,7 @@ static void acpi_ut_delete_mutex(acpi_mutex_handle mutex_id)
+  *
+  * FUNCTION:    acpi_ut_acquire_mutex
+  *
+- * PARAMETERS:  mutex_iD        - ID of the mutex to be acquired
++ * PARAMETERS:  mutex_ID        - ID of the mutex to be acquired
+  *
+  * RETURN:      Status
+  *
+@@ -283,7 +283,7 @@ acpi_status acpi_ut_acquire_mutex(acpi_mutex_handle mutex_id)
+  *
+  * FUNCTION:    acpi_ut_release_mutex
+  *
+- * PARAMETERS:  mutex_iD        - ID of the mutex to be released
++ * PARAMETERS:  mutex_ID        - ID of the mutex to be released
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/acpica/utobject.c b/drivers/acpi/acpica/utobject.c
+index d0441ca..655f079 100644
+--- a/drivers/acpi/acpica/utobject.c
++++ b/drivers/acpi/acpica/utobject.c
+@@ -69,7 +69,7 @@ acpi_ut_get_element_length(u8 object_type,
+  * PARAMETERS:  module_name         - Source file name of caller
+  *              line_number         - Line number of caller
+  *              component_id        - Component type of caller
+- *              Type                - ACPI Type of the new object
++ *              type                - ACPI Type of the new object
+  *
+  * RETURN:      A new internal object, null on failure
+  *
+@@ -150,7 +150,7 @@ union acpi_operand_object *acpi_ut_create_internal_object_dbg(const char
+  *
+  * FUNCTION:    acpi_ut_create_package_object
+  *
+- * PARAMETERS:  Count               - Number of package elements
++ * PARAMETERS:  count               - Number of package elements
+  *
+  * RETURN:      Pointer to a new Package object, null on failure
+  *
+@@ -323,7 +323,7 @@ union acpi_operand_object *acpi_ut_create_string_object(acpi_size string_size)
+  *
+  * FUNCTION:    acpi_ut_valid_internal_object
+  *
+- * PARAMETERS:  Object              - Object to be validated
++ * PARAMETERS:  object              - Object to be validated
+  *
+  * RETURN:      TRUE if object is valid, FALSE otherwise
+  *
+@@ -407,7 +407,7 @@ void *acpi_ut_allocate_object_desc_dbg(const char *module_name,
+  *
+  * FUNCTION:    acpi_ut_delete_object_desc
+  *
+- * PARAMETERS:  Object          - An Acpi internal object to be deleted
++ * PARAMETERS:  object          - An Acpi internal object to be deleted
+  *
+  * RETURN:      None.
+  *
+diff --git a/drivers/acpi/acpica/utosi.c b/drivers/acpi/acpica/utosi.c
+index 2360cf7..34ef0bd 100644
+--- a/drivers/acpi/acpica/utosi.c
++++ b/drivers/acpi/acpica/utosi.c
+@@ -68,7 +68,7 @@ static struct acpi_interface_info acpi_default_supported_interfaces[] = {
+ 	{"Windows 2001.1", NULL, 0, ACPI_OSI_WINSRV_2003},	/* Windows Server 2003 */
+ 	{"Windows 2001 SP2", NULL, 0, ACPI_OSI_WIN_XP_SP2},	/* Windows XP SP2 */
+ 	{"Windows 2001.1 SP1", NULL, 0, ACPI_OSI_WINSRV_2003_SP1},	/* Windows Server 2003 SP1 - Added 03/2006 */
+-	{"Windows 2006", NULL, 0, ACPI_OSI_WIN_VISTA},	/* Windows Vista - Added 03/2006 */
++	{"Windows 2006", NULL, 0, ACPI_OSI_WIN_VISTA},	/* Windows vista - Added 03/2006 */
+ 	{"Windows 2006.1", NULL, 0, ACPI_OSI_WINSRV_2008},	/* Windows Server 2008 - Added 09/2009 */
+ 	{"Windows 2006 SP1", NULL, 0, ACPI_OSI_WIN_VISTA_SP1},	/* Windows Vista SP1 - Added 09/2009 */
+ 	{"Windows 2006 SP2", NULL, 0, ACPI_OSI_WIN_VISTA_SP2},	/* Windows Vista SP2 - Added 09/2010 */
+diff --git a/drivers/acpi/acpica/utresrc.c b/drivers/acpi/acpica/utresrc.c
+index 9d441ea..e38bef4 100644
+--- a/drivers/acpi/acpica/utresrc.c
++++ b/drivers/acpi/acpica/utresrc.c
+@@ -356,13 +356,13 @@ static const u8 acpi_gbl_resource_types[] = {
+ 	ACPI_SMALL_VARIABLE_LENGTH,	/* 06 start_dependent_functions */
+ 	ACPI_FIXED_LENGTH,	/* 07 end_dependent_functions */
+ 	ACPI_FIXED_LENGTH,	/* 08 IO */
+-	ACPI_FIXED_LENGTH,	/* 09 fixed_iO */
+-	ACPI_FIXED_LENGTH,	/* 0_a fixed_dMA */
++	ACPI_FIXED_LENGTH,	/* 09 fixed_IO */
++	ACPI_FIXED_LENGTH,	/* 0A fixed_DMA */
+ 	0,
+ 	0,
+ 	0,
+-	ACPI_VARIABLE_LENGTH,	/* 0_e vendor_short */
+-	ACPI_FIXED_LENGTH,	/* 0_f end_tag */
++	ACPI_VARIABLE_LENGTH,	/* 0E vendor_short */
++	ACPI_FIXED_LENGTH,	/* 0F end_tag */
+ 
+ 	/* Large descriptors */
+ 
+@@ -375,16 +375,16 @@ static const u8 acpi_gbl_resource_types[] = {
+ 	ACPI_FIXED_LENGTH,	/* 06 memory32_fixed */
+ 	ACPI_VARIABLE_LENGTH,	/* 07 Dword* address */
+ 	ACPI_VARIABLE_LENGTH,	/* 08 Word* address */
+-	ACPI_VARIABLE_LENGTH,	/* 09 extended_iRQ */
+-	ACPI_VARIABLE_LENGTH,	/* 0_a Qword* address */
+-	ACPI_FIXED_LENGTH,	/* 0_b Extended* address */
+-	ACPI_VARIABLE_LENGTH,	/* 0_c Gpio* */
++	ACPI_VARIABLE_LENGTH,	/* 09 extended_IRQ */
++	ACPI_VARIABLE_LENGTH,	/* 0A Qword* address */
++	ACPI_FIXED_LENGTH,	/* 0B Extended* address */
++	ACPI_VARIABLE_LENGTH,	/* 0C Gpio* */
+ 	0,
+-	ACPI_VARIABLE_LENGTH	/* 0_e *serial_bus */
++	ACPI_VARIABLE_LENGTH	/* 0E *serial_bus */
+ };
+ 
  /*
-- * run func(pkg, core, cpu) on every cpu in /proc/stat
-+ * run func(thread, core, package) in topology order
-+ * skip non-present cpus
+- * For the i_aSL compiler/disassembler, we don't want any error messages
++ * For the iASL compiler/disassembler, we don't want any error messages
+  * because the disassembler uses the resource validation code to determine
+  * if Buffer objects are actually Resource Templates.
   */
+@@ -398,11 +398,11 @@ static const u8 acpi_gbl_resource_types[] = {
+  *
+  * FUNCTION:    acpi_ut_walk_aml_resources
+  *
+- * PARAMETERS:  Aml             - Pointer to the raw AML resource template
++ * PARAMETERS:  aml             - Pointer to the raw AML resource template
+  *              aml_length      - Length of the entire template
+  *              user_function   - Called once for each descriptor found. If
+  *                                NULL, a pointer to the end_tag is returned
+- *              Context         - Passed to user_function
++ *              context         - Passed to user_function
+  *
+  * RETURN:      Status
+  *
+@@ -513,7 +513,7 @@ acpi_ut_walk_aml_resources(u8 * aml,
+  *
+  * FUNCTION:    acpi_ut_validate_resource
+  *
+- * PARAMETERS:  Aml             - Pointer to the raw AML resource descriptor
++ * PARAMETERS:  aml             - Pointer to the raw AML resource descriptor
+  *              return_index    - Where the resource index is returned. NULL
+  *                                if the index is not required.
+  *
+@@ -664,7 +664,7 @@ acpi_status acpi_ut_validate_resource(void *aml, u8 * return_index)
+  *
+  * FUNCTION:    acpi_ut_get_resource_type
+  *
+- * PARAMETERS:  Aml             - Pointer to the raw AML resource descriptor
++ * PARAMETERS:  aml             - Pointer to the raw AML resource descriptor
+  *
+  * RETURN:      The Resource Type with no extraneous bits (except the
+  *              Large/Small descriptor bit -- this is left alone)
+@@ -698,7 +698,7 @@ u8 acpi_ut_get_resource_type(void *aml)
+  *
+  * FUNCTION:    acpi_ut_get_resource_length
+  *
+- * PARAMETERS:  Aml             - Pointer to the raw AML resource descriptor
++ * PARAMETERS:  aml             - Pointer to the raw AML resource descriptor
+  *
+  * RETURN:      Byte Length
+  *
+@@ -738,7 +738,7 @@ u16 acpi_ut_get_resource_length(void *aml)
+  *
+  * FUNCTION:    acpi_ut_get_resource_header_length
+  *
+- * PARAMETERS:  Aml             - Pointer to the raw AML resource descriptor
++ * PARAMETERS:  aml             - Pointer to the raw AML resource descriptor
+  *
+  * RETURN:      Length of the AML header (depends on large/small descriptor)
+  *
+@@ -763,7 +763,7 @@ u8 acpi_ut_get_resource_header_length(void *aml)
+  *
+  * FUNCTION:    acpi_ut_get_descriptor_length
+  *
+- * PARAMETERS:  Aml             - Pointer to the raw AML resource descriptor
++ * PARAMETERS:  aml             - Pointer to the raw AML resource descriptor
+  *
+  * RETURN:      Byte length
+  *
+diff --git a/drivers/acpi/acpica/utstate.c b/drivers/acpi/acpica/utstate.c
+index 4267477..a1c9882 100644
+--- a/drivers/acpi/acpica/utstate.c
++++ b/drivers/acpi/acpica/utstate.c
+@@ -51,8 +51,8 @@ ACPI_MODULE_NAME("utstate")
+  *
+  * FUNCTION:    acpi_ut_create_pkg_state_and_push
+  *
+- * PARAMETERS:  Object          - Object to be added to the new state
+- *              Action          - Increment/Decrement
++ * PARAMETERS:  object          - Object to be added to the new state
++ *              action          - Increment/Decrement
+  *              state_list      - List the state will be added to
+  *
+  * RETURN:      Status
+@@ -85,7 +85,7 @@ acpi_ut_create_pkg_state_and_push(void *internal_object,
+  * FUNCTION:    acpi_ut_push_generic_state
+  *
+  * PARAMETERS:  list_head           - Head of the state stack
+- *              State               - State object to push
++ *              state               - State object to push
+  *
+  * RETURN:      None
+  *
+@@ -214,8 +214,8 @@ struct acpi_thread_state *acpi_ut_create_thread_state(void)
+  *
+  * FUNCTION:    acpi_ut_create_update_state
+  *
+- * PARAMETERS:  Object          - Initial Object to be installed in the state
+- *              Action          - Update action to be performed
++ * PARAMETERS:  object          - Initial Object to be installed in the state
++ *              action          - Update action to be performed
+  *
+  * RETURN:      New state object, null on failure
+  *
+@@ -252,8 +252,8 @@ union acpi_generic_state *acpi_ut_create_update_state(union acpi_operand_object
+  *
+  * FUNCTION:    acpi_ut_create_pkg_state
+  *
+- * PARAMETERS:  Object          - Initial Object to be installed in the state
+- *              Action          - Update action to be performed
++ * PARAMETERS:  object          - Initial Object to be installed in the state
++ *              action          - Update action to be performed
+  *
+  * RETURN:      New state object, null on failure
+  *
+@@ -325,7 +325,7 @@ union acpi_generic_state *acpi_ut_create_control_state(void)
+  *
+  * FUNCTION:    acpi_ut_delete_generic_state
+  *
+- * PARAMETERS:  State               - The state object to be deleted
++ * PARAMETERS:  state               - The state object to be deleted
+  *
+  * RETURN:      None
+  *
+diff --git a/drivers/acpi/acpica/utxface.c b/drivers/acpi/acpica/utxface.c
+index afa94f5..534179f 100644
+--- a/drivers/acpi/acpica/utxface.c
++++ b/drivers/acpi/acpica/utxface.c
+@@ -131,7 +131,7 @@ acpi_status __init acpi_initialize_subsystem(void)
+  *
+  * FUNCTION:    acpi_enable_subsystem
+  *
+- * PARAMETERS:  Flags           - Init/enable Options
++ * PARAMETERS:  flags           - Init/enable Options
+  *
+  * RETURN:      Status
+  *
+@@ -234,7 +234,7 @@ ACPI_EXPORT_SYMBOL(acpi_enable_subsystem)
+  *
+  * FUNCTION:    acpi_initialize_objects
+  *
+- * PARAMETERS:  Flags           - Init/enable Options
++ * PARAMETERS:  flags           - Init/enable Options
+  *
+  * RETURN:      Status
+  *
+@@ -409,7 +409,7 @@ ACPI_EXPORT_SYMBOL(acpi_subsystem_status)
+  * PARAMETERS:  out_buffer      - A buffer to receive the resources for the
+  *                                device
+  *
+- * RETURN:      Status          - the status of the call
++ * RETURN:      status          - the status of the call
+  *
+  * DESCRIPTION: This function is called to get information about the current
+  *              state of the ACPI subsystem.  It will return system information
+@@ -480,8 +480,8 @@ ACPI_EXPORT_SYMBOL(acpi_get_system_info)
+  *
+  * FUNCTION:    acpi_install_initialization_handler
+  *
+- * PARAMETERS:  Handler             - Callback procedure
+- *              Function            - Not (currently) used, see below
++ * PARAMETERS:  handler             - Callback procedure
++ *              function            - Not (currently) used, see below
+  *
+  * RETURN:      Status
+  *
+@@ -618,7 +618,7 @@ ACPI_EXPORT_SYMBOL(acpi_remove_interface)
+  *
+  * FUNCTION:    acpi_install_interface_handler
+  *
+- * PARAMETERS:  Handler             - The _OSI interface handler to install
++ * PARAMETERS:  handler             - The _OSI interface handler to install
+  *                                    NULL means "remove existing handler"
+  *
+  * RETURN:      Status
+@@ -651,9 +651,9 @@ ACPI_EXPORT_SYMBOL(acpi_install_interface_handler)
+  * FUNCTION:    acpi_check_address_range
+  *
+  * PARAMETERS:  space_id            - Address space ID
+- *              Address             - Start address
+- *              Length              - Length
+- *              Warn                - TRUE if warning on overlap desired
++ *              address             - Start address
++ *              length              - Length
++ *              warn                - TRUE if warning on overlap desired
+  *
+  * RETURN:      Count of the number of conflicts detected.
+  *
+diff --git a/drivers/acpi/acpica/utxferror.c b/drivers/acpi/acpica/utxferror.c
+index 87aaddf..6d63cc3 100644
+--- a/drivers/acpi/acpica/utxferror.c
++++ b/drivers/acpi/acpica/utxferror.c
+@@ -53,7 +53,7 @@ ACPI_MODULE_NAME("utxferror")
+  * This module is used for the in-kernel ACPICA as well as the ACPICA
+  * tools/applications.
+  *
+- * For the i_aSL compiler case, the output is redirected to stderr so that
++ * For the iASL compiler case, the output is redirected to stderr so that
+  * any of the various ACPI errors and warnings do not appear in the output
+  * files, for either the compiler or disassembler portions of the tool.
+  */
+@@ -70,7 +70,7 @@ extern FILE *acpi_gbl_output_file;
  
--int for_all_cpus(void (func)(int, int, int))
-+int for_all_cpus_2(int (func)(struct thread_data *, struct core_data *,
-+	struct pkg_data *, struct thread_data *, struct core_data *,
-+	struct pkg_data *), struct thread_data *thread_base,
-+	struct core_data *core_base, struct pkg_data *pkg_base,
-+	struct thread_data *thread_base2, struct core_data *core_base2,
-+	struct pkg_data *pkg_base2)
-+{
-+	int retval, pkg_no, core_no, thread_no;
-+
-+	for (pkg_no = 0; pkg_no < topo.num_packages; ++pkg_no) {
-+		for (core_no = 0; core_no < topo.num_cores_per_pkg; ++core_no) {
-+			for (thread_no = 0; thread_no <
-+				topo.num_threads_per_core; ++thread_no) {
-+				struct thread_data *t, *t2;
-+				struct core_data *c, *c2;
-+				struct pkg_data *p, *p2;
-+
-+				t = GET_THREAD(thread_base, thread_no, core_no, pkg_no);
-+
-+				if (cpu_is_not_present(t->cpu_id))
-+					continue;
-+
-+				t2 = GET_THREAD(thread_base2, thread_no, core_no, pkg_no);
-+
-+				c = GET_CORE(core_base, core_no, pkg_no);
-+				c2 = GET_CORE(core_base2, core_no, pkg_no);
-+
-+				p = GET_PKG(pkg_base, pkg_no);
-+				p2 = GET_PKG(pkg_base2, pkg_no);
-+
-+				retval = func(t, c, p, t2, c2, p2);
-+				if (retval)
-+					return retval;
-+			}
-+		}
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * run func(cpu) on every cpu in /proc/stat
-+ * return max_cpu number
-+ */
-+int for_all_proc_cpus(int (func)(int))
- {
- 	FILE *fp;
--	int cpu_count;
-+	int cpu_num;
- 	int retval;
- 
- 	fp = fopen(proc_stat, "r");
-@@ -805,78 +913,88 @@ int for_all_cpus(void (func)(int, int, int))
- 		exit(1);
- 	}
- 
--	for (cpu_count = 0; ; cpu_count++) {
--		int cpu;
--
--		retval = fscanf(fp, "cpu%u %*d %*d %*d %*d %*d %*d %*d %*d %*d %*d\n", &cpu);
-+	while (1) {
-+		retval = fscanf(fp, "cpu%u %*d %*d %*d %*d %*d %*d %*d %*d %*d %*d\n", &cpu_num);
- 		if (retval != 1)
- 			break;
- 
--		func(get_physical_package_id(cpu), get_core_id(cpu), cpu);
-+		retval = func(cpu_num);
-+		if (retval) {
-+			fclose(fp);
-+			return(retval);
-+		}
- 	}
- 	fclose(fp);
--	return cpu_count;
-+	return 0;
- }
- 
- void re_initialize(void)
- {
--	free_all_counters();
--	num_cpus = for_all_cpus(alloc_new_counters);
--	cpu_mask_uninit();
--	cpu_mask_init(num_cpus);
--	printf("turbostat: re-initialized with num_cpus %d\n", num_cpus);
-+	free_all_buffers();
-+	setup_all_buffers();
-+	printf("turbostat: re-initialized with num_cpus %d\n", topo.num_cpus);
- }
- 
--void dummy(int pkg, int core, int cpu) { return; }
-+
+ #else
  /*
-- * check to see if a cpu came on-line
-+ * count_cpus()
-+ * remember the last one seen, it will be the max
+- * non-i_aSL case - no redirection, nothing to do
++ * non-iASL case - no redirection, nothing to do
   */
--int verify_num_cpus(void)
-+int count_cpus(int cpu)
- {
--	int new_num_cpus;
-+	if (topo.max_cpu_num < cpu)
-+		topo.max_cpu_num = cpu;
+ #define ACPI_MSG_REDIRECT_BEGIN
+ #define ACPI_MSG_REDIRECT_END
+@@ -95,7 +95,7 @@ extern FILE *acpi_gbl_output_file;
+  *
+  * PARAMETERS:  module_name         - Caller's module name (for error output)
+  *              line_number         - Caller's line number (for error output)
+- *              Format              - Printf format string + additional args
++ *              format              - Printf format string + additional args
+  *
+  * RETURN:      None
+  *
+@@ -126,8 +126,8 @@ ACPI_EXPORT_SYMBOL(acpi_error)
+  *
+  * PARAMETERS:  module_name         - Caller's module name (for error output)
+  *              line_number         - Caller's line number (for error output)
+- *              Status              - Status to be formatted
+- *              Format              - Printf format string + additional args
++ *              status              - Status to be formatted
++ *              format              - Printf format string + additional args
+  *
+  * RETURN:      None
+  *
+@@ -161,7 +161,7 @@ ACPI_EXPORT_SYMBOL(acpi_exception)
+  *
+  * PARAMETERS:  module_name         - Caller's module name (for error output)
+  *              line_number         - Caller's line number (for error output)
+- *              Format              - Printf format string + additional args
++ *              format              - Printf format string + additional args
+  *
+  * RETURN:      None
+  *
+@@ -192,7 +192,7 @@ ACPI_EXPORT_SYMBOL(acpi_warning)
+  *
+  * PARAMETERS:  module_name         - Caller's module name (for error output)
+  *              line_number         - Caller's line number (for error output)
+- *              Format              - Printf format string + additional args
++ *              format              - Printf format string + additional args
+  *
+  * RETURN:      None
+  *
+@@ -339,9 +339,9 @@ acpi_ut_predefined_warning(const char *module_name,
+  *
+  * PARAMETERS:  module_name     - Caller's module name (for error output)
+  *              line_number     - Caller's line number (for error output)
+- *              Pathname        - Full pathname to the node
++ *              pathname        - Full pathname to the node
+  *              node_flags      - From Namespace node for the method/object
+- *              Format          - Printf format string + additional args
++ *              format          - Printf format string + additional args
+  *
+  * RETURN:      None
+  *
+@@ -441,9 +441,9 @@ acpi_ut_namespace_error(const char *module_name,
+  *
+  * PARAMETERS:  module_name         - Caller's module name (for error output)
+  *              line_number         - Caller's line number (for error output)
+- *              Message             - Error message to use on failure
++ *              message             - Error message to use on failure
+  *              prefix_node         - Prefix relative to the path
+- *              Path                - Path to the node (optional)
++ *              path                - Path to the node (optional)
+  *              method_status       - Execution status
+  *
+  * RETURN:      None
+diff --git a/drivers/acpi/acpica/utxfmutex.c b/drivers/acpi/acpica/utxfmutex.c
+index 1427d19..0a40a85 100644
+--- a/drivers/acpi/acpica/utxfmutex.c
++++ b/drivers/acpi/acpica/utxfmutex.c
+@@ -58,8 +58,8 @@ acpi_ut_get_mutex_object(acpi_handle handle,
+  *
+  * FUNCTION:    acpi_ut_get_mutex_object
+  *
+- * PARAMETERS:  Handle              - Mutex or prefix handle (optional)
+- *              Pathname            - Mutex pathname (optional)
++ * PARAMETERS:  handle              - Mutex or prefix handle (optional)
++ *              pathname            - Mutex pathname (optional)
+  *              ret_obj             - Where the mutex object is returned
+  *
+  * RETURN:      Status
+@@ -118,9 +118,9 @@ acpi_ut_get_mutex_object(acpi_handle handle,
+  *
+  * FUNCTION:    acpi_acquire_mutex
+  *
+- * PARAMETERS:  Handle              - Mutex or prefix handle (optional)
+- *              Pathname            - Mutex pathname (optional)
+- *              Timeout             - Max time to wait for the lock (millisec)
++ * PARAMETERS:  handle              - Mutex or prefix handle (optional)
++ *              pathname            - Mutex pathname (optional)
++ *              timeout             - Max time to wait for the lock (millisec)
+  *
+  * RETURN:      Status
+  *
+@@ -155,8 +155,8 @@ acpi_acquire_mutex(acpi_handle handle, acpi_string pathname, u16 timeout)
+  *
+  * FUNCTION:    acpi_release_mutex
+  *
+- * PARAMETERS:  Handle              - Mutex or prefix handle (optional)
+- *              Pathname            - Mutex pathname (optional)
++ * PARAMETERS:  handle              - Mutex or prefix handle (optional)
++ *              pathname            - Mutex pathname (optional)
+  *
+  * RETURN:      Status
+  *
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index f3decb3..50faa93 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -304,16 +304,16 @@ static int acpi_processor_get_power_info_fadt(struct acpi_processor *pr)
+ 	pr->power.states[ACPI_STATE_C3].address = pr->pblk + 5;
  
--	new_num_cpus = for_all_cpus(dummy);
--
--	if (new_num_cpus != num_cpus) {
--		if (verbose)
--			printf("num_cpus was %d, is now  %d\n",
--				num_cpus, new_num_cpus);
--		return -1;
--	}
-+	topo.num_cpus += 1;
-+	return 0;
-+}
-+int mark_cpu_present(int cpu)
-+{
-+	CPU_SET_S(cpu, cpu_present_setsize, cpu_present_set);
- 	return 0;
- }
+ 	/* determine latencies from FADT */
+-	pr->power.states[ACPI_STATE_C2].latency = acpi_gbl_FADT.C2latency;
+-	pr->power.states[ACPI_STATE_C3].latency = acpi_gbl_FADT.C3latency;
++	pr->power.states[ACPI_STATE_C2].latency = acpi_gbl_FADT.c2_latency;
++	pr->power.states[ACPI_STATE_C3].latency = acpi_gbl_FADT.c3_latency;
  
- void turbostat_loop()
- {
-+	int retval;
-+
- restart:
--	get_counters(cnt_even);
-+	retval = for_all_cpus(get_counters, EVEN_COUNTERS);
-+	if (retval) {
-+		re_initialize();
-+		goto restart;
-+	}
- 	gettimeofday(&tv_even, (struct timezone *)NULL);
- 
- 	while (1) {
--		if (verify_num_cpus()) {
-+		if (for_all_proc_cpus(cpu_is_not_present)) {
- 			re_initialize();
- 			goto restart;
- 		}
- 		sleep(interval_sec);
--		if (get_counters(cnt_odd)) {
-+		retval = for_all_cpus(get_counters, ODD_COUNTERS);
-+		if (retval) {
- 			re_initialize();
- 			goto restart;
- 		}
- 		gettimeofday(&tv_odd, (struct timezone *)NULL);
--		compute_delta(cnt_odd, cnt_even, cnt_delta);
- 		timersub(&tv_odd, &tv_even, &tv_delta);
--		compute_average(cnt_delta, cnt_average);
--		print_counters(cnt_delta);
-+		for_all_cpus_2(delta_cpu, ODD_COUNTERS, EVEN_COUNTERS);
-+		compute_average(EVEN_COUNTERS);
-+		format_all_counters(EVEN_COUNTERS);
-+		flush_stdout();
- 		sleep(interval_sec);
--		if (get_counters(cnt_even)) {
-+		retval = for_all_cpus(get_counters, EVEN_COUNTERS);
-+		if (retval) {
- 			re_initialize();
- 			goto restart;
- 		}
- 		gettimeofday(&tv_even, (struct timezone *)NULL);
--		compute_delta(cnt_even, cnt_odd, cnt_delta);
- 		timersub(&tv_even, &tv_odd, &tv_delta);
--		compute_average(cnt_delta, cnt_average);
--		print_counters(cnt_delta);
-+		for_all_cpus_2(delta_cpu, EVEN_COUNTERS, ODD_COUNTERS);
-+		compute_average(ODD_COUNTERS);
-+		format_all_counters(ODD_COUNTERS);
-+		flush_stdout();
+ 	/*
+ 	 * FADT specified C2 latency must be less than or equal to
+ 	 * 100 microseconds.
+ 	 */
+-	if (acpi_gbl_FADT.C2latency > ACPI_PROCESSOR_MAX_C2_LATENCY) {
++	if (acpi_gbl_FADT.c2_latency > ACPI_PROCESSOR_MAX_C2_LATENCY) {
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-			"C2 latency too large [%d]\n", acpi_gbl_FADT.C2latency));
++			"C2 latency too large [%d]\n", acpi_gbl_FADT.c2_latency));
+ 		/* invalidate C2 */
+ 		pr->power.states[ACPI_STATE_C2].address = 0;
  	}
- }
- 
-@@ -1051,6 +1169,208 @@ int open_dev_cpu_msr(int dummy1)
- 	return 0;
- }
- 
-+void topology_probe()
-+{
-+	int i;
-+	int max_core_id = 0;
-+	int max_package_id = 0;
-+	int max_siblings = 0;
-+	struct cpu_topology {
-+		int core_id;
-+		int physical_package_id;
-+	} *cpus;
-+
-+	/* Initialize num_cpus, max_cpu_num */
-+	topo.num_cpus = 0;
-+	topo.max_cpu_num = 0;
-+	for_all_proc_cpus(count_cpus);
-+	if (!summary_only && topo.num_cpus > 1)
-+		show_cpu = 1;
-+
-+	if (verbose > 1)
-+		fprintf(stderr, "num_cpus %d max_cpu_num %d\n", topo.num_cpus, topo.max_cpu_num);
-+
-+	cpus = calloc(1, (topo.max_cpu_num  + 1) * sizeof(struct cpu_topology));
-+	if (cpus == NULL) {
-+		perror("calloc cpus");
-+		exit(1);
-+	}
-+
-+	/*
-+	 * Allocate and initialize cpu_present_set
-+	 */
-+	cpu_present_set = CPU_ALLOC((topo.max_cpu_num + 1));
-+	if (cpu_present_set == NULL) {
-+		perror("CPU_ALLOC");
-+		exit(3);
-+	}
-+	cpu_present_setsize = CPU_ALLOC_SIZE((topo.max_cpu_num + 1));
-+	CPU_ZERO_S(cpu_present_setsize, cpu_present_set);
-+	for_all_proc_cpus(mark_cpu_present);
-+
-+	/*
-+	 * Allocate and initialize cpu_affinity_set
-+	 */
-+	cpu_affinity_set = CPU_ALLOC((topo.max_cpu_num + 1));
-+	if (cpu_affinity_set == NULL) {
-+		perror("CPU_ALLOC");
-+		exit(3);
-+	}
-+	cpu_affinity_setsize = CPU_ALLOC_SIZE((topo.max_cpu_num + 1));
-+	CPU_ZERO_S(cpu_affinity_setsize, cpu_affinity_set);
-+
-+
-+	/*
-+	 * For online cpus
-+	 * find max_core_id, max_package_id
-+	 */
-+	for (i = 0; i <= topo.max_cpu_num; ++i) {
-+		int siblings;
-+
-+		if (cpu_is_not_present(i)) {
-+			if (verbose > 1)
-+				fprintf(stderr, "cpu%d NOT PRESENT\n", i);
-+			continue;
-+		}
-+		cpus[i].core_id = get_core_id(i);
-+		if (cpus[i].core_id > max_core_id)
-+			max_core_id = cpus[i].core_id;
-+
-+		cpus[i].physical_package_id = get_physical_package_id(i);
-+		if (cpus[i].physical_package_id > max_package_id)
-+			max_package_id = cpus[i].physical_package_id;
-+
-+		siblings = get_num_ht_siblings(i);
-+		if (siblings > max_siblings)
-+			max_siblings = siblings;
-+		if (verbose > 1)
-+			fprintf(stderr, "cpu %d pkg %d core %d\n",
-+				i, cpus[i].physical_package_id, cpus[i].core_id);
-+	}
-+	topo.num_cores_per_pkg = max_core_id + 1;
-+	if (verbose > 1)
-+		fprintf(stderr, "max_core_id %d, sizing for %d cores per package\n",
-+			max_core_id, topo.num_cores_per_pkg);
-+	if (!summary_only && topo.num_cores_per_pkg > 1)
-+		show_core = 1;
-+
-+	topo.num_packages = max_package_id + 1;
-+	if (verbose > 1)
-+		fprintf(stderr, "max_package_id %d, sizing for %d packages\n",
-+			max_package_id, topo.num_packages);
-+	if (!summary_only && topo.num_packages > 1)
-+		show_pkg = 1;
-+
-+	topo.num_threads_per_core = max_siblings;
-+	if (verbose > 1)
-+		fprintf(stderr, "max_siblings %d\n", max_siblings);
-+
-+	free(cpus);
-+}
-+
-+void
-+allocate_counters(struct thread_data **t, struct core_data **c, struct pkg_data **p)
-+{
-+	int i;
-+
-+	*t = calloc(topo.num_threads_per_core * topo.num_cores_per_pkg *
-+		topo.num_packages, sizeof(struct thread_data));
-+	if (*t == NULL)
-+		goto error;
-+
-+	for (i = 0; i < topo.num_threads_per_core *
-+		topo.num_cores_per_pkg * topo.num_packages; i++)
-+		(*t)[i].cpu_id = -1;
-+
-+	*c = calloc(topo.num_cores_per_pkg * topo.num_packages,
-+		sizeof(struct core_data));
-+	if (*c == NULL)
-+		goto error;
-+
-+	for (i = 0; i < topo.num_cores_per_pkg * topo.num_packages; i++)
-+		(*c)[i].core_id = -1;
-+
-+	*p = calloc(topo.num_packages, sizeof(struct pkg_data));
-+	if (*p == NULL)
-+		goto error;
-+
-+	for (i = 0; i < topo.num_packages; i++)
-+		(*p)[i].package_id = i;
-+
-+	return;
-+error:
-+	perror("calloc counters");
-+	exit(1);
-+}
-+/*
-+ * init_counter()
-+ *
-+ * set cpu_id, core_num, pkg_num
-+ * set FIRST_THREAD_IN_CORE and FIRST_CORE_IN_PACKAGE
-+ *
-+ * increment topo.num_cores when 1st core in pkg seen
-+ */
-+void init_counter(struct thread_data *thread_base, struct core_data *core_base,
-+	struct pkg_data *pkg_base, int thread_num, int core_num,
-+	int pkg_num, int cpu_id)
-+{
-+	struct thread_data *t;
-+	struct core_data *c;
-+	struct pkg_data *p;
-+
-+	t = GET_THREAD(thread_base, thread_num, core_num, pkg_num);
-+	c = GET_CORE(core_base, core_num, pkg_num);
-+	p = GET_PKG(pkg_base, pkg_num);
-+
-+	t->cpu_id = cpu_id;
-+	if (thread_num == 0) {
-+		t->flags |= CPU_IS_FIRST_THREAD_IN_CORE;
-+		if (cpu_is_first_core_in_package(cpu_id))
-+			t->flags |= CPU_IS_FIRST_CORE_IN_PACKAGE;
-+	}
-+
-+	c->core_id = core_num;
-+	p->package_id = pkg_num;
-+}
-+
-+
-+int initialize_counters(int cpu_id)
-+{
-+	int my_thread_id, my_core_id, my_package_id;
-+
-+	my_package_id = get_physical_package_id(cpu_id);
-+	my_core_id = get_core_id(cpu_id);
-+
-+	if (cpu_is_first_sibling_in_core(cpu_id)) {
-+		my_thread_id = 0;
-+		topo.num_cores++;
-+	} else {
-+		my_thread_id = 1;
-+	}
-+
-+	init_counter(EVEN_COUNTERS, my_thread_id, my_core_id, my_package_id, cpu_id);
-+	init_counter(ODD_COUNTERS, my_thread_id, my_core_id, my_package_id, cpu_id);
-+	return 0;
-+}
-+
-+void allocate_output_buffer()
-+{
-+	output_buffer = calloc(1, (1 + topo.num_cpus) * 128);
-+	outp = output_buffer;
-+	if (outp == NULL) {
-+		perror("calloc");
-+		exit(-1);
-+	}
-+}
-+
-+void setup_all_buffers(void)
-+{
-+	topology_probe();
-+	allocate_counters(&thread_even, &core_even, &package_even);
-+	allocate_counters(&thread_odd, &core_odd, &package_odd);
-+	allocate_output_buffer();
-+	for_all_proc_cpus(initialize_counters);
-+}
- void turbostat_init()
- {
- 	check_cpuid();
-@@ -1058,21 +1378,19 @@ void turbostat_init()
- 	check_dev_msr();
- 	check_super_user();
- 
--	num_cpus = for_all_cpus(alloc_new_counters);
--	cpu_mask_init(num_cpus);
-+	setup_all_buffers();
- 
- 	if (verbose)
--		print_nehalem_info();
-+		print_verbose_header();
- }
- 
- int fork_it(char **argv)
- {
--	int retval;
- 	pid_t child_pid;
--	get_counters(cnt_even);
- 
--        /* clear affinity side-effect of get_counters() */
--        sched_setaffinity(0, cpu_present_setsize, cpu_present_set);
-+	for_all_cpus(get_counters, EVEN_COUNTERS);
-+	/* clear affinity side-effect of get_counters() */
-+	sched_setaffinity(0, cpu_present_setsize, cpu_present_set);
- 	gettimeofday(&tv_even, (struct timezone *)NULL);
- 
- 	child_pid = fork();
-@@ -1095,14 +1413,17 @@ int fork_it(char **argv)
- 			exit(1);
- 		}
+@@ -322,9 +322,9 @@ static int acpi_processor_get_power_info_fadt(struct acpi_processor *pr)
+ 	 * FADT supplied C3 latency must be less than or equal to
+ 	 * 1000 microseconds.
+ 	 */
+-	if (acpi_gbl_FADT.C3latency > ACPI_PROCESSOR_MAX_C3_LATENCY) {
++	if (acpi_gbl_FADT.c3_latency > ACPI_PROCESSOR_MAX_C3_LATENCY) {
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-			"C3 latency too large [%d]\n", acpi_gbl_FADT.C3latency));
++			"C3 latency too large [%d]\n", acpi_gbl_FADT.c3_latency));
+ 		/* invalidate C3 */
+ 		pr->power.states[ACPI_STATE_C3].address = 0;
  	}
--	get_counters(cnt_odd);
-+	/*
-+	 * n.b. fork_it() does not check for errors from for_all_cpus()
-+	 * because re-starting is problematic when forking
-+	 */
-+	for_all_cpus(get_counters, ODD_COUNTERS);
- 	gettimeofday(&tv_odd, (struct timezone *)NULL);
--	retval = compute_delta(cnt_odd, cnt_even, cnt_delta);
--
- 	timersub(&tv_odd, &tv_even, &tv_delta);
--	compute_average(cnt_delta, cnt_average);
--	if (!retval)
--		print_counters(cnt_delta);
-+	for_all_cpus_2(delta_cpu, ODD_COUNTERS, EVEN_COUNTERS);
-+	compute_average(EVEN_COUNTERS);
-+	format_all_counters(EVEN_COUNTERS);
-+	flush_stderr();
+diff --git a/include/acpi/acrestyp.h b/include/acpi/acrestyp.h
+index 2504091..40349ae 100644
+--- a/include/acpi/acrestyp.h
++++ b/include/acpi/acrestyp.h
+@@ -48,7 +48,7 @@
+  * Definitions for Resource Attributes
+  */
+ typedef u16 acpi_rs_length;	/* Resource Length field is fixed at 16 bits */
+-typedef u32 acpi_rsdesc_size;	/* Max Resource Descriptor size is (Length+3) = (64_k-1)+3 */
++typedef u32 acpi_rsdesc_size;	/* Max Resource Descriptor size is (Length+3) = (64K-1)+3 */
  
- 	fprintf(stderr, "%.6f sec\n", tv_delta.tv_sec + tv_delta.tv_usec/1000000.0);
+ /*
+  * Memory Attributes
+@@ -332,7 +332,7 @@ struct acpi_resource_address64 {
+ };
  
-@@ -1115,8 +1436,14 @@ void cmdline(int argc, char **argv)
+ struct acpi_resource_extended_address64 {
+-	ACPI_RESOURCE_ADDRESS_COMMON u8 revision_iD;
++	ACPI_RESOURCE_ADDRESS_COMMON u8 revision_ID;
+ 	u64 granularity;
+ 	u64 minimum;
+ 	u64 maximum;
+diff --git a/include/acpi/actbl.h b/include/acpi/actbl.h
+index a629a01..59a73e1 100644
+--- a/include/acpi/actbl.h
++++ b/include/acpi/actbl.h
+@@ -212,7 +212,7 @@ struct acpi_table_fadt {
+ 	u32 smi_command;	/* 32-bit Port address of SMI command port */
+ 	u8 acpi_enable;		/* Value to write to smi_cmd to enable ACPI */
+ 	u8 acpi_disable;	/* Value to write to smi_cmd to disable ACPI */
+-	u8 S4bios_request;	/* Value to write to SMI CMD to enter S4BIOS state */
++	u8 s4_bios_request;	/* Value to write to SMI CMD to enter S4BIOS state */
+ 	u8 pstate_control;	/* Processor performance state control */
+ 	u32 pm1a_event_block;	/* 32-bit Port address of Power Mgt 1a Event Reg Blk */
+ 	u32 pm1b_event_block;	/* 32-bit Port address of Power Mgt 1b Event Reg Blk */
+@@ -230,8 +230,8 @@ struct acpi_table_fadt {
+ 	u8 gpe1_block_length;	/* Byte Length of ports at gpe1_block */
+ 	u8 gpe1_base;		/* Offset in GPE number space where GPE1 events start */
+ 	u8 cst_control;		/* Support for the _CST object and C States change notification */
+-	u16 C2latency;		/* Worst case HW latency to enter/exit C2 state */
+-	u16 C3latency;		/* Worst case HW latency to enter/exit C3 state */
++	u16 c2_latency;		/* Worst case HW latency to enter/exit C2 state */
++	u16 c3_latency;		/* Worst case HW latency to enter/exit C3 state */
+ 	u16 flush_size;		/* Processor's memory cache line width, in bytes */
+ 	u16 flush_stride;	/* Number of flush strides that need to be read */
+ 	u8 duty_offset;		/* Processor duty cycle index in processor's P_CNT reg */
+@@ -291,7 +291,7 @@ struct acpi_table_fadt {
+ #define ACPI_FADT_S4_RTC_VALID      (1<<16)	/* 16: [V4] Contents of RTC_STS valid after S4 wake (ACPI 3.0) */
+ #define ACPI_FADT_REMOTE_POWER_ON   (1<<17)	/* 17: [V4] System is compatible with remote power on (ACPI 3.0) */
+ #define ACPI_FADT_APIC_CLUSTER      (1<<18)	/* 18: [V4] All local APICs must use cluster model (ACPI 3.0) */
+-#define ACPI_FADT_APIC_PHYSICAL     (1<<19)	/* 19: [V4] All local x_aPICs must use physical dest mode (ACPI 3.0) */
++#define ACPI_FADT_APIC_PHYSICAL     (1<<19)	/* 19: [V4] All local xAPICs must use physical dest mode (ACPI 3.0) */
+ #define ACPI_FADT_HW_REDUCED        (1<<20)	/* 20: [V5] ACPI hardware is not implemented (ACPI 5.0) */
+ #define ACPI_FADT_LOW_POWER_S0      (1<<21)	/* 21: [V5] S0 power savings are equal or better than S3 (ACPI 5.0) */
  
- 	progname = argv[0];
+diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
+index 9ac26b4..300d14e 100644
+--- a/include/acpi/actbl1.h
++++ b/include/acpi/actbl1.h
+@@ -676,7 +676,7 @@ struct acpi_madt_local_apic {
+ struct acpi_madt_io_apic {
+ 	struct acpi_subtable_header header;
+ 	u8 id;			/* I/O APIC ID */
+-	u8 reserved;		/* Reserved - must be zero */
++	u8 reserved;		/* reserved - must be zero */
+ 	u32 address;		/* APIC physical address */
+ 	u32 global_irq_base;	/* Global system interrupt where INTI lines start */
+ };
+@@ -794,11 +794,11 @@ struct acpi_madt_generic_interrupt {
  
--	while ((opt = getopt(argc, argv, "+svi:M:")) != -1) {
-+	while ((opt = getopt(argc, argv, "+cpsvi:M:")) != -1) {
- 		switch (opt) {
-+		case 'c':
-+			show_core_only++;
-+			break;
-+		case 'p':
-+			show_pkg_only++;
-+			break;
- 		case 's':
- 			summary_only++;
- 			break;
-@@ -1142,10 +1469,8 @@ int main(int argc, char **argv)
- 	cmdline(argc, argv);
+ struct acpi_madt_generic_distributor {
+ 	struct acpi_subtable_header header;
+-	u16 reserved;		/* Reserved - must be zero */
++	u16 reserved;		/* reserved - must be zero */
+ 	u32 gic_id;
+ 	u64 base_address;
+ 	u32 global_irq_base;
+-	u32 reserved2;		/* Reserved - must be zero */
++	u32 reserved2;		/* reserved - must be zero */
+ };
  
- 	if (verbose > 1)
--		fprintf(stderr, "turbostat Dec 6, 2010"
-+		fprintf(stderr, "turbostat v2.0 May 16, 2012"
- 			" - Len Brown <lenb@kernel.org>\n");
--	if (verbose > 1)
--		fprintf(stderr, "http://userweb.kernel.org/~lenb/acpi/utils/pmtools/turbostat/\n");
+ /*
+@@ -841,7 +841,7 @@ struct acpi_table_msct {
+ 	u64 max_address;	/* Max physical address in system */
+ };
  
- 	turbostat_init();
+-/* Subtable - Maximum Proximity Domain Information. Version 1 */
++/* subtable - Maximum Proximity Domain Information. Version 1 */
  
+ struct acpi_msct_proximity {
+ 	u8 revision;
+diff --git a/include/acpi/actbl2.h b/include/acpi/actbl2.h
+index 34198bf2..d9ceb3d 100644
+--- a/include/acpi/actbl2.h
++++ b/include/acpi/actbl2.h
+@@ -66,7 +66,7 @@
+ #define ACPI_SIG_DBGP           "DBGP"	/* Debug Port table */
+ #define ACPI_SIG_DMAR           "DMAR"	/* DMA Remapping table */
+ #define ACPI_SIG_HPET           "HPET"	/* High Precision Event Timer table */
+-#define ACPI_SIG_IBFT           "IBFT"	/* i_sCSI Boot Firmware Table */
++#define ACPI_SIG_IBFT           "IBFT"	/* iSCSI Boot Firmware Table */
+ #define ACPI_SIG_IVRS           "IVRS"	/* I/O Virtualization Reporting Structure */
+ #define ACPI_SIG_MCFG           "MCFG"	/* PCI Memory Mapped Configuration table */
+ #define ACPI_SIG_MCHI           "MCHI"	/* Management Controller Host Interface table */
+@@ -334,8 +334,8 @@ struct acpi_dmar_reserved_memory {
+ 	struct acpi_dmar_header header;
+ 	u16 reserved;
+ 	u16 segment;
+-	u64 base_address;	/* 4_k aligned base address */
+-	u64 end_address;	/* 4_k aligned limit address */
++	u64 base_address;	/* 4K aligned base address */
++	u64 end_address;	/* 4K aligned limit address */
+ };
+ 
+ /* Masks for Flags field above */
+@@ -565,7 +565,7 @@ struct acpi_ivrs_hardware {
+ /* Masks for Info field above */
+ 
+ #define ACPI_IVHD_MSI_NUMBER_MASK   0x001F	/* 5 bits, MSI message number */
+-#define ACPI_IVHD_UNIT_ID_MASK      0x1F00	/* 5 bits, unit_iD */
++#define ACPI_IVHD_UNIT_ID_MASK      0x1F00	/* 5 bits, unit_ID */
+ 
+ /*
+  * Device Entries for IVHD subtable, appear after struct acpi_ivrs_hardware structure.
+diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
+index bc4a327..3af87de 100644
+--- a/include/acpi/actypes.h
++++ b/include/acpi/actypes.h
+@@ -173,7 +173,7 @@ typedef u64 acpi_physical_address;
+  * to indicate that special precautions must be taken to avoid alignment faults.
+  * (IA64 or ia64 is currently used by existing compilers to indicate IPF.)
+  *
+- * Note: Em64_t and other X86-64 processors support misaligned transfers,
++ * Note: EM64T and other X86-64 processors support misaligned transfers,
+  * so there is no need to define this flag.
+  */
+ #if defined (__IA64__) || defined (__ia64__)
+@@ -636,7 +636,7 @@ typedef u32 acpi_event_type;
+ #define ACPI_NUM_FIXED_EVENTS           ACPI_EVENT_MAX + 1
+ 
+ /*
+- * Event Status - Per event
++ * Event status - Per event
+  * -------------
+  * The encoding of acpi_event_status is illustrated below.
+  * Note that a set bit (1) indicates the property is TRUE
 -- 
 1.7.12.rc0
 
