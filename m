@@ -1,256 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab2GYGj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:39:28 -0400
-Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:4992 "EHLO
-	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751256Ab2GYGj0 (ORCPT
+	id S1754098Ab2GYGlv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:41:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46572 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab2GYGlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:39:26 -0400
-From: Maya Erez <merez@codeaurora.org>
-To: linux-mmc@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] mmc: card: Add Sanitize unit test
-Date: Wed, 25 Jul 2012 09:37:37 +0300
-Message-Id: <1343198350-5307-1-git-send-email-merez@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
-In-Reply-To: <n>
-References: <n>
+	Wed, 25 Jul 2012 02:41:49 -0400
+Message-ID: <500F954B.4010206@gmail.com>
+Date: Wed, 25 Jul 2012 08:42:19 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, tglx@linutronix.de
+CC: davej@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: tasklist_lock lockdep warnings on 3.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This test write data to the card, then send DISCARD on random
-addresses on the card, send SANITIZE to the card to erase all
-the unmapped areas.
+Hi all,
 
-Signed-off-by: Maya Erez <merez@codeaurora.org>
----
-This patch depends of the following patches:
-  [PATCH RESEND v7 1/2] block: ioctl support for sanitize in eMMC 4.5
-  [PATCH RESEND v7 2/2] mmc: card: Adding support for sanitize in eMMC 4.5
-  [PATCH v4 2/3] block: Add test-iosched scheduler
-  [PATCH v4 3/3] mmc: card: Add eMMC4.5 write packed commands unit-tests
+I've stumbled on the following while fuzzing with trinity inside a KVM tools guest on 3.6 kernel:
 
----
- block/test-iosched.c              |    3 +
- drivers/mmc/card/mmc_block_test.c |  120 +++++++++++++++++++++++++++++++++++++
- include/linux/test-iosched.h      |    1 +
- 3 files changed, 124 insertions(+), 0 deletions(-)
+[  250.495512] ======================================================
+[  250.496020] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
+[  250.496020] 3.5.0-sasha-01646-g39c0dda #269 Tainted: G        W
+[  250.496020] ------------------------------------------------------
+[  250.496020] trinity-child15/6956 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[  250.496020]  (tasklist_lock){.+.+..}, at: [<ffffffff811089da>] posix_cpu_timer_del+0x2a/0x110
+[  250.496020]
+[  250.496020] and this task is already holding:
+[  250.496020]  (&(&new_timer->it_lock)->rlock){-.-...}, at: [<ffffffff81105a10>] exit_itimers+0x50/0x140
+[  250.496020] which would create a new lock dependency:
+[  250.496020]  (&(&new_timer->it_lock)->rlock){-.-...} -> (tasklist_lock){.+.+..}
+[  250.496020]
+[  250.496020] but this new dependency connects a HARDIRQ-irq-safe lock:
+[  250.496020]  (&(&new_timer->it_lock)->rlock){-.-...}
+... which became HARDIRQ-irq-safe at:
+[  250.496020]   [<ffffffff81149e3c>] mark_irqflags+0x7c/0x190
+[  250.496020]   [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
+[  250.496020]   [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.496020]   [<ffffffff83699e79>] _raw_spin_lock_irqsave+0x79/0xc0
+[  250.496020]   [<ffffffff81104ee2>] posix_timer_fn+0x32/0xd0
+[  250.496020]   [<ffffffff8110b25e>] __run_hrtimer+0x27e/0x4d0
+[  250.496020]   [<ffffffff8110c299>] hrtimer_interrupt+0x119/0x220
+[  250.496020]   [<ffffffff81090215>] smp_apic_timer_interrupt+0x85/0xa0
+[  250.496020]   [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
+[  250.496020]   [<ffffffff8118ec1e>] rcu_lockdep_current_cpu_online+0x6e/0xa0
+[  250.496020]   [<ffffffff812a57be>] proc_sys_compare+0x7e/0x130
+[  250.496020]   [<ffffffff8124a09c>] __d_lookup+0x18c/0x2e0
+[  250.496020]   [<ffffffff8123d216>] lookup_fast+0x136/0x240
+[  250.496020]   [<ffffffff8123da1c>] link_path_walk+0x22c/0x8f0
+[  250.496020]   [<ffffffff8123e137>] path_lookupat+0x57/0x720
+[  250.496020]   [<ffffffff8123e82c>] do_path_lookup+0x2c/0xc0
+[  250.496020]   [<ffffffff8123ee14>] user_path_at_empty+0x64/0xa0
+[  250.496020]   [<ffffffff8123ee5c>] user_path_at+0xc/0x10
+[  250.496020]   [<ffffffff8122e6be>] sys_chdir+0x1e/0x70
+[  250.496020]   [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
+[  250.496020]
+[  250.496020] to a HARDIRQ-irq-unsafe lock:
+[  250.496020]  (&(&p->alloc_lock)->rlock){+.+...}
+... which became HARDIRQ-irq-unsafe at:
+[  250.496020] ...  [<ffffffff81149ec0>] mark_irqflags+0x100/0x190
+[  250.496020]   [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
+[  250.496020]   [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.496020]   [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
+[  250.496020]   [<ffffffff81237ed1>] set_task_comm+0x31/0x1c0
+[  250.496020]   [<ffffffff8110665c>] kthreadd+0x2c/0x170
+[  250.496020]   [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
+[  250.496020]
+[  250.496020] other info that might help us debug this:
+[  250.496020]
+[  250.496020] Chain exists of:
+  &(&new_timer->it_lock)->rlock --> tasklist_lock --> &(&p->alloc_lock)->rlock
 
-diff --git a/block/test-iosched.c b/block/test-iosched.c
-index 6f0b0b3..e04befd 100644
---- a/block/test-iosched.c
-+++ b/block/test-iosched.c
-@@ -173,6 +173,9 @@ int test_iosched_add_unique_test_req(int is_err_expcted,
- 		bio->bi_size = nr_sects << 9;
- 		bio->bi_sector = start_sec;
- 		break;
-+	case REQ_UNIQUE_SANITIZE:
-+		bio->bi_rw = REQ_WRITE | REQ_SANITIZE;
-+		break;
- 	default:
- 		test_pr_err("%s: Invalid request type %d", __func__,
- 			    req_unique);
-diff --git a/drivers/mmc/card/mmc_block_test.c b/drivers/mmc/card/mmc_block_test.c
-index f2a0ac7..25af8cc 100644
---- a/drivers/mmc/card/mmc_block_test.c
-+++ b/drivers/mmc/card/mmc_block_test.c
-@@ -33,11 +33,16 @@
- #define PACKED_HDR_RW_MASK 0x0000FF00
- #define PACKED_HDR_NUM_REQS_MASK 0x00FF0000
- #define PACKED_HDR_BITS_16_TO_29_SET 0x3FFF0000
-+#define SECTOR_SIZE 512
-+#define NUM_OF_SECTORS_PER_BIO		((BIO_U32_SIZE * 4) / SECTOR_SIZE)
-+#define BIO_TO_SECTOR(x)		(x * NUM_OF_SECTORS_PER_BIO)
- 
- #define test_pr_debug(fmt, args...) pr_debug("%s: "fmt"\n", MODULE_NAME, args)
- #define test_pr_info(fmt, args...) pr_info("%s: "fmt"\n", MODULE_NAME, args)
- #define test_pr_err(fmt, args...) pr_err("%s: "fmt"\n", MODULE_NAME, args)
- 
-+#define SANITIZE_TEST_TIMEOUT 240000
-+
- enum is_random {
- 	NON_RANDOM_TEST,
- 	RANDOM_TEST,
-@@ -83,6 +88,8 @@ enum mmc_block_test_testcases {
- 	TEST_CMD23_BITS_16TO29_SET,
- 	TEST_CMD23_HDR_BLK_NOT_IN_COUNT,
- 	INVALID_CMD_MAX_TESTCASE = TEST_CMD23_HDR_BLK_NOT_IN_COUNT,
-+
-+	TEST_WRITE_DISCARD_SANITIZE_READ,
- };
- 
- enum mmc_block_test_group {
-@@ -98,6 +105,7 @@ struct mmc_block_test_debug {
- 	struct dentry *err_check_test;
- 	struct dentry *send_invalid_packed_test;
- 	struct dentry *random_test_seed;
-+	struct dentry *discard_sanitize_test;
- };
- 
- struct mmc_block_test_data {
-@@ -454,6 +462,8 @@ static char *get_test_case_str(struct test_data *td)
- 		return "Test invalid - cmd23 bits [16-29] set";
- 	case TEST_CMD23_HDR_BLK_NOT_IN_COUNT:
- 		return "Test invalid - cmd23 header block not in count";
-+	case TEST_WRITE_DISCARD_SANITIZE_READ:
-+		return "\nTest write, discard, sanitize";
- 	default:
- 		 return "Unknown testcase";
- 	}
-@@ -1080,6 +1090,63 @@ static int validate_packed_commands_settings(void)
- 	return 0;
- }
- 
-+static void pseudo_rnd_sector_and_size(unsigned int *seed,
-+				       unsigned int min_start_sector,
-+				       unsigned int *start_sector,
-+				       unsigned int *num_of_bios)
-+{
-+	unsigned int max_sec = min_start_sector + TEST_MAX_SECTOR_RANGE;
-+	do {
-+		*start_sector = pseudo_random_seed(seed,
-+						   1, max_sec);
-+		*num_of_bios = pseudo_random_seed(seed,
-+						  1, TEST_MAX_BIOS_PER_REQ);
-+		if (!(*num_of_bios))
-+			*num_of_bios = 1;
-+	} while ((*start_sector < min_start_sector) ||
-+		 (*start_sector + (*num_of_bios * BIO_U32_SIZE * 4)) > max_sec);
-+}
-+
-+/* sanitize test functions */
-+static int prepare_write_discard_sanitize_read(struct test_data *td)
-+{
-+	unsigned int start_sector;
-+	unsigned int num_of_bios = 0;
-+	static unsigned int total_bios;
-+	unsigned int *num_bios_seed;
-+	int i = 0;
-+
-+	if (mbtd->random_test_seed == 0) {
-+		mbtd->random_test_seed =
-+			(unsigned int)(get_jiffies_64() & 0xFFFF);
-+		test_pr_info("%s: got seed from jiffies %d",
-+			     __func__, mbtd->random_test_seed);
-+	}
-+	num_bios_seed = &mbtd->random_test_seed;
-+
-+	do {
-+		pseudo_rnd_sector_and_size(num_bios_seed, td->start_sector,
-+					   &start_sector, &num_of_bios);
-+
-+		/* DISCARD */
-+		total_bios += num_of_bios;
-+		test_pr_info("%s: discard req: id=%d, startSec=%d, NumBios=%d",
-+		       __func__, td->unique_next_req_id, start_sector,
-+			     num_of_bios);
-+		test_iosched_add_unique_test_req(0, REQ_UNIQUE_DISCARD,
-+				    start_sector, BIO_TO_SECTOR(num_of_bios),
-+						 NULL);
-+
-+	} while (++i < (BLKDEV_MAX_RQ-10));
-+
-+	test_pr_info("%s: total discard bios = %d", __func__, total_bios);
-+
-+	test_pr_info("%s: add sanitize req", __func__);
-+	test_iosched_add_unique_test_req(0, REQ_UNIQUE_SANITIZE, 0, 0, NULL);
-+
-+	return 0;
-+}
-+
- static bool message_repeat;
- static int test_open(struct inode *inode, struct file *file)
- {
-@@ -1397,12 +1464,56 @@ const struct file_operations send_invalid_packed_test_ops = {
- 	.read = send_invalid_packed_test_read,
- };
- 
-+static ssize_t write_discard_sanitize_test_write(struct file *file,
-+				const char __user *buf,
-+				size_t count,
-+				loff_t *ppos)
-+{
-+	int ret = 0;
-+	int i = 0;
-+	int number = -1;
-+
-+	sscanf(buf, "%d", &number);
-+	if (number <= 0)
-+		number = 1;
-+
-+	test_pr_info("%s: -- write_discard_sanitize TEST --\n", __func__);
-+
-+	memset(&mbtd->test_info, 0, sizeof(struct test_info));
-+
-+	mbtd->test_group = TEST_GENERAL_GROUP;
-+
-+	mbtd->test_info.data = mbtd;
-+	mbtd->test_info.prepare_test_fn = prepare_write_discard_sanitize_read;
-+	mbtd->test_info.get_test_case_str_fn = get_test_case_str;
-+	mbtd->test_info.timeout_msec = SANITIZE_TEST_TIMEOUT;
-+
-+	for (i = 0 ; i < number ; ++i) {
-+		test_pr_info("%s: Cycle # %d / %d\n", __func__, i+1, number);
-+		test_pr_info("%s: ===================", __func__);
-+
-+		mbtd->test_info.testcase = TEST_WRITE_DISCARD_SANITIZE_READ;
-+		ret = test_iosched_start_test(&mbtd->test_info);
-+
-+		if (ret)
-+			break;
-+	}
-+
-+	return count;
-+}
-+
-+const struct file_operations write_discard_sanitize_test_ops = {
-+	.open = test_open,
-+	.write = write_discard_sanitize_test_write,
-+};
-+
- static void mmc_block_test_debugfs_cleanup(void)
- {
- 	debugfs_remove(mbtd->debug.random_test_seed);
- 	debugfs_remove(mbtd->debug.send_write_packing_test);
- 	debugfs_remove(mbtd->debug.err_check_test);
- 	debugfs_remove(mbtd->debug.send_invalid_packed_test);
-+	debugfs_remove(mbtd->debug.discard_sanitize_test);
- }
- 
- static int mmc_block_test_debugfs_init(void)
-@@ -1454,6 +1565,15 @@ static int mmc_block_test_debugfs_init(void)
- 	if (!mbtd->debug.send_invalid_packed_test)
- 		goto err_nomem;
- 
-+	mbtd->debug.discard_sanitize_test =
-+		debugfs_create_file("write_discard_sanitize_test",
-+				    S_IRUGO | S_IWUGO,
-+				    tests_root,
-+				    NULL,
-+				    &write_discard_sanitize_test_ops);
-+	if (!mbtd->debug.discard_sanitize_test)
-+		goto err_nomem;
-+
- 	return 0;
- 
- err_nomem:
-diff --git a/include/linux/test-iosched.h b/include/linux/test-iosched.h
-index 8054409..1e428c5 100644
---- a/include/linux/test-iosched.h
-+++ b/include/linux/test-iosched.h
-@@ -65,6 +65,7 @@ enum req_unique_type {
- 	REQ_UNIQUE_NONE,
- 	REQ_UNIQUE_DISCARD,
- 	REQ_UNIQUE_FLUSH,
-+	REQ_UNIQUE_SANITIZE,
- };
- 
- /**
--- 
-1.7.3.3
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+[  250.496020]  Possible interrupt unsafe locking scenario:
+[  250.496020]
+[  250.496020]        CPU0                    CPU1
+[  250.496020]        ----                    ----
+[  250.496020]   lock(&(&p->alloc_lock)->rlock);
+[  250.496020]                                local_irq_disable();
+[  250.496020]                                lock(&(&new_timer->it_lock)->rlock);
+[  250.496020]                                lock(tasklist_lock);
+[  250.496020]   <Interrupt>
+[  250.496020]     lock(&(&new_timer->it_lock)->rlock);
+[  250.496020]
+[  250.496020]  *** DEADLOCK ***
+[  250.496020]
+[  250.496020] 1 lock held by trinity-child15/6956:
+[  250.496020]  #0:  (&(&new_timer->it_lock)->rlock){-.-...}, at: [<ffffffff81105a10>] exit_itimers+0x50/0x140
+[  250.496020]
+the dependencies between HARDIRQ-irq-safe lock and the holding lock:
+[  250.496020] -> (&(&new_timer->it_lock)->rlock){-.-...} ops: 6221 {
+[  250.496020]    IN-HARDIRQ-W at:
+[  250.496020]                     [<ffffffff81149e3c>] mark_irqflags+0x7c/0x190
+[  250.496020]                     [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
+[  250.496020]                     [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.496020]                     [<ffffffff83699e79>] _raw_spin_lock_irqsave+0x79/0xc0
+[  250.496020]                     [<ffffffff81104ee2>] posix_timer_fn+0x32/0xd0
+[  250.496020]                     [<ffffffff8110b25e>] __run_hrtimer+0x27e/0x4d0
+[  250.496020]                     [<ffffffff8110c299>] hrtimer_interrupt+0x119/0x220
+[  250.496020]                     [<ffffffff81090215>] smp_apic_timer_interrupt+0x85/0xa0
+[  250.496020]                     [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
+[  250.496020]                     [<ffffffff8118ec1e>] rcu_lockdep_current_cpu_online+0x6e/0xa0
+[  250.496020]                     [<ffffffff812a57be>] proc_sys_compare+0x7e/0x130
+[  250.496020]                     [<ffffffff8124a09c>] __d_lookup+0x18c/0x2e0
+[  250.496020]                     [<ffffffff8123d216>] lookup_fast+0x136/0x240
+[  250.496020]                     [<ffffffff8123da1c>] link_path_walk+0x22c/0x8f0
+[  250.496020]                     [<ffffffff8123e137>] path_lookupat+0x57/0x720
+[  250.496020]                     [<ffffffff8123e82c>] do_path_lookup+0x2c/0xc0
+[  250.496020]                     [<ffffffff8123ee14>] user_path_at_empty+0x64/0xa0
+[  250.496020]                     [<ffffffff8123ee5c>] user_path_at+0xc/0x10
+[  250.496020]                     [<ffffffff8122e6be>] sys_chdir+0x1e/0x70
+[  250.496020]                     [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
+[  250.496020]    IN-SOFTIRQ-W at:
+[  250.496020]                     [<ffffffff81149e67>] mark_irqflags+0xa7/0x190
+[  250.496020]                     [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
+[  250.496020]                     [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.496020]                     [<ffffffff83699e79>] _raw_spin_lock_irqsave+0x79/0xc0
+[  250.496020]                     [<ffffffff81104ee2>] posix_timer_fn+0x32/0xd0
+[  250.496020]                     [<ffffffff8110b25e>] __run_hrtimer+0x27e/0x4d0
+[  250.496020]                     [<ffffffff8110c299>] hrtimer_interrupt+0x119/0x220
+[  250.561155]                     [<ffffffff81090215>] smp_apic_timer_interrupt+0x85/0xa0
+[  250.561155]                     [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
+[  250.561155]                     [<ffffffff81190d27>] rcu_start_gp+0x467/0x500
+[  250.561155]                     [<ffffffff811932c3>] rcu_report_qs_rsp+0x223/0x290
+[  250.561155]                     [<ffffffff81193581>] rcu_report_qs_rnp+0x251/0x2b0
+[  250.561155]                     [<ffffffff8119543b>] rcu_check_quiescent_state+0x9b/0xc0
+[  250.561155]                     [<ffffffff811954e6>] __rcu_process_callbacks+0x86/0xe0
+[  250.561155]                     [<ffffffff81195618>] rcu_process_callbacks+0xd8/0x210
+[  250.561155]                     [<ffffffff810e1b95>] __do_softirq+0x1c5/0x450
+[  250.561155]                     [<ffffffff810e1f25>] run_ksoftirqd+0x105/0x250
+[  250.561155]                     [<ffffffff8110607d>] kthread+0xad/0xc0
+[  250.561155]                     [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
+[  250.561155]    INITIAL USE at:
+[  250.561155]                    [<ffffffff8114c0dc>] __lock_acquire+0x95c/0xb60
+[  250.561155]                    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]                    [<ffffffff83699e79>] _raw_spin_lock_irqsave+0x79/0xc0
+[  250.561155]                    [<ffffffff81104bb7>] __lock_timer+0xa7/0x1a0
+[  250.561155]                    [<ffffffff81105662>] sys_timer_getoverrun+0x12/0x50
+[  250.561155]                    [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
+[  250.561155]  }
+[  250.561155]  ... key      at: [<ffffffff8536f7a0>] __key.29517+0x0/0x8
+[  250.561155]  ... acquired at:
+[  250.561155]    [<ffffffff8114886d>] check_usage+0x1bd/0x1e0
+[  250.561155]    [<ffffffff811488fa>] check_irq_usage+0x6a/0xe0
+[  250.561155]    [<ffffffff81148abb>] check_prev_add+0x14b/0x640
+[  250.561155]    [<ffffffff8114906a>] check_prevs_add+0xba/0x1a0
+[  250.561155]    [<ffffffff811497f0>] validate_chain.isra.22+0x6a0/0x7b0
+[  250.561155]    [<ffffffff8114c221>] __lock_acquire+0xaa1/0xb60
+[  250.561155]    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]    [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
+[  250.561155]    [<ffffffff811089da>] posix_cpu_timer_del+0x2a/0x110
+[  250.561155]    [<ffffffff81105a8d>] exit_itimers+0xcd/0x140
+[  250.561155]    [<ffffffff810deea8>] do_exit+0x1b8/0x580
+[  250.561155]    [<ffffffff810df33a>] do_group_exit+0x8a/0xc0
+[  250.561155]    [<ffffffff810df382>] sys_exit_group+0x12/0x20
+[  250.561155]    [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
+[  250.561155]
+[  250.561155]
+[  250.561155] the dependencies between the lock to be acquired and HARDIRQ-irq-unsafe lock:
+[  250.561155]  -> (&(&p->alloc_lock)->rlock){+.+...} ops: 921205 {
+[  250.561155]     HARDIRQ-ON-W at:
+[  250.561155]                       [<ffffffff81149ec0>] mark_irqflags+0x100/0x190
+[  250.561155]                       [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
+[  250.561155]                       [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]                       [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
+[  250.561155]                       [<ffffffff81237ed1>] set_task_comm+0x31/0x1c0
+[  250.561155]                       [<ffffffff8110665c>] kthreadd+0x2c/0x170
+[  250.561155]                       [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
+[  250.561155]     SOFTIRQ-ON-W at:
+[  250.561155]                       [<ffffffff81149ee3>] mark_irqflags+0x123/0x190
+[  250.561155]                       [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
+[  250.561155]                       [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]                       [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
+[  250.561155]                       [<ffffffff81237ed1>] set_task_comm+0x31/0x1c0
+[  250.561155]                       [<ffffffff8110665c>] kthreadd+0x2c/0x170
+[  250.561155]                       [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
+[  250.561155]     INITIAL USE at:
+[  250.561155]                      [<ffffffff8114c0dc>] __lock_acquire+0x95c/0xb60
+[  250.561155]                      [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]                      [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
+[  250.561155]                      [<ffffffff81237ed1>] set_task_comm+0x31/0x1c0
+[  250.561155]                      [<ffffffff8110665c>] kthreadd+0x2c/0x170
+[  250.561155]                      [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
+[  250.561155]   }
+[  250.561155]   ... key      at: [<ffffffff8532b228>] __key.45219+0x0/0x8
+[  250.561155]   ... acquired at:
+[  250.561155]    [<ffffffff8114906a>] check_prevs_add+0xba/0x1a0
+[  250.561155]    [<ffffffff811497f0>] validate_chain.isra.22+0x6a0/0x7b0
+[  250.561155]    [<ffffffff8114c221>] __lock_acquire+0xaa1/0xb60
+[  250.561155]    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]    [<ffffffff83699dcb>] _raw_spin_lock+0x3b/0x70
+[  250.561155]    [<ffffffff8189c7e5>] keyctl_session_to_parent+0x105/0x3f0
+[  250.561155]    [<ffffffff8189cc25>] sys_keyctl+0x155/0x1a0
+[  250.561155]    [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
+[  250.561155]
+[  250.561155] -> (tasklist_lock){.+.+..} ops: 81487 {
+[  250.561155]    HARDIRQ-ON-R at:
+[  250.561155]                     [<ffffffff81149e8c>] mark_irqflags+0xcc/0x190
+[  250.561155]                     [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
+[  250.561155]                     [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]                     [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
+[  250.561155]                     [<ffffffff810de1b8>] do_wait+0x178/0x3b0
+[  250.561155]                     [<ffffffff810df64b>] sys_wait4+0xbb/0xe0
+[  250.561155]                     [<ffffffff810f81b0>] wait_for_helper+0x80/0xa0
+[  250.561155]                     [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
+[  250.561155]    SOFTIRQ-ON-R at:
+[  250.561155]                     [<ffffffff81149ee3>] mark_irqflags+0x123/0x190
+[  250.561155]                     [<ffffffff8114c0b6>] __lock_acquire+0x936/0xb60
+[  250.561155]                     [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]                     [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
+[  250.561155]                     [<ffffffff810de1b8>] do_wait+0x178/0x3b0
+[  250.561155]                     [<ffffffff810df64b>] sys_wait4+0xbb/0xe0
+[  250.561155]                     [<ffffffff810f81b0>] wait_for_helper+0x80/0xa0
+[  250.561155]                     [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
+[  250.561155]    INITIAL USE at:
+[  250.561155]                    [<ffffffff8114c0dc>] __lock_acquire+0x95c/0xb60
+[  250.561155]                    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]                    [<ffffffff8369a859>] _raw_write_lock_irq+0x59/0x90
+[  250.561155]                    [<ffffffff810d686d>] copy_process+0xb0d/0x11a0
+[  250.561155]                    [<ffffffff810d7034>] do_fork+0x104/0x3d0
+[  250.561155]                    [<ffffffff81074451>] kernel_thread+0x71/0x80
+[  250.561155]                    [<ffffffff834f4bed>] rest_init+0x21/0x144
+[  250.561155]                    [<ffffffff850cbc24>] start_kernel+0x378/0x385
+[  250.561155]                    [<ffffffff850cb397>] x86_64_start_reservations+0x101/0x105
+[  250.561155]                    [<ffffffff850cb480>] x86_64_start_kernel+0xe5/0xf4
+[  250.561155]  }
+[  250.561155]  ... key      at: [<ffffffff8481e018>] tasklist_lock+0x18/0x80
+[  250.561155]  ... acquired at:
+[  250.561155]    [<ffffffff8114886d>] check_usage+0x1bd/0x1e0
+[  250.561155]    [<ffffffff811488fa>] check_irq_usage+0x6a/0xe0
+[  250.561155]    [<ffffffff81148abb>] check_prev_add+0x14b/0x640
+[  250.561155]    [<ffffffff8114906a>] check_prevs_add+0xba/0x1a0
+[  250.561155]    [<ffffffff811497f0>] validate_chain.isra.22+0x6a0/0x7b0
+[  250.561155]    [<ffffffff8114c221>] __lock_acquire+0xaa1/0xb60
+[  250.561155]    [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]    [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
+[  250.561155]    [<ffffffff811089da>] posix_cpu_timer_del+0x2a/0x110
+[  250.561155]    [<ffffffff81105a8d>] exit_itimers+0xcd/0x140
+[  250.561155]    [<ffffffff810deea8>] do_exit+0x1b8/0x580
+[  250.561155]    [<ffffffff810df33a>] do_group_exit+0x8a/0xc0
+[  250.561155]    [<ffffffff810df382>] sys_exit_group+0x12/0x20
+[  250.561155]    [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
+[  250.561155]
+[  250.561155]
+[  250.561155] stack backtrace:
+[  250.561155] Pid: 6956, comm: trinity-child15 Tainted: G        W    3.5.0-sasha-01646-g39c0dda #269
+[  250.561155] Call Trace:
+[  250.561155]  [<ffffffff8114868a>] print_bad_irq_dependency+0x2ea/0x310
+[  250.561155]  [<ffffffff8114886d>] check_usage+0x1bd/0x1e0
+[  250.561155]  [<ffffffff8109cc55>] ? pvclock_clocksource_read+0x55/0xe0
+[  250.561155]  [<ffffffff811488fa>] check_irq_usage+0x6a/0xe0
+[  250.561155]  [<ffffffff81148abb>] check_prev_add+0x14b/0x640
+[  250.561155]  [<ffffffff8109cc55>] ? pvclock_clocksource_read+0x55/0xe0
+[  250.561155]  [<ffffffff8114906a>] check_prevs_add+0xba/0x1a0
+[  250.561155]  [<ffffffff81071a15>] ? sched_clock+0x15/0x20
+[  250.561155]  [<ffffffff811497f0>] validate_chain.isra.22+0x6a0/0x7b0
+[  250.561155]  [<ffffffff8114c221>] __lock_acquire+0xaa1/0xb60
+[  250.561155]  [<ffffffff8114c245>] ? __lock_acquire+0xac5/0xb60
+[  250.561155]  [<ffffffff8369a0ac>] ? _raw_spin_unlock_irqrestore+0x7c/0xa0
+[  250.561155]  [<ffffffff8114e75a>] lock_acquire+0x1ca/0x270
+[  250.561155]  [<ffffffff811089da>] ? posix_cpu_timer_del+0x2a/0x110
+[  250.561155]  [<ffffffff8114dfde>] ? __lock_acquired+0x2ce/0x360
+[  250.561155]  [<ffffffff81105a10>] ? exit_itimers+0x50/0x140
+[  250.561155]  [<ffffffff8369a25e>] _raw_read_lock+0x3e/0x80
+[  250.561155]  [<ffffffff811089da>] ? posix_cpu_timer_del+0x2a/0x110
+[  250.561155]  [<ffffffff811089da>] posix_cpu_timer_del+0x2a/0x110
+[  250.561155]  [<ffffffff81105a8d>] exit_itimers+0xcd/0x140
+[  250.561155]  [<ffffffff810deea8>] do_exit+0x1b8/0x580
+[  250.561155]  [<ffffffff810df33a>] do_group_exit+0x8a/0xc0
+[  250.561155]  [<ffffffff810df382>] sys_exit_group+0x12/0x20
+[  250.561155]  [<ffffffff8369b77d>] system_call_fastpath+0x1a/0x1f
