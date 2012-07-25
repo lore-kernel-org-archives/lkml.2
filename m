@@ -1,52 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab2GYQNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:13:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62640 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab2GYQNK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:13:10 -0400
-Date: Wed, 25 Jul 2012 18:13:06 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Subject: Re: [PATCH 02/17] perf: Add ability to attach user level registers
- dump to sample
-Message-ID: <20120725161302.GC1173@somewhere.redhat.com>
-References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
- <1342959280-5361-3-git-send-email-jolsa@redhat.com>
+	id S1756392Ab2GYQP3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:15:29 -0400
+Received: from lobo.ruivo.org ([173.14.175.98]:43535 "EHLO lobo.ruivo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755675Ab2GYQP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 12:15:28 -0400
+Date: Wed, 25 Jul 2012 12:15:05 -0400
+From: Aristeu Rozanski <aris@ruivo.org>
+To: linux-kernel@vger.kernel.org
+Cc: Li Zefan <lizefan@huawei.com>, aris@redhat.com, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
+Subject: [PATCH v5 3/3] cgroup: add xattr support
+Message-ID: <20120725161505.GB5478@cathedrallabs.org>
+References: <20120718185227.717474436@muttley.lan.cathedral>
+ <20120718185228.417507307@muttley.lan.cathedral>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342959280-5361-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <20120718185228.417507307@muttley.lan.cathedral>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 02:14:25PM +0200, Jiri Olsa wrote:
-> Introducing PERF_SAMPLE_REGS_USER sample type bit to trigger
-> the dump of user level registers on sample. Registers we want
-> to dump are specified by sample_regs_user bitmask.
-> 
-> Only user level registers are dumped at the moment. Meaning the
-> register values of the user space context as it was before the
-> user entered the kernel for whatever reason (syscall, irq,
-> exception, or a PMI happening in userspace).
-> 
-> The layout of the sample_regs_user bitmap is described in
-> asm/perf_regs.h for archs that support register dump.
-> 
-> This is going to be useful to bring Dwarf CFI based stack
-> unwinding on top of samples.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+From: Li Zefan <lizefan@huawei.com>
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+This is one of the items in the plumber's wish list.
+
+For use cases:
+
+>> What would the use case be for this?
+>
+> Attaching meta information to services, in an easily discoverable
+> way. For example, in systemd we create one cgroup for each service, and
+> could then store data like the main pid of the specific service as an
+> xattr on the cgroup itself. That way we'd have almost all service state
+> in the cgroupfs, which would make it possible to terminate systemd and
+> later restart it without losing any state information. But there's more:
+> for example, some very peculiar services cannot be terminated on
+> shutdown (i.e. fakeraid DM stuff) and it would be really nice if the
+> services in question could just mark that on their cgroup, by setting an
+> xattr. On the more desktopy side of things there are other
+> possibilities: for example there are plans defining what an application
+> is along the lines of a cgroup (i.e. an app being a collection of
+> processes). With xattrs one could then attach an icon or human readable
+> program name on the cgroup.
+>
+> The key idea is that this would allow attaching runtime meta information
+> to cgroups and everything they model (services, apps, vms), that doesn't
+> need any complex userspace infrastructure, has good access control
+> (i.e. because the file system enforces that anyway, and there's the
+> "trusted." xattr namespace), notifications (inotify), and can easily be
+> shared among applications.
+>
+> Lennart
+
+v5:
+- check for capabilities before setting/removing xattrs
+v4:
+- no changes
+v3:
+- instead of config option, use mount option to enable xattr support
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+
+---
+ include/linux/cgroup.h |   13 +++-
+ kernel/cgroup.c        |  130 ++++++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 124 insertions(+), 19 deletions(-)
+
+Index: xattr/include/linux/cgroup.h
+===================================================================
+--- xattr.orig/include/linux/cgroup.h	2012-07-18 15:13:53.493351282 -0400
++++ xattr/include/linux/cgroup.h	2012-07-18 15:14:01.829571940 -0400
+@@ -17,6 +17,7 @@
+ #include <linux/rwsem.h>
+ #include <linux/idr.h>
+ #include <linux/workqueue.h>
++#include <linux/xattr.h>
+ 
+ #ifdef CONFIG_CGROUPS
+ 
+@@ -216,6 +217,9 @@
+ 	/* List of events which userspace want to receive */
+ 	struct list_head event_list;
+ 	spinlock_t event_list_lock;
++
++	/* directory xattrs */
++	struct simple_xattrs xattrs;
+ };
+ 
+ /*
+@@ -309,6 +313,9 @@
+ 	/* CFTYPE_* flags */
+ 	unsigned int flags;
+ 
++	/* file xattrs */
++	struct simple_xattrs xattrs;
++
+ 	int (*open)(struct inode *inode, struct file *file);
+ 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
+ 			struct file *file,
+@@ -394,7 +401,7 @@
+  */
+ struct cftype_set {
+ 	struct list_head		node;	/* chained at subsys->cftsets */
+-	const struct cftype		*cfts;
++	struct cftype			*cfts;
+ };
+ 
+ struct cgroup_scanner {
+@@ -406,8 +413,8 @@
+ 	void *data;
+ };
+ 
+-int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
+-int cgroup_rm_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
++int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
++int cgroup_rm_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
+ 
+ int cgroup_is_removed(const struct cgroup *cgrp);
+ 
+Index: xattr/kernel/cgroup.c
+===================================================================
+--- xattr.orig/kernel/cgroup.c	2012-07-18 15:14:01.817571622 -0400
++++ xattr/kernel/cgroup.c	2012-07-25 12:09:10.957226644 -0400
+@@ -276,7 +276,8 @@
+ 
+ /* bits in struct cgroupfs_root flags field */
+ enum {
+-	ROOT_NOPREFIX, /* mounted subsystems have no named prefix */
++	ROOT_NOPREFIX,	/* mounted subsystems have no named prefix */
++	ROOT_XATTR,	/* supports extended attributes */
+ };
+ 
+ static int cgroup_is_releasable(const struct cgroup *cgrp)
+@@ -913,15 +914,19 @@
+ 		 */
+ 		BUG_ON(!list_empty(&cgrp->pidlists));
+ 
++		simple_xattrs_free(&cgrp->xattrs);
++
+ 		kfree_rcu(cgrp, rcu_head);
+ 	} else {
+ 		struct cfent *cfe = __d_cfe(dentry);
+ 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
++		struct cftype *cft = cfe->type;
+ 
+ 		WARN_ONCE(!list_empty(&cfe->node) &&
+ 			  cgrp != &cgrp->root->top_cgroup,
+ 			  "cfe still linked for %s\n", cfe->type->name);
+ 		kfree(cfe);
++		simple_xattrs_free(&cft->xattrs);
+ 	}
+ 	iput(inode);
+ }
+@@ -1144,6 +1149,8 @@
+ 		seq_printf(seq, ",%s", ss->name);
+ 	if (test_bit(ROOT_NOPREFIX, &root->flags))
+ 		seq_puts(seq, ",noprefix");
++	if (test_bit(ROOT_XATTR, &root->flags))
++		seq_puts(seq, ",xattr");
+ 	if (strlen(root->release_agent_path))
+ 		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
+ 	if (clone_children(&root->top_cgroup))
+@@ -1212,6 +1219,10 @@
+ 			opts->clone_children = true;
+ 			continue;
+ 		}
++		if (!strcmp(token, "xattr")) {
++			set_bit(ROOT_XATTR, &opts->flags);
++			continue;
++		}
+ 		if (!strncmp(token, "release_agent=", 14)) {
+ 			/* Specifying two release agents is forbidden */
+ 			if (opts->release_agent)
+@@ -1429,6 +1440,7 @@
+ 	mutex_init(&cgrp->pidlist_mutex);
+ 	INIT_LIST_HEAD(&cgrp->event_list);
+ 	spin_lock_init(&cgrp->event_list_lock);
++	simple_xattrs_init(&cgrp->xattrs);
+ }
+ 
+ static void init_cgroup_root(struct cgroupfs_root *root)
+@@ -1773,6 +1785,8 @@
+ 	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ 
++	simple_xattrs_free(&cgrp->xattrs);
++
+ 	kill_litter_super(sb);
+ 	cgroup_drop_root(root);
+ }
+@@ -2579,19 +2593,100 @@
+ 	return simple_rename(old_dir, old_dentry, new_dir, new_dentry);
+ }
+ 
++static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
++{
++	if (S_ISDIR(dentry->d_inode->i_mode))
++		return &__d_cgrp(dentry)->xattrs;
++	else
++		return &__d_cft(dentry)->xattrs;
++}
++
++static inline int xattr_enabled(struct dentry *dentry)
++{
++	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
++	return test_bit(ROOT_XATTR, &root->flags);
++}
++
++static bool is_valid_xattr(const char *name)
++{
++	if (!strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) ||
++	    !strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) ||
++	    !strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN))
++		return true;
++	return false;
++}
++
++static bool check_permission(const char *name)
++{
++	if (!strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
++		return capable(CAP_IPC_LOCK);
++	return true;
++}
++
++static int cgroup_setxattr(struct dentry *dentry, const char *name,
++			   const void *val, size_t size, int flags)
++{
++	if (!xattr_enabled(dentry))
++		return -EOPNOTSUPP;
++	if (!check_permission(name))
++		return -EPERM;
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return simple_xattr_set(__d_xattrs(dentry), name, val, size, flags);
++}
++
++static int cgroup_removexattr(struct dentry *dentry, const char *name)
++{
++	if (!xattr_enabled(dentry))
++		return -EOPNOTSUPP;
++	if (!check_permission(name))
++		return -EPERM;
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return simple_xattr_remove(__d_xattrs(dentry), name);
++}
++
++static ssize_t cgroup_getxattr(struct dentry *dentry, const char *name,
++			       void *buf, size_t size)
++{
++	if (!xattr_enabled(dentry))
++		return -EOPNOTSUPP;
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return simple_xattr_get(__d_xattrs(dentry), name, buf, size);
++}
++
++static ssize_t cgroup_listxattr(struct dentry *dentry, char *buf, size_t size)
++{
++	if (!xattr_enabled(dentry))
++		return -EOPNOTSUPP;
++	return simple_xattr_list(__d_xattrs(dentry), buf, size);
++}
++
+ static const struct file_operations cgroup_file_operations = {
+-	.read = cgroup_file_read,
+-	.write = cgroup_file_write,
+-	.llseek = generic_file_llseek,
+-	.open = cgroup_file_open,
+-	.release = cgroup_file_release,
++	.read		= cgroup_file_read,
++	.write		= cgroup_file_write,
++	.llseek		= generic_file_llseek,
++	.open		= cgroup_file_open,
++	.release	= cgroup_file_release,
++};
++
++static const struct inode_operations cgroup_file_inode_operations = {
++	.setxattr	= cgroup_setxattr,
++	.getxattr	= cgroup_getxattr,
++	.listxattr	= cgroup_listxattr,
++	.removexattr	= cgroup_removexattr,
+ };
+ 
+ static const struct inode_operations cgroup_dir_inode_operations = {
+-	.lookup = cgroup_lookup,
+-	.mkdir = cgroup_mkdir,
+-	.rmdir = cgroup_rmdir,
+-	.rename = cgroup_rename,
++	.lookup		= cgroup_lookup,
++	.mkdir		= cgroup_mkdir,
++	.rmdir		= cgroup_rmdir,
++	.rename		= cgroup_rename,
++	.setxattr	= cgroup_setxattr,
++	.getxattr	= cgroup_getxattr,
++	.listxattr	= cgroup_listxattr,
++	.removexattr	= cgroup_removexattr,
+ };
+ 
+ static struct dentry *cgroup_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
+@@ -2639,6 +2734,7 @@
+ 	} else if (S_ISREG(mode)) {
+ 		inode->i_size = 0;
+ 		inode->i_fop = &cgroup_file_operations;
++		inode->i_op = &cgroup_file_inode_operations;
+ 	}
+ 	d_instantiate(dentry, inode);
+ 	dget(dentry);	/* Extra count - pin the dentry in core */
+@@ -2699,7 +2795,7 @@
+ }
+ 
+ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+-			   const struct cftype *cft)
++			   struct cftype *cft)
+ {
+ 	struct dentry *dir = cgrp->dentry;
+ 	struct cgroup *parent = __d_cgrp(dir);
+@@ -2709,6 +2805,8 @@
+ 	umode_t mode;
+ 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
+ 
++	simple_xattrs_init(&cft->xattrs);
++
+ 	/* does @cft->flags tell us to skip creation on @cgrp? */
+ 	if ((cft->flags & CFTYPE_NOT_ON_ROOT) && !cgrp->parent)
+ 		return 0;
+@@ -2749,9 +2847,9 @@
+ }
+ 
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+-			      const struct cftype cfts[], bool is_add)
++			      struct cftype cfts[], bool is_add)
+ {
+-	const struct cftype *cft;
++	struct cftype *cft;
+ 	int err, ret = 0;
+ 
+ 	for (cft = cfts; cft->name[0] != '\0'; cft++) {
+@@ -2785,7 +2883,7 @@
+ }
+ 
+ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+-			       const struct cftype *cfts, bool is_add)
++			       struct cftype *cfts, bool is_add)
+ 	__releases(&cgroup_mutex) __releases(&cgroup_cft_mutex)
+ {
+ 	LIST_HEAD(pending);
+@@ -2836,7 +2934,7 @@
+  * function currently returns 0 as long as @cfts registration is successful
+  * even if some file creation attempts on existing cgroups fail.
+  */
+-int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
++int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
+ {
+ 	struct cftype_set *set;
+ 
+@@ -2866,7 +2964,7 @@
+  * Returns 0 on successful unregistration, -ENOENT if @cfts is not
+  * registered with @ss.
+  */
+-int cgroup_rm_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
++int cgroup_rm_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
+ {
+ 	struct cftype_set *set;
+ 
