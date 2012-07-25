@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab2GYEkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 00:40:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35808 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab2GYEkC (ORCPT
+	id S1751285Ab2GYErS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 00:47:18 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:32993 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab2GYErR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 00:40:02 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Sameer Nanda <snanda@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH] kernel/watchdog.c : fix smp_processor_id() warning
-Date: Wed, 25 Jul 2012 12:39:45 +0800
-Message-Id: <1343191185-7746-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 25 Jul 2012 00:47:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120724125513.GG12438@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+ <1342799346.5138.7.camel@lorien2> <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
+ <20120722181956.GA4557@opensource.wolfsonmicro.com> <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
+ <20120724125513.GG12438@opensource.wolfsonmicro.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 25 Jul 2012 12:46:56 +0800
+X-Google-Sender-Auth: kC7URWdl5zdAIE0RRi5Ec30BT_M
+Message-ID: <CAK5ve-Lyk_EjOjSKHF-j0J1_8oey8wWKkVXAdqbKpRX2eZY+hg@mail.gmail.com>
+Subject: Re: [PATCH v2] leds: add new lp8788 led driver
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use raw_smp_processor_id in lockup_detector_bootcpu_resume()
-because it is enough when non-boot CPUs are offline.
+On Tue, Jul 24, 2012 at 8:55 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, Jul 24, 2012 at 08:23:00AM +0800, Bryan Wu wrote:
+>> On Mon, Jul 23, 2012 at 2:19 AM, Mark Brown
+>
+>> > If the work is flushed then the state that userspace thought was set
+>> > when the driver is removed will actually be set before the driver is
+>> > removed.  This is fairly minor but might be useful.
+>
+>> So what's kind of state you mentioned here that is cared by user
+>> space. I find these 2 functions are quite confused for use right now.
+>
+> Any state - none of the drivers with sleeping I/O can do anything
+> directly in their callbacks so they defer everything to work (we really
+> should have that in the core but it was too annoying to implement last
+> time I looked).
+>
+>> Literally, canceling normally will remove pending work item and wait
+>> for running work item to finish. flushing will wait for both pending
+>> and running work item to finish.
+>
+> Right, so if we flush it means we know that any scheduled work actually
+> ran and implemented whatever change was requested.
 
-This patch fixes the following warning when DEBUG_PREEMPT
-is enabled.
+Thanks Mark for clarifying this.
 
-[  168.259429] BUG: using smp_processor_id() in preemptible [00000000] code: pm/1577
-[  168.259460] caller is lockup_detector_bootcpu_resume+0x8/0x48
-[  168.259490] [<c001558c>] (unwind_backtrace+0x0/0x11c) from [<c0296874>] (debug_smp_processor_id+0xbc/0xf0)
-[  168.259521] [<c0296874>] (debug_smp_processor_id+0xbc/0xf0) from [<c0090114>] (lockup_detector_bootcpu_res
-ume+0x8/0x48)
-[  168.259552] [<c0090114>] (lockup_detector_bootcpu_resume+0x8/0x48) from [<c006facc>] (suspend_devices_and_
-enter+0x1f8/0x358)
-[  168.259552] [<c006facc>] (suspend_devices_and_enter+0x1f8/0x358) from [<c006fd68>] (pm_suspend+0x13c/0x204
-)
-[  168.259582] [<c006fd68>] (pm_suspend+0x13c/0x204) from [<c006f0d0>] (state_store+0xb0/0xd4)
-[  168.259582] [<c006f0d0>] (state_store+0xb0/0xd4) from [<c028a3d8>] (kobj_attr_store+0x14/0x20)
-[  168.259613] [<c028a3d8>] (kobj_attr_store+0x14/0x20) from [<c014d344>] (sysfs_write_file+0x10c/0x140)
-[  168.259643] [<c014d344>] (sysfs_write_file+0x10c/0x140) from [<c00f5a88>] (vfs_write+0xb0/0x138)
-[  168.259643] [<c00f5a88>] (vfs_write+0xb0/0x138) from [<c00f5ce8>] (sys_write+0x3c/0x68)
-[  168.259674] [<c00f5ce8>] (sys_write+0x3c/0x68) from [<c000e020>] (ret_fast_syscall+0x0/0x48)
-[  168.260375] Enabling non-boot CPUs ...
+I'm going to Ack this driver and Mark will you merge this as whole patchset?
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- kernel/watchdog.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Acked-by: Bryan Wu <bryan.wu@canonical.com>
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 69add8a..7ddb11b 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -623,7 +623,7 @@ static struct notifier_block cpu_nfb = {
-  */
- void lockup_detector_bootcpu_resume(void)
- {
--	void *cpu = (void *)(long)smp_processor_id();
-+	void *cpu = (void *)(long)raw_smp_processor_id();
- 
- 	cpu_callback(&cpu_nfb, CPU_DEAD_FROZEN, cpu);
- 	cpu_callback(&cpu_nfb, CPU_UP_PREPARE_FROZEN, cpu);
--- 
-1.7.9.5
-
+Thanks,
+-Bryan
