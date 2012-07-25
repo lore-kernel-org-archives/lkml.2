@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab2GYRzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:55:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51486 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751473Ab2GYRzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:55:44 -0400
-Message-ID: <501032BF.1010800@redhat.com>
-Date: Wed, 25 Jul 2012 13:54:07 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: peterz@infradead.org, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] rbtree: faster augmented insert
-References: <1342787467-5493-1-git-send-email-walken@google.com> <1342787467-5493-5-git-send-email-walken@google.com>
-In-Reply-To: <1342787467-5493-5-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752259Ab2GYR6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:58:42 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:42534 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab2GYR6k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 13:58:40 -0400
+Message-ID: <1343238829.3010.394.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Toshi Kani <toshi.kani@hp.com>
+To: Joe Perches <joe@perches.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
+Date: Wed, 25 Jul 2012 11:53:49 -0600
+In-Reply-To: <1343200017.30161.3.camel@joe2Laptop>
+References: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
+	 <1342803256-17514-2-git-send-email-toshi.kani@hp.com>
+	 <1343200017.30161.3.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 08:31 AM, Michel Lespinasse wrote:
-> Introduce rb_insert_augmented(), which is a version of rb_insert_color()
-> with an added callback on tree rotations. This can be used for insertion
-> into an augmented tree: the handcoded search phase must be updated to
-> maintain the augmented information on insertion, and then the rbtree
-> coloring/rebalancing algorithms keep it up to date.
->
-> rb_insert_color() is now a special case of rb_insert_augmented() with
-> a do-nothing callback. I used inlining to optimize out the callback,
-> with the intent that this would generate the same code as previously
-> for rb_insert_augmented(). This didn't fully work, as my compiler output
-> is now *smaller* than before for that function. Speed wise, they seem
-> comparable though.
->
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+On Wed, 2012-07-25 at 00:06 -0700, Joe Perches wrote:
+> On Fri, 2012-07-20 at 10:54 -0600, Toshi Kani wrote:
+> > This patch introduces acpi_pr_<level>(), where <level> is a message
+> > level such as err/warn/info, to support improved logging messages
+> > for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
+> > "ACPI" prefix and ACPI object path to the messages.  This improves
+> > diagnostics in hotplug operations since it identifies an object that
+> > caused an issue in a log file.
 
-The second version of patch 5/6 takes care of my
-concerns about this patch.
+Hi Joe,
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Thanks for reviewing!
+
+> trivia:
+
+Did you mean to say something more on this?  Just checking...
+
+> > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+> []
+> > @@ -454,3 +454,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> []
+> > +	char *path;
+> 
+> const ?
+
+Agreed.  I will update with the change.
+
+> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> []
+> > @@ -85,6 +85,26 @@ struct acpi_pld {
+> []
+> > +#define acpi_pr_debug(handle, fmt, ...)				\
+> > +	acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
+> 
+> Might be nicer if this somehow had a dynamic debug
+> mechanism too.
+
+Good point!  I will try to add a dynamic debug mechanism on this.
+
+Thanks,
+-Toshi
+
+
