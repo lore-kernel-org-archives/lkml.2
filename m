@@ -1,229 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2GYVwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 17:52:41 -0400
-Received: from shutemov.name ([176.9.204.213]:44305 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774Ab2GYVwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 17:52:39 -0400
-Date: Thu, 26 Jul 2012 00:53:32 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org,
-        cgroups@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 03/10] memcg: infrastructure to  match an allocation to
- the right cache
-Message-ID: <20120725215332.GA5756@shutemov.name>
-References: <1343227101-14217-1-git-send-email-glommer@parallels.com>
- <1343227101-14217-4-git-send-email-glommer@parallels.com>
+	id S1752404Ab2GYVz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 17:55:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59564 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab2GYVzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 17:55:54 -0400
+Date: Wed, 25 Jul 2012 14:55:41 -0700
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-cc70cdc33242d79a48f46f652e5ce2deb86c9c09@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+In-Reply-To: <1343171129-2747-2-git-send-email-suresh.b.siddha@intel.com>
+References: <1343171129-2747-2-git-send-email-suresh.b.siddha@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] x86, signal: Cleanup ifdefs and is_ia32, is_x32
+Git-Commit-ID: cc70cdc33242d79a48f46f652e5ce2deb86c9c09
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1343227101-14217-4-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 14:55:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 06:38:14PM +0400, Glauber Costa wrote:
-> The page allocator is able to bind a page to a memcg when it is
-> allocated. But for the caches, we'd like to have as many objects as
-> possible in a page belonging to the same cache.
-> 
-> This is done in this patch by calling memcg_kmem_get_cache in the
-> beginning of every allocation function. This routing is patched out by
-> static branches when kernel memory controller is not being used.
-> 
-> It assumes that the task allocating, which determines the memcg in the
-> page allocator, belongs to the same cgroup throughout the whole process.
-> Misacounting can happen if the task calls memcg_kmem_get_cache() while
-> belonging to a cgroup, and later on changes. This is considered
-> acceptable, and should only happen upon task migration.
-> 
-> Before the cache is created by the memcg core, there is also a possible
-> imbalance: the task belongs to a memcg, but the cache being allocated
-> from is the global cache, since the child cache is not yet guaranteed to
-> be ready. This case is also fine, since in this case the GFP_KMEMCG will
-> not be passed and the page allocator will not attempt any cgroup
-> accounting.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> ---
->  include/linux/memcontrol.h |   38 ++++++++
->  init/Kconfig               |    2 +-
->  mm/memcontrol.c            |  221 +++++++++++++++++++++++++++++++++++++++++++-
->  3 files changed, 259 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index d9229a3..bd1f34b 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -423,6 +423,8 @@ int memcg_css_id(struct mem_cgroup *memcg);
->  void memcg_register_cache(struct mem_cgroup *memcg,
->  				      struct kmem_cache *s);
->  void memcg_release_cache(struct kmem_cache *cachep);
-> +struct kmem_cache *
-> +__memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
->  #else
->  static inline void memcg_register_cache(struct mem_cgroup *memcg,
->  					     struct kmem_cache *s)
-> @@ -456,6 +458,12 @@ __memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle,
->  			      int order)
->  {
->  }
-> +
-> +static inline struct kmem_cache *
-> +__memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
-> +{
-> +	return cachep;
-> +}
->  #endif /* CONFIG_MEMCG_KMEM */
->  
->  /**
-> @@ -515,5 +523,35 @@ void memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle,
->  	if (memcg_kmem_on)
->  		__memcg_kmem_commit_page(page, handle, order);
->  }
-> +
-> +/**
-> + * memcg_kmem_get_kmem_cache: selects the correct per-memcg cache for allocation
-> + * @cachep: the original global kmem cache
-> + * @gfp: allocation flags.
-> + *
-> + * This function assumes that the task allocating, which determines the memcg
-> + * in the page allocator, belongs to the same cgroup throughout the whole
-> + * process.  Misacounting can happen if the task calls memcg_kmem_get_cache()
-> + * while belonging to a cgroup, and later on changes. This is considered
-> + * acceptable, and should only happen upon task migration.
-> + *
-> + * Before the cache is created by the memcg core, there is also a possible
-> + * imbalance: the task belongs to a memcg, but the cache being allocated from
-> + * is the global cache, since the child cache is not yet guaranteed to be
-> + * ready. This case is also fine, since in this case the GFP_KMEMCG will not be
-> + * passed and the page allocator will not attempt any cgroup accounting.
-> + */
-> +static __always_inline struct kmem_cache *
-> +memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
-> +{
-> +	if (!memcg_kmem_on)
-> +		return cachep;
-> +	if (gfp & __GFP_NOFAIL)
-> +		return cachep;
-> +	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
-> +		return cachep;
-> +
-> +	return __memcg_kmem_get_cache(cachep, gfp);
-> +}
->  #endif /* _LINUX_MEMCONTROL_H */
->  
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 547bd10..610cfd3 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -741,7 +741,7 @@ config MEMCG_SWAP_ENABLED
->  	  then swapaccount=0 does the trick).
->  config MEMCG_KMEM
->  	bool "Memory Resource Controller Kernel Memory accounting (EXPERIMENTAL)"
-> -	depends on MEMCG && EXPERIMENTAL
-> +	depends on MEMCG && EXPERIMENTAL && !SLOB
->  	default n
->  	help
->  	  The Kernel Memory extension for Memory Resource Controller can limit
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 88bb826..8d012c7 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -14,6 +14,10 @@
->   * Copyright (C) 2012 Parallels Inc. and Google Inc.
->   * Authors: Glauber Costa and Suleiman Souhlal
->   *
-> + * Kernel Memory Controller
-> + * Copyright (C) 2012 Parallels Inc. and Google Inc.
-> + * Authors: Glauber Costa and Suleiman Souhlal
-> + *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License as published by
->   * the Free Software Foundation; either version 2 of the License, or
-> @@ -339,6 +343,11 @@ struct mem_cgroup {
->  #ifdef CONFIG_INET
->  	struct tcp_memcontrol tcp_mem;
->  #endif
-> +
-> +#ifdef CONFIG_MEMCG_KMEM
-> +	/* Slab accounting */
-> +	struct kmem_cache *slabs[MAX_KMEM_CACHE_TYPES];
-> +#endif
->  };
->  
->  enum {
-> @@ -532,6 +541,40 @@ static inline bool memcg_kmem_enabled(struct mem_cgroup *memcg)
->  		memcg->kmem_accounted;
->  }
->  
-> +static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-> +{
-> +	char *name;
-> +	struct dentry *dentry;
-> +
-> +	rcu_read_lock();
-> +	dentry = rcu_dereference(memcg->css.cgroup->dentry);
-> +	rcu_read_unlock();
-> +
-> +	BUG_ON(dentry == NULL);
-> +
-> +	name = kasprintf(GFP_KERNEL, "%s(%d:%s)",
-> +	    cachep->name, css_id(&memcg->css), dentry->d_name.name);
-> +
-> +	return name;
-> +}
-> +
-> +static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
-> +					 struct kmem_cache *s)
-> +{
-> +	char *name;
-> +	struct kmem_cache *new;
-> +
-> +	name = memcg_cache_name(memcg, s);
-> +	if (!name)
-> +		return NULL;
-> +
-> +	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
-> +				      (s->flags & ~SLAB_PANIC), s->ctor);
-> +
-> +	kfree(name);
-> +	return new;
-> +}
-> +
->  struct ida cache_types;
->  
->  void memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-> @@ -656,6 +699,14 @@ void __memcg_kmem_free_page(struct page *page, int order)
->  }
->  EXPORT_SYMBOL(__memcg_kmem_free_page);
->  
-> +static void memcg_slab_init(struct mem_cgroup *memcg)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++)
-> +		memcg->slabs[i] = NULL;
-> +}
+Commit-ID:  cc70cdc33242d79a48f46f652e5ce2deb86c9c09
+Gitweb:     http://git.kernel.org/tip/cc70cdc33242d79a48f46f652e5ce2deb86c9c09
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Tue, 24 Jul 2012 16:05:27 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 25 Jul 2012 13:25:18 -0700
 
-It seems redundant. mem_cgroup_alloc() uses kzalloc()/vzalloc() to
-allocate struct mem_cgroup.
+x86, signal: Cleanup ifdefs and is_ia32, is_x32
 
--- 
- Kirill A. Shutemov
+Use config_enabled() to cleanup the definitions of is_ia32/is_x32. Move
+the function prototypes to the header file to cleanup ifdefs.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Link: http://lkml.kernel.org/r/1343171129-2747-2-git-send-email-suresh.b.siddha@intel.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/fpu-internal.h |   29 ++++++++++++++++
+ arch/x86/include/asm/signal.h       |    4 ++
+ arch/x86/kernel/signal.c            |   62 +++++++---------------------------
+ 3 files changed, 46 insertions(+), 49 deletions(-)
+
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 75f4c6d..74dab61 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/kernel_stat.h>
+ #include <linux/regset.h>
++#include <linux/compat.h>
+ #include <linux/slab.h>
+ #include <asm/asm.h>
+ #include <asm/cpufeature.h>
+@@ -49,12 +50,32 @@ extern int save_i387_xstate_ia32(void __user *buf);
+ extern int restore_i387_xstate_ia32(void __user *buf);
+ #endif
+ 
++int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
++		       siginfo_t *info, compat_sigset_t *set,
++		       struct pt_regs *regs);
++
+ #ifdef CONFIG_MATH_EMULATION
+ extern void finit_soft_fpu(struct i387_soft_struct *soft);
+ #else
+ static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
+ #endif
+ 
++static inline int is_ia32_compat_frame(void)
++{
++	return config_enabled(CONFIG_IA32_EMULATION) &&
++	       test_thread_flag(TIF_IA32);
++}
++
++static inline int is_ia32_frame(void)
++{
++	return config_enabled(CONFIG_X86_32) || is_ia32_compat_frame();
++}
++
++static inline int is_x32_frame(void)
++{
++	return config_enabled(CONFIG_X86_X32_ABI) && test_thread_flag(TIF_X32);
++}
++
+ #define X87_FSW_ES (1 << 7)	/* Exception Summary */
+ 
+ static __always_inline __pure bool use_xsaveopt(void)
+@@ -180,6 +201,11 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ #endif
+ }
+ 
++int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
++			compat_sigset_t *set, struct pt_regs *regs);
++int ia32_setup_frame(int sig, struct k_sigaction *ka,
++		     compat_sigset_t *set, struct pt_regs *regs);
++
+ #else  /* CONFIG_X86_32 */
+ 
+ /* perform fxrstor iff the processor has extended states, otherwise frstor */
+@@ -204,6 +230,9 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ 		     : [fx] "=m" (fpu->state->fxsave));
+ }
+ 
++#define ia32_setup_frame	__setup_frame
++#define ia32_setup_rt_frame	__setup_rt_frame
++
+ #endif	/* CONFIG_X86_64 */
+ 
+ /*
+diff --git a/arch/x86/include/asm/signal.h b/arch/x86/include/asm/signal.h
+index 598457c..323973f 100644
+--- a/arch/x86/include/asm/signal.h
++++ b/arch/x86/include/asm/signal.h
+@@ -31,6 +31,10 @@ typedef struct {
+ 	unsigned long sig[_NSIG_WORDS];
+ } sigset_t;
+ 
++#ifndef CONFIG_COMPAT
++typedef sigset_t compat_sigset_t;
++#endif
++
+ #else
+ /* Here we must cater to libcs that poke about in kernel headers.  */
+ 
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index b280908..9779084 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -209,24 +209,21 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size,
+ 	unsigned long sp = regs->sp;
+ 	int onsigstack = on_sig_stack(sp);
+ 
+-#ifdef CONFIG_X86_64
+ 	/* redzone */
+-	sp -= 128;
+-#endif /* CONFIG_X86_64 */
++	if (config_enabled(CONFIG_X86_64))
++		sp -= 128;
+ 
+ 	if (!onsigstack) {
+ 		/* This is the X/Open sanctioned signal stack switching.  */
+ 		if (ka->sa.sa_flags & SA_ONSTACK) {
+ 			if (current->sas_ss_size)
+ 				sp = current->sas_ss_sp + current->sas_ss_size;
+-		} else {
+-#ifdef CONFIG_X86_32
+-			/* This is the legacy signal stack switching. */
+-			if ((regs->ss & 0xffff) != __USER_DS &&
+-				!(ka->sa.sa_flags & SA_RESTORER) &&
+-					ka->sa.sa_restorer)
++		} else if (config_enabled(CONFIG_X86_32) &&
++			   (regs->ss & 0xffff) != __USER_DS &&
++			   !(ka->sa.sa_flags & SA_RESTORER) &&
++			   ka->sa.sa_restorer) {
++				/* This is the legacy signal stack switching. */
+ 				sp = (unsigned long) ka->sa.sa_restorer;
+-#endif /* CONFIG_X86_32 */
+ 		}
+ 	}
+ 
+@@ -612,55 +609,22 @@ static int signr_convert(int sig)
+ 	return sig;
+ }
+ 
+-#ifdef CONFIG_X86_32
+-
+-#define is_ia32	1
+-#define ia32_setup_frame	__setup_frame
+-#define ia32_setup_rt_frame	__setup_rt_frame
+-
+-#else /* !CONFIG_X86_32 */
+-
+-#ifdef CONFIG_IA32_EMULATION
+-#define is_ia32	test_thread_flag(TIF_IA32)
+-#else /* !CONFIG_IA32_EMULATION */
+-#define is_ia32	0
+-#endif /* CONFIG_IA32_EMULATION */
+-
+-#ifdef CONFIG_X86_X32_ABI
+-#define is_x32	test_thread_flag(TIF_X32)
+-
+-static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
+-			      siginfo_t *info, compat_sigset_t *set,
+-			      struct pt_regs *regs);
+-#else /* !CONFIG_X86_X32_ABI */
+-#define is_x32	0
+-#endif /* CONFIG_X86_X32_ABI */
+-
+-int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-		sigset_t *set, struct pt_regs *regs);
+-int ia32_setup_frame(int sig, struct k_sigaction *ka,
+-		sigset_t *set, struct pt_regs *regs);
+-
+-#endif /* CONFIG_X86_32 */
+-
+ static int
+ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 		struct pt_regs *regs)
+ {
+ 	int usig = signr_convert(sig);
+ 	sigset_t *set = sigmask_to_save();
++	compat_sigset_t *cset = (compat_sigset_t *) set;
+ 
+ 	/* Set up the stack frame */
+-	if (is_ia32) {
++	if (is_ia32_frame()) {
+ 		if (ka->sa.sa_flags & SA_SIGINFO)
+-			return ia32_setup_rt_frame(usig, ka, info, set, regs);
++			return ia32_setup_rt_frame(usig, ka, info, cset, regs);
+ 		else
+-			return ia32_setup_frame(usig, ka, set, regs);
+-#ifdef CONFIG_X86_X32_ABI
+-	} else if (is_x32) {
+-		return x32_setup_rt_frame(usig, ka, info,
+-					 (compat_sigset_t *)set, regs);
+-#endif
++			return ia32_setup_frame(usig, ka, cset, regs);
++	} else if (is_x32_frame()) {
++		return x32_setup_rt_frame(usig, ka, info, cset, regs);
+ 	} else {
+ 		return __setup_rt_frame(sig, ka, info, set, regs);
+ 	}
