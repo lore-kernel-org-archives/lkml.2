@@ -1,180 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147Ab2GYOSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:18:24 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:45395 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933089Ab2GYOSX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:18:23 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371I542M1432Izz1202hzz8275bh186Mz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>
-Subject: RE: [PATCH 1/1] Drivers: hv: Cleanup the guest ID computation
-Thread-Topic: [PATCH 1/1] Drivers: hv: Cleanup the guest ID computation
-Thread-Index: AQHNae+sL9Mcy5ytHkK/2crRs+eVQZc6C+ng
-Date: Wed, 25 Jul 2012 14:18:03 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236A8B9A@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1343171518-15189-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1343171518-15189-1-git-send-email-kys@microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.24.39.100]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933173Ab2GYOSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:18:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933089Ab2GYOSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 10:18:30 -0400
+Message-ID: <50100014.2010109@redhat.com>
+Date: Wed, 25 Jul 2012 16:17:56 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
+        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com>
+In-Reply-To: <500FF412.3090600@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the patch I sent out yesterday for Linux to clean up the guest ID mess. For FreeBSD, you can use the following constant:
+Il 25/07/2012 15:26, Boaz Harrosh ha scritto:
+>>> In SCSI land most LLDs should support chaining just by virtu of using the
+>>> for_each_sg macro. That all it takes. Your code above does support it.
+>>
+>> Yes, it supports it but still has to undo them before passing to virtio.
+>>
+>> What my LLD does is add a request descriptor in front of the scatterlist
+>> that the LLD receives.  I would like to do this with a 2-item
+>> scatterlist: one for the request descriptor, and one which is a chain to
+>> the original scatterlist.  
+> 
+> I hate that plan. Why yet override the scatter element yet again with a third
+> union of a "request descriptor"
 
-HV_FREEBSD_VENDOR_ID		0x8200
+I'm not overriding (or did you mean overloading?) anything, and I think
+you're reading too much in my words.
 
-and use the function to generate the ID appropriately. Larry, I will forward you the proposal for guest ID in a separate email.
+What I am saying is (for a WRITE command):
 
-Regards.
+1) what I get is a scsi_cmnd which contains an N-element scatterlist.
 
-K. Y
+2) virtio-scsi has to build the "packet" that is passed to the hardware
+(it does not matter that the hardware is virtual).  This packet (per
+virtio-scsi spec) has an N+1-element scatterlist, where the first
+element is a request descriptor (struct virtio_scsi_cmd_req), and the
+others describe the written data.
 
-> -----Original Message-----
-> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
-> Sent: Tuesday, July 24, 2012 7:12 PM
-> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; olaf@aepfle.de;
-> apw@canonical.com
-> Cc: KY Srinivasan
-> Subject: [PATCH 1/1] Drivers: hv: Cleanup the guest ID computation
-> 
-> The current guest ID string in use in vmbus driver does not conform
-> to the MSFT guidelines on guest ID. MSFT currently does not specify
-> Linux specific guidelines. MSFT however has plans to publish Linux
-> specific guidelines. This implementation conforms to the yet unpublished
-> Linux specific guidelines for guest ID. This implementation also broadly
-> conforms to the current guidelines as well.
-> 
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/hv/hv.c           |    9 +++++--
->  drivers/hv/hyperv_vmbus.h |   48
-> +++++++++++++++++++++++++++++++++++++++++---
->  2 files changed, 50 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
-> index 86f8885..771e24f 100644
-> --- a/drivers/hv/hv.c
-> +++ b/drivers/hv/hv.c
-> @@ -26,6 +26,7 @@
->  #include <linux/slab.h>
->  #include <linux/vmalloc.h>
->  #include <linux/hyperv.h>
-> +#include <linux/version.h>
->  #include <asm/hyperv.h>
->  #include "hyperv_vmbus.h"
-> 
-> @@ -164,9 +165,11 @@ int hv_init(void)
-> 
->  	max_leaf = query_hypervisor_info();
-> 
-> -	/* Write our OS info */
-> -	wrmsrl(HV_X64_MSR_GUEST_OS_ID, HV_LINUX_GUEST_ID);
-> -	hv_context.guestid = HV_LINUX_GUEST_ID;
-> +	/*
-> +	 * Write our OS ID.
-> +	 */
-> +	hv_context.guestid = generate_guest_id(0, LINUX_VERSION_CODE, 0);
-> +	wrmsrl(HV_X64_MSR_GUEST_OS_ID, hv_context.guestid);
-> 
->  	/* See if the hypercall page is already set */
->  	rdmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
-> diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-> index 0614ff3..108a441 100644
-> --- a/drivers/hv/hyperv_vmbus.h
-> +++ b/drivers/hv/hyperv_vmbus.h
-> @@ -410,10 +410,50 @@ enum {
-> 
->  #define HV_PRESENT_BIT			0x80000000
-> 
-> -#define HV_LINUX_GUEST_ID_LO		0x00000000
-> -#define HV_LINUX_GUEST_ID_HI		2976579765
-> -#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI << 32) |
-> \
-> -					   HV_LINUX_GUEST_ID_LO)
-> +/*
-> + * The guest OS needs to register the guest ID with the hypervisor.
-> + * The guest ID is a 64 bit entity and the structure of this ID is
-> + * specified in the Hyper-V specification:
-> + *
-> + * http://msdn.microsoft.com/en-us/library/windows/
-> + * hardware/ff542653%28v=vs.85%29.aspx
-> + *
-> + * While the current guideline does not specify how Linux guest ID(s)
-> + * need to be generated, our plan is to publish the guidelines for
-> + * Linux and other guest operating systems that currently are hosted
-> + * on Hyper-V. The implementation here conforms to this yet
-> + * unpublished guidelines.
-> + *
-> + *
-> + * Bit(s)
-> + * 63 - Indicates if the OS is Open Source or not; 1 is Open Source
-> + * 62:56 - Os Type; Linux is 0x100
-> + * 55:48 - Distro specific identification
-> + * 47:16 - Linux kernel version number
-> + * 15:0  - Distro specific identification
-> + *
-> + *
-> + */
-> +
-> +#define HV_LINUX_VENDOR_ID		0x8100
-> +
-> +/*
-> + * Generate the guest ID based on the guideline described above.
-> + */
-> +
-> +static inline  __u64 generate_guest_id(__u8 d_info1, __u32 kernel_version,
-> +					__u16 d_info2)
-> +{
-> +	__u64 guest_id = 0;
-> +
-> +	guest_id = (((__u64)HV_LINUX_VENDOR_ID) << 48);
-> +	guest_id |= (((__u64)(d_info1)) << 48);
-> +	guest_id |= (((__u64)(kernel_version)) << 16);
-> +	guest_id |= ((__u64)(d_info2));
-> +
-> +	return guest_id;
-> +}
-> +
-> 
->  #define HV_CPU_POWER_MANAGEMENT		(1 << 0)
->  #define HV_RECOMMENDATIONS_MAX		4
-> --
-> 1.7.4.1
-> 
-> 
-> 
+3) virtio takes care of converting the "packet" from a scatterlist
+(which currently must be a flat one) to the hardware representation.
+Here a walk is inevitable, so we don't care about this walk.
+
+4) What I'm doing now: copying (and flattening) the N-element
+scatterlist onto the last elements of an N+1 array that I pass to virtio.
+
+          _ _ _ _ _ _
+         |_|_|_|_|_|_|  scsi_cmnd scatterlist
+
+         vvv COPY vvv
+        _ _ _ _ _ _ _
+       |_|_|_|_|_|_|_|  scatterlist passed to virtio
+        |
+    virtio_scsi_cmd_req
+
+Then I hand off the scatterlist to virtio.  virtio walks it and converts
+it to hardware format.
+
+5) What I want to do: create a 2-element scatterlist, the first being
+the request descriptor and the second chaining to scsi_cmnd's N-element
+scatterlist.
+
+             _ _ _ _ _ _
+            |_|_|_|_|_|_|  scsi_cmnd scatterlist
+        _ _/
+       |_|C|               scatterlist passed to virtio
+        |
+    virtio_scsi_cmd_req
+
+Then I hand off the scatterlist to virtio.  virtio will still walk the
+scatterlist chain, and convert it to N+1 elements for the hardware to
+consume.  Still, removing one walk largely reduces the length of my
+critical sections.  I also save some pointer-chasing because the
+2-element scatterlist are short-lived and can reside on the stack.
 
 
+Other details (you can probably skip these):
 
+There is also a response descriptor.  In the case of writes this is the
+only element that the hardware will write to, so in the case of writes
+the "written by hardware" scatterlist has 1 element only and does not
+need chaining.
+
+Reads are entirely symmetric.  The hardware will read the request
+descriptor from a 1-element scatterlist, and will write response+data
+into an N+1-element scatterlist (the response descriptor precedes the
+data that was read).  It can be treated in exactly the same way.  The
+N+1-element scatterlist could also become a 2-element scatterlist with
+chaining.
+
+>> Except that if I call sg_chain and my
+>> architecture does not define ARCH_HAS_SG_CHAIN, it will BUG out.  So I
+>> need to keep all the scatterlist allocation and copying crap that I have
+>> now within #ifdef, and it will bitrot.
+> 
+> except that with the correct design you don't call sg_chain you just do:
+> 	request_descriptor->sg_list = sg;
+
+By the above it should be clear, that request_descriptor is not a
+driver-private extension of the scsi_cmnd.  It is something passed to
+the hardware.
+
+>>> Well that can be done as well, (If done carefully) It should be easy to add
+>>> chained fragments to both the end of a given chain just as at beginning.
+>>> It only means that the last element of the appended-to chain moves to
+>>> the next fragment and it's place is replaced by a link.
+>>
+>> But you cannot do that in constant time, can you?  And that means you do
+>> not enjoy any benefit in terms of cache misses etc.
+> 
+> I did not understand "constant time" it is O(0) if that what you meant.
+
+In the worst case it is a linked list, no?  So in the worst case
+_finding_ the last element of the appended-to chain is O(n).
+
+Actually, appending to the end is not a problem for virtio-scsi.  But
+for example the virtio-blk spec places the response descriptor _after_
+the input data.  I think this was a mistake, and I didn't repeat it for
+virtio-scsi, but I cited it because in the past Rusty complained that
+the long sglist implementation was "SCSI-centric".
+
+>> Also, this assumes that I can modify the appended-to chain.  I'm not
+>> sure I can do this?
+> 
+> Each case it's own. If the appended-to chain is const, yes you'll have
+> to reallocate it and copy. Is that your case?
+
+It will be virtio-blk's case, but we can ignore it.
+
+Paolo
