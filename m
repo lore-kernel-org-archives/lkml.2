@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751123Ab2GYSwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 14:52:21 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22280 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab2GYSwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 14:52:20 -0400
-Date: Wed, 25 Jul 2012 14:43:19 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [Xen-devel] [PATCH WIP 6/6] xen/arm: enable evtchn irqs
-Message-ID: <20120725184319.GB16360@phenom.dumpdata.com>
-References: <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120709144005.GA12102@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com>
- <20120716145709.GB552@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207181750500.23783@kaball.uk.xensource.com>
- <20120719233045.GA944@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207201208230.23783@kaball.uk.xensource.com>
- <20120720143609.GA21870@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207201608100.26163@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207201608100.26163@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1751104Ab2GYSxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 14:53:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62637 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743Ab2GYSxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 14:53:18 -0400
+Date: Wed, 25 Jul 2012 14:51:19 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-mm@kvack.org
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH -mm] remove __GFP_NO_KSWAPD fixes
+Message-ID: <20120725145119.75be021d@cuia.bos.redhat.com>
+In-Reply-To: <20120724111222.2c5e6b30@annuminas.surriel.com>
+References: <20120724111222.2c5e6b30@annuminas.surriel.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 04:23:07PM +0100, Stefano Stabellini wrote:
-> On Fri, 20 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Jul 20, 2012 at 12:09:56PM +0100, Stefano Stabellini wrote:
-> > > On Fri, 20 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> > > > > > OK, please include those questions/answers in the git commit and
-> > > > > > repost.
-> > > > 
-> > > > I seem to be missing the rest of the patches. I see the drivers/xen/events also
-> > > > has the  xen_init_IRQ_arm... is there a git tree with the base patches?
-> > > 
-> > > Yes, the latest git tree, based on
-> > > 55b02d2f4445ad625213817a1736bf2884d32547, is available here:
-> > > 
-> > > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git xenarmv7-3
-> > 
-> > Uh there is a bit of stuff there.
-> 
-> Actually, aside from many backports and hacks, there are just three
-> interesting patch series from my point of view:
-> 
-> http://marc.info/?l=xen-devel&m=133001901013674&w=2 xen/arm: receive Xen events and initialize xenbus
-> http://marc.info/?l=xen-devel&m=134038186610813&w=2 xen/arm: PV console support
-> http://marc.info/?l=xen-devel&m=134140081408627&w=2 xen/arm: grant_table, blkfront and blkback
-> 
-> The last two are recent and I have received feedback from you on the second
-> one.
-> 
-> 
-> > Can you just repost those you want me to
-> > review and Ack that touch common code?
-> 
-> Good idea, but fortunately there aren't that many of them.
-> In fact if we exclude the ones that just add more #include, these are the ones
-> that remains:
-> 
-> d122a6b075e582af17dd2b3ddd8ee4ded3f85300 xen/arm: receive xen events on arm
-> 1902bd5574447c03c1e6081cce98d8bf6e1f35e7 xen/arm: compile and run xenbus
-> 5bbda4a165284aceee19b54954f10344b724b506 xen/arm: enable evtchn irqs
-> d4fda31cf5411e8ada3f1163c68595b7474d7c1d xen/arm: initialize grant_table on ARM
-> 
-> it would be nice if you could take a look at them and tell me what you think.
-> 
-> 
-> > Or are you posting them to collect feedback/Acks and then want to post them
-> > as a bigger set?
+Turns out I missed two spots where __GFP_NO_KSWAPD is used.
 
-I am going to be lazy and wait for you to git-send-email the right patches. If
-you like, you can just email them privately to me and I can look at them.
+The removal from the trace code is obvious, since the flag
+got removed there is no need to print it.
 
-> 
-> Yes, the idea is to post them in a single set.
-> Now that I have support for the basic functionalities (guests booting, PV
-> console, disk and network), I can start working on a single patch
-> series for a recent kernel.
+For mtdcore.c, now that memory compaction has been fixed,
+we should no longer see large swap storms from an attempt
+to allocate a large buffer, removing the need to specify
+__GFP_NO_KSWAPD.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ drivers/mtd/mtdcore.c           |    3 +--
+ include/trace/events/gfpflags.h |    1 -
+ 2 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+index 9a9ce71..af1e932 100644
+--- a/drivers/mtd/mtdcore.c
++++ b/drivers/mtd/mtdcore.c
+@@ -761,8 +761,7 @@ EXPORT_SYMBOL_GPL(mtd_writev);
+  */
+ void *mtd_kmalloc_up_to(const struct mtd_info *mtd, size_t *size)
+ {
+-	gfp_t flags = __GFP_NOWARN | __GFP_WAIT |
+-		       __GFP_NORETRY | __GFP_NO_KSWAPD;
++	gfp_t flags = __GFP_NOWARN | __GFP_WAIT | __GFP_NORETRY;
+ 	size_t min_alloc = max_t(size_t, mtd->writesize, PAGE_SIZE);
+ 	void *kbuf;
+ 
+diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
+index 9fe3a36..8ffc050 100644
+--- a/include/trace/events/gfpflags.h
++++ b/include/trace/events/gfpflags.h
+@@ -35,7 +35,6 @@
+ 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+ 	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
+ 	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
+-	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"},	\
+ 	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
+ 	) : "GFP_NOWAIT"
+ 
+
