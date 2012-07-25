@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab2GYMcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:32:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59194 "EHLO mx1.redhat.com"
+	id S932999Ab2GYMeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:34:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7994 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932089Ab2GYMce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:32:34 -0400
-Message-ID: <500FE74C.4040907@redhat.com>
-Date: Wed, 25 Jul 2012 15:32:12 +0300
-From: Avi Kivity <avi@redhat.com>
+	id S932917Ab2GYMe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:34:29 -0400
+Message-ID: <500FE7C9.3000703@redhat.com>
+Date: Wed, 25 Jul 2012 14:34:17 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Stefan Bader <stefan.bader@canonical.com>
-CC: Cong Wang <xiyou.wangcong@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: x86/mm: Limit 2/4M size calculation to x86_32
-References: <5000259D.9020303@canonical.com> <CAM_iQpVPzB69R1_4E_J5Yw=d1TncqHe0+dWEwOufQniNcpBVtg@mail.gmail.com> <500FCDF3.7080808@redhat.com> <500FD4FA.7020904@canonical.com>
-In-Reply-To: <500FD4FA.7020904@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+To: Wang Sen <senwang@linux.vnet.ibm.com>
+CC: linux-scsi@vger.kernel.org, JBottomley@parallels.com,
+        stefanha@linux.vnet.ibm.com, mc@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2] scsi: virtio-scsi: Fix address translation failure
+ of HighMem pages used by sg list
+References: <1343218390-24310-1-git-send-email-senwang@linux.vnet.ibm.com>
+In-Reply-To: <1343218390-24310-1-git-send-email-senwang@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 02:14 PM, Stefan Bader wrote:
-> On 25.07.2012 12:44, Avi Kivity wrote:
->> On 07/24/2012 06:52 PM, Cong Wang wrote:
->> 
->>>> From 6b679d1af20656929c0e829f29eed60b0a86a74f Mon Sep 17 00:00:00 2001
->>>> From: Stefan Bader <stefan.bader@canonical.com>
->>>> Date: Fri, 13 Jul 2012 15:16:33 +0200
->>>> Subject: [PATCH] x86/mm: Limit 2/4M size calculation to x86_32
->>>>
->>>> commit 722bc6b (x86/mm: Fix the size calculation of mapping tables)
->>>> did modify the extra space calculation for mapping tables in order
->>>> to make up for the first 2/4M memory range using 4K pages.
->>>> However this setup is only used when compiling for 32bit. On 64bit
->>>> there is only the trailing area of 4K pages (which is already added).
->>>>
->>>> The code was already adapted once for things went wrong on a 8TB
->>>> machine (bd2753b x86/mm: Only add extra pages count for the first memory
->>>> range during pre-allocation early page table space), but it looks a bit
->>>> like it currently would overdo things for 64bit.
->>>> I only noticed while bisecting for the reason I could not make a crash
->>>> kernel boot (which ended up on this patch).
->>>>
->>>> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
->>>> Cc: WANG Cong <xiyou.wangcong@gmail.com>
->>>> Cc: Yinghai Lu <yinghai@kernel.org>
->>>> Cc: Tejun Heo <tj@kernel.org>
->>>
->>> Acked-by: Cong Wang <xiyou.wangcong@gmail.com>
->>>
->>> Sorry for that I was not aware of x86_64 is different with x86 in the
->>> first 2/4M.
->> 
->> Why would there be a difference?
->> 
->> Shouldn't the IO space at 0xa0000-0x100000 be mapped with uncacheable
->> attributes (or WC for VGA)?  If it's done later, it can be done later
->> for both.
->> 
-> arch/x86/mm/init.c
+Il 25/07/2012 14:13, Wang Sen ha scritto:
+> When using the commands below to write some data to a virtio-scsi LUN of the
+> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
 > 
-> unsigned long __init_refok init_memory_mapping(...
-> ...
-> ifdef CONFIG_X86_32
->         /*
->          * Don't use a large page for the first 2/4MB of memory
->          * because there are often fixed size MTRRs in there
->          * and overlapping MTRRs into large pages can cause
->          * slowdowns.
->          */
+>         # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
+>         # sudo mount /dev/sdb /mnt
+>         # dd if=/dev/zero of=/mnt/file bs=1M count=1024
 > 
+> In current implementation, sg_set_buf is called to add buffers to sg list which
+> is put into the virtqueue eventually. But if there are some HighMem pages in
+> table->sgl you can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
+> return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
+> in QEMU because an invalid GPA is passed by virtqueue.
+> 
+> I take Paolo's solution mentioned in last thread to avoid failure on handling 
+> flag bits.
 
-That's equally true for X86_64.
+Please include an URL or (better) summarize the reason why sg_set_page
+is not correct in the commit message.  For example, replace this
+paragraph with the following:
 
-Best would be to merge the MTRRs into PAT, but that might not work for SMM.
+"To fix this, we can simply copy the original scatterlist entries into
+virtio-scsi's; we need to copy the entries entirely, including the flag
+bits, so using sg_set_page is not correct".
 
+Please send v3 with this change and I'll add my Acked-by.
 
--- 
-error compiling committee.c: too many arguments to function
+Paolo
+
+> 
+> I have tested the patch on my workstation. QEMU would not crash any more.
+> 
+> Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
+> ---
+>  drivers/scsi/virtio_scsi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 1b38431..6661610 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -198,7 +198,7 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+>  	int i;
+>  
+>  	for_each_sg(table->sgl, sg_elem, table->nents, i)
+> -		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
+> +		sg[idx++] = *sg_elem;
+>  
+>  	*p_idx = idx;
+>  }
+> 
 
 
