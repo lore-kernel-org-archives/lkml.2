@@ -1,119 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933030Ab2GYMeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:34:46 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:37257 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932917Ab2GYMeo (ORCPT
+	id S933021Ab2GYMfd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:35:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57666 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932917Ab2GYMfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:34:44 -0400
-Message-ID: <500FE7D2.7070101@panasas.com>
-Date: Wed, 25 Jul 2012 15:34:26 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Wed, 25 Jul 2012 08:35:31 -0400
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
-        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
-        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
- HighMem pages used by sg list
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com>
-In-Reply-To: <500FBF37.50603@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+	<CA+55aFzKu6xhTPmKPTg+p36Su0GkZgzGWpnvhpsFXJzhp=R16w@mail.gmail.com>
+	<CACVXFVMeRQ-Fwk03uVg5LOH193PF+AyCoAAxmXDpqjeZXi7nxw@mail.gmail.com>
+	<CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com>
+Date: Wed, 25 Jul 2012 20:35:28 +0800
+Message-ID: <CACVXFVOiXRiqRsE46_xmOzK_dExNvkBaJVwjiZ9adhwqRRwY+g@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/13] firmware loader: introduce cache/uncache firmware
+From: Ming Lei <ming.lei@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 12:41 PM, Paolo Bonzini wrote:
+CC usb guys and list
 
-> Il 25/07/2012 11:22, Boaz Harrosh ha scritto:
->>>>>>  	for_each_sg(table->sgl, sg_elem, table->nents, i)
->>>>>> -		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
->>>>>> +		sg_set_page(&sg[idx++], sg_page(sg_elem), sg_elem->length,
->>>>>> +			sg_elem->offset);
->>>>
->>>> This can simply be
->>>>
->>>>    sg[idx++] = *sg_elem;
->>>>
->>>> Can you repost it with this change, and also add stable@vger.kernel.org
->>>> to the Cc?  Thanks very much!
->>>>
->>
->> No! Please use sg_set_page()! Look at sg_set_page(), which calls sg_assign_page().
->> It has all these jump over chained arrays. When you'll start using long
->> sg_lists (which you should) then jumping from chain to chain must go through
->> sg_page(sg_elem) && sg_assign_page(), As in the original patch.
-> 
-> Hi Boaz,
-> 
-> actually it seems to me that using sg_set_page is wrong, because it will
-> not copy the end marker from table->sgl to sg[].  If something chained
-> the sg[] scatterlist onto something else, sg_next's test for sg_is_last
-> would go beyond the table->nents-th item and access invalid memory.
-> 
+On Wed, Jul 25, 2012 at 1:53 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I really think the isight thing is a totally different thing entirely.
+>
+> And quite frankly, that's just a BUG in the USB implementation. If the
+> USB ID changes, it shouldn't be considered a "resume" thing at all,
+> but a probe thing, and that should not be done in early resume - it
+> should be done *after* the resume is done.
 
+IMO, usbcore may have found the ID changes during resume(reset_resume),
+and make the device disconnect. The disconnect event will be handled
+in hubd kthread, which is woken up before usermodehelper_enable()(see
+thaw_processes), so request_firmware will return failure during probe()
+inside hubd kthread.
 
-Yes, you did not understand this structure. And Yes I am right, when
-using chained lists you *must* use sg_set_page().
+The cache firmware patch set may not help the situation, because the
+original isight usb device for downloading firmware has been disconnected
+before system suspend, so firmware loader can't cache the firmware for
+the device.
 
-You see the chaining belongs to the allocation not the value of the
-sg-elements. One must not copy the chaining marker to the destination
-array which might have it's own. And one must not crap all over the
-destination chaining markers, set at allocation time.
+The below patch should fix the problem above.
 
-The sizes and mostly the pointers of source and destination are not
-the same.
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index 19db29f..eb8355f 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -185,16 +185,18 @@ void thaw_processes(void)
 
-> Using chained sglists is on my to-do list, I expect that it would make a
-> nice performance improvement.  However, I was a bit confused as to
-> what's the plan there; there is hardly any user, and many arches still
-> do not define ARCH_HAS_SG_CHAIN.  Do you have any pointer to discussions
-> or LWN articles?
-> 
+ 	printk("Restarting tasks ... ");
 
+-	thaw_workqueues();
+-
+ 	read_lock(&tasklist_lock);
+ 	do_each_thread(g, p) {
+-		__thaw_task(p);
++		if (!(p->flags & (PF_KTHREAD | PF_WQ_WORKER)))
++			__thaw_task(p);
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
 
-Only the source code I'm afraid.
+ 	usermodehelper_enable();
 
-In SCSI land most LLDs should support chaining just by virtu of using the
-for_each_sg macro. That all it takes. Your code above does support it.
-(In Wang version).
-
-Though more code need probably be added at sg allocation to actually
-allocate and prepare a chain.
-
-> I would need to add support for the long sglists to virtio; this is not
-> a problem, but in the past Rusty complained that long sg-lists are not
-> well suited to virtio (which would like to add elements not just at the
-> beginning of a given sglist, but also at the end).  
++	/* let kthread see usermodehelper enabled flag */
++	thaw_kernel_threads();
++
+ 	schedule();
+ 	printk("done.\n");
+ }
 
 
-Well that can be done as well, (If done carefully) It should be easy to add
-chained fragments to both the end of a given chain just as at beginning.
-
-It only means that the last element of the appended-to chain moves to
-the next fragment and it's place is replaced by a link.
-
-If you have ready made two long segments A and C which you would like not
-to reallocate and copy, you insert a two-elements segment in the middle, say
-call it B.
-
-The first element of B is the last element of A which is now used as the pointer
-to B, and the 2nd element of B is a pointer to C.
-
-> It seems to me that
-> virtio would prefer to work with a struct scatterlist ** rather than a
-> long sglist.
-> 
-
-
-That's just going backwards, and lazy. As you said if you want to enjoy
-the better performance cake you better break some eggs ;-)
-
-> Paolo
-
-
-Cheers
-Boaz
+Thanks,
+--
+Ming Lei
