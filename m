@@ -1,418 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab2GYL4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:56:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29232 "EHLO mx1.redhat.com"
+	id S1756614Ab2GYMCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:02:36 -0400
+Received: from svenfoo.org ([82.94.215.22]:55564 "EHLO mail.zonque.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756611Ab2GYL4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:56:21 -0400
-Date: Wed, 25 Jul 2012 13:58:18 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
+	id S1756577Ab2GYMCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:02:20 -0400
+From: Daniel Mack <zonque@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org
-Subject: [PATCH 1/1] x86, MSI: Support multiple MSIs in presense of IRQ
- remapping
-Message-ID: <5204a17925886be95694c9625ce1e8dfc6513ff0.1343216955.git.agordeev@redhat.com>
-References: <cover.1343216955.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1343216955.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: eric.piel@tremplin-utc.net, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, Daniel Mack <zonque@gmail.com>
+Subject: [PATCH 1/2] lis3: add generic DT matching code
+Date: Wed, 25 Jul 2012 14:02:13 +0200
+Message-Id: <1343217734-10438-1-git-send-email-zonque@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSI specification has several constraints in comparison with MSI-X,
-most notable of them is the inability to configure MSIs independently.
-As a result, it is impossible to dispatch interrupts from different
-queues to different CPUs. This is largely devalues the support of
-multiple MSIs in SMP systems.
+This patch adds logic to parse lis3 properties from a device tree node
+and store them in a freshly allocated lis3lv02d_platform_data.
 
-Also, a necessity to allocate a contiguous block of vector numbers for
-devices capable of multiple MSIs might cause a considerable pressure on
-x86 interrupt vector allocator and could lead to fragmentation of the
-interrupt vectors space.
+Note that the actual match tables are left out here. This part should
+happen in the drivers that bind to the individual busses (SPI/I2C/PCI).
 
-This patch overcomes both drawbacks in presense of IRQ remapping and
-lets devices take advantage of multiple queues and per-IRQ affinity
-assignments.
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
 ---
- arch/x86/kernel/apic/io_apic.c |  166 +++++++++++++++++++++++++++++++++++++--
- include/linux/irq.h            |    6 ++
- kernel/irq/chip.c              |   30 +++++--
- kernel/irq/irqdesc.c           |   31 ++++++++
- 4 files changed, 216 insertions(+), 17 deletions(-)
+ drivers/misc/lis3lv02d/lis3lv02d.c |  145 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/lis3lv02d/lis3lv02d.h |    4 +
+ 2 files changed, 149 insertions(+)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index a951ef7..f083049 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -305,6 +305,11 @@ static int alloc_irq_from(unsigned int from, int node)
- 	return irq_alloc_desc_from(from, node);
+diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
+index a981e2a..cfa4689 100644
+--- a/drivers/misc/lis3lv02d/lis3lv02d.c
++++ b/drivers/misc/lis3lv02d/lis3lv02d.c
+@@ -39,6 +39,7 @@
+ #include <linux/miscdevice.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/atomic.h>
++#include <linux/of_device.h>
+ #include "lis3lv02d.h"
+ 
+ #define DRIVER_NAME     "lis3lv02d"
+@@ -912,6 +913,146 @@ static void lis3lv02d_8b_configure(struct lis3lv02d *lis3,
+ 	}
  }
  
-+static int alloc_irqs_from(unsigned int from, unsigned int count, int node)
++#ifdef CONFIG_OF
++static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
 +{
-+	return irq_alloc_descs_from(from, count, node);
-+}
++	struct lis3lv02d_platform_data *pdata;
++	struct device_node *np = lis3->of_node;
++	u32 tmp;
 +
- static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
- {
- 	free_irq_cfg(at, cfg);
-@@ -3030,6 +3035,55 @@ int create_irq(void)
- 	return irq;
- }
- 
-+unsigned int create_irqs(unsigned int from, unsigned int count, int node)
-+{
-+	struct irq_cfg **cfg;
-+	unsigned long flags;
-+	int irq, i;
-+
-+	if (from < nr_irqs_gsi)
-+		from = nr_irqs_gsi;
-+
-+	cfg = kzalloc_node(count * sizeof(cfg[0]), GFP_KERNEL, node);
-+	if (!cfg)
++	if (!lis3->of_node)
 +		return 0;
 +
-+	irq = alloc_irqs_from(from, count, node);
-+	if (irq < 0)
-+		goto out_cfgs;
++	pdata = kzalloc(sizeof(*lis3->pdata), GFP_KERNEL);
++	if (!lis3->pdata)
++		return -ENOMEM;
 +
-+	for (i = 0; i < count; i++) {
-+		cfg[i] = alloc_irq_cfg(irq + i, node);
-+		if (!cfg[i])
-+			goto out_irqs;
++	if (of_get_property(np, "st,click-single-x", NULL))
++		pdata->click_flags |= LIS3_CLICK_SINGLE_X;
++	if (of_get_property(np, "st,click-double-x", NULL))
++		pdata->click_flags |= LIS3_CLICK_DOUBLE_X;
++
++	if (of_get_property(np, "st,click-single-y", NULL))
++		pdata->click_flags |= LIS3_CLICK_SINGLE_Y;
++	if (of_get_property(np, "st,click-double-y", NULL))
++		pdata->click_flags |= LIS3_CLICK_DOUBLE_Y;
++
++	if (of_get_property(np, "st,click-single-z", NULL))
++		pdata->click_flags |= LIS3_CLICK_SINGLE_Z;
++	if (of_get_property(np, "st,click-double-z", NULL))
++		pdata->click_flags |= LIS3_CLICK_DOUBLE_Z;
++
++	if (!of_property_read_u32(np, "st,click-threshold-x", &tmp))
++		pdata->click_thresh_x = tmp;
++	if (!of_property_read_u32(np, "st,click-threshold-y", &tmp))
++		pdata->click_thresh_y = tmp;
++	if (!of_property_read_u32(np, "st,click-threshold-z", &tmp))
++		pdata->click_thresh_z = tmp;
++
++	if (!of_property_read_u32(np, "st,click-time-limit", &tmp))
++		pdata->click_time_limit = tmp;
++	if (!of_property_read_u32(np, "st,click-latency", &tmp))
++		pdata->click_latency = tmp;
++	if (!of_property_read_u32(np, "st,click-time-limit", &tmp))
++		pdata->click_time_limit = tmp;
++
++	if (of_get_property(np, "st,irq1-disable", NULL))
++		pdata->irq_cfg |= LIS3_IRQ1_DISABLE;
++	if (of_get_property(np, "st,irq1-ff-wu-1", NULL))
++		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_1;
++	if (of_get_property(np, "st,irq1-ff-wu-2", NULL))
++		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_2;
++	if (of_get_property(np, "st,irq1-ff-wu-2", NULL))
++		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_2;
++	if (of_get_property(np, "st,irq1-data-ready", NULL))
++		pdata->irq_cfg |= LIS3_IRQ1_DATA_READY;
++	if (of_get_property(np, "st,irq1-click", NULL))
++		pdata->irq_cfg |= LIS3_IRQ1_CLICK;
++	if (of_get_property(np, "st,irq1-mask", NULL))
++		pdata->irq_cfg |= LIS3_IRQ1_MASK;
++
++	if (of_get_property(np, "st,irq2-disable", NULL))
++		pdata->irq_cfg |= LIS3_IRQ2_DISABLE;
++	if (of_get_property(np, "st,irq2-ff-wu-1", NULL))
++		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_1;
++	if (of_get_property(np, "st,irq2-ff-wu-2", NULL))
++		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_2;
++	if (of_get_property(np, "st,irq2-ff-wu-2", NULL))
++		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_2;
++	if (of_get_property(np, "st,irq2-data-ready", NULL))
++		pdata->irq_cfg |= LIS3_IRQ2_DATA_READY;
++	if (of_get_property(np, "st,irq2-click", NULL))
++		pdata->irq_cfg |= LIS3_IRQ2_CLICK;
++	if (of_get_property(np, "st,irq2-mask", NULL))
++		pdata->irq_cfg |= LIS3_IRQ2_MASK;
++
++	if (of_get_property(np, "st,irq-open-drain", NULL))
++		pdata->irq_cfg |= LIS3_IRQ_OPEN_DRAIN;
++	if (of_get_property(np, "st,irq-active-low", NULL))
++		pdata->irq_cfg |= LIS3_IRQ_ACTIVE_LOW;
++
++	if (!of_property_read_u32(np, "st,duration-1", &tmp))
++		pdata->duration1 = tmp;
++	if (!of_property_read_u32(np, "st,duration-2", &tmp))
++		pdata->duration2 = tmp;
++
++	if (of_get_property(np, "st,wakeup-x-lo", NULL))
++		pdata->wakeup_flags |= LIS3_WAKEUP_X_LO;
++	if (of_get_property(np, "st,wakeup-x-hi", NULL))
++		pdata->wakeup_flags |= LIS3_WAKEUP_X_HI;
++	if (of_get_property(np, "st,wakeup-y-lo", NULL))
++		pdata->wakeup_flags |= LIS3_WAKEUP_Y_LO;
++	if (of_get_property(np, "st,wakeup-y-hi", NULL))
++		pdata->wakeup_flags |= LIS3_WAKEUP_Y_HI;
++	if (of_get_property(np, "st,wakeup-z-lo", NULL))
++		pdata->wakeup_flags |= LIS3_WAKEUP_Z_LO;
++	if (of_get_property(np, "st,wakeup-z-hi", NULL))
++		pdata->wakeup_flags |= LIS3_WAKEUP_Z_HI;
++
++	if (!of_property_read_u32(np, "st,highpass-cutoff-hz", &tmp)) {
++		switch (tmp) {
++		case 1:
++			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_1HZ;
++			break;
++		case 2:
++			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_2HZ;
++			break;
++		case 4:
++			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_4HZ;
++			break;
++		case 8:
++			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_8HZ;
++			break;
++		}
 +	}
 +
-+	raw_spin_lock_irqsave(&vector_lock, flags);
-+	for (i = 0; i < count; i++)
-+		if (__assign_irq_vector(irq + i, cfg[i], apic->target_cpus()))
-+			goto out_vecs;
-+	raw_spin_unlock_irqrestore(&vector_lock, flags);
++	if (of_get_property(np, "st,hipass1-disable", NULL))
++		pdata->hipass_ctrl |= LIS3_HIPASS1_DISABLE;
++	if (of_get_property(np, "st,hipass2-disable", NULL))
++		pdata->hipass_ctrl |= LIS3_HIPASS2_DISABLE;
 +
-+	for (i = 0; i < count; i++) {
-+		irq_set_chip_data(irq + i, cfg[i]);
-+		irq_clear_status_flags(irq + i, IRQ_NOREQUEST);
-+	}
++	if (of_get_property(np, "st,axis-x", NULL))
++		pdata->axis_x = tmp;
++	if (of_get_property(np, "st,axis-y", NULL))
++		pdata->axis_y = tmp;
++	if (of_get_property(np, "st,axis-z", NULL))
++		pdata->axis_z = tmp;
 +
-+	kfree(cfg);
-+	return irq;
++	if (of_get_property(np, "st,default-rate", NULL))
++		pdata->default_rate = tmp;
 +
-+out_vecs:
-+	for (; i; i--)
-+		__clear_irq_vector(irq + i - 1, cfg[i - 1]);
-+	raw_spin_unlock_irqrestore(&vector_lock, flags);
-+out_irqs:
-+	for (i = 0; i < count; i++)
-+		free_irq_at(irq + i, cfg[i]);
-+out_cfgs:
-+	kfree(cfg);
++	lis3->pdata = pdata;
++
 +	return 0;
 +}
 +
- void destroy_irq(unsigned int irq)
- {
- 	struct irq_cfg *cfg = irq_get_chip_data(irq);
-@@ -3045,6 +3099,27 @@ void destroy_irq(unsigned int irq)
- 	free_irq_at(irq, cfg);
- }
- 
-+static inline void destroy_irqs(unsigned int irq, unsigned int count)
++#else
++static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
 +{
-+	unsigned int i;
-+	for (i = 0; i < count; i++)
-+		destroy_irq(irq + i);
++	return 0;
 +}
-+
-+static inline int
-+can_create_pow_of_two_irqs(unsigned int from, unsigned int count)
-+{
-+	if ((count > 1) && (count % 2))
-+		return -EINVAL;
-+
-+	for (; count; count = count / 2) {
-+		if (!irq_can_alloc_irqs(from, count))
-+			return count;
-+	}
-+
-+	return -ENOSPC;
-+}
++#endif
 +
  /*
-  * MSI message composition
-  */
-@@ -3136,18 +3211,25 @@ static struct irq_chip msi_chip = {
- 	.irq_retrigger		= ioapic_retrigger_irq,
+  * Initialise the accelerometer and the various subsystems.
+  * Should be rather independent of the bus system.
+@@ -922,6 +1063,10 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
+ 	irq_handler_t thread_fn;
+ 	int irq_flags = 0;
+ 
++	err = lis3lv02d_init_dt(lis3);
++	if (err < 0)
++		return err;
++
+ 	lis3->whoami = lis3lv02d_read_8(lis3, WHO_AM_I);
+ 
+ 	switch (lis3->whoami) {
+diff --git a/drivers/misc/lis3lv02d/lis3lv02d.h b/drivers/misc/lis3lv02d/lis3lv02d.h
+index 2b1482a..a296f1d 100644
+--- a/drivers/misc/lis3lv02d/lis3lv02d.h
++++ b/drivers/misc/lis3lv02d/lis3lv02d.h
+@@ -282,6 +282,10 @@ struct lis3lv02d {
+ 
+ 	struct lis3lv02d_platform_data *pdata;	/* for passing board config */
+ 	struct mutex		mutex;     /* Serialize poll and selftest */
++
++#ifdef CONFIG_OF
++	struct device_node	*of_node;
++#endif
  };
  
--static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
-+static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
-+			 unsigned int irq_base, unsigned int irq_offset)
- {
- 	struct irq_chip *chip = &msi_chip;
- 	struct msi_msg msg;
-+	unsigned int irq = irq_base + irq_offset;
- 	int ret;
- 
- 	ret = msi_compose_msg(dev, irq, &msg, -1);
- 	if (ret < 0)
- 		return ret;
- 
--	irq_set_msi_desc(irq, msidesc);
--	write_msi_msg(irq, &msg);
-+	irq_set_msi_desc_off(irq_base, irq_offset, msidesc);
-+
-+	/* MSI-X message is written per-IRQ, the offset is always 0.
-+	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
-+	 */
-+	if (!irq_offset)
-+		write_msi_msg(irq, &msg);
- 
- 	if (irq_remapped(irq_get_chip_data(irq))) {
- 		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
-@@ -3161,16 +3243,12 @@ static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
- 	return 0;
- }
- 
--int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+int setup_msix_irqs(struct pci_dev *dev, int nvec)
- {
- 	int node, ret, sub_handle, index = 0;
- 	unsigned int irq, irq_want;
- 	struct msi_desc *msidesc;
- 
--	/* x86 doesn't support multiple MSI yet */
--	if (type == PCI_CAP_ID_MSI && nvec > 1)
--		return 1;
--
- 	node = dev_to_node(&dev->dev);
- 	irq_want = nr_irqs_gsi;
- 	sub_handle = 0;
-@@ -3199,7 +3277,7 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 				goto error;
- 		}
- no_ir:
--		ret = setup_msi_irq(dev, msidesc, irq);
-+		ret = setup_msi_irq(dev, msidesc, irq, 0);
- 		if (ret < 0)
- 			goto error;
- 		sub_handle++;
-@@ -3211,6 +3289,76 @@ error:
- 	return ret;
- }
- 
-+int setup_msi_irqs(struct pci_dev *dev, int nvec)
-+{
-+	int node, ret, sub_handle, index = 0;
-+	unsigned int irq;
-+	struct msi_desc *msidesc;
-+
-+	if (nvec > 1 && !irq_remapping_enabled)
-+		return 1;
-+
-+	nvec = __roundup_pow_of_two(nvec);
-+	ret = can_create_pow_of_two_irqs(nr_irqs_gsi, nvec);
-+	if (ret != nvec)
-+		return ret;
-+
-+	WARN_ON(!list_is_singular(&dev->msi_list));
-+	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
-+	WARN_ON(msidesc->irq);
-+	WARN_ON(msidesc->msi_attrib.multiple);
-+
-+	node = dev_to_node(&dev->dev);
-+	irq = create_irqs(nr_irqs_gsi, nvec, node);
-+	if (irq == 0)
-+		return -ENOSPC;
-+
-+	if (!irq_remapping_enabled) {
-+		ret = setup_msi_irq(dev, msidesc, irq, 0);
-+		if (ret < 0)
-+			goto error;
-+		return 0;
-+	}
-+
-+	msidesc->msi_attrib.multiple = ilog2(nvec);
-+	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
-+		if (!sub_handle) {
-+			index = msi_alloc_remapped_irq(dev, irq, nvec);
-+			if (index < 0) {
-+				ret = index;
-+				goto error;
-+			}
-+		} else {
-+			ret = msi_setup_remapped_irq(dev, irq + sub_handle,
-+						     index, sub_handle);
-+			if (ret < 0)
-+				goto error;
-+		}
-+		ret = setup_msi_irq(dev, msidesc, irq, sub_handle);
-+		if (ret < 0)
-+			goto error;
-+	}
-+	return 0;
-+
-+error:
-+	destroy_irqs(irq, nvec);
-+
-+	/* Restore altered MSI descriptor fields and prevent just destroyed
-+	 * IRQs from tearing down again in default_teardown_msi_irqs()
-+	 */
-+	msidesc->irq = 0;
-+	msidesc->msi_attrib.multiple = 0;
-+
-+	return ret;
-+}
-+
-+int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+{
-+	if (type == PCI_CAP_ID_MSI)
-+		return setup_msi_irqs(dev, nvec);
-+	return setup_msix_irqs(dev, nvec);
-+}
-+
- void native_teardown_msi_irq(unsigned int irq)
- {
- 	destroy_irq(irq);
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 47a937c..bccddc0 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -523,6 +523,8 @@ extern int irq_set_handler_data(unsigned int irq, void *data);
- extern int irq_set_chip_data(unsigned int irq, void *data);
- extern int irq_set_irq_type(unsigned int irq, unsigned int type);
- extern int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry);
-+extern int irq_set_msi_desc_off(unsigned int irq_base, unsigned int irq_offset,
-+				struct msi_desc *entry);
- extern struct irq_data *irq_get_irq_data(unsigned int irq);
- 
- static inline struct irq_chip *irq_get_chip(unsigned int irq)
-@@ -585,8 +587,12 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- #define irq_alloc_desc_from(from, node)		\
- 	irq_alloc_descs(-1, from, 1, node)
- 
-+#define irq_alloc_descs_from(from, cnt, node)	\
-+	irq_alloc_descs(-1, from, cnt, node)
-+
- void irq_free_descs(unsigned int irq, unsigned int cnt);
- int irq_reserve_irqs(unsigned int from, unsigned int cnt);
-+int irq_can_alloc_irqs(unsigned int from, unsigned int cnt);
- 
- static inline void irq_free_desc(unsigned int irq)
- {
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index eebd6d5..dccbec1 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -90,27 +90,41 @@ int irq_set_handler_data(unsigned int irq, void *data)
- EXPORT_SYMBOL(irq_set_handler_data);
- 
- /**
-- *	irq_set_msi_desc - set MSI descriptor data for an irq
-- *	@irq:	Interrupt number
-- *	@entry:	Pointer to MSI descriptor data
-+ *	irq_set_msi_desc_off - set MSI descriptor data for an irq at offset
-+ *	@irq_base:	Interrupt number base
-+ *	@irq_offset:	Interrupt number offset
-+ *	@entry:		Pointer to MSI descriptor data
-  *
-- *	Set the MSI descriptor entry for an irq
-+ *	Set the MSI descriptor entry for an irq at offset
-  */
--int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry)
-+int irq_set_msi_desc_off(unsigned int irq_base, unsigned int irq_offset,
-+			 struct msi_desc *entry)
- {
- 	unsigned long flags;
--	struct irq_desc *desc = irq_get_desc_lock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
-+	struct irq_desc *desc = irq_get_desc_lock(irq_base + irq_offset, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
- 
- 	if (!desc)
- 		return -EINVAL;
- 	desc->irq_data.msi_desc = entry;
--	if (entry)
--		entry->irq = irq;
-+	if (entry && !irq_offset)
-+		entry->irq = irq_base;
- 	irq_put_desc_unlock(desc, flags);
- 	return 0;
- }
- 
- /**
-+ *	irq_set_msi_desc - set MSI descriptor data for an irq
-+ *	@irq:	Interrupt number
-+ *	@entry:	Pointer to MSI descriptor data
-+ *
-+ *	Set the MSI descriptor entry for an irq
-+ */
-+int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry)
-+{
-+	return irq_set_msi_desc_off(irq, 0, entry);
-+}
-+
-+/**
-  *	irq_set_chip_data - set irq chip data for an irq
-  *	@irq:	Interrupt number
-  *	@data:	Pointer to chip specific data
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 192a302..8287b78 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -210,6 +210,13 @@ static int irq_expand_nr_irqs(unsigned int nr)
- 	return 0;
- }
- 
-+static int irq_can_expand_nr_irqs(unsigned int nr)
-+{
-+	if (nr > IRQ_BITMAP_BITS)
-+		return -ENOMEM;
-+	return 0;
-+}
-+
- int __init early_irq_init(void)
- {
- 	int i, initcnt, node = first_online_node;
-@@ -414,6 +421,30 @@ int irq_reserve_irqs(unsigned int from, unsigned int cnt)
- }
- 
- /**
-+ * irq_can_alloc_irqs - checks if a range of irqs could be allocated
-+ * @from:	check from irq number
-+ * @cnt:	number of irqs to check
-+ *
-+ * Returns 0 on success or an appropriate error code
-+ */
-+int irq_can_alloc_irqs(unsigned int from, unsigned int cnt)
-+{
-+	unsigned int start;
-+	int ret = 0;
-+
-+	if (!cnt)
-+		return -EINVAL;
-+
-+	mutex_lock(&sparse_irq_lock);
-+	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
-+					   from, cnt, 0);
-+	mutex_unlock(&sparse_irq_lock);
-+	if (start + cnt > nr_irqs)
-+		ret = irq_can_expand_nr_irqs(start + cnt);
-+	return ret;
-+}
-+
-+/**
-  * irq_get_next_irq - get next allocated irq number
-  * @offset:	where to start the search
-  *
+ int lis3lv02d_init_device(struct lis3lv02d *lis3);
 -- 
-1.7.7.6
+1.7.10.4
 
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
