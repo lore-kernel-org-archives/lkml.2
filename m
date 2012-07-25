@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168Ab2GYOVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:21:18 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:32792 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933123Ab2GYOVQ (ORCPT
+	id S933165Ab2GYOXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:23:55 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:54962 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932993Ab2GYOXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:21:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120716103948.456416747@linutronix.de>
-References: <20120716103749.122800930@linutronix.de>
-	<20120716103948.456416747@linutronix.de>
-Date: Wed, 25 Jul 2012 23:21:15 +0900
-Message-ID: <CAAmzW4OhKu=Xwt1S1ABs-fZvLRq=DauXPXjWZqCJb1n1Q7dWXA@mail.gmail.com>
-Subject: Re: [Patch 4/7] softirq: Use hotplug thread infrastructure
-From: JoonSoo Kim <js1304@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Jul 2012 10:23:53 -0400
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: Ted Tso <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        lczerner@redhat.com, a.sangwan@samsung.com, namjae.jeon@samsung.com,
+        Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH RESEND] Ext4: No need to add inode to orphan list during hole punch
+Date: Wed, 25 Jul 2012 19:53:34 +0530
+Message-Id: <1343226214-2068-1-git-send-email-ashish.sangwan2@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/16 Thomas Gleixner <tglx@linutronix.de>:
-> -               static const struct sched_param param = {
-> -                       .sched_priority = MAX_RT_PRIO-1
-> -               };
-> -
-> -               p = per_cpu(ksoftirqd, hotcpu);
-> -               per_cpu(ksoftirqd, hotcpu) = NULL;
-> -               sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
-> -               kthread_stop(p);
-> +               int hotcpu = (unsigned long)hcpu;
-> +
->                 takeover_tasklets(hotcpu);
->                 break;
+While performing punch hole for an inode, i_disksize is not changed.
+So, there is no need to add the inode to orphan list.
 
-Currently, "int hotcpu = (unsigned long)hcpu;" is somewhat strange.
-"takeover_tasklets((unsigned long)hcpu)" is sufficient for me.
+Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ fs/ext4/extents.c |    4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 91341ec..3e902f9 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4801,9 +4801,6 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
+ 	if (IS_ERR(handle))
+ 		return PTR_ERR(handle);
+ 
+-	err = ext4_orphan_add(handle, inode);
+-	if (err)
+-		goto out;
+ 
+ 	/*
+ 	 * Now we need to zero out the non-page-aligned data in the
+@@ -4889,7 +4886,6 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
+ 	up_write(&EXT4_I(inode)->i_data_sem);
+ 
+ out:
+-	ext4_orphan_del(handle, inode);
+ 	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
+ 	ext4_mark_inode_dirty(handle, inode);
+ 	ext4_journal_stop(handle);
+-- 
+1.7.10.4
+
