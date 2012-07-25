@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078Ab2GYDpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 23:45:53 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:33308 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933033Ab2GYDna (ORCPT
+	id S933125Ab2GYDqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 23:46:18 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42750 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932928Ab2GYDp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 23:43:30 -0400
-From: Len Brown <lenb@kernel.org>
-To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
-        Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 46/52] ACPICA: Update to version 20120711
-Date: Tue, 24 Jul 2012 23:41:42 -0400
-Message-Id: <819f1a64beb6c962218bd348a6f19aff718cde6c.1343187618.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.12.rc0
-In-Reply-To: <1343187708-19532-1-git-send-email-lenb@kernel.org>
-References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
-In-Reply-To: <6af1c4fc5227af65092ebc848989693562bfa3e8.1343187617.git.len.brown@intel.com>
-References: <6af1c4fc5227af65092ebc848989693562bfa3e8.1343187617.git.len.brown@intel.com>
-Reply-To: Len Brown <lenb@kernel.org>
-Organization: Intel Open Source Technology Center
+	Tue, 24 Jul 2012 23:45:59 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <500F6BE3.8060508@jp.fujitsu.com>
+Date: Wed, 25 Jul 2012 12:45:39 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <lenb@kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <bhelgaas@google.com>,
+        <liuj97@gmail.com>, <srivatsa.bhat@linux.vnet.ibm.com>,
+        <prarit@redhat.com>, <imammedo@redhat.com>,
+        <vijaymohan.pandarathil@hp.com>
+Subject: Re: [PATCH 0/4] ACPI: hotplug messages improvement
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Moore <robert.moore@intel.com>
+Hi Toshi,
 
-Version 20120711.
+2012/07/19 5:40, Toshi Kani wrote:
+> This patchset improves logging messages for ACPI CPU, Memory, and
+> Container hotplug notify handlers.  The patchset introduces a set of
+> new macro interfaces, acpi_pr_<level>(), and updates the notify
+> handlers to use them.  acpi_pr_<level>() appends "ACPI" prefix and
+> ACPI object path to the messages.  This improves diagnostics in
+> hotplug operations since it identifies an object that caused an
+> issue in a log file.
+>
 
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- include/acpi/acpixf.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The log message looks good to me.
+But I could not understand when to use it instead of pr_{warn, info, ...}
+or ACPI_{WARNING, INFO, ...}. Do you have the policy?
 
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 9877432..2c744c7 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -47,7 +47,7 @@
- 
- /* Current ACPICA subsystem version in YYYYMMDD format */
- 
--#define ACPI_CA_VERSION                 0x20120620
-+#define ACPI_CA_VERSION                 0x20120711
- 
- #include "acconfig.h"
- #include "actypes.h"
--- 
-1.7.12.rc0
+> ---
+> This patchset applies on top of the patch below.
+> 
+> [PATCH] ACPI: Add ACPI CPU hot-remove support
+> http://marc.info/?l=linux-acpi&m=134098193327362&w=2
+> 
+> ---
+> Toshi Kani (4):
+>   ACPI: Add acpi_pr_<level>() interfaces
+>   ACPI: Update CPU hotplug messages
+>   ACPI: Update Memory hotplug messages
+>   ACPI: Update Container hotplug messages
+
+I think you need update other component, which are driver/acpi/{acpi_pad.c,
+battery.c, button.c}. Do you have the plan to update them?
+
+Thanks,
+Yasuaki Ishimatsu
+
+> ---
+>   drivers/acpi/acpi_memhotplug.c  |   24 ++++++++++++------------
+>   drivers/acpi/container.c        |    6 +++---
+>   drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
+>   drivers/acpi/utils.c            |   32 ++++++++++++++++++++++++++++++++
+>   include/acpi/acpi_bus.h         |   18 ++++++++++++++++++
+>   5 files changed, 86 insertions(+), 30 deletions(-)
+> 
+
 
