@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab2GYJqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 05:46:24 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:25608 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab2GYJqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 05:46:22 -0400
-Message-ID: <500FC011.5050807@huawei.com>
-Date: Wed, 25 Jul 2012 17:44:49 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1753142Ab2GYJvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 05:51:21 -0400
+Received: from mta04.xtra.co.nz ([210.54.141.251]:48638 "EHLO mta01.xtra.co.nz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751325Ab2GYJvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 05:51:20 -0400
+X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 05:51:20 EDT
+From: "Sentient" <sentient@digitalfantasy.co.nz>
+To: <vt8500-wm8505-linux-kernel@googlegroups.com>,
+        "Tony Prisk" <linux@prisktech.co.nz>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Alexey Charkov'" <alchark@gmail.com>
+References: <1342969400-21123-1-git-send-email-linux@prisktech.co.nz> <CAJOA=zNNE18DWwSgfh0H0zGgqpFhPeZrZ8zc0i_cxPBUc2VuoQ@mail.gmail.com>
+In-Reply-To: <CAJOA=zNNE18DWwSgfh0H0zGgqpFhPeZrZ8zc0i_cxPBUc2VuoQ@mail.gmail.com>
+Subject: RE: [PATCH] ARM: vt8500: clk: Add clock support for arch-vt8500
+Date: Wed, 25 Jul 2012 21:40:09 +1200
+Message-ID: <000001cd6a49$7bb8d500$732a7f00$@digitalfantasy.co.nz>
 MIME-Version: 1.0
-To: "Kaneshige, Kenji" <kaneshige.kenji@jp.fujitsu.com>
-CC: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Izumi, Taku" <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 07/32] PCI/portdrv: use PCIe capabilities access
- functions to simplify implementation
-References: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com> <1343147504-25891-8-git-send-email-jiang.liu@huawei.com> <4A338DB2991D2A44B9A44B8718AECF650A4586BC@G01JPEXMBYT03>
-In-Reply-To: <4A338DB2991D2A44B9A44B8718AECF650A4586BC@G01JPEXMBYT03>
-Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQKFSaZBTWIsB1THzIXIiufLq5p6nwFateaHlb8pzuA=
+Content-Language: en-nz
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/drivers/pci/pcie/portdrv_core.c
->> b/drivers/pci/pcie/portdrv_core.c
->> index bf320a9..37bff83 100644
->> --- a/drivers/pci/pcie/portdrv_core.c
->> +++ b/drivers/pci/pcie/portdrv_core.c
->> @@ -76,7 +76,6 @@ static int pcie_port_enable_msix(struct pci_dev *dev,
->> int *vectors, int mask)
->>  	struct msix_entry *msix_entries;
->>  	int idx[PCIE_PORT_DEVICE_MAXSERVICES];
->>  	int nr_entries, status, pos, i, nvec;
->> -	u16 reg16;
->>  	u32 reg32;
->>
->>  	nr_entries = pci_msix_table_size(dev);
->> @@ -120,9 +119,7 @@ static int pcie_port_enable_msix(struct pci_dev *dev,
->> int *vectors, int mask)
->>  		 * the value in this field indicates which MSI-X Table entry
->> is
->>  		 * used to generate the interrupt message."
->>  		 */
->> -		pos = pci_pcie_cap(dev);
->> -		pci_read_config_word(dev, pos + PCI_EXP_FLAGS, &reg16);
->> -		entry = (reg16 & PCI_EXP_FLAGS_IRQ) >> 9;
->> +		entry = (dev->pcie_flags_reg & PCI_EXP_FLAGS_IRQ) >> 9;
->>  		if (entry >= nr_entries)
->>  			goto Error;
+Thanks Mike,
+
+I might actually have a new patch up by then as the device tree support is coming along nicely.
+
+Regards,
+Tony
+
+> -----Original Message-----
+> From: vt8500-wm8505-linux-kernel@googlegroups.com [mailto:vt8500-wm8505-linux-kernel@googlegroups.com] On Behalf Of
+> Turquette, Mike
+> Sent: Wednesday, 25 July 2012 9:08 a.m.
+> To: Tony Prisk
+> Cc: VT8500 mailing list; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Russell King; Arnd Bergmann; Alexey
+> Charkov
+> Subject: Re: [PATCH] ARM: vt8500: clk: Add clock support for arch-vt8500
 > 
-> I think we need to use pci_read_config_word() for MSI setup.
+> On Sun, Jul 22, 2012 at 8:03 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
+> > This patch adds common clock framework support for arch-vt8500.
+> > WM8650 support is included in preparation for devicetree support.
+> > Each SoC has a seperate initialization function due to no
+> > devicetree support to identify SoCs at the moment. Once devicetree
+> > is implemented, VT8500 and WM8505 should be combined. WM8650 uses
+> > different functions for clocks.
+> >
+> > Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 > 
-> "Interrupt Message Number" in the PCIe capability register can vary depending
-> on whether MSI or MSI-x is enabled. Please see PCIe spec for details.
+> Hi Tony,
 > 
-> Could you double-check that?
+> I'll give this a more thorough review once the -rc1 window is over.
 > 
 > Regards,
-> Kenji Kaneshige
-Good catch, will revert this change.
-Thanks!
-Gerry
+> Mike
 
