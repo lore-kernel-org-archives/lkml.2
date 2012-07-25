@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab2GYEvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 00:51:00 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:39725 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab2GYEu7 (ORCPT
+	id S1751418Ab2GYFJe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 01:09:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56401 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab2GYFJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 00:50:59 -0400
+	Wed, 25 Jul 2012 01:09:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <1343141382-31087-1-git-send-email-benchan@chromium.org>
-References: <1343141382-31087-1-git-send-email-benchan@chromium.org>
-Date: Wed, 25 Jul 2012 10:35:58 +0545
-Message-ID: <CAHdPZaOTvF=e3j8ypzK8_V5Uh_8Nk1U74uVe4tcXs+cdQvimjg@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: gdm72xx: fix reference counting in gdm_wimax_event_init
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Ben Chan <benchan@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
+In-Reply-To: <1343025161.2957.22.camel@pasglop>
+References: <alpine.LSU.2.00.1207211911160.1585@eggly.anvils>
+ <1343011543.2957.2.camel@pasglop> <1343025161.2957.22.camel@pasglop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 24 Jul 2012 23:09:11 -0600
+X-Google-Sender-Auth: O1O8eXSWFRlaOQkHtQ_Cu3Nst6M
+Message-ID: <CACxGe6vKUsUJnyef+DWfmQtpzGk8c6-Hta54VjCUWzss3Ej2gw@mail.gmail.com>
+Subject: Re: More irqdomain problems (Was: next/mmotm unbootable on G5: irqdomain)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Hugh Dickins <hughd@google.com>, Paul Mundt <lethal@linux-sh.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 8:34 PM, Ben Chan <benchan@chromium.org> wrote:
-> This patch fixes the commit "staging/gdm72xx: cleanup little at
-> gdm_wimax_event_rcv" (8df858ea76b76dde9a39d4edd9aaded983582cfe),
-> which mishandles the reference counting of wm_event.
+On Mon, Jul 23, 2012 at 12:32 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> Allright, another one Grant:
 >
-> Signed-off-by: Ben Chan <benchan@chromium.org>
-> ---
-> Fixed the commit message as suggested by Dan Carpenter.
+> unsigned int irq_find_mapping(struct irq_domain *domain,
+>                               irq_hw_number_t hwirq)
+> {
+>         struct irq_data *data;
 >
->  drivers/staging/gdm72xx/gdm_wimax.c |   16 ++++++++++------
->  1 files changed, 10 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-> index 0716efc..6cb8107 100644
-> --- a/drivers/staging/gdm72xx/gdm_wimax.c
-> +++ b/drivers/staging/gdm72xx/gdm_wimax.c
-> @@ -258,12 +258,16 @@ static int gdm_wimax_event_init(void)
->         if (!wm_event.ref_cnt) {
->                 wm_event.sock = netlink_init(NETLINK_WIMAX,
->                                                 gdm_wimax_event_rcv);
-> -               if (wm_event.sock)
-> -                       wm_event.ref_cnt++;
-> -               INIT_LIST_HEAD(&wm_event.evtq);
-> -               INIT_LIST_HEAD(&wm_event.freeq);
-> -               INIT_WORK(&wm_event.ws, __gdm_wimax_event_send);
-> -               spin_lock_init(&wm_event.evt_lock);
-> +               if (wm_event.sock) {
-> +                       INIT_LIST_HEAD(&wm_event.evtq);
-> +                       INIT_LIST_HEAD(&wm_event.freeq);
-> +                       INIT_WORK(&wm_event.ws, __gdm_wimax_event_send);
-> +                       spin_lock_init(&wm_event.evt_lock);
-> +               }
-> +       }
-> +
-> +       if (wm_event.sock) {
-> +               wm_event.ref_cnt++;
+>         /* Look for default domain if nececssary */
+>         if (domain == NULL)
+>                 domain = irq_default_domain;
+>         if (domain == NULL)
 >                 return 0;
->         }
 >
-> --
-> 1.7.7.3
+>         switch (domain->revmap_type) {
+>         case IRQ_DOMAIN_MAP_LEGACY:
+>                 return irq_domain_legacy_revmap(domain, hwirq);
+>         case IRQ_DOMAIN_MAP_LINEAR:
+>                 return irq_linear_revmap(domain, hwirq);
+>         case IRQ_DOMAIN_MAP_TREE:
+>                 rcu_read_lock();
+>                 data = radix_tree_lookup(&domain->revmap_data.tree, hwirq);
+>                 rcu_read_unlock();
+>                 if (data)
+>                         return data->irq;
+> -               break;
+> +               return 0;
+>         case IRQ_DOMAIN_MAP_NOMAP:
 >
+> Please, stick a proper commit message and my s-o-b and see if you can fix
+> your tree before you ask Linus to pull because that's not pretty on any
+> pseries .... irq_find_mapping() does get called for all interrupt the
+> first time it's mapped to check if there's a pre-existing mapping, so
+> the case of the thing being unpopulated is absolutely legit.
+>
+> the NOMAP case has a similar dubious exit case but since I'm not that
+> familiar with NOMAP I haven't touched it.
 
-Hi Ben,
+I've decided to rework the patch to simply omit the WARN statement. It
+isn't really needed. I've merged in Linus' tree below the eliminate
+slow-path patch and remove the WARN statement. It's been pushed out to
+my irqdomain/next branch, so it should show up in tomorrow's
+linux-next.
 
-I have some basic understanding about this flow of the function,
+You can find it here if you want to give it a spin:
 
-Here is my understanding of the thing i have done when i was doing
-some cleanups to this driver.
+git://git.secretlab.ca/git/linux-2.6 irqdomain/next
 
-The ref_cnt will be 0 at first time. if so the sock creation happens
-only once, and register_wimax_device only calls this function.
-so i think doing the ref_cnt++ inside the if (!wm_event.ref_cnt) is valid.
+I'll give it a bit more time in linux-next before I ask Linus to pull.
 
-Please suggest me if i am wrong.
-
-Thanks,
+g.
