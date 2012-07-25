@@ -1,110 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab2GYTOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:14:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26687 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab2GYTOA convert rfc822-to-8bit (ORCPT
+	id S1751824Ab2GYTRY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:17:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58210 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab2GYTRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:14:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="186119138"
-From: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
-To: Jesper Juhl <jj@chaosbits.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "Pieper, Jeffrey E" <jeffrey.e.pieper@intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        Rick Jones <rick.jones2@hp.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: RE: [PATCH] igb: correct hardware type (i210/i211) check in
- igb_loopback_test()
-Thread-Topic: [PATCH] igb: correct hardware type (i210/i211) check in
- igb_loopback_test()
-Thread-Index: AQHNapiSF3r1AxmBl0euFYGkObEHDpc6XbYg
-Date: Wed, 25 Jul 2012 19:13:36 +0000
-Message-ID: <9BBC4E0CF881AA4299206E2E1412B62630D64753@ORSMSX102.amr.corp.intel.com>
-References: <alpine.LNX.2.00.1207252059320.11754@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1207252059320.11754@swampdragon.chaosbits.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 25 Jul 2012 15:17:22 -0400
+Date: Wed, 25 Jul 2012 12:16:32 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-f51304d3fe4fee475991ee424a4b7f85eec65a7b@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de, namhyung@kernel.org,
+        jolsa@redhat.com
+In-Reply-To: <1342826756-64663-2-git-send-email-dsahern@gmail.com>
+References: <1342826756-64663-2-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf symbols:
+  Add machine id to modules debug message
+Git-Commit-ID: f51304d3fe4fee475991ee424a4b7f85eec65a7b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:16:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  f51304d3fe4fee475991ee424a4b7f85eec65a7b
+Gitweb:     http://git.kernel.org/tip/f51304d3fe4fee475991ee424a4b7f85eec65a7b
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Fri, 20 Jul 2012 17:25:46 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 23 Jul 2012 15:03:48 -0300
 
+perf symbols: Add machine id to modules debug message
 
------Original Message-----
-From: Jesper Juhl [mailto:jj@chaosbits.net] 
-Sent: Wednesday, July 25, 2012 12:06 PM
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org; e1000-devel@lists.sourceforge.net; Wyborny, Carolyn; Pieper, Jeffrey E; Kirsher, Jeffrey T; Rick Jones; Ronciak, John; Brandeburg, Jesse; Allan, Bruce W; Skidmore, Donald C; Rose, Gregory V; Waskiewicz Jr, Peter P; Duyck, Alexander H; David S. Miller
-Subject: [PATCH] igb: correct hardware type (i210/i211) check in igb_loopback_test()
+Current debug message is:
+Problems creating module maps, continuing anyway...
 
-In the original code
-...
- 	if ((adapter->hw.mac.type == e1000_i210)
-		|| (adapter->hw.mac.type == e1000_i210)) { ...
-the second check of 'adapter->hw.mac.type' is pointless since it tests for the exact same value as the first.
+When running multiple VMs it would be nice to know which machine the
+message is referring to:
 
-After reading through a few other parts of the driver I believe that the second check was actually intended to check for 'e1000_i211'
-rather than 'e1000_i210', but I admit that I'm not certain so someone with more knowledge about this driver should ACK the patch before it gets merged.
+$ perf kvm --guest --guestmount=/tmp/guest-mount record -av -- sleep 10
+Problems creating module maps for guest 6613, continuing anyway...
 
-Unfortunately I have no hardware to actually test this on, so it is compile tested only.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1342826756-64663-2-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/net/ethernet/intel/igb/igb_ethtool.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/symbol.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-index a19c84c..ad489b7 100644
---- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
-+++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-@@ -1783,7 +1783,7 @@ static int igb_loopback_test(struct igb_adapter *adapter, u64 *data)
- 		goto out;
- 	}
- 	if ((adapter->hw.mac.type == e1000_i210)
--		|| (adapter->hw.mac.type == e1000_i210)) {
-+		|| (adapter->hw.mac.type == e1000_i211)) {
- 		dev_err(&adapter->pdev->dev,
- 			"Loopback test not supported "
- 			"on this part at this time.\n");
---
-1.7.11.3
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
-ACK.
-
-Good catch.  Thanks Jesper!
-
-Carolyn
-
-Carolyn Wyborny
-Linux Development
-LAN Access Division
-Intel Corporation
-
-
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 50958bb..66c132e 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -2564,8 +2564,15 @@ int machine__create_kernel_maps(struct machine *machine)
+ 	    __machine__create_kernel_maps(machine, kernel) < 0)
+ 		return -1;
+ 
+-	if (symbol_conf.use_modules && machine__create_modules(machine) < 0)
+-		pr_debug("Problems creating module maps, continuing anyway...\n");
++	if (symbol_conf.use_modules && machine__create_modules(machine) < 0) {
++		if (machine__is_host(machine))
++			pr_debug("Problems creating module maps, "
++				 "continuing anyway...\n");
++		else
++			pr_debug("Problems creating module maps for guest %d, "
++				 "continuing anyway...\n", machine->pid);
++	}
++
+ 	/*
+ 	 * Now that we have all the maps created, just set the ->end of them:
+ 	 */
