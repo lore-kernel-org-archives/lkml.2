@@ -1,66 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab2GYPdT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:33:19 -0400
-Received: from mail.ch.keymile.com ([193.17.201.103]:32234 "HELO
-	mail.ch.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751860Ab2GYPdR (ORCPT
+	id S932741Ab2GYPdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:33:25 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:34623 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab2GYPdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:33:17 -0400
-X-Greylist: delayed 719 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 11:33:16 EDT
-Message-ID: <50100EDC.3010109@keymile.com>
-Date: Wed, 25 Jul 2012 17:21:00 +0200
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120717 Thunderbird/10.0.6
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DavidWoodhouse <dwmw2@infradead.org>
-Subject: Re: linux-next: manual merge of the l2-mtd tree with the mtd tree
-References: <20120717110025.35e6d8404104e77019bef6ce@canb.auug.org.au>
-In-Reply-To: <20120717110025.35e6d8404104e77019bef6ce@canb.auug.org.au>
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Jul 2012 15:21:00.0401 (UTC) FILETIME=[18D80610:01CD6A79]
-X-ESAFE-STATUS: [srvchber1306.keymile.net] Mail allowed
+	Wed, 25 Jul 2012 11:33:23 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: linux-mmc@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>, Will Newton <will.newton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org,
+        Grant Grundler <grundler@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, shashidharh@vayavyalabs.com,
+        ki0351.kim@samsung.com, Doug Anderson <dianders@chromium.org>
+Subject: [PATCH v4] mmc: dw_mmc: Disable low power mode if SDIO interrupts are used
+Date: Wed, 25 Jul 2012 08:33:17 -0700
+Message-Id: <1343230397-10500-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <CAD=FV=V0Z=f+DNZKnaX9cJqS3MTmPdF8G3wmbYJYW34bUZqoXg@mail.gmail.com>
+References: <CAD=FV=V0Z=f+DNZKnaX9cJqS3MTmPdF8G3wmbYJYW34bUZqoXg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks, Stepehen,
+The documentation for the dw_mmc part says that the low power
+mode should normally only be set for MMC and SD memory and should
+be turned off for SDIO cards that need interrupts detected.
 
-On 07/17/2012 03:00 AM, Stephen Rothwell wrote:
-> Hi Artem,
->
-> Today's linux-next merge of the l2-mtd tree got a conflict in
-> drivers/mtd/chips/cfi_cmdset_0002.c between commit 420962884379 ("mtd:
-> cfi_cmdset_0002: Micron M29EW bugfixes as per TN-13-07") from the mtd
-> tree and commit 39c0c188e160 ("mtd: cfi_cmdset_0002: Micron M29EW
-> bugfixes as per TN-13-07") from the l2-mtd tree.
->
-> I just used the version in the mtd tree.
+The best place I could find to do this is when the SDIO interrupt
+was first enabled.  I rely on the fact that dw_mci_setup_bus()
+will be called when it's time to reenable.
 
-I have no clue how the whole linux integration process works, so please 
-forgive me if what I'm about to say will sound silly to all of you...
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v4:
+- Don't regenerate slot variable when we already had it.
 
-I'm just reading the above mail (a few days later than the original 
-post) and I can't figure out what happened.
-At first I could not find commit 39c0c188e160 out of the master branch 
-in l2-mtd (http://git.infradead.org/users/dedekind/l2-mtd.git), then I 
-tried again with the commit ID and found it, but now I can't figure out 
-what branch it belongs to (looks like an orphaned branch).
-Except that it differs from the "good" commit 420962884379 in that it 
-has been commited by Artem (as opposed to David), and *not* 
-signed-off-by David.
+Changes in v3:
+- Commenting fixes requested by Seungwoon Jeon and Jaehoon Chung.
+- Only pass 'slot' to the low power disable function since whole mmc
+  structure wasn't needed.
 
-So could someone please spend a few words on what happened in the meantime?
-To me it looks like the l2-mtd tree got rebased at some point, but I'm 
-quite at loss about this whole back-and-forth between trees.
-I'm sure a few words could make my life much easier... :-)
+Changes in v2:
+- Commenting fixes requested by Grant Grundler.
+- Be extra certain that we don't re-turn on the low power mode in
+  CLKENA in dw_mci_setup_bus() if SDIO interrupts are enabled.
+  There are no known instances of this happening but it's good to be safe.
 
-Thanks a lot!
-Gerlando
+ drivers/mmc/host/dw_mmc.c |   41 ++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 38 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 72dc3cd..882748b 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -627,6 +627,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot)
+ {
+ 	struct dw_mci *host = slot->host;
+ 	u32 div;
++	u32 clk_en_a;
+ 
+ 	if (slot->clock != host->current_speed) {
+ 		div = host->bus_hz / slot->clock;
+@@ -659,9 +660,11 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot)
+ 		mci_send_cmd(slot,
+ 			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+ 
+-		/* enable clock */
+-		mci_writel(host, CLKENA, ((SDMMC_CLKEN_ENABLE |
+-			   SDMMC_CLKEN_LOW_PWR) << slot->id));
++		/* enable clock; only low power if no SDIO */
++		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
++		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
++			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
++		mci_writel(host, CLKENA, clk_en_a);
+ 
+ 		/* inform CIU */
+ 		mci_send_cmd(slot,
+@@ -862,6 +865,30 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
+ 	return present;
+ }
+ 
++/*
++ * Disable lower power mode.
++ *
++ * Low power mode will stop the card clock when idle.  According to the
++ * description of the CLKENA register we should disable low power mode
++ * for SDIO cards if we need SDIO interrupts to work.
++ *
++ * This function is fast if low power mode is already disabled.
++ */
++static void dw_mci_disable_low_power(struct dw_mci_slot *slot)
++{
++	struct dw_mci *host = slot->host;
++	u32 clk_en_a;
++	const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
++
++	clk_en_a = mci_readl(host, CLKENA);
++
++	if (clk_en_a & clken_low_pwr) {
++		mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
++		mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
++			     SDMMC_CMD_PRV_DAT_WAIT, 0);
++	}
++}
++
+ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+ {
+ 	struct dw_mci_slot *slot = mmc_priv(mmc);
+@@ -871,6 +898,14 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+ 	/* Enable/disable Slot Specific SDIO interrupt */
+ 	int_mask = mci_readl(host, INTMASK);
+ 	if (enb) {
++		/*
++		 * Turn off low power mode if it was enabled.  This is a bit of
++		 * a heavy operation and we disable / enable IRQs a lot, so
++		 * we'll leave low power mode disabled and it will get
++		 * re-enabled again in dw_mci_setup_bus().
++		 */
++		dw_mci_disable_low_power(slot);
++
+ 		mci_writel(host, INTMASK,
+ 			   (int_mask | SDMMC_INT_SDIO(slot->id)));
+ 	} else {
+-- 
+1.7.7.3
+
