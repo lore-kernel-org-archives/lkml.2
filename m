@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab2GYRm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:42:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45524 "EHLO
+	id S1751314Ab2GYRn2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:43:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45531 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab2GYRmZ (ORCPT
+	with ESMTP id S1751868Ab2GYRm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:42:25 -0400
+	Wed, 25 Jul 2012 13:42:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
@@ -23,9 +23,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/19] perf symbols: Factor DSO symtab types to generic binary types
-Date: Wed, 25 Jul 2012 14:41:25 -0300
-Message-Id: <1343238094-12481-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 13/19] perf test: Add dso data caching tests
+Date: Wed, 25 Jul 2012 14:41:28 -0300
+Message-Id: <1343238094-12481-14-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1343238094-12481-1-git-send-email-acme@infradead.org>
 References: <1343238094-12481-1-git-send-email-acme@infradead.org>
@@ -38,16 +38,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Adding interface to access DSOs so it could be used
-from another place.
-
-New DSO binary type is added - making current SYMTAB__*
-types more general:
-   DSO_BINARY_TYPE__* = SYMTAB__*
-
-Following function is added to return path based on the specified
-binary type:
-   dso__binary_type_file
+Adding automated test for DSO data reading. Testing raw/cached reads
+from different file/cache locations.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arun Sharma <asharma@fb.com>
@@ -64,397 +56,211 @@ Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1342959280-5361-10-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1342959280-5361-18-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c   |    2 +-
- tools/perf/util/annotate.c |    2 +-
- tools/perf/util/symbol.c   |  209 ++++++++++++++++++++++++++------------------
- tools/perf/util/symbol.h   |   34 ++++----
- 4 files changed, 145 insertions(+), 102 deletions(-)
+ tools/perf/Makefile             |    1 +
+ tools/perf/builtin-test.c       |    4 +
+ tools/perf/util/dso-test-data.c |  153 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h        |    1 +
+ 4 files changed, 159 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/util/dso-test-data.c
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e3cab5f..35e86c6 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -125,7 +125,7 @@ static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
- 	/*
- 	 * We can't annotate with just /proc/kallsyms
- 	 */
--	if (map->dso->symtab_type == SYMTAB__KALLSYMS) {
-+	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
- 		pr_err("Can't annotate %s: No vmlinux file was found in the "
- 		       "path\n", sym->name);
- 		sleep(1);
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 8069dfb..7d3641f 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -777,7 +777,7 @@ fallback:
- 		free_filename = false;
- 	}
- 
--	if (dso->symtab_type == SYMTAB__KALLSYMS) {
-+	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
- 		char bf[BUILD_ID_SIZE * 2 + 16] = " with build id ";
- 		char *build_id_msg = NULL;
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 66c132e..60677a6 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -48,6 +48,23 @@ struct symbol_conf symbol_conf = {
- 	.symfs            = "",
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 75d74e5..e8f0579 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -354,6 +354,7 @@ LIB_OBJS += $(OUTPUT)util/usage.o
+ LIB_OBJS += $(OUTPUT)util/wrapper.o
+ LIB_OBJS += $(OUTPUT)util/sigchain.o
+ LIB_OBJS += $(OUTPUT)util/symbol.o
++LIB_OBJS += $(OUTPUT)util/dso-test-data.o
+ LIB_OBJS += $(OUTPUT)util/color.o
+ LIB_OBJS += $(OUTPUT)util/pager.o
+ LIB_OBJS += $(OUTPUT)util/header.o
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 5ce3030..d909eb7 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1142,6 +1142,10 @@ static struct test {
+ 		.func = test__perf_pmu,
+ 	},
+ 	{
++		.desc = "Test dso data interface",
++		.func = dso__test_data,
++	},
++	{
+ 		.func = NULL,
+ 	},
  };
- 
-+static enum dso_binary_type binary_type_symtab[] = {
-+	DSO_BINARY_TYPE__KALLSYMS,
-+	DSO_BINARY_TYPE__GUEST_KALLSYMS,
-+	DSO_BINARY_TYPE__JAVA_JIT,
-+	DSO_BINARY_TYPE__DEBUGLINK,
-+	DSO_BINARY_TYPE__BUILD_ID_CACHE,
-+	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
-+	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
-+	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
-+	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__NOT_FOUND,
-+};
+diff --git a/tools/perf/util/dso-test-data.c b/tools/perf/util/dso-test-data.c
+new file mode 100644
+index 0000000..541cdc7
+--- /dev/null
++++ b/tools/perf/util/dso-test-data.c
+@@ -0,0 +1,153 @@
++#include "util.h"
 +
-+#define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
++#include <stdlib.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <string.h>
 +
- int dso__name_len(const struct dso *dso)
- {
- 	if (!dso)
-@@ -318,7 +335,7 @@ struct dso *dso__new(const char *name)
- 		dso__set_short_name(dso, dso->name);
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
--		dso->symtab_type = SYMTAB__NOT_FOUND;
-+		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
-@@ -806,9 +823,9 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
- 	symbols__fixup_end(&dso->symbols[map->type]);
- 
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--		dso->symtab_type = SYMTAB__GUEST_KALLSYMS;
-+		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KALLSYMS;
- 	else
--		dso->symtab_type = SYMTAB__KALLSYMS;
-+		dso->symtab_type = DSO_BINARY_TYPE__KALLSYMS;
- 
- 	return dso__split_kallsyms(dso, map, filter);
- }
-@@ -1660,32 +1677,110 @@ out:
- char dso__symtab_origin(const struct dso *dso)
- {
- 	static const char origin[] = {
--		[SYMTAB__KALLSYMS]	      = 'k',
--		[SYMTAB__JAVA_JIT]	      = 'j',
--		[SYMTAB__DEBUGLINK]           = 'l',
--		[SYMTAB__BUILD_ID_CACHE]      = 'B',
--		[SYMTAB__FEDORA_DEBUGINFO]    = 'f',
--		[SYMTAB__UBUNTU_DEBUGINFO]    = 'u',
--		[SYMTAB__BUILDID_DEBUGINFO]   = 'b',
--		[SYMTAB__SYSTEM_PATH_DSO]     = 'd',
--		[SYMTAB__SYSTEM_PATH_KMODULE] = 'K',
--		[SYMTAB__GUEST_KALLSYMS]      =  'g',
--		[SYMTAB__GUEST_KMODULE]	      =  'G',
-+		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
-+		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
-+		[DSO_BINARY_TYPE__DEBUGLINK]		= 'l',
-+		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
-+		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
-+		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
-+		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
-+		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
-+		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
- 	};
- 
--	if (dso == NULL || dso->symtab_type == SYMTAB__NOT_FOUND)
-+	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
- 		return '!';
- 	return origin[dso->symtab_type];
- }
- 
-+int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
-+			  char *root_dir, char *file, size_t size)
++#include "symbol.h"
++
++#define TEST_ASSERT_VAL(text, cond) \
++do { \
++	if (!(cond)) { \
++		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
++		return -1; \
++	} \
++} while (0)
++
++static char *test_file(int size)
 +{
-+	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
-+	int ret = 0;
++	static char buf_templ[] = "/tmp/test-XXXXXX";
++	char *templ = buf_templ;
++	int fd, i;
++	unsigned char *buf;
 +
-+	switch (type) {
-+	case DSO_BINARY_TYPE__DEBUGLINK: {
-+		char *debuglink;
++	fd = mkostemp(templ, O_CREAT|O_WRONLY|O_TRUNC);
 +
-+		strncpy(file, dso->long_name, size);
-+		debuglink = file + dso->long_name_len;
-+		while (debuglink != file && *debuglink != '/')
-+			debuglink--;
-+		if (*debuglink == '/')
-+			debuglink++;
-+		filename__read_debuglink(dso->long_name, debuglink,
-+					 size - (debuglink - file));
-+		}
-+		break;
-+	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
-+		/* skip the locally configured cache if a symfs is given */
-+		if (symbol_conf.symfs[0] ||
-+		    (dso__build_id_filename(dso, file, size) == NULL))
-+			ret = -1;
-+		break;
-+
-+	case DSO_BINARY_TYPE__FEDORA_DEBUGINFO:
-+		snprintf(file, size, "%s/usr/lib/debug%s.debug",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
-+
-+	case DSO_BINARY_TYPE__UBUNTU_DEBUGINFO:
-+		snprintf(file, size, "%s/usr/lib/debug%s",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
-+
-+	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
-+		if (!dso->has_build_id) {
-+			ret = -1;
-+			break;
-+		}
-+
-+		build_id__sprintf(dso->build_id,
-+				  sizeof(dso->build_id),
-+				  build_id_hex);
-+		snprintf(file, size,
-+			 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
-+			 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
-+		break;
-+
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
-+		snprintf(file, size, "%s%s",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
-+
-+	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+		snprintf(file, size, "%s%s%s", symbol_conf.symfs,
-+			 root_dir, dso->long_name);
-+		break;
-+
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+		snprintf(file, size, "%s%s", symbol_conf.symfs,
-+			 dso->long_name);
-+		break;
-+
-+	default:
-+	case DSO_BINARY_TYPE__KALLSYMS:
-+	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
-+	case DSO_BINARY_TYPE__JAVA_JIT:
-+	case DSO_BINARY_TYPE__NOT_FOUND:
-+		ret = -1;
-+		break;
++	buf = malloc(size);
++	if (!buf) {
++		close(fd);
++		return NULL;
 +	}
 +
-+	return ret;
++	for (i = 0; i < size; i++)
++		buf[i] = (unsigned char) ((int) i % 10);
++
++	if (size != write(fd, buf, size))
++		templ = NULL;
++
++	close(fd);
++	return templ;
 +}
 +
- int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- {
--	int size = PATH_MAX;
- 	char *name;
- 	int ret = -1;
- 	int fd;
-+	u_int i;
- 	struct machine *machine;
--	const char *root_dir;
-+	char *root_dir = (char *) "";
- 	int want_symtab;
- 
- 	dso__set_loaded(dso, map->type);
-@@ -1700,7 +1795,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	else
- 		machine = NULL;
- 
--	name = malloc(size);
-+	name = malloc(PATH_MAX);
- 	if (!name)
- 		return -1;
- 
-@@ -1719,81 +1814,27 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		}
- 
- 		ret = dso__load_perf_map(dso, map, filter);
--		dso->symtab_type = ret > 0 ? SYMTAB__JAVA_JIT :
--					      SYMTAB__NOT_FOUND;
-+		dso->symtab_type = ret > 0 ? DSO_BINARY_TYPE__JAVA_JIT :
-+					     DSO_BINARY_TYPE__NOT_FOUND;
- 		return ret;
- 	}
- 
-+	if (machine)
-+		root_dir = machine->root_dir;
++#define TEST_FILE_SIZE (DSO__DATA_CACHE_SIZE * 20)
 +
- 	/* Iterate over candidate debug images.
- 	 * On the first pass, only load images if they have a full symtab.
- 	 * Failing that, do a second pass where we accept .dynsym also
- 	 */
- 	want_symtab = 1;
- restart:
--	for (dso->symtab_type = SYMTAB__DEBUGLINK;
--	     dso->symtab_type != SYMTAB__NOT_FOUND;
--	     dso->symtab_type++) {
--		switch (dso->symtab_type) {
--		case SYMTAB__DEBUGLINK: {
--			char *debuglink;
--			strncpy(name, dso->long_name, size);
--			debuglink = name + dso->long_name_len;
--			while (debuglink != name && *debuglink != '/')
--				debuglink--;
--			if (*debuglink == '/')
--				debuglink++;
--			filename__read_debuglink(dso->long_name, debuglink,
--						 size - (debuglink - name));
--			}
--			break;
--		case SYMTAB__BUILD_ID_CACHE:
--			/* skip the locally configured cache if a symfs is given */
--			if (symbol_conf.symfs[0] ||
--			    (dso__build_id_filename(dso, name, size) == NULL)) {
--				continue;
--			}
--			break;
--		case SYMTAB__FEDORA_DEBUGINFO:
--			snprintf(name, size, "%s/usr/lib/debug%s.debug",
--				 symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__UBUNTU_DEBUGINFO:
--			snprintf(name, size, "%s/usr/lib/debug%s",
--				 symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__BUILDID_DEBUGINFO: {
--			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
--
--			if (!dso->has_build_id)
--				continue;
-+	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
- 
--			build_id__sprintf(dso->build_id,
--					  sizeof(dso->build_id),
--					  build_id_hex);
--			snprintf(name, size,
--				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
--				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
--			}
--			break;
--		case SYMTAB__SYSTEM_PATH_DSO:
--			snprintf(name, size, "%s%s",
--			     symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__GUEST_KMODULE:
--			if (map->groups && machine)
--				root_dir = machine->root_dir;
--			else
--				root_dir = "";
--			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
--				 root_dir, dso->long_name);
--			break;
-+		dso->symtab_type = binary_type_symtab[i];
- 
--		case SYMTAB__SYSTEM_PATH_KMODULE:
--			snprintf(name, size, "%s%s", symbol_conf.symfs,
--				 dso->long_name);
--			break;
--		default:;
--		}
-+		if (dso__binary_type_file(dso, dso->symtab_type,
-+					  root_dir, name, PATH_MAX))
-+			continue;
- 
- 		/* Name is now the name of the next image to try */
- 		fd = open(name, O_RDONLY);
-@@ -2010,9 +2051,9 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- 		return NULL;
- 
- 	if (machine__is_host(machine))
--		dso->symtab_type = SYMTAB__SYSTEM_PATH_KMODULE;
-+		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
- 	else
--		dso->symtab_type = SYMTAB__GUEST_KMODULE;
-+		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
- 	map_groups__insert(&machine->kmaps, map);
- 	return map;
- }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index a884b99..dc474f0 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -155,6 +155,21 @@ struct addr_location {
- 	s32	      cpu;
- };
- 
-+enum dso_binary_type {
-+	DSO_BINARY_TYPE__KALLSYMS = 0,
-+	DSO_BINARY_TYPE__GUEST_KALLSYMS,
-+	DSO_BINARY_TYPE__JAVA_JIT,
-+	DSO_BINARY_TYPE__DEBUGLINK,
-+	DSO_BINARY_TYPE__BUILD_ID_CACHE,
-+	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
-+	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
-+	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
-+	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__NOT_FOUND,
++struct test_data_offset {
++	off_t offset;
++	u8 data[10];
++	int size;
 +};
 +
- enum dso_kernel_type {
- 	DSO_TYPE_USER = 0,
- 	DSO_TYPE_KERNEL,
-@@ -173,13 +188,13 @@ struct dso {
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
-+	enum dso_binary_type	symtab_type;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
- 	u8		 annotate_warned:1;
- 	u8		 sname_alloc:1;
- 	u8		 lname_alloc:1;
--	unsigned char	 symtab_type;
- 	u8		 sorted_by_name;
- 	u8		 loaded;
- 	u8		 build_id[BUILD_ID_SIZE];
-@@ -253,21 +268,6 @@ size_t dso__fprintf_symbols_by_name(struct dso *dso,
- 				    enum map_type type, FILE *fp);
- size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
- 
--enum symtab_type {
--	SYMTAB__KALLSYMS = 0,
--	SYMTAB__GUEST_KALLSYMS,
--	SYMTAB__JAVA_JIT,
--	SYMTAB__DEBUGLINK,
--	SYMTAB__BUILD_ID_CACHE,
--	SYMTAB__FEDORA_DEBUGINFO,
--	SYMTAB__UBUNTU_DEBUGINFO,
--	SYMTAB__BUILDID_DEBUGINFO,
--	SYMTAB__SYSTEM_PATH_DSO,
--	SYMTAB__GUEST_KMODULE,
--	SYMTAB__SYSTEM_PATH_KMODULE,
--	SYMTAB__NOT_FOUND,
--};
--
- char dso__symtab_origin(const struct dso *dso);
- void dso__set_long_name(struct dso *dso, char *name);
- void dso__set_build_id(struct dso *dso, void *build_id);
-@@ -304,4 +304,6 @@ bool symbol_type__is_a(char symbol_type, enum map_type map_type);
- 
- size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
- 
-+int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
-+			  char *root_dir, char *file, size_t size);
++struct test_data_offset offsets[] = {
++	/* Fill first cache page. */
++	{
++		.offset = 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Read first cache page. */
++	{
++		.offset = 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Fill cache boundary pages. */
++	{
++		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Read cache boundary pages. */
++	{
++		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Fill final cache page. */
++	{
++		.offset = TEST_FILE_SIZE - 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Read final cache page. */
++	{
++		.offset = TEST_FILE_SIZE - 10,
++		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
++		.size   = 10,
++	},
++	/* Read final cache page. */
++	{
++		.offset = TEST_FILE_SIZE - 3,
++		.data   = { 7, 8, 9, 0, 0, 0, 0, 0, 0, 0 },
++		.size   = 3,
++	},
++};
++
++int dso__test_data(void)
++{
++	struct machine machine;
++	struct dso *dso;
++	char *file = test_file(TEST_FILE_SIZE);
++	size_t i;
++
++	TEST_ASSERT_VAL("No test file", file);
++
++	memset(&machine, 0, sizeof(machine));
++
++	dso = dso__new((const char *)file);
++
++	/* Basic 10 bytes tests. */
++	for (i = 0; i < ARRAY_SIZE(offsets); i++) {
++		struct test_data_offset *data = &offsets[i];
++		ssize_t size;
++		u8 buf[10];
++
++		memset(buf, 0, 10);
++		size = dso__data_read_offset(dso, &machine, data->offset,
++				     buf, 10);
++
++		TEST_ASSERT_VAL("Wrong size", size == data->size);
++		TEST_ASSERT_VAL("Wrong data", !memcmp(buf, data->data, 10));
++	}
++
++	/* Read cross multiple cache pages. */
++	{
++		ssize_t size;
++		int c;
++		u8 *buf;
++
++		buf = malloc(TEST_FILE_SIZE);
++		TEST_ASSERT_VAL("ENOMEM\n", buf);
++
++		/* First iteration to fill caches, second one to read them. */
++		for (c = 0; c < 2; c++) {
++			memset(buf, 0, TEST_FILE_SIZE);
++			size = dso__data_read_offset(dso, &machine, 10,
++						     buf, TEST_FILE_SIZE);
++
++			TEST_ASSERT_VAL("Wrong size",
++				size == (TEST_FILE_SIZE - 10));
++
++			for (i = 0; i < (size_t)size; i++)
++				TEST_ASSERT_VAL("Wrong data",
++					buf[i] == (i % 10));
++		}
++
++		free(buf);
++	}
++
++	dso__delete(dso);
++	unlink(file);
++	return 0;
++}
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 980d5f5..1fe733a 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -325,4 +325,5 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    struct machine *machine, u64 addr,
+ 			    u8 *data, ssize_t size);
++int dso__test_data(void);
  #endif /* __PERF_SYMBOL */
 -- 
 1.7.1
