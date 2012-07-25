@@ -1,145 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547Ab2GYTTa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:19:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58255 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab2GYTT3 (ORCPT
+	id S1751752Ab2GYTUB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:20:01 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:23287 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab2GYTUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:19:29 -0400
-Date: Wed, 25 Jul 2012 12:19:10 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-adb5d2a487c55e5ca2ecc0b73c8f592e95d292c7@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de, namhyung@kernel.org,
-        jolsa@redhat.com
-In-Reply-To: <1342826756-64663-5-git-send-email-dsahern@gmail.com>
-References: <1342826756-64663-5-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Fix bug resolving guest kernel syms
-Git-Commit-ID: adb5d2a487c55e5ca2ecc0b73c8f592e95d292c7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 25 Jul 2012 15:20:00 -0400
+Date: Wed, 25 Jul 2012 21:19:58 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Rick Jones <rick.jones2@hp.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] igb: don't break user visible strings over multiple lines
+ in igb_ethtool.c
+Message-ID: <alpine.LNX.2.00.1207252115321.11754@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:19:16 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  adb5d2a487c55e5ca2ecc0b73c8f592e95d292c7
-Gitweb:     http://git.kernel.org/tip/adb5d2a487c55e5ca2ecc0b73c8f592e95d292c7
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Fri, 20 Jul 2012 17:25:49 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 25 Jul 2012 11:30:13 -0300
+Even when they go beyond 80 characters, user visible strings should be
+on one line to make them easy to grep for.
 
-perf kvm: Fix bug resolving guest kernel syms
-
-Guest kernel symbols are not resolved despite passing the information
-needed to resolve them. e.g.,
-
-perf kvm --guest --guestmount=/tmp/guest-mount record -a -- sleep 1
-perf kvm --guest --guestmount=/tmp/guest-mount report --stdio
-
-    36.55%  [guest/11399]  [unknown]         [g] 0xffffffff81600bc8
-    33.19%  [guest/10474]  [unknown]         [g] 0x00000000c0116e00
-    30.26%  [guest/11094]  [unknown]         [g] 0xffffffff8100a288
-    43.69%  [guest/10474]  [unknown]         [g] 0x00000000c0103d90
-    37.38%  [guest/11399]  [unknown]         [g] 0xffffffff81600bc8
-    12.24%  [guest/11094]  [unknown]         [g] 0xffffffff810aa91d
-     6.69%  [guest/11094]  [unknown]         [u] 0x00007fa784d721c3
-
-which is just pathetic.
-
-After a maddening 2 days sifting through perf minutia I found it --
-id_hdr_size is not initialized for guest machines. This shows up on the
-report side as random garbage for the cpu and timestamp, e.g.,
-
-29816 7310572949125804849 0x1ac0 [0x50]: PERF_RECORD_MMAP ...
-
-That messes up the sample sorting such that synthesized guest maps are
-processed last.
-
-With this patch you get a much more helpful report:
-
-  12.11%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] irqtime_account_process_tick
-  10.58%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] run_timer_softirq
-   6.95%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] printk_needs_cpu
-   6.50%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] do_timer
-   6.45%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] idle_balance
-   4.90%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] native_read_tsc
-    ...
-
-v2:
-- changed rbtree walk to use rb_first per Namhyung's suggestion
-
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1342826756-64663-5-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- tools/perf/util/map.c     |   13 +++++++++++++
- tools/perf/util/map.h     |    1 +
- tools/perf/util/session.c |    1 +
- 3 files changed, 15 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_ethtool.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 8668569..16d783d 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -729,3 +729,16 @@ char *machine__mmap_name(struct machine *self, char *bf, size_t size)
+ This patch was generated on top of another patch I submitted a few minutes ago:
+  Subject: [PATCH] igb: correct hardware type (i210/i211) check in igb_loopback_test()
+  Message-ID: <alpine.LNX.2.00.1207252059320.11754@swampdragon.chaosbits.net>
+
+diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+index ad489b7..90550f5 100644
+--- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
++++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+@@ -209,8 +209,8 @@ static int igb_set_settings(struct net_device *netdev, struct ethtool_cmd *ecmd)
+ 	/* When SoL/IDER sessions are active, autoneg/speed/duplex
+ 	 * cannot be changed */
+ 	if (igb_check_reset_block(hw)) {
+-		dev_err(&adapter->pdev->dev, "Cannot change link "
+-			"characteristics when SoL/IDER is active.\n");
++		dev_err(&adapter->pdev->dev,
++			"Cannot change link characteristics when SoL/IDER is active.\n");
+ 		return -EINVAL;
+ 	}
  
- 	return bf;
- }
-+
-+void machines__set_id_hdr_size(struct rb_root *machines, u16 id_hdr_size)
-+{
-+	struct rb_node *node;
-+	struct machine *machine;
-+
-+	for (node = rb_first(machines); node; node = rb_next(node)) {
-+		machine = rb_entry(node, struct machine, rb_node);
-+		machine->id_hdr_size = id_hdr_size;
-+	}
-+
-+	return;
-+}
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index c14c665..03a1e9b 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -151,6 +151,7 @@ struct machine *machines__add(struct rb_root *self, pid_t pid,
- struct machine *machines__find_host(struct rb_root *self);
- struct machine *machines__find(struct rb_root *self, pid_t pid);
- struct machine *machines__findnew(struct rb_root *self, pid_t pid);
-+void machines__set_id_hdr_size(struct rb_root *self, u16 id_hdr_size);
- char *machine__mmap_name(struct machine *self, char *bf, size_t size);
- int machine__init(struct machine *self, const char *root_dir, pid_t pid);
- void machine__exit(struct machine *self);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 90ee39d..8e4f075 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -87,6 +87,7 @@ void perf_session__update_sample_type(struct perf_session *self)
- 	self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
- 	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
- 	self->host_machine.id_hdr_size = self->id_hdr_size;
-+	machines__set_id_hdr_size(&self->machines, self->id_hdr_size);
- }
- 
- int perf_session__create_kernel_maps(struct perf_session *self)
+@@ -1089,8 +1089,8 @@ static bool reg_pattern_test(struct igb_adapter *adapter, u64 *data,
+ 		wr32(reg, (_test[pat] & write));
+ 		val = rd32(reg) & mask;
+ 		if (val != (_test[pat] & write & mask)) {
+-			dev_err(&adapter->pdev->dev, "pattern test reg %04X "
+-				"failed: got 0x%08X expected 0x%08X\n",
++			dev_err(&adapter->pdev->dev,
++				"pattern test reg %04X failed: got 0x%08X expected 0x%08X\n",
+ 				reg, val, (_test[pat] & write & mask));
+ 			*data = reg;
+ 			return 1;
+@@ -1108,8 +1108,8 @@ static bool reg_set_and_check(struct igb_adapter *adapter, u64 *data,
+ 	wr32(reg, write & mask);
+ 	val = rd32(reg);
+ 	if ((write & mask) != (val & mask)) {
+-		dev_err(&adapter->pdev->dev, "set/check reg %04X test failed:"
+-			" got 0x%08X expected 0x%08X\n", reg,
++		dev_err(&adapter->pdev->dev,
++			"set/check reg %04X test failed: got 0x%08X expected 0x%08X\n", reg,
+ 			(val & mask), (write & mask));
+ 		*data = reg;
+ 		return 1;
+@@ -1171,8 +1171,9 @@ static int igb_reg_test(struct igb_adapter *adapter, u64 *data)
+ 	wr32(E1000_STATUS, toggle);
+ 	after = rd32(E1000_STATUS) & toggle;
+ 	if (value != after) {
+-		dev_err(&adapter->pdev->dev, "failed STATUS register test "
+-			"got: 0x%08X expected: 0x%08X\n", after, value);
++		dev_err(&adapter->pdev->dev,
++			"failed STATUS register test got: 0x%08X expected: 0x%08X\n",
++			after, value);
+ 		*data = 1;
+ 		return 1;
+ 	}
+@@ -1777,16 +1778,14 @@ static int igb_loopback_test(struct igb_adapter *adapter, u64 *data)
+ 	 * sessions are active */
+ 	if (igb_check_reset_block(&adapter->hw)) {
+ 		dev_err(&adapter->pdev->dev,
+-			"Cannot do PHY loopback test "
+-			"when SoL/IDER is active.\n");
++			"Cannot do PHY loopback test when SoL/IDER is active.\n");
+ 		*data = 0;
+ 		goto out;
+ 	}
+ 	if ((adapter->hw.mac.type == e1000_i210)
+ 		|| (adapter->hw.mac.type == e1000_i211)) {
+ 		dev_err(&adapter->pdev->dev,
+-			"Loopback test not supported "
+-			"on this part at this time.\n");
++			"Loopback test not supported on this part at this time.\n");
+ 		*data = 0;
+ 		goto out;
+ 	}
+-- 
+1.7.11.3
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
