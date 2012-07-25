@@ -1,112 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753Ab2GYQEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:04:31 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:36468 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833Ab2GYQEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:04:30 -0400
-Date: Wed, 25 Jul 2012 18:04:25 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 08/13] driver core: firmware loader: fix device
- lifetime
-Message-ID: <20120725160425.GK11152@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
- <1343149213-10160-9-git-send-email-ming.lei@canonical.com>
+	id S1755927Ab2GYQEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:04:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54332 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755797Ab2GYQEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 12:04:38 -0400
+Date: Wed, 25 Jul 2012 17:04:34 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Stable <stable@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 15/34] mm: migration: clean up unmap_and_move()
+Message-ID: <20120725160434.GC9222@suse.de>
+References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
+ <1343050727-3045-16-git-send-email-mgorman@suse.de>
+ <20120725154526.GA18901@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1343149213-10160-9-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <20120725154526.GA18901@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 01:00:08AM +0800, Ming Lei wrote:
-> Callers of request_firmware* must hold the reference count of
-> @device, otherwise it is easy to trigger oops since the firmware
-> loader device is the child of @device.
+On Wed, Jul 25, 2012 at 08:45:26AM -0700, Greg KH wrote:
+> On Mon, Jul 23, 2012 at 02:38:28PM +0100, Mel Gorman wrote:
+> > commit 0dabec93de633a87adfbbe1d800a4c56cd19d73b upstream.
+> > 
+> > Stable note: Not tracked in Bugzilla. This patch makes later patches
+> > 	easier to apply but has no other impact.
+> > 
+> > unmap_and_move() is one a big messy function.  Clean it up.
+> > 
+> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Rik van Riel <riel@redhat.com>
+> > Cc: Michal Hocko <mhocko@suse.cz>
+> > Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > ---
+> >  mm/migrate.c |   59 ++++++++++++++++++++++++++++++++--------------------------
+> >  1 file changed, 33 insertions(+), 26 deletions(-)
 > 
-> This patch adds comments about the usage. In fact, most of drivers
-> call request_firmware* in its probe() or open(), so the constraint
-> should be reasonable and satisfied easily.
+> Mel, you didn't sign-off-on this patch.  Any reason why?
 > 
-> Also this patch holds the reference cound of @device before
 
-					count
+Another patch that was merged to the distribution kernel before picked
+up by mainline. In this case, I copied across the signed-off-bys and
+missed my own
 
-> schedule_work() in request_firmware_nowait() to avoid that
-> the @device dies after request_firmware_nowait returns and before
-> the work is scheduled.
-> 
-> Also request_firmware_nowait should be called in atomic context now,
-> so fix the obsolete comments.
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/base/firmware_class.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 674cb11..540b2e1 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -717,6 +717,8 @@ err_put_dev:
->   *      @name will be used as $FIRMWARE in the uevent environment and
->   *      should be distinctive enough not to be confused with any other
->   *      firmware image for this or any other device.
-> + *
-> + *	Caller must hold the reference count of @device.
->   **/
->  int
->  request_firmware(const struct firmware **firmware_p, const char *name,
-> @@ -798,6 +800,7 @@ static void request_firmware_work_func(struct work_struct *work)
->  
->   out:
->  	fw_work->cont(fw, fw_work->context);
-> +	put_device(fw_work->device);
->  
->  	module_put(fw_work->module);
->  	kfree(fw_work);
-> @@ -816,9 +819,10 @@ static void request_firmware_work_func(struct work_struct *work)
->   * @cont: function will be called asynchronously when the firmware
->   *	request is over.
->   *
-> + *	Caller must hold the reference count of @device.
-> + *
->   *	Asynchronous variant of request_firmware() for user contexts where
-> - *	it is not possible to sleep for long time. It can't be called
-> - *	in atomic contexts.
-> + *	it is not possible to sleep for long time.
-
-Let's state it explicitly:
-
-	"it is not allowed to sleep for it is called in atomic context."
-
->   **/
->  int
->  request_firmware_nowait(
-> @@ -844,6 +848,7 @@ request_firmware_nowait(
->  		return -EFAULT;
->  	}
->  
-> +	get_device(fw_work->device);
->  	INIT_WORK(&fw_work->work, request_firmware_work_func);
->  	schedule_work(&fw_work->work);
->  	return 0;
-
-Thanks.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Mel Gorman
+SUSE Labs
