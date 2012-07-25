@@ -1,492 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab2GYLnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:43:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49221 "EHLO bear.ext.ti.com"
+	id S1756634Ab2GYLno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:43:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37851 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756523Ab2GYLnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:43:39 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: <thierry.reding@avionic-design.de>
-CC: <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>, <vaibhav.bedia@ti.com>,
-        <gururaja.hebbar@ti.com>, "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v2 2/2] pwm: pwm-tiehrpwm: PWM driver support for EHRPWM
-Date: Wed, 25 Jul 2012 16:58:19 +0530
-Message-ID: <1343215699-4575-3-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1343215699-4575-1-git-send-email-avinashphilip@ti.com>
-References: <1343215699-4575-1-git-send-email-avinashphilip@ti.com>
+	id S1756620Ab2GYLnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 07:43:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="185825240"
+Date: Wed, 25 Jul 2012 19:42:16 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Coccinelle <cocci@diku.dk>
+Cc: Nicolas Palix <npalix@diku.dk>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: coccinelle hung on mini_lock.cocci
+Message-ID: <20120725114216.GA26741@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhanced high resolution PWM module (EHRPWM) hardware can be used to
-generate PWM output over 2 channels. This commit adds PWM driver support
-for EHRPWM device present on AM33XX SOC. Current implementation supports
-simple PWM functionality.
+Hi all,
 
-Reviewed-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
-Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
----
-:100644 100644 2840747... 371a36c... M	drivers/pwm/Kconfig
-:100644 100644 35fee43... e4b2c89... M	drivers/pwm/Makefile
-:000000 100644 0000000... 010d232... A	drivers/pwm/pwm-tiehrpwm.c
- drivers/pwm/Kconfig        |   11 ++
- drivers/pwm/Makefile       |    1 +
- drivers/pwm/pwm-tiehrpwm.c |  411 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 423 insertions(+), 0 deletions(-)
+This command seem to hang for ever on the current linus/master.
+It happens only on mini_lock.cocci _and_ mm/shmem.c
+I've updated coccinelle to its git release, however it didn't help..
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 2840747..371a36c 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -87,6 +87,17 @@ config  PWM_TIECAP
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-tiecap.
- 
-+config  PWM_TIEHRPWM
-+	tristate "EHRPWM PWM support"
-+	depends on SOC_AM33XX
-+
-+	help
-+	  PWM driver support for the EHRPWM controller found on AM33XX
-+	  TI SOC
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-tiehrpwm.
-+
- config PWM_VT8500
- 	tristate "vt8500 pwm support"
- 	depends on ARCH_VT8500
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 35fee43..e4b2c89 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -7,4 +7,5 @@ obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
- obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
- obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
-+obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
- obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
-diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
-new file mode 100644
-index 0000000..010d232
---- /dev/null
-+++ b/drivers/pwm/pwm-tiehrpwm.c
-@@ -0,0 +1,411 @@
-+/*
-+ * EHRPWM PWM driver
-+ *
-+ * Copyright (C) 2012 Texas Instruments, Inc. - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/clk.h>
-+#include <linux/pm_runtime.h>
-+
-+/* EHRPWM registers and bits definitions */
-+
-+/* Time base module registers */
-+#define TBCTL			0x00
-+#define TBPRD			0x0A
-+
-+#define TBCTL_RUN_MASK		(BIT(15) | BIT(14))
-+#define TBCTL_STOP_NEXT		0
-+#define TBCTL_STOP_ON_CYCLE	BIT(14)
-+#define TBCTL_FREE_RUN		(BIT(15) | BIT(14))
-+#define TBCTL_PRDLD_MASK	BIT(3)
-+#define TBCTL_PRDLD_SHDW	0
-+#define TBCTL_PRDLD_IMDT	BIT(3)
-+#define TBCTL_CLKDIV_MASK	(BIT(12) | BIT(11) | BIT(10) | BIT(9) | \
-+				BIT(8) | BIT(7))
-+#define TBCTL_CTRMODE_MASK	(BIT(1) | BIT(0))
-+#define TBCTL_CTRMODE_UP	0
-+#define TBCTL_CTRMODE_DOWN	BIT(0)
-+#define TBCTL_CTRMODE_UPDOWN	BIT(1)
-+#define TBCTL_CTRMODE_FREEZE	(BIT(1) | BIT(0))
-+
-+#define TBCTL_HSPCLKDIV_SHIFT	7
-+#define TBCTL_CLKDIV_SHIFT	10
-+
-+#define CLKDIV_MAX		7
-+#define HSPCLKDIV_MAX		7
-+#define PERIOD_MAX		0xFFFF
-+
-+/* compare module registers */
-+#define CMPA			0x12
-+#define CMPB			0x14
-+
-+/* Action qualifier module registers */
-+#define AQCTLA			0x16
-+#define AQCTLB			0x18
-+#define AQSFRC			0x1A
-+#define AQCSFRC			0x1C
-+
-+#define AQCTL_CBU_MASK		(BIT(9) | BIT(8))
-+#define AQCTL_CBU_FRCLOW	BIT(8)
-+#define AQCTL_CBU_FRCHIGH	BIT(9)
-+#define AQCTL_CBU_FRCTOGGLE	(BIT(9) | BIT(8))
-+#define AQCTL_CAU_MASK		(BIT(5) | BIT(4))
-+#define AQCTL_CAU_FRCLOW	BIT(4)
-+#define AQCTL_CAU_FRCHIGH	BIT(5)
-+#define AQCTL_CAU_FRCTOGGLE	(BIT(5) | BIT(4))
-+#define AQCTL_PRD_MASK		(BIT(3) | BIT(2))
-+#define AQCTL_PRD_FRCLOW	BIT(2)
-+#define AQCTL_PRD_FRCHIGH	BIT(3)
-+#define AQCTL_PRD_FRCTOGGLE	(BIT(3) | BIT(2))
-+#define AQCTL_ZRO_MASK		(BIT(1) | BIT(0))
-+#define AQCTL_ZRO_FRCLOW	BIT(0)
-+#define AQCTL_ZRO_FRCHIGH	BIT(1)
-+#define AQCTL_ZRO_FRCTOGGLE	(BIT(1) | BIT(0))
-+
-+#define AQSFRC_RLDCSF_MASK	(BIT(7) | BIT(6))
-+#define AQSFRC_RLDCSF_ZRO	0
-+#define AQSFRC_RLDCSF_PRD	BIT(6)
-+#define AQSFRC_RLDCSF_ZROPRD	BIT(7)
-+#define AQSFRC_RLDCSF_IMDT	(BIT(7) | BIT(6))
-+
-+#define AQCSFRC_CSFB_MASK	(BIT(3) | BIT(2))
-+#define AQCSFRC_CSFB_FRCDIS	0
-+#define AQCSFRC_CSFB_FRCLOW	BIT(2)
-+#define AQCSFRC_CSFB_FRCHIGH	BIT(3)
-+#define AQCSFRC_CSFB_DISSWFRC	(BIT(3) | BIT(2))
-+#define AQCSFRC_CSFA_MASK	(BIT(1) | BIT(0))
-+#define AQCSFRC_CSFA_FRCDIS	0
-+#define AQCSFRC_CSFA_FRCLOW	BIT(0)
-+#define AQCSFRC_CSFA_FRCHIGH	BIT(1)
-+#define AQCSFRC_CSFA_DISSWFRC	(BIT(1) | BIT(0))
-+
-+#define NUM_PWM_CHANNEL		2	/* EHRPWM channels */
-+
-+struct ehrpwm_pwm_chip {
-+	struct pwm_chip	chip;
-+	unsigned int	clk_rate;
-+	void __iomem	*mmio_base;
-+};
-+
-+static inline struct ehrpwm_pwm_chip *to_ehrpwm_pwm_chip(struct pwm_chip *chip)
-+{
-+	return container_of(chip, struct ehrpwm_pwm_chip, chip);
-+}
-+
-+static void ehrpwm_write(void *base, int offset, unsigned int val)
-+{
-+	writew(val & 0xFFFF, base + offset);
-+}
-+
-+static void ehrpwm_modify(void *base, int offset,
-+		unsigned short mask, unsigned short val)
-+{
-+	unsigned short regval;
-+
-+	regval = readw(base + offset);
-+	regval &= ~mask;
-+	regval |= val & mask;
-+	writew(regval, base + offset);
-+}
-+
-+/**
-+ * set_prescale_div -	Set up the prescaler divider function
-+ * @rqst_prescaler:	prescaler value min
-+ * @prescale_div:	prescaler value set
-+ * @tb_clk_div:		Time Base Control prescaler bits
-+ */
-+static int set_prescale_div(unsigned long rqst_prescaler,
-+		unsigned short *prescale_div, unsigned short *tb_clk_div)
-+{
-+	unsigned int clkdiv, hspclkdiv;
-+
-+	for (clkdiv = 0; clkdiv <= CLKDIV_MAX; clkdiv++) {
-+		for (hspclkdiv = 0; hspclkdiv <= HSPCLKDIV_MAX; hspclkdiv++) {
-+
-+			/*
-+			 * calculations for prescaler value :
-+			 * prescale_div = HSPCLKDIVIDER * CLKDIVIDER.
-+			 * HSPCLKDIVIDER =  2 ** hspclkdiv
-+			 * CLKDIVIDER = (1),		if clkdiv == 0 *OR*
-+			 *		(2 * clkdiv),	if clkdiv != 0
-+			 *
-+			 * Configure prescale_div value such that period
-+			 * register value is less than 65535.
-+			 */
-+
-+			*prescale_div = (1 << clkdiv) *
-+					(hspclkdiv ? (hspclkdiv * 2) : 1);
-+			if (*prescale_div > rqst_prescaler) {
-+				*tb_clk_div = (clkdiv << TBCTL_CLKDIV_SHIFT) |
-+					(hspclkdiv << TBCTL_HSPCLKDIV_SHIFT);
-+				return 0;
-+			}
-+		}
-+	}
-+	return 1;
-+}
-+
-+static void configure_chans(struct ehrpwm_pwm_chip *pc, int chan,
-+		unsigned long duty_cycles)
-+{
-+	int cmp_reg, aqctl_reg;
-+	unsigned short aqctl_val, aqctl_mask;
-+
-+	/*
-+	 * Channels can be configured from action qualifier module.
-+	 * Channel 0 configured with compare A register and for
-+	 * up-counter mode.
-+	 * Channel 1 configured with compare B register and for
-+	 * up-counter mode.
-+	 */
-+	if (chan == 1) {
-+		aqctl_reg = AQCTLB;
-+		cmp_reg = CMPB;
-+		/* Configure PWM Low from compare B value */
-+		aqctl_val = AQCTL_CBU_FRCLOW;
-+		aqctl_mask = AQCTL_CBU_MASK;
-+	} else {
-+		cmp_reg = CMPA;
-+		aqctl_reg = AQCTLA;
-+		/* Configure PWM Low from compare A value*/
-+		aqctl_val = AQCTL_CAU_FRCLOW;
-+		aqctl_mask = AQCTL_CAU_MASK;
-+	}
-+
-+	/* Configure PWM High from period value and zero value */
-+	aqctl_val |= AQCTL_PRD_FRCHIGH | AQCTL_ZRO_FRCHIGH;
-+	aqctl_mask |= AQCTL_PRD_MASK | AQCTL_ZRO_MASK;
-+	ehrpwm_modify(pc->mmio_base,  aqctl_reg, aqctl_mask, aqctl_val);
-+
-+	ehrpwm_write(pc->mmio_base,  cmp_reg, duty_cycles);
-+}
-+
-+/*
-+ * period_ns = 10^9 * (ps_divval * period_cycles) / PWM_CLK_RATE
-+ * duty_ns   = 10^9 * (ps_divval * duty_cycles) / PWM_CLK_RATE
-+ */
-+static int ehrpwm_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+		int duty_ns, int period_ns)
-+{
-+	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
-+	unsigned long long c;
-+	unsigned long period_cycles, duty_cycles;
-+	unsigned short ps_divval, tb_divval;
-+
-+	if (period_ns < 0 || duty_ns < 0 || period_ns > NSEC_PER_SEC)
-+		return -ERANGE;
-+
-+	c = pc->clk_rate;
-+	c = c * period_ns;
-+	do_div(c, NSEC_PER_SEC);
-+	period_cycles = (unsigned long)c;
-+
-+	if (period_cycles < 1) {
-+		period_cycles = 1;
-+		duty_cycles = 1;
-+	} else {
-+		c = pc->clk_rate;
-+		c = c * duty_ns;
-+		do_div(c, NSEC_PER_SEC);
-+		duty_cycles = (unsigned long)c;
-+	}
-+
-+	/* Configure clock prescaler to support Low frequency PWM wave */
-+	if (set_prescale_div(period_cycles/PERIOD_MAX, &ps_divval,
-+				&tb_divval)) {
-+		dev_err(chip->dev, "Unsupported values\n");
-+		return -EINVAL;
-+	}
-+
-+	pm_runtime_get_sync(chip->dev);
-+
-+	/* Update clock prescaler values */
-+	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_CLKDIV_MASK, tb_divval);
-+
-+	/* Update period & duty cycle with presacler division */
-+	period_cycles = period_cycles / ps_divval;
-+	duty_cycles = duty_cycles / ps_divval;
-+
-+	/* Configure shadow loading on Period register */
-+	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_PRDLD_MASK, TBCTL_PRDLD_SHDW);
-+
-+	ehrpwm_write(pc->mmio_base, TBPRD, period_cycles);
-+
-+	/* Configure ehrpwm counter for up-count mode */
-+	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_CTRMODE_MASK,
-+			TBCTL_CTRMODE_UP);
-+
-+	/* Configure the channel for duty cycle */
-+	configure_chans(pc, pwm->hwpwm, duty_cycles);
-+	pm_runtime_put_sync(chip->dev);
-+	return 0;
-+}
-+
-+static int ehrpwm_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
-+	unsigned short aqcsfrc_val, aqcsfrc_mask;
-+
-+	/* Leave clock enabled on enabling PWM */
-+	pm_runtime_get_sync(chip->dev);
-+
-+	/* Disabling Action Qualifier on PWM output */
-+	if (pwm->hwpwm) {
-+		aqcsfrc_val = AQCSFRC_CSFB_FRCDIS;
-+		aqcsfrc_mask = AQCSFRC_CSFB_MASK;
-+	} else {
-+		aqcsfrc_val = AQCSFRC_CSFA_FRCDIS;
-+		aqcsfrc_mask = AQCSFRC_CSFA_MASK;
-+	}
-+
-+	/* Changes to shadow mode */
-+	ehrpwm_modify(pc->mmio_base, AQSFRC, AQSFRC_RLDCSF_MASK,
-+			AQSFRC_RLDCSF_ZRO);
-+
-+	ehrpwm_modify(pc->mmio_base, AQCSFRC, aqcsfrc_mask, aqcsfrc_val);
-+
-+	/* Enable time counter for free_run */
-+	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_RUN_MASK, TBCTL_FREE_RUN);
-+	return 0;
-+}
-+
-+static void ehrpwm_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
-+	unsigned short aqcsfrc_val, aqcsfrc_mask;
-+
-+	/* Action Qualifier puts PWM output low forcefully */
-+	if (pwm->hwpwm) {
-+		aqcsfrc_val = AQCSFRC_CSFB_FRCLOW;
-+		aqcsfrc_mask = AQCSFRC_CSFB_MASK;
-+	} else {
-+		aqcsfrc_val = AQCSFRC_CSFA_FRCLOW;
-+		aqcsfrc_mask = AQCSFRC_CSFA_MASK;
-+	}
-+
-+	/*
-+	 * Changes to immediate action on Action Qualifier. This puts
-+	 * Action Qualifier control on PWM output from next TBCLK
-+	 */
-+	ehrpwm_modify(pc->mmio_base, AQSFRC, AQSFRC_RLDCSF_MASK,
-+			AQSFRC_RLDCSF_IMDT);
-+
-+	ehrpwm_modify(pc->mmio_base, AQCSFRC, aqcsfrc_mask, aqcsfrc_val);
-+
-+	/* Stop Time base counter */
-+	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_RUN_MASK, TBCTL_STOP_NEXT);
-+
-+	/* Disable clock on PWM disable */
-+	pm_runtime_put_sync(chip->dev);
-+}
-+
-+static void ehrpwm_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-+		dev_warn(chip->dev, "Removing PWM device without disabling\n");
-+		pm_runtime_put_sync(chip->dev);
-+	}
-+}
-+
-+static const struct pwm_ops ehrpwm_pwm_ops = {
-+	.free		= ehrpwm_pwm_free,
-+	.config		= ehrpwm_pwm_config,
-+	.enable		= ehrpwm_pwm_enable,
-+	.disable	= ehrpwm_pwm_disable,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int __devinit ehrpwm_pwm_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct resource *r;
-+	struct clk *clk;
-+	struct ehrpwm_pwm_chip *pc;
-+
-+	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
-+	if (!pc) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	clk = devm_clk_get(&pdev->dev, "fck");
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "failed to get clock\n");
-+		return PTR_ERR(clk);
-+	}
-+
-+	pc->clk_rate = clk_get_rate(clk);
-+	if (!pc->clk_rate) {
-+		dev_err(&pdev->dev, "failed to get clock rate\n");
-+		return -EINVAL;
-+	}
-+
-+	pc->chip.dev = &pdev->dev;
-+	pc->chip.ops = &ehrpwm_pwm_ops;
-+	pc->chip.base = -1;
-+	pc->chip.npwm = NUM_PWM_CHANNEL;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!r) {
-+		dev_err(&pdev->dev, "no memory resource defined\n");
-+		return -ENODEV;
-+	}
-+
-+	pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
-+	if (!pc->mmio_base) {
-+		dev_err(&pdev->dev, "failed to ioremap() registers\n");
-+		return  -EADDRNOTAVAIL;
-+	}
-+
-+	ret = pwmchip_add(&pc->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-+		return ret;
-+	}
-+
-+	pm_runtime_enable(&pdev->dev);
-+	platform_set_drvdata(pdev, pc);
-+	return 0;
-+}
-+
-+static int __devexit ehrpwm_pwm_remove(struct platform_device *pdev)
-+{
-+	struct ehrpwm_pwm_chip *pc = platform_get_drvdata(pdev);
-+
-+	pm_runtime_put_sync(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+	return pwmchip_remove(&pc->chip);
-+}
-+
-+static struct platform_driver ehrpwm_pwm_driver = {
-+	.driver = {
-+		.name = "ehrpwm",
-+	},
-+	.probe = ehrpwm_pwm_probe,
-+	.remove = __devexit_p(ehrpwm_pwm_remove),
-+};
-+
-+module_platform_driver(ehrpwm_pwm_driver);
-+
-+MODULE_DESCRIPTION("EHRPWM PWM driver");
-+MODULE_AUTHOR("Texas Instruments");
-+MODULE_LICENSE("GPL");
--- 
-1.7.1
+% spatch -debug  -D report -I /c/kernel-tests/src/linux/include -sp_file /c/kernel-tests/src/linux/scripts/coccinelle/locks/mini_lock.cocci -no_includes -include_headers /c/kernel-tests/src/linux/mm/shmem.c -no_show_diff
+init_defs_builtins: /usr/share/coccinelle/standard.h
+-----------------------------------------------------------------------
+processing semantic patch file: /c/kernel-tests/src/linux/scripts/coccinelle/locks/mini_lock.cocci
+with isos from: /usr/share/coccinelle/standard.iso
+-----------------------------------------------------------------------
+/// Find missing unlocks.  This semantic match considers the specific case
+/// where the unlock is missing from an if branch, and there is a lock
+/// before the if and an unlock after the if.  False positives are due to
+/// cases where the if branch represents a case where the function is
+/// supposed to exit with the lock held, or where there is some preceding
+/// function call that releases the lock.
+///
+// Confidence: Moderate
+// Copyright: (C) 2010-2012 Nicolas Palix.  GPLv2.
+// Copyright: (C) 2010-2012 Julia Lawall, INRIA/LIP6.  GPLv2.
+// Copyright: (C) 2010-2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+// URL: http://coccinelle.lip6.fr/
+// Comments:
+// Options: -no_includes -include_headers
+
+virtual context
+virtual org
+virtual report
+
+@prelocked@
+position p1,p;
+expression E1;
+@@
+
+(
+mutex_lock@p1
+|
+mutex_trylock@p1
+|
+spin_lock@p1
+|
+spin_trylock@p1
+|
+read_lock@p1
+|
+read_trylock@p1
+|
+write_lock@p1
+|
+write_trylock@p1
+|
+read_lock_irq@p1
+|
+write_lock_irq@p1
+|
+read_lock_irqsave@p1
+|
+write_lock_irqsave@p1
+|
+spin_lock_irq@p1
+|
+spin_lock_irqsave@p1
+) (E1@p,...);
+
+@looped@
+position r;
+@@
+
+for(...;...;...) { <+... return@r ...; ...+> }
+
+@err exists@
+expression E1;
+position prelocked.p;
+position up != prelocked.p1;
+position r!=looped.r;
+identifier lock,unlock;
+@@
+
+*lock(E1@p,...);
+<+... when != E1
+if (...) {
+  ... when != E1
+*  return@r ...;
+}
+...+>
+*unlock@up(E1,...);
+
+@script:python depends on org@
+p << prelocked.p1;
+lock << err.lock;
+unlock << err.unlock;
+p2 << err.r;
+@@
+
+cocci.print_main(lock,p)
+cocci.print_secs(unlock,p2)
+
+@script:python depends on report@
+p << prelocked.p1;
+lock << err.lock;
+unlock << err.unlock;
+p2 << err.r;
+@@
+
+msg = "preceding lock on line %s" % (p[0].line)
+coccilib.report.print_report(p2[0],msg)
+
+-----------------------------------------------------------------------
+script rule -1 =
+-----------------------------------------------------------------------
+dependencies for script satisfied:
+binding in = []
+HANDLING: /c/kernel-tests/src/linux/mm/shmem.c
+-----------------------------------------------------------------------
+let's go
+-----------------------------------------------------------------------
+Defined virtual rules: report
+-----------------------------------------------------------------------
+CFG: orphelin nodes, maybe something weird happened
+-----------------------------------------------------------------------
+prelocked =
+-----------------------------------------------------------------------
+dependencies for rule prelocked satisfied:
+binding in = []
+binding relevant in = []
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_reserve_inode,(194,2),(194,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_reserve_inode,(194,12),(194,30))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,2),(209,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,12),(209,30))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,1),(300,14))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,15),(300,34))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,1),(327,14))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,15),(327,34))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,1),(397,14))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,15),(397,34))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_undo_range,(589,1),(589,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_undo_range,(589,11),(589,22))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,3),(646,13))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,14),(646,35))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse_inode,(692,2),(692,12))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse_inode,(692,13),(692,34))]]
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse_inode,(731,3),(731,12))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse_inode,(731,13),(731,24))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse,(768,1),(768,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_unuse,(768,12),(768,33))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(836,3),(836,12))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(836,13),(836,27))]]
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(865,1),(865,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(865,12),(865,33))]]
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(873,2),(873,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_writepage,(873,12),(873,23))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,2),(912,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,12),(912,30))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_replace_page,(1033,1),(1033,14))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_replace_page,(1033,15),(1033,39))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,2),(1163,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,12),(1163,23))]]
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1210,2),(1210,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1210,12),(1210,23))]]
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1256,1),(1256,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1256,11),(1256,22))]]
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1277,2),(1277,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1277,12),(1277,23))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_lock,(1328,1),(1328,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_lock,(1328,11),(1328,22))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,1),(1719,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,12),(1719,27))]]
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,1),(1752,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,11),(1752,25))]]
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,1),(1803,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,11),(1803,25))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2112,2),(2112,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2112,12),(2112,23))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_get,(2129,1),(2129,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_get,(2129,11),(2129,22))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_set,(2168,1),(2168,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_set,(2168,11),(2168,22))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_listxattr,(2301,1),(2301,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_listxattr,(2301,11),(2301,22))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,2),(2398,11))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,12),(2398,17))]]
+     transformation info is empty
+     binding out = [prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_remount_fs,(2527,1),(2527,10))];
+                   prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_remount_fs,(2527,11),(2527,29))]]
+-----------------------------------------------------------------------
+looped =
+-----------------------------------------------------------------------
+dependencies for rule looped satisfied:
+binding in = [prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,15),(300,34))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,1),(300,14))]]
+binding relevant in = []
+     transformation info is empty
+     binding out = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))]]
+     binding out = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9))]]
+     transformation info is empty
+     binding out = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10))]]
+     binding out = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))]]
+-----------------------------------------------------------------------
+err =
+-----------------------------------------------------------------------
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,15),(300,34))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,1),(300,14))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,15),(300,34))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_add_to_page_cache,(300,1),(300,14))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,15),(327,34))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,1),(327,14))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,15),(327,34))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_delete_from_page_cache,(327,1),(327,14))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,12),(2398,17))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,2),(2398,11))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,12),(2398,17))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_encode_fh,(2398,2),(2398,11))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,14),(646,35))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,3),(646,13))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,14),(646,35))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_evict_inode,(646,3),(646,13))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,12),(1719,27))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,1),(1719,11))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,12),(1719,27))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1719,1),(1719,11))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,11),(1752,25))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,1),(1752,10))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,11),(1752,25))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1752,1),(1752,10))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,11),(1803,25))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,1),(1803,10))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,11),(1803,25))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_fallocate,(1803,1),(1803,10))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,12),(209,30))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,2),(209,11))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,12),(209,30))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_inode,(209,2),(209,11))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,15),(397,34))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,1),(397,14))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,15),(397,34))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_free_swap,(397,1),(397,14))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,12),(912,30))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,2),(912,11))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,12),(912,30))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_get_sbmpol,(912,2),(912,11))]]
+dependencies for rule err satisfied:
+binding in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9))];
+             prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,12),(1163,23))];
+             prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,2),(1163,11))]]
+binding relevant in = [looped.r --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2097,3),(2097,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_initxattrs,(2104,3),(2104,9)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2217,4),(2217,10)), (/c/kernel-tests/src/linux/mm/shmem.c,shmem_xattr_validate,(2218,3),(2218,9))];
+                      prelocked.p --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,12),(1163,23))];
+                      prelocked.p1 --> poss[(/c/kernel-tests/src/linux/mm/shmem.c,shmem_getpage_gfp,(1163,2),(1163,11))]]
 
