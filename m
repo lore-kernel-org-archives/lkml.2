@@ -1,54 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab2GYPwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:52:43 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55576 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664Ab2GYPwm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:52:42 -0400
-Subject: Re: [PATCH 06/12] perf header: Reconstruct group relationship by
- parsing cmdline
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Ulrich Drepper <drepper@gmail.com>, Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20120725153932.GE946@krava.brq.redhat.com>
-References: <1343120493-23059-1-git-send-email-namhyung@kernel.org>
-	 <1343120493-23059-7-git-send-email-namhyung@kernel.org>
-	 <20120725153932.GE946@krava.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 26 Jul 2012 00:52:33 +0900
-Message-ID: <1343231553.1525.11.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
+	id S1755522Ab2GYPww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:52:52 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:36411 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755275Ab2GYPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:52:50 -0400
+Date: Wed, 25 Jul 2012 17:52:44 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 07/13] driver core: firmware loader: introduce
+ cache_firmware and uncache_firmware
+Message-ID: <20120725155244.GI11152@aftab.osrc.amd.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+ <1343149213-10160-8-git-send-email-ming.lei@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1343149213-10160-8-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-07-25 (수), 17:39 +0200, Jiri Olsa:
-> On Tue, Jul 24, 2012 at 06:01:27PM +0900, Namhyung Kim wrote:
-> > In order to support the event group viewer, their group relationship
-> > is needed. Since it's not recorded explicitly anywhere in the perf.data
-> > we should parse saved cmdline and apply the result to the evlist. It is
-> > assumed that parsed entries are in a same order with the originals.
-> > 
-> > I know it's fragile but hard to find other way to do it in the current
-> > condition. :(
+On Wed, Jul 25, 2012 at 01:00:07AM +0800, Ming Lei wrote:
+> This patches introduce two kernel APIs of cache_firmware and
+> uncache_firmware, both of which take the firmware file name
+> as the only parameter.
 > 
-> How about storing grouping details in new perf.data feature?
-> As you said reparsing looks too fragile.
+> So any drivers can call cache_firmware to cache the specified
+> firmware file into kernel memory, and can use the cached firmware
+> in situations which can't request firmware from user space.
 > 
-> jirka
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/base/firmware_class.c |   79 +++++++++++++++++++++++++++++++++++++++++
+>  include/linux/firmware.h      |   12 +++++++
+>  2 files changed, 91 insertions(+)
+> 
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 225898e..674cb11 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -168,6 +168,22 @@ static int fw_lookup_and_alloate_buf(const char *fw_name,
+>  	return tmp ? 0 : -1;
+>  }
+>  
+> +static struct firmware_buf *fw_lookup_buf(const char *fw_name)
+> +{
+> +	struct firmware_buf *tmp;
+> +	struct firmware_cache *fwc = &fw_cache;
+> +
+> +	spin_lock(&fwc->lock);
+> +	list_for_each_entry(tmp, &fwc->head, list)
+> +		if (!strcmp(tmp->fw_id, fw_name)) {
+> +			spin_unlock(&fwc->lock);
+> +			return tmp;
+> +		}
+> +	spin_unlock(&fwc->lock);
+> +
+> +	return NULL;
+> +}
 
-Yeah, maybe it's the best thing I can do now.
+You have similar functionality in fw_lookup_and_alloate_buf() above.
+Can't you reuse it instead of defining a new function?
 
-Thanks,
-Namhyung
+> +
+>  static void __fw_free_buf(struct kref *ref)
+>  {
+>  	struct firmware_buf *buf = to_fwbuf(ref);
+> @@ -833,6 +849,67 @@ request_firmware_nowait(
+>  	return 0;
+>  }
+>  
+> +/**
+> + * cache_firmware - cache one firmware image in kernel memory space
+> + * @fw_name: the firmware image name
+> + *
+> + * Cache firmware in kernel memory so that drivers can use the firmware
 
+								s/the firmware/it/
 
+> + * when system isn't ready for drivers to request firmware image from
+
+				s/drivers/them/
+
+> + * userspace. Once returns successfully, driver can use request_firmware*
+
+		    it
+
+> + * to get the cached firmware without any interacting with user space
+
+							s/user space/userspace/
+
+> + *
+> + * Return 0 if the firmware image has been cached successfully
+> + * Return !0 if it is not successfully
+
+	Return !0 otherwise.
+
+> + *
+> + */
+> +int cache_firmware(const char *fw_name)
+> +{
+> +	int ret;
+> +	const struct firmware *fw;
+> +
+> +	pr_debug("%s: %s\n", __func__, fw_name);
+> +
+> +	ret = request_firmware(&fw, fw_name, NULL);
+> +
+
+stray newline
+
+> +	if (!ret)
+> +		kfree(fw);
+> +
+> +	pr_debug("%s: %s ret=%d\n", __func__, fw_name, ret);
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * uncache_firmware - remove one cached firmware image
+> + *
+
+stray newline
+
+> + * @fw_name: the firmware image name
+> + *
+> + * Uncache one firmware image which has been cached successfully
+> + * before.
+> + *
+> + * Return 0 if the firmware cache has been removed successfully
+> + * Return !0 if it is not successfully
+
+Return !0 otherwise
+
+> + *
+> + */
+> +int uncache_firmware(const char *fw_name)
+> +{
+> +	struct firmware_buf *buf;
+> +	struct firmware fw;
+> +
+> +	pr_debug("%s: %s\n", __func__, fw_name);
+> +
+> +	if (fw_get_builtin_firmware(&fw, fw_name))
+> +		return 0;
+> +
+> +	buf = fw_lookup_buf(fw_name);
+> +	if (buf) {
+> +		fw_free_buf(buf);
+> +		return 0;
+> +	}
+> +
+> +	return -EINVAL;
+
+[ … ]
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
