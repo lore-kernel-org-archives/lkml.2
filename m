@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2GYUGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 16:06:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60275 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab2GYUGs (ORCPT
+	id S1752716Ab2GYUHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 16:07:08 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37048 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab2GYUHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 16:06:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91: platform data for atmel-mci (for 3.5)
-Date: Wed, 25 Jul 2012 20:06:44 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-References: <4FBE4FE7.3010005@atmel.com> <4FC722B7.10409@atmel.com>
-In-Reply-To: <4FC722B7.10409@atmel.com>
+	Wed, 25 Jul 2012 16:07:03 -0400
+Message-ID: <501051DF.5040907@redhat.com>
+Date: Wed, 25 Jul 2012 22:06:55 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
+        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com>
+In-Reply-To: <50104614.3080002@panasas.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207252006.44523.arnd@arndb.de>
-X-Provags-ID: V02:K0:Smog2d9KylMlZKoADfxZjIhl5DwrRdxr/dNSpwiEvpp
- UHQK7h88OsVL1diO2FWtGAsoRLpmgmhCmmnD2xatWm6+/Mgxsx
- OxPc7zR5lKeUnY2KMLA/tqLus79NlJxSgnsFk2Ve5s4C+nm751
- W516U8SMUPPtnDrZi7/gcP8iQDElzTdK6W4FWK3K4i+PTz+t3g
- nO7pdCFOchBZnOQD1LgTvrkDuhz50/O7wGuxAAbbWfRMqH6QmO
- 5H1DA58QV2FkJRSD8crU1etISKVfxNO8ROh65JvyQ7jyr7zOhM
- A3EQ9A0vSLM48dCraZrRFp9C8Hnh8R9c3gkBhrrWlzucpyuylR
- XBwI8ToreknPhnr/OaDs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 31 May 2012, Nicolas Ferre wrote:
+Il 25/07/2012 21:16, Boaz Harrosh ha scritto:
+> The picture confused me. It looked like the first element is the virtio_scsi_cmd_req
+> not an sgilist-element that points to the struct's buffer.
 > 
-> On 05/24/2012 05:12 PM, Nicolas Ferre :
-> > Hi Arnd, hi Olof,
+> In that case then yes your plan of making a two-elements fragment that points to the
+> original scsi-sglist is perfect. All you have to do is that, and all you have to do
+> at virtio is use the sg_for_each macro and you are done.
 > 
-> Ping?
-> 
-> (or maybe you will have a look at this after the merge window...)
-> 
+> You don't need any sglist allocation or reshaping. And you can easily support
+> chaining. Looks like order of magnitude more simple then what you do now
 
-I've just gone through all old pull requests that I had somewhere in
-my inbox and this turned out to be one that we never pulled.
+It is.
 
-It looks like it still applies and we should send it to Linus as as
-late branch this time, given that we screwed up and it was there
-all the time.
+> So what is the problem?
 
-Nicolas, can you please confirm?
+That not all architectures have ARCH_HAS_SG_CHAIN (though all those I
+care about do).  So I need to go through all architectures and make sure
+they use for_each_sg, or at least to change ARCH_HAS_SG_CHAIN to a
+Kconfig define so that dependencies can be expressed properly.
 
-	Arnd
+> And BTW you won't need that new __sg_set_page API anymore.
+
+Kind of.
+
+   sg_init_table(sg, 2);
+   sg_set_buf(sg[0], req, sizeof(req));
+   sg_chain(sg[1], scsi_out(sc));
+
+is still a little bit worse than
+
+   __sg_set_buf(sg[0], req, sizeof(req));
+   __sg_chain(sg[1], scsi_out(sc));
+
+Paolo
