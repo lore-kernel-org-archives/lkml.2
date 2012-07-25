@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab2GYDmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 23:42:38 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:33308 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932812Ab2GYDm3 (ORCPT
+	id S932871Ab2GYDml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 23:42:41 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46154 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932845Ab2GYDmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 23:42:29 -0400
+	Tue, 24 Jul 2012 23:42:38 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
+Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.linux@gmail.com>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 15/52] cpuidle: refactor out cpuidle_enter_state
-Date: Tue, 24 Jul 2012 23:41:11 -0400
-Message-Id: <56cfbf74a17c40f3a741398103c9f5d5a6806715.1343187617.git.len.brown@intel.com>
+Subject: [PATCH 19/52] drivers/thermal/spear_thermal.c: add Device Tree probing capability
+Date: Tue, 24 Jul 2012 23:41:15 -0400
+Message-Id: <b9c7aff481f19dd655ae3ce6513817d625e2d47c.1343187617.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.rc0
 In-Reply-To: <1343187708-19532-1-git-send-email-lenb@kernel.org>
 References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
@@ -25,102 +28,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
+From: Viresh Kumar <viresh.linux@gmail.com>
 
-Split the code to enter a state and update the stats into a helper
-function, cpuidle_enter_state, and export it.  This function will
-be called by the coupled state code to handle entering the safe
-state and the final coupled state.
+SPEAr platforms now support DT and so must convert all drivers to support
+DT.  This patch adds DT probing support for SPEAr thermal sensor driver
+and updates its documentation too.
 
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Reviewed-by: Kevin Hilman <khilman@ti.com>
-Tested-by: Kevin Hilman <khilman@ti.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+Also, as SPEAr is the only user of this driver and is only available with
+DT, make this an only DT driver.  So, platform_data is completely removed
+and passed via DT now.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Vincenzo Frascino <vincenzo.frascino@st.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/cpuidle/cpuidle.c | 42 +++++++++++++++++++++++++++++-------------
- drivers/cpuidle/cpuidle.h |  2 ++
- 2 files changed, 31 insertions(+), 13 deletions(-)
+ .../devicetree/bindings/thermal/spear-thermal.txt  | 14 ++++++++++++
+ drivers/thermal/Kconfig                            |  1 +
+ drivers/thermal/spear_thermal.c                    | 26 +++++++++++++---------
+ include/linux/platform_data/spear_thermal.h        | 26 ----------------------
+ 4 files changed, 31 insertions(+), 36 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/thermal/spear-thermal.txt
+ delete mode 100644 include/linux/platform_data/spear_thermal.h
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 2f0083a..3e3e3e4 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -103,6 +103,34 @@ int cpuidle_play_dead(void)
- }
+diff --git a/Documentation/devicetree/bindings/thermal/spear-thermal.txt b/Documentation/devicetree/bindings/thermal/spear-thermal.txt
+new file mode 100644
+index 0000000..93e3b67
+--- /dev/null
++++ b/Documentation/devicetree/bindings/thermal/spear-thermal.txt
+@@ -0,0 +1,14 @@
++* SPEAr Thermal
++
++Required properties:
++- compatible : "st,thermal-spear1340"
++- reg : Address range of the thermal registers
++- st,thermal-flags: flags used to enable thermal sensor
++
++Example:
++
++	thermal@fc000000 {
++		compatible = "st,thermal-spear1340";
++		reg = <0xfc000000 0x1000>;
++		st,thermal-flags = <0x7000>;
++	};
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index 514a691..3ab2bd5 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -23,6 +23,7 @@ config SPEAR_THERMAL
+ 	bool "SPEAr thermal sensor driver"
+ 	depends on THERMAL
+ 	depends on PLAT_SPEAR
++	depends on OF
+ 	help
+ 	  Enable this to plug the SPEAr thermal sensor driver into the Linux
+ 	  thermal framework
+diff --git a/drivers/thermal/spear_thermal.c b/drivers/thermal/spear_thermal.c
+index c2e32df..ca40d36 100644
+--- a/drivers/thermal/spear_thermal.c
++++ b/drivers/thermal/spear_thermal.c
+@@ -20,9 +20,9 @@
+ #include <linux/err.h>
+ #include <linux/io.h>
+ #include <linux/kernel.h>
++#include <linux/of.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+-#include <linux/platform_data/spear_thermal.h>
+ #include <linux/thermal.h>
  
- /**
-+ * cpuidle_enter_state - enter the state and update stats
-+ * @dev: cpuidle device for this cpu
-+ * @drv: cpuidle driver for this cpu
-+ * @next_state: index into drv->states of the state to enter
-+ */
-+int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
-+		int next_state)
-+{
-+	int entered_state;
+ #define MD_FACTOR	1000
+@@ -103,21 +103,20 @@ static int spear_thermal_probe(struct platform_device *pdev)
+ {
+ 	struct thermal_zone_device *spear_thermal = NULL;
+ 	struct spear_thermal_dev *stdev;
+-	struct spear_thermal_pdata *pdata;
+-	int ret = 0;
++	struct device_node *np = pdev->dev.of_node;
+ 	struct resource *stres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	int ret = 0, val;
 +
-+	entered_state = cpuidle_enter_ops(dev, drv, next_state);
-+
-+	if (entered_state >= 0) {
-+		/* Update cpuidle counters */
-+		/* This can be moved to within driver enter routine
-+		 * but that results in multiple copies of same code.
-+		 */
-+		dev->states_usage[entered_state].time +=
-+				(unsigned long long)dev->last_residency;
-+		dev->states_usage[entered_state].usage++;
-+	} else {
-+		dev->last_residency = 0;
++	if (!np || !of_property_read_u32(np, "st,thermal-flags", &val)) {
++		dev_err(&pdev->dev, "Failed: DT Pdata not passed\n");
++		return -EINVAL;
 +	}
-+
-+	return entered_state;
-+}
-+
-+/**
-  * cpuidle_idle_call - the main idle loop
-  *
-  * NOTE: no locks or semaphores should be used here
-@@ -143,23 +171,11 @@ int cpuidle_idle_call(void)
- 	trace_power_start_rcuidle(POWER_CSTATE, next_state, dev->cpu);
- 	trace_cpu_idle_rcuidle(next_state, dev->cpu);
  
--	entered_state = cpuidle_enter_ops(dev, drv, next_state);
-+	entered_state = cpuidle_enter_state(dev, drv, next_state);
+ 	if (!stres) {
+ 		dev_err(&pdev->dev, "memory resource missing\n");
+ 		return -ENODEV;
+ 	}
  
- 	trace_power_end_rcuidle(dev->cpu);
- 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
- 
--	if (entered_state >= 0) {
--		/* Update cpuidle counters */
--		/* This can be moved to within driver enter routine
--		 * but that results in multiple copies of same code.
--		 */
--		dev->states_usage[entered_state].time +=
--				(unsigned long long)dev->last_residency;
--		dev->states_usage[entered_state].usage++;
--	} else {
--		dev->last_residency = 0;
+-	pdata = dev_get_platdata(&pdev->dev);
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "platform data is NULL\n");
+-		return -EINVAL;
 -	}
 -
- 	/* give the governor an opportunity to reflect on the outcome */
- 	if (cpuidle_curr_governor->reflect)
- 		cpuidle_curr_governor->reflect(dev, entered_state);
-diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
-index 7db1866..d8a3ccc 100644
---- a/drivers/cpuidle/cpuidle.h
-+++ b/drivers/cpuidle/cpuidle.h
-@@ -14,6 +14,8 @@ extern struct list_head cpuidle_detected_devices;
- extern struct mutex cpuidle_lock;
- extern spinlock_t cpuidle_driver_lock;
- extern int cpuidle_disabled(void);
-+extern int cpuidle_enter_state(struct cpuidle_device *dev,
-+		struct cpuidle_driver *drv, int next_state);
+ 	stdev = devm_kzalloc(&pdev->dev, sizeof(*stdev), GFP_KERNEL);
+ 	if (!stdev) {
+ 		dev_err(&pdev->dev, "kzalloc fail\n");
+@@ -144,7 +143,7 @@ static int spear_thermal_probe(struct platform_device *pdev)
+ 		goto put_clk;
+ 	}
  
- /* idle loop */
- extern void cpuidle_install_idle_handler(void);
+-	stdev->flags = pdata->thermal_flags;
++	stdev->flags = val;
+ 	writel_relaxed(stdev->flags, stdev->thermal_base);
+ 
+ 	spear_thermal = thermal_zone_device_register("spear_thermal", 0,
+@@ -189,6 +188,12 @@ static int spear_thermal_exit(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id spear_thermal_id_table[] = {
++	{ .compatible = "st,thermal-spear1340" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, spear_thermal_id_table);
++
+ static struct platform_driver spear_thermal_driver = {
+ 	.probe = spear_thermal_probe,
+ 	.remove = spear_thermal_exit,
+@@ -196,6 +201,7 @@ static struct platform_driver spear_thermal_driver = {
+ 		.name = "spear_thermal",
+ 		.owner = THIS_MODULE,
+ 		.pm = &spear_thermal_pm_ops,
++		.of_match_table = of_match_ptr(spear_thermal_id_table),
+ 	},
+ };
+ 
+diff --git a/include/linux/platform_data/spear_thermal.h b/include/linux/platform_data/spear_thermal.h
+deleted file mode 100644
+index 724f2e1..0000000
+--- a/include/linux/platform_data/spear_thermal.h
++++ /dev/null
+@@ -1,26 +0,0 @@
+-/*
+- * SPEAr thermal driver platform data.
+- *
+- * Copyright (C) 2011-2012 ST Microelectronics
+- * Author: Vincenzo Frascino <vincenzo.frascino@st.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-#ifndef SPEAR_THERMAL_H
+-#define SPEAR_THERMAL_H
+-
+-/* SPEAr Thermal Sensor Platform Data */
+-struct spear_thermal_pdata {
+-	/* flags used to enable thermal sensor */
+-	unsigned int thermal_flags;
+-};
+-
+-#endif /* SPEAR_THERMAL_H */
 -- 
 1.7.12.rc0
 
