@@ -1,239 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751081Ab2GYRjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:39:21 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:34112 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab2GYRjU (ORCPT
+	id S1751519Ab2GYRln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:41:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45448 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab2GYRll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:39:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1342959280-5361-3-git-send-email-jolsa@redhat.com>
-References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
-	<1342959280-5361-3-git-send-email-jolsa@redhat.com>
-Date: Wed, 25 Jul 2012 19:39:18 +0200
-Message-ID: <CABPqkBQONxpNAm=rE9JpQ8Pjdfzf6dc707UZWhSzM+E0AAXE-w@mail.gmail.com>
-Subject: Re: [PATCH 02/17] perf: Add ability to attach user level registers
- dump to sample
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Wed, 25 Jul 2012 13:41:41 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 01/19] perf symbols: Add machine id to modules debug message
+Date: Wed, 25 Jul 2012 14:41:16 -0300
+Message-Id: <1343238094-12481-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1343238094-12481-1-git-send-email-acme@infradead.org>
+References: <1343238094-12481-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 22, 2012 at 2:14 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> Introducing PERF_SAMPLE_REGS_USER sample type bit to trigger
-> the dump of user level registers on sample. Registers we want
-> to dump are specified by sample_regs_user bitmask.
->
-> Only user level registers are dumped at the moment. Meaning the
-> register values of the user space context as it was before the
-> user entered the kernel for whatever reason (syscall, irq,
-> exception, or a PMI happening in userspace).
->
-> The layout of the sample_regs_user bitmap is described in
-> asm/perf_regs.h for archs that support register dump.
->
-> This is going to be useful to bring Dwarf CFI based stack
-> unwinding on top of samples.
->
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  include/linux/perf_event.h |   20 ++++++++++++--
->  kernel/events/core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 78 insertions(+), 3 deletions(-)
->
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 76c5c8b..57f209d 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -130,8 +130,9 @@ enum perf_event_sample_format {
->         PERF_SAMPLE_STREAM_ID                   = 1U << 9,
->         PERF_SAMPLE_RAW                         = 1U << 10,
->         PERF_SAMPLE_BRANCH_STACK                = 1U << 11,
-> +       PERF_SAMPLE_REGS_USER                   = 1U << 12,
->
-> -       PERF_SAMPLE_MAX = 1U << 12,             /* non-ABI */
-> +       PERF_SAMPLE_MAX = 1U << 13,             /* non-ABI */
->  };
->
->  /*
-> @@ -194,6 +195,7 @@ enum perf_event_read_format {
->  #define PERF_ATTR_SIZE_VER0    64      /* sizeof first published struct */
->  #define PERF_ATTR_SIZE_VER1    72      /* add: config2 */
->  #define PERF_ATTR_SIZE_VER2    80      /* add: branch_sample_type */
-> +#define PERF_ATTR_SIZE_VER3    88      /* add: sample_regs_user */
->
->  /*
->   * Hardware event_id to monitor via a performance monitoring event:
-> @@ -271,7 +273,13 @@ struct perf_event_attr {
->                 __u64           bp_len;
->                 __u64           config2; /* extension of config1 */
->         };
-> -       __u64   branch_sample_type; /* enum branch_sample_type */
-> +       __u64   branch_sample_type; /* enum perf_branch_sample_type */
-> +
-> +       /*
-> +        * Defines set of user regs to dump on samples.
-> +        * See asm/perf_regs.h for details.
-> +        */
-> +       __u64   sample_regs_user;
->  };
->
->  /*
-> @@ -548,6 +556,9 @@ enum perf_event_type {
->          *        char                  data[size];}&& PERF_SAMPLE_RAW
->          *
->          *      { u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
-> +        *
-> +        *      { u64                   available;
-> +        *        u64                   regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
->          * };
->          */
->         PERF_RECORD_SAMPLE                      = 9,
-> @@ -609,6 +620,7 @@ struct perf_guest_info_callbacks {
->  #include <linux/static_key.h>
->  #include <linux/atomic.h>
->  #include <linux/sysfs.h>
-> +#include <linux/perf_regs.h>
->  #include <asm/local.h>
->
->  struct perf_callchain_entry {
-> @@ -1133,6 +1145,7 @@ struct perf_sample_data {
->         struct perf_callchain_entry     *callchain;
->         struct perf_raw_record          *raw;
->         struct perf_branch_stack        *br_stack;
-> +       struct pt_regs                  *regs_user;
->  };
->
->  static inline void perf_sample_data_init(struct perf_sample_data *data,
-> @@ -1142,7 +1155,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
->         data->addr = addr;
->         data->raw  = NULL;
->         data->br_stack = NULL;
-> -       data->period    = period;
-> +       data->period = period;
-> +       data->regs_user = NULL;
->  }
->
->  extern void perf_output_sample(struct perf_output_handle *handle,
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index f1cf0ed..e817e32 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3756,6 +3756,33 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
->  }
->  EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
->
-> +static void
-> +perf_output_sample_regs(struct perf_output_handle *handle,
-> +                       struct pt_regs *regs, u64 mask)
-> +{
-> +       int bit;
-> +
-> +       for_each_set_bit(bit, (const unsigned long *) &mask,
-> +                        sizeof(mask) * BITS_PER_BYTE) {
-> +               u64 val;
-> +
-> +               val = perf_reg_value(regs, bit);
-> +               perf_output_put(handle, val);
-> +       }
-> +}
-> +
-> +static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
-> +{
-> +       if (!user_mode(regs)) {
-> +               if (current->mm)
-> +                       regs = task_pt_regs(current);
-> +               else
-> +                       regs = NULL;
-> +       }
-> +
-> +       return regs;
-> +}
-> +
->  static void __perf_event_header__init_id(struct perf_event_header *header,
->                                          struct perf_sample_data *data,
->                                          struct perf_event *event)
-> @@ -4016,6 +4043,23 @@ void perf_output_sample(struct perf_output_handle *handle,
->                         perf_output_put(handle, nr);
->                 }
->         }
-> +
-> +       if (sample_type & PERF_SAMPLE_REGS_USER) {
-> +               u64 avail = (data->regs_user != NULL);
-> +
-> +               /*
-> +                * If there are no regs to dump, notice it through
-> +                * first u64 being zero.
-> +                */
-> +               perf_output_put(handle, avail);
-> +
-The only role of avail is to report whether or not you've captured actual
-registers. Could it be used to report the sampled process ABI (32 vs. 64)
-instead? Something like:
-      PERF_SAMPLE_REGS_ABI_NONE -> no regs captured (emulate your
-current behavior)
-      PERF_SAMPLE_REGS_ABI_32 -> 32 bit ABI regs captured
-      PERF_SAMPLE_REGS_ABI_64 -> 64 bit ABI regs captured
+From: David Ahern <dsahern@gmail.com>
 
-That could help the tools interpret the register values.
+Current debug message is:
+Problems creating module maps, continuing anyway...
 
-Other than that the patch looks good to me.
+When running multiple VMs it would be nice to know which machine the
+message is referring to:
 
-Once it's in, I will piggyback on it to add and post a patch to add
-interrupted, pebs machine state sampling.
+$ perf kvm --guest --guestmount=/tmp/guest-mount record -av -- sleep 10
+Problems creating module maps for guest 6613, continuing anyway...
 
-> +               if (avail) {
-> +                       u64 mask = event->attr.sample_regs_user;
-> +                       perf_output_sample_regs(handle,
-> +                                               data->regs_user,
-> +                                               mask);
-> +               }
-> +       }
->  }
->
->  void perf_prepare_sample(struct perf_event_header *header,
-> @@ -4067,6 +4111,19 @@ void perf_prepare_sample(struct perf_event_header *header,
->                 }
->                 header->size += size;
->         }
-> +
-> +       if (sample_type & PERF_SAMPLE_REGS_USER) {
-> +               /* regs dump available bool */
-> +               int size = sizeof(u64);
-> +
-> +               data->regs_user = perf_sample_regs_user(regs);
-> +               if (data->regs_user) {
-> +                       u64 mask = event->attr.sample_regs_user;
-> +                       size += hweight64(mask) * sizeof(u64);
-> +               }
-> +
-> +               header->size += size;
-> +       }
->  }
->
->  static void perf_event_output(struct perf_event *event,
-> @@ -6116,6 +6173,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
->                         attr->branch_sample_type = mask;
->                 }
->         }
-> +
-> +       if (attr->sample_type & PERF_SAMPLE_REGS_USER)
-> +               ret = perf_reg_validate(attr->sample_regs_user);
-> +
->  out:
->         return ret;
->
-> --
-> 1.7.7.6
->
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1342826756-64663-2-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 50958bb..66c132e 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -2564,8 +2564,15 @@ int machine__create_kernel_maps(struct machine *machine)
+ 	    __machine__create_kernel_maps(machine, kernel) < 0)
+ 		return -1;
+ 
+-	if (symbol_conf.use_modules && machine__create_modules(machine) < 0)
+-		pr_debug("Problems creating module maps, continuing anyway...\n");
++	if (symbol_conf.use_modules && machine__create_modules(machine) < 0) {
++		if (machine__is_host(machine))
++			pr_debug("Problems creating module maps, "
++				 "continuing anyway...\n");
++		else
++			pr_debug("Problems creating module maps for guest %d, "
++				 "continuing anyway...\n", machine->pid);
++	}
++
+ 	/*
+ 	 * Now that we have all the maps created, just set the ->end of them:
+ 	 */
+-- 
+1.7.1
+
