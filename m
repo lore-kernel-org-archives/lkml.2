@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab2GYXSR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 19:18:17 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:15684 "EHLO
+	id S1752160Ab2GYXSY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 19:18:24 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:15703 "EHLO
 	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab2GYXSO (ORCPT
+	with ESMTP id S1752015Ab2GYXSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 19:18:14 -0400
+	Wed, 25 Jul 2012 19:18:20 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: lenb@kernel.org, linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
         srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
         imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v3 2/4] ACPI: Update CPU hotplug messages
-Date: Wed, 25 Jul 2012 17:12:56 -0600
-Message-Id: <1343257978-7085-3-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v3 4/4] ACPI: Update Container hotplug messages
+Date: Wed, 25 Jul 2012 17:12:58 -0600
+Message-Id: <1343257978-7085-5-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
 References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
@@ -24,133 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated CPU hotplug log messages with acpi_pr_<level>(),
-dev_<level>() and pr_<level>().  Some messages are also
-changed for clarity.
+Updated Container hotplug log messages with acpi_pr_<level>()
+and pr_<level>().
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
 ---
- drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
- 1 files changed, 21 insertions(+), 15 deletions(-)
+ drivers/acpi/container.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index a6bdeaa..225f252 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -282,7 +282,9 @@ static int acpi_processor_get_info(struct acpi_device *device)
- 		/* Declared with "Processor" statement; match ProcessorID */
- 		status = acpi_evaluate_object(pr->handle, NULL, NULL, &buffer);
- 		if (ACPI_FAILURE(status)) {
--			printk(KERN_ERR PREFIX "Evaluating processor object\n");
-+			acpi_pr_err(pr->handle,
-+				"Failed to evaluate processor object (0x%x)\n",
-+				status);
- 			return -ENODEV;
- 		}
+diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+index 01a986d..643e962 100644
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -99,7 +99,7 @@ static int acpi_container_add(struct acpi_device *device)
  
-@@ -301,8 +303,9 @@ static int acpi_processor_get_info(struct acpi_device *device)
- 		status = acpi_evaluate_integer(pr->handle, METHOD_NAME__UID,
- 						NULL, &value);
- 		if (ACPI_FAILURE(status)) {
--			printk(KERN_ERR PREFIX
--			    "Evaluating processor _UID [%#x]\n", status);
-+			acpi_pr_err(pr->handle,
-+				"Failed to evaluate processor _UID (0x%x)\n",
-+				status);
- 			return -ENODEV;
- 		}
- 		device_declaration = 1;
-@@ -345,7 +348,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
- 	if (!object.processor.pblk_address)
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No PBLK (NULL address)\n"));
- 	else if (object.processor.pblk_length != 6)
--		printk(KERN_ERR PREFIX "Invalid PBLK length [%d]\n",
-+		acpi_pr_err(pr->handle, "Invalid PBLK length [%d]\n",
- 			    object.processor.pblk_length);
- 	else {
- 		pr->throttling.address = object.processor.pblk_address;
-@@ -429,8 +432,8 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
- 		 * Initialize missing things
- 		 */
- 		if (pr->flags.need_hotplug_init) {
--			printk(KERN_INFO "Will online and init hotplugged "
--			       "CPU: %d\n", pr->id);
-+			pr_info("Will online and init hotplugged CPU: %d\n",
-+				pr->id);
- 			WARN(acpi_processor_start(pr), "Failed to start CPU:"
- 				" %d\n", pr->id);
- 			pr->flags.need_hotplug_init = 0;
-@@ -491,14 +494,16 @@ static __ref int acpi_processor_start(struct acpi_processor *pr)
- 				   &pr->cdev->device.kobj,
- 				   "thermal_cooling");
- 	if (result) {
--		printk(KERN_ERR PREFIX "Create sysfs link\n");
-+		dev_err(&device->dev,
-+			"Failed to create sysfs link 'thermal_cooling'\n");
- 		goto err_thermal_unregister;
- 	}
- 	result = sysfs_create_link(&pr->cdev->device.kobj,
- 				   &device->dev.kobj,
- 				   "device");
- 	if (result) {
--		printk(KERN_ERR PREFIX "Create sysfs link\n");
-+		dev_err(&pr->cdev->device,
-+			"Failed to create sysfs link 'device'\n");
- 		goto err_remove_sysfs_thermal;
+ 
+ 	if (!device) {
+-		printk(KERN_ERR PREFIX "device is NULL\n");
++		pr_err(PREFIX "device is NULL\n");
+ 		return -EINVAL;
  	}
  
-@@ -560,8 +565,7 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
- 	 */
- 	if (per_cpu(processor_device_array, pr->id) != NULL &&
- 	    per_cpu(processor_device_array, pr->id) != device) {
--		printk(KERN_WARNING "BIOS reported wrong ACPI id "
--			"for the processor\n");
-+		pr_warn("BIOS reported wrong ACPI id for the processor\n");
- 		result = -ENODEV;
- 		goto err_free_cpumask;
- 	}
-@@ -715,7 +719,7 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+@@ -164,7 +164,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 	case ACPI_NOTIFY_BUS_CHECK:
+ 		/* Fall through */
+ 	case ACPI_NOTIFY_DEVICE_CHECK:
+-		printk(KERN_WARNING "Container driver received %s event\n",
++		pr_warn("Container driver received %s event\n",
+ 		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+ 		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
  
- 		result = acpi_processor_device_add(handle, &device);
+@@ -185,7 +185,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 
+ 		result = container_device_add(&device, handle);
  		if (result) {
--			pr_err(PREFIX "Unable to add the device\n");
-+			acpi_pr_err(handle, "Unable to add the device\n");
+-			pr_warn("Failed to add container\n");
++			acpi_pr_warn(handle, "Failed to add container\n");
  			break;
  		}
  
-@@ -727,17 +731,19 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
- 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
- 
- 		if (acpi_bus_get_device(handle, &device)) {
--			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
-+			acpi_pr_err(handle,
-+				"Device don't exist, dropping EJECT\n");
- 			break;
- 		}
- 		if (!acpi_driver_data(device)) {
--			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
-+			acpi_pr_err(handle,
-+				"Driver data is NULL, dropping EJECT\n");
- 			break;
- 		}
- 
- 		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
- 		if (!ej_event) {
--			pr_err(PREFIX "No memory, dropping EJECT\n");
-+			acpi_pr_err(handle, "No memory, dropping EJECT\n");
- 			break;
- 		}
- 
-@@ -847,7 +853,7 @@ static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
- 	 * and do it when the CPU gets online the first time
- 	 * TBD: Cleanup above functions and try to do this more elegant.
- 	 */
--	printk(KERN_INFO "CPU %d got hotplugged\n", pr->id);
-+	pr_info("CPU %d got hotplugged\n", pr->id);
- 	pr->flags.need_hotplug_init = 1;
- 
- 	return AE_OK;
 -- 
 1.7.7.6
 
