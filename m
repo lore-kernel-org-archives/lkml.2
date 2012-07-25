@@ -1,35 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2GYQBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:01:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14174 "EHLO mx1.redhat.com"
+	id S1755434Ab2GYQCU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:02:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16492 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755173Ab2GYQBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:01:19 -0400
-Message-ID: <501013DC.5090803@redhat.com>
-Date: Wed, 25 Jul 2012 11:42:20 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: peterz@infradead.org, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] augmented rbtree test
-References: <1342787467-5493-1-git-send-email-walken@google.com> <1342787467-5493-4-git-send-email-walken@google.com>
-In-Reply-To: <1342787467-5493-4-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753247Ab2GYQCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 12:02:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="171305175"
+Message-ID: <1343232376.4060.202.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 07/16] btrfs: nuke write_super from comments
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: cwillu <cwillu@cwillu.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Date: Wed, 25 Jul 2012 19:06:16 +0300
+In-Reply-To: <CAE5mzvg178UUj4eRmL-VE+=jXSnBJvAUgNPooY3f2ihbwSbBOg@mail.gmail.com>
+References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
+	 <1343229134-29487-8-git-send-email-artem.bityutskiy@linux.intel.com>
+	 <CAE5mzvg178UUj4eRmL-VE+=jXSnBJvAUgNPooY3f2ihbwSbBOg@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-95OoLSqEcB/3SpQeF8Pd"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 08:31 AM, Michel Lespinasse wrote:
-> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-Could use a changelog.  Other than that:
+--=-95OoLSqEcB/3SpQeF8Pd
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rik van Riel <riel@redhat.com>
+On Wed, 2012-07-25 at 09:46 -0600, cwillu wrote:
+> >         mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
+> >         list_add_rcu(&device->dev_list, &root->fs_info->fs_devices->dev=
+ices);
+> >         list_add(&device->dev_alloc_list,
+>=20
+> Is the locking still required for approximately the same reason?
 
+I do not know, I assume Chris would check that.
 
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-95OoLSqEcB/3SpQeF8Pd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQEBl4AAoJECmIfjd9wqK0u34P/3TAb3pQdKPPT4OCm0COftc3
+nWBYGc5aOQwQFWRCHQRNA31HmZ0bFm9y80mNakBwFZY/l/ylgRIVfStykhJVYp3h
+B7O/thSyOivLaNsVH9zpE7gKQbECKlXMlKCr1t/oYMBBWo9MvyrG8x3qQMrCAMQ7
+y0xN9x1xalSIuQprFI08RK2I1lVdPXwufhtbDPYMNyQheEc+mh0vchK48aSsg7dw
+HsjNroIvHybIDZJ/qTy7pMU4uhHnHdpyXZaxfiX/fdfCFeJiVeW0SAZlqec5gg5n
+USqE4iOwmB21qtuHgRzogUQjRSv6NpUvbrCTygR9N7LtVqQIbmlHrLwkJfNA7gdz
+oTXpLVjPuBeBXWQNCLomKPEDFBhsLdXpHN2uBbq6CPDkHZ5D4XPrwBJzH7CQIf6Z
+BK45mOByZ+fdukEQT0SkYWb7lt2hnBd8hDzc1XzW70Bnf2FW8nfd1WZ7RZQqPtmu
+BHWK+o0qvYfUFYbBK7dRG9xWnceD57zucefcDiXLNTTQvHOBxqLHyrzPZDl01NDW
++1upJDkDt/UBQsfEecdh5yqm6jq5/a4ObRtH9VYLrHKy1zvgnTruEqMhnkkiiuON
+4FA4vaf59UJw3KGO6FtDfk5HIOUc5Qj7scEAci7ZNWDbLNXK5QoKMsGJhC5HFbGn
+aFe18tZqUAR21ENJM7kY
+=oXXn
+-----END PGP SIGNATURE-----
+
+--=-95OoLSqEcB/3SpQeF8Pd--
 
