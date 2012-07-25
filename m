@@ -1,88 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab2GYGgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:36:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55894 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab2GYGga (ORCPT
+	id S1753757Ab2GYGj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:39:28 -0400
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:4992 "EHLO
+	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751256Ab2GYGj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:36:30 -0400
-Date: Tue, 24 Jul 2012 23:36:24 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Baodong Chen <chenbdchenbd@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fixed a macro coding style issue
-Message-ID: <20120725063624.GA6546@core.coreip.homeip.net>
-References: <no>
- <1343193656-2643-1-git-send-email-chenbdchenbd@gmail.com>
- <20120725053755.GA2100@core.coreip.homeip.net>
- <20120725061512.GB6481@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120725061512.GB6481@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Jul 2012 02:39:26 -0400
+From: Maya Erez <merez@codeaurora.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] mmc: card: Add Sanitize unit test
+Date: Wed, 25 Jul 2012 09:37:37 +0300
+Message-Id: <1343198350-5307-1-git-send-email-merez@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 07:15:12AM +0100, Al Viro wrote:
-> On Tue, Jul 24, 2012 at 10:37:55PM -0700, Dmitry Torokhov wrote:
-> > On Wed, Jul 25, 2012 at 01:20:56PM +0800, Baodong Chen wrote:
-> > > Fixed a coding style issue in driver/input/input.c
-> > > 
-> > > Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
-> > > ---
-> > >  drivers/input/input.c |    6 ++++--
-> > >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/input/input.c b/drivers/input/input.c
-> > > index 8921c61..c96e983 100644
-> > > --- a/drivers/input/input.c
-> > > +++ b/drivers/input/input.c
-> > > @@ -845,11 +845,13 @@ int input_set_keycode(struct input_dev *dev,
-> > >  EXPORT_SYMBOL(input_set_keycode);
-> > >  
-> > >  #define MATCH_BIT(bit, max) \
-> > > +	do { \
-> > >  		for (i = 0; i < BITS_TO_LONGS(max); i++) \
-> > >  			if ((id->bit[i] & dev->bit[i]) != id->bit[i]) \
-> > >  				break; \
-> > > -		if (i != BITS_TO_LONGS(max)) \
-> > > -			continue;
-> > > +			if (i != BITS_TO_LONGS(max)) \
-> > > +				continue; \
-> > > +	} while (0)
-> > 
-> > This changes semantics. While current implementation of MATCH_BIT might
-> > not be great style, it is not supposed to be used outside of
-> > input_match_device(), and the replacement is completely broken.
-> 
-> Replacement is certainly completely broken, but "might not be great style"
-> is quite an understatement.  Everything else aside, it's too obfuscated
-> and ugly for anything outside of IOCCC and too verbose for IOCCC.
-> 
-> Damnit, at least turn that into
-> static inline int is_subset(unsigned long *bitmap1, unsigned long *bitmap2, size_t bits)
-> {
-> 	int i;
-> 	for (i = BITS_TO_LONGS(bits); i; bitmap1++, bitmap2++, i--)
-> 		if ((*bitmap1 & *bitmap2) != *bitmap1)
-> 			return 0;
-> 	return 1;
-> }
-> and just before your loop
-> /* ignore ones that don't have bits required by id */
-> #define MATCH_BIT(array, bits) if (!is_subset(id->array, dev->array, bits)) continue;
+This test write data to the card, then send DISCARD on random
+addresses on the card, send SANITIZE to the card to erase all
+the unmapped areas.
 
-Hmm, we already have bitmap_subset(), I think we can simply use it.
+Signed-off-by: Maya Erez <merez@codeaurora.org>
+---
+This patch depends of the following patches:
+  [PATCH RESEND v7 1/2] block: ioctl support for sanitize in eMMC 4.5
+  [PATCH RESEND v7 2/2] mmc: card: Adding support for sanitize in eMMC 4.5
+  [PATCH v4 2/3] block: Add test-iosched scheduler
+  [PATCH v4 3/3] mmc: card: Add eMMC4.5 write packed commands unit-tests
 
-> with #undef MATCH_BIT right after the loop, to make it damn clean that it's local.
-> And frankly, I'd consider expanding that variant and killing the macro off.
-> Macros that affect control flow are vile and actively confusing for reader.
+---
+ block/test-iosched.c              |    3 +
+ drivers/mmc/card/mmc_block_test.c |  120 +++++++++++++++++++++++++++++++++++++
+ include/linux/test-iosched.h      |    1 +
+ 3 files changed, 124 insertions(+), 0 deletions(-)
 
-I agree. In my defense it is quite old code...
-
+diff --git a/block/test-iosched.c b/block/test-iosched.c
+index 6f0b0b3..e04befd 100644
+--- a/block/test-iosched.c
++++ b/block/test-iosched.c
+@@ -173,6 +173,9 @@ int test_iosched_add_unique_test_req(int is_err_expcted,
+ 		bio->bi_size = nr_sects << 9;
+ 		bio->bi_sector = start_sec;
+ 		break;
++	case REQ_UNIQUE_SANITIZE:
++		bio->bi_rw = REQ_WRITE | REQ_SANITIZE;
++		break;
+ 	default:
+ 		test_pr_err("%s: Invalid request type %d", __func__,
+ 			    req_unique);
+diff --git a/drivers/mmc/card/mmc_block_test.c b/drivers/mmc/card/mmc_block_test.c
+index f2a0ac7..25af8cc 100644
+--- a/drivers/mmc/card/mmc_block_test.c
++++ b/drivers/mmc/card/mmc_block_test.c
+@@ -33,11 +33,16 @@
+ #define PACKED_HDR_RW_MASK 0x0000FF00
+ #define PACKED_HDR_NUM_REQS_MASK 0x00FF0000
+ #define PACKED_HDR_BITS_16_TO_29_SET 0x3FFF0000
++#define SECTOR_SIZE 512
++#define NUM_OF_SECTORS_PER_BIO		((BIO_U32_SIZE * 4) / SECTOR_SIZE)
++#define BIO_TO_SECTOR(x)		(x * NUM_OF_SECTORS_PER_BIO)
+ 
+ #define test_pr_debug(fmt, args...) pr_debug("%s: "fmt"\n", MODULE_NAME, args)
+ #define test_pr_info(fmt, args...) pr_info("%s: "fmt"\n", MODULE_NAME, args)
+ #define test_pr_err(fmt, args...) pr_err("%s: "fmt"\n", MODULE_NAME, args)
+ 
++#define SANITIZE_TEST_TIMEOUT 240000
++
+ enum is_random {
+ 	NON_RANDOM_TEST,
+ 	RANDOM_TEST,
+@@ -83,6 +88,8 @@ enum mmc_block_test_testcases {
+ 	TEST_CMD23_BITS_16TO29_SET,
+ 	TEST_CMD23_HDR_BLK_NOT_IN_COUNT,
+ 	INVALID_CMD_MAX_TESTCASE = TEST_CMD23_HDR_BLK_NOT_IN_COUNT,
++
++	TEST_WRITE_DISCARD_SANITIZE_READ,
+ };
+ 
+ enum mmc_block_test_group {
+@@ -98,6 +105,7 @@ struct mmc_block_test_debug {
+ 	struct dentry *err_check_test;
+ 	struct dentry *send_invalid_packed_test;
+ 	struct dentry *random_test_seed;
++	struct dentry *discard_sanitize_test;
+ };
+ 
+ struct mmc_block_test_data {
+@@ -454,6 +462,8 @@ static char *get_test_case_str(struct test_data *td)
+ 		return "Test invalid - cmd23 bits [16-29] set";
+ 	case TEST_CMD23_HDR_BLK_NOT_IN_COUNT:
+ 		return "Test invalid - cmd23 header block not in count";
++	case TEST_WRITE_DISCARD_SANITIZE_READ:
++		return "\nTest write, discard, sanitize";
+ 	default:
+ 		 return "Unknown testcase";
+ 	}
+@@ -1080,6 +1090,63 @@ static int validate_packed_commands_settings(void)
+ 	return 0;
+ }
+ 
++static void pseudo_rnd_sector_and_size(unsigned int *seed,
++				       unsigned int min_start_sector,
++				       unsigned int *start_sector,
++				       unsigned int *num_of_bios)
++{
++	unsigned int max_sec = min_start_sector + TEST_MAX_SECTOR_RANGE;
++	do {
++		*start_sector = pseudo_random_seed(seed,
++						   1, max_sec);
++		*num_of_bios = pseudo_random_seed(seed,
++						  1, TEST_MAX_BIOS_PER_REQ);
++		if (!(*num_of_bios))
++			*num_of_bios = 1;
++	} while ((*start_sector < min_start_sector) ||
++		 (*start_sector + (*num_of_bios * BIO_U32_SIZE * 4)) > max_sec);
++}
++
++/* sanitize test functions */
++static int prepare_write_discard_sanitize_read(struct test_data *td)
++{
++	unsigned int start_sector;
++	unsigned int num_of_bios = 0;
++	static unsigned int total_bios;
++	unsigned int *num_bios_seed;
++	int i = 0;
++
++	if (mbtd->random_test_seed == 0) {
++		mbtd->random_test_seed =
++			(unsigned int)(get_jiffies_64() & 0xFFFF);
++		test_pr_info("%s: got seed from jiffies %d",
++			     __func__, mbtd->random_test_seed);
++	}
++	num_bios_seed = &mbtd->random_test_seed;
++
++	do {
++		pseudo_rnd_sector_and_size(num_bios_seed, td->start_sector,
++					   &start_sector, &num_of_bios);
++
++		/* DISCARD */
++		total_bios += num_of_bios;
++		test_pr_info("%s: discard req: id=%d, startSec=%d, NumBios=%d",
++		       __func__, td->unique_next_req_id, start_sector,
++			     num_of_bios);
++		test_iosched_add_unique_test_req(0, REQ_UNIQUE_DISCARD,
++				    start_sector, BIO_TO_SECTOR(num_of_bios),
++						 NULL);
++
++	} while (++i < (BLKDEV_MAX_RQ-10));
++
++	test_pr_info("%s: total discard bios = %d", __func__, total_bios);
++
++	test_pr_info("%s: add sanitize req", __func__);
++	test_iosched_add_unique_test_req(0, REQ_UNIQUE_SANITIZE, 0, 0, NULL);
++
++	return 0;
++}
++
+ static bool message_repeat;
+ static int test_open(struct inode *inode, struct file *file)
+ {
+@@ -1397,12 +1464,56 @@ const struct file_operations send_invalid_packed_test_ops = {
+ 	.read = send_invalid_packed_test_read,
+ };
+ 
++static ssize_t write_discard_sanitize_test_write(struct file *file,
++				const char __user *buf,
++				size_t count,
++				loff_t *ppos)
++{
++	int ret = 0;
++	int i = 0;
++	int number = -1;
++
++	sscanf(buf, "%d", &number);
++	if (number <= 0)
++		number = 1;
++
++	test_pr_info("%s: -- write_discard_sanitize TEST --\n", __func__);
++
++	memset(&mbtd->test_info, 0, sizeof(struct test_info));
++
++	mbtd->test_group = TEST_GENERAL_GROUP;
++
++	mbtd->test_info.data = mbtd;
++	mbtd->test_info.prepare_test_fn = prepare_write_discard_sanitize_read;
++	mbtd->test_info.get_test_case_str_fn = get_test_case_str;
++	mbtd->test_info.timeout_msec = SANITIZE_TEST_TIMEOUT;
++
++	for (i = 0 ; i < number ; ++i) {
++		test_pr_info("%s: Cycle # %d / %d\n", __func__, i+1, number);
++		test_pr_info("%s: ===================", __func__);
++
++		mbtd->test_info.testcase = TEST_WRITE_DISCARD_SANITIZE_READ;
++		ret = test_iosched_start_test(&mbtd->test_info);
++
++		if (ret)
++			break;
++	}
++
++	return count;
++}
++
++const struct file_operations write_discard_sanitize_test_ops = {
++	.open = test_open,
++	.write = write_discard_sanitize_test_write,
++};
++
+ static void mmc_block_test_debugfs_cleanup(void)
+ {
+ 	debugfs_remove(mbtd->debug.random_test_seed);
+ 	debugfs_remove(mbtd->debug.send_write_packing_test);
+ 	debugfs_remove(mbtd->debug.err_check_test);
+ 	debugfs_remove(mbtd->debug.send_invalid_packed_test);
++	debugfs_remove(mbtd->debug.discard_sanitize_test);
+ }
+ 
+ static int mmc_block_test_debugfs_init(void)
+@@ -1454,6 +1565,15 @@ static int mmc_block_test_debugfs_init(void)
+ 	if (!mbtd->debug.send_invalid_packed_test)
+ 		goto err_nomem;
+ 
++	mbtd->debug.discard_sanitize_test =
++		debugfs_create_file("write_discard_sanitize_test",
++				    S_IRUGO | S_IWUGO,
++				    tests_root,
++				    NULL,
++				    &write_discard_sanitize_test_ops);
++	if (!mbtd->debug.discard_sanitize_test)
++		goto err_nomem;
++
+ 	return 0;
+ 
+ err_nomem:
+diff --git a/include/linux/test-iosched.h b/include/linux/test-iosched.h
+index 8054409..1e428c5 100644
+--- a/include/linux/test-iosched.h
++++ b/include/linux/test-iosched.h
+@@ -65,6 +65,7 @@ enum req_unique_type {
+ 	REQ_UNIQUE_NONE,
+ 	REQ_UNIQUE_DISCARD,
+ 	REQ_UNIQUE_FLUSH,
++	REQ_UNIQUE_SANITIZE,
+ };
+ 
+ /**
 -- 
-Dmitry
+1.7.3.3
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
