@@ -1,51 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab2GYRFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 13:05:35 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:48958 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756446Ab2GYRFe (ORCPT
+	id S1756652Ab2GYRFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 13:05:40 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57310 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756494Ab2GYRFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 13:05:34 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: xcQ.r64VM1lvuPJYLu8pVO.dgmEBBQtYM_TWyMwRGyqiB19
- 0zE2NYsXQ9FBjnVJiyqNFC8hhtkuDsp1chieDlb_O.cHY8hm7uKZ94WUtKHN
- EwK_mubcNiemes1GH8ZmPbUYR5Yo9nI4__rC1wv7kuyKM9zEOdKz9kHp8UdW
- 8rUSPkMJdK7R5zGLjOMy6_O.KHVSQcDYTxFh1rY78gwmhOvhHY2iro0fwTnw
- sbF5oYAbXr7fcmZ0LvXdQGmDuPZ6smZ40RVEYC0Opa.lFfZKOEOP2bxY24nk
- GdVjdNt6cJq47ABJiC7PA12aEIKRZitPwpK9NH25Mn88pHOEeBLZRoN4BDft
- vZsGbGbEn3MuDX8.lIUEwg.BCWpf5CJ.sgePlXNWqPk9EHsnWaRNx7dNRIiG
- YgvCHYp54ty6qG93L
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 25 Jul 2012 12:05:28 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org,
-        cgroups@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 05/10] slab: allow enable_cpu_cache to use preset values
- for its tunables
-In-Reply-To: <1343227101-14217-6-git-send-email-glommer@parallels.com>
-Message-ID: <alpine.DEB.2.00.1207251204450.3543@router.home>
-References: <1343227101-14217-1-git-send-email-glommer@parallels.com> <1343227101-14217-6-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 25 Jul 2012 13:05:38 -0400
+Date: Wed, 25 Jul 2012 19:05:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 14/17] perf, tool: Support for dwarf cfi unwinding on
+ post processing
+Message-ID: <20120725170530.GE1173@somewhere.redhat.com>
+References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+ <1342959280-5361-15-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342959280-5361-15-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jul 2012, Glauber Costa wrote:
+On Sun, Jul 22, 2012 at 02:14:37PM +0200, Jiri Olsa wrote:
+> This brings the support for dwarf cfi unwinding on perf post
+> processing. Call frame informations are retrieved and then passed
+> to libunwind that requests memory and register content from the
+> applications.
+> 
+> Adding unwind object to handle the user stack backtrace based
+> on the user register values and user stack dump.
+> 
+> The unwind object access the libunwind via remote interface
+> and provides to it all the necessary data to unwind the stack.
+> 
+> The unwind interface provides following function:
+> 	unwind__get_entries
+> 
+> And callback (specified in above function) to retrieve
+> the backtrace entries:
+> 	typedef int (*unwind_entry_cb_t)(struct unwind_entry *entry,
+> 					 void *arg);
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  tools/perf/Makefile                                |    2 +
+>  tools/perf/arch/x86/Makefile                       |    3 +
+>  tools/perf/arch/x86/util/unwind.c                  |  111 ++++
+>  tools/perf/builtin-report.c                        |   24 +-
+>  tools/perf/builtin-script.c                        |   16 +-
+>  tools/perf/builtin-top.c                           |    5 +-
+>  tools/perf/util/include/linux/compiler.h           |    1 +
+>  tools/perf/util/map.h                              |    7 +-
+>  .../perf/util/scripting-engines/trace-event-perl.c |    3 +-
+>  .../util/scripting-engines/trace-event-python.c    |    3 +-
+>  tools/perf/util/session.c                          |   61 ++-
+>  tools/perf/util/session.h                          |    3 +-
+>  tools/perf/util/trace-event-scripting.c            |    3 +-
+>  tools/perf/util/trace-event.h                      |    5 +-
+>  tools/perf/util/unwind.c                           |  567 ++++++++++++++++++++
+>  tools/perf/util/unwind.h                           |   34 ++
+>  16 files changed, 811 insertions(+), 37 deletions(-)
+>  create mode 100644 tools/perf/arch/x86/util/unwind.c
+>  create mode 100644 tools/perf/util/unwind.c
+>  create mode 100644 tools/perf/util/unwind.h
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index d0c3291..c18c790 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -328,6 +328,7 @@ LIB_H += util/cgroup.h
+>  LIB_H += $(TRACE_EVENT_DIR)event-parse.h
+>  LIB_H += util/target.h
+>  LIB_H += util/perf_regs.h
+> +LIB_H += util/unwind.h
+>  
+>  LIB_OBJS += $(OUTPUT)util/abspath.o
+>  LIB_OBJS += $(OUTPUT)util/alias.o
+> @@ -513,6 +514,7 @@ else
+>  	EXTLIBS += $(LIBUNWIND_LIBS)
+>  	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
+>  	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
+> +	LIB_OBJS += $(OUTPUT)util/unwind.o
+>  endif
+>  
+>  ifdef NO_NEWT
+> diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+> index 744e629..815841c 100644
+> --- a/tools/perf/arch/x86/Makefile
+> +++ b/tools/perf/arch/x86/Makefile
+> @@ -2,4 +2,7 @@ ifndef NO_DWARF
+>  PERF_HAVE_DWARF_REGS := 1
+>  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+>  endif
+> +ifndef NO_LIBUNWIND
+> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
+> +endif
+>  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+> diff --git a/tools/perf/arch/x86/util/unwind.c b/tools/perf/arch/x86/util/unwind.c
+> new file mode 100644
+> index 0000000..78d956e
+> --- /dev/null
+> +++ b/tools/perf/arch/x86/util/unwind.c
+> @@ -0,0 +1,111 @@
+> +
+> +#include <errno.h>
+> +#include <libunwind.h>
+> +#include "perf_regs.h"
+> +#include "../../util/unwind.h"
+> +
+> +#ifdef ARCH_X86_64
+> +int unwind__arch_reg_id(int regnum)
 
-> SLAB allows us to tune a particular cache behavior with tunables.
-> When creating a new memcg cache copy, we'd like to preserve any tunables
-> the parent cache already had.
-
-So does SLUB but I do not see a patch for that allocator.
+Please try to avoid __ in function names. We used that convention
+before but we gave up because that's actually more painful than
+anything.
