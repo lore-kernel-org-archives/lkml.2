@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab2GYIfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 04:35:21 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56532 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932802Ab2GYIfP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 04:35:15 -0400
-Date: Wed, 25 Jul 2012 09:34:52 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Domenico Andreoli <cavokz@gmail.com>
-Subject: Re: [08/36] AArch64: Kernel booting and initialisation
-Message-ID: <20120725083452.GA11389@arm.com>
-References: <1341608777-12982-9-git-send-email-catalin.marinas@arm.com>
- <500DB986.7090309@codeaurora.org>
- <20120724162404.GB29519@arm.com>
- <201207241853.16625.arnd@arndb.de>
+	id S932888Ab2GYIgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 04:36:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59819 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932818Ab2GYIgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 04:36:43 -0400
+Date: Wed, 25 Jul 2012 09:36:37 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+Message-ID: <20120725083637.GA9222@suse.de>
+References: <20120720134937.GG9222@suse.de>
+ <20120720141108.GH9222@suse.de>
+ <20120720143635.GE12434@tiehlicka.suse.cz>
+ <20120720145121.GJ9222@suse.de>
+ <alpine.LSU.2.00.1207222033030.6810@eggly.anvils>
+ <20120723114007.GU9222@suse.de>
+ <alpine.LSU.2.00.1207231702440.1683@eggly.anvils>
+ <20120724093406.GO9222@suse.de>
+ <alpine.LSU.2.00.1207241108010.1749@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <201207241853.16625.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LSU.2.00.1207241108010.1749@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 07:53:16PM +0100, Arnd Bergmann wrote:
-> On Tuesday 24 July 2012, Catalin Marinas wrote:
-> > On Mon, Jul 23, 2012 at 09:52:22PM +0100, Christopher Covington wrote:
-> > > Catalin Marinas - July 8, 2012, 9:18 a.m.
-> > > > On Fri, Jul 06, 2012 at 10:32:54PM +0100, Stephen Warren wrote:
-> > > > 
-> > > >> Also, on Tegra at least and perhaps OMAP too, there are a few parts
-> > > >> of earlyprintk serial port setup (i.e. port selection) which happen
-> > > >> as part of the decompressor rather than the main kernel image, so
-> > > >> we'd have to re-jig that too.
-> > > > 
-> > > > Whatever we did on AArch32, if it was useful and we want to follow a
-> > > > similar model it needs porting given that the code cannot be shared. So
-> > > > there is nothing to re-jig but rather implement.
-> > > > 
-> > > > As for earlyprintk, you can initialise it in the decompressed kernel
-> > > > anyway. But even though it's a useful debugging tool, it goes against
-> > > > the single Image aim (at least the current printascii/addruart
-> > > > implementation). I don't have a proper implementation yet.
+On Tue, Jul 24, 2012 at 12:23:58PM -0700, Hugh Dickins wrote:
+> On Tue, 24 Jul 2012, Mel Gorman wrote:
+> > On Mon, Jul 23, 2012 at 06:08:05PM -0700, Hugh Dickins wrote:
 > > > 
-> > > Would DCC [1] be a reasonably commonly available early printk mechanism
-> > > for the single image to provide?
+> > > So, after a bout of anxiety, I think my &= ~VM_MAYSHARE remains good.
+> > > 
 > > 
-> > Yes, this can be implemented but I think it has its own restrictions,
-> > requiring a JTAG connection.
+> > I agree with you. When I was thinking about the potential problems, I was
+> > thinking of them in the general context of the core VM and what we normally
+> > take into account.
+> > 
+> > I confess that I really find this working-by-coincidence very icky and am
+> > uncomfortable with it but your patch is the only patch that contains the
+> > mess to hugetlbfs. I fixed exit_mmap() for my version but only by changing
+> > the core to introduce exit_vmas() to take mmap_sem for write if a hugetlb
+> > VMA is found so I also affected the core.
 > 
-> Right, which means that it's not generic and we still need to make
-> a decision for a how we want to solve the underlying problem. The
-> options I see are:
+> "icky" is not quite the word I'd use, but yes, it feels like you only
+> have to dislodge a stone somewhere at the other end of the kernel,
+> and the whole lot would come tumbling down.
 > 
-> 1. Have no earlyprintk before loading the console drivers
+> If I could think of a suitable VM_BUG_ON to insert next to the ~VM_MAYSHARE,
+> I would: to warn us when assumptions change.  If we were prepared to waste
+> another vm_flag on it (and just because there's now a type which lets them
+> expand does not mean we can be profligate with them), then you can imagine
+> a VM_GOINGAWAY flag set in unmap_region() and exit_mmap(), and we key off
+> that instead; or something of that kind.
+> 
 
-It may be a long time and wouldn't help with early bugs.
+A new VM flag would be overkill for this right now.
 
-> 2. Make the series from Domenico architecture independent code
+> But I'm afraid I see that as TODO-list material: the one-liner is pretty
+> good for stable backporting, and I felt smiled-upon when it turned out to
+> be workable (and not even needing a change in arch/x86/mm, that really
+> surprised me).  It seems ungrateful not to seize the simple fix it offers,
+> which I found much easier to understand than the alternatives.
+> 
 
-I haven't seen this yet.
+That's fair enough.
 
-> 3. Reimplement a layer like that, differently
+> > 
+> > So, lets go with your patch but with all this documented! I stuck a
+> > changelog and an additional comment onto your patch and this is the end
+> > result.
+> 
+> Okay, thanks.  (I think you've copied rather more of my previous mail
+> into the commit description than it deserves, but it looks like you
+> like more words where I like less!)
+> 
 
-Any of the two above would be fine.
+I did copy more than was necessary, I'll fix it.
 
-> 4. Make it a compile-time option and allow this only for
->    low level debugging purposes but disable it in distro kernels.
+> > 
+> > Do you want to pick this up and send it to Andrew or will I?
+> 
+> Oh, please change your Reviewed-by to Signed-off-by: almost all of the
+> work and description comes from you and Michal; then please, you send it
+> in to Andrew - sorry, I really need to turn my attention to other things.
+> 
 
-That's what I currently have (though not included in this post) but I
-don't particularly the approach. There are advantages in being able to
-call printascii from assembly early on but if we don't have a standard
-UART than it goes against single Image file.
-
-My proposal is to allow DCC very early on for development kernels
-(possibly called from assembly) with a timeout if there is no JTAG
-connection. Immediately after setup_machine_fdt() switch to a UART early
-console if there is one. But we retrieve this information from the FDT.
-
-I would say the early_printk console should not bother with UART
-initialisation (done by the boot loader) but just the actual character
-sending. It should also be placed somewhere under drivers/ as it may
-be shared by other architectures (it's just specific to the UART chip).
+That's fine, I'll pick it. Thanks for working on this.
 
 -- 
-Catalin
+Mel Gorman
+SUSE Labs
