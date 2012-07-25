@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab2GYIZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 04:25:51 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:62930 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932748Ab2GYIZs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 04:25:48 -0400
+	id S932797Ab2GYI1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 04:27:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59393 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932748Ab2GYI1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 04:27:41 -0400
+Date: Wed, 25 Jul 2012 09:27:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: John David Anglin <dave.anglin@bell.net>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@parisc-linux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Subject: Re: [next:akpm 129/309] net/core/sock.c:274:36: error: initializer
+ element is not constant
+Message-ID: <20120725082732.GZ9222@suse.de>
+References: <20120722163058.GB13376@localhost>
+ <20120723111619.GT9222@suse.de>
+ <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
+ <20120723114258.GV9222@suse.de>
+ <20120723122905.GA22476@localhost>
+ <BLU0-SMTP2254F8872DDE5FA6035CDE97DD0@phx.gbl>
+ <20120724074844.GA9519@localhost>
+ <BLU0-SMTP6C7CFCFF734FE10A39B6E97DC0@phx.gbl>
 MIME-Version: 1.0
-In-Reply-To: <1343203282.30161.29.camel@joe2Laptop>
-References: <1343200277-14385-1-git-send-email-chenbdchenbd@gmail.com>
-	<1343201406.30161.10.camel@joe2Laptop>
-	<CAEAuANO7itUw64z=w9ve_suvQBoPirnmZ_5WBbc=Tn=ESeG6OA@mail.gmail.com>
-	<1343203282.30161.29.camel@joe2Laptop>
-Date: Wed, 25 Jul 2012 16:25:47 +0800
-Message-ID: <CAEAuANOJaVb2prSMF4N4zxKTAxpEWvmdOPFODQNAR+fFo3hKEA@mail.gmail.com>
-Subject: Re: [PATCH] fixed coding style issues
-From: Baodong Chen <chenbdchenbd@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <BLU0-SMTP6C7CFCFF734FE10A39B6E97DC0@phx.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 4:01 PM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2012-07-25 at 15:44 +0800, Baodong Chen wrote:
->> i want to participate in and to start from
->> fixing simple issues!
->
-> That's fine Baodong.  Welcome.
->
->> how could i choose issues form checkpatch's output to find which
->> should be fixed which are
->> not?
->
-> checkpatch output is merely a guide for submission of patches
-> to conform to some generic "kernel style".  I think there are
-> times when really ugly code should have a pass to make it more
-> "kernel style" like.  Most of those cleanup type changes should
-> be done only to code in the "drivers/staging" directory.
->
-> I think most of the time, unless you are also fixing some other
-> underlying code defect or shortcoming, checkpatch only cleanups
-> to existing code are best avoided.
->
-> I suggest for now, until you are really comfortable with the
-> preferred style, you confine yourself to drivers/staging.
->
-hi,Joe;
-thank for your explaining!
-ok, i will start from drivers/staging
+On Tue, Jul 24, 2012 at 05:08:04PM -0400, John David Anglin wrote:
+> On 24-Jul-12, at 3:48 AM, Fengguang Wu wrote:
+> 
+> >Here is the line in sock.i:
+> >
+> >struct static_key memalloc_socks = ((struct static_key) { .enabled
+> >= ((atomic_t) { (0) }) });
+> 
+> 
+> The above line contains two compound literals.  It also uses a
+> designated initializer
+> to initialize the field enabled.  A compound literal is not a
+> constant expression.
+> 
+> The location of the above statement isn't fully clear, but if a
+> compound literal occurs
+> outside the body of a function, the initializer list must consist of
+> constant expressions.
+> 
+> Removing "(atomic_t)" from the define results in a constant expression.
+> 
+> Test case:
+> 
+> typedef struct { long enabled; } atomic_t;
+> struct static_key { atomic_t enabled; int x; };
+> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+> ((atomic_t) { (0) }) });
+> 
 
->> or checkpatch.pl should be updated??
->
-> You could work on that too.
->
-> One possibility is to write a utility to take checkpatch output
-> and generate patches automatically, or perhaps extend checkpatch
-> itself to do that.  (ie: add a --fix option)
->
-> cheers, Joe
->
+Thanks John for that explanation, it clears it up. The source of the
+above line was linux-next/master:net/core/sock.c due to some patches I
+merged. The exact line looks like this
+
+struct static_key memalloc_socks = STATIC_KEY_INIT_FALSE;
+
+and that thing in turns looks like
+
+#define STATIC_KEY_INIT_FALSE ((struct static_key) \
+        { .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
+
+This is a standard use of a static key (http://lwn.net/Articles/487426/)
+and as I expect there will be more use of this feature in the future
+it's good to get it fixed up first.
+
+Thanks James for picking this up and putting a changelog on it.
+
+-- 
+Mel Gorman
+SUSE Labs
