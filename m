@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab2GYMlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:41:12 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:37648 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932934Ab2GYMlK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:41:10 -0400
-Message-ID: <500FE952.9030001@panasas.com>
-Date: Wed, 25 Jul 2012 15:40:50 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	id S1756697Ab2GYMoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:44:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44918 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755483Ab2GYMoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:44:24 -0400
+From: Oliver Neukum <oneukum@suse.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC PATCH 00/13] firmware loader: introduce cache/uncache firmware
+Date: Wed, 25 Jul 2012 14:43:29 +0200
+Message-ID: <2841959.DtLAQqdt31@linux-lqwf.site>
+Organization: SUSE
+User-Agent: KMail/4.8.4 (Linux/3.5.0-rc6-117-g918227b-1-vanilla; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <CACVXFVOiXRiqRsE46_xmOzK_dExNvkBaJVwjiZ9adhwqRRwY+g@mail.gmail.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com> <CA+55aFypmnk8S4JkLui1Z7JxKae=-k88K-wEP9xDwrf1LOX-Vw@mail.gmail.com> <CACVXFVOiXRiqRsE46_xmOzK_dExNvkBaJVwjiZ9adhwqRRwY+g@mail.gmail.com>
 MIME-Version: 1.0
-To: Sen Wang <kelvin.xupt@gmail.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, Wang Sen <senwang@linux.vnet.ibm.com>,
-        <linux-scsi@vger.kernel.org>, <JBottomley@parallels.com>,
-        <stefanha@linux.vnet.ibm.com>, <mc@linux.vnet.ibm.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
- HighMem pages used by sg list
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <CAKviJvVrrtyjFOzu7jmmD7cpXZcXtyQ+7HDy1G1o2_a0JRss5w@mail.gmail.com>
-In-Reply-To: <CAKviJvVrrtyjFOzu7jmmD7cpXZcXtyQ+7HDy1G1o2_a0JRss5w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 02:44 PM, Sen Wang wrote:
+On Wednesday 25 July 2012 20:35:28 Ming Lei wrote:
+> CC usb guys and list
+> 
+> On Wed, Jul 25, 2012 at 1:53 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > I really think the isight thing is a totally different thing entirely.
+> >
+> > And quite frankly, that's just a BUG in the USB implementation. If the
+> > USB ID changes, it shouldn't be considered a "resume" thing at all,
+> > but a probe thing, and that should not be done in early resume - it
+> > should be done *after* the resume is done.
+> 
+> IMO, usbcore may have found the ID changes during resume(reset_resume),
+> and make the device disconnect. The disconnect event will be handled
+> in hubd kthread, which is woken up before usermodehelper_enable()(see
+> thaw_processes), so request_firmware will return failure during probe()
+> inside hubd kthread.
+> 
+> The cache firmware patch set may not help the situation, because the
+> original isight usb device for downloading firmware has been disconnected
+> before system suspend, so firmware loader can't cache the firmware for
+> the device.
+> 
+> The below patch should fix the problem above.
 
-> 2012/7/25 Paolo Bonzini <pbonzini@redhat.com>:
->> Il 25/07/2012 10:29, Wang Sen ha scritto:
->>> When using the commands below to write some data to a virtio-scsi LUN of the
->>> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
->>>
->>>       # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
->>>       # sudo mount /dev/sdb /mnt
->>>       # dd if=/dev/zero of=/mnt/file bs=1M count=1024
->>>
->>> In current implementation, sg_set_buf is called to add buffers to sg list which
->>> is put into the virtqueue eventually. But there are some HighMem pages in
->>> table->sgl can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
->>> return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
->>> in QEMU because an invalid GPA is passed by virtqueue.
->>
->> Heh, I was compiling (almost) the same patch as we speak. :)
-> 
-> Uh, what a coincidence! :)
-> 
->>
->> I've never seen QEMU crash; the VM would more likely just fail to boot
->> with a panic.  But it's the same bug anyway.
-> 
-> I never met this before. How this situation happens?
-> 
->>
->>> My solution is using sg_set_page instead of sg_set_buf.
->>>
->>> I have tested the patch on my workstation. QEMU would not crash any more.
->>>
->>> Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
->>> ---
->>>  drivers/scsi/virtio_scsi.c |    3 ++-
->>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
->>> index 1b38431..fc5c88a 100644
->>> --- a/drivers/scsi/virtio_scsi.c
->>> +++ b/drivers/scsi/virtio_scsi.c
->>> @@ -198,7 +198,8 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
->>>       int i;
->>>
->>>       for_each_sg(table->sgl, sg_elem, table->nents, i)
->>> -             sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
->>> +             sg_set_page(&sg[idx++], sg_page(sg_elem), sg_elem->length,
->>> +                     sg_elem->offset);
->>
->> This can simply be
->>
->>    sg[idx++] = *sg_elem;
->>
-> 
-> Yes, I saw your another E-mail. I think you're right. Simply calling
-> sg_set_page can not handle
-> the flag bits correctly. So, I'll repost the patch soon. Thank you!
-> 
+This is likely unwise. You'd better introduce a special flag for kernel threads
+that should be thawed only after user space will have been thawed.
 
-
-No this code is correct, though you will need to make sure to properly
-terminate the destination sg_list.
-
-But since old code was using sg_set_buf(), than it means it was properly
-terminated before, and there for this code is good as is please don't
-touch it.
-
-Thanks
-Boaz
-
->> Can you repost it with this change, and also add stable@vger.kernel.org
->> to the Cc?  Thanks very much!
->>
->> Paolo
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> 
+	Regards
+		Oliver
 
