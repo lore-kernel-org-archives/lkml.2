@@ -1,220 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab2GYMCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:02:36 -0400
-Received: from svenfoo.org ([82.94.215.22]:55564 "EHLO mail.zonque.de"
+	id S1756643Ab2GYMCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:02:37 -0400
+Received: from svenfoo.org ([82.94.215.22]:55569 "EHLO mail.zonque.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756577Ab2GYMCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756558Ab2GYMCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 25 Jul 2012 08:02:20 -0400
 From: Daniel Mack <zonque@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: eric.piel@tremplin-utc.net, grant.likely@secretlab.ca,
         rob.herring@calxeda.com, Daniel Mack <zonque@gmail.com>
-Subject: [PATCH 1/2] lis3: add generic DT matching code
-Date: Wed, 25 Jul 2012 14:02:13 +0200
-Message-Id: <1343217734-10438-1-git-send-email-zonque@gmail.com>
+Subject: [PATCH 2/2] lis3-spi: add DT matching table passthru code
+Date: Wed, 25 Jul 2012 14:02:14 +0200
+Message-Id: <1343217734-10438-2-git-send-email-zonque@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1343217734-10438-1-git-send-email-zonque@gmail.com>
+References: <1343217734-10438-1-git-send-email-zonque@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds logic to parse lis3 properties from a device tree node
-and store them in a freshly allocated lis3lv02d_platform_data.
+If probed from a device tree, this driver now passes the node
+information to the generic part, so the runtime information can be
+derived.
 
-Note that the actual match tables are left out here. This part should
-happen in the drivers that bind to the individual busses (SPI/I2C/PCI).
+Successfully tested on a PXA3xx board.
 
 Signed-off-by: Daniel Mack <zonque@gmail.com>
 ---
- drivers/misc/lis3lv02d/lis3lv02d.c |  145 ++++++++++++++++++++++++++++++++++++
- drivers/misc/lis3lv02d/lis3lv02d.h |    4 +
- 2 files changed, 149 insertions(+)
+ drivers/misc/lis3lv02d/lis3lv02d_spi.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
-index a981e2a..cfa4689 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.c
-@@ -39,6 +39,7 @@
- #include <linux/miscdevice.h>
- #include <linux/pm_runtime.h>
- #include <linux/atomic.h>
-+#include <linux/of_device.h>
+diff --git a/drivers/misc/lis3lv02d/lis3lv02d_spi.c b/drivers/misc/lis3lv02d/lis3lv02d_spi.c
+index 80880e9..8616054 100644
+--- a/drivers/misc/lis3lv02d/lis3lv02d_spi.c
++++ b/drivers/misc/lis3lv02d/lis3lv02d_spi.c
+@@ -17,6 +17,7 @@
+ #include <linux/workqueue.h>
+ #include <linux/spi/spi.h>
+ #include <linux/pm.h>
++#include <linux/of_platform.h>
+ 
  #include "lis3lv02d.h"
  
- #define DRIVER_NAME     "lis3lv02d"
-@@ -912,6 +913,146 @@ static void lis3lv02d_8b_configure(struct lis3lv02d *lis3,
- 	}
- }
+@@ -58,6 +59,12 @@ static int lis3_spi_init(struct lis3lv02d *lis3)
+ static union axis_conversion lis3lv02d_axis_normal =
+ 	{ .as_array = { 1, 2, 3 } };
  
-+#ifdef CONFIG_OF
-+static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
-+{
-+	struct lis3lv02d_platform_data *pdata;
-+	struct device_node *np = lis3->of_node;
-+	u32 tmp;
++static struct of_device_id lis302dl_spi_dt_ids[] = {
++	{ .compatible = "st,lis302dl-spi" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, lis302dl_spi_dt_ids);
 +
-+	if (!lis3->of_node)
-+		return 0;
-+
-+	pdata = kzalloc(sizeof(*lis3->pdata), GFP_KERNEL);
-+	if (!lis3->pdata)
-+		return -ENOMEM;
-+
-+	if (of_get_property(np, "st,click-single-x", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_X;
-+	if (of_get_property(np, "st,click-double-x", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_X;
-+
-+	if (of_get_property(np, "st,click-single-y", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_Y;
-+	if (of_get_property(np, "st,click-double-y", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_Y;
-+
-+	if (of_get_property(np, "st,click-single-z", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_Z;
-+	if (of_get_property(np, "st,click-double-z", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_Z;
-+
-+	if (!of_property_read_u32(np, "st,click-threshold-x", &tmp))
-+		pdata->click_thresh_x = tmp;
-+	if (!of_property_read_u32(np, "st,click-threshold-y", &tmp))
-+		pdata->click_thresh_y = tmp;
-+	if (!of_property_read_u32(np, "st,click-threshold-z", &tmp))
-+		pdata->click_thresh_z = tmp;
-+
-+	if (!of_property_read_u32(np, "st,click-time-limit", &tmp))
-+		pdata->click_time_limit = tmp;
-+	if (!of_property_read_u32(np, "st,click-latency", &tmp))
-+		pdata->click_latency = tmp;
-+	if (!of_property_read_u32(np, "st,click-time-limit", &tmp))
-+		pdata->click_time_limit = tmp;
-+
-+	if (of_get_property(np, "st,irq1-disable", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_DISABLE;
-+	if (of_get_property(np, "st,irq1-ff-wu-1", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_1;
-+	if (of_get_property(np, "st,irq1-ff-wu-2", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_2;
-+	if (of_get_property(np, "st,irq1-ff-wu-2", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_2;
-+	if (of_get_property(np, "st,irq1-data-ready", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_DATA_READY;
-+	if (of_get_property(np, "st,irq1-click", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_CLICK;
-+	if (of_get_property(np, "st,irq1-mask", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_MASK;
-+
-+	if (of_get_property(np, "st,irq2-disable", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_DISABLE;
-+	if (of_get_property(np, "st,irq2-ff-wu-1", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_1;
-+	if (of_get_property(np, "st,irq2-ff-wu-2", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_2;
-+	if (of_get_property(np, "st,irq2-ff-wu-2", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_2;
-+	if (of_get_property(np, "st,irq2-data-ready", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_DATA_READY;
-+	if (of_get_property(np, "st,irq2-click", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_CLICK;
-+	if (of_get_property(np, "st,irq2-mask", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_MASK;
-+
-+	if (of_get_property(np, "st,irq-open-drain", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ_OPEN_DRAIN;
-+	if (of_get_property(np, "st,irq-active-low", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ_ACTIVE_LOW;
-+
-+	if (!of_property_read_u32(np, "st,duration-1", &tmp))
-+		pdata->duration1 = tmp;
-+	if (!of_property_read_u32(np, "st,duration-2", &tmp))
-+		pdata->duration2 = tmp;
-+
-+	if (of_get_property(np, "st,wakeup-x-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_X_LO;
-+	if (of_get_property(np, "st,wakeup-x-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_X_HI;
-+	if (of_get_property(np, "st,wakeup-y-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Y_LO;
-+	if (of_get_property(np, "st,wakeup-y-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Y_HI;
-+	if (of_get_property(np, "st,wakeup-z-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Z_LO;
-+	if (of_get_property(np, "st,wakeup-z-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Z_HI;
-+
-+	if (!of_property_read_u32(np, "st,highpass-cutoff-hz", &tmp)) {
-+		switch (tmp) {
-+		case 1:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_1HZ;
-+			break;
-+		case 2:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_2HZ;
-+			break;
-+		case 4:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_4HZ;
-+			break;
-+		case 8:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_8HZ;
-+			break;
-+		}
-+	}
-+
-+	if (of_get_property(np, "st,hipass1-disable", NULL))
-+		pdata->hipass_ctrl |= LIS3_HIPASS1_DISABLE;
-+	if (of_get_property(np, "st,hipass2-disable", NULL))
-+		pdata->hipass_ctrl |= LIS3_HIPASS2_DISABLE;
-+
-+	if (of_get_property(np, "st,axis-x", NULL))
-+		pdata->axis_x = tmp;
-+	if (of_get_property(np, "st,axis-y", NULL))
-+		pdata->axis_y = tmp;
-+	if (of_get_property(np, "st,axis-z", NULL))
-+		pdata->axis_z = tmp;
-+
-+	if (of_get_property(np, "st,default-rate", NULL))
-+		pdata->default_rate = tmp;
-+
-+	lis3->pdata = pdata;
-+
-+	return 0;
-+}
-+
-+#else
-+static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
-+{
-+	return 0;
-+}
-+#endif
-+
- /*
-  * Initialise the accelerometer and the various subsystems.
-  * Should be rather independent of the bus system.
-@@ -922,6 +1063,10 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
- 	irq_handler_t thread_fn;
- 	int irq_flags = 0;
- 
-+	err = lis3lv02d_init_dt(lis3);
-+	if (err < 0)
-+		return err;
-+
- 	lis3->whoami = lis3lv02d_read_8(lis3, WHO_AM_I);
- 
- 	switch (lis3->whoami) {
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.h b/drivers/misc/lis3lv02d/lis3lv02d.h
-index 2b1482a..a296f1d 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.h
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.h
-@@ -282,6 +282,10 @@ struct lis3lv02d {
- 
- 	struct lis3lv02d_platform_data *pdata;	/* for passing board config */
- 	struct mutex		mutex;     /* Serialize poll and selftest */
+ static int __devinit lis302dl_spi_probe(struct spi_device *spi)
+ {
+ 	int ret;
+@@ -75,6 +82,12 @@ static int __devinit lis302dl_spi_probe(struct spi_device *spi)
+ 	lis3_dev.irq		= spi->irq;
+ 	lis3_dev.ac		= lis3lv02d_axis_normal;
+ 	lis3_dev.pdata		= spi->dev.platform_data;
 +
 +#ifdef CONFIG_OF
-+	struct device_node	*of_node;
++	if (of_match_device(lis302dl_spi_dt_ids, &spi->dev))
++		lis3_dev.of_node = spi->dev.of_node;
 +#endif
- };
++
+ 	spi_set_drvdata(spi, &lis3_dev);
  
- int lis3lv02d_init_device(struct lis3lv02d *lis3);
+ 	return lis3lv02d_init_device(&lis3_dev);
+@@ -121,6 +134,7 @@ static struct spi_driver lis302dl_spi_driver = {
+ 		.name   = DRV_NAME,
+ 		.owner  = THIS_MODULE,
+ 		.pm	= &lis3lv02d_spi_pm,
++		.of_match_table = of_match_ptr(lis302dl_spi_dt_ids),
+ 	},
+ 	.probe	= lis302dl_spi_probe,
+ 	.remove	= __devexit_p(lis302dl_spi_remove),
 -- 
 1.7.10.4
 
