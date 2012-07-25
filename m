@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756643Ab2GYMCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 08:02:37 -0400
-Received: from svenfoo.org ([82.94.215.22]:55569 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756558Ab2GYMCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 08:02:20 -0400
-From: Daniel Mack <zonque@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: eric.piel@tremplin-utc.net, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, Daniel Mack <zonque@gmail.com>
-Subject: [PATCH 2/2] lis3-spi: add DT matching table passthru code
-Date: Wed, 25 Jul 2012 14:02:14 +0200
-Message-Id: <1343217734-10438-2-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343217734-10438-1-git-send-email-zonque@gmail.com>
-References: <1343217734-10438-1-git-send-email-zonque@gmail.com>
+	id S1756624Ab2GYMEG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 08:04:06 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:36070 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756558Ab2GYMEE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 08:04:04 -0400
+Message-ID: <500FE092.6010108@panasas.com>
+Date: Wed, 25 Jul 2012 15:03:30 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+MIME-Version: 1.0
+To: Kent Overstreet <koverstreet@google.com>
+CC: <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dm-devel@redhat.com>, <tj@kernel.org>, <axboe@kernel.dk>,
+        <agk@redhat.com>, <neilb@suse.de>, <drbd-dev@lists.linbit.com>,
+        <vgoyal@redhat.com>, <mpatocka@redhat.com>, <sage@newdream.net>,
+        <yehuda@hq.newdream.net>
+Subject: Re: [PATCH v4 09/12] block: Rework bio_pair_split()
+References: <1343160689-12378-1-git-send-email-koverstreet@google.com> <1343160689-12378-10-git-send-email-koverstreet@google.com>
+In-Reply-To: <1343160689-12378-10-git-send-email-koverstreet@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If probed from a device tree, this driver now passes the node
-information to the generic part, so the runtime information can be
-derived.
+On 07/24/2012 11:11 PM, Kent Overstreet wrote:
 
-Successfully tested on a PXA3xx board.
+> This changes bio_pair_split() to use the new bio_split() underneath,
+> which gets rid of the single page bio limitation. The various callers
+> are fixed up for the slightly different struct bio_pair, and to remove
+> the unnecessary checks.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
----
- drivers/misc/lis3lv02d/lis3lv02d_spi.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+<snip>
 
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d_spi.c b/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-index 80880e9..8616054 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d_spi.c
-@@ -17,6 +17,7 @@
- #include <linux/workqueue.h>
- #include <linux/spi/spi.h>
- #include <linux/pm.h>
-+#include <linux/of_platform.h>
- 
- #include "lis3lv02d.h"
- 
-@@ -58,6 +59,12 @@ static int lis3_spi_init(struct lis3lv02d *lis3)
- static union axis_conversion lis3lv02d_axis_normal =
- 	{ .as_array = { 1, 2, 3 } };
- 
-+static struct of_device_id lis302dl_spi_dt_ids[] = {
-+	{ .compatible = "st,lis302dl-spi" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, lis302dl_spi_dt_ids);
-+
- static int __devinit lis302dl_spi_probe(struct spi_device *spi)
- {
- 	int ret;
-@@ -75,6 +82,12 @@ static int __devinit lis302dl_spi_probe(struct spi_device *spi)
- 	lis3_dev.irq		= spi->irq;
- 	lis3_dev.ac		= lis3lv02d_axis_normal;
- 	lis3_dev.pdata		= spi->dev.platform_data;
-+
-+#ifdef CONFIG_OF
-+	if (of_match_device(lis302dl_spi_dt_ids, &spi->dev))
-+		lis3_dev.of_node = spi->dev.of_node;
-+#endif
-+
- 	spi_set_drvdata(spi, &lis3_dev);
- 
- 	return lis3lv02d_init_device(&lis3_dev);
-@@ -121,6 +134,7 @@ static struct spi_driver lis302dl_spi_driver = {
- 		.name   = DRV_NAME,
- 		.owner  = THIS_MODULE,
- 		.pm	= &lis3lv02d_spi_pm,
-+		.of_match_table = of_match_ptr(lis302dl_spi_dt_ids),
- 	},
- 	.probe	= lis302dl_spi_probe,
- 	.remove	= __devexit_p(lis302dl_spi_remove),
--- 
-1.7.10.4
+> +
+> +extern struct bio *bio_split(struct bio *bio, int sectors,
+> +			     gfp_t gfp, struct bio_set *bs);
+
+
+nit:
+
+Just for taking pride in my work, I'd move this extern declaration
+to the previous patch that actually introduces it.
+
+Cheers
+Boaz
+
+>  extern struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors);
+>  extern void bio_pair_release(struct bio_pair *dbio);
+>  
+> @@ -512,7 +514,6 @@ extern int bio_integrity_prep(struct bio *);
+>  extern void bio_integrity_endio(struct bio *, int);
+>  extern void bio_integrity_advance(struct bio *, unsigned int);
+>  extern void bio_integrity_trim(struct bio *, unsigned int, unsigned int);
+> -extern void bio_integrity_split(struct bio *, struct bio_pair *, int);
+>  extern int bio_integrity_clone(struct bio *, struct bio *, gfp_t, struct bio_set *);
+>  extern int bioset_integrity_create(struct bio_set *, int);
+>  extern void bioset_integrity_free(struct bio_set *);
+> @@ -556,12 +557,6 @@ static inline int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
+>  	return 0;
+>  }
+>  
+> -static inline void bio_integrity_split(struct bio *bio, struct bio_pair *bp,
+> -				       int sectors)
+> -{
+> -	return;
+> -}
+> -
+>  static inline void bio_integrity_advance(struct bio *bio,
+>  					 unsigned int bytes_done)
+>  {
+
 
