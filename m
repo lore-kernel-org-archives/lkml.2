@@ -1,188 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab2GYGZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:25:43 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35192 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932767Ab2GYGZk (ORCPT
+	id S932834Ab2GYGaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:30:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49738 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932710Ab2GYGaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:25:40 -0400
-X-Sasl-enc: EhGIVRsuIgFbm2zmz+D+ctDk3SPamKdjVqqJ0G8bJyIn 1343197539
-Message-ID: <1343197528.2386.32.camel@perseus.themaw.net>
-Subject: [Fwd: [ANNOUNCE] autofs 5.0.7 release]
-From: Ian Kent <raven@themaw.net>
-To: autofs@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jul 2012 14:25:28 +0800
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-K1odDQO8LzBIFLpmhAc+"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Wed, 25 Jul 2012 02:30:08 -0400
+From: Hideki EIRAKU <hdk@igel.co.jp>
+To: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Hideki EIRAKU <hdk@igel.co.jp>
+Subject: [PATCH 0/2] Renesas IPMMU driver for sh7372
+Date: Wed, 25 Jul 2012 15:29:00 +0900
+Message-Id: <1343197742-13630-1-git-send-email-hdk@igel.co.jp>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the Renesas IPMMU driver, IOMMU API implementation and IPMMU
+device support for sh7372 (AP4EVB and Mackerel).
 
---=-K1odDQO8LzBIFLpmhAc+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The IPMMU module supports the MMU function and the PMB function.  The
+MMU function provides address translation by pagetable compatible with
+ARMv6.  The PMB function provides address translation including
+tile-linear translation.  This is implementation of the MMU function.
 
-Hi all,
+Hideki EIRAKU (2):
+  iommu/shmobile: Add iommu driver for Renesas IPMMU modules
+  ARM: mach-shmobile: sh7372: Add IPMMU device
 
-Oops, I sent this without updating the autofs mailing list address in my
-release announcement template and I didn't sign the message which I
-wanted to do.
-
-Sorry for the noise.
-
-Ian
-
--------- Forwarded Message --------
-From: Ian Kent <raven@themaw.net>
-To: autofs@linux.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] autofs 5.0.7 release
-Date: Wed, 25 Jul 2012 14:19:28 +0800
-
-Hi all,
-
-Once again this is long overdue so there are many changes.
-
-The kernel patches are not being updated any more because of the
-introduction of the vfs-automount changes to the VFS. If there
-are needs in this area we will need to discuss how to deal with
-them on the mailing list.
-
-Known issues (haven't changed since 5.0.6)
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-
-- Quoted strings in the master map are still not yet handled.
-- When the active restart is being used it will happily re-connect a
-  mount that is unresponsive, perhaps because the server is not
-  responding. A forced expire (USR1 signal) should be enough to clean
-  up.
-
-autofs
-=3D=3D=3D=3D=3D=3D
-
-The package can be found at:
-
-ftp://ftp.kernel.org/pub/linux/daemons/autofs/v5
-
-It is autofs-5.0.7.tar.[gz|bz2|xz]
-
-No source rpm is there as it can be produced by using:
-
-rpmbuild -ts autofs-5.0.7.tar.gz
-
-and the binary rpm by using:
-
-rpmbuild -tb autofs-5.0.7.tar.gz
-
-See the INSTALL file for information about configure options and
-kernel requirements.
-
-Here are the entries from the CHANGELOG which outline the updates:
-
-25/07/2012 autofs-5.0.7
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-- fix ipv6 name for lookup fix.
-- improve mount location error reporting.
-- fix paged query more results check.
-- fix dumpmaps not reading maps.
-- fix result null check in read_one_map().
-- fix LDAP result leaks on error paths.
-- fix fix LDAP result leaks on error paths.
-- code analysis fixes part 1.
-- fix not bind mounting local filesystem.
-- add "dir" map-type.
-- fix wait for master source mutex.
-- fix submount shutdown race.
-- fix fix map source check in file lookup.
-- add disable move mount configure option.
-- fix ipv6 name lookup check.
-- fix ipv6 rpc calls.
-- fix ipv6 configure check.
-- add piddir to configure.
-- add systemd unit support.
-- remove empty command line arguments (passed by systemd).
-- fix rpc build error.
-- fix improve mount location error reporting.
-- fix fix wait for master source mutex.
-- add sss lookup module.
-- teach automount about sss source.
-- fix init script usage message.
-- ignore duplicate exports in auto.net.
-- add kernel verion check function.
-- add function to check mount.nfs version.
-- reinstate singleton mount probe.
-- rework error return handling in rpc code.
-- catch EHOSTUNREACH and bail out early.
-- systemd support fixes.
-- check scandir() return value.
-- allow for kernel packet size change (in kernel 3.3.0+).
-- fix function to check mount.nfs version.
-- fix typo in libtirpc file name.
-- fix rework error return handling in rpc code.
-- allow MOUNT_WAIT to override probe.
-- improve UDP RPC timeout handling.
-- use strtok_r() in linux_version_code().
-- fix sss wildcard match.
-- fix dlopen() error handling in sss module.
-- fix configure string length tests for sss library.
-- report map not read when debug logging.
-- duplicate parent options for included maps.
-- update ->timeout() function to not return timeout.
-- move timeout to map_source (allow per direct map timeout).
-- fix kernel verion check of version components.
-- dont retry ldap connect if not required.
-- fix initialization in rpc create_client().
-- fix libtirpc name clash.
-- check if /etc/mtab is a link to /proc/self/mounts.
-- fix nfs4 contacts portmap.
-- make autofs wait longer for shutdown completion.
-- fix sss map age not updated.
-- fix remount deadlock.
-- fix umount recovery of busy direct mount.
-- fix offset mount point directory removal.
-- fix remount of multi mount.
-- fix devce ioctl alloc path check.
-- add hup signal handling to hosts map.
-- fix systemd argument passing.
-- fix get_nfs_info() can incorrectly fail.
-- fix offset directory removal.
-- check negative cache much earlier.
-- dont use pthread_rwlock_tryrdlock().
-- mount_nfs.so to honor explicit NFSv4 requests.
-- mount_nfs.so fix port=3D0 option behavior v3.
-- documentation fix some typos and misleading comments.
-
-Ian
-
-
---=-K1odDQO8LzBIFLpmhAc+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQD5FYAAoJEOdnc4D1T9ipWYcP/3k3DlUFTTxGGMfIAzvC1pPY
-jPqbXpo3T/BwbfM3mHlRRafePLocGFOkLCOZAU5iYN/tOZNFTvXINE1ebVMBA8Z3
-goMBQI8OvoxVVCtGFIqntJapplU90Me7bJO7WXLmQgdMg7dhbkrcPWtli3DQSo6H
-Ku5tSAzONe5RhDhk0ihEg3Xw4NBsBq8L7/kcauphv91ACHI0S2QoNPW2qswxHWR8
-FM7MqAu+3c04cZ2HEjI/1zPfkgzNZ+rVIHyHGiprQE8X3cFoihABnj1f30GuNyFN
-7MRdO9kkUhkrWMeIrfPRWZZXSJvVG60rvdfqQXi2jSwiUe95qBWX25iPFmsWb2qJ
-DwUQ6gr/TLGxN1T7x30BIL3ZfXGxsZ/yPXQkm/x0rHKsC1DIOaM4gKtNi2ohT4hq
-/HNE4ee1mdtNpVXzWjzYevcWitQ3+VA+jArDCdvKmFlcCBcKDnz8YTgiLBlFo8cV
-f1v84+/hOwBQdR0OIa6w0O3Cxv50CK+9vCYYZIkwhk8bpymW3UST5Hzy/3OBSeYB
-EIW6HaHQhtWx7L4KIfQIDKNQADFE0iDq6A0D+sieMI61E+BTsavyJD5dzUv41N9F
-SZGMXGM2bAn71hsSOex/tmHPRsbrtPd3iM0xaAG5RVKAepJucOa/EdQ3hmdfKI+P
-+gL3QSB/kKeptI3aULCJ
-=bhCu
------END PGP SIGNATURE-----
-
---=-K1odDQO8LzBIFLpmhAc+--
+ arch/arm/mach-shmobile/Kconfig              |    6 +
+ arch/arm/mach-shmobile/Makefile             |    3 +
+ arch/arm/mach-shmobile/board-ap4evb.c       |    5 +
+ arch/arm/mach-shmobile/board-mackerel.c     |    5 +
+ arch/arm/mach-shmobile/include/mach/ipmmu.h |   10 +
+ arch/arm/mach-shmobile/ipmmu.c              |  137 ++++++++++++
+ arch/arm/mach-shmobile/setup-sh7372.c       |   22 ++
+ drivers/iommu/Kconfig                       |    7 +
+ drivers/iommu/Makefile                      |    1 +
+ drivers/iommu/shmobile-iommu.c              |  318 +++++++++++++++++++++++++++
+ 10 files changed, 514 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-shmobile/include/mach/ipmmu.h
+ create mode 100644 arch/arm/mach-shmobile/ipmmu.c
+ create mode 100644 drivers/iommu/shmobile-iommu.c
 
