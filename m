@@ -1,131 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741Ab2GYPdZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:33:25 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:34623 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab2GYPdX (ORCPT
+	id S1754091Ab2GYPgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:36:14 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:28813 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab2GYPgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:33:23 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: linux-mmc@vger.kernel.org
-Cc: Chris Ball <cjb@laptop.org>, Will Newton <will.newton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org,
-        Grant Grundler <grundler@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, shashidharh@vayavyalabs.com,
-        ki0351.kim@samsung.com, Doug Anderson <dianders@chromium.org>
-Subject: [PATCH v4] mmc: dw_mmc: Disable low power mode if SDIO interrupts are used
-Date: Wed, 25 Jul 2012 08:33:17 -0700
-Message-Id: <1343230397-10500-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <CAD=FV=V0Z=f+DNZKnaX9cJqS3MTmPdF8G3wmbYJYW34bUZqoXg@mail.gmail.com>
-References: <CAD=FV=V0Z=f+DNZKnaX9cJqS3MTmPdF8G3wmbYJYW34bUZqoXg@mail.gmail.com>
+	Wed, 25 Jul 2012 11:36:13 -0400
+Message-ID: <1343230282.3010.387.camel@misato.fc.hp.com>
+Subject: RE: [PATCH v2 0/4] ACPI: hotplug messages improvement
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "liuj97@gmail.com" <liuj97@gmail.com>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "prarit@redhat.com" <prarit@redhat.com>,
+        "imammedo@redhat.com" <imammedo@redhat.com>
+Date: Wed, 25 Jul 2012 09:31:22 -0600
+In-Reply-To: <EC847C0FC42FF046B94E60B168774B173164314F@G9W0337.americas.hpqcorp.net>
+References: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
+	 <EC847C0FC42FF046B94E60B168774B173164314F@G9W0337.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation for the dw_mmc part says that the low power
-mode should normally only be set for MMC and SD memory and should
-be turned off for SDIO cards that need interrupts detected.
+On Wed, 2012-07-25 at 06:15 +0000, Pandarathil, Vijaymohan R wrote:
+> Hi Toshi,
+> 
+> Tested your patches on a KVM setup. Since all your acpi_pr* macros
+> are in the error path, I didn't see an easy way to trigger them.
+> Instead added an acpi_pr_err() message in the success path and tested
+> out vcpu addition/deletion sequence. No regressions seen in the
+> functional tests and the ACPI err message comes out on the console
+> and message buffer with a valid ACPI device path.
+> 
+> Vijay
+> 
+> Tested-by: Vijay Mohan Pandarathil<vijaymohan.pandarathil@hp.com>
 
-The best place I could find to do this is when the SDIO interrupt
-was first enabled.  I rely on the fact that dw_mci_setup_bus()
-will be called when it's time to reenable.
+Hi Vijay,
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v4:
-- Don't regenerate slot variable when we already had it.
+Thanks for the testing!  It sounds good to me and that's how I tested as
+well, i.e. copied all messages to the normal path.  I will add your
+Tested-by to patch 1/4 and 2/4.
 
-Changes in v3:
-- Commenting fixes requested by Seungwoon Jeon and Jaehoon Chung.
-- Only pass 'slot' to the low power disable function since whole mmc
-  structure wasn't needed.
+-Toshi
 
-Changes in v2:
-- Commenting fixes requested by Grant Grundler.
-- Be extra certain that we don't re-turn on the low power mode in
-  CLKENA in dw_mci_setup_bus() if SDIO interrupts are enabled.
-  There are no known instances of this happening but it's good to be safe.
 
- drivers/mmc/host/dw_mmc.c |   41 ++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 38 insertions(+), 3 deletions(-)
+> -----Original Message-----
+> From: Kani, Toshimitsu 
+> Sent: Friday, July 20, 2012 9:54 AM
+> To: lenb@kernel.org; linux-acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; joe@perches.com; bhelgaas@google.com; isimatu.yasuaki@jp.fujitsu.com; liuj97@gmail.com; srivatsa.bhat@linux.vnet.ibm.com; prarit@redhat.com; imammedo@redhat.com; Pandarathil, Vijaymohan R; Kani, Toshimitsu
+> Subject: [PATCH v2 0/4] ACPI: hotplug messages improvement
+> 
+> This patchset improves logging messages for ACPI CPU, Memory, and
+> Container hotplug notify handlers.  The patchset introduces a set of
+> new macro interfaces, acpi_pr_<level>(), and updates the notify
+> handlers to use them.  acpi_pr_<level>() appends "ACPI" prefix and
+> ACPI object path to the messages.  This improves diagnostics in
+> hotplug operations since it identifies an object that caused an
+> issue in a log file.
+> 
+> v2:
+>  - Set buffer.pointer to NULL in acpi_printk().
+>  - Added acpi_pr_debug().
+> 
+> ---
+> This patchset applies on top of the patch below.
+> 
+> [PATCH] ACPI: Add ACPI CPU hot-remove support
+> http://marc.info/?l=linux-acpi&m=134098193327362&w=2
+> 
+> ---
+> Toshi Kani (4):
+>  ACPI: Add acpi_pr_<level>() interfaces
+>  ACPI: Update CPU hotplug messages
+>  ACPI: Update Memory hotplug messages
+>  ACPI: Update Container hotplug messages
+> 
+> ---
+>  drivers/acpi/acpi_memhotplug.c  |   24 ++++++++++++------------
+>  drivers/acpi/container.c        |    6 +++---
+>  drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
+>  drivers/acpi/utils.c            |   34 ++++++++++++++++++++++++++++++++++
+>  include/acpi/acpi_bus.h         |   20 ++++++++++++++++++++
+>  5 files changed, 90 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 72dc3cd..882748b 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -627,6 +627,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot)
- {
- 	struct dw_mci *host = slot->host;
- 	u32 div;
-+	u32 clk_en_a;
- 
- 	if (slot->clock != host->current_speed) {
- 		div = host->bus_hz / slot->clock;
-@@ -659,9 +660,11 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot)
- 		mci_send_cmd(slot,
- 			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
- 
--		/* enable clock */
--		mci_writel(host, CLKENA, ((SDMMC_CLKEN_ENABLE |
--			   SDMMC_CLKEN_LOW_PWR) << slot->id));
-+		/* enable clock; only low power if no SDIO */
-+		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
-+		if (!(mci_readl(host, INTMASK) & SDMMC_INT_SDIO(slot->id)))
-+			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
-+		mci_writel(host, CLKENA, clk_en_a);
- 
- 		/* inform CIU */
- 		mci_send_cmd(slot,
-@@ -862,6 +865,30 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
- 	return present;
- }
- 
-+/*
-+ * Disable lower power mode.
-+ *
-+ * Low power mode will stop the card clock when idle.  According to the
-+ * description of the CLKENA register we should disable low power mode
-+ * for SDIO cards if we need SDIO interrupts to work.
-+ *
-+ * This function is fast if low power mode is already disabled.
-+ */
-+static void dw_mci_disable_low_power(struct dw_mci_slot *slot)
-+{
-+	struct dw_mci *host = slot->host;
-+	u32 clk_en_a;
-+	const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
-+
-+	clk_en_a = mci_readl(host, CLKENA);
-+
-+	if (clk_en_a & clken_low_pwr) {
-+		mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
-+		mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
-+			     SDMMC_CMD_PRV_DAT_WAIT, 0);
-+	}
-+}
-+
- static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
- {
- 	struct dw_mci_slot *slot = mmc_priv(mmc);
-@@ -871,6 +898,14 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
- 	/* Enable/disable Slot Specific SDIO interrupt */
- 	int_mask = mci_readl(host, INTMASK);
- 	if (enb) {
-+		/*
-+		 * Turn off low power mode if it was enabled.  This is a bit of
-+		 * a heavy operation and we disable / enable IRQs a lot, so
-+		 * we'll leave low power mode disabled and it will get
-+		 * re-enabled again in dw_mci_setup_bus().
-+		 */
-+		dw_mci_disable_low_power(slot);
-+
- 		mci_writel(host, INTMASK,
- 			   (int_mask | SDMMC_INT_SDIO(slot->id)));
- 	} else {
--- 
-1.7.7.3
 
