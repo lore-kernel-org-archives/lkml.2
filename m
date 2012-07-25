@@ -1,91 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab2GYTSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:18:07 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:41566 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab2GYTSF (ORCPT
+	id S1751981Ab2GYTSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:18:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58240 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2GYTSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:18:05 -0400
-Message-ID: <50104614.3080002@panasas.com>
-Date: Wed, 25 Jul 2012 22:16:36 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Wed, 25 Jul 2012 15:18:35 -0400
+Date: Wed, 25 Jul 2012 12:18:18 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-7c0f4a4113ba5de7898c246eeaeee4c23d94b887@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de, namhyung@kernel.org,
+        jolsa@redhat.com
+In-Reply-To: <1342826756-64663-4-git-send-email-dsahern@gmail.com>
+References: <1342826756-64663-4-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf kvm:
+  Guest userspace samples should not be lumped with host uspace
+Git-Commit-ID: 7c0f4a4113ba5de7898c246eeaeee4c23d94b887
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
-        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
-        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
- Fix address translation failure of HighMem pages used by sg list)
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com>
-In-Reply-To: <50103043.5050508@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:18:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 08:43 PM, Paolo Bonzini wrote:
+Commit-ID:  7c0f4a4113ba5de7898c246eeaeee4c23d94b887
+Gitweb:     http://git.kernel.org/tip/7c0f4a4113ba5de7898c246eeaeee4c23d94b887
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Fri, 20 Jul 2012 17:25:48 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 25 Jul 2012 11:29:46 -0300
 
-> Il 25/07/2012 17:28, Boaz Harrosh ha scritto:
->>> 1) what I get is a scsi_cmnd which contains an N-element scatterlist.
->>>
->>> 2) virtio-scsi has to build the "packet" that is passed to the hardware
->>> (it does not matter that the hardware is virtual).  This packet (per
->>> virtio-scsi spec) has an N+1-element scatterlist, where the first
->>> element is a request descriptor (struct virtio_scsi_cmd_req), and the
->>> others describe the written data.
->>
->> Then "virtio-scsi spec" is crap. It overloads the meaning of
->> "struct scatterlist" of the first element in an array. to be a
->> "struct virtio_scsi_cmd_req".
-> 
-> What the holy fuck?  The first element simply _points_ to the "struct
-> virtio_scsi_cmd_req", just like subsequent elements point to the data.
-> 
-> And the protocol of the device is _not_ a struct scatterlist[].  The
-> virtio _API_ takes that array and converts to a series of physical
-> address + offset pairs.
-> 
->> Since you need to change the standard to support chaining then
->> it is a good time to fix this.
-> 
-> Perhaps it is a good time for you to read the virtio spec.  You are
-> making a huge confusion between the LLD->virtio interface and the
-> virtio->hardware interface.  I'm talking only of the former.
-> 
->>> 3) virtio takes care of converting the "packet" from a scatterlist
->>> (which currently must be a flat one) to the hardware representation.
->>> Here a walk is inevitable, so we don't care about this walk.
->>
->> "hardware representation" you mean aio or biovec, what ever the
->> IO submission path uses at the host end?
-> 
-> No, I mean the way the virtio spec encodes the physical address + offset
-> pairs.
-> 
-> I stopped reading here.
-> 
+perf kvm: Guest userspace samples should not be lumped with host uspace
 
+e.g., perf kvm --host  --guest report -i perf.data --stdio -D
+shows:
 
-The picture confused me. It looked like the first element is the virtio_scsi_cmd_req
-not an sgilist-element that points to the struct's buffer.
+1 599127912065356 0x143b8 [0x48]: PERF_RECORD_SAMPLE(IP, 5): 5671/5676: 0x7fdf95a061c0 period: 1 addr: 0
+... chain: nr:2
+.....  0: ffffffffffffff80
+.....  1: fffffffffffffe00
+ ... thread: qemu-kvm:5671
+ ...... dso: <not found>
 
-In that case then yes your plan of making a two-elements fragment that points to the
-original scsi-sglist is perfect. All you have to do is that, and all you have to do
-at virtio is use the sg_for_each macro and you are done.
+(IP, 5) means sample in guest userspace. Those samples should not be lumped
+into the VMM's host thread. i.e, the report output:
 
-You don't need any sglist allocation or reshaping. And you can easily support
-chaining. Looks like order of magnitude more simple then what you do now
-So what is the problem?
+    56.86%  qemu-kvm  [unknown]         [u] 0x00007fdf95a061c0
 
-And BTW you won't need that new __sg_set_page API anymore.
+With this patch the output emphasizes it is a guest userspace hit:
 
-> Paolo
+    56.86%  [guest/5671]  [unknown]         [u] 0x00007fdf95a061c0
 
+Looking at 3 VMs (2 64-bit, 1 32-bit) with each running a CPU bound
+process (openssl speed), perf report currently shows:
 
-Cheers
-Boaz
+  93.84%  117726   qemu-kvm  [unknown]   [u] 0x00007fd7dcaea8e5
+
+which is wrong. With this patch you get:
+
+  31.50%   39258   [guest/18772]  [unknown]   [u] 0x00007fd7dcaea8e5
+  31.50%   39236   [guest/11230]  [unknown]   [u] 0x0000000000a57340
+  30.84%   39232   [guest/18395]  [unknown]   [u] 0x00007f66f641e107
+
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1342826756-64663-4-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 8e48559..90ee39d 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -918,7 +918,9 @@ static struct machine *
+ {
+ 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+-	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
++	if (perf_guest &&
++	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
++	     (cpumode == PERF_RECORD_MISC_GUEST_USER))) {
+ 		u32 pid;
+ 
+ 		if (event->header.type == PERF_RECORD_MMAP)
