@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab2GYI3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 04:29:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64859 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556Ab2GYI3T (ORCPT
+	id S932799Ab2GYIaC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 04:30:02 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:47880 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932753Ab2GYI35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 04:29:19 -0400
-Date: Wed, 25 Jul 2012 10:29:26 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Maciej Rutecki <maciej.rutecki@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [REGRESSION] [KMS] [INTEL] Wrong resolution in console and
- XWindow
-Message-ID: <20120725082926.GB5396@phenom.ffwll.local>
-Mail-Followup-To: Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org
-References: <201207251020.47637.maciej.rutecki@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207251020.47637.maciej.rutecki@gmail.com>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Jul 2012 04:29:57 -0400
+From: Wang Sen <senwang@linux.vnet.ibm.com>
+To: linux-scsi@vger.kernel.org
+Cc: JBottomley@parallels.com, pbonzini@redhat.com, stefanha@linux.vnet.ibm.com,
+        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Wang Sen <senwang@linux.vnet.ibm.com>
+Subject: [PATCH] scsi: virtio-scsi: Fix address translation failure of HighMem pages used by sg list
+Date: Wed, 25 Jul 2012 16:29:26 +0800
+Message-Id: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 12072508-8256-0000-0000-00000370F3BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 10:20:47AM +0200, Maciej Rutecki wrote:
-> Last known good: 3.4.4
-> First bad: 3.5.0
-> 
-> When booting 3.5.0 resolution (in console, and after in KDE) is set to 
-> 1024x768 (60Hz). In 3.4.4 was correct: 1440x900 (60Hz).
+When using the commands below to write some data to a virtio-scsi LUN of the 
+QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
 
-Can you please attach the output of xrandr --verbose for both kernels?
-Also, please boot with drm.debug=0xe added to your kernel cmdline and grab
-the dmesg (again for both kernels).
+	# sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
+	# sudo mount /dev/sdb /mnt
+	# dd if=/dev/zero of=/mnt/file bs=1M count=1024
 
-Thanks, Daniel
+In current implementation, sg_set_buf is called to add buffers to sg list which
+is put into the virtqueue eventually. But there are some HighMem pages in 
+table->sgl can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
+return NULL value. This will cause QEMU exit when virtqueue_map_sg is called 
+in QEMU because an invalid GPA is passed by virtqueue.
 
-> 
-> Dmesg from 3.5.0:
-> http://mrutecki.pl/download/kernel/3.5/swinka/dmesg-3.5.0.txt
-> 
-> Dmesg from 3.4.4:
-> http://mrutecki.pl/download/kernel/3.5/swinka/dmesg-3.4.4.txt
-> 
-> Config 3.5.0:
-> http://mrutecki.pl/download/kernel/3.5/swinka/config-3.5.0
-> 
-> lspci:
-> http://mrutecki.pl/download/kernel/3.5/swinka/lspci.txt
-> 
-> Regards
-> -- 
-> Maciej Rutecki
-> http://www.mrutecki.pl
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+My solution is using sg_set_page instead of sg_set_buf.
 
+I have tested the patch on my workstation. QEMU would not crash any more.
+
+Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
+---
+ drivers/scsi/virtio_scsi.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 1b38431..fc5c88a 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -198,7 +198,8 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+ 	int i;
+ 
+ 	for_each_sg(table->sgl, sg_elem, table->nents, i)
+-		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
++		sg_set_page(&sg[idx++], sg_page(sg_elem), sg_elem->length,
++			sg_elem->offset);
+ 
+ 	*p_idx = idx;
+ }
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.9.5
+
