@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab2GYHzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 03:55:38 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:40791 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406Ab2GYHzh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 03:55:37 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6782"; a="211891302"
-Message-ID: <500FA66F.7090202@codeaurora.org>
-Date: Wed, 25 Jul 2012 00:55:27 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756359Ab2GYH5n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 03:57:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57174 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755853Ab2GYH5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 03:57:41 -0400
+Date: Wed, 25 Jul 2012 08:57:37 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Stable <stable@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/34] mm: Reduce the amount of work done when updating
+ min_free_kbytes
+Message-ID: <20120725075737.GW9222@suse.de>
+References: <1343050727-3045-1-git-send-email-mgorman@suse.de>
+ <1343050727-3045-4-git-send-email-mgorman@suse.de>
+ <20120724224712.GB4245@kroah.com>
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 06/13] driver core: firmware loader: always let firmware_buf
- own the pages buffer
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com> <1343149213-10160-7-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1343149213-10160-7-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120724224712.GB4245@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mostly trivia.
+On Tue, Jul 24, 2012 at 03:47:12PM -0700, Greg KH wrote:
+> On Mon, Jul 23, 2012 at 02:38:16PM +0100, Mel Gorman wrote:
+> > commit 938929f14cb595f43cd1a4e63e22d36cab1e4a1f upstream.
+> > 
+> > Stable note: Fixes https://bugzilla.novell.com/show_bug.cgi?id=726210 .
+> > 	Large machines with 1TB or more of RAM take a long time to boot
+> > 	without this patch and may spew out soft lockup warnings.
+> 
+> In comparing this with the upstream version, you have a few different
+> coding style differences, but no real content difference.  Why?
+> 
 
-On 7/24/2012 10:00 AM, Ming Lei wrote:
-> +
-> +static int fw_lookup_and_alloate_buf(const char *fw_name,
+This was a mistake in my workflow that needs a bit of ironing out.
 
-allocate?
+The mistake is that I took the patch from the distribution kernel which was
+merged at a time before the coding style fixes were applied. The upstream
+commit and signed-off lines were "fixed" but I failed to refresh the
+patch and missed that it differed from upstream. Thanks for catching this.
+I'll adjust my workflow and assistant scripts to watch for this sort of
+problem in the future.
 
-> +		struct firmware_cache *fwc,
-> +		struct firmware_buf **buf)
-> +{
-> +	struct firmware_buf *tmp;
-> +
-> +	spin_lock(&fwc->lock);
-> +	list_for_each_entry(tmp, &fwc->head, list)
-> +		if (!strcmp(tmp->fw_id, fw_name)) {
-> +			kref_get(&tmp->ref);
-> +			spin_unlock(&fwc->lock);
-> +			*buf = tmp;
-> +			return 1;
-> +		}
-> +
-> +	tmp = __allocate_fw_buf(fw_name, fwc);
-> +	if (tmp)
-> +		list_add(&tmp->list, &fwc->head);
-> +	spin_unlock(&fwc->lock);
-> +
-> +	*buf = tmp;
-> +
-> +	return tmp ? 0 : -1;
+> > 
+> > When min_free_kbytes is updated blocks marked MIGRATE_RESERVE are
+> > updated. Ordinarily, this work is unnoticable as it happens early
+> > in boot. However, on large machines with 1TB of memory, this can take
+> > a considerable time when NUMA distances are taken into account. The bulk
+> > of the work is done by pageblock_is_reserved() which examines the
+> > metadata for almost every page in the system. Currently, we are doing
+> > this far more than necessary as it is only required while there are
+> > still blocks to be marked MIGRATE_RESERVE. This patch significantly
+> > reduces the amount of work done by setup_zone_migrate_reserve()
+> > improving boot times on 1TB machines.
+> > 
+> > [akpm@linux-foundation.org: coding-style fixes]
+> 
+> I'm guessing you didn't pick these up?
+> 
 
--ENOMEM instead of -1?
+Correct but due to a mistake, not for any good reason.
 
-> +
-> +static void fw_cache_init(void)
+> Anyway, I've taken it now as the original one from Linus's tree,
+> hopefully this doesn't burn me later in the series...
+> 
 
-__init?
+I hope it didn't.
 
-> +{
-> +	spin_lock_init(&fw_cache.lock);
-> +	INIT_LIST_HEAD(&fw_cache.head);
-> +}
-> +
-[...]
-> uevent, nowait);
->  
-> -/* transfer the ownership of pages to firmware */
-> -static void fw_set_page_data(struct firmware_buf *buf)
-> -{
-> -	struct firmware *fw = buf->fw;
-> +	if (IS_ERR(fw_priv) || ret == -1) {
-> +		kfree(firmware);
-> +		*firmware_p = NULL;
-> +		return ERR_PTR(-ENOMEM);
-
-This would have to check for < 0 and return ERR_PTR(ret) instead.
+Thanks Greg.
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Mel Gorman
+SUSE Labs
