@@ -1,218 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab2GYKqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 06:46:31 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42472 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756482Ab2GYKqa convert rfc822-to-8bit (ORCPT
+	id S1756513Ab2GYKwi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 06:52:38 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:34217 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756483Ab2GYKwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 06:46:30 -0400
-Message-ID: <500FCE74.8010005@parallels.com>
-Date: Wed, 25 Jul 2012 14:46:12 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 25 Jul 2012 06:52:37 -0400
+Date: Wed, 25 Jul 2012 11:41:38 +0100
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, mc@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
+ HighMem pages used by sg list
+Message-ID: <20120725104138.GA11098@stefanha-thinkpad.localdomain>
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com>
+ <500FB1DE.1000100@redhat.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3 03/11] NFS: move per-net callback thread initialization
- to nfs_callback_up_net()
-References: <20120703161844.11911.92996.stgit@localhost.localdomain> <20120703161946.11911.85659.stgit@localhost.localdomain> <20120724214731.GO8570@fieldses.org> <500FC80F.2070403@parallels.com>
-In-Reply-To: <500FC80F.2070403@parallels.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500FB1DE.1000100@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12072510-1948-0000-0000-0000027E4987
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-25.07.2012 14:18, Stanislav Kinsbursky пишет:
-> 25.07.2012 01:47, J. Bruce Fields пишет:
->> On Tue, Jul 03, 2012 at 08:19:46PM +0400, Stanislav Kinsbursky wrote:
->>> This new function in now called before nfs_minorversion_callback_svc_setup()).
->>>
->>> Also few small changes:
->>> 1) current network namespace in nfs_callback_up() was replaced by transport net.
->>> 2) svc_shutdown_net() was moved prior to callback usage counter decrement
->>> (because in case of per-net data allocation faulure svc_shutdown_net() have to
->>> be skipped).
->>>
->>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>> ---
->>>    fs/nfs/callback.c |  125 +++++++++++++++++++++++++++++++++--------------------
->>>    fs/nfs/client.c   |    2 -
->>>    2 files changed, 79 insertions(+), 48 deletions(-)
->>>
->>> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
->>> index f8d0c21..b61ed61 100644
->>> --- a/fs/nfs/callback.c
->>> +++ b/fs/nfs/callback.c
->>> @@ -63,6 +63,32 @@ static struct kernel_param_ops param_ops_portnr = {
->>>
->>>    module_param_named(callback_tcpport, nfs_callback_set_tcpport, portnr, 0644);
->>>
->>> +static int nfs4_callback_up_net(struct svc_serv *serv, struct net *net)
->>> +{
->>> +	int ret;
->>> +
->>> +	ret = svc_create_xprt(serv, "tcp", net, PF_INET,
->>> +				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
->>> +	if (ret <= 0)
->>> +		goto out_err;
->>> +	nfs_callback_tcpport = ret;
->>> +	dprintk("NFS: Callback listener port = %u (af %u, net %p)\n",
->>> +			nfs_callback_tcpport, PF_INET, net);
->>> +
->>> +	ret = svc_create_xprt(serv, "tcp", net, PF_INET6,
->>> +				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
->>> +	if (ret > 0) {
->>> +		nfs_callback_tcpport6 = ret;
->>> +		dprintk("NFS: Callback listener port = %u (af %u, net %p)\n",
->>> +				nfs_callback_tcpport6, PF_INET6, net);
->>> +	} else if (ret != -EAFNOSUPPORT)
->>> +		goto out_err;
->>> +	return 0;
->>> +
->>> +out_err:
->>> +	return (ret) ? ret : -ENOMEM;
->>> +}
->>> +
->>>    /*
->>>     * This is the NFSv4 callback kernel thread.
->>>     */
->>> @@ -104,36 +130,21 @@ nfs4_callback_svc(void *vrqstp)
->>>    static struct svc_rqst *
->>>    nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->>>    {
->>> -	int ret;
->>> -
->>> -	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
->>> -				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
->>> -	if (ret <= 0)
->>> -		goto out_err;
->>> -	nfs_callback_tcpport = ret;
->>> -	dprintk("NFS: Callback listener port = %u (af %u)\n",
->>> -			nfs_callback_tcpport, PF_INET);
->>> -
->>> -	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
->>> -				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
->>> -	if (ret > 0) {
->>> -		nfs_callback_tcpport6 = ret;
->>> -		dprintk("NFS: Callback listener port = %u (af %u)\n",
->>> -				nfs_callback_tcpport6, PF_INET6);
->>> -	} else if (ret == -EAFNOSUPPORT)
->>> -		ret = 0;
->>> -	else
->>> -		goto out_err;
->>> -
->>>    	return svc_prepare_thread(serv, &serv->sv_pools[0], NUMA_NO_NODE);
->>> -
->>> -out_err:
->>> -	if (ret == 0)
->>> -		ret = -ENOMEM;
->>> -	return ERR_PTR(ret);
->>>    }
->>>
->>>    #if defined(CONFIG_NFS_V4_1)
->>> +static int nfs41_callback_up_net(struct svc_serv *serv, struct net *net)
->>> +{
->>> +	/*
->>> +	 * Create an svc_sock for the back channel service that shares the
->>> +	 * fore channel connection.
->>> +	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
->>> +	 */
->>> +	return svc_create_xprt(serv, "tcp-bc", net, PF_INET, 0,
->>> +			      SVC_SOCK_ANONYMOUS);
->>> +}
->>> +
->>>    /*
->>>     * The callback service for NFSv4.1 callbacks
->>>     */
->>> @@ -176,19 +187,6 @@ static struct svc_rqst *
->>>    nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->>>    {
->>>    	struct svc_rqst *rqstp;
->>> -	int ret;
->>> -
->>> -	/*
->>> -	 * Create an svc_sock for the back channel service that shares the
->>> -	 * fore channel connection.
->>> -	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
->>> -	 */
->>> -	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
->>> -			      SVC_SOCK_ANONYMOUS);
->>> -	if (ret < 0) {
->>> -		rqstp = ERR_PTR(ret);
->>> -		goto out;
->>> -	}
->>>
->>>    	/*
->>>    	 * Save the svc_serv in the transport so that it can
->>> @@ -204,7 +202,6 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->>>    		svc_xprt_put(serv->sv_bc_xprt);
->>>    		serv->sv_bc_xprt = NULL;
->>>    	}
->>> -out:
->>>    	dprintk("--> %s return %ld\n", __func__,
->>>    		IS_ERR(rqstp) ? PTR_ERR(rqstp) : 0);
->>>    	return rqstp;
->>> @@ -228,6 +225,11 @@ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
->>>    		xprt->bc_serv = cb_info->serv;
->>>    }
->>>    #else
->>> +static int nfs41_callback_up_net(struct svc_serv *serv, struct net *net)
->>> +{
->>> +	return 0;
->>> +}
->>> +
->>>    static inline int nfs_minorversion_callback_svc_setup(u32 minorversion,
->>>    		struct svc_serv *serv, struct rpc_xprt *xprt,
->>>    		struct svc_rqst **rqstpp, int (**callback_svc)(void *vrqstp))
->>> @@ -241,6 +243,36 @@ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
->>>    }
->>>    #endif /* CONFIG_NFS_V4_1 */
->>>
->>> +static int nfs_callback_up_net(int minorversion, struct svc_serv *serv, struct net *net)
->>> +{
->>> +	int ret;
->>> +
->>> +	dprintk("NFS: create per-net callback data; net=%p\n", net);
->>> +
->>> +	ret = svc_bind(serv, net);
->>> +	if (ret < 0) {
->>> +		printk(KERN_WARNING "NFS: bind callback service failed\n");
->>> +		goto err_bind;
->>> +	}
->>> +
->>> +	if (minorversion) {
->>> +		ret = nfs41_callback_up_net(serv, net);
->>> +		if (ret < 0)
->>> +			goto err_socks;
->>> +	}
->>> +
->>> +	if (ret == 0)
->>> +		ret = nfs4_callback_up_net(serv, net);
->>
->> So in the minorversion 1 case, and in the absence of errors, you set up
->> both the 4.1 and 4.0 callback xprts?
->>
->> That doesn't look right.  You should need only one or the other.
->>
->
-> Thanks for the catch, Bruce.
-> I'll fix it and resend.
-> But currently I'm thinking, that for 3.6 kernel probably it's better to push
-> this code through Trond's tree.
->
+On Wed, Jul 25, 2012 at 10:44:14AM +0200, Paolo Bonzini wrote:
+> Il 25/07/2012 10:29, Wang Sen ha scritto:
+> > When using the commands below to write some data to a virtio-scsi LUN of the 
+> > QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
+> > 
+> > 	# sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
+> > 	# sudo mount /dev/sdb /mnt
+> > 	# dd if=/dev/zero of=/mnt/file bs=1M count=1024
+> > 
+> > In current implementation, sg_set_buf is called to add buffers to sg list which
+> > is put into the virtqueue eventually. But there are some HighMem pages in 
+> > table->sgl can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
+> > return NULL value. This will cause QEMU exit when virtqueue_map_sg is called 
+> > in QEMU because an invalid GPA is passed by virtqueue.
+> 
+> Heh, I was compiling (almost) the same patch as we speak. :)
+> 
+> I've never seen QEMU crash; the VM would more likely just fail to boot
+> with a panic.  But it's the same bug anyway.
 
-No, Bruce. It works fine. nfs41_callback_up_net() will return either negative 
-value of port number. I.e. nfs4_callback_up_net() won't be called.
-But this looks confusing.
-I'll rewrite this part.
+It's not a segfault "crash", I think it hits an abort(3) in QEMU's
+virtio code when trying to map an invalid guest physical address.
 
--- 
-Best regards,
-Stanislav Kinsbursky
-
+Stefan
 
