@@ -1,50 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab2GYLnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:43:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:65487 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756539Ab2GYLnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:43:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="185825222"
-Date: Wed, 25 Jul 2012 19:35:30 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Nicolas Palix <npalix@diku.dk>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Coccinelle: fix typo in memdup_user.cocci
-Message-ID: <20120725113530.GA26514@localhost>
+	id S1756607Ab2GYLna (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:43:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37819 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756523Ab2GYLn1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 07:43:27 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <thierry.reding@avionic-design.de>
+CC: <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>, <vaibhav.bedia@ti.com>,
+        <gururaja.hebbar@ti.com>, "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH v2 1/2] pwm: pwm-tiecap: PWM driver support for ECAP APWM
+Date: Wed, 25 Jul 2012 16:58:18 +0530
+Message-ID: <1343215699-4575-2-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1343215699-4575-1-git-send-email-avinashphilip@ti.com>
+References: <1343215699-4575-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- scripts/coccinelle/api/memdup_user.cocci |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ECAP hardware on AM33XX SOC supports auxiliary PWM (APWM) feature. This
+commit adds PWM driver support for ECAP hardware on AM33XX SOC.
 
-diff --git a/scripts/coccinelle/api/memdup_user.cocci b/scripts/coccinelle/api/memdup_user.cocci
-index 2efac28..2b131a8 100644
---- a/scripts/coccinelle/api/memdup_user.cocci
-+++ b/scripts/coccinelle/api/memdup_user.cocci
-@@ -51,10 +51,10 @@ statement S1,S2;
- p << r.p;
- @@
+In the ECAP hardware, each PWM pin can also be configured to be in
+capture mode. Current implementation only supports PWM mode of
+operation. Also, hardware supports sync between multiple PWM pins but
+the driver supports simple independent PWM functionality.
+
+Reviewed-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+:100644 100644 94e176e... 2840747... M	drivers/pwm/Kconfig
+:100644 100644 5459702... 35fee43... M	drivers/pwm/Makefile
+:000000 100644 0000000... 3c2ad28... A	drivers/pwm/pwm-tiecap.c
+ drivers/pwm/Kconfig      |   11 ++
+ drivers/pwm/Makefile     |    1 +
+ drivers/pwm/pwm-tiecap.c |  232 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 244 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 94e176e..2840747 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -76,6 +76,17 @@ config PWM_TEGRA
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-tegra.
  
--coccilib.org.print_todo(p[0], "WARNING opportunity for memdep_user")
-+coccilib.org.print_todo(p[0], "WARNING opportunity for memdup_user")
- 
- @script:python depends on report@
- p << r.p;
- @@
- 
--coccilib.report.print_report(p[0], "WARNING opportunity for memdep_user")
-+coccilib.report.print_report(p[0], "WARNING opportunity for memdup_user")
++config  PWM_TIECAP
++	tristate "ECAP PWM support"
++	depends on SOC_AM33XX
++
++	help
++	  PWM driver support for the ECAP APWM controller found on AM33XX
++	  TI SOC
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-tiecap.
++
+ config PWM_VT8500
+ 	tristate "vt8500 pwm support"
+ 	depends on ARCH_VT8500
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index 5459702..35fee43 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -6,4 +6,5 @@ obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
+ obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
+ obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
+ obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
++obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
+ obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
+diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
+new file mode 100644
+index 0000000..3c2ad28
+--- /dev/null
++++ b/drivers/pwm/pwm-tiecap.c
+@@ -0,0 +1,232 @@
++/*
++ * ECAP PWM driver
++ *
++ * Copyright (C) 2012 Texas Instruments, Inc. - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/clk.h>
++#include <linux/pm_runtime.h>
++#include <linux/pwm.h>
++
++/* ECAP registers and bits definitions */
++#define CAP1			0x08
++#define CAP2			0x0C
++#define CAP3			0x10
++#define CAP4			0x14
++#define ECCTL2			0x2A
++#define ECCTL2_APWM_MODE	BIT(9)
++#define ECCTL2_SYNC_SEL_DISA	(BIT(7) | BIT(6))
++#define ECCTL2_TSCTR_FREERUN	BIT(4)
++
++struct ecap_pwm_chip {
++	struct pwm_chip	chip;
++	unsigned int	clk_rate;
++	void __iomem	*mmio_base;
++};
++
++static inline struct ecap_pwm_chip *to_ecap_pwm_chip(struct pwm_chip *chip)
++{
++	return container_of(chip, struct ecap_pwm_chip, chip);
++}
++
++/*
++ * period_ns = 10^9 * period_cycles / PWM_CLK_RATE
++ * duty_ns   = 10^9 * duty_cycles / PWM_CLK_RATE
++ */
++static int ecap_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++		int duty_ns, int period_ns)
++{
++	struct ecap_pwm_chip *pc = to_ecap_pwm_chip(chip);
++	unsigned long long c;
++	unsigned long period_cycles, duty_cycles;
++	unsigned int reg_val;
++
++	if (period_ns < 0 || duty_ns < 0 || period_ns > NSEC_PER_SEC)
++		return -ERANGE;
++
++	c = pc->clk_rate;
++	c = c * period_ns;
++	do_div(c, NSEC_PER_SEC);
++	period_cycles = (unsigned long)c;
++
++	if (period_cycles < 1) {
++		period_cycles = 1;
++		duty_cycles = 1;
++	} else {
++		c = pc->clk_rate;
++		c = c * duty_ns;
++		do_div(c, NSEC_PER_SEC);
++		duty_cycles = (unsigned long)c;
++	}
++
++	pm_runtime_get_sync(pc->chip.dev);
++
++	reg_val = readw(pc->mmio_base + ECCTL2);
++
++	/* Configure APWM mode & disable sync option */
++	reg_val |= ECCTL2_APWM_MODE | ECCTL2_SYNC_SEL_DISA;
++
++	writew(reg_val, pc->mmio_base + ECCTL2);
++
++	if (!test_bit(PWMF_ENABLED, &pwm->flags)) {
++		/* Update active registers if not running */
++		writel(duty_cycles, pc->mmio_base + CAP2);
++		writel(period_cycles, pc->mmio_base + CAP1);
++	} else {
++		/*
++		 * Update shadow registers to configure period and
++		 * compare values. This helps current PWM period to
++		 * complete on reconfiguring
++		 */
++		writel(duty_cycles, pc->mmio_base + CAP4);
++		writel(period_cycles, pc->mmio_base + CAP3);
++	}
++
++	pm_runtime_put_sync(pc->chip.dev);
++	return 0;
++}
++
++static int ecap_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct ecap_pwm_chip *pc = to_ecap_pwm_chip(chip);
++	unsigned int reg_val;
++
++	/* Leave clock enabled on enabling PWM */
++	pm_runtime_get_sync(pc->chip.dev);
++
++	/*
++	 * Enable 'Free run Time stamp counter mode' to start counter
++	 * and  'APWM mode' to enable APWM output
++	 */
++	reg_val = readw(pc->mmio_base + ECCTL2);
++	reg_val |= ECCTL2_TSCTR_FREERUN | ECCTL2_APWM_MODE;
++	writew(reg_val, pc->mmio_base + ECCTL2);
++	return 0;
++}
++
++static void ecap_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct ecap_pwm_chip *pc = to_ecap_pwm_chip(chip);
++	unsigned int reg_val;
++
++	/*
++	 * Disable 'Free run Time stamp counter mode' to stop counter
++	 * and 'APWM mode' to put APWM output to low
++	 */
++	reg_val = readw(pc->mmio_base + ECCTL2);
++	reg_val &= ~(ECCTL2_TSCTR_FREERUN | ECCTL2_APWM_MODE);
++	writew(reg_val, pc->mmio_base + ECCTL2);
++
++	/* Disable clock on PWM disable */
++	pm_runtime_put_sync(pc->chip.dev);
++}
++
++static void ecap_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
++		dev_warn(chip->dev, "Removing PWM device without disabling\n");
++		pm_runtime_put_sync(chip->dev);
++	}
++}
++
++static const struct pwm_ops ecap_pwm_ops = {
++	.free		= ecap_pwm_free,
++	.config		= ecap_pwm_config,
++	.enable		= ecap_pwm_enable,
++	.disable	= ecap_pwm_disable,
++	.owner		= THIS_MODULE,
++};
++
++static int __devinit ecap_pwm_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct resource *r;
++	struct clk *clk;
++	struct ecap_pwm_chip *pc;
++
++	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
++	if (!pc) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	clk = devm_clk_get(&pdev->dev, "fck");
++	if (IS_ERR(clk)) {
++		dev_err(&pdev->dev, "failed to get clock\n");
++		return PTR_ERR(clk);
++	}
++
++	pc->clk_rate = clk_get_rate(clk);
++	if (!pc->clk_rate) {
++		dev_err(&pdev->dev, "failed to get clock rate\n");
++		return -EINVAL;
++	}
++
++	pc->chip.dev = &pdev->dev;
++	pc->chip.ops = &ecap_pwm_ops;
++	pc->chip.base = -1;
++	pc->chip.npwm = 1;
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!r) {
++		dev_err(&pdev->dev, "no memory resource defined\n");
++		return -ENODEV;
++	}
++
++	pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
++	if (!pc->mmio_base) {
++		dev_err(&pdev->dev, "failed to ioremap() registers\n");
++		return -EADDRNOTAVAIL;
++	}
++
++	ret = pwmchip_add(&pc->chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
++		return ret;
++	}
++
++	pm_runtime_enable(&pdev->dev);
++	platform_set_drvdata(pdev, pc);
++	return 0;
++}
++
++static int __devexit ecap_pwm_remove(struct platform_device *pdev)
++{
++	struct ecap_pwm_chip *pc = platform_get_drvdata(pdev);
++
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++	return pwmchip_remove(&pc->chip);
++}
++
++static struct platform_driver ecap_pwm_driver = {
++	.driver = {
++		.name = "ecap",
++	},
++	.probe = ecap_pwm_probe,
++	.remove = __devexit_p(ecap_pwm_remove),
++};
++
++module_platform_driver(ecap_pwm_driver);
++
++MODULE_DESCRIPTION("ECAP PWM driver");
++MODULE_AUTHOR("Texas Instruments");
++MODULE_LICENSE("GPL");
 -- 
-1.7.10
+1.7.1
 
