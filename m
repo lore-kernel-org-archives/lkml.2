@@ -1,119 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab2GYGUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:20:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43712 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932736Ab2GYGUm (ORCPT
+	id S932848Ab2GYGZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:25:43 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35192 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932767Ab2GYGZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:20:42 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <spi-devel-general@lists.sourceforge.net>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH] spi: omap2-mcspi: In case of dma errors fall back to pio
-Date: Wed, 25 Jul 2012 11:50:29 +0530
-Message-ID: <1343197229-15188-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 25 Jul 2012 02:25:40 -0400
+X-Sasl-enc: EhGIVRsuIgFbm2zmz+D+ctDk3SPamKdjVqqJ0G8bJyIn 1343197539
+Message-ID: <1343197528.2386.32.camel@perseus.themaw.net>
+Subject: [Fwd: [ANNOUNCE] autofs 5.0.7 release]
+From: Ian Kent <raven@themaw.net>
+To: autofs@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 25 Jul 2012 14:25:28 +0800
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-K1odDQO8LzBIFLpmhAc+"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case there are dma errors currently the driver exits.
-Make the spi driver fall back to pio mode in case of dma errors.
 
-If the DMA engine is not selected the driver
-exits.This patch makes the spi fall back to pio in that case.
+--=-K1odDQO8LzBIFLpmhAc+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Also adds a field dma_unusable to struct omap2_mcspi.
- 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/spi/spi-omap2-mcspi.c |   21 +++++++++++++--------
- 1 files changed, 13 insertions(+), 8 deletions(-)
+Hi all,
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index bc47781..f243a39 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -129,6 +129,7 @@ struct omap2_mcspi {
- 	struct omap2_mcspi_dma	*dma_channels;
- 	struct device		*dev;
- 	struct omap2_mcspi_regs ctx;
-+	int dma_unusable;
- };
- 
- struct omap2_mcspi_cs {
-@@ -845,7 +846,7 @@ static int omap2_mcspi_setup(struct spi_device *spi)
- 	if (!mcspi_dma->dma_rx || !mcspi_dma->dma_tx) {
- 		ret = omap2_mcspi_request_dma(spi);
- 		if (ret < 0)
--			return ret;
-+			mcspi->dma_unusable = 1;
- 	}
- 
- 	ret = omap2_mcspi_enable_clocks(mcspi);
-@@ -956,7 +957,8 @@ static void omap2_mcspi_work(struct omap2_mcspi *mcspi, struct spi_message *m)
- 				__raw_writel(0, cs->base
- 						+ OMAP2_MCSPI_TX0);
- 
--			if (m->is_dma_mapped || t->len >= DMA_MIN_BYTES)
-+			if (!mcspi->dma_unusable && (m->is_dma_mapped ||
-+						t->len >= DMA_MIN_BYTES))
- 				count = omap2_mcspi_txrx_dma(spi, t);
- 			else
- 				count = omap2_mcspi_txrx_pio(spi, t);
-@@ -1030,7 +1032,8 @@ static int omap2_mcspi_transfer_one_message(struct spi_master *master,
- 			return -EINVAL;
- 		}
- 
--		if (m->is_dma_mapped || len < DMA_MIN_BYTES)
-+		if (mcspi->dma_unusable || m->is_dma_mapped ||
-+					len < DMA_MIN_BYTES)
- 			continue;
- 
- 		if (tx_buf != NULL) {
-@@ -1054,6 +1057,7 @@ static int omap2_mcspi_transfer_one_message(struct spi_master *master,
- 				return -EINVAL;
- 			}
- 		}
-+
- 	}
- 
- 	omap2_mcspi_work(mcspi, m);
-@@ -1216,9 +1220,12 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
- 		mcspi->dma_channels[i].dma_tx_sync_dev = dma_res->start;
- 	}
- 
--	if (status < 0)
--		goto dma_chnl_free;
--
-+	if (status < 0) {
-+		dev_err(&pdev->dev, "cannot get DMA channel switching to pio\n");
-+		mcspi->dma_unusable = 1;
-+		status = 0;
-+		kfree(mcspi->dma_channels);
-+	}
- 	pm_runtime_use_autosuspend(&pdev->dev);
- 	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
- 	pm_runtime_enable(&pdev->dev);
-@@ -1229,14 +1236,12 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
- 	status = spi_register_master(master);
- 	if (status < 0)
- 		goto err_spi_register;
--
- 	return status;
- 
- err_spi_register:
- 	spi_master_put(master);
- disable_pm:
- 	pm_runtime_disable(&pdev->dev);
--dma_chnl_free:
- 	kfree(mcspi->dma_channels);
- free_master:
- 	kfree(master);
--- 
-1.7.5.4
+Oops, I sent this without updating the autofs mailing list address in my
+release announcement template and I didn't sign the message which I
+wanted to do.
+
+Sorry for the noise.
+
+Ian
+
+-------- Forwarded Message --------
+From: Ian Kent <raven@themaw.net>
+To: autofs@linux.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] autofs 5.0.7 release
+Date: Wed, 25 Jul 2012 14:19:28 +0800
+
+Hi all,
+
+Once again this is long overdue so there are many changes.
+
+The kernel patches are not being updated any more because of the
+introduction of the vfs-automount changes to the VFS. If there
+are needs in this area we will need to discuss how to deal with
+them on the mailing list.
+
+Known issues (haven't changed since 5.0.6)
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+
+- Quoted strings in the master map are still not yet handled.
+- When the active restart is being used it will happily re-connect a
+  mount that is unresponsive, perhaps because the server is not
+  responding. A forced expire (USR1 signal) should be enough to clean
+  up.
+
+autofs
+=3D=3D=3D=3D=3D=3D
+
+The package can be found at:
+
+ftp://ftp.kernel.org/pub/linux/daemons/autofs/v5
+
+It is autofs-5.0.7.tar.[gz|bz2|xz]
+
+No source rpm is there as it can be produced by using:
+
+rpmbuild -ts autofs-5.0.7.tar.gz
+
+and the binary rpm by using:
+
+rpmbuild -tb autofs-5.0.7.tar.gz
+
+See the INSTALL file for information about configure options and
+kernel requirements.
+
+Here are the entries from the CHANGELOG which outline the updates:
+
+25/07/2012 autofs-5.0.7
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+- fix ipv6 name for lookup fix.
+- improve mount location error reporting.
+- fix paged query more results check.
+- fix dumpmaps not reading maps.
+- fix result null check in read_one_map().
+- fix LDAP result leaks on error paths.
+- fix fix LDAP result leaks on error paths.
+- code analysis fixes part 1.
+- fix not bind mounting local filesystem.
+- add "dir" map-type.
+- fix wait for master source mutex.
+- fix submount shutdown race.
+- fix fix map source check in file lookup.
+- add disable move mount configure option.
+- fix ipv6 name lookup check.
+- fix ipv6 rpc calls.
+- fix ipv6 configure check.
+- add piddir to configure.
+- add systemd unit support.
+- remove empty command line arguments (passed by systemd).
+- fix rpc build error.
+- fix improve mount location error reporting.
+- fix fix wait for master source mutex.
+- add sss lookup module.
+- teach automount about sss source.
+- fix init script usage message.
+- ignore duplicate exports in auto.net.
+- add kernel verion check function.
+- add function to check mount.nfs version.
+- reinstate singleton mount probe.
+- rework error return handling in rpc code.
+- catch EHOSTUNREACH and bail out early.
+- systemd support fixes.
+- check scandir() return value.
+- allow for kernel packet size change (in kernel 3.3.0+).
+- fix function to check mount.nfs version.
+- fix typo in libtirpc file name.
+- fix rework error return handling in rpc code.
+- allow MOUNT_WAIT to override probe.
+- improve UDP RPC timeout handling.
+- use strtok_r() in linux_version_code().
+- fix sss wildcard match.
+- fix dlopen() error handling in sss module.
+- fix configure string length tests for sss library.
+- report map not read when debug logging.
+- duplicate parent options for included maps.
+- update ->timeout() function to not return timeout.
+- move timeout to map_source (allow per direct map timeout).
+- fix kernel verion check of version components.
+- dont retry ldap connect if not required.
+- fix initialization in rpc create_client().
+- fix libtirpc name clash.
+- check if /etc/mtab is a link to /proc/self/mounts.
+- fix nfs4 contacts portmap.
+- make autofs wait longer for shutdown completion.
+- fix sss map age not updated.
+- fix remount deadlock.
+- fix umount recovery of busy direct mount.
+- fix offset mount point directory removal.
+- fix remount of multi mount.
+- fix devce ioctl alloc path check.
+- add hup signal handling to hosts map.
+- fix systemd argument passing.
+- fix get_nfs_info() can incorrectly fail.
+- fix offset directory removal.
+- check negative cache much earlier.
+- dont use pthread_rwlock_tryrdlock().
+- mount_nfs.so to honor explicit NFSv4 requests.
+- mount_nfs.so fix port=3D0 option behavior v3.
+- documentation fix some typos and misleading comments.
+
+Ian
+
+
+--=-K1odDQO8LzBIFLpmhAc+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQD5FYAAoJEOdnc4D1T9ipWYcP/3k3DlUFTTxGGMfIAzvC1pPY
+jPqbXpo3T/BwbfM3mHlRRafePLocGFOkLCOZAU5iYN/tOZNFTvXINE1ebVMBA8Z3
+goMBQI8OvoxVVCtGFIqntJapplU90Me7bJO7WXLmQgdMg7dhbkrcPWtli3DQSo6H
+Ku5tSAzONe5RhDhk0ihEg3Xw4NBsBq8L7/kcauphv91ACHI0S2QoNPW2qswxHWR8
+FM7MqAu+3c04cZ2HEjI/1zPfkgzNZ+rVIHyHGiprQE8X3cFoihABnj1f30GuNyFN
+7MRdO9kkUhkrWMeIrfPRWZZXSJvVG60rvdfqQXi2jSwiUe95qBWX25iPFmsWb2qJ
+DwUQ6gr/TLGxN1T7x30BIL3ZfXGxsZ/yPXQkm/x0rHKsC1DIOaM4gKtNi2ohT4hq
+/HNE4ee1mdtNpVXzWjzYevcWitQ3+VA+jArDCdvKmFlcCBcKDnz8YTgiLBlFo8cV
+f1v84+/hOwBQdR0OIa6w0O3Cxv50CK+9vCYYZIkwhk8bpymW3UST5Hzy/3OBSeYB
+EIW6HaHQhtWx7L4KIfQIDKNQADFE0iDq6A0D+sieMI61E+BTsavyJD5dzUv41N9F
+SZGMXGM2bAn71hsSOex/tmHPRsbrtPd3iM0xaAG5RVKAepJucOa/EdQ3hmdfKI+P
++gL3QSB/kKeptI3aULCJ
+=bhCu
+-----END PGP SIGNATURE-----
+
+--=-K1odDQO8LzBIFLpmhAc+--
 
