@@ -1,82 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab2GYHQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 03:16:54 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35906 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab2GYHQv (ORCPT
+	id S1754857Ab2GYHWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 03:22:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36647 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab2GYHWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 03:16:51 -0400
-References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com> <500CDE35.6000009@windriver.com> <42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com> <500E1057.3020509@windriver.com> <75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com> <CA+=dFzg=Bpsv5bMzECoAXYVcbD95eYy6xDAzL6fwiHrunfq-tg@mail.gmail.com>
-User-Agent: SkitMail for Android
-In-Reply-To: <CA+=dFzg=Bpsv5bMzECoAXYVcbD95eYy6xDAzL6fwiHrunfq-tg@mail.gmail.com>
+	Wed, 25 Jul 2012 03:22:42 -0400
+Date: Wed, 25 Jul 2012 09:22:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
+        zakir@umich.edu, greg@kroah.com, mpm@selenic.com, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
+        stable@kernel.org, DJ Johnson <dj.johnson@intel.com>
+Subject: Re: [PATCH 07/10] random: add new get_random_bytes_arch() function
+Message-ID: <20120725072236.GB27535@gmail.com>
+References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
+ <1341511933-11169-8-git-send-email-tytso@mit.edu>
+ <500F69F3.3040905@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK when bundling
-From: Vlad Yasevich <vyasevich@gmail.com>
-Date: Wed, 25 Jul 2012 03:16:44 -0400
-To: Xufeng Zhang <xufengzhang.main@gmail.com>
-CC: xufeng zhang <xufeng.zhang@windriver.com>, sri@us.ibm.com,
-        davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <e7f8a685-9635-4aa9-bd67-1044e0720b29@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500F69F3.3040905@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xufeng Zhang <xufengzhang.main@gmail.com> wrote:
 
->On 7/24/12, Vlad Yasevich <vyasevich@gmail.com> wrote:
->>>>> And I should clarify the above judgment code.
->>>>> AFAIK, there should be two cases for the bundling when invalid
->>>stream
->>>>> identifier error happens:
->>>>> 1). COOKIE_ACK ERROR SACK
->>>>> 2). ERROR SACK
->>>>> So I need to deal with the two cases differently.
->>>>>
->>>>>
->>>> Sorry but I just don't buy that the above are the only 2 cases. 
->What
->>>if there are addip chunks as well?  What if there are some other
->>>extensions also.  This code has to be generic enough to handle any
->>>condition.
->>>>
->>>Aha, you are right, this may happens.
->>>So I think the general solution is to fix this problem in the enqueue
->>>side.
->>>What do you think? any better suggestion!
->>>
->>
->> Don't have code in front of me but what if we carry the error
->condition to
->> where we queue the Sack and add the error side effect then?
->Yes, this is the most direct way to fix this problem.
->But I don't think it's the best way since we will take care of a lot
->of things and
->it also involves in lots of changes to side effect processing.
->I prefer to Neil Horman's way for the solution since only COOKIE_ACK
->chunk is
->allowed to place ahead of SACK chunk when bundling into one packet.
->What do you think?
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> For those who have read the Google+ thread[1] it is pretty 
+> clear that there are varying opinions on the idea of removing 
+> the RDRAND bypass.
+> 
+> I have gathered some performance numbers to make the debate 
+> more concrete: RDRAND is between 12 and 15 times faster than 
+> the current random pool system (for large and small blocks, 
+> respectively.)  Both the pool system and RDRAND scale 
+> perfectly with frequency, so the ratio is independent of 
+> P-states.
+> 
+> Given the discrepancy in performance (and presumably, in terms 
+> of power) I still very much believe it is a mistake to 
+> unconditionally disallow users the option for using RDRAND 
+> directly, but what I *do* believe we can all agree on is that 
+> security is paramount.  Dropping RDRAND is not just a 
+> performance loss but is likely a security loss since it will 
+> produce substantially less entropy.
+> 
+> As a compromise I offer the following patch; in terms of 
+> performance it is "the worst of both worlds" but it should 
+> provide the combined security of either; even if RDRAND is 
+> completely compromised by the NSA, Microsoft and the 
+> Illuminati all at once it will do no worse than the existing 
+> code, [...]
+
+I should mention that since there's documented historic examples 
+of our software random pool in drivers/char/random.c having bugs 
+that no-one noticed, XOR-ing the RDRAND hardware stream to the 
+software entropy pool's stream is the sensible thing to do, from 
+a security point of view.
+
+So your patch recovers the security lost via this recent patch 
+in random.git:
+
+  c2557a303ab6 random: add new get_random_bytes_arch() function
+
+I don't think random.git should be sent upstream without 
+addressing this Ivy Bridge security regression first.
+
+Btw., the commit above has a very misleading title: it not just 
+'adds' a function but the far more important change it does is 
+that it removes RDRAND from the output stream.
+
+The commit also made random number generation an order of 
+magnitude slower.
+
+> [...] and (since RDRAND is so much faster than the existing 
+> code) it has only a modest performance cost.  More 
+> realistically, it will let many more users take advantage of a 
+> high entropy quick-reseeding random number generator, thus 
+> ending up with a major gain in security.
 >
->
+> It is worth noting that although RDRAND by itself is adequate 
+> for any in-kernel users (and the 3.4-3.5 kernels use them as 
+> such unless you specify "nordrand"), this is not true for 
+> /dev/random; nor, due to abuse, /dev/urandom; the recently 
+> disclosed[2] RDSEED instruction, on the other hand, is defined 
+> to be fully entropic and can be used for any purpose; that one 
+> will be introduced in a later processor.
+> 
+> Note that the attached patch is way more conservative than it needs
+> to be: every byte is mixed with RDRAND data twice on its way through
+> (and an additional 1.2 byte is lost), as I moved the mixing to
+> extract_buf(), but even so the overhead is modest, and mixing in
+> extract_buf() makes the code quite a bit simpler.
+> 
+> This patch is on top of random.git.
+> 
+> 
+> [1] https://plus.google.com/115124063126128475540/posts/KbAEJKMsAfq
+> 
+> [2] http://software.intel.com/file/45207
+> 
+> -- 
+> H. Peter Anvin, Intel Open Source Technology Center
+> I work for Intel.  I don't speak on their behalf.
+> 
 
-Actually not true.  AUTH can be before SACK.  So can any addip chunks that aid in locating an association. 
+> From b36c22b00c6bf8e91a758d3167e912b0ac4f0d0c Mon Sep 17 00:00:00 2001
+> From: "H. Peter Anvin" <hpa@linux.intel.com>
+> Date: Tue, 24 Jul 2012 14:48:56 -0700
+> Subject: [PATCH] random: mix in architectural randomness in extract_buf()
+> 
+> RDRAND is so much faster than the Linux pool system that we can
+> always just mix in architectural randomness.
+> 
+> Doing this in extract_buf() lets us do this in one convenient
+> place, unfortunately the output size (10 bytes) is maximally
+> awkward.  That, plus the fact that every output byte will have
+> passed through extract_buf() twice means we are not being very
+> efficient with the RDRAND use.
+> 
+> Measurements show that RDRAND is 12-15 times faster than the Linux
+> pool system.  Doing the math shows this corresponds to about an
+> 11.5% slowdown which is confirmed by measurements.
+> 
+> Users who are very performance- or power-sensitive could definitely
+> still benefit from being allowed to use RDRAND directly, but I
+> believe this version should satisfy even the most hyper-paranoid
+> crowd.
+> 
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: DJ Johnson <dj.johnson@intel.com>
+> ---
+>  drivers/char/random.c |   56 ++++++++++++++++++++++++++++---------------------
+>  1 file changed, 32 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/char/random.c b/drivers/char/random.c
+> index 9793b40..a4a24e4 100644
+> --- a/drivers/char/random.c
+> +++ b/drivers/char/random.c
+> @@ -277,6 +277,8 @@
+>  #define SEC_XFER_SIZE 512
+>  #define EXTRACT_SIZE 10
+>  
+> +#define LONGS(x) (((x) + sizeof(unsigned long) - 1)/sizeof(unsigned long))
+> +
+>  /*
+>   * The minimum number of bits of entropy before we wake up a read on
+>   * /dev/random.  Should be enough to do a significant reseed.
+> @@ -813,11 +815,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+>   */
+>  static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+>  {
+> -	union {
+> -		__u32	tmp[OUTPUT_POOL_WORDS];
+> -		long	hwrand[4];
+> -	} u;
+> -	int	i;
+> +	__u32	tmp[OUTPUT_POOL_WORDS];
+>  
+>  	if (r->pull && r->entropy_count < nbytes * 8 &&
+>  	    r->entropy_count < r->poolinfo->POOLBITS) {
+> @@ -828,23 +826,17 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+>  		/* pull at least as many as BYTES as wakeup BITS */
+>  		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
+>  		/* but never more than the buffer size */
+> -		bytes = min_t(int, bytes, sizeof(u.tmp));
+> +		bytes = min_t(int, bytes, sizeof(tmp));
+>  
+>  		DEBUG_ENT("going to reseed %s with %d bits "
+>  			  "(%d of %d requested)\n",
+>  			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
+>  
+> -		bytes = extract_entropy(r->pull, u.tmp, bytes,
+> +		bytes = extract_entropy(r->pull, tmp, bytes,
+>  					random_read_wakeup_thresh / 8, rsvd);
+> -		mix_pool_bytes(r, u.tmp, bytes, NULL);
+> +		mix_pool_bytes(r, tmp, bytes, NULL);
+>  		credit_entropy_bits(r, bytes*8);
+>  	}
+> -	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
+> -	for (i = 0; i < 4; i++)
+> -		if (arch_get_random_long(&u.hwrand[i]))
+> -			break;
+> -	if (i)
+> -		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
+>  }
+>  
+>  /*
+> @@ -901,15 +893,19 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+>  static void extract_buf(struct entropy_store *r, __u8 *out)
+>  {
+>  	int i;
+> -	__u32 hash[5], workspace[SHA_WORKSPACE_WORDS];
+> +	union {
+> +		__u32 w[5];
+> +		unsigned long l[LONGS(EXTRACT_SIZE)];
+> +	} hash;
+> +	__u32 workspace[SHA_WORKSPACE_WORDS];
+>  	__u8 extract[64];
+>  	unsigned long flags;
+>  
+>  	/* Generate a hash across the pool, 16 words (512 bits) at a time */
+> -	sha_init(hash);
+> +	sha_init(hash.w);
+>  	spin_lock_irqsave(&r->lock, flags);
+>  	for (i = 0; i < r->poolinfo->poolwords; i += 16)
+> -		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
+> +		sha_transform(hash.w, (__u8 *)(r->pool + i), workspace);
+>  
+>  	/*
+>  	 * We mix the hash back into the pool to prevent backtracking
+> @@ -920,14 +916,14 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+>  	 * brute-forcing the feedback as hard as brute-forcing the
+>  	 * hash.
+>  	 */
+> -	__mix_pool_bytes(r, hash, sizeof(hash), extract);
+> +	__mix_pool_bytes(r, hash.w, sizeof(hash.w), extract);
+>  	spin_unlock_irqrestore(&r->lock, flags);
+>  
+>  	/*
+>  	 * To avoid duplicates, we atomically extract a portion of the
+>  	 * pool while mixing, and hash one final time.
+>  	 */
+> -	sha_transform(hash, extract, workspace);
+> +	sha_transform(hash.w, extract, workspace);
+>  	memset(extract, 0, sizeof(extract));
+>  	memset(workspace, 0, sizeof(workspace));
+>  
+> @@ -936,11 +932,23 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+>  	 * pattern, we fold it in half. Thus, we always feed back
+>  	 * twice as much data as we output.
+>  	 */
+> -	hash[0] ^= hash[3];
+> -	hash[1] ^= hash[4];
+> -	hash[2] ^= rol32(hash[2], 16);
+> -	memcpy(out, hash, EXTRACT_SIZE);
+> -	memset(hash, 0, sizeof(hash));
+> +	hash.w[0] ^= hash.w[3];
+> +	hash.w[1] ^= hash.w[4];
+> +	hash.w[2] ^= rol32(hash.w[2], 16);
+> +
+> +	/*
+> +	 * If we have a architectural hardware random number
+> +	 * generator, mix that in, too.
+> +	 */
+> +	for (i = 0; i < LONGS(EXTRACT_SIZE); i++) {
+> +		unsigned long v;
+> +		if (!arch_get_random_long(&v))
+> +			break;
+> +		hash.l[i] ^= v;
+> +	}
+> +
+> +	memcpy(out, hash.w, EXTRACT_SIZE);
+> +	memset(&hash, 0, sizeof(hash));
+>  }
 
-Now AUTH isn't a big issue since its autogenerated to the packet but ADDIP is since it could be queued up for retransmission.
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-There could be other extensions as well.  It really needs to be done either through side effects or making error chunks go at the end of other control chunks.  Need to audit the spec to see if that's ok.
+Thanks,
 
--vlad
->
->Thanks,
->Xufeng Zhang
->>
->> -vlad
-
-
--- 
-Sent from my Android phone with SkitMail. Please excuse my brevity.
+	Ingo
