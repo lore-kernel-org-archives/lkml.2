@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab2GYDmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 23:42:10 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52413 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358Ab2GYDmG (ORCPT
+	id S1756425Ab2GYDz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 23:55:58 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46154 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756367Ab2GYDmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 23:42:06 -0400
+	Tue, 24 Jul 2012 23:42:08 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
         Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 03/52] ACPICA: Lint fixes for acpi_write, no functional changes
-Date: Tue, 24 Jul 2012 23:40:59 -0400
-Message-Id: <5134abfcfb4a8a9ef42c82dabad05762fbf04376.1343187617.git.len.brown@intel.com>
+Subject: [PATCH 04/52] ACPICA: Add support for multiple notify handlers
+Date: Tue, 24 Jul 2012 23:41:00 -0400
+Message-Id: <86ed4bc83abf530cf2019044b74f89a39dfd6425.1343187617.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.12.rc0
 In-Reply-To: <1343187708-19532-1-git-send-email-lenb@kernel.org>
 References: <1343187708-19532-1-git-send-email-lenb@kernel.org>
@@ -27,57 +27,1065 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bob Moore <robert.moore@intel.com>
 
-acpi_write was widened to 64-bit data, this change eliminates some
-lint warnings.
+This change adds support to allow multiple notify handlers on
+Device, ThermalZone, and Processor objects. Also re-worked
+and restructured the entire notify support code for handler
+installation, handler removal, notify event queuing, and notify
+dispatch to handler.
+
+Extends and updates original commit 3f0be67("ACPI / ACPICA: Multiple
+system notify handlers per device") by Rafael Wysocki.
 
 Signed-off-by: Bob Moore <robert.moore@intel.com>
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/hwesleep.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/acpi/acpica/acglobal.h |   3 +-
+ drivers/acpi/acpica/aclocal.h  |  13 +-
+ drivers/acpi/acpica/acobject.h |   9 +-
+ drivers/acpi/acpica/evmisc.c   | 185 +++++++----------
+ drivers/acpi/acpica/evxface.c  | 440 ++++++++++++++---------------------------
+ drivers/acpi/acpica/exdump.c   |  25 ++-
+ drivers/acpi/acpica/utdelete.c |  24 ++-
+ drivers/acpi/acpica/utglobal.c |   4 +-
+ include/acpi/actypes.h         |   4 +
+ 9 files changed, 266 insertions(+), 441 deletions(-)
 
-diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
-index 29e8592..3680c45 100644
---- a/drivers/acpi/acpica/hwesleep.c
-+++ b/drivers/acpi/acpica/hwesleep.c
-@@ -117,7 +117,8 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state, u8 flags)
+diff --git a/drivers/acpi/acpica/acglobal.h b/drivers/acpi/acpica/acglobal.h
+index 4f7d3f5..dec7994 100644
+--- a/drivers/acpi/acpica/acglobal.h
++++ b/drivers/acpi/acpica/acglobal.h
+@@ -278,8 +278,7 @@ ACPI_EXTERN acpi_cache_t *acpi_gbl_operand_cache;
  
- 	/* Clear wake status (WAK_STS) */
+ /* Global handlers */
  
--	status = acpi_write(ACPI_X_WAKE_STATUS, &acpi_gbl_FADT.sleep_status);
-+	status =
-+	    acpi_write((u64)ACPI_X_WAKE_STATUS, &acpi_gbl_FADT.sleep_status);
- 	if (ACPI_FAILURE(status)) {
- 		return_ACPI_STATUS(status);
+-ACPI_EXTERN struct acpi_object_notify_handler acpi_gbl_device_notify;
+-ACPI_EXTERN struct acpi_object_notify_handler acpi_gbl_system_notify;
++ACPI_EXTERN struct acpi_global_notify_handler acpi_gbl_global_notify[2];
+ ACPI_EXTERN acpi_exception_handler acpi_gbl_exception_handler;
+ ACPI_EXTERN acpi_init_handler acpi_gbl_init_handler;
+ ACPI_EXTERN acpi_tbl_handler acpi_gbl_table_handler;
+diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
+index e3922ca..28f6778 100644
+--- a/drivers/acpi/acpica/aclocal.h
++++ b/drivers/acpi/acpica/aclocal.h
+@@ -600,13 +600,22 @@ acpi_status(*acpi_parse_downwards) (struct acpi_walk_state * walk_state,
+ 
+ typedef acpi_status(*acpi_parse_upwards) (struct acpi_walk_state * walk_state);
+ 
++/* Global handlers for AML Notifies */
++
++struct acpi_global_notify_handler {
++	acpi_notify_handler handler;
++	void *context;
++};
++
+ /*
+  * Notify info - used to pass info to the deferred notify
+  * handler/dispatcher.
+  */
+ struct acpi_notify_info {
+-	ACPI_STATE_COMMON struct acpi_namespace_node *node;
+-	union acpi_operand_object *handler_obj;
++	ACPI_STATE_COMMON u8 handler_list_id;
++	struct acpi_namespace_node *node;
++	union acpi_operand_object *handler_list_head;
++	struct acpi_global_notify_handler *global;
+ };
+ 
+ /* Generic state is union of structs above */
+diff --git a/drivers/acpi/acpica/acobject.h b/drivers/acpi/acpica/acobject.h
+index c065078..39a2b84 100644
+--- a/drivers/acpi/acpica/acobject.h
++++ b/drivers/acpi/acpica/acobject.h
+@@ -206,8 +206,7 @@ struct acpi_object_method {
+  * Common fields for objects that support ASL notifications
+  */
+ #define ACPI_COMMON_NOTIFY_INFO \
+-	union acpi_operand_object       *system_notify;     /* Handler for system notifies */\
+-	union acpi_operand_object       *device_notify;     /* Handler for driver notifies */\
++	union acpi_operand_object       *notify_list[2];    /* Handlers for system/device notifies */\
+ 	union acpi_operand_object       *handler;	/* Handler for Address space */
+ 
+ struct acpi_object_notify_common {	/* COMMON NOTIFY for POWER, PROCESSOR, DEVICE, and THERMAL */
+@@ -296,10 +295,10 @@ struct acpi_object_buffer_field {
+ 
+ struct acpi_object_notify_handler {
+ 	ACPI_OBJECT_COMMON_HEADER struct acpi_namespace_node *node;	/* Parent device */
+-	u32 handler_type;
+-	acpi_notify_handler handler;
++	u32 handler_type;	/* Type: Device/System/Both */
++	acpi_notify_handler handler;	/* Handler address */
+ 	void *context;
+-	struct acpi_object_notify_handler *next;
++	union acpi_operand_object *next[2];	/* Device and System handler lists */
+ };
+ 
+ struct acpi_object_addr_handler {
+diff --git a/drivers/acpi/acpica/evmisc.c b/drivers/acpi/acpica/evmisc.c
+index 51ef9f5..381fce9 100644
+--- a/drivers/acpi/acpica/evmisc.c
++++ b/drivers/acpi/acpica/evmisc.c
+@@ -101,102 +101,77 @@ acpi_ev_queue_notify_request(struct acpi_namespace_node * node,
+ 			     u32 notify_value)
+ {
+ 	union acpi_operand_object *obj_desc;
+-	union acpi_operand_object *handler_obj = NULL;
+-	union acpi_generic_state *notify_info;
++	union acpi_operand_object *handler_list_head = NULL;
++	union acpi_generic_state *info;
++	u8 handler_list_id = 0;
+ 	acpi_status status = AE_OK;
+ 
+ 	ACPI_FUNCTION_NAME(ev_queue_notify_request);
+ 
+-	/*
+-	 * For value 0x03 (Ejection Request), may need to run a device method.
+-	 * For value 0x02 (Device Wake), if _PRW exists, may need to run
+-	 *   the _PS0 method.
+-	 * For value 0x80 (Status Change) on the power button or sleep button,
+-	 *   initiate soft-off or sleep operation.
+-	 *
+-	 * For all cases, simply dispatch the notify to the handler.
+-	 */
+-	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-			  "Dispatching Notify on [%4.4s] (%s) Value 0x%2.2X (%s) Node %p\n",
+-			  acpi_ut_get_node_name(node),
+-			  acpi_ut_get_type_name(node->type), notify_value,
+-			  acpi_ut_get_notify_name(notify_value), node));
++	/* Are Notifies allowed on this object? */
+ 
+-	/* Get the notify object attached to the NS Node */
+-
+-	obj_desc = acpi_ns_get_attached_object(node);
+-	if (obj_desc) {
+-
+-		/* We have the notify object, Get the correct handler */
+-
+-		switch (node->type) {
++	if (!acpi_ev_is_notify_object(node)) {
++		return (AE_TYPE);
++	}
+ 
+-			/* Notify is allowed only on these types */
++	/* Get the correct notify list type (System or Device) */
+ 
+-		case ACPI_TYPE_DEVICE:
+-		case ACPI_TYPE_THERMAL:
+-		case ACPI_TYPE_PROCESSOR:
++	if (notify_value <= ACPI_MAX_SYS_NOTIFY) {
++		handler_list_id = ACPI_SYSTEM_HANDLER_LIST;
++	} else {
++		handler_list_id = ACPI_DEVICE_HANDLER_LIST;
++	}
+ 
+-			if (notify_value <= ACPI_MAX_SYS_NOTIFY) {
+-				handler_obj =
+-				    obj_desc->common_notify.system_notify;
+-			} else {
+-				handler_obj =
+-				    obj_desc->common_notify.device_notify;
+-			}
+-			break;
++	/* Get the notify object attached to the namespace Node */
+ 
+-		default:
++	obj_desc = acpi_ns_get_attached_object(node);
++	if (obj_desc) {
+ 
+-			/* All other types are not supported */
++		/* We have an attached object, Get the correct handler list */
+ 
+-			return (AE_TYPE);
+-		}
++		handler_list_head =
++		    obj_desc->common_notify.notify_list[handler_list_id];
  	}
-@@ -147,7 +148,7 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state, u8 flags)
- 	    ((acpi_gbl_sleep_type_a << ACPI_X_SLEEP_TYPE_POSITION) &
- 	     ACPI_X_SLEEP_TYPE_MASK);
  
--	status = acpi_write((sleep_type_value | ACPI_X_SLEEP_ENABLE),
-+	status = acpi_write((u64)(sleep_type_value | ACPI_X_SLEEP_ENABLE),
- 			    &acpi_gbl_FADT.sleep_control);
- 	if (ACPI_FAILURE(status)) {
- 		return_ACPI_STATUS(status);
-@@ -195,7 +196,7 @@ acpi_status acpi_hw_extended_wake_prep(u8 sleep_state, u8 flags)
- 		    ((acpi_gbl_sleep_type_a << ACPI_X_SLEEP_TYPE_POSITION) &
- 		     ACPI_X_SLEEP_TYPE_MASK);
- 
--		(void)acpi_write((sleep_type_value | ACPI_X_SLEEP_ENABLE),
-+		(void)acpi_write((u64)(sleep_type_value | ACPI_X_SLEEP_ENABLE),
- 				 &acpi_gbl_FADT.sleep_control);
- 	}
- 
-@@ -239,7 +240,7 @@ acpi_status acpi_hw_extended_wake(u8 sleep_state, u8 flags)
- 	 * and use it to determine whether the system is rebooting or
- 	 * resuming. Clear WAK_STS for compatibility.
+ 	/*
+-	 * If there is a handler to run, schedule the dispatcher.
+-	 * Check for:
+-	 * 1) Global system notify handler
+-	 * 2) Global device notify handler
+-	 * 3) Per-device notify handler
++	 * If there is no notify handler (Global or Local)
++	 * for this object, just ignore the notify
  	 */
--	(void)acpi_write(ACPI_X_WAKE_STATUS, &acpi_gbl_FADT.sleep_status);
-+	(void)acpi_write((u64)ACPI_X_WAKE_STATUS, &acpi_gbl_FADT.sleep_status);
- 	acpi_gbl_system_awake_and_running = TRUE;
+-	if ((acpi_gbl_system_notify.handler &&
+-	     (notify_value <= ACPI_MAX_SYS_NOTIFY)) ||
+-	    (acpi_gbl_device_notify.handler &&
+-	     (notify_value > ACPI_MAX_SYS_NOTIFY)) || handler_obj) {
+-		notify_info = acpi_ut_create_generic_state();
+-		if (!notify_info) {
+-			return (AE_NO_MEMORY);
+-		}
++	if (!acpi_gbl_global_notify[handler_list_id].handler
++	    && !handler_list_head) {
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++				  "No notify handler for Notify, ignoring (%4.4s, %X) node %p\n",
++				  acpi_ut_get_node_name(node), notify_value,
++				  node));
  
- 	acpi_hw_execute_sleep_method(METHOD_PATHNAME__SST, ACPI_SST_WORKING);
+-		if (!handler_obj) {
+-			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-					  "Executing system notify handler for Notify (%4.4s, %X) "
+-					  "node %p\n",
+-					  acpi_ut_get_node_name(node),
+-					  notify_value, node));
+-		}
++		return (AE_OK);
++	}
+ 
+-		notify_info->common.descriptor_type =
+-		    ACPI_DESC_TYPE_STATE_NOTIFY;
+-		notify_info->notify.node = node;
+-		notify_info->notify.value = (u16) notify_value;
+-		notify_info->notify.handler_obj = handler_obj;
++	/* Setup notify info and schedule the notify dispatcher */
+ 
+-		status =
+-		    acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_ev_notify_dispatch,
+-				    notify_info);
+-		if (ACPI_FAILURE(status)) {
+-			acpi_ut_delete_generic_state(notify_info);
+-		}
+-	} else {
+-		/* There is no notify handler (per-device or system) for this device */
++	info = acpi_ut_create_generic_state();
++	if (!info) {
++		return (AE_NO_MEMORY);
++	}
+ 
+-		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-				  "No notify handler for Notify (%4.4s, %X) node %p\n",
+-				  acpi_ut_get_node_name(node), notify_value,
+-				  node));
++	info->common.descriptor_type = ACPI_DESC_TYPE_STATE_NOTIFY;
++
++	info->notify.node = node;
++	info->notify.value = (u16)notify_value;
++	info->notify.handler_list_id = handler_list_id;
++	info->notify.handler_list_head = handler_list_head;
++	info->notify.global = &acpi_gbl_global_notify[handler_list_id];
++
++	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++			  "Dispatching Notify on [%4.4s] (%s) Value 0x%2.2X (%s) Node %p\n",
++			  acpi_ut_get_node_name(node),
++			  acpi_ut_get_type_name(node->type), notify_value,
++			  acpi_ut_get_notify_name(notify_value), node));
++
++	status = acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_ev_notify_dispatch,
++				 info);
++	if (ACPI_FAILURE(status)) {
++		acpi_ut_delete_generic_state(info);
+ 	}
+ 
+ 	return (status);
+@@ -217,60 +192,34 @@ acpi_ev_queue_notify_request(struct acpi_namespace_node * node,
+ 
+ static void ACPI_SYSTEM_XFACE acpi_ev_notify_dispatch(void *context)
+ {
+-	union acpi_generic_state *notify_info =
+-	    (union acpi_generic_state *)context;
+-	acpi_notify_handler global_handler = NULL;
+-	void *global_context = NULL;
++	union acpi_generic_state *info = (union acpi_generic_state *)context;
+ 	union acpi_operand_object *handler_obj;
+ 
+ 	ACPI_FUNCTION_ENTRY();
+ 
+-	/*
+-	 * We will invoke a global notify handler if installed. This is done
+-	 * _before_ we invoke the per-device handler attached to the device.
+-	 */
+-	if (notify_info->notify.value <= ACPI_MAX_SYS_NOTIFY) {
+-
+-		/* Global system notification handler */
+-
+-		if (acpi_gbl_system_notify.handler) {
+-			global_handler = acpi_gbl_system_notify.handler;
+-			global_context = acpi_gbl_system_notify.context;
+-		}
+-	} else {
+-		/* Global driver notification handler */
+-
+-		if (acpi_gbl_device_notify.handler) {
+-			global_handler = acpi_gbl_device_notify.handler;
+-			global_context = acpi_gbl_device_notify.context;
+-		}
+-	}
+-
+-	/* Invoke the system handler first, if present */
++	/* Invoke a global notify handler if installed */
+ 
+-	if (global_handler) {
+-		global_handler(notify_info->notify.node,
+-			       notify_info->notify.value, global_context);
++	if (info->notify.global->handler) {
++		info->notify.global->handler(info->notify.node,
++					     info->notify.value,
++					     info->notify.global->context);
+ 	}
+ 
+-	/* Now invoke the per-device handler, if present */
++	/* Now invoke the local notify handler(s) if any are installed */
+ 
+-	handler_obj = notify_info->notify.handler_obj;
+-	if (handler_obj) {
+-		struct acpi_object_notify_handler *notifier;
++	handler_obj = info->notify.handler_list_head;
++	while (handler_obj) {
++		handler_obj->notify.handler(info->notify.node,
++					    info->notify.value,
++					    handler_obj->notify.context);
+ 
+-		notifier = &handler_obj->notify;
+-		while (notifier) {
+-			notifier->handler(notify_info->notify.node,
+-					  notify_info->notify.value,
+-					  notifier->context);
+-			notifier = notifier->next;
+-		}
++		handler_obj =
++		    handler_obj->notify.next[info->notify.handler_list_id];
+ 	}
+ 
+ 	/* All done with the info object */
+ 
+-	acpi_ut_delete_generic_state(notify_info);
++	acpi_ut_delete_generic_state(info);
+ }
+ 
+ #if (!ACPI_REDUCED_HARDWARE)
+diff --git a/drivers/acpi/acpica/evxface.c b/drivers/acpi/acpica/evxface.c
+index 44bef57..90ae6d1 100644
+--- a/drivers/acpi/acpica/evxface.c
++++ b/drivers/acpi/acpica/evxface.c
+@@ -54,86 +54,25 @@ ACPI_MODULE_NAME("evxface")
+ 
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_populate_handler_object
+- *
+- * PARAMETERS:  handler_obj        - Handler object to populate
+- *              handler_type       - The type of handler:
+- *                                  ACPI_SYSTEM_NOTIFY: system_handler (00-7f)
+- *                                  ACPI_DEVICE_NOTIFY: driver_handler (80-ff)
+- *                                  ACPI_ALL_NOTIFY:  both system and device
+- *              handler            - Address of the handler
+- *              context            - Value passed to the handler on each GPE
+- *              next               - Address of a handler object to link to
+- *
+- * RETURN:      None
+- *
+- * DESCRIPTION: Populate a handler object.
+- *
+- ******************************************************************************/
+-static void
+-acpi_populate_handler_object(struct acpi_object_notify_handler *handler_obj,
+-			     u32 handler_type,
+-			     acpi_notify_handler handler, void *context,
+-			     struct acpi_object_notify_handler *next)
+-{
+-	handler_obj->handler_type = handler_type;
+-	handler_obj->handler = handler;
+-	handler_obj->context = context;
+-	handler_obj->next = next;
+-}
+-
+-/*******************************************************************************
+- *
+- * FUNCTION:    acpi_add_handler_object
+- *
+- * PARAMETERS:  parent_obj         - Parent of the new object
+- *              handler            - Address of the handler
+- *              context            - Value passed to the handler on each GPE
+- *
+- * RETURN:      Status
+- *
+- * DESCRIPTION: Create a new handler object and populate it.
+- *
+- ******************************************************************************/
+-static acpi_status
+-acpi_add_handler_object(struct acpi_object_notify_handler *parent_obj,
+-			acpi_notify_handler handler, void *context)
+-{
+-	struct acpi_object_notify_handler *handler_obj;
+-
+-	/* The parent must not be a defice notify handler object. */
+-	if (parent_obj->handler_type & ACPI_DEVICE_NOTIFY)
+-		return AE_BAD_PARAMETER;
+-
+-	handler_obj = ACPI_ALLOCATE_ZEROED(sizeof(*handler_obj));
+-	if (!handler_obj)
+-		return AE_NO_MEMORY;
+-
+-	acpi_populate_handler_object(handler_obj,
+-					ACPI_SYSTEM_NOTIFY,
+-					handler, context,
+-					parent_obj->next);
+-	parent_obj->next = handler_obj;
+-
+-	return AE_OK;
+-}
+-
+-
+-/*******************************************************************************
+- *
+  * FUNCTION:    acpi_install_notify_handler
+  *
+  * PARAMETERS:  Device          - The device for which notifies will be handled
+  *              handler_type    - The type of handler:
+- *                                  ACPI_SYSTEM_NOTIFY: system_handler (00-7f)
+- *                                  ACPI_DEVICE_NOTIFY: driver_handler (80-ff)
+- *                                  ACPI_ALL_NOTIFY:  both system and device
++ *                                  ACPI_SYSTEM_NOTIFY: System Handler (00-7F)
++ *                                  ACPI_DEVICE_NOTIFY: Device Handler (80-FF)
++ *                                  ACPI_ALL_NOTIFY:    Both System and Device
+  *              Handler         - Address of the handler
+  *              Context         - Value passed to the handler on each GPE
+  *
+  * RETURN:      Status
+  *
+- * DESCRIPTION: Install a handler for notifies on an ACPI device
++ * DESCRIPTION: Install a handler for notifications on an ACPI Device,
++ *              thermal_zone, or Processor object.
++ *
++ * NOTES:       The Root namespace object may have only one handler for each
++ *              type of notify (System/Device). Device/Thermal/Processor objects
++ *              may have one device notify handler, and multiple system notify
++ *              handlers.
+  *
+  ******************************************************************************/
+ acpi_status
+@@ -141,17 +80,19 @@ acpi_install_notify_handler(acpi_handle device,
+ 			    u32 handler_type,
+ 			    acpi_notify_handler handler, void *context)
+ {
++	struct acpi_namespace_node *node =
++	    ACPI_CAST_PTR(struct acpi_namespace_node, device);
+ 	union acpi_operand_object *obj_desc;
+-	union acpi_operand_object *notify_obj;
+-	struct acpi_namespace_node *node;
++	union acpi_operand_object *handler_obj;
+ 	acpi_status status;
++	u32 i;
+ 
+ 	ACPI_FUNCTION_TRACE(acpi_install_notify_handler);
+ 
+ 	/* Parameter validation */
+ 
+-	if ((!device) ||
+-	    (!handler) || (handler_type > ACPI_MAX_NOTIFY_HANDLER_TYPE)) {
++	if ((!device) || (!handler) || (!handler_type) ||
++	    (handler_type > ACPI_MAX_NOTIFY_HANDLER_TYPE)) {
+ 		return_ACPI_STATUS(AE_BAD_PARAMETER);
+ 	}
+ 
+@@ -160,144 +101,112 @@ acpi_install_notify_handler(acpi_handle device,
+ 		return_ACPI_STATUS(status);
+ 	}
+ 
+-	/* Convert and validate the device handle */
+-
+-	node = acpi_ns_validate_handle(device);
+-	if (!node) {
+-		status = AE_BAD_PARAMETER;
+-		goto unlock_and_exit;
+-	}
+-
+ 	/*
+ 	 * Root Object:
+ 	 * Registering a notify handler on the root object indicates that the
+ 	 * caller wishes to receive notifications for all objects. Note that
+-	 * only one <external> global handler can be regsitered (per notify type).
++	 * only one global handler can be registered per notify type.
++	 * Ensure that a handler is not already installed.
+ 	 */
+ 	if (device == ACPI_ROOT_OBJECT) {
++		for (i = 0; i < ACPI_NUM_NOTIFY_TYPES; i++) {
++			if (handler_type & (i + 1)) {
++				if (acpi_gbl_global_notify[i].handler) {
++					status = AE_ALREADY_EXISTS;
++					goto unlock_and_exit;
++				}
+ 
+-		/* Make sure the handler is not already installed */
+-
+-		if (((handler_type & ACPI_SYSTEM_NOTIFY) &&
+-		     acpi_gbl_system_notify.handler) ||
+-		    ((handler_type & ACPI_DEVICE_NOTIFY) &&
+-		     acpi_gbl_device_notify.handler)) {
+-			status = AE_ALREADY_EXISTS;
+-			goto unlock_and_exit;
+-		}
+-
+-		if (handler_type & ACPI_SYSTEM_NOTIFY) {
+-			acpi_gbl_system_notify.node = node;
+-			acpi_gbl_system_notify.handler = handler;
+-			acpi_gbl_system_notify.context = context;
+-		}
+-
+-		if (handler_type & ACPI_DEVICE_NOTIFY) {
+-			acpi_gbl_device_notify.node = node;
+-			acpi_gbl_device_notify.handler = handler;
+-			acpi_gbl_device_notify.context = context;
++				acpi_gbl_global_notify[i].handler = handler;
++				acpi_gbl_global_notify[i].context = context;
++			}
+ 		}
+ 
+-		/* Global notify handler installed */
++		goto unlock_and_exit;	/* Global notify handler installed, all done */
+ 	}
+ 
+ 	/*
+ 	 * All Other Objects:
+-	 * Caller will only receive notifications specific to the target object.
+-	 * Note that only certain object types can receive notifications.
++	 * Caller will only receive notifications specific to the target
++	 * object. Note that only certain object types are allowed to
++	 * receive notifications.
+ 	 */
+-	else {
+-		/* Notifies allowed on this object? */
+ 
+-		if (!acpi_ev_is_notify_object(node)) {
+-			status = AE_TYPE;
+-			goto unlock_and_exit;
+-		}
++	/* Are Notifies allowed on this object? */
+ 
+-		/* Check for an existing internal object */
++	if (!acpi_ev_is_notify_object(node)) {
++		status = AE_TYPE;
++		goto unlock_and_exit;
++	}
+ 
+-		obj_desc = acpi_ns_get_attached_object(node);
+-		if (obj_desc) {
++	/* Check for an existing internal object, might not exist */
+ 
+-			/* Object exists. */
++	obj_desc = acpi_ns_get_attached_object(node);
++	if (!obj_desc) {
+ 
+-			/* For a device notify, make sure there's no handler. */
+-			if ((handler_type & ACPI_DEVICE_NOTIFY) &&
+-			     obj_desc->common_notify.device_notify) {
+-				status = AE_ALREADY_EXISTS;
+-				goto unlock_and_exit;
+-			}
++		/* Create a new object */
+ 
+-			/* System notifies may have more handlers installed. */
+-			notify_obj = obj_desc->common_notify.system_notify;
++		obj_desc = acpi_ut_create_internal_object(node->type);
++		if (!obj_desc) {
++			status = AE_NO_MEMORY;
++			goto unlock_and_exit;
++		}
+ 
+-			if ((handler_type & ACPI_SYSTEM_NOTIFY) && notify_obj) {
+-				struct acpi_object_notify_handler *parent_obj;
++		/* Attach new object to the Node, remove local reference */
+ 
+-				if (handler_type & ACPI_DEVICE_NOTIFY) {
++		status = acpi_ns_attach_object(device, obj_desc, node->type);
++		acpi_ut_remove_reference(obj_desc);
++		if (ACPI_FAILURE(status)) {
++			goto unlock_and_exit;
++		}
++	}
++
++	/* Ensure that the handler is not already installed in the lists */
++
++	for (i = 0; i < ACPI_NUM_NOTIFY_TYPES; i++) {
++		if (handler_type & (i + 1)) {
++			handler_obj = obj_desc->common_notify.notify_list[i];
++			while (handler_obj) {
++				if (handler_obj->notify.handler == handler) {
+ 					status = AE_ALREADY_EXISTS;
+ 					goto unlock_and_exit;
+ 				}
+ 
+-				parent_obj = &notify_obj->notify;
+-				status = acpi_add_handler_object(parent_obj,
+-								 handler,
+-								 context);
+-				goto unlock_and_exit;
+-			}
+-		} else {
+-			/* Create a new object */
+-
+-			obj_desc = acpi_ut_create_internal_object(node->type);
+-			if (!obj_desc) {
+-				status = AE_NO_MEMORY;
+-				goto unlock_and_exit;
+-			}
+-
+-			/* Attach new object to the Node */
+-
+-			status =
+-			    acpi_ns_attach_object(device, obj_desc, node->type);
+-
+-			/* Remove local reference to the object */
+-
+-			acpi_ut_remove_reference(obj_desc);
+-			if (ACPI_FAILURE(status)) {
+-				goto unlock_and_exit;
++				handler_obj = handler_obj->notify.next[i];
+ 			}
+ 		}
++	}
+ 
+-		/* Install the handler */
++	/* Create and populate a new notify handler object */
+ 
+-		notify_obj =
+-		    acpi_ut_create_internal_object(ACPI_TYPE_LOCAL_NOTIFY);
+-		if (!notify_obj) {
+-			status = AE_NO_MEMORY;
+-			goto unlock_and_exit;
+-		}
++	handler_obj = acpi_ut_create_internal_object(ACPI_TYPE_LOCAL_NOTIFY);
++	if (!handler_obj) {
++		status = AE_NO_MEMORY;
++		goto unlock_and_exit;
++	}
+ 
+-		acpi_populate_handler_object(&notify_obj->notify,
+-						handler_type,
+-						handler, context,
+-						NULL);
++	handler_obj->notify.node = node;
++	handler_obj->notify.handler_type = handler_type;
++	handler_obj->notify.handler = handler;
++	handler_obj->notify.context = context;
+ 
+-		if (handler_type & ACPI_SYSTEM_NOTIFY) {
+-			obj_desc->common_notify.system_notify = notify_obj;
+-		}
++	/* Install the handler at the list head(s) */
+ 
+-		if (handler_type & ACPI_DEVICE_NOTIFY) {
+-			obj_desc->common_notify.device_notify = notify_obj;
+-		}
++	for (i = 0; i < ACPI_NUM_NOTIFY_TYPES; i++) {
++		if (handler_type & (i + 1)) {
++			handler_obj->notify.next[i] =
++			    obj_desc->common_notify.notify_list[i];
+ 
+-		if (handler_type == ACPI_ALL_NOTIFY) {
++			obj_desc->common_notify.notify_list[i] = handler_obj;
++		}
++	}
+ 
+-			/* Extra ref if installed in both */
++	/* Add an extra reference if handler was installed in both lists */
+ 
+-			acpi_ut_add_reference(notify_obj);
+-		}
++	if (handler_type == ACPI_ALL_NOTIFY) {
++		acpi_ut_add_reference(handler_obj);
+ 	}
+ 
+-      unlock_and_exit:
++unlock_and_exit:
+ 	(void)acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+ 	return_ACPI_STATUS(status);
+ }
+@@ -308,11 +217,11 @@ ACPI_EXPORT_SYMBOL(acpi_install_notify_handler)
+  *
+  * FUNCTION:    acpi_remove_notify_handler
+  *
+- * PARAMETERS:  Device          - The device for which notifies will be handled
++ * PARAMETERS:  Device          - The device for which the handler is installed
+  *              handler_type    - The type of handler:
+- *                                  ACPI_SYSTEM_NOTIFY: system_handler (00-7f)
+- *                                  ACPI_DEVICE_NOTIFY: driver_handler (80-ff)
+- *                                  ACPI_ALL_NOTIFY:  both system and device
++ *                                  ACPI_SYSTEM_NOTIFY: System Handler (00-7F)
++ *                                  ACPI_DEVICE_NOTIFY: Device Handler (80-FF)
++ *                                  ACPI_ALL_NOTIFY:    Both System and Device
+  *              Handler         - Address of the handler
+  *
+  * RETURN:      Status
+@@ -324,165 +233,106 @@ acpi_status
+ acpi_remove_notify_handler(acpi_handle device,
+ 			   u32 handler_type, acpi_notify_handler handler)
+ {
+-	union acpi_operand_object *notify_obj;
++	struct acpi_namespace_node *node =
++	    ACPI_CAST_PTR(struct acpi_namespace_node, device);
+ 	union acpi_operand_object *obj_desc;
+-	struct acpi_namespace_node *node;
++	union acpi_operand_object *handler_obj;
++	union acpi_operand_object *previous_handler_obj;
+ 	acpi_status status;
++	u32 i;
+ 
+ 	ACPI_FUNCTION_TRACE(acpi_remove_notify_handler);
+ 
+ 	/* Parameter validation */
+ 
+-	if ((!device) ||
+-	    (!handler) || (handler_type > ACPI_MAX_NOTIFY_HANDLER_TYPE)) {
+-		status = AE_BAD_PARAMETER;
+-		goto exit;
++	if ((!device) || (!handler) || (!handler_type) ||
++	    (handler_type > ACPI_MAX_NOTIFY_HANDLER_TYPE)) {
++		return_ACPI_STATUS(AE_BAD_PARAMETER);
+ 	}
+-
+-
+ 	/* Make sure all deferred tasks are completed */
++
+ 	acpi_os_wait_events_complete(NULL);
+ 
+ 	status = acpi_ut_acquire_mutex(ACPI_MTX_NAMESPACE);
+ 	if (ACPI_FAILURE(status)) {
+-		goto exit;
+-	}
+-
+-	/* Convert and validate the device handle */
+-
+-	node = acpi_ns_validate_handle(device);
+-	if (!node) {
+-		status = AE_BAD_PARAMETER;
+-		goto unlock_and_exit;
++		return_ACPI_STATUS(status);
+ 	}
+ 
+-	/* Root Object */
++	/* Root Object. Global handlers are removed here */
+ 
+ 	if (device == ACPI_ROOT_OBJECT) {
+-		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-				  "Removing notify handler for namespace root object\n"));
++		for (i = 0; i < ACPI_NUM_NOTIFY_TYPES; i++) {
++			if (handler_type & (i + 1)) {
++				if (!acpi_gbl_global_notify[i].handler ||
++				    (acpi_gbl_global_notify[i].handler !=
++				     handler)) {
++					status = AE_NOT_EXIST;
++					goto unlock_and_exit;
++				}
+ 
+-		if (((handler_type & ACPI_SYSTEM_NOTIFY) &&
+-		     !acpi_gbl_system_notify.handler) ||
+-		    ((handler_type & ACPI_DEVICE_NOTIFY) &&
+-		     !acpi_gbl_device_notify.handler)) {
+-			status = AE_NOT_EXIST;
+-			goto unlock_and_exit;
+-		}
++				ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++						  "Removing global notify handler\n"));
+ 
+-		if (handler_type & ACPI_SYSTEM_NOTIFY) {
+-			acpi_gbl_system_notify.node = NULL;
+-			acpi_gbl_system_notify.handler = NULL;
+-			acpi_gbl_system_notify.context = NULL;
++				acpi_gbl_global_notify[i].handler = NULL;
++				acpi_gbl_global_notify[i].context = NULL;
++			}
+ 		}
+ 
+-		if (handler_type & ACPI_DEVICE_NOTIFY) {
+-			acpi_gbl_device_notify.node = NULL;
+-			acpi_gbl_device_notify.handler = NULL;
+-			acpi_gbl_device_notify.context = NULL;
+-		}
++		goto unlock_and_exit;
+ 	}
+ 
+-	/* All Other Objects */
+-
+-	else {
+-		/* Notifies allowed on this object? */
++	/* All other objects: Are Notifies allowed on this object? */
+ 
+-		if (!acpi_ev_is_notify_object(node)) {
+-			status = AE_TYPE;
+-			goto unlock_and_exit;
+-		}
++	if (!acpi_ev_is_notify_object(node)) {
++		status = AE_TYPE;
++		goto unlock_and_exit;
++	}
+ 
+-		/* Check for an existing internal object */
++	/* Must have an existing internal object */
+ 
+-		obj_desc = acpi_ns_get_attached_object(node);
+-		if (!obj_desc) {
+-			status = AE_NOT_EXIST;
+-			goto unlock_and_exit;
+-		}
++	obj_desc = acpi_ns_get_attached_object(node);
++	if (!obj_desc) {
++		status = AE_NOT_EXIST;
++		goto unlock_and_exit;
++	}
+ 
+-		/* Object exists - make sure there's an existing handler */
++	/* Internal object exists. Find the handler and remove it */
+ 
+-		if (handler_type & ACPI_SYSTEM_NOTIFY) {
+-			struct acpi_object_notify_handler *handler_obj;
+-			struct acpi_object_notify_handler *parent_obj;
++	for (i = 0; i < ACPI_NUM_NOTIFY_TYPES; i++) {
++		if (handler_type & (i + 1)) {
++			handler_obj = obj_desc->common_notify.notify_list[i];
++			previous_handler_obj = NULL;
+ 
+-			notify_obj = obj_desc->common_notify.system_notify;
+-			if (!notify_obj) {
+-				status = AE_NOT_EXIST;
+-				goto unlock_and_exit;
+-			}
++			/* Attempt to find the handler in the handler list */
+ 
+-			handler_obj = &notify_obj->notify;
+-			parent_obj = NULL;
+-			while (handler_obj->handler != handler) {
+-				if (handler_obj->next) {
+-					parent_obj = handler_obj;
+-					handler_obj = handler_obj->next;
+-				} else {
+-					break;
+-				}
++			while (handler_obj &&
++			       (handler_obj->notify.handler != handler)) {
++				previous_handler_obj = handler_obj;
++				handler_obj = handler_obj->notify.next[i];
+ 			}
+ 
+-			if (handler_obj->handler != handler) {
+-				status = AE_BAD_PARAMETER;
++			if (!handler_obj) {
++				status = AE_NOT_EXIST;
+ 				goto unlock_and_exit;
+ 			}
+ 
+-			/*
+-			 * Remove the handler.  There are three possible cases.
+-			 * First, we may need to remove a non-embedded object.
+-			 * Second, we may need to remove the embedded object's
+-			 * handler data, while non-embedded objects exist.
+-			 * Finally, we may need to remove the embedded object
+-			 * entirely along with its container.
+-			 */
+-			if (parent_obj) {
+-				/* Non-embedded object is being removed. */
+-				parent_obj->next = handler_obj->next;
+-				ACPI_FREE(handler_obj);
+-			} else if (notify_obj->notify.next) {
+-				/*
+-				 * The handler matches the embedded object, but
+-				 * there are more handler objects in the list.
+-				 * Replace the embedded object's data with the
+-				 * first next object's data and remove that
+-				 * object.
+-				 */
+-				parent_obj = &notify_obj->notify;
+-				handler_obj = notify_obj->notify.next;
+-				*parent_obj = *handler_obj;
+-				ACPI_FREE(handler_obj);
+-			} else {
+-				/* No more handler objects in the list. */
+-				obj_desc->common_notify.system_notify = NULL;
+-				acpi_ut_remove_reference(notify_obj);
+-			}
+-		}
++			/* Remove the handler object from the list */
+ 
+-		if (handler_type & ACPI_DEVICE_NOTIFY) {
+-			notify_obj = obj_desc->common_notify.device_notify;
+-			if (!notify_obj) {
+-				status = AE_NOT_EXIST;
+-				goto unlock_and_exit;
+-			}
++			if (previous_handler_obj) {	/* Handler is not at the list head */
++				previous_handler_obj->notify.next[i] =
++				    handler_obj->notify.next[i];
++			} else {	/* Handler is at the list head */
+ 
+-			if (notify_obj->notify.handler != handler) {
+-				status = AE_BAD_PARAMETER;
+-				goto unlock_and_exit;
++				obj_desc->common_notify.notify_list[i] =
++				    handler_obj->notify.next[i];
+ 			}
+ 
+-			/* Remove the handler */
+-			obj_desc->common_notify.device_notify = NULL;
+-			acpi_ut_remove_reference(notify_obj);
++			acpi_ut_remove_reference(handler_obj);
+ 		}
+ 	}
+ 
+-      unlock_and_exit:
++unlock_and_exit:
+ 	(void)acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+-      exit:
+-	if (ACPI_FAILURE(status))
+-		ACPI_EXCEPTION((AE_INFO, status, "Removing notify handler"));
+ 	return_ACPI_STATUS(status);
+ }
+ 
+diff --git a/drivers/acpi/acpica/exdump.c b/drivers/acpi/acpica/exdump.c
+index 836fe76..26c5654 100644
+--- a/drivers/acpi/acpica/exdump.c
++++ b/drivers/acpi/acpica/exdump.c
+@@ -109,9 +109,9 @@ static struct acpi_exdump_info acpi_ex_dump_package[5] = {
+ static struct acpi_exdump_info acpi_ex_dump_device[4] = {
+ 	{ACPI_EXD_INIT, ACPI_EXD_TABLE_SIZE(acpi_ex_dump_device), NULL},
+ 	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(device.handler), "Handler"},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(device.system_notify),
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(device.notify_list[0]),
+ 	 "System Notify"},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(device.device_notify),
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(device.notify_list[1]),
+ 	 "Device Notify"}
+ };
+ 
+@@ -158,9 +158,9 @@ static struct acpi_exdump_info acpi_ex_dump_power[5] = {
+ 	 "System Level"},
+ 	{ACPI_EXD_UINT32, ACPI_EXD_OFFSET(power_resource.resource_order),
+ 	 "Resource Order"},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(power_resource.system_notify),
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(power_resource.notify_list[0]),
+ 	 "System Notify"},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(power_resource.device_notify),
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(power_resource.notify_list[1]),
+ 	 "Device Notify"}
+ };
+ 
+@@ -169,18 +169,18 @@ static struct acpi_exdump_info acpi_ex_dump_processor[7] = {
+ 	{ACPI_EXD_UINT8, ACPI_EXD_OFFSET(processor.proc_id), "Processor ID"},
+ 	{ACPI_EXD_UINT8, ACPI_EXD_OFFSET(processor.length), "Length"},
+ 	{ACPI_EXD_ADDRESS, ACPI_EXD_OFFSET(processor.address), "Address"},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(processor.system_notify),
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(processor.notify_list[0]),
+ 	 "System Notify"},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(processor.device_notify),
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(processor.notify_list[1]),
+ 	 "Device Notify"},
+ 	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(processor.handler), "Handler"}
+ };
+ 
+ static struct acpi_exdump_info acpi_ex_dump_thermal[4] = {
+ 	{ACPI_EXD_INIT, ACPI_EXD_TABLE_SIZE(acpi_ex_dump_thermal), NULL},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(thermal_zone.system_notify),
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(thermal_zone.notify_list[0]),
+ 	 "System Notify"},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(thermal_zone.device_notify),
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(thermal_zone.notify_list[1]),
+ 	 "Device Notify"},
+ 	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(thermal_zone.handler), "Handler"}
+ };
+@@ -241,10 +241,15 @@ static struct acpi_exdump_info acpi_ex_dump_address_handler[6] = {
+ 	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(address_space.context), "Context"}
+ };
+ 
+-static struct acpi_exdump_info acpi_ex_dump_notify[3] = {
++static struct acpi_exdump_info acpi_ex_dump_notify[7] = {
+ 	{ACPI_EXD_INIT, ACPI_EXD_TABLE_SIZE(acpi_ex_dump_notify), NULL},
+ 	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(notify.node), "Node"},
+-	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(notify.context), "Context"}
++	{ACPI_EXD_UINT32, ACPI_EXD_OFFSET(notify.handler_type), "Handler Type"},
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(notify.handler), "Handler"},
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(notify.context), "Context"},
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(notify.next[0]),
++	 "Next System Notify"},
++	{ACPI_EXD_POINTER, ACPI_EXD_OFFSET(notify.next[1]), "Next Device Notify"}
+ };
+ 
+ /* Miscellaneous tables */
+diff --git a/drivers/acpi/acpica/utdelete.c b/drivers/acpi/acpica/utdelete.c
+index 2a6c3e1..0d50f2c 100644
+--- a/drivers/acpi/acpica/utdelete.c
++++ b/drivers/acpi/acpica/utdelete.c
+@@ -152,7 +152,7 @@ static void acpi_ut_delete_internal_obj(union acpi_operand_object *object)
+ 	case ACPI_TYPE_PROCESSOR:
+ 	case ACPI_TYPE_THERMAL:
+ 
+-		/* Walk the notify handler list for this object */
++		/* Walk the address handler list for this object */
+ 
+ 		handler_desc = object->common_notify.handler;
+ 		while (handler_desc) {
+@@ -480,6 +480,7 @@ acpi_ut_update_object_reference(union acpi_operand_object *object, u16 action)
+ 	acpi_status status = AE_OK;
+ 	union acpi_generic_state *state_list = NULL;
+ 	union acpi_operand_object *next_object = NULL;
++	union acpi_operand_object *prev_object;
+ 	union acpi_generic_state *state;
+ 	u32 i;
+ 
+@@ -505,12 +506,21 @@ acpi_ut_update_object_reference(union acpi_operand_object *object, u16 action)
+ 		case ACPI_TYPE_POWER:
+ 		case ACPI_TYPE_THERMAL:
+ 
+-			/* Update the notify objects for these types (if present) */
+-
+-			acpi_ut_update_ref_count(object->common_notify.
+-						 system_notify, action);
+-			acpi_ut_update_ref_count(object->common_notify.
+-						 device_notify, action);
++			/*
++			 * Update the notify objects for these types (if present)
++			 * Two lists, system and device notify handlers.
++			 */
++			for (i = 0; i < ACPI_NUM_NOTIFY_TYPES; i++) {
++				prev_object =
++				    object->common_notify.notify_list[i];
++				while (prev_object) {
++					next_object =
++					    prev_object->notify.next[i];
++					acpi_ut_update_ref_count(prev_object,
++								 action);
++					prev_object = next_object;
++				}
++			}
+ 			break;
+ 
+ 		case ACPI_TYPE_PACKAGE:
+diff --git a/drivers/acpi/acpica/utglobal.c b/drivers/acpi/acpica/utglobal.c
+index 90f53b4..78cf1fe 100644
+--- a/drivers/acpi/acpica/utglobal.c
++++ b/drivers/acpi/acpica/utglobal.c
+@@ -304,8 +304,8 @@ acpi_status acpi_ut_init_globals(void)
+ 
+ 	/* Global handlers */
+ 
+-	acpi_gbl_system_notify.handler = NULL;
+-	acpi_gbl_device_notify.handler = NULL;
++	acpi_gbl_global_notify[0].handler = NULL;
++	acpi_gbl_global_notify[1].handler = NULL;
+ 	acpi_gbl_exception_handler = NULL;
+ 	acpi_gbl_init_handler = NULL;
+ 	acpi_gbl_table_handler = NULL;
+diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
+index e8bcc47..0339a2d 100644
+--- a/include/acpi/actypes.h
++++ b/include/acpi/actypes.h
+@@ -706,10 +706,14 @@ typedef u32 acpi_event_status;
+ #define ACPI_DEVICE_NOTIFY              0x2
+ #define ACPI_ALL_NOTIFY                 (ACPI_SYSTEM_NOTIFY | ACPI_DEVICE_NOTIFY)
+ #define ACPI_MAX_NOTIFY_HANDLER_TYPE    0x3
++#define ACPI_NUM_NOTIFY_TYPES           2
+ 
+ #define ACPI_MAX_SYS_NOTIFY             0x7F
+ #define ACPI_MAX_DEVICE_SPECIFIC_NOTIFY 0xBF
+ 
++#define ACPI_SYSTEM_HANDLER_LIST        0	/* Used as index, must be SYSTEM_NOTIFY -1 */
++#define ACPI_DEVICE_HANDLER_LIST        1	/* Used as index, must be DEVICE_NOTIFY -1 */
++
+ /* Address Space (Operation Region) Types */
+ 
+ typedef u8 acpi_adr_space_type;
 -- 
 1.7.12.rc0
 
