@@ -1,193 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab2GYA72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Jul 2012 20:59:28 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:21224
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754409Ab2GYA70 (ORCPT
+	id S1755797Ab2GYBJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Jul 2012 21:09:56 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59462 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab2GYBJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Jul 2012 20:59:26 -0400
-X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail03.sonyusa.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2fh2a8h668h839hd25hf0ah107ah10d2h)
-Message-ID: <500F44CA.40302@am.sony.com>
-Date: Tue, 24 Jul 2012 17:58:50 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-rt-users@vger.kernel.org>
-Subject: [PATCH RT] cpu unplug with PREEMPT_LL
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	Tue, 24 Jul 2012 21:09:55 -0400
+Date: Wed, 25 Jul 2012 11:09:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>
+Subject: Re: [GIT PULL] KVM updates for the 3.6 merge window
+Message-Id: <20120725110943.e0c429afbffd2cf8b6c92aac@canb.auug.org.au>
+In-Reply-To: <1343169516.3715.25.camel@pasglop>
+References: <500D1573.3030406@redhat.com>
+	<CA+55aFygKruOf1G5bjfE3mpvaMP3B7Eg3Hh2=HpMO=M8fDX=tw@mail.gmail.com>
+	<1343169516.3715.25.camel@pasglop>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__25_Jul_2012_11_09_43_+1000_Trx_OL2QHlHKa7oH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__25_Jul_2012_11_09_43_+1000_Trx_OL2QHlHKa7oH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-With CONFIG_PREEMPT_LL, cpu unplug generates a bunch of
-  BUG: sleeping function called from invalid context
-  BUG: scheduling while atomic
+On Wed, 25 Jul 2012 08:38:36 +1000 Benjamin Herrenschmidt <benh@kernel.cras=
+hing.org> wrote:
+>
+> On Tue, 2012-07-24 at 12:04 -0700, Linus Torvalds wrote:
+> > Ok, this caused conflicts with the s390 and ppc trees. I think I fixed
+> > them correctly, but the respective arch people really should take a
+> > look.
+>=20
+> A quick peek at the merge commit looks allright, but Alex mentioned that
+> there's some more fallover that needs an actual patch to fix (the
+> changes to enforce a cleaner ASM syntax need to be applied to some new
+> code from Avi's tree that didn't actually trigger merge conflicts).
+>=20
+> I'll follow up with Alex and send you the relevant patches if any.
 
-To reproduce the problem:
-  echo 0 > /sys/devices/system/cpu/cpu1/online
+There was at least one, but Linus got it (I checked all the mentions of
+VCPU_GPR).  His merge resolution matches the one that has been in
+linux-next for quite some time.
 
-This patch is:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-  - UGLY
-  - lightly tested
-  - should maybe not be included in the RT patch set
+--Signature=_Wed__25_Jul_2012_11_09_43_+1000_Trx_OL2QHlHKa7oH
+Content-Type: application/pgp-signature
 
-but it may be useful to anyone determined to use cpu hotplug with PREEMPT_LL.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This patch was tested on 3.0.36-rt58 since that release has the latest
-hotplug patches.  I will re-test this on 3.5-rtX when that is available.
+iQIcBAEBCAAGBQJQD0dXAAoJEECxmPOUX5FEwSMP/jdugUT1BvLgJHnnwlqloZ1y
+rvViuVPRWbO++oAE5I5K6Tj/9velKetCpDTVLq7JXAlHNwmnk+bUwq+YQW7tWZLh
+B74OJIwNxd25A+KwweyJS1wX6Vj5xXIlwzotIDcf9lnezwjxwDOIq0YiBtBZZ/We
+EFNBU+UoLia4JyDUgjVRBlutMbHiG5MDxUTH806DCRW+RLxx6LuKESKUsBDrGWth
+0bi2U6JsIf4G+FajbcO/TqIJeXcdraQLSd1sAEQ4w4DVtnsSELsCt1bX/APvcoSh
+44rJJXzQp3IAYX0OruVbptAzosOVJyZ9Wg0Uci0u630ISMZa2eBcM+cEE5N75tmv
+HVFAEJDdsoECVjvN9iX88yzGodMTYqOCRYVd/JasJmmbbCDWziTudbF5Lj182QNV
+p7DwC6Nh+Je+T5ZPyFJiWmVLu0+6tP8/z0dmG/VQxVKpXPnSHChTzVetnv1YiJPy
+/smWq+xTJHRHiEaYnOlLwOBTR7i60Ry2o7o92/jL42QpaRKWGUAer2dbt0gYZpuG
+7Z9DiaLN9k1v/IEfKWpnJERWLx4jslvIOB24pROIObEgO1INBUPHA27hPIV5TsVV
+pN1N3N08+c13lNux9sBfVgyHPzK1VyyvE3x32vuIriGdyoKeKluy6/yMtXKlSEnn
+PiMQfNJyK55rqfBRH67b
+=oLHm
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
----
- include/linux/preempt.h |    4 	4 +	0 -	0 !
- include/linux/sched.h   |    6 	3 +	3 -	0 !
- kernel/cpu.c            |   12 	12 +	0 -	0 !
- kernel/sched.c          |   18 	17 +	1 -	0 !
- 4 files changed, 36 insertions(+), 4 deletions(-)
-
-Index: b/include/linux/preempt.h
-===================================================================
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -122,6 +122,10 @@ do { \
- # define preempt_enable_nort()		preempt_enable()
- # define migrate_disable()		preempt_disable()
- # define migrate_enable()		preempt_enable()
-+#ifdef CONFIG_PREEMPT_LL
-+   extern void __migrate_disable(void);
-+   extern void __migrate_enable(void);
-+#endif
- #endif
- 
- #ifdef CONFIG_PREEMPT_NOTIFIERS
-Index: b/kernel/cpu.c
-===================================================================
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -500,11 +500,19 @@ static int __ref _cpu_down(unsigned int 
- 	cpumask_andnot(cpumask, cpu_online_mask, cpumask_of(cpu));
- 	set_cpus_allowed_ptr(current, cpumask);
- 	free_cpumask_var(cpumask);
-+#ifdef CONFIG_PREEMPT_LL
-+	__migrate_disable();
-+#else
- 	migrate_disable();
-+#endif
- 	mycpu = smp_processor_id();
- 	if (mycpu == cpu) {
- 		printk(KERN_ERR "Yuck! Still on unplug CPU\n!");
-+#ifdef CONFIG_PREEMPT_LL
-+		__migrate_enable();
-+#else
- 		migrate_enable();
-+#endif
- 		return -EBUSY;
- 	}
- 
-@@ -557,7 +565,11 @@ static int __ref _cpu_down(unsigned int 
- out_release:
- 	cpu_unplug_done(cpu);
- out_cancel:
-+#ifdef CONFIG_PREEMPT_LL
-+	__migrate_enable();
-+#else
- 	migrate_enable();
-+#endif
- 	cpu_hotplug_done();
- 	if (!err)
- 		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
-Index: b/kernel/sched.c
-===================================================================
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4192,7 +4192,7 @@ static inline void schedule_debug(struct
- 	schedstat_inc(this_rq(), sched_count);
- }
- 
--#if defined(CONFIG_PREEMPT_RT_FULL) && defined(CONFIG_SMP)
-+#if (defined(CONFIG_PREEMPT_RT_FULL) || defined(CONFIG_PREEMPT_LL)) && defined(CONFIG_SMP)
- #define MIGRATE_DISABLE_SET_AFFIN	(1<<30) /* Can't make a negative */
- #define migrate_disabled_updated(p)	((p)->migrate_disable & MIGRATE_DISABLE_SET_AFFIN)
- #define migrate_disable_count(p)	((p)->migrate_disable & ~MIGRATE_DISABLE_SET_AFFIN)
-@@ -4228,7 +4228,11 @@ static inline void update_migrate_disabl
- 	p->migrate_disable |= MIGRATE_DISABLE_SET_AFFIN;
- }
- 
-+#ifdef CONFIG_PREEMPT_LL
-+void __migrate_disable(void)
-+#else
- void migrate_disable(void)
-+#endif
- {
- 	struct task_struct *p = current;
- 
-@@ -4254,9 +4258,17 @@ void migrate_disable(void)
- 	p->migrate_disable = 1;
- 	preempt_enable();
- }
-+#ifdef CONFIG_PREEMPT_LL
-+EXPORT_SYMBOL(__migrate_disable);
-+#else
- EXPORT_SYMBOL(migrate_disable);
-+#endif
- 
-+#ifdef CONFIG_PREEMPT_LL
-+void __migrate_enable(void)
-+#else
- void migrate_enable(void)
-+#endif
- {
- 	struct task_struct *p = current;
- 	const struct cpumask *mask;
-@@ -4306,7 +4318,11 @@ void migrate_enable(void)
- 	unpin_current_cpu();
- 	preempt_enable();
- }
-+#ifdef CONFIG_PREEMPT_LL
-+EXPORT_SYMBOL(__migrate_enable);
-+#else
- EXPORT_SYMBOL(migrate_enable);
-+#endif
- #else
- static inline void update_migrate_disable(struct task_struct *p) { }
- #define migrate_disabled_updated(p)		0
-Index: b/include/linux/sched.h
-===================================================================
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1260,7 +1260,7 @@ struct task_struct {
- #endif
- 
- 	unsigned int policy;
--#ifdef CONFIG_PREEMPT_RT_FULL
-+#if defined(CONFIG_PREEMPT_RT_FULL) || defined(CONFIG_PREEMPT_LL)
- 	int migrate_disable;
- #ifdef CONFIG_SCHED_DEBUG
- 	int migrate_disable_atomic;
-@@ -2678,7 +2678,7 @@ static inline void set_task_cpu(struct t
- 
- static inline int __migrate_disabled(struct task_struct *p)
- {
--#ifdef CONFIG_PREEMPT_RT_FULL
-+#if defined(CONFIG_PREEMPT_RT_FULL) || defined(CONFIG_PREEMPT_LL)
- 	return p->migrate_disable;
- #else
- 	return 0;
-@@ -2688,7 +2688,7 @@ static inline int __migrate_disabled(str
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
- static inline const struct cpumask *tsk_cpus_allowed(struct task_struct *p)
- {
--#ifdef CONFIG_PREEMPT_RT_FULL
-+#if defined(CONFIG_PREEMPT_RT_FULL) || defined(CONFIG_PREEMPT_LL)
- 	if (p->migrate_disable)
- 		return cpumask_of(task_cpu(p));
- #endif
-
+--Signature=_Wed__25_Jul_2012_11_09_43_+1000_Trx_OL2QHlHKa7oH--
