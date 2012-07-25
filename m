@@ -1,145 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2GYNbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 09:31:12 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:40094 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316Ab2GYNbL (ORCPT
+	id S1756716Ab2GYNb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 09:31:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64563 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316Ab2GYNb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 09:31:11 -0400
-Message-ID: <500FF412.3090600@panasas.com>
-Date: Wed, 25 Jul 2012 16:26:42 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Wed, 25 Jul 2012 09:31:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: [PATCH] misc/pch_phub: Enable UART clock setting by module parameter
+Date: Wed, 25 Jul 2012 13:31:52 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+References: <1342000670-1005-1-git-send-email-tomoya.rohm@gmail.com> <CANKRQni4SU=876iPtHJ2WC3Ub7QProJqHZ53Ru-n-njsdg8D5A@mail.gmail.com> <CANKRQnhcFr+e1H5p==UUTWfYb2nzdt8aVnOn2NvmYAXFiDxqew@mail.gmail.com>
+In-Reply-To: <CANKRQnhcFr+e1H5p==UUTWfYb2nzdt8aVnOn2NvmYAXFiDxqew@mail.gmail.com>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
-        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
-        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
- HighMem pages used by sg list
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com>
-In-Reply-To: <500FEB63.3000709@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207251331.52883.arnd@arndb.de>
+X-Provags-ID: V02:K0:9Hcx0rB+7yX59NgVHwBufvdQWyV1Ew9gZ+dipqMGXoM
+ 9snX0jeViUY7/MhAmhnnEGmXzSlYf71qaaV1djEZwdCf7lT0SI
+ Fz7ZzhefBpojAXtyz2xPjhLsTZ2N069W9GxvmMa0ubXlNGrBTQ
+ xOqUpcGfjuBIBQFXIPT6Yl9G2vxwzoKFMDbKyeT8s100wam8YJ
+ mg4C+iU0SJFjRLwHhrPhGiGrDHJNGEalc4PRSThJ79A+++4KmZ
+ Mphz/TJguK+c1+PkolmQL8z9c2Hy95WC2puCWw2T0RQJuw3agw
+ jVzD2l9eyyN6PGV6+xvy86XkV82fTFtWyDzYQBKVsR6EQdLBsO
+ /pNdjck9QzY/JuAFbnc8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 03:49 PM, Paolo Bonzini wrote:
+Hi Tomoya,
 
+On Tuesday 24 July 2012, Tomoya MORINAGA wrote:
+> Let me know this patch status.
+> If you have still any concern, let me know.
+
+Sorry for the late reply.
+
+> BTW, now I remember, Did you take part in LinuxConJapan last month ?
+> I also took part in this event as volunteer staff.
+> Additionally, I took charge of your session as time keeper.
 > 
-> Except here the destination array has to be given to virtio, which
-> doesn't (yet) understand chaining.  I'm using for_each_sg rather than a
-> simple memcpy exactly because I want to flatten the input scatterlist
-> onto consecutive scatterlist entries, which is what virtio expects (and
-> what I'll change when I get to it).
+> Thanks in advance.
+> -- 
+> ROHM Co., Ltd.
+> tomoya
 > 
-> for_each_sg guarantees that I get non-chain scatterlists only, so it is
-> okay to value-assign them to sg[].
-> 
+> On Thu, Jul 12, 2012 at 9:54 AM, Tomoya MORINAGA <tomoya.rohm@gmail.com> wrote:
+> > On Wed, Jul 11, 2012 at 7:45 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> This looks like a rather nonscalable solution if you get to systems
+> >> with lots of clocks.
+> >
+> > This "clock" is internal clock, not external clock.
+> > This PacketHub provides clock to the UART module
+> > Both the PacketHub and the UART is in 1 chip LSI which is EG20T.
+> > So, selectable clock 1.8432MHz or 48MHz or 64MHz or 192MHz are enough.
 
+Right, I got this part.
 
-So if the virtio does not understand chaining at all then surly it will
-not understand the 2-bit end marker and will get a wrong page pointer
-with the 1st bit set.
+> >> Given that you are doing it for the uart clock, shouldn't that be
+> >> set from the uart driver using an ioctl like other serial ports do?
+> > PacketHub is not serial driver but special driver. So, ioctl doesn't
+> > suit PacketHub.
+> >
+> >> What would be the use case for an end user to override the module
+> >> parameter? Is it about platform specific settings or policy?
+> > I show use case.
+> > Currently, UART works with 1.8432MHz.
+> > Using this clock, as you know, maximum speed is 115k.
+> > A user wants to use 4M speed, the user need to modify pch_phun.c by hand.
+> > If this patch is applied, a user can specify uart_clock via a modules
+> > parameter and use 4M speed.
+> >
+> > My reference driver for this patch is drivers/tty/serial/pch_uart.c
+> > This driver can set uart_clock via a module parameter(user_uartclk).
 
-As I said!! Since the last code did sg_set_buff() and worked then you must
-change it with sg_set_page().
+It's clear that modifying the source code is not a good solution, so
+I agree something should be done about it.
 
-If there are *any* chaining-or-no-chaining markers errors these should
-be fixed as a separate patch!
+What I think should work better here would be to use the clk API,
+so that the phub driver registers a 'struct clk' using 
+(I assume) clk_register_divider_table().
+The UART driver would then call clk_get() to find that clk for
+the uart device and call clk_set_rate when it needs to change
+that clock in order to set a different baud rate.
 
-Please lets concentrate at the problem at hand.
+Does this make sense?
 
-<snip>
-
-> 
-> It was _not_ properly terminated, and didn't matter because virtio
-> doesn't care about termination.  Changing all the virtio devices to
-> properly terminate chains (and to use for_each_sg) is a prerequisite for
-> properly supporting long sglists).
-> 
-
-
-Fine then your code is now a crash because the terminating bit was just
-copied over, which it was not before.
-
-------------
-Now Back to the how to support chaining:
-
-Lets separate the two topics from now on. Send me one mail concerning
-the proper above patch, And a different mail for how to support chaining.
-
->> In SCSI land most LLDs should support chaining just by virtu of using the
->> for_each_sg macro. That all it takes. Your code above does support it.
-> 
-> Yes, it supports it but still has to undo them before passing to virtio.
-> 
-> What my LLD does is add a request descriptor in front of the scatterlist
-> that the LLD receives.  I would like to do this with a 2-item
-> scatterlist: one for the request descriptor, and one which is a chain to
-> the original scatterlist.  
-
-
-I hate that plan. Why yet override the scatter element yet again with a third
-union of a "request descriptor"
-
-The reason it was overloaded as a link-pointer in the first place was because
-of historical compatibility reasons and not because of a good design.
-
-You should have a proper "request descriptor" structure defined, pointing to
-(or followed by), an sglist-chain. And all of the above is mute.
- 
-
-> Except that if I call sg_chain and my
-> architecture does not define ARCH_HAS_SG_CHAIN, it will BUG out.  So I
-> need to keep all the scatterlist allocation and copying crap that I have
-> now within #ifdef, and it will bitrot.
-> 
-
-
-except that with the correct design you don't call sg_chain you just do:
-	request_descriptor->sg_list = sg;
-
->>> I would need to add support for the long sglists to virtio; this is not
->>> a problem, but in the past Rusty complained that long sg-lists are not
->>> well suited to virtio (which would like to add elements not just at the
->>> beginning of a given sglist, but also at the end).  
->>
->> Well that can be done as well, (If done carefully) It should be easy to add
->> chained fragments to both the end of a given chain just as at beginning.
->> It only means that the last element of the appended-to chain moves to
->> the next fragment and it's place is replaced by a link.
-> 
-> But you cannot do that in constant time, can you?  And that means you do
-> not enjoy any benefit in terms of cache misses etc.
-> 
-
-
-I did not understand "constant time" it is O(0) if that what you meant.
-
-(And surly today's code of copy the full list "cache misses")
-
-> Also, this assumes that I can modify the appended-to chain.  I'm not
-> sure I can do this?
-> 
-
-
-Each case it's own. If the appended-to chain is const, yes you'll have
-to reallocate it and copy. Is that your case?
-
-Cheers
-Boaz
-
->>> It seems to me that virtio would prefer to work with a struct
->>> scatterlist ** rather than a long sglist.
->>
->> That's just going backwards, and lazy. As you said if you want to enjoy
->> the better performance cake you better break some eggs ;-)
-> 
-> :)
-> 
-> Paolo
-
-
+	Arnd
