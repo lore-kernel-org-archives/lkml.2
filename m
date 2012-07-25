@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab2GYLna (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:43:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37819 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756523Ab2GYLn1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:43:27 -0400
+	id S1756618Ab2GYLnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:43:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49221 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756523Ab2GYLnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 07:43:39 -0400
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: <thierry.reding@avionic-design.de>
 CC: <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>, <vaibhav.bedia@ti.com>,
         <gururaja.hebbar@ti.com>, "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v2 1/2] pwm: pwm-tiecap: PWM driver support for ECAP APWM
-Date: Wed, 25 Jul 2012 16:58:18 +0530
-Message-ID: <1343215699-4575-2-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v2 2/2] pwm: pwm-tiehrpwm: PWM driver support for EHRPWM
+Date: Wed, 25 Jul 2012 16:58:19 +0530
+Message-ID: <1343215699-4575-3-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1343215699-4575-1-git-send-email-avinashphilip@ti.com>
 References: <1343215699-4575-1-git-send-email-avinashphilip@ti.com>
@@ -23,65 +22,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ECAP hardware on AM33XX SOC supports auxiliary PWM (APWM) feature. This
-commit adds PWM driver support for ECAP hardware on AM33XX SOC.
-
-In the ECAP hardware, each PWM pin can also be configured to be in
-capture mode. Current implementation only supports PWM mode of
-operation. Also, hardware supports sync between multiple PWM pins but
-the driver supports simple independent PWM functionality.
+Enhanced high resolution PWM module (EHRPWM) hardware can be used to
+generate PWM output over 2 channels. This commit adds PWM driver support
+for EHRPWM device present on AM33XX SOC. Current implementation supports
+simple PWM functionality.
 
 Reviewed-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
 Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 ---
-:100644 100644 94e176e... 2840747... M	drivers/pwm/Kconfig
-:100644 100644 5459702... 35fee43... M	drivers/pwm/Makefile
-:000000 100644 0000000... 3c2ad28... A	drivers/pwm/pwm-tiecap.c
- drivers/pwm/Kconfig      |   11 ++
- drivers/pwm/Makefile     |    1 +
- drivers/pwm/pwm-tiecap.c |  232 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 244 insertions(+), 0 deletions(-)
+:100644 100644 2840747... 371a36c... M	drivers/pwm/Kconfig
+:100644 100644 35fee43... e4b2c89... M	drivers/pwm/Makefile
+:000000 100644 0000000... 010d232... A	drivers/pwm/pwm-tiehrpwm.c
+ drivers/pwm/Kconfig        |   11 ++
+ drivers/pwm/Makefile       |    1 +
+ drivers/pwm/pwm-tiehrpwm.c |  411 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 423 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 94e176e..2840747 100644
+index 2840747..371a36c 100644
 --- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
-@@ -76,6 +76,17 @@ config PWM_TEGRA
+@@ -87,6 +87,17 @@ config  PWM_TIECAP
  	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-tegra.
+ 	  will be called pwm-tiecap.
  
-+config  PWM_TIECAP
-+	tristate "ECAP PWM support"
++config  PWM_TIEHRPWM
++	tristate "EHRPWM PWM support"
 +	depends on SOC_AM33XX
 +
 +	help
-+	  PWM driver support for the ECAP APWM controller found on AM33XX
++	  PWM driver support for the EHRPWM controller found on AM33XX
 +	  TI SOC
 +
 +	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-tiecap.
++	  will be called pwm-tiehrpwm.
 +
  config PWM_VT8500
  	tristate "vt8500 pwm support"
  	depends on ARCH_VT8500
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 5459702..35fee43 100644
+index 35fee43..e4b2c89 100644
 --- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
-@@ -6,4 +6,5 @@ obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
- obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
+@@ -7,4 +7,5 @@ obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
  obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
  obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
-+obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
+ obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
++obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
  obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
-diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
+diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
 new file mode 100644
-index 0000000..3c2ad28
+index 0000000..010d232
 --- /dev/null
-+++ b/drivers/pwm/pwm-tiecap.c
-@@ -0,0 +1,232 @@
++++ b/drivers/pwm/pwm-tiehrpwm.c
+@@ -0,0 +1,411 @@
 +/*
-+ * ECAP PWM driver
++ * EHRPWM PWM driver
 + *
 + * Copyright (C) 2012 Texas Instruments, Inc. - http://www.ti.com/
 + *
@@ -102,44 +98,196 @@ index 0000000..3c2ad28
 +
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
++#include <linux/pwm.h>
 +#include <linux/io.h>
 +#include <linux/err.h>
 +#include <linux/clk.h>
 +#include <linux/pm_runtime.h>
-+#include <linux/pwm.h>
 +
-+/* ECAP registers and bits definitions */
-+#define CAP1			0x08
-+#define CAP2			0x0C
-+#define CAP3			0x10
-+#define CAP4			0x14
-+#define ECCTL2			0x2A
-+#define ECCTL2_APWM_MODE	BIT(9)
-+#define ECCTL2_SYNC_SEL_DISA	(BIT(7) | BIT(6))
-+#define ECCTL2_TSCTR_FREERUN	BIT(4)
++/* EHRPWM registers and bits definitions */
 +
-+struct ecap_pwm_chip {
++/* Time base module registers */
++#define TBCTL			0x00
++#define TBPRD			0x0A
++
++#define TBCTL_RUN_MASK		(BIT(15) | BIT(14))
++#define TBCTL_STOP_NEXT		0
++#define TBCTL_STOP_ON_CYCLE	BIT(14)
++#define TBCTL_FREE_RUN		(BIT(15) | BIT(14))
++#define TBCTL_PRDLD_MASK	BIT(3)
++#define TBCTL_PRDLD_SHDW	0
++#define TBCTL_PRDLD_IMDT	BIT(3)
++#define TBCTL_CLKDIV_MASK	(BIT(12) | BIT(11) | BIT(10) | BIT(9) | \
++				BIT(8) | BIT(7))
++#define TBCTL_CTRMODE_MASK	(BIT(1) | BIT(0))
++#define TBCTL_CTRMODE_UP	0
++#define TBCTL_CTRMODE_DOWN	BIT(0)
++#define TBCTL_CTRMODE_UPDOWN	BIT(1)
++#define TBCTL_CTRMODE_FREEZE	(BIT(1) | BIT(0))
++
++#define TBCTL_HSPCLKDIV_SHIFT	7
++#define TBCTL_CLKDIV_SHIFT	10
++
++#define CLKDIV_MAX		7
++#define HSPCLKDIV_MAX		7
++#define PERIOD_MAX		0xFFFF
++
++/* compare module registers */
++#define CMPA			0x12
++#define CMPB			0x14
++
++/* Action qualifier module registers */
++#define AQCTLA			0x16
++#define AQCTLB			0x18
++#define AQSFRC			0x1A
++#define AQCSFRC			0x1C
++
++#define AQCTL_CBU_MASK		(BIT(9) | BIT(8))
++#define AQCTL_CBU_FRCLOW	BIT(8)
++#define AQCTL_CBU_FRCHIGH	BIT(9)
++#define AQCTL_CBU_FRCTOGGLE	(BIT(9) | BIT(8))
++#define AQCTL_CAU_MASK		(BIT(5) | BIT(4))
++#define AQCTL_CAU_FRCLOW	BIT(4)
++#define AQCTL_CAU_FRCHIGH	BIT(5)
++#define AQCTL_CAU_FRCTOGGLE	(BIT(5) | BIT(4))
++#define AQCTL_PRD_MASK		(BIT(3) | BIT(2))
++#define AQCTL_PRD_FRCLOW	BIT(2)
++#define AQCTL_PRD_FRCHIGH	BIT(3)
++#define AQCTL_PRD_FRCTOGGLE	(BIT(3) | BIT(2))
++#define AQCTL_ZRO_MASK		(BIT(1) | BIT(0))
++#define AQCTL_ZRO_FRCLOW	BIT(0)
++#define AQCTL_ZRO_FRCHIGH	BIT(1)
++#define AQCTL_ZRO_FRCTOGGLE	(BIT(1) | BIT(0))
++
++#define AQSFRC_RLDCSF_MASK	(BIT(7) | BIT(6))
++#define AQSFRC_RLDCSF_ZRO	0
++#define AQSFRC_RLDCSF_PRD	BIT(6)
++#define AQSFRC_RLDCSF_ZROPRD	BIT(7)
++#define AQSFRC_RLDCSF_IMDT	(BIT(7) | BIT(6))
++
++#define AQCSFRC_CSFB_MASK	(BIT(3) | BIT(2))
++#define AQCSFRC_CSFB_FRCDIS	0
++#define AQCSFRC_CSFB_FRCLOW	BIT(2)
++#define AQCSFRC_CSFB_FRCHIGH	BIT(3)
++#define AQCSFRC_CSFB_DISSWFRC	(BIT(3) | BIT(2))
++#define AQCSFRC_CSFA_MASK	(BIT(1) | BIT(0))
++#define AQCSFRC_CSFA_FRCDIS	0
++#define AQCSFRC_CSFA_FRCLOW	BIT(0)
++#define AQCSFRC_CSFA_FRCHIGH	BIT(1)
++#define AQCSFRC_CSFA_DISSWFRC	(BIT(1) | BIT(0))
++
++#define NUM_PWM_CHANNEL		2	/* EHRPWM channels */
++
++struct ehrpwm_pwm_chip {
 +	struct pwm_chip	chip;
 +	unsigned int	clk_rate;
 +	void __iomem	*mmio_base;
 +};
 +
-+static inline struct ecap_pwm_chip *to_ecap_pwm_chip(struct pwm_chip *chip)
++static inline struct ehrpwm_pwm_chip *to_ehrpwm_pwm_chip(struct pwm_chip *chip)
 +{
-+	return container_of(chip, struct ecap_pwm_chip, chip);
++	return container_of(chip, struct ehrpwm_pwm_chip, chip);
++}
++
++static void ehrpwm_write(void *base, int offset, unsigned int val)
++{
++	writew(val & 0xFFFF, base + offset);
++}
++
++static void ehrpwm_modify(void *base, int offset,
++		unsigned short mask, unsigned short val)
++{
++	unsigned short regval;
++
++	regval = readw(base + offset);
++	regval &= ~mask;
++	regval |= val & mask;
++	writew(regval, base + offset);
++}
++
++/**
++ * set_prescale_div -	Set up the prescaler divider function
++ * @rqst_prescaler:	prescaler value min
++ * @prescale_div:	prescaler value set
++ * @tb_clk_div:		Time Base Control prescaler bits
++ */
++static int set_prescale_div(unsigned long rqst_prescaler,
++		unsigned short *prescale_div, unsigned short *tb_clk_div)
++{
++	unsigned int clkdiv, hspclkdiv;
++
++	for (clkdiv = 0; clkdiv <= CLKDIV_MAX; clkdiv++) {
++		for (hspclkdiv = 0; hspclkdiv <= HSPCLKDIV_MAX; hspclkdiv++) {
++
++			/*
++			 * calculations for prescaler value :
++			 * prescale_div = HSPCLKDIVIDER * CLKDIVIDER.
++			 * HSPCLKDIVIDER =  2 ** hspclkdiv
++			 * CLKDIVIDER = (1),		if clkdiv == 0 *OR*
++			 *		(2 * clkdiv),	if clkdiv != 0
++			 *
++			 * Configure prescale_div value such that period
++			 * register value is less than 65535.
++			 */
++
++			*prescale_div = (1 << clkdiv) *
++					(hspclkdiv ? (hspclkdiv * 2) : 1);
++			if (*prescale_div > rqst_prescaler) {
++				*tb_clk_div = (clkdiv << TBCTL_CLKDIV_SHIFT) |
++					(hspclkdiv << TBCTL_HSPCLKDIV_SHIFT);
++				return 0;
++			}
++		}
++	}
++	return 1;
++}
++
++static void configure_chans(struct ehrpwm_pwm_chip *pc, int chan,
++		unsigned long duty_cycles)
++{
++	int cmp_reg, aqctl_reg;
++	unsigned short aqctl_val, aqctl_mask;
++
++	/*
++	 * Channels can be configured from action qualifier module.
++	 * Channel 0 configured with compare A register and for
++	 * up-counter mode.
++	 * Channel 1 configured with compare B register and for
++	 * up-counter mode.
++	 */
++	if (chan == 1) {
++		aqctl_reg = AQCTLB;
++		cmp_reg = CMPB;
++		/* Configure PWM Low from compare B value */
++		aqctl_val = AQCTL_CBU_FRCLOW;
++		aqctl_mask = AQCTL_CBU_MASK;
++	} else {
++		cmp_reg = CMPA;
++		aqctl_reg = AQCTLA;
++		/* Configure PWM Low from compare A value*/
++		aqctl_val = AQCTL_CAU_FRCLOW;
++		aqctl_mask = AQCTL_CAU_MASK;
++	}
++
++	/* Configure PWM High from period value and zero value */
++	aqctl_val |= AQCTL_PRD_FRCHIGH | AQCTL_ZRO_FRCHIGH;
++	aqctl_mask |= AQCTL_PRD_MASK | AQCTL_ZRO_MASK;
++	ehrpwm_modify(pc->mmio_base,  aqctl_reg, aqctl_mask, aqctl_val);
++
++	ehrpwm_write(pc->mmio_base,  cmp_reg, duty_cycles);
 +}
 +
 +/*
-+ * period_ns = 10^9 * period_cycles / PWM_CLK_RATE
-+ * duty_ns   = 10^9 * duty_cycles / PWM_CLK_RATE
++ * period_ns = 10^9 * (ps_divval * period_cycles) / PWM_CLK_RATE
++ * duty_ns   = 10^9 * (ps_divval * duty_cycles) / PWM_CLK_RATE
 + */
-+static int ecap_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++static int ehrpwm_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 +		int duty_ns, int period_ns)
 +{
-+	struct ecap_pwm_chip *pc = to_ecap_pwm_chip(chip);
++	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
 +	unsigned long long c;
 +	unsigned long period_cycles, duty_cycles;
-+	unsigned int reg_val;
++	unsigned short ps_divval, tb_divval;
 +
 +	if (period_ns < 0 || duty_ns < 0 || period_ns > NSEC_PER_SEC)
 +		return -ERANGE;
@@ -159,69 +307,96 @@ index 0000000..3c2ad28
 +		duty_cycles = (unsigned long)c;
 +	}
 +
-+	pm_runtime_get_sync(pc->chip.dev);
-+
-+	reg_val = readw(pc->mmio_base + ECCTL2);
-+
-+	/* Configure APWM mode & disable sync option */
-+	reg_val |= ECCTL2_APWM_MODE | ECCTL2_SYNC_SEL_DISA;
-+
-+	writew(reg_val, pc->mmio_base + ECCTL2);
-+
-+	if (!test_bit(PWMF_ENABLED, &pwm->flags)) {
-+		/* Update active registers if not running */
-+		writel(duty_cycles, pc->mmio_base + CAP2);
-+		writel(period_cycles, pc->mmio_base + CAP1);
-+	} else {
-+		/*
-+		 * Update shadow registers to configure period and
-+		 * compare values. This helps current PWM period to
-+		 * complete on reconfiguring
-+		 */
-+		writel(duty_cycles, pc->mmio_base + CAP4);
-+		writel(period_cycles, pc->mmio_base + CAP3);
++	/* Configure clock prescaler to support Low frequency PWM wave */
++	if (set_prescale_div(period_cycles/PERIOD_MAX, &ps_divval,
++				&tb_divval)) {
++		dev_err(chip->dev, "Unsupported values\n");
++		return -EINVAL;
 +	}
 +
-+	pm_runtime_put_sync(pc->chip.dev);
++	pm_runtime_get_sync(chip->dev);
++
++	/* Update clock prescaler values */
++	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_CLKDIV_MASK, tb_divval);
++
++	/* Update period & duty cycle with presacler division */
++	period_cycles = period_cycles / ps_divval;
++	duty_cycles = duty_cycles / ps_divval;
++
++	/* Configure shadow loading on Period register */
++	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_PRDLD_MASK, TBCTL_PRDLD_SHDW);
++
++	ehrpwm_write(pc->mmio_base, TBPRD, period_cycles);
++
++	/* Configure ehrpwm counter for up-count mode */
++	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_CTRMODE_MASK,
++			TBCTL_CTRMODE_UP);
++
++	/* Configure the channel for duty cycle */
++	configure_chans(pc, pwm->hwpwm, duty_cycles);
++	pm_runtime_put_sync(chip->dev);
 +	return 0;
 +}
 +
-+static int ecap_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++static int ehrpwm_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
-+	struct ecap_pwm_chip *pc = to_ecap_pwm_chip(chip);
-+	unsigned int reg_val;
++	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
++	unsigned short aqcsfrc_val, aqcsfrc_mask;
 +
 +	/* Leave clock enabled on enabling PWM */
-+	pm_runtime_get_sync(pc->chip.dev);
++	pm_runtime_get_sync(chip->dev);
 +
-+	/*
-+	 * Enable 'Free run Time stamp counter mode' to start counter
-+	 * and  'APWM mode' to enable APWM output
-+	 */
-+	reg_val = readw(pc->mmio_base + ECCTL2);
-+	reg_val |= ECCTL2_TSCTR_FREERUN | ECCTL2_APWM_MODE;
-+	writew(reg_val, pc->mmio_base + ECCTL2);
++	/* Disabling Action Qualifier on PWM output */
++	if (pwm->hwpwm) {
++		aqcsfrc_val = AQCSFRC_CSFB_FRCDIS;
++		aqcsfrc_mask = AQCSFRC_CSFB_MASK;
++	} else {
++		aqcsfrc_val = AQCSFRC_CSFA_FRCDIS;
++		aqcsfrc_mask = AQCSFRC_CSFA_MASK;
++	}
++
++	/* Changes to shadow mode */
++	ehrpwm_modify(pc->mmio_base, AQSFRC, AQSFRC_RLDCSF_MASK,
++			AQSFRC_RLDCSF_ZRO);
++
++	ehrpwm_modify(pc->mmio_base, AQCSFRC, aqcsfrc_mask, aqcsfrc_val);
++
++	/* Enable time counter for free_run */
++	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_RUN_MASK, TBCTL_FREE_RUN);
 +	return 0;
 +}
 +
-+static void ecap_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++static void ehrpwm_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
-+	struct ecap_pwm_chip *pc = to_ecap_pwm_chip(chip);
-+	unsigned int reg_val;
++	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
++	unsigned short aqcsfrc_val, aqcsfrc_mask;
++
++	/* Action Qualifier puts PWM output low forcefully */
++	if (pwm->hwpwm) {
++		aqcsfrc_val = AQCSFRC_CSFB_FRCLOW;
++		aqcsfrc_mask = AQCSFRC_CSFB_MASK;
++	} else {
++		aqcsfrc_val = AQCSFRC_CSFA_FRCLOW;
++		aqcsfrc_mask = AQCSFRC_CSFA_MASK;
++	}
 +
 +	/*
-+	 * Disable 'Free run Time stamp counter mode' to stop counter
-+	 * and 'APWM mode' to put APWM output to low
++	 * Changes to immediate action on Action Qualifier. This puts
++	 * Action Qualifier control on PWM output from next TBCLK
 +	 */
-+	reg_val = readw(pc->mmio_base + ECCTL2);
-+	reg_val &= ~(ECCTL2_TSCTR_FREERUN | ECCTL2_APWM_MODE);
-+	writew(reg_val, pc->mmio_base + ECCTL2);
++	ehrpwm_modify(pc->mmio_base, AQSFRC, AQSFRC_RLDCSF_MASK,
++			AQSFRC_RLDCSF_IMDT);
++
++	ehrpwm_modify(pc->mmio_base, AQCSFRC, aqcsfrc_mask, aqcsfrc_val);
++
++	/* Stop Time base counter */
++	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_RUN_MASK, TBCTL_STOP_NEXT);
 +
 +	/* Disable clock on PWM disable */
-+	pm_runtime_put_sync(pc->chip.dev);
++	pm_runtime_put_sync(chip->dev);
 +}
 +
-+static void ecap_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
++static void ehrpwm_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
 +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
 +		dev_warn(chip->dev, "Removing PWM device without disabling\n");
@@ -229,20 +404,20 @@ index 0000000..3c2ad28
 +	}
 +}
 +
-+static const struct pwm_ops ecap_pwm_ops = {
-+	.free		= ecap_pwm_free,
-+	.config		= ecap_pwm_config,
-+	.enable		= ecap_pwm_enable,
-+	.disable	= ecap_pwm_disable,
++static const struct pwm_ops ehrpwm_pwm_ops = {
++	.free		= ehrpwm_pwm_free,
++	.config		= ehrpwm_pwm_config,
++	.enable		= ehrpwm_pwm_enable,
++	.disable	= ehrpwm_pwm_disable,
 +	.owner		= THIS_MODULE,
 +};
 +
-+static int __devinit ecap_pwm_probe(struct platform_device *pdev)
++static int __devinit ehrpwm_pwm_probe(struct platform_device *pdev)
 +{
 +	int ret;
 +	struct resource *r;
 +	struct clk *clk;
-+	struct ecap_pwm_chip *pc;
++	struct ehrpwm_pwm_chip *pc;
 +
 +	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
 +	if (!pc) {
@@ -263,9 +438,9 @@ index 0000000..3c2ad28
 +	}
 +
 +	pc->chip.dev = &pdev->dev;
-+	pc->chip.ops = &ecap_pwm_ops;
++	pc->chip.ops = &ehrpwm_pwm_ops;
 +	pc->chip.base = -1;
-+	pc->chip.npwm = 1;
++	pc->chip.npwm = NUM_PWM_CHANNEL;
 +
 +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 +	if (!r) {
@@ -276,7 +451,7 @@ index 0000000..3c2ad28
 +	pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
 +	if (!pc->mmio_base) {
 +		dev_err(&pdev->dev, "failed to ioremap() registers\n");
-+		return -EADDRNOTAVAIL;
++		return  -EADDRNOTAVAIL;
 +	}
 +
 +	ret = pwmchip_add(&pc->chip);
@@ -290,26 +465,26 @@ index 0000000..3c2ad28
 +	return 0;
 +}
 +
-+static int __devexit ecap_pwm_remove(struct platform_device *pdev)
++static int __devexit ehrpwm_pwm_remove(struct platform_device *pdev)
 +{
-+	struct ecap_pwm_chip *pc = platform_get_drvdata(pdev);
++	struct ehrpwm_pwm_chip *pc = platform_get_drvdata(pdev);
 +
 +	pm_runtime_put_sync(&pdev->dev);
 +	pm_runtime_disable(&pdev->dev);
 +	return pwmchip_remove(&pc->chip);
 +}
 +
-+static struct platform_driver ecap_pwm_driver = {
++static struct platform_driver ehrpwm_pwm_driver = {
 +	.driver = {
-+		.name = "ecap",
++		.name = "ehrpwm",
 +	},
-+	.probe = ecap_pwm_probe,
-+	.remove = __devexit_p(ecap_pwm_remove),
++	.probe = ehrpwm_pwm_probe,
++	.remove = __devexit_p(ehrpwm_pwm_remove),
 +};
 +
-+module_platform_driver(ecap_pwm_driver);
++module_platform_driver(ehrpwm_pwm_driver);
 +
-+MODULE_DESCRIPTION("ECAP PWM driver");
++MODULE_DESCRIPTION("EHRPWM PWM driver");
 +MODULE_AUTHOR("Texas Instruments");
 +MODULE_LICENSE("GPL");
 -- 
