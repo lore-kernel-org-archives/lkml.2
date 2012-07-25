@@ -1,185 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572Ab2GYLlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:41:05 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:35188 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab2GYLkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:40:31 -0400
-Message-ID: <500FDB0D.4070605@panasas.com>
-Date: Wed, 25 Jul 2012 14:39:57 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	id S1756599Ab2GYLnW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:43:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:65487 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756539Ab2GYLnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 07:43:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="185825222"
+Date: Wed, 25 Jul 2012 19:35:30 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Nicolas Palix <npalix@diku.dk>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Coccinelle: fix typo in memdup_user.cocci
+Message-ID: <20120725113530.GA26514@localhost>
 MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dm-devel@redhat.com>, <tj@kernel.org>, <axboe@kernel.dk>,
-        <agk@redhat.com>, <neilb@suse.de>, <drbd-dev@lists.linbit.com>,
-        <vgoyal@redhat.com>, <mpatocka@redhat.com>, <sage@newdream.net>,
-        <yehuda@hq.newdream.net>
-Subject: Re: [PATCH v4 05/12] block: Kill bi_destructor
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com> <1343160689-12378-6-git-send-email-koverstreet@google.com>
-In-Reply-To: <1343160689-12378-6-git-send-email-koverstreet@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 11:11 PM, Kent Overstreet wrote:
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ scripts/coccinelle/api/memdup_user.cocci |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> Now that we've got generic code for freeing bios allocated from bio
-> pools, this isn't needed anymore.
-> 
-> This also changes the semantics of bio_free() a bit - it now also frees
-> bios allocated by bio_kmalloc(). It's also no longer exported, as
-> without bi_destructor there should be no need for it to be called
-> anywhere else.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-
-<snip>
-
-> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-> index be65582..9338d0602 100644
-> --- a/drivers/target/target_core_iblock.c
-> +++ b/drivers/target/target_core_iblock.c
-> @@ -467,15 +467,7 @@ iblock_get_bio(struct se_cmd *cmd, sector_t lba, u32 sg_num)
->  	}
->  
->  	bio->bi_bdev = ib_dev->ibd_bd;
-> -<<<<<<< HEAD
->  	bio->bi_private = cmd;
-> -	bio->bi_destructor = iblock_bio_destructor;
-> -||||||| merged common ancestors
-> -	bio->bi_private = task;
-> -	bio->bi_destructor = iblock_bio_destructor;
-> -=======
-> -	bio->bi_private = task;
-> ->>>>>>> block: Generalized bio pool freeing
->  	bio->bi_end_io = &iblock_bio_done;
->  	bio->bi_sector = lba;
->  	return bio;
-
-
-Merge conflict allmodconfig compilation please?
-
-> diff --git a/fs/bio.c b/fs/bio.c
-> index 252e253..a301071 100644
-> --- a/fs/bio.c
-> +++ b/fs/bio.c
-> @@ -56,6 +56,9 @@ static struct biovec_slab bvec_slabs[BIOVEC_NR_POOLS] __read_mostly = {
->   */
->  struct bio_set *fs_bio_set;
->  
-> +/* Only used as a sentinal value */
-> +static struct bio_set bio_kmalloc_pool;
-> +
-
-
-Id rather if you use a define like:
-#define BIO_KMALLOC_POOL ((void *)~0)
-
-So any code access actually crashes in the bug case where
-this leaks out. (And there is no actual unused storage allocated)
-
-BTW I like this reuse of the bi_pool member as a flag as well.
-
-Thanks
-Boaz
-
->  /*
->   * Our slab pool management
->   */
-> @@ -232,10 +235,21 @@ fallback:
->  	return bvl;
->  }
->  
-> -void bio_free(struct bio *bio, struct bio_set *bs)
-> +void bio_free(struct bio *bio)
->  {
-> +	struct bio_set *bs = bio->bi_pool;
->  	void *p;
->  
-> +	BUG_ON(!bs);
-> +
-> +	if (bs == &bio_kmalloc_pool) {
-> +		/* Bio was allocated by bio_kmalloc() */
-> +		if (bio_integrity(bio))
-> +			bio_integrity_free(bio, fs_bio_set);
-> +		kfree(bio);
-> +		return;
-> +	}
-> +
->  	if (bio_has_allocated_vec(bio))
->  		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
->  
-> @@ -347,13 +361,6 @@ struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
->  }
->  EXPORT_SYMBOL(bio_alloc);
->  
-> -static void bio_kmalloc_destructor(struct bio *bio)
-> -{
-> -	if (bio_integrity(bio))
-> -		bio_integrity_free(bio, fs_bio_set);
-> -	kfree(bio);
-> -}
-> -
->  /**
->   * bio_kmalloc - allocate a bio for I/O using kmalloc()
->   * @gfp_mask:   the GFP_ mask given to the slab allocator
-> @@ -380,7 +387,7 @@ struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
->  	bio->bi_flags |= BIO_POOL_NONE << BIO_POOL_OFFSET;
->  	bio->bi_max_vecs = nr_iovecs;
->  	bio->bi_io_vec = bio->bi_inline_vecs;
-> -	bio->bi_destructor = bio_kmalloc_destructor;
-> +	bio->bi_pool = &bio_kmalloc_pool;
->  
->  	return bio;
->  }
-> @@ -418,12 +425,7 @@ void bio_put(struct bio *bio)
->  	 */
->  	if (atomic_dec_and_test(&bio->bi_cnt)) {
->  		bio_disassociate_task(bio);
-> -		bio->bi_next = NULL;
-> -
-> -		if (bio->bi_pool)
-> -			bio_free(bio, bio->bi_pool);
-> -		else
-> -			bio->bi_destructor(bio);
-> +		bio_free(bio);
->  	}
->  }
->  EXPORT_SYMBOL(bio_put);
-> diff --git a/include/linux/bio.h b/include/linux/bio.h
-> index ba60319..393c87e 100644
-> --- a/include/linux/bio.h
-> +++ b/include/linux/bio.h
-> @@ -216,7 +216,7 @@ extern struct bio *bio_alloc(gfp_t, unsigned int);
->  extern struct bio *bio_kmalloc(gfp_t, unsigned int);
->  extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
->  extern void bio_put(struct bio *);
-> -extern void bio_free(struct bio *, struct bio_set *);
-> +extern void bio_free(struct bio *);
->  
->  extern void bio_endio(struct bio *, int);
->  struct request_queue;
-> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-> index 40411e2..fa45a12 100644
-> --- a/include/linux/blk_types.h
-> +++ b/include/linux/blk_types.h
-> @@ -84,11 +84,8 @@ struct bio {
->  	struct bio_integrity_payload *bi_integrity;  /* data integrity */
->  #endif
->  
-> -	/* If bi_pool is non NULL, bi_destructor is not called */
->  	struct bio_set		*bi_pool;
->  
-> -	bio_destructor_t	*bi_destructor;	/* destructor */
-> -
->  	/*
->  	 * We can inline a number of vecs at the end of the bio, to avoid
->  	 * double allocations for a small number of bio_vecs. This member
-
+diff --git a/scripts/coccinelle/api/memdup_user.cocci b/scripts/coccinelle/api/memdup_user.cocci
+index 2efac28..2b131a8 100644
+--- a/scripts/coccinelle/api/memdup_user.cocci
++++ b/scripts/coccinelle/api/memdup_user.cocci
+@@ -51,10 +51,10 @@ statement S1,S2;
+ p << r.p;
+ @@
+ 
+-coccilib.org.print_todo(p[0], "WARNING opportunity for memdep_user")
++coccilib.org.print_todo(p[0], "WARNING opportunity for memdup_user")
+ 
+ @script:python depends on report@
+ p << r.p;
+ @@
+ 
+-coccilib.report.print_report(p[0], "WARNING opportunity for memdep_user")
++coccilib.report.print_report(p[0], "WARNING opportunity for memdup_user")
+-- 
+1.7.10
 
