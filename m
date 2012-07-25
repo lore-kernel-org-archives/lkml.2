@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030314Ab2GYPO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:14:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39255 "EHLO mga09.intel.com"
+	id S1030333Ab2GYPPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:15:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30025 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933462Ab2GYPKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:10:52 -0400
+	id S933206Ab2GYPKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:10:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="171267553"
+   d="scan'208";a="171267492"
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
         Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Subject: [PATCH 04/16] ext3: nuke write_super from comments
-Date: Wed, 25 Jul 2012 18:12:02 +0300
-Message-Id: <1343229134-29487-5-git-send-email-artem.bityutskiy@linux.intel.com>
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 01/16] vfs: kill write_super and sync_supers
+Date: Wed, 25 Jul 2012 18:11:59 +0300
+Message-Id: <1343229134-29487-2-git-send-email-artem.bityutskiy@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
 References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
@@ -28,69 +26,213 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-The '->write_super' superblock method is gone, and this patch removes all the
-references to 'write_super' from ext3.
+Finally we can kill the 'sync_supers' kernel thread along with the
+'->write_super()' superblock operation because all the users are gone.
+Now every file-system is supposed to self-manage own superblock and
+its dirty state.
 
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+The nice thing about killing this thread is that it improves power management.
+Indeed, 'sync_supers' is a source of monotonic system wake-ups - it woke up
+every 5 seconds no matter what - even if there were no dirty superblocks and
+even if there were no file-systems using this service (e.g., btrfs and
+journalled ext4 do not need it). So it was wasting power most of the time. And
+because the thread was in the core of the kernel, all systems had to have it.
+So I am quite happy to make it go away.
+
+Interestingly, this thread is a left-over from the pdflush kernel thread which
+was a self-forking kernel thread responsible for all the write-back in old
+Linux kernels. It was turned into per-block device BDI threads, and
+'sync_supers' was a left-over. Thus, R.I.P, pdflush as well.
+
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
+ fs/super.c                  |   40 ---------------------------------
+ include/linux/backing-dev.h |    1 -
+ include/linux/fs.h          |    3 ---
+ mm/backing-dev.c            |   52 -------------------------------------------
+ mm/page-writeback.c         |    1 -
+ 5 files changed, 97 deletions(-)
 
-I expect this patch to be merged via Al Viro's VFS tree.
-
- fs/ext3/inode.c |    8 --------
- fs/ext3/super.c |   11 -----------
- 2 files changed, 19 deletions(-)
-
-diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-index 9a4a5c4..a075973 100644
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -3459,14 +3459,6 @@ ext3_reserve_inode_write(handle_t *handle, struct inode *inode,
-  * inode out, but prune_icache isn't a user-visible syncing function.
-  * Whenever the user wants stuff synced (sys_sync, sys_msync, sys_fsync)
-  * we start and wait on commits.
-- *
-- * Is this efficient/effective?  Well, we're being nice to the system
-- * by cleaning up our inodes proactively so they can be reaped
-- * without I/O.  But we are potentially leaving up to five seconds'
-- * worth of inodes floating about which prune_icache wants us to
-- * write out.  One way to fix that would be to get prune_icache()
-- * to do a write_super() to free up some memory.  It has the desired
-- * effect.
-  */
- int ext3_mark_inode_dirty(handle_t *handle, struct inode *inode)
- {
-diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-index 8c3a44b..0794bd6 100644
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -64,11 +64,6 @@ static int ext3_freeze(struct super_block *sb);
+diff --git a/fs/super.c b/fs/super.c
+index cf00177..c8ca90c 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -484,46 +484,6 @@ void drop_super(struct super_block *sb)
+ EXPORT_SYMBOL(drop_super);
  
- /*
-  * Wrappers for journal_start/end.
+ /**
+- * sync_supers - helper for periodic superblock writeback
 - *
-- * The only special thing we need to do here is to make sure that all
-- * journal_end calls result in the superblock being marked dirty, so
-- * that sync() will call the filesystem's write_super callback if
-- * appropriate.
-  */
- handle_t *ext3_journal_start_sb(struct super_block *sb, int nblocks)
+- * Call the write_super method if present on all dirty superblocks in
+- * the system.  This is for the periodic writeback used by most older
+- * filesystems.  For data integrity superblock writeback use
+- * sync_filesystems() instead.
+- *
+- * Note: check the dirty flag before waiting, so we don't
+- * hold up the sync while mounting a device. (The newly
+- * mounted device won't need syncing.)
+- */
+-void sync_supers(void)
+-{
+-	struct super_block *sb, *p = NULL;
+-
+-	spin_lock(&sb_lock);
+-	list_for_each_entry(sb, &super_blocks, s_list) {
+-		if (hlist_unhashed(&sb->s_instances))
+-			continue;
+-		if (sb->s_op->write_super && sb->s_dirt) {
+-			sb->s_count++;
+-			spin_unlock(&sb_lock);
+-
+-			down_read(&sb->s_umount);
+-			if (sb->s_root && sb->s_dirt && (sb->s_flags & MS_BORN))
+-				sb->s_op->write_super(sb);
+-			up_read(&sb->s_umount);
+-
+-			spin_lock(&sb_lock);
+-			if (p)
+-				__put_super(p);
+-			p = sb;
+-		}
+-	}
+-	if (p)
+-		__put_super(p);
+-	spin_unlock(&sb_lock);
+-}
+-
+-/**
+  *	iterate_supers - call function for all active superblocks
+  *	@f: function to call
+  *	@arg: argument to pass to it
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index b1038bd..94143aa 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -123,7 +123,6 @@ void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+ void bdi_start_background_writeback(struct backing_dev_info *bdi);
+ int bdi_writeback_thread(void *data);
+ int bdi_has_dirty_io(struct backing_dev_info *bdi);
+-void bdi_arm_supers_timer(void);
+ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi);
+ void bdi_lock_two(struct bdi_writeback *wb1, struct bdi_writeback *wb2);
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 17fd887..8878410 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1453,7 +1453,6 @@ extern spinlock_t sb_lock;
+ struct super_block {
+ 	struct list_head	s_list;		/* Keep this first */
+ 	dev_t			s_dev;		/* search index; _not_ kdev_t */
+-	unsigned char		s_dirt;
+ 	unsigned char		s_blocksize_bits;
+ 	unsigned long		s_blocksize;
+ 	loff_t			s_maxbytes;	/* Max file size */
+@@ -1718,7 +1717,6 @@ struct super_operations {
+ 	int (*drop_inode) (struct inode *);
+ 	void (*evict_inode) (struct inode *);
+ 	void (*put_super) (struct super_block *);
+-	void (*write_super) (struct super_block *);
+ 	int (*sync_fs)(struct super_block *sb, int wait);
+ 	int (*freeze_fs) (struct super_block *);
+ 	int (*unfreeze_fs) (struct super_block *);
+@@ -2241,7 +2239,6 @@ extern int vfs_fsync_range(struct file *file, loff_t start, loff_t end,
+ 			   int datasync);
+ extern int vfs_fsync(struct file *file, int datasync);
+ extern int generic_write_sync(struct file *file, loff_t pos, loff_t count);
+-extern void sync_supers(void);
+ extern void emergency_sync(void);
+ extern void emergency_remount(void);
+ #ifdef CONFIG_BLOCK
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index dd8e2aa..f34c4ca 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -39,12 +39,6 @@ DEFINE_SPINLOCK(bdi_lock);
+ LIST_HEAD(bdi_list);
+ LIST_HEAD(bdi_pending_list);
+ 
+-static struct task_struct *sync_supers_tsk;
+-static struct timer_list sync_supers_timer;
+-
+-static int bdi_sync_supers(void *);
+-static void sync_supers_timer_fn(unsigned long);
+-
+ void bdi_lock_two(struct bdi_writeback *wb1, struct bdi_writeback *wb2)
  {
-@@ -90,12 +85,6 @@ handle_t *ext3_journal_start_sb(struct super_block *sb, int nblocks)
- 	return journal_start(journal, nblocks);
+ 	if (wb1 < wb2) {
+@@ -250,12 +244,6 @@ static int __init default_bdi_init(void)
+ {
+ 	int err;
+ 
+-	sync_supers_tsk = kthread_run(bdi_sync_supers, NULL, "sync_supers");
+-	BUG_ON(IS_ERR(sync_supers_tsk));
+-
+-	setup_timer(&sync_supers_timer, sync_supers_timer_fn, 0);
+-	bdi_arm_supers_timer();
+-
+ 	err = bdi_init(&default_backing_dev_info);
+ 	if (!err)
+ 		bdi_register(&default_backing_dev_info, NULL, "default");
+@@ -270,46 +258,6 @@ int bdi_has_dirty_io(struct backing_dev_info *bdi)
+ 	return wb_has_dirty_io(&bdi->wb);
  }
  
 -/*
-- * The only special thing we need to do here is to make sure that all
-- * journal_stop calls result in the superblock being marked dirty, so
-- * that sync() will call the filesystem's write_super callback if
-- * appropriate.
+- * kupdated() used to do this. We cannot do it from the bdi_forker_thread()
+- * or we risk deadlocking on ->s_umount. The longer term solution would be
+- * to implement sync_supers_bdi() or similar and simply do it from the
+- * bdi writeback thread individually.
 - */
- int __ext3_journal_stop(const char *where, handle_t *handle)
+-static int bdi_sync_supers(void *unused)
+-{
+-	set_user_nice(current, 0);
+-
+-	while (!kthread_should_stop()) {
+-		set_current_state(TASK_INTERRUPTIBLE);
+-		schedule();
+-
+-		/*
+-		 * Do this periodically, like kupdated() did before.
+-		 */
+-		sync_supers();
+-	}
+-
+-	return 0;
+-}
+-
+-void bdi_arm_supers_timer(void)
+-{
+-	unsigned long next;
+-
+-	if (!dirty_writeback_interval)
+-		return;
+-
+-	next = msecs_to_jiffies(dirty_writeback_interval * 10) + jiffies;
+-	mod_timer(&sync_supers_timer, round_jiffies_up(next));
+-}
+-
+-static void sync_supers_timer_fn(unsigned long unused)
+-{
+-	wake_up_process(sync_supers_tsk);
+-	bdi_arm_supers_timer();
+-}
+-
+ static void wakeup_timer_fn(unsigned long data)
  {
- 	struct super_block *sb;
+ 	struct backing_dev_info *bdi = (struct backing_dev_info *)data;
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 93d8d2f..cffc800 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1504,7 +1504,6 @@ int dirty_writeback_centisecs_handler(ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	proc_dointvec(table, write, buffer, length, ppos);
+-	bdi_arm_supers_timer();
+ 	return 0;
+ }
+ 
 -- 
 1.7.10
 
