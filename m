@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab2GYLUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:20:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756468Ab2GYLUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:20:48 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAHO5Pa2ck_wqUwiuFUxEeU=k3dJvByyjpygpUhrSFRsMyBZ8Eg@mail.gmail.com>
-References: <CAHO5Pa2ck_wqUwiuFUxEeU=k3dJvByyjpygpUhrSFRsMyBZ8Eg@mail.gmail.com> <20120720215636.14854.41208.stgit@warthog.procyon.org.uk> <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com> <28702.1343135952@warthog.procyon.org.uk> <CAHO5Pa310CYFKvyN4N21CHoCKJG-eJ04Q-yg1VmgwvgR5N91Rg@mail.gmail.com> <6193.1343211798@warthog.procyon.org.uk>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de, tglx@linutronix.de,
-        mingo@kernel.org, davej@redhat.com
-Subject: Re: [PATCH 00/13] UAPI header file split
-Date: Wed, 25 Jul 2012 12:20:32 +0100
-Message-ID: <12201.1343215232@warthog.procyon.org.uk>
+	id S1756547Ab2GYLVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:21:53 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34267 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756459Ab2GYLVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 07:21:51 -0400
+Message-ID: <500FD698.30906@mvista.com>
+Date: Wed, 25 Jul 2012 15:20:56 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Afzal Mohammed <afzal@ti.com>
+CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, nsekhar@ti.com, khilman@ti.com,
+        a.zummo@towertech.it, tony@atomide.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH v2 6/6] arm/dts: am33xx rtc node
+References: <cover.1343191280.git.afzal@ti.com> <d16976055462214af276d7242faa2bc6e621fd44.1343191280.git.afzal@ti.com>
+In-Reply-To: <d16976055462214af276d7242faa2bc6e621fd44.1343191280.git.afzal@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+Hello.
 
-> >> 2. EMPTY UAPI HEADERS
-> >>
-> >> Some of the resulting uapi header files are empty:
-> >> ...
-> >> I imagine this should be reasonably easy to fix.
-> >
-> > Fix how?  The Kbuild files say these headers must exist in UAPI space, but
-> > the __KERNEL__ guards therein don't define any content for them in UAPI.
-> 
-> I'm not sure of the answer here. It certainly seems odd to have a
-> bunch of new empty header files in the kernel tree, which is why I
-> commented on it. Without digging much deeper, I've no idea whether the
-> Kbuild files can be (automatically?) modified not to require these
-> empty files.
+On 25-07-2012 10:12, Afzal Mohammed wrote:
 
-You can't get rid of the empty header files completely.  They're exported to
-userspace and so userspace may require their presence.
+> Add AM33xx rtc node.
 
-I could put a guard in there just so they're not empty, I suppose.
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> ---
 
-> So, a manual fix may be in order?
+> v2:
+>   Use compatible as ti,da830-rtc instead of ti,am1808-rtc
 
-Or just apply the removal regexp to each line before I write the UAPI header
-out.  I'll have a play with it later.
+>   arch/arm/boot/dts/am33xx.dtsi |    5 +++++
+>   1 files changed, 5 insertions(+), 0 deletions(-)
 
-David
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index bd0cff3..e1ed72d 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -159,5 +159,10 @@
+>   			compatible = "ti,omap3-wdt";
+>   			ti,hwmods = "wd_timer2";
+>   		};
+> +
+> +		rtc@44e3e000 {
+
+    Address postfix in the node name without "reg" property?
+
+> +			compatible = "ti,da830-rtc";
+> +			ti,hwmods = "rtc";
+> +		};
+
+WBR, Sergei
+
+
