@@ -1,249 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030226Ab2GYPbO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:31:14 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:46622 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932943Ab2GYPbM (ORCPT
+	id S1030286Ab2GYPbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:31:24 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:13763 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030232Ab2GYPbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:31:12 -0400
-Message-ID: <50101091.5090909@panasas.com>
-Date: Wed, 25 Jul 2012 18:28:17 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
-        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
-        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
- Fix address translation failure of HighMem pages used by sg list)
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com>
-In-Reply-To: <50100014.2010109@redhat.com>
+	Wed, 25 Jul 2012 11:31:21 -0400
+Message-ID: <1343229989.3010.383.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/4] ACPI: hotplug messages improvement
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
+Date: Wed, 25 Jul 2012 09:26:29 -0600
+In-Reply-To: <500F6BE3.8060508@jp.fujitsu.com>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <500F6BE3.8060508@jp.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 05:17 PM, Paolo Bonzini wrote:
-
-> Il 25/07/2012 15:26, Boaz Harrosh ha scritto:
->>>> In SCSI land most LLDs should support chaining just by virtu of using the
->>>> for_each_sg macro. That all it takes. Your code above does support it.
->>>
->>> Yes, it supports it but still has to undo them before passing to virtio.
->>>
->>> What my LLD does is add a request descriptor in front of the scatterlist
->>> that the LLD receives.  I would like to do this with a 2-item
->>> scatterlist: one for the request descriptor, and one which is a chain to
->>> the original scatterlist.  
->>
->> I hate that plan. Why yet override the scatter element yet again with a third
->> union of a "request descriptor"
+On Wed, 2012-07-25 at 12:45 +0900, Yasuaki Ishimatsu wrote:
+> Hi Toshi,
 > 
-> I'm not overriding (or did you mean overloading?) anything, and I think
-> you're reading too much in my words.
+> 2012/07/19 5:40, Toshi Kani wrote:
+> > This patchset improves logging messages for ACPI CPU, Memory, and
+> > Container hotplug notify handlers.  The patchset introduces a set of
+> > new macro interfaces, acpi_pr_<level>(), and updates the notify
+> > handlers to use them.  acpi_pr_<level>() appends "ACPI" prefix and
+> > ACPI object path to the messages.  This improves diagnostics in
+> > hotplug operations since it identifies an object that caused an
+> > issue in a log file.
+> >
 > 
-> What I am saying is (for a WRITE command):
+> The log message looks good to me.
+
+Hi Yasuaki,
+
+Thanks for reviewing!
+
+> But I could not understand when to use it instead of pr_{warn, info, ...}
+> or ACPI_{WARNING, INFO, ...}. Do you have the policy?
+
+acpi_pr_<level>() is used when ACPI device path is used to identify an
+ACPI object for the message, such as error message to the object.  The
+usage model is similar to dev_<level>(), which appends device object to
+the message.  acpi_pr_<level>() is intended for ACPI drivers, and can be
+used when device object is not created / valid, such as the case for
+ACPI hotplug handlers.
+
+pr_<level>() is the regular printk() interfaces with message level, and
+continues to be used when ACPI device path does not have to be appended
+to the message.  I expect non-error messages (such as boot-up messages)
+continue to use pr_<level>().
+
+ACPI_[WARNING|INFO|ERROR]() are ACPICA internal interfaces, and are not
+intended for ACPI drivers.
+
+Additionally, ACPI drivers can also use dev_<level>() when device object
+is valid.  You find such examples in patch 2/4.
+
+I will add more descriptions to the patchset.
+
+
+> > ---
+> > This patchset applies on top of the patch below.
+> > 
+> > [PATCH] ACPI: Add ACPI CPU hot-remove support
+> > http://marc.info/?l=linux-acpi&m=134098193327362&w=2
+> > 
+> > ---
+> > Toshi Kani (4):
+> >   ACPI: Add acpi_pr_<level>() interfaces
+> >   ACPI: Update CPU hotplug messages
+> >   ACPI: Update Memory hotplug messages
+> >   ACPI: Update Container hotplug messages
 > 
-> 1) what I get is a scsi_cmnd which contains an N-element scatterlist.
-> 
-> 2) virtio-scsi has to build the "packet" that is passed to the hardware
-> (it does not matter that the hardware is virtual).  This packet (per
-> virtio-scsi spec) has an N+1-element scatterlist, where the first
-> element is a request descriptor (struct virtio_scsi_cmd_req), and the
-> others describe the written data.
-> 
+> I think you need update other component, which are driver/acpi/{acpi_pad.c,
+> battery.c, button.c}. Do you have the plan to update them?
 
+I won't be ready to include them in this round, but will look at them
+and change them later as necessary.  I need to make sure that I can test
+these drivers when making such changes.
 
-Then "virtio-scsi spec" is crap. It overloads the meaning of
-"struct scatterlist" of the first element in an array. to be a
-"struct virtio_scsi_cmd_req".
+Thanks,
+-Toshi
 
-Instead of simply defining the protocol as passing a "struct virtio_scsi_cmd_req".
-
-The following scatterlist can then be pointed to or followed in the stream.
-But the above is just bad programming, regardless of standard or not.
-
-Since you need to change the standard to support chaining then
-it is a good time to fix this. (You need to change it because virtio
-will now need to decode a guest-pointer at each chain-end to yet a new
-guest-memory buffer)
-
-In Practice you will get the same stream. a first packet of a
-struct virtio_scsi_cmd_req followed or pointing to an array of
-struct scatterlist. Only you don't have that contraption of virtio_scsi_cmd_req
-must be the same size as "struct scatterlist" and all that union crap.
-
-What where you guys smoking that day? ;-)
-
-> 3) virtio takes care of converting the "packet" from a scatterlist
-> (which currently must be a flat one) to the hardware representation.
-> Here a walk is inevitable, so we don't care about this walk.
-> 
-
-
-"hardware representation" you mean aio or biovec, what ever the
-IO submission path uses at the host end?
-
-> 4) What I'm doing now: copying (and flattening) the N-element
-> scatterlist onto the last elements of an N+1 array that I pass to virtio.
-> 
->           _ _ _ _ _ _
->          |_|_|_|_|_|_|  scsi_cmnd scatterlist
-> 
->          vvv COPY vvv
->         _ _ _ _ _ _ _
->        |_|_|_|_|_|_|_|  scatterlist passed to virtio
->         |
->     virtio_scsi_cmd_req
-> 
-> Then I hand off the scatterlist to virtio.  virtio walks it and converts
-> it to hardware format.
-> 
-
-
-Crap design. All that extra full vector copy. Just for that request
-header - virtio_scsi_cmd_req.
-
-Why are they at all related. Why does virtio_scsi_cmd_req need to be
-as part of scatterlist and of the same size as the first element?
-
-> 5) What I want to do: create a 2-element scatterlist, the first being
-> the request descriptor and the second chaining to scsi_cmnd's N-element
-> scatterlist.
-> 
->              _ _ _ _ _ _
->             |_|_|_|_|_|_|  scsi_cmnd scatterlist
->         _ _/
->        |_|C|               scatterlist passed to virtio
->         |
->     virtio_scsi_cmd_req
-> 
-> Then I hand off the scatterlist to virtio.  virtio will still walk the
-> scatterlist chain, and convert it to N+1 elements for the hardware to
-> consume.  Still, removing one walk largely reduces the length of my
-> critical sections.  I also save some pointer-chasing because the
-> 2-element scatterlist are short-lived and can reside on the stack.
-> 
-
-
-Sure this is much better. 
-
-But since you are already changing the two code sites, Here, and at
-virtio to support chained scatterlist, why not fix it properly
-
-              _ _ _ _ _ _
-             |_|_|_|_|_|_|  scsi_cmnd scatterlist
-         _ _/_______________
-        |virtio_scsi_cmd_req|    virtio_scsi_cmd_req passed to virtio
-         --------------------
-
-Just a regularly defined header with an embedded pointer to a scatterlist.
-
-And BTW the "scsi_cmnd scatterlist" can now be a chained one and virtio
-can support that as well.
 
 > 
-> Other details (you can probably skip these):
+> Thanks,
+> Yasuaki Ishimatsu
 > 
-> There is also a response descriptor.  In the case of writes this is the
-> only element that the hardware will write to, so in the case of writes
-> the "written by hardware" scatterlist has 1 element only and does not
-> need chaining.
+> > ---
+> >   drivers/acpi/acpi_memhotplug.c  |   24 ++++++++++++------------
+> >   drivers/acpi/container.c        |    6 +++---
+> >   drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
+> >   drivers/acpi/utils.c            |   32 ++++++++++++++++++++++++++++++++
+> >   include/acpi/acpi_bus.h         |   18 ++++++++++++++++++
+> >   5 files changed, 86 insertions(+), 30 deletions(-)
+> > 
 > 
-
-
-Again the scatterlist as a union for everything crap. Why why??
-That is not at all SCSI. in iSCSI a response packet is well defined.
-
-> Reads are entirely symmetric.  The hardware will read the request
-> descriptor from a 1-element scatterlist, 
-
-
-Why a scatterlist why not just a well defined READ-REQ struct.
-
-> and will write response+data
-> into an N+1-element scatterlist (the response descriptor precedes the
-> data that was read).  It can be treated in exactly the same way.  The
-> N+1-element scatterlist could also become a 2-element scatterlist with
-> chaining.
 > 
-
-
-Wahoo. Very bad design. This would not be accepted at T10.
-And done by programmers? Talking about shoot one self in the foot.
-
-How do you deal with different ARCHs having the different scatterlist
-size. You need to have a different virtio driver at host for every ARCH
-you want to emulate. (Yes I know I know, only self ARCH hosting, but why)
-
->>> Except that if I call sg_chain and my
->>> architecture does not define ARCH_HAS_SG_CHAIN, it will BUG out.  So I
->>> need to keep all the scatterlist allocation and copying crap that I have
->>> now within #ifdef, and it will bitrot.
->>
->> except that with the correct design you don't call sg_chain you just do:
->> 	request_descriptor->sg_list = sg;
-> 
-> By the above it should be clear, that request_descriptor is not a
-> driver-private extension of the scsi_cmnd.  It is something passed to
-> the hardware.
-> 
-
-
-Someone wanted to be smart and embed the request_descriptor inside the
-existing streams. Only it was embedded in the wrong place, at the scatterlist.
-
-A scatterlist should be just that. A descriptor of the bigger buffer that
-is acted on as a contiguous stream but is constructed of smaller atomic buffers
-like PAGEs.
-
-Also in iscsi we pre-pend and sg_element *pointing* to the iscsi-req-header
-followed by immediate data sglist, and sent via NET as a single skb.
-
-But for you guys at virtio it is even more simple because since you contemplate
-of chaining then it means you don't even need the data as a single contiguous
-stream, since you can decode a pointer and continue fetching from that guest-memory
-pointer.
-
-I don't see any single merit in current design. And at the HW bits level you are
-doing exactly as I describe only with a very messy code. And weirdly padded
-structures.
-
-Good luck
-Boaz
-
->>>> Well that can be done as well, (If done carefully) It should be easy to add
->>>> chained fragments to both the end of a given chain just as at beginning.
->>>> It only means that the last element of the appended-to chain moves to
->>>> the next fragment and it's place is replaced by a link.
->>>
->>> But you cannot do that in constant time, can you?  And that means you do
->>> not enjoy any benefit in terms of cache misses etc.
->>
->> I did not understand "constant time" it is O(0) if that what you meant.
-> 
-> In the worst case it is a linked list, no?  So in the worst case
-> _finding_ the last element of the appended-to chain is O(n).
-> 
-> Actually, appending to the end is not a problem for virtio-scsi.  But
-> for example the virtio-blk spec places the response descriptor _after_
-> the input data.  I think this was a mistake, and I didn't repeat it for
-> virtio-scsi, but I cited it because in the past Rusty complained that
-> the long sglist implementation was "SCSI-centric".
-> 
->>> Also, this assumes that I can modify the appended-to chain.  I'm not
->>> sure I can do this?
->>
->> Each case it's own. If the appended-to chain is const, yes you'll have
->> to reallocate it and copy. Is that your case?
-> 
-> It will be virtio-blk's case, but we can ignore it.
-> 
-> Paolo
 
 
