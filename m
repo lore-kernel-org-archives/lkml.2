@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2GYTU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:20:26 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:54758 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751812Ab2GYTUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751947Ab2GYTUX (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 25 Jul 2012 15:20:23 -0400
-Date: Wed, 25 Jul 2012 21:20:07 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the akpm tree with the tip tree
-Message-ID: <20120725192007.GD1112@cmpxchg.org>
-References: <20120725140827.4332a5448e4d8d200164ea2e@canb.auug.org.au>
- <20120725071044.GA27535@gmail.com>
- <20120725073503.GB1112@cmpxchg.org>
- <20120725115713.e56239b5.akpm@linux-foundation.org>
+Received: from terminus.zytor.com ([198.137.202.10]:58278 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab2GYTUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 15:20:20 -0400
+Date: Wed, 25 Jul 2012 12:20:04 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-c80c3c269011c67b8dabef5238af44a6d94e4d0e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de, namhyung@kernel.org,
+        jolsa@redhat.com
+In-Reply-To: <1342826756-64663-7-git-send-email-dsahern@gmail.com>
+References: <1342826756-64663-7-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf kvm:
+  Limit repetitive guestmount message to once per directory
+Git-Commit-ID: c80c3c269011c67b8dabef5238af44a6d94e4d0e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120725115713.e56239b5.akpm@linux-foundation.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:20:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 11:57:13AM -0700, Andrew Morton wrote:
-> On Wed, 25 Jul 2012 09:35:03 +0200
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > As this is unlikely to reappear in this merge window, the conflict
-> > resolution is quite simple.  All that's needed is remove the 3 hunks
-> > from my patch that converted a user in Peter's patch to a new API.  I
-> > can resend the series if needed, but it's probably easier to just
-> > remove the hunks against mm/migrate.c::migrate_misplaced_page():
-> > 
-> > @@ -1519,10 +1512,9 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
-> >  {
-> >  	struct page *oldpage = page, *newpage;
-> >  	struct address_space *mapping = page_mapping(page);
-> > -	struct mem_cgroup *mcg;
-> > +	struct mem_cgroup *memcg;
-> >  	unsigned int gfp;
-> >  	int rc = 0;
-> > -	int charge = -ENOMEM;
-> >  
-> >  	VM_BUG_ON(!PageLocked(page));
-> >  	VM_BUG_ON(page_mapcount(page));
-> > @@ -1556,12 +1548,7 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
-> >  	if (!trylock_page(newpage))
-> >  		BUG();		/* new page should be unlocked!!! */
-> >  
-> > -	// XXX hnaz, is this right?
-> > -	charge = mem_cgroup_prepare_migration(page, newpage, &mcg, gfp);
-> > -	if (charge == -ENOMEM) {
-> > -		rc = charge;
-> > -		goto out;
-> > -	}
-> > +	mem_cgroup_prepare_migration(page, newpage, &memcg);
-> >  
-> >  	newpage->index = page->index;
-> >  	newpage->mapping = page->mapping;
-> > @@ -1581,11 +1568,9 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
-> >  		page = newpage;
-> >  	}
-> >  
-> > +	mem_cgroup_end_migration(memcg, oldpage, newpage, !rc);
-> >  out:
-> > -	if (!charge)
-> > -		mem_cgroup_end_migration(mcg, oldpage, newpage, !rc);
-> > -
-> > -       if (oldpage != page)
-> > +	if (oldpage != page)
-> >                 put_page(oldpage);
-> >  
-> >  	if (rc) {
-> 
-> Yes, that worked out OK.
-> 
-> This means that if the above code reappears in linux-next or mainline,
-> the current copy of
-> mm-memcg-fix-compaction-migration-failing-due-to-memcg-limits.patch
-> will no longer update it, and I probably won't notice that omission. 
+Commit-ID:  c80c3c269011c67b8dabef5238af44a6d94e4d0e
+Gitweb:     http://git.kernel.org/tip/c80c3c269011c67b8dabef5238af44a6d94e4d0e
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Fri, 20 Jul 2012 17:25:51 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 25 Jul 2012 11:31:03 -0300
 
-The gfp_t argument was dropped from mem_cgroup_prepare_migration(), so
-it'll blow up during compilation with CONFIG_NUMA=y.
+perf kvm: Limit repetitive guestmount message to once per directory
+
+After 7ed97ad use of the guestmount option without a subdir for *each*
+VM generates an error message for each sample related to that VM. Once
+per VM is enough.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1342826756-64663-7-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/map.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 16d783d..cc33486 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -8,6 +8,7 @@
+ #include <unistd.h>
+ #include "map.h"
+ #include "thread.h"
++#include "strlist.h"
+ 
+ const char *map_type__name[MAP__NR_TYPES] = {
+ 	[MAP__FUNCTION] = "Functions",
+@@ -695,7 +696,15 @@ struct machine *machines__findnew(struct rb_root *self, pid_t pid)
+ 	    (symbol_conf.guestmount)) {
+ 		sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
+ 		if (access(path, R_OK)) {
+-			pr_err("Can't access file %s\n", path);
++			static struct strlist *seen;
++
++			if (!seen)
++				seen = strlist__new(true, NULL);
++
++			if (!strlist__has_entry(seen, path)) {
++				pr_err("Can't access file %s\n", path);
++				strlist__add(seen, path);
++			}
+ 			machine = NULL;
+ 			goto out;
+ 		}
