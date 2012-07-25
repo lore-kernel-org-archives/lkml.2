@@ -1,107 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab2GYTRm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 15:17:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58222 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab2GYTRl (ORCPT
+	id S1751863Ab2GYTSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 15:18:07 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:41566 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2GYTSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 15:17:41 -0400
-Date: Wed, 25 Jul 2012 12:17:25 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-5cd95c2db479aa7a66f6fa572dfa410c6314c78e@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de, namhyung@kernel.org,
-        jolsa@redhat.com
-In-Reply-To: <1342826756-64663-3-git-send-email-dsahern@gmail.com>
-References: <1342826756-64663-3-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Set name for VM process in guest machine
-Git-Commit-ID: 5cd95c2db479aa7a66f6fa572dfa410c6314c78e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 25 Jul 2012 15:18:05 -0400
+Message-ID: <50104614.3080002@panasas.com>
+Date: Wed, 25 Jul 2012 22:16:36 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 12:17:30 -0700 (PDT)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
+        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
+        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com>
+In-Reply-To: <50103043.5050508@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5cd95c2db479aa7a66f6fa572dfa410c6314c78e
-Gitweb:     http://git.kernel.org/tip/5cd95c2db479aa7a66f6fa572dfa410c6314c78e
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Fri, 20 Jul 2012 17:25:47 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 25 Jul 2012 11:27:55 -0300
+On 07/25/2012 08:43 PM, Paolo Bonzini wrote:
 
-perf kvm: Set name for VM process in guest machine
+> Il 25/07/2012 17:28, Boaz Harrosh ha scritto:
+>>> 1) what I get is a scsi_cmnd which contains an N-element scatterlist.
+>>>
+>>> 2) virtio-scsi has to build the "packet" that is passed to the hardware
+>>> (it does not matter that the hardware is virtual).  This packet (per
+>>> virtio-scsi spec) has an N+1-element scatterlist, where the first
+>>> element is a request descriptor (struct virtio_scsi_cmd_req), and the
+>>> others describe the written data.
+>>
+>> Then "virtio-scsi spec" is crap. It overloads the meaning of
+>> "struct scatterlist" of the first element in an array. to be a
+>> "struct virtio_scsi_cmd_req".
+> 
+> What the holy fuck?  The first element simply _points_ to the "struct
+> virtio_scsi_cmd_req", just like subsequent elements point to the data.
+> 
+> And the protocol of the device is _not_ a struct scatterlist[].  The
+> virtio _API_ takes that array and converts to a series of physical
+> address + offset pairs.
+> 
+>> Since you need to change the standard to support chaining then
+>> it is a good time to fix this.
+> 
+> Perhaps it is a good time for you to read the virtio spec.  You are
+> making a huge confusion between the LLD->virtio interface and the
+> virtio->hardware interface.  I'm talking only of the former.
+> 
+>>> 3) virtio takes care of converting the "packet" from a scatterlist
+>>> (which currently must be a flat one) to the hardware representation.
+>>> Here a walk is inevitable, so we don't care about this walk.
+>>
+>> "hardware representation" you mean aio or biovec, what ever the
+>> IO submission path uses at the host end?
+> 
+> No, I mean the way the virtio spec encodes the physical address + offset
+> pairs.
+> 
+> I stopped reading here.
+> 
 
-COMM events are not generated in the context of a guest machine, so the
-thread name is never set for the VMM process. For example, the qemu-kvm
-name applies to the process in the host machine, not the guest machine.
-So, samples for guest machines are currently displayed as:
 
-    99.67%     :5671  [unknown]         [g] 0xffffffff81366b41
+The picture confused me. It looked like the first element is the virtio_scsi_cmd_req
+not an sgilist-element that points to the struct's buffer.
 
-where 5671 is the pid of the VMM. With this patch the samples in the guest
-machine are shown as:
+In that case then yes your plan of making a two-elements fragment that points to the
+original scsi-sglist is perfect. All you have to do is that, and all you have to do
+at virtio is use the sg_for_each macro and you are done.
 
-    18.43%  [guest/5671]  [unknown]           [g] 0xffffffff810d68b7
+You don't need any sglist allocation or reshaping. And you can easily support
+chaining. Looks like order of magnitude more simple then what you do now
+So what is the problem?
 
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1342826756-64663-3-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/map.c |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+And BTW you won't need that new __sg_set_page API anymore.
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index a1f4e36..8668569 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -7,6 +7,7 @@
- #include <stdio.h>
- #include <unistd.h>
- #include "map.h"
-+#include "thread.h"
- 
- const char *map_type__name[MAP__NR_TYPES] = {
- 	[MAP__FUNCTION] = "Functions",
-@@ -585,7 +586,21 @@ int machine__init(struct machine *self, const char *root_dir, pid_t pid)
- 	self->kmaps.machine = self;
- 	self->pid	    = pid;
- 	self->root_dir      = strdup(root_dir);
--	return self->root_dir == NULL ? -ENOMEM : 0;
-+	if (self->root_dir == NULL)
-+		return -ENOMEM;
-+
-+	if (pid != HOST_KERNEL_ID) {
-+		struct thread *thread = machine__findnew_thread(self, pid);
-+		char comm[64];
-+
-+		if (thread == NULL)
-+			return -ENOMEM;
-+
-+		snprintf(comm, sizeof(comm), "[guest/%d]", pid);
-+		thread__set_comm(thread, comm);
-+	}
-+
-+	return 0;
- }
- 
- static void dsos__delete(struct list_head *self)
+> Paolo
+
+
+Cheers
+Boaz
