@@ -1,408 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307Ab2GYOmt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 10:42:49 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:2477 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933294Ab2GYOmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 10:42:47 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        <cgroups@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH 03/10] memcg: infrastructure to  match an allocation to the right cache
-Date: Wed, 25 Jul 2012 18:38:14 +0400
-Message-Id: <1343227101-14217-4-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343227101-14217-1-git-send-email-glommer@parallels.com>
-References: <1343227101-14217-1-git-send-email-glommer@parallels.com>
+	id S933285Ab2GYOrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 10:47:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51432 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933117Ab2GYOrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 10:47:33 -0400
+Date: Wed, 25 Jul 2012 15:47:25 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Message-ID: <20120725144724.GD1894@decadent.org.uk>
+References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
+ <1343145701-3691-1-git-send-email-kys@microsoft.com>
+ <1343145701-3691-3-git-send-email-kys@microsoft.com>
+ <1343178644.5132.103.camel@deadeye.wl.decadent.org.uk>
+ <426367E2313C2449837CD2DE46E7EAF9236A8B61@SN2PRD0310MB382.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF9236A8B61@SN2PRD0310MB382.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH 03/17] Drivers: hv: kvp: Cleanup error handling in KVP
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The page allocator is able to bind a page to a memcg when it is
-allocated. But for the caches, we'd like to have as many objects as
-possible in a page belonging to the same cache.
+On Wed, Jul 25, 2012 at 02:10:05PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Ben Hutchings [mailto:ben@decadent.org.uk]
+> > Sent: Tuesday, July 24, 2012 9:11 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; olaf@aepfle.de;
+> > apw@canonical.com; netdev@vger.kernel.org
+> > Subject: Re: [PATCH 03/17] Drivers: hv: kvp: Cleanup error handling in KVP
+> > 
+> > On Tue, 2012-07-24 at 09:01 -0700, K. Y. Srinivasan wrote:
+> > > In preparation to implementing IP injection, cleanup the way we propagate
+> > > and handle errors both in the driver as well as in the user level daemon.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > ---
+> > >  drivers/hv/hv_kvp.c      |  112 +++++++++++++++++++++++++++++++++++++-
+> > --------
+> > >  include/linux/hyperv.h   |   17 +++++---
+> > >  tools/hv/hv_kvp_daemon.c |   70 +++++++++++++++-------------
+> > >  3 files changed, 138 insertions(+), 61 deletions(-)
+> > >
+> > > diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+> > > index 0012eed..9b7fc4a 100644
+> > > --- a/drivers/hv/hv_kvp.c
+> > > +++ b/drivers/hv/hv_kvp.c
+> > [...]
+> > > @@ -109,27 +154,52 @@ kvp_cn_callback(struct cn_msg *msg, struct
+> > netlink_skb_parms *nsp)
+> > >  {
+> > >  	struct hv_kvp_msg *message;
+> > >  	struct hv_kvp_msg_enumerate *data;
+> > > +	int	error = 0;
+> > >
+> > >  	message = (struct hv_kvp_msg *)msg->data;
+> > > -	switch (message->kvp_hdr.operation) {
+> > > +
+> > > +	/*
+> > > +	 * If we are negotiating the version information
+> > > +	 * with the daemon; handle that first.
+> > > +	 */
+> > > +
+> > > +	if (in_hand_shake) {
+> > > +		if (kvp_handle_handshake(message))
+> > > +			in_hand_shake = false;
+> > > +		return;
+> > > +	}
+> > > +
+> > > +	/*
+> > > +	 * Based on the version of the daemon, we propagate errors from the
+> > > +	 * daemon differently.
+> > > +	 */
+> > > +
+> > > +	data = &message->body.kvp_enum_data;
+> > > +
+> > > +	switch (dm_reg_value) {
+> > >  	case KVP_OP_REGISTER:
+> > > -		pr_info("KVP: user-mode registering done.\n");
+> > > -		kvp_register();
+> > > -		kvp_transaction.active = false;
+> > > -		hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
+> > > +		/*
+> > > +		 * Null string is used to pass back error condition.
+> > > +		 */
+> > > +		if (!strlen(data->data.key))
+> > 
+> > Do we know that the key is null-terminated here?  Shouldn't we just
+> > check whether data->data.key[0] == 0?
+> 
+> Yes, currently we do return null string to indicate error.
+[...]
 
-This is done in this patch by calling memcg_kmem_get_cache in the
-beginning of every allocation function. This routing is patched out by
-static branches when kernel memory controller is not being used.
+So the kernel should assume userland input is always valid?
 
-It assumes that the task allocating, which determines the memcg in the
-page allocator, belongs to the same cgroup throughout the whole process.
-Misacounting can happen if the task calls memcg_kmem_get_cache() while
-belonging to a cgroup, and later on changes. This is considered
-acceptable, and should only happen upon task migration.
+Ben.
 
-Before the cache is created by the memcg core, there is also a possible
-imbalance: the task belongs to a memcg, but the cache being allocated
-from is the global cache, since the child cache is not yet guaranteed to
-be ready. This case is also fine, since in this case the GFP_KMEMCG will
-not be passed and the page allocator will not attempt any cgroup
-accounting.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
----
- include/linux/memcontrol.h |   38 ++++++++
- init/Kconfig               |    2 +-
- mm/memcontrol.c            |  221 +++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 259 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index d9229a3..bd1f34b 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -423,6 +423,8 @@ int memcg_css_id(struct mem_cgroup *memcg);
- void memcg_register_cache(struct mem_cgroup *memcg,
- 				      struct kmem_cache *s);
- void memcg_release_cache(struct kmem_cache *cachep);
-+struct kmem_cache *
-+__memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
- #else
- static inline void memcg_register_cache(struct mem_cgroup *memcg,
- 					     struct kmem_cache *s)
-@@ -456,6 +458,12 @@ __memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle,
- 			      int order)
- {
- }
-+
-+static inline struct kmem_cache *
-+__memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
-+{
-+	return cachep;
-+}
- #endif /* CONFIG_MEMCG_KMEM */
- 
- /**
-@@ -515,5 +523,35 @@ void memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle,
- 	if (memcg_kmem_on)
- 		__memcg_kmem_commit_page(page, handle, order);
- }
-+
-+/**
-+ * memcg_kmem_get_kmem_cache: selects the correct per-memcg cache for allocation
-+ * @cachep: the original global kmem cache
-+ * @gfp: allocation flags.
-+ *
-+ * This function assumes that the task allocating, which determines the memcg
-+ * in the page allocator, belongs to the same cgroup throughout the whole
-+ * process.  Misacounting can happen if the task calls memcg_kmem_get_cache()
-+ * while belonging to a cgroup, and later on changes. This is considered
-+ * acceptable, and should only happen upon task migration.
-+ *
-+ * Before the cache is created by the memcg core, there is also a possible
-+ * imbalance: the task belongs to a memcg, but the cache being allocated from
-+ * is the global cache, since the child cache is not yet guaranteed to be
-+ * ready. This case is also fine, since in this case the GFP_KMEMCG will not be
-+ * passed and the page allocator will not attempt any cgroup accounting.
-+ */
-+static __always_inline struct kmem_cache *
-+memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
-+{
-+	if (!memcg_kmem_on)
-+		return cachep;
-+	if (gfp & __GFP_NOFAIL)
-+		return cachep;
-+	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
-+		return cachep;
-+
-+	return __memcg_kmem_get_cache(cachep, gfp);
-+}
- #endif /* _LINUX_MEMCONTROL_H */
- 
-diff --git a/init/Kconfig b/init/Kconfig
-index 547bd10..610cfd3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -741,7 +741,7 @@ config MEMCG_SWAP_ENABLED
- 	  then swapaccount=0 does the trick).
- config MEMCG_KMEM
- 	bool "Memory Resource Controller Kernel Memory accounting (EXPERIMENTAL)"
--	depends on MEMCG && EXPERIMENTAL
-+	depends on MEMCG && EXPERIMENTAL && !SLOB
- 	default n
- 	help
- 	  The Kernel Memory extension for Memory Resource Controller can limit
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 88bb826..8d012c7 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -14,6 +14,10 @@
-  * Copyright (C) 2012 Parallels Inc. and Google Inc.
-  * Authors: Glauber Costa and Suleiman Souhlal
-  *
-+ * Kernel Memory Controller
-+ * Copyright (C) 2012 Parallels Inc. and Google Inc.
-+ * Authors: Glauber Costa and Suleiman Souhlal
-+ *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-  * the Free Software Foundation; either version 2 of the License, or
-@@ -339,6 +343,11 @@ struct mem_cgroup {
- #ifdef CONFIG_INET
- 	struct tcp_memcontrol tcp_mem;
- #endif
-+
-+#ifdef CONFIG_MEMCG_KMEM
-+	/* Slab accounting */
-+	struct kmem_cache *slabs[MAX_KMEM_CACHE_TYPES];
-+#endif
- };
- 
- enum {
-@@ -532,6 +541,40 @@ static inline bool memcg_kmem_enabled(struct mem_cgroup *memcg)
- 		memcg->kmem_accounted;
- }
- 
-+static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-+{
-+	char *name;
-+	struct dentry *dentry;
-+
-+	rcu_read_lock();
-+	dentry = rcu_dereference(memcg->css.cgroup->dentry);
-+	rcu_read_unlock();
-+
-+	BUG_ON(dentry == NULL);
-+
-+	name = kasprintf(GFP_KERNEL, "%s(%d:%s)",
-+	    cachep->name, css_id(&memcg->css), dentry->d_name.name);
-+
-+	return name;
-+}
-+
-+static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
-+					 struct kmem_cache *s)
-+{
-+	char *name;
-+	struct kmem_cache *new;
-+
-+	name = memcg_cache_name(memcg, s);
-+	if (!name)
-+		return NULL;
-+
-+	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
-+				      (s->flags & ~SLAB_PANIC), s->ctor);
-+
-+	kfree(name);
-+	return new;
-+}
-+
- struct ida cache_types;
- 
- void memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-@@ -656,6 +699,14 @@ void __memcg_kmem_free_page(struct page *page, int order)
- }
- EXPORT_SYMBOL(__memcg_kmem_free_page);
- 
-+static void memcg_slab_init(struct mem_cgroup *memcg)
-+{
-+	int i;
-+
-+	for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++)
-+		memcg->slabs[i] = NULL;
-+}
-+
- static void disarm_kmem_keys(struct mem_cgroup *memcg)
- {
- 	if (test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted))
-@@ -666,6 +717,170 @@ static void disarm_kmem_keys(struct mem_cgroup *memcg)
- 	 */
- 	WARN_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
- }
-+
-+static DEFINE_MUTEX(memcg_cache_mutex);
-+static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-+						  struct kmem_cache *cachep)
-+{
-+	struct kmem_cache *new_cachep;
-+	int idx;
-+
-+	BUG_ON(!memcg_kmem_enabled(memcg));
-+
-+	idx = cachep->memcg_params.id;
-+
-+	mutex_lock(&memcg_cache_mutex);
-+	new_cachep = memcg->slabs[idx];
-+	if (new_cachep)
-+		goto out;
-+
-+	new_cachep = kmem_cache_dup(memcg, cachep);
-+
-+	if (new_cachep == NULL) {
-+		new_cachep = cachep;
-+		goto out;
-+	}
-+
-+	mem_cgroup_get(memcg);
-+	memcg->slabs[idx] = new_cachep;
-+	new_cachep->memcg_params.memcg = memcg;
-+out:
-+	mutex_unlock(&memcg_cache_mutex);
-+	return new_cachep;
-+}
-+
-+struct create_work {
-+	struct mem_cgroup *memcg;
-+	struct kmem_cache *cachep;
-+	struct list_head list;
-+};
-+
-+/* Use a single spinlock for destruction and creation, not a frequent op */
-+static DEFINE_SPINLOCK(cache_queue_lock);
-+static LIST_HEAD(create_queue);
-+
-+/*
-+ * Flush the queue of kmem_caches to create, because we're creating a cgroup.
-+ *
-+ * We might end up flushing other cgroups' creation requests as well, but
-+ * they will just get queued again next time someone tries to make a slab
-+ * allocation for them.
-+ */
-+void memcg_flush_cache_create_queue(void)
-+{
-+	struct create_work *cw, *tmp;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cache_queue_lock, flags);
-+	list_for_each_entry_safe(cw, tmp, &create_queue, list) {
-+		list_del(&cw->list);
-+		kfree(cw);
-+	}
-+	spin_unlock_irqrestore(&cache_queue_lock, flags);
-+}
-+
-+static void memcg_create_cache_work_func(struct work_struct *w)
-+{
-+	struct create_work *cw, *tmp;
-+	unsigned long flags;
-+	LIST_HEAD(create_unlocked);
-+
-+	spin_lock_irqsave(&cache_queue_lock, flags);
-+	list_for_each_entry_safe(cw, tmp, &create_queue, list)
-+		list_move(&cw->list, &create_unlocked);
-+	spin_unlock_irqrestore(&cache_queue_lock, flags);
-+
-+	list_for_each_entry_safe(cw, tmp, &create_unlocked, list) {
-+		list_del(&cw->list);
-+		memcg_create_kmem_cache(cw->memcg, cw->cachep);
-+		/* Drop the reference gotten when we enqueued. */
-+		css_put(&cw->memcg->css);
-+		kfree(cw);
-+	}
-+}
-+
-+static DECLARE_WORK(memcg_create_cache_work, memcg_create_cache_work_func);
-+
-+/*
-+ * Enqueue the creation of a per-memcg kmem_cache.
-+ * Called with rcu_read_lock.
-+ */
-+static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
-+				       struct kmem_cache *cachep)
-+{
-+	struct create_work *cw;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cache_queue_lock, flags);
-+	list_for_each_entry(cw, &create_queue, list) {
-+		if (cw->memcg == memcg && cw->cachep == cachep) {
-+			spin_unlock_irqrestore(&cache_queue_lock, flags);
-+			return;
-+		}
-+	}
-+	spin_unlock_irqrestore(&cache_queue_lock, flags);
-+
-+	/* The corresponding put will be done in the workqueue. */
-+	if (!css_tryget(&memcg->css))
-+		return;
-+
-+	cw = kmalloc(sizeof(struct create_work), GFP_NOWAIT);
-+	if (cw == NULL) {
-+		css_put(&memcg->css);
-+		return;
-+	}
-+
-+	cw->memcg = memcg;
-+	cw->cachep = cachep;
-+	spin_lock_irqsave(&cache_queue_lock, flags);
-+	list_add_tail(&cw->list, &create_queue);
-+	spin_unlock_irqrestore(&cache_queue_lock, flags);
-+
-+	schedule_work(&memcg_create_cache_work);
-+}
-+
-+/*
-+ * Return the kmem_cache we're supposed to use for a slab allocation.
-+ * We try to use the current memcg's version of the cache.
-+ *
-+ * If the cache does not exist yet, if we are the first user of it,
-+ * we either create it immediately, if possible, or create it asynchronously
-+ * in a workqueue.
-+ * In the latter case, we will let the current allocation go through with
-+ * the original cache.
-+ *
-+ * Can't be called in interrupt context or from kernel threads.
-+ * This function needs to be called with rcu_read_lock() held.
-+ */
-+struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
-+					  gfp_t gfp)
-+{
-+	struct mem_cgroup *memcg;
-+	int idx;
-+	struct task_struct *p;
-+
-+	if (cachep->memcg_params.memcg)
-+		return cachep;
-+
-+	idx = cachep->memcg_params.id;
-+	VM_BUG_ON(idx == -1);
-+
-+	rcu_read_lock();
-+	p = rcu_dereference(current->mm->owner);
-+	memcg = mem_cgroup_from_task(p);
-+	rcu_read_unlock();
-+
-+	if (!memcg_kmem_enabled(memcg))
-+		return cachep;
-+
-+	if (memcg->slabs[idx] == NULL) {
-+		memcg_create_cache_enqueue(memcg, cachep);
-+		return cachep;
-+	}
-+
-+	return memcg->slabs[idx];
-+}
-+EXPORT_SYMBOL(__memcg_kmem_get_cache);
- #else
- static void disarm_kmem_keys(struct mem_cgroup *memcg)
- {
-@@ -4860,7 +5075,11 @@ static struct cftype kmem_cgroup_files[] = {
- 
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
--	return mem_cgroup_sockets_init(memcg, ss);
-+	int ret = mem_cgroup_sockets_init(memcg, ss);
-+
-+	if (!ret)
-+		memcg_slab_init(memcg);
-+	return ret;
- };
- 
- static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
 -- 
-1.7.10.4
-
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
