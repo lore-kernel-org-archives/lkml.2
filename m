@@ -1,139 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830Ab2GYGTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:19:34 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:46469 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932736Ab2GYGTd (ORCPT
+	id S932840Ab2GYGUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:20:43 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43712 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932736Ab2GYGUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:19:33 -0400
-X-Sasl-enc: ntS0ctq65Q48llymBNW3CLPuJeZJ+fXBt6gC3p2qMQm/ 1343197171
-Message-ID: <1343197168.2386.29.camel@perseus.themaw.net>
-Subject: [ANNOUNCE] autofs 5.0.7 release
-From: Ian Kent <raven@themaw.net>
-To: autofs@linux.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jul 2012 14:19:28 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 25 Jul 2012 02:20:42 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <spi-devel-general@lists.sourceforge.net>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCH] spi: omap2-mcspi: In case of dma errors fall back to pio
+Date: Wed, 25 Jul 2012 11:50:29 +0530
+Message-ID: <1343197229-15188-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+In case there are dma errors currently the driver exits.
+Make the spi driver fall back to pio mode in case of dma errors.
 
-Once again this is long overdue so there are many changes.
+If the DMA engine is not selected the driver
+exits.This patch makes the spi fall back to pio in that case.
 
-The kernel patches are not being updated any more because of the
-introduction of the vfs-automount changes to the VFS. If there
-are needs in this area we will need to discuss how to deal with
-them on the mailing list.
+Also adds a field dma_unusable to struct omap2_mcspi.
+ 
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+---
+ drivers/spi/spi-omap2-mcspi.c |   21 +++++++++++++--------
+ 1 files changed, 13 insertions(+), 8 deletions(-)
 
-Known issues (haven't changed since 5.0.6)
-==========================================
-
-- Quoted strings in the master map are still not yet handled.
-- When the active restart is being used it will happily re-connect a
-  mount that is unresponsive, perhaps because the server is not
-  responding. A forced expire (USR1 signal) should be enough to clean
-  up.
-
-autofs
-======
-
-The package can be found at:
-
-ftp://ftp.kernel.org/pub/linux/daemons/autofs/v5
-
-It is autofs-5.0.7.tar.[gz|bz2|xz]
-
-No source rpm is there as it can be produced by using:
-
-rpmbuild -ts autofs-5.0.7.tar.gz
-
-and the binary rpm by using:
-
-rpmbuild -tb autofs-5.0.7.tar.gz
-
-See the INSTALL file for information about configure options and
-kernel requirements.
-
-Here are the entries from the CHANGELOG which outline the updates:
-
-25/07/2012 autofs-5.0.7
-=======================
-- fix ipv6 name for lookup fix.
-- improve mount location error reporting.
-- fix paged query more results check.
-- fix dumpmaps not reading maps.
-- fix result null check in read_one_map().
-- fix LDAP result leaks on error paths.
-- fix fix LDAP result leaks on error paths.
-- code analysis fixes part 1.
-- fix not bind mounting local filesystem.
-- add "dir" map-type.
-- fix wait for master source mutex.
-- fix submount shutdown race.
-- fix fix map source check in file lookup.
-- add disable move mount configure option.
-- fix ipv6 name lookup check.
-- fix ipv6 rpc calls.
-- fix ipv6 configure check.
-- add piddir to configure.
-- add systemd unit support.
-- remove empty command line arguments (passed by systemd).
-- fix rpc build error.
-- fix improve mount location error reporting.
-- fix fix wait for master source mutex.
-- add sss lookup module.
-- teach automount about sss source.
-- fix init script usage message.
-- ignore duplicate exports in auto.net.
-- add kernel verion check function.
-- add function to check mount.nfs version.
-- reinstate singleton mount probe.
-- rework error return handling in rpc code.
-- catch EHOSTUNREACH and bail out early.
-- systemd support fixes.
-- check scandir() return value.
-- allow for kernel packet size change (in kernel 3.3.0+).
-- fix function to check mount.nfs version.
-- fix typo in libtirpc file name.
-- fix rework error return handling in rpc code.
-- allow MOUNT_WAIT to override probe.
-- improve UDP RPC timeout handling.
-- use strtok_r() in linux_version_code().
-- fix sss wildcard match.
-- fix dlopen() error handling in sss module.
-- fix configure string length tests for sss library.
-- report map not read when debug logging.
-- duplicate parent options for included maps.
-- update ->timeout() function to not return timeout.
-- move timeout to map_source (allow per direct map timeout).
-- fix kernel verion check of version components.
-- dont retry ldap connect if not required.
-- fix initialization in rpc create_client().
-- fix libtirpc name clash.
-- check if /etc/mtab is a link to /proc/self/mounts.
-- fix nfs4 contacts portmap.
-- make autofs wait longer for shutdown completion.
-- fix sss map age not updated.
-- fix remount deadlock.
-- fix umount recovery of busy direct mount.
-- fix offset mount point directory removal.
-- fix remount of multi mount.
-- fix devce ioctl alloc path check.
-- add hup signal handling to hosts map.
-- fix systemd argument passing.
-- fix get_nfs_info() can incorrectly fail.
-- fix offset directory removal.
-- check negative cache much earlier.
-- dont use pthread_rwlock_tryrdlock().
-- mount_nfs.so to honor explicit NFSv4 requests.
-- mount_nfs.so fix port=0 option behavior v3.
-- documentation fix some typos and misleading comments.
-
-Ian
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index bc47781..f243a39 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -129,6 +129,7 @@ struct omap2_mcspi {
+ 	struct omap2_mcspi_dma	*dma_channels;
+ 	struct device		*dev;
+ 	struct omap2_mcspi_regs ctx;
++	int dma_unusable;
+ };
+ 
+ struct omap2_mcspi_cs {
+@@ -845,7 +846,7 @@ static int omap2_mcspi_setup(struct spi_device *spi)
+ 	if (!mcspi_dma->dma_rx || !mcspi_dma->dma_tx) {
+ 		ret = omap2_mcspi_request_dma(spi);
+ 		if (ret < 0)
+-			return ret;
++			mcspi->dma_unusable = 1;
+ 	}
+ 
+ 	ret = omap2_mcspi_enable_clocks(mcspi);
+@@ -956,7 +957,8 @@ static void omap2_mcspi_work(struct omap2_mcspi *mcspi, struct spi_message *m)
+ 				__raw_writel(0, cs->base
+ 						+ OMAP2_MCSPI_TX0);
+ 
+-			if (m->is_dma_mapped || t->len >= DMA_MIN_BYTES)
++			if (!mcspi->dma_unusable && (m->is_dma_mapped ||
++						t->len >= DMA_MIN_BYTES))
+ 				count = omap2_mcspi_txrx_dma(spi, t);
+ 			else
+ 				count = omap2_mcspi_txrx_pio(spi, t);
+@@ -1030,7 +1032,8 @@ static int omap2_mcspi_transfer_one_message(struct spi_master *master,
+ 			return -EINVAL;
+ 		}
+ 
+-		if (m->is_dma_mapped || len < DMA_MIN_BYTES)
++		if (mcspi->dma_unusable || m->is_dma_mapped ||
++					len < DMA_MIN_BYTES)
+ 			continue;
+ 
+ 		if (tx_buf != NULL) {
+@@ -1054,6 +1057,7 @@ static int omap2_mcspi_transfer_one_message(struct spi_master *master,
+ 				return -EINVAL;
+ 			}
+ 		}
++
+ 	}
+ 
+ 	omap2_mcspi_work(mcspi, m);
+@@ -1216,9 +1220,12 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
+ 		mcspi->dma_channels[i].dma_tx_sync_dev = dma_res->start;
+ 	}
+ 
+-	if (status < 0)
+-		goto dma_chnl_free;
+-
++	if (status < 0) {
++		dev_err(&pdev->dev, "cannot get DMA channel switching to pio\n");
++		mcspi->dma_unusable = 1;
++		status = 0;
++		kfree(mcspi->dma_channels);
++	}
+ 	pm_runtime_use_autosuspend(&pdev->dev);
+ 	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
+ 	pm_runtime_enable(&pdev->dev);
+@@ -1229,14 +1236,12 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
+ 	status = spi_register_master(master);
+ 	if (status < 0)
+ 		goto err_spi_register;
+-
+ 	return status;
+ 
+ err_spi_register:
+ 	spi_master_put(master);
+ disable_pm:
+ 	pm_runtime_disable(&pdev->dev);
+-dma_chnl_free:
+ 	kfree(mcspi->dma_channels);
+ free_master:
+ 	kfree(master);
+-- 
+1.7.5.4
 
