@@ -1,73 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933335Ab2GYPKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:10:32 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:41226 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933160Ab2GYPKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:10:31 -0400
-Date: Wed, 25 Jul 2012 11:10:00 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
-        zakir@umich.edu, greg@kroah.com, mpm@selenic.com, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
-        stable@kernel.org, DJ Johnson <dj.johnson@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 07/10] random: add new get_random_bytes_arch() function
-Message-ID: <20120725151000.GA30996@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
-	zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
-	nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-	davem@davemloft.net, stable@kernel.org,
-	DJ Johnson <dj.johnson@intel.com>, Ingo Molnar <mingo@kernel.org>
-References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
- <1341511933-11169-8-git-send-email-tytso@mit.edu>
- <500F69F3.3040905@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500F69F3.3040905@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S933450Ab2GYPKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:10:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30025 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933160Ab2GYPKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:10:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="171267477"
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
+Subject: R.I.P. pdflush
+Date: Wed, 25 Jul 2012 18:11:58 +0300
+Message-Id: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 08:37:23PM -0700, H. Peter Anvin wrote:
-> 
-> As a compromise I offer the following patch; in terms of performance
-> it is "the worst of both worlds" but it should provide the combined
-> security of either; even if RDRAND is completely compromised by the
-> NSA, Microsoft and the Illuminati all at once it will do no worse
-> than the existing code, and (since RDRAND is so much faster than the
-> existing code) it has only a modest performance cost.  More
-> realistically, it will let many more users take advantage of a high
-> entropy quick-reseeding random number generator, thus ending up with
-> a major gain in security.
+Now that all file-systems have been modified to not use the '->write_super()'
+superblock method, we can kill the last pdflush leftover - the 'sync_supers'
+kernel thread.
 
-RDRAND is already getting mixed in already in xfer_secondary_pool() so
-we are already taking advantage of Bull Mountain (or any other
-CPU/architecture-specific hw RNG) if it is present.
+The sync_supers kernel thread does a very simple thing: wake up every 5
+seconds (see [1]), iterate over all superblocks in the system and flush
+dirty superblocks by calling their '->write_super()' method.
 
-Aside from whether it's better to do this step in
-xfer_secondary_pool() or extract_entropy(), your patch looks very
-wrong to me.  Nothing is actually *using* hash.l[], which is where the
-results of the RDRAND generator is placed.
+The problem is that from power-efficiency point of view it is very wasteful
+to have a thread which wakes up every 5 seconds in the very core of the
+Linux kernel. Indeed, most of the time this thread wakes the CPU from a deep
+sleep state just to find out that there are no dirty superblocks. Besides,
+modern file-systems like btrfs and ext4 (journalled mode only) do not even
+register '->write_super()', so on many modern systems sync_super is completely
+useless.
 
-I assume you were planning on xor'ing hash.w and hash.l, but that's
-not present in your patch.
+And as usually happens when trying to modify old code like that - removing
+sync_supers was a tedious job. It required changing 12 file-systems, including
+ancient ones. While changes were not that complex, testing all of them was the
+most difficult part. While testing the mainstream file-systems like ext4 was
+easy (just run xfstests and wait few hours), testing baroque file-systems was
+problematic because they simply oopsed or errored even before I modified them.
 
-I also don't understand why you are using a blind union here; it has
-no real advantage that I can see, and so it's all downside.  It bloats
-the patch (making it harder to see that your patch results in a net
-*decrease* in security, since it removes the use of RDRAND in
-xfer_security_pool, and replaces it with a no-op).
+For example, reiserfs deadlocked quickly when I tested it using xfstests with
+resierfs quota support enabled. I spend several days trying to fix this, but
+reiserfs is quite complex and I'd say its locking is crazy (partially because
+of the BKL push-down). But I gave up after I realized that the dead-lock is
+related to the quota support. I disabled quotas and xfstests passed.
 
-		    		    	   - Ted
+I also had some adventures with affs and few other old file-systems.
+
+The first patch of this patch-set removes the sync_supers thread and it is the
+most important one. All the other patches are minor clean-ups and they simply
+remove all references to 'write_super' and 'pdflush' from commentaries
+and the documentation.
+
+I suggest that all patches go in via Al's tree. However, not before the ext4,
+exofs and udf changes are merged, which I expect to happen before v3.6-rc1.
+The rest of the file-systems are merged already - here is the summary.
+
+1.  ext4 - changes sit in Ted Ts'o's tree
+    git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git dev
+2.  exofs - changes sit in Boaz Harrosh's tree
+    git://git.open-osd.org/linux-open-osd linux-next
+3.  udf - changes sit in Jan Kara's tree:
+    git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs for_next
+4.  sysv - merged upstream
+    9d46be2 fs/sysv: stop using write_super and s_dirt
+5.  ufs - merged upstream
+    9e9ad5f fs/ufs: get rid of write_super
+6.  affs - merged upstream:
+    3dd8478 affs: get rid of affs_sync_super
+7.  hfs - merged upstream:
+    5687b57 hfs: get rid of hfs_sync_super
+8.  hfsplus - merged upstream:
+    9e6c582 hfsplus: get rid of write_super
+9.  ext2 - merged upstream
+    f72cf5e ext2: do not register write_super within VFS
+10. vfat - merged upstream
+    7849118 fat: switch to fsinfo_inode
+11. jffs2 - merged upstream
+    208b14e jffs2: get rid of jffs2_sync_super
+12. reiserfs - merged upstream
+    033369d reiserfs: get rid of resierfs_sync_super
+
+These patches are also available here:
+git://git.infradead.org/users/dedekind/linux-misc.git sync_supers
+
+And just because this is the final pdflush removal, here is a brief historical
+reference.
+
+1. early days...2.6.31 - pdflush is the kernel daemon which periodically
+   wakes-up and flushes all dirty inodes and superblocks.
+2. 2.6.32 - Jens Axboe introduces per-block device BDI flusher threads which
+   are now responsible to flushing dirty inodes [2]. The pdflush thread becomes
+   very simple, it is re-named to sync_supers and it periodically wakes-up
+   and flushes superblocks. While overall Jens' change was good, it introduced
+   a regression: instead of one pdflush thread waking-up every 5 seconds [3]
+   we ended up with multiple threads waking up every 5 seconds - sync_supers
+   and several flusher threads.
+3. 2.6.36 - Artem Bityutskiy :-) fixes the wake-ups regression (see commit
+   6467716) and from now on flusher threads do not wake up unless there are
+   some dirty data for the corresponding block device.
+
+   Attempts are made to similarly optimize sync_supers, but they are vetoed
+   by Al Viro who wants sync_supers to be killed altogether instead [4].
+4. 3.6 - the sync_supers is hopefully finally killed. With this the last
+   piece of pdflush is also gone.
+
+I'd like to thank Intel OTC for supporting this project, Jan Kara for help
+with ext[24], Andrew Morton, Al Viro, Ted Ts'o, Nick Piggin.
+
+[1] 5 seconds is the default setting and major distributions do not change
+    it. But it is tunable via /proc/sys/vm/dirty_writeback_centisecs
+[2] http://lwn.net/Articles/326552/
+[3] pdflush thread was forking itself if there were a lot dirty date, but it
+    does not matter in this context.
+[4] https://lkml.org/lkml/2010/7/22/96
+
+--
+Regards,
+Artem Bityutskiy
