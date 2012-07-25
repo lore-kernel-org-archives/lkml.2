@@ -1,37 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab2GYLn6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:43:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37851 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756523Ab2GYLnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:43:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="185825264"
-Date: Wed, 25 Jul 2012 19:05:23 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
-Subject: bcma_bus_scan/bcma_bus_scan_early: missing iounmap
-Message-ID: <20120725110523.GA24514@localhost>
+	id S1756593Ab2GYLoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:44:32 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35649 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab2GYLo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 07:44:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <500FB1DE.1000100@redhat.com>
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com>
+	<500FB1DE.1000100@redhat.com>
+Date: Wed, 25 Jul 2012 19:44:28 +0800
+Message-ID: <CAKviJvVrrtyjFOzu7jmmD7cpXZcXtyQ+7HDy1G1o2_a0JRss5w@mail.gmail.com>
+Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
+ HighMem pages used by sg list
+From: Sen Wang <kelvin.xupt@gmail.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
+        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hauke,
+2012/7/25 Paolo Bonzini <pbonzini@redhat.com>:
+> Il 25/07/2012 10:29, Wang Sen ha scritto:
+>> When using the commands below to write some data to a virtio-scsi LUN of the
+>> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
+>>
+>>       # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
+>>       # sudo mount /dev/sdb /mnt
+>>       # dd if=/dev/zero of=/mnt/file bs=1M count=1024
+>>
+>> In current implementation, sg_set_buf is called to add buffers to sg list which
+>> is put into the virtqueue eventually. But there are some HighMem pages in
+>> table->sgl can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
+>> return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
+>> in QEMU because an invalid GPA is passed by virtqueue.
+>
+> Heh, I was compiling (almost) the same patch as we speak. :)
 
-The coccinelle static checker emits these warnings:
+Uh, what a coincidence! :)
 
-drivers/bcma/scan.c:466:3-9: ERROR: missing iounmap; ioremap on line 451 and execution via conditional on line 465
-drivers/bcma/scan.c:540:3-9: ERROR: missing iounmap; ioremap on line 515 and execution via conditional on line 539
+>
+> I've never seen QEMU crash; the VM would more likely just fail to boot
+> with a panic.  But it's the same bug anyway.
 
-It seems we need to change the return statements to goto/break statements.
+I never met this before. How this situation happens?
 
-Thanks,
-Fengguang
+>
+>> My solution is using sg_set_page instead of sg_set_buf.
+>>
+>> I have tested the patch on my workstation. QEMU would not crash any more.
+>>
+>> Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
+>> ---
+>>  drivers/scsi/virtio_scsi.c |    3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+>> index 1b38431..fc5c88a 100644
+>> --- a/drivers/scsi/virtio_scsi.c
+>> +++ b/drivers/scsi/virtio_scsi.c
+>> @@ -198,7 +198,8 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+>>       int i;
+>>
+>>       for_each_sg(table->sgl, sg_elem, table->nents, i)
+>> -             sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
+>> +             sg_set_page(&sg[idx++], sg_page(sg_elem), sg_elem->length,
+>> +                     sg_elem->offset);
+>
+> This can simply be
+>
+>    sg[idx++] = *sg_elem;
+>
+
+Yes, I saw your another E-mail. I think you're right. Simply calling
+sg_set_page can not handle
+the flag bits correctly. So, I'll repost the patch soon. Thank you!
+
+> Can you repost it with this change, and also add stable@vger.kernel.org
+> to the Cc?  Thanks very much!
+>
+> Paolo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+------------------------------------------
+Wang Sen
+Addr: XUPT,Xi'an,Shaanxi,China
+Email: kelvin.xupt@gmail.com
+------------------------------------------
