@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab2GYK5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 06:57:55 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44297 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991Ab2GYK5y convert rfc822-to-8bit (ORCPT
+	id S1756456Ab2GYLB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:01:26 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:23972
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755686Ab2GYLBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 06:57:54 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: [REGRESSION] [KMS] [INTEL] Wrong resolution in console and XWindow
-Date: Wed, 25 Jul 2012 12:57:49 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.0-rc3; KDE/4.8.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-References: <201207251020.47637.maciej.rutecki@gmail.com> <201207251054.25498.maciej.rutecki@gmail.com> <20120725092928.GD5396@phenom.ffwll.local>
-In-Reply-To: <20120725092928.GD5396@phenom.ffwll.local>
+	Wed, 25 Jul 2012 07:01:25 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1202hzzz2dh668h839hd25he5bhf0ah107ah)
+X-WSS-ID: 0M7PQM7-01-3GU-02
+X-M-MSG: 
+Message-ID: <500FD158.2070503@amd.com>
+Date: Wed, 25 Jul 2012 12:58:32 +0200
+From: Andre Przywara <andre.przywara@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201207251257.50064.maciej.rutecki@gmail.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Borislav Petkov <bp@amd64.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
+References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com> <20120721103715.GA3632@aftab.osrc.amd.com>	<500E4960.8040307@parallels.com> <500E5951.5020900@amd.com>	<500E5CDF.5000504@parallels.com> <20120724101041.GA24739@aftab.osrc.amd.com>	<500E8280.6050905@parallels.com> <500E9664.9030306@amd.com> <20120724134405.7a42b5bd@pyramind.ukuu.org.uk> <500FCB02.2080603@parallels.com>
+In-Reply-To: <500FCB02.2080603@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On środa, 25 lipca 2012 o 11:29:28 Daniel Vetter wrote:
-> On Wed, Jul 25, 2012 at 10:54:25AM +0200, Maciej Rutecki wrote:
-> > On środa, 25 lipca 2012 o 10:29:26 Daniel Vetter wrote:
-> > > On Wed, Jul 25, 2012 at 10:20:47AM +0200, Maciej Rutecki wrote:
-> > > > Last known good: 3.4.4
-> > > > First bad: 3.5.0
-> > > > 
-> > > > When booting 3.5.0 resolution (in console, and after in KDE) is set
-> > > > to 1024x768 (60Hz). In 3.4.4 was correct: 1440x900 (60Hz).
-> > > 
-> > > Can you please attach the output of xrandr --verbose for both kernels?
-> > > Also, please boot with drm.debug=0xe added to your kernel cmdline and
-> > > grab the dmesg (again for both kernels).
-> > 
-> > Thanks for the ansfer.
-> > 
-> > Here xrandr and dmesg outputs for 3.4.4 and 3.5.0
-> > 
-> > http://mrutecki.pl/download/kernel/3.5/swinka/debug/
-> 
-> Can you please test this quick hack:
-> 
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_i2c.c
-> b/drivers/gpu/drm/i915/intel_i2c.c index 1991a44..abe1611 100644
-> --- a/drivers/gpu/drm/i915/intel_i2c.c
-> +++ b/drivers/gpu/drm/i915/intel_i2c.c
-> @@ -405,7 +405,7 @@ clear_err:
->  	 * timing out seems to happen when there _is_ a ddc chip present, but
->  	 * it's slow responding and only answers on the 2nd retry.
->  	 */
-> -	ret = -ENXIO;
-> +	ret = 0;
->  	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0,
->  		     10)) {
->  		DRM_DEBUG_KMS("GMBUS [%s] timed out after NAK\n",
-> 
-> 
-> Thanks, Daniel
+On 07/25/2012 12:31 PM, Vladimir Davydov wrote:
+> On 07/24/2012 04:44 PM, Alan Cox wrote:
+>>> This approach does not need any kernel support (except for the
+>>> /proc/cpuinfo filtering). Does this address the issues you have?
+>> You can do the /proc/cpuinfo filtering in user space too
+>>
+>
+> How?
 
-Still the same.
+I wanted to write the same reply yesterday, but followed the hint in 
+Alan's previous mail:
+# mount --bind /dev/shm/faked_cpuinfo /somepath/proc/cpuinfo
 
-PS. Unfortunately, this afternoon I have small a surgical operation and 
-further tests will be possible only after 2-3 days.
+I checked it, it works even with chroots and is not visible from within.
 
-Regards
+Regards,
+Andre.
+
 -- 
-Maciej Rutecki
-http://www.mrutecki.pl
+Andre Przywara
+AMD-Operating System Research Center (OSRC), Dresden, Germany
+
