@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab2GYPMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:12:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34632 "EHLO mga09.intel.com"
+	id S1030247Ab2GYPNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:13:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44939 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933524Ab2GYPLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:11:05 -0400
+	id S933404Ab2GYPK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:10:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="171267770"
+   d="scan'208";a="171267658"
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
         Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [PATCH 13/16] nilfs2: nuke write_super from comments
-Date: Wed, 25 Jul 2012 18:12:11 +0300
-Message-Id: <1343229134-29487-14-git-send-email-artem.bityutskiy@linux.intel.com>
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH 09/16] jbd/jbd2: nuke write_super from comments
+Date: Wed, 25 Jul 2012 18:12:07 +0300
+Message-Id: <1343229134-29487-10-git-send-email-artem.bityutskiy@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
 References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
@@ -28,56 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
 The '->write_super' superblock method is gone, and this patch removes all the
-references to 'write_super' from ntfs.
+references to 'write_super' from various jbd and jbd2.
 
-Cc: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
 
 I expect this patch to be merged via Al Viro's VFS tree.
 
- fs/nilfs2/super.c     |    7 -------
- fs/nilfs2/the_nilfs.h |    2 --
- 2 files changed, 9 deletions(-)
+ fs/jbd/journal.c  |    4 ++--
+ fs/jbd2/journal.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
-index 1099a76..19ffcc6 100644
---- a/fs/nilfs2/super.c
-+++ b/fs/nilfs2/super.c
-@@ -676,20 +676,13 @@ static const struct super_operations nilfs_sops = {
- 	.alloc_inode    = nilfs_alloc_inode,
- 	.destroy_inode  = nilfs_destroy_inode,
- 	.dirty_inode    = nilfs_dirty_inode,
--	/* .write_inode    = nilfs_write_inode, */
--	/* .put_inode      = nilfs_put_inode, */
--	/* .drop_inode	  = nilfs_drop_inode, */
- 	.evict_inode    = nilfs_evict_inode,
- 	.put_super      = nilfs_put_super,
--	/* .write_super    = nilfs_write_super, */
- 	.sync_fs        = nilfs_sync_fs,
- 	.freeze_fs	= nilfs_freeze,
- 	.unfreeze_fs	= nilfs_unfreeze,
--	/* .write_super_lockfs */
--	/* .unlockfs */
- 	.statfs         = nilfs_statfs,
- 	.remount_fs     = nilfs_remount,
--	/* .umount_begin */
- 	.show_options = nilfs_show_options
- };
- 
-diff --git a/fs/nilfs2/the_nilfs.h b/fs/nilfs2/the_nilfs.h
-index 9992b11..0722043 100644
---- a/fs/nilfs2/the_nilfs.h
-+++ b/fs/nilfs2/the_nilfs.h
-@@ -104,8 +104,6 @@ struct the_nilfs {
- 	 * used for
- 	 * - loading the latest checkpoint exclusively.
- 	 * - allocating a new full segment.
--	 * - protecting s_dirt in the super_block struct
--	 *   (see nilfs_write_super) and the following fields.
- 	 */
- 	struct buffer_head     *ns_sbh[2];
- 	struct nilfs_super_block *ns_sbp[2];
+diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+index 425c2f2..0935750 100644
+--- a/fs/jbd/journal.c
++++ b/fs/jbd/journal.c
+@@ -534,8 +534,8 @@ int journal_start_commit(journal_t *journal, tid_t *ptid)
+ 		ret = 1;
+ 	} else if (journal->j_committing_transaction) {
+ 		/*
+-		 * If ext3_write_super() recently started a commit, then we
+-		 * have to wait for completion of that transaction
++		 * If commit has been started, then we have to wait for
++		 * completion of that transaction.
+ 		 */
+ 		if (ptid)
+ 			*ptid = journal->j_committing_transaction->t_tid;
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index e9a3c4c..8625da2 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -612,8 +612,8 @@ int jbd2_journal_start_commit(journal_t *journal, tid_t *ptid)
+ 		ret = 1;
+ 	} else if (journal->j_committing_transaction) {
+ 		/*
+-		 * If ext3_write_super() recently started a commit, then we
+-		 * have to wait for completion of that transaction
++		 * If commit has been started, then we have to wait for
++		 * completion of that transaction.
+ 		 */
+ 		if (ptid)
+ 			*ptid = journal->j_committing_transaction->t_tid;
 -- 
 1.7.10
 
