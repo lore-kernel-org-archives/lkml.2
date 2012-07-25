@@ -1,182 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab2GYLzL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 07:55:11 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:55165 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756535Ab2GYLzI (ORCPT
+	id S1756677Ab2GYLzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 07:55:24 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:38221 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756660Ab2GYLzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 07:55:08 -0400
+	Wed, 25 Jul 2012 07:55:22 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH 5/6] sched,
- perf: Prepare migration and perf CPU hotplug callbacks for reverse
- invocation
+Subject: [RFC PATCH 6/6] CPU hotplug: Invoke CPU offline notifiers in reverse
+ order
 To: tglx@linutronix.de, mingo@kernel.org, peterz@infradead.org,
         rusty@rustcorp.com.au, paulmck@linux.vnet.ibm.com, namhyung@kernel.org,
         tj@kernel.org
 Cc: rjw@sisk.pl, srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 25 Jul 2012 17:24:57 +0530
-Message-ID: <20120725115439.3900.59443.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 25 Jul 2012 17:25:13 +0530
+Message-ID: <20120725115502.3900.10942.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20120725115224.3900.80783.stgit@srivatsabhat.in.ibm.com>
 References: <20120725115224.3900.80783.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12072511-2000-0000-0000-0000087C2F28
+x-cbid: 12072511-8878-0000-0000-000003614D41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While dealing with reverse invocation of callbacks during CPU offline, we
-get an opportunity to revisit some of the reasons behind the existing callback
-invocation orders and how they would fit into the new reverse invocation model
-(which poses its own constraints and challenges).
+During CPU hotplug, we want to create the following effect:
+ * During CPU online, the CPU incrementally grows the number of services
+   it offers.
+ * During CPU offline, the services are incrementally retired, in the
+   reverse order of their growth during CPU online.
 
-It is documented that the perf and migration CPU hotplug callbacks must be
-run pretty early (ie., before the normal callbacks that have priority 0 and
-lower)... and also that the perf callbacks must be run before the migration
-one. Again, at first glance, it looks like the "Notifier A must be followed
-by B, always, in both cpu online and cpu offline paths" rule. However, looking
-a bit closely at the code, it appears that this requirement is true mainly for
-the CPU online path, and not for the CPU offline path.
+To achieve the above, invoke the registered CPU hotplug notifiers in the
+reverse order during CPU offline, with respect to the order in which they
+were invoked during CPU online.
 
-In the CPU offline path, some of the perf callbacks deal with low-level
-registers, whereas the migration callback deals with the scheduler runqueues
-and stuff, which look quite unrelated. Also, there are quite a few priority 0
-callbacks that deal with low-level arch-specific-cpu-disable stuff in the
-CPU down path.
+This approach helps in making the hotplug path a lot more logically
+coherent: Services are started in a well-known order, perhaps with dependencies
+between them, while bringing up a CPU. While offlining the CPU, we honor
+many of the dependencies automatically by just backtracking the way we came;
+that is, by invoking the notifiers in the reverse order. Thus, this model of
+reverse notifier invocation helps us in avoiding the need for excessively
+messing with the notifier priorities while trying to get the ordering right.
 
-All in all, it appears that the requirement can be restated as follows:
-
-CPU online path:
-Run the perf callbacks early, followed by the migration callback and later
-run the priority 0 and other callbacks as usual.
-
-CPU offline path:
-Run the migration callback early, followed by the priority 0 callbacks and
-later run the perf callbacks.
-
-Keeping this in mind, adjust the perf and migration callbacks in preparation
-for moving over to the reverse invocation model. That is, split up the
-migration callback into CPU online and CPU offline components and assign
-suitable priorities to them. This split would help us move over to the
-reverse invocation model easily, since we would now have the necessary control
-over both the paths (online and offline) to handle the ordering requirements
-correctly.
+Notes:
+1. The workqueue code becomes simpler, since it now needs just a single CPU
+hotplug callback.
+2. The scheduler's sched_cpu_[in]active() callbacks can also be merged into
+a single callback.
+3. On similar lines, the cpusets' cpuset_cpu_[in]active() callbacks can also
+be merged.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/cpu.h |    3 ++-
- kernel/sched/core.c |   55 ++++++++++++++++++++++++++++++++++++++++-----------
- 2 files changed, 45 insertions(+), 13 deletions(-)
+ include/linux/cpu.h |   37 ++++++++++++++++++++++++-------------
+ kernel/cpu.c        |   34 ++++++++++++++++++++++++++--------
+ kernel/sched/core.c |   48 ++++++++++++++----------------------------------
+ kernel/workqueue.c  |   30 +++++++++++-------------------
+ 4 files changed, 75 insertions(+), 74 deletions(-)
 
 diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 255b889..88de47d 100644
+index 88de47d..b27a046 100644
 --- a/include/linux/cpu.h
 +++ b/include/linux/cpu.h
-@@ -70,7 +70,8 @@ enum {
+@@ -55,26 +55,37 @@ extern ssize_t arch_print_cpu_modalias(struct device *dev,
+  */
+ enum {
+ 	/*
+-	 * SCHED_ACTIVE marks a cpu which is coming up active during CPU_ONLINE
+-	 * and CPU_DOWN_FAILED and must be the first notifier.  It then passes
+-	 * control to the cpuset_cpu_active() notifier which adjusts cpusets
+-	 * according to cpu_active mask. During CPU_DOWN_PREPARE, SCHED_INACTIVE
+-	 * marks the cpu as inactive and passes control to the
+-	 * cpuset_cpu_inactive() notifier in a similar way.
++	 * sched_cpu_notify() marks a cpu which is coming up active during
++	 * CPU_ONLINE and CPU_DOWN_FAILED and must be the first notifier.  It
++	 * then passes control to the cpuset_cpu_active() notifier which adjusts
++	 * cpusets according to cpu_active mask. During CPU_DOWN_PREPARE,
++	 * sched_cpu_notify() marks the cpu as inactive and passes control to
++	 * the cpuset_cpu_inactive() notifier in a similar way.
+ 	 *
+ 	 * This ordering guarantees consistent cpu_active mask and
+ 	 * migration behavior to all cpu notifiers.
+ 	 */
+-	CPU_PRI_SCHED_ACTIVE	= INT_MAX,
+-	CPU_PRI_SCHED_INACTIVE	= INT_MIN,
++	CPU_PRI_SCHED		= INT_MAX,
  
- 	/* migration should happen before other stuff but after perf */
+-	/* migration should happen before other stuff but after perf */
++	/*
++	 * Migration should happen before other stuff but after perf,
++	 * in the CPU online path.
++	 */
  	CPU_PRI_PERF		= 20,
--	CPU_PRI_MIGRATION	= 10,
-+	CPU_PRI_MIGRATION_UP	= 10,
-+	CPU_PRI_MIGRATION_DOWN	= 9,
- 	/* bring up workqueues before normal notifiers and down after */
- 	CPU_PRI_WORKQUEUE_UP	= 5,
- 	CPU_PRI_WORKQUEUE_DOWN	= -5,
+ 	CPU_PRI_MIGRATION_UP	= 10,
+-	CPU_PRI_MIGRATION_DOWN	= 9,
+-	/* bring up workqueues before normal notifiers and down after */
+-	CPU_PRI_WORKQUEUE_UP	= 5,
+-	CPU_PRI_WORKQUEUE_DOWN	= -5,
++
++	/*
++	 * Bring up workqueues before normal notifiers in the CPU online
++	 * path. Do the opposite in the CPU offline path.
++	 */
++	CPU_PRI_WORKQUEUE	= 5,
++
++	/*
++	 * In the CPU offline path, the notifiers are invoked in the reverse
++	 * order. So use a numerically low value for the priority, to ensure
++	 * that we get invoked early.
++	 */
++	CPU_PRI_MIGRATION_DOWN	= -10,
+ };
+ 
+ #define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 8ab33ae..30444c2 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -155,16 +155,32 @@ static int __cpu_notify(unsigned long val, void *v, int nr_to_call,
+ 	return notifier_to_errno(ret);
+ }
+ 
++static int __cpu_notify_reverse(unsigned long val, void *v, int nr_to_call,
++			int *nr_calls)
++{
++	int ret;
++
++	ret = __raw_notifier_call_chain_reverse(&cpu_chain, val, v,
++							nr_to_call, nr_calls);
++
++	return notifier_to_errno(ret);
++}
++
+ static int cpu_notify(unsigned long val, void *v)
+ {
+ 	return __cpu_notify(val, v, -1, NULL);
+ }
+ 
++static int cpu_notify_reverse(unsigned long val, void *v)
++{
++	return __cpu_notify_reverse(val, v, -1, NULL);
++}
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ 
+-static void cpu_notify_nofail(unsigned long val, void *v)
++static void cpu_notify_reverse_nofail(unsigned long val, void *v)
+ {
+-	BUG_ON(cpu_notify(val, v));
++	BUG_ON(cpu_notify_reverse(val, v));
+ }
+ EXPORT_SYMBOL(register_cpu_notifier);
+ 
+@@ -249,7 +265,7 @@ static int __ref take_cpu_down(void *_param)
+ 	if (err < 0)
+ 		return err;
+ 
+-	cpu_notify(CPU_DYING | param->mod, param->hcpu);
++	cpu_notify_reverse(CPU_DYING | param->mod, param->hcpu);
+ 	return 0;
+ }
+ 
+@@ -272,10 +288,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 
+ 	cpu_hotplug_begin();
+ 
+-	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
++	err = __cpu_notify_reverse(CPU_DOWN_PREPARE | mod, hcpu, -1,
++								&nr_calls);
+ 	if (err) {
+ 		nr_calls--;
+-		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
++		__cpu_notify_reverse(CPU_DOWN_FAILED | mod, hcpu, nr_calls,
++									NULL);
+ 		printk("%s: attempt to take down CPU %u failed\n",
+ 				__func__, cpu);
+ 		goto out_release;
+@@ -286,7 +304,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	if (err) {
+ 		/* CPU didn't die: tell everyone.  Can't complain. */
+ 		smpboot_unpark_threads(cpu);
+-		cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
++		cpu_notify_reverse_nofail(CPU_DOWN_FAILED | mod, hcpu);
+ 		goto out_release;
+ 	}
+ 	BUG_ON(cpu_online(cpu));
+@@ -305,14 +323,14 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	__cpu_die(cpu);
+ 
+ 	/* CPU is completely dead: tell everyone.  Too late to complain. */
+-	cpu_notify_nofail(CPU_DEAD | mod, hcpu);
++	cpu_notify_reverse_nofail(CPU_DEAD | mod, hcpu);
+ 
+ 	check_for_tasks(cpu);
+ 
+ out_release:
+ 	cpu_hotplug_done();
+ 	if (!err)
+-		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
++		cpu_notify_reverse_nofail(CPU_POST_DEAD | mod, hcpu);
+ 	return err;
+ }
+ 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9ccebdd..6a511f2 100644
+index 6a511f2..9dbcb11 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -5444,12 +5444,10 @@ static void set_rq_offline(struct rq *rq)
+@@ -5477,6 +5477,9 @@ cpu_up_migration_call(struct notifier_block *nfb, unsigned long action,
+ }
+ 
+ /*
++ * CPU online path: Notifiers are invoked in normal order; that is, notifiers
++ * with numerically higher priorities are invoked first.
++ *
+  * Register at high priority so that task migration (migrate_tasks)
+  * happens before everything else.  This has to be lower priority than
+  * the notifier in the perf_event subsystem, though.
+@@ -5525,9 +5528,11 @@ cpu_down_migration_call(struct notifier_block *nfb, unsigned long action,
+ }
+ 
+ /*
+- * Register at high priority so that task migration (migrate_tasks)
+- * happens before everything else.  This has to be lower priority than
+- * the notifier in the perf_event subsystem, though.
++ * CPU offline path: Notifiers are invoked in reverse order; that is,
++ * notifiers with numerically lower priorities are invoked first.
++ *
++ * Register at low priority so that task migration (migrate_tasks)
++ * happens before everything else.
+  */
+ static struct notifier_block __cpuinitdata cpu_down_migration_notifier = {
+ 	.notifier_call = cpu_down_migration_call,
+@@ -5539,32 +5544,22 @@ static struct notifier_block __cpuinitdata cpu_down_migration_notifier = {
+  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
+  * around partition_sched_domains().
+  */
+-static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
++static int cpuset_cpu_notify(struct notifier_block *nfb, unsigned long action,
+ 			     void *hcpu)
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+-		cpuset_update_active_cpus();
+-		return NOTIFY_OK;
+-	default:
+-		return NOTIFY_DONE;
+-	}
+-}
+-
+-static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+-			       void *hcpu)
+-{
+-	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DOWN_PREPARE:
+ 		cpuset_update_active_cpus();
+ 		return NOTIFY_OK;
++
+ 	default:
+ 		return NOTIFY_DONE;
  	}
  }
  
--/*
-- * migration_call - callback that gets triggered when a CPU is added.
-- * Here we can start up the necessary migration thread for the new CPU.
-- */
-+/* cpu_up_migration_call - callback that gets triggered when a CPU is added. */
- static int __cpuinit
--migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
-+cpu_up_migration_call(struct notifier_block *nfb, unsigned long action,
-+								void *hcpu)
+-static int __cpuinit sched_cpu_active(struct notifier_block *nfb,
++static int __cpuinit sched_cpu_notify(struct notifier_block *nfb,
+ 				      unsigned long action, void *hcpu)
  {
- 	int cpu = (long)hcpu;
- 	unsigned long flags;
-@@ -5471,6 +5469,36 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		}
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 	int ret;
+@@ -5575,32 +5570,18 @@ static int __cpuinit sched_cpu_active(struct notifier_block *nfb,
+ 		set_cpu_active((long)hcpu, true);
+ 		ret = NOTIFY_OK;
  		break;
-+	}
-+
-+	update_max_interval();
-+
-+	return NOTIFY_OK;
-+}
-+
-+/*
-+ * Register at high priority so that task migration (migrate_tasks)
-+ * happens before everything else.  This has to be lower priority than
-+ * the notifier in the perf_event subsystem, though.
-+ */
-+static struct notifier_block __cpuinitdata cpu_up_migration_notifier = {
-+	.notifier_call = cpu_up_migration_call,
-+	.priority = CPU_PRI_MIGRATION_UP,
-+};
-+
-+/*
-+ * cpu_down_migration_call - callback that gets triggered when a CPU is
-+ * removed.
-+ */
-+static int __cpuinit
-+cpu_down_migration_call(struct notifier_block *nfb, unsigned long action,
-+								void *hcpu)
-+{
-+	int cpu = (long)hcpu;
-+	unsigned long flags;
-+	struct rq *rq = cpu_rq(cpu);
-+
-+	switch (action & ~CPU_TASKS_FROZEN) {
+-	default:
+-		ret = NOTIFY_DONE;
+-	}
+-
+-	if (likely(sched_smp_init_complete))
+-		return cpuset_cpu_active(nfb, action, hcpu);
+-
+-	return ret;
+-}
  
- #ifdef CONFIG_HOTPLUG_CPU
- 	case CPU_DYING:
-@@ -5497,13 +5525,13 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+-static int __cpuinit sched_cpu_inactive(struct notifier_block *nfb,
+-					unsigned long action, void *hcpu)
+-{
+-	int ret;
+-
+-	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DOWN_PREPARE:
+ 		set_cpu_active((long)hcpu, false);
+ 		ret = NOTIFY_OK;
+ 		break;
++
+ 	default:
+ 		ret = NOTIFY_DONE;
+ 	}
+ 
+ 	if (likely(sched_smp_init_complete))
+-		return cpuset_cpu_inactive(nfb, action, hcpu);
++		return cpuset_cpu_notify(nfb, action, hcpu);
+ 
+ 	return ret;
+ }
+@@ -5620,8 +5601,7 @@ static int __init migration_init(void)
+ 	register_cpu_notifier(&cpu_down_migration_notifier);
+ 
+ 	/* Register cpu active notifiers */
+-	cpu_notifier(sched_cpu_active, CPU_PRI_SCHED_ACTIVE);
+-	cpu_notifier(sched_cpu_inactive, CPU_PRI_SCHED_INACTIVE);
++	cpu_notifier(sched_cpu_notify, CPU_PRI_SCHED);
+ 
+ 	return 0;
+ }
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 471996a..5fba1da 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3429,16 +3429,24 @@ static void gcwq_unbind_fn(struct work_struct *work)
  }
  
  /*
-- * Register at high priority so that task migration (migrate_all_tasks)
-+ * Register at high priority so that task migration (migrate_tasks)
-  * happens before everything else.  This has to be lower priority than
-  * the notifier in the perf_event subsystem, though.
++ * CPU online:
+  * Workqueues should be brought up before normal priority CPU notifiers.
+- * This will be registered high priority CPU notifier.
++ *
++ * CPU offline:
++ * Workqueues should be brought down after normal priority CPU notifiers.
++ *
++ * This will be registered as high priority CPU notifier. Then, the automatic
++ * reverse invocation of notifiers in the CPU offline path will satisfy both
++ * the above requirements.
   */
--static struct notifier_block __cpuinitdata migration_notifier = {
--	.notifier_call = migration_call,
--	.priority = CPU_PRI_MIGRATION,
-+static struct notifier_block __cpuinitdata cpu_down_migration_notifier = {
-+	.notifier_call = cpu_down_migration_call,
-+	.priority = CPU_PRI_MIGRATION_DOWN,
- };
+-static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
++static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
+ 					       unsigned long action,
+ 					       void *hcpu)
+ {
+ 	unsigned int cpu = (unsigned long)hcpu;
+ 	struct global_cwq *gcwq = get_gcwq(cpu);
+ 	struct worker_pool *pool;
++	struct work_struct unbind_work;
  
- /*
-@@ -5583,10 +5611,13 @@ static int __init migration_init(void)
- 	int err;
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_UP_PREPARE:
+@@ -3465,22 +3473,7 @@ static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
+ 		rebind_workers(gcwq);
+ 		gcwq_release_management_and_unlock(gcwq);
+ 		break;
+-	}
+-	return NOTIFY_OK;
+-}
  
- 	/* Initialize migration for the boot CPU */
--	err = migration_call(&migration_notifier, CPU_UP_PREPARE, cpu);
-+	err = cpu_up_migration_call(&cpu_up_migration_notifier,
-+						CPU_UP_PREPARE, cpu);
- 	BUG_ON(err == NOTIFY_BAD);
--	migration_call(&migration_notifier, CPU_ONLINE, cpu);
--	register_cpu_notifier(&migration_notifier);
-+	cpu_up_migration_call(&cpu_up_migration_notifier, CPU_ONLINE, cpu);
-+	register_cpu_notifier(&cpu_up_migration_notifier);
-+
-+	register_cpu_notifier(&cpu_down_migration_notifier);
+-/*
+- * Workqueues should be brought down after normal priority CPU notifiers.
+- * This will be registered as low priority CPU notifier.
+- */
+-static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
+-						 unsigned long action,
+-						 void *hcpu)
+-{
+-	unsigned int cpu = (unsigned long)hcpu;
+-	struct work_struct unbind_work;
+-
+-	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DOWN_PREPARE:
+ 		/* unbinding should happen on the local CPU */
+ 		INIT_WORK_ONSTACK(&unbind_work, gcwq_unbind_fn);
+@@ -3686,8 +3679,7 @@ static int __init init_workqueues(void)
+ 	unsigned int cpu;
+ 	int i;
  
- 	/* Register cpu active notifiers */
- 	cpu_notifier(sched_cpu_active, CPU_PRI_SCHED_ACTIVE);
+-	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
+-	cpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
++	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
+ 
+ 	/* initialize gcwqs */
+ 	for_each_gcwq_cpu(cpu) {
 
