@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab2GYKba (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 06:31:30 -0400
-Received: from relay.parallels.com ([195.214.232.42]:39536 "EHLO
+	id S1755653Ab2GYKeY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 06:34:24 -0400
+Received: from relay.parallels.com ([195.214.232.42]:39948 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab2GYKb2 (ORCPT
+	with ESMTP id S1754480Ab2GYKeW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 06:31:28 -0400
-Message-ID: <500FCAFB.4080301@parallels.com>
-Date: Wed, 25 Jul 2012 14:31:23 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Wed, 25 Jul 2012 06:34:22 -0400
+Message-ID: <500FCBA7.7000909@parallels.com>
+Date: Wed, 25 Jul 2012 14:34:15 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Andre Przywara <andre.przywara@amd.com>
-CC: Borislav Petkov <bp@amd64.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Ingo Molnar" <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
+To: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
-References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com> <20120721103715.GA3632@aftab.osrc.amd.com> <500E4960.8040307@parallels.com> <500E5951.5020900@amd.com> <500E5CDF.5000504@parallels.com> <20120724101041.GA24739@aftab.osrc.amd.com> <500E8280.6050905@parallels.com> <500E9664.9030306@amd.com>
-In-Reply-To: <500E9664.9030306@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3 00/11] Series short description
+References: <20120703161844.11911.92996.stgit@localhost.localdomain> <20120724223617.GP8570@fieldses.org>
+In-Reply-To: <20120724223617.GP8570@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 04:34 PM, Andre Przywara wrote:
-> On 07/24/2012 01:09 PM, Vladimir Davydov wrote:
->> On 07/24/2012 02:10 PM, Borislav Petkov wrote:
->>> On Tue, Jul 24, 2012 at 12:29:19PM +0400, Vladimir Davydov wrote:
->>>> I guess that when the more advanced features become widely-used,
->>>> vendors will offer new MSRs and/or CPUID faulting.
->>> And this right there is the dealbreaker:
->>>
->>> So what are you doing for cpus which have the advanced CPUID features
->>> leafs but there are no MSRs to turn those bits off?
->> We have not encountered this situation in our environments and I hope we
->> won't :-)
+25.07.2012 02:36, J. Bruce Fields пишет:
+> On Tue, Jul 03, 2012 at 08:19:23PM +0400, Stanislav Kinsbursky wrote:
+>> v3: Rebased on Bruce's tree, "for-3.6" branch
 >>
->> But look, these CPUID functions cover majority of CPU features, don't
->> they? So, most of "normal" apps inside VM will survive migration.
->> Perhaps, some low-level utils won't. I guess that's why there are no
->> MSRs for other levels provided by vendors.
-> You have the new feature leaf at EAX=7. This contains things like BMI
-> and AVX2 and probably more upcoming features.
-> So you may be safe for a while, but you need a solution in the long run.
+>> v2: Rebased on Bruce's tree, "for-3.5" branch
 >
->>> You surely need some software-only solution for the migration to work,
->>> no?
->> Yes.
+> Aside from the one question, this looks OK to me.
+>
+> I seem to recall this needed to go through my tree for some reason, but
+> does Trond still want a chance to ACK/NACK it?
+>
+
+Agreed.
+Trond, could you, please, review this patch set?
+And maybe it's better to push this code through your tree to simplify further 
+merging?
+
+> --b.
+>
 >>
->>> If so, why not apply that solution to your hypervisor without touching
->>> the kernel at all?
->> In most hypervisor-based virtualization products, this is already
->> implemented using VMM-exits, so that each VM can have arbitrary CPUID
->> mask set by the admin.
+>> This patch set depeneds on "SUNRPC: separate per-net data creation from
+>> service
+>> creation" patch set sent earlier.
 >>
->> The problem is that we have no hypervisor. "Virtualization" we want this
->> feature for is based on cgroups and namespaces (examples are OpenVZ and
->> mainstream LXC). Tasks are just grouped into virtual environments and
->> share the same kernel, which is proved to be more memory usage efficient
->> than traditional hypervisor-based approaches.
-> So for this single kernel approach I'd understand it that way:
-> 1. You boot up the kernel on the host, it should detect and enable all
-> the features, say MCA.
-> 2. After boot, you use /src/msr-tools/wrmsr to mask CPUID bits, again
-> MCA for instance or AVX/AES or the like.
-> Since the (host side of the) kernel already detected it, this does not
-> hurt the kernel features like MCA. But AVX will not be available to
-> applications running in the "host container", which is probably OK since
-> these are mostly management applications, right?
-> 3. Then you start guests. The guest's libc will not detect the features
-> because of the MSR masking. All you need now is /proc/cpuinfo filtering
-> to make this bullet-proof, preferably through the container
-> functionality. I see that you do already massive sysfs filtering and
-> also /proc/<pid>  filtering, so this maybe an option?
+>> The following series implements...
+>>
+>> ---
+>>
+>> Stanislav Kinsbursky (11):
+>>        NFS: pass net to nfs_callback_down()
+>>        NFS: callback service creation function introduced
+>>        NFS: move per-net callback thread initialization to nfs_callback_up_net()
+>>        NFS: callback up - transport backchannel cleanup
+>>        NFS: callback service start function introduced
+>>        NFS: callback up - users counting cleanup
+>>        NFS: make nfs_callback_tcpport per network context
+>>        NFS: make nfs_callback_tcpport6 per network context
+>>        NFS; callback per-net usage counting introduced
+>>        NFS: add debug messages to callback down function
+>>        NFS: get net after idr allocation
+>>
+>>
+>>   fs/nfs/callback.c  |  288 ++++++++++++++++++++++++++++++++++------------------
+>>   fs/nfs/callback.h  |    4 -
+>>   fs/nfs/client.c    |    5 +
+>>   fs/nfs/netns.h     |    3 +
+>>   fs/nfs/nfs4state.c |    6 +
+>>   5 files changed, 202 insertions(+), 104 deletions(-)
+>>
 
-Yes, we do filter /proc/cpuinfo output in our product (OpenVZ), but 
-there is also the LXC project that is based completely on the mainstream 
-kernel. LXC developers have not faced the cross-vendor migration problem 
-yet because currently they don't have migration at all, but they will 
-surely face it in future since the work on migration is in progress now 
-(CRIU).
 
-So, you prefer adding some filtering of /proc/cpuinfo into the 
-mainstream kernel (not now, later, for LXC to work) instead of enabling 
-clearcpuid boot option to mask CPUID features? IMO, the latter would 
-look clearer.
+-- 
+Best regards,
+Stanislav Kinsbursky
 
->
-> This approach does not need any kernel support (except for the
-> /proc/cpuinfo filtering). Does this address the issues you have?
->
-> Regards,
-> Andre.
->
 
