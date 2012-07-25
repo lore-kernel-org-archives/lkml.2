@@ -1,120 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab2GYVvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 17:51:36 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:53505 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab2GYVve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 17:51:34 -0400
-Date: Wed, 25 Jul 2012 14:51:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com
-Subject: [PATCH RFC] sched: Make migration_call() safe for
- stop_machine()-free hotplug
-Message-ID: <20120725215126.GA7350@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1752858Ab2GYVwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 17:52:41 -0400
+Received: from shutemov.name ([176.9.204.213]:44305 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751774Ab2GYVwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 17:52:39 -0400
+Date: Thu, 26 Jul 2012 00:53:32 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org,
+        cgroups@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 03/10] memcg: infrastructure to  match an allocation to
+ the right cache
+Message-ID: <20120725215332.GA5756@shutemov.name>
+References: <1343227101-14217-1-git-send-email-glommer@parallels.com>
+ <1343227101-14217-4-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1343227101-14217-4-git-send-email-glommer@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072521-7282-0000-0000-00000B4EE47D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPU_DYING branch of migration_call() relies on the fact that
-CPU-hotplug offline operations use stop_machine().  This commit therefore
-attempts to remedy this situation by acquiring the relevant runqueue
-locks.  Note that sched_ttwu_pending() remains outside of the scope of
-these new runqueue-lock critical sections because (1) sched_ttwu_pending()
-does its own runqueue-lock acquisition and (2) sched_ttwu_pending() handles
-pending wakeups, and no further wakeups can select this CPU because it
-is already marked as offline.
+On Wed, Jul 25, 2012 at 06:38:14PM +0400, Glauber Costa wrote:
+> The page allocator is able to bind a page to a memcg when it is
+> allocated. But for the caches, we'd like to have as many objects as
+> possible in a page belonging to the same cache.
+> 
+> This is done in this patch by calling memcg_kmem_get_cache in the
+> beginning of every allocation function. This routing is patched out by
+> static branches when kernel memory controller is not being used.
+> 
+> It assumes that the task allocating, which determines the memcg in the
+> page allocator, belongs to the same cgroup throughout the whole process.
+> Misacounting can happen if the task calls memcg_kmem_get_cache() while
+> belonging to a cgroup, and later on changes. This is considered
+> acceptable, and should only happen upon task migration.
+> 
+> Before the cache is created by the memcg core, there is also a possible
+> imbalance: the task belongs to a memcg, but the cache being allocated
+> from is the global cache, since the child cache is not yet guaranteed to
+> be ready. This case is also fine, since in this case the GFP_KMEMCG will
+> not be passed and the page allocator will not attempt any cgroup
+> accounting.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> ---
+>  include/linux/memcontrol.h |   38 ++++++++
+>  init/Kconfig               |    2 +-
+>  mm/memcontrol.c            |  221 +++++++++++++++++++++++++++++++++++++++++++-
+>  3 files changed, 259 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index d9229a3..bd1f34b 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -423,6 +423,8 @@ int memcg_css_id(struct mem_cgroup *memcg);
+>  void memcg_register_cache(struct mem_cgroup *memcg,
+>  				      struct kmem_cache *s);
+>  void memcg_release_cache(struct kmem_cache *cachep);
+> +struct kmem_cache *
+> +__memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+>  #else
+>  static inline void memcg_register_cache(struct mem_cgroup *memcg,
+>  					     struct kmem_cache *s)
+> @@ -456,6 +458,12 @@ __memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle,
+>  			      int order)
+>  {
+>  }
+> +
+> +static inline struct kmem_cache *
+> +__memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+> +{
+> +	return cachep;
+> +}
+>  #endif /* CONFIG_MEMCG_KMEM */
+>  
+>  /**
+> @@ -515,5 +523,35 @@ void memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle,
+>  	if (memcg_kmem_on)
+>  		__memcg_kmem_commit_page(page, handle, order);
+>  }
+> +
+> +/**
+> + * memcg_kmem_get_kmem_cache: selects the correct per-memcg cache for allocation
+> + * @cachep: the original global kmem cache
+> + * @gfp: allocation flags.
+> + *
+> + * This function assumes that the task allocating, which determines the memcg
+> + * in the page allocator, belongs to the same cgroup throughout the whole
+> + * process.  Misacounting can happen if the task calls memcg_kmem_get_cache()
+> + * while belonging to a cgroup, and later on changes. This is considered
+> + * acceptable, and should only happen upon task migration.
+> + *
+> + * Before the cache is created by the memcg core, there is also a possible
+> + * imbalance: the task belongs to a memcg, but the cache being allocated from
+> + * is the global cache, since the child cache is not yet guaranteed to be
+> + * ready. This case is also fine, since in this case the GFP_KMEMCG will not be
+> + * passed and the page allocator will not attempt any cgroup accounting.
+> + */
+> +static __always_inline struct kmem_cache *
+> +memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+> +{
+> +	if (!memcg_kmem_on)
+> +		return cachep;
+> +	if (gfp & __GFP_NOFAIL)
+> +		return cachep;
+> +	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
+> +		return cachep;
+> +
+> +	return __memcg_kmem_get_cache(cachep, gfp);
+> +}
+>  #endif /* _LINUX_MEMCONTROL_H */
+>  
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 547bd10..610cfd3 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -741,7 +741,7 @@ config MEMCG_SWAP_ENABLED
+>  	  then swapaccount=0 does the trick).
+>  config MEMCG_KMEM
+>  	bool "Memory Resource Controller Kernel Memory accounting (EXPERIMENTAL)"
+> -	depends on MEMCG && EXPERIMENTAL
+> +	depends on MEMCG && EXPERIMENTAL && !SLOB
+>  	default n
+>  	help
+>  	  The Kernel Memory extension for Memory Resource Controller can limit
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 88bb826..8d012c7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -14,6 +14,10 @@
+>   * Copyright (C) 2012 Parallels Inc. and Google Inc.
+>   * Authors: Glauber Costa and Suleiman Souhlal
+>   *
+> + * Kernel Memory Controller
+> + * Copyright (C) 2012 Parallels Inc. and Google Inc.
+> + * Authors: Glauber Costa and Suleiman Souhlal
+> + *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License as published by
+>   * the Free Software Foundation; either version 2 of the License, or
+> @@ -339,6 +343,11 @@ struct mem_cgroup {
+>  #ifdef CONFIG_INET
+>  	struct tcp_memcontrol tcp_mem;
+>  #endif
+> +
+> +#ifdef CONFIG_MEMCG_KMEM
+> +	/* Slab accounting */
+> +	struct kmem_cache *slabs[MAX_KMEM_CACHE_TYPES];
+> +#endif
+>  };
+>  
+>  enum {
+> @@ -532,6 +541,40 @@ static inline bool memcg_kmem_enabled(struct mem_cgroup *memcg)
+>  		memcg->kmem_accounted;
+>  }
+>  
+> +static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+> +{
+> +	char *name;
+> +	struct dentry *dentry;
+> +
+> +	rcu_read_lock();
+> +	dentry = rcu_dereference(memcg->css.cgroup->dentry);
+> +	rcu_read_unlock();
+> +
+> +	BUG_ON(dentry == NULL);
+> +
+> +	name = kasprintf(GFP_KERNEL, "%s(%d:%s)",
+> +	    cachep->name, css_id(&memcg->css), dentry->d_name.name);
+> +
+> +	return name;
+> +}
+> +
+> +static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+> +					 struct kmem_cache *s)
+> +{
+> +	char *name;
+> +	struct kmem_cache *new;
+> +
+> +	name = memcg_cache_name(memcg, s);
+> +	if (!name)
+> +		return NULL;
+> +
+> +	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
+> +				      (s->flags & ~SLAB_PANIC), s->ctor);
+> +
+> +	kfree(name);
+> +	return new;
+> +}
+> +
+>  struct ida cache_types;
+>  
+>  void memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+> @@ -656,6 +699,14 @@ void __memcg_kmem_free_page(struct page *page, int order)
+>  }
+>  EXPORT_SYMBOL(__memcg_kmem_free_page);
+>  
+> +static void memcg_slab_init(struct mem_cgroup *memcg)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++)
+> +		memcg->slabs[i] = NULL;
+> +}
 
-It is quite possible that migrate_nr_uninterruptible() and
-calc_global_load_remove() somehow don't need runqueue-lock protection,
-but I was not able to prove this to myself.
+It seems redundant. mem_cgroup_alloc() uses kzalloc()/vzalloc() to
+allocate struct mem_cgroup.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
-
- core.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index eaead2d..2e7797a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5175,10 +5175,8 @@ void idle_task_exit(void)
-  * their home CPUs. So we just add the counter to another CPU's counter,
-  * to keep the global sum constant after CPU-down:
-  */
--static void migrate_nr_uninterruptible(struct rq *rq_src)
-+static void migrate_nr_uninterruptible(struct rq *rq_src, struct rq *rq_dest)
- {
--	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
--
- 	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
- 	rq_src->nr_uninterruptible = 0;
- }
-@@ -5200,7 +5198,7 @@ static void calc_global_load_remove(struct rq *rq)
-  * there's no concurrency possible, we hold the required locks anyway
-  * because of lock validation efforts.
-  */
--static void migrate_tasks(unsigned int dead_cpu)
-+static void migrate_tasks(unsigned int dead_cpu, struct rq *rq_dest)
- {
- 	struct rq *rq = cpu_rq(dead_cpu);
- 	struct task_struct *next, *stop = rq->stop;
-@@ -5234,11 +5232,11 @@ static void migrate_tasks(unsigned int dead_cpu)
- 
- 		/* Find suitable destination for @next, with force if needed. */
- 		dest_cpu = select_fallback_rq(dead_cpu, next);
--		raw_spin_unlock(&rq->lock);
-+		double_rq_unlock(rq, rq_dest);
- 
- 		__migrate_task(next, dead_cpu, dest_cpu);
- 
--		raw_spin_lock(&rq->lock);
-+		double_rq_lock(rq, rq_dest);
- 	}
- 
- 	rq->stop = stop;
-@@ -5452,6 +5450,7 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	int cpu = (long)hcpu;
- 	unsigned long flags;
- 	struct rq *rq = cpu_rq(cpu);
-+	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
- 
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 
-@@ -5474,17 +5473,19 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	case CPU_DYING:
- 		sched_ttwu_pending();
- 		/* Update our root-domain */
--		raw_spin_lock_irqsave(&rq->lock, flags);
-+		local_irq_save(flags);
-+		double_rq_lock(rq, rq_dest);
- 		if (rq->rd) {
- 			BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
- 			set_rq_offline(rq);
- 		}
--		migrate_tasks(cpu);
-+		migrate_tasks(cpu, rq_dest);
- 		BUG_ON(rq->nr_running != 1); /* the migration thread */
--		raw_spin_unlock_irqrestore(&rq->lock, flags);
- 
--		migrate_nr_uninterruptible(rq);
-+		migrate_nr_uninterruptible(rq, rq_dest);
- 		calc_global_load_remove(rq);
-+		double_rq_unlock(rq, rq_dest);
-+		local_irq_restore(flags);
- 		break;
- #endif
- 	}
-
+-- 
+ Kirill A. Shutemov
