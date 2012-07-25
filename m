@@ -1,166 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab2GYGJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 02:09:58 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:33841 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398Ab2GYGJ4 (ORCPT
+	id S1756422Ab2GYGMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 02:12:14 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:61675 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab2GYGMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 02:09:56 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-fa-500f8db2014a
-Message-id: <500F8DB4.30401@samsung.com>
-Date: Wed, 25 Jul 2012 15:09:56 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] extcon: arizona: Implement button detection support
-References: <1342800449-10328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-reply-to: <1342800449-10328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t9jAd1NvfwBBl0frSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG255WtoJ18hU/Dp9ha2A8ItHFyMkhIWAi8fDsGUYIW0ziwr31
-	bF2MXBxCAosYJZo29LNDOF1MEhOezmEHqeIV0JC4OeUUE4jNIqAq0XJzMQuIzSagJbH/xQ2g
-	bg4OUYEIiV/9HBDlghI/Jt9jAQmLAC37fb8SZCSzwGJGiT97HoAtFhbwkLjduQpsvJBAqMSD
-	ty/ZQeo5BcIkXp3XBAkzC+hI7G+dxgZhy0tsXvOWeQKjwCwkG2YhKZuFpGwBI/MqRtHUguSC
-	4qT0XEO94sTc4tK8dL3k/NxNjODweya1g3Flg8UhRgEORiUe3p9P+AKEWBPLiitzDzFKcDAr
-	ifAWhfEHCPGmJFZWpRblxxeV5qQWH2KU5mBREuc19v7qLySQnliSmp2aWpBaBJNl4uCUamA8
-	lSt8+5/ysmXWX+TllV4XdP2K2Ng2wzJ936KFtSJuZ+6s7Ly7S9T/7K5NGkq/72xSuz9bZOol
-	JRP1Xfob/cWPirTnFvusmZSulHlaPUBObl/dVNHJbBd5Gr/rdCmI7dtfv3c2W3FxZ0VBidOH
-	W0emKohUdYpuOL/wV4X8z44NN3Ml9KMaWnmVWIozEg21mIuKEwGE+3YoOwIAAA==
-X-TM-AS-MML: No
+	Wed, 25 Jul 2012 02:12:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1343176370-5856-1-git-send-email-ccross@android.com>
+References: <1343176370-5856-1-git-send-email-ccross@android.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 25 Jul 2012 14:11:30 +0800
+X-Google-Sender-Auth: B5OzJc_hFuPF4I71v4iD2E5TUSw
+Message-ID: <CAK5ve-LY1iw7CanrMSZ0PtK=Fk9Au9tXnmaOuZ5P7vnP+5VAgA@mail.gmail.com>
+Subject: Re: [PATCH] leds: triggers: send uevent when changing triggers
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Wed, Jul 25, 2012 at 8:32 AM, Colin Cross <ccross@android.com> wrote:
+> Some triggers create sysfs files when they are enabled.  Send a uevent
+> "change" notification whenever the trigger is changed to allow userspace
+> processes such as udev to modify permissions on the new files.
+>
 
-On 07/21/2012 01:07 AM, Mark Brown wrote:
+This looks like an workaround only for led trigger, can we fix this in
+sysfs level?
 
-> As well as identifying accessories the accessory detection hardware on
-> Arizona class devices can also detect a number of buttons which we should
-> report via the input API.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Thanks,
+-Bryan
+
+> Signed-off-by: Colin Cross <ccross@android.com>
 > ---
->  drivers/extcon/extcon-arizona.c |   72 +++++++++++++++++++++++++++++++++++----
->  1 file changed, 65 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-> index 427a289..fa2114f 100644
-> --- a/drivers/extcon/extcon-arizona.c
-> +++ b/drivers/extcon/extcon-arizona.c
-> @@ -21,6 +21,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/err.h>
->  #include <linux/gpio.h>
-> +#include <linux/input.h>
->  #include <linux/platform_device.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/regulator/consumer.h>
-> @@ -30,11 +31,14 @@
->  #include <linux/mfd/arizona/pdata.h>
->  #include <linux/mfd/arizona/registers.h>
->  
-> +#define ARIZONA_NUM_BUTTONS 6
-> +
->  struct arizona_extcon_info {
->  	struct device *dev;
->  	struct arizona *arizona;
->  	struct mutex lock;
->  	struct regulator *micvdd;
-> +	struct input_dev *input;
->  
->  	int micd_mode;
->  	const struct arizona_micd_config *micd_modes;
-> @@ -54,6 +58,18 @@ static const struct arizona_micd_config micd_default_modes[] = {
->  	{ 0,                  2 << ARIZONA_MICD_BIAS_SRC_SHIFT, 1 },
->  };
->  
-> +static struct {
-> +	u16 status;
-> +	int report;
-> +} arizona_lvl_to_key[ARIZONA_NUM_BUTTONS] = {
-> +	{  0x1, BTN_0 },
-> +	{  0x2, BTN_1 },
-> +	{  0x4, BTN_2 },
-> +	{  0x8, BTN_3 },
-> +	{ 0x10, BTN_4 },
-> +	{ 0x20, BTN_5 },
-> +};
-> +
->  #define ARIZONA_CABLE_MECHANICAL 0
->  #define ARIZONA_CABLE_MICROPHONE 1
->  #define ARIZONA_CABLE_HEADPHONE  2
-> @@ -133,6 +149,7 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
->  
->  	if (change) {
->  		regulator_disable(info->micvdd);
-> +		pm_runtime_mark_last_busy(info->dev);
->  		pm_runtime_put_autosuspend(info->dev);
->  	}
->  }
-> @@ -141,8 +158,8 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+>  drivers/leds/led-triggers.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+> index 46b4c76..a85ce09 100644
+> --- a/drivers/leds/led-triggers.c
+> +++ b/drivers/leds/led-triggers.c
+> @@ -102,6 +102,12 @@ ssize_t led_trigger_show(struct device *dev, struct device_attribute *attr,
+>  void led_trigger_set(struct led_classdev *led_cdev, struct led_trigger *trigger)
 >  {
->  	struct arizona_extcon_info *info = data;
->  	struct arizona *arizona = info->arizona;
-> -	unsigned int val;
-> -	int ret;
-> +	unsigned int val, lvl;
-> +	int ret, i;
->  
->  	mutex_lock(&info->lock);
->  
-> @@ -219,13 +236,22 @@ static irqreturn_t arizona_micdet(int irq, void *data)
->  
->  	/*
->  	 * If we're still detecting and we detect a short then we've
-> -	 * got a headphone.  Otherwise it's a button press, the
-> -	 * button reporting is stubbed out for now.
-> +	 * got a headphone.  Otherwise it's a button press.
->  	 */
->  	if (val & 0x3fc) {
->  		if (info->mic) {
->  			dev_dbg(arizona->dev, "Mic button detected\n");
->  
-> +			lvl = val & ARIZONA_MICD_LVL_MASK;
-> +			lvl >>= ARIZONA_MICD_LVL_SHIFT;
+>         unsigned long flags;
+> +       char *event = NULL;
+> +       char *envp[2];
+> +       const char *name;
 > +
-> +			for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
-> +				if (lvl & arizona_lvl_to_key[i].status)
-> +					input_report_key(info->input,
-> +							 arizona_lvl_to_key[i].report,
-> +							 1);
-> +			input_sync(info->input);
+> +       name = trigger ? trigger->name : "none";
+> +       event = kasprintf(GFP_KERNEL, "TRIGGER=%s", name);
+>
+>         /* Remove any existing trigger */
+>         if (led_cdev->trigger) {
+> @@ -122,6 +128,13 @@ void led_trigger_set(struct led_classdev *led_cdev, struct led_trigger *trigger)
+>                 if (trigger->activate)
+>                         trigger->activate(led_cdev);
+>         }
 > +
->  		} else if (info->detecting) {
->  			dev_dbg(arizona->dev, "Headphone detected\n");
->  			info->detecting = false;
-> @@ -244,6 +270,10 @@ static irqreturn_t arizona_micdet(int irq, void *data)
->  		}
->  	} else {
->  		dev_dbg(arizona->dev, "Mic button released\n");
-> +		for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
-> +			input_report_key(info->input,
-> +					 arizona_lvl_to_key[i].report, 0);
-
-> +		input_sync(info->input);
-
->  	}
+> +       if (event) {
+> +               envp[0] = event;
+> +               envp[1] = NULL;
+> +               kobject_uevent_env(&led_cdev->dev->kobj, KOBJ_CHANGE, envp);
+> +               kfree(event);
+> +       }
+>  }
+>  EXPORT_SYMBOL_GPL(led_trigger_set);
+>
+> --
+> 1.7.7.3
+>
 
 
-Why do you should report released event to all of buttons? I think that
-you should only
-report released event to previous pressed button. If user press two
-button on the headset
-at the same time and then user release only one button with pressed
-another button, extcon-arizona driver have to report released event to
-previous pressed button except for still pressed another button.
 
-Thank you,
-Chanwoo Choi
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
