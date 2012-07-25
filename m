@@ -1,75 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab2GYHKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 03:10:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53420 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab2GYHKu (ORCPT
+	id S1755202Ab2GYHLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 03:11:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38132 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab2GYHLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 03:10:50 -0400
-Date: Wed, 25 Jul 2012 09:10:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the akpm tree with the tip tree
-Message-ID: <20120725071044.GA27535@gmail.com>
-References: <20120725140827.4332a5448e4d8d200164ea2e@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120725140827.4332a5448e4d8d200164ea2e@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 25 Jul 2012 03:11:45 -0400
+From: Baodong Chen <chenbdchenbd@gmail.com>
+To: dmitry.torokhov@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Baodong Chen <chenbdchenbd@gmail.com>
+Subject: [PATCH] fixed coding style issues
+Date: Wed, 25 Jul 2012 15:11:17 +0800
+Message-Id: <1343200277-14385-1-git-send-email-chenbdchenbd@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fexed coding style issues from scripts/checkpatch.pl in drivers/input
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
+---
+ drivers/input/apm-power.c     |    2 +-
+ drivers/input/evdev.c         |   52 +++++++++++++++++++++++++++++++---------
+ drivers/input/ff-core.c       |    4 +-
+ drivers/input/ff-memless.c    |   12 ++++----
+ drivers/input/joydev.c        |    2 +-
+ drivers/input/mousedev.c      |   32 ++++++++++++++++--------
+ drivers/input/sparse-keymap.c |    4 +-
+ 7 files changed, 73 insertions(+), 35 deletions(-)
 
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm tree got a conflict in 
-> mm/migrate.c between the tip tree and commit "mm: memcg: fix 
-> compaction/migration failing due to memcg limits" from the 
-> akpm tree.
-> 
-> The commit 4783af477d3d ("mm: Migrate misplaced page") was 
-> removed (among several others) from the tip tree since 
-> yesterday (and thus linux-next) so the above akpm tree patch 
-> no longer applies.
-> 
-> I have dropped this patch form the akpm tree (and the following patches
-> as well:
-> mm-memcg-fix-compaction-migration-failing-due-to-memcg-limits-checkpatch-fixes
-> mm: memcg: push down PageSwapCache check into uncharge entry functions
-> mm: memcg: only check for PageSwapCache when uncharging anon
-> mm: memcg: remove unneeded shmem charge type
-> mm: memcg: remove needless !mm fixup to init_mm when charging
-> )
-> 
-> Hopefully this doesn't cause other problems.  I guess that 
-> they will need rebasing depending on what gets merged via the 
-> tip tree.
+diff --git a/drivers/input/apm-power.c b/drivers/input/apm-power.c
+index e90ee3d..543d85b 100644
+--- a/drivers/input/apm-power.c
++++ b/drivers/input/apm-power.c
+@@ -33,7 +33,7 @@ static void system_power_event(unsigned int keycode)
+ }
+ 
+ static void apmpower_event(struct input_handle *handle, unsigned int type,
+-		        unsigned int code, int value)
++			unsigned int code, int value)
+ {
+ 	/* only react on key down events */
+ 	if (value != 1)
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index 6c58bff..a0104bd 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -547,16 +547,44 @@ static int handle_eviocgbit(struct input_dev *dev,
+ 
+ 	switch (type) {
+ 
+-	case      0: bits = dev->evbit;  len = EV_MAX;  break;
+-	case EV_KEY: bits = dev->keybit; len = KEY_MAX; break;
+-	case EV_REL: bits = dev->relbit; len = REL_MAX; break;
+-	case EV_ABS: bits = dev->absbit; len = ABS_MAX; break;
+-	case EV_MSC: bits = dev->mscbit; len = MSC_MAX; break;
+-	case EV_LED: bits = dev->ledbit; len = LED_MAX; break;
+-	case EV_SND: bits = dev->sndbit; len = SND_MAX; break;
+-	case EV_FF:  bits = dev->ffbit;  len = FF_MAX;  break;
+-	case EV_SW:  bits = dev->swbit;  len = SW_MAX;  break;
+-	default: return -EINVAL;
++	case      0:
++		bits = dev->evbit;
++		len = EV_MAX;
++		break;
++	case EV_KEY:
++		bits = dev->keybit;
++		len = KEY_MAX;
++		break;
++	case EV_REL:
++		bits = dev->relbit;
++		len = REL_MAX;
++		break;
++	case EV_ABS:
++		bits = dev->absbit;
++		len = ABS_MAX;
++		break;
++	case EV_MSC:
++		bits = dev->mscbit;
++		len = MSC_MAX;
++		break;
++	case EV_LED:
++		bits = dev->ledbit;
++		len = LED_MAX;
++		break;
++	case EV_SND:
++		bits = dev->sndbit;
++		len = SND_MAX;
++		break;
++	case EV_FF:
++		bits = dev->ffbit;
++		len = FF_MAX;
++		break;
++	case EV_SW:
++		bits = dev->swbit;
++		len = SW_MAX;
++		break;
++	default:
++		return -EINVAL;
+ 	}
+ 
+ 	/*
+@@ -567,8 +595,8 @@ static int handle_eviocgbit(struct input_dev *dev,
+ 	if (type == EV_KEY && size == OLD_KEY_MAX) {
+ 		len = OLD_KEY_MAX;
+ 		if (printk_timed_ratelimit(&keymax_warn_time, 10 * 1000))
+-			pr_warning("(EVIOCGBIT): Suspicious buffer size %u, "
+-				   "limiting output to %zu bytes. See "
++			pr_warn("(EVIOCGBIT): Suspicious buffer size %u, " \
++				   "limiting output to %zu bytes. See "	\
+ 				   "http://userweb.kernel.org/~dtor/eviocgbit-bug.html\n",
+ 				   OLD_KEY_MAX,
+ 				   BITS_TO_LONGS(OLD_KEY_MAX) * sizeof(long));
+diff --git a/drivers/input/ff-core.c b/drivers/input/ff-core.c
+index 480eb9d..f50f6dd 100644
+--- a/drivers/input/ff-core.c
++++ b/drivers/input/ff-core.c
+@@ -138,8 +138,8 @@ int input_ff_upload(struct input_dev *dev, struct ff_effect *effect,
+ 
+ 	if (effect->id == -1) {
+ 		for (id = 0; id < ff->max_effects; id++)
+-		     if (!ff->effect_owners[id])
+-			break;
++			if (!ff->effect_owners[id])
++				break;
+ 
+ 		if (id >= ff->max_effects) {
+ 			ret = -ENOSPC;
+diff --git a/drivers/input/ff-memless.c b/drivers/input/ff-memless.c
+index 5f55885..a237cf2 100644
+--- a/drivers/input/ff-memless.c
++++ b/drivers/input/ff-memless.c
+@@ -72,12 +72,12 @@ static const struct ff_envelope *get_envelope(const struct ff_effect *effect)
+ 	static const struct ff_envelope empty_envelope;
+ 
+ 	switch (effect->type) {
+-		case FF_PERIODIC:
+-			return &effect->u.periodic.envelope;
+-		case FF_CONSTANT:
+-			return &effect->u.constant.envelope;
+-		default:
+-			return &empty_envelope;
++	case FF_PERIODIC:
++		return &effect->u.periodic.envelope;
++	case FF_CONSTANT:
++		return &effect->u.constant.envelope;
++	default:
++		return &empty_envelope;
+ 	}
+ }
+ 
+diff --git a/drivers/input/joydev.c b/drivers/input/joydev.c
+index 26043cc..78f323e 100644
+--- a/drivers/input/joydev.c
++++ b/drivers/input/joydev.c
+@@ -711,7 +711,7 @@ static long joydev_ioctl(struct file *file,
+ 
+ 	case JS_SET_ALL:
+ 		retval = copy_from_user(&joydev->glue, argp,
+-					sizeof(joydev->glue)) ? -EFAULT: 0;
++					sizeof(joydev->glue)) ? -EFAULT : 0;
+ 		break;
+ 
+ 	case JS_GET_ALL:
+diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+index 0110b5a..80bbe52 100644
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -236,25 +236,36 @@ static void mousedev_key_event(struct mousedev *mousedev,
+ 
+ 	case BTN_TOUCH:
+ 	case BTN_0:
+-	case BTN_LEFT:		index = 0; break;
++	case BTN_LEFT:
++		index = 0;
++		break;
+ 
+ 	case BTN_STYLUS:
+ 	case BTN_1:
+-	case BTN_RIGHT:		index = 1; break;
++	case BTN_RIGHT:
++		index = 1;
++		break;
+ 
+ 	case BTN_2:
+ 	case BTN_FORWARD:
+ 	case BTN_STYLUS2:
+-	case BTN_MIDDLE:	index = 2; break;
++	case BTN_MIDDLE:
++		index = 2;
++		break;
+ 
+ 	case BTN_3:
+ 	case BTN_BACK:
+-	case BTN_SIDE:		index = 3; break;
++	case BTN_SIDE:
++		index = 3;
++		break;
+ 
+ 	case BTN_4:
+-	case BTN_EXTRA:		index = 4; break;
++	case BTN_EXTRA:
++		index = 4;
++		break;
+ 
+-	default:		return;
++	default:
++		return;
+ 	}
+ 
+ 	if (value) {
+@@ -551,17 +562,16 @@ static int mousedev_open(struct inode *inode, struct file *file)
+ 		return -ENODEV;
+ 
+ 	error = mutex_lock_interruptible(&mousedev_table_mutex);
+-	if (error) {
++	if (error)
+ 		return error;
+-	}
++
+ 	mousedev = mousedev_table[i];
+ 	if (mousedev)
+ 		get_device(&mousedev->dev);
+ 	mutex_unlock(&mousedev_table_mutex);
+ 
+-	if (!mousedev) {
++	if (!mousedev)
+ 		return -ENODEV;
+-	}
+ 
+ 	client = kzalloc(sizeof(struct mousedev_client), GFP_KERNEL);
+ 	if (!client) {
+@@ -1088,7 +1098,7 @@ static int __init mousedev_init(void)
+ #ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
+ 	error = misc_register(&psaux_mouse);
+ 	if (error)
+-		pr_warning("could not register psaux device, error: %d\n",
++		pr_warn("could not register psaux device, error: %d\n",
+ 			   error);
+ 	else
+ 		psaux_registered = 1;
+diff --git a/drivers/input/sparse-keymap.c b/drivers/input/sparse-keymap.c
+index 75fb040..a70aa55 100644
+--- a/drivers/input/sparse-keymap.c
++++ b/drivers/input/sparse-keymap.c
+@@ -180,11 +180,11 @@ int sparse_keymap_setup(struct input_dev *dev,
+ 	for (e = keymap; e->type != KE_END; e++)
+ 		map_size++;
+ 
+-	map = kcalloc(map_size, sizeof (struct key_entry), GFP_KERNEL);
++	map = kcalloc(map_size, sizeof(struct key_entry), GFP_KERNEL);
+ 	if (!map)
+ 		return -ENOMEM;
+ 
+-	memcpy(map, keymap, map_size * sizeof (struct key_entry));
++	memcpy(map, keymap, map_size * sizeof(struct key_entry));
+ 
+ 	for (i = 0; i < map_size; i++) {
+ 		entry = &map[i];
+-- 
+1.7.0.4
 
-Andrew, sorry about this last minute fallout: I felt that 
-sched/numa was still not fully cooked and did not want to hold 
-up the rest of the scheduler tree on that - nor did I want to 
-send an uncooked tree to Linus.
-
-PeterZ posted another series of sched/numa patches two days ago 
-- once that is ready (probably after the merge window) it will 
-all reappear again, in a slightly different form. I could stick 
-the mm/ bits into a separate tree to make it easier for you.
-
-Cross-discipline patches are hard - the other option would be to 
-let Linux NUMA scheduling continue to suck.
-
-Thanks,
-
-	Ingo
