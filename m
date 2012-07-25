@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab2GYXSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 19:18:03 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:1627 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab2GYXSB (ORCPT
+	id S1751982Ab2GYXSM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 19:18:12 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:40801 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab2GYXSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 19:18:01 -0400
+	Wed, 25 Jul 2012 19:18:07 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: lenb@kernel.org, linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
@@ -14,49 +14,137 @@ Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
         srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
         imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v3 0/4] ACPI: hotplug messages improvement
-Date: Wed, 25 Jul 2012 17:12:54 -0600
-Message-Id: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v3 1/4] ACPI: Add acpi_pr_<level>() interfaces
+Date: Wed, 25 Jul 2012 17:12:55 -0600
+Message-Id: <1343257978-7085-2-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
+References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset improves logging messages for ACPI CPU, Memory, and
-Container hotplug notify handlers.  The patchset introduces a set of
-new macro interfaces, acpi_pr_<level>(), and updates the notify
-handlers to use them.  acpi_pr_<level>() appends "ACPI" prefix and
-ACPI object path to the messages, and its usage model is similar to
-dev_<level>().  This improves diagnostics in hotplug operations
-since it identifies an object that caused an issue in a log file.
+This patch introduces acpi_pr_<level>(), where <level> is a kernel
+message level such as err/warn/info, to support improved logging
+messages for ACPI, esp. in hotplug operations.  acpi_pr_<level>()
+appends "ACPI" prefix and ACPI object path to the messages.  This
+improves diagnostics in hotplug operations since it identifies an
+object that caused an issue in a log file.
 
-v3:
- - Changed acpi_pr_debug() to NOP when !DEBUG and !DYNAMIC_DEBUG.
-   DYNAMIC_DEBUG will be supported later.
- - Added const to a path variable in acpi_printk().
- - Added more descriptions to the change log of patch 1/4.
+acpi_pr_<level>() takes acpi_handle as an argument, which is passed
+to ACPI hotplug notify handlers from the ACPICA.  Therefore, it is
+always available unlike other kernel objects, such as device.
 
-v2:
- - Set buffer.pointer to NULL in acpi_printk().
- - Added acpi_pr_debug().
+For example, the statement below
+  acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
+logs an error message like this at KERN_ERR.
+  ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
 
+ACPI drivers can use acpi_pr_<level>() when they need to identify
+a target ACPI object in their messages, such as error messages.
+The usage model is similar to dev_<level>().  acpi_pr_<level>() can
+be used when device is not created/valid, which may be the case for
+ACPI hotplug handlers.  ACPI drivers can continue to use dev_<level>()
+when device is valid.
+
+ACPI drivers also continue to use pr_<level>() when ACPI device
+path does not have to be appended to the messages, such as boot-up
+messages.
+
+Note: ACPI_[WARNING|INFO|ERROR]() are intended for the ACPICA and
+are not associated with the kernel message level.
+
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
 ---
-This patchset applies on top of the patch below.
+ drivers/acpi/utils.c    |   34 ++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h |   31 +++++++++++++++++++++++++++++++
+ 2 files changed, 65 insertions(+), 0 deletions(-)
 
-[PATCH] ACPI: Add ACPI CPU hot-remove support
-http://marc.info/?l=linux-acpi&m=134098193327362&w=2
+diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+index 3e87c9c..ec0c6f9 100644
+--- a/drivers/acpi/utils.c
++++ b/drivers/acpi/utils.c
+@@ -454,3 +454,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+ #endif
+ }
+ EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
++
++/**
++ * acpi_printk: Print messages with ACPI prefix and object path
++ *
++ * This function is intended to be called through acpi_pr_<level> macros.
++ */
++void
++acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
++{
++	struct va_format vaf;
++	va_list args;
++	struct acpi_buffer buffer = {
++		.length = ACPI_ALLOCATE_BUFFER,
++		.pointer = NULL
++	};
++	const char *path;
++	acpi_status ret;
++
++	va_start(args, fmt);
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
++	if (ret == AE_OK)
++		path = buffer.pointer;
++	else
++		path = "<n/a>";
++
++	printk("%sACPI: %s: %pV", level, path, &vaf);
++
++	va_end(args);
++	kfree(buffer.pointer);
++}
++EXPORT_SYMBOL(acpi_printk);
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index bde976e..1c855b8 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -85,6 +85,37 @@ struct acpi_pld {
+ 
+ acpi_status
+ acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld *pld);
++
++void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
++
++#define acpi_pr_emerg(handle, fmt, ...)				\
++	acpi_printk(KERN_EMERG, handle, fmt, ##__VA_ARGS__)
++#define acpi_pr_alert(handle, fmt, ...)				\
++	acpi_printk(KERN_ALERT, handle, fmt, ##__VA_ARGS__)
++#define acpi_pr_crit(handle, fmt, ...)				\
++	acpi_printk(KERN_CRIT, handle, fmt, ##__VA_ARGS__)
++#define acpi_pr_err(handle, fmt, ...)				\
++	acpi_printk(KERN_ERR, handle, fmt, ##__VA_ARGS__)
++#define acpi_pr_warn(handle, fmt, ...)				\
++	acpi_printk(KERN_WARNING, handle, fmt, ##__VA_ARGS__)
++#define acpi_pr_notice(handle, fmt, ...)			\
++	acpi_printk(KERN_NOTICE, handle, fmt, ##__VA_ARGS__)
++#define acpi_pr_info(handle, fmt, ...)				\
++	acpi_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
++
++/* REVISIT: Need to support CONFIG_DYNAMIC_DEBUG */
++#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
++#define acpi_pr_debug(handle, fmt, ...)					\
++	acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
++#else
++#define acpi_pr_debug(handle, fmt, ...)					\
++({									\
++	if (0)								\
++		acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__);	\
++	0;								\
++})
++#endif
++
+ #ifdef CONFIG_ACPI
+ 
+ #include <linux/proc_fs.h>
+-- 
+1.7.7.6
 
----
-Toshi Kani (4):
- ACPI: Add acpi_pr_<level>() interfaces
- ACPI: Update CPU hotplug messages
- ACPI: Update Memory hotplug messages
- ACPI: Update Container hotplug messages
-
----
- drivers/acpi/acpi_memhotplug.c  |   24 ++++++++++++------------
- drivers/acpi/container.c        |    6 +++---
- drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
- drivers/acpi/utils.c            |   34 ++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h         |   31 +++++++++++++++++++++++++++++++
- 5 files changed, 101 insertions(+), 30 deletions(-)
