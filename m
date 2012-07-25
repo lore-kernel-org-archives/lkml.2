@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933452Ab2GYPUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 11:20:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55938 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933187Ab2GYPUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 11:20:33 -0400
-Message-ID: <50100E93.1030809@zytor.com>
-Date: Wed, 25 Jul 2012 08:19:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1030255Ab2GYPXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 11:23:47 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:32401 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933233Ab2GYPXp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 11:23:45 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 1jJMkxwVM1l7ZTz6r5W_iRprEJKG3fwP1dYa7Ir_INhVnMG
+ cgLM1lvCyEEvjhaY9vAHeSd96bTLd44WK8yNuAWIHKJMP7v11Ze3.LhDdK5J
+ DCm7wCiYXpRGNb2R8ClmFe3Q7DPPkiU6P86k2BUZGKP_zbIYtmZMZ3j3Axq9
+ YOEWj99oW.kyYvO__nQ29d5yrdl60sOE2pGnEj5rgk2QE5.ben3nqHhZmgEH
+ XU_Fwu_F_SRNjaHfy3EpAJ6Yg.cobDKi5lgCn4KVvTrqG9N7fuMuYqCWQJ4W
+ 4l0sa1IK393AZbuo73Tu.YAmL81tW8RBhZ6ku9WoVWpBueaA1prYFERmv1I.
+ MfA5a2WbrzzOXOgeK5kDK6irM8xTTfwwFcEPuddJtUrA3.oT8GrOtDG5L487
+ Tw3mT2LQ97EwmQRpd
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 25 Jul 2012 10:23:40 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, cgroups@vger.kernel.org,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v4 24/25] memcg/slub: shrink dead caches
+In-Reply-To: <5009D8D8.6040509@parallels.com>
+Message-ID: <alpine.DEB.2.00.1207251022570.32678@router.home>
+References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-25-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1207061015030.28648@router.home> <5009D8D8.6040509@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
-        zakir@umich.edu, greg@kroah.com, mpm@selenic.com, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
-        stable@kernel.org, DJ Johnston <dj.johnston@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 07/10] random: add new get_random_bytes_arch() function
-References: <1341511933-11169-1-git-send-email-tytso@mit.edu> <1341511933-11169-8-git-send-email-tytso@mit.edu> <500F69F3.3040905@zytor.com> <20120725151000.GA30996@thunk.org>
-In-Reply-To: <20120725151000.GA30996@thunk.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 08:10 AM, Theodore Ts'o wrote:
->
-> RDRAND is already getting mixed in already in xfer_secondary_pool() so
-> we are already taking advantage of Bull Mountain (or any other
-> CPU/architecture-specific hw RNG) if it is present.
->
+On Fri, 20 Jul 2012, Glauber Costa wrote:
 
-You generate an arbitrary 16 or 32 bytes of RDRAND in one place, but 
-that could be substantially less than the actual consumption.
+> > This is the same btw in SLAB which keeps objects in per cpu caches and
+> > keeps empty slab pages on special queues.
+> >
+> >> This patch marks all memcg caches as dead. kmem_cache_shrink is called
+> >> for the ones who are not yet dead - this will force internal cache
+> >> reorganization, and then all references to empty pages will be removed.
+> >
+> > You need to call this also for slab to drain the caches and free the pages
+> > on the empty list.
+> >
+> Doesn't the SLAB have a time-based reaper for that?
 
-My original tack was looking at doing this in extract_entropy and 
-extract_entropy_user, but then I moved it to extract_buf since it looked 
-simpler.
-
-> Aside from whether it's better to do this step in
-> xfer_secondary_pool() or extract_entropy(), your patch looks very
-> wrong to me.  Nothing is actually *using* hash.l[], which is where the
-> results of the RDRAND generator is placed.
->
-> I assume you were planning on xor'ing hash.w and hash.l, but that's
-> not present in your patch.
->
-> I also don't understand why you are using a blind union here; it has
-> no real advantage that I can see, and so it's all downside.  It bloats
-> the patch (making it harder to see that your patch results in a net
-> *decrease* in security, since it removes the use of RDRAND in
-> xfer_security_pool, and replaces it with a no-op).
->
-
-I don't know the term "blind union", but it is not an unnamed union is 
-that is what you mean:
-
-+	union {
-+		__u32 w[5];
-+		unsigned long l[LONGS(EXTRACT_SIZE)];
-+	} hash;
-
-This is a standard C declaration for hash.w and hash.l occupying the 
-same memory, so your statement that "nothing uses hash.l" is just plain 
-incorrect.  The reasons for using a union here is to make sure that the 
-buffer is suitably aligned and padded to be able to be safely accessed 
-via "unsigned long", even on architectures with alignment requirements. 
-  Thus, xoring into hash.l modifies hash.w as well, so this is NOT a no-op.
-
-Incidentally, this is exactly the same union construct you use before:
-
--	union {
--		__u32	tmp[OUTPUT_POOL_WORDS];
--		long	hwrand[4];
--	} u;
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Yes but it will take a couple of minutes to drain the caches.
 
