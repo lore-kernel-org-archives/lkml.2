@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab2GYQCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 12:02:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16492 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753247Ab2GYQCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 12:02:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="171305175"
-Message-ID: <1343232376.4060.202.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 07/16] btrfs: nuke write_super from comments
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: cwillu <cwillu@cwillu.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Date: Wed, 25 Jul 2012 19:06:16 +0300
-In-Reply-To: <CAE5mzvg178UUj4eRmL-VE+=jXSnBJvAUgNPooY3f2ihbwSbBOg@mail.gmail.com>
-References: <1343229134-29487-1-git-send-email-artem.bityutskiy@linux.intel.com>
-	 <1343229134-29487-8-git-send-email-artem.bityutskiy@linux.intel.com>
-	 <CAE5mzvg178UUj4eRmL-VE+=jXSnBJvAUgNPooY3f2ihbwSbBOg@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-95OoLSqEcB/3SpQeF8Pd"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1755839Ab2GYQC2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 12:02:28 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:36457 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755769Ab2GYQC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 12:02:27 -0400
+Date: Wed, 25 Jul 2012 18:02:21 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 06/13] driver core: firmware loader: always let
+ firmware_buf own the pages buffer
+Message-ID: <20120725160221.GJ11152@aftab.osrc.amd.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+ <1343149213-10160-7-git-send-email-ming.lei@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343149213-10160-7-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 25, 2012 at 01:00:06AM +0800, Ming Lei wrote:
+> @@ -750,6 +835,7 @@ request_firmware_nowait(
 
---=-95OoLSqEcB/3SpQeF8Pd
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+while you're here, can you fix the arg alignment of this
+request_firmware_nowait - it looks awful right now:
 
-On Wed, 2012-07-25 at 09:46 -0600, cwillu wrote:
-> >         mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
-> >         list_add_rcu(&device->dev_list, &root->fs_info->fs_devices->dev=
-ices);
-> >         list_add(&device->dev_alloc_list,
->=20
-> Is the locking still required for approximately the same reason?
+int
+request_firmware_nowait(
+        struct module *module, bool uevent,
+        const char *name, struct device *device, gfp_t gfp, void *context,
+        void (*cont)(const struct firmware *fw, void *context))
+{
 
-I do not know, I assume Chris would check that.
+and it could like, say, this:
 
---=20
-Best Regards,
-Artem Bityutskiy
+int request_firmware_nowait(struct module *module, bool uevent, const char *name,
+			    struct device *device, gfp_t gfp, void *context,
+			    void (*cont)(const struct firmware *fw, void *context))
+{
 
---=-95OoLSqEcB/3SpQeF8Pd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+or something even more readable.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+>  static int __init firmware_class_init(void)
+>  {
+> +	fw_cache_init();
+>  	return class_register(&firmware_class);
+>  }
+>  
+> diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+> index 1e7c011..e85b771 100644
+> --- a/include/linux/firmware.h
+> +++ b/include/linux/firmware.h
+> @@ -12,6 +12,9 @@ struct firmware {
+>  	size_t size;
+>  	const u8 *data;
+>  	struct page **pages;
+> +
+> +	/* firmware loader private fields */
+> +	void *priv;
+>  };
+>  
+>  struct module;
 
-iQIcBAABAgAGBQJQEBl4AAoJECmIfjd9wqK0u34P/3TAb3pQdKPPT4OCm0COftc3
-nWBYGc5aOQwQFWRCHQRNA31HmZ0bFm9y80mNakBwFZY/l/ylgRIVfStykhJVYp3h
-B7O/thSyOivLaNsVH9zpE7gKQbECKlXMlKCr1t/oYMBBWo9MvyrG8x3qQMrCAMQ7
-y0xN9x1xalSIuQprFI08RK2I1lVdPXwufhtbDPYMNyQheEc+mh0vchK48aSsg7dw
-HsjNroIvHybIDZJ/qTy7pMU4uhHnHdpyXZaxfiX/fdfCFeJiVeW0SAZlqec5gg5n
-USqE4iOwmB21qtuHgRzogUQjRSv6NpUvbrCTygR9N7LtVqQIbmlHrLwkJfNA7gdz
-oTXpLVjPuBeBXWQNCLomKPEDFBhsLdXpHN2uBbq6CPDkHZ5D4XPrwBJzH7CQIf6Z
-BK45mOByZ+fdukEQT0SkYWb7lt2hnBd8hDzc1XzW70Bnf2FW8nfd1WZ7RZQqPtmu
-BHWK+o0qvYfUFYbBK7dRG9xWnceD57zucefcDiXLNTTQvHOBxqLHyrzPZDl01NDW
-+1upJDkDt/UBQsfEecdh5yqm6jq5/a4ObRtH9VYLrHKy1zvgnTruEqMhnkkiiuON
-4FA4vaf59UJw3KGO6FtDfk5HIOUc5Qj7scEAci7ZNWDbLNXK5QoKMsGJhC5HFbGn
-aFe18tZqUAR21ENJM7kY
-=oXXn
------END PGP SIGNATURE-----
+Thanks.
 
---=-95OoLSqEcB/3SpQeF8Pd--
+-- 
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
