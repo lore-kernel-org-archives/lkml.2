@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab2GYSnm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 14:43:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41484 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab2GYSnk (ORCPT
+	id S1751222Ab2GYSvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 14:51:09 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:47928 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750789Ab2GYSvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 14:43:40 -0400
-Date: Wed, 25 Jul 2012 20:43:22 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: "Theodore Ts'o" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, davem@davemloft.net, stable@kernel.org
-Subject: Re: [PATCH 01/10] random: make 'add_interrupt_randomness()' do
- something sane
-In-Reply-To: <CA+55aFw90o8btDJhztkS=2NXiZvXNAkCsZkx-p9+RRx-cMQc6A@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1207252015020.32033@ionos>
-References: <1341511933-11169-2-git-send-email-tytso@mit.edu> <1341514078.4020.1213.camel@calx> <CA+55aFyMYVLCW0OYTVttkjjOwyu9VgDM9haNC=BeoRCEiWWNPQ@mail.gmail.com> <1341524367.4020.1324.camel@calx> <CA+55aFxAe1pRN+jvdLveHQ+nNRNC6HDZ+S4Y9P202rxgNLN8pg@mail.gmail.com>
- <20120705220040.GA15685@thunk.org> <CA+55aFzFMZpiDMJO9UxoXSjOCzvxn7tgvmAHLM36OmaiMasQhw@mail.gmail.com> <1341527482.4020.1355.camel@calx> <20120705232136.GD15685@thunk.org> <CA+55aFxhobNMY5RLmH+tKox8voqfH-bVqKVF03JeeVrHkhLcaQ@mail.gmail.com>
- <20120706130127.GB10798@thunk.org> <CA+55aFw90o8btDJhztkS=2NXiZvXNAkCsZkx-p9+RRx-cMQc6A@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 25 Jul 2012 14:51:07 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: .wIITOYVM1nUC06xgJ9sCrWDaGd99EpEHcde6oKJPlEy0L6
+ biCEhHCy6rJlzhqCPwseZ8cbiwj4iiI.IXQFI8zGLVPKJTZntFHDg63mzaiP
+ 5.W6XphmmECbHj3BCFsk_wbieJvV235Zk7GyTaon.kVAAaAaJAF.4N6VQUPF
+ 43NBaIYJexWkC9Pr_Y1a..4IeYpJ9dHBa3VWn3wSVCSxHgUrKcysr1G8dZ4v
+ 1Gie2bIxxiEi_nx3v.j3Rx686x1z056ezM09PrqK3zSEJDh8XglVpD9qmdHQ
+ DYLJ.EddAr9O7eEAkk8ZMNrZGD4RkO5775PeApPJuwIJmV7qtaVYLFGQ13nU
+ n5D1FVDOpBFlWew94w0_8x40B9gn1RWbB0hXoWVvBlH8Dv2f0xHvx25blUKK
+ SjWxMekyaLbwVWSNbTtfuCc2rIuGlKPbv.kN56D8E_LzfThfqwd_u
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 25 Jul 2012 13:51:01 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+cc: linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
+        Jan Beulich <jbeulich@novell.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC 0/6] Avoid cache trashing on clearing huge/gigantic
+ page
+In-Reply-To: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
+Message-ID: <alpine.DEB.2.00.1207251346250.4995@router.home>
+References: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jul 2012, Linus Torvalds wrote:
+On Fri, 20 Jul 2012, Kirill A. Shutemov wrote:
 
-> On Fri, Jul 6, 2012 at 6:01 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> > What in the world is "fast count"?  I've grepped for it,
-> > and I can't find it.
-> 
-> It's your own fast-pool counter that Matt was talking about.
-> 
-> > I can simply not credit entropy of the timer is on the irq, but I
-> > think you and Matt were suggesting more subtle.  I just have no idea
-> > how to tell if there were non-timer interrupts during the last HZ
-> > cycle.  Can you give me a hint?
-> 
-> So instead of not calling the add_interrupt_randomness() at all if the
-> __IRQF_TIMER bit was set, just pass it in as an argument. That way you
-> can still use the cycle counter for mixing stuff, but the random.c
-> code could at least (perhaps in the future) decide that if all it has
-> seen is timer interrupts, and get_cycles() always returns zero (no
-> cycle counter), we won't count it as entropy.
-> 
-> At least with no-HZ there's still going to be *some* data there
-> because you won't get called for every tick, so things like random app
-> timers etc will affect even the timer interrupt distribution, but...
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>
+> Clearing a 2MB huge page will typically blow away several levels of CPU
+> caches.  To avoid this only cache clear the 4K area around the fault
+> address and use a cache avoiding clears for the rest of the 2MB area.
 
-There is only one constellation which will not be able to deliver
-randomness via the timer interrupt and a "cycle counter":
+why exempt the 4K around the fault address? Is there a regression if that
+is not exempted?
 
-Systems, which do not have an usable fine granular clocksource and
-therefor are completely based on jiffies. Those systems have neither
-high resolution timers nor NOHZ idle for obvious reasons.
+I guess for anonymous huge pages one may assume that there will be at
+least one write to one cache line in the 4k page. Is it useful to get all
+the cachelines in the page in the cache.
 
-Though almost all systems which we care about have a more or less
-useful clocksource and register it proper with the core.
-
-So we could do the following in the core code when a clocksource is
-registered:
-
-Aside of considering it to handle the timekeeping stuff, which has
-different criteria, we could filter out the clocksource with the
-highest frequency and provide a function which allows us to access it
-for randomness and other purposes. IOW, a generic "get_cycles"
-implementation.
-
-Now, if the only available clocksource is jiffies, which is completely
-useless, as it gets incremented once per timer interrupt (and there is
-no distribution possible due to the lack of NOHZ support) then the
-function returns 0 which allows the random code to discard it as a
-entropy source.
-
-We might consider to put a low frequency limit into that selection
-process as well, but that needs some thought and experimentation.
-
-Thanks,
-
-	tglx
-
-
+Also note that if we get later into hugepage use for the page cache we
+would want the cache to be cold because the contents have to come in from
+a storage medium.
 
 
