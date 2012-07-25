@@ -1,231 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab2GYJ5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 05:57:07 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55612 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753854Ab2GYJzl (ORCPT
+	id S1754170Ab2GYKCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 06:02:34 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:26272 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab2GYKCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 05:55:41 -0400
-Message-Id: <20120725095024.760705388@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 25 Jul 2012 13:47:20 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 2/7] procfs: Convert /proc/pid/fdinfo/ handling routines to seq-file
-References: <20120725094718.089879534@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-seq-ops-4
+	Wed, 25 Jul 2012 06:02:33 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-84-500fc437b59d
+Message-id: <500FC428.8030305@samsung.com>
+Date: Wed, 25 Jul 2012 19:02:16 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615
+ Thunderbird/13.0.1
+MIME-version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org,
+        Grant Grundler <grundler@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, shashidharh@vayavyalabs.com,
+        ki0351.kim@samsung.com
+Subject: Re: [PATCH v3] mmc: dw_mmc: Disable low power mode if SDIO interrupts
+ are used
+References: <CAD=FV=Wa1bCRvLNnFjhht6nvNorm3CRzX5zrn-YDA2Jec1K3Eg@mail.gmail.com>
+ <1343149145-22927-1-git-send-email-dianders@chromium.org>
+In-reply-to: <1343149145-22927-1-git-send-email-dianders@chromium.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t9jQV3zI/wBBo39mhaXd81hszjyv5/R
+	gcnj8ya5AMYoLpuU1JzMstQifbsEroxnDfdYC/6wVpy96d3AeIWli5GTQ0LARGL6gxlMELaY
+	xIV769m6GLk4hASmM0psfHKcFcJ5ySjxZscvVpAqXgEtiRmzjoB1sAioSkyZMg8sziagI7H9
+	23GwuKhAmMSruz/ZIOoFJX5Mvge2TURAU+JZw0tmkKHMAv+YJNY8bwNLCAtEShz4toMdYlsf
+	o8Sc2RPAujkF3CReN3WCTWUG2rC/dRobhC0vsXnNW+YJjAKzkCyZhaRsFpKyBYzMqxhFUwuS
+	C4qT0nMN9YoTc4tL89L1kvNzNzGCw/GZ1A7GlQ0WhxgFOBiVeHh/PuELEGJNLCuuzD3EKMHB
+	rCTC27qbP0CINyWxsiq1KD++qDQntfgQozQHi5I4r7H3V38hgfTEktTs1NSC1CKYLBMHp1QD
+	Y09U6xH93zm7/DpOri0907D0eonzCqerXTqyYd0vp0w41XzRu/7GzB2hwgeOCjr+VUxkn5d3
+	dhqPuZOp9Dy3xX/bbooJSPPsDlHj1/Z0VAjNiF1nVM5YlGkWd+rO9WNqRj/V4s8G6bJYJl69
+	FvV5tfG94ud3wu6cnrJWfFai2UmlXqFEHvc2JZbijERDLeai4kQAjC3kQkMCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts /proc/pid/fdinfo/ handling routines to seq-file which
-is needed to extend seq operations and plug in auxiliary fdinfo provides
-from subsystems like eventfd/eventpoll/fsnotify.
+> +
+>  static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+>  {
+>  	struct dw_mci_slot *slot = mmc_priv(mmc);
+> @@ -871,6 +898,14 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+>  	/* Enable/disable Slot Specific SDIO interrupt */
+>  	int_mask = mci_readl(host, INTMASK);
+>  	if (enb) {
+> +		/*
+> +		 * Turn off low power mode if it was enabled.  This is a bit of
+> +		 * a heavy operation and we disable / enable IRQs a lot, so
+> +		 * we'll leave low power mode disabled and it will get
+> +		 * re-enabled again in dw_mci_setup_bus().
+> +		 */
+> +		dw_mci_disable_low_power(mmc_priv(mmc));
+Just use the slot. slot is already assigned to mmc_priv(mmc)
 
-Note the proc_fd_link no longer call for proc_fd_info, simply because
-proc_fd_info is converted to seq_fdinfo_open (which is seq-file open()
-prototype), moreover in further patches I need to provide two seq_fdinfo_open
-variants -- one with CONFIG_CHECKPOINT_RESTORE and one without this
-symbol. All in one -- this will look more messy then.
+Reviewed-by: Jaehoon Chung <jh80.chung@samsung.com>
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: James Bottomley <jbottomley@parallels.com>
----
- fs/proc/fd.c |  133 +++++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 85 insertions(+), 48 deletions(-)
-
-Index: linux-2.6.git/fs/proc/fd.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/fd.c
-+++ linux-2.6.git/fs/proc/fd.c
-@@ -6,61 +6,90 @@
- #include <linux/namei.h>
- #include <linux/pid.h>
- #include <linux/security.h>
-+#include <linux/file.h>
-+#include <linux/seq_file.h>
- 
- #include <linux/proc_fs.h>
- 
- #include "internal.h"
- #include "fd.h"
- 
--#define PROC_FDINFO_MAX 64
-+struct proc_fdinfo {
-+	loff_t	f_pos;
-+	int	f_flags;
-+};
- 
--static int proc_fd_info(struct inode *inode, struct path *path, char *info)
-+static int seq_show(struct seq_file *m, void *v)
-+{
-+	struct proc_fdinfo *fdinfo = m->private;
-+	seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
-+		   (long long)fdinfo->f_pos,
-+		   fdinfo->f_flags);
-+	return 0;
-+}
-+
-+static int seq_fdinfo_open(struct inode *inode, struct file *file)
- {
--	struct task_struct *task = get_proc_task(inode);
- 	struct files_struct *files = NULL;
--	int fd = proc_fd(inode);
--	struct file *file;
-+	struct proc_fdinfo *fdinfo = NULL;
-+	struct task_struct *task;
-+	int ret = -ENOENT;
-+
-+	fdinfo = kzalloc(sizeof(*fdinfo), GFP_KERNEL);
-+	if (!fdinfo)
-+		return -ENOMEM;
- 
-+	task = get_proc_task(inode);
- 	if (task) {
- 		files = get_files_struct(task);
- 		put_task_struct(task);
- 	}
-+
- 	if (files) {
--		/*
--		 * We are not taking a ref to the file structure, so we must
--		 * hold ->file_lock.
--		 */
-+		int fd = proc_fd(inode);
-+		struct file *fd_file;
-+
- 		spin_lock(&files->file_lock);
--		file = fcheck_files(files, fd);
--		if (file) {
--			unsigned int f_flags;
--			struct fdtable *fdt;
-+		fd_file = fcheck_files(files, fd);
-+		if (fd_file) {
-+			struct fdtable *fdt = files_fdtable(files);
- 
--			fdt = files_fdtable(files);
--			f_flags = file->f_flags & ~O_CLOEXEC;
-+			fdinfo->f_flags = fd_file->f_flags & ~O_CLOEXEC;
- 			if (close_on_exec(fd, fdt))
--				f_flags |= O_CLOEXEC;
--
--			if (path) {
--				*path = file->f_path;
--				path_get(&file->f_path);
--			}
--			if (info)
--				snprintf(info, PROC_FDINFO_MAX,
--					 "pos:\t%lli\n"
--					 "flags:\t0%o\n",
--					 (long long) file->f_pos,
--					 f_flags);
--			spin_unlock(&files->file_lock);
--			put_files_struct(files);
--			return 0;
-+				fdinfo->f_flags |= O_CLOEXEC;
-+			ret = 0;
- 		}
- 		spin_unlock(&files->file_lock);
- 		put_files_struct(files);
- 	}
--	return -ENOENT;
-+
-+	if (!ret) {
-+		ret = single_open(file, seq_show, fdinfo);
-+		if (!ret)
-+			fdinfo = NULL;
-+	}
-+
-+	kfree(fdinfo);
-+	return ret;
-+}
-+
-+static int seq_fdinfo_release(struct inode *inode, struct file *file)
-+{
-+	struct seq_file *m = file->private_data;
-+	struct proc_fdinfo *fdinfo = m->private;
-+
-+	kfree(fdinfo);
-+
-+	return single_release(inode, file);
- }
- 
-+static const struct file_operations proc_fdinfo_file_operations = {
-+	.open		= seq_fdinfo_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_fdinfo_release,
-+};
-+
- static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
- {
- 	struct files_struct *files;
-@@ -130,7 +159,31 @@ static const struct dentry_operations ti
- 
- static int proc_fd_link(struct dentry *dentry, struct path *path)
- {
--	return proc_fd_info(dentry->d_inode, path, NULL);
-+	struct inode *inode = dentry->d_inode;
-+	struct task_struct *task = get_proc_task(inode);
-+	struct files_struct *files = NULL;
-+	int fd = proc_fd(inode);
-+	struct file *file;
-+	int err = -ENOENT;
-+
-+	if (task) {
-+		files = get_files_struct(task);
-+		put_task_struct(task);
-+	}
-+
-+	if (files) {
-+		spin_lock(&files->file_lock);
-+		file = fcheck_files(files, fd);
-+		if (file) {
-+			*path = file->f_path;
-+			path_get(&file->f_path);
-+		}
-+		spin_unlock(&files->file_lock);
-+		put_files_struct(files);
-+		err = 0;
-+	}
-+
-+	return err;
- }
- 
- static struct dentry *
-@@ -245,22 +298,6 @@ out_no_task:
- 	return retval;
- }
- 
--static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
--				size_t len, loff_t *ppos)
--{
--	char tmp[PROC_FDINFO_MAX];
--	int err = proc_fd_info(file->f_path.dentry->d_inode, NULL, tmp);
--	if (!err)
--		err = simple_read_from_buffer(buf, len, ppos, tmp, strlen(tmp));
--	return err;
--}
--
--static const struct file_operations proc_fdinfo_file_operations = {
--	.open           = nonseekable_open,
--	.read		= proc_fdinfo_read,
--	.llseek		= no_llseek,
--};
--
- static int proc_readfd(struct file *filp, void *dirent, filldir_t filldir)
- {
- 	return proc_readfd_common(filp, dirent, filldir, proc_fd_instantiate);
 
