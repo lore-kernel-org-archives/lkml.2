@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab2GYKxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 06:53:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53604 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756498Ab2GYKxU (ORCPT
+	id S1756402Ab2GYK5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 06:57:55 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44297 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755991Ab2GYK5y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 06:53:20 -0400
-Date: Wed, 25 Jul 2012 03:53:04 -0700
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-dc9b229a58dc0dfed34272ff26c6d5fd17c674e0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, mtosatti@redhat.com, jan.kiszka@web.de,
-        tglx@linutronix.de, avi@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, mtosatti@redhat.com, jan.kiszka@web.de,
-        tglx@linutronix.de, avi@redhat.com
-In-Reply-To: <alpine.LFD.2.02.1207132056540.32033@ionos>
-References: <alpine.LFD.2.02.1207132056540.32033@ionos>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] genirq:
-  Allow irq chips to mark themself oneshot safe
-Git-Commit-ID: dc9b229a58dc0dfed34272ff26c6d5fd17c674e0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 25 Jul 2012 06:57:54 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Daniel Vetter <daniel@ffwll.ch>
+Subject: Re: [REGRESSION] [KMS] [INTEL] Wrong resolution in console and XWindow
+Date: Wed, 25 Jul 2012 12:57:49 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5.0-rc3; KDE/4.8.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+References: <201207251020.47637.maciej.rutecki@gmail.com> <201207251054.25498.maciej.rutecki@gmail.com> <20120725092928.GD5396@phenom.ffwll.local>
+In-Reply-To: <20120725092928.GD5396@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 25 Jul 2012 03:53:10 -0700 (PDT)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201207251257.50064.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dc9b229a58dc0dfed34272ff26c6d5fd17c674e0
-Gitweb:     http://git.kernel.org/tip/dc9b229a58dc0dfed34272ff26c6d5fd17c674e0
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 13 Jul 2012 19:29:45 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 25 Jul 2012 12:46:38 +0200
+On środa, 25 lipca 2012 o 11:29:28 Daniel Vetter wrote:
+> On Wed, Jul 25, 2012 at 10:54:25AM +0200, Maciej Rutecki wrote:
+> > On środa, 25 lipca 2012 o 10:29:26 Daniel Vetter wrote:
+> > > On Wed, Jul 25, 2012 at 10:20:47AM +0200, Maciej Rutecki wrote:
+> > > > Last known good: 3.4.4
+> > > > First bad: 3.5.0
+> > > > 
+> > > > When booting 3.5.0 resolution (in console, and after in KDE) is set
+> > > > to 1024x768 (60Hz). In 3.4.4 was correct: 1440x900 (60Hz).
+> > > 
+> > > Can you please attach the output of xrandr --verbose for both kernels?
+> > > Also, please boot with drm.debug=0xe added to your kernel cmdline and
+> > > grab the dmesg (again for both kernels).
+> > 
+> > Thanks for the ansfer.
+> > 
+> > Here xrandr and dmesg outputs for 3.4.4 and 3.5.0
+> > 
+> > http://mrutecki.pl/download/kernel/3.5/swinka/debug/
+> 
+> Can you please test this quick hack:
+> 
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_i2c.c
+> b/drivers/gpu/drm/i915/intel_i2c.c index 1991a44..abe1611 100644
+> --- a/drivers/gpu/drm/i915/intel_i2c.c
+> +++ b/drivers/gpu/drm/i915/intel_i2c.c
+> @@ -405,7 +405,7 @@ clear_err:
+>  	 * timing out seems to happen when there _is_ a ddc chip present, but
+>  	 * it's slow responding and only answers on the 2nd retry.
+>  	 */
+> -	ret = -ENXIO;
+> +	ret = 0;
+>  	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0,
+>  		     10)) {
+>  		DRM_DEBUG_KMS("GMBUS [%s] timed out after NAK\n",
+> 
+> 
+> Thanks, Daniel
 
-genirq: Allow irq chips to mark themself oneshot safe
+Still the same.
 
-Some interrupt chips like MSI are oneshot safe by implementation. For
-those interrupts we can avoid the mask/unmask sequence for threaded
-interrupt handlers.
+PS. Unfortunately, this afternoon I have small a surgical operation and 
+further tests will be possible only after 2-3 days.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1207132056540.32033@ionos
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@web.de>
----
- include/linux/irq.h |    1 +
- kernel/irq/manage.c |   15 ++++++++++++++-
- 2 files changed, 15 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 553fb66..216b0ba 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -349,6 +349,7 @@ enum {
- 	IRQCHIP_MASK_ON_SUSPEND		= (1 <<  2),
- 	IRQCHIP_ONOFFLINE_ENABLED	= (1 <<  3),
- 	IRQCHIP_SKIP_SET_WAKE		= (1 <<  4),
-+	IRQCHIP_ONESHOT_SAFE		= (1 <<  5),
- };
- 
- /* This include will go away once we isolated irq_desc usage to core code */
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 8c54823..2e326d1 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -960,6 +960,18 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	}
- 
- 	/*
-+	 * Drivers are often written to work w/o knowledge about the
-+	 * underlying irq chip implementation, so a request for a
-+	 * threaded irq without a primary hard irq context handler
-+	 * requires the ONESHOT flag to be set. Some irq chips like
-+	 * MSI based interrupts are per se one shot safe. Check the
-+	 * chip flags, so we can avoid the unmask dance at the end of
-+	 * the threaded handler for those.
-+	 */
-+	if (desc->irq_data.chip->flags & IRQCHIP_ONESHOT_SAFE)
-+		new->flags &= ~IRQF_ONESHOT;
-+
-+	/*
- 	 * The following block of code has to be executed atomically
- 	 */
- 	raw_spin_lock_irqsave(&desc->lock, flags);
-@@ -1033,7 +1045,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		 */
- 		new->thread_mask = 1 << ffz(thread_mask);
- 
--	} else if (new->handler == irq_default_primary_handler) {
-+	} else if (new->handler == irq_default_primary_handler &&
-+		   !(desc->irq_data.chip->flags & IRQCHIP_ONESHOT_SAFE)) {
- 		/*
- 		 * The interrupt was requested with handler = NULL, so
- 		 * we use the default primary handler for it. But it
+Regards
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
