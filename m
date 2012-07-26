@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab2GZWQb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 18:16:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49798 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752642Ab2GZWQa (ORCPT
+	id S1752936Ab2GZWWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 18:22:16 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:42763 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752712Ab2GZWWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 18:16:30 -0400
-Date: Thu, 26 Jul 2012 23:16:04 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] mfd: add MAX8907 core driver
-Message-ID: <20120726221604.GL4560@opensource.wolfsonmicro.com>
-References: <1343331630-27126-1-git-send-email-swarren@wwwdotorg.org>
- <20120726203526.GD4560@opensource.wolfsonmicro.com>
- <5011BF90.5030708@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OGLMwEELQbPC02lM"
-Content-Disposition: inline
-In-Reply-To: <5011BF90.5030708@wwwdotorg.org>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Jul 2012 18:22:15 -0400
+Subject: Re: [PATCH] ivtv: Declare MODULE_FIRMWARE usage
+From: Andy Walls <awalls@md.metrocast.net>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
+Date: Thu, 26 Jul 2012 18:21:35 -0400
+In-Reply-To: <1343327180-94759-1-git-send-email-tim.gardner@canonical.com>
+References: <1343327180-94759-1-git-send-email-tim.gardner@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1343341295.2575.18.camel@palomino.walls.org>
+Mime-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-26_06:2012-07-26,2012-07-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1203120001 definitions=main-1207260269
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-07-26 at 12:26 -0600, Tim Gardner wrote:
+> Cc: Andy Walls <awalls@md.metrocast.net>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: ivtv-devel@ivtvdriver.org
+> Cc: linux-media@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/media/video/ivtv/ivtv-firmware.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/media/video/ivtv/ivtv-firmware.c b/drivers/media/video/ivtv/ivtv-firmware.c
+> index 02c5ade..6ec7705 100644
+> --- a/drivers/media/video/ivtv/ivtv-firmware.c
+> +++ b/drivers/media/video/ivtv/ivtv-firmware.c
+> @@ -396,3 +396,7 @@ int ivtv_firmware_check(struct ivtv *itv, char *where)
+>  
+>  	return res;
+>  }
+> +
+> +MODULE_FIRMWARE(CX2341X_FIRM_ENC_FILENAME);
+> +MODULE_FIRMWARE(CX2341X_FIRM_DEC_FILENAME);
+> +MODULE_FIRMWARE(IVTV_DECODE_INIT_MPEG_FILENAME);
 
---OGLMwEELQbPC02lM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Only the PVR-350, based on the iTVC-15/CX23415 chip, needs the
+CX2341X_FIRM_DEC_FILENAME and IVTV_DECODE_INIT_MPEG_FILENAME.  (And even
+in the case of that card, not having the IVTV_DECODE_INIT_MPEG_FILENAME
+file is non-fatal.)
 
-On Thu, Jul 26, 2012 at 04:07:12PM -0600, Stephen Warren wrote:
-> On 07/26/2012 02:35 PM, Mark Brown wrote:
-> > On Thu, Jul 26, 2012 at 01:40:30PM -0600, Stephen Warren wrote:
+I would not want anything in user-space or kernel space preventing the
+ivtv module from loading, if some of those files don't exist.
 
-> >> +		if (irqd_is_wakeup_set(d)) {
-> >> +			/* 1 -- disable, 0 -- enable */
-> >> +			switch (irq_data->mask_reg) {
+Regards,
+Andy
 
-> > This loop we should just port over into the regmap code.
-
-> I assume the best way of doing this is to add new functions
-> regmap_irq_suspend()/regmap_irq_resume() (which would mask any enabled
-> interrupts that were not wake enabled); that way, the regmap_irq code
-> can loop over each register and just write it once. An alternative might
-> be to implement struct irq_chip's .irq_suspend/.irq_resume ops, but that
-> might worst-case end up with an I2C write per interrupt.
-
-irq_suspend() and irq_resume() are only supposed to be called once per
-irq_chip so there should be no concern with using them.  Even if they
-weren't it's probably not that performance critical really.
-
-> I see that the MAX8907 IRQ code does this in suspend:
-
-> 	if (device_may_wakeup(chip->dev))
-> 		enable_irq_wake(i2c->irq);
-> 	else
-> 		disable_irq(i2c->irq);
-
-> and this in resume:
-
-> 	if (device_may_wakeup(chip->dev))
-> 		disable_irq_wake(i2c->irq);
-> 	else
-> 		enable_irq(i2c->irq);
-
-> neither of which are done in regmap_irq, since it doesn't explicitly do
-> anything for suspend/resume at the moment. Are those code blocks
-> necessary? I see that regmap_irq_sync_unlock() is already calling
-> irq_set_irq_wake(), which implies that suspend/resume may have already
-> been completely taken care of?
-
-Yes, it should already be taken care of.  What the calls here are doing
-is mostly allowing userspace to explicitly override the wake state on a
-per chip basis.  I'm not convinced it's terribly clever to implement
-explicit wake support on an interrupt controller, it seems prone to
-confusion.  We could do that though.
-
---OGLMwEELQbPC02lM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQEcGeAAoJEBus8iNuMP3dyVwQAI9czs/UnQwsOhkJFLYSHFOE
-zVAQNjZaNghtTKOS3UgTV+0cJuY9TVaMX/6MFIT2IkH8ieXrohCIBHDVOky7xAFY
-H/FQ2pdVmv8/Y0IJU91gpMlhauJOhaSBWQYjSlTvP9ADC4ilnvpyBCQn8/3VQi9j
-UJj8KjIWttXyf0KHan3e0wj+agUsf3u12R6Jy4ib8cONCnIMt7AqaNeL1G4JcD+y
-DpeSn8n10aRYaauHSZ3gR75SI5ZUtIcA09KsC2KVTPAPWbSlqE4OZ2KbEZET4h7/
-omOKoDonki5tOfIQ3tQrjicBFW3e2BiaYDIB3LEXJ3T4Zsx43PDqm3uIAXuy671p
-k/L85K6jPAH0jN+wOlnxoUFY8kFlcoiJ/tR/sgfTIV9CZzCWkLwZ/VvFTVsVs/Vj
-deHgMuWJ/fi3lbwr2lFjvRscDedJzguixG3pUaXKojYBTUh9aHt7Vza3TZGzE50U
-vhkPrDlB5wD+7QySZofW9b1J+hKOOdlkIfIfFVlmvX+hCsE6lPAvw3L8vAIyxxOy
-W65FQ7NTqKnZaGwAJtJi8OI1bscfLG0ixxLhofVDH9dfPJ8F044uxfK/qiY4bZJ8
-43wGTnWFSDGYl8T57wLhQTHzesbHZ6KF5sLkMzdUiDtCLXDTz3TQo8HLRxJmWJEs
-32B5ewW6Qad4cdGgLoFu
-=5v6h
------END PGP SIGNATURE-----
-
---OGLMwEELQbPC02lM--
