@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2GZVUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:20:34 -0400
+	id S1752781Ab2GZVUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:20:43 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:49659 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab2GZVUc (ORCPT
+	with ESMTP id S1752623Ab2GZVUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:20:32 -0400
+	Thu, 26 Jul 2012 17:20:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        majianpeng <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [ 01/23] md: avoid crash when stopping md array races with closing other open fds.
-Date: Thu, 26 Jul 2012 14:19:40 -0700
-Message-Id: <20120726211405.959857593@linuxfoundation.org>
+        Bill Robertson <bill_robertson@debortoli.com.au>,
+        Dion Edwards <dion_edwards@debortoli.com.au>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 03/23] cifs: always update the inode cache with the results from a FIND_*
+Date: Thu, 26 Jul 2012 14:19:42 -0700
+Message-Id: <20120726211406.143929325@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120726211420.GA7678@kroah.com>
+In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
+ <20120726211405.959857593@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,161 +32,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit a05b7ea03d72f36edb0cec05e8893803335c61a0 upstream.
+commit cd60042cc1392e79410dc8de9e9c1abb38a29e57 upstream.
 
-md will refuse to stop an array if any other fd (or mounted fs) is
-using it.
-When any fs is unmounted of when the last open fd is closed all
-pending IO will be flushed (e.g. sync_blockdev call in __blkdev_put)
-so there will be no pending IO to worry about when the array is
-stopped.
+When we get back a FIND_FIRST/NEXT result, we have some info about the
+dentry that we use to instantiate a new inode. We were ignoring and
+discarding that info when we had an existing dentry in the cache.
 
-However in order to send the STOP_ARRAY ioctl to stop the array one
-must first get and open fd on the block device.
-If some fd is being used to write to the block device and it is closed
-after mdadm open the block device, but before mdadm issues the
-STOP_ARRAY ioctl, then there will be no last-close on the md device so
-__blkdev_put will not call sync_blockdev.
+Fix this by updating the inode in place when we find an existing dentry
+and the uniqueid is the same.
 
-If this happens, then IO can still be in-flight while md tears down
-the array and bad things can happen (use-after-free and subsequent
-havoc).
-
-So in the case where do_md_stop is being called from an open file
-descriptor, call sync_block after taking the mutex to ensure there
-will be no new openers.
-
-This is needed when setting a read-write device to read-only too.
-
-Reported-by: majianpeng <majianpeng@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-and-Tested-by: Andrew Bartlett <abartlet@samba.org>
+Reported-by: Bill Robertson <bill_robertson@debortoli.com.au>
+Reported-by: Dion Edwards <dion_edwards@debortoli.com.au>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |   36 +++++++++++++++++++++++-------------
- 1 file changed, 23 insertions(+), 13 deletions(-)
+ fs/cifs/readdir.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -3744,8 +3744,8 @@ array_state_show(struct mddev *mddev, ch
- 	return sprintf(page, "%s\n", array_states[st]);
- }
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -86,9 +86,12 @@ cifs_readdir_lookup(struct dentry *paren
  
--static int do_md_stop(struct mddev * mddev, int ro, int is_open);
--static int md_set_readonly(struct mddev * mddev, int is_open);
-+static int do_md_stop(struct mddev * mddev, int ro, struct block_device *bdev);
-+static int md_set_readonly(struct mddev * mddev, struct block_device *bdev);
- static int do_md_run(struct mddev * mddev);
- static int restart_array(struct mddev *mddev);
- 
-@@ -3761,14 +3761,14 @@ array_state_store(struct mddev *mddev, c
- 		/* stopping an active array */
- 		if (atomic_read(&mddev->openers) > 0)
- 			return -EBUSY;
--		err = do_md_stop(mddev, 0, 0);
-+		err = do_md_stop(mddev, 0, NULL);
- 		break;
- 	case inactive:
- 		/* stopping an active array */
- 		if (mddev->pers) {
- 			if (atomic_read(&mddev->openers) > 0)
- 				return -EBUSY;
--			err = do_md_stop(mddev, 2, 0);
-+			err = do_md_stop(mddev, 2, NULL);
- 		} else
- 			err = 0; /* already inactive */
- 		break;
-@@ -3776,7 +3776,7 @@ array_state_store(struct mddev *mddev, c
- 		break; /* not supported yet */
- 	case readonly:
- 		if (mddev->pers)
--			err = md_set_readonly(mddev, 0);
-+			err = md_set_readonly(mddev, NULL);
- 		else {
- 			mddev->ro = 1;
- 			set_disk_ro(mddev->gendisk, 1);
-@@ -3786,7 +3786,7 @@ array_state_store(struct mddev *mddev, c
- 	case read_auto:
- 		if (mddev->pers) {
- 			if (mddev->ro == 0)
--				err = md_set_readonly(mddev, 0);
-+				err = md_set_readonly(mddev, NULL);
- 			else if (mddev->ro == 1)
- 				err = restart_array(mddev);
- 			if (err == 0) {
-@@ -5124,15 +5124,17 @@ void md_stop(struct mddev *mddev)
- }
- EXPORT_SYMBOL_GPL(md_stop);
- 
--static int md_set_readonly(struct mddev *mddev, int is_open)
-+static int md_set_readonly(struct mddev *mddev, struct block_device *bdev)
- {
- 	int err = 0;
- 	mutex_lock(&mddev->open_mutex);
--	if (atomic_read(&mddev->openers) > is_open) {
-+	if (atomic_read(&mddev->openers) > !!bdev) {
- 		printk("md: %s still in use.\n",mdname(mddev));
- 		err = -EBUSY;
- 		goto out;
+ 	dentry = d_lookup(parent, name);
+ 	if (dentry) {
+-		/* FIXME: check for inode number changes? */
+-		if (dentry->d_inode != NULL)
++		inode = dentry->d_inode;
++		/* update inode in place if i_ino didn't change */
++		if (inode && CIFS_I(inode)->uniqueid == fattr->cf_uniqueid) {
++			cifs_fattr_to_inode(inode, fattr);
+ 			return dentry;
++		}
+ 		d_drop(dentry);
+ 		dput(dentry);
  	}
-+	if (bdev)
-+		sync_blockdev(bdev);
- 	if (mddev->pers) {
- 		__md_stop_writes(mddev);
- 
-@@ -5154,18 +5156,26 @@ out:
-  *   0 - completely stop and dis-assemble array
-  *   2 - stop but do not disassemble array
-  */
--static int do_md_stop(struct mddev * mddev, int mode, int is_open)
-+static int do_md_stop(struct mddev * mddev, int mode,
-+		      struct block_device *bdev)
- {
- 	struct gendisk *disk = mddev->gendisk;
- 	struct md_rdev *rdev;
- 
- 	mutex_lock(&mddev->open_mutex);
--	if (atomic_read(&mddev->openers) > is_open ||
-+	if (atomic_read(&mddev->openers) > !!bdev ||
- 	    mddev->sysfs_active) {
- 		printk("md: %s still in use.\n",mdname(mddev));
- 		mutex_unlock(&mddev->open_mutex);
- 		return -EBUSY;
- 	}
-+	if (bdev)
-+		/* It is possible IO was issued on some other
-+		 * open file which was closed before we took ->open_mutex.
-+		 * As that was not the last close __blkdev_put will not
-+		 * have called sync_blockdev, so we must.
-+		 */
-+		sync_blockdev(bdev);
- 
- 	if (mddev->pers) {
- 		if (mddev->ro)
-@@ -5239,7 +5249,7 @@ static void autorun_array(struct mddev *
- 	err = do_md_run(mddev);
- 	if (err) {
- 		printk(KERN_WARNING "md: do_md_run() returned %d\n", err);
--		do_md_stop(mddev, 0, 0);
-+		do_md_stop(mddev, 0, NULL);
- 	}
- }
- 
-@@ -6237,11 +6247,11 @@ static int md_ioctl(struct block_device
- 			goto done_unlock;
- 
- 		case STOP_ARRAY:
--			err = do_md_stop(mddev, 0, 1);
-+			err = do_md_stop(mddev, 0, bdev);
- 			goto done_unlock;
- 
- 		case STOP_ARRAY_RO:
--			err = md_set_readonly(mddev, 1);
-+			err = md_set_readonly(mddev, bdev);
- 			goto done_unlock;
- 
- 		case BLKROSET:
 
 
