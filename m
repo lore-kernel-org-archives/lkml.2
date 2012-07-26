@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab2GZFqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 01:46:39 -0400
-Received: from claw.goop.org ([74.207.240.146]:45853 "EHLO claw.goop.org"
+	id S1751532Ab2GZFu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 01:50:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6932 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011Ab2GZFqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 01:46:38 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 01:46:38 EDT
-Message-ID: <5010D82C.4050802@goop.org>
-Date: Wed, 25 Jul 2012 22:39:56 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751011Ab2GZFu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 01:50:27 -0400
+Date: Thu, 26 Jul 2012 08:50:11 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
+Message-ID: <20120726055011.GP26120@redhat.com>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+ <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+ <20120723181358.GC6717@infradead.org>
+ <500EAF23.8060909@gmail.com>
+ <20120724161507.GG3732@erda.amd.com>
+ <1343248546.26034.68.camel@twins>
 MIME-Version: 1.0
-To: Yuanhan Liu <yliu.null@gmail.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86/mm: stop allocating pmd page if failed
-References: <1343135751-8336-1-git-send-email-yliu.null@gmail.com>
-In-Reply-To: <1343135751-8336-1-git-send-email-yliu.null@gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343248546.26034.68.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 06:15 AM, Yuanhan Liu wrote:
-> The old code would call __get_free_page() even though previous
-> allocation fail met. This is not needed.
-
-Yeah, I guess, but its hardly worth changing.
-
-    J
-
-
->
-> Signed-off-by: Yuanhan Liu <yliu.null@gmail.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> ---
->  arch/x86/mm/pgtable.c |   18 +++++++++---------
->  1 files changed, 9 insertions(+), 9 deletions(-)
->
-> diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-> index 8573b83..6760348 100644
-> --- a/arch/x86/mm/pgtable.c
-> +++ b/arch/x86/mm/pgtable.c
-> @@ -181,24 +181,24 @@ static void free_pmds(pmd_t *pmds[])
->  {
->  	int i;
->  
-> -	for(i = 0; i < PREALLOCATED_PMDS; i++)
-> -		if (pmds[i])
-> -			free_page((unsigned long)pmds[i]);
-> +	for(i = 0; i < PREALLOCATED_PMDS; i++) {
-> +		if (pmds[i] == NULL)
-> +			break;
-> +		free_page((unsigned long)pmds[i]);
-> +	}
->  }
->  
->  static int preallocate_pmds(pmd_t *pmds[])
->  {
->  	int i;
-> -	bool failed = false;
->  
->  	for(i = 0; i < PREALLOCATED_PMDS; i++) {
-> -		pmd_t *pmd = (pmd_t *)__get_free_page(PGALLOC_GFP);
-> -		if (pmd == NULL)
-> -			failed = true;
-> -		pmds[i] = pmd;
-> +		pmds[i] = (pmd_t *)__get_free_page(PGALLOC_GFP);
-> +		if (pmds[i] == NULL)
-> +			break;
->  	}
->  
-> -	if (failed) {
-> +	if (i < PREALLOCATED_PMDS) {
->  		free_pmds(pmds);
->  		return -ENOMEM;
->  	}
-
+On Wed, Jul 25, 2012 at 10:35:46PM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-07-24 at 18:15 +0200, Robert Richter wrote:
+> > David,
+> > 
+> > On 24.07.12 08:20:19, David Ahern wrote:
+> > > On 7/23/12 12:13 PM, Arnaldo Carvalho de Melo wrote:
+> > > > Em Fri, Jul 20, 2012 at 05:25:53PM -0600, David Ahern escreveu:
+> > > >> PEBS cannot be used with guest mode. If user adds :p modifier set
+> > > >> exclude_guest as well.
+> > > >
+> > > > Is this something Intel specific? Or can someone think of an arch where
+> > > > this limitation wouldn't exist?
+> > > 
+> > > Good point. So far precise_ip is used by arch/x86 only. I don't have an 
+> > > AMD based server so I don't know if there is a conflict between 
+> > > virtualization and IBS. Added Robert for advice.
+> > 
+> > thanks for this hint.
+> > 
+> > On AMD cpus precise_ip maps to IBS, which does not support hardware
+> > options as perfctrs do. Thus, following attr flags are not supported:
+> > 
+> >  exclude_user, exclude_kernel, exclude_host, exclude_guest
+> > 
+> > Counting in guest mode is possible with IBS, but not the exclusion of
+> > a certain mode. If precise_ip counting is enabled on AMD we may not
+> > set the exclude_guest flag.
+> 
+> IIRC we have SVM enter/exit hooks in kvm/perf already, we could use
+> those to implement exclude_guest for IBS.
+> 
+> Now I've been trying to find the patches that introduced that, but I'm
+> failing horridly. Gleb, got us a pointer here?
+The commit is 144d31e6, but it introduces hook that is used on VMX only.
+SVM does not need it to implement guest/host only counters since it
+has HW support for that in the PMU.
+ 
+--
+			Gleb.
