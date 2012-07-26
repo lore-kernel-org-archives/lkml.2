@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab2GZVzm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:55:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34433 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab2GZVzk (ORCPT
+	id S1752855Ab2GZV4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:56:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60447 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752390Ab2GZV4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:55:40 -0400
-Date: Thu, 26 Jul 2012 14:54:43 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Rik van Riel <riel@redhat.com>
-cc: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+	Thu, 26 Jul 2012 17:56:06 -0400
+Date: Thu, 26 Jul 2012 22:55:43 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Arnd Bergmann <arnd@arndb.de>,
+        devicetree-discuss@lists.ozlabs.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH] mm: hugetlbfs: Close race during teardown of hugetlbfs
- shared page tables v2
-In-Reply-To: <5011AFEC.2040609@redhat.com>
-Message-ID: <alpine.LSU.2.00.1207261451180.1705@eggly.anvils>
-References: <20120720134937.GG9222@suse.de> <5011AFEC.2040609@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Benoit Cousson <b-cousson@ti.com>
+Subject: Re: [RFC][PATCH 0/14] PM / shmobile: Pass power domain information
+ via DT (was: Re: [RFD] PM: Device tree representation of power domains)
+Message-ID: <20120726215543.GJ4560@opensource.wolfsonmicro.com>
+References: <201207032302.17805.rjw@sisk.pl>
+ <201207242237.28051.rjw@sisk.pl>
+ <201207251300.34892.arnd@arndb.de>
+ <201207260032.40159.rjw@sisk.pl>
+ <87vchb4ar8.fsf@ti.com>
+ <20120726210952.GG4560@opensource.wolfsonmicro.com>
+ <87mx2mmc1b.fsf@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SLfjTIIQuAzj8yil"
+Content-Disposition: inline
+In-Reply-To: <87mx2mmc1b.fsf@ti.com>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012, Rik van Riel wrote:
-> On 07/20/2012 09:49 AM, Mel Gorman wrote:
-> > This V2 is still the mmap_sem approach that fixes a potential deadlock
-> > problem pointed out by Michal.
-> 
-> Larry and I were looking around the hugetlb code some
-> more, and found what looks like yet another race.
-> 
-> In hugetlb_no_page, we have the following code:
-> 
-> 
->         spin_lock(&mm->page_table_lock);
->         size = i_size_read(mapping->host) >> huge_page_shift(h);
->         if (idx >= size)
->                 goto backout;
-> 
->         ret = 0;
->         if (!huge_pte_none(huge_ptep_get(ptep)))
->                 goto backout;
-> 
->         if (anon_rmap)
->                 hugepage_add_new_anon_rmap(page, vma, address);
->         else
->                 page_dup_rmap(page);
->         new_pte = make_huge_pte(vma, page, ((vma->vm_flags & VM_WRITE)
->                                 && (vma->vm_flags & VM_SHARED)));
->         set_huge_pte_at(mm, address, ptep, new_pte);
-> 	...
-> 	spin_unlock(&mm->page_table_lock);
-> 
-> Notice how we check !huge_pte_none with our own
-> mm->page_table_lock held.
-> 
-> This offers no protection at all against other
-> processes, that also hold their own page_table_lock.
-> 
-> In short, it looks like it is possible for multiple
-> processes to go through the above code simultaneously,
-> potentially resulting in:
-> 
-> 1) one process overwriting the pte just created by
->    another process
-> 
-> 2) data corruption, as one partially written page
->    gets superceded by an newly zeroed page, but no
->    TLB invalidates get sent to other CPUs
-> 
-> 3) a memory leak of a huge page
-> 
-> Is there anything that would make this race impossible,
-> or is this a real bug?
 
-I believe it's protected by the unloved hugetlb_instantiation_mutex.
+--SLfjTIIQuAzj8yil
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> If so, are there more like it in the hugetlbfs code?
+On Thu, Jul 26, 2012 at 02:45:52PM -0700, Kevin Hilman wrote:
 
-What, more than one bug in that code?
-Surely that would defy the laws of probability ;)
+> Ideally, we will eventually have a representation that can map
+> from regulators all the way down to IP blocks.  regulator --> voltage
+> domain --> power domain --> clock domain --> clocks --> IP block.
 
-Hugh
+Well, often the clock bit is something of a noop - a lot of SoCs can
+reparent the IP block clocks between the different clock domains happily
+and have core clock domains that are mostly orthogonal to the power
+domains.  But yes.
+
+--SLfjTIIQuAzj8yil
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQEbzUAAoJEBus8iNuMP3dnXcP/jFLKtSMKjOVVPSJfE9TfobM
+ClesmABbQItO82QxziXieqbP0lqCW3gKjvHRPLNiPqmQg5YtQ4mx6Wqo9OFwxHdL
+OXwxKDybMDuN4x/x8SHbnpzrPm4CNQ7zOrSjYgMq+vv3zufAvOtO3QOaUPMdKVd2
+6+s7T3kf8esHf5hllCeNiJhrIcImbJlw2p4+X/GHDi2tVPs1d7b4V46ZvjtFqXG4
+G4Tsyli3aelMEml+w2E3hVWP+CJX7kygLvOAX3BzlDWtHVxpdYIxR6b/JS4Fhuhg
+X6P/BpZRTQthDMhI+9Xj5C/8HvYCN4ZUQ31NLdh4Gaov5Fu10N8kPL6JO4SxxOUQ
+T2aCUzT2hvpeeUG2w8hXvyUSdUri5MdPSHRgCl0hVaBWCLBgoxr62u1CHrh6z5m5
+3vITouilNQ+mvXwKx16whLxUcRKomYK/CNo7LYA7jiW6ftsWsw1xPPqkM3Qa9SzK
+XZPbdeTrM+bsH/utP1xoKQ3RR1d464bNMyeNikrRB46nXu3TrXyUGeyWS+XJU5RC
+9VC3CsD13S1he5EVJB6phJS+gVICqqAWmZdiaiD0Ts/O2EiOJuQbKx0LSteoAigb
+ac7XlAdqAW476w9AwtZP5ERMmurUlMi/VCr9cFIrb297ufZpJOooaQ/tG4qrRrBE
+Pp8SJQa/3s3uJl86XERp
+=Mioi
+-----END PGP SIGNATURE-----
+
+--SLfjTIIQuAzj8yil--
