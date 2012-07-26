@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab2GZVV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:21:26 -0400
+	id S1753099Ab2GZVVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:21:40 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:55834 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab2GZVVD (ORCPT
+	with ESMTP id S1753045Ab2GZVVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:21:03 -0400
+	Thu, 26 Jul 2012 17:21:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Aaditya Kumar <aaditya.kumar@ap.sony.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: [ 10/23] mm: fix lost kswapd wakeup in kswapd_stop()
-Date: Thu, 26 Jul 2012 14:19:49 -0700
-Message-Id: <20120726211406.798340041@linuxfoundation.org>
+        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
+        Iwo Mergler <Iwo.Mergler@netcommwireless.com>,
+        James Nute <newten82@gmail.com>
+Subject: [ 15/23] UBIFS: fix a bug in empty space fix-up
+Date: Thu, 26 Jul 2012 14:19:54 -0700
+Message-Id: <20120726211407.256255674@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -32,82 +32,65 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
 
-commit 1c7e7f6c0703d03af6bcd5ccc11fc15d23e5ecbe upstream.
+commit c6727932cfdb13501108b16c38463c09d5ec7a74 upstream.
 
-Offlining memory may block forever, waiting for kswapd() to wake up
-because kswapd() does not check the event kthread->should_stop before
-sleeping.
+UBIFS has a feature called "empty space fix-up" which is a quirk to work-around
+limitations of dumb flasher programs. Namely, of those flashers that are unable
+to skip NAND pages full of 0xFFs while flashing, resulting in empty space at
+the end of half-filled eraseblocks to be unusable for UBIFS. This feature is
+relatively new (introduced in v3.0).
 
-The proper pattern, from Documentation/memory-barriers.txt, is:
+The fix-up routine (fixup_free_space()) is executed only once at the very first
+mount if the superblock has the 'space_fixup' flag set (can be done with -F
+option of mkfs.ubifs). It basically reads all the UBIFS data and metadata and
+writes it back to the same LEB. The routine assumes the image is pristine and
+does not have anything in the journal.
 
-   ---  waker  ---
-   event_indicated = 1;
-   wake_up_process(event_daemon);
+There was a bug in 'fixup_free_space()' where it fixed up the log incorrectly.
+All but one LEB of the log of a pristine file-system are empty. And one
+contains just a commit start node. And 'fixup_free_space()' just unmapped this
+LEB, which resulted in wiping the commit start node. As a result, some users
+were unable to mount the file-system next time with the following symptom:
 
-   ---  sleeper  ---
-   for (;;) {
-      set_current_state(TASK_UNINTERRUPTIBLE);
-      if (event_indicated)
-         break;
-      schedule();
-   }
+UBIFS error (pid 1): replay_log_leb: first log node at LEB 3:0 is not CS node
+UBIFS error (pid 1): replay_log_leb: log error detected while replaying the log at LEB 3:0
 
-   set_current_state() may be wrapped by:
-      prepare_to_wait();
+The root-cause of this bug was that 'fixup_free_space()' wrongly assumed
+that the beginning of empty space in the log head (c->lhead_offs) was known
+on mount. However, it is not the case - it was always 0. UBIFS does not store
+in it the master node and finds out by scanning the log on every mount.
 
-In the kswapd() case, event_indicated is kthread->should_stop.
+The fix is simple - just pass commit start node size instead of 0 to
+'fixup_leb()'.
 
-  === offlining memory (waker) ===
-   kswapd_stop()
-      kthread_stop()
-         kthread->should_stop = 1
-         wake_up_process()
-         wait_for_completion()
-
-  ===  kswapd_try_to_sleep (sleeper) ===
-   kswapd_try_to_sleep()
-      prepare_to_wait()
-           .
-           .
-      schedule()
-           .
-           .
-      finish_wait()
-
-The schedule() needs to be protected by a test of kthread->should_stop,
-which is wrapped by kthread_should_stop().
-
-Reproducer:
-   Do heavy file I/O in background.
-   Do a memory offline/online in a tight loop
-
-Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
+Reported-by: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
+Tested-by: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
+Reported-by: James Nute <newten82@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ubifs/sb.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3013,7 +3013,10 @@ static void kswapd_try_to_sleep(pg_data_
- 		 * them before going back to sleep.
- 		 */
- 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
--		schedule();
-+
-+		if (!kthread_should_stop())
-+			schedule();
-+
- 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
- 	} else {
- 		if (remaining)
+--- a/fs/ubifs/sb.c
++++ b/fs/ubifs/sb.c
+@@ -724,8 +724,12 @@ static int fixup_free_space(struct ubifs
+ 		lnum = ubifs_next_log_lnum(c, lnum);
+ 	}
+ 
+-	/* Fixup the current log head */
+-	err = fixup_leb(c, c->lhead_lnum, c->lhead_offs);
++	/*
++	 * Fixup the log head which contains the only a CS node at the
++	 * beginning.
++	 */
++	err = fixup_leb(c, c->lhead_lnum,
++			ALIGN(UBIFS_CS_NODE_SZ, c->min_io_size));
+ 	if (err)
+ 		goto out;
+ 
 
 
