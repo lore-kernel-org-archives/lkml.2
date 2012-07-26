@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab2GZVWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:22:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51570 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab2GZVWA (ORCPT
+	id S1753074Ab2GZVVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:21:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55834 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab2GZVVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:22:00 -0400
+	Thu, 26 Jul 2012 17:21:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 22/23] ARM: SAMSUNG: Update default rate for xusbxti clock
-Date: Thu, 26 Jul 2012 14:20:01 -0700
-Message-Id: <20120726211407.891861694@linuxfoundation.org>
+        Benny Halevy <bhalevy@tonian.com>, Boaz Harrosh <bharrosh@panasas.com>
+Subject: [ 17/23] ore: Remove support of partial IO request (NFS crash)
+Date: Thu, 26 Jul 2012 14:19:56 -0700
+Message-Id: <20120726211407.432822551@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -31,36 +30,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tushar Behera <tushar.behera@linaro.org>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit bdd3cc26ba651e33780ade33f1410320cf2d0cf4 upstream.
+commit 62b62ad873f2accad9222a4d7ffbe1e93f6714c1 upstream.
 
-The rate of xusbxti clock is set in individual machine files.
-The default value should be defined at the clock definition
-and individual machine files should modify it if required.
+Do to OOM situations the ore might fail to allocate all resources
+needed for IO of the full request. If some progress was possible
+it would proceed with a partial/short request, for the sake of
+forward progress.
 
-Division by zero in kernel.
-[<c0011849>] (unwind_backtrace+0x1/0x9c) from [<c022c663>] (Ldiv0+0x9/0x12)
-[<c022c663>] (Ldiv0+0x9/0x12) from [<c001a3c3>] (s3c_setrate_clksrc+0x33/0x78)
-[<c001a3c3>] (s3c_setrate_clksrc+0x33/0x78) from [<c0019e67>] (clk_set_rate+0x2f/0x78)
+Since this crashes NFS-core and exofs is just fine without it just
+remove this contraption, and fail.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+TODO:
+	Support real forward progress with some reserved allocations
+	of resources, such as mem pools and/or bio_sets
+
+[Bug since 3.2 Kernel]
+CC: Benny Halevy <bhalevy@tonian.com>
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/plat-s5p/clock.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/exofs/ore.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/arch/arm/plat-s5p/clock.c
-+++ b/arch/arm/plat-s5p/clock.c
-@@ -38,6 +38,7 @@ struct clk clk_ext_xtal_mux = {
- struct clk clk_xusbxti = {
- 	.name		= "xusbxti",
- 	.id		= -1,
-+	.rate		= 24000000,
- };
+--- a/fs/exofs/ore.c
++++ b/fs/exofs/ore.c
+@@ -735,13 +735,7 @@ static int _prepare_for_striping(struct
+ out:
+ 	ios->numdevs = devs_in_group;
+ 	ios->pages_consumed = cur_pg;
+-	if (unlikely(ret)) {
+-		if (length == ios->length)
+-			return ret;
+-		else
+-			ios->length -= length;
+-	}
+-	return 0;
++	return ret;
+ }
  
- struct clk s5p_clk_27m = {
+ int ore_create(struct ore_io_state *ios)
 
 
