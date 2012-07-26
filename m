@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab2GZLcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:32:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48117 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751049Ab2GZLcH (ORCPT
+	id S1752348Ab2GZLfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:35:25 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:56173 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751341Ab2GZLfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:32:07 -0400
-Date: Thu, 26 Jul 2012 12:32:04 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 07/21] ASoC: io: Prevent use of regmap if request fails
-Message-ID: <20120726113204.GY3099@opensource.wolfsonmicro.com>
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
- <1343298534-13611-8-git-send-email-lee.jones@linaro.org>
+	Thu, 26 Jul 2012 07:35:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R0SsnouPYaG+7rP6"
-Content-Disposition: inline
-In-Reply-To: <1343298534-13611-8-git-send-email-lee.jones@linaro.org>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKVbJB96Y87=a1dOskYX472Um3w=_orQWN19_Yj+iRp7js9Anw@mail.gmail.com>
+References: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
+ <CANfBPZ-amdTBXMbj0E2SrMHBjHFnd8cuC4ASoygkbXC+5oeAGg@mail.gmail.com> <CAKVbJB96Y87=a1dOskYX472Um3w=_orQWN19_Yj+iRp7js9Anw@mail.gmail.com>
+From: "S, Venkatraman" <svenkatr@ti.com>
+Date: Thu, 26 Jul 2012 17:05:02 +0530
+Message-ID: <CANfBPZ97FvXnx0JtsDtDhYRxB=f38NsxcvvO4UOqN_sOYe_Rcg@mail.gmail.com>
+Subject: Re: [PATCH V3 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
+To: vinayak holikatti <vinholikatti@gmail.com>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
+        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
+        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
+        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
+        sreekumar.c@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 26, 2012 at 4:42 PM, vinayak holikatti
+<vinholikatti@gmail.com> wrote:
+> On Thu, Jul 26, 2012 at 4:02 PM, S, Venkatraman <svenkatr@ti.com> wrote:
+>> On Thu, Jul 26, 2012 at 2:12 PM, Vinayak Holikatti
+>> <vinholikatti@gmail.com> wrote:
+>>> This patch set adds following features
+>>>  - Seggregate PCI specific code in ufshcd.c
+>>>  - Adds PCI glue driver ufshcd-pci.c and ufshcd.c become core module
+>>>  - Adds Platform glue driver ufshcd-pltfrm.c
+>>>  - Update correct transfer size in Command UPIU
+>>>
+>>> Vinayak Holikatti (4):
+>>>   [SCSI] drivers/scsi/ufs: Seggregate PCI Specific Code
+>>>   [SCSI] drivers/scsi/ufs: Separate PCI code into glue driver
+>>>   [SCSI] ufs: Add Platform glue driver for ufshcd
+>>>   [SCSI] ufs: Correct the expected data transfer size
+>>>
+>>>  drivers/scsi/ufs/Kconfig         |   37 +++-
+>>>  drivers/scsi/ufs/Makefile        |    2 +
+>>>  drivers/scsi/ufs/ufshcd-pci.c    |  228 ++++++++++++++++++++
+>>>  drivers/scsi/ufs/ufshcd-pltfrm.c |  222 ++++++++++++++++++++
+>>>  drivers/scsi/ufs/ufshcd.c        |  422 ++++++--------------------------------
+>>>  drivers/scsi/ufs/ufshcd.h        |  206 +++++++++++++++++++
+>>>  drivers/scsi/ufs/ufshcd_common.h |   53 +++++
+>>>  7 files changed, 813 insertions(+), 357 deletions(-)
+>>
+>> Two minor observations..
+>> 1) If both pci and platform have to do the exact same thing in their
+>> _suspend() and _resume() routines, perhaps there is scope for making
+>> them as common (the steps outlined in them should be done in core
+>> ufshcd) ?
+> Both will not have to do the exact same thing. We have plan to implement
+> ufshcd_suspend and ufshcd_resume which will be generic and will be part
+> of ufshcd core, as you said.
 
---R0SsnouPYaG+7rP6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks. The comments in the driver files don't reflect this; it'd be
+wise to create
+the placeholder for core_suspend()/resume() in ufshcd.c, instead of
+the platform drivers.
 
-On Thu, Jul 26, 2012 at 11:28:40AM +0100, Lee Jones wrote:
-
-> @@ -52,10 +52,13 @@ static unsigned int hw_read(struct snd_soc_codec *cod=
-ec, unsigned int reg)
->  		if (codec->cache_only)
->  			return -1;
-> =20
-> -		ret =3D regmap_read(codec->control_data, reg, &val);
-> -		if (ret =3D=3D 0)
-> -			return val;
-> -		else
-> +		if (codec->using_regmap) {
-> +			ret =3D regmap_read(codec->control_data, reg, &val);
-> +			if (ret =3D=3D 0)
-> +				return val;
-> +			else
-> +				return -1;
-> +		} else
-
-No, this makes no sense.  There is no non-regmap I/O support in soc-io,
-anything using the soc-io hw_read() function must be using regmap.
-
->  	case SND_SOC_REGMAP:
->  		/* Device has made its own regmap arrangements */
-> -		codec->using_regmap =3D true;
-
-Again, this makes no sense.  If we're explicitly being asked to use
-regmap then we should be using regmap or just failing to set up I/O
-(which is obviously a catastrophic failure).
-
---R0SsnouPYaG+7rP6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQESquAAoJEBus8iNuMP3d9DsP/iDnBdEh+CX25QbvBdsNCa6/
-KjsDUX0kLU07gIfa8dq+A1k6MLIsHte5h43MhHZS3Tuck3GvxfGD1nPLA2ok4V/5
-uLEgzGxPJywXpf3130/2H8pHTsFKXt9lNPPhsGuBNdF3YJcKMtRtRL+JHxY+p4Vc
-heIjm9Ap90nDRbU2l6uWlC1T1pBzlY4KwZvJMqtCJja6DwEptnnBklk/vpyl5d2J
-CvquDClF76pSZgtbrfN8hpOpi6CLWf0+Ks9a2RXhw9SM9YWRh/x0nNMUfpJjWwZQ
-4a+5f5R2DPkO3t8ir8IPL9YQf+gKVfBcPFzi3hc0b2EPIuPJjqIj7j1NjczG9p7z
-Pf03Bqj3o34QAVgvL3n7zbE66YK5PjhQlxC5o3e3maejeBoOr8EEGOhkZqvlImeR
-chD2O6dTrHWvkck+ethnT2/Sq0fS1kCBg/aBAOZMCnrezYZAf1MU4myLaHbK3678
-TIV1pj63qakN18IdwoKVncDC1SgIIMgvCbR5pg7kQYIh4SKusDdDpqbTemfEs4Qc
-yZeTXK5ENnriN1jZsIMRIu88rh/XHrHdbtmas1aQHX1vuhnlXD40wDuwPOzxEgBt
-0kr+mgXGOoEG4ZVMtXEBp590jxXJs1oZoMy1YhHzmCeqJz4R0gU0G5qf8HmZat3u
-+H9v3cdDja4WWYPTLJa/
-=mbZQ
------END PGP SIGNATURE-----
-
---R0SsnouPYaG+7rP6--
+>>
+>> 2) Need to include ufshcd_common.h in ufshcd.c so that the prototypes
+>> are supplied for the exported functions.
+> Thank you, I will make necessary changes in next version of patches.
+>
