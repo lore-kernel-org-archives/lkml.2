@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab2GZOON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:14:13 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:53369 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab2GZOOL (ORCPT
+	id S1752201Ab2GZOPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:15:07 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40733 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab2GZOPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:14:11 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 26 Jul 2012 07:14:26 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Johannes Winkelmann <johannes.winkelmann@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Jean Delvare <khali@linux-fr.org>,
-        Johannes Winkelmann <johannes.winkelmann@sensirion.com>
-Subject: Re: [RFC][PATCH] hwmon: add support for Sensirion C1 sensor
-Message-ID: <20120726141426.GA15985@roeck-us.net>
-References: <1342789042-13433-1-git-send-email-johannes.winkelmann@sensirion.com>
- <20120721170150.GA13086@roeck-us.net>
- <CAEYbzYsTQttoOnkoYqw9RkDO1zUc3qpyg0CzEY11_=oqdk0H-Q@mail.gmail.com>
+	Thu, 26 Jul 2012 10:15:04 -0400
+Message-ID: <501150E5.6010503@linaro.org>
+Date: Thu, 26 Jul 2012 15:15:01 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEYbzYsTQttoOnkoYqw9RkDO1zUc3qpyg0CzEY11_=oqdk0H-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 20/21] ASoC: codecs: Enable AB8500 CODEC for Device Tree
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-21-git-send-email-lee.jones@linaro.org> <20120726115055.GD3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120726115055.GD3099@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+Sorry missed this:
 
-On Thu, Jul 26, 2012 at 03:53:12PM +0200, Johannes Winkelmann wrote:
-> Hi Guenter,
-> 
-> Thanks a lot for the feedback; I've incorporated most of it in
-> preparation for a v2 of the patch; I have some comments on the points
-> I'm not certain about:
-> 
-[ ... ]
-> >> +
-> >> +The device communicates with the I2C protocol. All sensors are set to the same
-> >> +I2C address 0x70, so an entry with I2C_BOARD_INFO("shtc1", 0x70) can be used
-> >> +in the board setup code.
-> >> +
-> > Please also provide a reference to the other means to instantiate the driver.
-> 
-> I've checked a couple of documentation files and haven't found what
-> else I should add, in fact the other sensor documents I checked didn't
-> cover this, except for the one from the sht21 after which I modelled
-> the document. Could you give me a pointer where to look?
-> 
-Just add a reference to Documentation/i2c/instantiating-devices.
+>>   	{
+>>   		.name = "ab8500-codec",
+>> +		.of_compatible = "stericsson,ab8500-codec",
+>>   	},
+>
+> Why are we doing this?  The MFD cells are a totally Linux specific
+> thing, there's no reason to represent them in the device tree unless
+> they're in some way reusable and the "ab8500-codec" name suggests that's
+> unlikely.  Just put the properties on the parent node and instantiate
+> the MFD cell as normal.
 
-Thanks,
-Guenter
+We have all of the AB8500 devices into the Device Tree to accurately 
+represent the hardware. We will also be passing configuration 
+information into the AB8500 Codec from Device Tree. The only reason 
+we're still registering them using the MFD API is to overcome addressing 
+issues encountered earlier. Each 'device' still belongs in the 'device' 
+tree.
+
+If we were to take this Device Tree and use it on something non-Linux, 
+that OS will still need to know about each of the AB8500 devices and 
+every associated configuration option. Only in Linux do we continue to 
+register them though a different API, which doesn't affect any other OS.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
