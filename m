@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab2GZVOu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:14:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55206 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab2GZVOZ (ORCPT
+	id S1752789Ab2GZVRW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:17:22 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10649 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab2GZVRV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:14:25 -0400
-Message-ID: <5011B32D.1080102@wwwdotorg.org>
-Date: Thu, 26 Jul 2012 15:14:21 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 26 Jul 2012 17:17:21 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 26 Jul 2012 14:16:52 -0700
+From: Peter Boonstoppel <pboonstoppel@nvidia.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Andy Walls <awalls@md.metrocast.net>,
+        Diwakar Tundlam <dtundlam@nvidia.com>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Thu, 26 Jul 2012 14:16:51 -0700
+Subject: RE: [PATCH 1/1] kthread: disable preemption during complete()
+Thread-Topic: [PATCH 1/1] kthread: disable preemption during complete()
+Thread-Index: Ac1rHCNq0j2OYZo9SViAVcLPid3/VQAVRVV6
+Message-ID: <5FBF8E85CA34454794F0F7ECBA79798F379D364860@HQMAIL04.nvidia.com>
+References: <5FBF8E85CA34454794F0F7ECBA79798F379D364859@HQMAIL04.nvidia.com>
+  <20120725000901.GA5304@google.com>
+  <5FBF8E85CA34454794F0F7ECBA79798F379D36485E@HQMAIL04.nvidia.com>
+  <20120725224044.GC32378@google.com>
+ <1343289850.26034.79.camel@twins>,<alpine.LFD.2.02.1207261242240.32033@ionos>
+In-Reply-To: <alpine.LFD.2.02.1207261242240.32033@ionos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] mfd: add MAX8907 core driver
-References: <1343331630-27126-1-git-send-email-swarren@wwwdotorg.org> <20120726203526.GD4560@opensource.wolfsonmicro.com>
-In-Reply-To: <20120726203526.GD4560@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 02:35 PM, Mark Brown wrote:
-> On Thu, Jul 26, 2012 at 01:40:30PM -0600, Stephen Warren wrote:
+> > tglx has patches that make the kthread create/destroy stuff from hotplug
+> > go away.. that seems like the better approach.
 
->> +		if (!irqd_irq_disabled(d) && (value & irq_data->offs)) {
-> 
-> This looks very suspicious...  why do we need to call 
-> irqd_irq_disabled() here?
+> Right. That cpu hotplug setup/teardown stuff is ugly.
 
-I believe the status register reflects the unmasked status, it's just
-the interrupt signal that's affected by the mask.
+If that stuff gets removed complete that's great. The only change I'm aware of right now is the workqueue one: http://thread.gmane.org/gmane.linux.kernel/1329164
 
->> +static void max8907_irq_enable(struct irq_data *data) +{ +	/*
->> Everything happens in max8907_irq_sync_unlock */ +}
-> 
->> +static void max8907_irq_disable(struct irq_data *data) +{ +	/*
->> Everything happens in max8907_irq_sync_unlock */ +}
-> 
-> The fact that these functions are empty is the second part of the
-> above suspicous check for disabled IRQs.  We're just completely
-> ignoring the caller here.  What would idiomatically happen is that
-> we'd update a variable here then write it out in the unmask.
-> 
-> If these functions really should be empty then they should be
-> omitted.
-> 
->> +static int max8907_irq_set_wake(struct irq_data *data, unsigned
->> int on) +{ +	/* Everything happens in max8907_irq_sync_unlock */ 
->> + +	return 0; +}
-> 
-> Again, this doesn't look clever at all.
+> > The main thing is avoiding the wakeup preemption from the complete()
+> > because we're going to sleep right after anyway.
 
-So the idea here was that the IRQ core is already maintaining state
-which describes which IRQs are enabled/disabled and wake/not. Rather
-than have irq_enable/irq_disable/set_wake do nothing but save the same
-state to irq_chip-specific structures, I removed the body of those
-functions and instead just call irqd_irq_disabled() etc. wherever I
-would have accessed the "local" state. Is that not a legitimate design
-then?
+You are very likely to be preempted by the complete(), since the newly created thread has a relatively high vruntime.
+
+> > The comment doesn't really make that clear.
+
+> Right, the comment is crap. It has nothing to do with kthread_bind()
+> and stuff. The whole purpose is to avoid the pointless preemption
+> after wakeup.
+
+The only case I want to solve is the kthread_bind()->wait_task_inactive() scenario. On our platforms this patch reduces average cpu_up() time from about 9ms to 8ms, but max time goes down from 37ms to 8.5ms. cpu_up() latency becomes much more predictable.
+
+
+PeterB
