@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab2GZPH7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:07:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38011 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab2GZPH5 (ORCPT
+	id S1752577Ab2GZPII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:08:08 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:39144
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752452Ab2GZPIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:07:57 -0400
-Date: Thu, 26 Jul 2012 08:07:33 -0700
-From: tip-bot for Alex Shi <alex.shi@intel.com>
-Message-ID: <tip-6956dc568f34107f1d02b24f87efe7250803fc87@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, alex.shi@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, alex.shi@intel.com
-In-Reply-To: <1342765190-21540-1-git-send-email-alex.shi@intel.com>
-References: <1342765190-21540-1-git-send-email-alex.shi@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/numa: Add SD_PERFER_SIBLING to CPU domain
-Git-Commit-ID: 6956dc568f34107f1d02b24f87efe7250803fc87
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 26 Jul 2012 11:08:05 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6QF7wpl032592
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] Problem with commit cf03c5dac83609f09d9f0e9fa3c09d86daed614d
+In-Reply-To: <20120726134926.GA10452@thinkpad-t410> (Seth Forshee's message of
+	"Thu, 26 Jul 2012 08:49:26 -0500")
+References: <gik3xqtzw3.fsf@karga.hank.lab>
+	<20120726134926.GA10452@thinkpad-t410>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Thu, 26 Jul 2012 17:07:57 +0200
+Message-ID: <gi7gtqlfw2.fsf@mx10.gouders.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jul 2012 08:07:39 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 26 Jul 2012 17:08:00 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6956dc568f34107f1d02b24f87efe7250803fc87
-Gitweb:     http://git.kernel.org/tip/6956dc568f34107f1d02b24f87efe7250803fc87
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Fri, 20 Jul 2012 14:19:50 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 26 Jul 2012 11:46:58 +0200
+Seth Forshee <seth.forshee@canonical.com> writes:
 
-sched/numa: Add SD_PERFER_SIBLING to CPU domain
+> On Thu, Jul 26, 2012 at 03:28:44PM +0200, Dirk Gouders wrote:
+>> Hi Seth,
+>> 
+>> today, I noticed a problem with the current kernel
+>> (3.5.0-04773-gbdc0077): my laptop hangs during boot -- the last message
+>> on the console is printed just before invoking `udevadm trigger'.
+>> 
+>> I bisected the problem and ended at commit
+>> cf03c5dac83609f09d9f0e9fa3c09d86daed614d (brcm80211: smac: inform
+>> mac80211 of the X2 regulatory domain).  However, I'm not sure that this
+>> commit really is the reason for my problems, because the behaviour is a
+>> bit different: at that state the machine not just hangs but the console
+>> shows a trace which I append to the end of this mail -- but the trace
+>> happens at the same state during the boot process.
+>
+> Hi Dirk,
+>
+> The NULL pointer dereference in wlc_phy_chanspec_band_validch is already
+> fixed in edc7651f3a4ffa7fca37d92401562694121512ad. There was also
+> another related crash that appeared after the introduction of 802.11ad
+> support that's fixed in 32c336a5dfd16b4645c8a0dbc534efd02f079e02.
+>
+> So in all likelihood whatever problem your seeing in current -git is a
+> different issue. One easy way to test this would be to prevent the
+> brcmsmac module from loading and verify that you still get the hang,
+> then rerun the bisection that way to keep those bugs from affecting your
+> results.
 
-Commit 8e7fbcbc22c ("sched: Remove stale power aware scheduling remnants
-and dysfunctional knobs") removed SD_PERFER_SIBLING from the CPU domain.
+Hi Seth,
 
-On NUMA machines this causes that load_balance() doesn't perfer LCPU in
- same physical CPU package.
+thanks for your reply and sorry for the noise.
 
-It causes some actual performance regressions on our NUMA machines from
-Core2 to NHM and SNB.
+I followed your advice and tried to boot with the WLAN interface turned
+off, and the problem still exists.  I'll start a new bisect session,
+probably with one of the commits you mentioned as the first good commit.
 
-Adding this domain flag again recovers the performance drop.
+Best regards,
 
-This change doesn't have any bad impact on any of my benchmarks:
- specjbb, kbuild, fio, hackbench .. etc, on all my machines.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1342765190-21540-1-git-send-email-alex.shi@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/topology.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index e91cd43..fec12d6 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -164,6 +164,7 @@ int arch_update_cpu_topology(void);
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_SHARE_PKG_RESOURCES		\
- 				| 0*SD_SERIALIZE			\
-+				| 1*SD_PREFER_SIBLING			\
- 				,					\
- 	.last_balance		= jiffies,				\
- 	.balance_interval	= 1,					\
+Dirk
