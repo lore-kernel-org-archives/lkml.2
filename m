@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab2GZKfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 06:35:08 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:63742 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab2GZK3T (ORCPT
+	id S1752428Ab2GZKfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 06:35:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49118 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab2GZK3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 06:29:19 -0400
+	Thu, 26 Jul 2012 06:29:15 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
@@ -14,9 +14,9 @@ Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         sameo@linux.intel.com, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
         alsa-devel@alsa-project.org, lrg@ti.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 04/21] ASoC: ux500: Strengthen error checking after memory allocation
-Date: Thu, 26 Jul 2012 11:28:37 +0100
-Message-Id: <1343298534-13611-5-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 01/21] ARM: ux500: Remove unused snowball_of_platform_devs struct
+Date: Thu, 26 Jul 2012 11:28:34 +0100
+Message-Id: <1343298534-13611-2-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
 References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
@@ -24,44 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there is no out-of-memory error checking after attempting
-to allocate memory for the ux500_msp or ux500_msp_i2s_drvdata data
-structures. Instead we go about populating them regardless. This
-patch applies the necessary error checking to prevent a panic.
+This was left over during a recent clean-up which removed Device Tree
+helper structs. There is no longer a requirement for it, so we can just
+remove it.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- sound/soc/ux500/ux500_msp_dai.c |    3 +++
- sound/soc/ux500/ux500_msp_i2s.c |    2 ++
- 2 files changed, 5 insertions(+)
+ arch/arm/mach-ux500/board-mop500.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/sound/soc/ux500/ux500_msp_dai.c b/sound/soc/ux500/ux500_msp_dai.c
-index 62ac0285..cdbbdaf 100644
---- a/sound/soc/ux500/ux500_msp_dai.c
-+++ b/sound/soc/ux500/ux500_msp_dai.c
-@@ -760,6 +760,9 @@ static int __devinit ux500_msp_drv_probe(struct platform_device *pdev)
- 	drvdata = devm_kzalloc(&pdev->dev,
- 				sizeof(struct ux500_msp_i2s_drvdata),
- 				GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+
- 	drvdata->fmt = 0;
- 	drvdata->slots = 1;
- 	drvdata->tx_mask = 0x01;
-diff --git a/sound/soc/ux500/ux500_msp_i2s.c b/sound/soc/ux500/ux500_msp_i2s.c
-index ee14d2d..4c79850 100644
---- a/sound/soc/ux500/ux500_msp_i2s.c
-+++ b/sound/soc/ux500/ux500_msp_i2s.c
-@@ -673,6 +673,8 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index 80b4f0e..e641003 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -726,11 +726,6 @@ MACHINE_END
  
- 	*msp_p = devm_kzalloc(&pdev->dev, sizeof(struct ux500_msp), GFP_KERNEL);
- 	msp = *msp_p;
-+	if (!msp)
-+		return -ENOMEM;
+ #ifdef CONFIG_MACH_UX500_DT
  
- 	msp->id = platform_data->id;
- 	msp->dev = &pdev->dev;
+-static struct platform_device *snowball_of_platform_devs[] __initdata = {
+-	&snowball_led_dev,
+-	&snowball_key_dev,
+-};
+-
+ struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+ 	/* Requires call-back bindings. */
+ 	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
 -- 
 1.7.9.5
 
