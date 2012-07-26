@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2GZIUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 04:20:14 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:65096 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab2GZIUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 04:20:10 -0400
-Message-ID: <5010FDB2.5040505@redhat.com>
-Date: Thu, 26 Jul 2012 10:20:02 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1751981Ab2GZInV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:43:21 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38086 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867Ab2GZInT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 04:43:19 -0400
+Date: Thu, 26 Jul 2012 10:43:12 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: wwang <wei_wang@realsil.com.cn>
+Cc: Aaron Lu <aaron.lu@amd.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Philip Rakity <prakity@marvell.com>, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
+Message-ID: <20120726084312.GB20845@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	wwang <wei_wang@realsil.com.cn>, Aaron Lu <aaron.lu@amd.com>,
+	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Philip Rakity <prakity@marvell.com>, Chris Ball <cjb@laptop.org>
+References: <1343036558-8189-1-git-send-email-wei_wang@realsil.com.cn>
+ <20120723163340.GA4105@x1.osrc.amd.com>
+ <500DF89E.6090501@realsil.com.cn>
+ <20120724064409.GA15735@liondog.tnic>
+ <500E6126.4060604@realsil.com.cn>
+ <20120724140709.GA13753@x1.osrc.amd.com>
+ <500F59D7.2050508@realsil.com.cn>
+ <20120725080415.GA21341@liondog.tnic>
+ <20120725101601.GA8578@aarontestpc.amd.com>
+ <50109E9B.6080806@realsil.com.cn>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Jason Wang <jasowang@redhat.com>, krkumar2@in.ibm.com,
-        habanero@linux.vnet.ibm.com, mashirle@us.ibm.com, kvm@vger.kernel.org,
-        mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        sri@us.ibm.com
-Subject: Re: [net-next RFC V5 2/5] virtio_ring: move queue_index to vring_virtqueue
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-3-git-send-email-jasowang@redhat.com> <1341488454.18786.15.camel@lappy>
-In-Reply-To: <1341488454.18786.15.camel@lappy>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50109E9B.6080806@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/07/2012 13:40, Sasha Levin ha scritto:
-> @@ -275,7 +274,7 @@ static void vm_del_vq(struct virtqueue *vq)
->         vring_del_virtqueue(vq);
->  
->         /* Select and deactivate the queue */
-> -       writel(info->queue_index, vm_dev->base + VIRTIO_MMIO_QUEUE_SEL);
-> +       writel(virtqueue_get_queue_index(vq), vm_dev->base + VIRTIO_MMIO_QUEUE_SEL);
->         writel(0, vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
->  
+On Thu, Jul 26, 2012 at 09:34:19AM +0800, wwang wrote:
+> Hi Aaron:
+> 
+> Thank you. I will modify our host per your suggestion.
 
-This accesses vq after vring_del_virtqueue has freed it.
+Hi Wei,
 
-Paolo
+please put me on CC for your next submission of the driver so that I can
+give it a run.
 
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
