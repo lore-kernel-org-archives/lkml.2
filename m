@@ -1,67 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab2GZPcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:32:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42900 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751063Ab2GZPcr (ORCPT
+	id S1751762Ab2GZPeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:34:24 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:7570 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab2GZPeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:32:47 -0400
-Date: Thu, 26 Jul 2012 16:32:45 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Michael Jones <michael.jones@matrix-vision.de>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] regulator: whitespace
-Message-ID: <20120726153245.GT3099@opensource.wolfsonmicro.com>
-References: <1343311644-19739-1-git-send-email-michael.jones@matrix-vision.de>
- <1343311644-19739-2-git-send-email-michael.jones@matrix-vision.de>
- <20120726144457.GM3099@opensource.wolfsonmicro.com>
- <50115E7B.3010400@matrix-vision.de>
- <20120726151546.GQ3099@opensource.wolfsonmicro.com>
- <5011624A.4040309@matrix-vision.de>
+	Thu, 26 Jul 2012 11:34:22 -0400
+X-IronPort-AV: E=Sophos;i="4.77,659,1336348800"; 
+   d="dts'?scan'208";a="13718763"
+Date: Thu, 26 Jul 2012 16:33:28 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, Tim Deegan <tim@xen.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
+        <catalin.marinas@arm.com>, <arnd@arndb.de>
+Subject: [PATCH 00/24] Introduce Xen support on ARM
+Message-ID: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B8Vg9Vt30SMsjSDh"
-Content-Disposition: inline
-In-Reply-To: <5011624A.4040309@matrix-vision.de>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;
+	boundary="1342847746-2057181226-1343316148=:26163"
+Content-ID: <alpine.DEB.2.02.1207261622400.26163@kaball.uk.xensource.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--1342847746-2057181226-1343316148=:26163
+Content-Type: text/plain; charset="US-ASCII"
+Content-ID: <alpine.DEB.2.02.1207261622401.26163@kaball.uk.xensource.com>
 
---B8Vg9Vt30SMsjSDh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi all,
+this patch series implements Xen support for ARMv7 with virtualization
+extensions.  It allows a Linux guest to boot as dom0 and
+as domU on Xen on ARM. PV console, disk and network frontends and
+backends are all working correctly.
 
-On Thu, Jul 26, 2012 at 05:29:14PM +0200, Michael Jones wrote:
+It has been tested on a Versatile Express Cortex A15 emulator, using the
+latest Xen, and a simple ad-hoc tool to build guest domains
+(marc.info/?l=xen-devel&m=134089788016546).
 
-> So I suppose the changelog should have been something like:
-> regulator: whitespace- indent with tabs not spaces
+The patch marked with [HACK] shouldn't be applied and is part of the
+series only because it is needed to create domUs.
 
-Yes.  I'll apply after the merge window.
+I am also attaching to this email the dts'es that I am currently using
+for dom0 and domU: vexpress-v2p-ca15-tc1.dts is the dts used for dom0
+and it is passed to Linux by Xen, while vexpress-virt.dts is the dts
+used for other domUs and it is appended in binary form to the guest
+kernel image. I am not sure where they are supposed to live yet, so I am
+just attaching them here so that people can actually try out this series
+if they want to.
 
---B8Vg9Vt30SMsjSDh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Comments are very welcome!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQEWIPAAoJEBus8iNuMP3dd0YP/035fk9m35rLUOby0tG8WnOm
-HjrYW6sd1+t+jo+8qbWpYA7H655rL3tZUuA5P2u5lK4WvRy2i8pTnHqQISbwBhZd
-a6Dmc5Li7z4boBK77TVhaeDoV9pPzm+xKeKfv9RQ4yTdXShLQJWRYaz1Hvk+HO7H
-7/6N2K2iA2kFU+8V9+IowL1pwk4vQFqOgN8d0jsN6nlzI3dctHqrfkC/nXkuLlJW
-TAFn3NAn6IomOhysp8c3d3skeCXrDJQuFpXK/KpES2seuVT3uoGeYj5CKzJIO10P
-pGr7UtaK4XAgOAOqsVT5mUsS3ZYpNoESpGIfG0zxUmvMBBVmYvKH4nfbvpry+Y56
-uIjTggOOoAi8DoS+lr4vSeDAyhdxAMnbH7eWMwvlrGhGZG4mLHuNTTVxoW6l5rrN
-ritmT6S33xF5t5IX6eNaSAvvWpt6gxUEOv9FzGhdiwwdt2r9kOvemadotgOQKsAH
-3h+4PdeVgFZ6oSSTT6sNIJAEy/FiiREMBocl/ixbLYsPCKc/HTPFOdMdIrovkEhq
-zGrzpcz9Uuk/zMo5aYuRRrY1jhVfvntKwh5+7zVEfxJZ3yg7NLCh87e3WwWFplxX
-C/0XuGMPyNBL81jehpfA1ILJmlVKYV8ULRUrUKxLqhdsbkvV4qccXgnoXvg+curT
-F+r1yPyeK23qVQuTXeFc
-=BtHF
------END PGP SIGNATURE-----
+Ian Campbell (2):
+      ARM: enable earlyprintk=xen
+      [HACK] xen/arm: implement xen_remap_domain_mfn_range
 
---B8Vg9Vt30SMsjSDh--
+Stefano Stabellini (22):
+      arm: initial Xen support
+      xen/arm: hypercalls
+      xen/arm: page.h definitions
+      xen/arm: sync_bitops
+      xen/arm: empty implementation of grant_table arch specific functions
+      xen: missing includes
+      xen/arm: Xen detection and shared_info page mapping
+      xen/arm: Introduce xen_pfn_t for pfn and mfn types
+      xen/arm: compile and run xenbus
+      xen: do not compile manage, balloon, pci, acpi and cpu_hotplug on ARM
+      xen/arm: introduce CONFIG_XEN on ARM
+      xen/arm: Introduce xen_guest_init
+      xen/arm: get privilege status
+      xen/arm: initialize grant_table on ARM
+      xen/arm: receive Xen events on ARM
+      xen/arm: implement alloc/free_xenballooned_pages with alloc_pages/kfree
+      xen: allow privcmd for HVM guests
+      xen/arm: compile blkfront and blkback
+      xen/arm: compile netback
+      xen: update xen_add_to_physmap interface
+      arm/v2m: initialize arch_timers even if v2m_timer is not present
+      hvc_xen: allow dom0_write_console for HVM guests
+
+ arch/arm/Kconfig                           |   10 ++
+ arch/arm/Makefile                          |    1 +
+ arch/arm/include/asm/hypervisor.h          |    6 +
+ arch/arm/include/asm/sync_bitops.h         |   17 ++
+ arch/arm/include/asm/xen/hypercall.h       |   69 ++++++++
+ arch/arm/include/asm/xen/hypervisor.h      |   19 +++
+ arch/arm/include/asm/xen/interface.h       |   66 ++++++++
+ arch/arm/include/asm/xen/page.h            |   77 +++++++++
+ arch/arm/kernel/early_printk.c             |   11 ++-
+ arch/arm/mach-vexpress/v2m.c               |   11 +-
+ arch/arm/xen/Makefile                      |    1 +
+ arch/arm/xen/enlighten.c                   |  244 ++++++++++++++++++++++++++++
+ arch/arm/xen/grant-table.c                 |   53 ++++++
+ arch/arm/xen/hypercall.S                   |   65 ++++++++
+ arch/ia64/include/asm/xen/interface.h      |    2 +-
+ arch/x86/include/asm/xen/interface.h       |    2 +
+ arch/x86/xen/enlighten.c                   |    9 +
+ arch/x86/xen/irq.c                         |    1 +
+ arch/x86/xen/xen-ops.h                     |    1 -
+ drivers/block/xen-blkback/blkback.c        |    1 +
+ drivers/net/xen-netback/netback.c          |    1 +
+ drivers/net/xen-netfront.c                 |    1 +
+ drivers/tty/hvc/hvc_xen.c                  |   14 +-
+ drivers/xen/Makefile                       |    9 +-
+ drivers/xen/events.c                       |   18 ++-
+ drivers/xen/grant-table.c                  |    3 +-
+ drivers/xen/privcmd.c                      |   20 +--
+ drivers/xen/xenbus/xenbus_comms.c          |    2 +-
+ drivers/xen/xenbus/xenbus_probe.c          |   27 ++--
+ drivers/xen/xenbus/xenbus_probe_frontend.c |    1 +
+ drivers/xen/xenbus/xenbus_xs.c             |    1 +
+ drivers/xen/xenfs/super.c                  |    7 +
+ include/xen/events.h                       |    2 +
+ include/xen/interface/features.h           |    3 +
+ include/xen/interface/grant_table.h        |    4 +-
+ include/xen/interface/io/protocols.h       |    3 +
+ include/xen/interface/memory.h             |   19 ++-
+ include/xen/interface/platform.h           |    4 +-
+ include/xen/interface/xen.h                |    9 +-
+ include/xen/privcmd.h                      |    3 +-
+ include/xen/xen.h                          |    4 +-
+ 41 files changed, 763 insertions(+), 58 deletions(-)
+
+
+A branch based on 3.5-rc7 is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.5-rc7-arm-1
+
+Cheers,
+
+Stefano
+--1342847746-2057181226-1343316148=:26163
+Content-Type: text/plain; charset="US-ASCII"; name="vexpress-v2p-ca15-tc1.dts"
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.DEB.2.02.1207261622280.26163@kaball.uk.xensource.com>
+Content-Description: 
+Content-Disposition: attachment; filename="vexpress-v2p-ca15-tc1.dts"
+
+LyoNCiAqIEFSTSBMdGQuIFZlcnNhdGlsZSBFeHByZXNzDQogKg0KICogQ29y
+ZVRpbGUgRXhwcmVzcyBBMTV4MiAodmVyc2lvbiB3aXRoIFRlc3QgQ2hpcCAx
+KQ0KICogQ29ydGV4LUExNSBNUENvcmUgKFYyUC1DQTE1KQ0KICoNCiAqIEhC
+SS0wMjM3QQ0KICovDQoNCi9kdHMtdjEvOw0KDQovIHsNCgltb2RlbCA9ICJW
+MlAtQ0ExNSI7DQoJYXJtLGhiaSA9IDwweDIzNz47DQoJY29tcGF0aWJsZSA9
+ICJhcm0sdmV4cHJlc3MsdjJwLWNhMTUsdGMxIiwgImFybSx2ZXhwcmVzcyx2
+MnAtY2ExNSIsICJhcm0sdmV4cHJlc3MiOw0KDQoJI2FkZHJlc3MtY2VsbHMg
+PSA8MT47DQoJI3NpemUtY2VsbHMgPSA8MT47DQoNCglpbnRlcnJ1cHQtcGFy
+ZW50ID0gPCZnaWM+Ow0KDQoJY2hvc2VuIHsNCiAgICAgICAgICAgICAgICAg
+Ym9vdGFyZ3MgPSAiZG9tMF9tZW09MTI4TSI7DQogICAgICAgICAgICAgICAg
+IHhlbixkb20wLWJvb3RhcmdzID0gImVhcmx5cHJpbnRrPXhlbmJvb3QgY29u
+c29sZT10dHlBTUExIHJvb3Q9L2Rldi9tbWNibGswIGRlYnVnIHJ3IjsNCgl9
+Ow0KDQoNCglhbGlhc2VzIHsNCgkJc2VyaWFsMCA9ICZ2Mm1fc2VyaWFsMDsN
+CgkJc2VyaWFsMSA9ICZ2Mm1fc2VyaWFsMTsNCgkJc2VyaWFsMiA9ICZ2Mm1f
+c2VyaWFsMjsNCgkJc2VyaWFsMyA9ICZ2Mm1fc2VyaWFsMzsNCgkJaTJjMCA9
+ICZ2Mm1faTJjX2R2aTsNCgkJaTJjMSA9ICZ2Mm1faTJjX3BjaWU7DQoJfTsN
+Cg0KCWNwdXMgew0KCQkjYWRkcmVzcy1jZWxscyA9IDwxPjsNCgkJI3NpemUt
+Y2VsbHMgPSA8MD47DQoNCgkJY3B1QDAgew0KCQkJZGV2aWNlX3R5cGUgPSAi
+Y3B1IjsNCgkJCWNvbXBhdGlibGUgPSAiYXJtLGNvcnRleC1hMTUiOw0KCQkJ
+cmVnID0gPDA+Ow0KCQl9Ow0KCX07DQoNCgltZW1vcnkgew0KCQlkZXZpY2Vf
+dHlwZSA9ICJtZW1vcnkiOw0KCQlyZWcgPSA8MHg4MDAwMDAwMCAweDgwMDAw
+MDAwPjsNCgl9Ow0KDQoJZ2ljOiBpbnRlcnJ1cHQtY29udHJvbGxlckAyYzAw
+MTAwMCB7DQoJCWNvbXBhdGlibGUgPSAiYXJtLGNvcnRleC1hOS1naWMiOw0K
+CQkjaW50ZXJydXB0LWNlbGxzID0gPDM+Ow0KCQkjYWRkcmVzcy1jZWxscyA9
+IDwwPjsNCgkJaW50ZXJydXB0LWNvbnRyb2xsZXI7DQoJCXJlZyA9IDwweDJj
+MDAxMDAwIDB4MTAwMD4sDQoJCSAgICAgIDwweDJjMDAyMDAwIDB4MTAwPjsN
+Cgl9Ow0KDQoJcG11IHsNCgkJY29tcGF0aWJsZSA9ICJhcm0sY29ydGV4LWE5
+LXBtdSI7DQoJCWludGVycnVwdHMgPSA8MCA2OCA0PiwNCgkJCSAgICAgPDAg
+NjkgND47DQoJfTsNCg0KCXhlbiB7DQoJCWNvbXBhdGlibGUgPSAiYXJtLHhl
+biI7DQoJCXJlZyA9IDwweGIwMDAwMDAwIDB4MjAwMDA+Ow0KCQlpbnRlcnJ1
+cHRzID0gPDEgMTUgMHhmMDg+Ow0KCX07DQoNCgltb3RoZXJib2FyZCB7DQoJ
+CXJhbmdlcyA9IDwwIDAgMHgwODAwMDAwMCAweDA0MDAwMDAwPiwNCgkJCSA8
+MSAwIDB4MTQwMDAwMDAgMHgwNDAwMDAwMD4sDQoJCQkgPDIgMCAweDE4MDAw
+MDAwIDB4MDQwMDAwMDA+LA0KCQkJIDwzIDAgMHgxYzAwMDAwMCAweDA0MDAw
+MDAwPiwNCgkJCSA8NCAwIDB4MGMwMDAwMDAgMHgwNDAwMDAwMD4sDQoJCQkg
+PDUgMCAweDEwMDAwMDAwIDB4MDQwMDAwMDA+Ow0KDQoJCWludGVycnVwdC1t
+YXAtbWFzayA9IDwwIDAgNjM+Ow0KCQlpbnRlcnJ1cHQtbWFwID0gPDAgMCAg
+MCAmZ2ljIDAgIDAgND4sDQoJCQkJPDAgMCAgMSAmZ2ljIDAgIDEgND4sDQoJ
+CQkJPDAgMCAgMiAmZ2ljIDAgIDIgND4sDQoJCQkJPDAgMCAgMyAmZ2ljIDAg
+IDMgND4sDQoJCQkJPDAgMCAgNCAmZ2ljIDAgIDQgND4sDQoJCQkJPDAgMCAg
+NSAmZ2ljIDAgIDUgND4sDQoJCQkJPDAgMCAgNiAmZ2ljIDAgIDYgND4sDQoJ
+CQkJPDAgMCAgNyAmZ2ljIDAgIDcgND4sDQoJCQkJPDAgMCAgOCAmZ2ljIDAg
+IDggND4sDQoJCQkJPDAgMCAgOSAmZ2ljIDAgIDkgND4sDQoJCQkJPDAgMCAx
+MCAmZ2ljIDAgMTAgND4sDQoJCQkJPDAgMCAxMSAmZ2ljIDAgMTEgND4sDQoJ
+CQkJPDAgMCAxMiAmZ2ljIDAgMTIgND4sDQoJCQkJPDAgMCAxMyAmZ2ljIDAg
+MTMgND4sDQoJCQkJPDAgMCAxNCAmZ2ljIDAgMTQgND4sDQoJCQkJPDAgMCAx
+NSAmZ2ljIDAgMTUgND4sDQoJCQkJPDAgMCAxNiAmZ2ljIDAgMTYgND4sDQoJ
+CQkJPDAgMCAxNyAmZ2ljIDAgMTcgND4sDQoJCQkJPDAgMCAxOCAmZ2ljIDAg
+MTggND4sDQoJCQkJPDAgMCAxOSAmZ2ljIDAgMTkgND4sDQoJCQkJPDAgMCAy
+MCAmZ2ljIDAgMjAgND4sDQoJCQkJPDAgMCAyMSAmZ2ljIDAgMjEgND4sDQoJ
+CQkJPDAgMCAyMiAmZ2ljIDAgMjIgND4sDQoJCQkJPDAgMCAyMyAmZ2ljIDAg
+MjMgND4sDQoJCQkJPDAgMCAyNCAmZ2ljIDAgMjQgND4sDQoJCQkJPDAgMCAy
+NSAmZ2ljIDAgMjUgND4sDQoJCQkJPDAgMCAyNiAmZ2ljIDAgMjYgND4sDQoJ
+CQkJPDAgMCAyNyAmZ2ljIDAgMjcgND4sDQoJCQkJPDAgMCAyOCAmZ2ljIDAg
+MjggND4sDQoJCQkJPDAgMCAyOSAmZ2ljIDAgMjkgND4sDQoJCQkJPDAgMCAz
+MCAmZ2ljIDAgMzAgND4sDQoJCQkJPDAgMCAzMSAmZ2ljIDAgMzEgND4sDQoJ
+CQkJPDAgMCAzMiAmZ2ljIDAgMzIgND4sDQoJCQkJPDAgMCAzMyAmZ2ljIDAg
+MzMgND4sDQoJCQkJPDAgMCAzNCAmZ2ljIDAgMzQgND4sDQoJCQkJPDAgMCAz
+NSAmZ2ljIDAgMzUgND4sDQoJCQkJPDAgMCAzNiAmZ2ljIDAgMzYgND4sDQoJ
+CQkJPDAgMCAzNyAmZ2ljIDAgMzcgND4sDQoJCQkJPDAgMCAzOCAmZ2ljIDAg
+MzggND4sDQoJCQkJPDAgMCAzOSAmZ2ljIDAgMzkgND4sDQoJCQkJPDAgMCA0
+MCAmZ2ljIDAgNDAgND4sDQoJCQkJPDAgMCA0MSAmZ2ljIDAgNDEgND4sDQoJ
+CQkJPDAgMCA0MiAmZ2ljIDAgNDIgND47DQoJfTsNCn07DQoNCi9pbmNsdWRl
+LyAidmV4cHJlc3MtdjJtLXJzMS1ydHNtLmR0c2kiDQo=
+
+--1342847746-2057181226-1343316148=:26163
+Content-Type: text/plain; charset="US-ASCII"; name="vexpress-virt.dts"
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.DEB.2.02.1207261622281.26163@kaball.uk.xensource.com>
+Content-Description: 
+Content-Disposition: attachment; filename="vexpress-virt.dts"
+
+LyoNCiAqIEFSTSBMdGQuIFZlcnNhdGlsZSBFeHByZXNzDQogKg0KICogQVJN
+IEVudmVsb3BlIE1vZGVsIHY3QSAoc2luZ2xlIENQVSkuDQogKi8NCg0KL2R0
+cy12MS87DQoNCi9pbmNsdWRlLyAic2tlbGV0b24uZHRzaSINCg0KLyB7DQoJ
+bW9kZWwgPSAiVjJQLUFFTXY3QSI7DQoJY29tcGF0aWJsZSA9ICJhcm0sdmV4
+cHJlc3MsdjJwLWFlbSx2N2EiLCAiYXJtLHZleHByZXNzLHYycC1hZW0iLCAi
+YXJtLHZleHByZXNzIjsNCglpbnRlcnJ1cHQtcGFyZW50ID0gPCZnaWM+Ow0K
+DQogICAgICAgIGNob3NlbiB7DQogICAgICAgICAgICAgICAgYm9vdGFyZ3Mg
+PSAiZWFybHlwcmludGs9eGVuIGRlYnVnIGxvZ2xldmVsPTkgY29uc29sZT1o
+dmMwIHJvb3Q9L2Rldi94dmRhIjsNCiAgICAgICAgfTsNCg0KCWNwdXMgew0K
+CQkjYWRkcmVzcy1jZWxscyA9IDwxPjsNCgkJI3NpemUtY2VsbHMgPSA8MD47
+DQoNCgkJY3B1QDAgew0KCQkJZGV2aWNlX3R5cGUgPSAiY3B1IjsNCgkJCWNv
+bXBhdGlibGUgPSAiYXJtLGNvcnRleC1hMTUiOw0KCQkJcmVnID0gPDA+Ow0K
+CQl9Ow0KCX07DQoNCgltZW1vcnkgew0KCQlkZXZpY2VfdHlwZSA9ICJtZW1v
+cnkiOw0KCQlyZWcgPSA8MHg4MDAwMDAwMCAweDA4MDAwMDAwPjsNCgl9Ow0K
+DQoJZ2ljOiBpbnRlcnJ1cHQtY29udHJvbGxlckAyYzAwMTAwMCB7DQoJCWNv
+bXBhdGlibGUgPSAiYXJtLGNvcnRleC1hOS1naWMiOw0KCQkjaW50ZXJydXB0
+LWNlbGxzID0gPDM+Ow0KCQkjYWRkcmVzcy1jZWxscyA9IDwwPjsNCgkJaW50
+ZXJydXB0LWNvbnRyb2xsZXI7DQoJCXJlZyA9IDwweDJjMDAxMDAwIDB4MTAw
+MD4sDQoJCSAgICAgIDwweDJjMDAyMDAwIDB4MTAwPjsNCgl9Ow0KDQoJdGlt
+ZXIgew0KCQljb21wYXRpYmxlID0gImFybSxhcm12Ny10aW1lciI7DQoJCWlu
+dGVycnVwdHMgPSA8MSAxMyAweGYwOD4sDQoJCQkgICAgIDwxIDE0IDB4ZjA4
+PiwNCgkJCSAgICAgPDEgMTEgMHhmMDg+LA0KCQkJICAgICA8MSAxMCAweGYw
+OD47DQoJfTsNCg0KCXhlbiB7DQoJCWNvbXBhdGlibGUgPSAiYXJtLHhlbiI7
+DQoJCXJlZyA9IDwweGIwMDAwMDAwIDB4MjAwMDA+Ow0KCQlpbnRlcnJ1cHRz
+ID0gPDEgMTUgMHhmMDg+Ow0KCX07DQoNCgltb3RoZXJib2FyZCB7DQoJCXJh
+bmdlcyA9IDwwIDAgMHgwODAwMDAwMCAweDA0MDAwMDAwPiwNCgkJCSA8MSAw
+IDB4MTQwMDAwMDAgMHgwNDAwMDAwMD4sDQoJCQkgPDIgMCAweDE4MDAwMDAw
+IDB4MDQwMDAwMDA+LA0KCQkJIDwzIDAgMHgxYzAwMDAwMCAweDA0MDAwMDAw
+PiwNCgkJCSA8NCAwIDB4MGMwMDAwMDAgMHgwNDAwMDAwMD4sDQoJCQkgPDUg
+MCAweDEwMDAwMDAwIDB4MDQwMDAwMDA+Ow0KDQoJCWludGVycnVwdC1tYXAt
+bWFzayA9IDwwIDAgNjM+Ow0KCQlpbnRlcnJ1cHQtbWFwID0gPDAgMCAgMCAm
+Z2ljIDAgIDAgND4sDQoJCQkJPDAgMCAgMSAmZ2ljIDAgIDEgND4sDQoJCQkJ
+PDAgMCAgMiAmZ2ljIDAgIDIgND4sDQoJCQkJPDAgMCAgMyAmZ2ljIDAgIDMg
+ND4sDQoJCQkJPDAgMCAgNCAmZ2ljIDAgIDQgND4sDQoJCQkJPDAgMCAgNSAm
+Z2ljIDAgIDUgND4sDQoJCQkJPDAgMCAgNiAmZ2ljIDAgIDYgND4sDQoJCQkJ
+PDAgMCAgNyAmZ2ljIDAgIDcgND4sDQoJCQkJPDAgMCAgOCAmZ2ljIDAgIDgg
+ND4sDQoJCQkJPDAgMCAgOSAmZ2ljIDAgIDkgND4sDQoJCQkJPDAgMCAxMCAm
+Z2ljIDAgMTAgND4sDQoJCQkJPDAgMCAxMSAmZ2ljIDAgMTEgND4sDQoJCQkJ
+PDAgMCAxMiAmZ2ljIDAgMTIgND4sDQoJCQkJPDAgMCAxMyAmZ2ljIDAgMTMg
+ND4sDQoJCQkJPDAgMCAxNCAmZ2ljIDAgMTQgND4sDQoJCQkJPDAgMCAxNSAm
+Z2ljIDAgMTUgND4sDQoJCQkJPDAgMCAxNiAmZ2ljIDAgMTYgND4sDQoJCQkJ
+PDAgMCAxNyAmZ2ljIDAgMTcgND4sDQoJCQkJPDAgMCAxOCAmZ2ljIDAgMTgg
+ND4sDQoJCQkJPDAgMCAxOSAmZ2ljIDAgMTkgND4sDQoJCQkJPDAgMCAyMCAm
+Z2ljIDAgMjAgND4sDQoJCQkJPDAgMCAyMSAmZ2ljIDAgMjEgND4sDQoJCQkJ
+PDAgMCAyMiAmZ2ljIDAgMjIgND4sDQoJCQkJPDAgMCAyMyAmZ2ljIDAgMjMg
+ND4sDQoJCQkJPDAgMCAyNCAmZ2ljIDAgMjQgND4sDQoJCQkJPDAgMCAyNSAm
+Z2ljIDAgMjUgND4sDQoJCQkJPDAgMCAyNiAmZ2ljIDAgMjYgND4sDQoJCQkJ
+PDAgMCAyNyAmZ2ljIDAgMjcgND4sDQoJCQkJPDAgMCAyOCAmZ2ljIDAgMjgg
+ND4sDQoJCQkJPDAgMCAyOSAmZ2ljIDAgMjkgND4sDQoJCQkJPDAgMCAzMCAm
+Z2ljIDAgMzAgND4sDQoJCQkJPDAgMCAzMSAmZ2ljIDAgMzEgND4sDQoJCQkJ
+PDAgMCAzMiAmZ2ljIDAgMzIgND4sDQoJCQkJPDAgMCAzMyAmZ2ljIDAgMzMg
+ND4sDQoJCQkJPDAgMCAzNCAmZ2ljIDAgMzQgND4sDQoJCQkJPDAgMCAzNSAm
+Z2ljIDAgMzUgND4sDQoJCQkJPDAgMCAzNiAmZ2ljIDAgMzYgND4sDQoJCQkJ
+PDAgMCAzNyAmZ2ljIDAgMzcgND4sDQoJCQkJPDAgMCAzOCAmZ2ljIDAgMzgg
+ND4sDQoJCQkJPDAgMCAzOSAmZ2ljIDAgMzkgND4sDQoJCQkJPDAgMCA0MCAm
+Z2ljIDAgNDAgND4sDQoJCQkJPDAgMCA0MSAmZ2ljIDAgNDEgND4sDQoJCQkJ
+PDAgMCA0MiAmZ2ljIDAgNDIgND47DQoJfTsNCn07DQoNCi8qIC9pbmNsdWRl
+LyAidmV4cHJlc3MtdjJtLXJzMS1ydHNtLmR0c2kiICovDQo=
+
+--1342847746-2057181226-1343316148=:26163--
