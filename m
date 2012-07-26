@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab2GZO23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:28:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50417 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751502Ab2GZO22 (ORCPT
+	id S1752359Ab2GZO2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:28:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34830 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab2GZO2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:28:28 -0400
-Date: Thu, 26 Jul 2012 15:28:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 20/21] ASoC: codecs: Enable AB8500 CODEC for Device Tree
-Message-ID: <20120726142825.GK3099@opensource.wolfsonmicro.com>
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
- <1343298534-13611-21-git-send-email-lee.jones@linaro.org>
- <20120726115055.GD3099@opensource.wolfsonmicro.com>
- <50114D71.9060700@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ry3qE+viRNtbc3l7"
-Content-Disposition: inline
-In-Reply-To: <50114D71.9060700@linaro.org>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Jul 2012 10:28:47 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 1/7] kdb: Remove currently unused kdbtab_t->cmd_flags
+Date: Thu, 26 Jul 2012 07:26:25 -0700
+Message-Id: <1343312791-9138-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20120726142514.GA32158@lizard>
+References: <20120726142514.GA32158@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The struct member is never used in the code, so we can remove it.
 
---Ry3qE+viRNtbc3l7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+We will introduce real flags soon by renaming cmd_repeat to cmd_flags.
 
-On Thu, Jul 26, 2012 at 03:00:17PM +0100, Lee Jones wrote:
-> On 26/07/12 12:50, Mark Brown wrote:
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ kernel/debug/kdb/kdb_main.c    |    1 -
+ kernel/debug/kdb/kdb_private.h |    1 -
+ 2 files changed, 2 deletions(-)
 
-> >Yet again no binding documentation....
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 67b847d..e2b14ea 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2757,7 +2757,6 @@ int kdb_register_repeat(char *cmd,
+ 	kp->cmd_func   = func;
+ 	kp->cmd_usage  = usage;
+ 	kp->cmd_help   = help;
+-	kp->cmd_flags  = 0;
+ 	kp->cmd_minlen = minlen;
+ 	kp->cmd_repeat = repeat;
+ 
+diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
+index 47c4e56..b7869c7 100644
+--- a/kernel/debug/kdb/kdb_private.h
++++ b/kernel/debug/kdb/kdb_private.h
+@@ -175,7 +175,6 @@ typedef struct _kdbtab {
+ 	kdb_func_t cmd_func;		/* Function to execute command */
+ 	char    *cmd_usage;		/* Usage String for this command */
+ 	char    *cmd_help;		/* Help message for this command */
+-	short    cmd_flags;		/* Parsing flags */
+ 	short    cmd_minlen;		/* Minimum legal # command
+ 					 * chars required */
+ 	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
+-- 
+1.7.10.4
 
-> RFC. ;)
-
-> I'll write the documentation when/if the properties are accepted.
-
-No, write the documentation.  It's way too much effort to reverse
-engineer the bindings from the code.
-
-> >>+		default :
-> >>+			codec->ear_cmv = EAR_CMV_UNKNOWN;
-> >>+			dev_err(dev, "Unsuitable earpiece voltage found in DT\n");
-
-> >The platform data code picks a default, can't the DT code do the same?
-
-> No, I don't think that it does? The original code returns -EINVAL
-> unless a value is specified.
-
-The code doesn't specify values for the enumeration so it ought to
-default to EAR_CMV_0_95V if nothing is specified.
-
-> The original author is keen to have a clear error message in case
-> users try to specify non-exact values. I'd rather we fail-out than
-> use incorrect values which would be a great deal harder for a user
-> to debug.
-
-By that argument all the properties should be mandatory but it's only
-this one IIRC.
-
---Ry3qE+viRNtbc3l7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQEVP/AAoJEBus8iNuMP3d4OAP/3dSjzRTMkWkanupN3zmIKS+
-20DJ+p7U12apePR7+fXAUi3uJn5htRClpwJymyYNPTIcd0Q55647dqxOF7PX8bmt
-pOBAeSyMbTBr05fMuOlp3YzOnR32c7/nO80100x8K8oJ8+oC7wS3xnlVrAermTiq
-2EwE8PlFRuLVB58ROttdxzmORyxYPgyaon9UH9MPSTW9SmA1FkSAIEp13bojx3V9
-TAuA/g8ItWPTW7vjCPytxBmH/wshwoI9SaIM/OZRLIGVDc2De7XYDla1uPa0Joy2
-boxyB791GYs05hhGK8xKpkyDPtdbRyQNdYFZuOUIPf4X//bnHyOFEZFCxB2qW5+h
-xhFFmlV4x/GpMNTZUyQe4xNTXiscCOw+zexu1r8uTi3KpyHoOzdel1H5pJV3jgFr
-GMBAH+Vkz/7FubJ91lh2eOu7s4dL5C1JOR4IFMoym/SJk6f6HJM0W6sD8krFpx6U
-aMoL52g+BnTm9/boB9rqQd75cMbbnmLF/QM/D6sDzxE3mV6QQtDV1eCVjE/RIw6+
-HwXbKiSbTZgiAHKfJcumcs1ws+N+9NE7B9OZqi2MhvXWzrE1hxF9qU1tpl0dfYy3
-ujncSTs07vN6UuIW3ymdAF3YmQNBa9rHoIQ/kD8NR/vwABTnbrAHixOa+/fm0IAZ
-u7YBVktNDnjWCm2QFRTn
-=0Ho6
------END PGP SIGNATURE-----
-
---Ry3qE+viRNtbc3l7--
