@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab2GZONw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:13:52 -0400
-Received: from mail1.matrix-vision.com ([78.47.19.71]:39570 "EHLO
-	mail1.matrix-vision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab2GZONv (ORCPT
+	id S1752278Ab2GZOON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:14:13 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53369 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab2GZOOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:13:51 -0400
-X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 10:13:51 EDT
-From: Michael Jones <michael.jones@matrix-vision.de>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] regulator: Kconfig grammar & whitespace
-Date: Thu, 26 Jul 2012 16:07:22 +0200
-Message-Id: <1343311644-19739-1-git-send-email-michael.jones@matrix-vision.de>
-X-Mailer: git-send-email 1.7.4.1
-X-MV-Disclaimer: true (erinome)
-X-AV-Checked: ClamAV using ClamSMTP (erinome)
-X-AV-Checked: ClamAV using ClamSMTP (mail1)
+	Thu, 26 Jul 2012 10:14:11 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 26 Jul 2012 07:14:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Johannes Winkelmann <johannes.winkelmann@gmail.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Jean Delvare <khali@linux-fr.org>,
+        Johannes Winkelmann <johannes.winkelmann@sensirion.com>
+Subject: Re: [RFC][PATCH] hwmon: add support for Sensirion C1 sensor
+Message-ID: <20120726141426.GA15985@roeck-us.net>
+References: <1342789042-13433-1-git-send-email-johannes.winkelmann@sensirion.com>
+ <20120721170150.GA13086@roeck-us.net>
+ <CAEYbzYsTQttoOnkoYqw9RkDO1zUc3qpyg0CzEY11_=oqdk0H-Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAEYbzYsTQttoOnkoYqw9RkDO1zUc3qpyg0CzEY11_=oqdk0H-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These fix grammar and whitespace.
+Hi Johannes,
 
-Michael Jones (2):
-  regulator: whitespace
-  regulator: grammar fix in Kconfig
+On Thu, Jul 26, 2012 at 03:53:12PM +0200, Johannes Winkelmann wrote:
+> Hi Guenter,
+> 
+> Thanks a lot for the feedback; I've incorporated most of it in
+> preparation for a v2 of the patch; I have some comments on the points
+> I'm not certain about:
+> 
+[ ... ]
+> >> +
+> >> +The device communicates with the I2C protocol. All sensors are set to the same
+> >> +I2C address 0x70, so an entry with I2C_BOARD_INFO("shtc1", 0x70) can be used
+> >> +in the board setup code.
+> >> +
+> > Please also provide a reference to the other means to instantiate the driver.
+> 
+> I've checked a couple of documentation files and haven't found what
+> else I should add, in fact the other sensor documents I checked didn't
+> cover this, except for the one from the sht21 after which I modelled
+> the document. Could you give me a pointer where to look?
+> 
+Just add a reference to Documentation/i2c/instantiating-devices.
 
- drivers/regulator/Kconfig |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
-
--- 
-1.7.4.1
-
-
-MATRIX VISION GmbH, Talstrasse 16, DE-71570 Oppenweiler
-Registergericht: Amtsgericht Stuttgart, HRB 271090
-Geschaeftsfuehrer: Gerhard Thullner, Werner Armingeon, Uwe Furtner, Erhard Meier
+Thanks,
+Guenter
