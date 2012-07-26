@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab2GZLiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:38:22 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52974 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab2GZLiV (ORCPT
+	id S1752587Ab2GZLik (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:38:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43308 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751119Ab2GZLij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:38:21 -0400
-Message-ID: <50112C29.6020606@linaro.org>
-Date: Thu, 26 Jul 2012 12:38:17 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
+	Thu, 26 Jul 2012 07:38:39 -0400
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 07/21] ASoC: io: Prevent use of regmap if request fails
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-8-git-send-email-lee.jones@linaro.org> <20120726113204.GY3099@opensource.wolfsonmicro.com>
-In-Reply-To: <20120726113204.GY3099@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH] regmap: Don't lock in regmap_reinit_cache()
+Date: Thu, 26 Jul 2012 12:45:55 +0100
+Message-Id: <1343303155-27610-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/07/12 12:32, Mark Brown wrote:
-> On Thu, Jul 26, 2012 at 11:28:40AM +0100, Lee Jones wrote:
->
->> @@ -52,10 +52,13 @@ static unsigned int hw_read(struct snd_soc_codec *codec, unsigned int reg)
->>   		if (codec->cache_only)
->>   			return -1;
->>
->> -		ret = regmap_read(codec->control_data, reg, &val);
->> -		if (ret == 0)
->> -			return val;
->> -		else
->> +		if (codec->using_regmap) {
->> +			ret = regmap_read(codec->control_data, reg, &val);
->> +			if (ret == 0)
->> +				return val;
->> +			else
->> +				return -1;
->> +		} else
->
-> No, this makes no sense.  There is no non-regmap I/O support in soc-io,
-> anything using the soc-io hw_read() function must be using regmap.
->
->>   	case SND_SOC_REGMAP:
->>   		/* Device has made its own regmap arrangements */
->> -		codec->using_regmap = true;
->
-> Again, this makes no sense.  If we're explicitly being asked to use
-> regmap then we should be using regmap or just failing to set up I/O
-> (which is obviously a catastrophic failure).
+When bus->fast_io is set, the locking here is done with spinlocks.
+This is currently true for the regmap-mmio bus implementation.
 
-How much work is there involved in regmap:ing a device, so that 
-dev_get_regmap() doesn't fail?
+While holding a spinlock we can't go to sleep, various operations
+like removing the debugfs entries or re-initializing the cache will
+sleep, therefore, shift the locking up to the user.
 
+Change-Id: I766bdce4ea3415ed87116a937576aa4812aad508
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap.c | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index c241ae2..52069d2 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -659,13 +659,12 @@ EXPORT_SYMBOL_GPL(devm_regmap_init);
+  * new cache.  This can be used to restore the cache to defaults or to
+  * update the cache configuration to reflect runtime discovery of the
+  * hardware.
++ *
++ * No explicit locking is done here, the user needs to ensure that
++ * this function will not race with other calls to regmap.
+  */
+ int regmap_reinit_cache(struct regmap *map, const struct regmap_config *config)
+ {
+-	int ret;
+-
+-	map->lock(map);
+-
+ 	regcache_exit(map);
+ 	regmap_debugfs_exit(map);
+ 
+@@ -681,11 +680,7 @@ int regmap_reinit_cache(struct regmap *map, const struct regmap_config *config)
+ 	map->cache_bypass = false;
+ 	map->cache_only = false;
+ 
+-	ret = regcache_init(map, config);
+-
+-	map->unlock(map);
+-
+-	return ret;
++	return regcache_init(map, config);
+ }
+ EXPORT_SYMBOL_GPL(regmap_reinit_cache);
+ 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.11.3
+
