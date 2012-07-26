@@ -1,367 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab2GZAKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 20:10:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36582 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751126Ab2GZAKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 20:10:06 -0400
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Baron <jbaron@redhat.com>
-Cc: Kay Sievers <kay@vrfy.org>, Jim Cromie <jim.cromie@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH] dynamic_debug: Restore dev_dbg/netdev_dbg functionality, reduce stack use
-Date: Wed, 25 Jul 2012 17:10:00 -0700
-Message-Id: <403af268697d3d117114b12000b20c74aafa5bac.1343261030.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+	id S1752452Ab2GZAKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 20:10:15 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:55829 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab2GZAKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 20:10:10 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-82-50108ae09f07
+Message-id: <50108AE0.5070502@samsung.com>
+Date: Thu, 26 Jul 2012 09:10:08 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: arizona: Implement button detection support
+References: <1342800449-10328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <500F8DB4.30401@samsung.com>
+ <20120725111105.GI3099@opensource.wolfsonmicro.com>
+In-reply-to: <20120725111105.GI3099@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t9jAd0HXQIBBi/vmVhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M7m8vWAt+cFbMe76DsYGxmaOLkZNDQsBE4trnDkYIW0ziwr31
+	bF2MXBxCAosYJTbv6mSCcLqYJNpubmMCqeIV0JI4ff4XWAeLgKrE12WzwGw2oPj+FzeAujk4
+	RAUiJH71c0CUC0r8mHyPBSQsArTs9/1KkJHMAosZJf7seQDWKizgIXG7cxU7xK5VjBLdm2ew
+	gyQ4BRwk5s/YxQJiMwvoSOxvncYGYctLbF7zlnkCo8AsJDtmISmbhaRsASPzKkbR1ILkguKk
+	9FxDveLE3OLSvHS95PzcTYzgEHwmtYNxZYPFIUYBDkYlHl7PcIEAIdbEsuLK3EOMEhzMSiK8
+	bulAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rzG3l/9hQTSE0tSs1NTC1KLYLJMHJxSDYyakv5u
+	hW2CroUvpnayuW5PCmV1Mndh5eCVF9djFbp7T9rqre/jS++6bgdd3mf65lvnnQeu4j+Tgi+e
+	1P+qVrQ01+qt0aeLenb/lNPStqWt+Ryq8vih/J4tydYW4SfyJjF2pUjdzDtzsEx+y6WkjYek
+	GH6HqhRka8Q1xIfMLuT3M8uX/d5yXImlOCPRUIu5qDgRACL8INY9AgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c4e00daaa9 ("driver-core: extend dev_printk() to pass structured data")
-changed __dev_printk and broke dynamic-debug's ability to control the
-dynamic prefix of dev_dbg(dev,..).
+On 07/25/2012 08:11 PM, Mark Brown wrote:
 
-dynamic_emit_prefix() adds "[tid] module:func:line:" to the output and
-those additions got lost.
+>> Why do you should report released event to all of buttons? I think that
+>> you should only
+>> report released event to previous pressed button. If user press two
+>> button on the headset
+>> at the same time and then user release only one button with pressed
+>> another button, extcon-arizona driver have to report released event to
+>> previous pressed button except for still pressed another button.
+> 
+> The input API already supresses duplicate reports, they won't be
+> propagated to userspace, so there's no point in duplicating the work
+> to remember what buttons are pressed in individual drivers.  Userspace
+> will only see events reported that refect changes in state.
 
-In addition, the current dynamic debug code uses up to 3 recursion
-levels via %pV.  This can consume quite a bit of stack.  Directly
-call printk_emit to reduce the recursion by one depth.
 
-These changes include:
+The extcon-arizona include six buttons(BTN_0, BTN_1, BTN_2, BTN_3,
+BTN_4, BTN_5). Currently, extcon-arizona driver will report released
+event to all buttons (BTN_0, BTN_1, BTN_2, BTN_3, BTN_4, BTN_5)
+when released event irrespective of the type of buttons is happened.
 
-o Remove KERN_DEBUG from dynamic_emit_prefix
-o Create and use function create_syslog_header to format the syslog
-  header for printk_emit uses.
-o Call create_syslog_header and neaten __dev_printk
-o Call create_syslog_header and printk_emit from dynamic_dev_dbg
-o Call create_syslog_header and printk_emit from dynamic_netdev_dbg
-o Make __dev_printk and __netdev_printk static not global
-o Remove include header declarations of __dev_printk and __netdev_printk
-o Remove now unused EXPORT_SYMBOL()s of __dev_printk and __netdev_printk
-o Whitespace neatening
+If user press BTN_0 and BTN_1 at the same time and then user only
+released BTN_0 but BTN_1 is still pressed, is it right that report
+released event to all of buttons? I think that different event between
+BTN_0 and BTN_1.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/base/core.c       |   57 ++++++++++++++++++++++++-----------------
- include/linux/device.h    |   11 +++-----
- include/linux/netdevice.h |    3 --
- lib/dynamic_debug.c       |   61 ++++++++++++++++++++++++++++++++++++---------
- net/core/dev.c            |    5 ++-
- 5 files changed, 89 insertions(+), 48 deletions(-)
+Thank you,
+Chanwoo Choi
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 346be8b..320a32c 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1844,25 +1844,19 @@ void device_shutdown(void)
-  */
- 
- #ifdef CONFIG_PRINTK
--int __dev_printk(const char *level, const struct device *dev,
--		 struct va_format *vaf)
-+int create_syslog_header(const struct device *dev, char *hdr, size_t hdrlen)
- {
--	char dict[128];
--	size_t dictlen = 0;
- 	const char *subsys;
--
--	if (!dev)
--		return printk("%s(NULL device *): %pV", level, vaf);
-+	size_t pos = 0;
- 
- 	if (dev->class)
- 		subsys = dev->class->name;
- 	else if (dev->bus)
- 		subsys = dev->bus->name;
- 	else
--		goto skip;
-+		return 0;
- 
--	dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--			    "SUBSYSTEM=%s", subsys);
-+	pos += snprintf(hdr + pos, hdrlen - pos, "SUBSYSTEM=%s", subsys);
- 
- 	/*
- 	 * Add device identifier DEVICE=:
-@@ -1878,28 +1872,41 @@ int __dev_printk(const char *level, const struct device *dev,
- 			c = 'b';
- 		else
- 			c = 'c';
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				   "DEVICE=%c%u:%u",
--				   c, MAJOR(dev->devt), MINOR(dev->devt));
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=%c%u:%u",
-+				c, MAJOR(dev->devt), MINOR(dev->devt));
- 	} else if (strcmp(subsys, "net") == 0) {
- 		struct net_device *net = to_net_dev(dev);
- 
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				    "DEVICE=n%u", net->ifindex);
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=n%u", net->ifindex);
- 	} else {
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				    "DEVICE=+%s:%s", subsys, dev_name(dev));
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=+%s:%s", subsys, dev_name(dev));
- 	}
--skip:
--	return printk_emit(0, level[1] - '0',
--			   dictlen ? dict : NULL, dictlen,
-+
-+	return pos;
-+}
-+EXPORT_SYMBOL(create_syslog_header);
-+
-+static int __dev_printk(const char *level, const struct device *dev,
-+			struct va_format *vaf)
-+{
-+	char hdr[128];
-+	size_t hdrlen;
-+
-+	if (!dev)
-+		return printk("%s(NULL device *): %pV", level, vaf);
-+
-+	hdrlen = create_syslog_header(dev, hdr, sizeof(hdr));
-+
-+	return printk_emit(0, level[1] - '0', hdrlen ? hdr : NULL, hdrlen,
- 			   "%s %s: %pV",
- 			   dev_driver_string(dev), dev_name(dev), vaf);
- }
--EXPORT_SYMBOL(__dev_printk);
- 
- int dev_printk(const char *level, const struct device *dev,
- 	       const char *fmt, ...)
-@@ -1914,6 +1921,7 @@ int dev_printk(const char *level, const struct device *dev,
- 	vaf.va = &args;
- 
- 	r = __dev_printk(level, dev, &vaf);
-+
- 	va_end(args);
- 
- 	return r;
-@@ -1933,6 +1941,7 @@ int func(const struct device *dev, const char *fmt, ...)	\
- 	vaf.va = &args;						\
- 								\
- 	r = __dev_printk(kern_level, dev, &vaf);		\
-+								\
- 	va_end(args);						\
- 								\
- 	return r;						\
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 5083bcc..bd9701d 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -886,12 +886,12 @@ extern const char *dev_driver_string(const struct device *dev);
- 
- #ifdef CONFIG_PRINTK
- 
--extern int __dev_printk(const char *level, const struct device *dev,
--			struct va_format *vaf);
-+extern int create_syslog_header(const struct device *dev,
-+				char *hdr, size_t hdrlen);
-+
- extern __printf(3, 4)
- int dev_printk(const char *level, const struct device *dev,
--	       const char *fmt, ...)
--	;
-+	       const char *fmt, ...);
- extern __printf(2, 3)
- int dev_emerg(const struct device *dev, const char *fmt, ...);
- extern __printf(2, 3)
-@@ -909,9 +909,6 @@ int _dev_info(const struct device *dev, const char *fmt, ...);
- 
- #else
- 
--static inline int __dev_printk(const char *level, const struct device *dev,
--			       struct va_format *vaf)
--{ return 0; }
- static inline __printf(3, 4)
- int dev_printk(const char *level, const struct device *dev,
- 	       const char *fmt, ...)
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index eb06e58..291e0ee 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2715,9 +2715,6 @@ static inline const char *netdev_name(const struct net_device *dev)
- 	return dev->name;
- }
- 
--extern int __netdev_printk(const char *level, const struct net_device *dev,
--			struct va_format *vaf);
--
- extern __printf(3, 4)
- int netdev_printk(const char *level, const struct net_device *dev,
- 		  const char *format, ...);
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 7ca29a0..6507d11 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -521,25 +521,23 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
- 	int pos_after_tid;
- 	int pos = 0;
- 
--	pos += snprintf(buf + pos, remaining(pos), "%s", KERN_DEBUG);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_TID) {
- 		if (in_interrupt())
--			pos += snprintf(buf + pos, remaining(pos), "%s ",
--						"<intr>");
-+			pos += snprintf(buf + pos, remaining(pos), "<intr> ");
- 		else
- 			pos += snprintf(buf + pos, remaining(pos), "[%d] ",
--						task_pid_vnr(current));
-+					task_pid_vnr(current));
- 	}
- 	pos_after_tid = pos;
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
- 		pos += snprintf(buf + pos, remaining(pos), "%s:",
--					desc->modname);
-+				desc->modname);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
- 		pos += snprintf(buf + pos, remaining(pos), "%s:",
--					desc->function);
-+				desc->function);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
- 		pos += snprintf(buf + pos, remaining(pos), "%d:",
--					desc->lineno);
-+				desc->lineno);
- 	if (pos - pos_after_tid)
- 		pos += snprintf(buf + pos, remaining(pos), " ");
- 	if (pos >= PREFIX_SIZE)
-@@ -559,9 +557,13 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 	BUG_ON(!fmt);
- 
- 	va_start(args, fmt);
-+
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	res = printk("%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
-+
-+	res = printk(KERN_DEBUG "%s%pV",
-+		     dynamic_emit_prefix(descriptor, buf), &vaf);
-+
- 	va_end(args);
- 
- 	return res;
-@@ -580,9 +582,24 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
- 	BUG_ON(!fmt);
- 
- 	va_start(args, fmt);
-+
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	res = __dev_printk(dynamic_emit_prefix(descriptor, buf), dev, &vaf);
-+
-+	if (!dev) {
-+		res = printk(KERN_DEBUG "(NULL device *): %pV", &vaf);
-+	} else {
-+		char dict[128];
-+		size_t dictlen;
-+
-+		dictlen = create_syslog_header(dev, dict, sizeof(dict));
-+
-+		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
-+				  "%s%s %s: %pV",
-+				  dynamic_emit_prefix(descriptor, buf),
-+				  dev_driver_string(dev), dev_name(dev), &vaf);
-+	}
-+
- 	va_end(args);
- 
- 	return res;
-@@ -592,20 +609,40 @@ EXPORT_SYMBOL(__dynamic_dev_dbg);
- #ifdef CONFIG_NET
- 
- int __dynamic_netdev_dbg(struct _ddebug *descriptor,
--		      const struct net_device *dev, const char *fmt, ...)
-+			 const struct net_device *dev, const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
- 	int res;
--	char buf[PREFIX_SIZE];
- 
- 	BUG_ON(!descriptor);
- 	BUG_ON(!fmt);
- 
- 	va_start(args, fmt);
-+
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	res = __netdev_printk(dynamic_emit_prefix(descriptor, buf), dev, &vaf);
-+
-+	if (dev && dev->dev.parent) {
-+		char buf[PREFIX_SIZE];
-+		char dict[128];
-+		size_t dictlen;
-+
-+		dictlen = create_syslog_header(dev->dev.parent,
-+					       dict, sizeof(dict));
-+
-+		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
-+				  "%s%s %s: %pV",
-+				  dynamic_emit_prefix(descriptor, buf),
-+				  dev_driver_string(dev->dev.parent),
-+				  netdev_name(dev), &vaf);
-+
-+	} else if (dev) {
-+		res = printk(KERN_DEBUG "%s: %pV", netdev_name(dev), &vaf);
-+	} else {
-+		res = printk(KERN_DEBUG "(NULL net_device): %pV", &vaf);
-+	}
-+
- 	va_end(args);
- 
- 	return res;
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 0ebaea1..f6ebe92 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6358,7 +6358,7 @@ const char *netdev_drivername(const struct net_device *dev)
- 	return empty;
- }
- 
--int __netdev_printk(const char *level, const struct net_device *dev,
-+static int __netdev_printk(const char *level, const struct net_device *dev,
- 			   struct va_format *vaf)
- {
- 	int r;
-@@ -6373,7 +6373,6 @@ int __netdev_printk(const char *level, const struct net_device *dev,
- 
- 	return r;
- }
--EXPORT_SYMBOL(__netdev_printk);
- 
- int netdev_printk(const char *level, const struct net_device *dev,
- 		  const char *format, ...)
-@@ -6388,6 +6387,7 @@ int netdev_printk(const char *level, const struct net_device *dev,
- 	vaf.va = &args;
- 
- 	r = __netdev_printk(level, dev, &vaf);
-+
- 	va_end(args);
- 
- 	return r;
-@@ -6407,6 +6407,7 @@ int func(const struct net_device *dev, const char *fmt, ...)	\
- 	vaf.va = &args;						\
- 								\
- 	r = __netdev_printk(level, dev, &vaf);			\
-+								\
- 	va_end(args);						\
- 								\
- 	return r;						\
--- 
-1.7.8.111.gad25c.dirty
 
