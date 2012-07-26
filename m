@@ -1,92 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab2GZVwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:52:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60427 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752329Ab2GZVwW (ORCPT
+	id S1752707Ab2GZVzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:55:05 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:46298 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab2GZVzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:52:22 -0400
-Date: Thu, 26 Jul 2012 22:51:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] mfd: add MAX8907 core driver
-Message-ID: <20120726215150.GI4560@opensource.wolfsonmicro.com>
-References: <1343331630-27126-1-git-send-email-swarren@wwwdotorg.org>
- <20120726203526.GD4560@opensource.wolfsonmicro.com>
- <5011B32D.1080102@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X0cz4bGbQuRbxrVl"
-Content-Disposition: inline
-In-Reply-To: <5011B32D.1080102@wwwdotorg.org>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Jul 2012 17:55:03 -0400
+Message-ID: <1343339411.3010.507.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Toshi Kani <toshi.kani@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        joe@perches.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
+Date: Thu, 26 Jul 2012 15:50:11 -0600
+In-Reply-To: <20120726213730.GA2149@google.com>
+References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
+	 <1343257978-7085-2-git-send-email-toshi.kani@hp.com>
+	 <CAErSpo4=HDaWTusKf+tRU6aXmj-mC1i7CswnDzDLZii21i9NaQ@mail.gmail.com>
+	 <1343336330.3010.496.camel@misato.fc.hp.com>
+	 <20120726213730.GA2149@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-07-26 at 15:37 -0600, Bjorn Helgaas wrote:
+> On Thu, Jul 26, 2012 at 02:58:50PM -0600, Toshi Kani wrote:
+> > On Thu, 2012-07-26 at 13:22 -0600, Bjorn Helgaas wrote:
+> > > On Wed, Jul 25, 2012 at 5:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > > > This patch introduces acpi_pr_<level>(), where <level> is a kernel
+> > > > message level such as err/warn/info, to support improved logging
+> > > > messages for ACPI, esp. in hotplug operations.  acpi_pr_<level>()
+> > > > appends "ACPI" prefix and ACPI object path to the messages.  This
+> > > > improves diagnostics in hotplug operations since it identifies an
+> > > > object that caused an issue in a log file.
+> > > >
+> > > > acpi_pr_<level>() takes acpi_handle as an argument, which is passed
+> > > > to ACPI hotplug notify handlers from the ACPICA.  Therefore, it is
+> > > > always available unlike other kernel objects, such as device.
+> > > >
+> > > > For example, the statement below
+> > > >   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
+> > > > logs an error message like this at KERN_ERR.
+> > > >   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+> > > >
+> > > > ACPI drivers can use acpi_pr_<level>() when they need to identify
+> > > > a target ACPI object in their messages, such as error messages.
+> > > 
+> > > It's definitely an improvement to have *something* that identifies a
+> > > device in these messages.  But the ACPI namespace path is not really
+> > > intended to be user-consumable, so I don't think we should expose it
+> > > indiscriminately.  I think we should be using the ACPI device name
+> > > ("PNP0C02:00") whenever possible.  Given the device name, we can get
+> > > the path from the sysfs "path" file.
+> > 
+> > Hi Bjorn,
+> > 
+> > Thanks for reviewing!  Yes, ACPI device path is not good for regular
+> > users to analyze from the info.  I also agree with you that device name
+> > is a better choice when users always diagnose issues by themselves right
+> > after they performed an operation.  However, there are also cases that
+> > users ask someone to diagnose an issue remotely from the log files, and
+> > hotplug operations are performed automatically.  In such cases, using
+> > ACPI device name alone is problematic for hotplug operations since a
+> > device name comes with an instance number that continues to change with
+> > hot-add/remove operations.  Here is one example scenario.  Let's say,
+> > user has automatic load-balancer or power-saving that can trigger
+> > hundreds of CPU hotplug operations per a day.  This user then found that
+> > there were multiple hotplug errors logged in the past few days, and
+> > asked an IT guy to look at the error messages.  When this user found the
+> > issue, all device names are gone from sysfs after repeated hotplug
+> > operations.  This IT guy would have no idea if those errors were
+> > happening on a particular device or not from the error messages since
+> > their instance numbers continue to change.
+> 
+> I agree that it's useful to be able to debug from the dmesg log
+> without having to ask a user to collect stuff from /sys.  But rather
+> than including the namespace path in every message, I think it'd be
+> better to do one dev_info() in the hotplug notify event handler and
+> include the path there.  Subsequent messages can just use dev_info()
+> without the namespace info.
 
---X0cz4bGbQuRbxrVl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Bjorn,
 
-On Thu, Jul 26, 2012 at 03:14:21PM -0600, Stephen Warren wrote:
-> On 07/26/2012 02:35 PM, Mark Brown wrote:
+I agree.  For now, I will keep the use of acpi_pr_<level>() within the
+hotplug notify handler functions.  I will change any subsequent
+functions to use dev_<level>().  This way, we have only one use of
+acpi_pr_<level>() in an operation.  I will also clarify this in the
+change log.
 
-> > This looks very suspicious...  why do we need to call=20
-> > irqd_irq_disabled() here?
+> > > Another possible approach to this is to add a %p extension rather than
+> > > adding acpi_printk().  Then you could do, e.g., 'printk("%pA ...\n",
+> > > handle)', and printk could interpolate the namespace path.  But I
+> > > really think there should be very few places where we need the path,
+> > > so I'm not sure it's worth it.
+> > 
+> > Address of handle is not very helpful either when someone needs to
+> > analyze from log files.
+> 
+> Sorry, I should have made this clearer.  The %pA would expand to the ACPI
+> namespace path, so a "dev_info(dev, "new device for %pA\n", dev->handle)"
+> would produce output like this:
+> 
+>     PNP0C01:00: new device for \_SB_.PCI0.ISA_.MBIO
+> 
+> I fiddled with this a while ago; it would look something like this:
 
-> I believe the status register reflects the unmasked status, it's just
-> the interrupt signal that's affected by the mask.
+I see.  That sounds good idea.  I agree that we can use it when device
+is valid.  Since it's late to make such changes, I will consider making
+such changes for 3.7. 
 
-This is totally normal, the standard pattern here is to and the status
-register with the mask register before parsing.
+Thanks,
+-Toshi
 
-> So the idea here was that the IRQ core is already maintaining state
-> which describes which IRQs are enabled/disabled and wake/not. Rather
-> than have irq_enable/irq_disable/set_wake do nothing but save the same
-> state to irq_chip-specific structures, I removed the body of those
-> functions and instead just call irqd_irq_disabled() etc. wherever I
-> would have accessed the "local" state. Is that not a legitimate design
-> then?
 
-It seems very smelly, if you were supposed to do this then you wouldn't
-have to be defining the empty operations.  There's also the counter
-argument that it means you've got to go through every interrupt and work
-out the state before syncing rather than just being able to blast the
-register states in but that's fairly weak.
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index c3f36d41..201dcdb 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -551,6 +551,29 @@ char *symbol_string(char *buf, char *end, void *ptr,
+>  #endif
+>  }
+>  
+> +#ifdef CONFIG_ACPI
+> +#include <acpi/acpi.h>
+> +
+> +static noinline_for_stack
+> +char *acpi_name_string(char *buf, char *end, acpi_handle handle,
+> +		       struct printf_spec spec, const char *fmt)
+> +{
+> +	acpi_status status;
+> +	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	u32 type = ACPI_SINGLE_NAME;
+> +	char *p = buf;
+> +
+> +	if (fmt[0] == 'A')
+> +		type = ACPI_FULL_PATHNAME;
+> +
+> +	status = acpi_get_name(handle, type, &buffer);
+> +	if (ACPI_SUCCESS(status))
+> +		p = string(buf, end, buffer.pointer, spec);
+> +	kfree(buffer.pointer);
+> +	return p;
+> +}
+> +#endif
+> +
+>  static noinline_for_stack
+>  char *resource_string(char *buf, char *end, struct resource *res,
+>  		      struct printf_spec spec, const char *fmt)
+> @@ -921,6 +944,8 @@ int kptr_restrict __read_mostly;
+>   *
+>   * Right now we handle:
+>   *
+> + * - 'A' For full ACPI namespace names
+> + * - 'a' For single segment ACPI namespace names
+>   * - 'F' For symbolic function descriptor pointers with offset
+>   * - 'f' For simple symbolic function names without offset
+>   * - 'S' For symbolic direct pointers with offset
+> @@ -982,6 +1007,9 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+>  	}
+>  
+>  	switch (*fmt) {
+> +	case 'A':
+> +	case 'a':
+> +		return acpi_name_string(buf, end, ptr, spec, fmt);
+>  	case 'F':
+>  	case 'f':
+>  		ptr = dereference_function_descriptor(ptr);
 
-I think it's a totally sensible idea to reuse the state in the core, but
-I do think it's a bad idea to dance around the core's back like this
-with the empty operations.
 
---X0cz4bGbQuRbxrVl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQEbvdAAoJEBus8iNuMP3dm+MP/R5H1jRrOtbvujSAJuZooF2q
-6rxZvj61sbgXm1h6qe8ABuQzlV0qH+DqHhyNyhkdE/RgwzsC4KV2bDIFT2JhvuRR
-lYFtiAkIxCkfoNMIoqjpfvYoDKKyntCjWLPGI7Amlic3B+GFFdoiAfvIH+0WdORX
-FGRcEnKAiFfrwZbnUhIrCncZMoamfkQ140A5T0RrZFRpbwKuk7UzvuEEaPdtb5JC
-B4ykoTTBXTyzlG2GtXgtyDK3DZIaVSEZzhMcez1sC1mTi2VTp9ftsL/YC3lsf64B
-kBTiM5yINIA2JkU+oq6gXTheXzAog2I/Qs4kyf04AHPrSZIAC/37iMfQuIP+AA/V
-6uRjM7Qly3GFRB/T+XH/F8kCdJZKH/0YNtTzJTywFTJlGSC5Jynb916cUZqwaMi3
-rvSV1kZ/q2oAQy4pIdD0FzbRHRFAd64KGojgBoSBwmfLS/w2d1OLbo8SG0H964Eg
-n32fDcKiQzS7lFai/DVJQHsydty7PQdFDqON++ztz557ReybaIxeoEOVGb50V3eH
-RQe3YUSLiTHYU3zLzcWgG5jidaBr7+rLLz/aBvDjTX60BrhLgHBe70e7eZbwqHVR
-+VdA3JauF1QlUzgjao3s6AAoCibL7JFt4w5w9Da0u8IMUKVqNAz96F/uRA7eCo3h
-TfwgmOziXyeQ0ULpJdKU
-=wby9
------END PGP SIGNATURE-----
-
---X0cz4bGbQuRbxrVl--
