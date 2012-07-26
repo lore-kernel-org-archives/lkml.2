@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab2GZVYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:24:36 -0400
+	id S1753111Ab2GZVYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:24:55 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:55834 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab2GZVVX (ORCPT
+	with ESMTP id S1752898Ab2GZVU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:21:23 -0400
+	Thu, 26 Jul 2012 17:20:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frank Kunz <xxxxxmichl@googlemail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 12/23] HID: add Sennheiser BTD500USB device support
-Date: Thu, 26 Jul 2012 14:19:51 -0700
-Message-Id: <20120726211406.969870388@linuxfoundation.org>
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 08/23] tcm_fc: Fix crash seen with aborts and large reads
+Date: Thu, 26 Jul 2012 14:19:47 -0700
+Message-Id: <20120726211406.606538356@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -30,44 +31,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Frank Kunz <xxxxxmichl@googlemail.com>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit 0e050923a797c1fc46ccc1e5182fd3090f33a75d upstream.
+commit 3cc5d2a6b9a2fd1bf024aa5e52dd22961eecaf13 upstream.
 
-The Sennheiser BTD500USB composit device requires the
-HID_QUIRK_NOGET flag to be set for working proper. Without the
-flag the device crashes during hid intialization.
+This patch fixes a crash seen when large reads have their exchange
+aborted by either timing out or being reset. Because the exchange
+abort results in the seq pointer being set to NULL, because the
+sequence is no longer valid, it must not be dereferenced. This
+patch changes the function ft_get_task_tag to return ~0 if it is
+unable to get the tag for this reason. Because the get_task_tag
+interface provides no means of returning an error, this seems
+like the best way to fix this issue at the moment.
 
-Signed-off-by: Frank Kunz <xxxxxmichl@googlemail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/target/tcm_fc/tfc_cmd.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -650,6 +650,9 @@
- #define USB_DEVICE_ID_SAMSUNG_IR_REMOTE	0x0001
- #define USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE	0x0600
+--- a/drivers/target/tcm_fc/tfc_cmd.c
++++ b/drivers/target/tcm_fc/tfc_cmd.c
+@@ -240,6 +240,8 @@ u32 ft_get_task_tag(struct se_cmd *se_cm
+ {
+ 	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
  
-+#define USB_VENDOR_ID_SENNHEISER	0x1395
-+#define USB_DEVICE_ID_SENNHEISER_BTD500USB	0x002c
-+
- #define USB_VENDOR_ID_SIGMA_MICRO	0x1c4f
- #define USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD	0x0002
++	if (cmd->aborted)
++		return ~0;
+ 	return fc_seq_exch(cmd->seq)->rxid;
+ }
  
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -76,6 +76,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_PRODIGE, USB_DEVICE_ID_PRODIGE_CORDLESS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
 
 
