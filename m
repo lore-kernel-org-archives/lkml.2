@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab2GZJdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 05:33:53 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19009 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab2GZJdw convert rfc822-to-8bit (ORCPT
+	id S1751957Ab2GZJf2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 05:35:28 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:46801 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab2GZJfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 05:33:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 26 Jul 2012 02:29:01 -0700
-Subject: RE: How to use the generic thermal sysfs.
-From: Wei Ni <wni@nvidia.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@ger.kernel.org" <linux-tegra@ger.kernel.org>,
-        Alex Courbot <acourbot@nvidia.com>
-In-Reply-To: <1342165278.1682.259.camel@rui.sh.intel.com>
-References: <1342088573.27605.101.camel@tegra-chromium-2>
-	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
-	 <1342144273.1682.237.camel@rui.sh.intel.com>
-	 <1342164616.27605.129.camel@tegra-chromium-2>
-	 <1342165278.1682.259.camel@rui.sh.intel.com>
-Date: Thu, 26 Jul 2012 17:31:34 +0800
-Message-ID: <1343295094.4042.24.camel@tegra-chromium-2>
+	Thu, 26 Jul 2012 05:35:23 -0400
+Message-ID: <50110F51.3050903@linux.vnet.ibm.com>
+Date: Thu, 26 Jul 2012 17:35:13 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] KVM: remove dummy pages
+References: <5010C008.4030304@linux.vnet.ibm.com> <5010C083.30102@linux.vnet.ibm.com>	<5011062F.3080505@redhat.com> <20120726182033.e127e9e6.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120726182033.e127e9e6.yoshikawa.takuya@oss.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072609-5490-0000-0000-000001DA77CB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 15:41 +0800, Zhang Rui wrote:
-> On 五, 2012-07-13 at 15:30 +0800, Wei Ni wrote:
-> > 
-> > Our tegra thermal framework also will use the generic thermal layer. It
-> > will register the cooling device, and run the throttling in this generic
-> > framework.
-> > But we have a special mechanism, when the temp is below the trip temp,
-> > we will set different cpu capability for different temp range. For
-> > example, set the low/high temp as 20C/30C to the sensor, and set the cpu
-> > to the max capability, it mean the cpu can run up to the max freq and
-> > voltage in this temp range. if the temp is out that range, the sensor
-> > will have irq/alert to notify the tegra framework, then we will set to
-> > another temperature range and cpu capability.
-> > I think we can try to add this mechanism to the generic framework as a
-> > new policy, right?
-> > 
-> I think you can make use of the upper&lower limit in my patch set.
-> Say, here is your thermal policy
-> 20C - 30C, P0
-> 30C - 40C, P1 - P2
-> 40C - 60C, P3 - P5
-> 60C+, P6 ~ Pn
+On 07/26/2012 05:20 PM, Takuya Yoshikawa wrote:
+> On Thu, 26 Jul 2012 11:56:15 +0300
+> Avi Kivity <avi@redhat.com> wrote:
 > 
-> you can register to the thermal layer 4 passive trip points,
-> 20C, 30C, 40C, 60C, and then
-> 1) for trip 0 (20C), upper limit 0, lower limit 0
-> 2) for trip 1 (30C), upper limit 2, lower limit 1
-> 3) for trip 2 (40C), upper limit 5, lower limit 3
-> 4) for trip 3 (60C), upper limit n, lower limit 6
+>> Since my comments are better done as a separate patch, I applied all
+>> three patches.  Thanks!
 > 
-> you can program your own sensor to get interrupt when the temperature
-> hits 20C/30C/40C/60C, and the generic thermal layer will put the
-> processors to proper frequency for each trip point.
+> Is this patch really safe for all architectures?
 > 
-> what do you think?
-
-Hi, Rui
-I'm trying your upper/lower codes on our tegra platform.
-Since we want to set limit value to the sensor to get interrupt, and
-many sensor drivers can support the limit alert property, could we add a
-new callback .set_limits() for the thermal zone device, so that we can
-program it in the generic layer. when the temperature hits the
-trip_temp, we can try to set to the next limit range.
-I can try to add these codes base on your patches.
-
-Thanks.
-Wei.
-
+> IS_ERR_VALUE() casts -MAX_ERRNO to unsigned long and then does comparison.
+> Isn't it possible to conflict with valid pfns?
 > 
-> BTW, the upper and lower limit is introduced in the patch set I'm
-> testing, so maybe you were not aware of it.
-> 
-> thanks,
-> rui
 
+See IS_ERR_VALUE():
 
+#define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
+
+The minimal value of the error code is:
+0xffff f001 on 32-bit and 0x ffff ffff ffff f001 on 64-bit,
+it is fair larger that a valid pfn (for the pfn, the most top of 12 bits
+are always 0).
+
+Note, PAE is a special case, but only 64G physical memory is valid,
+0xffff f001 is also suitable for that.
 
