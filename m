@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2GZL7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:59:46 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:40413 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab2GZLzg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:55:36 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v4 06/17] vfs: turn "empty" arg in getname_flags into a bool
-Date: Thu, 26 Jul 2012 07:55:09 -0400
-Message-Id: <1343303720-11199-7-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
-References: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
+	id S1752785Ab2GZL77 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:59:59 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:47085 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752344Ab2GZL74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 07:59:56 -0400
+X-Greylist: delayed 1144 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 07:59:56 EDT
+From: Pavel Andrianov <andrianov@ispras.ru>
+To: Neela Syam Kolli <megaraidlinux@lsi.com>
+Cc: Pavel Andrianov <andrianov@ispras.ru>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: [PATCH] scsi_megaraid: addition spin_lock in megaraid_abort()
+Date: Thu, 26 Jul 2012 15:40:15 +0400
+Message-Id: <1343302815-13064-1-git-send-email-andrianov@ispras.ru>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...it's just used as a flag.
+In function megaraid_abort() there are calls to megaraid_abort_and_reset()
+and mega_rundoneq() which access shared data (like pending_list) without
+synchronization.In function megaraid_reset() the same calls were done with
+spin_lock held. So, the patch adds spin_lock_irq and spin_unlock_irq to
+megaraid_abort().
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Found by Linux Driver Verification project (linuxtesting.org)
+
+Signed-off-by: Pavel Andrianov <andrianov@ispras.ru>
 ---
- fs/namei.c         | 4 ++--
- fs/stat.c          | 2 +-
- include/linux/fs.h | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/megaraid.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 244ee8b..6563077 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -117,7 +117,7 @@
-  * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
-  * PATH_MAX includes the nul terminator --RR.
-  */
--char *getname_flags(const char __user *filename, int flags, int *empty)
-+char *getname_flags(const char __user *filename, int flags, bool *empty)
- {
- 	char *result = __getname(), *err;
- 	int len;
-@@ -133,7 +133,7 @@ char *getname_flags(const char __user *filename, int flags, int *empty)
- 	/* The empty path is special. */
- 	if (unlikely(!len)) {
- 		if (empty)
--			*empty = 1;
-+			*empty = true;
- 		err = ERR_PTR(-ENOENT);
- 		if (!(flags & LOOKUP_EMPTY))
- 			goto error;
-diff --git a/fs/stat.c b/fs/stat.c
-index c9d88f7..4f8b6bc 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -306,7 +306,7 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- {
- 	struct path path;
- 	int error;
--	int empty = 0;
-+	bool empty = false;
- 	char *name;
- 	unsigned int try = 0;
- 	unsigned int lookup_flags = LOOKUP_EMPTY;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 00db714..386d016 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2062,7 +2062,7 @@ extern struct file *file_open_root(struct dentry *, struct vfsmount *,
- 				   const char *, int);
- extern struct file * dentry_open(const struct path *, int, const struct cred *);
- extern int filp_close(struct file *, fl_owner_t id);
--extern char *getname_flags(const char __user *, int, int *);
-+extern char *getname_flags(const char __user *, int, bool *);
- extern char * getname(const char __user *);
- enum {
- 	FILE_CREATED = 1,
+diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+index 4d39a9f..7572d86 100644
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -1898,6 +1898,8 @@ megaraid_abort(Scsi_Cmnd *cmd)
+ 
+ 	adapter = (adapter_t *)cmd->device->host->hostdata;
+ 
++	spin_lock_irq(&adapter->lock);
++
+ 	rval =  megaraid_abort_and_reset(adapter, cmd, SCB_ABORT);
+ 
+ 	/*
+@@ -1905,6 +1907,7 @@ megaraid_abort(Scsi_Cmnd *cmd)
+ 	 * to be communicated over to the mid layer.
+ 	 */
+ 	mega_rundoneq(adapter);
++	spin_unlock_irq(&adapter->lock);
+ 
+ 	return rval;
+ }
 -- 
-1.7.11.2
+1.7.4.1
 
