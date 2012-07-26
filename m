@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2GZRFp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:05:45 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1591 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545Ab2GZRFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:05:44 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
-Subject: [PATCH] cx18: Declare MODULE_FIRMWARE usage
-Date: Thu, 26 Jul 2012 11:05:58 -0600
-Message-Id: <1343322358-128310-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752731Ab2GZRGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:06:22 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:33739 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab2GZRGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 13:06:20 -0400
+Date: Thu, 26 Jul 2012 10:04:11 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] power_supply: Added support for power supply
+ attribute sources
+Message-ID: <20120726170411.GA19112@lizard>
+References: <1343315844-18824-1-git-send-email-ramakrishna.pallala@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1343315844-18824-1-git-send-email-ramakrishna.pallala@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Andy Walls <awalls@md.metrocast.net>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: ivtv-devel@ivtvdriver.org
-Cc: linux-media@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/media/video/cx18/cx18-driver.c   |    1 +
- drivers/media/video/cx18/cx18-firmware.c |   10 ++++++++--
- 2 files changed, 9 insertions(+), 2 deletions(-)
+Hello Ramakrishna,
 
-diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
-index 7e5ffd6..c67733d 100644
---- a/drivers/media/video/cx18/cx18-driver.c
-+++ b/drivers/media/video/cx18/cx18-driver.c
-@@ -1357,3 +1357,4 @@ static void __exit module_cleanup(void)
- 
- module_init(module_start);
- module_exit(module_cleanup);
-+MODULE_FIRMWARE(XC2028_DEFAULT_FIRMWARE);
-diff --git a/drivers/media/video/cx18/cx18-firmware.c b/drivers/media/video/cx18/cx18-firmware.c
-index b85c292..a1c1cec 100644
---- a/drivers/media/video/cx18/cx18-firmware.c
-+++ b/drivers/media/video/cx18/cx18-firmware.c
-@@ -376,6 +376,9 @@ void cx18_init_memory(struct cx18 *cx)
- 	cx18_write_reg(cx, 0x00000101, CX18_WMB_CLIENT14);  /* AVO */
- }
- 
-+#define CX18_CPU_FIRMWARE "v4l-cx23418-cpu.fw"
-+#define CX18_APU_FIRMWARE "v4l-cx23418-apu.fw"
-+
- int cx18_firmware_init(struct cx18 *cx)
- {
- 	u32 fw_entry_addr;
-@@ -400,7 +403,7 @@ int cx18_firmware_init(struct cx18 *cx)
- 	cx18_sw1_irq_enable(cx, IRQ_CPU_TO_EPU | IRQ_APU_TO_EPU);
- 	cx18_sw2_irq_enable(cx, IRQ_CPU_TO_EPU_ACK | IRQ_APU_TO_EPU_ACK);
- 
--	sz = load_cpu_fw_direct("v4l-cx23418-cpu.fw", cx->enc_mem, cx);
-+	sz = load_cpu_fw_direct(CX18_CPU_FIRMWARE, cx->enc_mem, cx);
- 	if (sz <= 0)
- 		return sz;
- 
-@@ -408,7 +411,7 @@ int cx18_firmware_init(struct cx18 *cx)
- 	cx18_init_scb(cx);
- 
- 	fw_entry_addr = 0;
--	sz = load_apu_fw_direct("v4l-cx23418-apu.fw", cx->enc_mem, cx,
-+	sz = load_apu_fw_direct(CX18_APU_FIRMWARE, cx->enc_mem, cx,
- 				&fw_entry_addr);
- 	if (sz <= 0)
- 		return sz;
-@@ -451,3 +454,6 @@ int cx18_firmware_init(struct cx18 *cx)
- 	cx18_write_reg_expect(cx, 0x14001400, 0xc78110, 0x00001400, 0x14001400);
- 	return 0;
- }
-+
-+MODULE_FIRMWARE(CX18_CPU_FIRMWARE);
-+MODULE_FIRMWARE(CX18_APU_FIRMWARE);
+On Thu, Jul 26, 2012 at 08:47:24PM +0530, Ramakrishna Pallala wrote:
+> On some platforms one driver(or HW chip) may not be able to provide all
+> the necessary attributes of the power supply connected to the platform or
+> may provide very limited info which can be used by core/primary drivers.
+> 
+> For example a temperature sensor chip placed near the battery can be used
+> to report battery ambient temperature but it does not makes sense to register
+> sensor driver with power supply class. Or even a ADC driver or platform
+> driver may report power supply properties like voltage/current or charging
+> status but registering all those driver with power supply class is not a
+> practical or ideal approach.
+> 
+> This patch adds the generic support to register the drivers as power
+> supply attribute(properties) sources and adds an interface to read
+> these attributes from power supply class drivers.
+> 
+> If there are multiple attribute sources of the same type then caller has
+> to do source selection by passing the source string in the query struct.
+> 
+> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> ---
+[...]
+> +extern int power_supply_attributes_register(struct device *parent,
+> +				struct power_supply_attr_source *psy_attr);
+
+Can you please show some user of the new calls? If I understand
+correctly, you're going to call these from sensing (ADC, or some
+other) drivers, which would be very very wrong thing to do.
+
+Thanks,
+
 -- 
-1.7.9.5
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
