@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab2GZC7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 22:59:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32862 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab2GZC7K (ORCPT
+	id S1752783Ab2GZDDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 23:03:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44503 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab2GZDC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 22:59:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120725160425.GK11152@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<1343149213-10160-9-git-send-email-ming.lei@canonical.com>
-	<20120725160425.GK11152@aftab.osrc.amd.com>
-Date: Thu, 26 Jul 2012 10:59:08 +0800
-Message-ID: <CACVXFVO5HHFraBXsV2S_a_KUrBg3ffyO0qqaGCjzq8Rksr9KaA@mail.gmail.com>
-Subject: Re: [RFC PATCH 08/13] driver core: firmware loader: fix device lifetime
-From: Ming Lei <ming.lei@canonical.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 25 Jul 2012 23:02:59 -0400
+From: Sha Zhengju <handai.szj@gmail.com>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        devel@open-fcoe.org
+Cc: Sha Zhengju <handai.szj@taobao.com>, robert.w.love@intel.com
+Subject: [PATCH] mainline 3.5, fcoe: remove the __exit annotation of fcoe_transport_exit()
+Date: Thu, 26 Jul 2012 11:02:44 +0800
+Message-Id: <1343271764-17501-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 12:04 AM, Borislav Petkov <bp@amd64.org> wrote:
->> Also this patch holds the reference cound of @device before
->
->                                         count
+From: Sha Zhengju <handai.szj@taobao.com>
 
-Good catch, will fix it in -v1.
+While testing linux mainline v3.5, it comes out the following warning:
+
+WARNING: drivers/scsi/fcoe/libfcoe.o(.init.text+0x21): Section mismatch in reference from the function
+init_module() to the function .exit.text:fcoe_transport_exit()
+The function __init init_module() references a function __exit fcoe_transport_exit().
+This is often seen when error handling in the init function uses functionality in the exit path.
+The fix is often to remove the __exit annotation of fcoe_transport_exit() so it may be used outside an exit section.
 
 
->> - *   it is not possible to sleep for long time. It can't be called
->> - *   in atomic contexts.
->> + *   it is not possible to sleep for long time.
->
-> Let's state it explicitly:
->
->         "it is not allowed to sleep for it is called in atomic context."
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+Cc: robert.w.love@intel.com
+---
+ drivers/scsi/fcoe/fcoe_transport.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Looks you understand it incorrectly, the sentence is below
+diff --git a/drivers/scsi/fcoe/fcoe_transport.c b/drivers/scsi/fcoe/fcoe_transport.c
+index b46f43d..71cc909 100644
+--- a/drivers/scsi/fcoe/fcoe_transport.c
++++ b/drivers/scsi/fcoe/fcoe_transport.c
+@@ -502,7 +502,7 @@ static int __init fcoe_transport_init(void)
+ 	return 0;
+ }
+ 
+-static int __exit fcoe_transport_exit(void)
++static int fcoe_transport_exit(void)
+ {
+ 	struct fcoe_transport *ft;
+ 
+-- 
+1.7.1
 
- *      Asynchronous variant of request_firmware() for user contexts where
- *      it is not possible to sleep for long time.
-
-and maybe it should be changed to below:
-
- *      Asynchronous variant of request_firmware() for user contexts where
- *      it is not possible to sleep for long time or can't sleep at all.
-
-Thanks,
---
-Ming Lei
