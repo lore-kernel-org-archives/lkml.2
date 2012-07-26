@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab2GZReQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:34:16 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38143 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab2GZReP (ORCPT
+	id S1752311Ab2GZRir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:38:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45654 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab2GZRiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:34:15 -0400
-Date: Thu, 26 Jul 2012 18:33:33 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Khalid Aziz <khalid.aziz@hp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, mikew@google.com, tony.luck@intel.com,
-        keescook@chromium.org, gong.chen@linux.intel.com, gregkh@suse.de,
-        paul.gortmaker@windriver.com, maxin.john@gmail.com,
-        rdunlap@xenotime.net, matt.fleming@intel.com, olof@lixom.net,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Shorten constant names for EFI variable attributes
-Message-ID: <20120726173332.GA19851@srcf.ucam.org>
-References: <20120720220841.GA32642@hp.com>
- <5009D770.1050905@zytor.com>
- <20120723132656.GC21495@srcf.ucam.org>
- <50117E40.8090904@hp.com>
+	Thu, 26 Jul 2012 13:38:46 -0400
+Message-ID: <501180A1.1000504@linutronix.de>
+Date: Thu, 26 Jul 2012 19:38:41 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50117E40.8090904@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] uprobes: don't enable/disable signle step if the user
+ did it
+References: <1343316043-13475-1-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <1343316043-13475-1-git-send-email-bigeasy@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 11:28:32AM -0600, Khalid Aziz wrote:
+On 07/26/2012 05:20 PM, Sebastian Andrzej Siewior wrote:
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index f935327..772eb3a 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1528,7 +1528,10 @@ static void handle_swbp(struct pt_regs *regs)
+>
+>   	utask->state = UTASK_SSTEP;
+>   	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
+> -		user_enable_single_step(current);
+> +		if (test_tsk_thread_flag(current, TIF_SINGLESTEP))
+> +			uprobe->flags |= UPROBE_USER_SSTEP;
+> +		else
+> +			user_enable_single_step(current);
 
-> I also do not believe that kernel must use the constant names
-> mentioned in the specification especially when the name reaches 50
-> characters. We can not get away from having to create aliases. Do
-> you think having aliases in efi.h can cause mixed use of long names
-> and short names in future code in the kernel? Can we address this by
-> suggesting to future code authors that they should use the short
-> names in their code? Should we consider inclusion of this patch in
-> the kernel?
+After looking at it for a bit I noticed that the state should be saved
+in utask intead of uprobe because uprobe might be shared with another
+task.
+I would resend the fixed patch unless someone comes up with something
+else..
 
-I'd be surprised if it were a problem - we should catch any of those 
-cases in code review, or gate the aliases under #ifndef __KERNEL__
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Sebastian
