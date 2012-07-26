@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab2GZKpm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 06:45:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33910 "EHLO mx2.suse.de"
+	id S1752331Ab2GZKqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 06:46:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15817 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab2GZKpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 06:45:41 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jeff Garzik <jgarzik@pobox.com>, Lin Ming <minggr@gmail.com>,
-        Jeff Wu <jeff.wu@amd.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
-Subject: Re: [PATCH v3 2/7] scsi: pm: use autosuspend if device supports it
-Date: Thu, 26 Jul 2012 12:44:24 +0200
-Message-ID: <1476441.ovA4GKBza3@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.5.0-12-desktop+; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <1343297129-28174-3-git-send-email-aaron.lu@amd.com>
-References: <1343297129-28174-1-git-send-email-aaron.lu@amd.com> <1343297129-28174-3-git-send-email-aaron.lu@amd.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751999Ab2GZKqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 06:46:17 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAHO5Pa1yOxBhorYBGJUsy8MehRUbbrwc=uq7Vs+bevtCXGjGMQ@mail.gmail.com>
+References: <CAHO5Pa1yOxBhorYBGJUsy8MehRUbbrwc=uq7Vs+bevtCXGjGMQ@mail.gmail.com> <20120720215636.14854.41208.stgit@warthog.procyon.org.uk> <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com> <28702.1343135952@warthog.procyon.org.uk> <CAHO5Pa310CYFKvyN4N21CHoCKJG-eJ04Q-yg1VmgwvgR5N91Rg@mail.gmail.com> <6193.1343211798@warthog.procyon.org.uk> <CAHO5Pa2ck_wqUwiuFUxEeU=k3dJvByyjpygpUhrSFRsMyBZ8Eg@mail.gmail.com> <5901.1343244093@warthog.procyon.org.uk>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de, tglx@linutronix.de,
+        mingo@kernel.org, davej@redhat.com
+Subject: Re: [PATCH 00/13] UAPI header file split
+Date: Thu, 26 Jul 2012 11:46:04 +0100
+Message-ID: <19738.1343299564@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 July 2012 18:05:24 Aaron Lu wrote:
-> If the device is using autosuspend, when scsi_autopm_put_device is
-> called for it, use autosuspend runtime pm calls instead of the sync
-> call.
+Michael Kerrisk <mtk.manpages@gmail.com> wrote:
 
-What is the purpose of this approach?
-You need a very good reason to have an API do two different things
-based on this.
+> >> >> 3. HEADER COMMENTS NOT RETAINED IN KAPI FILES
+> >
+> > How about the attached changes?  This is a delta to the disintegrate markers
+> > diff I sent earlier.
+> 
+> That looks about right to me.
+> 
+> Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
 
-	Regards
-		Oliver
+Excellent, thanks.  The question is where can I attach your ack?  I'm not
+going to simply tag these on the end as a new patch, but rather the changes
+are included in the regenerated patches as I changed the scripts.
 
+So just the main set of scripted commits?
+
+David
