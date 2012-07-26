@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab2GZO5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:57:09 -0400
-Received: from mail1.matrix-vision.com ([78.47.19.71]:39696 "EHLO
-	mail1.matrix-vision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab2GZO5H (ORCPT
+	id S1752482Ab2GZO6H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:58:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60214 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752425Ab2GZO6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:57:07 -0400
-Message-ID: <50115B72.2070604@matrix-vision.de>
-Date: Thu, 26 Jul 2012 17:00:02 +0200
-From: Michael Jones <michael.jones@matrix-vision.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 26 Jul 2012 10:58:05 -0400
+Date: Thu, 26 Jul 2012 10:58:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@amd.com>
+cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jeff Garzik <jgarzik@pobox.com>, <linux-scsi@vger.kernel.org>,
+        Lin Ming <minggr@gmail.com>, <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates
+In-Reply-To: <5010D2DD.9060201@amd.com>
+Message-ID: <Pine.LNX.4.44L0.1207261054410.1295-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] regulator: grammar fix in Kconfig
-References: <1343311644-19739-1-git-send-email-michael.jones@matrix-vision.de> <1343311644-19739-3-git-send-email-michael.jones@matrix-vision.de> <20120726144812.GN3099@opensource.wolfsonmicro.com>
-In-Reply-To: <20120726144812.GN3099@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-MV-Disclaimer: true (erinome)
-X-AV-Checked: ClamAV using ClamSMTP (erinome)
-X-AV-Checked: ClamAV using ClamSMTP (mail1)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 04:48 PM, Mark Brown wrote:
-> On Thu, Jul 26, 2012 at 04:07:24PM +0200, Michael Jones wrote:
->
->> -	  constraints then the regulator core will provide an always
->> -	  enabled dummy regulator will be provided, allowing consumer
->> -	  drivers to continue.
->> +	  constraints, the regulator core will provide an always-
->> +	  enabled dummy regulator, allowing consumer drivers to continue.
->
-> This appears to be making the grammar worse, it's just removing a "then"
-> and inserting, random commas which don't make, much sense.
->
+On Thu, 26 Jul 2012, Aaron Lu wrote:
 
-What I was trying to fix was the double "provide" in "will provide an... 
-will be provided."  I agree that the if...then... was ugly, too.
+> On 07/26/2012 01:05 PM, James Bottomley wrote:
+> > On Thu, 2012-07-26 at 12:47 +0800, Aaron Lu wrote:
+> >> On 07/26/2012 05:38 AM, Jeff Garzik wrote:
+> >>> On 07/25/2012 04:35 PM, Jeff Garzik wrote:
+> >>>> * Updating libata to directly bind with ACPI / runtime power mgmt.
+> >>>> This is a pre-req for SATA ZPODD (CD-ROM power management).
+> >>>>
+> >>>> Touches ACPI (exports++) and SCSI in minor ways. Has been in linux-next
+> >>>> for weeks.
+> >>>>
+> >>>> The rest of [ZPODD] will probably come via SCSI tree, as it involves
+> >>>> a lot of updates to the 'sr' driver etc.
+> >>>
+> >>> BTW Lin and Aaron, note that this did not include these changes:
+> >>>
+> >>> sr: check support for device busy class events
+> >>> sr: support zero power ODD
+> >>> sr: make sure ODD is in resumed state in block ioctl
+> >>>
+> >>> as in the end I wanted to put the brakes on SCSI-touching patches. These
+> >>> should be able to go into James' scsi-misc tree with the other SCSI-area
+> >>> ZPODD changes.
+> >>>
+> >>> For those three 'sr' changes listed above, you may add
+> >>>
+> >>> Acked-by: Jeff Garzik<jgarzik@redhat.com>
+> >>>
+> >>> when moving them over.
+> >>
+> >> Thanks Jeff.
+> >>
+> >> Hi James,
+> >> I'll prepare these dropped patches plus some other fixes for ZPODD which
+> >> I've sent v2 recently and merge them into v3 for you to review.
+> >
+> > They weren't exactly dropped ... I've been waiting for you to address
+> > Alan Stern's comments, since he's our resident expert on suspend/resume.
+> 
+> Oh, I forgot to mention, that I agree with Alan's comments and have
+> addressed them in my v2 patches here:
+> http://marc.info/?l=linux-scsi&m=134312317325650&w=2
+> 
+> The 2 patches Alan has comments are:
+> http://marc.info/?l=linux-scsi&m=134312311025619&w=2
+> http://marc.info/?l=linux-scsi&m=134312308225610&w=2
+> 
+> Hi Alan,
+> Are the v2 patches look OK to you?
 
-MATRIX VISION GmbH, Talstrasse 16, DE-71570 Oppenweiler
-Registergericht: Amtsgericht Stuttgart, HRB 271090
-Geschaeftsfuehrer: Gerhard Thullner, Werner Armingeon, Uwe Furtner, Erhard Meier
+Yes, they are better now.
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
