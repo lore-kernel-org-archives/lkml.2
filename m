@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab2GZFT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 01:19:57 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:44044 "EHLO e7.ny.us.ibm.com"
+	id S1751663Ab2GZFUG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 01:20:06 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:40140 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab2GZFTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 01:19:55 -0400
-Date: Thu, 26 Jul 2012 10:48:39 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] uprobes: __replace_page() needs munlock_vma_page()
-Message-ID: <20120726051839.GE3810@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120712170934.GA25455@redhat.com>
- <20120712171025.GA25510@redhat.com>
+	id S1751601Ab2GZFUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 01:20:00 -0400
+Date: Thu, 26 Jul 2012 10:49:02 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>
+Cc: benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, michael@ellerman.id.au,
+        Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, oleg@redhat.com
+Subject: [PATCH 1/2] powerpc: Add trap_nr to thread_struct
+Message-ID: <20120726051902.GA29466@in.ibm.com>
+Reply-To: ananth@in.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120712171025.GA25510@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.17 (2007-11-01)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072605-5806-0000-0000-000017AC8ECF
+x-cbid: 12072605-5930-0000-0000-00000A37F3CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-07-12 19:10:25]:
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-> Like do_wp_page(), __replace_page() should do munlock_vma_page()
-> for the case when the old page still has other !VM_LOCKED mappings.
-> Unfortunately this needs mm/internal.h.
-> 
-> Also, move put_page() outside of ptl lock. This doesn't really
-> matter but looks a bit better.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Add thread_struct.trap_nr and use it to store the last exception
+the thread experienced. In this patch, we populate the field at
+various places where we force_sig_info() to the process.
 
-One thing I wanted to check is, should we mlock the new page, i.e the
-replacing page. It may not a good idea to mlock the new page
-because then we can end up adding too many pages to the unevictable
-list.
+This is also used in uprobes to determine if the probed instruction
+caused an exception.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Patch applies on the current master branch of Linus' tree (bdc0077af)
 
-> ---
->  kernel/events/uprobes.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index fc1df43..aeea41b 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -32,6 +32,7 @@
->  #include <linux/swap.h>		/* try_to_free_swap */
->  #include <linux/ptrace.h>	/* user_enable_single_step */
->  #include <linux/kdebug.h>	/* notifier mechanism */
-> +#include "../../mm/internal.h"	/* munlock_vma_page */
-> 
->  #include <linux/uprobes.h>
-> 
-> @@ -141,7 +142,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
->  	pte_t *ptep;
->  	int err;
-> 
-> -	/* freeze PageSwapCache() for try_to_free_swap() below */
-> +	/* For try_to_free_swap() and munlock_vma_page() below */
->  	lock_page(page);
-> 
->  	err = -EAGAIN;
-> @@ -164,9 +165,12 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
->  	page_remove_rmap(page);
->  	if (!page_mapped(page))
->  		try_to_free_swap(page);
-> -	put_page(page);
->  	pte_unmap_unlock(ptep, ptl);
-> 
-> +	if (vma->vm_flags & VM_LOCKED)
-> +		munlock_vma_page(page);
-> +	put_page(page);
-> +
->  	err = 0;
->   unlock:
->  	unlock_page(page);
-> -- 
-> 1.5.5.1
-> 
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
+ arch/powerpc/include/asm/processor.h |    1 +
+ arch/powerpc/kernel/process.c        |    2 ++
+ arch/powerpc/kernel/traps.c          |    1 +
+ arch/powerpc/mm/fault.c              |    1 +
+ 4 files changed, 5 insertions(+)
+
+Index: linux-26jul/arch/powerpc/include/asm/processor.h
+===================================================================
+--- linux-26jul.orig/arch/powerpc/include/asm/processor.h
++++ linux-26jul/arch/powerpc/include/asm/processor.h
+@@ -219,6 +219,7 @@ struct thread_struct {
+ #endif /* CONFIG_HAVE_HW_BREAKPOINT */
+ #endif
+ 	unsigned long	dabr;		/* Data address breakpoint register */
++	unsigned long	trap_nr;	/* last trap # on this thread */
+ #ifdef CONFIG_ALTIVEC
+ 	/* Complete AltiVec register set */
+ 	vector128	vr[32] __attribute__((aligned(16)));
+Index: linux-26jul/arch/powerpc/kernel/process.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/kernel/process.c
++++ linux-26jul/arch/powerpc/kernel/process.c
+@@ -258,6 +258,7 @@ void do_send_trap(struct pt_regs *regs, 
+ {
+ 	siginfo_t info;
+ 
++	current->thread.trap_nr = signal_code;
+ 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
+ 			11, SIGSEGV) == NOTIFY_STOP)
+ 		return;
+@@ -275,6 +276,7 @@ void do_dabr(struct pt_regs *regs, unsig
+ {
+ 	siginfo_t info;
+ 
++	current->thread.trap_nr = TRAP_HWBKPT;
+ 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
+ 			11, SIGSEGV) == NOTIFY_STOP)
+ 		return;
+Index: linux-26jul/arch/powerpc/kernel/traps.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/kernel/traps.c
++++ linux-26jul/arch/powerpc/kernel/traps.c
+@@ -251,6 +251,7 @@ void _exception(int signr, struct pt_reg
+ 	if (arch_irqs_disabled() && !arch_irq_disabled_regs(regs))
+ 		local_irq_enable();
+ 
++	current->thread.trap_nr = code;
+ 	memset(&info, 0, sizeof(info));
+ 	info.si_signo = signr;
+ 	info.si_code = code;
+Index: linux-26jul/arch/powerpc/mm/fault.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/mm/fault.c
++++ linux-26jul/arch/powerpc/mm/fault.c
+@@ -133,6 +133,7 @@ static int do_sigbus(struct pt_regs *reg
+ 	up_read(&current->mm->mmap_sem);
+ 
+ 	if (user_mode(regs)) {
++		current->thread.trap_nr = BUS_ADRERR;
+ 		info.si_signo = SIGBUS;
+ 		info.si_errno = 0;
+ 		info.si_code = BUS_ADRERR;
 
