@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab2GZVVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:21:40 -0400
+	id S1753121Ab2GZVVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:21:42 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:55834 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab2GZVVh (ORCPT
+	with ESMTP id S1753091Ab2GZVVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:21:37 -0400
+	Thu, 26 Jul 2012 17:21:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
-        Iwo Mergler <Iwo.Mergler@netcommwireless.com>,
-        James Nute <newten82@gmail.com>
-Subject: [ 15/23] UBIFS: fix a bug in empty space fix-up
-Date: Thu, 26 Jul 2012 14:19:54 -0700
-Message-Id: <20120726211407.256255674@linuxfoundation.org>
+        Boaz Harrosh <bharrosh@panasas.com>
+Subject: [ 16/23] ore: Fix NFS crash by supporting any unaligned RAID IO
+Date: Thu, 26 Jul 2012 14:19:55 -0700
+Message-Id: <20120726211407.331474270@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -32,65 +30,208 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit c6727932cfdb13501108b16c38463c09d5ec7a74 upstream.
+commit 9ff19309a9623f2963ac5a136782ea4d8b5d67fb upstream.
 
-UBIFS has a feature called "empty space fix-up" which is a quirk to work-around
-limitations of dumb flasher programs. Namely, of those flashers that are unable
-to skip NAND pages full of 0xFFs while flashing, resulting in empty space at
-the end of half-filled eraseblocks to be unusable for UBIFS. This feature is
-relatively new (introduced in v3.0).
+In RAID_5/6 We used to not permit an IO that it's end
+byte is not stripe_size aligned and spans more than one stripe.
+.i.e the caller must check if after submission the actual
+transferred bytes is shorter, and would need to resubmit
+a new IO with the remainder.
 
-The fix-up routine (fixup_free_space()) is executed only once at the very first
-mount if the superblock has the 'space_fixup' flag set (can be done with -F
-option of mkfs.ubifs). It basically reads all the UBIFS data and metadata and
-writes it back to the same LEB. The routine assumes the image is pristine and
-does not have anything in the journal.
+Exofs supports this, and NFS was supposed to support this
+as well with it's short write mechanism. But late testing has
+exposed a CRASH when this is used with none-RPC layout-drivers.
 
-There was a bug in 'fixup_free_space()' where it fixed up the log incorrectly.
-All but one LEB of the log of a pristine file-system are empty. And one
-contains just a commit start node. And 'fixup_free_space()' just unmapped this
-LEB, which resulted in wiping the commit start node. As a result, some users
-were unable to mount the file-system next time with the following symptom:
+The change at NFS is deep and risky, in it's place the fix
+at ORE to lift the limitation is actually clean and simple.
+So here it is below.
 
-UBIFS error (pid 1): replay_log_leb: first log node at LEB 3:0 is not CS node
-UBIFS error (pid 1): replay_log_leb: log error detected while replaying the log at LEB 3:0
+The principal here is that in the case of unaligned IO on
+both ends, beginning and end, we will send two read requests
+one like old code, before the calculation of the first stripe,
+and also a new site, before the calculation of the last stripe.
+If any "boundary" is aligned or the complete IO is within a single
+stripe. we do a single read like before.
 
-The root-cause of this bug was that 'fixup_free_space()' wrongly assumed
-that the beginning of empty space in the log head (c->lhead_offs) was known
-on mount. However, it is not the case - it was always 0. UBIFS does not store
-in it the master node and finds out by scanning the log on every mount.
+The code is clean and simple by splitting the old _read_4_write
+into 3 even parts:
+1._read_4_write_first_stripe
+2. _read_4_write_last_stripe
+3. _read_4_write_execute
 
-The fix is simple - just pass commit start node size instead of 0 to
-'fixup_leb()'.
+And calling 1+3 at the same place as before. 2+3 before last
+stripe, and in the case of all in a single stripe then 1+2+3
+is preformed additively.
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
-Reported-by: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
-Tested-by: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
-Reported-by: James Nute <newten82@gmail.com>
+Why did I not think of it before. Well I had a strike of
+genius because I have stared at this code for 2 years, and did
+not find this simple solution, til today. Not that I did not try.
+
+This solution is much better for NFS than the previous supposedly
+solution because the short write was dealt  with out-of-band after
+IO_done, which would cause for a seeky IO pattern where as in here
+we execute in order. At both solutions we do 2 separate reads, only
+here we do it within a single IO request. (And actually combine two
+writes into a single submission)
+
+NFS/exofs code need not change since the ORE API communicates the new
+shorter length on return, what will happen is that this case would not
+occur anymore.
+
+hurray!!
+
+[Stable this is an NFS bug since 3.2 Kernel should apply cleanly]
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/sb.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/exofs/ore_raid.c |   67 +++++++++++++++++++++++++++-------------------------
+ 1 file changed, 36 insertions(+), 31 deletions(-)
 
---- a/fs/ubifs/sb.c
-+++ b/fs/ubifs/sb.c
-@@ -724,8 +724,12 @@ static int fixup_free_space(struct ubifs
- 		lnum = ubifs_next_log_lnum(c, lnum);
+--- a/fs/exofs/ore_raid.c
++++ b/fs/exofs/ore_raid.c
+@@ -461,16 +461,12 @@ static void _mark_read4write_pages_uptod
+  * ios->sp2d[p][*], xor is calculated the same way. These pages are
+  * allocated/freed and don't go through cache
+  */
+-static int _read_4_write(struct ore_io_state *ios)
++static int _read_4_write_first_stripe(struct ore_io_state *ios)
+ {
+-	struct ore_io_state *ios_read;
+ 	struct ore_striping_info read_si;
+ 	struct __stripe_pages_2d *sp2d = ios->sp2d;
+ 	u64 offset = ios->si.first_stripe_start;
+-	u64 last_stripe_end;
+-	unsigned bytes_in_stripe = ios->si.bytes_in_stripe;
+-	unsigned i, c, p, min_p = sp2d->pages_in_unit, max_p = -1;
+-	int ret;
++	unsigned c, p, min_p = sp2d->pages_in_unit, max_p = -1;
+ 
+ 	if (offset == ios->offset) /* Go to start collect $200 */
+ 		goto read_last_stripe;
+@@ -478,6 +474,9 @@ static int _read_4_write(struct ore_io_s
+ 	min_p = _sp2d_min_pg(sp2d);
+ 	max_p = _sp2d_max_pg(sp2d);
+ 
++	ORE_DBGMSG("stripe_start=0x%llx ios->offset=0x%llx min_p=%d max_p=%d\n",
++		   offset, ios->offset, min_p, max_p);
++
+ 	for (c = 0; ; c++) {
+ 		ore_calc_stripe_info(ios->layout, offset, 0, &read_si);
+ 		read_si.obj_offset += min_p * PAGE_SIZE;
+@@ -512,6 +511,18 @@ static int _read_4_write(struct ore_io_s
  	}
  
--	/* Fixup the current log head */
--	err = fixup_leb(c, c->lhead_lnum, c->lhead_offs);
-+	/*
-+	 * Fixup the log head which contains the only a CS node at the
-+	 * beginning.
-+	 */
-+	err = fixup_leb(c, c->lhead_lnum,
-+			ALIGN(UBIFS_CS_NODE_SZ, c->min_io_size));
- 	if (err)
- 		goto out;
+ read_last_stripe:
++	return 0;
++}
++
++static int _read_4_write_last_stripe(struct ore_io_state *ios)
++{
++	struct ore_striping_info read_si;
++	struct __stripe_pages_2d *sp2d = ios->sp2d;
++	u64 offset;
++	u64 last_stripe_end;
++	unsigned bytes_in_stripe = ios->si.bytes_in_stripe;
++	unsigned c, p, min_p = sp2d->pages_in_unit, max_p = -1;
++
+ 	offset = ios->offset + ios->length;
+ 	if (offset % PAGE_SIZE)
+ 		_add_to_r4w_last_page(ios, &offset);
+@@ -527,15 +538,15 @@ read_last_stripe:
+ 	c = _dev_order(ios->layout->group_width * ios->layout->mirrors_p1,
+ 		       ios->layout->mirrors_p1, read_si.par_dev, read_si.dev);
  
+-	BUG_ON(ios->si.first_stripe_start + bytes_in_stripe != last_stripe_end);
+-	/* unaligned IO must be within a single stripe */
+-
+ 	if (min_p == sp2d->pages_in_unit) {
+ 		/* Didn't do it yet */
+ 		min_p = _sp2d_min_pg(sp2d);
+ 		max_p = _sp2d_max_pg(sp2d);
+ 	}
+ 
++	ORE_DBGMSG("offset=0x%llx stripe_end=0x%llx min_p=%d max_p=%d\n",
++		   offset, last_stripe_end, min_p, max_p);
++
+ 	while (offset < last_stripe_end) {
+ 		struct __1_page_stripe *_1ps = &sp2d->_1p_stripes[p];
+ 
+@@ -568,6 +579,15 @@ read_last_stripe:
+ 	}
+ 
+ read_it:
++	return 0;
++}
++
++static int _read_4_write_execute(struct ore_io_state *ios)
++{
++	struct ore_io_state *ios_read;
++	unsigned i;
++	int ret;
++
+ 	ios_read = ios->ios_read_4_write;
+ 	if (!ios_read)
+ 		return 0;
+@@ -591,6 +611,8 @@ read_it:
+ 	}
+ 
+ 	_mark_read4write_pages_uptodate(ios_read, ret);
++	ore_put_io_state(ios_read);
++	ios->ios_read_4_write = NULL; /* Might need a reuse at last stripe */
+ 	return 0;
+ }
+ 
+@@ -626,8 +648,11 @@ int _ore_add_parity_unit(struct ore_io_s
+ 			/* If first stripe, Read in all read4write pages
+ 			 * (if needed) before we calculate the first parity.
+ 			 */
+-			_read_4_write(ios);
++			_read_4_write_first_stripe(ios);
+ 		}
++		if (!cur_len) /* If last stripe r4w pages of last stripe */
++			_read_4_write_last_stripe(ios);
++		_read_4_write_execute(ios);
+ 
+ 		for (i = 0; i < num_pages; i++) {
+ 			pages[i] = _raid_page_alloc();
+@@ -654,34 +679,14 @@ int _ore_add_parity_unit(struct ore_io_s
+ 
+ int _ore_post_alloc_raid_stuff(struct ore_io_state *ios)
+ {
+-	struct ore_layout *layout = ios->layout;
+-
+ 	if (ios->parity_pages) {
++		struct ore_layout *layout = ios->layout;
+ 		unsigned pages_in_unit = layout->stripe_unit / PAGE_SIZE;
+-		unsigned stripe_size = ios->si.bytes_in_stripe;
+-		u64 last_stripe, first_stripe;
+ 
+ 		if (_sp2d_alloc(pages_in_unit, layout->group_width,
+ 				layout->parity, &ios->sp2d)) {
+ 			return -ENOMEM;
+ 		}
+-
+-		/* Round io down to last full strip */
+-		first_stripe = div_u64(ios->offset, stripe_size);
+-		last_stripe = div_u64(ios->offset + ios->length, stripe_size);
+-
+-		/* If an IO spans more then a single stripe it must end at
+-		 * a stripe boundary. The reminder at the end is pushed into the
+-		 * next IO.
+-		 */
+-		if (last_stripe != first_stripe) {
+-			ios->length = last_stripe * stripe_size - ios->offset;
+-
+-			BUG_ON(!ios->length);
+-			ios->nr_pages = (ios->length + PAGE_SIZE - 1) /
+-					PAGE_SIZE;
+-			ios->si.length = ios->length; /*make it consistent */
+-		}
+ 	}
+ 	return 0;
+ }
 
 
