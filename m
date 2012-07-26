@@ -1,160 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab2GZNhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 09:37:19 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:47732
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751049Ab2GZNhR (ORCPT
+	id S1751378Ab2GZNnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 09:43:45 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:56351 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab2GZNnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 09:37:17 -0400
-X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 09:37:17 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6QDSiWh023340
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [BUG] Problem with commit cf03c5dac83609f09d9f0e9fa3c09d86daed614d
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Thu, 26 Jul 2012 15:28:44 +0200
-Message-ID: <gik3xqtzw3.fsf@karga.hank.lab>
+	Thu, 26 Jul 2012 09:43:42 -0400
+Message-ID: <50114989.3010900@pobox.com>
+Date: Thu, 26 Jul 2012 09:43:37 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 26 Jul 2012 15:28:44 +0200 (CEST)
+To: Aaron Lu <aaron.lu@amd.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Lin Ming <minggr@gmail.com>,
+        Jeff Wu <jeff.wu@amd.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
+Subject: Re: [PATCH v3 0/7] ZPODD patches for scsi tree
+References: <1343297129-28174-1-git-send-email-aaron.lu@amd.com>
+In-Reply-To: <1343297129-28174-1-git-send-email-aaron.lu@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
+On 07/26/2012 06:05 AM, Aaron Lu wrote:
+> v3:
+> Rebase on top of scsi-misc tree;
+> Add the sr related patches previously in Jeff's libata tree;
+> Re-organize the sr patches.
+> A problem for now: for patch
+> scsi: sr: support zero power ODD(ZPODD)
+> I can't set a flag in libata-acpi.c since a related function is
+> missing in scsi-misc tree. Will fix this when 3.6-rc1 released.
 
-today, I noticed a problem with the current kernel
-(3.5.0-04773-gbdc0077): my laptop hangs during boot -- the last message
-on the console is printed just before invoking `udevadm trigger'.
+What does this mean?  Would you be more specific?
 
-I bisected the problem and ended at commit
-cf03c5dac83609f09d9f0e9fa3c09d86daed614d (brcm80211: smac: inform
-mac80211 of the X2 regulatory domain).  However, I'm not sure that this
-commit really is the reason for my problems, because the behaviour is a
-bit different: at that state the machine not just hangs but the console
-shows a trace which I append to the end of this mail -- but the trace
-happens at the same state during the boot process.
+	Jeff
 
-Best regards,
 
-Dirk
 
-------------------------------------------------------------------------
-
-Freeing unused kernel memory: 516k freed
-BUG: unable to handle kernel NULL pointer dereference at 000000000000096a
-IP: [<ffffffffa0023410>] wlc_phy_chanspec_band_validch+0x26/0x6b [brcmsmac]
-PGD 0 
-Oops: 0000 [#1] PREEMPT SMP 
-CPU 1 
-Modules linked in: brcmsmac cordic brcmutil bcma
-
-Pid: 982, comm: kworker/1:2 Not tainted 3.5.0-rc1-00538-gcf03c5d #38 LENOVO 08946MG/MoutCook
-RIP: 0010:[<ffffffffa0023410>]  [<ffffffffa0023410>] wlc_phy_chanspec_band_validch+0x26/0x6b [brcmsmac]
-RSP: 0018:ffff8800700c7cb8  EFLAGS: 00010202
-RAX: 0000000000000094 RBX: ffff88006f2c9000 RCX: 0000000000000095
-RDX: ffff8800700c7cc4 RSI: 0000000000000000 RDI: ffff8800700c7ce0
-RBP: 0000000000000001 R08: 0000000000000000 R09: 0000000000000001
-R10: 0000000000000040 R11: ffff88007048e240 R12: ffff88006f1021c0
-R13: ffffffffa0046c30 R14: ffff88006f2c9000 R15: ffff880073114905
-FS:  0000000000000000(0000) GS:ffff880073100000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 000000000000096a CR3: 0000000001923000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kworker/1:2 (pid: 982, threadinfo ffff8800700c6000, task ffff880072faca40)
-Stack:
- ffffffffa0016aa3 000000006f103d20 0000000000000000 0000000000000000
- 0000000000000000 ffff88007048e2c3 ffff88006f103d20 ffff88006f102520
- ffff88006f103d20 0000000000000000 ffffffffa004666a 0000000000000011
-Call Trace:
- [<ffffffffa0016aa3>] ? brcms_c_regd_init+0x3c/0xc5 [brcmsmac]
- [<ffffffffa004666a>] ? brcms_bcma_probe+0x548/0x5b0 [brcmsmac]
- [<ffffffff81315a1e>] ? driver_probe_device+0xa8/0x1ad
- [<ffffffff81315b72>] ? __driver_attach+0x4f/0x6f
- [<ffffffff81315b23>] ? driver_probe_device+0x1ad/0x1ad
- [<ffffffff81314474>] ? bus_for_each_dev+0x4a/0x75
- [<ffffffff81315216>] ? bus_add_driver+0xb7/0x207
- [<ffffffffa001399b>] ? brcms_isr+0x5d/0x5d [brcmsmac]
- [<ffffffff81315f87>] ? driver_register+0x85/0xed
- [<ffffffffa001399b>] ? brcms_isr+0x5d/0x5d [brcmsmac]
- [<ffffffffa00139af>] ? brcms_driver_init+0x14/0x32 [brcmsmac]
- [<ffffffff8106ade3>] ? process_one_work+0x1b0/0x2e7
- [<ffffffff8106b463>] ? worker_thread+0x158/0x215
- [<ffffffff8106b30b>] ? manage_workers.isra.26+0x15b/0x15b
- [<ffffffff8106eab6>] ? kthread+0x7d/0x85
- [<ffffffff8162ed14>] ? kernel_thread_helper+0x4/0x10
- [<ffffffff8106ea39>] ? kthread_freezable_should_stop+0x48/0x48
- [<ffffffff8162ed10>] ? gs_change+0xb/0xb
-Code: ff 5b 5b 5d c3 31 c0 49 89 f8 b9 07 00 00 00 48 89 d7 41 b9 01 00 00 00 f3 ab 31 c0 0f b7 88 50 7d 04 a0 81 f9 94 00 00 00 76 12 <41> 80 b8 6a 09 00 00 00 74 08 81 f9 a5 00 00 00 76 26 83 f9 0e 
-RIP  [<ffffffffa0023410>] wlc_phy_chanspec_band_validch+0x26/0x6b [brcmsmac]
- RSP <ffff8800700c7cb8>
-CR2: 000000000000096a
----[ end trace 112507b89cd00789 ]---
-BUG: unable to handle kernel paging request at fffffffffffffff8
-IP: [<ffffffff8106ec81>] kthread_data+0x7/0xc
-PGD 1925067 PUD 1926067 PMD 0 
-Oops: 0000 [#2] PREEMPT SMP 
-CPU 1 
-Modules linked in: brcmsmac cordic brcmutil bcma
-
-Pid: 982, comm: kworker/1:2 Tainted: G      D      3.5.0-rc1-00538-gcf03c5d #38 LENOVO 08946MG/MoutCook
-RIP: 0010:[<ffffffff8106ec81>]  [<ffffffff8106ec81>] kthread_data+0x7/0xc
-RSP: 0018:ffff8800700c78f0  EFLAGS: 00010002
-RAX: 0000000000000000 RBX: ffff880073111040 RCX: 0000000000000001
-RDX: ffff880072c04080 RSI: 0000000000000001 RDI: ffff880072faca40
-RBP: 0000000000000001 R08: 0000000000000400 R09: dead000000200200
-R10: dead000000200200 R11: ffff88006f576700 R12: ffff880072facd10
-R13: 0000000000000246 R14: 0000000000000001 R15: 0000000000000001
-FS:  0000000000000000(0000) GS:ffff880073100000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: fffffffffffffff8 CR3: 0000000001923000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kworker/1:2 (pid: 982, threadinfo ffff8800700c6000, task ffff880072faca40)
-Stack:
- ffffffff8106bb52 ffff880073111040 ffff880072faca40 ffff880072facd10
- ffffffff8162c007 ffff8800700c7fd8 ffff8800700c7fd8 0000000000011040
- 0000000000004000 00000000000003d6 ffffffff810ff309 ffff8800700c798b
-Call Trace:
- [<ffffffff8106bb52>] ? wq_worker_sleeping+0xb/0x6a
- [<ffffffff8162c007>] ? __schedule+0x137/0x71a
- [<ffffffff810ff309>] ? d_lookup+0x24/0x36
- [<ffffffff81131a5e>] ? proc_flush_task+0xe1/0x1a7
- [<ffffffff8105afef>] ? release_task+0x2f2/0x30a
- [<ffffffff8105c42b>] ? do_exit+0x769/0x775
- [<ffffffff8102becb>] ? oops_end+0x85/0x8a
- [<ffffffff81620dd9>] ? no_context+0x256/0x265
- [<ffffffff8122f82e>] ? ida_get_new_above+0x176/0x198
- [<ffffffff81045529>] ? do_page_fault+0x160/0x34b
- [<ffffffff81132115>] ? proc_register+0x193/0x1a9
- [<ffffffff811324ba>] ? proc_mkdir_mode+0x39/0x50
- [<ffffffff810a6d73>] ? register_handler_proc+0xcd/0xde
- [<ffffffff8162d71f>] ? page_fault+0x1f/0x30
- [<ffffffffa0023410>] ? wlc_phy_chanspec_band_validch+0x26/0x6b [brcmsmac]
- [<ffffffffa0016aa3>] ? brcms_c_regd_init+0x3c/0xc5 [brcmsmac]
- [<ffffffffa004666a>] ? brcms_bcma_probe+0x548/0x5b0 [brcmsmac]
- [<ffffffff81315a1e>] ? driver_probe_device+0xa8/0x1ad
- [<ffffffff81315b72>] ? __driver_attach+0x4f/0x6f
- [<ffffffff81315b23>] ? driver_probe_device+0x1ad/0x1ad
- [<ffffffff81314474>] ? bus_for_each_dev+0x4a/0x75
- [<ffffffff81315216>] ? bus_add_driver+0xb7/0x207
- [<ffffffffa001399b>] ? brcms_isr+0x5d/0x5d [brcmsmac]
- [<ffffffff81315f87>] ? driver_register+0x85/0xed
- [<ffffffffa001399b>] ? brcms_isr+0x5d/0x5d [brcmsmac]
- [<ffffffffa00139af>] ? brcms_driver_init+0x14/0x32 [brcmsmac]
- [<ffffffff8106ade3>] ? process_one_work+0x1b0/0x2e7
- [<ffffffff8106b463>] ? worker_thread+0x158/0x215
- [<ffffffff8106b30b>] ? manage_workers.isra.26+0x15b/0x15b
- [<ffffffff8106eab6>] ? kthread+0x7d/0x85
- [<ffffffff8162ed14>] ? kernel_thread_helper+0x4/0x10
- [<ffffffff8106ea39>] ? kthread_freezable_should_stop+0x48/0x48
- [<ffffffff8162ed10>] ? gs_change+0xb/0xb
-Code: df 83 e0 3f 48 c1 e5 03 48 8d 34 c5 08 94 64 81 48 29 ee e8 7d 8a 00 00 81 4b 14 00 00 00 04 41 5b 5b 5d c3 48 8b 87 78 02 00 00 <48> 8b 40 f8 c3 48 3b 3d 4b 11 a5 00 75 08 0f bf 87 da 05 00 00 
-RIP  [<ffffffff8106ec81>] kthread_data+0x7/0xc
- RSP <ffff8800700c78f0>
-CR2: fffffffffffffff8
----[ end trace 112507b89cd0078a ]---
-Fixing recursive fault but reboot is needed!
