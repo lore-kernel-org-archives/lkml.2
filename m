@@ -1,129 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab2GZPOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:14:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38130 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab2GZPOy (ORCPT
+	id S1752653Ab2GZPPB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:15:01 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:41490 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752349Ab2GZPO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:14:54 -0400
-Date: Thu, 26 Jul 2012 08:14:37 -0700
-From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-c1ece48cf7ec07c6b3e093a4036b54bc6078f782@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, zheng.z.yan@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1343097850-4348-1-git-send-email-zheng.z.yan@intel.com>
-References: <1343097850-4348-1-git-send-email-zheng.z.yan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86:
-  Fix format definition of SNB-EP uncore QPI box
-Git-Commit-ID: c1ece48cf7ec07c6b3e093a4036b54bc6078f782
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 26 Jul 2012 11:14:58 -0400
+Message-ID: <50115EB2.8000104@xenotime.net>
+Date: Thu, 26 Jul 2012 08:13:54 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Dan Luedtke <mail@danrl.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/kernel-doc: added support for html5
+References: <1343223488-1332-1-git-send-email-mail@danrl.de>	 <50103793.8000600@xenotime.net> <1343285615.12424.8.camel@localhost>
+In-Reply-To: <1343285615.12424.8.camel@localhost>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jul 2012 08:14:43 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c1ece48cf7ec07c6b3e093a4036b54bc6078f782
-Gitweb:     http://git.kernel.org/tip/c1ece48cf7ec07c6b3e093a4036b54bc6078f782
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Tue, 24 Jul 2012 10:44:10 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 26 Jul 2012 12:23:14 +0200
+On 07/25/2012 11:53 PM, Dan Luedtke wrote:
 
-perf/x86: Fix format definition of SNB-EP uncore QPI box
+> On Wed, 2012-07-25 at 11:14 -0700, Randy Dunlap wrote:
+>> Just say "html5" or "html version 5".
+>> A few years from now it won't be modern.
+> Haven't thought of that. Will be changed, thanks!
+> 
+>> Have you tested typedef, enum, DOC:, etc.?
+> Yes, here are a few examples:
+> 
+> DOC:
+> https://www.nonattached.net/lanyfs/doc-linux.php#doc:LanyFS_Inode_Cache
+> 
+> Typedef:
+> https://www.nonattached.net/lanyfs/doc-linux.php#typedef:lanyfs_blk_t
+> (You were right, it wasn't there yesterday, sorry!)
+> 
+> Enum:
+> https://www.nonattached.net/lanyfs/doc-fsutils.php#enum:mklanyfs_time
+> (It is a userspace tool, but it uses kernel-doc format)
+> 
+> I'll send the patches out in a minute.
+> 
+> Thanks!
 
-The event control register of SNB-EP uncore QPI box has a one bit
-extension at bit position 21.
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1343097850-4348-1-git-send-email-zheng.z.yan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   22 +++++++++++++++++++++-
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |    4 ++++
- 2 files changed, 25 insertions(+), 1 deletions(-)
+and thanks for the tested examples.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index d998170..7563fda 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -18,6 +18,7 @@ static struct event_constraint constraint_empty =
- 	EVENT_CONSTRAINT(0, 0, 0);
- 
- DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(event_ext, event, "config:0-7,21");
- DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
- DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
- DEFINE_UNCORE_FORMAT_ATTR(tid_en, tid_en, "config:19");
-@@ -293,6 +294,15 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- 	NULL,
- };
- 
-+static struct attribute *snbep_uncore_qpi_formats_attr[] = {
-+	&format_attr_event_ext.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_thresh8.attr,
-+	NULL,
-+};
-+
- static struct uncore_event_desc snbep_uncore_imc_events[] = {
- 	INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0x00"),
- 	INTEL_UNCORE_EVENT_DESC(cas_count_read,  "event=0x04,umask=0x03"),
-@@ -328,6 +338,11 @@ static struct attribute_group snbep_uncore_pcu_format_group = {
- 	.attrs = snbep_uncore_pcu_formats_attr,
- };
- 
-+static struct attribute_group snbep_uncore_qpi_format_group = {
-+	.name = "format",
-+	.attrs = snbep_uncore_qpi_formats_attr,
-+};
-+
- static struct intel_uncore_ops snbep_uncore_msr_ops = {
- 	.init_box	= snbep_uncore_msr_init_box,
- 	.disable_box	= snbep_uncore_msr_disable_box,
-@@ -499,8 +514,13 @@ static struct intel_uncore_type snbep_uncore_qpi = {
- 	.num_counters   = 4,
- 	.num_boxes	= 2,
- 	.perf_ctr_bits	= 48,
-+	.perf_ctr	= SNBEP_PCI_PMON_CTR0,
-+	.event_ctl	= SNBEP_PCI_PMON_CTL0,
-+	.event_mask	= SNBEP_QPI_PCI_PMON_RAW_EVENT_MASK,
-+	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,
-+	.ops		= &snbep_uncore_pci_ops,
- 	.event_descs	= snbep_uncore_qpi_events,
--	SNBEP_UNCORE_PCI_COMMON_INIT(),
-+	.format_group	= &snbep_uncore_qpi_format_group,
- };
- 
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 47b1776..f385189 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -113,6 +113,10 @@
- 				 SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
- 				 SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET)
- 
-+#define SNBEP_QPI_PCI_PMON_RAW_EVENT_MASK	\
-+				(SNBEP_PMON_RAW_EVENT_MASK | \
-+				 SNBEP_PMON_CTL_EV_SEL_EXT)
-+
- /* SNB-EP pci control register */
- #define SNBEP_PCI_PMON_BOX_CTL			0xf4
- #define SNBEP_PCI_PMON_CTL0			0xd8
+-- 
+~Randy
