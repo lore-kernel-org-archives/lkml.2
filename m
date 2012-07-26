@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2GZV01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:26:27 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:41537 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab2GZVUd (ORCPT
+	id S1752858Ab2GZV06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:26:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48805 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751872Ab2GZV04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:20:33 -0400
-Date: Thu, 26 Jul 2012 14:19:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, sbw@mit.edu, srivatsa.bhat@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, vincent.guittot@linaro.org,
-        amit.kucheria@linaro.org
-Subject: [PATCH RFC] cpu: No more __stop_machine() in _cpu_down()
-Message-ID: <20120726211927.GA26016@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Thu, 26 Jul 2012 17:26:56 -0400
+Date: Thu, 26 Jul 2012 22:25:16 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: swarren@wwwdotorg.org, cjb@laptop.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rmk+kernel@arm.linux.org.uk,
+        ulf.hansson@stericsson.com, linus.walleij@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org, lrg@ti.com,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/2] sound: tegra_wm8903: Adjust to of_get_named_gpio()
+ change
+Message-ID: <20120726212515.GH4560@opensource.wolfsonmicro.com>
+References: <1340037743-12924-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="N8ia4yKhAKKETby7"
 Content-Disposition: inline
+In-Reply-To: <1340037743-12924-1-git-send-email-stigge@antcom.de>
+X-Cookie: Condense soup, not books!
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072621-2356-0000-0000-000000B8C1B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The _cpu_down() function invoked as part of the CPU-hotplug offlining
-process currently invokes __stop_machine(), which is slow and inflicts
-substantial real-time latencies on the entire system.  This patch
-substitutes stop_cpus() for __stop_machine() in order to improve
-both performance and real-time latency.
 
-This is currently unsafe, because there are a number of uses of
-preempt_disable() that are intended to block CPU-hotplug offlining.
-These will be fixed, but in the meantime, this commit is one way to help
-locate them.  It nevertheless passes light rcutorture/hotplug stress
-testing.  Meaning that we should not be relying on pure testing to find
-places where people are relying on preemption disabling to block CPUs
-from going offline.  ;-)
+--N8ia4yKhAKKETby7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Not-yet-signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+On Mon, Jun 18, 2012 at 06:42:21PM +0200, Roland Stigge wrote:
+> of_get_named_gpio() was changed to return -EPROBE_DEFER in case of
+> gpios not probed yet. This patch adjusts tegra_wm8903 to this.
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index a4eb522..47e63a0 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -243,13 +243,18 @@ static int __ref take_cpu_down(void *_param)
- {
- 	struct take_cpu_down_param *param = _param;
- 	int err;
-+	unsigned long flags;
- 
- 	/* Ensure this CPU doesn't handle any more interrupts. */
-+	local_irq_save(flags);
- 	err = __cpu_disable();
--	if (err < 0)
-+	if (err < 0) {
-+		local_irq_restore(flags);
- 		return err;
-+	}
- 
- 	cpu_notify(CPU_DYING | param->mod, param->hcpu);
-+	local_irq_restore(flags);
- 	return 0;
- }
- 
-@@ -281,7 +286,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 		goto out_release;
- 	}
- 
--	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
-+	err = stop_cpus(cpumask_of(cpu), take_cpu_down, &tcd_param);
- 	if (err) {
- 		/* CPU didn't die: tell everyone.  Can't complain. */
- 		cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
+Applied both, thanks.
 
+--N8ia4yKhAKKETby7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQEbW1AAoJEBus8iNuMP3dcZEP/RWkqLK6Fi2eQ3ziTyDfHNKj
+cMC3zf4Eh3RyQKFyDZKlYubrYMeQYb1RlsKrfeD4JLj8YqKhLRQ1rzMFEbWqzhN9
+cnDFeeeq18j2QX2noqRRfzwHvJaVcVpYrnxBy0v6EHTzEXKhZ4khpMh7opo80QRy
+saawUlKdFpiiu0vgmDpEShAea6rI5ZPCQPVrdnmaZUC1OUMCBUnGoxJ7OHAuf5yO
+asznIak+jN3FxAdjqRcQ/KMAu+sjKRHM1PqR4bSyc4yLX/sTC0W2MfqgINGKVi1y
+dN6/Ycr+LrQIeWZYwHy5My248DbHpumjYubguz568k86WyogT8K+axlg+6F7oeuV
+O7fnXFP9AtS+7Qv7sZUH6MOEar425Vq0qvLO964L1tGBypL7LNjn6YIM9cp85RFC
+GE5qnv8dOMbRE0KtbKrVgAizqC7yQ1AJiMK2uY8Atg8r0u39O2DJSTZ6UQkeHu6I
+z+sgO0GSqli0uV6COpdFPLDooDUHDKCzeMLjNygwSnBOS4rsjJN6ju0+CKmk6kpW
+rc7tiLfArNYD2DNPXZNFuzyUydY9ZohBvPVNqHLfsA1j2pN0N/njHwy02HY9YMOJ
+R6z9mzc2MB1tYfFsCrdKcuqb68NHX0yxqGkxLv/PnIie75rkW2pkOUjfvr02Umuc
+Xr7MT53DvXZAPOS7G94G
+=nyD7
+-----END PGP SIGNATURE-----
+
+--N8ia4yKhAKKETby7--
