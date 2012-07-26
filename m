@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2GZR3d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:29:33 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42600 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab2GZR3c convert rfc822-to-8bit (ORCPT
+	id S1752192Ab2GZReQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:34:16 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:38143 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab2GZReP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:29:32 -0400
-Subject: Re: [PATCH v8 0/7] power management patch set
-Mime-Version: 1.0 (Apple Message framework v1278)
+	Thu, 26 Jul 2012 13:34:15 -0400
+Date: Thu, 26 Jul 2012 18:33:33 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Khalid Aziz <khalid.aziz@hp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, mikew@google.com, tony.luck@intel.com,
+        keescook@chromium.org, gong.chen@linux.intel.com, gregkh@suse.de,
+        paul.gortmaker@windriver.com, maxin.john@gmail.com,
+        rdunlap@xenotime.net, matt.fleming@intel.com, olof@lixom.net,
+        dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Shorten constant names for EFI variable attributes
+Message-ID: <20120726173332.GA19851@srcf.ucam.org>
+References: <20120720220841.GA32642@hp.com>
+ <5009D770.1050905@zytor.com>
+ <20120723132656.GC21495@srcf.ucam.org>
+ <50117E40.8090904@hp.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <CADRPPNSw5Yn7EgHt5fm2vYr+zxC4T+JbsvT812u2JPKELNcA6g@mail.gmail.com>
-Date: Thu, 26 Jul 2012 12:29:19 -0500
-Cc: Zhao Chenhui <chenhui.zhao@freescale.com>, scottwood@freescale.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B5854411-6C9A-43BA-BF5D-FB1AD76E28D1@kernel.crashing.org>
-References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com> <CADRPPNSw5Yn7EgHt5fm2vYr+zxC4T+JbsvT812u2JPKELNcA6g@mail.gmail.com>
-To: Li Yang <leoli@freescale.com>
-X-Mailer: Apple Mail (2.1278)
+Content-Disposition: inline
+In-Reply-To: <50117E40.8090904@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 26, 2012 at 11:28:32AM -0600, Khalid Aziz wrote:
 
-On Jul 26, 2012, at 9:02 AM, Li Yang wrote:
+> I also do not believe that kernel must use the constant names
+> mentioned in the specification especially when the name reaches 50
+> characters. We can not get away from having to create aliases. Do
+> you think having aliases in efi.h can cause mixed use of long names
+> and short names in future code in the kernel? Can we address this by
+> suggesting to future code authors that they should use the short
+> names in their code? Should we consider inclusion of this patch in
+> the kernel?
 
-> On Fri, Jul 20, 2012 at 8:42 PM, Zhao Chenhui
-> <chenhui.zhao@freescale.com> wrote:
->> Changes for v8:
->> * Separated the cpu hotplug patch into three patches, as follows
->> [PATCH v8 1/7] powerpc/smp: use a struct epapr_spin_table to replace macros
->> [PATCH v8 2/7] powerpc/smp: add generic_set_cpu_up() to set cpu_state as CPU_UP_PREPARE
->> [PATCH v8 4/7] powerpc/85xx: add HOTPLUG_CPU support
->> 
->> * Replaced magic numbers with macros in "[PATCH 5/7] powerpc/85xx: add sleep and deep sleep support"
->> 
->> * no change to the rest of the patch set
-> 
-> Hi Kumar,
-> 
-> How about picking about this series for 3.6?  The review seems to
-> settle down for this revision.
+I'd be surprised if it were a problem - we should catch any of those 
+cases in code review, or gate the aliases under #ifndef __KERNEL__
 
-Its too late for 3.6, but will look at queuing it up for 3.7.
-
-> Hi Scott,
-> 
-> Thanks for the review comments provided.  We'd like to get the ACK
-> from you for the series if you can.
-> 
-> Regards,
-> Leo
-
-- k
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
