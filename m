@@ -1,283 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab2GZTIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 15:08:50 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35462 "EHLO
+	id S1752599Ab2GZTM3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 15:12:29 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44396 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab2GZTIr (ORCPT
+	with ESMTP id S1752154Ab2GZTM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 15:08:47 -0400
-Date: Thu, 26 Jul 2012 12:08:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: No big TTY/serial patch merge for 3.6-rc1
-Message-ID: <20120726190814.GA2194@kroah.com>
+	Thu, 26 Jul 2012 15:12:28 -0400
+Message-ID: <50119697.5050807@lwfinger.net>
+Date: Thu, 26 Jul 2012 14:12:23 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Neal Cardwell <ncardwell@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Regression in staging:r8712u since 3.4 merge
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Since kernel 3.4, driver r8712u has yielded intermittent errors when connected 
+to a secure connection. With Firefox, the message is "Secure Connection Failed: 
+SSL received a record with an incorrect Message Authentication Code (Error code: 
+ssl_error_bad_mac_read)". A retry may work eventually, When using wget with an 
+https URL, the error message is "SSL3_GET_RECORD: decryption failed or bad 
+record mac".
 
-I don't really feel comfortable sending you the tty tree at the present
-time to have merged for 3.6-rc1.  It contains some tty changes that are
-still causing build problems, as Stephen has pointed out over the past
-week.  These fixes are being resolved by Alan, but I don't feel that
-they have had the time to fully be tested, and given the late arrival of
-them (i.e. the past few days), and the lack of real amount of time
-testing in linux-next, I'd really like to postpone the whole merge until
-3.7.
+This regression is the basis for https://bugzilla.kernel.org/show_bug.cgi?id=45071.
 
-Right now, this really isn't a whole lot of patches, there are only 62
-patches in the tty-next tree.  I've included below the full diffstat and
-shortlog of them if anyone wants to see them.
+Although intermittent, I managed to bisect the problem. The bad commit is
 
-There are maybe a few patches below that I think I should cherry-pick
-and have you pull, but that's just a handful, and are only for a few
-drivers, nothing in the tty core code at all.
+==========================================================================
+commit c8628155ece363487b57d33441ea0359018c0fa7
+Author: Eric Dumazet <eric.dumazet@gmail.com>
+Date:   Sun Mar 18 11:07:47 2012 +0000
 
-Jiri, I know this postpones your patches from being merged, sorry about
-that, but this gives us a few more months to ensure that they are
-working properly :)
+     tcp: reduce out_of_order memory use
 
-Alan, please keep sending me patches to fix these merge issues, but for
-now, I think it's best to wait until 3.7 for this to go to Linus.
+     With increasing receive window sizes, but speed of light not improved
+     that much, out of order queue can contain a huge number of skbs, waiting
+     to be moved to receive_queue when missing packets can fill the holes.
 
-thanks,
+     Some devices happen to use fat skbs (truesize of 4096 + sizeof(struct
+     sk_buff)) to store regular (MTU <= 1500) frames. This makes highly
+     probable sk_rmem_alloc hits sk_rcvbuf limit, which can be 4Mbytes in
+     many cases.
 
-greg k-h
+     When limit is hit, tcp stack calls tcp_collapse_ofo_queue(), a true
+     latency killer and cpu cache blower.
 
-------------------
+     Doing the coalescing attempt each time we add a frame in ofo queue
+     permits to keep memory use tight and in many cases avoid the
+     tcp_collapse() thing later.
 
- .../bindings/tty/serial/nxp-lpc32xx-hsuart.txt     |   14 +
- .../devicetree/bindings/tty/serial/of-serial.txt   |    3 +
- arch/ia64/hp/sim/simserial.c                       |    2 +-
- arch/um/drivers/chan_kern.c                        |    4 +-
- arch/um/drivers/line.c                             |   32 +-
- arch/um/drivers/line.h                             |    3 +-
- drivers/bluetooth/hci_ath.c                        |    2 +-
- drivers/char/mwave/mwavedd.c                       |   16 +-
- drivers/char/pcmcia/synclink_cs.c                  |   24 +-
- drivers/isdn/gigaset/interface.c                   |    4 +-
- drivers/isdn/i4l/isdn_tty.c                        |   16 +-
- drivers/misc/ibmasm/uart.c                         |   16 +-
- drivers/mmc/card/sdio_uart.c                       |   20 +-
- drivers/net/ethernet/sgi/ioc3-eth.c                |   22 +-
- drivers/net/irda/irtty-sir.c                       |   10 +-
- drivers/net/usb/hso.c                              |   12 +-
- drivers/tty/amiserial.c                            |   20 +-
- drivers/tty/cyclades.c                             |   82 +-
- drivers/tty/hvc/hvsi_lib.c                         |    2 +-
- drivers/tty/isicom.c                               |    8 +-
- drivers/tty/moxa.c                                 |   10 +-
- drivers/tty/mxser.c                                |   20 +-
- drivers/tty/n_gsm.c                                |    8 +-
- drivers/tty/n_tty.c                                |    8 +-
- drivers/tty/pty.c                                  |  144 ++--
- drivers/tty/rocket.c                               |   18 +-
- drivers/tty/serial/8250/8250.c                     |   88 +--
- drivers/tty/serial/8250/8250.h                     |   31 +-
- drivers/tty/serial/8250/8250_acorn.c               |   22 +-
- drivers/tty/serial/8250/8250_dw.c                  |   38 +-
- drivers/tty/serial/8250/8250_gsc.c                 |   26 +-
- drivers/tty/serial/8250/8250_hp300.c               |   26 +-
- drivers/tty/serial/8250/8250_pci.c                 |  126 +--
- drivers/tty/serial/8250/8250_pnp.c                 |   28 +-
- drivers/tty/serial/8250/serial_cs.c                |   30 +-
- drivers/tty/serial/Kconfig                         |   19 +
- drivers/tty/serial/Makefile                        |    1 +
- drivers/tty/serial/amba-pl011.c                    |   34 +-
- drivers/tty/serial/bfin_uart.c                     |    2 +-
- drivers/tty/serial/crisv10.c                       |   26 +-
- drivers/tty/serial/imx.c                           |    2 +-
- drivers/tty/serial/ioc4_serial.c                   |    2 +-
- drivers/tty/serial/jsm/jsm_tty.c                   |    8 +-
- drivers/tty/serial/lpc32xx_hs.c                    |  823 ++++++++++++++++++++
- drivers/tty/serial/of_serial.c                     |   14 +-
- drivers/tty/serial/pch_uart.c                      |   59 +-
- drivers/tty/serial/pxa.c                           |   14 +
- drivers/tty/serial/samsung.c                       |   30 +-
- drivers/tty/serial/serial_core.c                   |   34 +-
- drivers/tty/synclink.c                             |   36 +-
- drivers/tty/synclink_gt.c                          |   24 +-
- drivers/tty/synclinkmp.c                           |   24 +-
- drivers/tty/tty_io.c                               |  104 +--
- drivers/tty/tty_ioctl.c                            |  100 +--
- drivers/tty/tty_ldisc.c                            |   12 +-
- drivers/tty/tty_port.c                             |   23 +-
- drivers/tty/vt/keyboard.c                          |   50 +-
- drivers/tty/vt/vt.c                                |   63 +-
- drivers/tty/vt/vt_ioctl.c                          |   47 +-
- drivers/usb/class/cdc-acm.c                        |    2 +-
- drivers/usb/serial/ark3116.c                       |    4 +-
- drivers/usb/serial/belkin_sa.c                     |    2 +-
- drivers/usb/serial/cp210x.c                        |    8 +-
- drivers/usb/serial/cypress_m8.c                    |   40 +-
- drivers/usb/serial/digi_acceleport.c               |   14 +-
- drivers/usb/serial/empeg.c                         |    2 +-
- drivers/usb/serial/f81232.c                        |    3 +-
- drivers/usb/serial/ftdi_sio.c                      |    2 +-
- drivers/usb/serial/io_edgeport.c                   |   12 +-
- drivers/usb/serial/io_ti.c                         |   12 +-
- drivers/usb/serial/ir-usb.c                        |    2 +-
- drivers/usb/serial/iuu_phoenix.c                   |   28 +-
- drivers/usb/serial/keyspan.c                       |    6 +-
- drivers/usb/serial/keyspan_pda.c                   |    4 +-
- drivers/usb/serial/kl5kusb105.c                    |   18 +-
- drivers/usb/serial/kobil_sct.c                     |   14 +-
- drivers/usb/serial/mct_u232.c                      |    4 +-
- drivers/usb/serial/metro-usb.c                     |    8 +-
- drivers/usb/serial/mos7720.c                       |   14 +-
- drivers/usb/serial/mos7840.c                       |   12 +-
- drivers/usb/serial/oti6858.c                       |   10 +-
- drivers/usb/serial/pl2303.c                        |    6 +-
- drivers/usb/serial/quatech2.c                      |    4 +-
- drivers/usb/serial/sierra.c                        |    2 +-
- drivers/usb/serial/spcp8x5.c                       |   12 +-
- drivers/usb/serial/ssu100.c                        |    4 +-
- drivers/usb/serial/ti_usb_3410_5052.c              |   10 +-
- drivers/usb/serial/usb-serial.c                    |    7 +-
- drivers/usb/serial/usb_wwan.c                      |    2 +-
- drivers/usb/serial/whiteheat.c                     |    2 +-
- include/linux/Kbuild                               |    3 -
- include/linux/cd1400.h                             |  292 -------
- include/linux/cdk.h                                |  486 ------------
- include/linux/comstats.h                           |  119 ---
- include/linux/generic_serial.h                     |   35 -
- include/linux/istallion.h                          |  123 ---
- include/linux/kbd_kern.h                           |   13 -
- include/linux/sc26198.h                            |  533 -------------
- include/linux/serial167.h                          |  157 ----
- include/linux/serial_8250.h                        |   33 +-
- include/linux/serial_core.h                        |    3 +-
- include/linux/stallion.h                           |  147 ----
- include/linux/tty.h                                |   52 +-
- include/linux/tty_driver.h                         |   12 +-
- include/net/irda/ircomm_tty.h                      |   17 +-
- net/bluetooth/rfcomm/tty.c                         |    2 +-
- net/irda/ircomm/ircomm_param.c                     |    5 -
- net/irda/ircomm/ircomm_tty.c                       |  281 ++++---
- net/irda/ircomm/ircomm_tty_attach.c                |   40 +-
- net/irda/ircomm/ircomm_tty_ioctl.c                 |   33 +-
- 110 files changed, 2081 insertions(+), 3061 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/tty/serial/nxp-lpc32xx-hsuart.txt
- create mode 100644 drivers/tty/serial/lpc32xx_hs.c
- delete mode 100644 include/linux/cd1400.h
- delete mode 100644 include/linux/cdk.h
- delete mode 100644 include/linux/comstats.h
- delete mode 100644 include/linux/generic_serial.h
- delete mode 100644 include/linux/istallion.h
- delete mode 100644 include/linux/sc26198.h
- delete mode 100644 include/linux/serial167.h
- delete mode 100644 include/linux/stallion.h
+     Tested on various wireless setups (b43, ath9k, ...) known to use big skb
+     truesize, this patch removed the "packets collapsed in receive queue due
+     to low socket buffer" I had before.
 
----------------
+     This also reduced average memory used by tcp sockets.
 
-Alan Cox (16):
-      tty: note race we need to fix
-      tty: localise the lock
-      usb: fix sillies in the metro USB driver
-      8250: use the 8250 register interface not the legacy one
-      8250: propogate the bugs field
-      8250: add support for ASIX devices with a FIFO bug
-      tty: revert incorrectly applied lock patch
-      tty: move the termios object into the tty
-      f81232: correct stubbed termios handler
-      usb, kobil: Sort out some bogus tty handling
-      tty: Fix up PPC fallout from the termios move
-      8250: three way resolve of the 8250 diffs
-      vt: fix the keyboard/led locking
-      tty: Move the handling of the tty release logic
-      pch_uart: Fix missing break for 16 byte fifo
-      pcmcia,synclink_cs: fix termios port I missed
+     With help from Neal Cardwell.
 
-Chao Xie (1):
-      serial: pxa: add spin lock for console write
+     Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+     Cc: Neal Cardwell <ncardwell@google.com>
+     Cc: Yuchung Cheng <ycheng@google.com>
+     Cc: H.K. Jerry Chu <hkchu@google.com>
+     Cc: Tom Herbert <therbert@google.com>
+     Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+     Acked-by: Neal Cardwell <ncardwell@google.com>
+     Signed-off-by: David S. Miller <davem@davemloft.net>
+============================================================================
 
-Christopher Brannon (1):
-      tty: keyboard.c: Remove locking from vt_get_leds.
+As every other network driver is OK with this patch, I know the problem is in 
+r8712u. Do you have any thoughts on what it might be doing wrong to cause this 
+problem?
 
-Corbin (1):
-      serial_core: Update buffer overrun statistics.
+Thanks,
 
-Dan Carpenter (1):
-      tty: double unlock on error in ptmx_open()
-
-Darren Hart (1):
-      pch_uart: Add eg20t_port lock field, avoid recursive spinlocks
-
-Gabor Juhos (1):
-      tty: of_serial: add no-loopback-test property
-
-Jiri Slaby (23):
-      TTY: cyclades, add local pointer for card
-      TTY: ircomm, add tty_port
-      TTY: ircomm, use close times from tty_port
-      TTY: ircomm, use open counts from tty_port
-      TTY: ircomm, use flags from tty_port
-      TTY: ircomm, revamp locking
-      TTY: ircomm, use tty from tty_port
-      TTY: ircomm, define local tty_port
-      TTY: ircomm, define carrier routines
-      TTY: ircomm, use tty_port_close_end helper
-      TTY: ircomm, use tty_port_close_start helper
-      TTY: um/line, add tty_port
-      TTY: um/line, use tty from tty_port
-      PTY: remove one empty ops->remove
-      PTY: merge pty_install implementations
-      PTY: add tty_port
-      TTY: vt, remove con_schedule_flip
-      TTY: provide drivers with tty_port_install
-      TTY: vt, add ->install
-      TTY: usb-serial, use tty_port_install
-      TTY: centralize fail paths in tty_register_driver
-      TTY: add ports array to tty_driver
-      TTY: add tty_port_register_device helper
-
-KeyYoung Park (1):
-      serial: samsung: protect NULL dereference of clock name
-
-Kyoungil Kim (2):
-      serial: samsung: Remove NULL checking for baud clock
-      serial: samsung: Fixed wrong comparison for baudclk_rate
-
-Laurent Pinchart (2):
-      serial: sh-sci: Fix probe error paths
-      serial: sh-sci: Make probe fail for ports that exceed the maximum count
-
-Linus Walleij (1):
-      serial/amba-pl011: fix ages old copy-paste errors
-
-Paul Bolle (2):
-      delete seven tty headers
-      Delete generic_serial.h
-
-Rabin Vincent (1):
-      vt: fix race in vt_waitactive()
-
-Roland Stigge (3):
-      serial/8250: Add LPC3220 standard UART type
-      serial/of-serial: Add LPC3220 standard UART compatible string
-      serial: Add driver for LPC32xx High Speed UARTs
-
-Shachar Shemesh (1):
-      tty ldisc: Close/Reopen race prevention should check the proper flag
-
-Shawn Bohrer (1):
-      8250_pci: Remove duplicate struct pciserial_board
-
-Tomoya MORINAGA (2):
-      pch_uart: Fix rx error interrupt setting issue
-      pch_uart: Fix parity setting issue
-
-Uwe Kleine-König (1):
-      serial/imx: make devdata member point to const data
+Larry
 
