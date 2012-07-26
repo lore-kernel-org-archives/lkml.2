@@ -1,144 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab2GZVjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:39:13 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:48389 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab2GZVaj (ORCPT
+	id S1753383Ab2GZVja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:39:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55952 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab2GZVj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:39 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [ 13/40] vmscan: shrinker->nr updates race and go wrong
-Date: Thu, 26 Jul 2012 14:29:31 -0700
-Message-Id: <20120726211412.284677137@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
-References: <20120726211424.GA7709@kroah.com>
- <20120726211411.164006056@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
+	Thu, 26 Jul 2012 17:39:27 -0400
+Date: Thu, 26 Jul 2012 23:39:23 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@linux.intel.com>
+cc: Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 9/9 v3] dma: shdma: convert to the shdma base library
+In-Reply-To: <1343301622.1726.9021.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1207262338130.2723@axis700.grange>
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de> 
+ <1336576161-27082-10-git-send-email-g.liakhovetski@gmx.de> 
+ <20120725035935.GA30468@linux-sh.org>  <1343285361.1726.8980.camel@vkoul-udesk3>
+  <20120726065804.GF30468@linux-sh.org> <1343301622.1726.9021.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:zZe9oyns4kism8RJedRKUG3eDPnpFEdOwUftaN4hR6S
+ rueSKaiATTLSAimnW3JD1uETEpZPu53nNKW1qohV6tsyat0ksb
+ TJ3XqvyR+SZMXsNWx07VFDAsLFfLKEREiVb4x0+14JBNqiDPWC
+ vLDfopT2RQiGholWS+Mu420yQ+MBK9+ShE4ZJeNMBuvKi4nDik
+ 4vRT06U8ZOK1m4fG2BfNm/9E7MWrZSykdaSRNdJfazQ5/01g4J
+ SWlM05h0/JqAvwVIf6L8w4GJfYpOY6zyBrCJzAlcCMBYDsQFMy
+ EqrsanIOA76Ie7OoX4yimWRbX8TQjw7hFds9u3YjQuOkXoffn1
+ 2EcBfIqIFhIKnUlexJYcJVwCXgPiJQroZgqYJkzoIvIkhQ7Sic
+ nx2SIugJaKv2w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Thu, 26 Jul 2012, Vinod Koul wrote:
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+> On Thu, 2012-07-26 at 15:58 +0900, Paul Mundt wrote:
+> > On Thu, Jul 26, 2012 at 12:19:21PM +0530, Vinod Koul wrote:
+> > > On Wed, 2012-07-25 at 12:59 +0900, Paul Mundt wrote:
+> > > > On Wed, May 09, 2012 at 05:09:21PM +0200, Guennadi Liakhovetski wrote:
+> > > > > The shdma base library has originally been extracted from the shdma driver,
+> > > > > which now can be converted to actually use it.
+> > > > > 
+> > > > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > > > > ---
+> > > > >  drivers/dma/sh/shdma.c | 1122 ++++++++++++------------------------------------
+> > > > >  drivers/dma/sh/shdma.h |   44 +-
+> > > > >  include/linux/sh_dma.h |   33 +-
+> > > > >  3 files changed, 302 insertions(+), 897 deletions(-)
+> > > > > 
+> > > > Now that this has hit mainline, the sh-sci with DMA enabled build is
+> > > > broken:
+> > > > 
+> > > >   CC      drivers/tty/serial/sh-sci.o
+> > > > drivers/tty/serial/sh-sci.c: In function 'work_fn_rx':
+> > > > drivers/tty/serial/sh-sci.c:1413:67: error: dereferencing pointer to incomplete type
+> > > > drivers/tty/serial/sh-sci.c:1413:81: warning: type defaults to 'int' in declaration of '__mptr'
+> > > > drivers/tty/serial/sh-sci.c:1413:90: warning: initialization from incompatible pointer type
+> > > > drivers/tty/serial/sh-sci.c:1413:161: error: invalid use of undefined type 'struct sh_desc'
+> > > > drivers/tty/serial/sh-sci.c:1419:83: error: dereferencing pointer to incomplete type
+> > > > drivers/tty/serial/sh-sci.c:1419:101: error: dereferencing pointer to incomplete type
+> > > > drivers/tty/serial/sh-sci.c:1423:42: error: dereferencing pointer to incomplete type
+> > > This was in -next for quite some time :(
+> > > 
+> > It seems we don't have any configs that have this default-enabled under
+> > -next, so it wasn't noticed before. Still, as Guennadi wrote this code
+> > I'm surprised it was overlooked.
+> So did my script :(
+> 
+> 
+> I tried checking this, struct sh_desc have moved to struct shdma_desc in
+> shdma-base.h. But the field partial was dropped, so we need to use
+> residue here. But, shdma or base doesn't calculate residue for err
+> transactions, so you cannot use it to start a new one.
 
-------------------
+Hi Vinod, Paul
 
-From: Dave Chinner <dchinner@redhat.com>
+I'm on a holiday ATM, coming back late Saturday / Sunday. I'll have a look 
+at this breakage ASAP and submit a fix.
 
-commit acf92b485cccf028177f46918e045c0c4e80ee10 upstream.
-
-Stable note: Not tracked in Bugzilla. This patch reduces excessive
-	reclaim of slab objects reducing the amount of information
-	that has to be brought back in from disk.
-
-shrink_slab() allows shrinkers to be called in parallel so the
-struct shrinker can be updated concurrently. It does not provide any
-exclusio for such updates, so we can get the shrinker->nr value
-increasing or decreasing incorrectly.
-
-As a result, when a shrinker repeatedly returns a value of -1 (e.g.
-a VFS shrinker called w/ GFP_NOFS), the shrinker->nr goes haywire,
-sometimes updating with the scan count that wasn't used, sometimes
-losing it altogether. Worse is when a shrinker does work and that
-update is lost due to racy updates, which means the shrinker will do
-the work again!
-
-Fix this by making the total_scan calculations independent of
-shrinker->nr, and making the shrinker->nr updates atomic w.r.t. to
-other updates via cmpxchg loops.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Thank
+Guennadi
 ---
- mm/vmscan.c |   45 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 32 insertions(+), 13 deletions(-)
-
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -251,17 +251,29 @@ unsigned long shrink_slab(struct shrink_
- 		unsigned long total_scan;
- 		unsigned long max_pass;
- 		int shrink_ret = 0;
-+		long nr;
-+		long new_nr;
- 
-+		/*
-+		 * copy the current shrinker scan count into a local variable
-+		 * and zero it so that other concurrent shrinker invocations
-+		 * don't also do this scanning work.
-+		 */
-+		do {
-+			nr = shrinker->nr;
-+		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
-+
-+		total_scan = nr;
- 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
- 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
- 		delta *= max_pass;
- 		do_div(delta, lru_pages + 1);
--		shrinker->nr += delta;
--		if (shrinker->nr < 0) {
-+		total_scan += delta;
-+		if (total_scan < 0) {
- 			printk(KERN_ERR "shrink_slab: %pF negative objects to "
- 			       "delete nr=%ld\n",
--			       shrinker->shrink, shrinker->nr);
--			shrinker->nr = max_pass;
-+			       shrinker->shrink, total_scan);
-+			total_scan = max_pass;
- 		}
- 
- 		/*
-@@ -269,13 +281,10 @@ unsigned long shrink_slab(struct shrink_
- 		 * never try to free more than twice the estimate number of
- 		 * freeable entries.
- 		 */
--		if (shrinker->nr > max_pass * 2)
--			shrinker->nr = max_pass * 2;
--
--		total_scan = shrinker->nr;
--		shrinker->nr = 0;
-+		if (total_scan > max_pass * 2)
-+			total_scan = max_pass * 2;
- 
--		trace_mm_shrink_slab_start(shrinker, shrink, total_scan,
-+		trace_mm_shrink_slab_start(shrinker, shrink, nr,
- 					nr_pages_scanned, lru_pages,
- 					max_pass, delta, total_scan);
- 
-@@ -296,9 +305,19 @@ unsigned long shrink_slab(struct shrink_
- 			cond_resched();
- 		}
- 
--		shrinker->nr += total_scan;
--		trace_mm_shrink_slab_end(shrinker, shrink_ret, total_scan,
--					 shrinker->nr);
-+		/*
-+		 * move the unused scan count back into the shrinker in a
-+		 * manner that handles concurrent updates. If we exhausted the
-+		 * scan, there is no need to do an update.
-+		 */
-+		do {
-+			nr = shrinker->nr;
-+			new_nr = total_scan + nr;
-+			if (total_scan <= 0)
-+				break;
-+		} while (cmpxchg(&shrinker->nr, nr, new_nr) != nr);
-+
-+		trace_mm_shrink_slab_end(shrinker, shrink_ret, nr, new_nr);
- 	}
- 	up_read(&shrinker_rwsem);
- out:
-
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
