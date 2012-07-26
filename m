@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab2GZV4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:56:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60447 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752390Ab2GZV4G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:56:06 -0400
-Date: Thu, 26 Jul 2012 22:55:43 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [RFC][PATCH 0/14] PM / shmobile: Pass power domain information
- via DT (was: Re: [RFD] PM: Device tree representation of power domains)
-Message-ID: <20120726215543.GJ4560@opensource.wolfsonmicro.com>
-References: <201207032302.17805.rjw@sisk.pl>
- <201207242237.28051.rjw@sisk.pl>
- <201207251300.34892.arnd@arndb.de>
- <201207260032.40159.rjw@sisk.pl>
- <87vchb4ar8.fsf@ti.com>
- <20120726210952.GG4560@opensource.wolfsonmicro.com>
- <87mx2mmc1b.fsf@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLfjTIIQuAzj8yil"
-Content-Disposition: inline
-In-Reply-To: <87mx2mmc1b.fsf@ti.com>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752807Ab2GZV5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:57:36 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35884 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751489Ab2GZV5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 17:57:35 -0400
+Message-ID: <1343339854.17538.50.camel@joe2Laptop>
+Subject: Re: [PATCH v3 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Joe Perches <joe@perches.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
+Date: Thu, 26 Jul 2012 14:57:34 -0700
+In-Reply-To: <CAErSpo4cPuFLmp=b2JUUP-nDdtsFmJFda0az-9z9fEnys23L6w@mail.gmail.com>
+References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
+	 <1343257978-7085-2-git-send-email-toshi.kani@hp.com>
+	 <CAErSpo4=HDaWTusKf+tRU6aXmj-mC1i7CswnDzDLZii21i9NaQ@mail.gmail.com>
+	 <1343336330.3010.496.camel@misato.fc.hp.com>
+	 <20120726213730.GA2149@google.com> <1343338982.17538.45.camel@joe2Laptop>
+	 <CAErSpo4cPuFLmp=b2JUUP-nDdtsFmJFda0az-9z9fEnys23L6w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-07-26 at 15:50 -0600, Bjorn Helgaas wrote:
+> On Thu, Jul 26, 2012 at 3:43 PM, Joe Perches <joe@perches.com> wrote:
+> > On Thu, 2012-07-26 at 15:37 -0600, Bjorn Helgaas wrote:
+> >>     PNP0C01:00: new device for \_SB_.PCI0.ISA_.MBIO
+> >>
+> >> I fiddled with this a while ago; it would look something like this:
+> > []
+> >> +static noinline_for_stack
+> >> +char *acpi_name_string(char *buf, char *end, acpi_handle handle,
+> >> +                    struct printf_spec spec, const char *fmt)
+[]
+> Yes.  I'm hesitant about this approach in general, because I don't
+> think printing the ACPI path is something we should be doing often.
+> It's not like a struct resource or a MAC address, where there are
+> dozens or hundreds of users.  I really think we should only print ACPI
+> paths in one or two places, so adding a %p extension would waste a
+> letter and encourage the wrong behavior.
 
---SLfjTIIQuAzj8yil
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I don't much care for adding ACPI specific calls to vsprintf
+as acpi is supposed to be OS generic anyway.
 
-On Thu, Jul 26, 2012 at 02:45:52PM -0700, Kevin Hilman wrote:
+I don't think there's anything wrong with Toshi's approach.
+Anyone that looks for speed in a logging message is looking
+for an oddly fitting thing.  Tracing sure, but logging?
 
-> Ideally, we will eventually have a representation that can map
-> from regulators all the way down to IP blocks.  regulator --> voltage
-> domain --> power domain --> clock domain --> clocks --> IP block.
+I also don't see anything wrong with renaming it to just
+acpi_<level>, but that's a different discussion.
 
-Well, often the clock bit is something of a noop - a lot of SoCs can
-reparent the IP block clocks between the different clock domains happily
-and have core clock domains that are mostly orthogonal to the power
-domains.  But yes.
+cheers, Joe
 
---SLfjTIIQuAzj8yil
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQEbzUAAoJEBus8iNuMP3dnXcP/jFLKtSMKjOVVPSJfE9TfobM
-ClesmABbQItO82QxziXieqbP0lqCW3gKjvHRPLNiPqmQg5YtQ4mx6Wqo9OFwxHdL
-OXwxKDybMDuN4x/x8SHbnpzrPm4CNQ7zOrSjYgMq+vv3zufAvOtO3QOaUPMdKVd2
-6+s7T3kf8esHf5hllCeNiJhrIcImbJlw2p4+X/GHDi2tVPs1d7b4V46ZvjtFqXG4
-G4Tsyli3aelMEml+w2E3hVWP+CJX7kygLvOAX3BzlDWtHVxpdYIxR6b/JS4Fhuhg
-X6P/BpZRTQthDMhI+9Xj5C/8HvYCN4ZUQ31NLdh4Gaov5Fu10N8kPL6JO4SxxOUQ
-T2aCUzT2hvpeeUG2w8hXvyUSdUri5MdPSHRgCl0hVaBWCLBgoxr62u1CHrh6z5m5
-3vITouilNQ+mvXwKx16whLxUcRKomYK/CNo7LYA7jiW6ftsWsw1xPPqkM3Qa9SzK
-XZPbdeTrM+bsH/utP1xoKQ3RR1d464bNMyeNikrRB46nXu3TrXyUGeyWS+XJU5RC
-9VC3CsD13S1he5EVJB6phJS+gVICqqAWmZdiaiD0Ts/O2EiOJuQbKx0LSteoAigb
-ac7XlAdqAW476w9AwtZP5ERMmurUlMi/VCr9cFIrb297ufZpJOooaQ/tG4qrRrBE
-Pp8SJQa/3s3uJl86XERp
-=Mioi
------END PGP SIGNATURE-----
-
---SLfjTIIQuAzj8yil--
