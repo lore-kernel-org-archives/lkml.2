@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2GZSSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 14:18:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37076 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab2GZSSH (ORCPT
+	id S1752381Ab2GZSUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 14:20:21 -0400
+Received: from nm23-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.50]:36418 "HELO
+	nm23-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751678Ab2GZSUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 14:18:07 -0400
-Message-ID: <501189DA.4030709@enkore.de>
-Date: Thu, 26 Jul 2012 20:18:02 +0200
-From: Marian Beermann <public@enkore.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 26 Jul 2012 14:20:20 -0400
+X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 14:20:19 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 202170.78227.bm@omp1062.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=rocketmail.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:To:MIME-Version:Content-Type;
+  b=Ku5+eMi2xRKH9eIdbR9lRB5LNL/j7UfIOVvBfiINbblUK1XjiYC5a/zhDOvVzlrEOmgSifxYwQMa5TYOP/2tnEacYVVHdgkNnlYfEoNISUCFMjD9FljhHfPkLOjYkzVmsaCXY9SzuwPmscYQkvHDQ+/zludFeqgwMXljR3xaKjc=;
+X-YMail-OSG: nTdV.MwVM1kJVZ26B8WSJdozpj0Lr2e9b1XGkqGww0bAxls
+ 5f2u51nnmH7NuYKQOevXz9AsXDNGLGajBVeQ1tkAww.fm2HF_RCYhjUN_tBv
+ HcW99u8tpSH6KRVlQPz1ffKWBpdq_C.mSWB3.HCwPl2TOHAXSzFtw4BWU4h5
+ lGYN0WgMa9AzrWrpGVwznF6aQt9vEN3pkkCkmiN4ZS_RVu_i6C88jmI5x77Y
+ boWyjt.4dsqPTqxh_PrPSptiK..egfhZRKAPINE.GktgQ9QAW9HiwWY2WbDo
+ 1AG8iohTJcIPzsH3UlvZB_dS1Vo1.Z72DUnImanaVwEa67RCVaHcaat.ZEtb
+ QLQTM3F8uww6HMF92MpUN5nmAmJ9OBDLrWS4DwrRORdoHVsyLBlHQVO0OdVo
+ Sv64pMllwWIFU9GzQa64o_93cBXFbo4Nojmk-
+X-Mailer: YahooMailWebService/0.8.120.356233
+Message-ID: <1343326475.80706.YahooMailNeo@web121606.mail.ne1.yahoo.com>
+Date: Thu, 26 Jul 2012 11:14:35 -0700 (PDT)
+From: Jamie Gloudon <nanosecns@rocketmail.com>
+Reply-To: Jamie Gloudon <nanosecns@rocketmail.com>
+To: "LINUX-KERNEL@VGER.KERNEL.ORG" <LINUX-KERNEL@vger.kernel.org>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: linux-fsdevel@vger.kernel.org
-Subject: [BUG] NTFS code doesn't sanitize folder names sufficiently
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
-
-today I noticed some very odd behaviour, which could lead people to 
-believe a loss of data, because it is possible to create directories 
-with backslashes in them.
-
-I am currently running kernel 3.5.
-
-To completly reproduce the problem to the full extend you'll need a 
-Windows computer, but to see whats wrong Linux completly suffices :-)
-
-On a Linux computer
-1. Create a directory named TestA on an NTFS partition
-2. Create a subdirectory of TestA named TestB
-3. Create a third directory alongside TestA named TestA\TestB (the 
-fundamental problem is this: backslashes in directory names)
-
-Connect the drive containing the NTFS partition now to a Windows 
-computer and navigate to the directory containing TestA and TestA\TestB. 
-If you navigate to the folder (not path!) TestA\TestB you'll actually 
-see the contents of the path TestA\TestB (the subfolder TestB) and not 
-the contents of the directory.
-It is not possible on a Windows machine to access the contents of the 
-directory named TestA\TestB. This is not a bug in Windows, it's caused 
-by a bug in the NTFS driver, which allows illegal characters.
-
-The solution to this would be to disallow creation of files and folders 
-on NTFS drives containing illegal characters.
-
-Best regards
-Marian Beermann
-
-(notice: I'm not subscribed to linux-fsdevel...)
+unsubscribe linux-kernel
