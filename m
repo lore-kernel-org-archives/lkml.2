@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab2GZH0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 03:26:05 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:63400 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab2GZH0C (ORCPT
+	id S1751909Ab2GZHob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 03:44:31 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60332 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab2GZHo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 03:26:02 -0400
-Message-ID: <5010F104.5080606@redhat.com>
-Date: Thu, 26 Jul 2012 09:25:56 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 26 Jul 2012 03:44:29 -0400
+Date: Thu, 26 Jul 2012 09:44:24 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates
+Message-ID: <20120726074424.GB8421@gmail.com>
+References: <20120725203551.GA19762@havoc.gtf.org>
+ <20120725204350.GA20530@havoc.gtf.org>
+ <CA+55aFwCCctcmryQJMCT_3TDr60CYBQKu9HMyxOgS8482+w5Xw@mail.gmail.com>
+ <50107297.305@pobox.com>
+ <CA+55aFzun7GebfGZDa73MGLF_808+ROaei5Ag-9HvgUDp1bqLQ@mail.gmail.com>
+ <50107A0D.3060003@pobox.com>
+ <CA+55aFwi7wS3SFZA-45d+KwKi+hqn1GXqRExYmOw6gnSipv5Rg@mail.gmail.com>
 MIME-Version: 1.0
-To: Jeff Garzik <jgarzik@pobox.com>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] ata: MODE SELECT implementation
-References: <1341481235-12708-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1341481235-12708-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwi7wS3SFZA-45d+KwKi+hqn1GXqRExYmOw6gnSipv5Rg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/07/2012 11:40, Paolo Bonzini ha scritto:
-> This is a revised version of the MODE SELECT implementation from yesterday,
-> augmented with support for changeable parameter requests in MODE SENSE.
-> 
-> Paolo Bonzini (2):
->   ata: support MODE SENSE request for changeable parameters
->   ata: implement MODE SELECT command
-> 
->  drivers/ata/libata-scsi.c |  242 +++++++++++++++++++++++++++++++++++++++++----
->  1 files changed, 221 insertions(+), 21 deletions(-)
-> 
 
-Ping, no love for these? :)
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Paolo
+> I couldn't find an example of that in a quick look, it's 
+> fairly uncommon to have non-conflicting merges that had 
+> semantic - but not contextual - conflicts. [...]
 
+This:
+
+  git log --grep='Semantic merge\|Semantic conflict'
+
+gives over a dozen examples of such semantic merges I've done in 
+the past 4 years. I fully agree that they are best done in the 
+merge commit - in hindsight perhaps with a tad more explanation 
+than I did.
+
+Thanks,
+
+	Ingo
