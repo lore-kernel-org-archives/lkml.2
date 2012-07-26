@@ -1,38 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab2GZDMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 23:12:05 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:37533 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2GZDME (ORCPT
+	id S1751820Ab2GZDNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 23:13:00 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54042 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab2GZDM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 23:12:04 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6Q3BnFo000316, This message is released by code: ctaloc0852
-Message-ID: <5010B576.6040600@realsil.com.cn>
-Date: Thu, 26 Jul 2012 11:11:50 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 25 Jul 2012 23:12:58 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: realtek card reader core driver
-References: <1343036558-8189-1-git-send-email-wei_wang@realsil.com.cn> <20120723111757.GC4352@mwanda>
-In-Reply-To: <20120723111757.GC4352@mwanda>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <8ea83e51-81d1-407a-be06-98d2c99c876d@email.android.com>
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
+	<500CDE35.6000009@windriver.com>
+	<42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com>
+	<500E1057.3020509@windriver.com>
+	<75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com>
+	<CA+=dFzg=Bpsv5bMzECoAXYVcbD95eYy6xDAzL6fwiHrunfq-tg@mail.gmail.com>
+	<e7f8a685-9635-4aa9-bd67-1044e0720b29@email.android.com>
+	<CA+=dFzifKwbiXmw=pu0+rWmz72+4jsbv6bXOBHyL0LmxaL9byg@mail.gmail.com>
+	<CA+=dFzgXq3Sx-Ny+6oDZ3BEdsMQCgswNEVPVnhmhedHFvazzWw@mail.gmail.com>
+	<50100A29.8010705@gmail.com>
+	<CA+=dFzj11c9K0TS0T7D1aBVz+ppdFK91ZzBbevLV23FrWJNzmw@mail.gmail.com>
+	<CA+=dFziK09TVcK29x1SLg+JanOj6o__bJKf8yohw6dTYCUCF5A@mail.gmail.com>
+	<8ea83e51-81d1-407a-be06-98d2c99c876d@email.android.com>
+Date: Thu, 26 Jul 2012 11:12:57 +0800
+Message-ID: <CA+=dFzguqjjnnqHO53Mx859VB6NU=4MaPWAUzGQB2qtZGfdAUg@mail.gmail.com>
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK
+ when bundling
+From: Xufeng Zhang <xufengzhang.main@gmail.com>
+To: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        xufeng zhang <xufeng.zhang@windriver.com>, sri@us.ibm.com,
+        davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan:
+On 7/26/12, Vlad Yasevich <vyasevich@gmail.com> wrote:
+> Xufeng Zhang <xufengzhang.main@gmail.com> wrote:
+>
+>>On 7/26/12, Xufeng Zhang <xufengzhang.main@gmail.com> wrote:
+>>> On 7/25/12, Vlad Yasevich <vyasevich@gmail.com> wrote:
+>>>>> And after take a moment to look into the relative codes, I think we
+>>>>> can implement it
+>>>>> by below way:
+>>>>> 1). Add a flag(isi_err_needed) in the embedded struct peer of
+>>struct
+>>>>> struct sctp_association
+>>>>> just like sack_needed flag.
+>>>>> 2). When "invalid stream identifier" ERROR happens in
+>>sctp_eat_data()
+>>>>> function, we just
+>>>>> set isi_err_needed flag and don't create ERROR chunk and also don't
+>>>>> insert SCTP_CMD_REPLY command.
+>>>>> 3). In sctp_gen_sack() function, we create ERROR chunk and also
+>>insert
+>>>>> SCTP_CMD_REPLY command if isi_err_needed flag is set.
+>>>>>
+>>>>> Is this way proper?
+>>>>>
+>>>>
+>>>> So, I looked at the code, and it looks very simple to do.  We
+>>already
+>>>> return a specific status from sctp_eat_data() when the error was
+>>>> generated.  All you have to do is take the code that generates the
+>>error
+>>>> and adds it to the command list and give it its own small function
+>>that
+>>>> you can then call if SCTP_IERROR_BAD_STREAM error was returned.
+>>>
+>>> No, it will still has the same problem by just doing this.
+>>> SCTP_CMD_GEN_SACK command actually don't enqueue SACK to outqueue,
+>>> sctp_gen_sack() do this things when processing SCTP_CMD_GEN_SACK
+>>command
+>>> in sctp_cmd_interpreter().
+>>> So it's not enough if we just insert SCTP_ERROR_INV_STRM command
+>>after
+>>> sctp_eat_data() return SCTP_IERROR_BAD_STREAM in
+>>sctp_sf_eat_data_6_2().
+>>
+>>Yes, I just tried this way, SACK is still bundled after ERROR chunk.
+>>But I think my above method is also not fine if there are multiple
+>>error DATA chunks
+>>bundled in a packet.
+>>Really awesome!
+>
+> 1. Catch the error return.
+> 2.  Set flag indicating error is needed.
+> 3.  Queue sack as needed.
+> 4.  If error flag set call new function to queue error chunk.
 
-Sorry to bother you.
-I can't find the maintainer of drivers/misc. So if I want to submit my
-driver as misc device, who should I contact to send my patch?
+Both step 3 and 4 need lots of changes to make it working since
+SACK is ready to queue only at the end of the packet and we also
+need to deal with multiple "invalid stream identifier" ERROR chunks
+in a single packet.
 
-Thank you very much. I really appreciate this help.
 
-BR,
-wwang
+Thanks,
+Xufeng Zhang
+>
+> That should fix things.  Do this in all callers of sctp_eat_data.
+>
+> -vlad
+>
+>>
+>>
+>>Thanks,
+>>Xufeng Zhang
+>>
+>>>
+>>>
+>>>
+>>> Thanks,
+>>> Xufeng Zhang
+>>>
+>>>>
+>>>> -vlad
+>>>>
+>>>>>
+>>>>> Thanks,
+>>>>> Xufeng Zhang
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> Thanks,
+>>>>>> Xufeng Zhang
+>>>>>>>
+>>>>>>> -vlad
+>>>>>>>>
+>>>>>>>> Thanks,
+>>>>>>>> Xufeng Zhang
+>>>>>>>>>
+>>>>>>>>> -vlad
+>>>>>>>
+>>>>>>>
+>>>>>>> --
+>>>>>>> Sent from my Android phone with SkitMail. Please excuse my
+>>brevity.
+>>>>>>>
+>>>>>>
+>>>>
+>>>>
+>>>>
+>>>
+>
+>
+> --
+> Sent from my Android phone with SkitMail. Please excuse my brevity.
+>
