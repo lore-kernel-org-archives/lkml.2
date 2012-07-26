@@ -1,356 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2GZOf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:35:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39618 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab2GZOfx (ORCPT
+	id S1752412Ab2GZOlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:41:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54028 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab2GZOlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:35:53 -0400
+	Thu, 26 Jul 2012 10:41:22 -0400
+Date: Thu, 26 Jul 2012 22:41:14 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <minggr@gmail.com>,
+        Jeff Wu <jeff.wu@amd.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
+Subject: Re: [PATCH v3 0/7] ZPODD patches for scsi tree
+Message-ID: <20120726144108.GA2724@localhost.localdomain>
+References: <1343297129-28174-1-git-send-email-aaron.lu@amd.com>
+ <50114989.3010900@pobox.com>
 MIME-Version: 1.0
-In-Reply-To: <6228.1343313133@warthog.procyon.org.uk>
-References: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
- <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com>
- <28702.1343135952@warthog.procyon.org.uk> <CAHO5Pa310CYFKvyN4N21CHoCKJG-eJ04Q-yg1VmgwvgR5N91Rg@mail.gmail.com>
- <6193.1343211798@warthog.procyon.org.uk> <CAHO5Pa2ck_wqUwiuFUxEeU=k3dJvByyjpygpUhrSFRsMyBZ8Eg@mail.gmail.com>
- <12201.1343215232@warthog.procyon.org.uk> <CAHO5Pa1rCV+Od4q3SVHbGf_08q1uAeaNZEHH6NEuouviOS0awA@mail.gmail.com>
- <6228.1343313133@warthog.procyon.org.uk>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Thu, 26 Jul 2012 16:35:32 +0200
-X-Google-Sender-Auth: my1KtAbKZx3YkdKq9LNzswfmeNM
-Message-ID: <CAHO5Pa3yQQH+Wc-G=u4EncCt2O6vLdNDe=rV8wEgHvQowzk0ZQ@mail.gmail.com>
-Subject: Re: [PATCH 00/13] UAPI header file split
-To: David Howells <dhowells@redhat.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        tglx@linutronix.de, mingo@kernel.org, davej@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50114989.3010900@pobox.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 4:32 PM, David Howells <dhowells@redhat.com> wrote:
-> Michael Kerrisk <mtk.manpages@gmail.com> wrote:
->
->> I've not checked whether any of the below are fixed in the adjustments
->> that you made in the last 20 hours (though it looks like at least some
->> of them are not), but a little scripting to check the content of the
->> split files showed that while most of them were okay, in the cases
->> below, some comment text was being discarded by the scripts.
->>
->> ./include/linux/irqnr.h ./include/uapi/linux/irqnr.h
->> ./arch/frv/include/asm/types.h ./arch/frv/include/uapi/asm/types.h
->> ./arch/cris/include/asm/types.h ./arch/cris/include/uapi/asm/types.h
->> ./arch/arm/include/asm/types.h ./arch/arm/include/uapi/asm/types.h
->> ./arch/sh/include/asm/types.h ./arch/sh/include/uapi/asm/types.h
->> ./arch/ia64/include/asm/kvm_para.h ./arch/ia64/include/uapi/asm/kvm_para.h
->> ./arch/mn10300/include/asm/types.h ./arch/mn10300/include/uapi/asm/types.h
->> ./arch/m68k/include/asm/types.h ./arch/m68k/include/uapi/asm/types.h
->> ./arch/avr32/include/asm/types.h ./arch/avr32/include/uapi/asm/types.h
->> ./arch/m32r/include/asm/types.h ./arch/m32r/include/uapi/asm/types.h
->>
->> I found these using the script below, which tries to check the
->> integrity of the transformations you are making with your scripts.
->> Other than the files above, the results looked good.
->
-> How about the attached changes?
->
-> I had to put in special handling for comments of the form:
->
->         These aren't exported outside the kernel to avoid name space clashes
->
-> because they invariably occur in the wrong section (ie. they would normally
-> end up in the UAPI side).
+On Thu, Jul 26, 2012 at 09:43:37AM -0400, Jeff Garzik wrote:
+> On 07/26/2012 06:05 AM, Aaron Lu wrote:
+> >v3:
+> >Rebase on top of scsi-misc tree;
+> >Add the sr related patches previously in Jeff's libata tree;
+> >Re-organize the sr patches.
+> >A problem for now: for patch
+> >scsi: sr: support zero power ODD(ZPODD)
+> >I can't set a flag in libata-acpi.c since a related function is
+> >missing in scsi-misc tree. Will fix this when 3.6-rc1 released.
+> 
+> What does this mean?  Would you be more specific?
 
-I haven't looked over the changes yet, but what do my scripts now say?
-(If all's well, they generate no output beyond the list of files.)
+The patch "libata-acpi: add ata port runtime D3Cold support" by Lin Ming
+introduced a function ata_acpi_wake_dev in libata-acpi.c, and only lives
+in libata-next tree but not scsi-misc tree.
 
-Cheers,
+In patch "scsi: sr: support zero power ODD(ZPODD)" I need to set the
+wakeup_by_user flag of the scsi device in ata_acpi_wake_dev like this:
 
-Michael
+--- a/drivers/ata/libata-acpi.c
++++ b/drivers/ata/libata-acpi.c
+@@ -985,8 +985,10 @@ static void ata_acpi_wake_dev(acpi_handle handle, u32 event, void *context)
+ 	struct ata_device *ata_dev = context;
+ 
+ 	if (event == ACPI_NOTIFY_DEVICE_WAKE && ata_dev &&
+-			pm_runtime_suspended(&ata_dev->sdev->sdev_gendev))
++			pm_runtime_suspended(&ata_dev->sdev->sdev_gendev)) {
++		ata_dev->sdev->wakeup_by_user = 1;
+ 		scsi_autopm_get_device(ata_dev->sdev);
++	}
+ }
+ 
+But since there is no such function in scsi-misc tree, I can't set the
+flag. Any suggestions?
 
+Another minor issue is, I need to use the can_power_off and
+wakeup_by_user flag of the scsi_device structure in sr patches, but
+they are all introduced in patches in libata-next tree, so I have to
+re-define them in this patch set. Will cause conflict if James send
+these sr patches to Linus. Any way to avoid this?
 
->
-> I consulted Thomas Gleixner about irqnr.h.  He says it doesn't matter if that
-> one comment gets lost.  Besides, something like that can be added back later,
-> perhaps in a better place (it doesn't look like it's in the right place now).
->
-> David
-> ---
-> diff --git a/arch/arm/include/asm/types.h b/arch/arm/include/asm/types.h
-> index d73badf..01d8630 100644
-> --- a/arch/arm/include/asm/types.h
-> +++ b/arch/arm/include/asm/types.h
-> @@ -3,6 +3,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #define BITS_PER_LONG 32
->
-> diff --git a/arch/avr32/include/asm/types.h b/arch/avr32/include/asm/types.h
-> index cd34e33..5932405 100644
-> --- a/arch/avr32/include/asm/types.h
-> +++ b/arch/avr32/include/asm/types.h
-> @@ -10,6 +10,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #define BITS_PER_LONG 32
->
-> diff --git a/arch/avr32/include/uapi/asm/types.h b/arch/avr32/include/uapi/asm/types.h
-> index 9ec9d4c..bb34ad3 100644
-> --- a/arch/avr32/include/uapi/asm/types.h
-> +++ b/arch/avr32/include/uapi/asm/types.h
-> @@ -1 +1,8 @@
-> +/*
-> + * Copyright (C) 2004-2006 Atmel Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
->  #include <asm-generic/int-ll64.h>
-> diff --git a/arch/cris/include/asm/types.h b/arch/cris/include/asm/types.h
-> index 1964943..a3cac77 100644
-> --- a/arch/cris/include/asm/types.h
-> +++ b/arch/cris/include/asm/types.h
-> @@ -3,6 +3,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #define BITS_PER_LONG 32
->
-> diff --git a/arch/frv/include/asm/types.h b/arch/frv/include/asm/types.h
-> index 887a6cb..6bc6365 100644
-> --- a/arch/frv/include/asm/types.h
-> +++ b/arch/frv/include/asm/types.h
-> @@ -13,6 +13,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #define BITS_PER_LONG 32
->
-> diff --git a/arch/frv/include/uapi/asm/types.h b/arch/frv/include/uapi/asm/types.h
-> index 9ec9d4c..cf23149 100644
-> --- a/arch/frv/include/uapi/asm/types.h
-> +++ b/arch/frv/include/uapi/asm/types.h
-> @@ -1 +1,11 @@
-> +/* types.h: FRV types
-> + *
-> + * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
-> + * Written by David Howells (dhowells@redhat.com)
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
->  #include <asm-generic/int-ll64.h>
-> diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
-> index 2a7d1be..4c351b1 100644
-> --- a/arch/ia64/include/asm/types.h
-> +++ b/arch/ia64/include/asm/types.h
-> @@ -18,6 +18,9 @@
->
->  #ifdef __ASSEMBLY__
->  #else
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  struct fnptr {
->         unsigned long ip;
-> diff --git a/arch/ia64/include/uapi/asm/types.h b/arch/ia64/include/uapi/asm/types.h
-> index c90f317..321193b 100644
-> --- a/arch/ia64/include/uapi/asm/types.h
-> +++ b/arch/ia64/include/uapi/asm/types.h
-> @@ -26,9 +26,6 @@
->  # define __IA64_UL(x)          ((unsigned long)(x))
->  # define __IA64_UL_CONST(x)    x##UL
->
-> -/*
-> - * These aren't exported outside the kernel to avoid name space clashes
-> - */
->  #endif /* !__ASSEMBLY__ */
->
->  #endif /* _UAPI_ASM_IA64_TYPES_H */
-> diff --git a/arch/m32r/include/asm/types.h b/arch/m32r/include/asm/types.h
-> index f456659..04a44c6 100644
-> --- a/arch/m32r/include/asm/types.h
-> +++ b/arch/m32r/include/asm/types.h
-> @@ -3,6 +3,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #define BITS_PER_LONG 32
->
-> diff --git a/arch/m68k/include/asm/types.h b/arch/m68k/include/asm/types.h
-> index 436ab02..80160f4 100644
-> --- a/arch/m68k/include/asm/types.h
-> +++ b/arch/m68k/include/asm/types.h
-> @@ -3,6 +3,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #define BITS_PER_LONG 32
->
-> diff --git a/arch/mips/include/asm/types.h b/arch/mips/include/asm/types.h
-> index 8d13ec5..a845aaf 100644
-> --- a/arch/mips/include/asm/types.h
-> +++ b/arch/mips/include/asm/types.h
-> @@ -14,6 +14,9 @@
->  # include <asm-generic/int-ll64.h>
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->  #ifndef __ASSEMBLY__
->
->  /*
-> diff --git a/arch/mips/include/uapi/asm/types.h b/arch/mips/include/uapi/asm/types.h
-> index 6c65178..7ac9d0b 100644
-> --- a/arch/mips/include/uapi/asm/types.h
-> +++ b/arch/mips/include/uapi/asm/types.h
-> @@ -23,8 +23,5 @@
->  # endif
->  #endif
->
-> -/*
-> - * These aren't exported outside the kernel to avoid name space clashes
-> - */
->
->  #endif /* _UAPI_ASM_TYPES_H */
-> diff --git a/arch/mn10300/include/asm/types.h b/arch/mn10300/include/asm/types.h
-> index c056756..3d6e483 100644
-> --- a/arch/mn10300/include/asm/types.h
-> +++ b/arch/mn10300/include/asm/types.h
-> @@ -13,6 +13,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #define BITS_PER_LONG 32
->
-> diff --git a/arch/mn10300/include/uapi/asm/types.h b/arch/mn10300/include/uapi/asm/types.h
-> index 9ec9d4c..8b3f050 100644
-> --- a/arch/mn10300/include/uapi/asm/types.h
-> +++ b/arch/mn10300/include/uapi/asm/types.h
-> @@ -1 +1,11 @@
-> +/* MN10300 Basic type definitions
-> + *
-> + * Copyright (C) 2007 Matsushita Electric Industrial Co., Ltd.
-> + * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public Licence
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the Licence, or (at your option) any later version.
-> + */
->  #include <asm-generic/int-ll64.h>
-> diff --git a/arch/s390/include/asm/types.h b/arch/s390/include/asm/types.h
-> index 876f016..36ec230 100644
-> --- a/arch/s390/include/asm/types.h
-> +++ b/arch/s390/include/asm/types.h
-> @@ -10,6 +10,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #ifndef __ASSEMBLY__
->
-> diff --git a/arch/s390/include/uapi/asm/types.h b/arch/s390/include/uapi/asm/types.h
-> index 9d177d4..04a07a2 100644
-> --- a/arch/s390/include/uapi/asm/types.h
-> +++ b/arch/s390/include/uapi/asm/types.h
-> @@ -21,7 +21,4 @@ typedef __signed__ long saddr_t;
->
->  #endif /* __ASSEMBLY__ */
->
-> -/*
-> - * These aren't exported outside the kernel to avoid name space clashes
-> - */
->  #endif /* _UAPI_S390_TYPES_H */
-> diff --git a/arch/sh/include/asm/types.h b/arch/sh/include/asm/types.h
-> index 8315c99..6a31053 100644
-> --- a/arch/sh/include/asm/types.h
-> +++ b/arch/sh/include/asm/types.h
-> @@ -3,6 +3,9 @@
->
->  #include <uapi/asm/types.h>
->
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->  #ifndef __ASSEMBLY__
->
->  #ifdef CONFIG_SUPERH32
-> diff --git a/arch/xtensa/include/asm/types.h b/arch/xtensa/include/asm/types.h
-> index dd2a269..2b410b8 100644
-> --- a/arch/xtensa/include/asm/types.h
-> +++ b/arch/xtensa/include/asm/types.h
-> @@ -13,6 +13,9 @@
->  #include <uapi/asm/types.h>
->
->  #ifndef __ASSEMBLY__
-> +/*
-> + * These aren't exported outside the kernel to avoid name space clashes
-> + */
->
->  #define BITS_PER_LONG 32
->
-> diff --git a/arch/xtensa/include/uapi/asm/types.h b/arch/xtensa/include/uapi/asm/types.h
-> index 2293432..87ec7ae 100644
-> --- a/arch/xtensa/include/uapi/asm/types.h
-> +++ b/arch/xtensa/include/uapi/asm/types.h
-> @@ -23,9 +23,6 @@
->
->  #ifndef __ASSEMBLY__
->
-> -/*
-> - * These aren't exported outside the kernel to avoid name space clashes
-> - */
->  #endif
->
->  #endif /* _UAPI_XTENSA_TYPES_H */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+Thanks,
+Aaron
