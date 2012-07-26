@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab2GZVaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:30:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62132 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab2GZVaJ (ORCPT
+	id S1753257Ab2GZVaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:30:25 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:53162 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab2GZVaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:09 -0400
+	Thu, 26 Jul 2012 17:30:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Aaditya Kumar <aaditya.kumar@ap.sony.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: [ 03/40] mm: fix lost kswapd wakeup in kswapd_stop()
-Date: Thu, 26 Jul 2012 14:29:21 -0700
-Message-Id: <20120726211411.338731174@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 06/40] dm raid1: fix crash with mirror recovery and discard
+Date: Thu, 26 Jul 2012 14:29:24 -0700
+Message-Id: <20120726211411.652200420@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -32,82 +31,110 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 1c7e7f6c0703d03af6bcd5ccc11fc15d23e5ecbe upstream.
+commit 751f188dd5ab95b3f2b5f2f467c38aae5a2877eb upstream.
 
-Offlining memory may block forever, waiting for kswapd() to wake up
-because kswapd() does not check the event kthread->should_stop before
-sleeping.
+This patch fixes a crash when a discard request is sent during mirror
+recovery.
 
-The proper pattern, from Documentation/memory-barriers.txt, is:
+Firstly, some background.  Generally, the following sequence happens during
+mirror synchronization:
+- function do_recovery is called
+- do_recovery calls dm_rh_recovery_prepare
+- dm_rh_recovery_prepare uses a semaphore to limit the number
+  simultaneously recovered regions (by default the semaphore value is 1,
+  so only one region at a time is recovered)
+- dm_rh_recovery_prepare calls __rh_recovery_prepare,
+  __rh_recovery_prepare asks the log driver for the next region to
+  recover. Then, it sets the region state to DM_RH_RECOVERING. If there
+  are no pending I/Os on this region, the region is added to
+  quiesced_regions list. If there are pending I/Os, the region is not
+  added to any list. It is added to the quiesced_regions list later (by
+  dm_rh_dec function) when all I/Os finish.
+- when the region is on quiesced_regions list, there are no I/Os in
+  flight on this region. The region is popped from the list in
+  dm_rh_recovery_start function. Then, a kcopyd job is started in the
+  recover function.
+- when the kcopyd job finishes, recovery_complete is called. It calls
+  dm_rh_recovery_end. dm_rh_recovery_end adds the region to
+  recovered_regions or failed_recovered_regions list (depending on
+  whether the copy operation was successful or not).
 
-   ---  waker  ---
-   event_indicated = 1;
-   wake_up_process(event_daemon);
+The above mechanism assumes that if the region is in DM_RH_RECOVERING
+state, no new I/Os are started on this region. When I/O is started,
+dm_rh_inc_pending is called, which increases reg->pending count. When
+I/O is finished, dm_rh_dec is called. It decreases reg->pending count.
+If the count is zero and the region was in DM_RH_RECOVERING state,
+dm_rh_dec adds it to the quiesced_regions list.
 
-   ---  sleeper  ---
-   for (;;) {
-      set_current_state(TASK_UNINTERRUPTIBLE);
-      if (event_indicated)
-         break;
-      schedule();
-   }
+Consequently, if we call dm_rh_inc_pending/dm_rh_dec while the region is
+in DM_RH_RECOVERING state, it could be added to quiesced_regions list
+multiple times or it could be added to this list when kcopyd is copying
+data (it is assumed that the region is not on any list while kcopyd does
+its jobs). This results in memory corruption and crash.
 
-   set_current_state() may be wrapped by:
-      prepare_to_wait();
+There already exist bypasses for REQ_FLUSH requests: REQ_FLUSH requests
+do not belong to any region, so they are always added to the sync list
+in do_writes. dm_rh_inc_pending does not increase count for REQ_FLUSH
+requests. In mirror_end_io, dm_rh_dec is never called for REQ_FLUSH
+requests. These bypasses avoid the crash possibility described above.
 
-In the kswapd() case, event_indicated is kthread->should_stop.
+These bypasses were improperly implemented for REQ_DISCARD when
+the mirror target gained discard support in commit
+5fc2ffeabb9ee0fc0e71ff16b49f34f0ed3d05b4 (dm raid1: support discard).
 
-  === offlining memory (waker) ===
-   kswapd_stop()
-      kthread_stop()
-         kthread->should_stop = 1
-         wake_up_process()
-         wait_for_completion()
+In do_writes, REQ_DISCARD requests is always added to the sync queue and
+immediately dispatched (even if the region is in DM_RH_RECOVERING).  However,
+dm_rh_inc and dm_rh_dec is called for REQ_DISCARD resusts.  So it violates the
+rule that no I/Os are started on DM_RH_RECOVERING regions, and causes the list
+corruption described above.
 
-  ===  kswapd_try_to_sleep (sleeper) ===
-   kswapd_try_to_sleep()
-      prepare_to_wait()
-           .
-           .
-      schedule()
-           .
-           .
-      finish_wait()
+This patch changes it so that REQ_DISCARD requests follow the same path
+as REQ_FLUSH. This avoids the crash.
 
-The schedule() needs to be protected by a test of kthread->should_stop,
-which is wrapped by kthread_should_stop().
+Reference: https://bugzilla.redhat.com/837607
 
-Reproducer:
-   Do heavy file I/O in background.
-   Do a memory offline/online in a tight loop
-
-Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/md/dm-raid1.c       |    2 +-
+ drivers/md/dm-region-hash.c |    5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2695,7 +2695,10 @@ static void kswapd_try_to_sleep(pg_data_
- 		 * them before going back to sleep.
- 		 */
- 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
--		schedule();
+--- a/drivers/md/dm-raid1.c
++++ b/drivers/md/dm-raid1.c
+@@ -1210,7 +1210,7 @@ static int mirror_end_io(struct dm_targe
+ 	 * We need to dec pending if this was a write.
+ 	 */
+ 	if (rw == WRITE) {
+-		if (!(bio->bi_rw & REQ_FLUSH))
++		if (!(bio->bi_rw & (REQ_FLUSH | REQ_DISCARD)))
+ 			dm_rh_dec(ms->rh, map_context->ll);
+ 		return error;
+ 	}
+--- a/drivers/md/dm-region-hash.c
++++ b/drivers/md/dm-region-hash.c
+@@ -404,6 +404,9 @@ void dm_rh_mark_nosync(struct dm_region_
+ 		return;
+ 	}
+ 
++	if (bio->bi_rw & REQ_DISCARD)
++		return;
 +
-+		if (!kthread_should_stop())
-+			schedule();
-+
- 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
- 	} else {
- 		if (remaining)
+ 	/* We must inform the log that the sync count has changed. */
+ 	log->type->set_region_sync(log, region, 0);
+ 
+@@ -524,7 +527,7 @@ void dm_rh_inc_pending(struct dm_region_
+ 	struct bio *bio;
+ 
+ 	for (bio = bios->head; bio; bio = bio->bi_next) {
+-		if (bio->bi_rw & REQ_FLUSH)
++		if (bio->bi_rw & (REQ_FLUSH | REQ_DISCARD))
+ 			continue;
+ 		rh_inc(rh, dm_rh_bio_to_region(rh, bio));
+ 	}
 
 
