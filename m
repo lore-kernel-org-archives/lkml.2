@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab2GZKqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 06:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15817 "EHLO mx1.redhat.com"
+	id S1752416Ab2GZKqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 06:46:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27767 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab2GZKqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 06:46:17 -0400
+	id S1752176Ab2GZKqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 06:46:38 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
@@ -18,27 +18,13 @@ Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org, arnd@arndb.de, tglx@linutronix.de,
         mingo@kernel.org, davej@redhat.com
 Subject: Re: [PATCH 00/13] UAPI header file split
-Date: Thu, 26 Jul 2012 11:46:04 +0100
-Message-ID: <19738.1343299564@warthog.procyon.org.uk>
+Date: Thu, 26 Jul 2012 11:46:23 +0100
+Message-ID: <19755.1343299583@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Kerrisk <mtk.manpages@gmail.com> wrote:
 
-> >> >> 3. HEADER COMMENTS NOT RETAINED IN KAPI FILES
-> >
-> > How about the attached changes?  This is a delta to the disintegrate markers
-> > diff I sent earlier.
-> 
-> That looks about right to me.
-> 
-> Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
-
-Excellent, thanks.  The question is where can I attach your ack?  I'm not
-going to simply tag these on the end as a new patch, but rather the changes
-are included in the regenerated patches as I changed the scripts.
-
-So just the main set of scripted commits?
+Oh, and thanks for the write up!
 
 David
