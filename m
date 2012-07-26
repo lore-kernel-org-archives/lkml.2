@@ -1,31 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab2GZILw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 04:11:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54245 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab2GZILt convert rfc822-to-8bit (ORCPT
+	id S1751702Ab2GZIRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:17:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36185 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab2GZIRs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 04:11:49 -0400
-Message-ID: <1343290299.26034.84.camel@twins>
-Subject: Re: [RFC] page-table walkers vs memory order
+	Thu, 26 Jul 2012 04:17:48 -0400
+Message-ID: <1343290631.26034.86.camel@twins>
+Subject: Re: [PATCH 2/2] sched: fix a logical error in select_task_rq_fair
 From: Peter Zijlstra <peterz@infradead.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 26 Jul 2012 10:11:39 +0200
-In-Reply-To: <alpine.LSU.2.00.1207251452160.2084@eggly.anvils>
-References: <1343064870.26034.23.camel@twins>
-	 <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
-	 <20120725175628.GH2378@linux.vnet.ibm.com>
-	 <alpine.LSU.2.00.1207251313180.1942@eggly.anvils>
-	 <20120725211217.GR2378@linux.vnet.ibm.com>
-	 <alpine.LSU.2.00.1207251452160.2084@eggly.anvils>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com
+Date: Thu, 26 Jul 2012 10:17:11 +0200
+In-Reply-To: <1343280446-24019-2-git-send-email-alex.shi@intel.com>
+References: <1343280446-24019-1-git-send-email-alex.shi@intel.com>
+	 <1343280446-24019-2-git-send-email-alex.shi@intel.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -34,15 +24,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-25 at 15:09 -0700, Hugh Dickins wrote:
-> We find out after it hits us, and someone studies the disassembly -
-> if we're lucky enough to crash near the origin of the problem. 
+On Thu, 2012-07-26 at 13:27 +0800, Alex Shi wrote:
+> If find_idlest_cpu() return '-1', and sd->child is NULL. The function
+> select_task_rq_fair will return -1. That is not the function's purpose.
 
-This is a rather painful way.. see
+But find_idlest_cpu() will only return -1 if the group mask is fully
+excluded by the cpus_allowed mask, right?
 
-  https://lkml.org/lkml/2009/1/5/555
-
-we were lucky there in that the lack of ACCESS_ONCE() caused an infinite
-loop so we knew exactly where we got stuck.
+In that case aren't we covering up a bug in find_idlest_group(), it
+appears to have returned a group that isn't eligible to be idlest.
 
 
