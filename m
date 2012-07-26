@@ -1,81 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab2GZIKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 04:10:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867Ab2GZIKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 04:10:51 -0400
-Date: Thu, 26 Jul 2012 11:10:41 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>, David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
-Message-ID: <20120726081041.GS26120@redhat.com>
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
- <1342826756-64663-9-git-send-email-dsahern@gmail.com>
- <20120723181358.GC6717@infradead.org>
- <500EAF23.8060909@gmail.com>
- <20120724161507.GG3732@erda.amd.com>
- <1343248546.26034.68.camel@twins>
- <20120726055011.GP26120@redhat.com>
- <1343290057.26034.81.camel@twins>
+	id S1752003Ab2GZILP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:11:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36007 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750867Ab2GZILM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 04:11:12 -0400
+Date: Thu, 26 Jul 2012 09:11:10 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: arizona: Implement button detection support
+Message-ID: <20120726081110.GA26373@opensource.wolfsonmicro.com>
+References: <1342800449-10328-1-git-send-email-broonie@opensource.wolfsonmicro.com> <500F8DB4.30401@samsung.com> <20120725111105.GI3099@opensource.wolfsonmicro.com> <50108AE0.5070502@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343290057.26034.81.camel@twins>
+In-Reply-To: <50108AE0.5070502@samsung.com>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 10:07:37AM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-07-26 at 08:50 +0300, Gleb Natapov wrote:
-> > On Wed, Jul 25, 2012 at 10:35:46PM +0200, Peter Zijlstra wrote:
-> > > On Tue, 2012-07-24 at 18:15 +0200, Robert Richter wrote:
-> > > > David,
-> > > > 
-> > > > On 24.07.12 08:20:19, David Ahern wrote:
-> > > > > On 7/23/12 12:13 PM, Arnaldo Carvalho de Melo wrote:
-> > > > > > Em Fri, Jul 20, 2012 at 05:25:53PM -0600, David Ahern escreveu:
-> > > > > >> PEBS cannot be used with guest mode. If user adds :p modifier set
-> > > > > >> exclude_guest as well.
-> > > > > >
-> > > > > > Is this something Intel specific? Or can someone think of an arch where
-> > > > > > this limitation wouldn't exist?
-> > > > > 
-> > > > > Good point. So far precise_ip is used by arch/x86 only. I don't have an 
-> > > > > AMD based server so I don't know if there is a conflict between 
-> > > > > virtualization and IBS. Added Robert for advice.
-> > > > 
-> > > > thanks for this hint.
-> > > > 
-> > > > On AMD cpus precise_ip maps to IBS, which does not support hardware
-> > > > options as perfctrs do. Thus, following attr flags are not supported:
-> > > > 
-> > > >  exclude_user, exclude_kernel, exclude_host, exclude_guest
-> > > > 
-> > > > Counting in guest mode is possible with IBS, but not the exclusion of
-> > > > a certain mode. If precise_ip counting is enabled on AMD we may not
-> > > > set the exclude_guest flag.
-> > > 
-> > > IIRC we have SVM enter/exit hooks in kvm/perf already, we could use
-> > > those to implement exclude_guest for IBS.
-> > > 
-> > > Now I've been trying to find the patches that introduced that, but I'm
-> > > failing horridly. Gleb, got us a pointer here?
-> 
-> > The commit is 144d31e6, but it introduces hook that is used on VMX only.
-> > SVM does not need it to implement guest/host only counters since it
-> > has HW support for that in the PMU.
-> 
-> Right, seems that has changed now that we support IBS.
+On Thu, Jul 26, 2012 at 09:10:08AM +0900, Chanwoo Choi wrote:
 
-Copying Joerg who wrote guest/host exclude code for AMD.
+> If user press BTN_0 and BTN_1 at the same time and then user only
+> released BTN_0 but BTN_1 is still pressed, is it right that report
+> released event to all of buttons? I think that different event between
+> BTN_0 and BTN_1.
 
---
-			Gleb.
+That situation can't occur, the hardware can only detect one button at
+once - if two buttons are pressed simultaneusly only one will be
+reported.  This is just a standard resistive headset button detection
+mechanism.
