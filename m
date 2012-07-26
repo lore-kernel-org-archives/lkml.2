@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab2GZOCC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:02:02 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37355 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab2GZOCA (ORCPT
+	id S1752337Ab2GZOFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:05:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56092 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751619Ab2GZOFh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:02:00 -0400
+	Thu, 26 Jul 2012 10:05:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="177842225"
+From: "Love, Robert W" <robert.w.love@intel.com>
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH] mainline 3.5, fcoe: remove the __exit annotation of
+ fcoe_transport_exit()
+Thread-Topic: [PATCH] mainline 3.5, fcoe: remove the __exit annotation of
+ fcoe_transport_exit()
+Thread-Index: AQHNatsqI6bfWpza7kuufbNrvbHRFJc8Dt4A
+Date: Thu, 26 Jul 2012 14:05:08 +0000
+Message-ID: <50114E80.70303@intel.com>
+References: <1343271764-17501-1-git-send-email-handai.szj@taobao.com>
+In-Reply-To: <1343271764-17501-1-git-send-email-handai.szj@taobao.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
+ Thunderbird/14.0
+x-originating-ip: [10.19.9.42]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <6FDAFB903AD809448DB7E1CFDCFDD7C9@intel.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com>
-References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com>
-Date: Thu, 26 Jul 2012 22:02:00 +0800
-X-Google-Sender-Auth: eJRYHZUKy3o0afk1vDIHnhEqHW8
-Message-ID: <CADRPPNSw5Yn7EgHt5fm2vYr+zxC4T+JbsvT812u2JPKELNcA6g@mail.gmail.com>
-Subject: Re: [PATCH v8 0/7] power management patch set
-From: Li Yang <leoli@freescale.com>
-To: Zhao Chenhui <chenhui.zhao@freescale.com>, scottwood@freescale.com,
-        galak@kernel.crashing.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 8:42 PM, Zhao Chenhui
-<chenhui.zhao@freescale.com> wrote:
-> Changes for v8:
-> * Separated the cpu hotplug patch into three patches, as follows
->   [PATCH v8 1/7] powerpc/smp: use a struct epapr_spin_table to replace macros
->   [PATCH v8 2/7] powerpc/smp: add generic_set_cpu_up() to set cpu_state as CPU_UP_PREPARE
->   [PATCH v8 4/7] powerpc/85xx: add HOTPLUG_CPU support
->
-> * Replaced magic numbers with macros in "[PATCH 5/7] powerpc/85xx: add sleep and deep sleep support"
->
-> * no change to the rest of the patch set
+On 7/25/2012 8:02 PM, Sha Zhengju wrote:
 
-Hi Kumar,
+From: Sha Zhengju <handai.szj@taobao.com><mailto:handai.szj@taobao.com>
 
-How about picking about this series for 3.6?  The review seems to
-settle down for this revision.
+While testing linux mainline v3.5, it comes out the following warning:
+
+WARNING: drivers/scsi/fcoe/libfcoe.o(.init.text+0x21): Section mismatch in reference from the function
+init_module() to the function .exit.text:fcoe_transport_exit()
+The function __init init_module() references a function __exit fcoe_transport_exit().
+This is often seen when error handling in the init function uses functionality in the exit path.
+The fix is often to remove the __exit annotation of fcoe_transport_exit() so it may be used outside an exit section.
 
 
-Hi Scott,
 
-Thanks for the review comments provided.  We'd like to get the ACK
-from you for the series if you can.
+Hi Sha,
 
-Regards,
-Leo
+    Thanks for the patch. I have seen this same change a few times. The warning has existed for the entirety of the 3.5 development cycle. It's currently in scsi.git/for-next. Take a look at this tread from linux-scsi for the discussion about it.
+
+http://marc.info/?l=linux-scsi&m=134103414011479&w=2
+
+Thanks, //Rob
