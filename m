@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab2GZRlM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:41:12 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:48977 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab2GZRlK (ORCPT
+	id S1752426Ab2GZRm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:42:58 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59968 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752094Ab2GZRm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:41:10 -0400
-Date: Thu, 26 Jul 2012 10:39:02 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, arve@android.com,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [PATCH 6/7] kdb: Mark safe commands as KDB_SAFE and
- KDB_SAFE_NO_ARGS
-Message-ID: <20120726173902.GA20023@lizard>
-References: <20120726142514.GA32158@lizard>
- <1343312791-9138-6-git-send-email-anton.vorontsov@linaro.org>
- <20120726180709.09777a3b@pyramind.ukuu.org.uk>
+	Thu, 26 Jul 2012 13:42:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120726180709.09777a3b@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120725182747.GB14996@krava.brq.redhat.com>
+References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+	<1342959280-5361-3-git-send-email-jolsa@redhat.com>
+	<CABPqkBQONxpNAm=rE9JpQ8Pjdfzf6dc707UZWhSzM+E0AAXE-w@mail.gmail.com>
+	<20120725182747.GB14996@krava.brq.redhat.com>
+Date: Thu, 26 Jul 2012 19:42:55 +0200
+Message-ID: <CABPqkBQz88k4Srw+QLu-7OWC=xGtg1DDNFMiRfN10vRsZHVZ0w@mail.gmail.com>
+Subject: Re: [PATCH 02/17] perf: Add ability to attach user level registers
+ dump to sample
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 06:07:09PM +0100, Alan Cox wrote:
-> > The following commands were marked as "safe":
-> > 
-> > 	Clear Breakpoint
-> > 	Enable Breakpoint
-> > 	Disable Breakpoint
-> > 	Display exception frame
-> > 	Stack traceback
-> 
-> This is sufficient to steal cryptographic keys in many environments. In
-> fact you merely need two or three breakpoints and to log the order they
-> are hit through the crypto computation.
+On Wed, Jul 25, 2012 at 8:27 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Wed, Jul 25, 2012 at 07:39:18PM +0200, Stephane Eranian wrote:
+>> On Sun, Jul 22, 2012 at 2:14 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>
+> SNIP
+>
+>> > +       if (sample_type & PERF_SAMPLE_REGS_USER) {
+>> > +               u64 avail = (data->regs_user != NULL);
+>> > +
+>> > +               /*
+>> > +                * If there are no regs to dump, notice it through
+>> > +                * first u64 being zero.
+>> > +                */
+>> > +               perf_output_put(handle, avail);
+>> > +
+>> The only role of avail is to report whether or not you've captured actual
+>> registers. Could it be used to report the sampled process ABI (32 vs. 64)
+>> instead? Something like:
+>>       PERF_SAMPLE_REGS_ABI_NONE -> no regs captured (emulate your
+>> current behavior)
+>>       PERF_SAMPLE_REGS_ABI_32 -> 32 bit ABI regs captured
+>>       PERF_SAMPLE_REGS_ABI_64 -> 64 bit ABI regs captured
+>>
+>> That could help the tools interpret the register values.
+>
+> Yes, I think that could help once we start dealing with compat tasks.
+>
+You don't control whether or not you capture compat tasks. So
+you have to deal with those right now.
 
-Neat. :-)
-
-Breakpoints are no good then.
-
-> > 	Display stack for process
-> 
-> Exposes all sorts of user data unless you mean just the call trace, in
-> which case it's still quite useful.
-> 
-> > 	Display stack all processes
-> 
-> Ditto
-
-What I think is, should we just mark single stepping (as well as
-breakpoints) as unsafe, then it's hard to impossible to use the call
-trace as something meaningful?
-
-> > 	Send a signal to a process
-> 
-> Like say sending SIGSTOP to security monitoring threads or the battery
-> manager on locked devices that rely on software battery management ?
-
-Yeah, will need to zap it too.
-
-> It's an interesting idea but you need almost nothing to extract keys from
-> a system or to subvert it.
-
-Apart from the above issues?
-
-
-(Now it might seem that we cut almost everything from the KDB, but KDB is
-not just about ordinary debugging facilities, like breakpoints or
-variables watch. KDB is a shell that also implements commands to query
-kernel about its state: e.g. in Android case there is "irqs" commands that
-just shows interrupts counters, that is a nice feature if used w/ KDB
-NMI/FIQ debugger[1], so you can see which interrupt is misbehaving.
-There is also a 'dmesg' command, and 'summary' and maybe others.)
-
-Thanks!
-
-[1] http://lwn.net/Articles/506673/
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+> The current userspace code stays untouched, because it checks for
+> 'avail != 0', which stays even with your change.
+>
+> I think this could be sent later with all other fixes I'm already
+> working on. But I can work/send it preferentially before whole patchset
+> is taken if you like.
+>
+Well, why not do it now. You'd have to rename the available field
+into something more sensible. Also need to prepare it for future
+extension if they ever become necessary.
