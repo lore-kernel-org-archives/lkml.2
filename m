@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab2GZFQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 01:16:26 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55484 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab2GZFQZ (ORCPT
+	id S1751540Ab2GZFRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 01:17:49 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:42167
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751067Ab2GZFRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 01:16:25 -0400
-Message-ID: <5010D2B1.3000206@gmail.com>
-Date: Wed, 25 Jul 2012 23:16:33 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 26 Jul 2012 01:17:47 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zzbb2dI98dI9371I936eI1432I4015Izz1202hzz8275eh8275bha1495iz2dh668h839h93fhd25he5bhf0ah107ah)
+X-WSS-ID: 0M7R5D1-01-AKD-02
+X-M-MSG: 
+Message-ID: <5010D2DD.9060201@amd.com>
+Date: Thu, 26 Jul 2012 13:17:17 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120717 Thunderbird/10.0.6
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com> <1342826756-64663-9-git-send-email-dsahern@gmail.com> <20120723181358.GC6717@infradead.org> <500EAF23.8060909@gmail.com> <20120724161507.GG3732@erda.amd.com> <500EDB50.3070704@gmail.com> <20120724180312.GJ6717@infradead.org>
-In-Reply-To: <20120724180312.GJ6717@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: Jeff Garzik <jgarzik@pobox.com>, <linux-scsi@vger.kernel.org>,
+        Lin Ming <minggr@gmail.com>, <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates
+References: <20120725203551.GA19762@havoc.gtf.org>  <50106747.8070501@pobox.com> <5010CBFA.8020907@amd.com> <1343279108.3115.4.camel@dabdike>
+In-Reply-To: <1343279108.3115.4.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Jul 2012 05:17:20.0023 (UTC) FILETIME=[EE3AB270:01CD6AED]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/24/12 12:03 PM, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Jul 24, 2012 at 11:28:48AM -0600, David Ahern escreveu:
->> On 7/24/12 10:15 AM, Robert Richter wrote:
->>> On AMD cpus precise_ip maps to IBS, which does not support hardware
->>> options as perfctrs do. Thus, following attr flags are not supported:
+On 07/26/2012 01:05 PM, James Bottomley wrote:
+> On Thu, 2012-07-26 at 12:47 +0800, Aaron Lu wrote:
+>> On 07/26/2012 05:38 AM, Jeff Garzik wrote:
+>>> On 07/25/2012 04:35 PM, Jeff Garzik wrote:
+>>>> * Updating libata to directly bind with ACPI / runtime power mgmt.
+>>>> This is a pre-req for SATA ZPODD (CD-ROM power management).
+>>>>
+>>>> Touches ACPI (exports++) and SCSI in minor ways. Has been in linux-next
+>>>> for weeks.
+>>>>
+>>>> The rest of [ZPODD] will probably come via SCSI tree, as it involves
+>>>> a lot of updates to the 'sr' driver etc.
+>>>
+>>> BTW Lin and Aaron, note that this did not include these changes:
+>>>
+>>> sr: check support for device busy class events
+>>> sr: support zero power ODD
+>>> sr: make sure ODD is in resumed state in block ioctl
+>>>
+>>> as in the end I wanted to put the brakes on SCSI-touching patches. These
+>>> should be able to go into James' scsi-misc tree with the other SCSI-area
+>>> ZPODD changes.
+>>>
+>>> For those three 'sr' changes listed above, you may add
+>>>
+>>> Acked-by: Jeff Garzik<jgarzik@redhat.com>
+>>>
+>>> when moving them over.
+>>
+>> Thanks Jeff.
+>>
+>> Hi James,
+>> I'll prepare these dropped patches plus some other fixes for ZPODD which
+>> I've sent v2 recently and merge them into v3 for you to review.
 >
->>>   exclude_user, exclude_kernel, exclude_host, exclude_guest
->
->>> Counting in guest mode is possible with IBS, but not the exclusion of
->>> a certain mode. If precise_ip counting is enabled on AMD we may not
->>> set the exclude_guest flag.
->
->> Ok, so with AMD precise_ip requires exclude_guest to be unset; for
->> Intel we need it set.
->
->> So then we look at vendor_id in /proc/cpuinfo?
->
-> Does it return EOPNOTSUPP or something similar if something not
-> supported is asked for?
->
-> Fallbacking, or capability querying if you will, may be the way to do it
-> without having to maintain an userland table for what is possible,
-> leaving it to the kernel drivers for each arch.
+> They weren't exactly dropped ... I've been waiting for you to address
+> Alan Stern's comments, since he's our resident expert on suspend/resume.
 
-Peter's patch (see https://lkml.org/lkml/2012/7/9/298) changes kernel 
-side to require the use of exclude_guest if the precise modifier is 
-used, returning -EOPNOTSUPP if exclude_guest is not set. This patch goes 
-after the user experience: Today if a user specifies -e <event>:p all 
-other modifiers are reset - including exclude_guest. Going forward we 
-need :p to imply :pH if a user has not specified a GH modifer.
+Oh, I forgot to mention, that I agree with Alan's comments and have
+addressed them in my v2 patches here:
+http://marc.info/?l=linux-scsi&m=134312317325650&w=2
 
-We could do nothing and handle the unsupported error and try setting the 
-exclude_guest option - like perf handles other new parameters. But 
-EOPNOTSUPP is not uniquely tied to this error -- e.g., it could be the 
-BTS is not supported (:pp). Also, we have no easy way to discriminate :p 
-from :pG or :pGH. It seems to me perf should not silently undo a user 
-request on the modifier, but inform the user the request is wrong. For 
-example if a user request -e cycles:pG it should not be silently turned 
-into :pH.
+The 2 patches Alan has comments are:
+http://marc.info/?l=linux-scsi&m=134312311025619&w=2
+http://marc.info/?l=linux-scsi&m=134312308225610&w=2
 
-And then yesterday, Robert stated that none of the exclude_xxxx 
-modifiers can be set for the AMD if the precise modifier is used, so we 
-cannot blindly set exclude_guest if precise_ip is set.
+Hi Alan,
+Are the v2 patches look OK to you?
 
-So, seems to me perf need's one action for Intel processors and another 
-for AMD.
+And James,
+Do you want me to rebase these patches on top of scsi-misc tree?
 
-David
-
->
-> We do it now for sample_id_all and some other newer stuff, maybe we can
-> do it for this as well.
->
-> - Arnaldo
->
+Thanks,
+Aaron
 
