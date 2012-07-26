@@ -1,86 +1,558 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab2GZVeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:34:09 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:1763 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab2GZVeD (ORCPT
+	id S1753635Ab2GZVbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:31:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51347 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab2GZVbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:34:03 -0400
-Message-ID: <5011B7B3.3040907@spin.net.au>
-Date: Fri, 27 Jul 2012 07:33:39 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] NTFS code doesn't sanitize folder names sufficiently
-References: <501189DA.4030709@enkore.de>
-In-Reply-To: <501189DA.4030709@enkore.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.244, required 4, AWL 0.26, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+	Thu, 26 Jul 2012 17:31:46 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Nai Xia <nai.xia@gmail.com>, Johannes Weiner <jweiner@redhat.com>
+Subject: [ 28/40] mm: compaction: introduce sync-light migration for use by compaction
+Date: Thu, 26 Jul 2012 14:29:46 -0700
+Message-Id: <20120726211413.652717966@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
+References: <20120726211424.GA7709@kroah.com>
+ <20120726211411.164006056@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marian Beermann wrote:
-> Hello everyone,
->
-> today I noticed some very odd behaviour, which could lead people to 
-> believe a loss of data, because it is possible to create directories 
-> with backslashes in them.
->
-> I am currently running kernel 3.5.
->
-> To completly reproduce the problem to the full extend you'll need a 
-> Windows computer, but to see whats wrong Linux completly suffices :-)
->
-> On a Linux computer
-> 1. Create a directory named TestA on an NTFS partition
-> 2. Create a subdirectory of TestA named TestB
-> 3. Create a third directory alongside TestA named TestA\TestB (the 
-> fundamental problem is this: backslashes in directory names)
->
-> Connect the drive containing the NTFS partition now to a Windows 
-> computer and navigate to the directory containing TestA and 
-> TestA\TestB. If you navigate to the folder (not path!) TestA\TestB 
-> you'll actually see the contents of the path TestA\TestB (the 
-> subfolder TestB) and not the contents of the directory.
-> It is not possible on a Windows machine to access the contents of the 
-> directory named TestA\TestB. This is not a bug in Windows, it's caused 
-> by a bug in the NTFS driver, which allows illegal characters.
->
-> The solution to this would be to disallow creation of files and 
-> folders on NTFS drives containing illegal characters.
->
-> Best regards
-> Marian Beermann
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Yeah that's a tough one. I wouldn't exactly call it a bug. There's 
-probably lots of stuff like this you could do that the command line 
-would allow you to perform but not be a correct and intended function. I 
-would put this down to user error rather than a bug. Anyone with 
-knowledge of operating systems and file system structuring should know 
-that / or \ are illegal characters for creating a directories. Whether 
-it be on Windows or Linux.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-Regards
+From: Mel Gorman <mgorman@suse.de>
 
--- 
-		Chris Jones @ kernel.devproject@gmail.com
-also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
+commit a6bc32b899223a877f595ef9ddc1e89ead5072b8 upstream.
 
-OpenSUSE 12.1 (IceWM/zsh) (PC)|Android 4.0.3 (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
-Linux kernel developer|Solaris kernel developer|BSD kernel developer
-Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
+Stable note: Not tracked in Buzilla. This was part of a series that
+	reduced interactivity stalls experienced when THP was enabled.
+	These stalls were particularly noticable when copying data
+	to a USB stick but the experiences for users varied a lot.
 
-PGP Fingerprint: 4E38 0776 B380 63C8 F64F
-A7D6 736C CF56 42A4 FB35
+This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
+mode that avoids writing back pages to backing storage.  Async compaction
+maps to MIGRATE_ASYNC while sync compaction maps to MIGRATE_SYNC_LIGHT.
+For other migrate_pages users such as memory hotplug, MIGRATE_SYNC is
+used.
+
+This avoids sync compaction stalling for an excessive length of time,
+particularly when copying files to a USB stick where there might be a
+large number of dirty pages backed by a filesystem that does not support
+->writepages.
+
+[aarcange@redhat.com: This patch is heavily based on Andrea's work]
+[akpm@linux-foundation.org: fix fs/nfs/write.c build]
+[akpm@linux-foundation.org: fix fs/btrfs/disk-io.c build]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Cc: Nai Xia <nai.xia@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/btrfs/disk-io.c      |    5 +--
+ fs/hugetlbfs/inode.c    |    2 -
+ fs/nfs/internal.h       |    2 -
+ fs/nfs/write.c          |    4 +-
+ include/linux/fs.h      |    6 ++-
+ include/linux/migrate.h |   23 +++++++++++---
+ mm/compaction.c         |    2 -
+ mm/memory-failure.c     |    2 -
+ mm/memory_hotplug.c     |    2 -
+ mm/mempolicy.c          |    2 -
+ mm/migrate.c            |   78 ++++++++++++++++++++++++++----------------------
+ 11 files changed, 76 insertions(+), 52 deletions(-)
+
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -801,7 +801,8 @@ static int btree_submit_bio_hook(struct
+ 
+ #ifdef CONFIG_MIGRATION
+ static int btree_migratepage(struct address_space *mapping,
+-			struct page *newpage, struct page *page, bool sync)
++			struct page *newpage, struct page *page,
++			enum migrate_mode mode)
+ {
+ 	/*
+ 	 * we can't safely write a btree page from here,
+@@ -816,7 +817,7 @@ static int btree_migratepage(struct addr
+ 	if (page_has_private(page) &&
+ 	    !try_to_release_page(page, GFP_KERNEL))
+ 		return -EAGAIN;
+-	return migrate_page(mapping, newpage, page, sync);
++	return migrate_page(mapping, newpage, page, mode);
+ }
+ #endif
+ 
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -569,7 +569,7 @@ static int hugetlbfs_set_page_dirty(stru
+ 
+ static int hugetlbfs_migrate_page(struct address_space *mapping,
+ 				struct page *newpage, struct page *page,
+-				bool sync)
++				enum migrate_mode mode)
+ {
+ 	int rc;
+ 
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -315,7 +315,7 @@ void nfs_commit_release_pages(struct nfs
+ 
+ #ifdef CONFIG_MIGRATION
+ extern int nfs_migrate_page(struct address_space *,
+-		struct page *, struct page *, bool);
++		struct page *, struct page *, enum migrate_mode);
+ #else
+ #define nfs_migrate_page NULL
+ #endif
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1662,7 +1662,7 @@ out_error:
+ 
+ #ifdef CONFIG_MIGRATION
+ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
+-		struct page *page, bool sync)
++		struct page *page, enum migrate_mode mode)
+ {
+ 	/*
+ 	 * If PagePrivate is set, then the page is currently associated with
+@@ -1677,7 +1677,7 @@ int nfs_migrate_page(struct address_spac
+ 
+ 	nfs_fscache_release_page(page, GFP_KERNEL);
+ 
+-	return migrate_page(mapping, newpage, page, sync);
++	return migrate_page(mapping, newpage, page, mode);
+ }
+ #endif
+ 
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -523,6 +523,7 @@ enum positive_aop_returns {
+ struct page;
+ struct address_space;
+ struct writeback_control;
++enum migrate_mode;
+ 
+ struct iov_iter {
+ 	const struct iovec *iov;
+@@ -612,7 +613,7 @@ struct address_space_operations {
+ 	 * is false, it must not block.
+ 	 */
+ 	int (*migratepage) (struct address_space *,
+-			struct page *, struct page *, bool);
++			struct page *, struct page *, enum migrate_mode);
+ 	int (*launder_page) (struct page *);
+ 	int (*is_partially_uptodate) (struct page *, read_descriptor_t *,
+ 					unsigned long);
+@@ -2481,7 +2482,8 @@ extern int generic_check_addressable(uns
+ 
+ #ifdef CONFIG_MIGRATION
+ extern int buffer_migrate_page(struct address_space *,
+-				struct page *, struct page *, bool);
++				struct page *, struct page *,
++				enum migrate_mode);
+ #else
+ #define buffer_migrate_page NULL
+ #endif
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -6,18 +6,31 @@
+ 
+ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+ 
++/*
++ * MIGRATE_ASYNC means never block
++ * MIGRATE_SYNC_LIGHT in the current implementation means to allow blocking
++ *	on most operations but not ->writepage as the potential stall time
++ *	is too significant
++ * MIGRATE_SYNC will block when migrating pages
++ */
++enum migrate_mode {
++	MIGRATE_ASYNC,
++	MIGRATE_SYNC_LIGHT,
++	MIGRATE_SYNC,
++};
++
+ #ifdef CONFIG_MIGRATION
+ #define PAGE_MIGRATION 1
+ 
+ extern void putback_lru_pages(struct list_head *l);
+ extern int migrate_page(struct address_space *,
+-			struct page *, struct page *, bool);
++			struct page *, struct page *, enum migrate_mode);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 			unsigned long private, bool offlining,
+-			bool sync);
++			enum migrate_mode mode);
+ extern int migrate_huge_pages(struct list_head *l, new_page_t x,
+ 			unsigned long private, bool offlining,
+-			bool sync);
++			enum migrate_mode mode);
+ 
+ extern int fail_migrate_page(struct address_space *,
+ 			struct page *, struct page *);
+@@ -36,10 +49,10 @@ extern int migrate_huge_page_move_mappin
+ static inline void putback_lru_pages(struct list_head *l) {}
+ static inline int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, bool offlining,
+-		bool sync) { return -ENOSYS; }
++		enum migrate_mode mode) { return -ENOSYS; }
+ static inline int migrate_huge_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, bool offlining,
+-		bool sync) { return -ENOSYS; }
++		enum migrate_mode mode) { return -ENOSYS; }
+ 
+ static inline int migrate_prep(void) { return -ENOSYS; }
+ static inline int migrate_prep_local(void) { return -ENOSYS; }
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -577,7 +577,7 @@ static int compact_zone(struct zone *zon
+ 		nr_migrate = cc->nr_migratepages;
+ 		err = migrate_pages(&cc->migratepages, compaction_alloc,
+ 				(unsigned long)cc, false,
+-				cc->sync);
++				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC);
+ 		update_nr_listpages(cc);
+ 		nr_remaining = cc->nr_migratepages;
+ 
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1464,7 +1464,7 @@ int soft_offline_page(struct page *page,
+ 					    page_is_file_cache(page));
+ 		list_add(&page->lru, &pagelist);
+ 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+-								0, true);
++							0, MIGRATE_SYNC);
+ 		if (ret) {
+ 			putback_lru_pages(&pagelist);
+ 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -747,7 +747,7 @@ do_migrate_range(unsigned long start_pfn
+ 		}
+ 		/* this function returns # of failed pages */
+ 		ret = migrate_pages(&source, hotremove_migrate_alloc, 0,
+-								true, true);
++							true, MIGRATE_SYNC);
+ 		if (ret)
+ 			putback_lru_pages(&source);
+ 	}
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -926,7 +926,7 @@ static int migrate_to_node(struct mm_str
+ 
+ 	if (!list_empty(&pagelist)) {
+ 		err = migrate_pages(&pagelist, new_node_page, dest,
+-								false, true);
++							false, MIGRATE_SYNC);
+ 		if (err)
+ 			putback_lru_pages(&pagelist);
+ 	}
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -222,12 +222,13 @@ out:
+ 
+ #ifdef CONFIG_BLOCK
+ /* Returns true if all buffers are successfully locked */
+-static bool buffer_migrate_lock_buffers(struct buffer_head *head, bool sync)
++static bool buffer_migrate_lock_buffers(struct buffer_head *head,
++							enum migrate_mode mode)
+ {
+ 	struct buffer_head *bh = head;
+ 
+ 	/* Simple case, sync compaction */
+-	if (sync) {
++	if (mode != MIGRATE_ASYNC) {
+ 		do {
+ 			get_bh(bh);
+ 			lock_buffer(bh);
+@@ -263,7 +264,7 @@ static bool buffer_migrate_lock_buffers(
+ }
+ #else
+ static inline bool buffer_migrate_lock_buffers(struct buffer_head *head,
+-								bool sync)
++							enum migrate_mode mode)
+ {
+ 	return true;
+ }
+@@ -279,7 +280,7 @@ static inline bool buffer_migrate_lock_b
+  */
+ static int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+-		struct buffer_head *head, bool sync)
++		struct buffer_head *head, enum migrate_mode mode)
+ {
+ 	int expected_count;
+ 	void **pslot;
+@@ -315,7 +316,8 @@ static int migrate_page_move_mapping(str
+ 	 * the mapping back due to an elevated page count, we would have to
+ 	 * block waiting on other references to be dropped.
+ 	 */
+-	if (!sync && head && !buffer_migrate_lock_buffers(head, sync)) {
++	if (mode == MIGRATE_ASYNC && head &&
++			!buffer_migrate_lock_buffers(head, mode)) {
+ 		page_unfreeze_refs(page, expected_count);
+ 		spin_unlock_irq(&mapping->tree_lock);
+ 		return -EAGAIN;
+@@ -478,13 +480,14 @@ EXPORT_SYMBOL(fail_migrate_page);
+  * Pages are locked upon entry and exit.
+  */
+ int migrate_page(struct address_space *mapping,
+-		struct page *newpage, struct page *page, bool sync)
++		struct page *newpage, struct page *page,
++		enum migrate_mode mode)
+ {
+ 	int rc;
+ 
+ 	BUG_ON(PageWriteback(page));	/* Writeback must be complete */
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, sync);
++	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, mode);
+ 
+ 	if (rc)
+ 		return rc;
+@@ -501,17 +504,17 @@ EXPORT_SYMBOL(migrate_page);
+  * exist.
+  */
+ int buffer_migrate_page(struct address_space *mapping,
+-		struct page *newpage, struct page *page, bool sync)
++		struct page *newpage, struct page *page, enum migrate_mode mode)
+ {
+ 	struct buffer_head *bh, *head;
+ 	int rc;
+ 
+ 	if (!page_has_buffers(page))
+-		return migrate_page(mapping, newpage, page, sync);
++		return migrate_page(mapping, newpage, page, mode);
+ 
+ 	head = page_buffers(page);
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page, head, sync);
++	rc = migrate_page_move_mapping(mapping, newpage, page, head, mode);
+ 
+ 	if (rc)
+ 		return rc;
+@@ -521,8 +524,8 @@ int buffer_migrate_page(struct address_s
+ 	 * with an IRQ-safe spinlock held. In the sync case, the buffers
+ 	 * need to be locked now
+ 	 */
+-	if (sync)
+-		BUG_ON(!buffer_migrate_lock_buffers(head, sync));
++	if (mode != MIGRATE_ASYNC)
++		BUG_ON(!buffer_migrate_lock_buffers(head, mode));
+ 
+ 	ClearPagePrivate(page);
+ 	set_page_private(newpage, page_private(page));
+@@ -599,10 +602,11 @@ static int writeout(struct address_space
+  * Default handling if a filesystem does not provide a migration function.
+  */
+ static int fallback_migrate_page(struct address_space *mapping,
+-	struct page *newpage, struct page *page, bool sync)
++	struct page *newpage, struct page *page, enum migrate_mode mode)
+ {
+ 	if (PageDirty(page)) {
+-		if (!sync)
++		/* Only writeback pages in full synchronous migration */
++		if (mode != MIGRATE_SYNC)
+ 			return -EBUSY;
+ 		return writeout(mapping, page);
+ 	}
+@@ -615,7 +619,7 @@ static int fallback_migrate_page(struct
+ 	    !try_to_release_page(page, GFP_KERNEL))
+ 		return -EAGAIN;
+ 
+-	return migrate_page(mapping, newpage, page, sync);
++	return migrate_page(mapping, newpage, page, mode);
+ }
+ 
+ /*
+@@ -630,7 +634,7 @@ static int fallback_migrate_page(struct
+  *  == 0 - success
+  */
+ static int move_to_new_page(struct page *newpage, struct page *page,
+-					int remap_swapcache, bool sync)
++				int remap_swapcache, enum migrate_mode mode)
+ {
+ 	struct address_space *mapping;
+ 	int rc;
+@@ -651,7 +655,7 @@ static int move_to_new_page(struct page
+ 
+ 	mapping = page_mapping(page);
+ 	if (!mapping)
+-		rc = migrate_page(mapping, newpage, page, sync);
++		rc = migrate_page(mapping, newpage, page, mode);
+ 	else if (mapping->a_ops->migratepage)
+ 		/*
+ 		 * Most pages have a mapping and most filesystems provide a
+@@ -660,9 +664,9 @@ static int move_to_new_page(struct page
+ 		 * is the most common path for page migration.
+ 		 */
+ 		rc = mapping->a_ops->migratepage(mapping,
+-						newpage, page, sync);
++						newpage, page, mode);
+ 	else
+-		rc = fallback_migrate_page(mapping, newpage, page, sync);
++		rc = fallback_migrate_page(mapping, newpage, page, mode);
+ 
+ 	if (rc) {
+ 		newpage->mapping = NULL;
+@@ -677,7 +681,7 @@ static int move_to_new_page(struct page
+ }
+ 
+ static int __unmap_and_move(struct page *page, struct page *newpage,
+-				int force, bool offlining, bool sync)
++			int force, bool offlining, enum migrate_mode mode)
+ {
+ 	int rc = -EAGAIN;
+ 	int remap_swapcache = 1;
+@@ -686,7 +690,7 @@ static int __unmap_and_move(struct page
+ 	struct anon_vma *anon_vma = NULL;
+ 
+ 	if (!trylock_page(page)) {
+-		if (!force || !sync)
++		if (!force || mode == MIGRATE_ASYNC)
+ 			goto out;
+ 
+ 		/*
+@@ -732,10 +736,12 @@ static int __unmap_and_move(struct page
+ 
+ 	if (PageWriteback(page)) {
+ 		/*
+-		 * For !sync, there is no point retrying as the retry loop
+-		 * is expected to be too short for PageWriteback to be cleared
++		 * Only in the case of a full syncronous migration is it
++		 * necessary to wait for PageWriteback. In the async case,
++		 * the retry loop is too short and in the sync-light case,
++		 * the overhead of stalling is too much
+ 		 */
+-		if (!sync) {
++		if (mode != MIGRATE_SYNC) {
+ 			rc = -EBUSY;
+ 			goto uncharge;
+ 		}
+@@ -806,7 +812,7 @@ static int __unmap_and_move(struct page
+ 
+ skip_unmap:
+ 	if (!page_mapped(page))
+-		rc = move_to_new_page(newpage, page, remap_swapcache, sync);
++		rc = move_to_new_page(newpage, page, remap_swapcache, mode);
+ 
+ 	if (rc && remap_swapcache)
+ 		remove_migration_ptes(page, page);
+@@ -829,7 +835,8 @@ out:
+  * to the newly allocated page in newpage.
+  */
+ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+-			struct page *page, int force, bool offlining, bool sync)
++			struct page *page, int force, bool offlining,
++			enum migrate_mode mode)
+ {
+ 	int rc = 0;
+ 	int *result = NULL;
+@@ -847,7 +854,7 @@ static int unmap_and_move(new_page_t get
+ 		if (unlikely(split_huge_page(page)))
+ 			goto out;
+ 
+-	rc = __unmap_and_move(page, newpage, force, offlining, sync);
++	rc = __unmap_and_move(page, newpage, force, offlining, mode);
+ out:
+ 	if (rc != -EAGAIN) {
+ 		/*
+@@ -895,7 +902,8 @@ out:
+  */
+ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 				unsigned long private, struct page *hpage,
+-				int force, bool offlining, bool sync)
++				int force, bool offlining,
++				enum migrate_mode mode)
+ {
+ 	int rc = 0;
+ 	int *result = NULL;
+@@ -908,7 +916,7 @@ static int unmap_and_move_huge_page(new_
+ 	rc = -EAGAIN;
+ 
+ 	if (!trylock_page(hpage)) {
+-		if (!force || !sync)
++		if (!force || mode != MIGRATE_SYNC)
+ 			goto out;
+ 		lock_page(hpage);
+ 	}
+@@ -919,7 +927,7 @@ static int unmap_and_move_huge_page(new_
+ 	try_to_unmap(hpage, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
+ 
+ 	if (!page_mapped(hpage))
+-		rc = move_to_new_page(new_hpage, hpage, 1, sync);
++		rc = move_to_new_page(new_hpage, hpage, 1, mode);
+ 
+ 	if (rc)
+ 		remove_migration_ptes(hpage, hpage);
+@@ -962,7 +970,7 @@ out:
+  */
+ int migrate_pages(struct list_head *from,
+ 		new_page_t get_new_page, unsigned long private, bool offlining,
+-		bool sync)
++		enum migrate_mode mode)
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
+@@ -983,7 +991,7 @@ int migrate_pages(struct list_head *from
+ 
+ 			rc = unmap_and_move(get_new_page, private,
+ 						page, pass > 2, offlining,
+-						sync);
++						mode);
+ 
+ 			switch(rc) {
+ 			case -ENOMEM:
+@@ -1013,7 +1021,7 @@ out:
+ 
+ int migrate_huge_pages(struct list_head *from,
+ 		new_page_t get_new_page, unsigned long private, bool offlining,
+-		bool sync)
++		enum migrate_mode mode)
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
+@@ -1030,7 +1038,7 @@ int migrate_huge_pages(struct list_head
+ 
+ 			rc = unmap_and_move_huge_page(get_new_page,
+ 					private, page, pass > 2, offlining,
+-					sync);
++					mode);
+ 
+ 			switch(rc) {
+ 			case -ENOMEM:
+@@ -1159,7 +1167,7 @@ set_status:
+ 	err = 0;
+ 	if (!list_empty(&pagelist)) {
+ 		err = migrate_pages(&pagelist, new_page_node,
+-				(unsigned long)pm, 0, true);
++				(unsigned long)pm, 0, MIGRATE_SYNC);
+ 		if (err)
+ 			putback_lru_pages(&pagelist);
+ 	}
+
 
