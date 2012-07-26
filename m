@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab2GZCKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 22:10:45 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:62412 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab2GZCKK (ORCPT
+	id S1752424Ab2GZCPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 22:15:39 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40610 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab2GZCPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 22:10:10 -0400
-Message-ID: <5010A6FE.7000604@pobox.com>
-Date: Wed, 25 Jul 2012 22:10:06 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 25 Jul 2012 22:15:38 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates
-References: <20120725203551.GA19762@havoc.gtf.org> <20120725204350.GA20530@havoc.gtf.org> <CA+55aFwCCctcmryQJMCT_3TDr60CYBQKu9HMyxOgS8482+w5Xw@mail.gmail.com> <50107297.305@pobox.com> <CA+55aFzun7GebfGZDa73MGLF_808+ROaei5Ag-9HvgUDp1bqLQ@mail.gmail.com> <50107A0D.3060003@pobox.com> <CA+55aFwi7wS3SFZA-45d+KwKi+hqn1GXqRExYmOw6gnSipv5Rg@mail.gmail.com>
-In-Reply-To: <CA+55aFwi7wS3SFZA-45d+KwKi+hqn1GXqRExYmOw6gnSipv5Rg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1343245264-23291-1-git-send-email-tim.gardner@canonical.com>
+References: <1343245264-23291-1-git-send-email-tim.gardner@canonical.com>
+Date: Thu, 26 Jul 2012 10:15:37 +0800
+Message-ID: <CAMiH66GLN02JBVg4MUZ3NXqLFY4zJqZubBhwxmJdhzMwHE0XQA@mail.gmail.com>
+Subject: Re: [PATCH] tlg2300: Declare MODULE_FIRMWARE usage
+From: Huang Shijie <shijie8@gmail.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Kang Yong <kangyong@telegent.com>,
+        Zhang Xiaobing <xbzhang@telegent.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 07:30 PM, Linus Torvalds wrote:
-> On Wed, Jul 25, 2012 at 3:58 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
->>
->> What is the right course in when a post-merge change is needed?
+thanks.
+
+Acked-by: Huang Shijie <shijie8@gmail.com>
+
+On Thu, Jul 26, 2012 at 3:41 AM, Tim Gardner <tim.gardner@canonical.com> wrote:
+> Cc: Huang Shijie <shijie8@gmail.com>
+> Cc: Kang Yong <kangyong@telegent.com>
+> Cc: Zhang Xiaobing <xbzhang@telegent.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: linux-media@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/media/video/tlg2300/pd-main.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 >
-> Just describe the issue and the required change. Than I can just do it
-> as part of the merge, and now the whole series is bisectable,
-> including the merge itself.
+> diff --git a/drivers/media/video/tlg2300/pd-main.c b/drivers/media/video/tlg2300/pd-main.c
+> index c096b3f..7b1f6eb 100644
+> --- a/drivers/media/video/tlg2300/pd-main.c
+> +++ b/drivers/media/video/tlg2300/pd-main.c
+> @@ -53,7 +53,8 @@ int debug_mode;
+>  module_param(debug_mode, int, 0644);
+>  MODULE_PARM_DESC(debug_mode, "0 = disable, 1 = enable, 2 = verbose");
 >
-> Here's a (fairly bad) example:
+> -static const char *firmware_name = "tlg2300_firmware.bin";
+> +#define TLG2300_FIRMWARE "tlg2300_firmware.bin"
+> +static const char *firmware_name = TLG2300_FIRMWARE;
+>  static struct usb_driver poseidon_driver;
+>  static LIST_HEAD(pd_device_list);
 >
->    http://www.spinics.net/lists/netdev/msg192349.html
+> @@ -532,3 +533,4 @@ MODULE_AUTHOR("Telegent Systems");
+>  MODULE_DESCRIPTION("For tlg2300-based USB device ");
+>  MODULE_LICENSE("GPL");
+>  MODULE_VERSION("0.0.2");
+> +MODULE_FIRMWARE(TLG2300_FIRMWARE);
+> --
+> 1.7.9.5
 >
-> and the reason I call that a bad example is not because that's a bad
-> pull request, but simply that those are all real data conflicts, not
-> the more subtle kind of "it merges fine, but because new code
-> introduced uses an interface that changed, you need to do xyz".
-
-Thanks, so noted.  I guess if the merge gets more complex than something 
-easily described in an email, that implies that maintainers should do 
-more cross-coordination and maybe a merge tree.
-
-What's the best way for libata to move forward, now that this hideous 
-merge has been pushed out to the Well Known libata branches?  The 
-pre-jgarzik-merge commit you would have pulled is 
-dc7f71f486f4f5fa96f6dcf86833da020cde8a11 had my pull request been proper.
-
-I can lop off the top 3 commits and force-update the libata-dev.git 
-branches, then send a new pull request -- but you have grumbled at that 
-sort of behavior in maintainer trees before too...
-
-	Jeff
-
-
