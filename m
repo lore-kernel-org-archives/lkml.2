@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab2GZJXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 05:23:52 -0400
-Received: from server19320154104.serverpool.info ([193.201.54.104]:60179 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137Ab2GZJXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 05:23:51 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 05:23:51 EDT
-From: Hauke Mehrtens <hauke@hauke-m.de>
-To: torvalds@linux-foundation.org
-Cc: linville@tuxdriver.com, davem@davemloft.net,
-        brcm80211-dev-list@broadcom.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        seth.forshee@canonical.com, pieterpg@broadcom.com,
-        brudley@broadcom.com, Hauke Mehrtens <hauke@hauke-m.de>,
-        Arend van Spriel <arend@broadcom.com>,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
-Subject: [PATCH] bcma: fix regression in pmu workaround reg masks
-Date: Thu, 26 Jul 2012 11:15:51 +0200
-Message-Id: <1343294151-5691-1-git-send-email-hauke@hauke-m.de>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751947Ab2GZJZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 05:25:16 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57898 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab2GZJZO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 05:25:14 -0400
+Message-ID: <50110CF3.4070308@linux.vnet.ibm.com>
+Date: Thu, 26 Jul 2012 17:25:07 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] KVM: remove dummy pages
+References: <5010C008.4030304@linux.vnet.ibm.com> <5010C083.30102@linux.vnet.ibm.com> <5011062F.3080505@redhat.com>
+In-Reply-To: <5011062F.3080505@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072609-7014-0000-0000-000001A032AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a regression introduced in:
-commit b9562545ef0b13c0440ccd8d6dd4111fb77cb17a
-Author: Hauke Mehrtens <hauke@hauke-m.de>
-Date:   Sat Jun 30 01:44:41 2012 +0200
+On 07/26/2012 04:56 PM, Avi Kivity wrote:
+> On 07/26/2012 06:58 AM, Xiao Guangrong wrote:
+>> Currently, kvm allocates some pages and use them as error indicators,
+>> it wastes memory and is not good for scalability
+>>
+>> Base on Avi's suggestion, we use the error codes instead of these pages
+>> to indicate the error conditions
+>>
+>>
+>> +static pfn_t get_bad_pfn(void)
+>> +{
+>> +	return -ENOENT;
+>> +}
+>> +
+>> +pfn_t get_fault_pfn(void)
+>> +{
+>> +	return -EFAULT;
+>> +}
+>> +EXPORT_SYMBOL_GPL(get_fault_pfn);
+>> +
+>> +static pfn_t get_hwpoison_pfn(void)
+>> +{
+>> +	return -EHWPOISON;
+>> +}
+>> +
+> 
+> Would be better as #defines
 
-    bcma: complete workaround for BCMA43224 and BCM4313
+Okay.
 
-The regression broke reading of the sprom from the chip and seamed to
-cause a change of the pci id on a BCMA43224 device so that it is
-rejected by brcmsmac. If this problem occurred, after applying this
-patch, a cold boot is needed to make the device work again.
+> 
+>>  int is_hwpoison_pfn(pfn_t pfn)
+>>  {
+>> -	return pfn == hwpoison_pfn;
+>> +	return pfn == -EHWPOISON;
+>>  }
+>>  EXPORT_SYMBOL_GPL(is_hwpoison_pfn);
+>>
+>>  int is_noslot_pfn(pfn_t pfn)
+>>  {
+>> -	return pfn == bad_pfn;
+>> +	return pfn == -ENOENT;
+>>  }
+>>  EXPORT_SYMBOL_GPL(is_noslot_pfn);
+>>
+>>  int is_invalid_pfn(pfn_t pfn)
+>>  {
+>> -	return pfn == hwpoison_pfn || pfn == fault_pfn;
+>> +	return !is_noslot_pfn(pfn) && is_error_pfn(pfn);
+>>  }
+>>  EXPORT_SYMBOL_GPL(is_invalid_pfn);
+>>
+> 
+> So is_*_pfn() could go away and be replaced by ==.
+> 
 
-In the original patch the workaround set the intended bits in the chip
-common core chip control registers, but the patch also unset all the
-other bits in that register, because of a wrong mask. The original
-patch was based on code from brcmsmac and there was an additional
-inversing of the mask in the code setting these regs which was missing
-here. Now the regs are set like brcmsmac did it before.
+Okay.
 
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Tested-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: Arend van Spriel <arend@broadcom.com>
-Cc: Rafał Miłecki <zajec5@gmail.com>
----
- drivers/bcma/driver_chipcommon_pmu.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>>  EXPORT_SYMBOL_GPL(gfn_to_page);
+>>
+>>  void kvm_release_page_clean(struct page *page)
+>>  {
+>> -	kvm_release_pfn_clean(page_to_pfn(page));
+>> +	if (!is_error_page(page))
+>> +		kvm_release_pfn_clean(page_to_pfn(page));
+>>  }
+>>  EXPORT_SYMBOL_GPL(kvm_release_page_clean);
+> 
+> Note, we can remove calls to kvm_release_page_clean() from error paths
+> now, so in the future we can drop the test.
+> 
 
-diff --git a/drivers/bcma/driver_chipcommon_pmu.c b/drivers/bcma/driver_chipcommon_pmu.c
-index 4432617..c9a4f46 100644
---- a/drivers/bcma/driver_chipcommon_pmu.c
-+++ b/drivers/bcma/driver_chipcommon_pmu.c
-@@ -110,7 +110,7 @@ void bcma_pmu_workarounds(struct bcma_drv_cc *cc)
- 		/* enable 12 mA drive strenth for 4313 and set chipControl
- 		   register bit 1 */
- 		bcma_chipco_chipctl_maskset(cc, 0,
--					    BCMA_CCTRL_4313_12MA_LED_DRIVE,
-+					    ~BCMA_CCTRL_4313_12MA_LED_DRIVE,
- 					    BCMA_CCTRL_4313_12MA_LED_DRIVE);
- 		break;
- 	case BCMA_CHIP_ID_BCM4331:
-@@ -124,14 +124,14 @@ void bcma_pmu_workarounds(struct bcma_drv_cc *cc)
- 		   register bit 15 */
- 		if (bus->chipinfo.rev == 0) {
- 			bcma_cc_maskset32(cc, BCMA_CC_CHIPCTL,
--					  BCMA_CCTRL_43224_GPIO_TOGGLE,
-+					  ~BCMA_CCTRL_43224_GPIO_TOGGLE,
- 					  BCMA_CCTRL_43224_GPIO_TOGGLE);
- 			bcma_chipco_chipctl_maskset(cc, 0,
--						    BCMA_CCTRL_43224A0_12MA_LED_DRIVE,
-+						    ~BCMA_CCTRL_43224A0_12MA_LED_DRIVE,
- 						    BCMA_CCTRL_43224A0_12MA_LED_DRIVE);
- 		} else {
- 			bcma_chipco_chipctl_maskset(cc, 0,
--						    BCMA_CCTRL_43224B0_12MA_LED_DRIVE,
-+						    ~BCMA_CCTRL_43224B0_12MA_LED_DRIVE,
- 						    BCMA_CCTRL_43224B0_12MA_LED_DRIVE);
- 		}
- 		break;
--- 
-1.7.9.5
+Right, since the release path (kvm_release_page_clean) is used in many place
+and on many architectures, i did the change as small as possible for good
+review.
+
+> Since my comments are better done as a separate patch, 
+
+Yes, i will make a patch to apply all your comments. Thank you, Avi!
 
