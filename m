@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab2GZL4u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:56:50 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:46818 "EHLO
+	id S1752769Ab2GZL4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:56:49 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:38873 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2GZLzn (ORCPT
+	with ESMTP id S1752546Ab2GZLzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:55:43 -0400
+	Thu, 26 Jul 2012 07:55:45 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v4 11/17] vfs: fix linkat to retry on ESTALE errors
-Date: Thu, 26 Jul 2012 07:55:14 -0400
-Message-Id: <1343303720-11199-12-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v4 12/17] vfs: make rmdir retry on ESTALE errors
+Date: Thu, 26 Jul 2012 07:55:15 -0400
+Message-Id: <1343303720-11199-13-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
 References: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
@@ -24,98 +24,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c | 67 ++++++++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 43 insertions(+), 24 deletions(-)
+ fs/namei.c | 82 +++++++++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 46 insertions(+), 36 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 5a81c48..defb210 100644
+index defb210..09427f2 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -3445,6 +3445,8 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	struct path old_path, new_path;
- 	int how = 0;
- 	int error;
-+	char *old, *new;
+@@ -3152,52 +3152,62 @@ out:
+ static long do_rmdir(int dfd, const char __user *pathname)
+ {
+ 	int error = 0;
+-	char * name;
++	char *name;
+ 	struct dentry *dentry;
+ 	struct nameidata nd;
 +	unsigned int try = 0;
++	unsigned int lookup_flags = LOOKUP_PARENT;
  
- 	if ((flags & ~(AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0)
- 		return -EINVAL;
-@@ -3462,34 +3464,51 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	if (flags & AT_SYMLINK_FOLLOW)
- 		how |= LOOKUP_FOLLOW;
- 
--	error = user_path_at(olddfd, oldname, how, &old_path);
+-	error = user_path_parent(dfd, pathname, &nd, &name);
 -	if (error)
 -		return error;
-+	old = getname_flags(oldname, how, NULL);
-+	if (IS_ERR(old))
-+		return PTR_ERR(old);
++	name = getname(pathname);
++	if (IS_ERR(name))
++		return PTR_ERR(name);
  
--	new_dentry = user_path_create(newdfd, newname, &new_path, 0);
--	error = PTR_ERR(new_dentry);
--	if (IS_ERR(new_dentry))
--		goto out;
-+	new = getname(newname);
-+	if (IS_ERR(new)) {
-+		putname(old);
-+		return PTR_ERR(new);
-+	}
- 
--	error = -EXDEV;
--	if (old_path.mnt != new_path.mnt)
--		goto out_dput;
--	error = mnt_want_write(new_path.mnt);
--	if (error)
--		goto out_dput;
--	error = security_path_link(old_path.dentry, &new_path, new_dentry);
--	if (error)
--		goto out_drop_write;
--	error = vfs_link(old_path.dentry, new_path.dentry->d_inode, new_dentry);
+-	switch(nd.last_type) {
+-	case LAST_DOTDOT:
+-		error = -ENOTEMPTY;
+-		goto exit1;
+-	case LAST_DOT:
+-		error = -EINVAL;
+-		goto exit1;
+-	case LAST_ROOT:
+-		error = -EBUSY;
+-		goto exit1;
+-	}
 +	do {
-+		error = kern_path_at(olddfd, old, how, &old_path);
++		error = do_path_lookup(dfd, name, lookup_flags, &nd);
 +		if (error)
 +			break;
-+
-+		new_dentry = kern_path_create(newdfd, new, &new_path, 0, try);
-+		error = PTR_ERR(new_dentry);
-+		if (IS_ERR(new_dentry)) {
-+			path_put(&old_path);
-+			break;
+ 
+-	nd.flags &= ~LOOKUP_PARENT;
++		switch (nd.last_type) {
++		case LAST_DOTDOT:
++			error = -ENOTEMPTY;
++			goto exit1;
++		case LAST_DOT:
++			error = -EINVAL;
++			goto exit1;
++		case LAST_ROOT:
++			error = -EBUSY;
++			goto exit1;
 +		}
+ 
+-	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (IS_ERR(dentry))
+-		goto exit2;
+-	if (!dentry->d_inode) {
+-		error = -ENOENT;
+-		goto exit3;
+-	}
+-	error = mnt_want_write(nd.path.mnt);
+-	if (error)
+-		goto exit3;
+-	error = security_path_rmdir(&nd.path, dentry);
+-	if (error)
+-		goto exit4;
+-	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
++		nd.flags &= ~LOOKUP_PARENT;
 +
-+		error = -EXDEV;
-+		if (old_path.mnt != new_path.mnt)
-+			goto out_dput;
-+		error = mnt_want_write(new_path.mnt);
++		mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex,
++							I_MUTEX_PARENT);
++		dentry = lookup_hash(&nd);
++		error = PTR_ERR(dentry);
++		if (IS_ERR(dentry))
++			goto exit2;
++		if (!dentry->d_inode) {
++			error = -ENOENT;
++			goto exit3;
++		}
++		error = mnt_want_write(nd.path.mnt);
 +		if (error)
-+			goto out_dput;
-+		error = security_path_link(old_path.dentry, &new_path,
-+					new_dentry);
++			goto exit3;
++		error = security_path_rmdir(&nd.path, dentry);
 +		if (error)
-+			goto out_drop_write;
-+		error = vfs_link(old_path.dentry, new_path.dentry->d_inode,
-+				new_dentry);
- out_drop_write:
--	mnt_drop_write(new_path.mnt);
-+		mnt_drop_write(new_path.mnt);
- out_dput:
--	dput(new_dentry);
--	mutex_unlock(&new_path.dentry->d_inode->i_mutex);
--	path_put(&new_path);
--out:
--	path_put(&old_path);
--
-+		dput(new_dentry);
-+		mutex_unlock(&new_path.dentry->d_inode->i_mutex);
-+		path_put(&new_path);
-+		path_put(&old_path);
-+		how |= LOOKUP_REVAL;
++			goto exit4;
++		error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
+ exit4:
+-	mnt_drop_write(nd.path.mnt);
++		mnt_drop_write(nd.path.mnt);
+ exit3:
+-	dput(dentry);
++		dput(dentry);
+ exit2:
+-	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
++		mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ exit1:
+-	path_put(&nd.path);
++		path_put(&nd.path);
++		lookup_flags |= LOOKUP_REVAL;
 +	} while (retry_estale(error, try++));
-+	putname(new);
-+	putname(old);
+ 	putname(name);
  	return error;
  }
- 
 -- 
 1.7.11.2
 
