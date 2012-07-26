@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab2GZLVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:21:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42185 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab2GZLV2 (ORCPT
+	id S1752690Ab2GZLWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:22:37 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63779 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab2GZLV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:21:28 -0400
+	Thu, 26 Jul 2012 07:21:29 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: eparis@redhat.com, viro@zeniv.linux.org.uk
 Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 6/9] audit: remove dirlen argument to audit_compare_dname_path
-Date: Thu, 26 Jul 2012 07:21:10 -0400
-Message-Id: <1343301673-10642-7-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v5 7/9] audit: make audit_compare_dname_path use parent_len helper
+Date: Thu, 26 Jul 2012 07:21:11 -0400
+Message-Id: <1343301673-10642-8-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
 References: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
@@ -21,89 +21,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the callers set this to NULL now.
+From: Eric Paris <eparis@redhat.com>
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
- kernel/audit.h       | 3 +--
- kernel/audit_watch.c | 2 +-
- kernel/auditfilter.c | 6 +-----
- kernel/auditsc.c     | 4 ++--
- 4 files changed, 5 insertions(+), 10 deletions(-)
+ kernel/auditfilter.c | 27 +++++++--------------------
+ 1 file changed, 7 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/audit.h b/kernel/audit.h
-index 276ca88..ee31316 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -77,8 +77,7 @@ static inline int audit_hash_ino(u32 ino)
- extern int audit_match_class(int class, unsigned syscall);
- extern int audit_comparator(const u32 left, const u32 op, const u32 right);
- extern int parent_len(const char *path);
--extern int audit_compare_dname_path(const char *dname, const char *path,
--				    int *dirlen);
-+extern int audit_compare_dname_path(const char *dname, const char *path);
- extern struct sk_buff *	    audit_make_reply(int pid, int seq, int type,
- 					     int done, int multi,
- 					     const void *payload, int size);
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index 3823281..b6a873a 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -265,7 +265,7 @@ static void audit_update_watch(struct audit_parent *parent,
- 	/* Run all of the watches on this parent looking for the one that
- 	 * matches the given dname */
- 	list_for_each_entry_safe(owatch, nextw, &parent->watches, wlist) {
--		if (audit_compare_dname_path(dname, owatch->path, NULL))
-+		if (audit_compare_dname_path(dname, owatch->path))
- 			continue;
- 
- 		/* If the update involves invalidating rules, do the inode-based
 diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 29b167b..f9c48d0 100644
+index f9c48d0..f47ba18 100644
 --- a/kernel/auditfilter.c
 +++ b/kernel/auditfilter.c
-@@ -1230,8 +1230,7 @@ int parent_len(const char *path)
- 
- /* Compare given dentry name with last component in given path,
+@@ -1232,32 +1232,19 @@ int parent_len(const char *path)
   * return of 0 indicates a match. */
--int audit_compare_dname_path(const char *dname, const char *path,
--			     int *dirlen)
-+int audit_compare_dname_path(const char *dname, const char *path)
+ int audit_compare_dname_path(const char *dname, const char *path)
  {
- 	int dlen, plen;
+-	int dlen, plen;
++	int dlen, pathlen, parentlen;
  	const char *p;
-@@ -1260,9 +1259,6 @@ int audit_compare_dname_path(const char *dname, const char *path,
- 			p++;
- 	}
  
--	/* return length of path's directory component */
--	if (dirlen)
--		*dirlen = p - path;
+-	if (!dname || !path)
+-		return 1;
+-
+ 	dlen = strlen(dname);
+-	plen = strlen(path);
+-	if (plen < dlen)
++	pathlen = strlen(path);
++	if (pathlen < dlen)
+ 		return 1;
+ 
+-	/* disregard trailing slashes */
+-	p = path + plen - 1;
+-	while ((*p == '/') && (p > path))
+-		p--;
+-
+-	/* find last path component */
+-	p = p - dlen + 1;
+-	if (p < path)
++	parentlen = parent_len(path);
++	if (pathlen - parentlen != dlen)
+ 		return 1;
+-	else if (p > path) {
+-		if (*--p != '/')
+-			return 1;
+-		else
+-			p++;
+-	}
++
++	p = path + parentlen;
+ 
  	return strncmp(p, dname, dlen);
  }
- 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index e9f8b60..34d7ab2 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -2232,7 +2232,7 @@ void __audit_inode_child(const struct inode *parent,
- 			continue;
- 
- 		if (n->ino == parent->i_ino &&
--		    !audit_compare_dname_path(dname, n->name, NULL)) {
-+		    !audit_compare_dname_path(dname, n->name)) {
- 			found_parent = n->name;
- 			goto add_names;
- 		}
-@@ -2245,7 +2245,7 @@ void __audit_inode_child(const struct inode *parent,
- 
- 		/* strcmp() is the more likely scenario */
- 		if (!strcmp(dname, n->name) ||
--		     !audit_compare_dname_path(dname, n->name, NULL)) {
-+		     !audit_compare_dname_path(dname, n->name)) {
- 			if (inode)
- 				audit_copy_inode(n, dentry, inode);
- 			else
 -- 
 1.7.11.2
 
