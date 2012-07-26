@@ -1,75 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab2GZLfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:35:25 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:56173 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751341Ab2GZLfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:35:24 -0400
+	id S1752367Ab2GZLgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:36:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108Ab2GZLgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 07:36:12 -0400
+Date: Thu, 26 Jul 2012 17:05:37 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
+        Borislav Petkov <bp@amd64.org>,
+        virtualization@lists.linux-foundation.org,
+        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
+Message-ID: <20120726113537.GH9473@amit.redhat.com>
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-In-Reply-To: <CAKVbJB96Y87=a1dOskYX472Um3w=_orQWN19_Yj+iRp7js9Anw@mail.gmail.com>
-References: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
- <CANfBPZ-amdTBXMbj0E2SrMHBjHFnd8cuC4ASoygkbXC+5oeAGg@mail.gmail.com> <CAKVbJB96Y87=a1dOskYX472Um3w=_orQWN19_Yj+iRp7js9Anw@mail.gmail.com>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Thu, 26 Jul 2012 17:05:02 +0530
-Message-ID: <CANfBPZ97FvXnx0JtsDtDhYRxB=f38NsxcvvO4UOqN_sOYe_Rcg@mail.gmail.com>
-Subject: Re: [PATCH V3 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
-To: vinayak holikatti <vinholikatti@gmail.com>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
-        sreekumar.c@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 4:42 PM, vinayak holikatti
-<vinholikatti@gmail.com> wrote:
-> On Thu, Jul 26, 2012 at 4:02 PM, S, Venkatraman <svenkatr@ti.com> wrote:
->> On Thu, Jul 26, 2012 at 2:12 PM, Vinayak Holikatti
->> <vinholikatti@gmail.com> wrote:
->>> This patch set adds following features
->>>  - Seggregate PCI specific code in ufshcd.c
->>>  - Adds PCI glue driver ufshcd-pci.c and ufshcd.c become core module
->>>  - Adds Platform glue driver ufshcd-pltfrm.c
->>>  - Update correct transfer size in Command UPIU
->>>
->>> Vinayak Holikatti (4):
->>>   [SCSI] drivers/scsi/ufs: Seggregate PCI Specific Code
->>>   [SCSI] drivers/scsi/ufs: Separate PCI code into glue driver
->>>   [SCSI] ufs: Add Platform glue driver for ufshcd
->>>   [SCSI] ufs: Correct the expected data transfer size
->>>
->>>  drivers/scsi/ufs/Kconfig         |   37 +++-
->>>  drivers/scsi/ufs/Makefile        |    2 +
->>>  drivers/scsi/ufs/ufshcd-pci.c    |  228 ++++++++++++++++++++
->>>  drivers/scsi/ufs/ufshcd-pltfrm.c |  222 ++++++++++++++++++++
->>>  drivers/scsi/ufs/ufshcd.c        |  422 ++++++--------------------------------
->>>  drivers/scsi/ufs/ufshcd.h        |  206 +++++++++++++++++++
->>>  drivers/scsi/ufs/ufshcd_common.h |   53 +++++
->>>  7 files changed, 813 insertions(+), 357 deletions(-)
->>
->> Two minor observations..
->> 1) If both pci and platform have to do the exact same thing in their
->> _suspend() and _resume() routines, perhaps there is scope for making
->> them as common (the steps outlined in them should be done in core
->> ufshcd) ?
-> Both will not have to do the exact same thing. We have plan to implement
-> ufshcd_suspend and ufshcd_resume which will be generic and will be part
-> of ufshcd core, as you said.
+On (Tue) 24 Jul 2012 [11:36:57], Yoshihiro YUNOMAE wrote:
+> Hi All,
+> 
+> The following patch set provides a low-overhead system for collecting kernel
+> tracing data of guests by a host in a virtualization environment.
+> 
+> A guest OS generally shares some devices with other guests or a host, so
+> reasons of any problems occurring in a guest may be from other guests or a host.
+> Then, to collect some tracing data of a number of guests and a host is needed
+> when some problems occur in a virtualization environment. One of methods to
+> realize that is to collect tracing data of guests in a host. To do this, network
+> is generally used. However, high load will be taken to applications on guests
+> using network I/O because there are many network stack layers. Therefore,
+> a communication method for collecting the data without using network is needed.
+> 
+> We submitted a patch set of "IVRing", a ring-buffer driver constructed on
+> Inter-VM shared memory (IVShmem), to LKML http://lwn.net/Articles/500304/ in
+> this June. IVRing and the IVRing reader use POSIX shared memory each other
+> without using network, so a low-overhead system for collecting guest tracing
+> data is realized. However, this patch set has some problems as follows:
+>  - use IVShmem instead of virtio
+>  - create a new ring-buffer without using existing ring-buffer in kernel
+>  - scalability
+>    -- not support SMP environment
+>    -- buffer size limitation
+>    -- not support live migration (maybe difficult for realize this)
+> 
+> Therefore, we propose a new system "virtio-trace", which uses enhanced
+> virtio-serial and existing ring-buffer of ftrace, for collecting guest kernel
+> tracing data. In this system, there are 5 main components:
+>  (1) Ring-buffer of ftrace in a guest
+>      - When trace agent reads ring-buffer, a page is removed from ring-buffer.
+>  (2) Trace agent in the guest
+>      - Splice the page of ring-buffer to read_pipe using splice() without
+>        memory copying. Then, the page is spliced from write_pipe to virtio
+>        without memory copying.
 
-Thanks. The comments in the driver files don't reflect this; it'd be
-wise to create
-the placeholder for core_suspend()/resume() in ufshcd.c, instead of
-the platform drivers.
+I really like the splicing idea.
 
->>
->> 2) Need to include ufshcd_common.h in ufshcd.c so that the prototypes
->> are supplied for the exported functions.
-> Thank you, I will make necessary changes in next version of patches.
->
+>  (3) Virtio-console driver in the guest
+>      - Pass the page to virtio-ring
+>  (4) Virtio-serial bus in QEMU
+>      - Copy the page to kernel pipe
+>  (5) Reader in the host
+>      - Read guest tracing data via FIFO(named pipe) 
+
+So will this be useful only if guest and host run the same kernel?
+
+I'd like to see the host kernel not being used at all -- collect all
+relevant info from the guest and send it out to qemu, where it can be
+consumed directly by apps driving the tracing.
+
+> ***Evaluation***
+> When a host collects tracing data of a guest, the performance of using
+> virtio-trace is compared with that of using native(just running ftrace),
+> IVRing, and virtio-serial(normal method of read/write).
+
+Why is tracing performance-sensitive?  i.e. why try to optimise this
+at all?
+
+> <environment>
+> The overview of this evaluation is as follows:
+>  (a) A guest on a KVM is prepared.
+>      - The guest is dedicated one physical CPU as a virtual CPU(VCPU).
+> 
+>  (b) The guest starts to write tracing data to ring-buffer of ftrace.
+>      - The probe points are all trace points of sched, timer, and kmem.
+> 
+>  (c) Writing trace data, dhrystone 2 in UNIX bench is executed as a benchmark
+>      tool in the guest.
+>      - Dhrystone 2 intends system performance by repeating integer arithmetic
+>        as a score.
+>      - Since higher score equals to better system performance, if the score
+>        decrease based on bare environment, it indicates that any operation
+>        disturbs the integer arithmetic. Then, we define the overhead of
+>        transporting trace data is calculated as follows:
+> 		OVERHEAD = (1 - SCORE_OF_A_METHOD/NATIVE_SCORE) * 100.
+> 
+> The performance of each method is compared as follows:
+>  [1] Native
+>      - only recording trace data to ring-buffer on a guest
+>  [2] Virtio-trace
+>      - running a trace agent on a guest
+>      - a reader on a host opens FIFO using cat command
+>  [3] IVRing
+>      - A SystemTap script in a guest records trace data to IVRing.
+>        -- probe points are same as ftrace.
+>  [4] Virtio-serial(normal)
+>      - A reader(using cat) on a guest output trace data to a host using
+>        standard output via virtio-serial.
+> 
+> Other information is as follows:
+>  - host
+>    kernel: 3.3.7-1 (Fedora16)
+>    CPU: Intel Xeon x5660@2.80GHz(12core)
+>    Memory: 48GB
+> 
+>  - guest(only booting one guest)
+>    kernel: 3.5.0-rc4+ (Fedora16)
+>    CPU: 1VCPU(dedicated)
+>    Memory: 1GB
+> 
+> <result>
+> 3 patterns based on the bare environment were indicated as follows:
+> 	                   Scores      overhead against [0] Native
+>     [0] Native:          28807569.5               -
+>     [1] Virtio-trace:    28685049.5             0.43%
+>     [2] IVRing:          28418595.5             1.35%
+>     [3] Virtio-serial:   13262258.7            53.96%
+> 
+> 
+> ***Just enhancement ideas***
+>  - Support for trace-cmd
+>  - Support for 9pfs protocol
+>  - Support for non-blocking mode in QEMU
+
+There were patches long back (by me) to make chardevs non-blocking but
+they didn't make it upstream.  Fedora carries them, if you want to try
+out.  Though we want to converge on a reasonable solution that's
+acceptable upstream as well.  Just that no one's working on it
+currently.  Any help here will be appreciated.
+
+>  - Make "vhost-serial"
+
+I need to understand a) why it's perf-critical, and b) why should the
+host be involved at all, to comment on these.
+
+Thanks,
+
+		Amit
