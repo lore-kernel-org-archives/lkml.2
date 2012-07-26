@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab2GZL5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:57:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50628 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752492Ab2GZL5v (ORCPT
+	id S1752637Ab2GZL60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:58:26 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:46818 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab2GZLzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:57:51 -0400
-Date: Thu, 26 Jul 2012 12:57:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 04/21] ASoC: ux500: Strengthen error checking after
- memory allocation
-Message-ID: <20120726115749.GF3099@opensource.wolfsonmicro.com>
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
- <1343298534-13611-5-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ugMgaRwDDWDxqvmW"
-Content-Disposition: inline
-In-Reply-To: <1343298534-13611-5-git-send-email-lee.jones@linaro.org>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Jul 2012 07:55:42 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
+        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
+Subject: [PATCH v4 10/17] vfs: fix symlinkat to retry on ESTALE errors
+Date: Thu, 26 Jul 2012 07:55:13 -0400
+Message-Id: <1343303720-11199-11-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
+References: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c | 43 ++++++++++++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 17 deletions(-)
 
---ugMgaRwDDWDxqvmW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+diff --git a/fs/namei.c b/fs/namei.c
+index 4bec3f4..5a81c48 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3340,33 +3340,42 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
+ 		int, newdfd, const char __user *, newname)
+ {
+ 	int error;
+-	char *from;
++	char *from, *to;
+ 	struct dentry *dentry;
+ 	struct path path;
++	unsigned int try = 0;
+ 
+ 	from = getname(oldname);
+ 	if (IS_ERR(from))
+ 		return PTR_ERR(from);
+ 
+-	dentry = user_path_create(newdfd, newname, &path, 0);
+-	error = PTR_ERR(dentry);
+-	if (IS_ERR(dentry))
+-		goto out_putname;
++	to = getname(newname);
++	if (IS_ERR(to)) {
++		putname(from);
++		return PTR_ERR(to);
++	}
+ 
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto out_dput;
+-	error = security_path_symlink(&path, dentry, from);
+-	if (error)
+-		goto out_drop_write;
+-	error = vfs_symlink(path.dentry->d_inode, dentry, from);
++	do {
++		dentry = kern_path_create(newdfd, to, &path, 0, try);
++		error = PTR_ERR(dentry);
++		if (IS_ERR(dentry))
++			break;
++
++		error = mnt_want_write(path.mnt);
++		if (error)
++			goto out_dput;
++		error = security_path_symlink(&path, dentry, from);
++		if (error)
++			goto out_drop_write;
++		error = vfs_symlink(path.dentry->d_inode, dentry, from);
+ out_drop_write:
+-	mnt_drop_write(path.mnt);
++		mnt_drop_write(path.mnt);
+ out_dput:
+-	dput(dentry);
+-	mutex_unlock(&path.dentry->d_inode->i_mutex);
+-	path_put(&path);
+-out_putname:
++		dput(dentry);
++		mutex_unlock(&path.dentry->d_inode->i_mutex);
++		path_put(&path);
++	} while (retry_estale(error, try++));
++	putname(to);
+ 	putname(from);
+ 	return error;
+ }
+-- 
+1.7.11.2
 
-On Thu, Jul 26, 2012 at 11:28:37AM +0100, Lee Jones wrote:
-> Currently there is no out-of-memory error checking after attempting
-> to allocate memory for the ux500_msp or ux500_msp_i2s_drvdata data
-> structures. Instead we go about populating them regardless. This
-> patch applies the necessary error checking to prevent a panic.
-
-Applied, thanks.
-
---ugMgaRwDDWDxqvmW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQETC1AAoJEBus8iNuMP3dvEgQAJQQ4N0si8kBeBLoLos27IxL
-43adUukfh/hAESFOWfiLbieCHjAig+XSRMKfpKWkM2/2cWNV6Ps1s1P1SG+xTVZE
-fFYtNNtPWZpRp7d4TlT5EvY9NHq8ZYPW12917nOsJGlgxSPqZmYRLM0wB//dmF4d
-yY6O9iPY0aEr2fRsOWVOFTrUZFJPOW2r0OFqK9WYtv8PcgzFaSEyF2bKuYf+fFWL
-9jjeNh18NcCoHAqFRCAadoG+6SmGJPl2rEVT4taR2sg13m7rCg3fLgLh9iDgEWDU
-oHlQcRtc+Byqct1+YdB87zg12u9fTihU49ggxdLi15eEA1Lu59OlZZkzxocoylo9
-gPMF1kFMbuMav3lJN2ZhLz4AnjYEoaX2ySOz12p9dqvKlseyYiX/QDvZSs6iLJ9/
-yLbUFOaAxb317euq3j27Az236/1u0mGPCUlB4ynbLLaC/vRIZeOFyFYX+o8iWcao
-E8bGe/+DA2USmlt8dsSS+YAuqGJ49HazdnnOhIp9UoQLIzzPTB/PN9617V2ZqMtl
-U8UX0Sm41BX3npgLTfE7rXfpD5WDivrqz67U31r/ovw0rHtn6CNAroWvWkwPkpfX
-iuDkYDuQYZ97qRCHWhLKA6cyielO/2KSJ70aD0r4qkk+3ltpHEsYcwafao4pvv8h
-uMARFIixaSeXsWZv2P03
-=29+Z
------END PGP SIGNATURE-----
-
---ugMgaRwDDWDxqvmW--
