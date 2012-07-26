@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab2GZVVh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:21:37 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:45953 "EHLO
+	id S1753199Ab2GZVVx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:21:53 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:43844 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab2GZVVe (ORCPT
+	with ESMTP id S1753131Ab2GZVVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:21:34 -0400
+	Thu, 26 Jul 2012 17:21:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Daney <david.daney@cavium.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [ 14/23] MIPS: Properly align the .data..init_task section.
-Date: Thu, 26 Jul 2012 14:19:53 -0700
-Message-Id: <20120726211407.157467961@linuxfoundation.org>
+        Daniel Nicoletti <dantti12@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 11/23] HID: add battery quirk for Apple Wireless ANSI
+Date: Thu, 26 Jul 2012 14:19:50 -0700
+Message-Id: <20120726211406.893492664@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -31,66 +30,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: David Daney <david.daney@cavium.com>
+From: Daniel Nicoletti <dantti12@gmail.com>
 
-commit 7b1c0d26a8e272787f0f9fcc5f3e8531df3b3409 upstream.
+commit 0c47935c5b5cd4916cf1c1ed4a2894807f7bcc3e upstream.
 
-Improper alignment can lead to unbootable systems and/or random
-crashes.
+Add USB_DEVICE_ID_APPLE_ALU_WIRELESS_ANSI, to the quirk list since it report
+wrong feature type and wrong percentage range.
 
-[ralf@linux-mips.org: This is a lond standing bug since
-6eb10bc9e2deab06630261cd05c4cb1e9a60e980 (kernel.org) rsp.
-c422a10917f75fd19fa7fe070aaaa23e384dae6f (lmo) [MIPS: Clean up linker script
-using new linker script macros.] so dates back to 2.6.32.]
-
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/3881/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Daniel Nicoletti <dantti12@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/include/asm/thread_info.h |    4 ++--
- arch/mips/kernel/vmlinux.lds.S      |    3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/hid/hid-input.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/mips/include/asm/thread_info.h
-+++ b/arch/mips/include/asm/thread_info.h
-@@ -60,6 +60,8 @@ struct thread_info {
- register struct thread_info *__current_thread_info __asm__("$28");
- #define current_thread_info()  __current_thread_info
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -290,6 +290,9 @@ static const struct hid_device_id hid_ba
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
+ 			       USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI),
+ 	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
++		USB_DEVICE_ID_APPLE_ALU_WIRELESS_ANSI),
++	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
+ 	{}
+ };
  
-+#endif /* !__ASSEMBLY__ */
-+
- /* thread information allocation */
- #if defined(CONFIG_PAGE_SIZE_4KB) && defined(CONFIG_32BIT)
- #define THREAD_SIZE_ORDER (1)
-@@ -97,8 +99,6 @@ register struct thread_info *__current_t
- 
- #define free_thread_info(info) kfree(info)
- 
--#endif /* !__ASSEMBLY__ */
--
- #define PREEMPT_ACTIVE		0x10000000
- 
- /*
---- a/arch/mips/kernel/vmlinux.lds.S
-+++ b/arch/mips/kernel/vmlinux.lds.S
-@@ -1,5 +1,6 @@
- #include <asm/asm-offsets.h>
- #include <asm/page.h>
-+#include <asm/thread_info.h>
- #include <asm-generic/vmlinux.lds.h>
- 
- #undef mips
-@@ -72,7 +73,7 @@ SECTIONS
- 	.data : {	/* Data */
- 		. = . + DATAOFFSET;		/* for CONFIG_MAPPED_KERNEL */
- 
--		INIT_TASK_DATA(PAGE_SIZE)
-+		INIT_TASK_DATA(THREAD_SIZE)
- 		NOSAVE_DATA
- 		CACHELINE_ALIGNED_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
- 		READ_MOSTLY_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
 
 
