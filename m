@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab2GZN22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 09:28:28 -0400
+	id S1752381Ab2GZN2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 09:28:41 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:49739 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab2GZN20 (ORCPT
+	with ESMTP id S1751500Ab2GZN2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 09:28:26 -0400
+	Thu, 26 Jul 2012 09:28:30 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-scsi@vger.kernel.org, kvm@vger.kernel.org, JBottomley@parallels.com,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 0/2] virtio-scsi fixes for 3.6
-Date: Thu, 26 Jul 2012 15:28:06 +0200
-Message-Id: <1343309288-32615-1-git-send-email-pbonzini@redhat.com>
+        virtualization@lists.linux-foundation.org, <stable@vger.kernel.org>
+Subject: [PATCH 1/2] virtio-scsi: fix LUNs greater than 255
+Date: Thu, 26 Jul 2012 15:28:07 +0200
+Message-Id: <1343309288-32615-2-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1343309288-32615-1-git-send-email-pbonzini@redhat.com>
+References: <1343309288-32615-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James,
+virtio-scsi needs to report LUNs greater than 256 using the "flat"
+format.  Because the Linux SCSI layer just maps the SCSI LUN to
+an u32, without any parsing, these end up in the range from 16640
+to 32767.  Fix max_lun to account for the possibility that logical
+unit numbers are encoded with the "flat" format.
 
-patch 1 fixes scanning of LUNs whose number is greater than 255.  QEMU
-passes a max_lun of 16383 (because it uses SAM numbering) but in Linux
-it must become 32768 (because LUNs above 255 are "relocated" to 16640).
-Patch 2 is a resubmission of the patch for online resizing of virtio-scsi
-LUNs, which needs to be rebased.
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ drivers/scsi/virtio_scsi.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-LUNs above 255 now work for all of scanning, hotplug, hotunplug and
-resize.
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index c7030fb..8b6b927 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -677,7 +677,11 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
+ 	cmd_per_lun = virtscsi_config_get(vdev, cmd_per_lun) ?: 1;
+ 	shost->cmd_per_lun = min_t(u32, cmd_per_lun, shost->can_queue);
+ 	shost->max_sectors = virtscsi_config_get(vdev, max_sectors) ?: 0xFFFF;
+-	shost->max_lun = virtscsi_config_get(vdev, max_lun) + 1;
++
++	/* LUNs > 256 are reported with format 1, so they go in the range
++	 * 16640-32767.
++	 */
++	shost->max_lun = virtscsi_config_get(vdev, max_lun) + 1 + 0x4000;
+ 	shost->max_id = num_targets;
+ 	shost->max_channel = 0;
+ 	shost->max_cmd_len = VIRTIO_SCSI_CDB_SIZE;
+-- 
+1.7.1
 
-Thanks,
-
-Paolo
-
-Paolo Bonzini (2):
-  virtio-scsi: fix LUNs greater than 255
-  virtio-scsi: support online resizing of disks
-
- drivers/scsi/virtio_scsi.c  |   37 +++++++++++++++++++++++++++++++++++--
- include/linux/virtio_scsi.h |    2 ++
- 2 files changed, 37 insertions(+), 2 deletions(-)
 
