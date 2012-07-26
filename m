@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489Ab2GZVaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:30:18 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55921 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab2GZVaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753204Ab2GZVaN (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 26 Jul 2012 17:30:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62132 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab2GZVaJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 17:30:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Daney <david.daney@cavium.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [ 04/40] MIPS: Properly align the .data..init_task section.
-Date: Thu, 26 Jul 2012 14:29:22 -0700
-Message-Id: <20120726211411.443368067@linuxfoundation.org>
+        Aaditya Kumar <aaditya.kumar@ap.sony.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: [ 03/40] mm: fix lost kswapd wakeup in kswapd_stop()
+Date: Thu, 26 Jul 2012 14:29:21 -0700
+Message-Id: <20120726211411.338731174@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -31,66 +32,82 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: David Daney <david.daney@cavium.com>
+From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
 
-commit 7b1c0d26a8e272787f0f9fcc5f3e8531df3b3409 upstream.
+commit 1c7e7f6c0703d03af6bcd5ccc11fc15d23e5ecbe upstream.
 
-Improper alignment can lead to unbootable systems and/or random
-crashes.
+Offlining memory may block forever, waiting for kswapd() to wake up
+because kswapd() does not check the event kthread->should_stop before
+sleeping.
 
-[ralf@linux-mips.org: This is a lond standing bug since
-6eb10bc9e2deab06630261cd05c4cb1e9a60e980 (kernel.org) rsp.
-c422a10917f75fd19fa7fe070aaaa23e384dae6f (lmo) [MIPS: Clean up linker script
-using new linker script macros.] so dates back to 2.6.32.]
+The proper pattern, from Documentation/memory-barriers.txt, is:
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/3881/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+   ---  waker  ---
+   event_indicated = 1;
+   wake_up_process(event_daemon);
+
+   ---  sleeper  ---
+   for (;;) {
+      set_current_state(TASK_UNINTERRUPTIBLE);
+      if (event_indicated)
+         break;
+      schedule();
+   }
+
+   set_current_state() may be wrapped by:
+      prepare_to_wait();
+
+In the kswapd() case, event_indicated is kthread->should_stop.
+
+  === offlining memory (waker) ===
+   kswapd_stop()
+      kthread_stop()
+         kthread->should_stop = 1
+         wake_up_process()
+         wait_for_completion()
+
+  ===  kswapd_try_to_sleep (sleeper) ===
+   kswapd_try_to_sleep()
+      prepare_to_wait()
+           .
+           .
+      schedule()
+           .
+           .
+      finish_wait()
+
+The schedule() needs to be protected by a test of kthread->should_stop,
+which is wrapped by kthread_should_stop().
+
+Reproducer:
+   Do heavy file I/O in background.
+   Do a memory offline/online in a tight loop
+
+Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/include/asm/thread_info.h |    4 ++--
- arch/mips/kernel/vmlinux.lds.S      |    3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ mm/vmscan.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/mips/include/asm/thread_info.h
-+++ b/arch/mips/include/asm/thread_info.h
-@@ -60,6 +60,8 @@ struct thread_info {
- register struct thread_info *__current_thread_info __asm__("$28");
- #define current_thread_info()  __current_thread_info
- 
-+#endif /* !__ASSEMBLY__ */
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2695,7 +2695,10 @@ static void kswapd_try_to_sleep(pg_data_
+ 		 * them before going back to sleep.
+ 		 */
+ 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
+-		schedule();
 +
- /* thread information allocation */
- #if defined(CONFIG_PAGE_SIZE_4KB) && defined(CONFIG_32BIT)
- #define THREAD_SIZE_ORDER (1)
-@@ -97,8 +99,6 @@ register struct thread_info *__current_t
- 
- #define free_thread_info(info) kfree(info)
- 
--#endif /* !__ASSEMBLY__ */
--
- #define PREEMPT_ACTIVE		0x10000000
- 
- /*
---- a/arch/mips/kernel/vmlinux.lds.S
-+++ b/arch/mips/kernel/vmlinux.lds.S
-@@ -1,5 +1,6 @@
- #include <asm/asm-offsets.h>
- #include <asm/page.h>
-+#include <asm/thread_info.h>
- #include <asm-generic/vmlinux.lds.h>
- 
- #undef mips
-@@ -73,7 +74,7 @@ SECTIONS
- 	.data : {	/* Data */
- 		. = . + DATAOFFSET;		/* for CONFIG_MAPPED_KERNEL */
- 
--		INIT_TASK_DATA(PAGE_SIZE)
-+		INIT_TASK_DATA(THREAD_SIZE)
- 		NOSAVE_DATA
- 		CACHELINE_ALIGNED_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
- 		READ_MOSTLY_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
++		if (!kthread_should_stop())
++			schedule();
++
+ 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
+ 	} else {
+ 		if (remaining)
 
 
