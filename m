@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab2GZPz6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:55:58 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:47806 "EHLO SMTP.CITRIX.COM"
+	id S1752792Ab2GZP4B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:56:01 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:47816 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639Ab2GZPzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:55:52 -0400
+	id S1752735Ab2GZPz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 11:55:59 -0400
 X-IronPort-AV: E=Sophos;i="4.77,659,1336363200"; 
-   d="scan'208";a="32691093"
+   d="scan'208";a="32691104"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
@@ -15,9 +15,9 @@ CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
         <catalin.marinas@arm.com>, <arnd@arndb.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 23/24] hvc_xen: allow dom0_write_console for HVM guests
-Date: Thu, 26 Jul 2012 16:34:05 +0100
-Message-ID: <1343316846-25860-23-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 21/24] arm/v2m: initialize arch_timers even if v2m_timer is not present
+Date: Thu, 26 Jul 2012 16:34:03 +0100
+Message-ID: <1343316846-25860-21-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
@@ -27,32 +27,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM all guests are HVM guests, including Dom0.
-Allow dom0_write_console to be called by an HVM domain.
-
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- drivers/tty/hvc/hvc_xen.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ arch/arm/mach-vexpress/v2m.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index 3c04fb8..949edc2 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -616,12 +616,9 @@ static void xenboot_write_console(struct console *console, const char *string,
- 	unsigned int linelen, off = 0;
- 	const char *pos;
+diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+index fde26ad..dee1451 100644
+--- a/arch/arm/mach-vexpress/v2m.c
++++ b/arch/arm/mach-vexpress/v2m.c
+@@ -637,16 +637,17 @@ static void __init v2m_dt_timer_init(void)
+ 	node = of_find_compatible_node(NULL, NULL, "arm,sp810");
+ 	v2m_sysctl_init(of_iomap(node, 0));
  
--	if (!xen_pv_domain())
+-	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+-	if (WARN_ON(err))
 -		return;
--
- 	dom0_write_console(0, string, len);
+-	node = of_find_node_by_path(path);
+-	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+ 	if (arch_timer_of_register() != 0)
+ 		twd_local_timer_of_register();
  
--	if (xen_initial_domain())
-+	if (!xen_pv_domain())
- 		return;
+ 	if (arch_timer_sched_clock_init() != 0)
+ 		versatile_sched_clock_init(v2m_sysreg_base + V2M_SYS_24MHZ, 24000000);
++
++	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
++	if (WARN_ON(err))
++		return;
++	node = of_find_node_by_path(path);
++	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+ }
  
- 	domU_write_console(0, "(early) ", 8);
+ static struct sys_timer v2m_dt_timer = {
 -- 
 1.7.2.5
 
