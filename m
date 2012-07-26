@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab2GZWEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 18:04:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43054 "EHLO mail.zytor.com"
+	id S1753625Ab2GZWAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 18:00:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29915 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753045Ab2GZWEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 18:04:36 -0400
-Message-ID: <5011BD8C.4010301@zytor.com>
-Date: Thu, 26 Jul 2012 14:58:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Kent Yoder <key@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        m.selhorst@sirrix.com, safford@us.ibm.com,
-        Jeff Garzik <jeff@garzik.org>
-Subject: Re: [PATCH 2/2] hw_random: add support for the TPM chip as a hardware
- RNG source
-References: <1339094567.21398.2.camel@key-ThinkPad-W510> <1339094862.21398.6.camel@key-ThinkPad-W510>
-In-Reply-To: <1339094862.21398.6.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753562Ab2GZWA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 18:00:27 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: matt.fleming@intel.com
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] efi: Build EFI stub with EFI-appropriate options
+Date: Thu, 26 Jul 2012 18:00:00 -0400
+Message-Id: <1343340000-7587-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2012 11:47 AM, Kent Yoder wrote:
-> This driver will make use of any available TPM chip on the system as a
-> hwrng source.
->
-> Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-> ---
->   drivers/char/hw_random/Kconfig   |   13 +++++++++
->   drivers/char/hw_random/Makefile  |    1 +
->   drivers/char/hw_random/tpm-rng.c |   55 ++++++++++++++++++++++++++++++++++++++
->   3 files changed, 69 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/char/hw_random/tpm-rng.c
->
+We can't assume the presence of the red zone while we're still in a boot
+services environment, so we should build with -fno-red-zone to avoid
+problems. Change the size of wchar at the same time to make string handling
+simpler.
 
-So I just noticed this patch being pushed.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/boot/compressed/Makefile |    3 +++
+ 1 file changed, 3 insertions(+)
 
-/dev/hw_random is used by rngd, which already has support for the TPM 
-directly.  However, the TPM support in rngd conflict with tcsd (from 
-TrouSerS).
-
-Does this driver solve the coexistence problem?  If so, this is a Very 
-Good Thing and should be accepted (and the TPM support in rngd 
-deprecated/removed.)
-
-If it does *not* solve the coexistence problem, then it just prevents a 
-user space solution and the patch really should be rejected.
-
-It would be great to get that clarified as soon as possible.
-
-Thanks,
-
-	-hpa
-
-
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index e398bb5..8a84501 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -28,6 +28,9 @@ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
+ 	$(obj)/string.o $(obj)/cmdline.o $(obj)/early_serial_console.o \
+ 	$(obj)/piggy.o
+ 
++$(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
++$(obj)/efi_stub_$(BITS).o: KBUILD_CLFAGS += -fshort-wchar -mno-red-zone
++
+ ifeq ($(CONFIG_EFI_STUB), y)
+ 	VMLINUX_OBJS += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o
+ endif
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.10.4
 
