@@ -1,51 +1,454 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab2GZASI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 20:18:08 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:50098 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752322Ab2GZASG (ORCPT
+	id S1752403Ab2GZAWs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 20:22:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55404 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751402Ab2GZAWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 20:18:06 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Colin Cross <ccross@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: PM: Summary of changes for v3.6
-Organization: Texas Instruments, Inc.
-References: <201207162246.03660.rjw@sisk.pl> <87mx2zcq62.fsf@ti.com>
-	<201207172252.06093.rjw@sisk.pl>
-	<CAMbhsRQHMu-zzkhJxYLvszQ2+=OVEJwKrCTbGCjpYGtnP-tttg@mail.gmail.com>
-	<500791B2.9010601@kernel.org>
-Date: Wed, 25 Jul 2012 17:18:02 -0700
-In-Reply-To: <500791B2.9010601@kernel.org> (Len Brown's message of "Thu, 19
-	Jul 2012 00:48:50 -0400")
-Message-ID: <87a9yn74ud.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 25 Jul 2012 20:22:46 -0400
+Message-ID: <1343262160.5132.174.camel@deadeye.wl.decadent.org.uk>
+Subject: Linux 3.2.24
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Date: Thu, 26 Jul 2012 01:22:40 +0100
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-OaXbfwI/3lq03W4Euxfi"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Len Brown <lenb@kernel.org> writes:
 
->> The disappeared from Len's tree for a little while after the 3.5 merge
->> window, which is why they started appearing other places.  Now that
->> they have returned to Len's tree, hopefully to stay, they should be
->> considered the official version.
->
-> Yes, they are staged for 3.6 in my tree.
->
-> The intent was to push them for 3.5, but some unrelated patches
-> exploded and stopped that push.  I then had to re-merge my tree
-> to push only the bug-fixes to 3.5, which is why the feature
-> patches went away for a bit.
+--=-OaXbfwI/3lq03W4Euxfi
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Great, thanks for clarifying.
+I'm announcing the release of the 3.2.24 kernel.
 
-Kevin
+All users of the 3.2 kernel series should upgrade.
+
+The updated 3.2.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.2.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git
+
+Ben.
+
+------------
+
+ Makefile                                          |    2 +-
+ arch/arm/plat-samsung/adc.c                       |    8 +-
+ arch/mips/include/asm/thread_info.h               |    4 +-
+ arch/mips/kernel/vmlinux.lds.S                    |    3 +-
+ arch/powerpc/include/asm/cputime.h                |    6 +-
+ arch/powerpc/kernel/time.c                        |   10 +-
+ arch/x86/kernel/acpi/boot.c                       |   27 +-
+ arch/x86/kernel/reboot.c                          |    8 +
+ block/scsi_ioctl.c                                |    5 +-
+ drivers/acpi/processor_core.c                     |    6 +-
+ drivers/acpi/sleep.c                              |    4 +-
+ drivers/acpi/sysfs.c                              |    4 +-
+ drivers/gpio/gpio-wm8994.c                        |    5 +-
+ drivers/gpu/drm/i915/intel_display.c              |    4 +-
+ drivers/hid/hid-apple.c                           |    6 +
+ drivers/hid/hid-core.c                            |    7 +
+ drivers/hid/hid-ids.h                             |    6 +
+ drivers/hwmon/it87.c                              |    2 +-
+ drivers/hwspinlock/hwspinlock_core.c              |    4 +-
+ drivers/input/joystick/xpad.c                     |    6 +-
+ drivers/input/mouse/bcm5974.c                     |   20 ++
+ drivers/iommu/amd_iommu.c                         |    7 +
+ drivers/iommu/amd_iommu_init.c                    |    3 +-
+ drivers/md/dm-raid1.c                             |    3 +-
+ drivers/md/dm-region-hash.c                       |    5 +-
+ drivers/md/md.c                                   |   36 ++-
+ drivers/md/raid1.c                                |   13 +-
+ drivers/md/raid5.c                                |    4 +-
+ drivers/media/dvb/dvb-core/dvbdev.c               |    1 +
+ drivers/mtd/nand/nandsim.c                        |   12 +-
+ drivers/net/bonding/bond_debugfs.c                |    2 +-
+ drivers/net/bonding/bond_main.c                   |    9 +-
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c   |    1 -
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x.h       |   15 --
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c   |   36 ++-
+ drivers/net/ethernet/broadcom/tg3.c               |    3 +-
+ drivers/net/ethernet/intel/e1000e/82571.c         |    3 +
+ drivers/net/ethernet/realtek/r8169.c              |    3 +
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    3 +
+ drivers/net/macvtap.c                             |   57 +++--
+ drivers/net/usb/ipheth.c                          |    5 +
+ drivers/net/wireless/brcm80211/brcmsmac/main.c    |    3 +-
+ drivers/net/wireless/ipw2x00/ipw.h                |   23 ++
+ drivers/net/wireless/ipw2x00/ipw2100.c            |    4 +
+ drivers/net/wireless/ipw2x00/ipw2200.c            |    4 +
+ drivers/net/wireless/iwlegacy/iwl-4965-sta.c      |    4 +-
+ drivers/net/wireless/iwlegacy/iwl-core.c          |   14 +-
+ drivers/net/wireless/rt2x00/rt2x00usb.c           |    2 +-
+ drivers/net/wireless/rtl818x/rtl8187/leds.c       |    2 +-
+ drivers/pci/pci-driver.c                          |   12 +
+ drivers/pci/pci.c                                 |    5 -
+ drivers/pci/quirks.c                              |   26 --
+ drivers/platform/x86/intel_ips.c                  |   22 ++
+ drivers/platform/x86/samsung-laptop.c             |  225 +----------------
+ drivers/rtc/rtc-mxc.c                             |    5 +-
+ drivers/scsi/aic94xx/aic94xx_task.c               |    2 +-
+ drivers/scsi/libsas/sas_ata.c                     |   12 +-
+ drivers/target/target_core_cdb.c                  |    2 +-
+ drivers/target/target_core_pr.c                   |    7 +-
+ drivers/target/tcm_fc/tfc_cmd.c                   |    2 +
+ drivers/usb/class/cdc-wdm.c                       |    2 +
+ drivers/usb/core/hub.c                            |   18 +-
+ drivers/usb/host/xhci-hub.c                       |   44 +++-
+ drivers/usb/host/xhci.h                           |    6 +-
+ drivers/usb/serial/option.c                       |   26 ++
+ drivers/vhost/vhost.c                             |    2 +
+ fs/buffer.c                                       |   22 +-
+ fs/cifs/connect.c                                 |   18 ++
+ fs/cifs/readdir.c                                 |    7 +-
+ fs/ecryptfs/kthread.c                             |    2 +-
+ fs/ecryptfs/miscdev.c                             |   48 ++--
+ fs/eventpoll.c                                    |    4 +-
+ fs/exofs/ore.c                                    |    8 +-
+ fs/exofs/ore_raid.c                               |   67 ++---
+ fs/ext4/super.c                                   |    2 +-
+ fs/fifo.c                                         |    9 +-
+ fs/hugetlbfs/inode.c                              |   54 ++--
+ fs/locks.c                                        |    2 +-
+ fs/nfs/idmap.c                                    |   48 +++-
+ fs/nfs/nfs4state.c                                |    5 +-
+ fs/nfs/objlayout/objio_osd.c                      |   25 +-
+ fs/ocfs2/file.c                                   |    2 +-
+ fs/ramfs/file-nommu.c                             |    1 +
+ fs/ubifs/sb.c                                     |    8 +-
+ include/linux/Kbuild                              |    1 +
+ include/linux/hrtimer.h                           |   10 +-
+ include/linux/hugetlb.h                           |   14 +-
+ include/linux/mmzone.h                            |    2 +-
+ include/linux/pci.h                               |    2 -
+ include/linux/sched.h                             |    8 +
+ include/linux/skbuff.h                            |    5 +-
+ include/linux/timex.h                             |    2 +-
+ include/scsi/libsas.h                             |    6 +-
+ kernel/hrtimer.c                                  |   53 ++--
+ kernel/power/swap.c                               |   62 +++--
+ kernel/sched.c                                    |  276 +++++++++++++++--=
+----
+ kernel/sched_idletask.c                           |    1 -
+ kernel/time/ntp.c                                 |  124 +++------
+ kernel/time/tick-sched.c                          |    2 +
+ kernel/time/timekeeping.c                         |  115 ++++++---
+ mm/compaction.c                                   |    5 +-
+ mm/hugetlb.c                                      |  135 ++++++++--
+ mm/vmscan.c                                       |   12 +-
+ net/can/raw.c                                     |    3 -
+ net/core/dev.c                                    |   23 +-
+ net/ipv4/tcp_input.c                              |    2 +
+ net/iucv/af_iucv.c                                |    1 -
+ net/wireless/util.c                               |    2 +-
+ scripts/depmod.sh                                 |    6 -
+ virt/kvm/irq_comm.c                               |    1 +
+ 110 files changed, 1212 insertions(+), 835 deletions(-)
+
+Aaditya Kumar (1):
+      mm: fix lost kswapd wakeup in kswapd_stop()
+
+Alan Stern (1):
+      PCI: EHCI: fix crash during suspend on ASUS computers
+
+Anders Kaseorg (1):
+      fifo: Do not restart open() if it already found a partner
+
+Andreas Schwab (1):
+      powerpc: Fix wrong divisor in usecs_to_cputime
+
+Artem Bityutskiy (1):
+      UBIFS: fix a bug in empty space fix-up
+
+Avi Kivity (1):
+      KVM: Fix buffer overflow in kvm_set_irq()
+
+Ben Hutchings (2):
+      ext4: Report max_batch_time option correctly
+      Linux 3.2.24
+
+Beno=C3=AEt Th=C3=A9baudeau (1):
+      drivers/rtc/rtc-mxc.c: fix irq enabled interrupts warning
+
+Bj=C3=B8rn Mork (2):
+      USB: option: add ZTE MF60
+      USB: cdc-wdm: fix lockup on error in wdm_read
+
+Boaz Harrosh (4):
+      ore: Fix NFS crash by supporting any unaligned RAID IO
+      ore: Remove support of partial IO request (NFS crash)
+      pnfs-obj: don't leak objio_state if ore_write/read fails
+      pnfs-obj: Fix __r4w_get_page when offset is beyond i_size
+
+Bob Liu (1):
+      fs: ramfs: file-nommu: add SetPageUptodate()
+
+Bojan Smojver (1):
+      PM / Hibernate: Hibernate/thaw fixes/improvements
+
+Cloud Ren (1):
+      atl1c: fix issue of transmit queue 0 timed out
+
+Corentin Chary (1):
+      samsung-laptop: make the dmi check less strict
+
+Dan Williams (1):
+      libsas: fix taskfile corruption in sas_ata_qc_fill_rtf
+
+Dave Jones (1):
+      Remove easily user-triggerable BUG from generic_setlease
+
+David Daney (1):
+      MIPS: Properly align the .data..init_task section.
+
+David Gibson (1):
+      hugepages: fix use after free bug in "quota" handling
+
+David Rientjes (1):
+      mm, thp: abort compaction if migration page cannot be charged to memc=
+g
+
+Davide Gerhard (1):
+      ipheth: add support for iPad
+
+Deepak Sikri (1):
+      stmmac: Fix for nfs hang on multiple reboot
+
+Devendra Naga (1):
+      r8169: call netif_napi_del at errpaths and at driver unload
+
+Eldad Zack (1):
+      brcmsmac: "INTERMEDIATE but not AMPDU" only when tracing
+
+Emmanuel Grumbach (1):
+      iwlegacy: don't mess up the SCD when removing a key
+
+Eric Dumazet (4):
+      tcp: drop SYN+FIN messages
+      bnx2x: fix checksum validation
+      bnx2x: fix panic when TX ring is full
+      net: remove skb_orphan_try()
+
+Eric W. Biederman (2):
+      bonding: debugfs and network namespaces are incompatible
+      bonding: Manage /proc/net/bonding/ entries from the netdev events
+
+Eugeni Dodonov (2):
+      drm/i915: do not enable RC6p on Sandy Bridge
+      drm/i915: fix operator precedence when enabling RC6p
+
+Feng Tang (3):
+      ACPI: Make acpi_skip_timer_override cover all source_irq=3D=3D0 cases
+      ACPI: Remove one board specific WARN when ignoring timer overriding
+      ACPI: Add a quirk for "AMILO PRO V2030" to ignore the timer overridin=
+g
+
+Gaosen Zhang (1):
+      USB: option: Add MEDIATEK product ids
+
+Henrik Rydberg (1):
+      Input: bcm5974 - Add support for 2012 MacBook Pro Retina
+
+Herton Ronaldo Krzesinski (1):
+      mtd: nandsim: don't open code a do_div helper
+
+Ilia Katsnelson (1):
+      Input: xpad - add signature for Razer Onza Tournament Edition
+
+Jan Kara (1):
+      scsi: Silence unnecessary warnings about ioctl to partition
+
+Jason Baron (1):
+      epoll: clear the tfile_check_list on -ELOOP
+
+Jason Wang (5):
+      macvtap: zerocopy: fix offset calculation when building skb
+      macvtap: zerocopy: fix truesize underestimation
+      macvtap: zerocopy: put page when fail to get all requested user pages
+      macvtap: zerocopy: set SKBTX_DEV_ZEROCOPY only when skb is built succ=
+essfully
+      macvtap: zerocopy: validate vectors before building skb
+
+Jean Delvare (1):
+      hwmon: (it87) Preserve configuration register bits on init
+
+Jeff Layton (2):
+      cifs: on CONFIG_HIGHMEM machines, limit the rsize/wsize to the kmap s=
+pace
+      cifs: always update the inode cache with the results from a FIND_*
+
+Jeff Moyer (1):
+      block: fix infinite loop in __getblk_slow
+
+Jiang Liu (1):
+      memory hotplug: fix invalid memory access caused by stale kswapd poin=
+ter
+
+Joerg Roedel (1):
+      iommu/amd: Initialize dma_ops for hotplug and sriov devices
+
+John Stultz (5):
+      ntp: Fix leap-second hrtimer livelock
+      timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
+      hrtimer: Provide clock_was_set_delayed()
+      timekeeping: Fix leapsecond triggered load spike issue
+      hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+
+Lucas De Marchi (1):
+      kbuild: do not check for ancient modutils tools
+
+Luis Henriques (1):
+      ocfs2: fix NULL pointer dereference in __ocfs2_change_file_space()
+
+Mark Brown (1):
+      gpiolib: wm8994: Pay attention to the value set when enabling as outp=
+ut
+
+Mark Rustad (1):
+      tcm_fc: Fix crash seen with aborts and large reads
+
+Matt Carlson (1):
+      tg3: Apply short DMA frag workaround to 5906
+
+Michal Kazior (1):
+      cfg80211: check iface combinations only when iface is running
+
+Mikulas Patocka (2):
+      dm raid1: fix crash with mirror recovery and discard
+      dm raid1: set discard_zeroes_data_unsupported
+
+Nadav Har'El (1):
+      vhost: don't forget to schedule()
+
+NeilBrown (3):
+      md/raid1: fix use-after-free bug in RAID1 data-check code.
+      md: avoid crash when stopping md array races with closing other open =
+fds.
+      md/raid1: close some possible races on write errors during resync
+
+Pavel Vasilyev (1):
+      ACPI sysfs.c strlen fix
+
+Peter Zijlstra (1):
+      sched/nohz: Rewrite and fix load-avg computation -- again
+
+Rafael J. Wysocki (1):
+      ACPI / PM: Make acpi_pm_device_sleep_state() follow the specification
+
+Richard Cochran (1):
+      ntp: Correct TAI offset during leap second
+
+Roland Dreier (2):
+      target: Clean up returning errors in PR handling code
+      target: Fix range calculation in WRITE SAME emulation when num blocks=
+ =3D=3D 0
+
+Ryan Bourgeois (1):
+      HID: add support for 2012 MacBook Pro Retina
+
+Samuel Ortiz (1):
+      NFC: Export nfc.h to userland
+
+Santosh Nayak (1):
+      dvb-core: Release semaphore on error path dvb_register_device()
+
+Shaohua Li (1):
+      raid5: delayed stripe fix
+
+Shinya Kuribayashi (1):
+      hwspinlock/core: use global ID to register hwspinlocks on multiple de=
+vices
+
+Shuah Khan (1):
+      iommu/amd: Fix missing iommu_shutdown initialization in passthrough m=
+ode
+
+Stanislav Yakovlev (1):
+      net/wireless: ipw2x00: add supported cipher suites to wiphy initializ=
+ation
+
+Stanislaw Gruszka (3):
+      rtl8187: ->brightness_set can not sleep
+      rt2x00usb: fix indexes ordering on RX queue kick
+      iwlegacy: always monitor for stuck queues
+
+Stanislaw Ledwon (1):
+      usb: Add support for root hub port status CAS
+
+Takashi Iwai (1):
+      intel_ips: blacklist HP ProBook laptops
+
+Thomas Gleixner (5):
+      time: Move common updates to a function
+      timekeeping: Maintain ktime_t based offsets for hrtimers
+      hrtimers: Move lock held region in hrtimer_interrupt()
+      timekeeping: Provide hrtimer update function
+      timekeeping: Add missing update call in timekeeping_resume()
+
+Thomas Renninger (1):
+      cpufreq / ACPI: Fix not loading acpi-cpufreq driver regression
+
+Todd Poynor (1):
+      ARM: SAMSUNG: fix race in s3c_adc_start for ADC
+
+Trond Myklebust (2):
+      NFSv4: Reduce the footprint of the idmapper
+      NFSv4: Further reduce the footprint of the idmapper
+
+Tushar Dave (1):
+      e1000e: Correct link check logic for 82571 serdes
+
+Tyler Hicks (3):
+      eCryptfs: Gracefully refuse miscdev file ops on inherited/passed file=
+s
+      eCryptfs: Fix lockdep warning in miscdev operations
+      eCryptfs: Properly check for O_RDONLY flag before doing privileged op=
+en
+
+William Dauchy (1):
+      NFSv4: Rate limit the state manager for lock reclaim warning messages
+
+Yuri Khan (2):
+      Input: xpad - handle all variations of Mad Catz Beat Pad
+      Input: xpad - add Andamiro Pump It Up pad
+
+Zhang Rui (1):
+      ACPI, x86: fix Dell M6600 ACPI reboot regression via DMI
+
+
+
+--=-OaXbfwI/3lq03W4Euxfi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUBCN0ee/yOyVhhEJAQrYghAAmf53xTzliJwWEY7FlX/XgMSf3HkoSW1H
+NV89CSDK+6l/OJlshOCsdq5K2+Gy29C9ynOLvzvZDFB6hF4mAnnVKeCvTe6noyhv
+KtBcHR35YbQFO1M1Tt1wk7Gb8GOncdiW8ZoZPI72qbN00rugJDXuzuICd0Ao9CDW
+6kVCCBeZmuh185JXa8gjUbgFxuzIQpz5qpp5vxzbOq+X72Dy+WBCZsQ5GQtTMjlT
+VvF3ehHed+tQ6xgSIe4u+32eyugzQdfY0GBY39yMudwZDJMpSa2oc1zFiC+722W8
+yZhrjry8y2o4+3OCyJxCmEPQl30IX3J+rCEVuiYfIjHMpBB0nILfKdJ5s9BNOO7b
+iO3ZJ5eHcG50uOMaIiJgFhLI6q1wYFUH8Mvoj5iKfSZnb+6RMGAHahIZIn7Q5L1J
+WT7RTbSQ2ysSv1BJXg9yn7tEBNC0J6+kvulZiSAPlfMx4oDsm+jStjCavEiRp0Lk
+MBv3cbt0jGF1Ork/mYmboxTbhaqY7wzqOPIzh+5I/AW9aO7K1XQ/Dx/UfGkAz7Hp
+7joA67Ynt+LULYHx04Qlyj+nP10iN8VwPbIRtxPRGsfc8y0iXVhgC0Hx4L3gSlB6
+hewZANOHd7O5Mg0bKI2n99X/xnoIVsj+dlR8B3/1vOGxDTx1TC11nuKHbAjzZsVv
+vHWIf6bf+pU=
+=zjLu
+-----END PGP SIGNATURE-----
+
+--=-OaXbfwI/3lq03W4Euxfi--
