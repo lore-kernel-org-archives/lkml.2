@@ -1,50 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab2GZRnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:43:09 -0400
-Received: from newdomain10.com ([209.173.135.146]:37026 "EHLO
-	centos.newdomain10.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab2GZRnG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:43:06 -0400
-Date: Thu, 26 Jul 2012 13:42:56 -0400
-To: linux-kernel@vger.kernel.org
-From: Domain Sale <contact@milwaukeewiwebdesign.com>
-Reply-to: contact@milwaukeewiwebdesign.com
-Subject: websitenameavailability.com for sale | $275
-Message-ID: <a691604288c4ac1f16d51e87e9cfe928@static.newdomain10.com>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - centos.newdomain10.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - milwaukeewiwebdesign.com
+	id S1752802Ab2GZRpX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:45:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50890 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752218Ab2GZRpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 13:45:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127257821"
+Subject: Re: [tip:x86:fpu 2/2] arch/x86/kernel/signal.c:626:4: error:
+ implicit declaration of function '__setup_frame'
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: kernel-janitors@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 26 Jul 2012 10:48:04 -0700
+In-Reply-To: <20120725232716.GB5758@localhost>
+References: <20120725232716.GB5758@localhost>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1343324885.3696.527.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have the domain websitenameavailability.com for sale for $275.
+On Thu, 2012-07-26 at 07:27 +0800, Fengguang Wu wrote:
+> Hi Suresh,
+> 
+> Kernel build failed on
+> 
+> tree:   tip/x86/fpu x86/fpu
+> head:   29221d4b89d4e50f05ade42ad3b22e92bb564ca4
+> commit: 29221d4b89d4e50f05ade42ad3b22e92bb564ca4 [2/2] x86, fpu: Unify signal handling code paths for x86 and x86_64 kernels
+> config: x86_64-randconfig-s003 (attached as .config)
+> 
+> All related error/warning messages:
+> 
+> arch/x86/kernel/signal.c: In function 'setup_rt_frame':
+> arch/x86/kernel/signal.c:626:4: error: implicit declaration of function '__setup_frame' [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> --
+> arch/x86/kernel/xsave.c: In function 'save_fsave_header':
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: 'X86_FXSR_MAGIC' undeclared (first use in this function)
+> arch/x86/kernel/xsave.c:145:7: note: each undeclared identifier is reported only once for each function it appears in
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c:145:7: error: dereferencing pointer to incomplete type
+> arch/x86/kernel/xsave.c: In function 'save_user_xstate':
+> arch/x86/kernel/xsave.c:209:15: warning: ignoring return value of '__clear_user', declared with attribute warn_unused_result [-Wunused-result]
+> 
 
-This domain will improve your web traffic now and will increase in value in the future.
+Appended the patch for this. Thanks!
+---
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, fpu: fix x86_64 build without CONFIG_IA32_EMULATION
 
-If you are interested in purchasing this domain please respond to this email and I will
-send you an invoice.
+Fengguang's automated build reported some compilation failures:
+> arch/x86/kernel/signal.c: In function 'setup_rt_frame':
+> arch/x86/kernel/signal.c:626:4: error: implicit declaration of function '__setup_frame'
+> arch/x86/kernel/xsave.c: In function 'save_fsave_header':
+> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
+> ...
 
-Once payment is received, your domain will be transferred by the end of the business day.
+Fix x86_64 kernel build without CONFIG_IA32_EMULATION.
 
-Please email or call with any questions you might have.
+Code saving fsave prefix is applicable only for CONFIG_X86_32 or
+CONFIG_IA32_EMULATION. Use config_enabled() checks to remove the unnecessary
+code compile-time for x86_64 kernels build without CONFIG_IA32_EMULATION.
 
-Thank you,
-John
-1-877-388-2204
-1040 Hosbrook Dr. Cincinnati, OH 45236
-I do my best to only send very targeted emails to people who I think will benefit from them.
-If you feel that you received this email in error or would not like to receive any future
-opportunities:
-Unsubscribe: http://webdevelopmentincincinnati.com/unsubscribe.php?id=1992121&h=8d0259
+Also while we are at this, fix a spurious warning:
+> arch/x86/kernel/xsave.c:209:15: warning: ignoring return value of ‘__clear_user’, declared with attribute warn_unused_result
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/include/asm/fpu-internal.h |    2 +-
+ arch/x86/kernel/xsave.c             |   10 ++++++++--
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 35ad161..5779184 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -22,7 +22,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/xsave.h>
+ 
+-#ifdef CONFIG_IA32_EMULATION
++#ifdef CONFIG_X86_64
+ # include <asm/sigcontext32.h>
+ # include <asm/user32.h>
+ int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 2917e34..a23d100 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -205,8 +205,8 @@ static inline int save_user_xstate(struct xsave_struct __user *buf)
+ 	else
+ 		err = fsave_user((struct i387_fsave_struct __user *) buf);
+ 
+-	if (unlikely(err))
+-		__clear_user(buf, xstate_size);
++	if (unlikely(err) && __clear_user(buf, xstate_size))
++		err = -EFAULT;
+ 	return err;
+ }
+ 
+@@ -236,6 +236,9 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	struct task_struct *tsk = current;
+ 	int ia32_fxstate = (buf != buf_fx);
+ 
++	ia32_fxstate &= (config_enabled(CONFIG_X86_32) ||
++			 config_enabled(CONFIG_IA32_EMULATION));
++
+ 	if (!access_ok(VERIFY_WRITE, buf, size))
+ 		return -EACCES;
+ 
+@@ -333,6 +336,9 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	u64 xstate_bv = 0;
+ 	int fx_only = 0;
+ 
++	ia32_fxstate &= (config_enabled(CONFIG_X86_32) ||
++			 config_enabled(CONFIG_IA32_EMULATION));
++
+ 	if (!buf) {
+ 		drop_fpu(tsk);
+ 		return 0;
 
 
