@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab2GZV5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:57:36 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35884 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751489Ab2GZV5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:57:35 -0400
-Message-ID: <1343339854.17538.50.camel@joe2Laptop>
-Subject: Re: [PATCH v3 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Joe Perches <joe@perches.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
-Date: Thu, 26 Jul 2012 14:57:34 -0700
-In-Reply-To: <CAErSpo4cPuFLmp=b2JUUP-nDdtsFmJFda0az-9z9fEnys23L6w@mail.gmail.com>
-References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
-	 <1343257978-7085-2-git-send-email-toshi.kani@hp.com>
-	 <CAErSpo4=HDaWTusKf+tRU6aXmj-mC1i7CswnDzDLZii21i9NaQ@mail.gmail.com>
-	 <1343336330.3010.496.camel@misato.fc.hp.com>
-	 <20120726213730.GA2149@google.com> <1343338982.17538.45.camel@joe2Laptop>
-	 <CAErSpo4cPuFLmp=b2JUUP-nDdtsFmJFda0az-9z9fEnys23L6w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753683Ab2GZWAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 18:00:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30525 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753697Ab2GZWAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 18:00:46 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: matt.fleming@intel.com
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] X86: Improve GOP detection in the EFI boot stub
+Date: Thu, 26 Jul 2012 18:00:27 -0400
+Message-Id: <1343340027-7641-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 15:50 -0600, Bjorn Helgaas wrote:
-> On Thu, Jul 26, 2012 at 3:43 PM, Joe Perches <joe@perches.com> wrote:
-> > On Thu, 2012-07-26 at 15:37 -0600, Bjorn Helgaas wrote:
-> >>     PNP0C01:00: new device for \_SB_.PCI0.ISA_.MBIO
-> >>
-> >> I fiddled with this a while ago; it would look something like this:
-> > []
-> >> +static noinline_for_stack
-> >> +char *acpi_name_string(char *buf, char *end, acpi_handle handle,
-> >> +                    struct printf_spec spec, const char *fmt)
-[]
-> Yes.  I'm hesitant about this approach in general, because I don't
-> think printing the ACPI path is something we should be doing often.
-> It's not like a struct resource or a MAC address, where there are
-> dozens or hundreds of users.  I really think we should only print ACPI
-> paths in one or two places, so adding a %p extension would waste a
-> letter and encourage the wrong behavior.
+We currently use the PCI IO protocol as a proxy for a functional GOP. This
+is less than ideal, since some platforms will put the GOP on output devices
+rather than the GPU itself. Move to using the conout protocol. This is not
+guaranteed per-spec, but is part of the consplitter implementation that
+causes this problem in the first place and so should be reliable.
 
-I don't much care for adding ACPI specific calls to vsprintf
-as acpi is supposed to be OS generic anyway.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/boot/compressed/eboot.c |   29 ++++++++++++++++-------------
+ arch/x86/boot/compressed/eboot.h |    4 ++++
+ 2 files changed, 20 insertions(+), 13 deletions(-)
 
-I don't think there's anything wrong with Toshi's approach.
-Anyone that looks for speed in a logging message is looking
-for an oddly fitting thing.  Tracing sure, but logging?
-
-I also don't see anything wrong with renaming it to just
-acpi_<level>, but that's a different discussion.
-
-cheers, Joe
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index b3e0227..d5e4044 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -276,8 +276,9 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 	nr_gops = size / sizeof(void *);
+ 	for (i = 0; i < nr_gops; i++) {
+ 		struct efi_graphics_output_mode_info *info;
+-		efi_guid_t pciio_proto = EFI_PCI_IO_PROTOCOL_GUID;
+-		void *pciio;
++		efi_guid_t conout_proto = EFI_CONSOLE_OUT_DEVICE_GUID;
++		bool conout_found = false;
++		void *dummy;
+ 		void *h = gop_handle[i];
+ 
+ 		status = efi_call_phys3(sys_table->boottime->handle_protocol,
+@@ -285,19 +286,21 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+ 
+-		efi_call_phys3(sys_table->boottime->handle_protocol,
+-			       h, &pciio_proto, &pciio);
++		status = efi_call_phys3(sys_table->boottime->handle_protocol,
++					h, &conout_proto, &dummy);
++
++		if (status == EFI_SUCCESS)
++			conout_found = true;
+ 
+ 		status = efi_call_phys4(gop->query_mode, gop,
+ 					gop->mode->mode, &size, &info);
+-		if (status == EFI_SUCCESS && (!first_gop || pciio)) {
++		if (status == EFI_SUCCESS && (!first_gop || conout_found)) {
+ 			/*
+-			 * Apple provide GOPs that are not backed by
+-			 * real hardware (they're used to handle
+-			 * multiple displays). The workaround is to
+-			 * search for a GOP implementing the PCIIO
+-			 * protocol, and if one isn't found, to just
+-			 * fallback to the first GOP.
++			 * Systems that use the UEFI Console Splitter may
++			 * provide multiple GOP devices, not all of which are
++			 * backed by real hardware. The workaround is to search
++			 * for a GOP implementing the ConOut protocol, and if
++			 * one isn't found, to just fall back to the first GOP.
+ 			 */
+ 			width = info->horizontal_resolution;
+ 			height = info->vertical_resolution;
+@@ -308,10 +311,10 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 			pixels_per_scan_line = info->pixels_per_scan_line;
+ 
+ 			/*
+-			 * Once we've found a GOP supporting PCIIO,
++			 * Once we've found a GOP supporting ConOut,
+ 			 * don't bother looking any further.
+ 			 */
+-			if (pciio)
++			if (conout_found)
+ 				break;
+ 
+ 			first_gop = gop;
+diff --git a/arch/x86/boot/compressed/eboot.h b/arch/x86/boot/compressed/eboot.h
+index 3b6e156..e5b0a8f 100644
+--- a/arch/x86/boot/compressed/eboot.h
++++ b/arch/x86/boot/compressed/eboot.h
+@@ -14,6 +14,10 @@
+ #define EFI_PAGE_SIZE		(1UL << EFI_PAGE_SHIFT)
+ #define EFI_READ_CHUNK_SIZE	(1024 * 1024)
+ 
++#define EFI_CONSOLE_OUT_DEVICE_GUID    \
++	EFI_GUID(0xd3b36f2c, 0xd551, 0x11d4, 0x9a, 0x46, 0x0, 0x90, 0x27, \
++		  0x3f, 0xc1, 0x4d)
++
+ #define PIXEL_RGB_RESERVED_8BIT_PER_COLOR		0
+ #define PIXEL_BGR_RESERVED_8BIT_PER_COLOR		1
+ #define PIXEL_BIT_MASK					2
+-- 
+1.7.10.4
 
