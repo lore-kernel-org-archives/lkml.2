@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab2GZCvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 22:51:40 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57560 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab2GZCvj (ORCPT
+	id S1752754Ab2GZCv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 22:51:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32843 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369Ab2GZCv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 22:51:39 -0400
+	Wed, 25 Jul 2012 22:51:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120725184302.GP3099@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
- <1342799346.5138.7.camel@lorien2> <CAK5ve-JPtHkCMPV_UYUUZxrt_gzS3tsRXm5x8nFbB6hp+-gBxg@mail.gmail.com>
- <20120722181956.GA4557@opensource.wolfsonmicro.com> <CAK5ve-KAufV5h93AcWdVUVZx2E+pfgQ1L0jp5H28wHgBfV2zPA@mail.gmail.com>
- <20120724125513.GG12438@opensource.wolfsonmicro.com> <CAK5ve-Lyk_EjOjSKHF-j0J1_8oey8wWKkVXAdqbKpRX2eZY+hg@mail.gmail.com>
- <20120725184302.GP3099@opensource.wolfsonmicro.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 26 Jul 2012 10:51:18 +0800
-X-Google-Sender-Auth: pSNrGxBqKhBRRyb-_xBHqRPVEiQ
-Message-ID: <CAK5ve-JYu9x_pnO2L2R-5933B-TJD4yWukkL9dJYpDLO6+i0Ug@mail.gmail.com>
-Subject: Re: [PATCH v2] leds: add new lp8788 led driver
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: shuahkhan@gmail.com, "Kim, Milo" <Milo.Kim@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120725135948.GD11152@aftab.osrc.amd.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+	<1343149213-10160-6-git-send-email-ming.lei@canonical.com>
+	<20120725135948.GD11152@aftab.osrc.amd.com>
+Date: Thu, 26 Jul 2012 10:51:55 +0800
+Message-ID: <CACVXFVOBdXubFi7ZRJ2aUHtd8syTzS=yG8GvsCjAOQmihhvwyQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 05/13] driver core: firmware loader: introduce firmware_buf
+From: Ming Lei <ming.lei@canonical.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 2:43 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, Jul 25, 2012 at 12:46:56PM +0800, Bryan Wu wrote:
->
->> I'm going to Ack this driver and Mark will you merge this as whole patchset?
->
->> Acked-by: Bryan Wu <bryan.wu@canonical.com>
->
-> It's an MFD so Samuel would normally apply if it were going via the MFD
-> tree, though if the dependencies are correct there should be no harm
-> merging via LEDs (until the core is merged it won't be possible to
-> enable the build in Kconfig).
+On Wed, Jul 25, 2012 at 9:59 PM, Borislav Petkov <bp@amd64.org> wrote:
 
-OK, thanks, I've merge this patch through my tree and can I add your ack to it?
+> This is subtle: the caller of fw_free_buf might forget to assign NULL to
+> the buf ptr.
 
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Who is the caller? Since it is always called inside firmware loader, we should
+make sure that.
+
+> Why not pass struct firmware_priv *fw_priv to the function instead and ...
+
+No, it shouldn't. The lifetime of fw_priv is just same with request_firmware or
+its work_func pair, but firmware_buf may live much longer than fw_priv. You
+will see that fw_free_buf is the release function of kref in firmware_buf.
+
+>
+>> +
+>> +     for (i = 0; i < buf->nr_pages; i++)
+>> +             __free_page(buf->pages[i]);
+>> +     kfree(buf->pages);
+>
+> assign NULL to the ptr as a last step, when all is done:
+>
+>         fw_priv->buf = NULL;
+>
+> This way you're making sure ->buf is NULL after all pages are freed and
+> your check above is always correct.
+
+It has been done in _request_firmware_load
+
+
+>> -             kunmap(fw_priv->pages[page_nr]);
+>> +             kunmap(buf->pages[page_nr]);
+>>               buffer += page_cnt;
+>>               offset += page_cnt;
+>>               count -= page_cnt;
+>> @@ -320,12 +334,13 @@ out:
+>
+> While you're at it, you can indent this "out:" label one space to the
+> right so that the diff can pick up the function name in the hunk tag
+> above instead of the label.
+
+Suppose you are right, it shouldn't be done in this patch since this patch
+just converts to firmware_buf.
+
+
+Thanks,
+--
+Ming Lei
