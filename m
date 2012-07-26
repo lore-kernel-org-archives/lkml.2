@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350Ab2GZHTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 03:19:07 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64412 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab2GZHTG (ORCPT
+	id S1751561Ab2GZHXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 03:23:50 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59096 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab2GZHXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 03:19:06 -0400
-Date: Thu, 26 Jul 2012 09:19:02 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: linux-kernel@vger.kernel.org, nsekhar@ti.com, vaibhav.bedia@ti.com,
-        gururaja.hebbar@ti.com
-Subject: Re: [PATCH v2 2/2] pwm: pwm-tiehrpwm: PWM driver support for EHRPWM
-Message-ID: <20120726071902.GB28165@avionic-0098.mockup.avionic-design.de>
-References: <1343215699-4575-1-git-send-email-avinashphilip@ti.com>
- <1343215699-4575-3-git-send-email-avinashphilip@ti.com>
+	Thu, 26 Jul 2012 03:23:48 -0400
+Message-ID: <5010F07E.7050506@redhat.com>
+Date: Thu, 26 Jul 2012 09:23:42 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8GpibOaaTibBMecb"
-Content-Disposition: inline
-In-Reply-To: <1343215699-4575-3-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:WlsU6Bqogms7maYbxr4PDBt25JrkYdLw/buSSuW40pk
- r2llToD3EOi3NuBEFr+fxl6YuqUeO4jcpw0Q5Qq1rGt9WJQ+/5
- KhaL1CDb1bjtubL3cM1mQNwW5c1myjDnE/Qp/q42U7ALp+XkYE
- CvFv5ygrrx4E5ue8yH8+1f3Hi2BKB4vkloV+I2UK/CauxE6CtQ
- gBGVyAdKp9+2e3/O5Dc1edmQLoQnIn/InkDkrEaVYZfYzOZ7Tm
- w3mqQr691JriIzh5nhjxSt3aXI3y3sBU/sYhXJ4hmjzoqu8nxH
- Gz+EdkNrPTQDeXULoowyFX/x3Da27eaxS+NV4onqpXe73GSLI9
- QcPuTbyDpWMYxx+5DBCNn7D2y1nKYoMmQwswhLSLGPmv8grsdk
- XYfBFWv3wlZP63dEiaBjbUWkneSs9s3CPzG/rMTkrbqUDslQVo
- ZvbiD
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
+        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com>
+In-Reply-To: <50105F60.8050707@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 25/07/2012 23:04, Boaz Harrosh ha scritto:
+>> That not all architectures have ARCH_HAS_SG_CHAIN (though all those I
+>> care about do).  So I need to go through all architectures and make sure
+>> they use for_each_sg, or at least to change ARCH_HAS_SG_CHAIN to a
+>> Kconfig define so that dependencies can be expressed properly.
+> 
+> What is actually preventing ARCH_HAS_SG_CHAIN from all these ARCHES?
+> is that the DMA drivers not using for_each_sg(). Sounds like easy
+> to fix.
+> 
+> But yes a deep change would convert ARCH_HAS_SG_CHAIN to a Kconfig.
+> 
+> If you want to be lazy, like me, You might just put a BUILD_BUG_ON
+> in code, requesting the user to disable the driver for this ARCH.
+> 
+> I bet there is more things to do at ARCH to enable virtualization
+> then just support ARCH_HAS_SG_CHAIN. Be it just another requirement.
 
---8GpibOaaTibBMecb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Actually, many arches run just fine with QEMU's binary code translation
+(alpha, mips, coldfire).  And since it's already pretty slow, using
+virtio to improve performance is nice even in that scenario (which does
+not require any kernel change).  But it's just an icing on the cake
+indeed.  I can live with a BUILD_BUG_ON or better a "depends on
+HAVE_SG_CHAIN" for the time being.
 
-On Wed, Jul 25, 2012 at 04:58:19PM +0530, Philip, Avinash wrote:
-> Enhanced high resolution PWM module (EHRPWM) hardware can be used to
-> generate PWM output over 2 channels. This commit adds PWM driver support
-> for EHRPWM device present on AM33XX SOC. Current implementation supports
-> simple PWM functionality.
->=20
-> Reviewed-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
-> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+>>> And BTW you won't need that new __sg_set_page API anymore.
+>>
+>> Kind of.
+>>
+>>    sg_init_table(sg, 2);
+>>    sg_set_buf(sg[0], req, sizeof(req));
+>>    sg_chain(sg[1], scsi_out(sc));
+>>
+>> is still a little bit worse than
+>>
+>>    __sg_set_buf(sg[0], req, sizeof(req));
+>>    __sg_chain(sg[1], scsi_out(sc));
+> 
+> 
+> I believe they are the same, specially for the
+> on the stack 2 elements array. Actually I think
+> In both cases you need to at least call sg_init_table()
+> once after allocation, No?
 
-Applied, with a minor cosmetic fixup. Thanks.
+Because the scatterlist here would be allocated on the stack, I would
+need to call it every time if I used sg_set_buf/sg_chain.
 
-Thierry
+But sg_init_table is really just memset + set SG_MAGIC + sg_mark_end.
+If you use the "full-init" APIs as above, you don't need any of those
+(sg_chain undoes the flag changes in sg_mark_end and vice versa).
 
---8GpibOaaTibBMecb
-Content-Type: application/pgp-signature
+> But please for my sake do not call it __sg_chain. Call it
+> something like sg_chain_not_end(). I hate those "__" which
+> for god sack means what? 
+> (A good name is when I don't have to read the code, an "__"
+>  means "fuck you go read the code")
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Right, better call them sg_init_buf/sg_init_page/sg_init_chain.
 
-iQIcBAEBAgAGBQJQEO9mAAoJEN0jrNd/PrOhHw4QAKGOuYQYJa+l9N9rxQ4rUp+8
-d4ibYk7Htf6K8yYCncLKqIMwiBaDOMqRgv190gJUfrsbzaYlvkkSw1RaPQCx4JgK
-+D9UaPa/bvPfNygFTZCkRzhWSJtoJU/oOMzw47NmmmK1rZDzm9lqRk6IQ/nsLJpZ
-3BUk8i4l60u7ma48AswyPren9bJmabucfdTNix6h3JAEpY9poyHKYrDuC9uS+JfR
-SEEKdSF+CpXCIYb/V2dZJu/UmYprsuEhpRpm4zc2wxWv6lsMcDbSKF25ps88Jfzd
-BWkEv+o3DbAlARL1YuwU6zjcOTUHqfeA9AeYwtsDsCbWopuUMrjCYFh9n6162iFr
-vJ+vSvUvAaaqXchVAJe3yikwGswzWXfkdDwYDpPYhlm6h3jiN74q6hEAP/EwPRH1
-Adk7ItogL2gvQkQCenUIFlp0AQKbKYtjVr1slUMkdN1sdOU+buYKaMo92mS6M8xj
-c8H2YueryGwsUHY4g4CtgjlcN1IBqeh38G4ZJ6tfXsugzjlHpLAdDAgE4b+IhpG4
-iyqy9AasGqQ+SRciFSkQp5180Q2qXiE322Y85wXY2wPjWsz2nAsB2p9Y7XdZbCRF
-XhUrP5YChfOKuoYJgLode558RgXEnvOtFLA8lTQKIpyx3gUdOaNaSCHtpGQjHOHY
-x4qWVHNZ7Bes4NpzRYBN
-=JIJ2
------END PGP SIGNATURE-----
+In the meanwhile, we still have a bug to fix, and we need to choose
+between Sen Wang's v1 (sg_set_page) or v2 (value assignment).  I'm still
+leaning more towards v2, if only because I already tested that one myself.
 
---8GpibOaaTibBMecb--
+Paolo
