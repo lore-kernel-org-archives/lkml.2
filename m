@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab2GZO6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:58:07 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:60214 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752425Ab2GZO6F (ORCPT
+	id S1752401Ab2GZPBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:01:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61681 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab2GZPBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:58:05 -0400
-Date: Thu, 26 Jul 2012 10:58:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Aaron Lu <aaron.lu@amd.com>
-cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jeff Garzik <jgarzik@pobox.com>, <linux-scsi@vger.kernel.org>,
-        Lin Ming <minggr@gmail.com>, <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates
-In-Reply-To: <5010D2DD.9060201@amd.com>
-Message-ID: <Pine.LNX.4.44L0.1207261054410.1295-100000@iolanthe.rowland.org>
+	Thu, 26 Jul 2012 11:01:21 -0400
+Message-ID: <50115BBA.2020400@linaro.org>
+Date: Thu, 26 Jul 2012 16:01:14 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 20/21] ASoC: codecs: Enable AB8500 CODEC for Device Tree
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-21-git-send-email-lee.jones@linaro.org> <20120726115055.GD3099@opensource.wolfsonmicro.com> <50114D71.9060700@linaro.org> <20120726142825.GK3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120726142825.GK3099@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012, Aaron Lu wrote:
+On 26/07/12 15:28, Mark Brown wrote:
+> On Thu, Jul 26, 2012 at 03:00:17PM +0100, Lee Jones wrote:
+>> On 26/07/12 12:50, Mark Brown wrote:
+>
+>>> Yet again no binding documentation....
+>
+>> RFC. ;)
+>
+>> I'll write the documentation when/if the properties are accepted.
+>
+> No, write the documentation.  It's way too much effort to reverse
+> engineer the bindings from the code.
+>
+>>>> +		default :
+>>>> +			codec->ear_cmv = EAR_CMV_UNKNOWN;
+>>>> +			dev_err(dev, "Unsuitable earpiece voltage found in DT\n");
+>
+>>> The platform data code picks a default, can't the DT code do the same?
+>
+>> No, I don't think that it does? The original code returns -EINVAL
+>> unless a value is specified.
+>
+> The code doesn't specify values for the enumeration so it ought to
+> default to EAR_CMV_0_95V if nothing is specified.
 
-> On 07/26/2012 01:05 PM, James Bottomley wrote:
-> > On Thu, 2012-07-26 at 12:47 +0800, Aaron Lu wrote:
-> >> On 07/26/2012 05:38 AM, Jeff Garzik wrote:
-> >>> On 07/25/2012 04:35 PM, Jeff Garzik wrote:
-> >>>> * Updating libata to directly bind with ACPI / runtime power mgmt.
-> >>>> This is a pre-req for SATA ZPODD (CD-ROM power management).
-> >>>>
-> >>>> Touches ACPI (exports++) and SCSI in minor ways. Has been in linux-next
-> >>>> for weeks.
-> >>>>
-> >>>> The rest of [ZPODD] will probably come via SCSI tree, as it involves
-> >>>> a lot of updates to the 'sr' driver etc.
-> >>>
-> >>> BTW Lin and Aaron, note that this did not include these changes:
-> >>>
-> >>> sr: check support for device busy class events
-> >>> sr: support zero power ODD
-> >>> sr: make sure ODD is in resumed state in block ioctl
-> >>>
-> >>> as in the end I wanted to put the brakes on SCSI-touching patches. These
-> >>> should be able to go into James' scsi-misc tree with the other SCSI-area
-> >>> ZPODD changes.
-> >>>
-> >>> For those three 'sr' changes listed above, you may add
-> >>>
-> >>> Acked-by: Jeff Garzik<jgarzik@redhat.com>
-> >>>
-> >>> when moving them over.
-> >>
-> >> Thanks Jeff.
-> >>
-> >> Hi James,
-> >> I'll prepare these dropped patches plus some other fixes for ZPODD which
-> >> I've sent v2 recently and merge them into v3 for you to review.
-> >
-> > They weren't exactly dropped ... I've been waiting for you to address
-> > Alan Stern's comments, since he's our resident expert on suspend/resume.
-> 
-> Oh, I forgot to mention, that I agree with Alan's comments and have
-> addressed them in my v2 patches here:
-> http://marc.info/?l=linux-scsi&m=134312317325650&w=2
-> 
-> The 2 patches Alan has comments are:
-> http://marc.info/?l=linux-scsi&m=134312311025619&w=2
-> http://marc.info/?l=linux-scsi&m=134312308225610&w=2
-> 
-> Hi Alan,
-> Are the v2 patches look OK to you?
+Ah, I see what you mean. I guess we could compromise and print a warning 
+_and_ fall back to the 0th original emum.
 
-Yes, they are better now.
+>> The original author is keen to have a clear error message in case
+>> users try to specify non-exact values. I'd rather we fail-out than
+>> use incorrect values which would be a great deal harder for a user
+>> to debug.
+>
+> By that argument all the properties should be mandatory but it's only
+> this one IIRC.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+This is the only value which the user can pick an obscure value, such as 
+913, thinking they can pick 913mV. I'm happy to fall-back, as long as 
+Ola is too.
 
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
