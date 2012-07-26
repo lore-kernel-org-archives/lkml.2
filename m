@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab2GZVWz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:22:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49659 "EHLO
+	id S1752994Ab2GZVVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:21:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55834 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab2GZVWD (ORCPT
+	with ESMTP id S1752965Ab2GZVVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:22:03 -0400
+	Thu, 26 Jul 2012 17:21:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jian Li <jiali@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 23/23] cifs: when CONFIG_HIGHMEM is set, serialize the read/write kmaps
-Date: Thu, 26 Jul 2012 14:20:02 -0700
-Message-Id: <20120726211407.996441174@linuxfoundation.org>
+        Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [ 02/23] md/raid1: close some possible races on write errors during resync
+Date: Thu, 26 Jul 2012 14:19:41 -0700
+Message-Id: <20120726211406.053709887@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -31,119 +30,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 3cf003c08be785af4bee9ac05891a15bcbff856a upstream.
+commit 58e94ae18478c08229626daece2fc108a4a23261 upstream.
 
-[The async read code was broadened to include uncached reads in 3.5, so
-the mainline patch did not apply directly. This patch is just a backport
-to account for that change.]
+commit 4367af556133723d0f443e14ca8170d9447317cb
+   md/raid1: clear bad-block record when write succeeds.
 
-Jian found that when he ran fsx on a 32 bit arch with a large wsize the
-process and one of the bdi writeback kthreads would sometimes deadlock
-with a stack trace like this:
+Added a 'reschedule_retry' call possibility at the end of
+end_sync_write, but didn't add matching code at the end of
+sync_request_write.  So if the writes complete very quickly, or
+scheduling makes it seem that way, then we can miss rescheduling
+the request and the resync could hang.
 
-crash> bt
-PID: 2789   TASK: f02edaa0  CPU: 3   COMMAND: "fsx"
- #0 [eed63cbc] schedule at c083c5b3
- #1 [eed63d80] kmap_high at c0500ec8
- #2 [eed63db0] cifs_async_writev at f7fabcd7 [cifs]
- #3 [eed63df0] cifs_writepages at f7fb7f5c [cifs]
- #4 [eed63e50] do_writepages at c04f3e32
- #5 [eed63e54] __filemap_fdatawrite_range at c04e152a
- #6 [eed63ea4] filemap_fdatawrite at c04e1b3e
- #7 [eed63eb4] cifs_file_aio_write at f7fa111a [cifs]
- #8 [eed63ecc] do_sync_write at c052d202
- #9 [eed63f74] vfs_write at c052d4ee
-#10 [eed63f94] sys_write at c052df4c
-#11 [eed63fb0] ia32_sysenter_target at c0409a98
-    EAX: 00000004  EBX: 00000003  ECX: abd73b73  EDX: 012a65c6
-    DS:  007b      ESI: 012a65c6  ES:  007b      EDI: 00000000
-    SS:  007b      ESP: bf8db178  EBP: bf8db1f8  GS:  0033
-    CS:  0073      EIP: 40000424  ERR: 00000004  EFLAGS: 00000246
+Also commit 73d5c38a9536142e062c35997b044e89166e063b
+    md: avoid races when stopping resync.
 
-Each task would kmap part of its address array before getting stuck, but
-not enough to actually issue the write.
+Fix a race condition in this same code in end_sync_write but didn't
+make the change in sync_request_write.
 
-This patch fixes this by serializing the marshal_iov operations for
-async reads and writes. The idea here is to ensure that cifs
-aggressively tries to populate a request before attempting to fulfill
-another one. As soon as all of the pages are kmapped for a request, then
-we can unlock and allow another one to proceed.
+This patch updates sync_request_write to fix both of those.
+Patch is suitable for 3.1 and later kernels.
 
-There's no need to do this serialization on non-CONFIG_HIGHMEM arches
-however, so optimize all of this out when CONFIG_HIGHMEM isn't set.
-
-Reported-by: Jian Li <jiali@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Original-version-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- fs/cifs/cifssmb.c |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ drivers/md/raid1.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -89,6 +89,32 @@ static struct {
- /* Forward declarations */
- static void cifs_readv_complete(struct work_struct *work);
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1821,8 +1821,14 @@ static void sync_request_write(struct md
  
-+#ifdef CONFIG_HIGHMEM
-+/*
-+ * On arches that have high memory, kmap address space is limited. By
-+ * serializing the kmap operations on those arches, we ensure that we don't
-+ * end up with a bunch of threads in writeback with partially mapped page
-+ * arrays, stuck waiting for kmap to come back. That situation prevents
-+ * progress and can deadlock.
-+ */
-+static DEFINE_MUTEX(cifs_kmap_mutex);
-+
-+static inline void
-+cifs_kmap_lock(void)
-+{
-+	mutex_lock(&cifs_kmap_mutex);
-+}
-+
-+static inline void
-+cifs_kmap_unlock(void)
-+{
-+	mutex_unlock(&cifs_kmap_mutex);
-+}
-+#else /* !CONFIG_HIGHMEM */
-+#define cifs_kmap_lock() do { ; } while(0)
-+#define cifs_kmap_unlock() do { ; } while(0)
-+#endif /* CONFIG_HIGHMEM */
-+
- /* Mark as invalid, all open files on tree connections since they
-    were closed when session to server was lost */
- static void mark_open_files_invalid(struct cifs_tcon *pTcon)
-@@ -1557,6 +1583,7 @@ cifs_readv_receive(struct TCP_Server_Inf
- 	eof_index = eof ? (eof - 1) >> PAGE_CACHE_SHIFT : 0;
- 	cFYI(1, "eof=%llu eof_index=%lu", eof, eof_index);
- 
-+	cifs_kmap_lock();
- 	list_for_each_entry_safe(page, tpage, &rdata->pages, lru) {
- 		if (remaining >= PAGE_CACHE_SIZE) {
- 			/* enough data to fill the page */
-@@ -1606,6 +1633,7 @@ cifs_readv_receive(struct TCP_Server_Inf
- 			page_cache_release(page);
- 		}
+ 	if (atomic_dec_and_test(&r1_bio->remaining)) {
+ 		/* if we're here, all write(s) have completed, so clean up */
+-		md_done_sync(mddev, r1_bio->sectors, 1);
+-		put_buf(r1_bio);
++		int s = r1_bio->sectors;
++		if (test_bit(R1BIO_MadeGood, &r1_bio->state) ||
++		    test_bit(R1BIO_WriteError, &r1_bio->state))
++			reschedule_retry(r1_bio);
++		else {
++			put_buf(r1_bio);
++			md_done_sync(mddev, s, 1);
++		}
  	}
-+	cifs_kmap_unlock();
- 
- 	/* issue the read if we have any iovecs left to fill */
- 	if (rdata->nr_iov > 1) {
-@@ -2194,7 +2222,9 @@ cifs_async_writev(struct cifs_writedata
- 	 * and set the iov_len properly for each one. It may also set
- 	 * wdata->bytes too.
- 	 */
-+	cifs_kmap_lock();
- 	wdata->marshal_iov(iov, wdata);
-+	cifs_kmap_unlock();
- 
- 	cFYI(1, "async write at %llu %u bytes", wdata->offset, wdata->bytes);
+ }
  
 
 
