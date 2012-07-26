@@ -1,63 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab2GZCPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 22:15:39 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:40610 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab2GZCPi (ORCPT
+	id S1752526Ab2GZCSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 22:18:07 -0400
+Received: from mail-hostigation.familyross.net ([69.85.93.112]:54788 "EHLO
+	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab2GZCSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 22:15:38 -0400
+	Wed, 25 Jul 2012 22:18:05 -0400
+Message-ID: <5010A8DB.40805@familyross.net>
+Date: Wed, 25 Jul 2012 19:18:03 -0700
+From: Kevin Ross <kevin@familyross.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <1343245264-23291-1-git-send-email-tim.gardner@canonical.com>
-References: <1343245264-23291-1-git-send-email-tim.gardner@canonical.com>
-Date: Thu, 26 Jul 2012 10:15:37 +0800
-Message-ID: <CAMiH66GLN02JBVg4MUZ3NXqLFY4zJqZubBhwxmJdhzMwHE0XQA@mail.gmail.com>
-Subject: Re: [PATCH] tlg2300: Declare MODULE_FIRMWARE usage
-From: Huang Shijie <shijie8@gmail.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Kang Yong <kangyong@telegent.com>,
-        Zhang Xiaobing <xbzhang@telegent.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: CoolCold <coolthecold@gmail.com>
+CC: Phil Turmel <philip@turmel.org>, linux-kernel@vger.kernel.org,
+        linux-raid <linux-raid@vger.kernel.org>
+Subject: Re: RAID extremely slow
+References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net> <CAGqmV7p3c4PCgzJOwP+QGrRSPq=Kszh4a2ncmasWaUdSagv_HQ@mail.gmail.com>
+In-Reply-To: <CAGqmV7p3c4PCgzJOwP+QGrRSPq=Kszh4a2ncmasWaUdSagv_HQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks.
+On 07/25/2012 07:09 PM, CoolCold wrote:
+> You might be interested in write intent bitmap then, it gonna help a 
+> lot. (resending in plain text)
 
-Acked-by: Huang Shijie <shijie8@gmail.com>
+Thanks, I'll look into that!
 
-On Thu, Jul 26, 2012 at 3:41 AM, Tim Gardner <tim.gardner@canonical.com> wrote:
-> Cc: Huang Shijie <shijie8@gmail.com>
-> Cc: Kang Yong <kangyong@telegent.com>
-> Cc: Zhang Xiaobing <xbzhang@telegent.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: linux-media@vger.kernel.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->  drivers/media/video/tlg2300/pd-main.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/media/video/tlg2300/pd-main.c b/drivers/media/video/tlg2300/pd-main.c
-> index c096b3f..7b1f6eb 100644
-> --- a/drivers/media/video/tlg2300/pd-main.c
-> +++ b/drivers/media/video/tlg2300/pd-main.c
-> @@ -53,7 +53,8 @@ int debug_mode;
->  module_param(debug_mode, int, 0644);
->  MODULE_PARM_DESC(debug_mode, "0 = disable, 1 = enable, 2 = verbose");
->
-> -static const char *firmware_name = "tlg2300_firmware.bin";
-> +#define TLG2300_FIRMWARE "tlg2300_firmware.bin"
-> +static const char *firmware_name = TLG2300_FIRMWARE;
->  static struct usb_driver poseidon_driver;
->  static LIST_HEAD(pd_device_list);
->
-> @@ -532,3 +533,4 @@ MODULE_AUTHOR("Telegent Systems");
->  MODULE_DESCRIPTION("For tlg2300-based USB device ");
->  MODULE_LICENSE("GPL");
->  MODULE_VERSION("0.0.2");
-> +MODULE_FIRMWARE(TLG2300_FIRMWARE);
-> --
-> 1.7.9.5
->
+-- Kevin
+
