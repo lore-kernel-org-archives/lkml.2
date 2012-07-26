@@ -1,95 +1,505 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab2GZNFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 09:05:39 -0400
-Received: from mail.renton.name ([90.155.165.44]:60714 "EHLO
-	beaver.old-horrors.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab2GZNFh (ORCPT
+	id S1752610Ab2GZNFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 09:05:52 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:57434 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab2GZNFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 09:05:37 -0400
-Date: Thu, 26 Jul 2012 17:02:22 +0400
-From: Alexey Vlasov <renton@renton.name>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
-Subject: Re: Attaching a process to cgroups
-Message-ID: <20120726130222.GB9169@beaver>
-References: <20120619185856.GC31797@beaver>
- <1340195298.15707.3.camel@marge.simpson.net>
- <20120725133637.GA9169@beaver>
- <1343224667.5745.67.camel@marge.simpson.net>
+	Thu, 26 Jul 2012 09:05:49 -0400
+Message-ID: <501140A3.9090908@redhat.com>
+Date: Thu, 26 Jul 2012 15:05:39 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1343224667.5745.67.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
+        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com> <5010F07E.7050506@redhat.com> <5010F831.9030300@panasas.com> <5010F896.8090409@redhat.com>
+In-Reply-To: <5010F896.8090409@redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------020101000300050808020602"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 03:57:47PM +0200, Mike Galbraith wrote:
+This is a multi-part message in MIME format.
+--------------020101000300050808020602
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+Il 26/07/2012 09:58, Paolo Bonzini ha scritto:
 > 
-> I'd profile it with perf, and expect to find a large pile of cycles.
+>> > Please CC me on the "convert to sg copy-less" patches, It looks interesting
+> Sure.
 
-I did it the as following:
-# perf stat cat /proc/self/cgroup 
+Well, here is the gist of it (note it won't apply on any public tree,
+hence no SoB yet).  It should be split in multiple changesets and you
+can make more simplifications on top of it, because
+virtio_scsi_target_state is not anymore variable-sized, but that's
+secondary.
 
-4:blkio:/
-3:devices:/
-2:memory:/
-1:cpuacct:/
+The patch includes the conversion of virtio_ring.c to use sg_next.
+It is a bit ugly because of backwards-compatibility, it can be fixed
+by going through all drivers; not that there are many.
 
- Performance counter stats for 'cat /proc/self/cgroup':
+I'm still a bit worried of the future of this feature though.  I would
+be the first and (because of the non-portability) presumably sole user
+for some time.  Someone axing chained sg-lists in the future does not
+seem too unlikely.  So in practice I would rather just add to virtio a
+function that takes two struct scatterlist ** (or an array of struct
+scatterlist * + size pairs).  Converting to sg_chain once it takes off
+would be trivial.
 
-          0.472513 task-clock                #    0.000 CPUs utilized          
-                 1 context-switches          #    0.002 M/sec                  
-                 1 CPU-migrations            #    0.002 M/sec                  
-               169 page-faults               #    0.358 M/sec                  
-           1111521 cycles                    #    2.352 GHz                    
-            784737 stalled-cycles-frontend   #   70.60% frontend cycles idle   
-            445520 stalled-cycles-backend    #   40.08% backend  cycles idle   
-            576622 instructions              #    0.52  insns per cycle        
-                                             #    1.36  stalled cycles per insn
-            120032 branches                  #  254.029 M/sec                  
-              6577 branch-misses             #    5.48% of all branches        
+Paolo
 
-       9.114631804 seconds time elapsed
+--------------020101000300050808020602
+Content-Type: text/x-patch;
+ name="0001-virtio-scsi-use-chained-sg_lists.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-virtio-scsi-use-chained-sg_lists.patch"
 
-# perf report --sort comm,dso
-Kernel address maps (/proc/{kallsyms,modules}) were restricted.
+>From 57f8d4a20cbe9b3b25e10cd0595d7ac102fc8f73 Mon Sep 17 00:00:00 2001
+From: Paolo Bonzini <pbonzini@redhat.com>
+Date: Thu, 26 Jul 2012 09:58:14 +0200
+Subject: [PATCH] virtio-scsi: use chained sg_lists
 
-Check /proc/sys/kernel/kptr_restrict before running 'perf record'.
+Using chained sg_lists simplifies everything a lot.
+The scatterlists we pass to virtio are always of bounded size,
+and can be allocated on the stack.  This means we do not need to
+take tgt_lock and struct virtio_scsi_target_state does not have
+anymore a flexible array at the end, so we can avoid a pointer
+access.
+---
+ drivers/block/virtio_blk.c   |    3 +
+ drivers/scsi/virtio_scsi.c   |   93 ++++++++++++++++---------------------------
+ drivers/virtio/virtio_ring.c |   93 +++++++++++++++++++++++++++++++------------
+ include/linux/virtio.h       |    8 +++
+ 4 files changed, 114 insertions(+), 83 deletions(-)
 
-If some relocation was applied (e.g. kexec) symbols may be misresolved.
-
-Samples in kernel modules can't be resolved as well.
-
-# ========
-# captured on: Thu Jul 26 16:23:06 2012
-# hostname : l24
-# os release : 3.3.3-1gb-c-s-m
-# perf version : 3.2
-# arch : x86_64
-# nrcpus online : 24
-# nrcpus avail : 24
-# cpudesc : Intel(R) Xeon(R) CPU E5645 @ 2.40GHz
-# total memory : 74181032 kB
-# cmdline : /usr/sbin/perf record cat /proc/self/cgroup 
-# event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 1758, 1759, 1760, 1761, 1762, 1763, 1764, 1765, 1766, 1767, 1768, 1769, 1770, 1771, 1772, 1773, 1774, 1775, 1776, 1777, 1778, 1779, 1780, 1781 }
-# HEADER_CPU_TOPOLOGY info available, use -I to display
-# HEADER_NUMA_TOPOLOGY info available, use -I to display
-# ========
-#
-# Events: 21  cycles
-#
-# Overhead  Command      Shared Object
-# ........  .......  .................
-#
-   100.00%      cat  [kernel.kallsyms]
-
-but I don't know what next unfortunately.
-
-I also checked the same thing on the other server with the 2.6.37 kernel,
-there' some thousands cgroups too, and it somehow works there immediately.
-
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 13f7ccb..ef65ea1 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -66,9 +66,6 @@ struct virtio_scsi_target_state {
+ 	struct virtio_scsi_vq *req_vq;
+ 
+ 	atomic_t reqs;
+-
+-	/* For sglist construction when adding commands to the virtqueue.  */
+-	struct scatterlist sg[];
+ };
+ 
+ /* Driver instance state */
+@@ -362,20 +359,6 @@ static void virtscsi_event_done(struct virtqueue *vq)
+ 	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
+ };
+ 
+-static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+-			     struct scsi_data_buffer *sdb)
+-{
+-	struct sg_table *table = &sdb->table;
+-	struct scatterlist *sg_elem;
+-	unsigned int idx = *p_idx;
+-	int i;
+-
+-	for_each_sg(table->sgl, sg_elem, table->nents, i)
+-		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
+-
+-	*p_idx = idx;
+-}
+-
+ /**
+  * virtscsi_map_cmd - map a scsi_cmd to a virtqueue scatterlist
+  * @vscsi	: virtio_scsi state
+@@ -384,52 +367,57 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+  * @in_num	: number of write-only elements
+  * @req_size	: size of the request buffer
+  * @resp_size	: size of the response buffer
+- *
+- * Called with tgt_lock held.
+  */
+-static void virtscsi_map_cmd(struct virtio_scsi_target_state *tgt,
+-			     struct virtio_scsi_cmd *cmd,
+-			     unsigned *out_num, unsigned *in_num,
++static void virtscsi_map_cmd(struct virtio_scsi_cmd *cmd,
++			     struct scatterlist *sg_out,
++			     unsigned *out_num,
++			     struct scatterlist *sg_in,
++			     unsigned *in_num,
+ 			     size_t req_size, size_t resp_size)
+ {
+ 	struct scsi_cmnd *sc = cmd->sc;
+-	struct scatterlist *sg = tgt->sg;
+-	unsigned int idx = 0;
++
++	sg_init_table(sg_out, 2);
++	sg_init_table(sg_in, 2);
+ 
+ 	/* Request header.  */
+-	sg_set_buf(&sg[idx++], &cmd->req, req_size);
++	sg_set_buf(&sg_out[0], &cmd->req, req_size);
++	*out_num = 1;
+ 
+ 	/* Data-out buffer.  */
+-	if (sc && sc->sc_data_direction != DMA_FROM_DEVICE)
+-		virtscsi_map_sgl(sg, &idx, scsi_out(sc));
+-
+-	*out_num = idx;
++	if (sc && sc->sc_data_direction != DMA_FROM_DEVICE) {
++		struct sg_table *table = &scsi_out(sc)->table;
++		sg_chain(sg_out, 2, table->sgl);
++		*out_num += table->nents;
++	}
+ 
+ 	/* Response header.  */
+-	sg_set_buf(&sg[idx++], &cmd->resp, resp_size);
++	sg_set_buf(&sg_in[0], &cmd->resp, resp_size);
++	*in_num = 1;
+ 
+ 	/* Data-in buffer */
+-	if (sc && sc->sc_data_direction != DMA_TO_DEVICE)
+-		virtscsi_map_sgl(sg, &idx, scsi_in(sc));
+-
+-	*in_num = idx - *out_num;
++	if (sc && sc->sc_data_direction != DMA_TO_DEVICE) {
++		struct sg_table *table = &scsi_in(sc)->table;
++		sg_chain(sg_in, 2, table->sgl);
++		*in_num += table->nents;
++	}
+ }
+ 
+-static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+-			     struct virtio_scsi_vq *vq,
++static int virtscsi_kick_cmd(struct virtio_scsi_vq *vq,
+ 			     struct virtio_scsi_cmd *cmd,
+ 			     size_t req_size, size_t resp_size, gfp_t gfp)
+ {
++	struct scatterlist sg_out[2], sg_in[2];
+ 	unsigned int out_num, in_num;
+ 	unsigned long flags;
+ 	int ret;
+ 
+-	spin_lock_irqsave(&tgt->tgt_lock, flags);
+-	virtscsi_map_cmd(tgt, cmd, &out_num, &in_num, req_size, resp_size);
++	virtscsi_map_cmd(cmd, sg_out, &out_num, sg_in, &in_num,
++			 req_size, resp_size);
+ 
+-	spin_lock(&vq->vq_lock);
+-	ret = virtqueue_add_buf(vq->vq, tgt->sg, out_num, in_num, cmd, gfp);
+-	spin_unlock(&tgt->tgt_lock);
++	spin_lock_irqsave(&vq->vq_lock, flags);
++	ret = virtqueue_add_buf_sg(vq->vq, sg_out, out_num, sg_in, in_num,
++				   cmd, gfp);
+ 	if (ret >= 0)
+ 		ret = virtqueue_kick_prepare(vq->vq);
+ 
+@@ -447,9 +435,6 @@ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+ 	struct virtio_scsi_cmd *cmd;
+ 	int ret;
+ 
+-	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+-	BUG_ON(scsi_sg_count(sc) > shost->sg_tablesize);
+-
+ 	/* TODO: check feature bit and fail if unsupported?  */
+ 	BUG_ON(sc->sc_data_direction == DMA_BIDIRECTIONAL);
+ 
+@@ -477,7 +462,7 @@ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+ 	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+ 	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+ 
+-	if (virtscsi_kick_cmd(tgt, tgt->req_vq, cmd,
++	if (virtscsi_kick_cmd(tgt->req_vq, cmd,
+ 			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+ 			      GFP_ATOMIC) >= 0)
+ 		ret = 0;
+@@ -519,11 +504,10 @@ static int virtscsi_queuecommand_multi(struct Scsi_Host *sh,
+ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(comp);
+-	struct virtio_scsi_target_state *tgt = vscsi->tgt[cmd->sc->device->id];
+ 	int ret = FAILED;
+ 
+ 	cmd->comp = &comp;
+-	if (virtscsi_kick_cmd(tgt, &vscsi->ctrl_vq, cmd,
++	if (virtscsi_kick_cmd(&vscsi->ctrl_vq, cmd,
+ 			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
+ 			      GFP_NOIO) < 0)
+ 		goto out;
+@@ -642,20 +626,16 @@ static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+ }
+ 
+ static struct virtio_scsi_target_state *virtscsi_alloc_tgt(
+-	struct virtio_scsi *vscsi, u32 sg_elems)
++	struct virtio_scsi *vscsi)
+ {
+ 	struct virtio_scsi_target_state *tgt;
+ 	gfp_t gfp_mask = GFP_KERNEL;
+ 
+-	/* We need extra sg elements at head and tail.  */
+-	tgt = kmalloc(sizeof(*tgt) + sizeof(tgt->sg[0]) * (sg_elems + 2),
+-		      gfp_mask);
+-
++	tgt = kmalloc(sizeof(*tgt), gfp_mask);
+ 	if (!tgt)
+ 		return NULL;
+ 
+ 	spin_lock_init(&tgt->tgt_lock);
+-	sg_init_table(tgt->sg, sg_elems + 2);
+ 	atomic_set(&tgt->reqs, 0);
+ 
+ 	/*
+@@ -698,7 +678,7 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 			 struct virtio_scsi *vscsi, int num_targets)
+ {
+ 	int err;
+-	u32 i, sg_elems;
++	u32 i;
+ 	u32 num_vqs;
+ 	vq_callback_t **callbacks;
+ 	const char **names;
+@@ -740,9 +720,6 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG))
+ 		virtscsi_kick_event_all(vscsi);
+ 
+-	/* We need to know how many segments before we allocate.  */
+-	sg_elems = virtscsi_config_get(vdev, seg_max) ?: 1;
+-
+ 	vscsi->tgt = kmalloc(num_targets *
+ 			sizeof(struct virtio_scsi_target_state *), GFP_KERNEL);
+ 	if (!vscsi->tgt) {
+@@ -750,7 +727,7 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 		goto out;
+ 	}
+ 	for (i = 0; i < num_targets; i++) {
+-		vscsi->tgt[i] = virtscsi_alloc_tgt(vscsi, sg_elems);
++		vscsi->tgt[i] = virtscsi_alloc_tgt(vscsi);
+ 		if (!vscsi->tgt[i]) {
+ 			err = -ENOMEM;
+ 			goto out;
 -- 
-Alexey Vlasov
+1.7.1
+
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 693187d..d359e35 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -155,6 +155,9 @@ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
+ 
+ 	num = blk_rq_map_sg(q, vbr->req, vblk->sg + out);
+ 
++	/* Remove scatterlist terminator, we will tack more items soon.  */
++	vblk->sg[num + out - 1].page_link &= ~0x2;
++
+ 	if (vbr->req->cmd_type == REQ_TYPE_BLOCK_PC) {
+ 		sg_set_buf(&vblk->sg[num + out + in++], vbr->req->sense, SCSI_SENSE_BUFFERSIZE);
+ 		sg_set_buf(&vblk->sg[num + out + in++], &vbr->in_hdr,
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 9c5aeea..fda723c 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -126,12 +126,14 @@ struct vring_virtqueue
+ 
+ /* Set up an indirect table of descriptors and add it to the queue. */
+ static int vring_add_indirect(struct vring_virtqueue *vq,
+-			      struct scatterlist sg[],
++			      struct scatterlist *sg_out,
+ 			      unsigned int out,
++			      struct scatterlist *sg_in,
+ 			      unsigned int in,
+ 			      gfp_t gfp)
+ {
+ 	struct vring_desc *desc;
++	struct scatterlist *sg_last = NULL;
+ 	unsigned head;
+ 	int i;
+ 
+@@ -139,20 +141,23 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
+ 	if (!desc)
+ 		return -ENOMEM;
+ 
+-	/* Transfer entries from the sg list into the indirect page */
++	/* Transfer entries from the sg_out list into the indirect page */
+ 	for (i = 0; i < out; i++) {
+ 		desc[i].flags = VRING_DESC_F_NEXT;
+-		desc[i].addr = sg_phys(sg);
+-		desc[i].len = sg->length;
++		desc[i].addr = sg_phys(sg_out);
++		desc[i].len = sg_out->length;
+ 		desc[i].next = i+1;
+-		sg++;
++		sg_last = sg_out;
++		sg_out = sg_next(sg_out);
+ 	}
++	if (!sg_in)
++		sg_in = sg_out ? sg_out : ++sg_last;
+ 	for (; i < (out + in); i++) {
+ 		desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
+-		desc[i].addr = sg_phys(sg);
+-		desc[i].len = sg->length;
++		desc[i].addr = sg_phys(sg_in);
++		desc[i].len = sg_in->length;
+ 		desc[i].next = i+1;
+-		sg++;
++		sg_in = sg_next(sg_in);
+ 	}
+ 
+ 	/* Last one doesn't continue. */
+@@ -189,36 +194,44 @@ int virtqueue_get_queue_index(struct virtqueue *_vq)
+ EXPORT_SYMBOL_GPL(virtqueue_get_queue_index);
+ 
+ /**
+- * virtqueue_add_buf - expose buffer to other end
++ * virtqueue_add_buf_sg - expose buffer to other end
+  * @vq: the struct virtqueue we're talking about.
+- * @sg: the description of the buffer(s).
++ * @sg_out: the description of the output buffer(s).
+  * @out_num: the number of sg readable by other side
+- * @in_num: the number of sg which are writable (after readable ones)
++ * @sg_in: the description of the input buffer(s).
++ * @in_num: the number of sg which are writable
+  * @data: the token identifying the buffer.
+  * @gfp: how to do memory allocations (if necessary).
+  *
+  * Caller must ensure we don't call this with other virtqueue operations
+  * at the same time (except where noted).
+  *
++ * If sg_in is NULL, the writable entries come in sg_out after the
++ * first out_num.
++ *
+  * Returns remaining capacity of queue or a negative error
+  * (ie. ENOSPC).  Note that it only really makes sense to treat all
+  * positive return values as "available": indirect buffers mean that
+  * we can put an entire sg[] array inside a single queue entry.
+  */
+-int virtqueue_add_buf(struct virtqueue *_vq,
+-		      struct scatterlist sg[],
+-		      unsigned int out,
+-		      unsigned int in,
+-		      void *data,
+-		      gfp_t gfp)
++int virtqueue_add_buf_sg(struct virtqueue *_vq,
++			 struct scatterlist *sg_out,
++			 unsigned int out,
++			 struct scatterlist *sg_in,
++			 unsigned int in,
++			 void *data,
++			 gfp_t gfp)
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
++	struct scatterlist *sg_last = NULL;
+ 	unsigned int i, avail, uninitialized_var(prev);
+ 	int head;
+ 
+ 	START_USE(vq);
+ 
+ 	BUG_ON(data == NULL);
++	BUG_ON(!sg_out && !sg_in);
++	BUG_ON(out + in == 0);
+ 
+ #ifdef DEBUG
+ 	{
+@@ -236,13 +249,12 @@ int virtqueue_add_buf(struct virtqueue *_vq,
+ 	/* If the host supports indirect descriptor tables, and we have multiple
+ 	 * buffers, then go indirect. FIXME: tune this threshold */
+ 	if (vq->indirect && (out + in) > 1 && vq->num_free) {
+-		head = vring_add_indirect(vq, sg, out, in, gfp);
++		head = vring_add_indirect(vq, sg_out, out, sg_in, in, gfp);
+ 		if (likely(head >= 0))
+ 			goto add_head;
+ 	}
+ 
+ 	BUG_ON(out + in > vq->vring.num);
+-	BUG_ON(out + in == 0);
+ 
+ 	if (vq->num_free < out + in) {
+ 		pr_debug("Can't add buf len %i - avail = %i\n",
+@@ -262,17 +274,20 @@ int virtqueue_add_buf(struct virtqueue *_vq,
+ 	head = vq->free_head;
+ 	for (i = vq->free_head; out; i = vq->vring.desc[i].next, out--) {
+ 		vq->vring.desc[i].flags = VRING_DESC_F_NEXT;
+-		vq->vring.desc[i].addr = sg_phys(sg);
+-		vq->vring.desc[i].len = sg->length;
++		vq->vring.desc[i].addr = sg_phys(sg_out);
++		vq->vring.desc[i].len = sg_out->length;
+ 		prev = i;
+-		sg++;
++		sg_last = sg_out;
++		sg_out = sg_next(sg_out);
+ 	}
++	if (!sg_in)
++		sg_in = sg_out ? sg_out : ++sg_last;
+ 	for (; in; i = vq->vring.desc[i].next, in--) {
+ 		vq->vring.desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
+-		vq->vring.desc[i].addr = sg_phys(sg);
+-		vq->vring.desc[i].len = sg->length;
++		vq->vring.desc[i].addr = sg_phys(sg_in);
++		vq->vring.desc[i].len = sg_in->length;
+ 		prev = i;
+-		sg++;
++		sg_in = sg_next(sg_in);
+ 	}
+ 	/* Last one doesn't continue. */
+ 	vq->vring.desc[prev].flags &= ~VRING_DESC_F_NEXT;
+@@ -305,6 +320,34 @@ add_head:
+ 
+ 	return vq->num_free;
+ }
++EXPORT_SYMBOL_GPL(virtqueue_add_buf_sg);
++
++/**
++ * virtqueue_add_buf - expose buffer to other end
++ * @vq: the struct virtqueue we're talking about.
++ * @sg: the description of the buffer(s).
++ * @out_num: the number of sg readable by other side
++ * @in_num: the number of sg which are writable (after readable ones)
++ * @data: the token identifying the buffer.
++ * @gfp: how to do memory allocations (if necessary).
++ *
++ * Caller must ensure we don't call this with other virtqueue operations
++ * at the same time (except where noted).
++ *
++ * Returns remaining capacity of queue or a negative error
++ * (ie. ENOSPC).  Note that it only really makes sense to treat all
++ * positive return values as "available": indirect buffers mean that
++ * we can put an entire sg[] array inside a single queue entry.
++ */
++int virtqueue_add_buf(struct virtqueue *_vq,
++		      struct scatterlist sg[],
++		      unsigned int out,
++		      unsigned int in,
++		      void *data,
++		      gfp_t gfp)
++{
++	return virtqueue_add_buf_sg(_vq, sg, out, NULL, in, data, gfp);
++}
+ EXPORT_SYMBOL_GPL(virtqueue_add_buf);
+ 
+ /**
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index 0ac3d3c..f0fe367 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -25,6 +25,14 @@ struct virtqueue {
+ 	void *priv;
+ };
+ 
++int virtqueue_add_buf_sg(struct virtqueue *vq,
++			 struct scatterlist *sg_out,
++			 unsigned int out_num,
++			 struct scatterlist *sg_in,
++			 unsigned int in_num,
++			 void *data,
++			 gfp_t gfp);
++
+ int virtqueue_add_buf(struct virtqueue *vq,
+ 		      struct scatterlist sg[],
+ 		      unsigned int out_num,
+
+--------------020101000300050808020602--
