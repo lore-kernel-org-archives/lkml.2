@@ -1,63 +1,460 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab2GZGOj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 02:14:39 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:34966 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab2GZGOg (ORCPT
+	id S1751061Ab2GZGjV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 02:39:21 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3486 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab2GZGjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 02:14:36 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6783"; a="212290090"
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-To: mchehab@infradead.org
-Cc: paul.gortmaker@windriver.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        davidb@codequrora.org, bryanh@codeaurora.org, tsoni@codeaurora.org,
-        Ravi Kumar V <kumarrav@codeaurora.org>
-Subject: [PATCH] media: rc: Add support to decode Remotes using NECx IR protocol
-Date: Thu, 26 Jul 2012 11:44:24 +0530
-Message-Id: <1343283264-25367-1-git-send-email-kumarrav@codeaurora.org>
-X-Mailer: git-send-email 1.7.8
+	Thu, 26 Jul 2012 02:39:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 25 Jul 2012 23:39:19 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <a.zummo@towertech.it>, <sameo@linux.intel.com>,
+        <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
+        <kyle.manna@fuel7.com>
+CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+Date: Thu, 26 Jul 2012 12:05:19 +0530
+Message-ID: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some remotes use NECx IR protocol to send remote control key
-events. Present nec decoder in rc framework is assuming to have 2
-stop bits (pulse width of 560us & space width 5600us) in NECx, but in
-reality NECx sends only pulse of 560us and space untill next frame.So
-here we can ignore the space width in stop bit as it is variable.
+TPS65910 PMIC is a MFD with RTC as one of the device.
+Adding RTC driver for supporting RTC device present
+inside TPS65910 PMIC.
 
-Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
+Only support for RTC alarm is implemented as part of this patch.
+
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
- drivers/media/rc/ir-nec-decoder.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/rc/ir-nec-decoder.c b/drivers/media/rc/ir-nec-decoder.c
-index 3c9431a..a3fe1c8 100644
---- a/drivers/media/rc/ir-nec-decoder.c
-+++ b/drivers/media/rc/ir-nec-decoder.c
-@@ -149,6 +149,10 @@ static int ir_nec_decode(struct rc_dev *dev, struct ir_raw_event ev)
- 			break;
+ drivers/rtc/Kconfig          |   10 ++
+ drivers/rtc/Makefile         |    1 +
+ drivers/rtc/rtc-tps65910.c   |  353 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65910.h |   10 ++
+ 4 files changed, 374 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-tps65910.c
+
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 668da59..82abc6c 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -323,6 +323,16 @@ config RTC_DRV_TWL4030
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-twl.
  
- 		data->state = STATE_TRAILER_SPACE;
++config RTC_DRV_TPS65910
++	tristate "TI TPS65910 RTC driver"
++	depends on RTC_CLASS && MFD_TPS65910
++	help
++	  If you say yes here you get support for the RTC on the
++	  TPS65910 chips.
 +
-+		if (data->is_nec_x)
-+			goto rc_data;
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-tps65910.
 +
- 		return 0;
+ config RTC_DRV_S35390A
+ 	tristate "Seiko Instruments S-35390A"
+ 	select BITREVERSE
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 2973921..9bd5620 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -104,6 +104,7 @@ obj-$(CONFIG_RTC_DRV_TEGRA)	+= rtc-tegra.o
+ obj-$(CONFIG_RTC_DRV_TEST)	+= rtc-test.o
+ obj-$(CONFIG_RTC_DRV_TILE)	+= rtc-tile.o
+ obj-$(CONFIG_RTC_DRV_TWL4030)	+= rtc-twl.o
++obj-$(CONFIG_RTC_DRV_TPS65910)	+= rtc-tps65910.o
+ obj-$(CONFIG_RTC_DRV_TX4939)	+= rtc-tx4939.o
+ obj-$(CONFIG_RTC_DRV_V3020)	+= rtc-v3020.o
+ obj-$(CONFIG_RTC_DRV_VR41XX)	+= rtc-vr41xx.o
+diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
+new file mode 100644
+index 0000000..74c43c7
+--- /dev/null
++++ b/drivers/rtc/rtc-tps65910.c
+@@ -0,0 +1,353 @@
++/*
++ * rtc-tps65910.c -- TPS65910 Real Time Clock interface
++ *
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ * Author: Venu Byravarasu <vbyravarasu@nvidia.com>
++ *
++ * Based on original TI driver rtc-twl.c
++ *   Copyright (C) 2007 MontaVista Software, Inc
++ *   Author: Alexandre Rusev <source@mvista.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/rtc.h>
++#include <linux/bcd.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/mfd/tps65910.h>
++
++struct tps65910_rtc {
++	struct rtc_device	*rtc;
++	/* To store the list of enabled interrupts */
++	u32 irqstat;
++};
++
++/* Total number of RTC registers needed to set time*/
++#define NUM_TIME_REGS	(TPS65910_YEARS - TPS65910_SECONDS + 1)
++
++static int tps65910_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
++{
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	u8 val = 0;
++
++	if (enabled)
++		val = TPS65910_RTC_INTERRUPTS_IT_ALARM;
++
++	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS, val);
++}
++
++/*
++ * Gets current tps65910 RTC time and date parameters.
++ *
++ * The RTC's time/alarm representation is not what gmtime(3) requires
++ * Linux to use:
++ *
++ *  - Months are 1..12 vs Linux 0-11
++ *  - Years are 0..99 vs Linux 1900..N (we assume 21st century)
++ */
++static int tps65910_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	unsigned char rtc_data[NUM_TIME_REGS];
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	int ret;
++
++	/* Copy RTC counting registers to static registers or latches */
++	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
++		TPS65910_RTC_CTRL_GET_TIME, TPS65910_RTC_CTRL_GET_TIME);
++	if (ret < 0) {
++		dev_err(dev, "RTC CTRL reg update failed with err:%d\n", ret);
++		return ret;
++	}
++
++	ret = regmap_bulk_read(tps->regmap, TPS65910_SECONDS, rtc_data,
++		NUM_TIME_REGS);
++	if (ret < 0) {
++		dev_err(dev, "reading from RTC failed with err:%d\n", ret);
++		return ret;
++	}
++
++	tm->tm_sec = bcd2bin(rtc_data[0]);
++	tm->tm_min = bcd2bin(rtc_data[1]);
++	tm->tm_hour = bcd2bin(rtc_data[2]);
++	tm->tm_mday = bcd2bin(rtc_data[3]);
++	tm->tm_mon = bcd2bin(rtc_data[4]) - 1;
++	tm->tm_year = bcd2bin(rtc_data[5]) + 100;
++
++	return ret;
++}
++
++static int tps65910_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	unsigned char rtc_data[NUM_TIME_REGS];
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	int ret;
++
++	rtc_data[0] = bin2bcd(tm->tm_sec);
++	rtc_data[1] = bin2bcd(tm->tm_min);
++	rtc_data[2] = bin2bcd(tm->tm_hour);
++	rtc_data[3] = bin2bcd(tm->tm_mday);
++	rtc_data[4] = bin2bcd(tm->tm_mon + 1);
++	rtc_data[5] = bin2bcd(tm->tm_year - 100);
++
++	/* Stop RTC while updating the RTC time registers */
++	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
++		TPS65910_RTC_CTRL_STOP_RTC, 0);
++	if (ret < 0) {
++		dev_err(dev, "RTC stop failed with err:%d\n", ret);
++		return ret;
++	}
++
++	/* update all the time registers in one shot */
++	ret = regmap_bulk_write(tps->regmap, TPS65910_SECONDS, rtc_data,
++		NUM_TIME_REGS);
++	if (ret < 0) {
++		dev_err(dev, "rtc_set_time error %d\n", ret);
++		return ret;
++	}
++
++	/* Start back RTC */
++	ret = regmap_update_bits(tps->regmap, TPS65910_RTC_CTRL,
++		TPS65910_RTC_CTRL_STOP_RTC, 1);
++	if (ret < 0)
++		dev_err(dev, "RTC start failed with err:%d\n", ret);
++
++	return ret;
++}
++
++/*
++ * Gets current tps65910 RTC alarm time.
++ */
++static int tps65910_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
++{
++	unsigned char alarm_data[NUM_TIME_REGS];
++	u32 int_val;
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	int ret;
++
++	ret = regmap_bulk_read(tps->regmap, TPS65910_SECONDS, alarm_data,
++		NUM_TIME_REGS);
++	if (ret < 0) {
++		dev_err(dev, "rtc_read_alarm error %d\n", ret);
++		return ret;
++	}
++
++	alm->time.tm_sec = bcd2bin(alarm_data[0]);
++	alm->time.tm_min = bcd2bin(alarm_data[1]);
++	alm->time.tm_hour = bcd2bin(alarm_data[2]);
++	alm->time.tm_mday = bcd2bin(alarm_data[3]);
++	alm->time.tm_mon = bcd2bin(alarm_data[4]) - 1;
++	alm->time.tm_year = bcd2bin(alarm_data[5]) + 100;
++
++	ret = regmap_read(tps->regmap, TPS65910_RTC_INTERRUPTS, &int_val);
++	if (ret < 0)
++		return ret;
++
++	if (int_val & TPS65910_RTC_INTERRUPTS_IT_ALARM)
++		alm->enabled = 1;
++
++	return ret;
++}
++
++static int tps65910_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
++{
++	unsigned char alarm_data[NUM_TIME_REGS];
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	int ret;
++
++	ret = tps65910_rtc_alarm_irq_enable(dev, 0);
++	if (ret)
++		return ret;
++
++	alarm_data[0] = bin2bcd(alm->time.tm_sec);
++	alarm_data[1] = bin2bcd(alm->time.tm_min);
++	alarm_data[2] = bin2bcd(alm->time.tm_hour);
++	alarm_data[3] = bin2bcd(alm->time.tm_mday);
++	alarm_data[4] = bin2bcd(alm->time.tm_mon + 1);
++	alarm_data[5] = bin2bcd(alm->time.tm_year - 100);
++
++	/* update all the alarm registers in one shot */
++	ret = regmap_bulk_write(tps->regmap, TPS65910_ALARM_SECONDS,
++		alarm_data, NUM_TIME_REGS);
++	if (ret) {
++		dev_err(dev, "rtc_set_alarm error %d\n", ret);
++		return ret;
++	}
++
++	if (alm->enabled)
++		ret = tps65910_rtc_alarm_irq_enable(dev, 1);
++
++	return ret;
++}
++
++static irqreturn_t tps65910_rtc_interrupt(int irq, void *rtc)
++{
++	struct device *dev = rtc;
++	unsigned long events = 0;
++	struct tps65910 *tps = dev_get_drvdata(dev->parent);
++	struct tps65910_rtc *tps_rtc = dev_get_drvdata(dev);
++	int ret;
++	u32 rtc_reg;
++
++	ret = regmap_read(tps->regmap, TPS65910_RTC_STATUS, &rtc_reg);
++	if (ret)
++		return IRQ_NONE;
++
++	if (rtc_reg & TPS65910_RTC_STATUS_ALARM)
++		events = RTC_IRQF | RTC_AF;
++
++	ret = regmap_write(tps->regmap, TPS65910_RTC_STATUS, rtc_reg);
++	if (ret)
++		return IRQ_NONE;
++
++	/* Notify RTC core on event */
++	rtc_update_irq(tps_rtc->rtc, 1, events);
++
++	return IRQ_HANDLED;
++}
++
++static struct rtc_class_ops tps65910_rtc_ops = {
++	.read_time	= tps65910_rtc_read_time,
++	.set_time	= tps65910_rtc_set_time,
++	.read_alarm	= tps65910_rtc_read_alarm,
++	.set_alarm	= tps65910_rtc_set_alarm,
++	.alarm_irq_enable = tps65910_rtc_alarm_irq_enable,
++};
++
++static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
++{
++	struct tps65910 *tps65910 = NULL;
++	struct tps65910_rtc *tps_rtc = NULL;
++	struct tps65910_board *pmic_plat_data;
++	int ret = -EINVAL;
++	int irq = 0;
++	u32 rtc_reg;
++
++	tps65910 = dev_get_drvdata(pdev->dev.parent);
++
++	tps_rtc = devm_kzalloc(&pdev->dev, sizeof(struct tps65910_rtc),
++			GFP_KERNEL);
++	if (!tps_rtc)
++		return -ENOMEM;
++
++	/* Clear pending interrupts */
++	ret = regmap_read(tps65910->regmap, TPS65910_RTC_STATUS, &rtc_reg);
++	if (ret < 0)
++		return ret;
++
++	ret = regmap_write(tps65910->regmap, TPS65910_RTC_STATUS, rtc_reg);
++	if (ret < 0)
++		return ret;
++
++	dev_dbg(&pdev->dev, "Enabling tps65910-RTC.\n");
++	rtc_reg = TPS65910_RTC_CTRL_STOP_RTC;
++	ret = regmap_write(tps65910->regmap, TPS65910_RTC_CTRL, rtc_reg);
++	if (ret < 0)
++		return ret;
++
++	pmic_plat_data = dev_get_platdata(tps65910->dev);
++	irq = pmic_plat_data->irq_base;
++	if (irq <= 0) {
++		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n",
++			irq);
++		return ret;
++	}
++
++	irq += TPS65910_IRQ_RTC_ALARM;
++	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
++		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
++		dev_name(&tps_rtc->rtc->dev), &pdev->dev);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "IRQ is not free.\n");
++		return ret;
++	}
++	device_init_wakeup(&pdev->dev, 1);
++
++	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
++		&tps65910_rtc_ops, THIS_MODULE);
++	if (IS_ERR(tps_rtc->rtc)) {
++		ret = PTR_ERR(tps_rtc->rtc);
++		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, tps_rtc);
++
++	return 0;
++}
++
++/*
++ * Disable all tps65910 RTC module interrupts.
++ * Sets status flag to free.
++ */
++static int __devexit tps65910_rtc_remove(struct platform_device *pdev)
++{
++	/* leave rtc running, but disable irqs */
++	struct rtc_device *rtc = platform_get_drvdata(pdev);
++
++	tps65910_rtc_alarm_irq_enable(&rtc->dev, 0);
++
++	rtc_device_unregister(rtc);
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++
++static int tps65910_rtc_suspend(struct platform_device *pdev,
++		pm_message_t state)
++{
++	struct tps65910 *tps = dev_get_drvdata(pdev->dev.parent);
++	u8 alarm = TPS65910_RTC_INTERRUPTS_IT_ALARM;
++	int ret;
++
++	/* Store current list of enabled interrupts*/
++	ret = regmap_read(tps->regmap, TPS65910_RTC_INTERRUPTS,
++		&tps->rtc.irqstat);
++	if (ret < 0)
++		return ret;
++
++	/* Enable RTC ALARM interrupt only */
++	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS, alarm);
++}
++
++static int tps65910_rtc_resume(struct platform_device *pdev)
++{
++	struct tps65910 *tps = dev_get_drvdata(pdev->dev.parent);
++
++	/* Restore list of enabled interrupts before suspend */
++	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS,
++		tps->rtc.irqstat);
++}
++
++static const struct dev_pm_ops tps65910_rtc_pm_ops = {
++	.suspend	= tps65910_rtc_suspend,
++	.resume		= tps65910_rtc_resume,
++};
++
++#define DEV_PM_OPS     (&tps65910_rtc_pm_ops)
++#else
++#define DEV_PM_OPS     NULL
++#endif
++
++static struct platform_driver tps65910rtc_driver = {
++	.probe		= tps65910_rtc_probe,
++	.remove		= __devexit_p(tps65910_rtc_remove),
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "tps65910-rtc",
++		.pm	= DEV_PM_OPS,
++	},
++};
++
++module_platform_driver(tps65910rtc_driver);
++MODULE_ALIAS("platform:tps65910_rtc");
++MODULE_AUTHOR("Venu Byravarasu <vbyravarasu@nvidia.com>");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+index dd8dc0a..8ab0ab3 100644
+--- a/include/linux/mfd/tps65910.h
++++ b/include/linux/mfd/tps65910.h
+@@ -132,6 +132,16 @@
+  *
+  */
  
- 	case STATE_TRAILER_SPACE:
-@@ -157,7 +161,7 @@ static int ir_nec_decode(struct rc_dev *dev, struct ir_raw_event ev)
++/* RTC_CTRL_REG bitfields */
++#define TPS65910_RTC_CTRL_STOP_RTC			0x01 /*0=stop, 1=run */
++#define TPS65910_RTC_CTRL_GET_TIME			0x40
++
++/* RTC_STATUS_REG bitfields */
++#define TPS65910_RTC_STATUS_ALARM               0x40
++
++/* RTC_INTERRUPTS_REG bitfields */
++#define TPS65910_RTC_INTERRUPTS_EVERY           0x03
++#define TPS65910_RTC_INTERRUPTS_IT_ALARM        0x08
  
- 		if (!geq_margin(ev.duration, NEC_TRAILER_SPACE, NEC_UNIT / 2))
- 			break;
--
-+rc_data:
- 		address     = bitrev8((data->bits >> 24) & 0xff);
- 		not_address = bitrev8((data->bits >> 16) & 0xff);
- 		command	    = bitrev8((data->bits >>  8) & 0xff);
+ /*Register BCK1  (0x80) register.RegisterDescription */
+ #define BCK1_BCKUP_MASK					0xFF
 -- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.1.1
 
