@@ -1,337 +1,437 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab2GZXta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 19:49:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55869 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269Ab2GZXt0 (ORCPT
+	id S1753439Ab2GZXt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 19:49:28 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:60381 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753359Ab2GZXsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 19:49:26 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>, linux-kernel@vger.kernel.org,
-        Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/olpc_dcon: fix checkpatch warnings
-Date: Fri, 27 Jul 2012 08:49:19 +0900
-Message-Id: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Thu, 26 Jul 2012 19:48:40 -0400
+From: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com,
+        gregkh@linuxfoundation.org,
+        "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+Subject: [vmw_vmci 07/11] Apply VMCI hash table
+Date: Thu, 26 Jul 2012 16:39:36 -0700
+Message-Id: <1343345980-32397-8-git-send-email-astiegmann@vmware.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
+References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now checkpatch clean.
+Implements a hash table for VMCI's use.
 
-$ find drivers/staging/olpc_dcon/ -name "*.[ch]"|xargs ./scripts/checkpatch.pl \
--f --terse --nosummary|cut -f3- -d":"|sort |uniq -c|sort -n
-      2  WARNING: msleep < 20ms can sleep for up to 20ms; see Documentation/timers/timers-howto.txt
-      3  WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
-      3  WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
-      6  WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-     19  WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
-
-And added pr_fmt.
-
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+Signed-off-by: Andrew Stiegmann (stieg) <astiegmann@vmware.com>
 ---
- drivers/staging/olpc_dcon/olpc_dcon.c        |   56 +++++++++++++-------------
- drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |   15 ++++---
- drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |    6 ++-
- 3 files changed, 41 insertions(+), 36 deletions(-)
+ drivers/misc/vmw_vmci/vmci_hash_table.c |  332 +++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_hash_table.h |   56 +++++
+ 2 files changed, 388 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_hash_table.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_hash_table.h
 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index 992275c..4e6efc1 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -11,6 +11,7 @@
-  * License as published by the Free Software Foundation.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/kernel.h>
- #include <linux/fb.h>
-@@ -71,18 +72,18 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
- 
- 	ver = dcon_read(dcon, DCON_REG_ID);
- 	if ((ver >> 8) != 0xDC) {
--		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
--			ver);
-+		pr_err("olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
-+		       ver);
- 		rc = -ENXIO;
- 		goto err;
- 	}
- 
- 	if (is_init) {
--		printk(KERN_INFO "olpc-dcon:  Discovered DCON version %x\n",
--				ver & 0xFF);
-+		pr_info("olpc-dcon:  Discovered DCON version %x\n",
-+			ver & 0xFF);
- 		rc = pdata->init(dcon);
- 		if (rc != 0) {
--			printk(KERN_ERR "olpc-dcon:  Unable to init.\n");
-+			pr_err("olpc-dcon:  Unable to init.\n");
- 			goto err;
- 		}
- 	}
-@@ -136,21 +137,21 @@ power_up:
- 		x = 1;
- 		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
- 		if (x) {
--			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power up: %d!\n",
-+			pr_warn("olpc-dcon:  unable to force dcon to power up: %d!\n",
- 				x);
- 			return x;
- 		}
--		msleep(10); /* we'll be conservative */
-+		usleep_range(10000, 20000);
- 	}
- 
- 	pdata->bus_stabilize_wiggle();
- 
- 	for (x = -1, timeout = 50; timeout && x < 0; timeout--) {
--		msleep(1);
-+		usleep_range(1000, 2000);
- 		x = dcon_read(dcon, DCON_REG_ID);
- 	}
- 	if (x < 0) {
--		printk(KERN_ERR "olpc-dcon:  unable to stabilize dcon's smbus, reasserting power and praying.\n");
-+		pr_err("olpc-dcon:  unable to stabilize dcon's smbus, reasserting power and praying.\n");
- 		BUG_ON(olpc_board_at_least(olpc_board(0xc2)));
- 		x = 0;
- 		olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
-@@ -221,7 +222,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
- 		x = 0;
- 		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
- 		if (x)
--			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power down: %d!\n",
-+			pr_warn("olpc-dcon:  unable to force dcon to power down: %d!\n",
- 				x);
- 		else
- 			dcon->asleep = sleep;
-@@ -231,7 +232,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
- 			dcon->disp_mode |= MODE_BL_ENABLE;
- 		x = dcon_bus_stabilize(dcon, 1);
- 		if (x)
--			printk(KERN_WARNING "olpc-dcon:  unable to reinit dcon hardware: %d!\n",
-+			pr_warn("olpc-dcon:  unable to reinit dcon hardware: %d!\n",
- 				x);
- 		else
- 			dcon->asleep = sleep;
-@@ -303,12 +304,11 @@ static void dcon_source_switch(struct work_struct *work)
- 
- 	switch (source) {
- 	case DCON_SOURCE_CPU:
--		printk(KERN_INFO "dcon_source_switch to CPU\n");
-+		pr_info("dcon_source_switch to CPU\n");
- 		/* Enable the scanline interrupt bit */
- 		if (dcon_write(dcon, DCON_REG_MODE,
- 				dcon->disp_mode | MODE_SCAN_INT))
--			printk(KERN_ERR
--			       "olpc-dcon:  couldn't enable scanline interrupt!\n");
-+			pr_err("olpc-dcon:  couldn't enable scanline interrupt!\n");
- 		else {
- 			/* Wait up to one second for the scanline interrupt */
- 			wait_event_timeout(dcon_wait_queue,
-@@ -316,11 +316,11 @@ static void dcon_source_switch(struct work_struct *work)
- 		}
- 
- 		if (!dcon->switched)
--			printk(KERN_ERR "olpc-dcon:  Timeout entering CPU mode; expect a screen glitch.\n");
-+			pr_err("olpc-dcon:  Timeout entering CPU mode; expect a screen glitch.\n");
- 
- 		/* Turn off the scanline interrupt */
- 		if (dcon_write(dcon, DCON_REG_MODE, dcon->disp_mode))
--			printk(KERN_ERR "olpc-dcon:  couldn't disable scanline interrupt!\n");
-+			pr_err("olpc-dcon:  couldn't disable scanline interrupt!\n");
- 
- 		/*
- 		 * Ideally we'd like to disable interrupts here so that the
-@@ -331,7 +331,7 @@ static void dcon_source_switch(struct work_struct *work)
- 		 * For now, we just hope..
- 		 */
- 		if (!dcon_blank_fb(dcon, false)) {
--			printk(KERN_ERR "olpc-dcon:  Failed to enter CPU mode\n");
-+			pr_err("olpc-dcon:  Failed to enter CPU mode\n");
- 			dcon->pending_src = DCON_SOURCE_DCON;
- 			return;
- 		}
-@@ -340,14 +340,14 @@ static void dcon_source_switch(struct work_struct *work)
- 		pdata->set_dconload(1);
- 		getnstimeofday(&dcon->load_time);
- 
--		printk(KERN_INFO "olpc-dcon: The CPU has control\n");
-+		pr_info("olpc-dcon: The CPU has control\n");
- 		break;
- 	case DCON_SOURCE_DCON:
- 	{
- 		int t;
- 		struct timespec delta_t;
- 
--		printk(KERN_INFO "dcon_source_switch to DCON\n");
-+		pr_info("dcon_source_switch to DCON\n");
- 
- 		add_wait_queue(&dcon_wait_queue, &wait);
- 		set_current_state(TASK_UNINTERRUPTIBLE);
-@@ -361,7 +361,7 @@ static void dcon_source_switch(struct work_struct *work)
- 		set_current_state(TASK_RUNNING);
- 
- 		if (!dcon->switched) {
--			printk(KERN_ERR "olpc-dcon: Timeout entering DCON mode; expect a screen glitch.\n");
-+			pr_err("olpc-dcon: Timeout entering DCON mode; expect a screen glitch.\n");
- 		} else {
- 			/* sometimes the DCON doesn't follow its own rules,
- 			 * and doesn't wait for two vsync pulses before
-@@ -377,7 +377,7 @@ static void dcon_source_switch(struct work_struct *work)
- 			delta_t = timespec_sub(dcon->irq_time, dcon->load_time);
- 			if (dcon->switched && delta_t.tv_sec == 0 &&
- 					delta_t.tv_nsec < NSEC_PER_MSEC * 20) {
--				printk(KERN_ERR "olpc-dcon: missed loading, retrying\n");
-+				pr_err("olpc-dcon: missed loading, retrying\n");
- 				pdata->set_dconload(1);
- 				mdelay(41);
- 				pdata->set_dconload(0);
-@@ -387,7 +387,7 @@ static void dcon_source_switch(struct work_struct *work)
- 		}
- 
- 		dcon_blank_fb(dcon, true);
--		printk(KERN_INFO "olpc-dcon: The DCON has control\n");
-+		pr_info("olpc-dcon: The DCON has control\n");
- 		break;
- 	}
- 	default:
-@@ -475,7 +475,7 @@ static ssize_t dcon_freeze_store(struct device *dev,
- 	if (ret)
- 		return ret;
- 
--	printk(KERN_INFO "dcon_freeze_store: %lu\n", output);
-+	pr_info("dcon_freeze_store: %lu\n", output);
- 
- 	switch (output) {
- 	case 0:
-@@ -649,7 +649,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	dcon_device = platform_device_alloc("dcon", -1);
- 
- 	if (dcon_device == NULL) {
--		printk(KERN_ERR "dcon:  Unable to create the DCON device\n");
-+		pr_err("dcon:  Unable to create the DCON device\n");
- 		rc = -ENOMEM;
- 		goto eirq;
- 	}
-@@ -657,7 +657,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	platform_set_drvdata(dcon_device, dcon);
- 
- 	if (rc) {
--		printk(KERN_ERR "dcon:  Unable to add the DCON device\n");
-+		pr_err("dcon:  Unable to add the DCON device\n");
- 		goto edev;
- 	}
- 
-@@ -761,7 +761,7 @@ irqreturn_t dcon_interrupt(int irq, void *id)
- 
- 	switch (status & 3) {
- 	case 3:
--		printk(KERN_DEBUG "olpc-dcon: DCONLOAD_MISSED interrupt\n");
-+		pr_debug("olpc-dcon: DCONLOAD_MISSED interrupt\n");
- 		break;
- 
- 	case 2:	/* switch to DCON mode */
-@@ -783,9 +783,9 @@ irqreturn_t dcon_interrupt(int irq, void *id)
- 			dcon->switched = true;
- 			getnstimeofday(&dcon->irq_time);
- 			wake_up(&dcon_wait_queue);
--			printk(KERN_DEBUG "olpc-dcon: switching w/ status 0/0\n");
-+			pr_debug("olpc-dcon: switching w/ status 0/0\n");
- 		} else {
--			printk(KERN_DEBUG "olpc-dcon: scanline interrupt w/CPU\n");
-+			pr_debug("olpc-dcon: scanline interrupt w/CPU\n");
- 		}
- 	}
- 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-index c87fdfa..e83467e 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-@@ -10,6 +10,9 @@
-  * modify it under the terms of version 2 of the GNU General Public
-  * License as published by the Free Software Foundation.
-  */
+diff --git a/drivers/misc/vmw_vmci/vmci_hash_table.c b/drivers/misc/vmw_vmci/vmci_hash_table.c
+new file mode 100644
+index 0000000..a7423df
+--- /dev/null
++++ b/drivers/misc/vmw_vmci/vmci_hash_table.c
+@@ -0,0 +1,332 @@
++/*
++ * VMware VMCI Driver
++ *
++ * Copyright (C) 2012 VMware, Inc. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation version 2 and no later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
++ */
 +
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#include <linux/vmw_vmci_defs.h>
 +
- #include <linux/cs5535.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
-@@ -22,23 +25,23 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
- 	unsigned char lob;
- 
- 	if (gpio_request(OLPC_GPIO_DCON_STAT0, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request STAT0 GPIO\n");
-+		pr_err("olpc-dcon: failed to request STAT0 GPIO\n");
- 		return -EIO;
- 	}
- 	if (gpio_request(OLPC_GPIO_DCON_STAT1, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request STAT1 GPIO\n");
-+		pr_err("olpc-dcon: failed to request STAT1 GPIO\n");
- 		goto err_gp_stat1;
- 	}
- 	if (gpio_request(OLPC_GPIO_DCON_IRQ, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request IRQ GPIO\n");
-+		pr_err("olpc-dcon: failed to request IRQ GPIO\n");
- 		goto err_gp_irq;
- 	}
- 	if (gpio_request(OLPC_GPIO_DCON_LOAD, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request LOAD GPIO\n");
-+		pr_err("olpc-dcon: failed to request LOAD GPIO\n");
- 		goto err_gp_load;
- 	}
- 	if (gpio_request(OLPC_GPIO_DCON_BLANK, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request BLANK GPIO\n");
-+		pr_err("olpc-dcon: failed to request BLANK GPIO\n");
- 		goto err_gp_blank;
- 	}
- 
-@@ -83,7 +86,7 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
- 
- 	/* Register the interrupt handler */
- 	if (request_irq(DCON_IRQ, &dcon_interrupt, 0, "DCON", dcon)) {
--		printk(KERN_ERR "olpc-dcon: failed to request DCON's irq\n");
-+		pr_err("olpc-dcon: failed to request DCON's irq\n");
- 		goto err_req_irq;
- 	}
- 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-index 69415ee..352dd3d 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-@@ -6,6 +6,8 @@
-  * License as published by the Free Software Foundation.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#include "vmci_context.h"
++#include "vmci_common_int.h"
++#include "vmci_driver.h"
++#include "vmci_hash_table.h"
 +
- #include <linux/acpi.h>
- #include <linux/delay.h>
- #include <linux/pci.h>
-@@ -66,7 +68,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
- 	pdev = pci_get_device(PCI_VENDOR_ID_VIA,
- 			      PCI_DEVICE_ID_VIA_VX855, NULL);
- 	if (!pdev) {
--		printk(KERN_ERR "cannot find VX855 PCI ID\n");
-+		pr_err("cannot find VX855 PCI ID\n");
- 		return 1;
- 	}
- 
-@@ -104,7 +106,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
- 	/* we're sharing the IRQ with ACPI */
- 	irq = acpi_gbl_FADT.sci_interrupt;
- 	if (request_irq(irq, &dcon_interrupt, IRQF_SHARED, "DCON", dcon)) {
--		printk(KERN_ERR PREFIX "DCON (IRQ%d) allocation failed\n", irq);
-+		pr_err("DCON (IRQ%d) allocation failed\n", irq);
- 		return 1;
- 	}
- 
++#define VMCI_HANDLE_TO_CONTEXT_ID(_handle) ((_handle).context)
++#define VMCI_HANDLE_TO_RESOURCE_ID(_handle) ((_handle).resource)
++#define VMCI_HASHTABLE_HASH(_h, _sz)				\
++	vmci_hash_calc(VMCI_HANDLE_TO_RESOURCE_ID(_h), (_sz))
++
++struct vmci_hash_table *vmci_hash_create(int size)
++{
++	struct vmci_hash_table *table;
++
++	table = kmalloc(sizeof *table, GFP_KERNEL);
++	if (table == NULL)
++		return NULL;
++
++	table->entries = kcalloc(size, sizeof *table->entries, GFP_KERNEL);
++	if (table->entries == NULL) {
++		kfree(table);
++		return NULL;
++	}
++
++	table->size = size;
++	spin_lock_init(&table->lock);
++
++	return table;
++}
++
++/*
++ * This function should be called at module exit time.
++ * We rely on the module ref count to insure that no one is accessing any
++ * hash table entries at this point in time. Hence we should be able to just
++ * remove all entries from the hash table.
++ */
++void vmci_hash_destroy(struct vmci_hash_table *table)
++{
++	ASSERT(table);
++
++	spin_lock_bh(&table->lock);
++	kfree(table->entries);
++	table->entries = NULL;
++	spin_unlock_bh(&table->lock);
++	kfree(table);
++}
++
++void vmci_hash_init_entry(struct vmci_hash_entry *entry,
++			  struct vmci_handle handle)
++{
++	ASSERT(entry);
++	entry->handle = handle;
++	entry->refCount = 0;
++}
++
++/*
++ * Unlocked version of vmci_hash_exists.
++ * True if handle already in hashtable. false otherwise.
++ */
++static bool hash_exists_locked(struct vmci_hash_table *table,
++			       struct vmci_handle handle)
++{
++	struct vmci_hash_entry *entry;
++	int idx;
++
++	ASSERT(table);
++
++	idx = VMCI_HASHTABLE_HASH(handle, table->size);
++
++	for (entry = table->entries[idx]; entry; entry = entry->next) {
++		if (VMCI_HANDLE_TO_RESOURCE_ID(entry->handle) ==
++		    VMCI_HANDLE_TO_RESOURCE_ID(handle) &&
++		    ((VMCI_HANDLE_TO_CONTEXT_ID(entry->handle) ==
++		      VMCI_HANDLE_TO_CONTEXT_ID(handle)) ||
++		     (VMCI_INVALID_ID == VMCI_HANDLE_TO_CONTEXT_ID(handle))
++		     || (VMCI_INVALID_ID ==
++			 VMCI_HANDLE_TO_CONTEXT_ID(entry->handle)))) {
++			return true;
++		}
++	}
++
++	return false;
++}
++
++/*
++ * Assumes caller holds table lock.
++ */
++static int hash_unlink(struct vmci_hash_table *table,
++		       struct vmci_hash_entry *entry)
++{
++	int result;
++	struct vmci_hash_entry *prev, *cur;
++	const int idx = VMCI_HASHTABLE_HASH(entry->handle, table->size);
++
++	prev = NULL;
++	cur = table->entries[idx];
++	while (true) {
++		if (cur == NULL) {
++			result = VMCI_ERROR_NOT_FOUND;
++			break;
++		}
++		if (VMCI_HANDLE_EQUAL(cur->handle, entry->handle)) {
++			ASSERT(cur == entry);
++
++			/* Remove entry and break. */
++			if (prev)
++				prev->next = cur->next;
++			else
++				table->entries[idx] = cur->next;
++
++			cur->next = NULL;
++			result = VMCI_SUCCESS;
++			break;
++		}
++		prev = cur;
++		cur = cur->next;
++	}
++
++	return result;
++}
++
++int vmci_hash_add(struct vmci_hash_table *table,
++		  struct vmci_hash_entry *entry)
++{
++	int idx;
++
++	ASSERT(entry);
++	ASSERT(table);
++
++	spin_lock_bh(&table->lock);
++
++	/* Creation of a new hashtable entry is always allowed. */
++	if (hash_exists_locked(table, entry->handle)) {
++		pr_devel("Entry (handle=0x%x:0x%x) already exists.",
++			 entry->handle.context, entry->handle.resource);
++		spin_unlock_bh(&table->lock);
++		return VMCI_ERROR_DUPLICATE_ENTRY;
++	}
++
++	idx = VMCI_HASHTABLE_HASH(entry->handle, table->size);
++	ASSERT(idx < table->size);
++
++	/* New entry is added to top/front of hash bucket. */
++	entry->refCount++;
++	entry->next = table->entries[idx];
++	table->entries[idx] = entry;
++	spin_unlock_bh(&table->lock);
++
++	return VMCI_SUCCESS;
++}
++
++int vmci_hash_remove(struct vmci_hash_table *table,
++		     struct vmci_hash_entry *entry)
++{
++	int result;
++
++	ASSERT(table);
++	ASSERT(entry);
++
++	spin_lock_bh(&table->lock);
++
++	/* First unlink the entry. */
++	result = hash_unlink(table, entry);
++	if (result == VMCI_SUCCESS) {
++		/* Decrement refcount and check if this is last reference. */
++		entry->refCount--;
++		if (entry->refCount == 0)
++			result = VMCI_SUCCESS_ENTRY_DEAD;
++	}
++
++	spin_unlock_bh(&table->lock);
++
++	return result;
++}
++
++/*
++ * Looks up an entry in the hash table, that is already locked.
++ * If the element is found, a pointer to the element is returned.
++ * Else NULL.
++ */
++static struct vmci_hash_entry *hash_get_locked(struct vmci_hash_table *table,
++					       struct vmci_handle handle)
++{
++	struct vmci_hash_entry *cur = NULL;
++	int idx;
++
++	ASSERT(!VMCI_HANDLE_EQUAL(handle, VMCI_INVALID_HANDLE));
++	ASSERT(table);
++
++	idx = VMCI_HASHTABLE_HASH(handle, table->size);
++
++	for (cur = table->entries[idx]; cur != NULL; cur = cur->next) {
++		if (VMCI_HANDLE_TO_RESOURCE_ID(cur->handle) ==
++		    VMCI_HANDLE_TO_RESOURCE_ID(handle) &&
++		    ((VMCI_HANDLE_TO_CONTEXT_ID(cur->handle) ==
++		      VMCI_HANDLE_TO_CONTEXT_ID(handle)) ||
++		     (VMCI_INVALID_ID ==
++		      VMCI_HANDLE_TO_CONTEXT_ID(cur->handle)))) {
++			cur->refCount++;
++			break;
++		}
++	}
++
++	return cur;
++}
++
++struct vmci_hash_entry *vmci_hash_get(struct vmci_hash_table *table,
++				      struct vmci_handle handle)
++{
++	struct vmci_hash_entry *entry;
++
++	if (VMCI_HANDLE_EQUAL(handle, VMCI_INVALID_HANDLE))
++		return NULL;
++
++	ASSERT(table);
++
++	spin_lock_bh(&table->lock);
++	entry = hash_get_locked(table, handle);
++	spin_unlock_bh(&table->lock);
++
++	return entry;
++}
++
++/*
++ * Hold the given entry.  This will increment the entry's reference count.
++ * This is like a GetEntry() but without having to lookup the entry by
++ * handle.
++ */
++void vmci_hash_hold(struct vmci_hash_table *table,
++		    struct vmci_hash_entry *entry)
++{
++	ASSERT(table);
++	ASSERT(entry);
++
++	spin_lock_bh(&table->lock);
++	entry->refCount++;
++	spin_unlock_bh(&table->lock);
++}
++
++/*
++ * Releases an element previously obtained with hash_get_locked.
++ * If the entry is removed from the hash table, VMCI_SUCCESS_ENTRY_DEAD
++ * is returned. Otherwise, VMCI_SUCCESS is returned.
++ */
++static int hash_release_locked(struct vmci_hash_table *table,
++			       struct vmci_hash_entry *entry)
++{
++	int result = VMCI_SUCCESS;
++
++	ASSERT(table);
++	ASSERT(entry);
++
++	entry->refCount--;
++	/* Check if this is last reference and report if so. */
++	if (entry->refCount == 0) {
++		/*
++		 * Remove entry from hash table if not already
++		 * removed. This could have happened already because
++		 * vmci_hash_remove was called to unlink it. We ignore
++		 * if it is not found. Datagram handles will often
++		 * have RemoveEntry called, whereas SharedMemory
++		 * regions rely on ReleaseEntry to unlink the entry,
++		 * since the creator does not call RemoveEntry when it
++		 * detaches.
++		 */
++		hash_unlink(table, entry);
++		result = VMCI_SUCCESS_ENTRY_DEAD;
++	}
++
++	return result;
++}
++
++int vmci_hash_release(struct vmci_hash_table *table,
++		      struct vmci_hash_entry *entry)
++{
++	int result;
++
++	spin_lock_bh(&table->lock);
++	result = hash_release_locked(table, entry);
++	spin_unlock_bh(&table->lock);
++
++	return result;
++}
++
++bool vmci_hash_exists(struct vmci_hash_table *table,
++		      struct vmci_handle handle)
++{
++	bool exists;
++
++	spin_lock_bh(&table->lock);
++	exists = hash_exists_locked(table, handle);
++	spin_unlock_bh(&table->lock);
++
++	return exists;
++}
++
++/*
++ * Hash function used by the Simple Datagram API. Hashes only a VMCI id
++ * (not the full VMCI handle) Based on the djb2 hash function by
++ * Dan Bernstein.
++ */
++int vmci_hash_calc(uint32_t id, unsigned size)
++{
++	unsigned i;
++	int hash = 5381;
++
++	for (i = 0; i < sizeof id; i++)
++		hash = ((hash << 5) + hash) + (uint8_t) (id >> (i * 8));
++
++	return hash & (size - 1);
++}
+diff --git a/drivers/misc/vmw_vmci/vmci_hash_table.h b/drivers/misc/vmw_vmci/vmci_hash_table.h
+new file mode 100644
+index 0000000..8e5c83b
+--- /dev/null
++++ b/drivers/misc/vmw_vmci/vmci_hash_table.h
+@@ -0,0 +1,56 @@
++/*
++ * VMware VMCI Driver
++ *
++ * Copyright (C) 2012 VMware, Inc. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation version 2 and no later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
++ */
++
++#ifndef _VMCI_HASH_TABLE_H_
++#define _VMCI_HASH_TABLE_H_
++
++#include <linux/vmw_vmci_defs.h>
++
++struct vmci_hash_entry {
++	struct vmci_handle handle;
++	int refCount;
++	struct vmci_hash_entry *next;
++};
++
++struct vmci_hash_table {
++	struct vmci_hash_entry **entries;
++	int size;		/* Number of buckets in above array. */
++	spinlock_t lock;
++};
++
++struct vmci_hash_table *vmci_hash_create(int size);
++void vmci_hash_destroy(struct vmci_hash_table *table);
++void vmci_hash_init_entry(struct vmci_hash_entry *entry,
++			  struct vmci_handle handle);
++int vmci_hash_add(struct vmci_hash_table *table,
++		  struct vmci_hash_entry *entry);
++int vmci_hash_remove(struct vmci_hash_table *table,
++		     struct vmci_hash_entry *entry);
++struct vmci_hash_entry *vmci_hash_get(struct vmci_hash_table
++				      *table,
++				      struct vmci_handle handle);
++void vmci_hash_hold(struct vmci_hash_table *table,
++		    struct vmci_hash_entry *entry);
++int vmci_hash_release(struct vmci_hash_table *table,
++		      struct vmci_hash_entry *entry);
++bool vmci_hash_exists(struct vmci_hash_table *table,
++		      struct vmci_handle handle);
++int vmci_hash_calc(uint32_t id, unsigned size);
++
++#endif /* _VMCI_HASH_TABLE_H_ */
 -- 
-1.7.5.4
+1.7.0.4
 
