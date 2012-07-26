@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab2GZQdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 12:33:25 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40199 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab2GZQdY (ORCPT
+	id S1752284Ab2GZQeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 12:34:15 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:34189 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab2GZQeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 12:33:24 -0400
-Date: Thu, 26 Jul 2012 12:24:28 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen/p2m: Check __brk_limit before allocating.
-Message-ID: <20120726162428.GA9222@phenom.dumpdata.com>
-References: <1343161413-11077-1-git-send-email-konrad.wilk@oracle.com>
- <1343289182.8016.38.camel@dagon.hellion.org.uk>
+	Thu, 26 Jul 2012 12:34:14 -0400
+Subject: [PATCH 1/3] hpsa: Use LUN reset instead of target reset
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Date: Thu, 26 Jul 2012 11:34:10 -0500
+Message-ID: <20120726163410.25864.55403.stgit@beardog.cce.hp.com>
+In-Reply-To: <20120726162726.25864.49510.stgit@beardog.cce.hp.com>
+References: <20120726162726.25864.49510.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343289182.8016.38.camel@dagon.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 08:53:02AM +0100, Ian Campbell wrote:
-> On Tue, 2012-07-24 at 16:23 -0400, Konrad Rzeszutek Wilk wrote:
-> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> > index 64effdc..b5bb26c 100644
-> > --- a/arch/x86/xen/p2m.c
-> > +++ b/arch/x86/xen/p2m.c
-> > @@ -498,7 +498,14 @@ static bool alloc_p2m(unsigned long pfn)
-> >  
-> >  	return true;
-> >  }
-> > -
-> > +#include <asm/sections.h>
-> > +bool __init can_extend_brk()
-> > +{
-> > +	/* Always reserve one for the DMI extend_brk call. */
-> 
-> That seems a bit fragile, what if someone adds something else or the
-> link order changes etc?
-> 
-> Can't we just have a variant of extend_brk which returns NULL instead of
-> BUG_ON and do error checking?
-> 
-> Or even just change extend_brk and push the BUG_ONs out to the callers
-> -- there aren't that many of them.
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Good thinking. Let me redo it that way and see get x86 folks input.
-> 
-> Ian.
-> -- 
-> Ian Campbell
-> 
-> 
-> Most people in this society who aren't actively mad are, at best,
-> reformed or potential lunatics.
-> 		-- Susan Sontag
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+It turns out Smart Array logical drives do not support target
+reset and when the target reset fails, the logical drive will
+be taken off line.  Symptoms look like this:
+
+hpsa 0000:03:00.0: Abort request on C1:B0:T0:L0
+hpsa 0000:03:00.0: resetting device 1:0:0:0
+hpsa 0000:03:00.0: cp ffff880037c56000 is reported invalid (probably means target device no longer present)
+hpsa 0000:03:00.0: resetting device failed.
+sd 1:0:0:0: Device offlined - not ready after error recovery
+sd 1:0:0:0: rejecting I/O to offline device
+EXT3-fs error (device sdb1): read_block_bitmap:
+
+LUN reset is supported though, and is what we should be using.
+Target reset is also disruptive in shared SAS situations,
+for example, an external MSA1210m which does support target
+reset attached to Smart Arrays in multiple hosts -- a target
+reset from one host is disruptive to other hosts as all LUNs
+on the target will be reset and will abort all outstanding i/os
+back to all the attached hosts.  So we should use LUN reset,
+not target reset.
+
+Tested this with Smart Array logical drives and with tape drives.
+Not sure how this bug survived since 2009, except it must be very
+rare for a Smart Array to require more than 30s to complete a request.
+
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/scsi/hpsa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 796482b..015a6c8 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3265,7 +3265,7 @@ static void fill_cmd(struct CommandList *c, u8 cmd, struct ctlr_info *h,
+ 			c->Request.Timeout = 0; /* Don't time out */
+ 			memset(&c->Request.CDB[0], 0, sizeof(c->Request.CDB));
+ 			c->Request.CDB[0] =  cmd;
+-			c->Request.CDB[1] = 0x03;  /* Reset target above */
++			c->Request.CDB[1] = HPSA_RESET_TYPE_LUN;
+ 			/* If bytes 4-7 are zero, it means reset the */
+ 			/* LunID device */
+ 			c->Request.CDB[4] = 0x00;
+
