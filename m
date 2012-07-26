@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab2GZS0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 14:26:43 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55449 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2GZS0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 14:26:41 -0400
-Message-ID: <50118BDD.7030505@pobox.com>
-Date: Thu, 26 Jul 2012 14:26:37 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752189Ab2GZSdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 14:33:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4321 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751251Ab2GZSdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 14:33:31 -0400
+Message-ID: <50118D16.4050603@redhat.com>
+Date: Thu, 26 Jul 2012 14:31:50 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Nate Lawson <nate@root.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux IDE mailing list <linux-ide@vger.kernel.org>
-Subject: Re: Andre Hedrick (anhedric) has died
-References: <B4DFDCAD-9D5E-4AE9-83FF-041D4D521CFF@root.org>
-In-Reply-To: <B4DFDCAD-9D5E-4AE9-83FF-041D4D521CFF@root.org>
+To: Michal Hocko <mhocko@suse.cz>
+CC: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz>
+In-Reply-To: <20120720143635.GE12434@tiehlicka.suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 12:39 AM, Nate Lawson wrote:
-> Dear Linux hackers,
->
-> Sorry for the intrusion on this technical list. I wanted to let Andre's fellow Linux developers know that he died this past weekend. For those that don't know him, Andre was an active developer for the ATA driver a while back.
->
-> I have known Andre for about 9 years, although I haven't seen much of him in the past year. He and I attended several retreats together in 2002 and 2003. I'd like to share a story from the first time I met him.
->
-> I was a FreeBSD developer at the time and had done some work in the SCSI (CAM) subsystem. I met Andre at a retreat center in the Marin woods. As we ate dinner, he mentioned that he was a software developer. "So am I", I said.
+On 07/20/2012 10:36 AM, Michal Hocko wrote:
 
-A very sad day.  Andre taught me a lot about ATA, and could be 
-considered one of the grandfathers of libata.
+> --- a/arch/x86/mm/hugetlbpage.c
+> +++ b/arch/x86/mm/hugetlbpage.c
+> @@ -81,7 +81,12 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+>   		if (saddr) {
+>   			spte = huge_pte_offset(svma->vm_mm, saddr);
+>   			if (spte) {
+> -				get_page(virt_to_page(spte));
+> +				struct page *spte_page = virt_to_page(spte);
+> +				if (!is_hugetlb_pmd_page_valid(spte_page)) {
 
-http://hedrick4419.blogspot.com/
-http://www.theregister.co.uk/2012/07/26/andre_hedrick/?2
+What prevents somebody else from marking the hugetlb
+pmd invalid, between here...
 
-Rest in peace,
+> +					spte = NULL;
+> +					continue;
+> +				}
 
-	Jeff
+... and here?
 
+> +				get_page(spte_page);
+>   				break;
+>   			}
 
+I think need to take the refcount before checking whether
+the hugetlb pmd is still valid.
+
+Also, disregard my previous email in this thread, I just
+read Mel's detailed explanation and wrapped my brain
+around the bug :)
