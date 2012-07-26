@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab2GZPzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:55:47 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:27451 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab2GZPzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:55:46 -0400
+	id S1752729Ab2GZPz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:55:58 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:47806 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752639Ab2GZPzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 11:55:52 -0400
 X-IronPort-AV: E=Sophos;i="4.77,659,1336363200"; 
-   d="scan'208";a="203311594"
+   d="scan'208";a="32691093"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
@@ -16,9 +15,9 @@ CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
         <catalin.marinas@arm.com>, <arnd@arndb.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 20/24] xen: update xen_add_to_physmap interface
-Date: Thu, 26 Jul 2012 16:34:02 +0100
-Message-ID: <1343316846-25860-20-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 23/24] hvc_xen: allow dom0_write_console for HVM guests
+Date: Thu, 26 Jul 2012 16:34:05 +0100
+Message-ID: <1343316846-25860-23-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
@@ -28,44 +27,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update struct xen_add_to_physmap to be in sync with Xen's version of the
-structure.
-The size field was introduced by:
-
-changeset:   24164:707d27fe03e7
-user:        Jean Guyader <jean.guyader@eu.citrix.com>
-date:        Fri Nov 18 13:42:08 2011 +0000
-summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
-
-According to the comment:
-
-"This new field .size is located in the 16 bits padding between .domid
-and .space in struct xen_add_to_physmap to stay compatible with older
-versions."
-
-This is not true on ARM where there is not padding, but it is valid on
-X86, so introducing size is safe on X86 and it is going to fix the
-interace for ARM.
+On ARM all guests are HVM guests, including Dom0.
+Allow dom0_write_console to be called by an HVM domain.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- include/xen/interface/memory.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/tty/hvc/hvc_xen.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index abbbff0..d8e33a9 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -163,6 +163,9 @@ struct xen_add_to_physmap {
-     /* Which domain to change the mapping for. */
-     domid_t domid;
+diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+index 3c04fb8..949edc2 100644
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -616,12 +616,9 @@ static void xenboot_write_console(struct console *console, const char *string,
+ 	unsigned int linelen, off = 0;
+ 	const char *pos;
  
-+    /* Number of pages to go through for gmfn_range */
-+    uint16_t    size;
-+
-     /* Source mapping space. */
- #define XENMAPSPACE_shared_info 0 /* shared info page */
- #define XENMAPSPACE_grant_table 1 /* grant table page */
+-	if (!xen_pv_domain())
+-		return;
+-
+ 	dom0_write_console(0, string, len);
+ 
+-	if (xen_initial_domain())
++	if (!xen_pv_domain())
+ 		return;
+ 
+ 	domU_write_console(0, "(early) ", 8);
 -- 
 1.7.2.5
 
