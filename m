@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab2GZRy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:54:28 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:43118 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752547Ab2GZRy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:54:27 -0400
-Date: Thu, 26 Jul 2012 19:54:21 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 12/13] driver core: firmware loader: use small
- timeout for cache device firmware
-Message-ID: <20120726175421.GB9161@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
- <1343149213-10160-13-git-send-email-ming.lei@canonical.com>
- <20120726123655.GE30717@aftab.osrc.amd.com>
- <CACVXFVOvkdCG_cAsCQPuNQB_4BnXq8f=+RnVXH=NS5GNPvQgtg@mail.gmail.com>
+	id S1752362Ab2GZSCf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 14:02:35 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47637 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab2GZSCe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 14:02:34 -0400
+Message-ID: <50118637.9060205@wwwdotorg.org>
+Date: Thu, 26 Jul 2012 12:02:31 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVOvkdCG_cAsCQPuNQB_4BnXq8f=+RnVXH=NS5GNPvQgtg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: regulators: creating a regulator device for the AC/USB/BAT/charge
+ component of a PMIC?
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 11:48:17PM +0800, Ming Lei wrote:
-> On Thu, Jul 26, 2012 at 8:36 PM, Borislav Petkov <bp@amd64.org> wrote:
-> > On Wed, Jul 25, 2012 at 01:00:12AM +0800, Ming Lei wrote:
-> >> Because device_cache_firmwares only cache the firmware which has been
-> >> loaded sucessfully at leat once, using a small loading timeout should
-> >
-> >                         least
-> >
-> >> be OK.
-> >
-> > Your commit message doesn't explain why exactly we decrease the timeout:
-> 
-> I have explained it. Because the firmware has been loaded successfully at least
-> once, so it is very probably to not timeout.
-> 
-> > you should probably say that this patch overrides the default 60s
-> > timeout because we're in pre-suspend/-hibernate mode where we have
-> > userspace and are able to load the firmware quickly.
-> 
-> No, it is not what I was saying.
+Mark, Liam,
 
-Ok, maybe I'm not understanding this then. So explain to me this: why
-do you need that timeout value of 10, how did we decide it to be 10
-(and not 20 or 30 or whatever)? Generally, why do we need to reprogram
-the timer to a smaller timeout instead of simply doing the completion
-without a timeout?
+A couple of the regulators I'm looking at (I guess many/most in fact)
+are structured as:
 
--- 
-Regards/Gruss,
-Boris.
+Battery, AC, USB, ... -> PMIC -> main output (unregulated?)
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+main output -> PMIC input pins for some of the SW-controllable
+regulators. This is an external connection on the board.
+
+Should this "main output" be represented as a regulator itself?
+
+In more graphical/concrete terms, take the TPS6586x:
+
+        +---------------+
+        |               |
+AC  --> | \             |
+USB --> |  |------> SYS | >---\
+BAT --> | /             |     |
+        |       VIN_SM0 | <---/
+        |         v     |
+        |       SM0 OUT | ---> other devices
+        ...
+
+... where SM0 is one of the regulators the driver already exposes.
+
+I assume SYS should be an explicit regulator device, because all the
+other regulators within the PMIC can be set up to require that a supply
+be specified (in the DT, a vin-sm0-supply property is mandatory for the
+TPS6586x driver), so some regulator object must exist and be provided as
+the supply.
+
+The alternative would be to this would be to ignore this aspect of the
+PMIC, and just create a standalone fixed regulator to act as the supply
+for the SM0 regulator. However, this doesn't seem like an accurate model
+of the HW.
+
+However, some of the regulators in the TPS6586x at least are fed
+directly from the SYS output by an internal connection within the PMIC
+(e.g. LDO5). Currently, the driver sets up these regulators as having no
+supply, which seems wrong too. Presumably the PMIC driver should
+internally hook up its SYS as LDO5's supply without needing any platform
+data or DT ldo5-supply property to do this?
+
+What are your thoughts here?
