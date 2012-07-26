@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab2GZVVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:21:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55834 "EHLO
+	id S1753243Ab2GZVWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:22:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49659 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab2GZVVn (ORCPT
+	with ESMTP id S1753175Ab2GZVVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:21:43 -0400
+	Thu, 26 Jul 2012 17:21:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benny Halevy <bhalevy@tonian.com>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: [ 17/23] ore: Remove support of partial IO request (NFS crash)
-Date: Thu, 26 Jul 2012 14:19:56 -0700
-Message-Id: <20120726211407.432822551@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 20/23] dm raid1: fix crash with mirror recovery and discard
+Date: Thu, 26 Jul 2012 14:19:59 -0700
+Message-Id: <20120726211407.699019627@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -30,47 +31,110 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 62b62ad873f2accad9222a4d7ffbe1e93f6714c1 upstream.
+commit 751f188dd5ab95b3f2b5f2f467c38aae5a2877eb upstream.
 
-Do to OOM situations the ore might fail to allocate all resources
-needed for IO of the full request. If some progress was possible
-it would proceed with a partial/short request, for the sake of
-forward progress.
+This patch fixes a crash when a discard request is sent during mirror
+recovery.
 
-Since this crashes NFS-core and exofs is just fine without it just
-remove this contraption, and fail.
+Firstly, some background.  Generally, the following sequence happens during
+mirror synchronization:
+- function do_recovery is called
+- do_recovery calls dm_rh_recovery_prepare
+- dm_rh_recovery_prepare uses a semaphore to limit the number
+  simultaneously recovered regions (by default the semaphore value is 1,
+  so only one region at a time is recovered)
+- dm_rh_recovery_prepare calls __rh_recovery_prepare,
+  __rh_recovery_prepare asks the log driver for the next region to
+  recover. Then, it sets the region state to DM_RH_RECOVERING. If there
+  are no pending I/Os on this region, the region is added to
+  quiesced_regions list. If there are pending I/Os, the region is not
+  added to any list. It is added to the quiesced_regions list later (by
+  dm_rh_dec function) when all I/Os finish.
+- when the region is on quiesced_regions list, there are no I/Os in
+  flight on this region. The region is popped from the list in
+  dm_rh_recovery_start function. Then, a kcopyd job is started in the
+  recover function.
+- when the kcopyd job finishes, recovery_complete is called. It calls
+  dm_rh_recovery_end. dm_rh_recovery_end adds the region to
+  recovered_regions or failed_recovered_regions list (depending on
+  whether the copy operation was successful or not).
 
-TODO:
-	Support real forward progress with some reserved allocations
-	of resources, such as mem pools and/or bio_sets
+The above mechanism assumes that if the region is in DM_RH_RECOVERING
+state, no new I/Os are started on this region. When I/O is started,
+dm_rh_inc_pending is called, which increases reg->pending count. When
+I/O is finished, dm_rh_dec is called. It decreases reg->pending count.
+If the count is zero and the region was in DM_RH_RECOVERING state,
+dm_rh_dec adds it to the quiesced_regions list.
 
-[Bug since 3.2 Kernel]
-CC: Benny Halevy <bhalevy@tonian.com>
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Consequently, if we call dm_rh_inc_pending/dm_rh_dec while the region is
+in DM_RH_RECOVERING state, it could be added to quiesced_regions list
+multiple times or it could be added to this list when kcopyd is copying
+data (it is assumed that the region is not on any list while kcopyd does
+its jobs). This results in memory corruption and crash.
+
+There already exist bypasses for REQ_FLUSH requests: REQ_FLUSH requests
+do not belong to any region, so they are always added to the sync list
+in do_writes. dm_rh_inc_pending does not increase count for REQ_FLUSH
+requests. In mirror_end_io, dm_rh_dec is never called for REQ_FLUSH
+requests. These bypasses avoid the crash possibility described above.
+
+These bypasses were improperly implemented for REQ_DISCARD when
+the mirror target gained discard support in commit
+5fc2ffeabb9ee0fc0e71ff16b49f34f0ed3d05b4 (dm raid1: support discard).
+
+In do_writes, REQ_DISCARD requests is always added to the sync queue and
+immediately dispatched (even if the region is in DM_RH_RECOVERING).  However,
+dm_rh_inc and dm_rh_dec is called for REQ_DISCARD resusts.  So it violates the
+rule that no I/Os are started on DM_RH_RECOVERING regions, and causes the list
+corruption described above.
+
+This patch changes it so that REQ_DISCARD requests follow the same path
+as REQ_FLUSH. This avoids the crash.
+
+Reference: https://bugzilla.redhat.com/837607
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exofs/ore.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/md/dm-raid1.c       |    2 +-
+ drivers/md/dm-region-hash.c |    5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -735,13 +735,7 @@ static int _prepare_for_striping(struct
- out:
- 	ios->numdevs = devs_in_group;
- 	ios->pages_consumed = cur_pg;
--	if (unlikely(ret)) {
--		if (length == ios->length)
--			return ret;
--		else
--			ios->length -= length;
--	}
--	return 0;
-+	return ret;
- }
+--- a/drivers/md/dm-raid1.c
++++ b/drivers/md/dm-raid1.c
+@@ -1214,7 +1214,7 @@ static int mirror_end_io(struct dm_targe
+ 	 * We need to dec pending if this was a write.
+ 	 */
+ 	if (rw == WRITE) {
+-		if (!(bio->bi_rw & REQ_FLUSH))
++		if (!(bio->bi_rw & (REQ_FLUSH | REQ_DISCARD)))
+ 			dm_rh_dec(ms->rh, map_context->ll);
+ 		return error;
+ 	}
+--- a/drivers/md/dm-region-hash.c
++++ b/drivers/md/dm-region-hash.c
+@@ -404,6 +404,9 @@ void dm_rh_mark_nosync(struct dm_region_
+ 		return;
+ 	}
  
- int ore_create(struct ore_io_state *ios)
++	if (bio->bi_rw & REQ_DISCARD)
++		return;
++
+ 	/* We must inform the log that the sync count has changed. */
+ 	log->type->set_region_sync(log, region, 0);
+ 
+@@ -524,7 +527,7 @@ void dm_rh_inc_pending(struct dm_region_
+ 	struct bio *bio;
+ 
+ 	for (bio = bios->head; bio; bio = bio->bi_next) {
+-		if (bio->bi_rw & REQ_FLUSH)
++		if (bio->bi_rw & (REQ_FLUSH | REQ_DISCARD))
+ 			continue;
+ 		rh_inc(rh, dm_rh_bio_to_region(rh, bio));
+ 	}
 
 
