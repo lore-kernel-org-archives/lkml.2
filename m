@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab2GZKnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 06:43:22 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:43510 "EHLO relay.sw.ru"
+	id S1752313Ab2GZKoE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 06:44:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25547 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab2GZKnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 06:43:20 -0400
-Message-ID: <50111F36.6000407@parallels.com>
-Date: Thu, 26 Jul 2012 14:43:02 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1751917Ab2GZKoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 06:44:02 -0400
+Message-ID: <50111F6C.7010502@redhat.com>
+Date: Thu, 26 Jul 2012 12:43:56 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 2/7] procfs: Convert /proc/pid/fdinfo/ handling routines
- to seq-file
-References: <20120725094718.089879534@openvz.org> <20120725095024.760705388@openvz.org>
-In-Reply-To: <20120725095024.760705388@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] virtio-scsi: fix parsing of hotplug/hot-unplug LUN
+ number
+References: <1342454751-8950-1-git-send-email-pbonzini@redhat.com>    <1342454751-8950-2-git-send-email-pbonzini@redhat.com>   <1343292731.3115.17.camel@dabdike> <50110820.4040403@redhat.com>  <1343294472.3115.22.camel@dabdike> <50111936.8090508@acm.org> <1343298798.3115.31.camel@dabdike>
+In-Reply-To: <1343298798.3115.31.camel@dabdike>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 01:47 PM, Cyrill Gorcunov wrote:
-> This patch converts /proc/pid/fdinfo/ handling routines to seq-file which
-> is needed to extend seq operations and plug in auxiliary fdinfo provides
-> from subsystems like eventfd/eventpoll/fsnotify.
+Il 26/07/2012 12:33, James Bottomley ha scritto:
+>> > Has it already been considered to modify scsilun_to_int() such that LUN
+>> > numbers start at zero even for addressing method 1 ? This is what e.g.
+>> > the function scst_unpack_lun() already does. See also
+>> > http://scst.svn.sourceforge.net/viewvc/scst/trunk/scst/src/scst_lib.c?revision=HEAD&view=markup.
+> Yes, as I said before, the problem is that the actual numbers are
 > 
-> Note the proc_fd_link no longer call for proc_fd_info, simply because
-> proc_fd_info is converted to seq_fdinfo_open (which is seq-file open()
-> prototype), moreover in further patches I need to provide two seq_fdinfo_open
-> variants -- one with CONFIG_CHECKPOINT_RESTORE and one without this
-> symbol. All in one -- this will look more messy then.
+> 1. not 1:1: there are several possible encodings of luns 0-255
+> 2. hierarchical, so once you go beyond a single level you can't properly
+> use a numeric representation either.
+> 
+> the mid layer just uses the lun number as an encoding of the actual SAM
+> lun.  The key for us is that int_to_scsilun has to go back the other
+> way.
 
-This is something I'm really not happy with :( After the set applied we will
-have one former proc_fd_info being splitted into 3 (three!) functions doing
-the same (with flavors).
+I still disagree, but I will modify QEMU so that this patch is not
+necessary.  Later I can switch to int_to_scsilun.
 
-For me it's better to fix this, otherwise conversion to seq-file looks OK.
+Paolo
 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> CC: Al Viro <viro@ZenIV.linux.org.uk>
-> CC: Alexey Dobriyan <adobriyan@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> CC: James Bottomley <jbottomley@parallels.com>
-> ---
->  fs/proc/fd.c |  133 +++++++++++++++++++++++++++++++++++++----------------------
->  1 file changed, 85 insertions(+), 48 deletions(-)
