@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab2GZLol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:44:41 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:49945 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab2GZLok (ORCPT
+	id S1751979Ab2GZLp6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:45:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57237 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751049Ab2GZLp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:44:40 -0400
+	Thu, 26 Jul 2012 07:45:57 -0400
+Date: Thu, 26 Jul 2012 12:45:55 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 19/21] ASoC: Ux500: Enable ux500 MSP driver for Device
+ Tree
+Message-ID: <20120726114554.GC3099@opensource.wolfsonmicro.com>
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
+ <1343298534-13611-20-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CANfBPZ97FvXnx0JtsDtDhYRxB=f38NsxcvvO4UOqN_sOYe_Rcg@mail.gmail.com>
-References: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
-	<CANfBPZ-amdTBXMbj0E2SrMHBjHFnd8cuC4ASoygkbXC+5oeAGg@mail.gmail.com>
-	<CAKVbJB96Y87=a1dOskYX472Um3w=_orQWN19_Yj+iRp7js9Anw@mail.gmail.com>
-	<CANfBPZ97FvXnx0JtsDtDhYRxB=f38NsxcvvO4UOqN_sOYe_Rcg@mail.gmail.com>
-Date: Thu, 26 Jul 2012 17:14:39 +0530
-Message-ID: <CAKVbJB_EL=h5y0BJC4nt60DcVZ2i7tSP9vS2gw+WQEGHCC1z5w@mail.gmail.com>
-Subject: Re: [PATCH V3 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
-From: vinayak holikatti <vinholikatti@gmail.com>
-To: "S, Venkatraman" <svenkatr@ti.com>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
-        sreekumar.c@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="F+wU6CH2q8RBGewX"
+Content-Disposition: inline
+In-Reply-To: <1343298534-13611-20-git-send-email-lee.jones@linaro.org>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 5:05 PM, S, Venkatraman <svenkatr@ti.com> wrote:
-> On Thu, Jul 26, 2012 at 4:42 PM, vinayak holikatti
-> <vinholikatti@gmail.com> wrote:
->> On Thu, Jul 26, 2012 at 4:02 PM, S, Venkatraman <svenkatr@ti.com> wrote:
->>> On Thu, Jul 26, 2012 at 2:12 PM, Vinayak Holikatti
->>> <vinholikatti@gmail.com> wrote:
->>>> This patch set adds following features
->>>>  - Seggregate PCI specific code in ufshcd.c
->>>>  - Adds PCI glue driver ufshcd-pci.c and ufshcd.c become core module
->>>>  - Adds Platform glue driver ufshcd-pltfrm.c
->>>>  - Update correct transfer size in Command UPIU
->>>>
->>>> Vinayak Holikatti (4):
->>>>   [SCSI] drivers/scsi/ufs: Seggregate PCI Specific Code
->>>>   [SCSI] drivers/scsi/ufs: Separate PCI code into glue driver
->>>>   [SCSI] ufs: Add Platform glue driver for ufshcd
->>>>   [SCSI] ufs: Correct the expected data transfer size
->>>>
->>>>  drivers/scsi/ufs/Kconfig         |   37 +++-
->>>>  drivers/scsi/ufs/Makefile        |    2 +
->>>>  drivers/scsi/ufs/ufshcd-pci.c    |  228 ++++++++++++++++++++
->>>>  drivers/scsi/ufs/ufshcd-pltfrm.c |  222 ++++++++++++++++++++
->>>>  drivers/scsi/ufs/ufshcd.c        |  422 ++++++--------------------------------
->>>>  drivers/scsi/ufs/ufshcd.h        |  206 +++++++++++++++++++
->>>>  drivers/scsi/ufs/ufshcd_common.h |   53 +++++
->>>>  7 files changed, 813 insertions(+), 357 deletions(-)
->>>
->>> Two minor observations..
->>> 1) If both pci and platform have to do the exact same thing in their
->>> _suspend() and _resume() routines, perhaps there is scope for making
->>> them as common (the steps outlined in them should be done in core
->>> ufshcd) ?
->> Both will not have to do the exact same thing. We have plan to implement
->> ufshcd_suspend and ufshcd_resume which will be generic and will be part
->> of ufshcd core, as you said.
->
-> Thanks. The comments in the driver files don't reflect this; it'd be
-> wise to create
-> the placeholder for core_suspend()/resume() in ufshcd.c, instead of
-> the platform drivers.
-Ok, I will make a place holder in ufshcd.c in next version of patch.
->
->>>
->>> 2) Need to include ufshcd_common.h in ufshcd.c so that the prototypes
->>> are supplied for the exported functions.
->> Thank you, I will make necessary changes in next version of patches.
->>
+
+--F+wU6CH2q8RBGewX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Jul 26, 2012 at 11:28:52AM +0100, Lee Jones wrote:
+
+>  arch/arm/mach-ux500/board-mop500-msp.c |   14 --------------
+>  arch/arm/mach-ux500/board-mop500.c     |    2 --
+>  arch/arm/mach-ux500/board-mop500.h     |    2 --
+>  sound/soc/ux500/ux500_msp_dai.c        |    6 ++++++
+>  sound/soc/ux500/ux500_msp_i2s.c        |   33 +++++++++++++++++++++++++++++---
+
+Always provide documentation for DT bindings.
+
+> +void ux500_msp_i2s_of_init_msp(struct platform_device *pdev,
+> +			struct ux500_msp *msp,
+> +			struct device_node *np)
+> +{
+> +	if (of_get_property(np, "stericsson,use-pinctrl", NULL))
+> +		msp->use_pinctrl = true;
+> +	else
+> +		msp->use_pinctrl = false;
+> +}
+> +
+
+This doesn't seem particularly sane...  why is this conditional?
+
+--F+wU6CH2q8RBGewX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQES2wAAoJEBus8iNuMP3d3FwP/2EJ6Y0YfHkCVFQMqzKcNZfj
+pUHjxnKqLLpm3AbxPWdX87XsLjFeSxGmu25Z1y1sbWVrQQtpQhGDbMYTRs3ylWiQ
+wwWhkTLvJZ60dNk0SnPkZzNOdHQcP6BvQqVcURYs4BB/83O20890pEWAMw8Nkiqc
+7erZdOAlvrAPI1eOMbHZUMmFZI/Ldm+3cO5OBiSKuBTGQxEod2LD6Jh6a9lEuhhE
+wG5MujwM2fYwJTzErsMN407725Xixy7rC6K//X7GfcjIz+Rk+e3QmBl+BE1b9y7u
+8OM5QzweCZYfY4CHnYiCnA1OgTQv6Uvkrr2h6EmO0RNxrf/wu57YPeUd1GbXS0BQ
+gDrTOeVn8tQmS9fj2xtXWul8/Hm9knofXEQfz7N8t8js0LQinD9PkbB473Xosaey
+/87W6mk0BH9QNg/573WKL76tCy8OV09q01WFezuY6BB+1Bf2bGM3NSPJ7REKTym3
++PqKx5Ohc1xClJoIKwARWQvywInLauINVTKV9Kuqi78VZ0wW82tjWBKw4CabN0EH
+6L45QETCyGgVfCdU9I2n+mQNkkP/eaIrWsLdyFX3ryrkp1UyoB1G3r7iQt9l6f8d
+2Fhe39vY8yXDURw48V9LYS94pJo+bKHGV9NxpR5EAibT9z6mc7+7Ajz0Y8844LAx
+tHQYKB5fvyb2sS1E+EEz
+=+r3M
+-----END PGP SIGNATURE-----
+
+--F+wU6CH2q8RBGewX--
