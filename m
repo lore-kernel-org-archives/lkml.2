@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab2GZOLZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:11:25 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56291 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751226Ab2GZOLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:11:24 -0400
-Message-ID: <1343311883.11398.21.camel@joe2Laptop>
-Subject: Re: [PATCH]net:appletalk:ddp:fixed coding style issue in
- net/appletalk/ddp.c
-From: Joe Perches <joe@perches.com>
-To: Jeffrin Jose <ahiliation@yahoo.co.in>
-Cc: acme@ghostprotocols.net, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 26 Jul 2012 07:11:23 -0700
-In-Reply-To: <1343311142-4539-1-git-send-email-ahiliation@yahoo.co.in>
-References: <1343311142-4539-1-git-send-email-ahiliation@yahoo.co.in>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752388Ab2GZOL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:11:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:55987 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752310Ab2GZOL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 10:11:56 -0400
+From: Rusty Russell <rusty@ozlabs.org>
+To: wei_wang@realsil.com.cn, gregkh@linuxfoundation.org,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Cc: Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 2/3] drivers/misc: Add realtek pci card reader driver
+In-Reply-To: <1342778966-30270-1-git-send-email-wei_wang@realsil.com.cn>
+References: <1342778966-30270-1-git-send-email-wei_wang@realsil.com.cn>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 26 Jul 2012 22:47:51 +0930
+Message-ID: <87pq7ioe4g.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 19:29 +0530, Jeffrin Jose wrote:
-> Fixed coding style issue relating to switch  and case
-> statement in file net/appletalk/ddp.c
+On Fri, 20 Jul 2012 18:09:26 +0800, <wei_wang@realsil.com.cn> wrote:
+> +static int msi_en = 1;
+> +module_param(msi_en, int, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(msi_en, "Enable MSI");
 
-Don't just move the case labels, move the code blocks
-including comments.
+Should this be a bool, and a module_param(msi_en, bool, S_IRUGO | S_IWUSR);?
 
-> diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
-[]
-> @@ -1798,7 +1798,7 @@ static int atalk_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
->  
->  	switch (cmd) {
->  		/* Protocol layer */
-> -		case TIOCOUTQ: {
-> +	case TIOCOUTQ: {
->  			long amount = sk->sk_sndbuf - sk_wmem_alloc_get(sk);
+> +static int adma_mode = 1;
+> +module_param(adma_mode, int, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(adma_mode, "ADMA Mode");
 
-		long amount = etc...
+This too?
 
-Post the patch with a commit message that says that
-that a git diff -w is empty and the compiled objects
-are the same too.
+> +	/* Data transferred in ADMA mode or not */
+> +	int			adma_mode;
 
+And this?
 
+Cheers,
+Rusty.
