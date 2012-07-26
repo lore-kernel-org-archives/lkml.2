@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab2GZPOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:14:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38116 "EHLO
+	id S1752562Ab2GZPOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:14:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38130 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab2GZPOJ (ORCPT
+	with ESMTP id S1752349Ab2GZPOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:14:09 -0400
-Date: Thu, 26 Jul 2012 08:13:45 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-2jxkmktkppkclj1qe6qxd7ah@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, fengguang.wu@intel.com,
-        bp@amd64.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, bp@amd64.org,
-        fengguang.wu@intel.com
+	Thu, 26 Jul 2012 11:14:54 -0400
+Date: Thu, 26 Jul 2012 08:14:37 -0700
+From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
+Message-ID: <tip-c1ece48cf7ec07c6b3e093a4036b54bc6078f782@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, zheng.z.yan@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        zheng.z.yan@intel.com, tglx@linutronix.de
+In-Reply-To: <1343097850-4348-1-git-send-email-zheng.z.yan@intel.com>
+References: <1343097850-4348-1-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Make bitfield unsigned
-Git-Commit-ID: 597ed953d7db28528b4687e46388c1aa905c14bd
+Subject: [tip:perf/core] perf/x86:
+  Fix format definition of SNB-EP uncore QPI box
+Git-Commit-ID: c1ece48cf7ec07c6b3e093a4036b54bc6078f782
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,43 +30,100 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jul 2012 08:13:51 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jul 2012 08:14:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  597ed953d7db28528b4687e46388c1aa905c14bd
-Gitweb:     http://git.kernel.org/tip/597ed953d7db28528b4687e46388c1aa905c14bd
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 9 Jul 2012 13:50:23 +0200
+Commit-ID:  c1ece48cf7ec07c6b3e093a4036b54bc6078f782
+Gitweb:     http://git.kernel.org/tip/c1ece48cf7ec07c6b3e093a4036b54bc6078f782
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Tue, 24 Jul 2012 10:44:10 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 26 Jul 2012 12:23:13 +0200
+CommitDate: Thu, 26 Jul 2012 12:23:14 +0200
 
-perf/x86: Make bitfield unsigned
+perf/x86: Fix format definition of SNB-EP uncore QPI box
 
-Fix:
+The event control register of SNB-EP uncore QPI box has a one bit
+extension at bit position 21.
 
- arch/x86/kernel/cpu/perf_event.h:377:43: sparse: dubious one-bit signed bitfield
-
-Cc: Borislav Petkov <bp@amd64.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-2jxkmktkppkclj1qe6qxd7ah@git.kernel.org
+Link: http://lkml.kernel.org/r/1343097850-4348-1-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |   22 +++++++++++++++++++++-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |    4 ++++
+ 2 files changed, 25 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index a15df4b..821d53b 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -374,7 +374,7 @@ struct x86_pmu {
- 	/*
- 	 * Intel DebugStore bits
- 	 */
--	int		bts		:1,
-+	unsigned int	bts		:1,
- 			bts_active	:1,
- 			pebs		:1,
- 			pebs_active	:1,
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index d998170..7563fda 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -18,6 +18,7 @@ static struct event_constraint constraint_empty =
+ 	EVENT_CONSTRAINT(0, 0, 0);
+ 
+ DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
++DEFINE_UNCORE_FORMAT_ATTR(event_ext, event, "config:0-7,21");
+ DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
+ DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
+ DEFINE_UNCORE_FORMAT_ATTR(tid_en, tid_en, "config:19");
+@@ -293,6 +294,15 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
+ 	NULL,
+ };
+ 
++static struct attribute *snbep_uncore_qpi_formats_attr[] = {
++	&format_attr_event_ext.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_thresh8.attr,
++	NULL,
++};
++
+ static struct uncore_event_desc snbep_uncore_imc_events[] = {
+ 	INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0x00"),
+ 	INTEL_UNCORE_EVENT_DESC(cas_count_read,  "event=0x04,umask=0x03"),
+@@ -328,6 +338,11 @@ static struct attribute_group snbep_uncore_pcu_format_group = {
+ 	.attrs = snbep_uncore_pcu_formats_attr,
+ };
+ 
++static struct attribute_group snbep_uncore_qpi_format_group = {
++	.name = "format",
++	.attrs = snbep_uncore_qpi_formats_attr,
++};
++
+ static struct intel_uncore_ops snbep_uncore_msr_ops = {
+ 	.init_box	= snbep_uncore_msr_init_box,
+ 	.disable_box	= snbep_uncore_msr_disable_box,
+@@ -499,8 +514,13 @@ static struct intel_uncore_type snbep_uncore_qpi = {
+ 	.num_counters   = 4,
+ 	.num_boxes	= 2,
+ 	.perf_ctr_bits	= 48,
++	.perf_ctr	= SNBEP_PCI_PMON_CTR0,
++	.event_ctl	= SNBEP_PCI_PMON_CTL0,
++	.event_mask	= SNBEP_QPI_PCI_PMON_RAW_EVENT_MASK,
++	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,
++	.ops		= &snbep_uncore_pci_ops,
+ 	.event_descs	= snbep_uncore_qpi_events,
+-	SNBEP_UNCORE_PCI_COMMON_INIT(),
++	.format_group	= &snbep_uncore_qpi_format_group,
+ };
+ 
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index 47b1776..f385189 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -113,6 +113,10 @@
+ 				 SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
+ 				 SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET)
+ 
++#define SNBEP_QPI_PCI_PMON_RAW_EVENT_MASK	\
++				(SNBEP_PMON_RAW_EVENT_MASK | \
++				 SNBEP_PMON_CTL_EV_SEL_EXT)
++
+ /* SNB-EP pci control register */
+ #define SNBEP_PCI_PMON_BOX_CTL			0xf4
+ #define SNBEP_PCI_PMON_CTL0			0xd8
