@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab2GZRYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:24:50 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:39792 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab2GZRYs (ORCPT
+	id S1752813Ab2GZR0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:26:54 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:46549 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752422Ab2GZR0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:24:48 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Aristeu Rozanski <aris@ruivo.org>
-Cc: aris@redhat.com, linux-kernel@vger.kernel.org
-References: <1342033282-24933-1-git-send-email-arozansk@redhat.com>
-	<20120725161120.GA5478@cathedrallabs.org>
-	<87wr1r77ry.fsf@xmission.com>
-	<20120726171321.GE14574@cathedrallabs.org>
-Date: Thu, 26 Jul 2012 10:24:41 -0700
-In-Reply-To: <20120726171321.GE14574@cathedrallabs.org> (Aristeu Rozanski's
-	message of "Thu, 26 Jul 2012 13:13:21 -0400")
-Message-ID: <87hasu306e.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 26 Jul 2012 13:26:52 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19Ax3JGATtAj2P7xcEmbaoxEFa+t/0qF9fpguicYp
+	lSGNjwP47LL0OK
+Message-ID: <50117DD9.6070200@gmx.de>
+Date: Thu, 26 Jul 2012 17:26:49 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/l8IF1iUcVKoxTs5YDD7F+hoAVzq6w0vk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0003]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Aristeu Rozanski <aris@ruivo.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 0/5] userns: convert some filesystems to kuid/kgid
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Alexander Holler <holler@ahsoftware.de>
+CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] video/smscufx: fix line counting in fb_write
+References: <1334959867-3719-1-git-send-email-holler@ahsoftware.de> <4F92995B.6030805@ahsoftware.de> <4FAFAD7B.6090207@gmx.de> <4FF211BD.8060203@ahsoftware.de>
+In-Reply-To: <4FF211BD.8060203@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aristeu Rozanski <aris@ruivo.org> writes:
+On 07/02/2012 09:25 PM, Alexander Holler wrote:
+> Hi Florian,
+> 
+> sorry for the late answer.
+> 
+> Am 13.05.2012 14:47, schrieb Florian Tobias Schandinat:
+>> Hi Alexander,
+>>
+>> On 04/21/2012 11:26 AM, Alexander Holler wrote:
+>>> Hello,
+>>>
+>>> as for the patch for udlfb, I forgot to mention that this is a candidate
+>>> for all stable trees 3.2 and above.
+>>>
+>>> Btw., the address of the maintainer doesn't seem to be valid anymore.
+>>
+>> it is better to cc me on patches to the framebuffer subsystem for such
+>> cases. I don't have much free time so it's rare that I come around to
+>> dig in the mailing list.
+>>
+>>>
+>>> Regards,
+>>>
+>>> Alexander
+>>>
+>>> Am 21.04.2012 00:11, schrieb Alexander Holler:
+>>>> Line 0 and 1 were both written to line 0 (on the display) and all
+>>>> subsequent
+>>>> lines had an offset of -1. The result was that the last line on the
+>>>> display
+>>>> was never overwritten by writes to /dev/fbN.
+>>>>
+>>>> The origin of this bug seems to have been udlfb.
+>>>>
+>>>> Signed-off-by: Alexander Holler<holler@ahsoftware.de>
+>>>
+>>> Cc: stable@vger.kernel.org
+>>
+>> Patch looks good to me but can be made simpler.
+>>
+>>>
+>>>> ---
+>>>>    drivers/video/smscufx.c |    2 +-
+>>>>    1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/drivers/video/smscufx.c b/drivers/video/smscufx.c
+>>>> index ccbfef5..1e1e2d2 100644
+>>>> --- a/drivers/video/smscufx.c
+>>>> +++ b/drivers/video/smscufx.c
+>>>> @@ -904,7 +904,7 @@ static ssize_t ufx_ops_write(struct fb_info *info,
+>>>> const char __user *buf,
+>>>>        result = fb_sys_write(info, buf, count, ppos);
+>>>>
+>>>>        if (result>  0) {
+>>>> -        int start = max((int)(offset / info->fix.line_length) - 1, 0);
+>>>> +        int start = max((int)(offset / info->fix.line_length), 0);
+>>
+>> the cast to int as well as the max is superfluous without the -1 as the
+>> value can no longer be negative.
+> 
+> I had that impression too, but I wanted to change as less as possible,
+> so I didn't had the need to check types and (their) sizes for possible
+> overflows or such. I was lazy and just wanted to fix that one bug. ;)
 
-> Hi Eric,
-> On Wed, Jul 25, 2012 at 04:14:41PM -0700, Eric W. Biederman wrote:
->> Sorry no.  I have unfortunately been a bit out of it for the last few
->> weeks and I have patches to address this already in my development tree.
->
-> what's the tree you're using for development? ebiederm/user-namespace.git at
-> kernel.org doesn't have those changes.
+Well, as this patch fixes a bug I applied it as is.
 
-Please see my userns-always-map-user-v41 branch.
+> 
+>>
+>>>>            int lines = min((u32)((result / info->fix.line_length) + 1),
+>>>>                    (u32)info->var.yres);
+>>>>
 
-Eric
 
+Best regards,
+
+Florian Tobias Schandinat
