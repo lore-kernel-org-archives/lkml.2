@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab2GZVRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:17:22 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10649 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab2GZVRV convert rfc822-to-8bit (ORCPT
+	id S1752476Ab2GZVTo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:19:44 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49464 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304Ab2GZVTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:17:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 26 Jul 2012 14:16:52 -0700
-From: Peter Boonstoppel <pboonstoppel@nvidia.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Diwakar Tundlam <dtundlam@nvidia.com>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Thu, 26 Jul 2012 14:16:51 -0700
-Subject: RE: [PATCH 1/1] kthread: disable preemption during complete()
-Thread-Topic: [PATCH 1/1] kthread: disable preemption during complete()
-Thread-Index: Ac1rHCNq0j2OYZo9SViAVcLPid3/VQAVRVV6
-Message-ID: <5FBF8E85CA34454794F0F7ECBA79798F379D364860@HQMAIL04.nvidia.com>
-References: <5FBF8E85CA34454794F0F7ECBA79798F379D364859@HQMAIL04.nvidia.com>
-  <20120725000901.GA5304@google.com>
-  <5FBF8E85CA34454794F0F7ECBA79798F379D36485E@HQMAIL04.nvidia.com>
-  <20120725224044.GC32378@google.com>
- <1343289850.26034.79.camel@twins>,<alpine.LFD.2.02.1207261242240.32033@ionos>
-In-Reply-To: <alpine.LFD.2.02.1207261242240.32033@ionos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 26 Jul 2012 17:19:43 -0400
+Date: Thu, 26 Jul 2012 22:23:13 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: No big TTY/serial patch merge for 3.6-rc1
+Message-ID: <20120726222313.5993a550@pyramind.ukuu.org.uk>
+In-Reply-To: <20120726190814.GA2194@kroah.com>
+References: <20120726190814.GA2194@kroah.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > tglx has patches that make the kthread create/destroy stuff from hotplug
-> > go away.. that seems like the better approach.
+On Thu, 26 Jul 2012 12:08:14 -0700
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-> Right. That cpu hotplug setup/teardown stuff is ugly.
+>       tty: Move the handling of the tty release logic
 
-If that stuff gets removed complete that's great. The only change I'm aware of right now is the workqueue one: http://thread.gmane.org/gmane.linux.kernel/1329164
+Can we lose that one specifically. I've chased down Ian Abbotts problem
+and replicated it and that is the offending patch not the lock localise
+(which still needs to be kept out as it depends upon this one)
 
-> > The main thing is avoiding the wakeup preemption from the complete()
-> > because we're going to sleep right after anyway.
+I have it fixed but it's not had enough testing for -rc1 and moving the
+termios data has enough spectacular hits all drivers fallout for 3.6
 
-You are very likely to be preempted by the complete(), since the newly created thread has a relatively high vruntime.
-
-> > The comment doesn't really make that clear.
-
-> Right, the comment is crap. It has nothing to do with kthread_bind()
-> and stuff. The whole purpose is to avoid the pointless preemption
-> after wakeup.
-
-The only case I want to solve is the kthread_bind()->wait_task_inactive() scenario. On our platforms this patch reduces average cpu_up() time from about 9ms to 8ms, but max time goes down from 37ms to 8.5ms. cpu_up() latency becomes much more predictable.
-
-
-PeterB
+Alan
