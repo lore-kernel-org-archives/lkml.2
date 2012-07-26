@@ -1,263 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab2GZQjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 12:39:44 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19398 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab2GZQjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 12:39:43 -0400
-Date: Thu, 26 Jul 2012 12:30:20 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        linaro-dev@lists.linaro.org, Ian.Campbell@citrix.com, arnd@arndb.de,
-        catalin.marinas@arm.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Xen-devel] [PATCH 01/24] arm: initial Xen support
-Message-ID: <20120726163020.GB9222@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1752552Ab2GZQkR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 12:40:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62021 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752328Ab2GZQkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 12:40:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="198501303"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH v2] power_supply: Added support for power supply attribute sources
+Date: Thu, 26 Jul 2012 20:47:24 +0530
+Message-Id: <1343315844-18824-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 04:33:43PM +0100, Stefano Stabellini wrote:
-> - Basic hypervisor.h and interface.h definitions.
-> - Skelethon enlighten.c, set xen_start_info to an empty struct.
+On some platforms one driver(or HW chip) may not be able to provide all
+the necessary attributes of the power supply connected to the platform or
+may provide very limited info which can be used by core/primary drivers.
 
-Skeleton
+For example a temperature sensor chip placed near the battery can be used
+to report battery ambient temperature but it does not makes sense to register
+sensor driver with power supply class. Or even a ADC driver or platform
+driver may report power supply properties like voltage/current or charging
+status but registering all those driver with power supply class is not a
+practical or ideal approach.
 
-> - Do not limit xen_initial_domain to PV guests.
+This patch adds the generic support to register the drivers as power
+supply attribute(properties) sources and adds an interface to read
+these attributes from power supply class drivers.
 
-Better wording: Make xen_initial_domain dependent on the SIF_PRIVILIGED_BIT.
+If there are multiple attribute sources of the same type then caller has
+to do source selection by passing the source string in the query struct.
 
-Which reminds me - what about PV guests that do PCI passthrough. Aren't
-they "more" priviligied than normal PV guests? Or not really?
-> 
-> The new code only compiles when CONFIG_XEN is set, that is going to be
-> added to arch/arm/Kconfig in a later patch.
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ Documentation/power/power_supply_class.txt |   30 ++++++++++
+ drivers/power/power_supply_core.c          |   81 ++++++++++++++++++++++++++++
+ include/linux/power_supply.h               |   32 +++++++++++
+ 3 files changed, 143 insertions(+), 0 deletions(-)
 
-s/later patch/<name of patch>/
+diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
+index c0f62ae..f8ceb45 100644
+--- a/Documentation/power/power_supply_class.txt
++++ b/Documentation/power/power_supply_class.txt
+@@ -130,6 +130,36 @@ while battery powers a load)
+ TIME_TO_FULL - seconds left for battery to be considered full (i.e.
+ while battery is charging)
+ 
++Power supply attribute sources
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++On some platforms one driver(or HW chip) may not be able to provide all
++the necessary attributes of the power supply connected to the platform.
++
++For example a temperature sensor chip placed near the battery can be used
++to report battery ambient temperature but it does not makes sense to register
++sensor driver with power supply class. Or even a ADC driver or platform
++driver may report power supply properties like voltage/current or charging
++status but registering all those driver with power supply class is not a
++practical or ideal approach.
++
++Power supply subsystem provides an interface to register and report about
++these power supply attributes to the primary driver which is registered
++with power supply class.
++
++Power supply attribute source driver can use the following functions to
++register/unregister as attributes source.
++
++int power_supply_attributes_register(struct device *parent,
++				struct power_supply_attr_source *psy_attr);
++
++void power_supply_attributes_unregister(
++			struct power_supply_attr_source *psy_attr);
++
++Power supply class driver(consumer driver) which needs to get
++power supply attributes can call the following function.
++
++int power_supply_get_external_attr(
++				struct power_supply_attr_query *query);
+ 
+ Battery <-> external power supply interaction
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index ff990d2..a4b52f4 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -14,6 +14,7 @@
+ #include <linux/types.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
++#include <linux/list.h>
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/power_supply.h>
+@@ -26,6 +27,8 @@ EXPORT_SYMBOL_GPL(power_supply_class);
+ 
+ static struct device_type power_supply_dev_type;
+ 
++static LIST_HEAD(list_head_source_attr);
++
+ static int __power_supply_changed_work(struct device *dev, void *data)
+ {
+ 	struct power_supply *psy = (struct power_supply *)data;
+@@ -164,6 +167,37 @@ int power_supply_powers(struct power_supply *psy, struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(power_supply_powers);
+ 
++int power_supply_get_external_attr(struct power_supply_attr_query *query)
++{
++	struct list_head *list;
++	struct power_supply_attr_source *psy_attr;
++	int ret = -ENODEV;
++
++	if (!query || list_empty(&list_head_source_attr))
++		return -EINVAL;
++
++	list_for_each(list, &list_head_source_attr) {
++		psy_attr = list_entry(list,
++			struct power_supply_attr_source, attr_pool);
++
++		if (psy_attr->type != query->type)
++			continue;
++		if (query->src_name && strcmp(query->src_name,
++						psy_attr->name))
++			continue;
++
++		ret = psy_attr->get_property(psy_attr,
++				query->property, &query->res);
++		if (ret < 0)
++			continue;
++		else
++			break;
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(power_supply_get_external_attr);
++
+ static void power_supply_dev_release(struct device *dev)
+ {
+ 	pr_debug("device: '%s': %s\n", dev_name(dev), __func__);
+@@ -289,6 +323,53 @@ void power_supply_unregister(struct power_supply *psy)
+ }
+ EXPORT_SYMBOL_GPL(power_supply_unregister);
+ 
++int power_supply_attributes_register(struct device *parent,
++				struct power_supply_attr_source *psy_attr)
++{
++	struct device *dev;
++	int rc;
++
++	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	if (!dev)
++		return -ENOMEM;
++
++	device_initialize(dev);
++
++	dev->parent = parent;
++	dev->release = power_supply_dev_release;
++	dev_set_drvdata(dev, psy_attr);
++	psy_attr->dev = dev;
++
++	rc = kobject_set_name(&dev->kobj, "%s", psy_attr->name);
++	if (rc)
++		goto kobject_set_name_failed;
++
++	rc = device_add(dev);
++	if (rc)
++		goto device_add_failed;
++
++	INIT_LIST_HEAD(&psy_attr->attr_pool);
++	/* add to the list head */
++	list_add(&psy_attr->attr_pool, &list_head_source_attr);
++
++	goto success;
++
++kobject_set_name_failed:
++device_add_failed:
++	put_device(dev);
++success:
++	return rc;
++}
++EXPORT_SYMBOL_GPL(power_supply_attributes_register);
++
++void power_supply_attributes_unregister(struct power_supply_attr_source
++								*psy_attr)
++{
++	list_del(&psy_attr->attr_pool);
++	device_unregister(psy_attr->dev);
++}
++EXPORT_SYMBOL_GPL(power_supply_attributes_unregister);
++
+ static int __init power_supply_class_init(void)
+ {
+ 	power_supply_class = class_create(THIS_MODULE, "power_supply");
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 53f177d..b0f175a 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -193,6 +193,29 @@ struct power_supply {
+ #endif
+ };
+ 
++struct power_supply_attr_query {
++	char *src_name;
++	enum power_supply_property property;
++	enum power_supply_type type;
++	/* variable to store result */
++	union power_supply_propval res;
++};
++
++struct power_supply_attr_source {
++	const char *name;
++	enum power_supply_type type;
++	int (*get_property)(struct power_supply_attr_source *psy_attr,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val);
++	int (*set_property)(struct power_supply_attr_source *psy_attr,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val);
++
++	/* private */
++	struct device *dev;
++	struct list_head attr_pool;
++};
++
+ /*
+  * This is recommended structure to specify static power supply parameters.
+  * Generic one, parametrizable for different power supplies. Power supply
+@@ -216,6 +239,8 @@ extern struct power_supply *power_supply_get_by_name(char *name);
+ extern void power_supply_changed(struct power_supply *psy);
+ extern int power_supply_am_i_supplied(struct power_supply *psy);
+ extern int power_supply_set_battery_charged(struct power_supply *psy);
++extern int power_supply_get_external_attr(
++				struct power_supply_attr_query *query);
+ 
+ #ifdef CONFIG_POWER_SUPPLY
+ extern int power_supply_is_system_supplied(void);
+@@ -226,6 +251,13 @@ static inline int power_supply_is_system_supplied(void) { return -ENOSYS; }
+ extern int power_supply_register(struct device *parent,
+ 				 struct power_supply *psy);
+ extern void power_supply_unregister(struct power_supply *psy);
++
++extern int power_supply_attributes_register(struct device *parent,
++				struct power_supply_attr_source *psy_attr);
++
++extern void power_supply_attributes_unregister(
++			struct power_supply_attr_source *psy_attr);
++
+ extern int power_supply_powers(struct power_supply *psy, struct device *dev);
+ 
+ /* For APM emulation, think legacy userspace. */
+-- 
+1.7.0.4
 
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/Makefile                     |    1 +
->  arch/arm/include/asm/hypervisor.h     |    6 +++
->  arch/arm/include/asm/xen/hypervisor.h |   19 ++++++++++
->  arch/arm/include/asm/xen/interface.h  |   64 +++++++++++++++++++++++++++++++++
->  arch/arm/xen/Makefile                 |    1 +
->  arch/arm/xen/enlighten.c              |   35 ++++++++++++++++++
->  include/xen/xen.h                     |    2 +-
->  7 files changed, 127 insertions(+), 1 deletions(-)
->  create mode 100644 arch/arm/include/asm/hypervisor.h
->  create mode 100644 arch/arm/include/asm/xen/hypervisor.h
->  create mode 100644 arch/arm/include/asm/xen/interface.h
->  create mode 100644 arch/arm/xen/Makefile
->  create mode 100644 arch/arm/xen/enlighten.c
-> 
-> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-> index 0298b00..70aaa82 100644
-> --- a/arch/arm/Makefile
-> +++ b/arch/arm/Makefile
-> @@ -246,6 +246,7 @@ endif
->  core-$(CONFIG_FPE_NWFPE)	+= arch/arm/nwfpe/
->  core-$(CONFIG_FPE_FASTFPE)	+= $(FASTFPE_OBJ)
->  core-$(CONFIG_VFP)		+= arch/arm/vfp/
-> +core-$(CONFIG_XEN)		+= arch/arm/xen/
->  
->  # If we have a machine-specific directory, then include it in the build.
->  core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
-> diff --git a/arch/arm/include/asm/hypervisor.h b/arch/arm/include/asm/hypervisor.h
-> new file mode 100644
-> index 0000000..b90d9e5
-> --- /dev/null
-> +++ b/arch/arm/include/asm/hypervisor.h
-> @@ -0,0 +1,6 @@
-> +#ifndef _ASM_ARM_HYPERVISOR_H
-> +#define _ASM_ARM_HYPERVISOR_H
-> +
-> +#include <asm/xen/hypervisor.h>
-> +
-> +#endif
-> diff --git a/arch/arm/include/asm/xen/hypervisor.h b/arch/arm/include/asm/xen/hypervisor.h
-> new file mode 100644
-> index 0000000..d7ab99a
-> --- /dev/null
-> +++ b/arch/arm/include/asm/xen/hypervisor.h
-> @@ -0,0 +1,19 @@
-> +#ifndef _ASM_ARM_XEN_HYPERVISOR_H
-> +#define _ASM_ARM_XEN_HYPERVISOR_H
-> +
-> +extern struct shared_info *HYPERVISOR_shared_info;
-> +extern struct start_info *xen_start_info;
-> +
-> +/* Lazy mode for batching updates / context switch */
-> +enum paravirt_lazy_mode {
-> +	PARAVIRT_LAZY_NONE,
-> +	PARAVIRT_LAZY_MMU,
-> +	PARAVIRT_LAZY_CPU,
-> +};
-> +
-> +static inline enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
-> +{
-> +	return PARAVIRT_LAZY_NONE;
-> +}
-> +
-> +#endif /* _ASM_ARM_XEN_HYPERVISOR_H */
-> diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
-> new file mode 100644
-> index 0000000..6c3ab59
-> --- /dev/null
-> +++ b/arch/arm/include/asm/xen/interface.h
-> @@ -0,0 +1,64 @@
-> +/******************************************************************************
-> + * Guest OS interface to ARM Xen.
-> + *
-> + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2011
-
-2012
-
-> + */
-> +
-> +#ifndef _ASM_ARM_XEN_INTERFACE_H
-> +#define _ASM_ARM_XEN_INTERFACE_H
-> +
-> +#include <linux/types.h>
-> +
-> +#define __DEFINE_GUEST_HANDLE(name, type) \
-> +	typedef type * __guest_handle_ ## name
-> +
-> +#define DEFINE_GUEST_HANDLE_STRUCT(name) \
-> +	__DEFINE_GUEST_HANDLE(name, struct name)
-> +#define DEFINE_GUEST_HANDLE(name) __DEFINE_GUEST_HANDLE(name, name)
-> +#define GUEST_HANDLE(name)        __guest_handle_ ## name
-> +
-> +#define set_xen_guest_handle(hnd, val)			\
-> +	do {						\
-> +		if (sizeof(hnd) == 8)			\
-> +			*(uint64_t *)&(hnd) = 0;	\
-> +		(hnd) = val;				\
-> +	} while (0)
-> +
-> +#ifndef __ASSEMBLY__
-> +/* Guest handles for primitive C types. */
-> +__DEFINE_GUEST_HANDLE(uchar, unsigned char);
-> +__DEFINE_GUEST_HANDLE(uint,  unsigned int);
-> +__DEFINE_GUEST_HANDLE(ulong, unsigned long);
-> +DEFINE_GUEST_HANDLE(char);
-> +DEFINE_GUEST_HANDLE(int);
-> +DEFINE_GUEST_HANDLE(long);
-> +DEFINE_GUEST_HANDLE(void);
-> +DEFINE_GUEST_HANDLE(uint64_t);
-> +DEFINE_GUEST_HANDLE(uint32_t);
-> +
-> +/* Maximum number of virtual CPUs in multi-processor guests. */
-> +#define MAX_VIRT_CPUS 1
-> +
-> +struct arch_vcpu_info { };
-> +struct arch_shared_info { };
-> +
-> +/* XXX: Move pvclock definitions some place arch independent */
-> +struct pvclock_vcpu_time_info {
-> +	u32   version;
-> +	u32   pad0;
-> +	u64   tsc_timestamp;
-> +	u64   system_time;
-> +	u32   tsc_to_system_mul;
-> +	s8    tsc_shift;
-> +	u8    flags;
-> +	u8    pad[2];
-> +} __attribute__((__packed__)); /* 32 bytes */
-> +
-> +struct pvclock_wall_clock {
-> +	u32   version;
-> +	u32   sec;
-> +	u32   nsec;
-> +} __attribute__((__packed__));
-
-That is weird. It is 4+4+4 = 12 bytes? Don't you want it to be 16 bytes?
-
-> +#endif
-> +
-> +#endif /* _ASM_ARM_XEN_INTERFACE_H */
-> diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
-> new file mode 100644
-> index 0000000..0bad594
-> --- /dev/null
-> +++ b/arch/arm/xen/Makefile
-> @@ -0,0 +1 @@
-> +obj-y		:= enlighten.o
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> new file mode 100644
-> index 0000000..d27c2a6
-> --- /dev/null
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -0,0 +1,35 @@
-> +#include <xen/xen.h>
-> +#include <xen/interface/xen.h>
-> +#include <xen/interface/memory.h>
-> +#include <xen/platform_pci.h>
-> +#include <asm/xen/hypervisor.h>
-> +#include <asm/xen/hypercall.h>
-> +#include <linux/module.h>
-> +
-> +struct start_info _xen_start_info;
-> +struct start_info *xen_start_info = &_xen_start_info;
-> +EXPORT_SYMBOL_GPL(xen_start_info);
-> +
-> +enum xen_domain_type xen_domain_type = XEN_NATIVE;
-> +EXPORT_SYMBOL_GPL(xen_domain_type);
-> +
-> +struct shared_info xen_dummy_shared_info;
-> +struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
-> +
-> +DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
-> +
-> +/* XXX: to be removed */
-
-In this patch series later on? Or just when you try to collapse the x86 and arm variant
-together?
-
-> +__read_mostly int xen_have_vector_callback;
-> +EXPORT_SYMBOL_GPL(xen_have_vector_callback);
-> +
-> +int xen_platform_pci_unplug = XEN_UNPLUG_ALL;
-> +EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
-> +
-> +int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
-> +			       unsigned long addr,
-> +			       unsigned long mfn, int nr,
-> +			       pgprot_t prot, unsigned domid)
-> +{
-> +	return -ENOSYS;
-> +}
-> +EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
-> diff --git a/include/xen/xen.h b/include/xen/xen.h
-> index a164024..2c0d3a5 100644
-> --- a/include/xen/xen.h
-> +++ b/include/xen/xen.h
-> @@ -23,7 +23,7 @@ extern enum xen_domain_type xen_domain_type;
->  #include <xen/interface/xen.h>
->  #include <asm/xen/hypervisor.h>
->  
-> -#define xen_initial_domain()	(xen_pv_domain() && \
-> +#define xen_initial_domain()	(xen_domain() && \
->  				 xen_start_info->flags & SIF_INITDOMAIN)
->  #else  /* !CONFIG_XEN_DOM0 */
->  #define xen_initial_domain()	(0)
-> -- 
-> 1.7.2.5
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
