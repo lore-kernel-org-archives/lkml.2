@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab2GZL4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:56:46 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35235 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548Ab2GZLzr (ORCPT
+	id S1752752Ab2GZL5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:57:53 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50628 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752492Ab2GZL5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:55:47 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v4 14/17] vfs: fix renameat to retry on ESTALE errors
-Date: Thu, 26 Jul 2012 07:55:17 -0400
-Message-Id: <1343303720-11199-15-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
-References: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
+	Thu, 26 Jul 2012 07:57:51 -0400
+Date: Thu, 26 Jul 2012 12:57:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 04/21] ASoC: ux500: Strengthen error checking after
+ memory allocation
+Message-ID: <20120726115749.GF3099@opensource.wolfsonmicro.com>
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
+ <1343298534-13611-5-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ugMgaRwDDWDxqvmW"
+Content-Disposition: inline
+In-Reply-To: <1343298534-13611-5-git-send-email-lee.jones@linaro.org>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...as always, rename is the messiest of the bunch. We have to track
-whether to retry or not via a separate flag since the error handling
-is already quite complex.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/namei.c | 31 ++++++++++++++++++++++++++-----
- 1 file changed, 26 insertions(+), 5 deletions(-)
+--ugMgaRwDDWDxqvmW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 65e5177..7cf5e91 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3699,12 +3699,25 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	char *from;
- 	char *to;
- 	int error;
-+	unsigned int try = 0;
-+	bool should_retry = false;
-+	unsigned int lookup_flags = LOOKUP_PARENT;
- 
--	error = user_path_parent(olddfd, oldname, &oldnd, &from);
--	if (error)
-+	from = getname(oldname);
-+	if (IS_ERR(from))
-+		return PTR_ERR(from);
-+
-+	to = getname(newname);
-+	if (IS_ERR(to)) {
-+		error = PTR_ERR(to);
- 		goto exit;
-+	}
-+retry:
-+	error = do_path_lookup(olddfd, from, lookup_flags, &oldnd);
-+	if (error)
-+		goto exit0;
- 
--	error = user_path_parent(newdfd, newname, &newnd, &to);
-+	error = do_path_lookup(newdfd, to, lookup_flags, &newnd);
- 	if (error)
- 		goto exit1;
- 
-@@ -3773,13 +3786,21 @@ exit4:
- 	dput(old_dentry);
- exit3:
- 	unlock_rename(new_dir, old_dir);
-+	if (retry_estale(error, try++))
-+		should_retry = true;
- exit2:
- 	path_put(&newnd.path);
--	putname(to);
- exit1:
- 	path_put(&oldnd.path);
--	putname(from);
-+	if (should_retry) {
-+		should_retry = false;
-+		lookup_flags |= LOOKUP_REVAL;
-+		goto retry;
-+	}
-+exit0:
-+	putname(to);
- exit:
-+	putname(from);
- 	return error;
- }
- 
--- 
-1.7.11.2
+On Thu, Jul 26, 2012 at 11:28:37AM +0100, Lee Jones wrote:
+> Currently there is no out-of-memory error checking after attempting
+> to allocate memory for the ux500_msp or ux500_msp_i2s_drvdata data
+> structures. Instead we go about populating them regardless. This
+> patch applies the necessary error checking to prevent a panic.
 
+Applied, thanks.
+
+--ugMgaRwDDWDxqvmW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQETC1AAoJEBus8iNuMP3dvEgQAJQQ4N0si8kBeBLoLos27IxL
+43adUukfh/hAESFOWfiLbieCHjAig+XSRMKfpKWkM2/2cWNV6Ps1s1P1SG+xTVZE
+fFYtNNtPWZpRp7d4TlT5EvY9NHq8ZYPW12917nOsJGlgxSPqZmYRLM0wB//dmF4d
+yY6O9iPY0aEr2fRsOWVOFTrUZFJPOW2r0OFqK9WYtv8PcgzFaSEyF2bKuYf+fFWL
+9jjeNh18NcCoHAqFRCAadoG+6SmGJPl2rEVT4taR2sg13m7rCg3fLgLh9iDgEWDU
+oHlQcRtc+Byqct1+YdB87zg12u9fTihU49ggxdLi15eEA1Lu59OlZZkzxocoylo9
+gPMF1kFMbuMav3lJN2ZhLz4AnjYEoaX2ySOz12p9dqvKlseyYiX/QDvZSs6iLJ9/
+yLbUFOaAxb317euq3j27Az236/1u0mGPCUlB4ynbLLaC/vRIZeOFyFYX+o8iWcao
+E8bGe/+DA2USmlt8dsSS+YAuqGJ49HazdnnOhIp9UoQLIzzPTB/PN9617V2ZqMtl
+U8UX0Sm41BX3npgLTfE7rXfpD5WDivrqz67U31r/ovw0rHtn6CNAroWvWkwPkpfX
+iuDkYDuQYZ97qRCHWhLKA6cyielO/2KSJ70aD0r4qkk+3ltpHEsYcwafao4pvv8h
+uMARFIixaSeXsWZv2P03
+=29+Z
+-----END PGP SIGNATURE-----
+
+--ugMgaRwDDWDxqvmW--
