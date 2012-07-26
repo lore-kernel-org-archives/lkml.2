@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab2GZX6G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 19:58:06 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57406 "EHLO
+	id S1753226Ab2GZX6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 19:58:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57415 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425Ab2GZX6E (ORCPT
+	with ESMTP id S1752828Ab2GZX63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 19:58:04 -0400
-Date: Thu, 26 Jul 2012 16:58:03 -0700 (PDT)
-Message-Id: <20120726.165803.612314640731436574.davem@davemloft.net>
+	Thu, 26 Jul 2012 19:58:29 -0400
+Date: Thu, 26 Jul 2012 16:58:28 -0700 (PDT)
+Message-Id: <20120726.165828.987529619428347919.davem@davemloft.net>
 To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
+Subject: [GIT] Sparc
 From: David Miller <davem@davemloft.net>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
@@ -23,118 +23,92 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-1) Reinstate the no-ref optimization for input route lookups in ipv4
-   to fix some routing cache removal perf regressions.
+Nothing much this merge window for sparc.
 
-2) Make TCP socket pre-demux work on ipv6 side too, from Eric Dumazet.
+1) Fix FPU state management in sparc32, from Tkhai Kirill.
 
-3) Get RX hash value from correct place in be2net driver, from
-   Sarveshwar Bandi.
+2) More sparc32 mm layer code cleanups, largely more side effects
+   of the sun4c support removal in the 3.5  From Sam Ravnborg.
 
-4) Validation of FIB cached routes missing critical check, from Eric
-   Dumazet.
+3) Remove unused code in sparc64, from Bjorn Helgaas and Kirill Tkhai.
 
-5) EEH support in mlx4 driver, from Kleber Sacilotto de Souza.
+4) Some declaration and comment tidies in PROM support code, from
+   Geert Uytterhoeven.
 
 Please pull, thanks a lot!
 
-The following changes since commit 3c4cfadef6a1665d9cd02a543782d03d3e6740c6:
+The following changes since commit d1346a6cbabf6d377d753f1adc16cb0b305830cc:
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next (2012-07-24 10:01:50 -0700)
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2012-06-26 11:26:50 -0700)
 
 are available in the git repository at:
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
 
-for you to fetch changes up to c7109986db3c945f50ceed884a30e0fd8af3b89b:
+for you to fetch changes up to 427f23cb3abc21c3784df8ae907c4c3a31d885d1:
 
-  ipv6: Early TCP socket demux (2012-07-26 15:50:39 -0700)
+  sparc32, copy_thread: Clear TIF_USEDFPU flag of created task instead of current (2012-07-26 16:49:40 -0700)
 
 ----------------------------------------------------------------
-Alan Cox (2):
-      caif: fix NULL pointer check
-      wanmain: comparing array with NULL
-
-Amir Vadai (1):
-      net/mlx4_en: Limit the RFS filter IDs to be < RPS_NO_FILTER
-
-Andy Cress (3):
-      pch_gbe: fix transmit watchdog timeout
-      pch_gbe: add extra clean tx
-      pch_gbe: vlan skb len fix
-
-Anton Blanchard (1):
-      be2net: Missing byteswap in be_get_fw_log_level causes oops on PowerPC
-
-Dan Williams (1):
-      cdc-ncm: tag Ericsson WWAN devices (eg F5521gw) with FLAG_WWAN
+Bjorn Helgaas (1):
+      sparc/PCI: remove unused pcibios_assign_resource() definition
 
 David S. Miller (1):
-      ipv4: Fix input route performance regression.
+      sparc64: Consistently use fsrc2 rather than fmovd in optimized asm.
 
-Emil Tantilov (1):
-      ixgbe: fix panic while dumping packets on Tx hang with IOMMU
+Geert Uytterhoeven (2):
+      sparc: Correct comments about prom_init() return values
+      sparc32: Remove superfluous extern declarations for prom_*() functions
 
-Eric Dumazet (3):
-      tcp: early_demux fixes
-      ipv4: rt_cache_valid must check expired routes
-      ipv6: Early TCP socket demux
+Kirill Tkhai (1):
+      sparc64: remove unused function straddles_64bit_va_hole()
 
-Haiyang Zhang (2):
-      hyperv: Add a check for ring_size value
-      hyperv: Add error handling to rndis_filter_device_add()
+Sam Ravnborg (18):
+      sparc32: define a few srmmu functions __init
+      sparc32: sort includes in srmmu.c
+      sparc32: fix coding-style in srmmu.c
+      sparc32: use void * in nocache get/free
+      sparc32: beautify srmmu_inherit_prom_mappings()
+      sparc32: drop swapper_pg_dir
+      sparc32: drop unused kmap_atomic_to_page
+      sparc32: fixmap.h cleanup
+      sparc32: drop fixmap.h
+      sparc32,leon: drop leon_init()
+      sparc32: drop sparc_unmapped_base
+      sparc32: drop sparc model check in paging_init
+      sparc32: drop quicklist
+      sparc32: centralize all mmu context handling in srmmu.c
+      sparc32: drop unused BAD_PAGE stuff
+      sparc32: move probe_memory() to srmmu.c
+      sparc32: move kmap_init() to highmem.c
+      sparc32: delete dead code in show_mem()
 
-Jiri Pirko (1):
-      team: init error value to 0 in team_netpoll_setup()
+Tkhai Kirill (1):
+      sparc32, copy_thread: Clear TIF_USEDFPU flag of created task instead of current
 
-Kleber Sacilotto de Souza (1):
-      mlx4: Add support for EEH error recovery
-
-Sarveshwar Bandi (1):
-      be2net: Fix to parse RSS hash from Receive completions correctly.
-
-Wei Yang (1):
-      net/pch_gpe: Cannot disable ethernet autonegation
-
-Yuval Mintz (1):
-      bnx2x: Correct EEE statistics gathering
-
-frank.blaschka@de.ibm.com (3):
-      net: wiznet add missing HAS_IOMEM dependency
-      netiucv: cleanup attribute usage
-      qeth: repair crash in qeth_l3_vlan_rx_kill_vid()
-
- drivers/net/caif/caif_serial.c                          |  3 ++
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_reg.h         |  4 +++
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c       |  8 +++--
- drivers/net/ethernet/emulex/benet/be_ethtool.c          |  5 ++--
- drivers/net/ethernet/emulex/benet/be_main.c             |  6 ++--
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c           | 11 +++----
- drivers/net/ethernet/mellanox/mlx4/catas.c              | 25 +++++++++++-----
- drivers/net/ethernet/mellanox/mlx4/cmd.c                | 49 +++++++++++++++++++++++++++++--
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c          |  2 +-
- drivers/net/ethernet/mellanox/mlx4/main.c               | 30 ++++++++++++++++++-
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_ethtool.c |  1 -
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c    | 70 ++++++++++++++++++++++++++++++--------------
- drivers/net/ethernet/wiznet/Kconfig                     |  1 +
- drivers/net/hyperv/netvsc_drv.c                         |  7 ++++-
- drivers/net/hyperv/rndis_filter.c                       | 11 +++----
- drivers/net/team/team.c                                 |  2 +-
- drivers/net/usb/cdc_ncm.c                               | 68 +++++++++++++++++++++++++++---------------
- drivers/s390/net/netiucv.c                              | 34 ++++-----------------
- drivers/s390/net/qeth_l3_main.c                         |  4 +++
- include/net/inet6_hashtables.h                          | 13 ++++----
- include/net/protocol.h                                  |  2 ++
- include/net/route.h                                     | 19 ++++++++++--
- net/ipv4/arp.c                                          |  2 +-
- net/ipv4/fib_semantics.c                                |  4 +--
- net/ipv4/ip_fragment.c                                  |  4 +--
- net/ipv4/ip_input.c                                     | 10 +++++--
- net/ipv4/route.c                                        | 56 +++++++++++++++++------------------
- net/ipv4/tcp_ipv4.c                                     |  9 ++----
- net/ipv4/xfrm4_input.c                                  |  4 +--
- net/ipv6/ip6_input.c                                    | 13 ++++++--
- net/ipv6/tcp_ipv6.c                                     | 38 ++++++++++++++++++++++++
- net/wanrouter/wanmain.c                                 | 51 +++++++++++++++-----------------
- 32 files changed, 374 insertions(+), 192 deletions(-)
+ arch/sparc/include/asm/fixmap.h         | 110 --------------------
+ arch/sparc/include/asm/highmem.h        |   3 -
+ arch/sparc/include/asm/leon.h           |   1 -
+ arch/sparc/include/asm/mmu_context_32.h |   8 +-
+ arch/sparc/include/asm/page_32.h        |   3 +-
+ arch/sparc/include/asm/pgalloc_32.h     |  29 ++----
+ arch/sparc/include/asm/pgtable_32.h     |  44 +-------
+ arch/sparc/include/asm/vaddrs.h         |  22 ++++
+ arch/sparc/kernel/head_32.S             |   2 -
+ arch/sparc/kernel/leon_kernel.c         |  16 ---
+ arch/sparc/kernel/pcic.c                |   5 -
+ arch/sparc/kernel/process_32.c          |   4 +-
+ arch/sparc/kernel/setup_32.c            |   1 -
+ arch/sparc/kernel/sys_sparc_64.c        |  17 ---
+ arch/sparc/lib/NG2memcpy.S              |  72 ++++++-------
+ arch/sparc/lib/U1memcpy.S               |   4 +-
+ arch/sparc/lib/copy_page.S              |  56 +++++-----
+ arch/sparc/mm/fault_32.c                |  18 ----
+ arch/sparc/mm/highmem.c                 |  42 ++++----
+ arch/sparc/mm/init_32.c                 |  58 +----------
+ arch/sparc/mm/srmmu.c                   | 332 ++++++++++++++++++++++++++++++++++++-----------------------
+ arch/sparc/prom/init_32.c               |   7 +-
+ arch/sparc/prom/init_64.c               |   4 +-
+ 23 files changed, 331 insertions(+), 527 deletions(-)
+ delete mode 100644 arch/sparc/include/asm/fixmap.h
