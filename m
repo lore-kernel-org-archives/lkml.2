@@ -1,417 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab2GZAaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 20:30:00 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36165 "EHLO smtp.outflux.net"
+	id S1752697Ab2GZAak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 20:30:40 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56434 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab2GZA35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 20:29:57 -0400
+	id S1751480Ab2GZAah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 20:30:37 -0400
+Date: Wed, 25 Jul 2012 17:30:33 -0700
 From: Kees Cook <keescook@chromium.org>
-To: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Doug Ledford <dledford@redhat.com>, Joe Korty <joe.korty@ccur.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/2] fs: add link restrictions
-Date: Wed, 25 Jul 2012 17:29:07 -0700
-Message-Id: <1343262548-21743-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1343262548-21743-1-git-send-email-keescook@chromium.org>
-References: <1343262548-21743-1-git-send-email-keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        keescook@chromium.org
+Subject: [RESEND][PATCH] audit: replace defines with C stubs
+Message-ID: <20120726003033.GA21803@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds symlink and hardlink restrictions to the Linux VFS.
+This replaces the #defines used when CONFIG_AUDIT or CONFIG_AUDIT_SYSCALLS
+are disabled so we get type checking during those builds.
 
-Symlinks:
-
-A long-standing class of security issues is the symlink-based
-time-of-check-time-of-use race, most commonly seen in world-writable
-directories like /tmp. The common method of exploitation of this flaw
-is to cross privilege boundaries when following a given symlink (i.e. a
-root process follows a symlink belonging to another user). For a likely
-incomplete list of hundreds of examples across the years, please see:
-http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
-
-The solution is to permit symlinks to only be followed when outside
-a sticky world-writable directory, or when the uid of the symlink and
-follower match, or when the directory owner matches the symlink's owner.
-
-Some pointers to the history of earlier discussion that I could find:
-
- 1996 Aug, Zygo Blaxell
-  http://marc.info/?l=bugtraq&m=87602167419830&w=2
- 1996 Oct, Andrew Tridgell
-  http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
- 1997 Dec, Albert D Cahalan
-  http://lkml.org/lkml/1997/12/16/4
- 2005 Feb, Lorenzo Hernández García-Hierro
-  http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
- 2010 May, Kees Cook
-  https://lkml.org/lkml/2010/5/30/144
-
-Past objections and rebuttals could be summarized as:
-
- - Violates POSIX.
-   - POSIX didn't consider this situation and it's not useful to follow
-     a broken specification at the cost of security.
- - Might break unknown applications that use this feature.
-   - Applications that break because of the change are easy to spot and
-     fix. Applications that are vulnerable to symlink ToCToU by not having
-     the change aren't. Additionally, no applications have yet been found
-     that rely on this behavior.
- - Applications should just use mkstemp() or O_CREATE|O_EXCL.
-   - True, but applications are not perfect, and new software is written
-     all the time that makes these mistakes; blocking this flaw at the
-     kernel is a single solution to the entire class of vulnerability.
- - This should live in the core VFS.
-   - This should live in an LSM. (https://lkml.org/lkml/2010/5/31/135)
- - This should live in an LSM.
-   - This should live in the core VFS. (https://lkml.org/lkml/2010/8/2/188)
-
-Hardlinks:
-
-On systems that have user-writable directories on the same partition
-as system files, a long-standing class of security issues is the
-hardlink-based time-of-check-time-of-use race, most commonly seen in
-world-writable directories like /tmp. The common method of exploitation
-of this flaw is to cross privilege boundaries when following a given
-hardlink (i.e. a root process follows a hardlink created by another
-user). Additionally, an issue exists where users can "pin" a potentially
-vulnerable setuid/setgid file so that an administrator will not actually
-upgrade a system fully.
-
-The solution is to permit hardlinks to only be created when the user is
-already the existing file's owner, or if they already have read/write
-access to the existing file.
-
-Many Linux users are surprised when they learn they can link to files
-they have no access to, so this change appears to follow the doctrine
-of "least surprise". Additionally, this change does not violate POSIX,
-which states "the implementation may require that the calling process
-has permission to access the existing file"[1].
-
-This change is known to break some implementations of the "at" daemon,
-though the version used by Fedora and Ubuntu has been fixed[2] for
-a while. Otherwise, the change has been undisruptive while in use in
-Ubuntu for the last 1.5 years.
-
-[1] http://pubs.opengroup.org/onlinepubs/9699919799/functions/linkat.html
-[2] http://anonscm.debian.org/gitweb/?p=collab-maint/at.git;a=commitdiff;h=f4114656c3a6c6f6070e315ffdf940a49eda3279
-
-This patch is based on the patches in Openwall and grsecurity, along with
-suggestions from Al Viro. I have added a sysctl to enable the protected
-behavior, and documentation.
-
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
 ---
-v2012.5:
- - updates requested by Al Viro:
-   - remove CONFIGs
-   - pass nd for parent checking
-   - release path on error
-v2012.4:
- - split audit functions into a separate patch, suggested by Eric Paris.
-v2012.3:
- While this code has been living in -mm and linux-next for 2 releases,
- this is a small rework based on feedback from Al Viro:
- - Moved audit functions into audit.c.
- - Added tests directly to path_openat/path_lookupat.
- - Merged with hardlink restriction patch to make things more sensible.
-v2012.2:
- - Change sysctl mode to 0600, suggested by Ingo Molnar.
- - Rework CONFIG logic to split code from default behavior.
- - Renamed sysctl to have a "sysctl_" prefix, suggested by Andrew Morton.
- - Use "true/false" instead of "1/0" for bool arg, thanks to Andrew Morton.
- - Do not trust s_id to be safe to print, suggested by Andrew Morton.
-v2012.1:
- - Use GFP_KERNEL for audit log allocation, thanks to Ingo Molnar.
-v2011.3:
- - Add pid/comm back to logging.
-v2011.2:
- - Updated documentation, thanks to Randy Dunlap.
- - Switched Kconfig default to "y", added __read_mostly to sysctl,
-   thanks to Ingo Molnar.
- - Switched to audit logging to gain safe path and name reporting when
-   hitting the restriction.
-v2011.1:
- - back from hiatus
----
- Documentation/sysctl/fs.txt |   42 +++++++++++++++
- fs/namei.c                  |  121 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h          |    2 +
- kernel/sysctl.c             |   18 ++++++
- 4 files changed, 183 insertions(+), 0 deletions(-)
+ include/linux/audit.h |  173 ++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 127 insertions(+), 46 deletions(-)
 
-diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
-index 13d6166..d4a372e 100644
---- a/Documentation/sysctl/fs.txt
-+++ b/Documentation/sysctl/fs.txt
-@@ -32,6 +32,8 @@ Currently, these files are in /proc/sys/fs:
- - nr_open
- - overflowuid
- - overflowgid
-+- protected_hardlinks
-+- protected_symlinks
- - suid_dumpable
- - super-max
- - super-nr
-@@ -157,6 +159,46 @@ The default is 65534.
- 
- ==============================================================
- 
-+protected_hardlinks:
-+
-+A long-standing class of security issues is the hardlink-based
-+time-of-check-time-of-use race, most commonly seen in world-writable
-+directories like /tmp. The common method of exploitation of this flaw
-+is to cross privilege boundaries when following a given hardlink (i.e. a
-+root process follows a hardlink created by another user). Additionally,
-+on systems without separated partitions, this stops unauthorized users
-+from "pinning" vulnerable setuid/setgid files against being upgraded by
-+the administrator, or linking to special files.
-+
-+When set to "0", hardlink creation behavior is unrestricted.
-+
-+When set to "1" hardlinks cannot be created by users if they do not
-+already own the source file, or do not have read/write access to it.
-+
-+This protection is based on the restrictions in Openwall and grsecurity.
-+
-+==============================================================
-+
-+protected_symlinks:
-+
-+A long-standing class of security issues is the symlink-based
-+time-of-check-time-of-use race, most commonly seen in world-writable
-+directories like /tmp. The common method of exploitation of this flaw
-+is to cross privilege boundaries when following a given symlink (i.e. a
-+root process follows a symlink belonging to another user). For a likely
-+incomplete list of hundreds of examples across the years, please see:
-+http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
-+
-+When set to "0", symlink following behavior is unrestricted.
-+
-+When set to "1" symlinks are permitted to be followed only when outside
-+a sticky world-writable directory, or when the uid of the symlink and
-+follower match, or when the directory owner matches the symlink's owner.
-+
-+This protection is based on the restrictions in Openwall and grsecurity.
-+
-+==============================================================
-+
- suid_dumpable:
- 
- This value can be used to query and set the core dump mode for setuid
-diff --git a/fs/namei.c b/fs/namei.c
-index 2ccc35c..e5ad2db 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -650,6 +650,118 @@ static inline void put_link(struct nameidata *nd, struct path *link, void *cooki
- 	path_put(link);
- }
- 
-+int sysctl_protected_symlinks __read_mostly = 1;
-+int sysctl_protected_hardlinks __read_mostly = 1;
-+
-+/**
-+ * may_follow_link - Check symlink following for unsafe situations
-+ * @link: The path of the symlink
-+ *
-+ * In the case of the sysctl_protected_symlinks sysctl being enabled,
-+ * CAP_DAC_OVERRIDE needs to be specifically ignored if the symlink is
-+ * in a sticky world-writable directory. This is to protect privileged
-+ * processes from failing races against path names that may change out
-+ * from under them by way of other users creating malicious symlinks.
-+ * It will permit symlinks to be followed only when outside a sticky
-+ * world-writable directory, or when the uid of the symlink and follower
-+ * match, or when the directory owner matches the symlink's owner.
-+ *
-+ * Returns 0 if following the symlink is allowed, -ve on error.
-+ */
-+static inline int may_follow_link(struct path *link, struct nameidata *nd)
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 22f292a..fa55743 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -622,37 +622,92 @@ static inline void audit_mmap_fd(int fd, int flags)
+ extern int audit_n_rules;
+ extern int audit_signals;
+ #else /* CONFIG_AUDITSYSCALL */
+-#define audit_alloc(t) ({ 0; })
+-#define audit_free(t) do { ; } while (0)
+-#define audit_syscall_entry(ta,a,b,c,d,e) do { ; } while (0)
+-#define audit_syscall_exit(r) do { ; } while (0)
+-#define audit_dummy_context() 1
+-#define audit_getname(n) do { ; } while (0)
+-#define audit_putname(n) do { ; } while (0)
+-#define __audit_inode(n,d) do { ; } while (0)
+-#define __audit_inode_child(i,p) do { ; } while (0)
+-#define audit_inode(n,d) do { (void)(d); } while (0)
+-#define audit_inode_child(i,p) do { ; } while (0)
+-#define audit_core_dumps(i) do { ; } while (0)
+-#define audit_seccomp(i,s,c) do { ; } while (0)
+-#define auditsc_get_stamp(c,t,s) (0)
++static inline int  audit_alloc(struct task_struct *task)
 +{
-+	const struct inode *inode;
-+	const struct inode *parent;
-+
-+	if (!sysctl_protected_symlinks)
-+		return 0;
-+
-+	/* Allowed if owner and follower match. */
-+	inode = link->dentry->d_inode;
-+	if (current_cred()->fsuid == inode->i_uid)
-+		return 0;
-+
-+	/* Allowed if parent directory not sticky and world-writable. */
-+	parent = nd->path.dentry->d_inode;
-+	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) != (S_ISVTX|S_IWOTH))
-+		return 0;
-+
-+	/* Allowed if parent directory and link owner match. */
-+	if (parent->i_uid == inode->i_uid)
-+		return 0;
-+
-+	path_put(&nd->path);
-+	return -EACCES;
++	return 0;
++}
++static inline void audit_free(struct task_struct *task)
++{ }
++static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
++				       unsigned long a1, unsigned long a2,
++				       unsigned long a3)
++{ }
++static inline void audit_syscall_exit(void *pt_regs)
++{ }
++static inline int audit_dummy_context(void)
++{
++	return 1;
++}
++static inline void audit_getname(const char *name)
++{ }
++static inline void audit_putname(const char *name)
++{ }
++static inline void __audit_inode(const char *name, const struct dentry *dentry)
++{ }
++static inline void __audit_inode_child(const struct dentry *dentry,
++					const struct inode *parent)
++{ }
++static inline void audit_inode(const char *name, const struct dentry *dentry)
++{ }
++static inline void audit_inode_child(const struct dentry *dentry,
++				     const struct inode *parent)
++{ }
++static inline void audit_core_dumps(long signr)
++{ }
++static inline void __audit_seccomp(unsigned long syscall, long signr, int code)
++{ }
++static inline void audit_seccomp(unsigned long syscall, long signr, int code)
++{ }
++static inline int auditsc_get_stamp(struct audit_context *ctx,
++			      struct timespec *t, unsigned int *serial)
++{
++	return 0;
++}
+ #define audit_get_loginuid(t) (-1)
+ #define audit_get_sessionid(t) (-1)
+-#define audit_log_task_context(b) do { ; } while (0)
+-#define audit_ipc_obj(i) ((void)0)
+-#define audit_ipc_set_perm(q,u,g,m) ((void)0)
+-#define audit_bprm(p) ({ 0; })
+-#define audit_socketcall(n,a) ((void)0)
+-#define audit_fd_pair(n,a) ((void)0)
+-#define audit_sockaddr(len, addr) ({ 0; })
+-#define audit_mq_open(o,m,a) ((void)0)
+-#define audit_mq_sendrecv(d,l,p,t) ((void)0)
+-#define audit_mq_notify(d,n) ((void)0)
+-#define audit_mq_getsetattr(d,s) ((void)0)
+-#define audit_log_bprm_fcaps(b, ncr, ocr) ({ 0; })
+-#define audit_log_capset(pid, ncr, ocr) ((void)0)
+-#define audit_mmap_fd(fd, flags) ((void)0)
+-#define audit_ptrace(t) ((void)0)
++static inline void audit_log_task_context(struct audit_buffer *ab)
++{ }
++static inline void audit_ipc_obj(struct kern_ipc_perm *ipcp)
++{ }
++static inline void audit_ipc_set_perm(unsigned long qbytes, uid_t uid,
++					gid_t gid, umode_t mode)
++{ }
++static inline int audit_bprm(struct linux_binprm *bprm)
++{
++	return 0;
++}
++static inline void audit_socketcall(int nargs, unsigned long *args)
++{ }
++static inline void audit_fd_pair(int fd1, int fd2)
++{ }
++static inline int audit_sockaddr(int len, void *addr)
++{
++	return 0;
++}
++static inline void audit_mq_open(int oflag, umode_t mode, struct mq_attr *attr)
++{ }
++static inline void audit_mq_sendrecv(mqd_t mqdes, size_t msg_len,
++				     unsigned int msg_prio,
++				     const struct timespec *abs_timeout)
++{ }
++static inline void audit_mq_notify(mqd_t mqdes,
++				   const struct sigevent *notification)
++{ }
++static inline void audit_mq_getsetattr(mqd_t mqdes, struct mq_attr *mqstat)
++{ }
++static inline int audit_log_bprm_fcaps(struct linux_binprm *bprm,
++				       const struct cred *new,
++				       const struct cred *old)
++{
++	return 0;
++}
++static inline void audit_log_capset(pid_t pid, const struct cred *new,
++				   const struct cred *old)
++{ }
++static inline void audit_mmap_fd(int fd, int flags)
++{ }
++static inline void audit_ptrace(struct task_struct *t)
++{ }
+ #define audit_n_rules 0
+ #define audit_signals 0
+ #endif /* CONFIG_AUDITSYSCALL */
+@@ -676,7 +731,6 @@ extern void		    audit_log_n_hex(struct audit_buffer *ab,
+ extern void		    audit_log_n_string(struct audit_buffer *ab,
+ 					       const char *buf,
+ 					       size_t n);
+-#define audit_log_string(a,b) audit_log_n_string(a, b, strlen(b));
+ extern void		    audit_log_n_untrustedstring(struct audit_buffer *ab,
+ 							const char *string,
+ 							size_t n);
+@@ -691,7 +745,8 @@ extern void		    audit_log_lost(const char *message);
+ #ifdef CONFIG_SECURITY
+ extern void 		    audit_log_secctx(struct audit_buffer *ab, u32 secid);
+ #else
+-#define audit_log_secctx(b,s) do { ; } while (0)
++static inline void	    audit_log_secctx(struct audit_buffer *ab, u32 secid)
++{ }
+ #endif
+ 
+ extern int		    audit_update_lsm_rules(void);
+@@ -703,21 +758,47 @@ extern int  audit_receive_filter(int type, int pid, int uid, int seq,
+ 				void *data, size_t datasz, uid_t loginuid,
+ 				u32 sessionid, u32 sid);
+ extern int audit_enabled;
+-#else
+-#define audit_log(c,g,t,f,...) do { ; } while (0)
+-#define audit_log_start(c,g,t) ({ NULL; })
+-#define audit_log_vformat(b,f,a) do { ; } while (0)
+-#define audit_log_format(b,f,...) do { ; } while (0)
+-#define audit_log_end(b) do { ; } while (0)
+-#define audit_log_n_hex(a,b,l) do { ; } while (0)
+-#define audit_log_n_string(a,c,l) do { ; } while (0)
+-#define audit_log_string(a,c) do { ; } while (0)
+-#define audit_log_n_untrustedstring(a,n,s) do { ; } while (0)
+-#define audit_log_untrustedstring(a,s) do { ; } while (0)
+-#define audit_log_d_path(b, p, d) do { ; } while (0)
+-#define audit_log_key(b, k) do { ; } while (0)
+-#define audit_log_secctx(b,s) do { ; } while (0)
++#else /* CONFIG_AUDIT */
++static inline __printf(4, 5)
++void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
++	       const char *fmt, ...)
++{ }
++static inline struct audit_buffer *audit_log_start(struct audit_context *ctx,
++						   gfp_t gfp_mask, int type)
++{
++	return NULL;
++}
++static inline __printf(2, 3)
++void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
++{ }
++static inline void audit_log_end(struct audit_buffer *ab)
++{ }
++static inline void audit_log_n_hex(struct audit_buffer *ab,
++				   const unsigned char *buf, size_t len)
++{ }
++static inline void audit_log_n_string(struct audit_buffer *ab,
++				      const char *buf, size_t n)
++{ }
++static inline void  audit_log_n_untrustedstring(struct audit_buffer *ab,
++						const char *string, size_t n)
++{ }
++static inline void audit_log_untrustedstring(struct audit_buffer *ab,
++					     const char *string)
++{ }
++static inline void audit_log_d_path(struct audit_buffer *ab,
++				    const char *prefix,
++				    const struct path *path)
++{ }
++static inline void audit_log_key(struct audit_buffer *ab, char *key)
++{ }
++static inline void audit_log_secctx(struct audit_buffer *ab, u32 secid)
++{ }
+ #define audit_enabled 0
+-#endif
++#endif /* CONFIG_AUDIT */
++static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
++{
++	audit_log_n_string(ab, buf, strlen(buf));
 +}
 +
-+/**
-+ * safe_hardlink_source - Check for safe hardlink conditions
-+ * @inode: the source inode to hardlink from
-+ *
-+ * Return false if at least one of the following conditions:
-+ *    - inode is not a regular file
-+ *    - inode is setuid
-+ *    - inode is setgid and group-exec
-+ *    - access failure for read and write
-+ *
-+ * Otherwise returns true.
-+ */
-+static bool safe_hardlink_source(struct inode *inode)
-+{
-+	umode_t mode = inode->i_mode;
-+
-+	/* Special files should not get pinned to the filesystem. */
-+	if (!S_ISREG(mode))
-+		return false;
-+
-+	/* Setuid files should not get pinned to the filesystem. */
-+	if (mode & S_ISUID)
-+		return false;
-+
-+	/* Executable setgid files should not get pinned to the filesystem. */
-+	if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))
-+		return false;
-+
-+	/* Hardlinking to unreadable or unwritable sources is dangerous. */
-+	if (inode_permission(inode, MAY_READ | MAY_WRITE))
-+		return false;
-+
-+	return true;
-+}
-+
-+/**
-+ * may_linkat - Check permissions for creating a hardlink
-+ * @link: the source to hardlink from
-+ *
-+ * Block hardlink when all of:
-+ *  - sysctl_protected_hardlinks enabled
-+ *  - fsuid does not match inode
-+ *  - hardlink source is unsafe (see safe_hardlink_source() above)
-+ *  - not CAP_FOWNER
-+ *
-+ * Returns 0 if successful, -ve on error.
-+ */
-+static int may_linkat(struct path *link)
-+{
-+	const struct cred *cred;
-+	struct inode *inode;
-+
-+	if (!sysctl_protected_hardlinks)
-+		return 0;
-+
-+	cred = current_cred();
-+	inode = link->dentry->d_inode;
-+
-+	/* Source inode owner (or CAP_FOWNER) can hardlink all they like,
-+	 * otherwise, it must be a safe source.
-+	 */
-+	if (cred->fsuid == inode->i_uid || safe_hardlink_source(inode) ||
-+	    capable(CAP_FOWNER))
-+		return 0;
-+
-+	return -EPERM;
-+}
-+
- static __always_inline int
- follow_link(struct path *link, struct nameidata *nd, void **p)
- {
-@@ -1818,6 +1930,9 @@ static int path_lookupat(int dfd, const char *name,
- 		while (err > 0) {
- 			void *cookie;
- 			struct path link = path;
-+			err = may_follow_link(&link, nd);
-+			if (unlikely(err))
-+				break;
- 			nd->flags |= LOOKUP_PARENT;
- 			err = follow_link(&link, nd, &cookie);
- 			if (err)
-@@ -2777,6 +2892,9 @@ static struct file *path_openat(int dfd, const char *pathname,
- 			error = -ELOOP;
- 			break;
- 		}
-+		error = may_follow_link(&link, nd);
-+		if (unlikely(error))
-+			break;
- 		nd->flags |= LOOKUP_PARENT;
- 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
- 		error = follow_link(&link, nd, &cookie);
-@@ -3436,6 +3554,9 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	error = -EXDEV;
- 	if (old_path.mnt != new_path.mnt)
- 		goto out_dput;
-+	error = may_linkat(&old_path);
-+	if (unlikely(error))
-+		goto out_dput;
- 	error = mnt_want_write(new_path.mnt);
- 	if (error)
- 		goto out_dput;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8fabb03..c8fb6df 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -437,6 +437,8 @@ extern unsigned long get_max_files(void);
- extern int sysctl_nr_open;
- extern struct inodes_stat_t inodes_stat;
- extern int leases_enable, lease_break_time;
-+extern int sysctl_protected_symlinks;
-+extern int sysctl_protected_hardlinks;
- 
- struct buffer_head;
- typedef int (get_block_t)(struct inode *inode, sector_t iblock,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4ab1187..5d9a1d2 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1494,6 +1494,24 @@ static struct ctl_table fs_table[] = {
  #endif
  #endif
- 	{
-+		.procname	= "protected_symlinks",
-+		.data		= &sysctl_protected_symlinks,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0600,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
-+	{
-+		.procname	= "protected_hardlinks",
-+		.data		= &sysctl_protected_hardlinks,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0600,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
-+	{
- 		.procname	= "suid_dumpable",
- 		.data		= &suid_dumpable,
- 		.maxlen		= sizeof(int),
 -- 
 1.7.0.4
 
+
+-- 
+Kees Cook
+Chrome OS Security
