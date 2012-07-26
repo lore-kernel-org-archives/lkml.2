@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab2GZNtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 09:49:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35119 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab2GZNt3 (ORCPT
+	id S1752154Ab2GZNvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 09:51:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55521 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab2GZNvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 09:49:29 -0400
-Date: Thu, 26 Jul 2012 08:49:26 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Arend van Spriel <arend@broadcom.com>
-Subject: Re: [BUG] Problem with commit
- cf03c5dac83609f09d9f0e9fa3c09d86daed614d
-Message-ID: <20120726134926.GA10452@thinkpad-t410>
-Mail-Followup-To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Arend van Spriel <arend@broadcom.com>
-References: <gik3xqtzw3.fsf@karga.hank.lab>
+	Thu, 26 Jul 2012 09:51:13 -0400
+Message-ID: <50114B4D.3030305@linaro.org>
+Date: Thu, 26 Jul 2012 14:51:09 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <gik3xqtzw3.fsf@karga.hank.lab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 16/21] ASoC: Ux500: Enable MOP500 driver for Device Tree
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-17-git-send-email-lee.jones@linaro.org> <20120726113734.GZ3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120726113734.GZ3099@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 03:28:44PM +0200, Dirk Gouders wrote:
-> Hi Seth,
+On 26/07/12 12:37, Mark Brown wrote:> On Thu, Jul 26, 2012 at 11:28:49AM +0100, Lee Jones wrote:
 > 
-> today, I noticed a problem with the current kernel
-> (3.5.0-04773-gbdc0077): my laptop hangs during boot -- the last message
-> on the console is printed just before invoking `udevadm trigger'.
+>>   arch/arm/mach-ux500/board-mop500-msp.c |    3 ---
+>>   sound/soc/ux500/mop500.c               |   41 ++++++++++++++++++++++++++++++++
 > 
-> I bisected the problem and ended at commit
-> cf03c5dac83609f09d9f0e9fa3c09d86daed614d (brcm80211: smac: inform
-> mac80211 of the X2 regulatory domain).  However, I'm not sure that this
-> commit really is the reason for my problems, because the behaviour is a
-> bit different: at that state the machine not just hangs but the console
-> shows a trace which I append to the end of this mail -- but the trace
-> happens at the same state during the boot process.
+> There is no binding documentation here.  All bindings should be
+> documented.
 
-Hi Dirk,
+Yes I know. This is more of an RFC _before_ I waste my time writing documentation (again).
 
-The NULL pointer dereference in wlc_phy_chanspec_band_validch is already
-fixed in edc7651f3a4ffa7fca37d92401562694121512ad. There was also
-another related crash that appeared after the introduction of 802.11ad
-support that's fixed in 32c336a5dfd16b4645c8a0dbc534efd02f079e02.
+>> -	pr_info("%s: Register platform-device 'snd-soc-u8500'.\n", __func__);
+>> -	platform_device_register(&snd_soc_mop500);
+>> -
+> 
+> This should be done separately - if it's going to be merged with
+> something it should be the patch that adds the relevant DT fragments.
 
-So in all likelihood whatever problem your seeing in current -git is a
-different issue. One easy way to test this would be to prevent the
-brcmsmac module from loading and verify that you still get the hang,
-then rerun the bisection that way to keep those bugs from affecting your
-results.
+Yes, I can do that.
 
-Cheers,
-Seth
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
