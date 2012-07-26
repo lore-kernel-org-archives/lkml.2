@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab2GZVZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:25:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40426 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab2GZVZq convert rfc822-to-8bit (ORCPT
+	id S1753044Ab2GZV01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:26:27 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41537 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2GZVUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:25:46 -0400
-Message-ID: <1343337937.32120.20.camel@twins>
-Subject: Re: [ 028/108] sched/nohz: Rewrite and fix load-avg computation --
- again
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 26 Jul 2012 23:25:37 +0200
-In-Reply-To: <1343138818.5132.98.camel@deadeye.wl.decadent.org.uk>
-References: <20120723010655.768372060@decadent.org.uk>
-	 <1343138818.5132.98.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 26 Jul 2012 17:20:33 -0400
+Date: Thu, 26 Jul 2012 14:19:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, sbw@mit.edu, srivatsa.bhat@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, vincent.guittot@linaro.org,
+        amit.kucheria@linaro.org
+Subject: [PATCH RFC] cpu: No more __stop_machine() in _cpu_down()
+Message-ID: <20120726211927.GA26016@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072621-2356-0000-0000-000000B8C1B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-24 at 15:06 +0100, Ben Hutchings wrote:
-> On Mon, 2012-07-23 at 02:07 +0100, Ben Hutchings wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > 
-> > commit 5167e8d5417bf5c322a703d2927daec727ea40dd upstream.
-> > 
-> > Thanks to Charles Wang for spotting the defects in the current code:
-> > 
-> >  - If we go idle during the sample window -- after sampling, we get a
-> >    negative bias because we can negate our own sample.
-> > 
-> >  - If we wake up during the sample window we get a positive bias
-> >    because we push the sample to a known active period.
-> > 
-> > So rewrite the entire nohz load-avg muck once again, now adding
-> > copious documentation to the code.
-> [...]
-> 
-> Based on <http://bugs.debian.org/674153>, I think we also need:
-> 
-> 556061b sched/nohz: Fix rq->cpu_load[] calculations
-> 5aaa0b7 sched/nohz: Fix rq->cpu_load calculations some more
-> 
-> Does this ('sched/nohz: Rewrite and fix load-avg computation -- again')
-> depend in any way on those, or are they separate fixes?
+The _cpu_down() function invoked as part of the CPU-hotplug offlining
+process currently invokes __stop_machine(), which is slow and inflicts
+substantial real-time latencies on the entire system.  This patch
+substitutes stop_cpus() for __stop_machine() in order to improve
+both performance and real-time latency.
 
-they might touch on a few entry points but the logic is separate.
+This is currently unsafe, because there are a number of uses of
+preempt_disable() that are intended to block CPU-hotplug offlining.
+These will be fixed, but in the meantime, this commit is one way to help
+locate them.  It nevertheless passes light rcutorture/hotplug stress
+testing.  Meaning that we should not be relying on pure testing to find
+places where people are relying on preemption disabling to block CPUs
+from going offline.  ;-)
 
-->cpu_load[] is per-cpu weight tracking for the load-balancer.
+Not-yet-signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 
-
-
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index a4eb522..47e63a0 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -243,13 +243,18 @@ static int __ref take_cpu_down(void *_param)
+ {
+ 	struct take_cpu_down_param *param = _param;
+ 	int err;
++	unsigned long flags;
+ 
+ 	/* Ensure this CPU doesn't handle any more interrupts. */
++	local_irq_save(flags);
+ 	err = __cpu_disable();
+-	if (err < 0)
++	if (err < 0) {
++		local_irq_restore(flags);
+ 		return err;
++	}
+ 
+ 	cpu_notify(CPU_DYING | param->mod, param->hcpu);
++	local_irq_restore(flags);
+ 	return 0;
+ }
+ 
+@@ -281,7 +286,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		goto out_release;
+ 	}
+ 
+-	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
++	err = stop_cpus(cpumask_of(cpu), take_cpu_down, &tcd_param);
+ 	if (err) {
+ 		/* CPU didn't die: tell everyone.  Can't complain. */
+ 		cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
 
