@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab2GZJ6s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 05:58:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49096 "EHLO mx1.redhat.com"
+	id S1751481Ab2GZKAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 06:00:17 -0400
+Received: from shutemov.name ([176.9.204.213]:44314 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040Ab2GZJ6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 05:58:47 -0400
-Message-ID: <501114D3.8090402@redhat.com>
-Date: Thu, 26 Jul 2012 11:58:43 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1750766Ab2GZKAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 06:00:15 -0400
+Date: Thu, 26 Jul 2012 13:01:11 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org,
+        cgroups@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 02/10] consider a memcg parameter in kmem_create_cache
+Message-ID: <20120726100111.GA7447@shutemov.name>
+References: <1343227101-14217-1-git-send-email-glommer@parallels.com>
+ <1343227101-14217-3-git-send-email-glommer@parallels.com>
+ <20120725181018.GA4921@shutemov.name>
+ <501110ED.9030400@parallels.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/2] virtio-scsi: fix parsing of hotplug/hot-unplug LUN
- number
-References: <1342454751-8950-1-git-send-email-pbonzini@redhat.com>    <1342454751-8950-2-git-send-email-pbonzini@redhat.com>   <1343292731.3115.17.camel@dabdike> <50110820.4040403@redhat.com>  <1343294472.3115.22.camel@dabdike> <50110D8C.8060802@redhat.com> <1343295687.3115.27.camel@dabdike>
-In-Reply-To: <1343295687.3115.27.camel@dabdike>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501110ED.9030400@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 26/07/2012 11:41, James Bottomley ha scritto:
-> On Thu, 2012-07-26 at 11:27 +0200, Paolo Bonzini wrote:
->> Il 26/07/2012 11:21, James Bottomley ha scritto:
->>>>> Because scsilun_to_int does not do the AND, so it would have exactly the
->>>>> same bug I'm fixing.
->>> It's not a bug ... it's the encoding.  All the other devices use this
->>> too.  Ideally we should have switched to 64 bit lun numbers for the
->>> encoding to be exact, but nothing so far has gone over 32 bits.  If we
->>> don't encode the Address method as part of the lun number, we don't get
->>> the reverse transform right and the addressing often fails.
->>
->> But virtio-scsi gets it right even if you use method=0 and method=1
->> interchangeably.
-> 
-> I don't actually understand this statement.  LUNS < 256 may be encoded
-> either way (they should be encoded with address method=0 but they don't
-> have to be) if you address the array with the wrong method, it doesn't
-> have to give you your lun.
+On Thu, Jul 26, 2012 at 01:42:05PM +0400, Glauber Costa wrote:
+> On 07/25/2012 10:10 PM, Kirill A. Shutemov wrote:
+> > On Wed, Jul 25, 2012 at 06:38:13PM +0400, Glauber Costa wrote:
+> > 
+> > ...
+> > 
+> >> @@ -337,6 +341,12 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
+> >>  	__kmalloc(size, flags)
+> >>  #endif /* DEBUG_SLAB */
+> >>  
+> >> +#ifdef CONFIG_MEMCG_KMEM
+> >> +#define MAX_KMEM_CACHE_TYPES 400
+> >> +#else
+> >> +#define MAX_KMEM_CACHE_TYPES 0
+> >> +#endif /* CONFIG_MEMCG_KMEM */
+> >> +
+> >>  #ifdef CONFIG_NUMA
+> >>  /*
+> >>   * kmalloc_node_track_caller is a special version of kmalloc_node that
+> > 
+> > ...
+> > 
+> >> @@ -527,6 +532,24 @@ static inline bool memcg_kmem_enabled(struct mem_cgroup *memcg)
+> >>  		memcg->kmem_accounted;
+> >>  }
+> >>  
+> >> +struct ida cache_types;
+> >> +
+> >> +void memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+> >> +{
+> >> +	int id = -1;
+> >> +
+> >> +	if (!memcg)
+> >> +		id = ida_simple_get(&cache_types, 0, MAX_KMEM_CACHE_TYPES,
+> >> +				    GFP_KERNEL);
+> > 
+> > MAX_KMEM_CACHE_TYPES is 0 if CONFIG_MEMCG_KMEM undefined.
+> > If 'end' parameter of ida_simple_get() is 0 it will use default max value
+> > which is 0x80000000.
+> > I guess you want MAX_KMEM_CACHE_TYPES to be 1 for !CONFIG_MEMCG_KMEM.
+> > 
+> ida_simple_get will not, and should never be called for !CONFIG_MEMCG_KMEM.
 
-But virtio-scsi does, LUN "16384" and LUN 0 are the same.
+Okay. Is there an user for MAX_KMEM_CACHE_TYPES if !CONFIG_MEMCG_KMEM?
 
-If somebody wanted to add support for >16383 LUNs, we would do it with
-the 4-byte encoding that is in SAM, but I don't see that happening.
-
-> It's nothing to do with buggy hardware ...
-
-Hardware that knows about format=1 LUNs, and yet treats LUN 0
-differently depending on the encoding sounds buggy.
-
-Of course some hardware may not know anything about format=1, so it is
-wrong to pass format=1 unconditionally, but virtio-scsi does.
-
-Paolo
+-- 
+ Kirill A. Shutemov
