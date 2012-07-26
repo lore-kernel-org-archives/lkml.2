@@ -1,57 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab2GZOaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:30:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55845 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab2GZOaL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:30:11 -0400
-MIME-Version: 1.0
-Date: Thu, 26 Jul 2012 10:30:09 -0400
-Message-ID: <CAG4AFWa5qKzUqmR+3o4Od_jBt0PT-osUPczbh=VhvLh45+E6ng@mail.gmail.com>
-Subject: Question about the fallocate system call
-From: Jidong Xiao <jidong.xiao@gmail.com>
-To: Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752277Ab2GZOcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:32:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751040Ab2GZOcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 10:32:32 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAHO5Pa1rCV+Od4q3SVHbGf_08q1uAeaNZEHH6NEuouviOS0awA@mail.gmail.com>
+References: <CAHO5Pa1rCV+Od4q3SVHbGf_08q1uAeaNZEHH6NEuouviOS0awA@mail.gmail.com> <20120720215636.14854.41208.stgit@warthog.procyon.org.uk> <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com> <28702.1343135952@warthog.procyon.org.uk> <CAHO5Pa310CYFKvyN4N21CHoCKJG-eJ04Q-yg1VmgwvgR5N91Rg@mail.gmail.com> <6193.1343211798@warthog.procyon.org.uk> <CAHO5Pa2ck_wqUwiuFUxEeU=k3dJvByyjpygpUhrSFRsMyBZ8Eg@mail.gmail.com> <12201.1343215232@warthog.procyon.org.uk>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de, tglx@linutronix.de,
+        mingo@kernel.org, davej@redhat.com
+Subject: Re: [PATCH 00/13] UAPI header file split
+Date: Thu, 26 Jul 2012 15:32:13 +0100
+Message-ID: <6228.1343313133@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Michael Kerrisk <mtk.manpages@gmail.com> wrote:
 
-I just have a simple question about fallocate.
+> I've not checked whether any of the below are fixed in the adjustments
+> that you made in the last 20 hours (though it looks like at least some
+> of them are not), but a little scripting to check the content of the
+> split files showed that while most of them were okay, in the cases
+> below, some comment text was being discarded by the scripts.
+> 
+> ./include/linux/irqnr.h ./include/uapi/linux/irqnr.h
+> ./arch/frv/include/asm/types.h ./arch/frv/include/uapi/asm/types.h
+> ./arch/cris/include/asm/types.h ./arch/cris/include/uapi/asm/types.h
+> ./arch/arm/include/asm/types.h ./arch/arm/include/uapi/asm/types.h
+> ./arch/sh/include/asm/types.h ./arch/sh/include/uapi/asm/types.h
+> ./arch/ia64/include/asm/kvm_para.h ./arch/ia64/include/uapi/asm/kvm_para.h
+> ./arch/mn10300/include/asm/types.h ./arch/mn10300/include/uapi/asm/types.h
+> ./arch/m68k/include/asm/types.h ./arch/m68k/include/uapi/asm/types.h
+> ./arch/avr32/include/asm/types.h ./arch/avr32/include/uapi/asm/types.h
+> ./arch/m32r/include/asm/types.h ./arch/m32r/include/uapi/asm/types.h
+> 
+> I found these using the script below, which tries to check the
+> integrity of the transformations you are making with your scripts.
+> Other than the files above, the results looked good.
 
-I want to test the punch hole function of fallocate(). So I wrote such
-a simple program:
+How about the attached changes?
 
-yosemite:/mnt # cat test.c
-#include <fcntl.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <linux/fs.h>
-#include <linux/falloc.h>
+I had to put in special handling for comments of the form:
 
-int main(void)
-{
-        int fd;
+	These aren't exported outside the kernel to avoid name space clashes
 
-        fd = open("testfile", O_RDWR);
-        fallocate(fd,FALLOC_FL_PUNCH_HOLE,0,500*1024*1024);
-        close(fd);
+because they invariably occur in the wrong section (ie. they would normally
+end up in the UAPI side).
 
-        return 0;
-}
+I consulted Thomas Gleixner about irqnr.h.  He says it doesn't matter if that
+one comment gets lost.  Besides, something like that can be added back later,
+perhaps in a better place (it doesn't look like it's in the right place now).
 
-I created a file called "testfile" whose size is 1GB, however, when I
-run the above program, the size of the testfile simply won't change,
-if I use stat command to check the file status, nothing is changed when I
-execute the above program. My filesystem is ext4, as I understand,
-ideally when I run the above program, the file size should decrease
-from 1GB to 512MB, is there anything wrong with the program or I just
-understood incorrectly?
-
-Thank you for any inputs/comments.
-
--Jidong
+David
+---
+diff --git a/arch/arm/include/asm/types.h b/arch/arm/include/asm/types.h
+index d73badf..01d8630 100644
+--- a/arch/arm/include/asm/types.h
++++ b/arch/arm/include/asm/types.h
+@@ -3,6 +3,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #define BITS_PER_LONG 32
+ 
+diff --git a/arch/avr32/include/asm/types.h b/arch/avr32/include/asm/types.h
+index cd34e33..5932405 100644
+--- a/arch/avr32/include/asm/types.h
++++ b/arch/avr32/include/asm/types.h
+@@ -10,6 +10,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #define BITS_PER_LONG 32
+ 
+diff --git a/arch/avr32/include/uapi/asm/types.h b/arch/avr32/include/uapi/asm/types.h
+index 9ec9d4c..bb34ad3 100644
+--- a/arch/avr32/include/uapi/asm/types.h
++++ b/arch/avr32/include/uapi/asm/types.h
+@@ -1 +1,8 @@
++/*
++ * Copyright (C) 2004-2006 Atmel Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
+ #include <asm-generic/int-ll64.h>
+diff --git a/arch/cris/include/asm/types.h b/arch/cris/include/asm/types.h
+index 1964943..a3cac77 100644
+--- a/arch/cris/include/asm/types.h
++++ b/arch/cris/include/asm/types.h
+@@ -3,6 +3,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #define BITS_PER_LONG 32
+ 
+diff --git a/arch/frv/include/asm/types.h b/arch/frv/include/asm/types.h
+index 887a6cb..6bc6365 100644
+--- a/arch/frv/include/asm/types.h
++++ b/arch/frv/include/asm/types.h
+@@ -13,6 +13,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #define BITS_PER_LONG 32
+ 
+diff --git a/arch/frv/include/uapi/asm/types.h b/arch/frv/include/uapi/asm/types.h
+index 9ec9d4c..cf23149 100644
+--- a/arch/frv/include/uapi/asm/types.h
++++ b/arch/frv/include/uapi/asm/types.h
+@@ -1 +1,11 @@
++/* types.h: FRV types
++ *
++ * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
+ #include <asm-generic/int-ll64.h>
+diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
+index 2a7d1be..4c351b1 100644
+--- a/arch/ia64/include/asm/types.h
++++ b/arch/ia64/include/asm/types.h
+@@ -18,6 +18,9 @@
+ 
+ #ifdef __ASSEMBLY__
+ #else
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ struct fnptr {
+ 	unsigned long ip;
+diff --git a/arch/ia64/include/uapi/asm/types.h b/arch/ia64/include/uapi/asm/types.h
+index c90f317..321193b 100644
+--- a/arch/ia64/include/uapi/asm/types.h
++++ b/arch/ia64/include/uapi/asm/types.h
+@@ -26,9 +26,6 @@
+ # define __IA64_UL(x)		((unsigned long)(x))
+ # define __IA64_UL_CONST(x)	x##UL
+ 
+-/*
+- * These aren't exported outside the kernel to avoid name space clashes
+- */
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* _UAPI_ASM_IA64_TYPES_H */
+diff --git a/arch/m32r/include/asm/types.h b/arch/m32r/include/asm/types.h
+index f456659..04a44c6 100644
+--- a/arch/m32r/include/asm/types.h
++++ b/arch/m32r/include/asm/types.h
+@@ -3,6 +3,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #define BITS_PER_LONG 32
+ 
+diff --git a/arch/m68k/include/asm/types.h b/arch/m68k/include/asm/types.h
+index 436ab02..80160f4 100644
+--- a/arch/m68k/include/asm/types.h
++++ b/arch/m68k/include/asm/types.h
+@@ -3,6 +3,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #define BITS_PER_LONG 32
+ 
+diff --git a/arch/mips/include/asm/types.h b/arch/mips/include/asm/types.h
+index 8d13ec5..a845aaf 100644
+--- a/arch/mips/include/asm/types.h
++++ b/arch/mips/include/asm/types.h
+@@ -14,6 +14,9 @@
+ # include <asm-generic/int-ll64.h>
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ #ifndef __ASSEMBLY__
+ 
+ /*
+diff --git a/arch/mips/include/uapi/asm/types.h b/arch/mips/include/uapi/asm/types.h
+index 6c65178..7ac9d0b 100644
+--- a/arch/mips/include/uapi/asm/types.h
++++ b/arch/mips/include/uapi/asm/types.h
+@@ -23,8 +23,5 @@
+ # endif
+ #endif
+ 
+-/*
+- * These aren't exported outside the kernel to avoid name space clashes
+- */
+ 
+ #endif /* _UAPI_ASM_TYPES_H */
+diff --git a/arch/mn10300/include/asm/types.h b/arch/mn10300/include/asm/types.h
+index c056756..3d6e483 100644
+--- a/arch/mn10300/include/asm/types.h
++++ b/arch/mn10300/include/asm/types.h
+@@ -13,6 +13,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #define BITS_PER_LONG 32
+ 
+diff --git a/arch/mn10300/include/uapi/asm/types.h b/arch/mn10300/include/uapi/asm/types.h
+index 9ec9d4c..8b3f050 100644
+--- a/arch/mn10300/include/uapi/asm/types.h
++++ b/arch/mn10300/include/uapi/asm/types.h
+@@ -1 +1,11 @@
++/* MN10300 Basic type definitions
++ *
++ * Copyright (C) 2007 Matsushita Electric Industrial Co., Ltd.
++ * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
+ #include <asm-generic/int-ll64.h>
+diff --git a/arch/s390/include/asm/types.h b/arch/s390/include/asm/types.h
+index 876f016..36ec230 100644
+--- a/arch/s390/include/asm/types.h
++++ b/arch/s390/include/asm/types.h
+@@ -10,6 +10,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #ifndef __ASSEMBLY__
+ 
+diff --git a/arch/s390/include/uapi/asm/types.h b/arch/s390/include/uapi/asm/types.h
+index 9d177d4..04a07a2 100644
+--- a/arch/s390/include/uapi/asm/types.h
++++ b/arch/s390/include/uapi/asm/types.h
+@@ -21,7 +21,4 @@ typedef __signed__ long saddr_t;
+ 
+ #endif /* __ASSEMBLY__ */
+ 
+-/*
+- * These aren't exported outside the kernel to avoid name space clashes
+- */
+ #endif /* _UAPI_S390_TYPES_H */
+diff --git a/arch/sh/include/asm/types.h b/arch/sh/include/asm/types.h
+index 8315c99..6a31053 100644
+--- a/arch/sh/include/asm/types.h
++++ b/arch/sh/include/asm/types.h
+@@ -3,6 +3,9 @@
+ 
+ #include <uapi/asm/types.h>
+ 
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ #ifndef __ASSEMBLY__
+ 
+ #ifdef CONFIG_SUPERH32
+diff --git a/arch/xtensa/include/asm/types.h b/arch/xtensa/include/asm/types.h
+index dd2a269..2b410b8 100644
+--- a/arch/xtensa/include/asm/types.h
++++ b/arch/xtensa/include/asm/types.h
+@@ -13,6 +13,9 @@
+ #include <uapi/asm/types.h>
+ 
+ #ifndef __ASSEMBLY__
++/*
++ * These aren't exported outside the kernel to avoid name space clashes
++ */
+ 
+ #define BITS_PER_LONG 32
+ 
+diff --git a/arch/xtensa/include/uapi/asm/types.h b/arch/xtensa/include/uapi/asm/types.h
+index 2293432..87ec7ae 100644
+--- a/arch/xtensa/include/uapi/asm/types.h
++++ b/arch/xtensa/include/uapi/asm/types.h
+@@ -23,9 +23,6 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
+-/*
+- * These aren't exported outside the kernel to avoid name space clashes
+- */
+ #endif
+ 
+ #endif /* _UAPI_XTENSA_TYPES_H */
