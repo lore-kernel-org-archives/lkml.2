@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab2GZVVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:21:30 -0400
+	id S1753007Ab2GZVV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:21:26 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:55834 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab2GZVV0 (ORCPT
+	with ESMTP id S1752933Ab2GZVVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:21:26 -0400
+	Thu, 26 Jul 2012 17:21:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 13/23] HID: multitouch: Add support for Baanto touchscreen
-Date: Thu, 26 Jul 2012 14:19:52 -0700
-Message-Id: <20120726211407.064475269@linuxfoundation.org>
+        Aaditya Kumar <aaditya.kumar@ap.sony.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: [ 10/23] mm: fix lost kswapd wakeup in kswapd_stop()
+Date: Thu, 26 Jul 2012 14:19:49 -0700
+Message-Id: <20120726211406.798340041@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -31,55 +32,82 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
 
-commit 9ed326951806c424b42dcf2e1125e25a98fb13d1 upstream.
+commit 1c7e7f6c0703d03af6bcd5ccc11fc15d23e5ecbe upstream.
 
-Reported-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-Tested-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Offlining memory may block forever, waiting for kswapd() to wake up
+because kswapd() does not check the event kthread->should_stop before
+sleeping.
+
+The proper pattern, from Documentation/memory-barriers.txt, is:
+
+   ---  waker  ---
+   event_indicated = 1;
+   wake_up_process(event_daemon);
+
+   ---  sleeper  ---
+   for (;;) {
+      set_current_state(TASK_UNINTERRUPTIBLE);
+      if (event_indicated)
+         break;
+      schedule();
+   }
+
+   set_current_state() may be wrapped by:
+      prepare_to_wait();
+
+In the kswapd() case, event_indicated is kthread->should_stop.
+
+  === offlining memory (waker) ===
+   kswapd_stop()
+      kthread_stop()
+         kthread->should_stop = 1
+         wake_up_process()
+         wait_for_completion()
+
+  ===  kswapd_try_to_sleep (sleeper) ===
+   kswapd_try_to_sleep()
+      prepare_to_wait()
+           .
+           .
+      schedule()
+           .
+           .
+      finish_wait()
+
+The schedule() needs to be protected by a test of kthread->should_stop,
+which is wrapped by kthread_should_stop().
+
+Reproducer:
+   Do heavy file I/O in background.
+   Do a memory offline/online in a tight loop
+
+Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c       |    1 +
- drivers/hid/hid-ids.h        |    3 +++
- drivers/hid/hid-multitouch.c |    4 ++++
- 3 files changed, 8 insertions(+)
+ mm/vmscan.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1391,6 +1391,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUS, USB_DEVICE_ID_ASUS_T91MT) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUS, USB_DEVICE_ID_ASUSTEK_MULTITOUCH_YFO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_BELKIN, USB_DEVICE_ID_FLIP_KVM) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_BAANTO, USB_DEVICE_ID_BAANTO_MT_190W2), },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE_2) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -160,6 +160,9 @@
- #define USB_VENDOR_ID_AVERMEDIA		0x07ca
- #define USB_DEVICE_ID_AVER_FM_MR800	0xb800
- 
-+#define USB_VENDOR_ID_BAANTO		0x2453
-+#define USB_DEVICE_ID_BAANTO_MT_190W2	0x0100
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3013,7 +3013,10 @@ static void kswapd_try_to_sleep(pg_data_
+ 		 * them before going back to sleep.
+ 		 */
+ 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
+-		schedule();
 +
- #define USB_VENDOR_ID_BELKIN		0x050d
- #define USB_DEVICE_ID_FLIP_KVM		0x3201
- 
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -783,6 +783,10 @@ static const struct hid_device_id mt_dev
- 		HID_USB_DEVICE(USB_VENDOR_ID_ATMEL,
- 			USB_DEVICE_ID_ATMEL_MXT_DIGITIZER) },
- 
-+	/* Baanto multitouch devices */
-+	{ .driver_data = MT_CLS_DEFAULT,
-+		HID_USB_DEVICE(USB_VENDOR_ID_BAANTO,
-+			USB_DEVICE_ID_BAANTO_MT_190W2) },
- 	/* Cando panels */
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
- 		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
++		if (!kthread_should_stop())
++			schedule();
++
+ 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
+ 	} else {
+ 		if (remaining)
 
 
