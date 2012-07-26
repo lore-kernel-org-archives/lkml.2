@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab2GZFRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 01:17:49 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:42167
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751067Ab2GZFRr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 01:17:47 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zzbb2dI98dI9371I936eI1432I4015Izz1202hzz8275eh8275bha1495iz2dh668h839h93fhd25he5bhf0ah107ah)
-X-WSS-ID: 0M7R5D1-01-AKD-02
-X-M-MSG: 
-Message-ID: <5010D2DD.9060201@amd.com>
-Date: Thu, 26 Jul 2012 13:17:17 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120717 Thunderbird/10.0.6
+	id S1751521Ab2GZFT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 01:19:57 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44044 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751119Ab2GZFTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 01:19:55 -0400
+Date: Thu, 26 Jul 2012 10:48:39 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] uprobes: __replace_page() needs munlock_vma_page()
+Message-ID: <20120726051839.GE3810@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120712170934.GA25455@redhat.com>
+ <20120712171025.GA25510@redhat.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Jeff Garzik <jgarzik@pobox.com>, <linux-scsi@vger.kernel.org>,
-        Lin Ming <minggr@gmail.com>, <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates
-References: <20120725203551.GA19762@havoc.gtf.org>  <50106747.8070501@pobox.com> <5010CBFA.8020907@amd.com> <1343279108.3115.4.camel@dabdike>
-In-Reply-To: <1343279108.3115.4.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Jul 2012 05:17:20.0023 (UTC) FILETIME=[EE3AB270:01CD6AED]
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120712171025.GA25510@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072605-5806-0000-0000-000017AC8ECF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 01:05 PM, James Bottomley wrote:
-> On Thu, 2012-07-26 at 12:47 +0800, Aaron Lu wrote:
->> On 07/26/2012 05:38 AM, Jeff Garzik wrote:
->>> On 07/25/2012 04:35 PM, Jeff Garzik wrote:
->>>> * Updating libata to directly bind with ACPI / runtime power mgmt.
->>>> This is a pre-req for SATA ZPODD (CD-ROM power management).
->>>>
->>>> Touches ACPI (exports++) and SCSI in minor ways. Has been in linux-next
->>>> for weeks.
->>>>
->>>> The rest of [ZPODD] will probably come via SCSI tree, as it involves
->>>> a lot of updates to the 'sr' driver etc.
->>>
->>> BTW Lin and Aaron, note that this did not include these changes:
->>>
->>> sr: check support for device busy class events
->>> sr: support zero power ODD
->>> sr: make sure ODD is in resumed state in block ioctl
->>>
->>> as in the end I wanted to put the brakes on SCSI-touching patches. These
->>> should be able to go into James' scsi-misc tree with the other SCSI-area
->>> ZPODD changes.
->>>
->>> For those three 'sr' changes listed above, you may add
->>>
->>> Acked-by: Jeff Garzik<jgarzik@redhat.com>
->>>
->>> when moving them over.
->>
->> Thanks Jeff.
->>
->> Hi James,
->> I'll prepare these dropped patches plus some other fixes for ZPODD which
->> I've sent v2 recently and merge them into v3 for you to review.
->
-> They weren't exactly dropped ... I've been waiting for you to address
-> Alan Stern's comments, since he's our resident expert on suspend/resume.
+* Oleg Nesterov <oleg@redhat.com> [2012-07-12 19:10:25]:
 
-Oh, I forgot to mention, that I agree with Alan's comments and have
-addressed them in my v2 patches here:
-http://marc.info/?l=linux-scsi&m=134312317325650&w=2
+> Like do_wp_page(), __replace_page() should do munlock_vma_page()
+> for the case when the old page still has other !VM_LOCKED mappings.
+> Unfortunately this needs mm/internal.h.
+> 
+> Also, move put_page() outside of ptl lock. This doesn't really
+> matter but looks a bit better.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-The 2 patches Alan has comments are:
-http://marc.info/?l=linux-scsi&m=134312311025619&w=2
-http://marc.info/?l=linux-scsi&m=134312308225610&w=2
+One thing I wanted to check is, should we mlock the new page, i.e the
+replacing page. It may not a good idea to mlock the new page
+because then we can end up adding too many pages to the unevictable
+list.
 
-Hi Alan,
-Are the v2 patches look OK to you?
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-And James,
-Do you want me to rebase these patches on top of scsi-misc tree?
-
-Thanks,
-Aaron
+> ---
+>  kernel/events/uprobes.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index fc1df43..aeea41b 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/swap.h>		/* try_to_free_swap */
+>  #include <linux/ptrace.h>	/* user_enable_single_step */
+>  #include <linux/kdebug.h>	/* notifier mechanism */
+> +#include "../../mm/internal.h"	/* munlock_vma_page */
+> 
+>  #include <linux/uprobes.h>
+> 
+> @@ -141,7 +142,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+>  	pte_t *ptep;
+>  	int err;
+> 
+> -	/* freeze PageSwapCache() for try_to_free_swap() below */
+> +	/* For try_to_free_swap() and munlock_vma_page() below */
+>  	lock_page(page);
+> 
+>  	err = -EAGAIN;
+> @@ -164,9 +165,12 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+>  	page_remove_rmap(page);
+>  	if (!page_mapped(page))
+>  		try_to_free_swap(page);
+> -	put_page(page);
+>  	pte_unmap_unlock(ptep, ptl);
+> 
+> +	if (vma->vm_flags & VM_LOCKED)
+> +		munlock_vma_page(page);
+> +	put_page(page);
+> +
+>  	err = 0;
+>   unlock:
+>  	unlock_page(page);
+> -- 
+> 1.5.5.1
+> 
 
