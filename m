@@ -1,117 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab2GZQhN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 12:37:13 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:34540 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752133Ab2GZQhL (ORCPT
+	id S1752448Ab2GZQjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 12:39:44 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19398 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab2GZQjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 12:37:11 -0400
+	Thu, 26 Jul 2012 12:39:43 -0400
+Date: Thu, 26 Jul 2012 12:30:20 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        linaro-dev@lists.linaro.org, Ian.Campbell@citrix.com, arnd@arndb.de,
+        catalin.marinas@arm.com, tim@xen.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Xen-devel] [PATCH 01/24] arm: initial Xen support
+Message-ID: <20120726163020.GB9222@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+ <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <1343215901-15430-3-git-send-email-ygardi@codeaurora.org>
-References: <1343215901-15430-1-git-send-email-ygardi@codeaurora.org> <1343215901-15430-3-git-send-email-ygardi@codeaurora.org>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Thu, 26 Jul 2012 22:06:49 +0530
-Message-ID: <CANfBPZ_M82Hro_Whq1HY9Z=oqgiLk4N_8BCPcEpUnqRVm-pKGQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND v8 2/2] mmc: card: Adding support for sanitize in
- eMMC 4.5
-To: Yaniv Gardi <ygardi@codeaurora.org>
-Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 5:01 PM, Yaniv Gardi <ygardi@codeaurora.org> wrote:
-> This feature delete the unmap memory region of the eMMC card,
-> by writing to a specific register in the EXT_CSD
-> unmap region is the memory region that were previously deleted
-> (by erase, trim or discard operation)
->
-> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
->
+On Thu, Jul 26, 2012 at 04:33:43PM +0100, Stefano Stabellini wrote:
+> - Basic hypervisor.h and interface.h definitions.
+> - Skelethon enlighten.c, set xen_start_info to an empty struct.
+
+Skeleton
+
+> - Do not limit xen_initial_domain to PV guests.
+
+Better wording: Make xen_initial_domain dependent on the SIF_PRIVILIGED_BIT.
+
+Which reminds me - what about PV guests that do PCI passthrough. Aren't
+they "more" priviligied than normal PV guests? Or not really?
+> 
+> The new code only compiles when CONFIG_XEN is set, that is going to be
+> added to arch/arm/Kconfig in a later patch.
+
+s/later patch/<name of patch>/
+
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > ---
->  drivers/mmc/card/block.c |   72 +++++++++++++++++++++++++++++++++-------------
->  drivers/mmc/card/queue.c |   10 ++++++-
->  include/linux/mmc/host.h |    1 +
->  3 files changed, 62 insertions(+), 21 deletions(-)
->
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index f1c84de..c45ec9f 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -860,10 +860,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
->  {
->         struct mmc_blk_data *md = mq->data;
->         struct mmc_card *card = md->queue.card;
-> -       unsigned int from, nr, arg, trim_arg, erase_arg;
-> +       unsigned int from, nr, arg;
->         int err = 0, type = MMC_BLK_SECDISCARD;
->
-> -       if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-> +       if (!(mmc_can_secure_erase_trim(card))) {
->                 err = -EOPNOTSUPP;
->                 goto out;
->         }
-> @@ -871,23 +871,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
->         from = blk_rq_pos(req);
->         nr = blk_rq_sectors(req);
->
-> -       /* The sanitize operation is supported at v4.5 only */
-> -       if (mmc_can_sanitize(card)) {
-> -               erase_arg = MMC_ERASE_ARG;
-> -               trim_arg = MMC_TRIM_ARG;
-> -       } else {
-> -               erase_arg = MMC_SECURE_ERASE_ARG;
-> -               trim_arg = MMC_SECURE_TRIM1_ARG;
-> -       }
-> -
-> -       if (mmc_erase_group_aligned(card, from, nr))
-> -               arg = erase_arg;
-> -       else if (mmc_can_trim(card))
-> -               arg = trim_arg;
-> -       else {
-> -               err = -EINVAL;
-> -               goto out;
-> -       }
-> +       if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
-> +               arg = MMC_SECURE_TRIM1_ARG;
-> +       else
-> +               arg = MMC_SECURE_ERASE_ARG;
->  retry:
->         if (card->quirks & MMC_QUIRK_INAND_CMD38) {
->                 err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> @@ -937,6 +924,46 @@ out:
->         return err ? 0 : 1;
->  }
->
-> +static int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
-> +                                     struct request *req)
+>  arch/arm/Makefile                     |    1 +
+>  arch/arm/include/asm/hypervisor.h     |    6 +++
+>  arch/arm/include/asm/xen/hypervisor.h |   19 ++++++++++
+>  arch/arm/include/asm/xen/interface.h  |   64 +++++++++++++++++++++++++++++++++
+>  arch/arm/xen/Makefile                 |    1 +
+>  arch/arm/xen/enlighten.c              |   35 ++++++++++++++++++
+>  include/xen/xen.h                     |    2 +-
+>  7 files changed, 127 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/arm/include/asm/hypervisor.h
+>  create mode 100644 arch/arm/include/asm/xen/hypervisor.h
+>  create mode 100644 arch/arm/include/asm/xen/interface.h
+>  create mode 100644 arch/arm/xen/Makefile
+>  create mode 100644 arch/arm/xen/enlighten.c
+> 
+> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+> index 0298b00..70aaa82 100644
+> --- a/arch/arm/Makefile
+> +++ b/arch/arm/Makefile
+> @@ -246,6 +246,7 @@ endif
+>  core-$(CONFIG_FPE_NWFPE)	+= arch/arm/nwfpe/
+>  core-$(CONFIG_FPE_FASTFPE)	+= $(FASTFPE_OBJ)
+>  core-$(CONFIG_VFP)		+= arch/arm/vfp/
+> +core-$(CONFIG_XEN)		+= arch/arm/xen/
+>  
+>  # If we have a machine-specific directory, then include it in the build.
+>  core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
+> diff --git a/arch/arm/include/asm/hypervisor.h b/arch/arm/include/asm/hypervisor.h
+> new file mode 100644
+> index 0000000..b90d9e5
+> --- /dev/null
+> +++ b/arch/arm/include/asm/hypervisor.h
+> @@ -0,0 +1,6 @@
+> +#ifndef _ASM_ARM_HYPERVISOR_H
+> +#define _ASM_ARM_HYPERVISOR_H
+> +
+> +#include <asm/xen/hypervisor.h>
+> +
+> +#endif
+> diff --git a/arch/arm/include/asm/xen/hypervisor.h b/arch/arm/include/asm/xen/hypervisor.h
+> new file mode 100644
+> index 0000000..d7ab99a
+> --- /dev/null
+> +++ b/arch/arm/include/asm/xen/hypervisor.h
+> @@ -0,0 +1,19 @@
+> +#ifndef _ASM_ARM_XEN_HYPERVISOR_H
+> +#define _ASM_ARM_XEN_HYPERVISOR_H
+> +
+> +extern struct shared_info *HYPERVISOR_shared_info;
+> +extern struct start_info *xen_start_info;
+> +
+> +/* Lazy mode for batching updates / context switch */
+> +enum paravirt_lazy_mode {
+> +	PARAVIRT_LAZY_NONE,
+> +	PARAVIRT_LAZY_MMU,
+> +	PARAVIRT_LAZY_CPU,
+> +};
+> +
+> +static inline enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
 > +{
-> +       struct mmc_blk_data *md = mq->data;
-> +       struct mmc_card *card = md->queue.card;
-> +       int err = 0;
+> +	return PARAVIRT_LAZY_NONE;
+> +}
 > +
-> +       BUG_ON(!card);
-> +       BUG_ON(!card->host);
+> +#endif /* _ASM_ARM_XEN_HYPERVISOR_H */
+> diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
+> new file mode 100644
+> index 0000000..6c3ab59
+> --- /dev/null
+> +++ b/arch/arm/include/asm/xen/interface.h
+> @@ -0,0 +1,64 @@
+> +/******************************************************************************
+> + * Guest OS interface to ARM Xen.
+> + *
+> + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2011
+
+2012
+
+> + */
 > +
-> +       if (!(mmc_can_sanitize(card) &&
-> +            (card->host->caps2 & MMC_CAP2_SANITIZE))) {
-> +                       pr_warning("%s: %s - SANITIZE is not supported\n",
-> +                                  mmc_hostname(card->host), __func__);
-> +                       err = -EOPNOTSUPP;
-> +                       goto out;
-> +       }
+> +#ifndef _ASM_ARM_XEN_INTERFACE_H
+> +#define _ASM_ARM_XEN_INTERFACE_H
 > +
-> +       pr_debug("%s: %s - SANITIZE IN PROGRESS...\n",
-> +               mmc_hostname(card->host), __func__);
+> +#include <linux/types.h>
 > +
-> +       err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> +                                        EXT_CSD_SANITIZE_START, 1, 0);
+> +#define __DEFINE_GUEST_HANDLE(name, type) \
+> +	typedef type * __guest_handle_ ## name
 > +
-Everything else seems to be good overall. But you need some sort of timeout
-implementation and handling for SANTIZE. It's not interrupted to
-provide way for other commands,
-as generic CMD6 timeout doesn't apply.
-Currently, the device can be easily DOS'ed by just issuing the IOCTL repeatedly.
+> +#define DEFINE_GUEST_HANDLE_STRUCT(name) \
+> +	__DEFINE_GUEST_HANDLE(name, struct name)
+> +#define DEFINE_GUEST_HANDLE(name) __DEFINE_GUEST_HANDLE(name, name)
+> +#define GUEST_HANDLE(name)        __guest_handle_ ## name
+> +
+> +#define set_xen_guest_handle(hnd, val)			\
+> +	do {						\
+> +		if (sizeof(hnd) == 8)			\
+> +			*(uint64_t *)&(hnd) = 0;	\
+> +		(hnd) = val;				\
+> +	} while (0)
+> +
+> +#ifndef __ASSEMBLY__
+> +/* Guest handles for primitive C types. */
+> +__DEFINE_GUEST_HANDLE(uchar, unsigned char);
+> +__DEFINE_GUEST_HANDLE(uint,  unsigned int);
+> +__DEFINE_GUEST_HANDLE(ulong, unsigned long);
+> +DEFINE_GUEST_HANDLE(char);
+> +DEFINE_GUEST_HANDLE(int);
+> +DEFINE_GUEST_HANDLE(long);
+> +DEFINE_GUEST_HANDLE(void);
+> +DEFINE_GUEST_HANDLE(uint64_t);
+> +DEFINE_GUEST_HANDLE(uint32_t);
+> +
+> +/* Maximum number of virtual CPUs in multi-processor guests. */
+> +#define MAX_VIRT_CPUS 1
+> +
+> +struct arch_vcpu_info { };
+> +struct arch_shared_info { };
+> +
+> +/* XXX: Move pvclock definitions some place arch independent */
+> +struct pvclock_vcpu_time_info {
+> +	u32   version;
+> +	u32   pad0;
+> +	u64   tsc_timestamp;
+> +	u64   system_time;
+> +	u32   tsc_to_system_mul;
+> +	s8    tsc_shift;
+> +	u8    flags;
+> +	u8    pad[2];
+> +} __attribute__((__packed__)); /* 32 bytes */
+> +
+> +struct pvclock_wall_clock {
+> +	u32   version;
+> +	u32   sec;
+> +	u32   nsec;
+> +} __attribute__((__packed__));
+
+That is weird. It is 4+4+4 = 12 bytes? Don't you want it to be 16 bytes?
+
+> +#endif
+> +
+> +#endif /* _ASM_ARM_XEN_INTERFACE_H */
+> diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
+> new file mode 100644
+> index 0000000..0bad594
+> --- /dev/null
+> +++ b/arch/arm/xen/Makefile
+> @@ -0,0 +1 @@
+> +obj-y		:= enlighten.o
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> new file mode 100644
+> index 0000000..d27c2a6
+> --- /dev/null
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -0,0 +1,35 @@
+> +#include <xen/xen.h>
+> +#include <xen/interface/xen.h>
+> +#include <xen/interface/memory.h>
+> +#include <xen/platform_pci.h>
+> +#include <asm/xen/hypervisor.h>
+> +#include <asm/xen/hypercall.h>
+> +#include <linux/module.h>
+> +
+> +struct start_info _xen_start_info;
+> +struct start_info *xen_start_info = &_xen_start_info;
+> +EXPORT_SYMBOL_GPL(xen_start_info);
+> +
+> +enum xen_domain_type xen_domain_type = XEN_NATIVE;
+> +EXPORT_SYMBOL_GPL(xen_domain_type);
+> +
+> +struct shared_info xen_dummy_shared_info;
+> +struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
+> +
+> +DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
+> +
+> +/* XXX: to be removed */
+
+In this patch series later on? Or just when you try to collapse the x86 and arm variant
+together?
+
+> +__read_mostly int xen_have_vector_callback;
+> +EXPORT_SYMBOL_GPL(xen_have_vector_callback);
+> +
+> +int xen_platform_pci_unplug = XEN_UNPLUG_ALL;
+> +EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
+> +
+> +int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+> +			       unsigned long addr,
+> +			       unsigned long mfn, int nr,
+> +			       pgprot_t prot, unsigned domid)
+> +{
+> +	return -ENOSYS;
+> +}
+> +EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
+> diff --git a/include/xen/xen.h b/include/xen/xen.h
+> index a164024..2c0d3a5 100644
+> --- a/include/xen/xen.h
+> +++ b/include/xen/xen.h
+> @@ -23,7 +23,7 @@ extern enum xen_domain_type xen_domain_type;
+>  #include <xen/interface/xen.h>
+>  #include <asm/xen/hypervisor.h>
+>  
+> -#define xen_initial_domain()	(xen_pv_domain() && \
+> +#define xen_initial_domain()	(xen_domain() && \
+>  				 xen_start_info->flags & SIF_INITDOMAIN)
+>  #else  /* !CONFIG_XEN_DOM0 */
+>  #define xen_initial_domain()	(0)
+> -- 
+> 1.7.2.5
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
