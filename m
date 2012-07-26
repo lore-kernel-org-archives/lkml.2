@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2GZTMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 15:12:36 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61574 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab2GZTMd (ORCPT
+	id S1752607Ab2GZTRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 15:17:44 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58286 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab2GZTRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 15:12:33 -0400
-Message-ID: <5011969D.5030902@suse.cz>
-Date: Thu, 26 Jul 2012 21:12:29 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120718 Thunderbird/15.0
+	Thu, 26 Jul 2012 15:17:42 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120726190814.GA2194@kroah.com>
+References: <20120726190814.GA2194@kroah.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 26 Jul 2012 12:17:21 -0700
+X-Google-Sender-Auth: RZ0_QXZ7NaZQ82-9Bkx1MIG37wc
+Message-ID: <CA+55aFzqY=bk_ceVOb41EeR=v0N-UfF-6pGGWFTuRT6oiqDqgw@mail.gmail.com>
+Subject: Re: No big TTY/serial patch merge for 3.6-rc1
 To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: No big TTY/serial patch merge for 3.6-rc1
-References: <20120726190814.GA2194@kroah.com>
-In-Reply-To: <20120726190814.GA2194@kroah.com>
-X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 09:08 PM, Greg KH wrote:
-> Jiri, I know this postpones your patches from being merged, sorry about
-> that, but this gives us a few more months to ensure that they are
-> working properly :)
+On Thu, Jul 26, 2012 at 12:08 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> I don't really feel comfortable sending you the tty tree at the present
+> time to have merged for 3.6-rc1.
 
-Fine with me.
+Good. This is what I like to see. If it's not ready to be merged,
+let's not merge it. I don't think anybody will mind horribly.
 
-When should I send you 3.7 material I have in my local queue -- now or
-after 3.6-rc1 is out as usual?
-
-thanks,
--- 
-js
-suse labs
+                  Linus
