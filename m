@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2GZKfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 06:35:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49118 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab2GZK3P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 06:29:15 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        sameo@linux.intel.com, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 01/21] ARM: ux500: Remove unused snowball_of_platform_devs struct
-Date: Thu, 26 Jul 2012 11:28:34 +0100
-Message-Id: <1343298534-13611-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
+	id S1752137Ab2GZKnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 06:43:22 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:43510 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab2GZKnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 06:43:20 -0400
+Message-ID: <50111F36.6000407@parallels.com>
+Date: Thu, 26 Jul 2012 14:43:02 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 2/7] procfs: Convert /proc/pid/fdinfo/ handling routines
+ to seq-file
+References: <20120725094718.089879534@openvz.org> <20120725095024.760705388@openvz.org>
+In-Reply-To: <20120725095024.760705388@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was left over during a recent clean-up which removed Device Tree
-helper structs. There is no longer a requirement for it, so we can just
-remove it.
+On 07/25/2012 01:47 PM, Cyrill Gorcunov wrote:
+> This patch converts /proc/pid/fdinfo/ handling routines to seq-file which
+> is needed to extend seq operations and plug in auxiliary fdinfo provides
+> from subsystems like eventfd/eventpoll/fsnotify.
+> 
+> Note the proc_fd_link no longer call for proc_fd_info, simply because
+> proc_fd_info is converted to seq_fdinfo_open (which is seq-file open()
+> prototype), moreover in further patches I need to provide two seq_fdinfo_open
+> variants -- one with CONFIG_CHECKPOINT_RESTORE and one without this
+> symbol. All in one -- this will look more messy then.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/board-mop500.c |    5 -----
- 1 file changed, 5 deletions(-)
+This is something I'm really not happy with :( After the set applied we will
+have one former proc_fd_info being splitted into 3 (three!) functions doing
+the same (with flavors).
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 80b4f0e..e641003 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -726,11 +726,6 @@ MACHINE_END
- 
- #ifdef CONFIG_MACH_UX500_DT
- 
--static struct platform_device *snowball_of_platform_devs[] __initdata = {
--	&snowball_led_dev,
--	&snowball_key_dev,
--};
--
- struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
- 	/* Requires call-back bindings. */
- 	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
--- 
-1.7.9.5
+For me it's better to fix this, otherwise conversion to seq-file looks OK.
 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Al Viro <viro@ZenIV.linux.org.uk>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: James Bottomley <jbottomley@parallels.com>
+> ---
+>  fs/proc/fd.c |  133 +++++++++++++++++++++++++++++++++++++----------------------
+>  1 file changed, 85 insertions(+), 48 deletions(-)
