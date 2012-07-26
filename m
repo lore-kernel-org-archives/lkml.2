@@ -1,343 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab2GZKaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 06:30:25 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39929 "EHLO comal.ext.ti.com"
+	id S1752609Ab2GZKab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 06:30:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33484 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab2GZKaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 06:30:21 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <lrg@ti.com>, <broonie@opensource.wolfsonmicro.com>,
-        <balbi@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] drivers: regulator: add error checks for exported APIs
-Date: Thu, 26 Jul 2012 16:00:03 +0530
-Message-ID: <1343298603-25442-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751481Ab2GZKa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 06:30:27 -0400
+Date: Thu, 26 Jul 2012 12:30:25 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Benjamin Poirier <bpoirier@suse.de>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH v2 2/2] nconf: add u, d command keys in scroll windows
+Message-ID: <20120726103025.GB25512@sepie.suse.cz>
+References: <500EDDAF.4040506@xenotime.net>
+ <1343160723-14308-1-git-send-email-bpoirier@suse.de>
+ <1343160723-14308-2-git-send-email-bpoirier@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343160723-14308-2-git-send-email-bpoirier@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added error checks for exported APIs in regulator framework so that
-incorrect use of these APIs does not result in a crash.
+On Tue, Jul 24, 2012 at 04:12:03PM -0400, Benjamin Poirier wrote:
+> They function just like they do in less(1).
+> Also correct some discrepancy between the help text and the code wrt
+> function keys.
+> 
+> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
-compile tested omap2plus_defconfig
+Applied to kbuild.git#kconfig, thanks.
 
- drivers/regulator/core.c |  119 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 104 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index f092588..5e88bb2 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1506,12 +1506,17 @@ static int _regulator_enable(struct regulator_dev *rdev)
-  */
- int regulator_enable(struct regulator *regulator)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret = 0;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	if (regulator->always_on)
- 		return 0;
- 
-+	rdev = regulator->rdev;
-+
- 	if (rdev->supply) {
- 		ret = regulator_enable(rdev->supply);
- 		if (ret != 0)
-@@ -1603,12 +1608,17 @@ static int _regulator_disable(struct regulator_dev *rdev)
-  */
- int regulator_disable(struct regulator *regulator)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret = 0;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	if (regulator->always_on)
- 		return 0;
- 
-+	rdev = regulator->rdev;
-+
- 	mutex_lock(&rdev->mutex);
- 	ret = _regulator_disable(rdev);
- 	mutex_unlock(&rdev->mutex);
-@@ -1652,9 +1662,13 @@ static int _regulator_force_disable(struct regulator_dev *rdev)
-  */
- int regulator_force_disable(struct regulator *regulator)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
- 	mutex_lock(&rdev->mutex);
- 	regulator->uA_load = 0;
- 	ret = _regulator_force_disable(regulator->rdev);
-@@ -1714,12 +1728,16 @@ static void regulator_disable_work(struct work_struct *work)
-  */
- int regulator_disable_deferred(struct regulator *regulator, int ms)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	if (regulator->always_on)
- 		return 0;
- 
-+	rdev = regulator->rdev;
- 	mutex_lock(&rdev->mutex);
- 	rdev->deferred_disables++;
- 	mutex_unlock(&rdev->mutex);
-@@ -1817,6 +1835,9 @@ int regulator_is_enabled(struct regulator *regulator)
- {
- 	int ret;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	if (regulator->always_on)
- 		return 1;
- 
-@@ -1838,7 +1859,12 @@ EXPORT_SYMBOL_GPL(regulator_is_enabled);
-  */
- int regulator_count_voltages(struct regulator *regulator)
- {
--	struct regulator_dev	*rdev = regulator->rdev;
-+	struct regulator_dev	*rdev;
-+
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
- 
- 	return rdev->desc->n_voltages ? : -EINVAL;
- }
-@@ -1901,10 +1927,16 @@ EXPORT_SYMBOL_GPL(regulator_list_voltage_table);
-  */
- int regulator_list_voltage(struct regulator *regulator, unsigned selector)
- {
--	struct regulator_dev	*rdev = regulator->rdev;
--	struct regulator_ops	*ops = rdev->desc->ops;
-+	struct regulator_dev	*rdev;
-+	struct regulator_ops	*ops;
- 	int			ret;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
-+	ops = rdev->desc->ops;
-+
- 	if (!ops->list_voltage || selector >= rdev->desc->n_voltages)
- 		return -EINVAL;
- 
-@@ -1935,9 +1967,14 @@ EXPORT_SYMBOL_GPL(regulator_list_voltage);
- int regulator_is_supported_voltage(struct regulator *regulator,
- 				   int min_uV, int max_uV)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int i, voltages, ret;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
-+
- 	/* If we can't change voltage check the current voltage */
- 	if (!(rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE)) {
- 		ret = regulator_get_voltage(regulator);
-@@ -2207,9 +2244,14 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
-  */
- int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret = 0;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
-+
- 	mutex_lock(&rdev->mutex);
- 
- 	/* If we're setting the same range as last time the change
-@@ -2258,13 +2300,19 @@ EXPORT_SYMBOL_GPL(regulator_set_voltage);
- int regulator_set_voltage_time(struct regulator *regulator,
- 			       int old_uV, int new_uV)
- {
--	struct regulator_dev	*rdev = regulator->rdev;
--	struct regulator_ops	*ops = rdev->desc->ops;
-+	struct regulator_dev	*rdev;
-+	struct regulator_ops	*ops;
- 	int old_sel = -1;
- 	int new_sel = -1;
- 	int voltage;
- 	int i;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
-+	ops = rdev->desc->ops;
-+
- 	/* Currently requires operations to do this */
- 	if (!ops->list_voltage || !ops->set_voltage_time_sel
- 	    || !rdev->desc->n_voltages)
-@@ -2340,9 +2388,14 @@ EXPORT_SYMBOL_GPL(regulator_set_voltage_time_sel);
-  */
- int regulator_sync_voltage(struct regulator *regulator)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret, min_uV, max_uV;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
-+
- 	mutex_lock(&rdev->mutex);
- 
- 	if (!rdev->desc->ops->set_voltage &&
-@@ -2410,6 +2463,9 @@ int regulator_get_voltage(struct regulator *regulator)
- {
- 	int ret;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	mutex_lock(&regulator->rdev->mutex);
- 
- 	ret = _regulator_get_voltage(regulator->rdev);
-@@ -2439,9 +2495,14 @@ EXPORT_SYMBOL_GPL(regulator_get_voltage);
- int regulator_set_current_limit(struct regulator *regulator,
- 			       int min_uA, int max_uA)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
-+
- 	mutex_lock(&rdev->mutex);
- 
- 	/* sanity check */
-@@ -2491,6 +2552,9 @@ out:
-  */
- int regulator_get_current_limit(struct regulator *regulator)
- {
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	return _regulator_get_current_limit(regulator->rdev);
- }
- EXPORT_SYMBOL_GPL(regulator_get_current_limit);
-@@ -2508,10 +2572,15 @@ EXPORT_SYMBOL_GPL(regulator_get_current_limit);
-  */
- int regulator_set_mode(struct regulator *regulator, unsigned int mode)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret;
- 	int regulator_curr_mode;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
-+
- 	mutex_lock(&rdev->mutex);
- 
- 	/* sanity check */
-@@ -2567,6 +2636,9 @@ out:
-  */
- unsigned int regulator_get_mode(struct regulator *regulator)
- {
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	return _regulator_get_mode(regulator->rdev);
- }
- EXPORT_SYMBOL_GPL(regulator_get_mode);
-@@ -2599,11 +2671,16 @@ EXPORT_SYMBOL_GPL(regulator_get_mode);
-  */
- int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	struct regulator *consumer;
- 	int ret, output_uV, input_uV = 0, total_uA_load = 0;
- 	unsigned int mode;
- 
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
-+	rdev = regulator->rdev;
-+
- 	if (rdev->supply)
- 		input_uV = regulator_get_voltage(rdev->supply);
- 
-@@ -2683,6 +2760,9 @@ EXPORT_SYMBOL_GPL(regulator_set_optimum_mode);
- int regulator_register_notifier(struct regulator *regulator,
- 			      struct notifier_block *nb)
- {
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	return blocking_notifier_chain_register(&regulator->rdev->notifier,
- 						nb);
- }
-@@ -2698,6 +2778,9 @@ EXPORT_SYMBOL_GPL(regulator_register_notifier);
- int regulator_unregister_notifier(struct regulator *regulator,
- 				struct notifier_block *nb)
- {
-+	if (IS_ERR_OR_NULL(regulator))
-+		return -ENODEV;
-+
- 	return blocking_notifier_chain_unregister(&regulator->rdev->notifier,
- 						  nb);
- }
-@@ -3477,6 +3560,9 @@ EXPORT_SYMBOL_GPL(rdev_get_drvdata);
-  */
- void *regulator_get_drvdata(struct regulator *regulator)
- {
-+	if (IS_ERR_OR_NULL(regulator))
-+		return NULL;
-+
- 	return regulator->rdev->reg_data;
- }
- EXPORT_SYMBOL_GPL(regulator_get_drvdata);
-@@ -3488,6 +3574,9 @@ EXPORT_SYMBOL_GPL(regulator_get_drvdata);
-  */
- void regulator_set_drvdata(struct regulator *regulator, void *data)
- {
-+	if (IS_ERR_OR_NULL(regulator))
-+		return;
-+
- 	regulator->rdev->reg_data = data;
- }
- EXPORT_SYMBOL_GPL(regulator_set_drvdata);
--- 
-1.7.9.5
-
+Michal
