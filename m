@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab2GZLp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:45:58 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57237 "EHLO
+	id S1752083Ab2GZLvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:51:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40267 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751049Ab2GZLp5 (ORCPT
+	by vger.kernel.org with ESMTP id S1751251Ab2GZLvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:45:57 -0400
-Date: Thu, 26 Jul 2012 12:45:55 +0100
+	Thu, 26 Jul 2012 07:51:03 -0400
+Date: Thu, 26 Jul 2012 12:50:55 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
         ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 19/21] ASoC: Ux500: Enable ux500 MSP driver for Device
- Tree
-Message-ID: <20120726114554.GC3099@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 20/21] ASoC: codecs: Enable AB8500 CODEC for Device Tree
+Message-ID: <20120726115055.GD3099@opensource.wolfsonmicro.com>
 References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
- <1343298534-13611-20-git-send-email-lee.jones@linaro.org>
+ <1343298534-13611-21-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="F+wU6CH2q8RBGewX"
+	protocol="application/pgp-signature"; boundary="UvwuEPigQXXfOf7G"
 Content-Disposition: inline
-In-Reply-To: <1343298534-13611-20-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1343298534-13611-21-git-send-email-lee.jones@linaro.org>
 X-Cookie: You will outgrow your usefulness.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,53 +30,75 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---F+wU6CH2q8RBGewX
+--UvwuEPigQXXfOf7G
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Jul 26, 2012 at 11:28:52AM +0100, Lee Jones wrote:
+On Thu, Jul 26, 2012 at 11:28:53AM +0100, Lee Jones wrote:
 
->  arch/arm/mach-ux500/board-mop500-msp.c |   14 --------------
->  arch/arm/mach-ux500/board-mop500.c     |    2 --
->  arch/arm/mach-ux500/board-mop500.h     |    2 --
->  sound/soc/ux500/ux500_msp_dai.c        |    6 ++++++
->  sound/soc/ux500/ux500_msp_i2s.c        |   33 +++++++++++++++++++++++++++++---
+>  drivers/mfd/ab8500-core.c               |    1 +
+>  include/linux/mfd/abx500/ab8500-codec.h |    6 ++-
+>  sound/soc/codecs/ab8500-codec.c         |   79 +++++++++++++++++++++++++++++++
+>  3 files changed, 84 insertions(+), 2 deletions(-)
 
-Always provide documentation for DT bindings.
+Yet again no binding documentation....
 
-> +void ux500_msp_i2s_of_init_msp(struct platform_device *pdev,
-> +			struct ux500_msp *msp,
-> +			struct device_node *np)
-> +{
-> +	if (of_get_property(np, "stericsson,use-pinctrl", NULL))
-> +		msp->use_pinctrl = true;
-> +	else
-> +		msp->use_pinctrl = false;
-> +}
-> +
+>  	{
+>  		.name = "ab8500-codec",
+> +		.of_compatible = "stericsson,ab8500-codec",
+>  	},
 
-This doesn't seem particularly sane...  why is this conditional?
+Why are we doing this?  The MFD cells are a totally Linux specific
+thing, there's no reason to represent them in the device tree unless
+they're in some way reusable and the "ab8500-codec" name suggests that's
+unlikely.  Just put the properties on the parent node and instantiate
+the MFD cell as normal.
 
---F+wU6CH2q8RBGewX
+> +	/* Has a non-standard Vamic been requested? */
+> +	if(of_get_property(np, "stericsson,amic1a-bias-vamic2", NULL))
+
+Coding style.
+
+> +	if (!of_property_read_u32(np, "stericsson,earpeice-cmv", &value)) {
+> +		switch (value) {
+> +		case 950 :
+> +			codec->ear_cmv = EAR_CMV_0_95V;
+> +			break;
+> +		case 1100 :
+> +			codec->ear_cmv = EAR_CMV_1_10V;
+> +			break;
+> +		case 1270 :
+> +			codec->ear_cmv = EAR_CMV_1_27V;
+> +			break;
+> +		case 1580 :
+> +			codec->ear_cmv = EAR_CMV_1_58V;
+> +			break;
+> +		default :
+> +			codec->ear_cmv = EAR_CMV_UNKNOWN;
+> +			dev_err(dev, "Unsuitable earpiece voltage found in DT\n");
+
+The platform data code picks a default, can't the DT code do the same?
+
+--UvwuEPigQXXfOf7G
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQES2wAAoJEBus8iNuMP3d3FwP/2EJ6Y0YfHkCVFQMqzKcNZfj
-pUHjxnKqLLpm3AbxPWdX87XsLjFeSxGmu25Z1y1sbWVrQQtpQhGDbMYTRs3ylWiQ
-wwWhkTLvJZ60dNk0SnPkZzNOdHQcP6BvQqVcURYs4BB/83O20890pEWAMw8Nkiqc
-7erZdOAlvrAPI1eOMbHZUMmFZI/Ldm+3cO5OBiSKuBTGQxEod2LD6Jh6a9lEuhhE
-wG5MujwM2fYwJTzErsMN407725Xixy7rC6K//X7GfcjIz+Rk+e3QmBl+BE1b9y7u
-8OM5QzweCZYfY4CHnYiCnA1OgTQv6Uvkrr2h6EmO0RNxrf/wu57YPeUd1GbXS0BQ
-gDrTOeVn8tQmS9fj2xtXWul8/Hm9knofXEQfz7N8t8js0LQinD9PkbB473Xosaey
-/87W6mk0BH9QNg/573WKL76tCy8OV09q01WFezuY6BB+1Bf2bGM3NSPJ7REKTym3
-+PqKx5Ohc1xClJoIKwARWQvywInLauINVTKV9Kuqi78VZ0wW82tjWBKw4CabN0EH
-6L45QETCyGgVfCdU9I2n+mQNkkP/eaIrWsLdyFX3ryrkp1UyoB1G3r7iQt9l6f8d
-2Fhe39vY8yXDURw48V9LYS94pJo+bKHGV9NxpR5EAibT9z6mc7+7Ajz0Y8844LAx
-tHQYKB5fvyb2sS1E+EEz
-=+r3M
+iQIcBAEBAgAGBQJQES8YAAoJEBus8iNuMP3dwT0P/0QsSbEgelm7n6tociwR5ajK
+p0T8qOAzbVHeg3n3C4ZSEXlE5X57NtwN0LzGJ6GPthhORRXZ1crPpkpGmFrJb+X5
+JZr1bQ4xWc3LV7JkoPr9YFe4VcuqKgDXZqU2WtxsL4x0lMid4yDn0Y/zGn0VnRbe
+yW8cIiW87AOEcVlSALPc53W3EGCIOCJfpV+AX+RDbv2I5FqssLOAUg85a0E9bgiE
+TSwr4XQb/oQGJK8OeaBmU+sXx+qiKuPN8QsID0FQjrDwX5jkoAb5YUU0SqQCmmkZ
+Tkry956vHmpxdZKKZlFoj6IbZLHaZTYckDkgKi3XsDZ0Z1CFH+Ho20X3dIBfQuZj
+qnO59SB46kmFSv+8690lNUl6g2wR6unN0Y+CHONBrmM07GevJ480cJXb/ftFttuP
+TkG/Y6MZQa5vcBe3qYGhHvAQGkf3epxX4O8SvSh6/4Ap32EvIgMwLmXPsoa4En+O
+MqdWsOF5xbpTV3qEvDbnP/9EPjEF/RVqGtVE6A2krAPg+FDwU1pXZAPqxsM4gcOt
+uBuI3+9NPI5WP2XjA1cxYB5nM8Ah0addFoJVmz2tv9/d6HsfSZ5BONx+WY6Ow6up
+W7ue4OgppScNn9K01dipYp0LoRrKlHs2P65/cOe3va8plz26pH+xlblMCVxKihkB
+cGf0vVd+vAIgfFcgNDQk
+=TwLY
 -----END PGP SIGNATURE-----
 
---F+wU6CH2q8RBGewX--
+--UvwuEPigQXXfOf7G--
