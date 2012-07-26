@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2GZVab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:30:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62132 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271Ab2GZVa0 (ORCPT
+	id S1753339Ab2GZVak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:30:40 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:48389 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310Ab2GZVag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:26 -0400
+	Thu, 26 Jul 2012 17:30:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [ 08/40] mm: memory hotplug: Check if pages are correctly reserved on a per-section basis
-Date: Thu, 26 Jul 2012 14:29:26 -0700
-Message-Id: <20120726211411.849674275@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [ 12/40] vmscan: add shrink_slab tracepoints
+Date: Thu, 26 Jul 2012 14:29:30 -0700
+Message-Id: <20120726211412.196641898@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -33,125 +31,147 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 2bbcb8788311a40714b585fc11b51da6ffa2ab92 upstream.
+commit 095760730c1047c69159ce88021a7fa3833502c8 upstream.
 
-Stable note: Fixes https://bugzilla.novell.com/show_bug.cgi?id=721039 .
-        Without the patch, memory hot-add can fail for kernel configurations
-        that do not set CONFIG_SPARSEMEM_VMEMMAP.
+Stable note: This patch makes later patches easier to apply but otherwise
+        has little to justify it. It is a diagnostic patch that was part
+        of a series addressing excessive slab shrinking after GFP_NOFS
+        failures. There is detailed information on the series' motivation
+        at https://lkml.org/lkml/2011/6/2/42 .
 
-(Resending as I am not seeing it in -next so maybe it got lost)
+It is impossible to understand what the shrinkers are actually doing
+without instrumenting the code, so add a some tracepoints to allow
+insight to be gained.
 
-mm: memory hotplug: Check if pages are correctly reserved on a per-section basis
-
-It is expected that memory being brought online is PageReserved
-similar to what happens when the page allocator is being brought up.
-Memory is onlined in "memory blocks" which consist of one or more
-sections. Unfortunately, the code that verifies PageReserved is
-currently assuming that the memmap backing all these pages is virtually
-contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
-As a result, memory hot-add is failing on those configurations with
-the message;
-
-kernel: section number XXX page number 256 not reserved, was it already online?
-
-This patch updates the PageReserved check to lookup struct page once
-per section to guarantee the correct struct page is being checked.
-
-[Check pages within sections properly: rientjes@google.com]
-[original patch by: nfont@linux.vnet.ibm.com]
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Tested-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/memory.c |   58 ++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 40 insertions(+), 18 deletions(-)
+ include/trace/events/vmscan.h |   77 ++++++++++++++++++++++++++++++++++++++++++
+ mm/vmscan.c                   |    8 +++-
+ 2 files changed, 84 insertions(+), 1 deletion(-)
 
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long
- }
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -179,6 +179,83 @@ DEFINE_EVENT(mm_vmscan_direct_reclaim_en
+ 	TP_ARGS(nr_reclaimed)
+ );
  
- /*
-+ * The probe routines leave the pages reserved, just as the bootmem code does.
-+ * Make sure they're still that way.
-+ */
-+static bool pages_correctly_reserved(unsigned long start_pfn,
-+					unsigned long nr_pages)
-+{
-+	int i, j;
-+	struct page *page;
-+	unsigned long pfn = start_pfn;
++TRACE_EVENT(mm_shrink_slab_start,
++	TP_PROTO(struct shrinker *shr, struct shrink_control *sc,
++		long nr_objects_to_shrink, unsigned long pgs_scanned,
++		unsigned long lru_pgs, unsigned long cache_items,
++		unsigned long long delta, unsigned long total_scan),
 +
-+	/*
-+	 * memmap between sections is not contiguous except with
-+	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
-+	 * and assume memmap is contiguous within each section
-+	 */
-+	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
-+		if (WARN_ON_ONCE(!pfn_valid(pfn)))
-+			return false;
-+		page = pfn_to_page(pfn);
++	TP_ARGS(shr, sc, nr_objects_to_shrink, pgs_scanned, lru_pgs,
++		cache_items, delta, total_scan),
 +
-+		for (j = 0; j < PAGES_PER_SECTION; j++) {
-+			if (PageReserved(page + j))
-+				continue;
++	TP_STRUCT__entry(
++		__field(struct shrinker *, shr)
++		__field(void *, shrink)
++		__field(long, nr_objects_to_shrink)
++		__field(gfp_t, gfp_flags)
++		__field(unsigned long, pgs_scanned)
++		__field(unsigned long, lru_pgs)
++		__field(unsigned long, cache_items)
++		__field(unsigned long long, delta)
++		__field(unsigned long, total_scan)
++	),
 +
-+			printk(KERN_WARNING "section number %ld page number %d "
-+				"not reserved, was it already online?\n",
-+				pfn_to_section_nr(pfn), j);
++	TP_fast_assign(
++		__entry->shr = shr;
++		__entry->shrink = shr->shrink;
++		__entry->nr_objects_to_shrink = nr_objects_to_shrink;
++		__entry->gfp_flags = sc->gfp_mask;
++		__entry->pgs_scanned = pgs_scanned;
++		__entry->lru_pgs = lru_pgs;
++		__entry->cache_items = cache_items;
++		__entry->delta = delta;
++		__entry->total_scan = total_scan;
++	),
 +
-+			return false;
-+		}
-+	}
++	TP_printk("%pF %p: objects to shrink %ld gfp_flags %s pgs_scanned %ld lru_pgs %ld cache items %ld delta %lld total_scan %ld",
++		__entry->shrink,
++		__entry->shr,
++		__entry->nr_objects_to_shrink,
++		show_gfp_flags(__entry->gfp_flags),
++		__entry->pgs_scanned,
++		__entry->lru_pgs,
++		__entry->cache_items,
++		__entry->delta,
++		__entry->total_scan)
++);
 +
-+	return true;
-+}
++TRACE_EVENT(mm_shrink_slab_end,
++	TP_PROTO(struct shrinker *shr, int shrinker_retval,
++		long unused_scan_cnt, long new_scan_cnt),
 +
-+/*
-  * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
-  * OK to have direct references to sparsemem variables in here.
-  */
- static int
- memory_block_action(unsigned long phys_index, unsigned long action)
- {
--	int i;
- 	unsigned long start_pfn, start_paddr;
- 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
- 	struct page *first_page;
-@@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_i
++	TP_ARGS(shr, shrinker_retval, unused_scan_cnt, new_scan_cnt),
++
++	TP_STRUCT__entry(
++		__field(struct shrinker *, shr)
++		__field(void *, shrink)
++		__field(long, unused_scan)
++		__field(long, new_scan)
++		__field(int, retval)
++		__field(long, total_scan)
++	),
++
++	TP_fast_assign(
++		__entry->shr = shr;
++		__entry->shrink = shr->shrink;
++		__entry->unused_scan = unused_scan_cnt;
++		__entry->new_scan = new_scan_cnt;
++		__entry->retval = shrinker_retval;
++		__entry->total_scan = new_scan_cnt - unused_scan_cnt;
++	),
++
++	TP_printk("%pF %p: unused scan count %ld new scan count %ld total_scan %ld last shrinker return val %d",
++		__entry->shrink,
++		__entry->shr,
++		__entry->unused_scan,
++		__entry->new_scan,
++		__entry->total_scan,
++		__entry->retval)
++);
  
- 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
+ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
  
--	/*
--	 * The probe routines leave the pages reserved, just
--	 * as the bootmem code does.  Make sure they're still
--	 * that way.
--	 */
--	if (action == MEM_ONLINE) {
--		for (i = 0; i < nr_pages; i++) {
--			if (PageReserved(first_page+i))
--				continue;
--
--			printk(KERN_WARNING "section number %ld page number %d "
--				"not reserved, was it already online?\n",
--				phys_index, i);
--			return -EBUSY;
--		}
--	}
--
- 	switch (action) {
- 		case MEM_ONLINE:
- 			start_pfn = page_to_pfn(first_page);
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -250,6 +250,7 @@ unsigned long shrink_slab(struct shrink_
+ 		unsigned long long delta;
+ 		unsigned long total_scan;
+ 		unsigned long max_pass;
++		int shrink_ret = 0;
+ 
+ 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+ 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
+@@ -274,9 +275,12 @@ unsigned long shrink_slab(struct shrink_
+ 		total_scan = shrinker->nr;
+ 		shrinker->nr = 0;
+ 
++		trace_mm_shrink_slab_start(shrinker, shrink, total_scan,
++					nr_pages_scanned, lru_pages,
++					max_pass, delta, total_scan);
 +
-+			if (!pages_correctly_reserved(start_pfn, nr_pages))
-+				return -EBUSY;
-+
- 			ret = online_pages(start_pfn, nr_pages);
- 			break;
- 		case MEM_OFFLINE:
+ 		while (total_scan >= SHRINK_BATCH) {
+ 			long this_scan = SHRINK_BATCH;
+-			int shrink_ret;
+ 			int nr_before;
+ 
+ 			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+@@ -293,6 +297,8 @@ unsigned long shrink_slab(struct shrink_
+ 		}
+ 
+ 		shrinker->nr += total_scan;
++		trace_mm_shrink_slab_end(shrinker, shrink_ret, total_scan,
++					 shrinker->nr);
+ 	}
+ 	up_read(&shrinker_rwsem);
+ out:
 
 
