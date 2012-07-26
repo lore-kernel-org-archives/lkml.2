@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab2GZBli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 21:41:38 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20848 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab2GZBlh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 21:41:37 -0400
-Message-ID: <5010A067.8050300@oracle.com>
-Date: Thu, 26 Jul 2012 09:41:59 +0800
-From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1752209Ab2GZBma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 21:42:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751485Ab2GZBm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 21:42:29 -0400
+Date: Wed, 25 Jul 2012 21:42:14 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, law@redhat.com,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] posix_types.h: Cleanup stale __NFDBITS and related
+ definitions
+Message-ID: <20120726014213.GB2356@zod.bos.redhat.com>
+References: <20120725144033.GK10534@zod.bos.redhat.com>
+ <1343258796.5132.164.camel@deadeye.wl.decadent.org.uk>
+ <20120726012713.GA2356@zod.bos.redhat.com>
+ <20120726013322.GB3532@burratino>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: khali@linux-fr.org, linux-kernel@vger.kernel.org,
-        Feng Jin <joe.jin@oracle.com>
-Subject: Re: [PATCH 2/2] Fetch dmi version from SMBIOS if it exist
-References: <500FD2E5.3010307@oracle.com> <20120725125518.d89b78a6.akpm@linux-foundation.org>
-In-Reply-To: <20120725125518.d89b78a6.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120726013322.GB3532@burratino>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 25, 2012 at 08:33:22PM -0500, Jonathan Nieder wrote:
+> Hi,
+> 
+> Josh Boyer wrote:
+> 
+> > Indeed.  However, I believe Linus pointed out that even before
+> > 8b3d1cda4f5f the macros that were removed weren't actually used.
+> > It's likely safe to go back further than just 3.4.
+> >
+> > I'll verify again in the morning and include the furthest back we could
+> > remove these.  For now, let's go with what you suggest to be safe.
+> 
+> I may be in the minority in having this view or missing a subtlety,
+> but shouldn't the question be the furthest back we need to remove
+> these rather than the furthest back we could?
 
+That should be the question, yes.  The answer is:
 
-于 2012-07-26 03:55, Andrew Morton 写道:
-> On Wed, 25 Jul 2012 19:05:09 +0800
-> "zhenzhong.duan"<zhenzhong.duan@oracle.com>  wrote:
->
->> The right dmi version is in SMBIOS if it's zero in DMI region
->>
-> This description is too brief to permit me to understand the patch.
-> Can you please provide a more detailed explanation?
->
-This issue was originally found from an oracle bug.
-One customer noticed system UUID doesn't match between dmidecode & uek2.
-HP ProLiant BL460c G6 :
-# cat /sys/devices/virtual/dmi/id/product_uuid
-00000000-0000-4C48-3031-4D5030333531
-# dmidecode | grep -i uuid
-UUID: 00000000-0000-484C-3031-4D5030333531
- From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than 
-network byte order.
-So we need to get dmi version to distinguish. If version is 0.0, the 
-real version is taken from the SMBIOS version. This is part of original 
-kernel comment in code.
+However far back people wish to use older stable kernel-headers to build
+applications against newer glibc.
 
-thanks
-zduan
+It isn't a clear answer.  Some people stick with older kernels while
+they update their userspace.  I was thinking along the lines of the 3.0
+kernel being the oldest I'd check for but if people think we shouldn't
+bother than that's fine by me.
+
+josh
