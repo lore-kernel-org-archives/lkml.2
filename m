@@ -1,667 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab2GZVjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:39:07 -0400
-Received: from lola.svc-box.de ([82.149.231.63]:59403 "EHLO lola.svc-box.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752752Ab2GZVjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:39:01 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 17:39:01 EDT
-Date: Thu, 26 Jul 2012 23:32:19 +0200
-From: Tino Reichardt <list-linux-fsdevel@mcmilk.de>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jfs-discussion@lists.sourceforge.net
-Subject: [PATCH] fs/jfs: TRIM support for JFS Filesystem
-Message-ID: <20120726213219.GA28330@mcmilk.de>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753359Ab2GZVjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:39:13 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:48389 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab2GZVaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 17:30:39 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [ 13/40] vmscan: shrinker->nr updates race and go wrong
+Date: Thu, 26 Jul 2012 14:29:31 -0700
+Message-Id: <20120726211412.284677137@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
+References: <20120726211424.GA7709@kroah.com>
+ <20120726211411.164006056@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Greg KH <gregkh@linuxfoundation.org>
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-This patch adds support for the two linux interfaces of the discard/TRIM
-command for SSD devices and sparse/thinly-provisioned LUNs.
+------------------
 
-JFS will support batched discard via FITRIM ioctl and online discard
-with the discard mount option.
+From: Dave Chinner <dchinner@redhat.com>
 
-I also think that a short description of the FITRIM ioctl should it made
-into Documetation/ioctl/fitrim.txt - but that would be part of some
-other patch. Maybe from Lukas Czerner?
+commit acf92b485cccf028177f46918e045c0c4e80ee10 upstream.
 
-For the online discard, you can also specify the minimum number of
-blocks. Everything of it is described in
-Documentation/filesystems/jfs.txt... so I am not writing it again in
-that mail.
+Stable note: Not tracked in Bugzilla. This patch reduces excessive
+	reclaim of slab objects reducing the amount of information
+	that has to be brought back in from disk.
 
-So than, maybe some other can stress-test JFS on some SSD as well?
+shrink_slab() allows shrinkers to be called in parallel so the
+struct shrinker can be updated concurrently. It does not provide any
+exclusio for such updates, so we can get the shrinker->nr value
+increasing or decreasing incorrectly.
 
+As a result, when a shrinker repeatedly returns a value of -1 (e.g.
+a VFS shrinker called w/ GFP_NOFS), the shrinker->nr goes haywire,
+sometimes updating with the scan count that wasn't used, sometimes
+losing it altogether. Worse is when a shrinker does work and that
+update is lost due to racy updates, which means the shrinker will do
+the work again!
 
-Signed-off-by: Tino Reichardt <list-jfs@mcmilk.de>
+Fix this by making the total_scan calculations independent of
+shrinker->nr, and making the shrinker->nr updates atomic w.r.t. to
+other updates via cmpxchg loops.
 
-PS: Sorry for my bad english ;)
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- 
-regards, TR
+---
+ mm/vmscan.c |   45 ++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 32 insertions(+), 13 deletions(-)
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="jfs-trim-2012-07-26_230038.diff"
-
-diff -X exclude -urpN linux-git/Documentation/filesystems/jfs.txt linux_jfs-trim/Documentation/filesystems/jfs.txt
---- linux-git/Documentation/filesystems/jfs.txt	2011-03-01 10:22:59.000000000 +0100
-+++ linux_jfs-trim/Documentation/filesystems/jfs.txt	2012-07-26 22:52:33.244721671 +0200
-@@ -3,6 +3,7 @@ IBM's Journaled File System (JFS) for Li
- JFS Homepage:  http://jfs.sourceforge.net/
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -251,17 +251,29 @@ unsigned long shrink_slab(struct shrink_
+ 		unsigned long total_scan;
+ 		unsigned long max_pass;
+ 		int shrink_ret = 0;
++		long nr;
++		long new_nr;
  
- The following mount options are supported:
-+(*) == default
- 
- iocharset=name	Character set to use for converting from Unicode to
- 		ASCII.  The default is to do no conversion.  Use
-@@ -21,12 +22,12 @@ nointegrity	Do not write to the journal.
- 		from backup media.  The integrity of the volume is not
- 		guaranteed if the system abnormally abends.
- 
--integrity	Default.  Commit metadata changes to the journal.  Use this
-+integrity(*)	Default.  Commit metadata changes to the journal.  Use this
- 		option to remount a volume where the nointegrity option was
- 		previously specified in order to restore normal behavior.
- 
- errors=continue		Keep going on a filesystem error.
--errors=remount-ro	Default. Remount the filesystem read-only on an error.
-+errors=remount-ro(*)	Default. Remount the filesystem read-only on an error.
- errors=panic		Panic and halt the machine if an error occurs.
- 
- uid=value	Override on-disk uid with specified value
-@@ -35,6 +36,18 @@ umask=value	Override on-disk umask with
- 		directories, the execute bit will be set if the corresponding
- 		read bit is set.
- 
-+discard=minlen	This enables/disables the use of discard/TRIM commands.
-+discard		The discard/TRIM commands are sent to the underlying
-+nodiscard(*)	block device when blocks are freed. This is useful for SSD
-+		devices and sparse/thinly-provisioned LUNs.  The FITRIM ioctl
-+		command is also available together with the nodiscard option.
-+		The value of minlen specifies the minimum blockcount, when
-+		a TRIM command to the block device is considered usefull.
-+		When no value is given to the discard option, it defaults to
-+		64 blocks, which means 256KiB in JFS.
-+		The minlen value of discard overrides the minlen value given
-+		on an FITRIM ioctl().
++		/*
++		 * copy the current shrinker scan count into a local variable
++		 * and zero it so that other concurrent shrinker invocations
++		 * don't also do this scanning work.
++		 */
++		do {
++			nr = shrinker->nr;
++		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
 +
- Please send bugs, comments, cards and letters to shaggy@linux.vnet.ibm.com.
++		total_scan = nr;
+ 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+ 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
+ 		delta *= max_pass;
+ 		do_div(delta, lru_pages + 1);
+-		shrinker->nr += delta;
+-		if (shrinker->nr < 0) {
++		total_scan += delta;
++		if (total_scan < 0) {
+ 			printk(KERN_ERR "shrink_slab: %pF negative objects to "
+ 			       "delete nr=%ld\n",
+-			       shrinker->shrink, shrinker->nr);
+-			shrinker->nr = max_pass;
++			       shrinker->shrink, total_scan);
++			total_scan = max_pass;
+ 		}
  
- The JFS mailing list can be subscribed to by using the link labeled
-diff -X exclude -urpN linux-git/fs/jfs/Makefile linux_jfs-trim/fs/jfs/Makefile
---- linux-git/fs/jfs/Makefile	2011-08-17 07:31:10.000000000 +0200
-+++ linux_jfs-trim/fs/jfs/Makefile	2012-07-26 22:53:48.640979880 +0200
-@@ -6,7 +6,7 @@ obj-$(CONFIG_JFS_FS) += jfs.o
- 
- jfs-y    := super.o file.o inode.o namei.o jfs_mount.o jfs_umount.o \
- 	    jfs_xtree.o jfs_imap.o jfs_debug.o jfs_dmap.o \
--	    jfs_unicode.o jfs_dtree.o jfs_inode.o \
-+	    jfs_unicode.o jfs_dtree.o jfs_inode.o jfs_discard.o \
- 	    jfs_extent.o symlink.o jfs_metapage.o \
- 	    jfs_logmgr.o jfs_txnmgr.o jfs_uniupr.o \
- 	    resize.o xattr.o ioctl.o
-diff -X exclude -urpN linux-git/fs/jfs/ioctl.c linux_jfs-trim/fs/jfs/ioctl.c
---- linux-git/fs/jfs/ioctl.c	2012-01-10 19:31:59.000000000 +0100
-+++ linux_jfs-trim/fs/jfs/ioctl.c	2012-07-26 22:53:48.640979880 +0200
-@@ -11,13 +11,17 @@
- #include <linux/mount.h>
- #include <linux/time.h>
- #include <linux/sched.h>
-+#include <linux/blkdev.h>
- #include <asm/current.h>
- #include <asm/uaccess.h>
- 
-+#include "jfs_filsys.h"
-+#include "jfs_debug.h"
- #include "jfs_incore.h"
- #include "jfs_dinode.h"
- #include "jfs_inode.h"
+ 		/*
+@@ -269,13 +281,10 @@ unsigned long shrink_slab(struct shrink_
+ 		 * never try to free more than twice the estimate number of
+ 		 * freeable entries.
+ 		 */
+-		if (shrinker->nr > max_pass * 2)
+-			shrinker->nr = max_pass * 2;
 -
-+#include "jfs_dmap.h"
-+#include "jfs_discard.h"
+-		total_scan = shrinker->nr;
+-		shrinker->nr = 0;
++		if (total_scan > max_pass * 2)
++			total_scan = max_pass * 2;
  
- static struct {
- 	long jfs_flag;
-@@ -123,6 +127,40 @@ setflags_out:
- 		mnt_drop_write_file(filp);
- 		return err;
- 	}
-+
-+	case FITRIM:
-+	{
-+		struct super_block *sb = inode->i_sb;
-+		struct request_queue *q = bdev_get_queue(sb->s_bdev);
-+		struct fstrim_range range;
-+		s64 ret = 0;
-+
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+
-+		if (!blk_queue_discard(q)) {
-+			jfs_warn("FITRIM not supported on device");
-+			return -EOPNOTSUPP;
-+		}
-+
-+		if (copy_from_user(&range, (struct fstrim_range __user *)arg,
-+		    sizeof(range)))
-+			return -EFAULT;
-+
-+		range.minlen = max((unsigned int)range.minlen,
-+				   q->limits.discard_granularity);
-+
-+		ret = jfs_ioc_trim(inode, &range);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (copy_to_user((struct fstrim_range __user *)arg, &range,
-+		    sizeof(range)))
-+			return -EFAULT;
-+
-+		return 0;
-+	}
-+
- 	default:
- 		return -ENOTTY;
- 	}
-@@ -142,6 +180,9 @@ long jfs_compat_ioctl(struct file *filp,
- 	case JFS_IOC_SETFLAGS32:
- 		cmd = JFS_IOC_SETFLAGS;
- 		break;
-+	case FITRIM:
-+		cmd = FITRIM;
-+		break;
- 	}
- 	return jfs_ioctl(filp, cmd, arg);
- }
-diff -X exclude -urpN linux-git/fs/jfs/jfs_discard.c linux_jfs-trim/fs/jfs/jfs_discard.c
---- linux-git/fs/jfs/jfs_discard.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux_jfs-trim/fs/jfs/jfs_discard.c	2012-07-26 22:53:48.640979880 +0200
-@@ -0,0 +1,119 @@
-+/*
-+ *   Copyright (C) Tino Reichardt, 2012
-+ *
-+ *   This program is free software;  you can redistribute it and/or modify
-+ *   it under the terms of the GNU General Public License as published by
-+ *   the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *   This program is distributed in the hope that it will be useful,
-+ *   but WITHOUT ANY WARRANTY;  without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-+ *   the GNU General Public License for more details.
-+ *
-+ *   You should have received a copy of the GNU General Public License
-+ *   along with this program;  if not, write to the Free Software
-+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/blkdev.h>
-+
-+#include "jfs_incore.h"
-+#include "jfs_superblock.h"
-+#include "jfs_dmap.h"
-+#include "jfs_lock.h"
-+#include "jfs_debug.h"
-+
-+
-+/*
-+ * NAME:	jfs_issue_discard()
-+ *
-+ * FUNCTION:	TRIM the specified block range on device, if supported
-+ *
-+ * PARAMETERS:
-+ *	ip	- pointer to in-core inode
-+ *	blkno	- starting block number to be trimmed (0..N)
-+ *	nblocks	- number of blocks to be trimmed
-+ *
-+ * RETURN VALUES:
-+ *	none
-+ *
-+ * serialization: IREAD_LOCK(ipbmap) held on entry/exit;
-+ */
-+void jfs_issue_discard(struct inode *ip, u64 blkno, u64 nblocks)
-+{
-+	struct super_block *sb = ip->i_sb;
-+	int r = 0;
-+
-+	r = sb_issue_discard(sb, blkno, nblocks, GFP_NOFS, 0);
-+	if (unlikely(r != 0)) {
-+		printk(KERN_ERR "JFS: sb_issue_discard"
-+			"(%p, %llu, %llu, GFP_NOFS, 0) = %d => failure!\n", sb,
-+			(unsigned long long)blkno,
-+			(unsigned long long)nblocks, r);
-+	}
-+
-+#ifdef JFS_DEBUG_TRIM
-+	printk(KERN_INFO "JFS: sb_issue_discard"
-+		"(%p, %llu, %llu, GFP_NOFS, 0) = %d\n", sb,
-+		(unsigned long long)blkno,
-+		(unsigned long long)nblocks, r);
-+#endif
-+
-+	return;
-+}
-+
-+/*
-+ * NAME:	jfs_ioc_trim()
-+ *
-+ * FUNCTION:	attempt to discard (TRIM) all free blocks from the
-+ *              filesystem.
-+ *
-+ * PARAMETERS:
-+ *	ip	- pointer to in-core inode;
-+ *	range	- the range, given by user space
-+ *
-+ * RETURN VALUES:
-+ *	0	- success
-+ *	-EIO	- i/o error
-+ */
-+int jfs_ioc_trim(struct inode *ip, struct fstrim_range *range)
-+{
-+	struct inode *ipbmap = JFS_SBI(ip->i_sb)->ipbmap;
-+	struct bmap *bmp = JFS_SBI(ip->i_sb)->bmap;
-+	struct super_block *sb = ipbmap->i_sb;
-+	int agno, agno_end;
-+	s64 start, end, minlen;
-+	u64 trimmed = 0;
-+
-+	/**
-+	 * convert byte values to block size of filesystem:
-+	 * start:	First Byte to trim
-+	 * len:		number of Bytes to trim from start
-+	 * minlen:	minimum extent length in Bytes
-+	 */
-+	start = range->start >> sb->s_blocksize_bits;
-+	if (start < 0)
-+		start = 0;
-+	end = start + (range->len >> sb->s_blocksize_bits) - 1;
-+	if (end >= bmp->db_mapsize)
-+		end = bmp->db_mapsize - 1;
-+	minlen = range->minlen >> sb->s_blocksize_bits;
-+	if (minlen < 0)
-+		minlen = 1;
-+
-+	/**
-+	 * we trim all ag's within the range
-+	 */
-+	agno = BLKTOAG(start, JFS_SBI(ip->i_sb));
-+	agno_end = BLKTOAG(end, JFS_SBI(ip->i_sb));
-+	while (agno <= agno_end) {
-+		trimmed += dbDiscardAG(ip, agno, minlen);
-+		agno++;
-+	}
-+	range->len = trimmed << sb->s_blocksize_bits;
-+
-+	return 0;
-+}
-diff -X exclude -urpN linux-git/fs/jfs/jfs_discard.h linux_jfs-trim/fs/jfs/jfs_discard.h
---- linux-git/fs/jfs/jfs_discard.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux_jfs-trim/fs/jfs/jfs_discard.h	2012-07-26 22:53:48.640979880 +0200
-@@ -0,0 +1,26 @@
-+/*
-+ *   Copyright (C) Tino Reichardt, 2012
-+ *
-+ *   This program is free software;  you can redistribute it and/or modify
-+ *   it under the terms of the GNU General Public License as published by
-+ *   the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *   This program is distributed in the hope that it will be useful,
-+ *   but WITHOUT ANY WARRANTY;  without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-+ *   the GNU General Public License for more details.
-+ *
-+ *   You should have received a copy of the GNU General Public License
-+ *   along with this program;  if not, write to the Free Software
-+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef	_H_JFS_DISCARD
-+#define _H_JFS_DISCARD
-+
-+struct fstrim_range;
-+
-+extern void jfs_issue_discard(struct inode *ip, u64 blkno, u64 nblocks);
-+extern int jfs_ioc_trim(struct inode *ip, struct fstrim_range *range);
-+
-+#endif /* _H_JFS_DISCARD */
-diff -X exclude -urpN linux-git/fs/jfs/jfs_dmap.c linux_jfs-trim/fs/jfs/jfs_dmap.c
---- linux-git/fs/jfs/jfs_dmap.c	2011-08-17 07:31:10.000000000 +0200
-+++ linux_jfs-trim/fs/jfs/jfs_dmap.c	2012-07-26 22:53:48.644313195 +0200
-@@ -1,5 +1,6 @@
- /*
-  *   Copyright (C) International Business Machines Corp., 2000-2004
-+ *   Portions Copyright (C) Tino Reichardt, 2012
-  *
-  *   This program is free software;  you can redistribute it and/or modify
-  *   it under the terms of the GNU General Public License as published by
-@@ -25,6 +26,7 @@
- #include "jfs_lock.h"
- #include "jfs_metapage.h"
- #include "jfs_debug.h"
-+#include "jfs_discard.h"
+-		trace_mm_shrink_slab_start(shrinker, shrink, total_scan,
++		trace_mm_shrink_slab_start(shrinker, shrink, nr,
+ 					nr_pages_scanned, lru_pages,
+ 					max_pass, delta, total_scan);
  
- /*
-  *	SERIALIZATION of the Block Allocation Map.
-@@ -104,7 +106,6 @@ static int dbFreeBits(struct bmap * bmp,
- static int dbFreeDmap(struct bmap * bmp, struct dmap * dp, s64 blkno,
- 		      int nblocks);
- static int dbMaxBud(u8 * cp);
--s64 dbMapFileSizeToMapSize(struct inode *ipbmap);
- static int blkstol2(s64 nb);
+@@ -296,9 +305,19 @@ unsigned long shrink_slab(struct shrink_
+ 			cond_resched();
+ 		}
  
- static int cntlz(u32 value);
-@@ -145,7 +146,6 @@ static const s8 budtab[256] = {
- 	2, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1
- };
- 
--
- /*
-  * NAME:	dbMount()
-  *
-@@ -310,7 +310,6 @@ int dbSync(struct inode *ipbmap)
- 	return (0);
- }
- 
--
- /*
-  * NAME:	dbFree()
-  *
-@@ -337,6 +336,7 @@ int dbFree(struct inode *ip, s64 blkno,
- 	s64 lblkno, rem;
- 	struct inode *ipbmap = JFS_SBI(ip->i_sb)->ipbmap;
- 	struct bmap *bmp = JFS_SBI(ip->i_sb)->bmap;
-+	struct super_block *sb = ipbmap->i_sb;
- 
- 	IREAD_LOCK(ipbmap, RDWRLOCK_DMAP);
- 
-@@ -351,6 +351,15 @@ int dbFree(struct inode *ip, s64 blkno,
- 		return -EIO;
- 	}
- 
-+	/**
-+	 * TRIM the blocks, when mounted with discard option
-+	 */
-+	if (JFS_SBI(sb)->flag & JFS_DISCARD) {
-+		if (JFS_SBI(sb)->minblks_trim <= nblocks) {
-+			jfs_issue_discard(ipbmap, blkno, nblocks);
-+		}
-+	}
-+
- 	/*
- 	 * free the blocks a dmap at a time.
- 	 */
-@@ -1095,7 +1104,6 @@ static int dbExtend(struct inode *ip, s6
- 		/* we were not successful */
- 		release_metapage(mp);
- 
--
- 	return (rc);
- }
- 
-@@ -1590,6 +1598,117 @@ static int dbAllocAny(struct bmap * bmp,
- 
- 
- /*
-+ * NAME:	dbDiscardAG()
-+ *
-+ * FUNCTION:	attempt to discard (TRIM) all free blocks of specific AG
-+ *
-+ * 		algorithm:
-+ * 		1) allocate blocks, as large as possible and save them
-+ * 		2) trim all these saved block/length values
-+ * 		3) mark the blocks free again
-+ *
-+ * 		benefit:
-+ * 		- we work only on one ag at some time, which is fully blocked
-+ * 		- reading / writing the fs is possible most time, even on trimming
-+ *
-+ * 		downside:
-+ * 		- we write two times to the dmapctl and dmap pages
-+ * 		- but for me, this seems the best way, better ideas?
-+ * 		/TR 2012
-+ *
-+ * PARAMETERS:
-+ *	ip	- pointer to in-core inode
-+ *	agno	- ag to trim
-+ *	minlen	- minimum value of contiguous blocks
-+ *
-+ * RETURN VALUES:
-+ *	s64	- actual number of blocks trimmed
-+ */
-+s64 dbDiscardAG(struct inode *ip, int agno, s64 minlen)
-+{
-+	struct inode *ipbmap = JFS_SBI(ip->i_sb)->ipbmap;
-+	struct bmap *bmp = JFS_SBI(ip->i_sb)->bmap;
-+	s64 nblocks, blkno;
-+	u64 trimmed = 0;
-+	int rc, l2nb;
-+	struct super_block *sb = ipbmap->i_sb;
-+
-+	struct range2trim {
-+		u64 blkno;
-+		u64 nblocks;
-+	} *totrim, *tt;
-+
-+	/* max blkno / nblocks pairs to trim */
-+	int count = 0, range_cnt = 32 * 1024;
-+
-+	/* prevent others from writing new stuff here, while trimming */
-+	IWRITE_LOCK(ipbmap, RDWRLOCK_DMAP);
-+
-+	/* worst value: each free block gets an entry */
-+	nblocks = bmp->db_agfree[agno];
-+	totrim = kmalloc(sizeof(struct range2trim) * range_cnt, GFP_NOFS);
-+	if (totrim == NULL) {
-+		jfs_error(bmp->db_ipbmap->i_sb,
-+			  "dbDiscardAG: no space for trim array");
-+		IWRITE_UNLOCK(ipbmap);
-+		return 0;
-+	}
-+
-+	tt = totrim;
-+	while (nblocks >= minlen) {
-+		l2nb = BLKSTOL2(nblocks);
-+
-+		/* 0 = okay, -EIO = fatal, -ENOSPC -> block kleiner */
-+		rc = dbAllocAG(bmp, agno, nblocks, l2nb, &blkno);
-+		if (rc == 0) {
-+			tt->blkno = blkno;
-+			tt->nblocks = nblocks;
-+			tt++; count++;
-+
-+#ifdef JFS_DEBUG_TRIM
-+		printk(KERN_INFO "JFS: agno=%d/%d, blkno:%ld, nblocks=%ld\n",
-+			agno+1, bmp->db_numag, (long int)blkno,
-+			(long int)nblocks);
-+#endif
-+
-+			/* the whole ag is free, trim now */
-+			if (bmp->db_agfree[agno] == 0)
+-		shrinker->nr += total_scan;
+-		trace_mm_shrink_slab_end(shrinker, shrink_ret, total_scan,
+-					 shrinker->nr);
++		/*
++		 * move the unused scan count back into the shrinker in a
++		 * manner that handles concurrent updates. If we exhausted the
++		 * scan, there is no need to do an update.
++		 */
++		do {
++			nr = shrinker->nr;
++			new_nr = total_scan + nr;
++			if (total_scan <= 0)
 +				break;
++		} while (cmpxchg(&shrinker->nr, nr, new_nr) != nr);
 +
-+			/* give a hint for the next while */
-+			nblocks = bmp->db_agfree[agno];
-+			continue;
-+		} else if (rc == -ENOSPC) {
-+			/* search for next smaller log2 block */
-+			l2nb = BLKSTOL2(nblocks) - 1;
-+			nblocks = 1 << l2nb;
-+		} else {
-+			/* Trim any already-allocated blocks */
-+			printk(KERN_ERR "JFS: dbDiscardAG: -EIO\n");
-+			break;
-+		}
-+
-+		/* check, if our trim array is full */
-+		if (unlikely(count >= range_cnt - 1))
-+			break;
-+	}
-+	IWRITE_UNLOCK(ipbmap);
-+
-+	tt->nblocks = 0; /* mark the current end */
-+	for (tt = totrim; tt->nblocks != 0; tt++) {
-+		if (!(JFS_SBI(sb)->flag & JFS_DISCARD)) {
-+			/* not needed, when online discard is used */
-+			jfs_issue_discard(ip, tt->blkno, tt->nblocks);
-+		}
-+		dbFree(ip, tt->blkno, tt->nblocks);
-+		trimmed += tt->nblocks;
-+	}
-+	kfree(totrim);
-+
-+	return trimmed;
-+}
-+
-+/*
-  * NAME:	dbFindCtl()
-  *
-  * FUNCTION:	starting at a specified dmap control page level and block
-diff -X exclude -urpN linux-git/fs/jfs/jfs_dmap.h linux_jfs-trim/fs/jfs/jfs_dmap.h
---- linux-git/fs/jfs/jfs_dmap.h	2011-08-17 07:31:10.000000000 +0200
-+++ linux_jfs-trim/fs/jfs/jfs_dmap.h	2012-07-26 22:53:48.644313195 +0200
-@@ -311,4 +311,6 @@ extern int dbAllocBottomUp(struct inode
- extern int dbExtendFS(struct inode *ipbmap, s64 blkno, s64 nblocks);
- extern void dbFinalizeBmap(struct inode *ipbmap);
- extern s64 dbMapFileSizeToMapSize(struct inode *ipbmap);
-+extern s64 dbDiscardAG(struct inode *ip, int agno, s64 minlen);
-+
- #endif				/* _H_JFS_DMAP */
-diff -X exclude -urpN linux-git/fs/jfs/jfs_filsys.h linux_jfs-trim/fs/jfs/jfs_filsys.h
---- linux-git/fs/jfs/jfs_filsys.h	2011-08-17 07:31:10.000000000 +0200
-+++ linux_jfs-trim/fs/jfs/jfs_filsys.h	2012-07-26 22:53:48.644313195 +0200
-@@ -45,6 +45,9 @@
- /* mount time flag to disable journaling to disk */
- #define JFS_NOINTEGRITY 0x00000040
- 
-+/* mount time flag to enable TRIM to ssd disks */
-+#define JFS_DISCARD     0x00000080
-+
- /* commit option */
- #define	JFS_COMMIT	0x00000f00	/* commit option mask */
- #define	JFS_GROUPCOMMIT	0x00000100	/* group (of 1) commit */
-diff -X exclude -urpN linux-git/fs/jfs/jfs_incore.h linux_jfs-trim/fs/jfs/jfs_incore.h
---- linux-git/fs/jfs/jfs_incore.h	2011-08-17 07:31:10.000000000 +0200
-+++ linux_jfs-trim/fs/jfs/jfs_incore.h	2012-07-26 22:53:48.647646510 +0200
-@@ -195,6 +195,7 @@ struct jfs_sb_info {
- 	uint		uid;		/* uid to override on-disk uid */
- 	uint		gid;		/* gid to override on-disk gid */
- 	uint		umask;		/* umask to override on-disk umask */
-+	uint		minblks_trim;	/* minimum blocks, for online trim */
- };
- 
- /* jfs_sb_info commit_state */
-diff -X exclude -urpN linux-git/fs/jfs/super.c linux_jfs-trim/fs/jfs/super.c
---- linux-git/fs/jfs/super.c	2012-07-24 21:31:28.000000000 +0200
-+++ linux_jfs-trim/fs/jfs/super.c	2012-07-26 23:00:28.018816264 +0200
-@@ -33,6 +33,7 @@
- #include <linux/slab.h>
- #include <asm/uaccess.h>
- #include <linux/seq_file.h>
-+#include <linux/blkdev.h>
- 
- #include "jfs_incore.h"
- #include "jfs_filsys.h"
-@@ -197,7 +198,8 @@ static void jfs_put_super(struct super_b
- enum {
- 	Opt_integrity, Opt_nointegrity, Opt_iocharset, Opt_resize,
- 	Opt_resize_nosize, Opt_errors, Opt_ignore, Opt_err, Opt_quota,
--	Opt_usrquota, Opt_grpquota, Opt_uid, Opt_gid, Opt_umask
-+	Opt_usrquota, Opt_grpquota, Opt_uid, Opt_gid, Opt_umask,
-+	Opt_discard, Opt_nodiscard, Opt_discard_minblk
- };
- 
- static const match_table_t tokens = {
-@@ -214,6 +216,9 @@ static const match_table_t tokens = {
- 	{Opt_uid, "uid=%u"},
- 	{Opt_gid, "gid=%u"},
- 	{Opt_umask, "umask=%u"},
-+	{Opt_discard, "discard"},
-+	{Opt_nodiscard, "nodiscard"},
-+	{Opt_discard_minblk, "discard=%u"},
- 	{Opt_err, NULL}
- };
- 
-@@ -324,12 +329,14 @@ static int parse_options(char *options,
- 			sbi->uid = simple_strtoul(uid, &uid, 0);
- 			break;
- 		}
-+
- 		case Opt_gid:
- 		{
- 			char *gid = args[0].from;
- 			sbi->gid = simple_strtoul(gid, &gid, 0);
- 			break;
- 		}
-+
- 		case Opt_umask:
- 		{
- 			char *umask = args[0].from;
-@@ -341,6 +348,43 @@ static int parse_options(char *options,
- 			}
- 			break;
- 		}
-+
-+		case Opt_discard:
-+		{
-+			struct request_queue *q = bdev_get_queue(sb->s_bdev);
-+			/* if set to 1, even copying files will cause
-+			 * trimming :O
-+			 * -> user has more control over the online trimming
-+			 */
-+			sbi->minblks_trim = 64;
-+			if (blk_queue_discard(q)) {
-+				*flag |= JFS_DISCARD;
-+			} else {
-+				printk(KERN_ERR "JFS: discard option "
-+					"not supported on device\n");
-+			}
-+			break;
-+		}
-+
-+		case Opt_nodiscard:
-+			*flag &= ~JFS_DISCARD;
-+			break;
-+
-+		case Opt_discard_minblk:
-+		{
-+			struct request_queue *q = bdev_get_queue(sb->s_bdev);
-+			char *minblks_trim = args[0].from;
-+			if (blk_queue_discard(q)) {
-+				*flag |= JFS_DISCARD;
-+				sbi->minblks_trim = simple_strtoull(
-+					minblks_trim, &minblks_trim, 0);
-+			} else {
-+				printk(KERN_ERR "JFS: discard option "
-+					"not supported on device\n");
-+			}
-+			break;
-+		}
-+
- 		default:
- 			printk("jfs: Unrecognized mount option \"%s\" "
- 					" or missing value\n", p);
-@@ -625,6 +669,8 @@ static int jfs_show_options(struct seq_f
- 		seq_printf(seq, ",umask=%03o", sbi->umask);
- 	if (sbi->flag & JFS_NOINTEGRITY)
- 		seq_puts(seq, ",nointegrity");
-+	if (sbi->flag & JFS_DISCARD)
-+		seq_printf(seq, ",discard=%u", sbi->minblks_trim);
- 	if (sbi->nls_tab)
- 		seq_printf(seq, ",iocharset=%s", sbi->nls_tab->charset);
- 	if (sbi->flag & JFS_ERR_CONTINUE)
++		trace_mm_shrink_slab_end(shrinker, shrink_ret, nr, new_nr);
+ 	}
+ 	up_read(&shrinker_rwsem);
+ out:
 
---pf9I7BMVVzbSWLtt--
+
