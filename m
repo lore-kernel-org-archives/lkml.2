@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab2GZVak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:30:40 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:48389 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab2GZVag (ORCPT
+	id S1753370Ab2GZVan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:30:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40055 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304Ab2GZVad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:36 -0400
+	Thu, 26 Jul 2012 17:30:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [ 12/40] vmscan: add shrink_slab tracepoints
-Date: Thu, 26 Jul 2012 14:29:30 -0700
-Message-Id: <20120726211412.196641898@linuxfoundation.org>
+        Shaohua Li <shaohua.li@intel.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [ 11/40] vmscan: clear ZONE_CONGESTED for zone with good watermark
+Date: Thu, 26 Jul 2012 14:29:29 -0700
+Message-Id: <20120726211412.097882882@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -31,147 +31,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Shaohua Li <shaohua.li@intel.com>
 
-commit 095760730c1047c69159ce88021a7fa3833502c8 upstream.
+commit 439423f6894aa0dec22187526827456f5004baed upstream.
 
-Stable note: This patch makes later patches easier to apply but otherwise
-        has little to justify it. It is a diagnostic patch that was part
-        of a series addressing excessive slab shrinking after GFP_NOFS
-        failures. There is detailed information on the series' motivation
-        at https://lkml.org/lkml/2011/6/2/42 .
+Stable note: Not tracked in Bugzilla. kswapd is responsible for clearing
+	ZONE_CONGESTED after it balances a zone and this patch fixes a bug
+	where that was failing to happen. Without this patch, processes
+	can stall in wait_iff_congested unnecessarily. For users, this can
+	look like an interactivity stall but some workloads would see it
+	as sudden drop in throughput.
 
-It is impossible to understand what the shrinkers are actually doing
-without instrumenting the code, so add a some tracepoints to allow
-insight to be gained.
+ZONE_CONGESTED is only cleared in kswapd, but pages can be freed in any
+task.  It's possible ZONE_CONGESTED isn't cleared in some cases:
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+ 1. the zone is already balanced just entering balance_pgdat() for
+    order-0 because concurrent tasks free memory.  In this case, later
+    check will skip the zone as it's balanced so the flag isn't cleared.
+
+ 2. high order balance fallbacks to order-0.  quote from Mel: At the
+    end of balance_pgdat(), kswapd uses the following logic;
+
+	If reclaiming at high order {
+		for each zone {
+			if all_unreclaimable
+				skip
+			if watermark is not met
+				order = 0
+				loop again
+
+			/* watermark is met */
+			clear congested
+		}
+	}
+
+    i.e. it clears ZONE_CONGESTED if it the zone is balanced.  if not,
+    it restarts balancing at order-0.  However, if the higher zones are
+    balanced for order-0, kswapd will miss clearing ZONE_CONGESTED as
+    that only happens after a zone is shrunk.  This can mean that
+    wait_iff_congested() stalls unnecessarily.
+
+This patch makes kswapd clear ZONE_CONGESTED during its initial
+highmem->dma scan for zones that are already balanced.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/trace/events/vmscan.h |   77 ++++++++++++++++++++++++++++++++++++++++++
- mm/vmscan.c                   |    8 +++-
- 2 files changed, 84 insertions(+), 1 deletion(-)
+ mm/vmscan.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -179,6 +179,83 @@ DEFINE_EVENT(mm_vmscan_direct_reclaim_en
- 	TP_ARGS(nr_reclaimed)
- );
- 
-+TRACE_EVENT(mm_shrink_slab_start,
-+	TP_PROTO(struct shrinker *shr, struct shrink_control *sc,
-+		long nr_objects_to_shrink, unsigned long pgs_scanned,
-+		unsigned long lru_pgs, unsigned long cache_items,
-+		unsigned long long delta, unsigned long total_scan),
-+
-+	TP_ARGS(shr, sc, nr_objects_to_shrink, pgs_scanned, lru_pgs,
-+		cache_items, delta, total_scan),
-+
-+	TP_STRUCT__entry(
-+		__field(struct shrinker *, shr)
-+		__field(void *, shrink)
-+		__field(long, nr_objects_to_shrink)
-+		__field(gfp_t, gfp_flags)
-+		__field(unsigned long, pgs_scanned)
-+		__field(unsigned long, lru_pgs)
-+		__field(unsigned long, cache_items)
-+		__field(unsigned long long, delta)
-+		__field(unsigned long, total_scan)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->shr = shr;
-+		__entry->shrink = shr->shrink;
-+		__entry->nr_objects_to_shrink = nr_objects_to_shrink;
-+		__entry->gfp_flags = sc->gfp_mask;
-+		__entry->pgs_scanned = pgs_scanned;
-+		__entry->lru_pgs = lru_pgs;
-+		__entry->cache_items = cache_items;
-+		__entry->delta = delta;
-+		__entry->total_scan = total_scan;
-+	),
-+
-+	TP_printk("%pF %p: objects to shrink %ld gfp_flags %s pgs_scanned %ld lru_pgs %ld cache items %ld delta %lld total_scan %ld",
-+		__entry->shrink,
-+		__entry->shr,
-+		__entry->nr_objects_to_shrink,
-+		show_gfp_flags(__entry->gfp_flags),
-+		__entry->pgs_scanned,
-+		__entry->lru_pgs,
-+		__entry->cache_items,
-+		__entry->delta,
-+		__entry->total_scan)
-+);
-+
-+TRACE_EVENT(mm_shrink_slab_end,
-+	TP_PROTO(struct shrinker *shr, int shrinker_retval,
-+		long unused_scan_cnt, long new_scan_cnt),
-+
-+	TP_ARGS(shr, shrinker_retval, unused_scan_cnt, new_scan_cnt),
-+
-+	TP_STRUCT__entry(
-+		__field(struct shrinker *, shr)
-+		__field(void *, shrink)
-+		__field(long, unused_scan)
-+		__field(long, new_scan)
-+		__field(int, retval)
-+		__field(long, total_scan)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->shr = shr;
-+		__entry->shrink = shr->shrink;
-+		__entry->unused_scan = unused_scan_cnt;
-+		__entry->new_scan = new_scan_cnt;
-+		__entry->retval = shrinker_retval;
-+		__entry->total_scan = new_scan_cnt - unused_scan_cnt;
-+	),
-+
-+	TP_printk("%pF %p: unused scan count %ld new scan count %ld total_scan %ld last shrinker return val %d",
-+		__entry->shrink,
-+		__entry->shr,
-+		__entry->unused_scan,
-+		__entry->new_scan,
-+		__entry->total_scan,
-+		__entry->retval)
-+);
- 
- DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -250,6 +250,7 @@ unsigned long shrink_slab(struct shrink_
- 		unsigned long long delta;
- 		unsigned long total_scan;
- 		unsigned long max_pass;
-+		int shrink_ret = 0;
- 
- 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
- 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
-@@ -274,9 +275,12 @@ unsigned long shrink_slab(struct shrink_
- 		total_scan = shrinker->nr;
- 		shrinker->nr = 0;
- 
-+		trace_mm_shrink_slab_start(shrinker, shrink, total_scan,
-+					nr_pages_scanned, lru_pages,
-+					max_pass, delta, total_scan);
-+
- 		while (total_scan >= SHRINK_BATCH) {
- 			long this_scan = SHRINK_BATCH;
--			int shrink_ret;
- 			int nr_before;
- 
- 			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
-@@ -293,6 +297,8 @@ unsigned long shrink_slab(struct shrink_
+@@ -2456,6 +2456,9 @@ loop_again:
+ 					high_wmark_pages(zone), 0, 0)) {
+ 				end_zone = i;
+ 				break;
++			} else {
++				/* If balanced, clear the congested flag */
++				zone_clear_flag(zone, ZONE_CONGESTED);
+ 			}
  		}
- 
- 		shrinker->nr += total_scan;
-+		trace_mm_shrink_slab_end(shrinker, shrink_ret, total_scan,
-+					 shrinker->nr);
- 	}
- 	up_read(&shrinker_rwsem);
- out:
+ 		if (i < 0)
 
 
