@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab2GZOW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:22:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51781 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751024Ab2GZOW2 (ORCPT
+	id S1752002Ab2GZO1Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:27:24 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34539 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2GZO1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:22:28 -0400
-Date: Thu, 26 Jul 2012 15:22:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 17/21] ASoC: Ux500: Enable ux500 PCM driver for Device
- Tree
-Message-ID: <20120726142225.GJ3099@opensource.wolfsonmicro.com>
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
- <1343298534-13611-18-git-send-email-lee.jones@linaro.org>
- <20120726113838.GA3099@opensource.wolfsonmicro.com>
- <50114B89.7070100@linaro.org>
+	Thu, 26 Jul 2012 10:27:23 -0400
+Date: Thu, 26 Jul 2012 07:25:14 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 0/7] KDB: Kiosk (reduced capabilities) mode
+Message-ID: <20120726142514.GA32158@lizard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gX7DG0PufVj3JKBt"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50114B89.7070100@linaro.org>
-X-Cookie: You will outgrow your usefulness.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
---gX7DG0PufVj3JKBt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Here is a patchset that implements "kiosk" mode for KDB debugger. The
+mode provides reduced set of features, so that it is no longer possible
+to leak sensitive data via the debugger, and not possible to change
+program flow in a predefined manner.
 
-On Thu, Jul 26, 2012 at 02:52:09PM +0100, Lee Jones wrote:
-> On 26/07/12 12:38, Mark Brown wrote:
+The are two use-cases for the mode, one is evil, but another is quite
+legitimate.
 
-> >>-	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
-> >>-	platform_device_register(&ux500_pcm);
+The evil use case is used by some (ahem) phone manufaturers that want
+to have a debuging facilities on a production device, but still don't
+want you to use the debugger to gain root access. I don't like locked
+phones, and I would not touch this/get my hands dirty by implementing
+the feature just for this evil (IMHO) use case.
 
-> >This has the same issue as your last patch...  the way you're doing
-> >things will break audio on all boards using this driver.
+But there is another non-evil use case: limitting access to public
+devices, i.e. "kiosks", ATMs (is that too much?) or just public
+computers w/ guest access. I can imagine that an administrator would
+want to setup a kernel so that upon an oops (or a sysrq event) the
+kernel would enter KDB, but at the same time, he would not want to
+leak sensitive data from the PC by means of the debugger.
 
-> It will, why?
+There are seven patches, the first five of them are just cleanups and
+preparations. I believe these five patches are good even if not
+considering the kiosk mode. And the rest of patches actually implement
+the mode -- it is pretty straightforward.
 
-You've just removed registration of the device and not added anything
-else to replace that.  Even if all boards convert to DT their DTs will
-need to be updated which you're not doing.
+Note that we might impelement the same mode for KGDB stub, but so far
+we don't bother.
 
---gX7DG0PufVj3JKBt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+--
+ include/linux/kdb.h            |   16 ++--
+ kernel/debug/kdb/kdb_bp.c      |   35 ++++----
+ kernel/debug/kdb/kdb_main.c    |  183 +++++++++++++++++++++-------------------
+ kernel/debug/kdb/kdb_private.h |    3 +-
+ kernel/trace/trace_kdb.c       |    4 +-
+ 5 files changed, 126 insertions(+), 115 deletions(-)
 
-iQIcBAEBAgAGBQJQEVKZAAoJEBus8iNuMP3dXXAP/115NxMC9YPGEiyKwkdPCvRf
-0Ghbh1Kv2AlpCc25WOc/KeasYgk08QUryvYBKRvxjZ1NpA12+XAOZXdGYD8qVgyv
-EY+yRiKtib9+JsrnPpV7cLWWFUIYkwgk+xNVKwPaw1xxKUwJjUKiwu2GkysHcFET
-TXj7o+JMA9Kfxa2jE3FSa/3JPXgDdLqj7+ZX4olKmIYjGKvdREMv6EuaxCxKAwY0
-kVC0InBKXtmwncuQIQ2hwfcgG9h/sgh0KF13dLByEkTaU/3TveiIZvvs9QX038SX
-eYc82VwRFhSXvAypRl+rQcHu6xEVlK1GHXpW0kZLqSIw0H4Euw2lmCccyhVO0qIY
-spCJ4EseyOyQOyCUZen+r+wbn2N9UqGVfvBZogxMDm2mg8cahyNlrMGKcn4TJfFM
-Ko4HnSjEWJIEKd23nOVC5cTyqXEG2x8aRxapZbadOI+qT1hToECZ1P24gbbwmS6I
-kuPo8ELWYngS4P+/arSxx+dS5rch5tS1Jf1Pf4OHJgY7TEOAPO3MDw8ga7pa4MMt
-6XavRrOV71hNshq7p0/asZdfYb9l+jAF8HXm39+o8GZCbLNVBKQZ/zzAIAhpeKzW
-64CKZgRPCTH4m8LkuJ/g1ry+pzkfJkAZv9OzkjfSiUI/EiYIMTCO1tQI7YtWNCYk
-xDleYooo2WUK64orbkqk
-=lOaV
------END PGP SIGNATURE-----
-
---gX7DG0PufVj3JKBt--
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
