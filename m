@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab2GZJVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 05:21:03 -0400
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:45211 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab2GZJVA (ORCPT
+	id S1751913Ab2GZJVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 05:21:18 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49382 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751481Ab2GZJVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 05:21:00 -0400
-Date: Thu, 26 Jul 2012 18:20:33 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] KVM: remove dummy pages
-Message-Id: <20120726182033.e127e9e6.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <5011062F.3080505@redhat.com>
-References: <5010C008.4030304@linux.vnet.ibm.com>
-	<5010C083.30102@linux.vnet.ibm.com>
-	<5011062F.3080505@redhat.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 26 Jul 2012 05:21:16 -0400
+Message-ID: <1343294472.3115.22.camel@dabdike>
+Subject: Re: [PATCH 1/2] virtio-scsi: fix parsing of hotplug/hot-unplug LUN
+ number
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Thu, 26 Jul 2012 13:21:12 +0400
+In-Reply-To: <50110820.4040403@redhat.com>
+References: <1342454751-8950-1-git-send-email-pbonzini@redhat.com>
+	  <1342454751-8950-2-git-send-email-pbonzini@redhat.com>
+	 <1343292731.3115.17.camel@dabdike> <50110820.4040403@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012 11:56:15 +0300
-Avi Kivity <avi@redhat.com> wrote:
+On Thu, 2012-07-26 at 11:04 +0200, Paolo Bonzini wrote:
+> Il 26/07/2012 10:52, James Bottomley ha scritto:
+> >> > +static unsigned int virtscsi_get_lun(u8 *lun_bytes)
+> >> > +{
+> >> > +	unsigned int lun = (lun_bytes[2] << 8) | lun_bytes[3];
+> >> > +	return lun & 16383;
+> >> > +}
+> >> > +
+> > Why are you rolling your own incomplete version of scsilun_to_int here?
+> 
+> Because scsilun_to_int does not do the AND, so it would have exactly the
+> same bug I'm fixing.
 
-> Since my comments are better done as a separate patch, I applied all
-> three patches.  Thanks!
+It's not a bug ... it's the encoding.  All the other devices use this
+too.  Ideally we should have switched to 64 bit lun numbers for the
+encoding to be exact, but nothing so far has gone over 32 bits.  If we
+don't encode the Address method as part of the lun number, we don't get
+the reverse transform right and the addressing often fails.
 
-Is this patch really safe for all architectures?
+That does mean that arrays that use address method=1 in REPORT LUNS have
+their lun numbers start at 16384.
 
-IS_ERR_VALUE() casts -MAX_ERRNO to unsigned long and then does comparison.
-Isn't it possible to conflict with valid pfns?
+James
 
-What are the underlying assumptions?
 
-	Takuya
