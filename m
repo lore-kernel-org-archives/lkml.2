@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab2GZGMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 02:12:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50420 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2GZGMD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 02:12:03 -0400
-From: Benson Leung <bleung@chromium.org>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benson Leung <bleung@chromium.org>
-Subject: [PATCH] Input: gpio_keys - Report wakeup events if device may wakeup
-Date: Wed, 25 Jul 2012 23:11:53 -0700
-Message-Id: <1343283113-16952-1-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	id S1751762Ab2GZGOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 02:14:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:27374 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266Ab2GZGOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 02:14:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="186508541"
+Subject: Re: [PATCH] dw_dmac: use devm_* functions to simplify code
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Viresh Kumar <viresh.linux@gmail.com>
+In-Reply-To: <1343116855-6804-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1343116855-6804-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 26 Jul 2012 11:45:07 +0530
+Message-ID: <1343283307.1726.8935.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a button is configured to wake the system, report a pm wakeup event.
+On Tue, 2012-07-24 at 11:00 +0300, Andy Shevchenko wrote:
+> Use devm_kzalloc, devm_clk_get, devm_request_irq, and devm_request_and_ioremap
+> to reduce the code and to simplify the error path.
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: Viresh Kumar <viresh.linux@gmail.com>
+Applied thanks
 
-Signed-off-by: Benson Leung <bleung@chromium.org>
----
- drivers/input/keyboard/gpio_keys.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index cbb1add..15a80e2 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -328,9 +328,13 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
- {
- 	const struct gpio_keys_button *button = bdata->button;
- 	struct input_dev *input = bdata->input;
-+	struct device *dev = input->dev.parent;
- 	unsigned int type = button->type ?: EV_KEY;
- 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
- 
-+	if (button->wakeup && device_may_wakeup(dev))
-+		pm_wakeup_event(dev, 0);
-+
- 	if (type == EV_ABS) {
- 		if (state)
- 			input_event(input, type, button->code, button->value);
 -- 
-1.7.7.3
+~Vinod
 
