@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2GZMaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 08:30:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40403 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751418Ab2GZMaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 08:30:19 -0400
-Date: Thu, 26 Jul 2012 14:30:17 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: kbuild: Document oldnoconfig to what it really does
-Message-ID: <20120726123017.GD25512@sepie.suse.cz>
-References: <1339802699.25903.47.camel@gandalf.stny.rr.com>
+	id S1752189Ab2GZMhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 08:37:05 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:41042 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266Ab2GZMhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 08:37:01 -0400
+Date: Thu, 26 Jul 2012 14:36:55 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 12/13] driver core: firmware loader: use small
+ timeout for cache device firmware
+Message-ID: <20120726123655.GE30717@aftab.osrc.amd.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+ <1343149213-10160-13-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339802699.25903.47.camel@gandalf.stny.rr.com>
+In-Reply-To: <1343149213-10160-13-git-send-email-ming.lei@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 07:24:59PM -0400, Steven Rostedt wrote:
-> The make target 'oldnoconfig' is a misnomer. It doesn't set new symbols
-> to 'n', but instead sets it to their default values.
-> 
-> Unfortunately, assuming that it actually did this, broke ktest in some
-> of its tests. For example, the tests to create a minimum config and even
-> a config bisect, depends on removing various configs and using
-> oldnoconfig to get rid of other configs that may have depended on it.
-> 
-> But because some configs that it was trying to disable, were in fact
-> default enabled, this caused those configs to re-enable and corrupt the
-> test.
-> 
-> I thought about fixing oldnoconfig, but I'm afraid that people are
-> already dependent on its current behavior. Instead, I'm just updating
-> the documentation to state that it sets the new symbols to their default
-> values and not to 'n'.
-> 
-> Ideally, this would be called, 'olddefconfig' and we have an
-> 'oldnoconfig' that actually disables the new symbols. But it's useless
-> for me now. If it changed, ktest would need to be consistent between
-> each version, and that would be to difficult to detect. I'll handle this
-> issue with ktest with other means.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+On Wed, Jul 25, 2012 at 01:00:12AM +0800, Ming Lei wrote:
+> Because device_cache_firmwares only cache the firmware which has been
+> loaded sucessfully at leat once, using a small loading timeout should
 
-Applied to kbuild.git#kconfig, thanks.
+			least
 
-Michal
+> be OK.
+
+Your commit message doesn't explain why exactly we decrease the timeout:
+you should probably say that this patch overrides the default 60s
+timeout because we're in pre-suspend/-hibernate mode where we have
+userspace and are able to load the firmware quickly.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
