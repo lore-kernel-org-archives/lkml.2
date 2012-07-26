@@ -1,104 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab2GZFUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 01:20:06 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:40140 "EHLO e5.ny.us.ibm.com"
+	id S1751691Ab2GZFUj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 01:20:39 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:37351 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601Ab2GZFUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 01:20:00 -0400
-Date: Thu, 26 Jul 2012 10:49:02 +0530
+	id S1751226Ab2GZFUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 01:20:38 -0400
+Date: Thu, 26 Jul 2012 10:50:29 +0530
 From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 To: linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>
 Cc: benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
         Anton Blanchard <anton@samba.org>, michael@ellerman.id.au,
         Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>, oleg@redhat.com
-Subject: [PATCH 1/2] powerpc: Add trap_nr to thread_struct
-Message-ID: <20120726051902.GA29466@in.ibm.com>
+Subject: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
+Message-ID: <20120726052029.GB29466@in.ibm.com>
 Reply-To: ananth@in.ibm.com
+References: <20120726051902.GA29466@in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120726051902.GA29466@in.ibm.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072605-5930-0000-0000-00000A37F3CC
+x-cbid: 12072605-6078-0000-0000-00000D8C81B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-Add thread_struct.trap_nr and use it to store the last exception
-the thread experienced. In this patch, we populate the field at
-various places where we force_sig_info() to the process.
+This is the port of uprobes to powerpc. Usage is similar to x86.
 
-This is also used in uprobes to determine if the probed instruction
-caused an exception.
+[root@xxxx ~]# ./bin/perf probe -x /lib64/libc.so.6 malloc
+Added new event:
+  probe_libc:malloc    (on 0xb4860)
 
-Patch applies on the current master branch of Linus' tree (bdc0077af)
+You can now use it in all perf tools, such as:
+
+	perf record -e probe_libc:malloc -aR sleep 1
+
+[root@xxxx ~]# ./bin/perf record -e probe_libc:malloc -aR sleep 20
+[ perf record: Woken up 22 times to write data ]
+[ perf record: Captured and wrote 5.843 MB perf.data (~255302 samples) ]
+[root@xxxx ~]# ./bin/perf report --stdio
+...
+
+# Samples: 83K of event 'probe_libc:malloc'
+# Event count (approx.): 83484
+#
+# Overhead       Command  Shared Object      Symbol
+# ........  ............  .............  ..........
+#
+    69.05%           tar  libc-2.12.so   [.] malloc
+    28.57%            rm  libc-2.12.so   [.] malloc
+     1.32%  avahi-daemon  libc-2.12.so   [.] malloc
+     0.58%          bash  libc-2.12.so   [.] malloc
+     0.28%          sshd  libc-2.12.so   [.] malloc
+     0.08%    irqbalance  libc-2.12.so   [.] malloc
+     0.05%         bzip2  libc-2.12.so   [.] malloc
+     0.04%         sleep  libc-2.12.so   [.] malloc
+     0.03%    multipathd  libc-2.12.so   [.] malloc
+     0.01%      sendmail  libc-2.12.so   [.] malloc
+     0.01%     automount  libc-2.12.so   [.] malloc
+
+Patch applies on the current master branch of Linus' tree (bdc0077af).
+The trap_nr addition patch is a prereq.
 
 Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
- arch/powerpc/include/asm/processor.h |    1 +
- arch/powerpc/kernel/process.c        |    2 ++
- arch/powerpc/kernel/traps.c          |    1 +
- arch/powerpc/mm/fault.c              |    1 +
- 4 files changed, 5 insertions(+)
 
-Index: linux-26jul/arch/powerpc/include/asm/processor.h
+Tested on POWER6; I don't see anything here that should stop it from
+working on a ppc32; since I don't have access to a ppc32 machine, it
+would be good if somoene could verify that part.
+
+V3:
+Added abort_xol() logic for powerpc, using thread_struct.trap_nr to
+determine if the stepped instruction caused an exception.
+
+V2:
+a. arch_uprobe_analyze_insn() now gets unsigned long addr.
+b. Verified that mtmsr[d] and rfi[d] are handled correctly by
+   emulate_step() (no changes to this patch).
+
+ arch/powerpc/Kconfig                   |    3 
+ arch/powerpc/include/asm/thread_info.h |    4 
+ arch/powerpc/include/asm/uprobes.h     |   50 +++++++++
+ arch/powerpc/kernel/Makefile           |    1 
+ arch/powerpc/kernel/signal.c           |    6 +
+ arch/powerpc/kernel/uprobes.c          |  174 +++++++++++++++++++++++++++++++++
+ 6 files changed, 237 insertions(+), 1 deletion(-)
+
+Index: linux-26jul/arch/powerpc/include/asm/thread_info.h
 ===================================================================
---- linux-26jul.orig/arch/powerpc/include/asm/processor.h
-+++ linux-26jul/arch/powerpc/include/asm/processor.h
-@@ -219,6 +219,7 @@ struct thread_struct {
- #endif /* CONFIG_HAVE_HW_BREAKPOINT */
- #endif
- 	unsigned long	dabr;		/* Data address breakpoint register */
-+	unsigned long	trap_nr;	/* last trap # on this thread */
- #ifdef CONFIG_ALTIVEC
- 	/* Complete AltiVec register set */
- 	vector128	vr[32] __attribute__((aligned(16)));
-Index: linux-26jul/arch/powerpc/kernel/process.c
+--- linux-26jul.orig/arch/powerpc/include/asm/thread_info.h
++++ linux-26jul/arch/powerpc/include/asm/thread_info.h
+@@ -102,6 +102,7 @@ static inline struct thread_info *curren
+ #define TIF_RESTOREALL		11	/* Restore all regs (implies NOERROR) */
+ #define TIF_NOERROR		12	/* Force successful syscall return */
+ #define TIF_NOTIFY_RESUME	13	/* callback before returning to user */
++#define TIF_UPROBE		14	/* breakpointed or single-stepping */
+ #define TIF_SYSCALL_TRACEPOINT	15	/* syscall tracepoint instrumentation */
+ 
+ /* as above, but as bit values */
+@@ -118,12 +119,13 @@ static inline struct thread_info *curren
+ #define _TIF_RESTOREALL		(1<<TIF_RESTOREALL)
+ #define _TIF_NOERROR		(1<<TIF_NOERROR)
+ #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
++#define _TIF_UPROBE		(1<<TIF_UPROBE)
+ #define _TIF_SYSCALL_TRACEPOINT	(1<<TIF_SYSCALL_TRACEPOINT)
+ #define _TIF_SYSCALL_T_OR_A	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
+ 				 _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT)
+ 
+ #define _TIF_USER_WORK_MASK	(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
+-				 _TIF_NOTIFY_RESUME)
++				 _TIF_NOTIFY_RESUME | _TIF_UPROBE)
+ #define _TIF_PERSYSCALL_MASK	(_TIF_RESTOREALL|_TIF_NOERROR)
+ 
+ /* Bits in local_flags */
+Index: linux-26jul/arch/powerpc/include/asm/uprobes.h
 ===================================================================
---- linux-26jul.orig/arch/powerpc/kernel/process.c
-+++ linux-26jul/arch/powerpc/kernel/process.c
-@@ -258,6 +258,7 @@ void do_send_trap(struct pt_regs *regs, 
+--- /dev/null
++++ linux-26jul/arch/powerpc/include/asm/uprobes.h
+@@ -0,0 +1,50 @@
++#ifndef _ASM_UPROBES_H
++#define _ASM_UPROBES_H
++/*
++ * User-space Probes (UProbes) for powerpc
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2007-2012
++ *
++ * Adapted from the x86 port by Ananth N Mavinakayanahalli <ananth@in.ibm.com>
++ */
++
++#include <linux/notifier.h>
++
++typedef unsigned int uprobe_opcode_t;
++
++#define MAX_UINSN_BYTES			4
++#define UPROBE_XOL_SLOT_BYTES		(MAX_UINSN_BYTES)
++
++#define UPROBE_SWBP_INSN		0x7fe00008
++#define UPROBE_SWBP_INSN_SIZE		4 /* swbp insn size in bytes */
++
++struct arch_uprobe {
++	u8	insn[MAX_UINSN_BYTES];
++};
++
++struct arch_uprobe_task {
++	unsigned long	saved_trap_nr;
++};
++
++extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
++extern unsigned long uprobe_get_swbp_addr(struct pt_regs *regs);
++extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
++extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
++extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++#endif	/* _ASM_UPROBES_H */
+Index: linux-26jul/arch/powerpc/kernel/Makefile
+===================================================================
+--- linux-26jul.orig/arch/powerpc/kernel/Makefile
++++ linux-26jul/arch/powerpc/kernel/Makefile
+@@ -96,6 +96,7 @@ obj-$(CONFIG_MODULES)		+= ppc_ksyms.o
+ obj-$(CONFIG_BOOTX_TEXT)	+= btext.o
+ obj-$(CONFIG_SMP)		+= smp.o
+ obj-$(CONFIG_KPROBES)		+= kprobes.o
++obj-$(CONFIG_UPROBES)		+= uprobes.o
+ obj-$(CONFIG_PPC_UDBG_16550)	+= legacy_serial.o udbg_16550.o
+ obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
+ obj-$(CONFIG_SWIOTLB)		+= dma-swiotlb.o
+Index: linux-26jul/arch/powerpc/kernel/signal.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/kernel/signal.c
++++ linux-26jul/arch/powerpc/kernel/signal.c
+@@ -11,6 +11,7 @@
+ 
+ #include <linux/tracehook.h>
+ #include <linux/signal.h>
++#include <linux/uprobes.h>
+ #include <linux/key.h>
+ #include <asm/hw_breakpoint.h>
+ #include <asm/uaccess.h>
+@@ -157,6 +158,11 @@ static int do_signal(struct pt_regs *reg
+ 
+ void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
  {
- 	siginfo_t info;
++	if (thread_info_flags & _TIF_UPROBE) {
++		clear_thread_flag(TIF_UPROBE);
++		uprobe_notify_resume(regs);
++	}
++
+ 	if (thread_info_flags & _TIF_SIGPENDING)
+ 		do_signal(regs);
  
-+	current->thread.trap_nr = signal_code;
- 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
- 			11, SIGSEGV) == NOTIFY_STOP)
- 		return;
-@@ -275,6 +276,7 @@ void do_dabr(struct pt_regs *regs, unsig
- {
- 	siginfo_t info;
- 
-+	current->thread.trap_nr = TRAP_HWBKPT;
- 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
- 			11, SIGSEGV) == NOTIFY_STOP)
- 		return;
-Index: linux-26jul/arch/powerpc/kernel/traps.c
+Index: linux-26jul/arch/powerpc/kernel/uprobes.c
 ===================================================================
---- linux-26jul.orig/arch/powerpc/kernel/traps.c
-+++ linux-26jul/arch/powerpc/kernel/traps.c
-@@ -251,6 +251,7 @@ void _exception(int signr, struct pt_reg
- 	if (arch_irqs_disabled() && !arch_irq_disabled_regs(regs))
- 		local_irq_enable();
- 
-+	current->thread.trap_nr = code;
- 	memset(&info, 0, sizeof(info));
- 	info.si_signo = signr;
- 	info.si_code = code;
-Index: linux-26jul/arch/powerpc/mm/fault.c
+--- /dev/null
++++ linux-26jul/arch/powerpc/kernel/uprobes.c
+@@ -0,0 +1,174 @@
++/*
++ * User-space Probes (UProbes) for powerpc
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2007-2012
++ *
++ * Adapted from the x86 port by Ananth N Mavinakayanahalli <ananth@in.ibm.com>
++ */
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/ptrace.h>
++#include <linux/uprobes.h>
++#include <linux/uaccess.h>
++#include <linux/kdebug.h>
++
++#include <asm/sstep.h>
++
++#define UPROBE_TRAP_NR	UINT_MAX
++
++/**
++ * arch_uprobe_analyze_insn
++ * @mm: the probed address space.
++ * @arch_uprobe: the probepoint information.
++ * @addr: vaddr to probe.
++ * Return 0 on success or a -ve number on error.
++ */
++int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
++{
++	if (addr & 0x03)
++		return -EINVAL;
++	return 0;
++}
++
++/*
++ * arch_uprobe_pre_xol - prepare to execute out of line.
++ * @auprobe: the probepoint information.
++ * @regs: reflects the saved user state of current task.
++ */
++int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++	struct arch_uprobe_task *autask = &current->utask->autask;
++
++	autask->saved_trap_nr = current->thread.trap_nr;
++	current->thread.trap_nr = UPROBE_TRAP_NR;
++	regs->nip = current->utask->xol_vaddr;
++	return 0;
++}
++
++/**
++ * uprobe_get_swbp_addr - compute address of swbp given post-swbp regs
++ * @regs: Reflects the saved state of the task after it has hit a breakpoint
++ * instruction.
++ * Return the address of the breakpoint instruction.
++ */
++unsigned long uprobe_get_swbp_addr(struct pt_regs *regs)
++{
++	return instruction_pointer(regs);
++}
++
++/*
++ * If xol insn itself traps and generates a signal (SIGILL/SIGSEGV/etc),
++ * then detect the case where a singlestepped instruction jumps back to its
++ * own address. It is assumed that anything like do_page_fault/do_trap/etc
++ * sets thread.trap_nr != -1.
++ *
++ * arch_uprobe_pre_xol/arch_uprobe_post_xol save/restore thread.trap_nr,
++ * arch_uprobe_xol_was_trapped() simply checks that ->trap_nr is not equal to
++ * UPROBE_TRAP_NR == -1 set by arch_uprobe_pre_xol().
++ */
++bool arch_uprobe_xol_was_trapped(struct task_struct *t)
++{
++	if (t->thread.trap_nr != UPROBE_TRAP_NR)
++		return true;
++
++	return false;
++}
++
++/*
++ * Called after single-stepping. To avoid the SMP problems that can
++ * occur when we temporarily put back the original opcode to
++ * single-step, we single-stepped a copy of the instruction.
++ *
++ * This function prepares to resume execution after the single-step.
++ */
++int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++	struct uprobe_task *utask = current->utask;
++
++	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
++
++	current->thread.trap_nr = utask->autask.saved_trap_nr;
++
++	/*
++	 * On powerpc, except for loads and stores, most instructions
++	 * including ones that alter code flow (branches, calls, returns)
++	 * are emulated in the kernel. We get here only if the emulation
++	 * support doesn't exist and have to fix-up the next instruction
++	 * to be executed.
++	 */
++	regs->nip = utask->vaddr + MAX_UINSN_BYTES;
++	return 0;
++}
++
++/* callback routine for handling exceptions. */
++int arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data)
++{
++	struct die_args *args = data;
++	struct pt_regs *regs = args->regs;
++
++	/* We are only interested in userspace traps */
++	if (regs && !user_mode(regs))
++		return NOTIFY_DONE;
++
++	switch (val) {
++	case DIE_BPT:
++		if (uprobe_pre_sstep_notifier(regs))
++			return NOTIFY_STOP;
++		break;
++	case DIE_SSTEP:
++		if (uprobe_post_sstep_notifier(regs))
++			return NOTIFY_STOP;
++	default:
++		break;
++	}
++	return NOTIFY_DONE;
++}
++
++/*
++ * This function gets called when XOL instruction either gets trapped or
++ * the thread has a fatal signal, so reset the instruction pointer to its
++ * probed address.
++ */
++void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++	struct uprobe_task *utask = current->utask;
++
++	current->thread.trap_nr = utask->autask.saved_trap_nr;
++	instruction_pointer_set(regs, utask->vaddr);
++}
++
++/*
++ * See if the instruction can be emulated.
++ * Returns true if instruction was emulated, false otherwise.
++ */
++bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++	int ret;
++	unsigned int insn;
++
++	memcpy(&insn, auprobe->insn, MAX_UINSN_BYTES);
++
++	/*
++	 * emulate_step() returns 1 if the insn was successfully emulated.
++	 * For all other cases, we need to single-step in hardware.
++	 */
++	ret = emulate_step(regs, insn);
++	if (ret > 0)
++		return true;
++
++	return false;
++}
+Index: linux-26jul/arch/powerpc/Kconfig
 ===================================================================
---- linux-26jul.orig/arch/powerpc/mm/fault.c
-+++ linux-26jul/arch/powerpc/mm/fault.c
-@@ -133,6 +133,7 @@ static int do_sigbus(struct pt_regs *reg
- 	up_read(&current->mm->mmap_sem);
+--- linux-26jul.orig/arch/powerpc/Kconfig
++++ linux-26jul/arch/powerpc/Kconfig
+@@ -237,6 +237,9 @@ config PPC_OF_PLATFORM_PCI
+ config ARCH_SUPPORTS_DEBUG_PAGEALLOC
+ 	def_bool y
  
- 	if (user_mode(regs)) {
-+		current->thread.trap_nr = BUS_ADRERR;
- 		info.si_signo = SIGBUS;
- 		info.si_errno = 0;
- 		info.si_code = BUS_ADRERR;
++config ARCH_SUPPORTS_UPROBES
++	def_bool y
++
+ config PPC_ADV_DEBUG_REGS
+ 	bool
+ 	depends on 40x || BOOKE
 
