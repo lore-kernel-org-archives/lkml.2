@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab2GZQDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 12:03:13 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4638 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab2GZQDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 12:03:11 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>, Ian Abbott <abbotti@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH] usbduxfast: Declare MODULE_FIRMWARE usage
-Date: Thu, 26 Jul 2012 10:03:34 -0600
-Message-Id: <1343318614-94700-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752345Ab2GZQFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 12:05:55 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41100 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab2GZQFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 12:05:54 -0400
+Message-ID: <50116ADF.4050700@linaro.org>
+Date: Thu, 26 Jul 2012 17:05:51 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 07/21] ASoC: io: Prevent use of regmap if request fails
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-8-git-send-email-lee.jones@linaro.org> <20120726113204.GY3099@opensource.wolfsonmicro.com> <50112C29.6020606@linaro.org> <20120726114215.GB3099@opensource.wolfsonmicro.com> <50115961.6060509@linaro.org> <20120726151217.GO3099@opensource.wolfsonmicro.com> <501160F5.5050807@linaro.org> <20120726152533.GS3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120726152533.GS3099@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
-Cc: devel@driverdev.osuosl.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/staging/comedi/drivers/usbduxfast.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+On 26/07/12 16:25, Mark Brown wrote:
+> On Thu, Jul 26, 2012 at 04:23:33PM +0100, Lee Jones wrote:
+>
+>> What's my 'control data'? It's not used in the original codec patch.
+>
+>> The old way wants to go:
+>
+>> snd_soc_update_bits() -> snd_soc_read() -> ab8500_codec_read_reg()
+>
+>> When then calls back into the abx500.
+>
+>> So what 'control data' should I be storing in the codec struct?
+>
+> You're supposed to use it for the data you use to call back into the
+> underlying I/O code.
 
-diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-index 7b1d21a..5f41d49 100644
---- a/drivers/staging/comedi/drivers/usbduxfast.c
-+++ b/drivers/staging/comedi/drivers/usbduxfast.c
-@@ -53,6 +53,7 @@
- #define DRIVER_AUTHOR "Bernd Porr, BerndPorr@f2s.com"
- #define DRIVER_DESC "USB-DUXfast, BerndPorr@f2s.com"
- #define BOARDNAME "usbduxfast"
-+#define FIRMWARE "usbduxfast_firmware.bin"
- 
- /*
-  * timeout for the USB-transfer
-@@ -1578,7 +1579,7 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
- 
- 	ret = request_firmware_nowait(THIS_MODULE,
- 				      FW_ACTION_HOTPLUG,
--				      "usbduxfast_firmware.bin",
-+				      FIRMWARE,
- 				      &udev->dev,
- 				      GFP_KERNEL,
- 				      usbduxfastsub + index,
-@@ -1804,3 +1805,4 @@ module_exit(exit_usbduxfast);
- MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_LICENSE("GPL");
-+MODULE_FIRMWARE(FIRMWARE);
+I don't understand. What 'data'?
+
+Surely if .read and .write are populated in 'struct 
+snd_soc_codec_driver', then it should just call back into those?
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
