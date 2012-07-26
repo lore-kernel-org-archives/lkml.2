@@ -1,206 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363Ab2GZHQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 03:16:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55440 "EHLO
+	id S1751444Ab2GZHSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 03:18:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58878 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2GZHQl (ORCPT
+	with ESMTP id S1750742Ab2GZHSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 03:16:41 -0400
-Date: Thu, 26 Jul 2012 09:16:36 +0200
+	Thu, 26 Jul 2012 03:18:12 -0400
+Date: Thu, 26 Jul 2012 09:18:03 +0200
 From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] PWM subsystem for v3.6
-Message-ID: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: linux-kernel@vger.kernel.org, nsekhar@ti.com, vaibhav.bedia@ti.com,
+        gururaja.hebbar@ti.com
+Subject: Re: [PATCH v2 1/2] pwm: pwm-tiecap: PWM driver support for ECAP APWM
+Message-ID: <20120726071803.GA28165@avionic-0098.mockup.avionic-design.de>
+References: <1343215699-4575-1-git-send-email-avinashphilip@ti.com>
+ <1343215699-4575-2-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+	protocol="application/pgp-signature"; boundary="nFreZHaLTZJo0R7j"
 Content-Disposition: inline
+In-Reply-To: <1343215699-4575-2-git-send-email-avinashphilip@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:HS+3BrwR91I5BjA0qrdVwjRMDAKmsW+JzHjIlyX5/oh
- 6ejt+k7P5FFE9JSBdi+u9kLsVsd8iBaaCMEN8flx30mqpX7DN6
- 9tjztarPN73WRStgviio+T2Knzrrf9NdOX3CWksOi5qzKAYKor
- LuxXmBovwO9pSaoky5Orcle9zV3cKhhCd05a//pngGN6YTTEfq
- +XFIL7MrFpFQVtp9hZ0CBqEbyl7WKmbwGYEWhkf5+/MFHU/3Pe
- 55yq7vS4xxgkM7rbm5HmJ4s+i6RF3D8Pd0Ch4NCH2W4QRF4VcE
- deDUAviyeW+8993EeAUhgDaQLOImrtFmYtXNnkJtBqcnF5Jw0T
- bhcogLofwCxl+i5QomtG7cNKRvZgvcP4d4hj4u9vOa13CfObSq
- nTS1E+DHAqAgUTSjGP72b0fBAAXWxX1uVQ=
+X-Provags-ID: V02:K0:Dl+cmnADP6nHKorMK+e+HTWjohVf26dww2GChI+3pXf
+ Tb/0iercLtUB/IUSHArjRt1NHdHuImtBXNuk7uTVb+KfRKEzPJ
+ +cDVjYmWw7bm152CJQR2P0M3xizoWdve/Q4g5+GgjFmOYyZxDc
+ yuvT8uuvOJ+C3xMGtZUGt0ZrH6YVdJCIgwCm5of6TKNMBFCa2N
+ VNIfV1taKUWl5iyybiodLX/kiglE+nl51WKQpnx9ZYwhUWqT1s
+ 8xTQPtwbCIfZLAG7nm4r/UVTzDHERcx7sAEZuHxvZIMT/VBMTH
+ q7JjPBROqppLs0DfyYQKgDA7POJUCogF3meEDmFZFTHspqjzrN
+ Nz0i3RHOv/jCNBO9M4UTwuZQU3FUGR0k86WJHugLssbuqjLpc1
+ g1LfrZ885ou/80aLGFENLQ4ALuGZtSsUuXwudt7OQlglDPr8ce
+ xpvl/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rwEMma7ioTxnRzrJ
+--nFreZHaLTZJo0R7j
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+On Wed, Jul 25, 2012 at 04:58:18PM +0530, Philip, Avinash wrote:
+> ECAP hardware on AM33XX SOC supports auxiliary PWM (APWM) feature. This
+> commit adds PWM driver support for ECAP hardware on AM33XX SOC.
+>=20
+> In the ECAP hardware, each PWM pin can also be configured to be in
+> capture mode. Current implementation only supports PWM mode of
+> operation. Also, hardware supports sync between multiple PWM pins but
+> the driver supports simple independent PWM functionality.
+>=20
+> Reviewed-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 
-The new PWM subsystem aims at collecting all implementations of the
-legacy PWM API and to eventually replace it completely. The subsystem
-has been in development for over half a year now and many drivers have
-already been converted. It has been in linux-next for a couple of weeks
-and there have been no major issues so I think it is ready for inclusion
-in your tree.
+Applied, with a minor cosmetic fixup. Thanks.
 
-Thanks,
 Thierry
 
-
-The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
-
-  Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
-
-are available in the git repository at:
-
-  git://gitorious.org/linux-pwm/linux-pwm.git for-3.6
-
-for you to fetch changes up to 19891b20e7c275feb92d669f4b1879861f7e8c25:
-
-  pwm: pwm-tiehrpwm: PWM driver support for EHRPWM (2012-07-26 07:45:20 +0200)
-
-----------------------------------------------------------------
-Alexandre Courbot (1):
-      pwm_backlight: pass correct brightness to callback
-
-Alexandre Pereira da Silva (1):
-      pwm: add lpc32xx PWM support
-
-Axel Lin (7):
-      pwm: Convert pwm-imx to use devm_* APIs
-      pwm: Convert pwm-vt8500 to use devm_* APIs
-      pwm: Convert pwm-pxa to use devm_* APIs
-      pwm: pwm-bfin: Return proper error if pwmchip_remove() fails
-      pwm: pwm-mxs: Return proper error if pwmchip_remove() fails
-      pwm: Convert pwm-tegra to use devm_clk_get()
-      pwm: Convert pwm-samsung to use devm_* APIs
-
-Philip, Avinash (2):
-      pwm: pwm-tiecap: PWM driver support for ECAP APWM
-      pwm: pwm-tiehrpwm: PWM driver support for EHRPWM
-
-Sachin Kamat (1):
-      pwm: Use pr_* functions in pwm-samsung.c file
-
-Sascha Hauer (4):
-      pwm: Add PWM framework support
-      ARM i.MX: Move i.MX pwm driver to pwm framework
-      ARM Samsung: Move s3c pwm driver to pwm framework
-      ARM vt8500: Move vt8500 pwm driver to pwm framework
-
-Shawn Guo (5):
-      pwm: add pwm-mxs support
-      pwm: pwm-mxs: encode soc name in compatible string
-      pwm: pwm-mxs: use global reset function stmp_reset_block
-      pwm: pwm-mxs: use devm_* managed functions
-      pwm: pwm-mxs: add pinctrl support
-
-Thierry Reding (15):
-      pwm: Allow chips to support multiple PWMs
-      pwm: Add debugfs interface
-      pwm: Add table-based lookup for static mappings
-      dt: Add empty of_property_match_string() function
-      dt: Add empty of_parse_phandle_with_args() function
-      pwm: Add device tree support
-      pwm: Add NVIDIA Tegra SoC support
-      pwm: tegra: Add device tree support
-      pwm: Move Blackfin PWM driver to PWM framework
-      pwm: Move PXA PWM driver to PWM framework
-      pwm-backlight: Add rudimentary device tree support
-      pwm: Take over maintainership of the PWM subsystem
-      pwm: Conflict with legacy PWM API
-      pwm: pxa: Propagate pwmchip_remove() error
-      pwm: fix used-uninitialized warning in pwm_get()
-
- .../devicetree/bindings/pwm/lpc32xx-pwm.txt        |  12 +
- Documentation/devicetree/bindings/pwm/mxs-pwm.txt  |  17 +
- .../devicetree/bindings/pwm/nvidia,tegra20-pwm.txt |  18 +
- Documentation/devicetree/bindings/pwm/pwm.txt      |  57 ++
- .../bindings/video/backlight/pwm-backlight.txt     |  28 +
- Documentation/pwm.txt                              |  76 +++
- MAINTAINERS                                        |  12 +
- arch/arm/Kconfig                                   |   1 -
- arch/arm/boot/dts/tegra20.dtsi                     |   6 +
- arch/arm/boot/dts/tegra30.dtsi                     |   6 +
- arch/arm/mach-tegra/board-dt-tegra20.c             |   1 +
- arch/arm/mach-tegra/board-dt-tegra30.c             |   3 +
- arch/arm/mach-vt8500/Makefile                      |   2 -
- arch/arm/mach-vt8500/pwm.c                         | 265 --------
- arch/arm/plat-mxc/Kconfig                          |   6 -
- arch/arm/plat-mxc/Makefile                         |   1 -
- arch/arm/plat-pxa/Makefile                         |   1 -
- arch/arm/plat-pxa/pwm.c                            | 304 ---------
- arch/arm/plat-samsung/Makefile                     |   4 -
- arch/blackfin/Kconfig                              |  10 -
- arch/blackfin/kernel/Makefile                      |   1 -
- arch/blackfin/kernel/pwm.c                         | 100 ---
- drivers/Kconfig                                    |   2 +
- drivers/Makefile                                   |   1 +
- drivers/mfd/Kconfig                                |   1 +
- drivers/misc/Kconfig                               |   1 +
- drivers/pwm/Kconfig                                | 108 ++++
- drivers/pwm/Makefile                               |  11 +
- drivers/pwm/core.c                                 | 713 +++++++++++++++++++++
- drivers/pwm/pwm-bfin.c                             | 162 +++++
- arch/arm/plat-mxc/pwm.c => drivers/pwm/pwm-imx.c   | 204 ++----
- drivers/pwm/pwm-lpc32xx.c                          | 148 +++++
- drivers/pwm/pwm-mxs.c                              | 203 ++++++
- drivers/pwm/pwm-pxa.c                              | 218 +++++++
- .../pwm.c => drivers/pwm/pwm-samsung.c             | 238 +++----
- drivers/pwm/pwm-tegra.c                            | 261 ++++++++
- drivers/pwm/pwm-tiecap.c                           | 232 +++++++
- drivers/pwm/pwm-tiehrpwm.c                         | 411 ++++++++++++
- drivers/pwm/pwm-vt8500.c                           | 177 +++++
- drivers/video/backlight/Kconfig                    |   2 +-
- drivers/video/backlight/pwm_bl.c                   | 159 ++++-
- include/linux/of.h                                 |  16 +
- include/linux/pwm.h                                | 117 ++++
- include/linux/pwm_backlight.h                      |   1 +
- 44 files changed, 3307 insertions(+), 1010 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/mxs-pwm.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/nvidia,tegra20-pwm.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm.txt
- create mode 100644 Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
- create mode 100644 Documentation/pwm.txt
- delete mode 100644 arch/arm/mach-vt8500/pwm.c
- delete mode 100644 arch/arm/plat-pxa/pwm.c
- delete mode 100644 arch/blackfin/kernel/pwm.c
- create mode 100644 drivers/pwm/Kconfig
- create mode 100644 drivers/pwm/Makefile
- create mode 100644 drivers/pwm/core.c
- create mode 100644 drivers/pwm/pwm-bfin.c
- rename arch/arm/plat-mxc/pwm.c => drivers/pwm/pwm-imx.c (50%)
- create mode 100644 drivers/pwm/pwm-lpc32xx.c
- create mode 100644 drivers/pwm/pwm-mxs.c
- create mode 100644 drivers/pwm/pwm-pxa.c
- rename arch/arm/plat-samsung/pwm.c => drivers/pwm/pwm-samsung.c (55%)
- create mode 100644 drivers/pwm/pwm-tegra.c
- create mode 100644 drivers/pwm/pwm-tiecap.c
- create mode 100644 drivers/pwm/pwm-tiehrpwm.c
- create mode 100644 drivers/pwm/pwm-vt8500.c
-
---rwEMma7ioTxnRzrJ
+--nFreZHaLTZJo0R7j
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQEO7UAAoJEN0jrNd/PrOhmMoP/jX6E+LbGnq5rTLmncdOpCT0
-PtUl7tqZ/LFP8H8jzbORFxru0jWHBdsNI7XTAnutFy53tDBYCVckaz3jjzhbdFdk
-Ykki7j4mFcgUeoKvkyofZyDSbvCORE2Wqwm55+bTWseNXv9U8dFo37K+n0GOpJI+
-Blo7jbKEWcIpgCnY/aIr/TTMEdAJSRkMdt8YNQZXcO5ePWg3MdRyd49efyDHql9s
-lLbMC7ACtfni+ztWAK5Nuul7OvOesQBqnOU5k88gGF4L95MZU/IVS4HIJOa55qT3
-z+aQKRQQfK9cBNR7W1ZvLmdO24PxoPWz5ujvAooyiQ9UFReN9/YYGLCPSnErb1fe
-+C07LGtjoqjFPlAkzw5C9z19nHoQl29Sn0SD7tPCq2ds5F0MB820W8QHO5ZY0zfl
-y3awmKB/RI0USQB7Cq/LnAhf3yhP4WbeJprrPMU88dr3brE/3fjDL4Yo4/Kv+nrS
-UHlskWq9pbCubMxqnmAucTvczKPw/+fnZ0AWyXZakSkm7USknH2YceeD51JFumqm
-sXAJ0g8mfoPAd2W9+X1YxPzy6qBH1etN6qgrwAHsdGustGxZR7h6SmA38HLAtAnA
-760P1PY5Vhq4V/VcDrAM5Yzn/tpawaMyjeYHTKtQAuGJmm/NnTsqWq9toXUivbR5
-1fvDHywPt9pzygI9OliJ
-=A7ux
+iQIcBAEBAgAGBQJQEO8rAAoJEN0jrNd/PrOhhG4QAKanegk2HrICvcQy6X7f/Im8
+FwQyayNYhhIr2JkhiidSdp03wXkRB9HmYmHWw+soPzbDfH5pCq0wv3zsP+Iqlv2p
+ceuu1j1h1sMYAMBJtNTYI3E/naoPgvCDMyWRBQ68QDDmXG75q7J+ngUR0l0DG4zp
+tleruiKcKyReOfJYLWYs3NKcA79s0V+YRsPqw8wp8VqAc5h3bH5mGAEJLHHTWQHs
+FvnNth2fnovMxKSesyVV20a7MVfhGOSrVXlQPtz8N9r0MUJCApz1//iRz2Y8Oxg/
+AsnN7oQbyJ/4Mf1L4syz9jOycGO7wRJwiq07J/ccT3We6M01NKjNpLTqJ5IJBbE9
+LOAOGPV0ARpmopI3NNmYXJsKdZlG9JlQZkNe+AFlbXv1oYVf3RDQBrB+F54WAFQx
+hjz3EdXBuc2NSPoUKMQhLtQn+/zhqbPV37pJwhFu2sn2IBRD+Nb71CHNBpFvHneN
+egVli4O6igYv2GPguqCteADFMbchhIG6PL0nU3Rg8xkTbjxjr1wUkA4w+j4bRozo
+zTGZkwTef1mOAYPqQ74yW+oikpuYWpniTSorS4fyDMOsK69EYIoowZAmZGFo/YKV
+L/KlGpANfrLTJjI+yd9h67A5rqgEsi/6VZ+7nqN7/YgKKv0YDQHKwN5hxXcCfYBa
+Qb/bSqQquo+Hol24PfE6
+=iXN9
 -----END PGP SIGNATURE-----
 
---rwEMma7ioTxnRzrJ--
+--nFreZHaLTZJo0R7j--
