@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab2GZPPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:15:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35631 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab2GZPPk (ORCPT
+	id S1752637Ab2GZPPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:15:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49132 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752349Ab2GZPPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:15:40 -0400
+	Thu, 26 Jul 2012 11:15:48 -0400
+Date: Thu, 26 Jul 2012 16:15:47 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Michael Jones <michael.jones@matrix-vision.de>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: whitespace
+Message-ID: <20120726151546.GQ3099@opensource.wolfsonmicro.com>
+References: <1343311644-19739-1-git-send-email-michael.jones@matrix-vision.de>
+ <1343311644-19739-2-git-send-email-michael.jones@matrix-vision.de>
+ <20120726144457.GM3099@opensource.wolfsonmicro.com>
+ <50115E7B.3010400@matrix-vision.de>
 MIME-Version: 1.0
-In-Reply-To: <20120725161539.GM11152@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<1343149213-10160-10-git-send-email-ming.lei@canonical.com>
-	<20120725161539.GM11152@aftab.osrc.amd.com>
-Date: Thu, 26 Jul 2012 23:15:37 +0800
-Message-ID: <CACVXFVMKzYbELKYsQSV55kqCTTVtez8SDKSrwJn55iszmjXrOw@mail.gmail.com>
-Subject: Re: [RFC PATCH 09/13] driver core: firmware loader: store firmware
- name into devres list
-From: Ming Lei <ming.lei@canonical.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CMx2Qe8y1jN1ar4Y"
+Content-Disposition: inline
+In-Reply-To: <50115E7B.3010400@matrix-vision.de>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 12:15 AM, Borislav Petkov <bp@amd64.org> wrote:
-> On Wed, Jul 25, 2012 at 01:00:09AM +0800, Ming Lei wrote:
->> This patch will store firmware name into devres list of the device
->> which is requesting firmware loading, so that we can implement
->> auto cache firmware for devices in need.
->
-> Stupid question: does this mean that once the firmware name is in the
-> devres list, it is being cached automatically and device drivers which
-> don't want that need to explicitly uncache it?
 
-Both the auto cache and auto uncache actions are not triggered by device
-driver, and will be triggered by some system state, for example, in 13/13,
-you will find the cache is done before system suspend and the uncache is
-done after system resume.
+--CMx2Qe8y1jN1ar4Y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If device drivers want to cache its firmware explicitly, they have to uncache
-it explicitly too, see cache_firmware/uncache_firmware in 7/13.
+On Thu, Jul 26, 2012 at 05:12:59PM +0200, Michael Jones wrote:
+> On 07/26/2012 04:44 PM, Mark Brown wrote:
 
-Thanks
---
-Ming Lei
+> >Your changelog says "whitespace" and is otherwise blank...  what is the
+> >problem you think you are fixing here?
+
+> I don't see what you're seeing.
+
+I'm not seeing anything at all.  That's the problem.
+
+> Here:
+> https://lkml.org/lkml/2012/7/26/255
+> I see the patch which replaces non-uniform spaces with tabs.
+
+...and only has a one word changelog.
+
+--CMx2Qe8y1jN1ar4Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQEV8SAAoJEBus8iNuMP3dqxYP/2WPwp49yl80PR4zHjHZmTSB
+ZpYo6QfZxyJDvy//rMouD55lamPpXztKB+YMAi50YZylcsIuwFi3aWxKxNzRjJxl
+42a6J271GqciNi6JxSyjeFPsNokno+UpC2bfwfRImam/soTmD0PYxuFbMyrOopIo
+viYuN2OomIlck4eIMHzkE3ubxdj6zh5j2UBt4+UjBMcmXu7of/9q6nkkPB3Fpwg0
+7w1oNp5Qc4hAE5q6FoSkcHZte5Z1xvSNCoaMwBDtJpPMsdqjXid0Tyn9ShKTPdp6
+9zeWVRHgNLaYyahQhSPnL2X87frzbt5hzQhhd28NLONDiLA5bguRRC4ZYAKxLhY2
+xTrqkvE1H8b/8F5XarulbiBia7xu6PPnsjBKKGLNdDa9vHRg71zmzi+IrXUjWk/e
+pt6KCDhW3+UbNJR7E3JxRJcrQtiV4M+DEM5cinJAWuDIFHHxc6kBMcQHj5kDI5BQ
+rIxlaF1Aqu5wR0Y0cVSwowrtBflfRau0p4nkRtjEX7xkoTN5EsDGwiFJrJXj5+Cm
+6DsJ2F3Abz4PHus1ModPzyZytP2aAGnS51v0vCJFYTqa29jvf7tW+7EMvOXFpK7M
+bYy1Y6QY24GNgGp3vrKRsAxIrlWAwxZhJDhpFXSLJQcMAfNJOe5UsXr6xIWlkdFX
+nXdBi94VWN+eArLepzuQ
+=xrZ3
+-----END PGP SIGNATURE-----
+
+--CMx2Qe8y1jN1ar4Y--
