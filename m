@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab2GZLhi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:37:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43293 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751758Ab2GZLhh (ORCPT
+	id S1752497Ab2GZLiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:38:22 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52974 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab2GZLiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:37:37 -0400
-Date: Thu, 26 Jul 2012 12:37:35 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+	Thu, 26 Jul 2012 07:38:21 -0400
+Message-ID: <50112C29.6020606@linaro.org>
+Date: Thu, 26 Jul 2012 12:38:17 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
         ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 16/21] ASoC: Ux500: Enable MOP500 driver for Device Tree
-Message-ID: <20120726113734.GZ3099@opensource.wolfsonmicro.com>
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
- <1343298534-13611-17-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dwN3S3mscniL3FCL"
-Content-Disposition: inline
-In-Reply-To: <1343298534-13611-17-git-send-email-lee.jones@linaro.org>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH 07/21] ASoC: io: Prevent use of regmap if request fails
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-8-git-send-email-lee.jones@linaro.org> <20120726113204.GY3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120726113204.GY3099@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26/07/12 12:32, Mark Brown wrote:
+> On Thu, Jul 26, 2012 at 11:28:40AM +0100, Lee Jones wrote:
+>
+>> @@ -52,10 +52,13 @@ static unsigned int hw_read(struct snd_soc_codec *codec, unsigned int reg)
+>>   		if (codec->cache_only)
+>>   			return -1;
+>>
+>> -		ret = regmap_read(codec->control_data, reg, &val);
+>> -		if (ret == 0)
+>> -			return val;
+>> -		else
+>> +		if (codec->using_regmap) {
+>> +			ret = regmap_read(codec->control_data, reg, &val);
+>> +			if (ret == 0)
+>> +				return val;
+>> +			else
+>> +				return -1;
+>> +		} else
+>
+> No, this makes no sense.  There is no non-regmap I/O support in soc-io,
+> anything using the soc-io hw_read() function must be using regmap.
+>
+>>   	case SND_SOC_REGMAP:
+>>   		/* Device has made its own regmap arrangements */
+>> -		codec->using_regmap = true;
+>
+> Again, this makes no sense.  If we're explicitly being asked to use
+> regmap then we should be using regmap or just failing to set up I/O
+> (which is obviously a catastrophic failure).
 
---dwN3S3mscniL3FCL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+How much work is there involved in regmap:ing a device, so that 
+dev_get_regmap() doesn't fail?
 
-On Thu, Jul 26, 2012 at 11:28:49AM +0100, Lee Jones wrote:
-
->  arch/arm/mach-ux500/board-mop500-msp.c |    3 ---
->  sound/soc/ux500/mop500.c               |   41 ++++++++++++++++++++++++++++++++
-
-There is no binding documentation here.  All bindings should be
-documented.
-
-> -	pr_info("%s: Register platform-device 'snd-soc-u8500'.\n", __func__);
-> -	platform_device_register(&snd_soc_mop500);
-> -
-
-This should be done separately - if it's going to be merged with
-something it should be the patch that adds the relevant DT fragments.
-
---dwN3S3mscniL3FCL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQESv4AAoJEBus8iNuMP3dQogP/ihizgNZtgkuVvzYcqi2miSd
-m53YyoBYZDz8JIj8u5+guTFezRqyK5m0K1/EzRyEUOTjRrc4sy3KB8HS/VUjXWEO
-UKFFca7RCgmJ7seIgPAx4TNygREXxScIT5GBwD9SV3GsvABo9C5nfURNYWW2iUSk
-+/ilMrNMf0PCzQO3XnuPefKwgf1YPy7mSG9/dtrK9DrWCIS6BpXaZ8bHVcONmVJm
-eI6NXTi8SumQljsfEPwRTlR1ODhctLZ08GPlOZeBBt30sjeP8E8l8QFDKyd8QCKu
-ieiOqfR3tUU9rthkw/dXZWvjNo/IchS2rcABllMgPXsrLTRIpbqCvWkSyLpb0nx4
-/uI0dkC086VmvWTPv6mMlA5yxMhDbce5y8ldxIXN7MGzZZWSq4zbunMRV1QKQqL2
-plongRa33lu0Y0r3Zmz2+lxqwEgSI8mj8xUl0obKZBWHQ1qjMR0/PXEAOc1ukvqk
-gEtIAXz1PU5czmSql7bn80yh982FtyFRAS9lhrlKLkFwZYrLqwb7edIEZvli0P1Q
-lLUneXhyBuHaEbVcRiK+743tUqNLcrIlf/L62SBWJzgKkMtzvyZPtIAZyZfDZFQw
-58lHXnaFYUDYL6LoRaCYx6Kl8iXwkSHtFlQg4sSnIW/pw/SMXQGS+G9nAFHcdMyU
-2+cv1j3EPr0fb83VZd8/
-=ruwj
------END PGP SIGNATURE-----
-
---dwN3S3mscniL3FCL--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
