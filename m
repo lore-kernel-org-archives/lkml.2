@@ -1,41 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab2GZAzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 20:55:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57330 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab2GZAz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 20:55:29 -0400
-Message-ID: <5010957D.1010500@landley.net>
-Date: Wed, 25 Jul 2012 19:55:25 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751520Ab2GZBQn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 21:16:43 -0400
+Received: from atl.turmel.org ([74.117.157.138]:48344 "EHLO atl.turmel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770Ab2GZBQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 21:16:42 -0400
+X-Greylist: delayed 949 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 21:16:42 EDT
+Message-ID: <501096C3.5060700@turmel.org>
+Date: Wed, 25 Jul 2012 21:00:51 -0400
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120707 Thunderbird/13.0
 MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] firmware: remove computone driver firmware and documentation
-References: <1343234526-105460-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1343234526-105460-1-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kevin Ross <kevin@familyross.net>
+CC: linux-kernel@vger.kernel.org, linux-raid <linux-raid@vger.kernel.org>
+Subject: Re: RAID extremely slow
+References: <501078B2.8070707@familyross.net>
+In-Reply-To: <501078B2.8070707@familyross.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 11:42 AM, Tim Gardner wrote:
-> As far as I can tell, the only Computone support left in the
-> kernel is in drivers/tty/serial/8250/8250_pci.c. CONFIG_COMPUTONE
-> is no longer a valid option. Therefore, remove firmware, documentation,
-> and the last vestiges of this driver.
->
-> Cc: Rob Landley <rob@landley.net>
+[Added linux-raid to the CC]
 
-Acked-by same.
+Hi Kevin,
 
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+Notes interleaved:
+
+On 07/25/2012 06:52 PM, Kevin Ross wrote:
+> Hello,
+> 
+> I'm having a problem.  After a while, my software RAID rebuild becomes
+> extremely slow, and the filesystem on the RAID is essentially blocked. 
+> I don't know what is causing this.  I guess it could be a bad drive, but
+> how can I find out?
+
+Probably not.  That pretty much always shows up in dmesg.
+
+> I used atop to show the transfer speeds to each drive. Here's a
+> screenshot:
+> http://img402.imageshack.us/img402/6484/screenshotfrom201207251.png
+
+Piles of small reads  scattered across multiple drives, and a
+concentration of queued writes to /dev/sda.  What's on /dev/sda?
+It's not a member of the raid, so it must be some other system task
+involved.
+
+[ The output of "lsdrv" [1] might be useful here, along with
+"mdadm -D /dev/md0" and "mdadm -E /dev/[b-j]" ]
+
+> "smartctl -a" for all the drives looks good to me, no pending failures,
+> or errors logged.  dmesg doesn't report anything wrong with any of the
+> drives.  It does, however, report lots of hung tasks, which are trying
+> to access the RAID volume.  For example:
+> 
+> [51000.672064] INFO: task mythbackend:10677 blocked for more than 120
+> seconds.
+> [51000.672098] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+> [51000.672143] mythbackend     D 0000000e     0 10677      1 0x00000000
+> [51000.672146]  f38bea00 00000086 c1095415 0000000e 00000002 00000000
+> 00000000 c147aac0
+> [51000.672152]  f38bebac c147aac0 eb2cff04 003d2f4b 00000000 c109cacb
+> 01872f02 eb2cfe50
+> [51000.672157]  c100f28b c13df480 01872f02 eb2cfe68 c10532b1 0069a8d0
+> f79d6ac0 00000000
+> [51000.672162] Call Trace:
+> [51000.672169]  [<c1095415>] ? find_get_pages_tag+0x2f/0xa2
+> [51000.672173]  [<c109cacb>] ? pagevec_lookup_tag+0x18/0x1e
+> [51000.672176]  [<c100f28b>] ? read_tsc+0xa/0x28
+> [51000.672179]  [<c10532b1>] ? timekeeping_get_ns+0x11/0x55
+> [51000.672182]  [<c10536a4>] ? ktime_get_ts+0x7a/0x82
+> [51000.672186]  [<c12bea8b>] ? io_schedule+0x4a/0x5f
+> [51000.672188]  [<c1095659>] ? sleep_on_page+0x5/0x8
+> [51000.672191]  [<c12bedeb>] ? __wait_on_bit+0x2f/0x54
+> [51000.672193]  [<c1095654>] ? lock_page+0x1d/0x1d
+> [51000.672196]  [<c1095754>] ? wait_on_page_bit+0x57/0x5e
+> [51000.672199]  [<c104d171>] ? autoremove_wake_function+0x29/0x29
+> [51000.672201]  [<c1095823>] ? filemap_fdatawait_range+0x71/0x11e
+> [51000.672205]  [<c109630f>] ? filemap_write_and_wait_range+0x3e/0x4c
+> [51000.672232]  [<f86bfb39>] ? xfs_file_fsync+0x68/0x214 [xfs]
+> [51000.672246]  [<f86bfad1>] ? xfs_file_splice_write+0x144/0x144 [xfs]
+> [51000.672249]  [<c10e7e3b>] ? vfs_fsync_range+0x27/0x2d
+> [51000.672252]  [<c10e7e52>] ? vfs_fsync+0x11/0x15
+> [51000.672254]  [<c10e80b8>] ? sys_fdatasync+0x20/0x2e
+
+MythTV is trying to flush recorded video to disk, I presume.  Sync is
+known to cause stalls--a great deal of work is on-going to improve
+this.  How old is this kernel?
+
+> [51000.672258]  [<c12c409f>] ? sysenter_do_call+0x12/0x28
+> [51000.672261]  [<c12b0000>] ? quirk_usb_early_handoff+0x4a9/0x522
+> 
+> Here is some other possibly relevant info:
+> 
+> # cat /proc/mdstat
+> Personalities : [raid6] [raid5] [raid4]
+> md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4]
+> sdf1[3] sdg1[8] sdj1[1]
+>       6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 [9/9]
+> [UUUUUUUUU]
+>       [==========>..........]  resync = 51.3% (501954432/976758784)
+> finish=28755.6min speed=275K/sec
+
+Is this resync a weekly check, or did something else trigger it?
+
+> unused devices: <none>
+> 
+> # cat /proc/sys/dev/raid/speed_limit_min
+> 10000
+
+MD is unable to reach its minimum rebuild rate while other system
+activity is ongoing.  You might want to lower this number to see if that
+gets you out of the stalls.
+
+Or temporarily shut down mythtv.
+
+> # cat /proc/sys/dev/raid/speed_limit_max
+> 200000
+> 
+> Thanks in advance!
+> -- Kevin
+
+HTH,
+
+Phil
+
+[1] http://github.com/pturmel/lsdrv
+
