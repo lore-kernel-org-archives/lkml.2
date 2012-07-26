@@ -1,386 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2GZPgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:36:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35757 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab2GZPgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:36:03 -0400
+	id S1752604Ab2GZPgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:36:46 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:29921 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751941Ab2GZPex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 11:34:53 -0400
+X-IronPort-AV: E=Sophos;i="4.77,659,1336363200"; 
+   d="scan'208";a="32688372"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>, <tim@xen.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
+        <catalin.marinas@arm.com>, <arnd@arndb.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 05/24] xen/arm: empty implementation of grant_table arch specific functions
+Date: Thu, 26 Jul 2012 16:33:47 +0100
+Message-ID: <1343316846-25860-5-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <20120725165224.GO11152@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<1343149213-10160-12-git-send-email-ming.lei@canonical.com>
-	<20120725165224.GO11152@aftab.osrc.amd.com>
-Date: Thu, 26 Jul 2012 23:36:00 +0800
-Message-ID: <CACVXFVNp73jbQafHNO-iW4j3A8EwDvXfAZ_Jw2z-6vBUFYA7bw@mail.gmail.com>
-Subject: Re: [RFC PATCH 11/13] driver core: firmware: introduce devices_cache/uncache_firmwares
-From: Ming Lei <ming.lei@canonical.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 12:52 AM, Borislav Petkov <bp@amd64.org> wrote:
-> On Wed, Jul 25, 2012 at 01:00:11AM +0800, Ming Lei wrote:
->> This patches introduces the three helpers below:
->>
->>       void device_cache_firmwares(void)
->>       void device_uncache_firmwares(void)
->>       void device_uncache_firmwares_delay(unsigned long)
->
-> I kinda don't like the plural of firmware: "firmwares". Can we call
-> those
->         device_cache_fw_images
->         device_uncache_fw_images
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/arm/xen/Makefile      |    2 +-
+ arch/arm/xen/grant-table.c |   53 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/xen/grant-table.c
 
-Looks fine.
+diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
+index b9d6acc..4384103 100644
+--- a/arch/arm/xen/Makefile
++++ b/arch/arm/xen/Makefile
+@@ -1 +1 @@
+-obj-y		:= enlighten.o hypercall.o
++obj-y		:= enlighten.o hypercall.o grant-table.o
+diff --git a/arch/arm/xen/grant-table.c b/arch/arm/xen/grant-table.c
+new file mode 100644
+index 0000000..0a4ee80
+--- /dev/null
++++ b/arch/arm/xen/grant-table.c
+@@ -0,0 +1,53 @@
++/******************************************************************************
++ * grant_table.c
++ * ARM specific part
++ *
++ * Granting foreign access to our memory reservation.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version 2
++ * as published by the Free Software Foundation; or, when distributed
++ * separately from the Linux kernel or incorporated into other
++ * software packages, subject to the following license:
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this source file (the "Software"), to deal in the Software without
++ * restriction, including without limitation the rights to use, copy, modify,
++ * merge, publish, distribute, sublicense, and/or sell copies of the Software,
++ * and to permit persons to whom the Software is furnished to do so, subject to
++ * the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
++ * IN THE SOFTWARE.
++ */
++
++#include <xen/interface/xen.h>
++#include <xen/page.h>
++#include <xen/grant_table.h>
++
++int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
++			   unsigned long max_nr_gframes,
++			   void **__shared)
++{
++	return -1;
++}
++
++void arch_gnttab_unmap(void *shared, unsigned long nr_gframes)
++{
++	return;
++}
++
++int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
++			   unsigned long max_nr_gframes,
++			   grant_status_t **__shared)
++{
++	return -1;
++}
+-- 
+1.7.2.5
 
->
-> or
->         device_cache_fw_blobs
->
-> or whatever?
->
->> so we can call device_cache_firmwares() to cache firmwares for
->> all devices which need firmwares to work, and the device driver
->> can get the firmware easily from kernel memory when system isn't
->> readly for completing their requests of loading firmwares.
->>
->> When system is ready for completing firmware loading, driver core
->> can call device_uncache_firmwares() or its delay version to free
->> the cached firmwares.
->>
->> The above helpers should be used to cache device firmwares during
->> system suspend/resume cycle in the following patches.
->>
->> Signed-off-by: Ming Lei <ming.lei@canonical.com>
->> ---
->>  drivers/base/firmware_class.c |  236 +++++++++++++++++++++++++++++++++++++++--
->>  1 file changed, 230 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> index c181e6d..7a96e75 100644
->> --- a/drivers/base/firmware_class.c
->> +++ b/drivers/base/firmware_class.c
->> @@ -22,6 +22,10 @@
->>  #include <linux/slab.h>
->>  #include <linux/sched.h>
->>  #include <linux/list.h>
->> +#include <linux/async.h>
->> +#include <linux/pm.h>
->> +
->> +#include "base.h"
->>
->>  MODULE_AUTHOR("Manuel Estrada Sainz");
->>  MODULE_DESCRIPTION("Multi purpose firmware loading support");
->> @@ -91,6 +95,17 @@ struct firmware_cache {
->>       /* firmware_buf instance will be added into the below list */
->>       spinlock_t lock;
->>       struct list_head head;
->> +
->> +     /*
->> +      * Name of firmware which has been cached successfully will be
->> +      * added into the below list so that device uncache helper can
->> +      * trace which firmware has been cached before.
->> +      */
->
-> Comment above the list_head and maybe call the list_head fw_names or so?
->
->> +     spinlock_t name_lock;
->> +     struct list_head name_head;
->> +     wait_queue_head_t      wait_queue;
->
-> Stray \t
->
->> +     int cnt;
->> +     struct delayed_work work;
->>  };
->>
->>  struct firmware_buf {
->> @@ -107,6 +122,11 @@ struct firmware_buf {
->>       char fw_id[];
->>  };
->>
->> +struct fw_name_for_cache {
->> +     struct list_head list;
->> +     char name[];
->> +};
->
-> Maybe fw_cache_entry?
-
-Looks fine.
-
->
->> +
->>  struct firmware_priv {
->>       struct timer_list timeout;
->>       bool nowait;
->> @@ -214,12 +234,6 @@ static void fw_free_buf(struct firmware_buf *buf)
->>       kref_put(&buf->ref, __fw_free_buf);
->>  }
->>
->> -static void fw_cache_init(void)
->> -{
->> -     spin_lock_init(&fw_cache.lock);
->> -     INIT_LIST_HEAD(&fw_cache.head);
->> -}
->> -
->>  static struct firmware_priv *to_firmware_priv(struct device *dev)
->>  {
->>       return container_of(dev, struct firmware_priv, dev);
->> @@ -981,6 +995,216 @@ int uncache_firmware(const char *fw_name)
->>       return -EINVAL;
->>  }
->>
->> +static struct fw_name_for_cache *alloc_fw_name_cache(const char *name)
->> +{
->> +     struct fw_name_for_cache *nc;
->> +
->> +     nc = kzalloc(sizeof(nc) + strlen(name) + 1, GFP_KERNEL);
->> +     if (!nc)
->> +             goto exit;
->> +
->> +     strcpy(nc->name, name);
->> +exit:
->> +     return nc;
->> +}
->> +
->> +static void free_fw_name_cache(struct fw_name_for_cache *nc)
->> +{
->> +     kfree(nc);
->> +}
->> +
->> +static void __async_dev_cache_firmware(void *fw_name,
->> +             async_cookie_t cookie)
->
-> Arg alignment.
-
-I am wondering why checkpatch.pl doesn't add the check...
-
->
->> +{
->> +     struct fw_name_for_cache *nc;
->> +     struct firmware_cache *fwc = &fw_cache;
->> +     char *curr_name;
->> +     int ret;
->> +
->> +     /* 'fw_name' is stored in devres, and it may be released,
->> +      * so allocate buffer to store the firmware name
->> +      */
->> +     curr_name = kstrdup((const char *)fw_name, GFP_KERNEL);
->> +     if (!curr_name) {
->> +             ret = -ENOMEM;
->> +             goto drop_ref;
->> +     }
->> +
->> +     strcpy(curr_name, fw_name);
->
-> AFAICT kstrdup already copies the existing string, why do you need to
-> strcpy it again?
-
-Good catch.
-
->
->> +
->> +     ret = cache_firmware(curr_name);
->> +
->> +     if (!ret) {
->
-> Invert check logic to save an indentation level:
->
->         if (ret)
->                 goto free;
->
->         nc = alloc...
->
->         ...
->
->  free:
->         kfree(curr_name);
->
->> +             /*
->> +              * allocate/all the instance of alloc_fw_name_cache
->> +              * for uncaching later if cache_firmware returns
->> +              * successfully
->> +              */
->> +             nc = alloc_fw_name_cache(curr_name);
->> +
->> +             /*
->> +              * have to uncache firmware in case of allocation
->> +              * failure since we can't trace the firmware cache
->> +              * any more without the firmware name.
->> +              */
->> +             if (!nc) {
->> +                     uncache_firmware(curr_name);
->> +             } else {
->> +                     spin_lock(&fwc->name_lock);
->> +                     list_add(&nc->list, &fwc->name_head);
->> +                     spin_unlock(&fwc->name_lock);
->> +             }
->> +     }
->> +     kfree(curr_name);
->> +
->> +drop_ref:
->> +     spin_lock(&fwc->name_lock);
->> +     fwc->cnt--;
->> +     spin_unlock(&fwc->name_lock);
->> +     wake_up(&fwc->wait_queue);
->> +}
->> +
->> +static void __dev_cache_firmware(struct device *dev, void *res)
->> +{
->> +     struct fw_name_devm *fwn = res;
->> +     const char *fw_name = fwn->name;
->> +     struct firmware_cache *fwc = &fw_cache;
->> +
->> +     dev_dbg(dev, "fw-%s %d\n", fw_name, fwc->cnt);
->> +
->> +     spin_lock(&fwc->name_lock);
->> +     fwc->cnt++;
->> +     spin_unlock(&fwc->name_lock);
->> +
->> +     async_schedule(__async_dev_cache_firmware, (void *)fw_name);
->> +}
->> +
->> +static int devm_name_match(struct device *dev, void *res,
->> +             void *match_data)
->
-> arg alignment
->
->> +{
->> +     struct fw_name_devm *fwn = res;
->> +     return (fwn->magic == (unsigned long)match_data);
->> +}
->> +
->> +static void dev_cache_firmware(struct device *dev)
->> +{
->> +     devres_for_each_res(dev, fw_name_devm_release,
->> +                     devm_name_match, &fw_cache,
->> +                     __dev_cache_firmware);
->
-> arg alignment
->
->> +}
->> +
->> +static void __device_uncache_firmwares(void)
->> +{
->> +     struct firmware_cache *fwc = &fw_cache;
->> +     struct fw_name_for_cache *nc;
->> +
->> +     spin_lock(&fwc->name_lock);
->> +     while (!list_empty(&fwc->name_head)) {
->> +             nc = list_entry(fwc->name_head.next,
->> +                             struct fw_name_for_cache, list);
->> +             list_del(&nc->list);
->> +             spin_unlock(&fwc->name_lock);
->> +
->> +             uncache_firmware(nc->name);
->> +             free_fw_name_cache(nc);
->> +
->> +             spin_lock(&fwc->name_lock);
->> +     }
->> +     spin_unlock(&fwc->name_lock);
->
-> Same thing here: maybe check if on the last element on the list and
-> don't grab the lock then?
->
->> +}
->> +
->> +extern struct list_head dpm_list;
->
-> checkpatch says here:
->
-> WARNING: externs should be avoided in .c files
-> #181: FILE: drivers/base/firmware_class.c:1118:
-> +extern struct list_head dpm_list;
->
-> and I think it is correct. AFAICT, it should be included from
-> <drivers/base/power/power.h>...
-
-Good catch.
-
->
->> +/**
->> + * device_cache_firmwares - cache devices' firmwares
->> + *
->> + * For each devices, if they called request_firmware or
->> + * request_firmware_nowait successfully before, their firmware
->> + * name will be recored into these devices' devres link list, so
->> + * device_cache_firmwares can call cache_firmware() to cache these
->> + * firmwares for these devices, then these device drivers can load
->> + * their firmwares easily at any time even when system is not ready
->> + * to complete loading firmwares.
->
-> This is a one looong sentence. Please simplify.
->
->> + *
->> + */
->> +static void device_cache_firmwares(void)
->> +{
->> +     struct firmware_cache *fwc = &fw_cache;
->> +     struct device *dev;
->> +     DEFINE_WAIT(wait);
->> +
->> +     pr_debug("%s\n", __func__);
->
-> No real need for that debug printk since you have one below.
-
-Suppose dev_cache_firmware hangs, you will see nothing without
-the above line.
-
->
->> +
->> +     device_pm_lock();
->> +     list_for_each_entry(dev, &dpm_list, power.entry)
->> +             dev_cache_firmware(dev);
->> +     device_pm_unlock();
->> +
->> +     pr_debug("%s firmwares %d\n", __func__, fwc->cnt);
->> +
->> +     /* wait for completion of caching firmware for all devices */
->> +     spin_lock(&fwc->name_lock);
->> +     for (;;) {
->> +             prepare_to_wait(&fwc->wait_queue, &wait,
->> +                             TASK_UNINTERRUPTIBLE);
->> +             if (!fwc->cnt)
->> +                     break;
->> +
->> +             spin_unlock(&fwc->name_lock);
->> +
->> +             schedule();
->> +
->> +             spin_lock(&fwc->name_lock);
->> +     }
->> +     spin_unlock(&fwc->name_lock);
->> +     finish_wait(&fwc->wait_queue, &wait);
->> +}
->> +
->> +/**
->> + * device_uncache_firmwares - uncache devices' firmwares
->> + *
->> + * uncache all firmwares which have been cached successfully
->> + * by device_uncache_firmwares
->
->     "by device_cache_firmwares earlier."
->
->> + *
->> + */
->> +static void device_uncache_firmwares(void)
->> +{
->> +     pr_debug("%s\n", __func__);
->> +     __device_uncache_firmwares();
->> +}
->> +
->
-> Ok, the rest of the patches tomorrow.
-
-Thank you for review.
-
-Thanks,
---
-Ming Lei
