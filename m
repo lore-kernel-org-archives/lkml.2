@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab2GZSdc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 14:33:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4321 "EHLO mx1.redhat.com"
+	id S1752343Ab2GZSeU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 14:34:20 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3463 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab2GZSdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 14:33:31 -0400
-Message-ID: <50118D16.4050603@redhat.com>
-Date: Thu, 26 Jul 2012 14:31:50 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz>
-In-Reply-To: <20120720143635.GE12434@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752228Ab2GZSdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 14:33:41 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org
+Subject: [PATCH] cx231xx: Declare MODULE_FIRMWARE usage
+Date: Thu, 26 Jul 2012 12:34:22 -0600
+Message-Id: <1343327662-95251-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 10:36 AM, Michal Hocko wrote:
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: linux-media@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/media/video/cx231xx/cx231xx-417.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> --- a/arch/x86/mm/hugetlbpage.c
-> +++ b/arch/x86/mm/hugetlbpage.c
-> @@ -81,7 +81,12 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
->   		if (saddr) {
->   			spte = huge_pte_offset(svma->vm_mm, saddr);
->   			if (spte) {
-> -				get_page(virt_to_page(spte));
-> +				struct page *spte_page = virt_to_page(spte);
-> +				if (!is_hugetlb_pmd_page_valid(spte_page)) {
+diff --git a/drivers/media/video/cx231xx/cx231xx-417.c b/drivers/media/video/cx231xx/cx231xx-417.c
+index ce2f622..b024e51 100644
+--- a/drivers/media/video/cx231xx/cx231xx-417.c
++++ b/drivers/media/video/cx231xx/cx231xx-417.c
+@@ -2193,3 +2193,5 @@ int cx231xx_417_register(struct cx231xx *dev)
+ 
+ 	return 0;
+ }
++
++MODULE_FIRMWARE(CX231xx_FIRM_IMAGE_NAME);
+-- 
+1.7.9.5
 
-What prevents somebody else from marking the hugetlb
-pmd invalid, between here...
-
-> +					spte = NULL;
-> +					continue;
-> +				}
-
-... and here?
-
-> +				get_page(spte_page);
->   				break;
->   			}
-
-I think need to take the refcount before checking whether
-the hugetlb pmd is still valid.
-
-Also, disregard my previous email in this thread, I just
-read Mel's detailed explanation and wrapped my brain
-around the bug :)
