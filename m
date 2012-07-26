@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab2GZLWn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:22:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45443 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752595Ab2GZLWj (ORCPT
+	id S1752692Ab2GZLXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:23:11 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51624 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab2GZLXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:22:39 -0400
-Date: Thu, 26 Jul 2012 12:22:37 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-Cc: lrg@ti.com, balbi@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] drivers: regulator: add error checks for exported
- APIs
-Message-ID: <20120726112237.GV3099@opensource.wolfsonmicro.com>
-References: <1343298603-25442-1-git-send-email-kishon@ti.com>
- <20120726111030.GU3099@opensource.wolfsonmicro.com>
- <CAAe_U6LhrBnsU9nC0yXqyNmEjmDfrvYP5BYhAOhJiGxLZbk_Qw@mail.gmail.com>
+	Thu, 26 Jul 2012 07:23:08 -0400
+Message-ID: <50112890.1000901@linux.vnet.ibm.com>
+Date: Thu, 26 Jul 2012 16:52:56 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aZ/0/p6gSDXwzas7"
-Content-Disposition: inline
-In-Reply-To: <CAAe_U6LhrBnsU9nC0yXqyNmEjmDfrvYP5BYhAOhJiGxLZbk_Qw@mail.gmail.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Alan Stern <stern@rowland.harvard.edu>, mingo@kernel.org,
+        peterz@infradead.org, rusty@rustcorp.com.au,
+        paulmck@linux.vnet.ibm.com, namhyung@kernel.org, tj@kernel.org,
+        rjw@sisk.pl, nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
+ during CPU hotplug
+References: <Pine.LNX.4.44L0.1207251054420.2008-100000@iolanthe.rowland.org> <50101733.4030205@linux.vnet.ibm.com> <alpine.LFD.2.02.1207251758340.32033@ionos>
+In-Reply-To: <alpine.LFD.2.02.1207251758340.32033@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072611-5564-0000-0000-000003C104EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/25/2012 10:00 PM, Thomas Gleixner wrote:
+> On Wed, 25 Jul 2012, Srivatsa S. Bhat wrote:
+>> On 07/25/2012 08:27 PM, Alan Stern wrote:
+>> One of the other ideas to improve the hotplug notifier stuff that came up during some
+>> of the discussions was to implement explicit dependency tracking between the notifiers
+>> and perhaps get rid of the priority numbers that are currently being used to provide
+>> some sort of ordering between the callbacks. Links to some of the related discussions
+>> are provided below.
+> 
+> The current code which brings up/down a CPU (mostly architecture
+> specific) code is comnpletely asymetric.
+> 
+> We really want a fully symetric state machine here, which also gives
+> us the proper invocation points for the other subsystems callbacks.
+> 
+> While I thought about having a full dependency tracking system, I'm
+> quite convinced by now, that hotplug is a rather linear sequence which
+> does not provide much room for paralell setup/teardown.
+> 
+> At least we should start with a simple linear chain.
+> 
+> The problem with the current notifiers is, that we only have ordering
+> for a few specific callbacks, but we don't have the faintest idea in
+> which order all other random stuff is brought up and torn down.
+> 
+> So I started experimenting with the following:
+> 
+> struct hotplug_event {
+>        int (*bring_up)(unsigned int cpu);
+>        int (*tear_down)(unsigned int cpu);
+> };
+> 
+> enum hotplug_events {
+>      CPU_HOTPLUG_START,
+>      CPU_HOTPLUG_CREATE_THREADS,
+>      CPU_HOTPLUG_INIT_TIMERS,
+>      ...
+>      CPU_HOTPLUG_KICK_CPU,
+>      ...
+>      CPU_HOTPLUG_START_THREADS,
+>      ...
+>      CPU_HOTPLUG_SET_ONLINE,
+>      ...
+>      CPU_HOTPLUG_MAX_EVENTS,
+> };
+> 
+> Now I have two arrays:
+> 
+> struct hotplug_event hotplug_events_bp[CPU_HOTPLUG_MAX_EVENTS];
+> struct hotplug_event hotplug_events_ap[CPU_HOTPLUG_MAX_EVENTS];
+>    
+> The _bp one is the list of events which are executed on the active cpu
+> and the _ap ones are those executed on the hotplugged cpu.
+> 
+> The core code advances the events in sync steps, so both BP and AP can
+> issue a stop on the process and cause a rollback.
+> 
+> Most of the callbacks can be added to the arrays at compile time, just
+> the stuff which is in modules requires an register/unregister
+> interface.
+> 
+> Though in any case the enum gives us a very explicit ordering of
+> setup/teardown, so rollback or partial online/offline should be simple
+> to achieve.
+>
 
---aZ/0/p6gSDXwzas7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Is there anything I can help you with, in implementing this new design?
 
-On Thu, Jul 26, 2012 at 04:49:21PM +0530, ABRAHAM, KISHON VIJAY wrote:
-> On Thu, Jul 26, 2012 at 4:40 PM, Mark Brown
+Regards,
+Srivatsa S. Bhat
 
-> > Also NULL is a valid regulator (though we don't use it right now).
-
-> I see a lot of dereferencing *regulator*. How is it supposed to work
-> when *regulator* is NULL?
-
-Like I say we don't use this now but the spec in the API is that
-anything except an error pointer is valid.
-
---aZ/0/p6gSDXwzas7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQESg0AAoJEBus8iNuMP3dXugP/1TwWoHak6NzaC/EP2LsUZJT
-y0Q97UgstW5qz3zosvYp+F5175Aj2rwW3p4MOFirIucwaKj6NlP6M54Q2sDqVYy9
-UMR3kIp0F7UlPBEhr0qyMComGCByVdsm+xAm/Xt/LoWk8O4oZLp0UI6/kKEP4Sg+
-HPMpXdRww3Z0HlI+cwRZXN8eCWeUNF/nxWTfqCn5OuQkhhD5zKj1ISXEac1mQYJ2
-A/sRywPUdZP74cWeUx5SMtZI5c112qTYaigZIb+HZ7+X/ii46KEUPzzdV/PF23Nd
-hMgp7Rt09b4UeC5UMVCHiykXQyei483KRWVEXMPQZM4s5qOmfZaL1HAOmta91Ytj
-5dK/NZvPPTG3jgHaYTGo7HRJ5b4LS42XCj97GVUlNsTj7Oi51Jb9QPyLPiNzJTGu
-3WB8kSvjryFfgfY9w7LFKyP+ZwccX89P4tsdjUSZ1sZSNKi4K/BOxS7A7ZtMHURJ
-K/1GzLOkyaZaut9NkRIcuUWxjmZlU18/YEw+iB4fp0Rqp4UU2eORoMPe39t/nbw0
-5evAvUOL6zgBOtwijJnb6GlTaca9EJugf9nWz0QCFV0sfwoVbJ/MwCZYbyB2ji7V
-E3b/V0004p3SN5ypb7tC1367X8RyH+27tOwhWJm5BGCsQGgRj5YsDQXGJIHXvWlb
-/dbXYdbQLvzV+yWJqO69
-=qmXn
------END PGP SIGNATURE-----
-
---aZ/0/p6gSDXwzas7--
