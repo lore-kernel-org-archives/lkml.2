@@ -1,58 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab2GZBma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 21:42:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab2GZBm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 21:42:29 -0400
-Date: Wed, 25 Jul 2012 21:42:14 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, law@redhat.com,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] posix_types.h: Cleanup stale __NFDBITS and related
- definitions
-Message-ID: <20120726014213.GB2356@zod.bos.redhat.com>
-References: <20120725144033.GK10534@zod.bos.redhat.com>
- <1343258796.5132.164.camel@deadeye.wl.decadent.org.uk>
- <20120726012713.GA2356@zod.bos.redhat.com>
- <20120726013322.GB3532@burratino>
+	id S1752060Ab2GZBzU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 21:55:20 -0400
+Received: from mail-hostigation.familyross.net ([69.85.93.112]:42784 "EHLO
+	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506Ab2GZBzU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 21:55:20 -0400
+Message-ID: <5010A386.4080209@familyross.net>
+Date: Wed, 25 Jul 2012 18:55:18 -0700
+From: Kevin Ross <kevin@familyross.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120726013322.GB3532@burratino>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Phil Turmel <philip@turmel.org>
+CC: linux-kernel@vger.kernel.org, linux-raid <linux-raid@vger.kernel.org>
+Subject: Re: RAID extremely slow
+References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org>
+In-Reply-To: <501096C3.5060700@turmel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 08:33:22PM -0500, Jonathan Nieder wrote:
-> Hi,
-> 
-> Josh Boyer wrote:
-> 
-> > Indeed.  However, I believe Linus pointed out that even before
-> > 8b3d1cda4f5f the macros that were removed weren't actually used.
-> > It's likely safe to go back further than just 3.4.
-> >
-> > I'll verify again in the morning and include the furthest back we could
-> > remove these.  For now, let's go with what you suggest to be safe.
-> 
-> I may be in the minority in having this view or missing a subtlety,
-> but shouldn't the question be the furthest back we need to remove
-> these rather than the furthest back we could?
+Thank you very much for taking the time to look into this.
 
-That should be the question, yes.  The answer is:
+On 07/25/2012 06:00 PM, Phil Turmel wrote:
+> Piles of small reads  scattered across multiple drives, and a
+> concentration of queued writes to /dev/sda.  What's on /dev/sda?
+> It's not a member of the raid, so it must be some other system task
+> involved.
 
-However far back people wish to use older stable kernel-headers to build
-applications against newer glibc.
+/dev/sda1 is the root filesystem.  The writes were most likely by MySQL, 
+but I would have to run iotop to be sure.
 
-It isn't a clear answer.  Some people stick with older kernels while
-they update their userspace.  I was thinking along the lines of the 3.0
-kernel being the oldest I'd check for but if people think we shouldn't
-bother than that's fine by me.
+> [ The output of "lsdrv" [1] might be useful here, along with
+> "mdadm -D /dev/md0" and "mdadm -E /dev/[b-j]" ]
 
-josh
+Here you go: http://pastebin.ca/2174740
+
+> MythTV is trying to flush recorded video to disk, I presume.  Sync is
+> known to cause stalls--a great deal of work is on-going to improve
+> this.  How old is this kernel?
+
+After rebooting, MythTV is currently recording two shows, and the resync 
+is running at full speed.
+
+# cat /proc/mdstat
+Personalities : [raid6] [raid5] [raid4]
+md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4] 
+sdf1[3] sdg1[8] sdj1[1]
+       6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 
+[9/9] [UUUUUUUUU]
+       [=>...................]  resync =  9.3% (91363840/976758784) 
+finish=1434.3min speed=10287K/sec
+
+unused devices: <none>
+
+atop shows the avio of all the drives to be less than 1ms, where before 
+they were much higher.  It will run for a couple days under load just 
+fine, and then it will come to a halt.
+
+It's a 3.2.21 kernel.  I'm running Debian Testing, and the exact Debian 
+package version is:
+
+ii  linux-image-3.2.0-3-686-pae                    
+3.2.21-3                                       Linux 3.2 for modern PCs
+
+>
+>> [51000.672258]  [<c12c409f>] ? sysenter_do_call+0x12/0x28
+>> [51000.672261]  [<c12b0000>] ? quirk_usb_early_handoff+0x4a9/0x522
+>>
+>> Here is some other possibly relevant info:
+>>
+>> # cat /proc/mdstat
+>> Personalities : [raid6] [raid5] [raid4]
+>> md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4]
+>> sdf1[3] sdg1[8] sdj1[1]
+>>        6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 [9/9]
+>> [UUUUUUUUU]
+>>        [==========>..........]  resync = 51.3% (501954432/976758784)
+>> finish=28755.6min speed=275K/sec
+> Is this resync a weekly check, or did something else trigger it?
+
+This is not a scheduled check.  It was triggered by, I believe, an 
+unclean shutdown.  An unclean shutdown will trigger a resync.  I don't 
+think it used to do this, but I could be remembering wrong.
+
+>
+>> unused devices:<none>
+>>
+>> # cat /proc/sys/dev/raid/speed_limit_min
+>> 10000
+> MD is unable to reach its minimum rebuild rate while other system
+> activity is ongoing.  You might want to lower this number to see if that
+> gets you out of the stalls.
+>
+> Or temporarily shut down mythtv.
+
+I will try lowering those numbers next time this happens, which will 
+probably be within the next day or two.  That's about how often this 
+happens.
+
+>> # cat /proc/sys/dev/raid/speed_limit_max
+>> 200000
+>>
+>> Thanks in advance!
+>> -- Kevin
+> HTH,
+>
+> Phil
+>
+> [1] http://github.com/pturmel/lsdrv
+>
+
+Thanks!
+-- Kevin
+
