@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab2GZIwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 04:52:16 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49280 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751279Ab2GZIwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 04:52:15 -0400
-Message-ID: <1343292731.3115.17.camel@dabdike>
-Subject: Re: [PATCH 1/2] virtio-scsi: fix parsing of hotplug/hot-unplug LUN
- number
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Thu, 26 Jul 2012 12:52:11 +0400
-In-Reply-To: <1342454751-8950-2-git-send-email-pbonzini@redhat.com>
-References: <1342454751-8950-1-git-send-email-pbonzini@redhat.com>
-	 <1342454751-8950-2-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1751720Ab2GZI4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:56:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62090 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab2GZI4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 04:56:21 -0400
+Message-ID: <5011062F.3080505@redhat.com>
+Date: Thu, 26 Jul 2012 11:56:15 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] KVM: remove dummy pages
+References: <5010C008.4030304@linux.vnet.ibm.com> <5010C083.30102@linux.vnet.ibm.com>
+In-Reply-To: <5010C083.30102@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-16 at 18:05 +0200, Paolo Bonzini wrote:
-> Hotplug/hot-unplug of a LUN whose number is greater than 255
-> uses the "flat" format for LUNs, which has bit 14 set.  Clear
-> the bit when parsing the event structs.
+On 07/26/2012 06:58 AM, Xiao Guangrong wrote:
+> Currently, kvm allocates some pages and use them as error indicators,
+> it wastes memory and is not good for scalability
 > 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  drivers/scsi/virtio_scsi.c |    8 ++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
+> Base on Avi's suggestion, we use the error codes instead of these pages
+> to indicate the error conditions
 > 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index c7030fb..c937232 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -252,13 +252,19 @@ static void virtscsi_cancel_event_work(struct virtio_scsi *vscsi)
->  		cancel_work_sync(&vscsi->event_list[i].work);
->  }
->  
-> +static unsigned int virtscsi_get_lun(u8 *lun_bytes)
+> 
+> +static pfn_t get_bad_pfn(void)
 > +{
-> +	unsigned int lun = (lun_bytes[2] << 8) | lun_bytes[3];
-> +	return lun & 16383;
+> +	return -ENOENT;
+> +}
+> +
+> +pfn_t get_fault_pfn(void)
+> +{
+> +	return -EFAULT;
+> +}
+> +EXPORT_SYMBOL_GPL(get_fault_pfn);
+> +
+> +static pfn_t get_hwpoison_pfn(void)
+> +{
+> +	return -EHWPOISON;
 > +}
 > +
 
-Why are you rolling your own incomplete version of scsilun_to_int here?
+Would be better as #defines
 
-James
+>  int is_hwpoison_pfn(pfn_t pfn)
+>  {
+> -	return pfn == hwpoison_pfn;
+> +	return pfn == -EHWPOISON;
+>  }
+>  EXPORT_SYMBOL_GPL(is_hwpoison_pfn);
+> 
+>  int is_noslot_pfn(pfn_t pfn)
+>  {
+> -	return pfn == bad_pfn;
+> +	return pfn == -ENOENT;
+>  }
+>  EXPORT_SYMBOL_GPL(is_noslot_pfn);
+> 
+>  int is_invalid_pfn(pfn_t pfn)
+>  {
+> -	return pfn == hwpoison_pfn || pfn == fault_pfn;
+> +	return !is_noslot_pfn(pfn) && is_error_pfn(pfn);
+>  }
+>  EXPORT_SYMBOL_GPL(is_invalid_pfn);
+> 
+
+So is_*_pfn() could go away and be replaced by ==.
+
+> 
+>  EXPORT_SYMBOL_GPL(gfn_to_page);
+> 
+>  void kvm_release_page_clean(struct page *page)
+>  {
+> -	kvm_release_pfn_clean(page_to_pfn(page));
+> +	if (!is_error_page(page))
+> +		kvm_release_pfn_clean(page_to_pfn(page));
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_release_page_clean);
+
+Note, we can remove calls to kvm_release_page_clean() from error paths
+now, so in the future we can drop the test.
+
+Since my comments are better done as a separate patch, I applied all
+three patches.  Thanks!
+
+-- 
+error compiling committee.c: too many arguments to function
 
 
