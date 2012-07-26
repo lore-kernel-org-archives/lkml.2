@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab2GZTTz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 15:19:55 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:14528 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab2GZTTy (ORCPT
+	id S1752617Ab2GZTUs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 15:20:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51620 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab2GZTUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 15:19:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6784"; a="214873497"
-Message-ID: <50119856.2020206@codeaurora.org>
-Date: Thu, 26 Jul 2012 15:19:50 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 26 Jul 2012 15:20:47 -0400
+Date: Thu, 26 Jul 2012 12:20:33 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: No big TTY/serial patch merge for 3.6-rc1
+Message-ID: <20120726192033.GA3488@kroah.com>
+References: <20120726190814.GA2194@kroah.com>
+ <5011969D.5030902@suse.cz>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        linaro-dev@lists.linaro.org, Ian.Campbell@citrix.com, arnd@arndb.de,
-        konrad.wilk@oracle.com, catalin.marinas@arm.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 02/24] xen/arm: hypercalls
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5011969D.5030902@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefano,
-
-On 07/26/2012 11:33 AM, Stefano Stabellini wrote:
-> Use r12 to pass the hypercall number to the hypervisor.
+On Thu, Jul 26, 2012 at 09:12:29PM +0200, Jiri Slaby wrote:
+> On 07/26/2012 09:08 PM, Greg KH wrote:
+> > Jiri, I know this postpones your patches from being merged, sorry about
+> > that, but this gives us a few more months to ensure that they are
+> > working properly :)
 > 
-> We need a register to pass the hypercall number because we might not
-> know it at compile time and HVC only takes an immediate argument.
+> Fine with me.
+> 
+> When should I send you 3.7 material I have in my local queue -- now or
+> after 3.6-rc1 is out as usual?
 
-You're not going to JIT assemble the appropriate HVC instruction? Darn.
+After 3.6-rc1 is out is good, as I'll just be ignoring any new stuff
+until then, with the exception of patches to fix build errors in the
+tty-next tree :)
 
-How many call numbers are there, though? 8? It seems like it'd be
-reasonable to take the approach that seems to be favored for MRC/MCR
-instructions, using a function containing switch statement that chooses
-between several inline assembly instructions based off an enum passed to
-the function. See for example arch_timer_reg_read in
-arch/arm/kernel/arch_timer.c.
+thanks,
 
-Regards,
-Christopher
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+greg k-h
