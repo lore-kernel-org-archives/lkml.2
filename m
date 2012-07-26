@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab2GZXKZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 19:10:25 -0400
-Received: from mail20.dotsterhost.com ([66.11.232.73]:52841 "EHLO
-	mail20.dotsterhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab2GZXKY (ORCPT
+	id S1753079Ab2GZXSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 19:18:51 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:50981 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043Ab2GZXSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 19:10:24 -0400
-Date: Thu, 26 Jul 2012 16:10:22 -0700
-From: "Mark A. Greer" <mgreer@animalcreek.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org
-Subject: Re: [GIT PULL 00/15] arm-soc: changes for v3.6
-Message-ID: <20120726231022.GC20413@animalcreek.com>
-References: <1343075561-17446-1-git-send-email-arnd@arndb.de>
- <CA+55aFyObNFgsaVOsjVOcH+aLjDyOgcqpvckM29T3dvugekVwg@mail.gmail.com>
- <201207240751.39111.arnd@arndb.de>
- <alpine.DEB.2.00.1207241436570.10781@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1207241436570.10781@utopia.booyaka.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 26 Jul 2012 19:18:49 -0400
+X-Greylist: delayed 4143 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 19:18:49 EDT
+From: Jaeden Amero <jaeden.amero@ni.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jaeden Amero <jaeden.amero@ni.com>
+Subject: [PATCH] n_tty: Don't lose characters when PARMRK is enabled
+Date: Thu, 26 Jul 2012 17:12:31 -0500
+Message-Id: <1343340751-1942-1-git-send-email-jaeden.amero@ni.com>
+X-Mailer: git-send-email 1.7.11.1
+In-Reply-To: <y>
+References: <y>
+X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.2FP3|July 10, 2011) at
+ 07/26/2012 05:09:45 PM,
+	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.2FP3|July 10, 2011) at
+ 07/26/2012 05:09:45 PM,
+	Serialize complete at 07/26/2012 05:09:45 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-26_06:2012-07-26,2012-07-26,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 02:51:35PM -0600, Paul Walmsley wrote:
-> Hi
-> 
-> On Tue, 24 Jul 2012, Arnd Bergmann wrote:
-> 
-> > On Tuesday 24 July 2012, Linus Torvalds wrote:
-> > 
-> > > In your "for-linus" branch, "&mpu_3xxx_clkdm" remains in the
-> > > clockdomains_common[] array. In my merge, it is gone. But I think I
-> > > did the merge correctly, and you did it wrong. HOWEVER, I don't know
-> > > the code, maybe there is some subtle reason why you did it like you
-> > > did.
-> > 
-> > Yes, I think you are right now that I look at it again. Paul Walmsley
-> > can have another look at the merge and send an update if we are both
-> > missing something now.
-> 
-> Linus' merge is correct.
+When PARMRK is set and large transfers of characters that will get
+marked are being received, n_tty could drop data silently (i.e.
+without reporting any error to the client). This is because
+characters have the potential to take up to three bytes in the line
+discipline (when they get marked with parity or framing errors), but
+the amount of free space reported to tty_buffer flush_to_ldisc (via
+tty->receive_room) is based on the pre-marked data size.
 
-FWIW, it looks right to me too.
+With this patch, the n_tty layer will no longer assume that each byte
+will only take up one byte in the line discipline. Instead, it will
+make an overly conservative estimate that each byte will take up
+three bytes in the line discipline when PARMRK is set.
 
-Thanks,
+Signed-off-by: Jaeden Amero <jaeden.amero@ni.com>
+---
+ drivers/tty/n_tty.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-Mark
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 101790c..5299cda 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -92,10 +92,20 @@ static inline int tty_put_user(struct tty_struct *tty, unsigned char x,
+ 
+ static void n_tty_set_room(struct tty_struct *tty)
+ {
+-	/* tty->read_cnt is not read locked ? */
+-	int	left = N_TTY_BUF_SIZE - tty->read_cnt - 1;
++	int left;
+ 	int old_left;
+ 
++	/* tty->read_cnt is not read locked ? */
++	if (I_PARMRK(tty))
++	{
++		/* Multiply read_cnt by 3, since each byte might take up to
++		 * three times as many spaces when PARMRK is set (depending on
++		 * its flags, e.g. parity error). */
++		left = N_TTY_BUF_SIZE - tty->read_cnt * 3 - 1;
++	}
++	else
++		left = N_TTY_BUF_SIZE - tty->read_cnt - 1;
++
+ 	/*
+ 	 * If we are doing input canonicalization, and there are no
+ 	 * pending newlines, let characters through without limit, so
+-- 
+1.7.11.1
+
