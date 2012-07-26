@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab2GZF1Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 01:27:16 -0400
+	id S1751678Ab2GZF1T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 01:27:19 -0400
 Received: from mga14.intel.com ([143.182.124.37]:36914 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751067Ab2GZF1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 01:27:15 -0400
+	id S1751345Ab2GZF1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 01:27:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="127018852"
+   d="scan'208";a="127018856"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org
 Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
         alex.shi@intel.com
-Subject: [PATCH 1/2] sched: recover SD_WAKE_AFFINE in select_task_rq_fair and code clean up
-Date: Thu, 26 Jul 2012 13:27:25 +0800
-Message-Id: <1343280446-24019-1-git-send-email-alex.shi@intel.com>
+Subject: [PATCH 2/2] sched: fix a logical error in select_task_rq_fair
+Date: Thu, 26 Jul 2012 13:27:26 +0800
+Message-Id: <1343280446-24019-2-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1343280446-24019-1-git-send-email-alex.shi@intel.com>
+References: <1343280446-24019-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since power saving code was removed from sched now, the implement
-code is out of service in this function, and even pollute other logical.
-like, 'want_sd' never has chance to be set '0', that remove the effect
-of SD_WAKE_AFFINE here.
+If find_idlest_cpu() return '-1', and sd->child is NULL. The function
+select_task_rq_fair will return -1. That is not the function's purpose.
 
-So, clean up the obsolete code and some other unnecessary code.
+The patch introduced a latest_cpu as temporay varible to store
+find_idlest_cpu() return value, and let new_cpu to store the latest
+workable cpu. If find_idlest_cpu() doesn't find idlest cpu, we still
+have a latest workable cpu.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c |   32 +++-----------------------------
- 1 files changed, 3 insertions(+), 29 deletions(-)
+ kernel/sched/fair.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 22321db..8a1db69 100644
+index 8a1db69..7e4bab48 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2686,7 +2686,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
- 	int want_affine = 0;
--	int want_sd = 1;
- 	int sync = wake_flags & WF_SYNC;
+@@ -2730,6 +2730,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 		int load_idx = sd->forkexec_idx;
+ 		struct sched_group *group;
+ 		int weight;
++		int latest_cpu;
  
- 	if (p->nr_cpus_allowed == 1)
-@@ -2704,48 +2703,23 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 		if (!(sd->flags & sd_flag)) {
+ 			sd = sd->child;
+@@ -2745,8 +2746,12 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
  			continue;
+ 		}
  
- 		/*
--		 * If power savings logic is enabled for a domain, see if we
--		 * are not overloaded, if so, don't balance wider.
--		 */
--		if (tmp->flags & (SD_PREFER_LOCAL)) {
--			unsigned long power = 0;
--			unsigned long nr_running = 0;
--			unsigned long capacity;
--			int i;
--
--			for_each_cpu(i, sched_domain_span(tmp)) {
--				power += power_of(i);
--				nr_running += cpu_rq(i)->cfs.nr_running;
--			}
--
--			capacity = DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE);
--
--			if (nr_running < capacity)
--				want_sd = 0;
--		}
--
--		/*
- 		 * If both cpu and prev_cpu are part of this domain,
- 		 * cpu is a valid SD_WAKE_AFFINE target.
- 		 */
- 		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
- 		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
- 			affine_sd = tmp;
--			want_affine = 0;
--		}
--
--		if (!want_sd && !want_affine)
- 			break;
-+		}
- 
- 		if (!(tmp->flags & sd_flag))
+-		new_cpu = find_idlest_cpu(group, p, cpu);
+-		if (new_cpu == -1 || new_cpu == cpu) {
++		latest_cpu = find_idlest_cpu(group, p, cpu);
++
++		if (latest_cpu != -1)
++			new_cpu = latest_cpu;
++
++		if (latest_cpu == -1 || latest_cpu == cpu) {
+ 			/* Now try balancing at a lower domain level of cpu */
+ 			sd = sd->child;
  			continue;
- 
--		if (want_sd)
--			sd = tmp;
-+		sd = tmp;
- 	}
- 
- 	if (affine_sd) {
--		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
-+		if (wake_affine(affine_sd, p, sync))
- 			prev_cpu = cpu;
- 
- 		new_cpu = select_idle_sibling(p, prev_cpu);
 -- 
 1.7.5.4
 
