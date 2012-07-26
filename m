@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab2GZXtg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 19:49:36 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:54557 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752338Ab2GZXrx (ORCPT
+	id S1753536Ab2GZXtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 19:49:35 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:60351 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753343Ab2GZXsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 19:47:53 -0400
+	Thu, 26 Jul 2012 19:48:39 -0400
 From: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
 To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
 Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com,
         gregkh@linuxfoundation.org,
         "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Subject: [vmw_vmci 01/11] Apply VMCI context code
-Date: Thu, 26 Jul 2012 16:39:30 -0700
-Message-Id: <1343345980-32397-2-git-send-email-astiegmann@vmware.com>
+Subject: [vmw_vmci 08/11] Apply VMCI queue pairs
+Date: Thu, 26 Jul 2012 16:39:37 -0700
+Message-Id: <1343345980-32397-9-git-send-email-astiegmann@vmware.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
 References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
@@ -22,23 +22,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Context code maintains state for vmci and allows the driver
-to communicate with multiple VMs.
+VMCI queue pairs allow for bi-directional ordered communication between
+host and guests.
 
 Signed-off-by: Andrew Stiegmann (stieg) <astiegmann@vmware.com>
 ---
- drivers/misc/vmw_vmci/vmci_context.c | 1269 ++++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_context.h |  161 +++++
- 2 files changed, 1430 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_context.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_context.h
+ drivers/misc/vmw_vmci/vmci_queue_pair.c | 3548 +++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_queue_pair.h |  182 ++
+ 2 files changed, 3730 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_queue_pair.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_queue_pair.h
 
-diff --git a/drivers/misc/vmw_vmci/vmci_context.c b/drivers/misc/vmw_vmci/vmci_context.c
+diff --git a/drivers/misc/vmw_vmci/vmci_queue_pair.c b/drivers/misc/vmw_vmci/vmci_queue_pair.c
 new file mode 100644
-index 0000000..46faf10
+index 0000000..11d111b
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_context.c
-@@ -0,0 +1,1269 @@
++++ b/drivers/misc/vmw_vmci/vmci_queue_pair.c
+@@ -0,0 +1,3548 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -58,1264 +58,3543 @@ index 0000000..46faf10
 + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 + */
 +
-+#include <linux/highmem.h>
++#include <linux/device-mapper.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/sched.h>
++#include <linux/semaphore.h>
++#include <linux/socket.h>
 +#include <linux/vmw_vmci_api.h>
 +#include <linux/vmw_vmci_defs.h>
 +
 +#include "vmci_common_int.h"
 +#include "vmci_context.h"
 +#include "vmci_datagram.h"
-+#include "vmci_doorbell.h"
 +#include "vmci_driver.h"
 +#include "vmci_event.h"
++#include "vmci_handle_array.h"
++#include "vmci_hash_table.h"
 +#include "vmci_queue_pair.h"
++#include "vmci_resource.h"
++#include "vmci_route.h"
 +
 +/*
-+ * List of current VMCI contexts.
++ * In the following, we will distinguish between two kinds of VMX processes -
++ * the ones with versions lower than VMCI_VERSION_NOVMVM that use specialized
++ * VMCI page files in the VMX and supporting VM to VM communication and the
++ * newer ones that use the guest memory directly. We will in the following
++ * refer to the older VMX versions as old-style VMX'en, and the newer ones as
++ * new-style VMX'en.
++ *
++ * The state transition datagram is as follows (the VMCIQPB_ prefix has been
++ * removed for readability) - see below for more details on the transtions:
++ *
++ *            --------------  NEW  -------------
++ *            |                                |
++ *           \_/                              \_/
++ *     CREATED_NO_MEM <-----------------> CREATED_MEM
++ *            |    |                           |
++ *            |    o-----------------------o   |
++ *            |                            |   |
++ *           \_/                          \_/ \_/
++ *     ATTACHED_NO_MEM <----------------> ATTACHED_MEM
++ *            |                            |   |
++ *            |     o----------------------o   |
++ *            |     |                          |
++ *           \_/   \_/                        \_/
++ *     SHUTDOWN_NO_MEM <----------------> SHUTDOWN_MEM
++ *            |                                |
++ *            |                                |
++ *            -------------> gone <-------------
++ *
++ * In more detail. When a VMCI queue pair is first created, it will be in the
++ * VMCIQPB_NEW state. It will then move into one of the following states:
++ *
++ * - VMCIQPB_CREATED_NO_MEM: this state indicates that either:
++ *
++ *     - the created was performed by a host endpoint, in which case there is
++ *       no backing memory yet.
++ *
++ *     - the create was initiated by an old-style VMX, that uses
++ *       vmci_qp_broker_set_page_store to specify the UVAs of the queue pair at
++ *       a later point in time. This state can be distinguished from the one
++ *       above by the context ID of the creator. A host side is not allowed to
++ *       attach until the page store has been set.
++ *
++ * - VMCIQPB_CREATED_MEM: this state is the result when the queue pair
++ *     is created by a VMX using the queue pair device backend that
++ *     sets the UVAs of the queue pair immediately and stores the
++ *     information for later attachers. At this point, it is ready for
++ *     the host side to attach to it.
++ *
++ * Once the queue pair is in one of the created states (with the exception of
++ * the case mentioned for older VMX'en above), it is possible to attach to the
++ * queue pair. Again we have two new states possible:
++ *
++ * - VMCIQPB_ATTACHED_MEM: this state can be reached through the following
++ *   paths:
++ *
++ *     - from VMCIQPB_CREATED_NO_MEM when a new-style VMX allocates a queue
++ *       pair, and attaches to a queue pair previously created by the host side.
++ *
++ *     - from VMCIQPB_CREATED_MEM when the host side attaches to a queue pair
++ *       already created by a guest.
++ *
++ *     - from VMCIQPB_ATTACHED_NO_MEM, when an old-style VMX calls
++ *       vmci_qp_broker_set_page_store (see below).
++ *
++ * - VMCIQPB_ATTACHED_NO_MEM: If the queue pair already was in the
++ *     VMCIQPB_CREATED_NO_MEM due to a host side create, an old-style VMX will
++ *     bring the queue pair into this state. Once vmci_qp_broker_set_page_store
++ *     is called to register the user memory, the VMCIQPB_ATTACH_MEM state
++ *     will be entered.
++ *
++ * From the attached queue pair, the queue pair can enter the shutdown states
++ * when either side of the queue pair detaches. If the guest side detaches
++ * first, the queue pair will enter the VMCIQPB_SHUTDOWN_NO_MEM state, where
++ * the content of the queue pair will no longer be available. If the host
++ * side detaches first, the queue pair will either enter the
++ * VMCIQPB_SHUTDOWN_MEM, if the guest memory is currently mapped, or
++ * VMCIQPB_SHUTDOWN_NO_MEM, if the guest memory is not mapped
++ * (e.g., the host detaches while a guest is stunned).
++ *
++ * New-style VMX'en will also unmap guest memory, if the guest is
++ * quiesced, e.g., during a snapshot operation. In that case, the guest
++ * memory will no longer be available, and the queue pair will transition from
++ * *_MEM state to a *_NO_MEM state. The VMX may later map the memory once more,
++ * in which case the queue pair will transition from the *_NO_MEM state at that
++ * point back to the *_MEM state. Note that the *_NO_MEM state may have changed,
++ * since the peer may have either attached or detached in the meantime. The
++ * values are laid out such that ++ on a state will move from a *_NO_MEM to a
++ * *_MEM state, and vice versa.
 + */
-+static struct {
++
++/*
++ * VMCIMemcpy{To,From}QueueFunc() prototypes.  Functions of these
++ * types are passed around to enqueue and dequeue routines.  Note that
++ * often the functions passed are simply wrappers around memcpy
++ * itself.
++ *
++ * Note: In order for the memcpy typedefs to be compatible with the VMKernel,
++ * there's an unused last parameter for the hosted side.  In
++ * ESX, that parameter holds a buffer type.
++ */
++typedef int VMCIMemcpyToQueueFunc(struct vmci_queue *queue,
++				  uint64_t queueOffset, const void *src,
++				  size_t srcOffset, size_t size);
++typedef int VMCIMemcpyFromQueueFunc(void *dest, size_t destOffset,
++				    const struct vmci_queue *queue,
++				    uint64_t queueOffset, size_t size);
++
++/* The Kernel specific component of the struct vmci_queue structure. */
++struct vmci_queue_kern_if {
++	struct page **page;
++	struct page **headerPage;
++	void *va;
++	struct semaphore __mutex;
++	struct semaphore *mutex;
++	bool host;
++	size_t numPages;
++	bool mapped;
++};
++
++/*
++ * This structure is opaque to the clients.
++ */
++struct vmci_qp {
++	struct vmci_handle handle;
++	struct vmci_queue *produceQ;
++	struct vmci_queue *consumeQ;
++	uint64_t produceQSize;
++	uint64_t consumeQSize;
++	uint32_t peer;
++	uint32_t flags;
++	uint32_t privFlags;
++	bool guestEndpoint;
++	uint32_t blocked;
++	wait_queue_head_t event;
++};
++
++enum qp_broker_state {
++	VMCIQPB_NEW,
++	VMCIQPB_CREATED_NO_MEM,
++	VMCIQPB_CREATED_MEM,
++	VMCIQPB_ATTACHED_NO_MEM,
++	VMCIQPB_ATTACHED_MEM,
++	VMCIQPB_SHUTDOWN_NO_MEM,
++	VMCIQPB_SHUTDOWN_MEM,
++	VMCIQPB_GONE
++};
++
++#define QPBROKERSTATE_HAS_MEM(_qpb) (_qpb->state == VMCIQPB_CREATED_MEM || \
++				     _qpb->state == VMCIQPB_ATTACHED_MEM || \
++				     _qpb->state == VMCIQPB_SHUTDOWN_MEM)
++
++/*
++ * In the queue pair broker, we always use the guest point of view for
++ * the produce and consume queue values and references, e.g., the
++ * produce queue size stored is the guests produce queue size. The
++ * host endpoint will need to swap these around. The only exception is
++ * the local queue pairs on the host, in which case the host endpoint
++ * that creates the queue pair will have the right orientation, and
++ * the attaching host endpoint will need to swap.
++ */
++struct qp_entry {
++	struct list_head listItem;
++	struct vmci_handle handle;
++	uint32_t peer;
++	uint32_t flags;
++	uint64_t produceSize;
++	uint64_t consumeSize;
++	uint32_t refCount;
++};
++
++struct qp_broker_entry {
++	struct qp_entry qp;
++	uint32_t createId;
++	uint32_t attachId;
++	enum qp_broker_state state;
++	bool requireTrustedAttach;
++	bool createdByTrusted;
++	bool vmciPageFiles; /* Created by VMX using VMCI page files */
++	struct vmci_queue *produceQ;
++	struct vmci_queue *consumeQ;
++	struct vmci_queue_header savedProduceQ;
++	struct vmci_queue_header savedConsumeQ;
++	VMCIEventReleaseCB wakeupCB;
++	void *clientData;
++	void *localMem;	 /* Kernel memory for local queue pair */
++};
++
++struct qp_guest_endpoint {
++	struct qp_entry qp;
++	uint64_t numPPNs;
++	void *produceQ;
++	void *consumeQ;
++	struct PPNSet ppnSet;
++};
++
++struct qp_list {
 +	struct list_head head;
-+	spinlock_t lock;
-+	spinlock_t firingLock;
-+} ctx_list;
++	struct semaphore mutex;
++};
 +
++static struct qp_list qpBrokerList;
++static struct qp_list qpGuestEndpoints;
 +
-+static void ctx_signal_notify(struct vmci_ctx *context)
-+{
-+	if (context->notify)
-+		*context->notify = true;
-+}
-+
-+static void ctx_clear_notify(struct vmci_ctx *context)
-+{
-+	if (context->notify)
-+		*context->notify = false;
-+}
++#define INVALID_VMCI_GUEST_MEM_ID  0
++#define QPE_NUM_PAGES(_QPE) ((uint32_t)					\
++			     (dm_div_up(_QPE.produceSize, PAGE_SIZE) +	\
++			      dm_div_up(_QPE.consumeSize, PAGE_SIZE) + 2))
 +
 +/*
-+ * If nothing requires the attention of the guest, clears both
-+ * notify flag and call.
++ * Frees kernel VA space for a given queue and its queue header, and
++ * frees physical data pages.
 + */
-+static void ctx_clear_notify_call(struct vmci_ctx *context)
++static void qp_free_queue(void *q,
++			  uint64_t size)
 +{
-+	if (context->pendingDatagrams == 0 &&
-+	    vmci_handle_arr_get_size(context->pendingDoorbellArray) == 0)
-+		ctx_clear_notify(context);
-+}
++	struct vmci_queue *queue = q;
 +
-+/*
-+ * Check if a context with the specified context ID exists.
-+ * Assumes the ctx_list.lock is held.
-+ */
-+static bool ctx_exists_locked(uint32_t cid)
-+{
-+	struct vmci_ctx *context;
++	if (queue) {
++		uint64_t i = dm_div_up(size, PAGE_SIZE);
 +
-+	list_for_each_entry(context, &ctx_list.head, listItem) {
-+		if (context->cid == cid)
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
-+/*
-+ * Sets the context's notify flag iff datagrams are pending for this
-+ * context.  Called from vmci_setup_notify().
-+ */
-+void vmci_ctx_check_signal_notify(struct vmci_ctx *context)
-+{
-+	ASSERT(context);
-+
-+	spin_lock(&ctx_list.lock);
-+	if (context->pendingDatagrams)
-+		ctx_signal_notify(context);
-+	spin_unlock(&ctx_list.lock);
-+}
-+
-+int __init vmci_ctx_init(void)
-+{
-+	INIT_LIST_HEAD(&ctx_list.head);
-+
-+	spin_lock_init(&ctx_list.lock);
-+	spin_lock_init(&ctx_list.firingLock);
-+
-+	return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * Allocates and initializes a VMCI context.
-+ */
-+int vmci_ctx_init_ctx(uint32_t cid,
-+		      uint32_t privFlags,
-+		      uintptr_t eventHnd,
-+		      int userVersion,
-+		      uid_t *user, struct vmci_ctx **outContext)
-+{
-+	struct vmci_ctx *context;
-+	int result;
-+
-+	if (privFlags & ~VMCI_PRIVILEGE_ALL_FLAGS) {
-+		pr_devel("Invalid flag (flags=0x%x) for VMCI context.",
-+			 privFlags);
-+		return VMCI_ERROR_INVALID_ARGS;
-+	}
-+
-+	if (userVersion == 0)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	context = kzalloc(sizeof *context, GFP_KERNEL);
-+	if (context == NULL) {
-+		pr_warn("Failed to allocate memory for VMCI context.");
-+		return VMCI_ERROR_NO_MEM;
-+	}
-+
-+	INIT_LIST_HEAD(&context->listItem);
-+	INIT_LIST_HEAD(&context->datagramQueue);
-+
-+	context->userVersion = userVersion;
-+
-+	context->queuePairArray = vmci_handle_arr_create(0);
-+	if (!context->queuePairArray) {
-+		result = VMCI_ERROR_NO_MEM;
-+		goto error;
-+	}
-+
-+	context->doorbellArray = vmci_handle_arr_create(0);
-+	if (!context->doorbellArray) {
-+		result = VMCI_ERROR_NO_MEM;
-+		goto error;
-+	}
-+
-+	context->pendingDoorbellArray = vmci_handle_arr_create(0);
-+	if (!context->pendingDoorbellArray) {
-+		result = VMCI_ERROR_NO_MEM;
-+		goto error;
-+	}
-+
-+	context->notifierArray = vmci_handle_arr_create(0);
-+	if (context->notifierArray == NULL) {
-+		result = VMCI_ERROR_NO_MEM;
-+		goto error;
-+	}
-+
-+	spin_lock_init(&context->lock);
-+
-+	atomic_set(&context->refCount, 1);
-+
-+	/* Inititialize host-specific VMCI context. */
-+	init_waitqueue_head(&context->hostContext.waitQueue);
-+
-+	context->privFlags = privFlags;
-+
-+	/*
-+	 * If we collide with an existing context we generate a new
-+	 * and use it instead. The VMX will determine if regeneration
-+	 * is okay. Since there isn't 4B - 16 VMs running on a given
-+	 * host, the below loop will terminate.
-+	 */
-+	spin_lock(&ctx_list.lock);
-+	ASSERT(cid != VMCI_INVALID_ID);
-+	while (ctx_exists_locked(cid)) {
-+
-+		/*
-+		 * If the cid is below our limit and we collide we are
-+		 * creating duplicate contexts internally so we want
-+		 * to assert fail in that case.
-+		 */
-+		ASSERT(cid >= VMCI_RESERVED_CID_LIMIT);
-+
-+		/* We reserve the lowest 16 ids for fixed contexts. */
-+		cid = max(cid, VMCI_RESERVED_CID_LIMIT - 1) + 1;
-+		if (cid == VMCI_INVALID_ID)
-+			cid = VMCI_RESERVED_CID_LIMIT;
-+	}
-+	ASSERT(!ctx_exists_locked(cid));
-+	context->cid = cid;
-+	context->validUser = user != NULL;
-+	if (context->validUser)
-+		context->user = *user;
-+	list_add(&context->listItem, &ctx_list.head);
-+	spin_unlock(&ctx_list.lock);
-+
-+	context->notify = NULL;
-+	context->notifyPage = NULL;
-+
-+	*outContext = context;
-+	return VMCI_SUCCESS;
-+
-+error:
-+	if (context->notifierArray)
-+		vmci_handle_arr_destroy(context->notifierArray);
-+	if (context->queuePairArray)
-+		vmci_handle_arr_destroy(context->queuePairArray);
-+	if (context->doorbellArray)
-+		vmci_handle_arr_destroy(context->doorbellArray);
-+	if (context->pendingDoorbellArray)
-+		vmci_handle_arr_destroy(context->pendingDoorbellArray);
-+	kfree(context);
-+	return result;
-+}
-+
-+/*
-+ * Dequeue VMCI context.
-+ */
-+void vmci_ctx_release_ctx(struct vmci_ctx *context)
-+{
-+	spin_lock(&ctx_list.lock);
-+	list_del(&context->listItem);
-+	spin_unlock(&ctx_list.lock);
-+
-+	vmci_ctx_release(context);
-+}
-+
-+/*
-+ * Fire notification for all contexts interested in given cid.
-+ */
-+static int ctx_fire_notification(uint32_t contextID,
-+				 uint32_t privFlags)
-+{
-+	uint32_t i, arraySize;
-+	struct vmci_ctx *subCtx;
-+	struct vmci_handle_arr *subscriberArray;
-+	struct vmci_handle contextHandle =
-+		vmci_make_handle(contextID, VMCI_EVENT_HANDLER);
-+
-+	/*
-+	 * We create an array to hold the subscribers we find when
-+	 * scanning through all contexts.
-+	 */
-+	subscriberArray = vmci_handle_arr_create(0);
-+	if (subscriberArray == NULL)
-+		return VMCI_ERROR_NO_MEM;
-+
-+	/*
-+	 * Scan all contexts to find who is interested in being
-+	 * notified about given contextID. We have a special
-+	 * firingLock that we use to synchronize across all
-+	 * notification operations. This avoids us having to take the
-+	 * context lock for each HasEntry call and it solves a lock
-+	 * ranking issue.
-+	 */
-+	spin_lock(&ctx_list.firingLock);
-+	spin_lock(&ctx_list.lock);
-+	list_for_each_entry(subCtx, &ctx_list.head, listItem) {
-+		/*
-+		 * We only deliver notifications of the removal of
-+		 * contexts, if the two contexts are allowed to
-+		 * interact.
-+		 */
-+		if (vmci_handle_arr_has_entry
-+		    (subCtx->notifierArray, contextHandle)
-+		    && !vmci_deny_interaction(privFlags, subCtx->privFlags)) {
-+			vmci_handle_arr_append_entry(&subscriberArray,
-+						     vmci_make_handle
-+						     (subCtx->cid,
-+						      VMCI_EVENT_HANDLER));
++		if (queue->kernelIf->mapped) {
++			ASSERT(queue->kernelIf->va);
++			vunmap(queue->kernelIf->va);
++			queue->kernelIf->va = NULL;
 +		}
++
++		while (i)
++			__free_page(queue->kernelIf->page[--i]);
++
++		vfree(queue->qHeader);
 +	}
-+	spin_unlock(&ctx_list.lock);
-+	spin_unlock(&ctx_list.firingLock);
-+
-+	/* Fire event to all subscribers. */
-+	arraySize = vmci_handle_arr_get_size(subscriberArray);
-+	for (i = 0; i < arraySize; i++) {
-+		int result;
-+		struct vmci_event_msg *eMsg;
-+		struct vmci_event_payld_ctx *evPayload;
-+		char buf[sizeof *eMsg + sizeof *evPayload];
-+
-+		eMsg = (struct vmci_event_msg *)buf;
-+
-+		/* Clear out any garbage. */
-+		memset(eMsg, 0, sizeof *eMsg + sizeof *evPayload);
-+		eMsg->hdr.dst = vmci_handle_arr_get_entry(subscriberArray, i);
-+		eMsg->hdr.src =
-+			vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
-+					 VMCI_CONTEXT_RESOURCE_ID);
-+		eMsg->hdr.payloadSize =
-+			sizeof *eMsg + sizeof *evPayload - sizeof eMsg->hdr;
-+		eMsg->eventData.event = VMCI_EVENT_CTX_REMOVED;
-+		evPayload = vmci_event_data_payload(&eMsg->eventData);
-+		evPayload->contextID = contextID;
-+
-+		result = vmci_dg_dispatch(VMCI_HYPERVISOR_CONTEXT_ID,
-+					  (struct vmci_dg *)
-+					  eMsg, false);
-+		if (result < VMCI_SUCCESS) {
-+			pr_devel("Failed to enqueue event datagram " \
-+				 "(type=%d) for context (ID=0x%x).",
-+				 eMsg->eventData.event, eMsg->hdr.dst.context);
-+			/* We continue to enqueue on next subscriber. */
-+		}
-+	}
-+	vmci_handle_arr_destroy(subscriberArray);
-+
-+	return VMCI_SUCCESS;
 +}
 +
-+/*
-+ * Returns the current number of pending datagrams. The call may
-+ * also serve as a synchronization point for the datagram queue,
-+ * as no enqueue operations can occur concurrently.
-+ */
-+int vmci_ctx_pending_dgs(uint32_t cid,
-+			 uint32_t *pending)
-+{
-+	struct vmci_ctx *context;
-+
-+	context = vmci_ctx_get(cid);
-+	if (context == NULL)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	spin_lock(&context->lock);
-+	if (pending)
-+		*pending = context->pendingDatagrams;
-+	spin_unlock(&context->lock);
-+	vmci_ctx_release(context);
-+
-+	return VMCI_SUCCESS;
-+}
 +
 +/*
-+ * Queues a VMCI datagram for the appropriate target VM context.
++ * Allocates kernel VA space of specified size, plus space for the
++ * queue structure/kernel interface and the queue header.  Allocates
++ * physical pages for the queue data pages.
++ *
++ * PAGE m:      struct vmci_queue_header (struct vmci_queue->qHeader)
++ * PAGE m+1:    struct vmci_queue
++ * PAGE m+1+q:  struct vmci_queue_kern_if (struct vmci_queue->kernelIf)
++ * PAGE n-size: Data pages (struct vmci_queue->kernelIf->page[])
 + */
-+int vmci_ctx_enqueue_dg(uint32_t cid,
-+			struct vmci_dg *dg)
++static void *qp_alloc_queue(uint64_t size,
++			    uint32_t flags)
 +{
-+	struct vmci_dg_queue_entry *dqEntry;
-+	struct vmci_ctx *context;
-+	struct vmci_handle dgSrc;
-+	size_t vmciDgSize;
++	uint64_t i;
++	struct vmci_queue *queue;
++	struct vmci_queue_header *qHeader;
++	const uint64_t numDataPages = dm_div_up(size, PAGE_SIZE);
++	const uint queueSize =
++		PAGE_SIZE +
++		sizeof(*queue) + sizeof(*(queue->kernelIf)) +
++		numDataPages * sizeof(*(queue->kernelIf->page));
 +
-+	ASSERT(dg);
-+	vmciDgSize = VMCI_DG_SIZE(dg);
-+	ASSERT(vmciDgSize <= VMCI_MAX_DG_SIZE);
++	ASSERT(size <= VMCI_MAX_GUEST_QP_MEMORY);
++	ASSERT(!QP_PINNED(flags) || size <= VMCI_MAX_PINNED_QP_MEMORY);
 +
-+	/* Get the target VM's VMCI context. */
-+	context = vmci_ctx_get(cid);
-+	if (context == NULL) {
-+		pr_devel("Invalid context (ID=0x%x).", cid);
-+		return VMCI_ERROR_INVALID_ARGS;
-+	}
-+
-+	/* Allocate guest call entry and add it to the target VM's queue. */
-+	dqEntry = kmalloc(sizeof *dqEntry, GFP_KERNEL);
-+	if (dqEntry == NULL) {
-+		pr_warn("Failed to allocate memory for datagram.");
-+		vmci_ctx_release(context);
-+		return VMCI_ERROR_NO_MEM;
-+	}
-+	dqEntry->dg = dg;
-+	dqEntry->dgSize = vmciDgSize;
-+	dgSrc = dg->src;
-+	INIT_LIST_HEAD(&dqEntry->listItem);
-+
-+	spin_lock(&context->lock);
-+
-+	/*
-+	 * We put a higher limit on datagrams from the hypervisor.  If
-+	 * the pending datagram is not from hypervisor, then we check
-+	 * if enqueueing it would exceed the
-+	 * VMCI_MAX_DATAGRAM_QUEUE_SIZE limit on the destination.  If
-+	 * the pending datagram is from hypervisor, we allow it to be
-+	 * queued at the destination side provided we don't reach the
-+	 * VMCI_MAX_DATAGRAM_AND_EVENT_QUEUE_SIZE limit.
-+	 */
-+	if (context->datagramQueueSize + vmciDgSize >=
-+	    VMCI_MAX_DATAGRAM_QUEUE_SIZE &&
-+	    (!VMCI_HANDLE_EQUAL(dgSrc,
-+				vmci_make_handle
-+				(VMCI_HYPERVISOR_CONTEXT_ID,
-+				 VMCI_CONTEXT_RESOURCE_ID))
-+	     || context->datagramQueueSize + vmciDgSize >=
-+	     VMCI_MAX_DATAGRAM_AND_EVENT_QUEUE_SIZE)) {
-+		spin_unlock(&context->lock);
-+		vmci_ctx_release(context);
-+		kfree(dqEntry);
-+		pr_devel("Context (ID=0x%x) receive queue is full.",
-+			 cid);
-+		return VMCI_ERROR_NO_RESOURCES;
-+	}
-+
-+	list_add(&dqEntry->listItem, &context->datagramQueue);
-+	context->pendingDatagrams++;
-+	context->datagramQueueSize += vmciDgSize;
-+	ctx_signal_notify(context);
-+	wake_up(&context->hostContext.waitQueue);
-+	spin_unlock(&context->lock);
-+	vmci_ctx_release(context);
-+
-+	return vmciDgSize;
-+}
-+
-+/*
-+ * Verifies whether a context with the specified context ID exists.
-+ */
-+bool vmci_ctx_exists(uint32_t cid)
-+{
-+	bool rv;
-+
-+	spin_lock(&ctx_list.lock);
-+	rv = ctx_exists_locked(cid);
-+	spin_unlock(&ctx_list.lock);
-+	return rv;
-+}
-+
-+/*
-+ * Retrieves VMCI context corresponding to the given cid.
-+ */
-+struct vmci_ctx *vmci_ctx_get(uint32_t cid)
-+{
-+	struct vmci_ctx *context = NULL;
-+
-+	if (cid == VMCI_INVALID_ID)
++	qHeader = vmalloc(queueSize);
++	if (!qHeader)
 +		return NULL;
 +
-+	spin_lock(&ctx_list.lock);
-+	list_for_each_entry(context, &ctx_list.head, listItem) {
-+		if (context->cid == cid) {
-+			/*
-+			 * At this point, we are sure that the
-+			 * reference count is larger already than
-+			 * zero. When starting the destruction of a
-+			 * context, we always remove it from the
-+			 * context list before decreasing the
-+			 * reference count. As we found the context
-+			 * here, it hasn't been destroyed yet. This
-+			 * means that we are not about to increase the
-+			 * reference count of something that is in the
-+			 * process of being destroyed.
-+			 */
++	queue = (struct vmci_queue *)((uint8_t *) qHeader + PAGE_SIZE);
++	queue->qHeader = qHeader;
++	queue->savedHeader = NULL;
++	queue->kernelIf = (struct vmci_queue_kern_if *)((uint8_t *) queue +
++							sizeof(*queue));
++	queue->kernelIf->headerPage = NULL;	/* Unused in guest. */
++	queue->kernelIf->page =
++		(struct page **)((uint8_t *) queue->kernelIf +
++				 sizeof(*(queue->kernelIf)));
++	queue->kernelIf->host = false;
++	queue->kernelIf->va = NULL;
++	queue->kernelIf->mapped = false;
 +
-+			atomic_inc(&context->refCount);
-+			break;
-+		}
++	for (i = 0; i < numDataPages; i++) {
++		queue->kernelIf->page[i] = alloc_pages(GFP_KERNEL, 0);
++		if (!queue->kernelIf->page[i])
++			goto fail;
 +	}
-+	spin_unlock(&ctx_list.lock);
 +
-+	return (context && context->cid == cid) ? context : NULL;
++	if (QP_PINNED(flags)) {
++		queue->kernelIf->va = vmap(queue->kernelIf->page, numDataPages,
++					   VM_MAP, PAGE_KERNEL);
++		if (!queue->kernelIf->va)
++			goto fail;
++
++		queue->kernelIf->mapped = true;
++	}
++
++	return (void *)queue;
++
++fail:
++	qp_free_queue(queue, i * PAGE_SIZE);
++	return NULL;
 +}
 +
 +/*
-+ * Deallocates all parts of a context datastructure. This
-+ * functions doesn't lock the context, because it assumes that
-+ * the caller is holding the last reference to context.
++ * Copies from a given buffer or iovector to a VMCI Queue.  Uses
++ * kmap()/kunmap() to dynamically map/unmap required portions of the queue
++ * by traversing the offset -> page translation structure for the queue.
++ * Assumes that offset + size does not wrap around in the queue.
 + */
-+static void ctx_free_ctx(struct vmci_ctx *context)
++static int __qp_memcpy_to_queue(struct vmci_queue *queue,
++				uint64_t queueOffset,
++				const void *src,
++				size_t size,
++				bool isIovec)
 +{
-+	struct list_head *curr;
-+	struct list_head *next;
-+	struct vmci_dg_queue_entry *dqEntry;
-+	struct vmci_handle tempHandle;
++	struct vmci_queue_kern_if *kernelIf = queue->kernelIf;
++	size_t bytesCopied = 0;
 +
-+	/*
-+	 * Fire event to all contexts interested in knowing this
-+	 * context is dying.
-+	 */
-+	ctx_fire_notification(context->cid, context->privFlags);
++	while (bytesCopied < size) {
++		uint64_t pageIndex = (queueOffset + bytesCopied) / PAGE_SIZE;
++		size_t pageOffset =
++			(queueOffset + bytesCopied) & (PAGE_SIZE - 1);
++		void *va;
++		size_t toCopy;
 +
-+	/*
-+	 * Cleanup all queue pair resources attached to context.  If
-+	 * the VM dies without cleaning up, this code will make sure
-+	 * that no resources are leaked.
-+	 */
-+	tempHandle = vmci_handle_arr_get_entry(context->queuePairArray, 0);
-+	while (!VMCI_HANDLE_EQUAL(tempHandle, VMCI_INVALID_HANDLE)) {
-+		if (vmci_qp_broker_detach(tempHandle, context) < VMCI_SUCCESS) {
-+			/*
-+			 * When vmci_qp_broker_detach() succeeds it
-+			 * removes the handle from the array.  If
-+			 * detach fails, we must remove the handle
-+			 * ourselves.
-+			 */
-+			vmci_handle_arr_remove_entry(context->queuePairArray,
-+						     tempHandle);
++		if (!kernelIf->mapped)
++			va = kmap(kernelIf->page[pageIndex]);
++		else
++			va = (void *)((uint8_t *)kernelIf->va +
++				      (pageIndex * PAGE_SIZE));
++
++		if (size - bytesCopied > PAGE_SIZE - pageOffset) {
++			/* Enough payload to fill up from this page. */
++			toCopy = PAGE_SIZE - pageOffset;
++		} else {
++			toCopy = size - bytesCopied;
 +		}
-+		tempHandle =
-+			vmci_handle_arr_get_entry(context->queuePairArray, 0);
++
++		if (isIovec) {
++			struct iovec *iov = (struct iovec *)src;
++			int err;
++
++			/* The iovec will track bytesCopied internally. */
++			err = memcpy_fromiovec((uint8_t *) va + pageOffset,
++					       iov, toCopy);
++			if (err != 0) {
++				kunmap(kernelIf->page[pageIndex]);
++				return VMCI_ERROR_INVALID_ARGS;
++			}
++		} else {
++			memcpy((uint8_t *) va + pageOffset,
++			       (uint8_t *) src + bytesCopied, toCopy);
++		}
++
++		bytesCopied += toCopy;
++		if (!kernelIf->mapped)
++			kunmap(kernelIf->page[pageIndex]);
 +	}
 +
-+	/*
-+	 * It is fine to destroy this without locking the callQueue, as
-+	 * this is the only thread having a reference to the context.
-+	 */	list_for_each_safe(curr, next, &context->datagramQueue) {
-+		dqEntry =
-+			list_entry(curr, struct vmci_dg_queue_entry, listItem);
-+		list_del(curr);
-+		ASSERT(dqEntry && dqEntry->dg);
-+		ASSERT(dqEntry->dgSize == VMCI_DG_SIZE(dqEntry->dg));
-+		kfree(dqEntry->dg);
-+		kfree(dqEntry);
-+	}
-+
-+	vmci_handle_arr_destroy(context->notifierArray);
-+	vmci_handle_arr_destroy(context->queuePairArray);
-+	vmci_handle_arr_destroy(context->doorbellArray);
-+	vmci_handle_arr_destroy(context->pendingDoorbellArray);
-+	vmci_ctx_unset_notify(context);
-+	kfree(context);
++	return VMCI_SUCCESS;
 +}
 +
 +/*
-+ * Releases the VMCI context. If this is the last reference to
-+ * the context it will be deallocated. A context is created with
-+ * a reference count of one, and on destroy, it is removed from
-+ * the context list before its reference count is
-+ * decremented. Thus, if we reach zero, we are sure that nobody
-+ * else are about to increment it (they need the entry in the
-+ * context list for that). This function musn't be called with a
-+ * lock held.
++ * Copies to a given buffer or iovector from a VMCI Queue.  Uses
++ * kmap()/kunmap() to dynamically map/unmap required portions of the queue
++ * by traversing the offset -> page translation structure for the queue.
++ * Assumes that offset + size does not wrap around in the queue.
 + */
-+void vmci_ctx_release(struct vmci_ctx *context)
++static int __qp_memcpy_from_queue(void *dest,
++				  const struct vmci_queue *queue,
++				  uint64_t queueOffset,
++				  size_t size,
++				  bool isIovec)
 +{
-+	ASSERT(context);
-+	if (atomic_dec_and_test(&context->refCount))
-+		ctx_free_ctx(context);
-+}
++	struct vmci_queue_kern_if *kernelIf = queue->kernelIf;
++	size_t bytesCopied = 0;
 +
-+/*
-+ * Dequeues the next datagram and returns it to caller.
-+ * The caller passes in a pointer to the max size datagram
-+ * it can handle and the datagram is only unqueued if the
-+ * size is less than maxSize. If larger maxSize is set to
-+ * the size of the datagram to give the caller a chance to
-+ * set up a larger buffer for the guestcall.
-+ */int vmci_ctx_dequeue_dg(struct vmci_ctx *context,
-+			size_t *maxSize,
-+			struct vmci_dg **dg)
-+{
-+	struct vmci_dg_queue_entry *dqEntry;
-+	struct list_head *listItem;
-+	int rv;
++	while (bytesCopied < size) {
++		uint64_t pageIndex = (queueOffset + bytesCopied) / PAGE_SIZE;
++		size_t pageOffset =
++			(queueOffset + bytesCopied) & (PAGE_SIZE - 1);
++		void *va;
++		size_t toCopy;
 +
-+	ASSERT(context && dg);
++		if (!kernelIf->mapped)
++			va = kmap(kernelIf->page[pageIndex]);
++		else
++			va = (void *)((uint8_t *)kernelIf->va +
++				      (pageIndex * PAGE_SIZE));
 +
-+	/* Dequeue the next datagram entry. */
-+	spin_lock(&context->lock);
-+	if (context->pendingDatagrams == 0) {
-+		ctx_clear_notify_call(context);
-+		spin_unlock(&context->lock);
-+		pr_devel("No datagrams pending.");
-+		return VMCI_ERROR_NO_MORE_DATAGRAMS;
++		if (size - bytesCopied > PAGE_SIZE - pageOffset) {
++			/* Enough payload to fill up this page. */
++			toCopy = PAGE_SIZE - pageOffset;
++		} else {
++			toCopy = size - bytesCopied;
++		}
++
++		if (isIovec) {
++			struct iovec *iov = (struct iovec *)dest;
++			int err;
++
++			/* The iovec will track bytesCopied internally. */
++			err = memcpy_toiovec(iov, (uint8_t *) va + pageOffset,
++					     toCopy);
++			if (err != 0) {
++				kunmap(kernelIf->page[pageIndex]);
++				return VMCI_ERROR_INVALID_ARGS;
++			}
++		} else {
++			memcpy((uint8_t *) dest + bytesCopied,
++			       (uint8_t *) va + pageOffset, toCopy);
++		}
++
++		bytesCopied += toCopy;
++		if (!kernelIf->mapped)
++			kunmap(kernelIf->page[pageIndex]);
 +	}
 +
-+	listItem = context->datagramQueue.next;
-+	ASSERT(!list_empty(&context->datagramQueue));
++	return VMCI_SUCCESS;
++}
 +
-+	dqEntry = list_entry(listItem, struct vmci_dg_queue_entry, listItem);
-+	ASSERT(dqEntry->dg);
 +
-+	/* Check size of caller's buffer. */
-+	if (*maxSize < dqEntry->dgSize) {
-+		*maxSize = dqEntry->dgSize;
-+		spin_unlock(&context->lock);
-+		pr_devel("Caller's buffer should be at least " \
-+			 "(size=%u bytes).", (uint32_t) *maxSize);
++/*
++ * Allocates two list of PPNs --- one for the pages in the produce queue,
++ * and the other for the pages in the consume queue. Intializes the list
++ * of PPNs with the page frame numbers of the KVA for the two queues (and
++ * the queue headers).
++ */
++static int qp_alloc_ppn_set(void *prodQ,
++			    uint64_t numProducePages,
++			    void *consQ,
++			    uint64_t numConsumePages,
++			    struct PPNSet *ppnSet)
++{
++	uint32_t *producePPNs;
++	uint32_t *consumePPNs;
++	struct vmci_queue *produceQ = prodQ;
++	struct vmci_queue *consumeQ = consQ;
++	uint64_t i;
++
++	if (!produceQ || !numProducePages || !consumeQ ||
++	    !numConsumePages || !ppnSet)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	if (ppnSet->initialized)
++		return VMCI_ERROR_ALREADY_EXISTS;
++
++	producePPNs =
++		kmalloc(numProducePages * sizeof *producePPNs, GFP_KERNEL);
++	if (!producePPNs)
++		return VMCI_ERROR_NO_MEM;
++
++	consumePPNs =
++		kmalloc(numConsumePages * sizeof *consumePPNs, GFP_KERNEL);
++	if (!consumePPNs) {
++		kfree(producePPNs);
 +		return VMCI_ERROR_NO_MEM;
 +	}
 +
-+	list_del(listItem);
-+	context->pendingDatagrams--;
-+	context->datagramQueueSize -= dqEntry->dgSize;
-+	if (context->pendingDatagrams == 0) {
-+		ctx_clear_notify_call(context);
-+		rv = VMCI_SUCCESS;
-+	} else {
-+		/*
-+		 * Return the size of the next datagram.
-+		 */
-+		struct vmci_dg_queue_entry *nextEntry;
++	producePPNs[0] = page_to_pfn(vmalloc_to_page(produceQ->qHeader));
++	for (i = 1; i < numProducePages; i++) {
++		unsigned long pfn;
 +
-+		listItem = context->datagramQueue.next;
-+		ASSERT(!list_empty(&context->datagramQueue));
-+		nextEntry = list_entry(listItem, struct vmci_dg_queue_entry,
-+				       listItem);
-+		ASSERT(nextEntry && nextEntry->dg);
++		producePPNs[i] = pfn =
++			page_to_pfn(produceQ->kernelIf->page[i - 1]);
 +
-+		/*
-+		 * The following size_t -> int truncation is fine as
-+		 * the maximum size of a (routable) datagram is 68KB.
-+		 */
-+		rv = (int)nextEntry->dgSize;
++		/* Fail allocation if PFN isn't supported by hypervisor. */
++		if (sizeof pfn > sizeof *producePPNs && pfn != producePPNs[i])
++			goto ppnError;
 +	}
-+	spin_unlock(&context->lock);
 +
-+	/* Caller must free datagram. */
-+	ASSERT(dqEntry->dgSize == VMCI_DG_SIZE(dqEntry->dg));
-+	*dg = dqEntry->dg;
-+	dqEntry->dg = NULL;
-+	kfree(dqEntry);
++	consumePPNs[0] = page_to_pfn(vmalloc_to_page(consumeQ->qHeader));
++	for (i = 1; i < numConsumePages; i++) {
++		unsigned long pfn;
 +
-+	return rv;
++		consumePPNs[i] = pfn =
++			page_to_pfn(consumeQ->kernelIf->page[i - 1]);
++
++		/* Fail allocation if PFN isn't supported by hypervisor. */
++		if (sizeof pfn > sizeof *consumePPNs && pfn != consumePPNs[i])
++			goto ppnError;
++	}
++
++	ppnSet->numProducePages = numProducePages;
++	ppnSet->numConsumePages = numConsumePages;
++	ppnSet->producePPNs = producePPNs;
++	ppnSet->consumePPNs = consumePPNs;
++	ppnSet->initialized = true;
++	return VMCI_SUCCESS;
++
++ppnError:
++	kfree(producePPNs);
++	kfree(consumePPNs);
++	return VMCI_ERROR_INVALID_ARGS;
 +}
 +
 +/*
-+ * Reverts actions set up by vmci_setup_notify().  Unmaps and unlocks the
-+ * page mapped/locked by vmci_setup_notify().
++ * Frees the two list of PPNs for a queue pair.
 + */
-+void vmci_ctx_unset_notify(struct vmci_ctx *context)
++static void qp_free_ppn_set(struct PPNSet *ppnSet)
 +{
-+	struct page *notifyPage = context->notifyPage;
-+
-+	if (!notifyPage)
-+		return;
-+
-+	context->notify = NULL;
-+	context->notifyPage = NULL;
-+	kunmap(notifyPage);
-+	put_page(notifyPage);
-+
-+}
-+
-+uint32_t vmci_ctx_get_id(struct vmci_ctx *context)
-+{
-+	if (!context)
-+		return VMCI_INVALID_ID;
-+
-+	ASSERT(context->cid != VMCI_INVALID_ID);
-+	return context->cid;
++	ASSERT(ppnSet);
++	if (ppnSet->initialized) {
++		/* Do not call these functions on NULL inputs. */
++		ASSERT(ppnSet->producePPNs && ppnSet->consumePPNs);
++		kfree(ppnSet->producePPNs);
++		kfree(ppnSet->consumePPNs);
++	}
++	memset(ppnSet, 0, sizeof *ppnSet);
 +}
 +
 +/*
-+ * Add remoteCID to list of contexts current contexts wants
-+ * notifications from/about.
++ * Populates the list of PPNs in the hypercall structure with the PPNS
++ * of the produce queue and the consume queue.
 + */
-+int vmci_ctx_add_notification(uint32_t contextID,
-+			      uint32_t remoteCID)
++static int qp_populate_ppn_set(uint8_t *callBuf,
++			       const struct PPNSet *ppnSet)
 +{
-+	int result = VMCI_ERROR_ALREADY_EXISTS;
-+	struct vmci_handle notifierHandle;
-+	struct vmci_ctx *context = vmci_ctx_get(contextID);
-+	if (context == NULL)
-+		return VMCI_ERROR_NOT_FOUND;
-+
-+	if (VMCI_CONTEXT_IS_VM(contextID) && VMCI_CONTEXT_IS_VM(remoteCID)) {
-+		pr_devel("Context removed notifications for other VMs not " \
-+			 "supported (src=0x%x, remote=0x%x).",
-+			 contextID, remoteCID);
-+		result = VMCI_ERROR_DST_UNREACHABLE;
-+		goto out;
-+	}
-+
-+	if (context->privFlags & VMCI_PRIVILEGE_FLAG_RESTRICTED) {
-+		result = VMCI_ERROR_NO_ACCESS;
-+		goto out;
-+	}
-+
-+	notifierHandle = vmci_make_handle(remoteCID, VMCI_EVENT_HANDLER);
-+	spin_lock(&ctx_list.firingLock);
-+	spin_lock(&context->lock);
-+	if (!vmci_handle_arr_has_entry(context->notifierArray,
-+				       notifierHandle)) {
-+		vmci_handle_arr_append_entry(&context->notifierArray,
-+					     notifierHandle);
-+		result = VMCI_SUCCESS;
-+	}
-+	spin_unlock(&context->lock);
-+	spin_unlock(&ctx_list.firingLock);
-+
-+ out:
-+	vmci_ctx_release(context);
-+	return result;
-+}
-+
-+/*
-+ * Remove remoteCID from current context's list of contexts it is
-+ * interested in getting notifications from/about.
-+ */
-+int vmci_ctx_remove_notification(uint32_t contextID,
-+				 uint32_t remoteCID)
-+{
-+	struct vmci_ctx *context = vmci_ctx_get(contextID);
-+	struct vmci_handle tmpHandle;
-+	if (context == NULL)
-+		return VMCI_ERROR_NOT_FOUND;
-+
-+	spin_lock(&ctx_list.firingLock);
-+	spin_lock(&context->lock);
-+	tmpHandle = vmci_make_handle(remoteCID, VMCI_EVENT_HANDLER);
-+	tmpHandle = vmci_handle_arr_remove_entry(context->notifierArray,
-+						 tmpHandle);
-+	spin_unlock(&context->lock);
-+	spin_unlock(&ctx_list.firingLock);
-+	vmci_ctx_release(context);
-+
-+	if (VMCI_HANDLE_EQUAL(tmpHandle, VMCI_INVALID_HANDLE))
-+		return VMCI_ERROR_NOT_FOUND;
++	ASSERT(callBuf && ppnSet && ppnSet->initialized);
++	memcpy(callBuf, ppnSet->producePPNs,
++	       ppnSet->numProducePages * sizeof *ppnSet->producePPNs);
++	memcpy(callBuf +
++	       ppnSet->numProducePages * sizeof *ppnSet->producePPNs,
++	       ppnSet->consumePPNs,
++	       ppnSet->numConsumePages * sizeof *ppnSet->consumePPNs);
 +
 +	return VMCI_SUCCESS;
 +}
 +
-+/*
-+ * Get current context's checkpoint state of given type.
-+ */
-+int vmci_ctx_get_chkpt_state(uint32_t contextID,
-+			     uint32_t cptType,
-+			     uint32_t *bufSize,
-+			     char **cptBufPtr)
++static int qp_memcpy_to_queue(struct vmci_queue *queue,
++			      uint64_t queueOffset,
++			      const void *src,
++			      size_t srcOffset,
++			      size_t size)
 +{
-+	int i, result;
-+	uint32_t arraySize, cptDataSize;
-+	struct vmci_handle_arr *array;
-+	struct vmci_ctx *context;
-+	char *cptBuf;
-+	bool getContextID;
++	return __qp_memcpy_to_queue(queue, queueOffset,
++				    (uint8_t *) src + srcOffset, size, false);
++}
 +
-+	ASSERT(bufSize && cptBufPtr);
-+
-+	context = vmci_ctx_get(contextID);
-+	if (context == NULL)
-+		return VMCI_ERROR_NOT_FOUND;
-+
-+	spin_lock(&context->lock);
-+	if (cptType == VMCI_NOTIFICATION_CPT_STATE) {
-+		ASSERT(context->notifierArray);
-+		array = context->notifierArray;
-+		getContextID = true;
-+	} else if (cptType == VMCI_WELLKNOWN_CPT_STATE) {
-+		/*
-+		 * For compatibility with VMX'en with VM to VM communication, we
-+		 * always return zero wellknown handles.
-+		 */
-+
-+		*bufSize = 0;
-+		*cptBufPtr = NULL;
-+		result = VMCI_SUCCESS;
-+		goto release;
-+	} else if (cptType == VMCI_DOORBELL_CPT_STATE) {
-+		ASSERT(context->doorbellArray);
-+		array = context->doorbellArray;
-+		getContextID = false;
-+	} else {
-+		pr_devel("Invalid cpt state (type=%d).", cptType);
-+		result = VMCI_ERROR_INVALID_ARGS;
-+		goto release;
-+	}
-+
-+	arraySize = vmci_handle_arr_get_size(array);
-+	if (arraySize > 0) {
-+		if (cptType == VMCI_DOORBELL_CPT_STATE) {
-+			cptDataSize =
-+				arraySize * sizeof(struct dbell_cpt_state);
-+		} else {
-+			cptDataSize = arraySize * sizeof(uint32_t);
-+		}
-+
-+		if (*bufSize < cptDataSize) {
-+			*bufSize = cptDataSize;
-+			result = VMCI_ERROR_MORE_DATA;
-+			goto release;
-+		}
-+
-+		cptBuf = kmalloc(cptDataSize, GFP_ATOMIC);
-+
-+		if (cptBuf == NULL) {
-+			result = VMCI_ERROR_NO_MEM;
-+			goto release;
-+		}
-+
-+		for (i = 0; i < arraySize; i++) {
-+			struct vmci_handle tmpHandle =
-+				vmci_handle_arr_get_entry(array, i);
-+			if (cptType == VMCI_DOORBELL_CPT_STATE) {
-+				((struct dbell_cpt_state *)cptBuf)[i].handle =
-+					tmpHandle;
-+			} else {
-+				((uint32_t *) cptBuf)[i] =
-+					getContextID ? tmpHandle.context :
-+					tmpHandle.resource;
-+			}
-+		}
-+		*bufSize = cptDataSize;
-+		*cptBufPtr = cptBuf;
-+	} else {
-+		*bufSize = 0;
-+		*cptBufPtr = NULL;
-+	}
-+	result = VMCI_SUCCESS;
-+
-+release:
-+	spin_unlock(&context->lock);
-+	vmci_ctx_release(context);
-+
-+	return result;
++static int qp_memcpy_from_queue(void *dest,
++				size_t destOffset,
++				const struct vmci_queue *queue,
++				uint64_t queueOffset,
++				size_t size)
++{
++	return __qp_memcpy_from_queue((uint8_t *) dest + destOffset,
++				      queue, queueOffset, size, false);
 +}
 +
 +/*
-+ * Set current context's checkpoint state of given type.
++ * Copies from a given iovec from a VMCI Queue.
 + */
-+int vmci_ctx_set_chkpt_state(uint32_t contextID,
-+			     uint32_t cptType,
-+			     uint32_t bufSize,
-+			     char *cptBuf)
++static int qp_memcpy_to_queue_iov(struct vmci_queue *queue,
++				  uint64_t queueOffset,
++				  const void *src,
++				  size_t srcOffset,
++				  size_t size)
 +{
-+	uint32_t i;
-+	uint32_t currentID;
-+	int result = VMCI_SUCCESS;
-+	uint32_t numIDs = bufSize / sizeof(uint32_t);
-+	ASSERT(cptBuf);
 +
-+	if (cptType == VMCI_WELLKNOWN_CPT_STATE && numIDs > 0) {
-+		/*
-+		 * We would end up here if VMX with VM to VM communication
-+		 * attempts to restore a checkpoint with wellknown handles.
-+		 */
-+		pr_warn("Attempt to restore checkpoint with obsolete " \
-+			"wellknown handles.");
-+		return VMCI_ERROR_OBSOLETE;
-+	}
-+
-+	if (cptType != VMCI_NOTIFICATION_CPT_STATE) {
-+		pr_devel("Invalid cpt state (type=%d).", cptType);
-+		return VMCI_ERROR_INVALID_ARGS;
-+	}
-+
-+	for (i = 0; i < numIDs && result == VMCI_SUCCESS; i++) {
-+		currentID = ((uint32_t *) cptBuf)[i];
-+		result = vmci_ctx_add_notification(contextID, currentID);
-+		if (result != VMCI_SUCCESS)
-+			break;
-+	}
-+	if (result != VMCI_SUCCESS)
-+		pr_devel("Failed to set cpt state (type=%d) " \
-+			 "(error=%d).", cptType, result);
-+
-+	return result;
++	/*
++	 * We ignore srcOffset because src is really a struct iovec * and will
++	 * maintain offset internally.
++	 */
++	return __qp_memcpy_to_queue(queue, queueOffset, src, size, true);
 +}
 +
 +/*
-+ * Retrieves the specified context's pending notifications in the
-+ * form of a handle array. The handle arrays returned are the
-+ * actual data - not a copy and should not be modified by the
-+ * caller. They must be released using
-+ * vmci_ctx_rcv_notifications_release.
++ * Copies to a given iovec from a VMCI Queue.
 + */
-+int vmci_ctx_rcv_notifications_get(uint32_t contextID,
-+				   struct vmci_handle_arr **dbHandleArray,
-+				   struct vmci_handle_arr **qpHandleArray)
++static int qp_memcpy_from_queue_iov(void *dest,
++				    size_t destOffset,
++				    const struct vmci_queue *queue,
++				    uint64_t queueOffset,
++				    size_t size)
 +{
-+	struct vmci_ctx *context;
-+	int result = VMCI_SUCCESS;
-+
-+	ASSERT(dbHandleArray && qpHandleArray);
-+
-+	context = vmci_ctx_get(contextID);
-+	if (context == NULL)
-+		return VMCI_ERROR_NOT_FOUND;
-+
-+	spin_lock(&context->lock);
-+
-+	*dbHandleArray = context->pendingDoorbellArray;
-+	context->pendingDoorbellArray = vmci_handle_arr_create(0);
-+	if (!context->pendingDoorbellArray) {
-+		context->pendingDoorbellArray = *dbHandleArray;
-+		*dbHandleArray = NULL;
-+		result = VMCI_ERROR_NO_MEM;
-+	}
-+	*qpHandleArray = NULL;
-+
-+	spin_unlock(&context->lock);
-+	vmci_ctx_release(context);
-+
-+	return result;
++	/*
++	 * We ignore destOffset because dest is really a struct iovec * and will
++	 * maintain offset internally.
++	 */
++	return __qp_memcpy_from_queue(dest, queue, queueOffset, size, true);
 +}
 +
 +/*
-+ * Releases handle arrays with pending notifications previously
-+ * retrieved using vmci_ctx_rcv_notifications_get. If the
-+ * notifications were not successfully handed over to the guest,
-+ * success must be false.
++ * Allocates kernel VA space of specified size plus space for the queue
++ * and kernel interface.  This is different from the guest queue allocator,
++ * because we do not allocate our own queue header/data pages here but
++ * share those of the guest.
 + */
-+void vmci_ctx_rcv_notifications_release(uint32_t contextID,
-+					struct vmci_handle_arr *dbHandleArray,
-+					struct vmci_handle_arr *qpHandleArray,
-+					bool success)
++static struct vmci_queue *qp_host_alloc_queue(uint64_t size)
 +{
-+	struct vmci_ctx *context = vmci_ctx_get(contextID);
++	struct vmci_queue *queue;
++	const size_t numPages = dm_div_up(size, PAGE_SIZE) + 1;
++	const size_t queueSize = sizeof(*queue) + sizeof(*(queue->kernelIf));
++	const size_t queuePageSize = numPages * sizeof(*queue->kernelIf->page);
 +
-+	if (!context) {
-+		/*
-+		 * The OS driver part is holding on to the context for the
-+		 * duration of the receive notification ioctl, so it should
-+		 * still be here.
-+		 */
-+		ASSERT(false);
++	queue = kzalloc(queueSize + queuePageSize, GFP_KERNEL);
++	if (queue) {
++		queue->qHeader = NULL;
++		queue->savedHeader = NULL;
++		queue->kernelIf =
++			(struct vmci_queue_kern_if *)((uint8_t *) queue +
++						      sizeof(*queue));
++		queue->kernelIf->host = true;
++		queue->kernelIf->mutex = NULL;
++		queue->kernelIf->numPages = numPages;
++		queue->kernelIf->headerPage =
++			(struct page **)((uint8_t *) queue + queueSize);
++		queue->kernelIf->page = &queue->kernelIf->headerPage[1];
++		queue->kernelIf->va = NULL;
++		queue->kernelIf->mapped = false;
 +	}
 +
-+	spin_lock(&context->lock);
-+	if (!success) {
-+		struct vmci_handle handle;
-+
-+		/*
-+		 * New notifications may have been added while we were not
-+		 * holding the context lock, so we transfer any new pending
-+		 * doorbell notifications to the old array, and reinstate the
-+		 * old array.
-+		 */
-+
-+		handle = vmci_handle_arr_remove_tail(
-+			context->pendingDoorbellArray);
-+		while (!VMCI_HANDLE_INVALID(handle)) {
-+			ASSERT(vmci_handle_arr_has_entry
-+			       (context->doorbellArray, handle));
-+			if (!vmci_handle_arr_has_entry
-+			    (dbHandleArray, handle)) {
-+				vmci_handle_arr_append_entry
-+					(&dbHandleArray, handle);
-+			}
-+			handle = vmci_handle_arr_remove_tail(
-+				context->pendingDoorbellArray);
-+		}
-+		vmci_handle_arr_destroy(context->pendingDoorbellArray);
-+		context->pendingDoorbellArray = dbHandleArray;
-+		dbHandleArray = NULL;
-+	} else {
-+		ctx_clear_notify_call(context);
-+	}
-+	spin_unlock(&context->lock);
-+	vmci_ctx_release(context);
-+
-+	if (dbHandleArray)
-+		vmci_handle_arr_destroy(dbHandleArray);
-+
-+	if (qpHandleArray)
-+		vmci_handle_arr_destroy(qpHandleArray);
++	return queue;
 +}
 +
 +/*
-+ * Registers that a new doorbell handle has been allocated by the
-+ * context. Only doorbell handles registered can be notified.
++ * Frees kernel memory for a given queue (header plus translation
++ * structure).
 + */
-+int vmci_ctx_dbell_create(uint32_t contextID,
-+			  struct vmci_handle handle)
++static void qp_host_free_queue(struct vmci_queue *queue,
++			       uint64_t queueSize)
 +{
-+	struct vmci_ctx *context;
-+	int result;
-+
-+	if (contextID == VMCI_INVALID_ID || VMCI_HANDLE_INVALID(handle))
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	context = vmci_ctx_get(contextID);
-+	if (context == NULL)
-+		return VMCI_ERROR_NOT_FOUND;
-+
-+	spin_lock(&context->lock);
-+	if (!vmci_handle_arr_has_entry(context->doorbellArray, handle)) {
-+		vmci_handle_arr_append_entry(&context->doorbellArray, handle);
-+		result = VMCI_SUCCESS;
-+	} else {
-+		result = VMCI_ERROR_DUPLICATE_ENTRY;
-+	}
-+
-+	spin_unlock(&context->lock);
-+	vmci_ctx_release(context);
-+
-+	return result;
++	kfree(queue);
 +}
 +
 +/*
-+ * Unregisters a doorbell handle that was previously registered
-+ * with vmci_ctx_dbell_create.
++ * Initialize the mutex for the pair of queues.  This mutex is used to
++ * protect the qHeader and the buffer from changing out from under any
++ * users of either queue.  Of course, it's only any good if the mutexes
++ * are actually acquired.  Queue structure must lie on non-paged memory
++ * or we cannot guarantee access to the mutex.
 + */
-+int vmci_ctx_dbell_destroy(uint32_t contextID,
-+			   struct vmci_handle handle)
++static void qp_init_queue_mutex(struct vmci_queue *produceQ,
++				struct vmci_queue *consumeQ)
 +{
-+	struct vmci_ctx *context;
-+	struct vmci_handle removedHandle;
++	ASSERT(produceQ);
++	ASSERT(consumeQ);
++	ASSERT(produceQ->kernelIf);
++	ASSERT(consumeQ->kernelIf);
 +
-+	if (contextID == VMCI_INVALID_ID || VMCI_HANDLE_INVALID(handle))
-+		return VMCI_ERROR_INVALID_ARGS;
++	/*
++	 * Only the host queue has shared state - the guest queues do not
++	 * need to synchronize access using a queue mutex.
++	 */
 +
-+	context = vmci_ctx_get(contextID);
-+	if (context == NULL)
-+		return VMCI_ERROR_NOT_FOUND;
-+
-+	spin_lock(&context->lock);
-+	removedHandle =
-+		vmci_handle_arr_remove_entry(context->doorbellArray, handle);
-+	vmci_handle_arr_remove_entry(context->pendingDoorbellArray, handle);
-+	spin_unlock(&context->lock);
-+
-+	vmci_ctx_release(context);
-+
-+	return VMCI_HANDLE_INVALID(removedHandle) ?
-+		VMCI_ERROR_NOT_FOUND : VMCI_SUCCESS;
++	if (produceQ->kernelIf->host) {
++		produceQ->kernelIf->mutex = &produceQ->kernelIf->__mutex;
++		consumeQ->kernelIf->mutex = &produceQ->kernelIf->__mutex;
++		sema_init(produceQ->kernelIf->mutex, 1);
++	}
 +}
 +
 +/*
-+ * Unregisters all doorbell handles that were previously
-+ * registered with vmci_ctx_dbell_create.
++ * Cleans up the mutex for the pair of queues.
 + */
-+int vmci_ctx_dbell_destroy_all(uint32_t contextID)
++static void qp_cleanup_queue_mutex(struct vmci_queue *produceQ,
++				   struct vmci_queue *consumeQ)
 +{
-+	struct vmci_ctx *context;
-+	struct vmci_handle handle;
++	ASSERT(produceQ);
++	ASSERT(consumeQ);
++	ASSERT(produceQ->kernelIf);
++	ASSERT(consumeQ->kernelIf);
 +
-+	if (contextID == VMCI_INVALID_ID)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	context = vmci_ctx_get(contextID);
-+	if (context == NULL)
-+		return VMCI_ERROR_NOT_FOUND;
-+
-+	spin_lock(&context->lock);
-+	do {
-+		struct vmci_handle_arr *arr = context->doorbellArray;
-+		handle = vmci_handle_arr_remove_tail(arr);
-+	} while (!VMCI_HANDLE_INVALID(handle));
-+	do {
-+		struct vmci_handle_arr *arr = context->pendingDoorbellArray;
-+		handle = vmci_handle_arr_remove_tail(arr);
-+	} while (!VMCI_HANDLE_INVALID(handle));
-+	spin_unlock(&context->lock);
-+
-+	vmci_ctx_release(context);
-+
-+	return VMCI_SUCCESS;
++	if (produceQ->kernelIf->host) {
++		produceQ->kernelIf->mutex = NULL;
++		consumeQ->kernelIf->mutex = NULL;
++	}
 +}
 +
 +/*
-+ * Registers a notification of a doorbell handle initiated by the
-+ * specified source context. The notification of doorbells are
-+ * subject to the same isolation rules as datagram delivery. To
-+ * allow host side senders of notifications a finer granularity
-+ * of sender rights than those assigned to the sending context
-+ * itself, the host context is required to specify a different
-+ * set of privilege flags that will override the privileges of
-+ * the source context.
++ * Acquire the mutex for the queue.  Note that the produceQ and
++ * the consumeQ share a mutex.  So, only one of the two need to
++ * be passed in to this routine.  Either will work just fine.
 + */
-+int vmci_ctx_notify_dbell(uint32_t srcCID,
-+			  struct vmci_handle handle,
-+			  uint32_t srcPrivFlags)
++static void qp_acquire_queue_mutex(struct vmci_queue *queue)
 +{
-+	struct vmci_ctx *dstContext;
-+	int result;
++	ASSERT(queue);
++	ASSERT(queue->kernelIf);
 +
-+	if (VMCI_HANDLE_INVALID(handle))
-+		return VMCI_ERROR_INVALID_ARGS;
++	if (queue->kernelIf->host) {
++		ASSERT(queue->kernelIf->mutex);
++		down(queue->kernelIf->mutex);
++	}
++}
 +
-+	/* Get the target VM's VMCI context. */
-+	dstContext = vmci_ctx_get(handle.context);
-+	if (dstContext == NULL) {
-+		pr_devel("Invalid context (ID=0x%x).", handle.context);
-+		return VMCI_ERROR_NOT_FOUND;
++/*
++ * Release the mutex for the queue.  Note that the produceQ and
++ * the consumeQ share a mutex.  So, only one of the two need to
++ * be passed in to this routine.  Either will work just fine.
++ */
++static void qp_release_queue_mutex(struct vmci_queue *queue)
++{
++	ASSERT(queue);
++	ASSERT(queue->kernelIf);
++
++	if (queue->kernelIf->host) {
++		ASSERT(queue->kernelIf->mutex);
++		up(queue->kernelIf->mutex);
++	}
++}
++
++/*
++ * Helper function to release pages in the PageStoreAttachInfo
++ * previously obtained using get_user_pages.
++ */
++static void qp_release_pages(struct page **pages,
++			     uint64_t numPages,
++			     bool dirty)
++{
++	int i;
++
++	for (i = 0; i < numPages; i++) {
++		ASSERT(pages[i]);
++
++		if (dirty)
++			set_page_dirty(pages[i]);
++
++		page_cache_release(pages[i]);
++		pages[i] = NULL;
++	}
++}
++
++/*
++ * Lock the user pages referenced by the {produce,consume}Buffer
++ * struct into memory and populate the {produce,consume}Pages
++ * arrays in the attach structure with them.
++ */
++static int qp_host_get_user_memory(uint64_t produceUVA,
++				   uint64_t consumeUVA,
++				   struct vmci_queue *produceQ,
++				   struct vmci_queue *consumeQ)
++{
++	int retval;
++	int err = VMCI_SUCCESS;
++
++	down_write(&current->mm->mmap_sem);
++	retval = get_user_pages(current,
++				current->mm,
++				(uintptr_t) produceUVA,
++				produceQ->kernelIf->numPages,
++				1, 0, produceQ->kernelIf->headerPage, NULL);
++	if (retval < produceQ->kernelIf->numPages) {
++		pr_warn("get_user_pages(produce) failed (retval=%d)",
++			retval);
++		qp_release_pages(produceQ->kernelIf->headerPage, retval, false);
++		err = VMCI_ERROR_NO_MEM;
++		goto out;
 +	}
 +
-+	if (srcCID != handle.context) {
-+		uint32_t dstPrivFlags;
-+
-+		if (VMCI_CONTEXT_IS_VM(srcCID)
-+		    && VMCI_CONTEXT_IS_VM(handle.context)) {
-+			pr_devel("Doorbell notification from VM to VM not " \
-+				 "supported (src=0x%x, dst=0x%x).", srcCID,
-+				 handle.context);
-+			result = VMCI_ERROR_DST_UNREACHABLE;
-+			goto out;
-+		}
-+
-+		result = vmci_dbell_get_priv_flags(handle, &dstPrivFlags);
-+		if (result < VMCI_SUCCESS) {
-+			pr_warn("Failed to get privilege flags for " \
-+				"destination (handle=0x%x:0x%x).",
-+				handle.context, handle.resource);
-+			goto out;
-+		}
-+
-+		if (srcCID != VMCI_HOST_CONTEXT_ID ||
-+		    srcPrivFlags == VMCI_NO_PRIVILEGE_FLAGS) {
-+			srcPrivFlags = VMCIContext_GetPrivFlags(srcCID);
-+		}
-+
-+		if (vmci_deny_interaction(srcPrivFlags, dstPrivFlags)) {
-+			result = VMCI_ERROR_NO_ACCESS;
-+			goto out;
-+		}
-+	}
-+
-+	if (handle.context == VMCI_HOST_CONTEXT_ID) {
-+		result = vmci_dbell_host_context_notify(srcCID, handle);
-+	} else {
-+		spin_lock(&dstContext->lock);
-+
-+		if (!vmci_handle_arr_has_entry
-+		    (dstContext->doorbellArray, handle)) {
-+			result = VMCI_ERROR_NOT_FOUND;
-+		} else {
-+			if (!vmci_handle_arr_has_entry
-+			    (dstContext->pendingDoorbellArray, handle)) {
-+				vmci_handle_arr_append_entry
-+					(&dstContext->pendingDoorbellArray,
-+					 handle);
-+
-+				ctx_signal_notify(dstContext);
-+				wake_up(&dstContext->hostContext.waitQueue);
-+
-+			}
-+			result = VMCI_SUCCESS;
-+		}
-+		spin_unlock(&dstContext->lock);
++	retval = get_user_pages(current,
++				current->mm,
++				(uintptr_t) consumeUVA,
++				consumeQ->kernelIf->numPages,
++				1, 0, consumeQ->kernelIf->headerPage, NULL);
++	if (retval < consumeQ->kernelIf->numPages) {
++		pr_warn("get_user_pages(consume) failed (retval=%d)",
++			retval);
++		qp_release_pages(consumeQ->kernelIf->headerPage, retval, false);
++		qp_release_pages(produceQ->kernelIf->headerPage,
++				 produceQ->kernelIf->numPages, false);
++		err = VMCI_ERROR_NO_MEM;
 +	}
 +
 +out:
-+	vmci_ctx_release(dstContext);
++	up_write(&current->mm->mmap_sem);
 +
-+	return result;
-+}
-+
-+static int ctx_compare_user(uid_t *user1, uid_t *user2)
-+{
-+	if (!user1 || !user2)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	return (*user1 == *user2) ? VMCI_SUCCESS : VMCI_ERROR_GENERIC;
-+}
-+
-+bool vmci_ctx_supports_host_qp(struct vmci_ctx *context)
-+{
-+	return context && context->userVersion >= VMCI_VERSION_HOSTQP;
++	return err;
 +}
 +
 +/*
-+ * Registers that a new queue pair handle has been allocated by
-+ * the context.
++ * Registers the specification of the user pages used for backing a queue
++ * pair. Enough information to map in pages is stored in the OS specific
++ * part of the struct vmci_queue structure.
 + */
-+int vmci_ctx_qp_create(struct vmci_ctx *context,
-+		       struct vmci_handle handle)
++static int qp_host_register_user_memory(struct vmci_qp_page_store *pageStore,
++					struct vmci_queue *produceQ,
++					struct vmci_queue *consumeQ)
++{
++	uint64_t produceUVA;
++	uint64_t consumeUVA;
++
++	ASSERT(produceQ->kernelIf->headerPage
++	       && consumeQ->kernelIf->headerPage);
++
++	/*
++	 * The new style and the old style mapping only differs in
++	 * that we either get a single or two UVAs, so we split the
++	 * single UVA range at the appropriate spot.
++	 */
++	produceUVA = pageStore->pages;
++	consumeUVA = pageStore->pages +
++		produceQ->kernelIf->numPages * PAGE_SIZE;
++	return qp_host_get_user_memory(produceUVA, consumeUVA, produceQ,
++				       consumeQ);
++}
++
++/*
++ * Releases and removes the references to user pages stored in the attach
++ * struct.  Pages are released from the page cache and may become
++ * swappable again.
++ */
++static void qp_host_unregister_user_memory(struct vmci_queue *produceQ,
++					   struct vmci_queue *consumeQ)
++{
++	ASSERT(produceQ->kernelIf);
++	ASSERT(consumeQ->kernelIf);
++	ASSERT(!produceQ->qHeader && !consumeQ->qHeader);
++
++	qp_release_pages(produceQ->kernelIf->headerPage,
++			 produceQ->kernelIf->numPages, true);
++	memset(produceQ->kernelIf->headerPage, 0,
++	       sizeof *produceQ->kernelIf->headerPage *
++	       produceQ->kernelIf->numPages);
++	qp_release_pages(consumeQ->kernelIf->headerPage,
++			 consumeQ->kernelIf->numPages, true);
++	memset(consumeQ->kernelIf->headerPage, 0,
++	       sizeof *consumeQ->kernelIf->headerPage *
++	       consumeQ->kernelIf->numPages);
++}
++
++/*
++ * Once qp_host_register_user_memory has been performed on a
++ * queue, the queue pair headers can be mapped into the
++ * kernel. Once mapped, they must be unmapped with
++ * qp_host_unmap_queues prior to calling
++ * qp_host_unregister_user_memory.
++ * Pages are pinned.
++ */
++static int qp_host_map_queues(struct vmci_queue *produceQ,
++			      struct vmci_queue *consumeQ)
 +{
 +	int result;
 +
-+	if (context == NULL || VMCI_HANDLE_INVALID(handle))
-+		return VMCI_ERROR_INVALID_ARGS;
++	if (!produceQ->qHeader || !consumeQ->qHeader) {
++		struct page *headers[2];
 +
-+	if (!vmci_handle_arr_has_entry(context->queuePairArray, handle)) {
-+		vmci_handle_arr_append_entry(&context->queuePairArray, handle);
-+		result = VMCI_SUCCESS;
++		if (produceQ->qHeader != consumeQ->qHeader)
++			return VMCI_ERROR_QUEUEPAIR_MISMATCH;
++
++		if (produceQ->kernelIf->headerPage == NULL ||
++		    *produceQ->kernelIf->headerPage == NULL)
++			return VMCI_ERROR_UNAVAILABLE;
++
++		ASSERT(*produceQ->kernelIf->headerPage
++		       && *consumeQ->kernelIf->headerPage);
++
++		headers[0] = *produceQ->kernelIf->headerPage;
++		headers[1] = *consumeQ->kernelIf->headerPage;
++
++		produceQ->qHeader = vmap(headers, 2, VM_MAP, PAGE_KERNEL);
++		if (produceQ->qHeader != NULL) {
++			consumeQ->qHeader =
++				(struct vmci_queue_header *)((uint8_t *)
++							     produceQ->qHeader +
++							     PAGE_SIZE);
++			result = VMCI_SUCCESS;
++		} else {
++			pr_warn("vmap failed.");
++			result = VMCI_ERROR_NO_MEM;
++		}
 +	} else {
-+		result = VMCI_ERROR_DUPLICATE_ENTRY;
++		result = VMCI_SUCCESS;
 +	}
 +
 +	return result;
 +}
 +
 +/*
-+ * Unregisters a queue pair handle that was previously registered
-+ * with vmci_ctx_qp_create.
++ * Unmaps previously mapped queue pair headers from the kernel.
++ * Pages are unpinned.
 + */
-+int vmci_ctx_qp_destroy(struct vmci_ctx *context,
-+			struct vmci_handle handle)
++static int qp_host_unmap_queues(uint32_t gid,
++				struct vmci_queue *produceQ,
++				struct vmci_queue *consumeQ)
 +{
-+	struct vmci_handle hndl;
++	if (produceQ->qHeader) {
++		ASSERT(consumeQ->qHeader);
 +
-+	if (context == NULL || VMCI_HANDLE_INVALID(handle))
++		if (produceQ->qHeader < consumeQ->qHeader)
++			vunmap(produceQ->qHeader);
++		else
++			vunmap(consumeQ->qHeader);
++
++		produceQ->qHeader = NULL;
++		consumeQ->qHeader = NULL;
++	}
++
++	return VMCI_SUCCESS;
++}
++
++/*
++ * Finds the entry in the list corresponding to a given handle. Assumes
++ * that the list is locked.
++ */
++static struct qp_entry *qp_list_find(struct qp_list *qpList,
++				     struct vmci_handle handle)
++{
++	struct qp_entry *entry;
++
++	if (VMCI_HANDLE_INVALID(handle))
++		return NULL;
++
++	list_for_each_entry(entry, &qpList->head, listItem) {
++		if (VMCI_HANDLE_EQUAL(entry->handle, handle))
++			return entry;
++	}
++
++	return NULL;
++}
++
++/*
++ * Dispatches a queue pair event message directly into the local event
++ * queue.
++ */
++static int qp_notify_peer_local(bool attach,
++				struct vmci_handle handle)
++{
++	struct vmci_event_msg *eMsg;
++	struct vmci_event_payld_qp *ePayload;
++	/* buf is only 48 bytes. */
++	char buf[sizeof *eMsg + sizeof *ePayload];
++	uint32_t contextId;
++
++	contextId = VMCI_GetContextID();
++
++	eMsg = (struct vmci_event_msg *)buf;
++	ePayload = vmci_event_data_payload(&eMsg->eventData);
++
++	eMsg->hdr.dst = vmci_make_handle(contextId, VMCI_EVENT_HANDLER);
++	eMsg->hdr.src = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
++					 VMCI_CONTEXT_RESOURCE_ID);
++	eMsg->hdr.payloadSize =
++		sizeof *eMsg + sizeof *ePayload - sizeof eMsg->hdr;
++	eMsg->eventData.event =
++		attach ? VMCI_EVENT_QP_PEER_ATTACH : VMCI_EVENT_QP_PEER_DETACH;
++	ePayload->peerId = contextId;
++	ePayload->handle = handle;
++
++	return vmci_event_dispatch((struct vmci_dg *)eMsg);
++}
++
++/*
++ * Allocates and initializes a qp_guest_endpoint structure.
++ * Allocates a QueuePair rid (and handle) iff the given entry has
++ * an invalid handle.  0 through VMCI_RESERVED_RESOURCE_ID_MAX
++ * are reserved handles.  Assumes that the QP list mutex is held
++ * by the caller.
++ */
++static struct qp_guest_endpoint *
++qp_guest_endpoint_create(struct vmci_handle handle,
++			 uint32_t peer,
++			 uint32_t flags,
++			 uint64_t produceSize,
++			 uint64_t consumeSize,
++			 void *produceQ,
++			 void *consumeQ)
++{
++	static uint32_t queuePairRID = VMCI_RESERVED_RESOURCE_ID_MAX + 1;
++	struct qp_guest_endpoint *entry;
++	/* One page each for the queue headers. */
++	const uint64_t numPPNs = dm_div_up(produceSize, PAGE_SIZE) +
++		dm_div_up(consumeSize, PAGE_SIZE) + 2;
++
++	ASSERT((produceSize || consumeSize) && produceQ && consumeQ);
++
++	if (VMCI_HANDLE_INVALID(handle)) {
++		uint32_t contextID = VMCI_GetContextID();
++		uint32_t oldRID = queuePairRID;
++
++		/*
++		 * Generate a unique QueuePair rid.  Keep on trying
++		 * until we wrap around in the RID space.
++		 */
++		ASSERT(oldRID > VMCI_RESERVED_RESOURCE_ID_MAX);
++		do {
++			handle = vmci_make_handle(contextID, queuePairRID);
++			entry = (struct qp_guest_endpoint *)
++				qp_list_find(&qpGuestEndpoints, handle);
++			queuePairRID++;
++
++			if (unlikely(!queuePairRID))
++				/* Skip the reserved rids. */
++				queuePairRID =
++					VMCI_RESERVED_RESOURCE_ID_MAX + 1;
++
++		} while (entry && queuePairRID != oldRID);
++
++		if (unlikely(entry != NULL)) {
++			ASSERT(queuePairRID == oldRID);
++			/*
++			 * We wrapped around --- no rids were free.
++			 */
++			return NULL;
++		}
++	}
++
++	ASSERT(!VMCI_HANDLE_INVALID(handle) &&
++	       qp_list_find(&qpGuestEndpoints, handle) == NULL);
++	entry = kzalloc(sizeof *entry, GFP_KERNEL);
++	if (entry) {
++		entry->qp.handle = handle;
++		entry->qp.peer = peer;
++		entry->qp.flags = flags;
++		entry->qp.produceSize = produceSize;
++		entry->qp.consumeSize = consumeSize;
++		entry->qp.refCount = 0;
++		entry->numPPNs = numPPNs;
++		entry->produceQ = produceQ;
++		entry->consumeQ = consumeQ;
++		INIT_LIST_HEAD(&entry->qp.listItem);
++	}
++	return entry;
++}
++
++/*
++ * Frees a qp_guest_endpoint structure.
++ */
++static void qp_guest_endpoint_destroy(struct qp_guest_endpoint *entry)
++{
++	ASSERT(entry);
++	ASSERT(entry->qp.refCount == 0);
++
++	qp_free_ppn_set(&entry->ppnSet);
++	qp_cleanup_queue_mutex(entry->produceQ, entry->consumeQ);
++	qp_free_queue(entry->produceQ, entry->qp.produceSize);
++	qp_free_queue(entry->consumeQ, entry->qp.consumeSize);
++	kfree(entry);
++}
++
++/*
++ * Helper to make a QueuePairAlloc hypercall when the driver is
++ * supporting a guest device.
++ */
++static int qp_alloc_hypercall(const struct qp_guest_endpoint *entry)
++{
++	struct vmci_qp_alloc_msg *allocMsg;
++	size_t msgSize;
++	int result;
++
++	if (!entry || entry->numPPNs <= 2)
 +		return VMCI_ERROR_INVALID_ARGS;
 +
-+	hndl = vmci_handle_arr_remove_entry(context->queuePairArray, handle);
++	ASSERT(!(entry->qp.flags & VMCI_QPFLAG_LOCAL));
 +
-+	return VMCI_HANDLE_INVALID(hndl) ?
-+		VMCI_ERROR_NOT_FOUND : VMCI_SUCCESS;
++	msgSize = sizeof *allocMsg + (size_t) entry->numPPNs * sizeof(uint32_t);
++	allocMsg = kmalloc(msgSize, GFP_KERNEL);
++	if (!allocMsg)
++		return VMCI_ERROR_NO_MEM;
++
++	allocMsg->hdr.dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
++					     VMCI_QUEUEPAIR_ALLOC);
++	allocMsg->hdr.src = VMCI_ANON_SRC_HANDLE;
++	allocMsg->hdr.payloadSize = msgSize - VMCI_DG_HEADERSIZE;
++	allocMsg->handle = entry->qp.handle;
++	allocMsg->peer = entry->qp.peer;
++	allocMsg->flags = entry->qp.flags;
++	allocMsg->produceSize = entry->qp.produceSize;
++	allocMsg->consumeSize = entry->qp.consumeSize;
++	allocMsg->numPPNs = entry->numPPNs;
++
++	result =
++		qp_populate_ppn_set((uint8_t *) allocMsg + sizeof *allocMsg,
++				    &entry->ppnSet);
++	if (result == VMCI_SUCCESS)
++		result = vmci_send_dg((struct vmci_dg *)allocMsg);
++
++	kfree(allocMsg);
++
++	return result;
 +}
 +
 +/*
-+ * Determines whether a given queue pair handle is registered
-+ * with the given context.
++ * Helper to make a QueuePairDetach hypercall when the driver is
++ * supporting a guest device.
 + */
-+bool vmci_ctx_qp_exists(struct vmci_ctx *context,
-+			struct vmci_handle handle)
++static int qp_detatch_hypercall(struct vmci_handle handle)
 +{
-+	if (context == NULL || VMCI_HANDLE_INVALID(handle))
-+		return false;
++	struct vmci_qp_detach_msg detachMsg;
 +
-+	return vmci_handle_arr_has_entry(context->queuePairArray, handle);
++	detachMsg.hdr.dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
++					     VMCI_QUEUEPAIR_DETACH);
++	detachMsg.hdr.src = VMCI_ANON_SRC_HANDLE;
++	detachMsg.hdr.payloadSize = sizeof handle;
++	detachMsg.handle = handle;
++
++	return vmci_send_dg((struct vmci_dg *)&detachMsg);
 +}
 +
-+/**
-+ * VMCIContext_GetPrivFlags() - Retrieve privilege flags.
-+ * @contextID:	The context ID of the VMCI context.
-+ *
-+ * Retrieves privilege flags of the given VMCI context ID.
++/*
++ * Adds the given entry to the list. Assumes that the list is locked.
 + */
-+uint32_t VMCIContext_GetPrivFlags(uint32_t contextID)
++static void qp_list_add_entry(struct qp_list *qpList,
++			      struct qp_entry *entry)
 +{
-+	if (vmci_host_code_active()) {
-+		uint32_t flags;
-+		struct vmci_ctx *context;
++	if (entry)
++		list_add(&entry->listItem, &qpList->head);
++}
 +
-+		context = vmci_ctx_get(contextID);
-+		if (!context)
-+			return VMCI_LEAST_PRIVILEGE_FLAGS;
++/*
++ * Removes the given entry from the list. Assumes that the list is locked.
++ */
++static void qp_list_remove_entry(struct qp_list *qpList,
++				 struct qp_entry *entry)
++{
++	if (entry)
++		list_del(&entry->listItem);
++}
 +
-+		flags = context->privFlags;
-+		vmci_ctx_release(context);
-+		return flags;
++/*
++ * Helper for VMCI QueuePair detach interface. Frees the physical
++ * pages for the queue pair.
++ */
++static int qp_detatch_guest_work(struct vmci_handle handle)
++{
++	int result;
++	struct qp_guest_endpoint *entry;
++	uint32_t refCount = ~0;	/* To avoid compiler warning below */
++
++	ASSERT(!VMCI_HANDLE_INVALID(handle));
++
++	down(&qpGuestEndpoints.mutex);
++
++	entry = (struct qp_guest_endpoint *)
++		qp_list_find(&qpGuestEndpoints, handle);
++	if (!entry) {
++		up(&qpGuestEndpoints.mutex);
++		return VMCI_ERROR_NOT_FOUND;
 +	}
-+	return VMCI_NO_PRIVILEGE_FLAGS;
++
++	ASSERT(entry->qp.refCount >= 1);
++
++	if (entry->qp.flags & VMCI_QPFLAG_LOCAL) {
++		result = VMCI_SUCCESS;
++
++		if (entry->qp.refCount > 1) {
++			result = qp_notify_peer_local(false, handle);
++			/*
++			 * We can fail to notify a local queuepair
++			 * because we can't allocate.  We still want
++			 * to release the entry if that happens, so
++			 * don't bail out yet.
++			 */
++		}
++	} else {
++		result = qp_detatch_hypercall(handle);
++		if (result < VMCI_SUCCESS) {
++			/*
++			 * We failed to notify a non-local queuepair.
++			 * That other queuepair might still be
++			 * accessing the shared memory, so don't
++			 * release the entry yet.  It will get cleaned
++			 * up by VMCIQueuePair_Exit() if necessary
++			 * (assuming we are going away, otherwise why
++			 * did this fail?).
++			 */
++
++			up(&qpGuestEndpoints.mutex);
++			return result;
++		}
++	}
++
++	/*
++	 * If we get here then we either failed to notify a local queuepair, or
++	 * we succeeded in all cases.  Release the entry if required.
++	 */
++
++	entry->qp.refCount--;
++	if (entry->qp.refCount == 0)
++		qp_list_remove_entry(&qpGuestEndpoints, &entry->qp);
++
++	/* If we didn't remove the entry, this could change once we unlock. */
++	if (entry)
++		refCount = entry->qp.refCount;
++
++	up(&qpGuestEndpoints.mutex);
++
++	if (refCount == 0)
++		qp_guest_endpoint_destroy(entry);
++
++	return result;
 +}
-+EXPORT_SYMBOL(VMCIContext_GetPrivFlags);
 +
-+/**
-+ * VMCI_ContextID2HostVmID() - Map CID to HostID
-+ * @contextID:	Context ID of VMCI context.
-+ * @hostVmID:	Host VM ID data
-+ * @hostVmIDLen:	Length of Host VM ID Data.
-+ *
-+ * Maps a context ID to the host specific (process/world) ID
-+ * of the VM/VMX.  This function is not used on Linux systems
-+ * and should be ignored.
++/*
++ * This functions handles the actual allocation of a VMCI queue
++ * pair guest endpoint. Allocates physical pages for the queue
++ * pair. It makes OS dependent calls through generic wrappers.
 + */
-+int VMCI_ContextID2HostVmID(uint32_t contextID,
-+			    void *hostVmID,
-+			    size_t hostVmIDLen)
++static int qp_alloc_guest_work(struct vmci_handle *handle,
++			       struct vmci_queue **produceQ,
++			       uint64_t produceSize,
++			       struct vmci_queue **consumeQ,
++			       uint64_t consumeSize,
++			       uint32_t peer,
++			       uint32_t flags,
++			       uint32_t privFlags)
 +{
-+	return VMCI_ERROR_UNAVAILABLE;
++	const uint64_t numProducePages = dm_div_up(produceSize, PAGE_SIZE) + 1;
++	const uint64_t numConsumePages = dm_div_up(consumeSize, PAGE_SIZE) + 1;
++	void *myProduceQ = NULL;
++	void *myConsumeQ = NULL;
++	int result;
++	struct qp_guest_endpoint *queuePairEntry = NULL;
++
++	ASSERT(handle && produceQ && consumeQ && (produceSize || consumeSize));
++
++	if (privFlags != VMCI_NO_PRIVILEGE_FLAGS)
++		return VMCI_ERROR_NO_ACCESS;
++
++	down(&qpGuestEndpoints.mutex);
++
++	queuePairEntry = (struct qp_guest_endpoint *)qp_list_find(
++		&qpGuestEndpoints, *handle);
++	if (queuePairEntry) {
++		if (queuePairEntry->qp.flags & VMCI_QPFLAG_LOCAL) {
++			/* Local attach case. */
++			if (queuePairEntry->qp.refCount > 1) {
++				pr_devel("Error attempting to attach more " \
++					 "than once.");
++				result = VMCI_ERROR_UNAVAILABLE;
++				goto errorKeepEntry;
++			}
++
++			if (queuePairEntry->qp.produceSize != consumeSize
++			    || queuePairEntry->qp.consumeSize !=
++			    produceSize
++			    || queuePairEntry->qp.flags !=
++			    (flags & ~VMCI_QPFLAG_ATTACH_ONLY)) {
++				pr_devel("Error mismatched queue pair in " \
++					 "local attach.");
++				result = VMCI_ERROR_QUEUEPAIR_MISMATCH;
++				goto errorKeepEntry;
++			}
++
++			/*
++			 * Do a local attach.  We swap the consume and
++			 * produce queues for the attacher and deliver
++			 * an attach event.
++			 */
++			result = qp_notify_peer_local(true, *handle);
++			if (result < VMCI_SUCCESS)
++				goto errorKeepEntry;
++
++			myProduceQ = queuePairEntry->consumeQ;
++			myConsumeQ = queuePairEntry->produceQ;
++			goto out;
++		}
++
++		result = VMCI_ERROR_ALREADY_EXISTS;
++		goto errorKeepEntry;
++	}
++
++	myProduceQ = qp_alloc_queue(produceSize, flags);
++	if (!myProduceQ) {
++		pr_warn("Error allocating pages for produce queue.");
++		result = VMCI_ERROR_NO_MEM;
++		goto error;
++	}
++
++	myConsumeQ = qp_alloc_queue(consumeSize, flags);
++	if (!myConsumeQ) {
++		pr_warn("Error allocating pages for consume queue.");
++		result = VMCI_ERROR_NO_MEM;
++		goto error;
++	}
++
++	queuePairEntry = qp_guest_endpoint_create(*handle, peer, flags,
++						  produceSize, consumeSize,
++						  myProduceQ, myConsumeQ);
++	if (!queuePairEntry) {
++		pr_warn("Error allocating memory in %s.", __func__);
++		result = VMCI_ERROR_NO_MEM;
++		goto error;
++	}
++
++	result = qp_alloc_ppn_set(myProduceQ, numProducePages, myConsumeQ,
++				  numConsumePages, &queuePairEntry->ppnSet);
++	if (result < VMCI_SUCCESS) {
++		pr_warn("qp_alloc_ppn_set failed.");
++		goto error;
++	}
++
++	/*
++	 * It's only necessary to notify the host if this queue pair will be
++	 * attached to from another context.
++	 */
++	if (queuePairEntry->qp.flags & VMCI_QPFLAG_LOCAL) {
++		/* Local create case. */
++		uint32_t contextId = VMCI_GetContextID();
++
++		/*
++		 * Enforce similar checks on local queue pairs as we
++		 * do for regular ones.  The handle's context must
++		 * match the creator or attacher context id (here they
++		 * are both the current context id) and the
++		 * attach-only flag cannot exist during create.  We
++		 * also ensure specified peer is this context or an
++		 * invalid one.
++		 */
++		if (queuePairEntry->qp.handle.context != contextId ||
++		    (queuePairEntry->qp.peer != VMCI_INVALID_ID &&
++		     queuePairEntry->qp.peer != contextId)) {
++			result = VMCI_ERROR_NO_ACCESS;
++			goto error;
++		}
++
++		if (queuePairEntry->qp.flags & VMCI_QPFLAG_ATTACH_ONLY) {
++			result = VMCI_ERROR_NOT_FOUND;
++			goto error;
++		}
++	} else {
++		result = qp_alloc_hypercall(queuePairEntry);
++		if (result < VMCI_SUCCESS) {
++			pr_warn("qp_alloc_hypercall result = %d.",
++				result);
++			goto error;
++		}
++	}
++
++	qp_init_queue_mutex((struct vmci_queue *)myProduceQ,
++			    (struct vmci_queue *)myConsumeQ);
++
++	qp_list_add_entry(&qpGuestEndpoints, &queuePairEntry->qp);
++
++out:
++	queuePairEntry->qp.refCount++;
++	*handle = queuePairEntry->qp.handle;
++	*produceQ = (struct vmci_queue *)myProduceQ;
++	*consumeQ = (struct vmci_queue *)myConsumeQ;
++
++	/*
++	 * We should initialize the queue pair header pages on a local
++	 * queue pair create.  For non-local queue pairs, the
++	 * hypervisor initializes the header pages in the create step.
++	 */
++	if ((queuePairEntry->qp.flags & VMCI_QPFLAG_LOCAL) &&
++	    queuePairEntry->qp.refCount == 1) {
++		vmci_q_header_init((*produceQ)->qHeader, *handle);
++		vmci_q_header_init((*consumeQ)->qHeader, *handle);
++	}
++
++	up(&qpGuestEndpoints.mutex);
++
++	return VMCI_SUCCESS;
++
++error:
++	up(&qpGuestEndpoints.mutex);
++	if (queuePairEntry) {
++		/* The queues will be freed inside the destroy routine. */
++		qp_guest_endpoint_destroy(queuePairEntry);
++	} else {
++		qp_free_queue(myProduceQ, produceSize);
++		qp_free_queue(myConsumeQ, consumeSize);
++	}
++	return result;
++
++errorKeepEntry:
++	/* This path should only be used when an existing entry was found. */
++	ASSERT(queuePairEntry->qp.refCount > 0);
++	up(&qpGuestEndpoints.mutex);
++	return result;
 +}
-+EXPORT_SYMBOL(VMCI_ContextID2HostVmID);
 +
-+/**
-+ * VMCI_IsContextOwner() - Determimnes if user is the context owner
-+ * @contextID:	The context ID of the VMCI context.
-+ * @hostUser:	The user as a void pointer.
++/*
++ * The first endpoint issuing a queue pair allocation will create the state
++ * of the queue pair in the queue pair broker.
 + *
-+ * Determines whether a given host OS specific representation of
-+ * user is the owner of the VM/VMX.
++ * If the creator is a guest, it will associate a VMX virtual address range
++ * with the queue pair as specified by the pageStore. For compatibility with
++ * older VMX'en, that would use a separate step to set the VMX virtual
++ * address range, the virtual address range can be registered later using
++ * vmci_qp_broker_set_page_store. In that case, a pageStore of NULL should be
++ * used.
++ *
++ * If the creator is the host, a pageStore of NULL should be used as well,
++ * since the host is not able to supply a page store for the queue pair.
++ *
++ * For older VMX and host callers, the queue pair will be created in the
++ * VMCIQPB_CREATED_NO_MEM state, and for current VMX callers, it will be
++ * created in VMCOQPB_CREATED_MEM state.
 + */
-+int VMCI_IsContextOwner(uint32_t contextID,
-+			void *hostUser)
++static int qp_broker_create(struct vmci_handle handle,
++			    uint32_t peer,
++			    uint32_t flags,
++			    uint32_t privFlags,
++			    uint64_t produceSize,
++			    uint64_t consumeSize,
++			    struct vmci_qp_page_store *pageStore,
++			    struct vmci_ctx *context,
++			    VMCIEventReleaseCB wakeupCB,
++			    void *clientData,
++			    struct qp_broker_entry **ent)
 +{
-+	if (vmci_host_code_active()) {
-+		struct vmci_ctx *context;
-+		uid_t *user = hostUser;
-+		int retval;
++	struct qp_broker_entry *entry = NULL;
++	const uint32_t contextId = vmci_ctx_get_id(context);
++	bool isLocal = flags & VMCI_QPFLAG_LOCAL;
++	int result;
++	uint64_t guestProduceSize;
++	uint64_t guestConsumeSize;
 +
-+		if (!hostUser)
++	/* Do not create if the caller asked not to. */
++	if (flags & VMCI_QPFLAG_ATTACH_ONLY)
++		return VMCI_ERROR_NOT_FOUND;
++
++	/*
++	 * Creator's context ID should match handle's context ID or the creator
++	 * must allow the context in handle's context ID as the "peer".
++	 */
++	if (handle.context != contextId && handle.context != peer)
++		return VMCI_ERROR_NO_ACCESS;
++
++	if (VMCI_CONTEXT_IS_VM(contextId) && VMCI_CONTEXT_IS_VM(peer))
++		return VMCI_ERROR_DST_UNREACHABLE;
++
++	/*
++	 * Creator's context ID for local queue pairs should match the
++	 * peer, if a peer is specified.
++	 */
++	if (isLocal && peer != VMCI_INVALID_ID && contextId != peer)
++		return VMCI_ERROR_NO_ACCESS;
++
++	entry = kzalloc(sizeof *entry, GFP_ATOMIC);
++	if (!entry)
++		return VMCI_ERROR_NO_MEM;
++
++	if (vmci_ctx_get_id(context) == VMCI_HOST_CONTEXT_ID && !isLocal) {
++		/*
++		 * The queue pair broker entry stores values from the guest
++		 * point of view, so a creating host side endpoint should swap
++		 * produce and consume values -- unless it is a local queue
++		 * pair, in which case no swapping is necessary, since the local
++		 * attacher will swap queues.
++		 */
++
++		guestProduceSize = consumeSize;
++		guestConsumeSize = produceSize;
++	} else {
++		guestProduceSize = produceSize;
++		guestConsumeSize = consumeSize;
++	}
++
++	entry->qp.handle = handle;
++	entry->qp.peer = peer;
++	entry->qp.flags = flags;
++	entry->qp.produceSize = guestProduceSize;
++	entry->qp.consumeSize = guestConsumeSize;
++	entry->qp.refCount = 1;
++	entry->createId = contextId;
++	entry->attachId = VMCI_INVALID_ID;
++	entry->state = VMCIQPB_NEW;
++	entry->requireTrustedAttach =
++		!!(context->privFlags & VMCI_PRIVILEGE_FLAG_RESTRICTED);
++	entry->createdByTrusted = !!(privFlags & VMCI_PRIVILEGE_FLAG_TRUSTED);
++	entry->vmciPageFiles = false;
++	entry->wakeupCB = wakeupCB;
++	entry->clientData = clientData;
++	entry->produceQ = qp_host_alloc_queue(guestProduceSize);
++	if (entry->produceQ == NULL) {
++		result = VMCI_ERROR_NO_MEM;
++		goto error;
++	}
++	entry->consumeQ = qp_host_alloc_queue(guestConsumeSize);
++	if (entry->consumeQ == NULL) {
++		result = VMCI_ERROR_NO_MEM;
++		goto error;
++	}
++
++	qp_init_queue_mutex(entry->produceQ, entry->consumeQ);
++
++	INIT_LIST_HEAD(&entry->qp.listItem);
++
++	if (isLocal) {
++		uint8_t *tmp;
++		ASSERT(pageStore == NULL);
++
++		entry->localMem = kcalloc(QPE_NUM_PAGES(entry->qp),
++					  PAGE_SIZE, GFP_KERNEL);
++		if (entry->localMem == NULL) {
++			result = VMCI_ERROR_NO_MEM;
++			goto error;
++		}
++		entry->state = VMCIQPB_CREATED_MEM;
++		entry->produceQ->qHeader = entry->localMem;
++		tmp = (uint8_t *) entry->localMem + PAGE_SIZE *
++			(dm_div_up(entry->qp.produceSize, PAGE_SIZE) + 1);
++		entry->consumeQ->qHeader = (struct vmci_queue_header *) tmp;
++
++		vmci_q_header_init(entry->produceQ->qHeader, handle);
++		vmci_q_header_init(entry->consumeQ->qHeader, handle);
++	} else if (pageStore) {
++		ASSERT(entry->createId != VMCI_HOST_CONTEXT_ID || isLocal);
++
++		/*
++		 * The VMX already initialized the queue pair headers, so no
++		 * need for the kernel side to do that.
++		 */
++		result = qp_host_register_user_memory(pageStore,
++						      entry->produceQ,
++						      entry->consumeQ);
++		if (result < VMCI_SUCCESS)
++			goto error;
++
++		entry->state = VMCIQPB_CREATED_MEM;
++	} else {
++		/*
++		 * A create without a pageStore may be either a host
++		 * side create (in which case we are waiting for the
++		 * guest side to supply the memory) or an old style
++		 * queue pair create (in which case we will expect a
++		 * set page store call as the next step).
++		 */
++		entry->state = VMCIQPB_CREATED_NO_MEM;
++	}
++
++	qp_list_add_entry(&qpBrokerList, &entry->qp);
++	if (ent != NULL)
++		*ent = entry;
++
++	vmci_ctx_qp_create(context, handle);
++
++	return VMCI_SUCCESS;
++
++error:
++	if (entry != NULL) {
++		qp_host_free_queue(entry->produceQ, guestProduceSize);
++		qp_host_free_queue(entry->consumeQ, guestConsumeSize);
++		kfree(entry);
++	}
++
++	return result;
++}
++
++/*
++ * Enqueues an event datagram to notify the peer VM attached to
++ * the given queue pair handle about attach/detach event by the
++ * given VM.  Returns Payload size of datagram enqueued on
++ * success, error code otherwise.
++ */
++static int qp_notify_peer(bool attach,
++			  struct vmci_handle handle,
++			  uint32_t myId,
++			  uint32_t peerId)
++{
++	int rv;
++	struct vmci_event_msg *eMsg;
++	struct vmci_event_payld_qp *evPayload;
++	char buf[sizeof *eMsg + sizeof *evPayload];
++
++	if (VMCI_HANDLE_INVALID(handle) || myId == VMCI_INVALID_ID ||
++	    peerId == VMCI_INVALID_ID)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	/*
++	 * Notification message contains: queue pair handle and
++	 * attaching/detaching VM's context id.
++	 */
++	eMsg = (struct vmci_event_msg *)buf;
++
++	/*
++	 * In vmci_ctx_enqueue_dg() we enforce the upper limit on
++	 * number of pending events from the hypervisor to a given VM
++	 * otherwise a rogue VM could do an arbitrary number of attach
++	 * and detach operations causing memory pressure in the host
++	 * kernel.
++	 */
++
++	/* Clear out any garbage. */
++	memset(eMsg, 0, sizeof buf);
++
++	eMsg->hdr.dst = vmci_make_handle(peerId, VMCI_EVENT_HANDLER);
++	eMsg->hdr.src = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
++					 VMCI_CONTEXT_RESOURCE_ID);
++	eMsg->hdr.payloadSize = sizeof *eMsg + sizeof *evPayload -
++		sizeof eMsg->hdr;
++	eMsg->eventData.event = attach ?
++		VMCI_EVENT_QP_PEER_ATTACH : VMCI_EVENT_QP_PEER_DETACH;
++	evPayload = vmci_event_data_payload(&eMsg->eventData);
++	evPayload->handle = handle;
++	evPayload->peerId = myId;
++
++	rv = vmci_dg_dispatch(VMCI_HYPERVISOR_CONTEXT_ID,
++			      (struct vmci_dg *)eMsg, false);
++	if (rv < VMCI_SUCCESS)
++		pr_warn("Failed to enqueue QueuePair %s event datagram " \
++			"for context (ID=0x%x).", attach ? "ATTACH" : "DETACH",
++			peerId);
++
++	return rv;
++}
++
++/*
++ * The second endpoint issuing a queue pair allocation will attach to
++ * the queue pair registered with the queue pair broker.
++ *
++ * If the attacher is a guest, it will associate a VMX virtual address
++ * range with the queue pair as specified by the pageStore. At this
++ * point, the already attach host endpoint may start using the queue
++ * pair, and an attach event is sent to it. For compatibility with
++ * older VMX'en, that used a separate step to set the VMX virtual
++ * address range, the virtual address range can be registered later
++ * using vmci_qp_broker_set_page_store. In that case, a pageStore of
++ * NULL should be used, and the attach event will be generated once
++ * the actual page store has been set.
++ *
++ * If the attacher is the host, a pageStore of NULL should be used as
++ * well, since the page store information is already set by the guest.
++ *
++ * For new VMX and host callers, the queue pair will be moved to the
++ * VMCIQPB_ATTACHED_MEM state, and for older VMX callers, it will be
++ * moved to the VMCOQPB_ATTACHED_NO_MEM state.
++ */
++static int qp_broker_attach(struct qp_broker_entry *entry,
++			    uint32_t peer,
++			    uint32_t flags,
++			    uint32_t privFlags,
++			    uint64_t produceSize,
++			    uint64_t consumeSize,
++			    struct vmci_qp_page_store *pageStore,
++			    struct vmci_ctx *context,
++			    VMCIEventReleaseCB wakeupCB,
++			    void *clientData,
++			    struct qp_broker_entry **ent)
++{
++	const uint32_t contextId = vmci_ctx_get_id(context);
++	bool isLocal = flags & VMCI_QPFLAG_LOCAL;
++	int result;
++
++	if (entry->state != VMCIQPB_CREATED_NO_MEM &&
++	    entry->state != VMCIQPB_CREATED_MEM)
++		return VMCI_ERROR_UNAVAILABLE;
++
++	if (isLocal) {
++		if (!(entry->qp.flags & VMCI_QPFLAG_LOCAL) ||
++		    contextId != entry->createId) {
++			return VMCI_ERROR_INVALID_ARGS;
++		}
++	} else if (contextId == entry->createId ||
++		   contextId == entry->attachId) {
++		return VMCI_ERROR_ALREADY_EXISTS;
++	}
++
++	ASSERT(entry->qp.refCount < 2);
++	ASSERT(entry->attachId == VMCI_INVALID_ID);
++
++	if (VMCI_CONTEXT_IS_VM(contextId) &&
++	    VMCI_CONTEXT_IS_VM(entry->createId))
++		return VMCI_ERROR_DST_UNREACHABLE;
++
++	/*
++	 * If we are attaching from a restricted context then the queuepair
++	 * must have been created by a trusted endpoint.
++	 */
++	if ((context->privFlags & VMCI_PRIVILEGE_FLAG_RESTRICTED) &&
++	    !entry->createdByTrusted)
++		return VMCI_ERROR_NO_ACCESS;
++
++	/*
++	 * If we are attaching to a queuepair that was created by a restricted
++	 * context then we must be trusted.
++	 */
++	if (entry->requireTrustedAttach &&
++	    (!(privFlags & VMCI_PRIVILEGE_FLAG_TRUSTED)))
++		return VMCI_ERROR_NO_ACCESS;
++
++	/*
++	 * If the creator specifies VMCI_INVALID_ID in "peer" field, access
++	 * control check is not performed.
++	 */
++	if (entry->qp.peer != VMCI_INVALID_ID && entry->qp.peer != contextId)
++		return VMCI_ERROR_NO_ACCESS;
++
++	if (entry->createId == VMCI_HOST_CONTEXT_ID) {
++		/*
++		 * Do not attach if the caller doesn't support Host Queue Pairs
++		 * and a host created this queue pair.
++		 */
++
++		if (!vmci_ctx_supports_host_qp(context))
++			return VMCI_ERROR_INVALID_RESOURCE;
++
++	} else if (contextId == VMCI_HOST_CONTEXT_ID) {
++		struct vmci_ctx *createContext;
++		bool supportsHostQP;
++
++		/*
++		 * Do not attach a host to a user created queue pair if that
++		 * user doesn't support host queue pair end points.
++		 */
++
++		createContext = vmci_ctx_get(entry->createId);
++		supportsHostQP = vmci_ctx_supports_host_qp(createContext);
++		vmci_ctx_release(createContext);
++
++		if (!supportsHostQP)
++			return VMCI_ERROR_INVALID_RESOURCE;
++	}
++
++	if ((entry->qp.flags & ~VMCI_QP_ASYMM) != (flags & ~VMCI_QP_ASYMM_PEER))
++		return VMCI_ERROR_QUEUEPAIR_MISMATCH;
++
++	if (contextId != VMCI_HOST_CONTEXT_ID) {
++		/*
++		 * The queue pair broker entry stores values from the guest
++		 * point of view, so an attaching guest should match the values
++		 * stored in the entry.
++		 */
++
++		if (entry->qp.produceSize != produceSize ||
++		    entry->qp.consumeSize != consumeSize) {
++			return VMCI_ERROR_QUEUEPAIR_MISMATCH;
++		}
++	} else if (entry->qp.produceSize != consumeSize ||
++		   entry->qp.consumeSize != produceSize) {
++		return VMCI_ERROR_QUEUEPAIR_MISMATCH;
++	}
++
++	if (contextId != VMCI_HOST_CONTEXT_ID) {
++		/*
++		 * If a guest attached to a queue pair, it will supply
++		 * the backing memory.  If this is a pre NOVMVM vmx,
++		 * the backing memory will be supplied by calling
++		 * vmci_qp_broker_set_page_store() following the
++		 * return of the vmci_qp_broker_alloc() call. If it is
++		 * a vmx of version NOVMVM or later, the page store
++		 * must be supplied as part of the
++		 * vmci_qp_broker_alloc call.  Under all circumstances
++		 * must the initially created queue pair not have any
++		 * memory associated with it already.
++		 */
++
++		if (entry->state != VMCIQPB_CREATED_NO_MEM)
 +			return VMCI_ERROR_INVALID_ARGS;
 +
-+		context = vmci_ctx_get(contextID);
-+		if (!context)
-+			return VMCI_ERROR_NOT_FOUND;
++		if (pageStore != NULL) {
++			/*
++			 * Patch up host state to point to guest
++			 * supplied memory. The VMX already
++			 * initialized the queue pair headers, so no
++			 * need for the kernel side to do that.
++			 */
 +
-+		if (context->validUser)
-+			retval = ctx_compare_user(user, &context->user);
++			result = qp_host_register_user_memory(pageStore,
++							      entry->produceQ,
++							      entry->consumeQ);
++			if (result < VMCI_SUCCESS)
++				return result;
++
++			/*
++			 * Preemptively load in the headers if non-blocking to
++			 * prevent blocking later.
++			 */
++			if (entry->qp.flags & VMCI_QPFLAG_NONBLOCK) {
++				result = qp_host_map_queues(entry->produceQ,
++							    entry->consumeQ);
++				if (result < VMCI_SUCCESS) {
++					qp_host_unregister_user_memory(
++						entry->produceQ,
++						entry->consumeQ);
++					return result;
++				}
++			}
++
++			entry->state = VMCIQPB_ATTACHED_MEM;
++		} else {
++			entry->state = VMCIQPB_ATTACHED_NO_MEM;
++		}
++	} else if (entry->state == VMCIQPB_CREATED_NO_MEM) {
++		/*
++		 * The host side is attempting to attach to a queue
++		 * pair that doesn't have any memory associated with
++		 * it. This must be a pre NOVMVM vmx that hasn't set
++		 * the page store information yet, or a quiesced VM.
++		 */
++
++		return VMCI_ERROR_UNAVAILABLE;
++	} else {
++		/*
++		 * For non-blocking queue pairs, we cannot rely on
++		 * enqueue/dequeue to map in the pages on the
++		 * host-side, since it may block, so we make an
++		 * attempt here.
++		 */
++
++		if (flags & VMCI_QPFLAG_NONBLOCK) {
++			result =
++				qp_host_map_queues(entry->produceQ,
++						   entry->consumeQ);
++			if (result < VMCI_SUCCESS)
++				return result;
++
++			entry->qp.flags |= flags &
++				(VMCI_QPFLAG_NONBLOCK | VMCI_QPFLAG_PINNED);
++		}
++
++		/* The host side has successfully attached to a queue pair. */
++		entry->state = VMCIQPB_ATTACHED_MEM;
++	}
++
++	if (entry->state == VMCIQPB_ATTACHED_MEM) {
++		result =
++			qp_notify_peer(true, entry->qp.handle, contextId,
++				       entry->createId);
++		if (result < VMCI_SUCCESS)
++			pr_warn("Failed to notify peer (ID=0x%x) of " \
++				"attach to queue pair (handle=0x%x:0x%x).",
++				entry->createId, entry->qp.handle.context,
++				entry->qp.handle.resource);
++	}
++
++	entry->attachId = contextId;
++	entry->qp.refCount++;
++	if (wakeupCB) {
++		ASSERT(!entry->wakeupCB);
++		entry->wakeupCB = wakeupCB;
++		entry->clientData = clientData;
++	}
++
++	/*
++	 * When attaching to local queue pairs, the context already has
++	 * an entry tracking the queue pair, so don't add another one.
++	 */
++	if (!isLocal)
++		vmci_ctx_qp_create(context, entry->qp.handle);
++	else
++		ASSERT(vmci_ctx_qp_exists(context, entry->qp.handle));
++
++	if (ent != NULL)
++		*ent = entry;
++
++	return VMCI_SUCCESS;
++}
++
++/*
++ * QueuePair_Alloc for use when setting up queue pair endpoints
++ * on the host.
++ */
++static int qp_broker_alloc(struct vmci_handle handle,
++			   uint32_t peer,
++			   uint32_t flags,
++			   uint32_t privFlags,
++			   uint64_t produceSize,
++			   uint64_t consumeSize,
++			   struct vmci_qp_page_store *pageStore,
++			   struct vmci_ctx *context,
++			   VMCIEventReleaseCB wakeupCB,
++			   void *clientData,
++			   struct qp_broker_entry **ent,
++			   bool *swap)
++{
++	const uint32_t contextId = vmci_ctx_get_id(context);
++	bool create;
++	struct qp_broker_entry *entry;
++	bool isLocal = flags & VMCI_QPFLAG_LOCAL;
++	int result;
++
++	if (VMCI_HANDLE_INVALID(handle) ||
++	    (flags & ~VMCI_QP_ALL_FLAGS) || isLocal ||
++	    !(produceSize || consumeSize) ||
++	    !context || contextId == VMCI_INVALID_ID ||
++	    handle.context == VMCI_INVALID_ID) {
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	if (pageStore && !VMCI_QP_PAGESTORE_IS_WELLFORMED(pageStore))
++		return VMCI_ERROR_INVALID_ARGS;
++
++	/*
++	 * In the initial argument check, we ensure that non-vmkernel hosts
++	 * are not allowed to create local queue pairs.
++	 */
++
++	ASSERT(!isLocal);
++
++	down(&qpBrokerList.mutex);
++
++	if (!isLocal && vmci_ctx_qp_exists(context, handle)) {
++		pr_devel("Context (ID=0x%x) already attached to queue " \
++			 "pair (handle=0x%x:0x%x).", contextId,
++			 handle.context, handle.resource);
++		up(&qpBrokerList.mutex);
++		return VMCI_ERROR_ALREADY_EXISTS;
++	}
++
++	entry = (struct qp_broker_entry *)
++		qp_list_find(&qpBrokerList, handle);
++	if (!entry) {
++		create = true;
++		result =
++			qp_broker_create(handle, peer, flags, privFlags,
++					 produceSize, consumeSize, pageStore,
++					 context, wakeupCB, clientData, ent);
++	} else {
++		create = false;
++		result =
++			qp_broker_attach(entry, peer, flags, privFlags,
++					 produceSize, consumeSize, pageStore,
++					 context, wakeupCB, clientData, ent);
++	}
++
++	up(&qpBrokerList.mutex);
++
++	if (swap)
++		*swap = (contextId == VMCI_HOST_CONTEXT_ID) &&
++			!(create && isLocal);
++
++
++	return result;
++}
++
++/*
++ * This function implements the kernel API for allocating a queue
++ * pair.
++ */
++static int qp_alloc_host_work(struct vmci_handle *handle,
++			      struct vmci_queue **produceQ,
++			      uint64_t produceSize,
++			      struct vmci_queue **consumeQ,
++			      uint64_t consumeSize,
++			      uint32_t peer,
++			      uint32_t flags,
++			      uint32_t privFlags,
++			      VMCIEventReleaseCB wakeupCB,
++			      void *clientData)
++{
++	struct vmci_ctx *context;
++	struct qp_broker_entry *entry;
++	int result;
++	bool swap;
++
++	if (VMCI_HANDLE_INVALID(*handle)) {
++		uint32_t resourceID;
++
++		resourceID = vmci_resource_get_id(VMCI_HOST_CONTEXT_ID);
++		if (resourceID == VMCI_INVALID_ID)
++			return VMCI_ERROR_NO_HANDLE;
++
++		*handle = vmci_make_handle(VMCI_HOST_CONTEXT_ID, resourceID);
++	}
++
++	context = vmci_ctx_get(VMCI_HOST_CONTEXT_ID);
++	ASSERT(context);
++
++	entry = NULL;
++	result =
++		qp_broker_alloc(*handle, peer, flags, privFlags,
++				produceSize, consumeSize, NULL, context,
++				wakeupCB, clientData, &entry, &swap);
++	if (result == VMCI_SUCCESS) {
++		if (swap) {
++			/*
++			 * If this is a local queue pair, the attacher
++			 * will swap around produce and consume
++			 * queues.
++			 */
++
++			*produceQ = entry->consumeQ;
++			*consumeQ = entry->produceQ;
++		} else {
++			*produceQ = entry->produceQ;
++			*consumeQ = entry->consumeQ;
++		}
++	} else {
++		*handle = VMCI_INVALID_HANDLE;
++		pr_devel("queue pair broker failed to alloc (result=%d).",
++			 result);
++	}
++	vmci_ctx_release(context);
++	return result;
++}
++
++/*
++ * Allocates a VMCI QueuePair. Only checks validity of input
++ * arguments. The real work is done in the host or guest
++ * specific function.
++ */
++int vmci_qp_alloc(struct vmci_handle *handle,
++		  struct vmci_queue **produceQ,
++		  uint64_t produceSize,
++		  struct vmci_queue **consumeQ,
++		  uint64_t consumeSize,
++		  uint32_t peer,
++		  uint32_t flags,
++		  uint32_t privFlags,
++		  bool guestEndpoint,
++		  VMCIEventReleaseCB wakeupCB,
++		  void *clientData)
++{
++	if (!handle || !produceQ || !consumeQ || (!produceSize && !consumeSize)
++	    || (flags & ~VMCI_QP_ALL_FLAGS))
++		return VMCI_ERROR_INVALID_ARGS;
++
++	if (guestEndpoint)
++		return qp_alloc_guest_work(handle, produceQ,
++					   produceSize, consumeQ,
++					   consumeSize, peer,
++					   flags, privFlags);
++	else
++		return qp_alloc_host_work(handle, produceQ,
++					  produceSize, consumeQ,
++					  consumeSize, peer, flags,
++					  privFlags, wakeupCB,
++					  clientData);
++}
++
++/*
++ * This function implements the host kernel API for detaching from
++ * a queue pair.
++ */
++static int qp_detatch_host_work(struct vmci_handle handle)
++{
++	int result;
++	struct vmci_ctx *context;
++
++	context = vmci_ctx_get(VMCI_HOST_CONTEXT_ID);
++
++	result = vmci_qp_broker_detach(handle, context);
++
++	vmci_ctx_release(context);
++	return result;
++}
++
++/*
++ * Detaches from a VMCI QueuePair. Only checks validity of input argument.
++ * Real work is done in the host or guest specific function.
++ */
++static int qp_detatch(struct vmci_handle handle,
++		      bool guestEndpoint)
++{
++	if (VMCI_HANDLE_INVALID(handle))
++		return VMCI_ERROR_INVALID_ARGS;
++
++	if (guestEndpoint)
++		return qp_detatch_guest_work(handle);
++	else
++		return qp_detatch_host_work(handle);
++}
++
++/*
++ * Initializes the list of QueuePairs.
++ */
++static int qp_list_init(struct qp_list *qpList)
++{
++	INIT_LIST_HEAD(&qpList->head);
++	sema_init(&qpList->mutex, 1);
++	return VMCI_SUCCESS;
++}
++
++/*
++ * Returns the entry from the head of the list. Assumes that the list is
++ * locked.
++ */
++static struct qp_entry *qp_list_get_head(struct qp_list *qpList)
++{
++	if (!list_empty(&qpList->head)) {
++		struct qp_entry *entry =
++			list_first_entry(&qpList->head, struct qp_entry,
++					 listItem);
++		return entry;
++	}
++
++	return NULL;
++}
++
++int __init vmci_qp_broker_init(void)
++{
++	return qp_list_init(&qpBrokerList);
++}
++
++void vmci_qp_broker_exit(void)
++{
++	struct qp_broker_entry *entry;
++
++	down(&qpBrokerList.mutex);
++
++	while ((entry = (struct qp_broker_entry *)
++		qp_list_get_head(&qpBrokerList))) {
++		qp_list_remove_entry(&qpBrokerList, &entry->qp);
++		kfree(entry);
++	}
++
++	up(&qpBrokerList.mutex);
++	INIT_LIST_HEAD(&(qpBrokerList.head));
++}
++
++/*
++ * Requests that a queue pair be allocated with the VMCI queue
++ * pair broker. Allocates a queue pair entry if one does not
++ * exist. Attaches to one if it exists, and retrieves the page
++ * files backing that QueuePair.  Assumes that the queue pair
++ * broker lock is held.
++ */
++int vmci_qp_broker_alloc(struct vmci_handle handle,
++			 uint32_t peer,
++			 uint32_t flags,
++			 uint32_t privFlags,
++			 uint64_t produceSize,
++			 uint64_t consumeSize,
++			 struct vmci_qp_page_store *pageStore,
++			 struct vmci_ctx *context)
++{
++	return qp_broker_alloc(handle, peer, flags, privFlags,
++			       produceSize, consumeSize,
++			       pageStore, context, NULL, NULL, NULL, NULL);
++}
++
++/*
++ * VMX'en with versions lower than VMCI_VERSION_NOVMVM use a separate
++ * step to add the UVAs of the VMX mapping of the queue pair. This function
++ * provides backwards compatibility with such VMX'en, and takes care of
++ * registering the page store for a queue pair previously allocated by the
++ * VMX during create or attach. This function will move the queue pair state
++ * to either from VMCIQBP_CREATED_NO_MEM to VMCIQBP_CREATED_MEM or
++ * VMCIQBP_ATTACHED_NO_MEM to VMCIQBP_ATTACHED_MEM. If moving to the
++ * attached state with memory, the queue pair is ready to be used by the
++ * host peer, and an attached event will be generated.
++ *
++ * Assumes that the queue pair broker lock is held.
++ *
++ * This function is only used by the hosted platform, since there is no
++ * issue with backwards compatibility for vmkernel.
++ */
++int vmci_qp_broker_set_page_store(struct vmci_handle handle,
++				  uint64_t produceUVA,
++				  uint64_t consumeUVA,
++				  struct vmci_ctx *context)
++{
++	struct qp_broker_entry *entry;
++	int result;
++	const uint32_t contextId = vmci_ctx_get_id(context);
++
++	if (VMCI_HANDLE_INVALID(handle) || !context
++	    || contextId == VMCI_INVALID_ID)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	/*
++	 * We only support guest to host queue pairs, so the VMX must
++	 * supply UVAs for the mapped page files.
++	 */
++
++	if (produceUVA == 0 || consumeUVA == 0)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	down(&qpBrokerList.mutex);
++
++	if (!vmci_ctx_qp_exists(context, handle)) {
++		pr_warn("Context (ID=0x%x) not attached to queue pair " \
++			"(handle=0x%x:0x%x).", contextId, handle.context,
++			handle.resource);
++		result = VMCI_ERROR_NOT_FOUND;
++		goto out;
++	}
++
++	entry = (struct qp_broker_entry *)
++		qp_list_find(&qpBrokerList, handle);
++	if (!entry) {
++		result = VMCI_ERROR_NOT_FOUND;
++		goto out;
++	}
++
++	/*
++	 * If I'm the owner then I can set the page store.
++	 *
++	 * Or, if a host created the QueuePair and I'm the attached peer
++	 * then I can set the page store.
++	 */
++	if (entry->createId != contextId &&
++	    (entry->createId != VMCI_HOST_CONTEXT_ID ||
++	     entry->attachId != contextId)) {
++		result = VMCI_ERROR_QUEUEPAIR_NOTOWNER;
++		goto out;
++	}
++
++	if (entry->state != VMCIQPB_CREATED_NO_MEM &&
++	    entry->state != VMCIQPB_ATTACHED_NO_MEM) {
++		result = VMCI_ERROR_UNAVAILABLE;
++		goto out;
++	}
++
++	result = qp_host_get_user_memory(produceUVA, consumeUVA,
++					 entry->produceQ, entry->consumeQ);
++	if (result < VMCI_SUCCESS)
++		goto out;
++
++	result = qp_host_map_queues(entry->produceQ, entry->consumeQ);
++	if (result < VMCI_SUCCESS) {
++		qp_host_unregister_user_memory(entry->produceQ,
++					       entry->consumeQ);
++		goto out;
++	}
++
++	if (entry->state == VMCIQPB_CREATED_NO_MEM) {
++		entry->state = VMCIQPB_CREATED_MEM;
++	} else {
++		ASSERT(entry->state == VMCIQPB_ATTACHED_NO_MEM);
++		entry->state = VMCIQPB_ATTACHED_MEM;
++	}
++	entry->vmciPageFiles = true;
++
++	if (entry->state == VMCIQPB_ATTACHED_MEM) {
++		result =
++			qp_notify_peer(true, handle, contextId,
++				       entry->createId);
++		if (result < VMCI_SUCCESS) {
++			pr_warn("Failed to notify peer (ID=0x%x) of " \
++				"attach to queue pair (handle=0x%x:0x%x).",
++				entry->createId, entry->qp.handle.context,
++				entry->qp.handle.resource);
++		}
++	}
++
++	result = VMCI_SUCCESS;
++out:
++	up(&qpBrokerList.mutex);
++	return result;
++}
++
++/*
++ * Resets saved queue headers for the given QP broker
++ * entry. Should be used when guest memory becomes available
++ * again, or the guest detaches.
++ */
++static void qp_reset_saved_headers(struct qp_broker_entry *entry)
++{
++	entry->produceQ->savedHeader = NULL;
++	entry->consumeQ->savedHeader = NULL;
++}
++
++/*
++ * The main entry point for detaching from a queue pair registered with the
++ * queue pair broker. If more than one endpoint is attached to the queue
++ * pair, the first endpoint will mainly decrement a reference count and
++ * generate a notification to its peer. The last endpoint will clean up
++ * the queue pair state registered with the broker.
++ *
++ * When a guest endpoint detaches, it will unmap and unregister the guest
++ * memory backing the queue pair. If the host is still attached, it will
++ * no longer be able to access the queue pair content.
++ *
++ * If the queue pair is already in a state where there is no memory
++ * registered for the queue pair (any *_NO_MEM state), it will transition to
++ * the VMCIQPB_SHUTDOWN_NO_MEM state. This will also happen, if a guest
++ * endpoint is the first of two endpoints to detach. If the host endpoint is
++ * the first out of two to detach, the queue pair will move to the
++ * VMCIQPB_SHUTDOWN_MEM state.
++ */
++int vmci_qp_broker_detach(struct vmci_handle handle,
++			  struct vmci_ctx *context)
++{
++	struct qp_broker_entry *entry;
++	const uint32_t contextId = vmci_ctx_get_id(context);
++	uint32_t peerId;
++	bool isLocal = false;
++	int result;
++
++	if (VMCI_HANDLE_INVALID(handle) || !context
++	    || contextId == VMCI_INVALID_ID) {
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	down(&qpBrokerList.mutex);
++
++	if (!vmci_ctx_qp_exists(context, handle)) {
++		pr_devel("Context (ID=0x%x) not attached to queue pair " \
++			 "(handle=0x%x:0x%x).", contextId, handle.context,
++			 handle.resource);
++		result = VMCI_ERROR_NOT_FOUND;
++		goto out;
++	}
++
++	entry = (struct qp_broker_entry *)
++		qp_list_find(&qpBrokerList, handle);
++	if (!entry) {
++		pr_devel("Context (ID=0x%x) reports being attached to " \
++			 "queue pair(handle=0x%x:0x%x) that isn't present " \
++			 "in broker.", contextId, handle.context,
++			 handle.resource);
++		result = VMCI_ERROR_NOT_FOUND;
++		goto out;
++	}
++
++	if (contextId != entry->createId && contextId != entry->attachId) {
++		result = VMCI_ERROR_QUEUEPAIR_NOTATTACHED;
++		goto out;
++	}
++
++	if (contextId == entry->createId) {
++		peerId = entry->attachId;
++		entry->createId = VMCI_INVALID_ID;
++	} else {
++		peerId = entry->createId;
++		entry->attachId = VMCI_INVALID_ID;
++	}
++	entry->qp.refCount--;
++
++	isLocal = entry->qp.flags & VMCI_QPFLAG_LOCAL;
++
++	if (contextId != VMCI_HOST_CONTEXT_ID) {
++		bool headersMapped;
++
++		ASSERT(!isLocal);
++
++		/*
++		 * Pre NOVMVM vmx'en may detach from a queue pair
++		 * before setting the page store, and in that case
++		 * there is no user memory to detach from. Also, more
++		 * recent VMX'en may detach from a queue pair in the
++		 * quiesced state.
++		 */
++
++		qp_acquire_queue_mutex(entry->produceQ);
++		headersMapped = entry->produceQ->qHeader
++			|| entry->consumeQ->qHeader;
++		if (QPBROKERSTATE_HAS_MEM(entry)) {
++			result = qp_host_unmap_queues(
++				INVALID_VMCI_GUEST_MEM_ID, entry->produceQ,
++				 entry->consumeQ);
++			if (result < VMCI_SUCCESS)
++				pr_warn("Failed to unmap queue headers " \
++					"for queue pair " \
++					"(handle=0x%x:0x%x,result=%d).",
++					handle.context, handle.resource,
++					result);
++
++			if (entry->vmciPageFiles) {
++				qp_host_unregister_user_memory(entry->produceQ,
++							       entry->consumeQ);
++			} else {
++				qp_host_unregister_user_memory(entry->produceQ,
++							       entry->consumeQ);
++			}
++		}
++
++		if (!headersMapped)
++			qp_reset_saved_headers(entry);
++
++		qp_release_queue_mutex(entry->produceQ);
++
++		if (!headersMapped && entry->wakeupCB)
++			entry->wakeupCB(entry->clientData);
++
++	} else {
++		if (entry->wakeupCB) {
++			entry->wakeupCB = NULL;
++			entry->clientData = NULL;
++		}
++	}
++
++	if (entry->qp.refCount == 0) {
++		qp_list_remove_entry(&qpBrokerList, &entry->qp);
++
++		if (isLocal)
++			kfree(entry->localMem);
++
++		qp_cleanup_queue_mutex(entry->produceQ, entry->consumeQ);
++		qp_host_free_queue(entry->produceQ, entry->qp.produceSize);
++		qp_host_free_queue(entry->consumeQ, entry->qp.consumeSize);
++		kfree(entry);
++
++		vmci_ctx_qp_destroy(context, handle);
++	} else {
++		ASSERT(peerId != VMCI_INVALID_ID);
++		qp_notify_peer(false, handle, contextId, peerId);
++		if (contextId == VMCI_HOST_CONTEXT_ID
++		    && QPBROKERSTATE_HAS_MEM(entry)) {
++			entry->state = VMCIQPB_SHUTDOWN_MEM;
++		} else {
++			entry->state = VMCIQPB_SHUTDOWN_NO_MEM;
++		}
++
++		if (!isLocal)
++			vmci_ctx_qp_destroy(context, handle);
++
++	}
++	result = VMCI_SUCCESS;
++out:
++	up(&qpBrokerList.mutex);
++	return result;
++}
++
++/*
++ * Establishes the necessary mappings for a queue pair given a
++ * reference to the queue pair guest memory. This is usually
++ * called when a guest is unquiesced and the VMX is allowed to
++ * map guest memory once again.
++ */
++int vmci_qp_broker_map(struct vmci_handle handle,
++		       struct vmci_ctx *context,
++		       uint64_t guestMem)
++{
++	struct qp_broker_entry *entry;
++	const uint32_t contextId = vmci_ctx_get_id(context);
++	bool isLocal = false;
++	int result;
++
++	if (VMCI_HANDLE_INVALID(handle) || !context
++	    || contextId == VMCI_INVALID_ID)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	down(&qpBrokerList.mutex);
++
++	if (!vmci_ctx_qp_exists(context, handle)) {
++		pr_devel("Context (ID=0x%x) not attached to queue pair " \
++			 "(handle=0x%x:0x%x).", contextId, handle.context,
++			 handle.resource);
++		result = VMCI_ERROR_NOT_FOUND;
++		goto out;
++	}
++
++	entry = (struct qp_broker_entry *)
++		qp_list_find(&qpBrokerList, handle);
++	if (!entry) {
++		pr_devel("Context (ID=0x%x) reports being attached to " \
++			 "queue pair (handle=0x%x:0x%x) that isn't present " \
++			 "in broker.", contextId, handle.context,
++			 handle.resource);
++		result = VMCI_ERROR_NOT_FOUND;
++		goto out;
++	}
++
++	if (contextId != entry->createId && contextId != entry->attachId) {
++		result = VMCI_ERROR_QUEUEPAIR_NOTATTACHED;
++		goto out;
++	}
++
++	isLocal = entry->qp.flags & VMCI_QPFLAG_LOCAL;
++	result = VMCI_SUCCESS;
++
++	if (contextId != VMCI_HOST_CONTEXT_ID) {
++		struct vmci_qp_page_store pageStore;
++
++		ASSERT(entry->state == VMCIQPB_CREATED_NO_MEM ||
++		       entry->state == VMCIQPB_SHUTDOWN_NO_MEM ||
++		       entry->state == VMCIQPB_ATTACHED_NO_MEM);
++		ASSERT(!isLocal);
++
++		pageStore.pages = guestMem;
++		pageStore.len = QPE_NUM_PAGES(entry->qp);
++
++		qp_acquire_queue_mutex(entry->produceQ);
++		qp_reset_saved_headers(entry);
++		result =
++			qp_host_register_user_memory(&pageStore,
++						     entry->produceQ,
++						     entry->consumeQ);
++		qp_release_queue_mutex(entry->produceQ);
++		if (result == VMCI_SUCCESS) {
++			/* Move state from *_NO_MEM to *_MEM */
++
++			entry->state++;
++
++			ASSERT(entry->state == VMCIQPB_CREATED_MEM ||
++			       entry->state == VMCIQPB_SHUTDOWN_MEM ||
++			       entry->state == VMCIQPB_ATTACHED_MEM);
++
++			if (entry->wakeupCB)
++				entry->wakeupCB(entry->clientData);
++		}
++	}
++
++out:
++	up(&qpBrokerList.mutex);
++	return result;
++}
++
++/*
++ * Saves a snapshot of the queue headers for the given QP broker
++ * entry. Should be used when guest memory is unmapped.
++ * Results:
++ * VMCI_SUCCESS on success, appropriate error code if guest memory
++ * can't be accessed..
++ */
++static int qp_save_headers(struct qp_broker_entry *entry)
++{
++	int result;
++
++	if (entry->produceQ->savedHeader != NULL &&
++	    entry->consumeQ->savedHeader != NULL) {
++		/*
++		 *  If the headers have already been saved, we don't need to do
++		 *  it again, and we don't want to map in the headers
++		 *  unnecessarily.
++		 */
++
++		return VMCI_SUCCESS;
++	}
++
++	if (NULL == entry->produceQ->qHeader
++	    || NULL == entry->consumeQ->qHeader) {
++		result = qp_host_map_queues(entry->produceQ, entry->consumeQ);
++		if (result < VMCI_SUCCESS)
++			return result;
++	}
++
++	memcpy(&entry->savedProduceQ, entry->produceQ->qHeader,
++	       sizeof entry->savedProduceQ);
++	entry->produceQ->savedHeader = &entry->savedProduceQ;
++	memcpy(&entry->savedConsumeQ, entry->consumeQ->qHeader,
++	       sizeof entry->savedConsumeQ);
++	entry->consumeQ->savedHeader = &entry->savedConsumeQ;
++
++	return VMCI_SUCCESS;
++}
++
++/*
++ * Removes all references to the guest memory of a given queue pair, and
++ * will move the queue pair from state *_MEM to *_NO_MEM. It is usually
++ * called when a VM is being quiesced where access to guest memory should
++ * avoided.
++ */
++int vmci_qp_broker_unmap(struct vmci_handle handle,
++			 struct vmci_ctx *context,
++			 uint32_t gid)
++{
++	struct qp_broker_entry *entry;
++	const uint32_t contextId = vmci_ctx_get_id(context);
++	bool isLocal = false;
++	int result;
++
++	if (VMCI_HANDLE_INVALID(handle) || !context
++	    || contextId == VMCI_INVALID_ID)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	down(&qpBrokerList.mutex);
++
++	if (!vmci_ctx_qp_exists(context, handle)) {
++		pr_devel("Context (ID=0x%x) not attached to queue pair " \
++			 "(handle=0x%x:0x%x).", contextId,
++			 handle.context, handle.resource);
++		result = VMCI_ERROR_NOT_FOUND;
++		goto out;
++	}
++
++	entry = (struct qp_broker_entry *)
++		qp_list_find(&qpBrokerList, handle);
++	if (!entry) {
++		pr_devel("Context (ID=0x%x) reports being attached to " \
++			 "queue pair (handle=0x%x:0x%x) that isn't present " \
++			 "in broker.", contextId, handle.context,
++			 handle.resource);
++		result = VMCI_ERROR_NOT_FOUND;
++		goto out;
++	}
++
++	if (contextId != entry->createId && contextId != entry->attachId) {
++		result = VMCI_ERROR_QUEUEPAIR_NOTATTACHED;
++		goto out;
++	}
++
++	isLocal = entry->qp.flags & VMCI_QPFLAG_LOCAL;
++
++	if (contextId != VMCI_HOST_CONTEXT_ID) {
++		ASSERT(entry->state != VMCIQPB_CREATED_NO_MEM &&
++		       entry->state != VMCIQPB_SHUTDOWN_NO_MEM &&
++		       entry->state != VMCIQPB_ATTACHED_NO_MEM);
++		ASSERT(!isLocal);
++
++		qp_acquire_queue_mutex(entry->produceQ);
++		result = qp_save_headers(entry);
++		if (result < VMCI_SUCCESS)
++			pr_warn("Failed to save queue headers for " \
++				"queue pair (handle=0x%x:0x%x,result=%d).",
++				handle.context, handle.resource, result);
++
++		qp_host_unmap_queues(gid, entry->produceQ, entry->consumeQ);
++
++		/*
++		 * On hosted, when we unmap queue pairs, the VMX will also
++		 * unmap the guest memory, so we invalidate the previously
++		 * registered memory. If the queue pair is mapped again at a
++		 * later point in time, we will need to reregister the user
++		 * memory with a possibly new user VA.
++		 */
++		qp_host_unregister_user_memory(entry->produceQ,
++					       entry->consumeQ);
++
++		/*
++		 * Move state from *_MEM to *_NO_MEM.
++		 */
++		entry->state--;
++
++		qp_release_queue_mutex(entry->produceQ);
++	}
++
++	result = VMCI_SUCCESS;
++
++out:
++	up(&qpBrokerList.mutex);
++	return result;
++}
++
++int __devinit vmci_qp_guest_endpoints_init(void)
++{
++	return qp_list_init(&qpGuestEndpoints);
++}
++
++/*
++ * Destroys all guest queue pair endpoints. If active guest queue
++ * pairs still exist, hypercalls to attempt detach from these
++ * queue pairs will be made. Any failure to detach is silently
++ * ignored.
++ */
++void vmci_qp_guest_endpoints_exit(void)
++{
++	struct qp_guest_endpoint *entry;
++
++	down(&qpGuestEndpoints.mutex);
++
++	while ((entry = (struct qp_guest_endpoint *)
++		qp_list_get_head(&qpGuestEndpoints))) {
++
++		/* Don't make a hypercall for local QueuePairs. */
++		if (!(entry->qp.flags & VMCI_QPFLAG_LOCAL))
++			qp_detatch_hypercall(entry->qp.handle);
++
++		/* We cannot fail the exit, so let's reset refCount. */
++		entry->qp.refCount = 0;
++		qp_list_remove_entry(&qpGuestEndpoints, &entry->qp);
++		qp_guest_endpoint_destroy(entry);
++	}
++
++	up(&qpGuestEndpoints.mutex);
++	INIT_LIST_HEAD(&(qpGuestEndpoints.head));
++}
++
++/*
++ * Helper routine that will lock the queue pair before subsequent
++ * operations.
++ * Note: Non-blocking on the host side is currently only implemented in ESX.
++ * Since non-blocking isn't yet implemented on the host personality we
++ * have no reason to acquire a spin lock.  So to avoid the use of an
++ * unnecessary lock only acquire the mutex if we can block.
++ * Note: It is assumed that QPFLAG_PINNED implies QPFLAG_NONBLOCK.  Therefore
++ * we can use the same locking function for access to both the queue
++ * and the queue headers as it is the same logic.  Assert this behvior.
++ */
++static void qp_lock(const struct vmci_qp *qpair)
++{
++	ASSERT(!QP_PINNED(qpair->flags) ||
++	       (QP_PINNED(qpair->flags) && !CAN_BLOCK(qpair->flags)));
++
++	if (CAN_BLOCK(qpair->flags))
++		qp_acquire_queue_mutex(qpair->produceQ);
++}
++
++/*
++ * Helper routine that unlocks the queue pair after calling
++ * qp_lock.  Respects non-blocking and pinning flags.
++ */
++static void qp_unlock(const struct vmci_qp *qpair)
++{
++	if (CAN_BLOCK(qpair->flags))
++		qp_release_queue_mutex(qpair->produceQ);
++}
++
++/*
++ * The queue headers may not be mapped at all times. If a queue is
++ * currently not mapped, it will be attempted to do so.
++ */
++static int qp_map_queue_headers(struct vmci_queue *produceQ,
++				struct vmci_queue *consumeQ,
++				bool canBlock)
++{
++	int result;
++
++	if (NULL == produceQ->qHeader || NULL == consumeQ->qHeader) {
++		if (canBlock)
++			result = qp_host_map_queues(produceQ, consumeQ);
 +		else
-+			retval = VMCI_ERROR_UNAVAILABLE;
++			result = VMCI_ERROR_QUEUEPAIR_NOT_READY;
 +
-+		vmci_ctx_release(context);
++		if (result < VMCI_SUCCESS)
++			return (produceQ->savedHeader &&
++				consumeQ->savedHeader) ?
++				VMCI_ERROR_QUEUEPAIR_NOT_READY :
++				VMCI_ERROR_QUEUEPAIR_NOTATTACHED;
++	}
++
++	return VMCI_SUCCESS;
++}
++
++/*
++ * Helper routine that will retrieve the produce and consume
++ * headers of a given queue pair. If the guest memory of the
++ * queue pair is currently not available, the saved queue headers
++ * will be returned, if these are available.
++ */
++static int qp_get_queue_headers(const struct vmci_qp *qpair,
++				struct vmci_queue_header **produceQHeader,
++				struct vmci_queue_header **consumeQHeader)
++{
++	int result;
++
++	result = qp_map_queue_headers(qpair->produceQ, qpair->consumeQ,
++				      CAN_BLOCK(qpair->flags));
++	if (result == VMCI_SUCCESS) {
++		*produceQHeader = qpair->produceQ->qHeader;
++		*consumeQHeader = qpair->consumeQ->qHeader;
++	} else if (qpair->produceQ->savedHeader &&
++		   qpair->consumeQ->savedHeader) {
++		ASSERT(!qpair->guestEndpoint);
++		*produceQHeader = qpair->produceQ->savedHeader;
++		*consumeQHeader = qpair->consumeQ->savedHeader;
++		result = VMCI_SUCCESS;
++	}
++
++	return result;
++}
++
++/*
++ * Callback from VMCI queue pair broker indicating that a queue
++ * pair that was previously not ready, now either is ready or
++ * gone forever.
++ */
++static int qp_wakeup_cb(void *clientData)
++{
++	struct vmci_qp *qpair = (struct vmci_qp *)clientData;
++	ASSERT(qpair);
++
++	qp_lock(qpair);
++	while (qpair->blocked > 0) {
++		qpair->blocked--;
++		wake_up(&qpair->event);
++	}
++	qp_unlock(qpair);
++
++	return VMCI_SUCCESS;
++}
++
++/*
++ * Callback from VMCI_WaitOnEvent releasing the queue pair mutex
++ * protecting the queue pair header state.
++ */
++static int qp_release_mutex_cb(void *clientData)
++{
++	struct vmci_qp *qpair = (struct vmci_qp *)clientData;
++	ASSERT(qpair);
++	qp_unlock(qpair);
++	return 0;
++}
++
++/*
++ * Makes the calling thread wait for the queue pair to become
++ * ready for host side access.  Returns true when thread is
++ * woken up after queue pair state change, false otherwise.
++ */
++static bool qp_wait_for_ready_queue(struct vmci_qp *qpair)
++{
++	if (unlikely(qpair->guestEndpoint))
++		ASSERT(false);
++
++	if (qpair->flags & VMCI_QPFLAG_NONBLOCK)
++		return false;
++
++	qpair->blocked++;
++	vmci_drv_wait_on_event_intr(&qpair->event, qp_release_mutex_cb,
++				    qpair);
++	qp_lock(qpair);
++	return true;
++}
++
++/*
++ * Enqueues a given buffer to the produce queue using the provided
++ * function. As many bytes as possible (space available in the queue)
++ * are enqueued.  Assumes the queue->mutex has been acquired.  Returns
++ * VMCI_ERROR_QUEUEPAIR_NOSPACE if no space was available to enqueue
++ * data, VMCI_ERROR_INVALID_SIZE, if any queue pointer is outside the
++ * queue (as defined by the queue size), VMCI_ERROR_INVALID_ARGS, if
++ * an error occured when accessing the buffer,
++ * VMCI_ERROR_QUEUEPAIR_NOTATTACHED, if the queue pair pages aren't
++ * available.  Otherwise, the number of bytes written to the queue is
++ * returned.  Updates the tail pointer of the produce queue.
++ */
++static ssize_t qp_enqueue_locked(struct vmci_queue *produceQ,
++				 struct vmci_queue *consumeQ,
++				 const uint64_t produceQSize,
++				 const void *buf,
++				 size_t bufSize,
++				 VMCIMemcpyToQueueFunc memcpyToQueue,
++				 bool canBlock)
++{
++	int64_t freeSpace;
++	uint64_t tail;
++	size_t written;
++	ssize_t result;
++
++	result = qp_map_queue_headers(produceQ, consumeQ, canBlock);
++	if (unlikely(result != VMCI_SUCCESS))
++		return result;
++
++	freeSpace = vmci_q_header_free_space(produceQ->qHeader,
++					     consumeQ->qHeader, produceQSize);
++	if (freeSpace == 0)
++		return VMCI_ERROR_QUEUEPAIR_NOSPACE;
++
++	if (freeSpace < VMCI_SUCCESS)
++		return (ssize_t) freeSpace;
++
++	written = (size_t) (freeSpace > bufSize ? bufSize : freeSpace);
++	tail = vmci_q_header_producer_tail(produceQ->qHeader);
++	if (likely(tail + written < produceQSize)) {
++		result = memcpyToQueue(produceQ, tail, buf, 0, written);
++	} else {
++		/* Tail pointer wraps around. */
++
++		const size_t tmp = (size_t) (produceQSize - tail);
++
++		result = memcpyToQueue(produceQ, tail, buf, 0, tmp);
++		if (result >= VMCI_SUCCESS)
++			result = memcpyToQueue(produceQ, 0, buf, tmp,
++					       written - tmp);
++	}
++
++	if (result < VMCI_SUCCESS)
++		return result;
++
++	vmci_q_header_add_producer_tail(produceQ->qHeader, written,
++					produceQSize);
++	return written;
++}
++
++/*
++ * Dequeues data (if available) from the given consume queue. Writes data
++ * to the user provided buffer using the provided function.
++ * Assumes the queue->mutex has been acquired.
++ * Results:
++ * VMCI_ERROR_QUEUEPAIR_NODATA if no data was available to dequeue.
++ * VMCI_ERROR_INVALID_SIZE, if any queue pointer is outside the queue
++ * (as defined by the queue size).
++ * VMCI_ERROR_INVALID_ARGS, if an error occured when accessing the buffer.
++ * Otherwise the number of bytes dequeued is returned.
++ * Side effects:
++ * Updates the head pointer of the consume queue.
++ */
++static ssize_t qp_dequeue_locked(struct vmci_queue *produceQ,
++				 struct vmci_queue *consumeQ,
++				 const uint64_t consumeQSize,
++				 void *buf,
++				 size_t bufSize,
++				 VMCIMemcpyFromQueueFunc memcpyFromQueue,
++				 bool updateConsumer,
++				 bool canBlock)
++{
++	int64_t bufReady;
++	uint64_t head;
++	size_t read;
++	ssize_t result;
++
++	result = qp_map_queue_headers(produceQ, consumeQ, canBlock);
++	if (unlikely(result != VMCI_SUCCESS))
++		return result;
++
++	bufReady = vmci_q_header_buf_ready(consumeQ->qHeader,
++					   produceQ->qHeader, consumeQSize);
++	if (bufReady == 0)
++		return VMCI_ERROR_QUEUEPAIR_NODATA;
++
++	if (bufReady < VMCI_SUCCESS)
++		return (ssize_t) bufReady;
++
++	read = (size_t) (bufReady > bufSize ? bufSize : bufReady);
++	head = vmci_q_header_consumer_head(produceQ->qHeader);
++	if (likely(head + read < consumeQSize)) {
++		result = memcpyFromQueue(buf, 0, consumeQ, head, read);
++	} else {
++		/* Head pointer wraps around. */
++
++		const size_t tmp = (size_t) (consumeQSize - head);
++
++		result = memcpyFromQueue(buf, 0, consumeQ, head, tmp);
++		if (result >= VMCI_SUCCESS) {
++			result = memcpyFromQueue(buf, tmp, consumeQ, 0,
++						 read - tmp);
++		}
++	}
++
++	if (result < VMCI_SUCCESS)
++		return result;
++
++	if (updateConsumer)
++		vmci_q_header_add_consumer_head(produceQ->qHeader,
++						read, consumeQSize);
++
++	return read;
++}
++
++/**
++ * VMCIQPair_Alloc() - Allocates a queue pair.
++ * @qpair:	Pointer for the new vmci_qp struct.
++ * @handle:	Handle to track the resource.
++ * @produceQSize:	Desired size of the producer queue.
++ * @consumeQSize:	Desired size of the consumer queue.
++ * @peer:	ContextID of the peer.
++ * @flags:	VMCI flags.
++ * @privFlags:	VMCI priviledge flags.
++ *
++ * This is the client interface for allocating the memory for a
++ * vmci_qp structure and then attaching to the underlying
++ * queue.  If an error occurs allocating the memory for the
++ * vmci_qp structure no attempt is made to attach.  If an
++ * error occurs attaching, then the structure is freed.
++ */
++int VMCIQPair_Alloc(struct vmci_qp **qpair,
++		    struct vmci_handle *handle,
++		    uint64_t produceQSize,
++		    uint64_t consumeQSize,
++		    uint32_t peer,
++		    uint32_t flags,
++		    uint32_t privFlags)
++{
++	struct vmci_qp *myQPair;
++	int retval;
++	struct vmci_handle src = VMCI_INVALID_HANDLE;
++	struct vmci_handle dst = vmci_make_handle(peer, VMCI_INVALID_ID);
++	enum vmci_route route;
++	VMCIEventReleaseCB wakeupCB;
++	void *clientData;
++
++	/*
++	 * Restrict the size of a queuepair.  The device already
++	 * enforces a limit on the total amount of memory that can be
++	 * allocated to queuepairs for a guest.  However, we try to
++	 * allocate this memory before we make the queuepair
++	 * allocation hypercall.  On Linux, we allocate each page
++	 * separately, which means rather than fail, the guest will
++	 * thrash while it tries to allocate, and will become
++	 * increasingly unresponsive to the point where it appears to
++	 * be hung.  So we place a limit on the size of an individual
++	 * queuepair here, and leave the device to enforce the
++	 * restriction on total queuepair memory.  (Note that this
++	 * doesn't prevent all cases; a user with only this much
++	 * physical memory could still get into trouble.)  The error
++	 * used by the device is NO_RESOURCES, so use that here too.
++	 */
++
++	if (produceQSize + consumeQSize < max(produceQSize, consumeQSize) ||
++	    produceQSize + consumeQSize > VMCI_MAX_GUEST_QP_MEMORY)
++		return VMCI_ERROR_NO_RESOURCES;
++
++	retval = vmci_route(&src, &dst, false, &route);
++	if (retval < VMCI_SUCCESS)
++		route = vmci_guest_code_active() ?
++			VMCI_ROUTE_AS_GUEST : VMCI_ROUTE_AS_HOST;
++
++	/* If NONBLOCK or PINNED is set, we better be the guest personality. */
++	if ((!CAN_BLOCK(flags) || QP_PINNED(flags)) &&
++	    VMCI_ROUTE_AS_GUEST != route) {
++		pr_devel("Not guest personality w/ NONBLOCK OR PINNED set");
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	/*
++	 * Limit the size of pinned QPs and check sanity.
++	 *
++	 * Pinned pages implies non-blocking mode.  Mutexes aren't acquired
++	 * when the NONBLOCK flag is set in qpair code; and also should not be
++	 * acquired when the PINNED flagged is set.  Since pinning pages
++	 * implies we want speed, it makes no sense not to have NONBLOCK
++	 * set if PINNED is set.  Hence enforce this implication.
++	 */
++	if (QP_PINNED(flags)) {
++		if (CAN_BLOCK(flags)) {
++			pr_err("Attempted to enable pinning w/o non-blocking");
++			return VMCI_ERROR_INVALID_ARGS;
++		}
++
++		if (produceQSize + consumeQSize > VMCI_MAX_PINNED_QP_MEMORY)
++			return VMCI_ERROR_NO_RESOURCES;
++	}
++
++	myQPair = kzalloc(sizeof *myQPair, GFP_KERNEL);
++	if (!myQPair)
++		return VMCI_ERROR_NO_MEM;
++
++	myQPair->produceQSize = produceQSize;
++	myQPair->consumeQSize = consumeQSize;
++	myQPair->peer = peer;
++	myQPair->flags = flags;
++	myQPair->privFlags = privFlags;
++
++	wakeupCB = clientData = NULL;
++	if (VMCI_ROUTE_AS_HOST == route) {
++		myQPair->guestEndpoint = false;
++		if (!(flags & VMCI_QPFLAG_LOCAL)) {
++			myQPair->blocked = 0;
++			init_waitqueue_head(&myQPair->event);
++			wakeupCB = qp_wakeup_cb;
++			clientData = (void *)myQPair;
++		}
++	} else {
++		myQPair->guestEndpoint = true;
++	}
++
++	retval = vmci_qp_alloc(handle,
++			       &myQPair->produceQ,
++			       myQPair->produceQSize,
++			       &myQPair->consumeQ,
++			       myQPair->consumeQSize,
++			       myQPair->peer,
++			       myQPair->flags,
++			       myQPair->privFlags,
++			       myQPair->guestEndpoint,
++			       wakeupCB, clientData);
++
++	if (retval < VMCI_SUCCESS) {
++		kfree(myQPair);
 +		return retval;
 +	}
-+	return VMCI_ERROR_UNAVAILABLE;
++
++	*qpair = myQPair;
++	myQPair->handle = *handle;
++
++	return retval;
 +}
-+EXPORT_SYMBOL(VMCI_IsContextOwner);
-diff --git a/drivers/misc/vmw_vmci/vmci_context.h b/drivers/misc/vmw_vmci/vmci_context.h
++EXPORT_SYMBOL(VMCIQPair_Alloc);
++
++/**
++ * VMCIQPair_Detatch() - Detatches the client from a queue pair.
++ * @qpair:	Reference of a pointer to the qpair struct.
++ *
++ * This is the client interface for detaching from a VMCIQPair.
++ * Note that this routine will free the memory allocated for the
++ * vmci_qp structure too.
++ */
++int VMCIQPair_Detach(struct vmci_qp **qpair)
++{
++	int result;
++	struct vmci_qp *oldQPair;
++
++	if (!qpair || !(*qpair))
++		return VMCI_ERROR_INVALID_ARGS;
++
++	oldQPair = *qpair;
++	result = qp_detatch(oldQPair->handle, oldQPair->guestEndpoint);
++
++	/*
++	 * The guest can fail to detach for a number of reasons, and
++	 * if it does so, it will cleanup the entry (if there is one).
++	 * The host can fail too, but it won't cleanup the entry
++	 * immediately, it will do that later when the context is
++	 * freed.  Either way, we need to release the qpair struct
++	 * here; there isn't much the caller can do, and we don't want
++	 * to leak.
++	 */
++
++	memset(oldQPair, 0, sizeof *oldQPair);
++	oldQPair->handle = VMCI_INVALID_HANDLE;
++	oldQPair->peer = VMCI_INVALID_ID;
++	kfree(oldQPair);
++	*qpair = NULL;
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_Detach);
++
++/**
++ * VMCIQPair_GetProduceIndexes() - Retrieves the indexes of the producer.
++ * @qpair:	Pointer to the queue pair struct.
++ * @producerTail:	Reference used for storing producer tail index.
++ * @consumerHead:	Reference used for storing the consumer head index.
++ *
++ * This is the client interface for getting the current indexes of the
++ * QPair from the point of the view of the caller as the producer.
++ */
++int VMCIQPair_GetProduceIndexes(const struct vmci_qp *qpair,
++				uint64_t *producerTail,
++				uint64_t *consumerHead)
++{
++	struct vmci_queue_header *produceQHeader;
++	struct vmci_queue_header *consumeQHeader;
++	int result;
++
++	if (!qpair)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++	result = qp_get_queue_headers(qpair, &produceQHeader, &consumeQHeader);
++	if (result == VMCI_SUCCESS)
++		vmci_q_header_get_pointers(produceQHeader, consumeQHeader,
++					   producerTail, consumerHead);
++	qp_unlock(qpair);
++
++	if (result == VMCI_SUCCESS &&
++	    ((producerTail && *producerTail >= qpair->produceQSize) ||
++	     (consumerHead && *consumerHead >= qpair->produceQSize)))
++		return VMCI_ERROR_INVALID_SIZE;
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_GetProduceIndexes);
++
++/**
++ * VMCIQPair_GetConsumeIndexes() - Retrieves the indexes of the comsumer.
++ * @qpair:	Pointer to the queue pair struct.
++ * @consumerTail:	Reference used for storing consumer tail index.
++ * @producerHead:	Reference used for storing the producer head index.
++ *
++ * This is the client interface for getting the current indexes of the
++ * QPair from the point of the view of the caller as the consumer.
++ */
++int VMCIQPair_GetConsumeIndexes(const struct vmci_qp *qpair,
++				uint64_t *consumerTail,
++				uint64_t *producerHead)
++{
++	struct vmci_queue_header *produceQHeader;
++	struct vmci_queue_header *consumeQHeader;
++	int result;
++
++	if (!qpair)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++	result = qp_get_queue_headers(qpair, &produceQHeader, &consumeQHeader);
++	if (result == VMCI_SUCCESS)
++		vmci_q_header_get_pointers(consumeQHeader, produceQHeader,
++					   consumerTail, producerHead);
++	qp_unlock(qpair);
++
++	if (result == VMCI_SUCCESS &&
++	    ((consumerTail && *consumerTail >= qpair->consumeQSize) ||
++	     (producerHead && *producerHead >= qpair->consumeQSize)))
++		return VMCI_ERROR_INVALID_SIZE;
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_GetConsumeIndexes);
++
++/**
++ * VMCIQPair_ProduceFreeSpace() - Retrieves free space in producer queue.
++ * @qpair:	Pointer to the queue pair struct.
++ *
++ * This is the client interface for getting the amount of free
++ * space in the QPair from the point of the view of the caller as
++ * the producer which is the common case.  Returns < 0 if err, else
++ * available bytes into which data can be enqueued if > 0.
++ */
++int64_t VMCIQPair_ProduceFreeSpace(const struct vmci_qp *qpair)
++{
++	struct vmci_queue_header *produceQHeader;
++	struct vmci_queue_header *consumeQHeader;
++	int64_t result;
++
++	if (!qpair)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++	result = qp_get_queue_headers(qpair, &produceQHeader, &consumeQHeader);
++	if (result == VMCI_SUCCESS) {
++		result = vmci_q_header_free_space(produceQHeader,
++						  consumeQHeader,
++						  qpair->produceQSize);
++	} else {
++		result = 0;
++	}
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_ProduceFreeSpace);
++
++/**
++ * VMCIQPair_ConsumeFreeSpace() - Retrieves free space in consumer queue.
++ * @qpair:	Pointer to the queue pair struct.
++ *
++ * This is the client interface for getting the amount of free
++ * space in the QPair from the point of the view of the caller as
++ * the consumer which is not the common case.  Returns < 0 if err, else
++ * available bytes into which data can be enqueued if > 0.
++ */
++int64_t VMCIQPair_ConsumeFreeSpace(const struct vmci_qp *qpair)
++{
++	struct vmci_queue_header *produceQHeader;
++	struct vmci_queue_header *consumeQHeader;
++	int64_t result;
++
++	if (!qpair)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++	result = qp_get_queue_headers(qpair, &produceQHeader, &consumeQHeader);
++	if (result == VMCI_SUCCESS) {
++		result = vmci_q_header_free_space(consumeQHeader,
++						  produceQHeader,
++						  qpair->consumeQSize);
++	} else {
++		result = 0;
++	}
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_ConsumeFreeSpace);
++
++/**
++ * VMCIQPair_ProduceBufReady() - Gets bytes ready to read from producer queue.
++ * @qpair:	Pointer to the queue pair struct.
++ *
++ * This is the client interface for getting the amount of
++ * enqueued data in the QPair from the point of the view of the
++ * caller as the producer which is not the common case.  Returns < 0 if err,
++ * else available bytes that may be read.
++ */
++int64_t VMCIQPair_ProduceBufReady(const struct vmci_qp *qpair)
++{
++	struct vmci_queue_header *produceQHeader;
++	struct vmci_queue_header *consumeQHeader;
++	int64_t result;
++
++	if (!qpair)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++	result = qp_get_queue_headers(qpair, &produceQHeader, &consumeQHeader);
++	if (result == VMCI_SUCCESS) {
++		result = vmci_q_header_buf_ready(produceQHeader,
++						 consumeQHeader,
++						 qpair->produceQSize);
++	} else {
++		result = 0;
++	}
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_ProduceBufReady);
++
++/**
++ * VMCIQPair_ConsumeBufReady() - Gets bytes ready to read from consumer queue.
++ * @qpair:	Pointer to the queue pair struct.
++ *
++ * This is the client interface for getting the amount of
++ * enqueued data in the QPair from the point of the view of the
++ * caller as the consumer which is the normal case.  Returns < 0 if err,
++ * else available bytes that may be read.
++ */
++int64_t VMCIQPair_ConsumeBufReady(const struct vmci_qp *qpair)
++{
++	struct vmci_queue_header *produceQHeader;
++	struct vmci_queue_header *consumeQHeader;
++	int64_t result;
++
++	if (!qpair)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++	result = qp_get_queue_headers(qpair, &produceQHeader, &consumeQHeader);
++	if (result == VMCI_SUCCESS) {
++		result = vmci_q_header_buf_ready(consumeQHeader,
++						 produceQHeader,
++						 qpair->consumeQSize);
++	} else {
++		result = 0;
++	}
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_ConsumeBufReady);
++
++/**
++ * VMCIQPair_Enqueue() - Throw data on the queue.
++ * @qpair:	Pointer to the queue pair struct.
++ * @buf:	Pointer to buffer containing data
++ * @bufSize:	Length of buffer.
++ * @bufType:	Buffer type (Unused).
++ *
++ * This is the client interface for enqueueing data into the queue.
++ * Returns number of bytes enqueued or < 0 on error.
++ */
++ssize_t VMCIQPair_Enqueue(struct vmci_qp *qpair,
++			  const void *buf,
++			  size_t bufSize,
++			  int bufType)
++{
++	ssize_t result;
++
++	if (!qpair || !buf)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++
++	do {
++		result = qp_enqueue_locked(qpair->produceQ,
++					   qpair->consumeQ,
++					   qpair->produceQSize,
++					   buf, bufSize,
++					   qp_memcpy_to_queue,
++					   CAN_BLOCK(qpair->flags));
++
++		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY &&
++		    !qp_wait_for_ready_queue(qpair))
++			result = VMCI_ERROR_WOULD_BLOCK;
++
++	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
++
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_Enqueue);
++
++/**
++ * VMCIQPair_Dequeue() - Get data from the queue.
++ * @qpair:	Pointer to the queue pair struct.
++ * @buf:	Pointer to buffer for the data
++ * @bufSize:	Length of buffer.
++ * @bufType:	Buffer type (Unused).
++ *
++ * This is the client interface for dequeueing data from the queue.
++ * Returns number of bytes dequeued or < 0 on error.
++ */
++ssize_t VMCIQPair_Dequeue(struct vmci_qp *qpair,
++			  void *buf,
++			  size_t bufSize,
++			  int bufType)
++{
++	ssize_t result;
++
++	if (!qpair || !buf)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++
++	do {
++		result = qp_dequeue_locked(qpair->produceQ,
++					   qpair->consumeQ,
++					   qpair->consumeQSize,
++					   buf, bufSize,
++					   qp_memcpy_from_queue, true,
++					   CAN_BLOCK(qpair->flags));
++
++		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY &&
++		    !qp_wait_for_ready_queue(qpair))
++			result = VMCI_ERROR_WOULD_BLOCK;
++
++	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
++
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_Dequeue);
++
++/**
++ * VMCIQPair_Peek() - Peek at the data in the queue.
++ * @qpair:	Pointer to the queue pair struct.
++ * @buf:	Pointer to buffer for the data
++ * @bufSize:	Length of buffer.
++ * @bufType:	Buffer type (Unused on Linux).
++ *
++ * This is the client interface for peeking into a queue.  (I.e.,
++ * copy data from the queue without updating the head pointer.)
++ * Returns number of bytes dequeued or < 0 on error.
++ */
++ssize_t VMCIQPair_Peek(struct vmci_qp *qpair,
++		       void *buf,
++		       size_t bufSize,
++		       int bufType)
++{
++	ssize_t result;
++
++	if (!qpair || !buf)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++
++	do {
++		result = qp_dequeue_locked(qpair->produceQ,
++					   qpair->consumeQ,
++					   qpair->consumeQSize,
++					   buf, bufSize,
++					   qp_memcpy_from_queue, false,
++					   CAN_BLOCK(qpair->flags));
++
++		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY &&
++		    !qp_wait_for_ready_queue(qpair))
++			result = VMCI_ERROR_WOULD_BLOCK;
++
++	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
++
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_Peek);
++
++/**
++ * VMCIQPair_EnqueueV() - Throw data on the queue using iov.
++ * @qpair:	Pointer to the queue pair struct.
++ * @iov:	Pointer to buffer containing data
++ * @iovSize:	Length of buffer.
++ * @bufType:	Buffer type (Unused).
++ *
++ * This is the client interface for enqueueing data into the queue.
++ * This function uses IO vectors to handle the work. Returns number
++ * of bytes enqueued or < 0 on error.
++ */
++ssize_t VMCIQPair_EnqueueV(struct vmci_qp *qpair,
++			   void *iov,
++			   size_t iovSize,
++			   int bufType)
++{
++	ssize_t result;
++
++	if (!qpair || !iov)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++
++	do {
++		result = qp_enqueue_locked(qpair->produceQ,
++					   qpair->consumeQ,
++					   qpair->produceQSize,
++					   iov, iovSize,
++					   qp_memcpy_to_queue_iov,
++					   CAN_BLOCK(qpair->flags));
++
++		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY &&
++		    !qp_wait_for_ready_queue(qpair))
++			result = VMCI_ERROR_WOULD_BLOCK;
++
++	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
++
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_EnqueueV);
++
++
++/**
++ * VMCIQPair_DequeueV() - Get data from the queue using iov.
++ * @qpair:	Pointer to the queue pair struct.
++ * @iov:	Pointer to buffer for the data
++ * @iovSize:	Length of buffer.
++ * @bufType:	Buffer type (Unused).
++ *
++ * This is the client interface for dequeueing data from the queue.
++ * This function uses IO vectors to handle the work. Returns number
++ * of bytes dequeued or < 0 on error.
++ */
++ssize_t VMCIQPair_DequeueV(struct vmci_qp *qpair,
++			   void *iov,
++			   size_t iovSize,
++			   int bufType)
++{
++	ssize_t result;
++
++	qp_lock(qpair);
++
++	if (!qpair || !iov)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	do {
++		result = qp_dequeue_locked(qpair->produceQ,
++					   qpair->consumeQ,
++					   qpair->consumeQSize,
++					   iov, iovSize,
++					   qp_memcpy_from_queue_iov,
++					   true, CAN_BLOCK(qpair->flags));
++
++		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY &&
++		    !qp_wait_for_ready_queue(qpair))
++			result = VMCI_ERROR_WOULD_BLOCK;
++
++	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
++
++	qp_unlock(qpair);
++
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_DequeueV);
++
++/**
++ * VMCIQPair_PeekV() - Peek at the data in the queue using iov.
++ * @qpair:	Pointer to the queue pair struct.
++ * @iov:	Pointer to buffer for the data
++ * @iovSize:	Length of buffer.
++ * @bufType:	Buffer type (Unused on Linux).
++ *
++ * This is the client interface for peeking into a queue.  (I.e.,
++ * copy data from the queue without updating the head pointer.)
++ * This function uses IO vectors to handle the work. Returns number
++ * of bytes peeked or < 0 on error.
++ */
++ssize_t VMCIQPair_PeekV(struct vmci_qp *qpair,
++			void *iov,
++			size_t iovSize,
++			int bufType)
++{
++	ssize_t result;
++
++	if (!qpair || !iov)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	qp_lock(qpair);
++
++	do {
++		result = qp_dequeue_locked(qpair->produceQ,
++					   qpair->consumeQ,
++					   qpair->consumeQSize,
++					   iov, iovSize,
++					   qp_memcpy_from_queue_iov,
++					   false, CAN_BLOCK(qpair->flags));
++
++		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY &&
++		    !qp_wait_for_ready_queue(qpair))
++			result = VMCI_ERROR_WOULD_BLOCK;
++
++	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
++
++	qp_unlock(qpair);
++	return result;
++}
++EXPORT_SYMBOL(VMCIQPair_PeekV);
+diff --git a/drivers/misc/vmw_vmci/vmci_queue_pair.h b/drivers/misc/vmw_vmci/vmci_queue_pair.h
 new file mode 100644
-index 0000000..0b80a5d
+index 0000000..b4f39e4
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_context.h
-@@ -0,0 +1,161 @@
++++ b/drivers/misc/vmw_vmci/vmci_queue_pair.h
+@@ -0,0 +1,182 @@
 +/*
-+ * VMware VMCI driver (vmciContext.h)
++ * VMware VMCI Driver
 + *
 + * Copyright (C) 2012 VMware, Inc. All rights reserved.
 + *
@@ -1333,148 +3612,169 @@ index 0000000..0b80a5d
 + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 + */
 +
-+#ifndef _VMCI_CONTEXT_H_
-+#define _VMCI_CONTEXT_H_
++#ifndef _VMCI_QUEUE_PAIR_H_
++#define _VMCI_QUEUE_PAIR_H_
 +
 +#include <linux/vmw_vmci_defs.h>
 +
-+#include "vmci_datagram.h"
-+#include "vmci_common_int.h"
-+#include "vmci_handle_array.h"
++#include "vmci_context.h"
 +
-+/* Used to determine what checkpoint state to get and set. */
-+enum {
-+	VMCI_NOTIFICATION_CPT_STATE = 1,
-+	VMCI_WELLKNOWN_CPT_STATE    = 2,
-+	VMCI_DG_OUT_STATE           = 3,
-+	VMCI_DG_IN_STATE            = 4,
-+	VMCI_DG_IN_SIZE_STATE       = 5,
-+	VMCI_DOORBELL_CPT_STATE     = 6,
++/* Callback needed for correctly waiting on events. */
++typedef int (*VMCIEventReleaseCB) (void *clientData);
++
++/* Guest device port I/O. */
++struct PPNSet {
++	uint64_t numProducePages;
++	uint64_t numConsumePages;
++	uint32_t *producePPNs;
++	uint32_t *consumePPNs;
++	bool initialized;
 +};
 +
-+/* Host specific struct used for signalling */
-+struct vmci_host {
-+	wait_queue_head_t waitQueue;
++
++/* VMCIQueuePairAllocInfo */
++struct vmci_qp_alloc_info {
++	struct vmci_handle handle;
++	uint32_t peer;
++	uint32_t flags;
++	uint64_t produceSize;
++	uint64_t consumeSize;
++	uint64_t ppnVA;		/* Start VA of queue pair PPNs. */
++	uint64_t numPPNs;
++	int32_t result;
++	uint32_t version;
 +};
 +
-+struct vmci_ctx {
-+	struct list_head listItem;	/* For global VMCI list. */
-+	uint32_t cid;
-+	atomic_t refCount;
-+	struct list_head datagramQueue;	/* Head of per VM queue. */
-+	uint32_t pendingDatagrams;
-+	size_t datagramQueueSize;	/* Size of datagram queue in bytes. */
-+
-+	/*
-+	 * Version of the code that created
-+	 * this context; e.g., VMX.
-+	 */
-+	int userVersion;
-+	spinlock_t lock;  /* Locks callQueue and handleArrays. */
-+
-+	/*
-+	 * QueuePairs attached to.  The array of
-+	 * handles for queue pairs is accessed
-+	 * from the code for QP API, and there
-+	 * it is protected by the QP lock.  It
-+	 * is also accessed from the context
-+	 * clean up path, which does not
-+	 * require a lock.  VMCILock is not
-+	 * used to protect the QP array field.
-+	 */
-+	struct vmci_handle_arr *queuePairArray;
-+
-+	/* Doorbells created by context. */
-+	struct vmci_handle_arr *doorbellArray;
-+
-+	/* Doorbells pending for context. */
-+	struct vmci_handle_arr *pendingDoorbellArray;
-+
-+	/* Contexts current context is subscribing to. */
-+	struct vmci_handle_arr *notifierArray;
-+	struct vmci_host hostContext;
-+	uint32_t privFlags;
-+	uid_t user;
-+	bool validUser;
-+	bool *notify;		/* Notify flag pointer - hosted only. */
-+	struct page *notifyPage;	/* Page backing the notify UVA. */
++/* VMCIQueuePairSetVAInfo */
++struct vmci_qp_set_va_info {
++	struct vmci_handle handle;
++	uint64_t va;		/* Start VA of queue pair PPNs. */
++	uint64_t numPPNs;
++	uint32_t version;
++	int32_t result;
 +};
 +
-+/* VMCINotifyAddRemoveInfo: Used to add/remove remote context notifications. */
-+struct vmci_ctx_info {
-+	uint32_t remoteCID;
-+	int result;
++/*
++ * For backwards compatibility, here is a version of the
++ * VMCIQueuePairPageFileInfo before host support end-points was added.
++ * Note that the current version of that structure requires VMX to
++ * pass down the VA of the mapped file.  Before host support was added
++ * there was nothing of the sort.  So, when the driver sees the ioctl
++ * with a parameter that is the sizeof
++ * VMCIQueuePairPageFileInfo_NoHostQP then it can infer that the version
++ * of VMX running can't attach to host end points because it doesn't
++ * provide the VA of the mapped files.
++ *
++ * The Linux driver doesn't get an indication of the size of the
++ * structure passed down from user space.  So, to fix a long standing
++ * but unfiled bug, the _pad field has been renamed to version.
++ * Existing versions of VMX always initialize the PageFileInfo
++ * structure so that _pad, er, version is set to 0.
++ *
++ * A version value of 1 indicates that the size of the structure has
++ * been increased to include two UVA's: produceUVA and consumeUVA.
++ * These UVA's are of the mmap()'d queue contents backing files.
++ *
++ * In addition, if when VMX is sending down the
++ * VMCIQueuePairPageFileInfo structure it gets an error then it will
++ * try again with the _NoHostQP version of the file to see if an older
++ * VMCI kernel module is running.
++ */
++
++/* VMCIQueuePairPageFileInfo */
++struct vmci_qp_page_file_info {
++	struct vmci_handle handle;
++	uint64_t producePageFile;	/* User VA. */
++	uint64_t consumePageFile;	/* User VA. */
++	uint64_t producePageFileSize;	/* Size of the file name array. */
++	uint64_t consumePageFileSize;	/* Size of the file name array. */
++	int32_t result;
++	uint32_t version;	/* Was _pad. */
++	uint64_t produceVA;	/* User VA of the mapped file. */
++	uint64_t consumeVA;	/* User VA of the mapped file. */
 +};
 +
-+/* VMCICptBufInfo: Used to set/get current context's checkpoint state. */
-+struct vmci_ctx_chkpt_buf_info {
-+	uint64_t cptBuf;
-+	uint32_t cptType;
-+	uint32_t bufSize;
++/* VMCIQueuePairDetachInfo */
++struct vmci_qp_dtch_info {
++	struct vmci_handle handle;
 +	int32_t result;
 +	uint32_t _pad;
 +};
 +
 +/*
-+ * VMCINotificationReceiveInfo: Used to recieve pending notifications
-+ * for doorbells and queue pairs.
++ * struct vmci_qp_page_store describes how the memory of a given queue pair
++ * is backed. When the queue pair is between the host and a guest, the
++ * page store consists of references to the guest pages. On vmkernel,
++ * this is a list of PPNs, and on hosted, it is a user VA where the
++ * queue pair is mapped into the VMX address space.
 + */
-+struct vmci_ctx_notify_recv_info {
-+	uint64_t dbHandleBufUVA;
-+	uint64_t dbHandleBufSize;
-+	uint64_t qpHandleBufUVA;
-+	uint64_t qpHandleBufSize;
-+	int32_t result;
-+	uint32_t _pad;
++struct vmci_qp_page_store {
++	/* Reference to pages backing the queue pair. */
++	uint64_t pages;
++	/* Length of pageList/virtual addres range (in pages). */
++	uint32_t len;
 +};
 +
-+int vmci_ctx_init(void);
-+int vmci_ctx_init_ctx(uint32_t cid, uint32_t flags,
-+		      uintptr_t eventHnd, int version,
-+		      uid_t *user, struct vmci_ctx **context);
++/*
++ * This data type contains the information about a queue.
++ * There are two queues (hence, queue pairs) per transaction model between a
++ * pair of end points, A & B.  One queue is used by end point A to transmit
++ * commands and responses to B.  The other queue is used by B to transmit
++ * commands and responses.
++ *
++ * struct vmci_queue_kern_if is a per-OS defined Queue structure.  It contains
++ * either a direct pointer to the linear address of the buffer contents or a
++ * pointer to structures which help the OS locate those data pages.  See
++ * vmciKernelIf.c for each platform for its definition.
++ */
++struct vmci_queue {
++	struct vmci_queue_header *qHeader;
++	struct vmci_queue_header *savedHeader;
++	struct vmci_queue_kern_if *kernelIf;
++};
 +
-+bool vmci_ctx_supports_host_qp(struct vmci_ctx *context);
-+void vmci_ctx_release_ctx(struct vmci_ctx *context);
-+int vmci_ctx_enqueue_dg(uint32_t cid, struct vmci_dg *dg);
-+int vmci_ctx_dequeue_dg(struct vmci_ctx *context,
-+			size_t *maxSize, struct vmci_dg **dg);
-+int vmci_ctx_pending_dgs(uint32_t cid, uint32_t *pending);
-+struct vmci_ctx *vmci_ctx_get(uint32_t cid);
-+void vmci_ctx_release(struct vmci_ctx *context);
-+bool vmci_ctx_exists(uint32_t cid);
++/*
++ * Utility function that checks whether the fields of the page
++ * store contain valid values.
++ * Result:
++ * true if the page store is wellformed. false otherwise.
++ */
++static inline bool
++VMCI_QP_PAGESTORE_IS_WELLFORMED(struct vmci_qp_page_store *pageStore)
++{
++	return pageStore->len >= 2;
++}
 +
-+uint32_t vmci_ctx_get_id(struct vmci_ctx *context);
-+int vmci_ctx_add_notification(uint32_t contextID, uint32_t remoteCID);
-+int vmci_ctx_remove_notification(uint32_t contextID, uint32_t remoteCID);
-+int vmci_ctx_get_chkpt_state(uint32_t contextID, uint32_t cptType,
-+			     uint32_t *numCIDs, char **cptBufPtr);
-+int vmci_ctx_set_chkpt_state(uint32_t contextID, uint32_t cptType,
-+			     uint32_t numCIDs, char *cptBuf);
 +
-+int vmci_ctx_qp_create(struct vmci_ctx *context,
-+		       struct vmci_handle handle);
-+int vmci_ctx_qp_destroy(struct vmci_ctx *context,
-+			struct vmci_handle handle);
-+bool vmci_ctx_qp_exists(struct vmci_ctx *context,
-+			struct vmci_handle handle);
 +
-+void vmci_ctx_check_signal_notify(struct vmci_ctx *context);
-+void vmci_ctx_unset_notify(struct vmci_ctx *context);
++int vmci_qp_broker_init(void);
++void vmci_qp_broker_exit(void);
++int vmci_qp_broker_alloc(struct vmci_handle handle, uint32_t peer,
++			 uint32_t flags, uint32_t privFlags,
++			 uint64_t produceSize, uint64_t consumeSize,
++			 struct vmci_qp_page_store *pageStore,
++			 struct vmci_ctx *context);
++int vmci_qp_broker_set_page_store(struct vmci_handle handle,
++				  uint64_t produceUVA, uint64_t consumeUVA,
++				  struct vmci_ctx *context);
++int vmci_qp_broker_detach(struct vmci_handle handle,
++			  struct vmci_ctx *context);
 +
-+int vmci_ctx_dbell_create(uint32_t contextID, struct vmci_handle handle);
-+int vmci_ctx_dbell_destroy(uint32_t contextID, struct vmci_handle handle);
-+int vmci_ctx_dbell_destroy_all(uint32_t contextID);
-+int vmci_ctx_notify_dbell(uint32_t cid, struct vmci_handle handle,
-+			  uint32_t srcPrivFlags);
++int vmci_qp_guest_endpoints_init(void);
++void vmci_qp_guest_endpoints_exit(void);
 +
-+int vmci_ctx_rcv_notifications_get(uint32_t contextID, struct vmci_handle_arr
-+				   **dbHandleArray, struct vmci_handle_arr
-+				   **qpHandleArray);
-+void
-+vmci_ctx_rcv_notifications_release(uint32_t contextID, struct vmci_handle_arr
-+				   *dbHandleArray, struct vmci_handle_arr
-+				   *qpHandleArray, bool success);
-+#endif /* _VMCI_CONTEXT_H_ */
++int vmci_qp_alloc(struct vmci_handle *handle,
++		  struct vmci_queue **produceQ, uint64_t produceSize,
++		  struct vmci_queue **consumeQ, uint64_t consumeSize,
++		  uint32_t peer, uint32_t flags, uint32_t privFlags,
++		  bool guestEndpoint, VMCIEventReleaseCB wakeupCB,
++		  void *clientData);
++int vmci_qp_broker_map(struct vmci_handle handle,
++		       struct vmci_ctx *context, uint64_t guestMem);
++int vmci_qp_broker_unmap(struct vmci_handle handle,
++			 struct vmci_ctx *context, uint32_t gid);
++
++#endif /* _VMCI_QUEUE_PAIR_H_ */
 -- 
 1.7.0.4
 
