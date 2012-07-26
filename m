@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab2GZTnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 15:43:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62232 "EHLO mx1.redhat.com"
+	id S1752319Ab2GZTtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 15:49:46 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:58974 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639Ab2GZTna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 15:43:30 -0400
-Date: Thu, 26 Jul 2012 15:43:24 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Sameer Nanda <snanda@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel/watchdog.c : fix smp_processor_id() warning
-Message-ID: <20120726194324.GG5637@redhat.com>
-References: <1343191185-7746-1-git-send-email-ming.lei@canonical.com>
+	id S1751251Ab2GZTto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 15:49:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Colin Cross <ccross@android.com>
+Subject: Re: [PATCH] cpuidle: coupled: fix sleeping while atomic in cpu notifier
+Date: Thu, 26 Jul 2012 21:55:31 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
+References: <1343251216-24106-1-git-send-email-ccross@android.com>
+In-Reply-To: <1343251216-24106-1-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343191185-7746-1-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207262155.31280.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 12:39:45PM +0800, Ming Lei wrote:
-> Use raw_smp_processor_id in lockup_detector_bootcpu_resume()
-> because it is enough when non-boot CPUs are offline.
-> 
-> This patch fixes the following warning when DEBUG_PREEMPT
-> is enabled.
+On Wednesday, July 25, 2012, Colin Cross wrote:
+> The cpu hotplug notifier gets called in both atomic and non-atomic
+> contexts, it is not always safe to lock a mutex.  Filter out all events
+> except the six necessary ones, which are all sleepable, before taking
+> the mutex.
 
-Is this patched on top of linux-next?
+I wonder what mutual exclusion mechanis we rely on when the mutex is not taken?
 
-It seems right based on the code usage.  Though it makes me sad the resume
-code has to hack into the cpu notifiers like that.
+Rafael
 
-Cheers,
-Don
 
-> 
-> [  168.259429] BUG: using smp_processor_id() in preemptible [00000000] code: pm/1577
-> [  168.259460] caller is lockup_detector_bootcpu_resume+0x8/0x48
-> [  168.259490] [<c001558c>] (unwind_backtrace+0x0/0x11c) from [<c0296874>] (debug_smp_processor_id+0xbc/0xf0)
-> [  168.259521] [<c0296874>] (debug_smp_processor_id+0xbc/0xf0) from [<c0090114>] (lockup_detector_bootcpu_res
-> ume+0x8/0x48)
-> [  168.259552] [<c0090114>] (lockup_detector_bootcpu_resume+0x8/0x48) from [<c006facc>] (suspend_devices_and_
-> enter+0x1f8/0x358)
-> [  168.259552] [<c006facc>] (suspend_devices_and_enter+0x1f8/0x358) from [<c006fd68>] (pm_suspend+0x13c/0x204
-> )
-> [  168.259582] [<c006fd68>] (pm_suspend+0x13c/0x204) from [<c006f0d0>] (state_store+0xb0/0xd4)
-> [  168.259582] [<c006f0d0>] (state_store+0xb0/0xd4) from [<c028a3d8>] (kobj_attr_store+0x14/0x20)
-> [  168.259613] [<c028a3d8>] (kobj_attr_store+0x14/0x20) from [<c014d344>] (sysfs_write_file+0x10c/0x140)
-> [  168.259643] [<c014d344>] (sysfs_write_file+0x10c/0x140) from [<c00f5a88>] (vfs_write+0xb0/0x138)
-> [  168.259643] [<c00f5a88>] (vfs_write+0xb0/0x138) from [<c00f5ce8>] (sys_write+0x3c/0x68)
-> [  168.259674] [<c00f5ce8>] (sys_write+0x3c/0x68) from [<c000e020>] (ret_fast_syscall+0x0/0x48)
-> [  168.260375] Enabling non-boot CPUs ...
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> Signed-off-by: Colin Cross <ccross@android.com>
 > ---
->  kernel/watchdog.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/cpuidle/coupled.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
 > 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 69add8a..7ddb11b 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -623,7 +623,7 @@ static struct notifier_block cpu_nfb = {
->   */
->  void lockup_detector_bootcpu_resume(void)
->  {
-> -	void *cpu = (void *)(long)smp_processor_id();
-> +	void *cpu = (void *)(long)raw_smp_processor_id();
+> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+> index 2c9bf26..c24dda0 100644
+> --- a/drivers/cpuidle/coupled.c
+> +++ b/drivers/cpuidle/coupled.c
+> @@ -678,6 +678,18 @@ static int cpuidle_coupled_cpu_notify(struct notifier_block *nb,
+>  	int cpu = (unsigned long)hcpu;
+>  	struct cpuidle_device *dev;
 >  
->  	cpu_callback(&cpu_nfb, CPU_DEAD_FROZEN, cpu);
->  	cpu_callback(&cpu_nfb, CPU_UP_PREPARE_FROZEN, cpu);
-> -- 
-> 1.7.9.5
+> +	switch (action & ~CPU_TASKS_FROZEN) {
+> +	case CPU_UP_PREPARE:
+> +	case CPU_DOWN_PREPARE:
+> +	case CPU_ONLINE:
+> +	case CPU_DEAD:
+> +	case CPU_UP_CANCELED:
+> +	case CPU_DOWN_FAILED:
+> +		break;
+> +	default:
+> +		return NOTIFY_OK;
+> +	}
+> +
+>  	mutex_lock(&cpuidle_lock);
+>  
+>  	dev = per_cpu(cpuidle_devices, cpu);
 > 
+
