@@ -1,145 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab2GZVeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:34:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35774 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab2GZVbt (ORCPT
+	id S1753838Ab2GZVeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:34:09 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:1763 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab2GZVeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:31:49 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miao Xie <miaox@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Mel Gorman <mgorman@suse.de>
-Subject: [ 38/40] cpusets: stall when updating mems_allowed for mempolicy or disjoint nodemask
-Date: Thu, 26 Jul 2012 14:29:56 -0700
-Message-Id: <20120726211414.650273026@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
-References: <20120726211424.GA7709@kroah.com>
- <20120726211411.164006056@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
+	Thu, 26 Jul 2012 17:34:03 -0400
+Message-ID: <5011B7B3.3040907@spin.net.au>
+Date: Fri, 27 Jul 2012 07:33:39 +1000
+From: Chris Jones <chrisjones@spin.net.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] NTFS code doesn't sanitize folder names sufficiently
+References: <501189DA.4030709@enkore.de>
+In-Reply-To: <501189DA.4030709@enkore.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.244, required 4, AWL 0.26, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Marian Beermann wrote:
+> Hello everyone,
+>
+> today I noticed some very odd behaviour, which could lead people to 
+> believe a loss of data, because it is possible to create directories 
+> with backslashes in them.
+>
+> I am currently running kernel 3.5.
+>
+> To completly reproduce the problem to the full extend you'll need a 
+> Windows computer, but to see whats wrong Linux completly suffices :-)
+>
+> On a Linux computer
+> 1. Create a directory named TestA on an NTFS partition
+> 2. Create a subdirectory of TestA named TestB
+> 3. Create a third directory alongside TestA named TestA\TestB (the 
+> fundamental problem is this: backslashes in directory names)
+>
+> Connect the drive containing the NTFS partition now to a Windows 
+> computer and navigate to the directory containing TestA and 
+> TestA\TestB. If you navigate to the folder (not path!) TestA\TestB 
+> you'll actually see the contents of the path TestA\TestB (the 
+> subfolder TestB) and not the contents of the directory.
+> It is not possible on a Windows machine to access the contents of the 
+> directory named TestA\TestB. This is not a bug in Windows, it's caused 
+> by a bug in the NTFS driver, which allows illegal characters.
+>
+> The solution to this would be to disallow creation of files and 
+> folders on NTFS drives containing illegal characters.
+>
+> Best regards
+> Marian Beermann
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Yeah that's a tough one. I wouldn't exactly call it a bug. There's 
+probably lots of stuff like this you could do that the command line 
+would allow you to perform but not be a correct and intended function. I 
+would put this down to user error rather than a bug. Anyone with 
+knowledge of operating systems and file system structuring should know 
+that / or \ are illegal characters for creating a directories. Whether 
+it be on Windows or Linux.
 
-------------------
 
-From: David Rientjes <rientjes@google.com>
+Regards
 
-commit b246272ecc5ac68c743b15c9e41a2275f7ce70e2 upstream.
+-- 
+		Chris Jones @ kernel.devproject@gmail.com
+also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
 
-Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
-	expensive and severely impacted page allocator performance. This is
-	part of a series of patches that reduce page allocator overhead.
+OpenSUSE 12.1 (IceWM/zsh) (PC)|Android 4.0.3 (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
+Linux kernel developer|Solaris kernel developer|BSD kernel developer
+Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
+Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
+Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
 
-Kernels where MAX_NUMNODES > BITS_PER_LONG may temporarily see an empty
-nodemask in a tsk's mempolicy if its previous nodemask is remapped onto a
-new set of allowed cpuset nodes where the two nodemasks, as a result of
-the remap, are now disjoint.
-
-c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
-cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
-nodes from changing for a thread.  This causes any update to a set of
-allowed nodes to stall until put_mems_allowed() is called.
-
-This stall is unncessary, however, if at least one node remains unchanged
-in the update to the set of allowed nodes.  This was addressed by
-89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
-node remains set"), but it's still possible that an empty nodemask may be
-read from a mempolicy because the old nodemask may be remapped to the new
-nodemask during rebind.  To prevent this, only avoid the stall if there is
-no mempolicy for the thread being changed.
-
-This is a temporary solution until all reads from mempolicy nodemasks can
-be guaranteed to not be empty without the get_mems_allowed()
-synchronization.
-
-Also moves the check for nodemask intersection inside task_lock() so that
-tsk->mems_allowed cannot change.  This ensures that nothing can set this
-tsk's mems_allowed out from under us and also protects tsk->mempolicy.
-
-Reported-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Paul Menage <paul@paulmenage.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/cpuset.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
-
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -123,6 +123,19 @@ static inline struct cpuset *task_cs(str
- 			    struct cpuset, css);
- }
- 
-+#ifdef CONFIG_NUMA
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return task->mempolicy;
-+}
-+#else
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return false;
-+}
-+#endif
-+
-+
- /* bits in struct cpuset flags field */
- typedef enum {
- 	CS_CPU_EXCLUSIVE,
-@@ -949,7 +962,7 @@ static void cpuset_migrate_mm(struct mm_
- static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 					nodemask_t *newmems)
- {
--	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
-+	bool need_loop;
- 
- repeat:
- 	/*
-@@ -962,6 +975,14 @@ repeat:
- 		return;
- 
- 	task_lock(tsk);
-+	/*
-+	 * Determine if a loop is necessary if another thread is doing
-+	 * get_mems_allowed().  If at least one node remains unchanged and
-+	 * tsk does not have a mempolicy, then an empty nodemask will not be
-+	 * possible when mems_allowed is larger than a word.
-+	 */
-+	need_loop = task_has_mempolicy(tsk) ||
-+			!nodes_intersects(*newmems, tsk->mems_allowed);
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
- 
-@@ -981,11 +1002,9 @@ repeat:
- 
- 	/*
- 	 * Allocation of memory is very fast, we needn't sleep when waiting
--	 * for the read-side.  No wait is necessary, however, if at least one
--	 * node remains unchanged.
-+	 * for the read-side.
- 	 */
--	while (masks_disjoint &&
--			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
-+	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
- 		task_unlock(tsk);
- 		if (!task_curr(tsk))
- 			yield();
-
+PGP Fingerprint: 4E38 0776 B380 63C8 F64F
+A7D6 736C CF56 42A4 FB35
 
