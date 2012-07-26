@@ -1,79 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab2GZXSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 19:18:51 -0400
-Received: from mailserver6.natinst.com ([130.164.80.6]:50981 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab2GZXSt (ORCPT
+	id S1753266Ab2GZX2V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 19:28:21 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:48910 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab2GZX2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 19:18:49 -0400
-X-Greylist: delayed 4143 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 19:18:49 EDT
-From: Jaeden Amero <jaeden.amero@ni.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jaeden Amero <jaeden.amero@ni.com>
-Subject: [PATCH] n_tty: Don't lose characters when PARMRK is enabled
-Date: Thu, 26 Jul 2012 17:12:31 -0500
-Message-Id: <1343340751-1942-1-git-send-email-jaeden.amero@ni.com>
-X-Mailer: git-send-email 1.7.11.1
-In-Reply-To: <y>
-References: <y>
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.2FP3|July 10, 2011) at
- 07/26/2012 05:09:45 PM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.2FP3|July 10, 2011) at
- 07/26/2012 05:09:45 PM,
-	Serialize complete at 07/26/2012 05:09:45 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-07-26_06:2012-07-26,2012-07-26,1970-01-01 signatures=0
+	Thu, 26 Jul 2012 19:28:19 -0400
+Message-ID: <5011D28D.4060600@kernel.org>
+Date: Thu, 26 Jul 2012 19:28:13 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [Resend][PATCH] ACPI / PM: Fix build warning in sleep.c for CONFIG_ACPI_SLEEP
+ unset
+References: <20120721214156.GA2515@linux.vnet.ibm.com> <201207221940.51764.rjw@sisk.pl> <20120722202843.GQ2435@linux.vnet.ibm.com> <201207232101.02472.rjw@sisk.pl> <20120723192910.GD2491@linux.vnet.ibm.com>
+In-Reply-To: <20120723192910.GD2491@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When PARMRK is set and large transfers of characters that will get
-marked are being received, n_tty could drop data silently (i.e.
-without reporting any error to the client). This is because
-characters have the potential to take up to three bytes in the line
-discipline (when they get marked with parity or framing errors), but
-the amount of free space reported to tty_buffer flush_to_ldisc (via
-tty->receive_room) is based on the pre-marked data size.
+Applied.
 
-With this patch, the n_tty layer will no longer assume that each byte
-will only take up one byte in the line discipline. Instead, it will
-make an overly conservative estimate that each byte will take up
-three bytes in the line discipline when PARMRK is set.
-
-Signed-off-by: Jaeden Amero <jaeden.amero@ni.com>
----
- drivers/tty/n_tty.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 101790c..5299cda 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -92,10 +92,20 @@ static inline int tty_put_user(struct tty_struct *tty, unsigned char x,
- 
- static void n_tty_set_room(struct tty_struct *tty)
- {
--	/* tty->read_cnt is not read locked ? */
--	int	left = N_TTY_BUF_SIZE - tty->read_cnt - 1;
-+	int left;
- 	int old_left;
- 
-+	/* tty->read_cnt is not read locked ? */
-+	if (I_PARMRK(tty))
-+	{
-+		/* Multiply read_cnt by 3, since each byte might take up to
-+		 * three times as many spaces when PARMRK is set (depending on
-+		 * its flags, e.g. parity error). */
-+		left = N_TTY_BUF_SIZE - tty->read_cnt * 3 - 1;
-+	}
-+	else
-+		left = N_TTY_BUF_SIZE - tty->read_cnt - 1;
-+
- 	/*
- 	 * If we are doing input canonicalization, and there are no
- 	 * pending newlines, let characters through without limit, so
--- 
-1.7.11.1
+thanks,
+Len Brown, Intel Open Source Technology Center
 
