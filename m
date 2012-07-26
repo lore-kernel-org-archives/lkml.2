@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab2GZGzO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 02:55:14 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:47902 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab2GZGzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 02:55:12 -0400
-Date: Thu, 26 Jul 2012 08:55:06 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/build change for v3.6
-Message-ID: <20120726065506.GA8421@gmail.com>
-References: <20120722134451.GA7099@gmail.com>
- <20120722135807.GA17513@shutemov.name>
- <20120722142204.GA9085@gmail.com>
- <20120725201511.GA888@merkur.ravnborg.org>
+	id S1751259Ab2GZG6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 02:58:15 -0400
+Received: from linux-sh.org ([111.68.239.195]:44897 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750992Ab2GZG6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 02:58:14 -0400
+Date: Thu, 26 Jul 2012 15:58:04 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 9/9 v3] dma: shdma: convert to the shdma base library
+Message-ID: <20120726065804.GF30468@linux-sh.org>
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de>
+ <1336576161-27082-10-git-send-email-g.liakhovetski@gmx.de>
+ <20120725035935.GA30468@linux-sh.org>
+ <1343285361.1726.8980.camel@vkoul-udesk3>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120725201511.GA888@merkur.ravnborg.org>
+In-Reply-To: <1343285361.1726.8980.camel@vkoul-udesk3>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Sam Ravnborg <sam@ravnborg.org> wrote:
-
+On Thu, Jul 26, 2012 at 12:19:21PM +0530, Vinod Koul wrote:
+> On Wed, 2012-07-25 at 12:59 +0900, Paul Mundt wrote:
+> > On Wed, May 09, 2012 at 05:09:21PM +0200, Guennadi Liakhovetski wrote:
+> > > The shdma base library has originally been extracted from the shdma driver,
+> > > which now can be converted to actually use it.
+> > > 
+> > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > > ---
+> > >  drivers/dma/sh/shdma.c | 1122 ++++++++++++------------------------------------
+> > >  drivers/dma/sh/shdma.h |   44 +-
+> > >  include/linux/sh_dma.h |   33 +-
+> > >  3 files changed, 302 insertions(+), 897 deletions(-)
+> > > 
+> > Now that this has hit mainline, the sh-sci with DMA enabled build is
+> > broken:
 > > 
-> > No, the reason for the odd looking diff is that lots of lines in 
-> > arch/x86/Makefile have 8-space tabs for histerical reasons but 
-> > new code (such as this one) has proper tabs.
+> >   CC      drivers/tty/serial/sh-sci.o
+> > drivers/tty/serial/sh-sci.c: In function 'work_fn_rx':
+> > drivers/tty/serial/sh-sci.c:1413:67: error: dereferencing pointer to incomplete type
+> > drivers/tty/serial/sh-sci.c:1413:81: warning: type defaults to 'int' in declaration of '__mptr'
+> > drivers/tty/serial/sh-sci.c:1413:90: warning: initialization from incompatible pointer type
+> > drivers/tty/serial/sh-sci.c:1413:161: error: invalid use of undefined type 'struct sh_desc'
+> > drivers/tty/serial/sh-sci.c:1419:83: error: dereferencing pointer to incomplete type
+> > drivers/tty/serial/sh-sci.c:1419:101: error: dereferencing pointer to incomplete type
+> > drivers/tty/serial/sh-sci.c:1423:42: error: dereferencing pointer to incomplete type
+> This was in -next for quite some time :(
 > 
-> Use of tabs for indent in a Makefile is just asking for 
-> trouble.
-
-Ok, I guess you are right - see the patch below which was 
-another type of bug that could be introduced via not using 
-spaces properly.
-
-We could do it the other way around: turn all tabs into spaces 
-and add Makefile checking in kbuild so that the build fails if
-a tab is added to a Makefile?
-
-Alternatively, is there perhaps some way to teach make to not be 
-so broken to depend on whitespace details that are *invisible* 
-to humans?
-
-Thanks,
-
-	Ingo
-
-Index: linux/arch/x86/Makefile
-===================================================================
---- linux.orig/arch/x86/Makefile
-+++ linux/arch/x86/Makefile
-@@ -96,7 +96,7 @@ ifdef CONFIG_X86_X32
- 		KBUILD_AFLAGS += -DCONFIG_X86_X32_ABI
- 		KBUILD_CFLAGS += -DCONFIG_X86_X32_ABI
- 	else
--		$(warning CONFIG_X86_X32 enabled but no binutils support)
-+ 		$(warning CONFIG_X86_X32 enabled but no binutils support)
- 	endif
- endif
- export CONFIG_X86_X32_ABI
+It seems we don't have any configs that have this default-enabled under
+-next, so it wasn't noticed before. Still, as Guennadi wrote this code
+I'm surprised it was overlooked.
