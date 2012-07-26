@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab2GZMyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 08:54:52 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:38386 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab2GZMyu (ORCPT
+	id S1752456Ab2GZM43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 08:56:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64078 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab2GZM41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 08:54:50 -0400
+	Thu, 26 Jul 2012 08:56:27 -0400
+Date: Thu, 26 Jul 2012 14:56:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] jiffies: Allow CLOCK_TICK_RATE to be undefined
+Message-ID: <20120726125620.GD24672@gmail.com>
+References: <1342660753-10382-1-git-send-email-john.stultz@linaro.org>
+ <1342660753-10382-2-git-send-email-john.stultz@linaro.org>
+ <20120719093704.GB27086@gmail.com>
+ <500DA7EB.1030608@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CALyraeOQZ+FPTqaOk6XjHsZwwCfNuo2XLo6bhw44maSEkDf7tA@mail.gmail.com>
-References: <CALyraeOQZ+FPTqaOk6XjHsZwwCfNuo2XLo6bhw44maSEkDf7tA@mail.gmail.com>
-Date: Thu, 26 Jul 2012 08:54:49 -0400
-Message-ID: <CALyraeM9WXraZeV-6-YC7NqGfY8yokkepjeznwJoZ+EbHhdxnQ@mail.gmail.com>
-Subject: Re: orphan process is causing deadlock in __kernel_vsyscall ()
-From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        linux-newbie@vger.kernel.org, linux-netdev <netdev@vger.kernel.org>,
-        kernelnewbies <Kernelnewbies@kernelnewbies.org>,
-        Kernel-newbies <kernelnewbies@nl.linux.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500DA7EB.1030608@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hello All,
->
-> I am debugging a problem which I do not know how to solve. I know what
-> is happening, but cannot find solution to it. If anyone has any
-> suggestions or solution that would be really grateful and I appreciate
-> it.
->
-> Here is the description.
->
-> I have a thread which spawns a child process using fork() and in child
-> context it execv to shell and parent thread waits on waitpid(). This
-> child process is nothing but a shell /bin/sh, so that from program I
-> can create shell and run some commands.
-> In this shell instance, I run tshark for capturing network traffic. I
-> have really high traffic going, so system is really busy. All is good
-> so far, but when I send SIGKILL to child process (shell) from another
-> thread from same application,
-> child process (shell) gets terminated and tshark is assigned to
-> init(1) process as orphan. The parent thread which spawned the child
-> process unblocks from waitpid() after cleaning child instance and
-> continues it execution.
->
-> Here is the problem:
-> Once the parent thread resumes from waitpid(), it hits fprintf to
-> print message "exiting from shell" to console. In here the main thread
-> gets blocked in __kernel_vsyscall () entered from fprintf. Following
-> is my stack trace from gdb.
-> But after some more debugging and found that, if I kill from another
-> shell "tshark" process which is assigned to init(1) as child, the
-> parent thread unblocks from __kernel_vsyscall ().
->
-> Can anyone tell what is going on, is this related to futex spinning
-> problem where lock is been held by tshark. How would I approach this
-> problem?
-> Or is there a way to kill all child process of a process without
-> making them orphan. Because when a child process is running at the
-> time parent is exiting, that child process is assigned to init(1) as
-> orphan process.
-> Can this behavior be modified. Please let me know any suggestions and
-> thoughts. Thanks in advance.
->
-> --
-> Regards,
-> Sri.
->
-> (gdb) backtrace
-> #0  0xffffe424 in __kernel_vsyscall ()
-> #1  0xb7e6396b in write () from /lib/libc.so.6
-> #2  0xb7e0c2ef in _IO_new_file_write () from /lib/libc.so.6
-> #3  0xb7e0bf93 in new_do_write () from /lib/libc.so.6
-> #4  0xb7e0c296 in _IO_new_do_write () from /lib/libc.so.6
-> #5  0xb7e0ce20 in _IO_new_file_overflow () from /lib/libc.so.6
-> #6  0xb7e0c0cd in _IO_new_file_xsputn () from /lib/libc.so.6
-> #7  0xb7de3634 in vfprintf () from /lib/libc.so.6
-> #8  0x09ad62a2 in acme_fprintf (stream=0xb7ee2560,
->     format=0x9f17694 "shell exited. returning to acli\n")
->     at /home/svemulpali/cc/svemulpali_SCOTTY_main/linux/private/common/src/coutOverride.cpp:42
-> #9  0x094a9345 in vxShellCmdStartWait (syscmd=0x0)
->     at /home/svemulpali/cc/svemulpali_SCOTTY_main/linux/private/lib/stub/vxShellLib.cpp:210
 
+* John Stultz <john.stultz@linaro.org> wrote:
 
+> On 07/19/2012 02:37 AM, Ingo Molnar wrote:
+> >* John Stultz <john.stultz@linaro.org> wrote:
+> >
+> >>From: Catalin Marinas <catalin.marinas@arm.com>
+> ...
+> >>diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+> >>index 265e2c3..a2134be 100644
+> >>--- a/include/linux/jiffies.h
+> >>+++ b/include/linux/jiffies.h
+> >>@@ -39,9 +39,6 @@
+> >>  # error Invalid value of HZ.
+> >>  #endif
+> >>-/* LATCH is used in the interval timer and ftape setup. */
+> >>-#define LATCH  ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
+> >>-
+> >>  /* Suppose we want to divide two numbers NOM and DEN: NOM/DEN, then we can
+> >>   * improve accuracy by shifting LSH bits, hence calculating:
+> >>   *     (NOM << LSH) / DEN
+> >>@@ -54,8 +51,15 @@
+> >>  #define SH_DIV(NOM,DEN,LSH) (   (((NOM) / (DEN)) << (LSH))              \
+> >>                               + ((((NOM) % (DEN)) << (LSH)) + (DEN) / 2) / (DEN))
+> >>+#ifdef CLOCK_TICK_RATE
+> >>+/* LATCH is used in the interval timer and ftape setup. */
+> >>+#define LATCH ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
+> >>+
+> >>  /* HZ is the requested value. ACTHZ is actual HZ ("<< 8" is for accuracy) */
+> >>  #define ACTHZ (SH_DIV (CLOCK_TICK_RATE, LATCH, 8))
+> >>+#else
+> >>+#define ACTHZ (HZ << 8)
+> >>+#endif
+> >The ACTHZ naming ugliness slipped past me. 'ACT' can mean so
+> >many things - please improve it to something more obvious, like
+> >'REAL_HZ' or 'KERNEL_HZ'.
+> 
+> ACTHZ has been around for a while. ~2002 I think?
 
--- 
-Regards,
-Sri.
+Time flies!
+
+> Is it ok if I do the rename in a following patch?
+
+Sure.
+
+> >Also, we tend to write such #if/#else/#endif patterns as:
+> >
+> >#if FOO
+> ># define BAR
+> >#else
+> ># define BAZ
+> >#endif
+> I'll fix this.
+
+Thanks!
+
+	Ingo
