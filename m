@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab2GZOPH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:15:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40733 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab2GZOPE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:15:04 -0400
-Message-ID: <501150E5.6010503@linaro.org>
-Date: Thu, 26 Jul 2012 15:15:01 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 20/21] ASoC: codecs: Enable AB8500 CODEC for Device Tree
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-21-git-send-email-lee.jones@linaro.org> <20120726115055.GD3099@opensource.wolfsonmicro.com>
-In-Reply-To: <20120726115055.GD3099@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752352Ab2GZOPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:15:32 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43031 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752235Ab2GZOPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 10:15:31 -0400
+Message-ID: <1343312131.11398.23.camel@joe2Laptop>
+Subject: Re: [PATCH] checkpatch: Update alignment check
+From: Joe Perches <joe@perches.com>
+To: Paul Walmsley <paul@booyaka.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 26 Jul 2012 07:15:31 -0700
+In-Reply-To: <alpine.DEB.2.00.1207260306590.30049@utopia.booyaka.com>
+References: <1339613458.28729.5.camel@joe2Laptop>
+	 <alpine.DEB.2.00.1207260306590.30049@utopia.booyaka.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry missed this:
+On Thu, 2012-07-26 at 03:08 -0600, Paul Walmsley wrote:
+> On Wed, 13 Jun 2012, Joe Perches wrote:
+> > Parenthesis alignment doesn't correctly check an existing line
+> > after an inserted or modified line with an open parenthesis.
+[]
+> This fixes some bogus checkpatch warnings here.  Andy, any chance this 
+> patch can make it in for 3.6-rc?
 
->>   	{
->>   		.name = "ab8500-codec",
->> +		.of_compatible = "stericsson,ab8500-codec",
->>   	},
->
-> Why are we doing this?  The MFD cells are a totally Linux specific
-> thing, there's no reason to represent them in the device tree unless
-> they're in some way reusable and the "ab8500-codec" name suggests that's
-> unlikely.  Just put the properties on the parent node and instantiate
-> the MFD cell as normal.
+That's pretty likely.
 
-We have all of the AB8500 devices into the Device Tree to accurately 
-represent the hardware. We will also be passing configuration 
-information into the AB8500 Codec from Device Tree. The only reason 
-we're still registering them using the MFD API is to overcome addressing 
-issues encountered earlier. Each 'device' still belongs in the 'device' 
-tree.
+It's been in Andrew Morton's -mm and -next for awhile.
 
-If we were to take this Device Tree and use it on something non-Linux, 
-that OS will still need to know about each of the AB8500 devices and 
-every associated configuration option. Only in Linux do we continue to 
-register them though a different API, which doesn't affect any other OS.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
