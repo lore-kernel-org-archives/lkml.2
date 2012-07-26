@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab2GZVk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:40:28 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55921 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229Ab2GZVaX (ORCPT
+	id S1753275Ab2GZVkv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:40:51 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:53162 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab2GZVaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:23 -0400
+	Thu, 26 Jul 2012 17:30:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dimitri Sivanich <sivanich@sgi.com>, Christoph Lameter <cl@gentwo.org>,
-        Mel Gorman <mel@csn.ul.ie>, Mel Gorman <mgorman@suse.de>
-Subject: [ 07/40] mm/vmstat.c: cache align vm_stat
-Date: Thu, 26 Jul 2012 14:29:25 -0700
-Message-Id: <20120726211411.751682159@linuxfoundation.org>
+        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
+        Iwo Mergler <Iwo.Mergler@netcommwireless.com>,
+        James Nute <newten82@gmail.com>
+Subject: [ 05/40] UBIFS: fix a bug in empty space fix-up
+Date: Thu, 26 Jul 2012 14:29:23 -0700
+Message-Id: <20120726211411.536832009@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -31,42 +32,65 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dimitri Sivanich <sivanich@sgi.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
 
-commit a1cb2c60ddc98ff4e5246f410558805401ceee67 upstream.
+commit c6727932cfdb13501108b16c38463c09d5ec7a74 upstream.
 
-Stable note: Not tracked on Bugzilla. This patch is known to make a big
-        difference to tmpfs performance on larger machines.
+UBIFS has a feature called "empty space fix-up" which is a quirk to work-around
+limitations of dumb flasher programs. Namely, of those flashers that are unable
+to skip NAND pages full of 0xFFs while flashing, resulting in empty space at
+the end of half-filled eraseblocks to be unusable for UBIFS. This feature is
+relatively new (introduced in v3.0).
 
-This was found to adversely affect tmpfs I/O performance.
+The fix-up routine (fixup_free_space()) is executed only once at the very first
+mount if the superblock has the 'space_fixup' flag set (can be done with -F
+option of mkfs.ubifs). It basically reads all the UBIFS data and metadata and
+writes it back to the same LEB. The routine assumes the image is pristine and
+does not have anything in the journal.
 
-Tests run on a 640 cpu UV system.
+There was a bug in 'fixup_free_space()' where it fixed up the log incorrectly.
+All but one LEB of the log of a pristine file-system are empty. And one
+contains just a commit start node. And 'fixup_free_space()' just unmapped this
+LEB, which resulted in wiping the commit start node. As a result, some users
+were unable to mount the file-system next time with the following symptom:
 
-With 120 threads doing parallel writes, each to different tmpfs mounts:
-No patch:		~300 MB/sec
-With vm_stat alignment:	~430 MB/sec
+UBIFS error (pid 1): replay_log_leb: first log node at LEB 3:0 is not CS node
+UBIFS error (pid 1): replay_log_leb: log error detected while replaying the log at LEB 3:0
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-Acked-by: Christoph Lameter <cl@gentwo.org>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+The root-cause of this bug was that 'fixup_free_space()' wrongly assumed
+that the beginning of empty space in the log head (c->lhead_offs) was known
+on mount. However, it is not the case - it was always 0. UBIFS does not store
+in it the master node and finds out by scanning the log on every mount.
+
+The fix is simple - just pass commit start node size instead of 0 to
+'fixup_leb()'.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
+Reported-by: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
+Tested-by: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
+Reported-by: James Nute <newten82@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmstat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ubifs/sb.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -78,7 +78,7 @@ void vm_events_fold_cpu(int cpu)
-  *
-  * vm_stat contains the global counters
-  */
--atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
-+atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS] __cacheline_aligned_in_smp;
- EXPORT_SYMBOL(vm_stat);
+--- a/fs/ubifs/sb.c
++++ b/fs/ubifs/sb.c
+@@ -715,8 +715,12 @@ static int fixup_free_space(struct ubifs
+ 		lnum = ubifs_next_log_lnum(c, lnum);
+ 	}
  
- #ifdef CONFIG_SMP
+-	/* Fixup the current log head */
+-	err = fixup_leb(c, c->lhead_lnum, c->lhead_offs);
++	/*
++	 * Fixup the log head which contains the only a CS node at the
++	 * beginning.
++	 */
++	err = fixup_leb(c, c->lhead_lnum,
++			ALIGN(UBIFS_CS_NODE_SZ, c->min_io_size));
+ 	if (err)
+ 		goto out;
+ 
 
 
