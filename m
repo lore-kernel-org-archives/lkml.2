@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab2GZKGX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 06:06:23 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:29098
+	id S1752177Ab2GZKHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 06:07:12 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:18753
 	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751024Ab2GZKGQ (ORCPT
+	by vger.kernel.org with ESMTP id S1751872Ab2GZKGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 06:06:16 -0400
+	Thu, 26 Jul 2012 06:06:22 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M7RIQ8-01-4HM-02
+X-WSS-ID: 0M7RIQH-01-4I3-02
 X-M-MSG: 
 From: Aaron Lu <aaron.lu@amd.com>
 To: James Bottomley <James.Bottomley@HansenPartnership.com>,
@@ -20,13 +20,13 @@ CC: Jeff Garzik <jgarzik@pobox.com>, Lin Ming <minggr@gmail.com>,
         <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
         <linux-ide@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
         Aaron Lu <aaron.lu@amd.com>
-Subject: [PATCH v3 7/7] block: genhd: add an interface to set disk's poll interval
-Date: Thu, 26 Jul 2012 18:05:29 +0800
-Message-ID: <1343297129-28174-8-git-send-email-aaron.lu@amd.com>
+Subject: [PATCH v3 3/7] scsi: sr: support zero power ODD(ZPODD)
+Date: Thu, 26 Jul 2012 18:05:25 +0800
+Message-ID: <1343297129-28174-4-git-send-email-aaron.lu@amd.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1343297129-28174-1-git-send-email-aaron.lu@amd.com>
 References: <1343297129-28174-1-git-send-email-aaron.lu@amd.com>
-X-OriginalArrivalTime: 26 Jul 2012 10:05:58.0550 (UTC) FILETIME=[40E03360:01CD6B16]
+X-OriginalArrivalTime: 26 Jul 2012 10:05:58.0487 (UTC) FILETIME=[40D69670:01CD6B16]
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -34,86 +34,276 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the ODD's in kernel poll interval to 2s for the user in case the
-user is using an old distro on which udev will not set the system wide
-block parameter events_dfl_poll_msecs.
+The ODD will be placed into suspend state when:
+1 For tray type ODD, no media inside and door closed;
+2 For slot type ODD, no media inside;
+And together with ACPI, when we suspend the ODD, we will omit the power
+altogether to reduce power consumption(done in libata-acpi.c).
+
+The ODD can be resumed either by user or by software.
+
+For user to resume the suspended ODD:
+1 For tray type ODD, press the eject button;
+2 For slot type ODD, insert a disc;
+Once such events happened, an ACPI notification will be sent and in our
+handler, we will power up the ODD and set its status back to
+active(again in libata-acpi.c).
+
+For software to resume the suspended ODD, we did this in ODD's
+open/release function: we scsi_autopm_get/put_device in scsi_cd_get/put.
+
+On old distros, the udisk daemon will poll the ODD and thus ODD will be
+open/closed every 2 seconds. To make use of ZPODD, udisks' poll has to
+be inhibited:
+$ udisks --inhibit-polling /dev/sr0
 
 Signed-off-by: Aaron Lu <aaron.lu@amd.com>
 ---
- block/genhd.c         | 23 +++++++++++++++++------
- drivers/scsi/sr.c     |  1 +
- include/linux/genhd.h |  1 +
- 3 files changed, 19 insertions(+), 6 deletions(-)
+ drivers/scsi/sr.c          | 130 ++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/scsi/sr.h          |   2 +
+ include/scsi/scsi_device.h |   2 +
+ 3 files changed, 133 insertions(+), 1 deletion(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index bdb3682..de9b9d9 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1619,6 +1619,19 @@ static void disk_events_workfn(struct work_struct *work)
- 		kobject_uevent_env(&disk_to_dev(disk)->kobj, KOBJ_CHANGE, envp);
+diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+index abfefab..2573a42 100644
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -45,6 +45,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/pm_runtime.h>
+ #include <asm/uaccess.h>
+ 
+ #include <scsi/scsi.h>
+@@ -79,6 +80,8 @@ static DEFINE_MUTEX(sr_mutex);
+ static int sr_probe(struct device *);
+ static int sr_remove(struct device *);
+ static int sr_done(struct scsi_cmnd *);
++static int sr_suspend(struct device *dev, pm_message_t msg);
++static int sr_resume(struct device *dev);
+ 
+ static struct scsi_driver sr_template = {
+ 	.owner			= THIS_MODULE,
+@@ -86,6 +89,8 @@ static struct scsi_driver sr_template = {
+ 		.name   	= "sr",
+ 		.probe		= sr_probe,
+ 		.remove		= sr_remove,
++		.suspend	= sr_suspend,
++		.resume		= sr_resume,
+ 	},
+ 	.done			= sr_done,
+ };
+@@ -147,8 +152,12 @@ static inline struct scsi_cd *scsi_cd_get(struct gendisk *disk)
+ 	kref_get(&cd->kref);
+ 	if (scsi_device_get(cd->device))
+ 		goto out_put;
++	if (scsi_autopm_get_device(cd->device))
++		goto out_pm;
+ 	goto out;
+ 
++ out_pm:
++	scsi_device_put(cd->device);
+  out_put:
+ 	kref_put(&cd->kref, sr_kref_release);
+ 	cd = NULL;
+@@ -164,9 +173,61 @@ static void scsi_cd_put(struct scsi_cd *cd)
+ 	mutex_lock(&sr_ref_mutex);
+ 	kref_put(&cd->kref, sr_kref_release);
+ 	scsi_device_put(sdev);
++	scsi_autopm_put_device(sdev);
+ 	mutex_unlock(&sr_ref_mutex);
  }
  
-+int disk_events_set_poll_msecs(struct gendisk *disk, long intv)
++static int sr_suspend(struct device *dev, pm_message_t msg)
 +{
-+	if (intv < 0 && intv != -1)
-+		return -EINVAL;
++	int poweroff;
++	struct scsi_sense_hdr sshdr;
++	struct scsi_cd *cd = dev_get_drvdata(dev);
 +
-+	disk_block_events(disk);
-+	disk->ev->poll_msecs = intv;
-+	__disk_unblock_events(disk, true);
++	/* no action for system pm */
++	if (!PMSG_IS_AUTO(msg))
++		return 0;
++
++	/* do another TUR to see if the ODD is still ready to be powered off */
++	scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES, &sshdr);
++
++	if (cd->cdi.mask & CDC_CLOSE_TRAY)
++		/* no media for caddy/slot type ODD */
++		poweroff = scsi_sense_valid(&sshdr) && sshdr.asc == 0x3a;
++	else
++		/* no media and door closed for tray type ODD */
++		poweroff = scsi_sense_valid(&sshdr) && sshdr.asc == 0x3a &&
++			sshdr.ascq == 0x01;
++
++	if (!poweroff) {
++		pm_runtime_get_noresume(dev);
++		atomic_set(&cd->suspend_count, 1);
++		return -EBUSY;
++	}
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL(disk_events_set_poll_msecs);
++
++static int sr_resume(struct device *dev)
++{
++	struct scsi_cd *cd;
++	struct scsi_sense_hdr sshdr;
++
++	cd = dev_get_drvdata(dev);
++
++	/* get the disk ready */
++	scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES, &sshdr);
++
++	/* if user wakes up the ODD, eject the tray */
++	if (cd->device->wakeup_by_user) {
++		cd->device->wakeup_by_user = 0;
++		if (!(cd->cdi.mask & CDC_CLOSE_TRAY))
++			sr_tray_move(&cd->cdi, 1);
++		atomic_set(&cd->suspend_count, 1);
++	}
++
++	return 0;
++}
++
+ static unsigned int sr_get_events(struct scsi_device *sdev)
+ {
+ 	u8 buf[8];
+@@ -201,6 +262,38 @@ static unsigned int sr_get_events(struct scsi_device *sdev)
+ 	return 0;
+ }
+ 
++static int sr_unit_load_done(struct scsi_cd *cd)
++{
++	u8 buf[8];
++	u8 cmd[] = { GET_EVENT_STATUS_NOTIFICATION,
++		1,                 /* polled */
++		0, 0,              /* reserved */
++		1 << 6,            /* notification class: Device Busy */
++		0, 0,              /* reserved */
++		0, sizeof(buf),    /* allocation length */
++		0,                 /* control */
++	};
++	struct event_header *eh = (void *)buf;
++	struct device_busy_event_desc *desc = (void *)(buf + 4);
++	struct scsi_sense_hdr sshdr;
++	int result;
++
++	result = scsi_execute_req(cd->device, cmd, DMA_FROM_DEVICE, buf,
++			sizeof(buf), &sshdr, SR_TIMEOUT, MAX_RETRIES, NULL);
++
++	if (result || be16_to_cpu(eh->data_len) < sizeof(*desc))
++		return 0;
++
++	if (eh->nea || eh->notification_class != 0x6)
++		return 0;
++
++	if (desc->device_busy_event == 2 && desc->device_busy_status == 0)
++		return 1;
++	else
++		return 0;
++}
++
 +
  /*
-  * A disk events enabled device has the following sysfs nodes under
-  * its /sys/block/X/ directory.
-@@ -1675,16 +1688,14 @@ static ssize_t disk_events_poll_msecs_store(struct device *dev,
+  * This function checks to see if the media has been changed or eject
+  * button has been pressed.  It is possible that we have already
+@@ -215,12 +308,21 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+ 	bool last_present;
+ 	struct scsi_sense_hdr sshdr;
+ 	unsigned int events;
+-	int ret;
++	int ret, poweroff;
+ 
+ 	/* no changer support */
+ 	if (CDSL_CURRENT != slot)
+ 		return 0;
+ 
++	if (pm_runtime_suspended(&cd->device->sdev_gendev))
++		return 0;
++
++	/* if the logical unit just finished loading/unloading, do a TUR */
++	if (cd->device->can_power_off && cd->dbml && sr_unit_load_done(cd)) {
++		events = 0;
++		goto do_tur;
++	}
++
+ 	events = sr_get_events(cd->device);
+ 	cd->get_event_changed |= events & DISK_EVENT_MEDIA_CHANGE;
+ 
+@@ -270,6 +372,20 @@ do_tur:
+ 		cd->tur_changed = true;
+ 	}
+ 
++	if (cd->device->can_power_off && !cd->media_present) {
++		if (cd->cdi.mask & CDC_CLOSE_TRAY)
++			poweroff = 1;
++		else
++			poweroff = sshdr.ascq == 0x01;
++		/*
++		 * This function might be called concurrently by a kernel
++		 * thread (in-kernel polling) and old versions of udisks,
++		 * to avoid put the device twice, an atomic operation is used.
++		 */
++		if (poweroff && atomic_add_unless(&cd->suspend_count, -1, 0))
++			scsi_autopm_put_device(cd->device);
++	}
++
+ 	if (cd->ignore_get_event)
+ 		return events;
+ 
+@@ -703,6 +819,14 @@ static int sr_probe(struct device *dev)
+ 	get_capabilities(cd);
+ 	blk_queue_prep_rq(sdev->request_queue, sr_prep_fn);
+ 	sr_vendor_init(cd);
++	/* zero power support */
++	if (sdev->can_power_off) {
++		check_dbml(cd);
++		/* default delay time is 3 minutes */
++		pm_runtime_set_autosuspend_delay(dev, 180 * 1000);
++		pm_runtime_use_autosuspend(dev);
++		atomic_set(&cd->suspend_count, 1);
++	}
+ 
+ 	disk->driverfs_dev = &sdev->sdev_gendev;
+ 	set_capacity(disk, cd->capacity);
+@@ -988,6 +1112,10 @@ static int sr_remove(struct device *dev)
  {
- 	struct gendisk *disk = dev_to_disk(dev);
- 	long intv;
-+	int ret;
+ 	struct scsi_cd *cd = dev_get_drvdata(dev);
  
- 	if (!count || !sscanf(buf, "%ld", &intv))
- 		return -EINVAL;
++	/* disable runtime pm and possibly resume the device */
++	if (!atomic_dec_and_test(&cd->suspend_count))
++		scsi_autopm_get_device(cd->device);
++
+ 	blk_queue_prep_rq(cd->device->request_queue, scsi_prep_fn);
+ 	del_gendisk(cd->disk);
  
--	if (intv < 0 && intv != -1)
--		return -EINVAL;
--
--	disk_block_events(disk);
--	disk->ev->poll_msecs = intv;
--	__disk_unblock_events(disk, true);
-+	ret = disk_events_set_poll_msecs(disk, intv);
-+	if (ret)
-+		return ret;
+diff --git a/drivers/scsi/sr.h b/drivers/scsi/sr.h
+index 7cc40ad..649fe76 100644
+--- a/drivers/scsi/sr.h
++++ b/drivers/scsi/sr.h
+@@ -49,6 +49,8 @@ typedef struct scsi_cd {
+ 	bool get_event_changed:1;	/* changed according to GET_EVENT */
+ 	bool ignore_get_event:1;	/* GET_EVENT is unreliable, use TUR */
  
- 	return count;
- }
-diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-index b8c2f9d..d639bcc 100644
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -862,6 +862,7 @@ static int sr_probe(struct device *dev)
- 	dev_set_drvdata(dev, cd);
- 	disk->flags |= GENHD_FL_REMOVABLE;
- 	add_disk(disk);
-+	disk_events_set_poll_msecs(disk, 2000);
++	atomic_t suspend_count;
++
+ 	struct cdrom_device_info cdi;
+ 	/* We hold gendisk and scsi_device references on probe and use
+ 	 * the refs on this kref to decide when to release them */
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 7539f52..9d11981 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -155,6 +155,8 @@ struct scsi_device {
+ 	unsigned try_rc_10_first:1;	/* Try READ_CAPACACITY_10 first */
+ 	unsigned is_visible:1;	/* is the device visible in sysfs */
+ 	unsigned wce_default_on:1;	/* Cache is ON by default */
++	unsigned can_power_off:1;	/* Device supports runtime power off */
++	unsigned wakeup_by_user:1;	/* user wakes up the ODD */
  
- 	sdev_printk(KERN_DEBUG, sdev,
- 		    "Attached scsi CD-ROM %s\n", cd->cdi.name);
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 017a7fb..7414fb5 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -418,6 +418,7 @@ extern void disk_block_events(struct gendisk *disk);
- extern void disk_unblock_events(struct gendisk *disk);
- extern void disk_flush_events(struct gendisk *disk, unsigned int mask);
- extern unsigned int disk_clear_events(struct gendisk *disk, unsigned int mask);
-+extern int disk_events_set_poll_msecs(struct gendisk *disk, long intv);
- 
- /* drivers/char/random.c */
- extern void add_disk_randomness(struct gendisk *disk);
+ 	DECLARE_BITMAP(supported_events, SDEV_EVT_MAXBITS); /* supported events */
+ 	struct list_head event_list;	/* asserted events */
 -- 
 1.7.11.3
 
