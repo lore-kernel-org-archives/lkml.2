@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab2GZLik (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:38:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43308 "EHLO
+	id S1752639Ab2GZLim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:38:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43313 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751119Ab2GZLij (ORCPT
+	by vger.kernel.org with ESMTP id S1752590Ab2GZLil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:38:39 -0400
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH] regmap: Don't lock in regmap_reinit_cache()
-Date: Thu, 26 Jul 2012 12:45:55 +0100
-Message-Id: <1343303155-27610-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.11.3
+	Thu, 26 Jul 2012 07:38:41 -0400
+Date: Thu, 26 Jul 2012 12:38:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 17/21] ASoC: Ux500: Enable ux500 PCM driver for Device
+ Tree
+Message-ID: <20120726113838.GA3099@opensource.wolfsonmicro.com>
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
+ <1343298534-13611-18-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/T5g/TLNXpBPJeG6"
+Content-Disposition: inline
+In-Reply-To: <1343298534-13611-18-git-send-email-lee.jones@linaro.org>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When bus->fast_io is set, the locking here is done with spinlocks.
-This is currently true for the regmap-mmio bus implementation.
 
-While holding a spinlock we can't go to sleep, various operations
-like removing the debugfs entries or re-initializing the cache will
-sleep, therefore, shift the locking up to the user.
+--/T5g/TLNXpBPJeG6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Change-Id: I766bdce4ea3415ed87116a937576aa4812aad508
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap.c | 13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+On Thu, Jul 26, 2012 at 11:28:50AM +0100, Lee Jones wrote:
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index c241ae2..52069d2 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -659,13 +659,12 @@ EXPORT_SYMBOL_GPL(devm_regmap_init);
-  * new cache.  This can be used to restore the cache to defaults or to
-  * update the cache configuration to reflect runtime discovery of the
-  * hardware.
-+ *
-+ * No explicit locking is done here, the user needs to ensure that
-+ * this function will not race with other calls to regmap.
-  */
- int regmap_reinit_cache(struct regmap *map, const struct regmap_config *config)
- {
--	int ret;
--
--	map->lock(map);
--
- 	regcache_exit(map);
- 	regmap_debugfs_exit(map);
- 
-@@ -681,11 +680,7 @@ int regmap_reinit_cache(struct regmap *map, const struct regmap_config *config)
- 	map->cache_bypass = false;
- 	map->cache_only = false;
- 
--	ret = regcache_init(map, config);
--
--	map->unlock(map);
--
--	return ret;
-+	return regcache_init(map, config);
- }
- EXPORT_SYMBOL_GPL(regmap_reinit_cache);
- 
--- 
-1.7.11.3
+> Here we pass platform registration from platform code over to Device
+> Tree, when DT is enabled.
 
+> -	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
+> -	platform_device_register(&ux500_pcm);
+
+This has the same issue as your last patch...  the way you're doing
+things will break audio on all boards using this driver.
+
+--/T5g/TLNXpBPJeG6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQESw3AAoJEBus8iNuMP3dH0gP/0EicBBzeE2y0WoO++ktRh/R
+A4YtfrcR2gU3ZBjVQvzWPQ15zhXT+ohoL9LsEhQuB4r7Emn5iEvzqn5aCOkyr5fh
+RyGQecc5MS3IIg0VkafeLZfyyRVAsrOhkpL6WgbrK6JvnMVfFjkQfhg2NBs6/g6y
+F+h3jwitvuRj7RbGtWXorqE6f2uEwMFjGCbYZz6kxWx+JKWgkgbEWXFhuCuVcxWd
+RuBjE0ljAix8IyK+2BfKaO7tgD7/k5K872nAEwNMAGlueq+I9fNa7/Qym91ButR4
+CcWhkbdh8SGsyf8maz17fsbHAf8jYEwDviDhcBKZ0VEsKRz9CFlF96el2aM7hfkO
+vMr/j3nTUXhcrXMcngtA9UV8kV9VHJo5cQkdC44QR4cud1+M+tfC0bKqvQh1YpPW
+d29TnxLRvL3OGxW3LcN7sQOH8C2uezQKYmHWuAg/7r4kWjJ/CR/mrUgYD9eZLDu/
+MVCdERl4zT5SwjWqzX+OUlKMo1lsZl+JTv0gqO3B5N0m7xtxFgxps+X7tMljH/Ht
+AH6ZoQMh6HTbtoTdW71g2Eq0EhGuDdXOErSQcyjPy1ix8WpFE4p/ltjB+JDcwkyM
+jvrp2j2KMh+N/eKELN7okcghBnh/0viH+OqvGhW8aT9HjACKJIyvX6N3EpRHaMOy
+FdPWrikaeb+JxRV+LmEY
+=FWWm
+-----END PGP SIGNATURE-----
+
+--/T5g/TLNXpBPJeG6--
