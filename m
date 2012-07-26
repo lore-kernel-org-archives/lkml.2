@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2GZTXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 15:23:19 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59901 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab2GZTXR (ORCPT
+	id S1752271Ab2GZTXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 15:23:52 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:49816 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab2GZTXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 15:23:17 -0400
+	Thu, 26 Jul 2012 15:23:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <1343257978-7085-2-git-send-email-toshi.kani@hp.com>
-References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com> <1343257978-7085-2-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1343257978-7085-3-git-send-email-toshi.kani@hp.com>
+References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com> <1343257978-7085-3-git-send-email-toshi.kani@hp.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 26 Jul 2012 13:22:55 -0600
-Message-ID: <CAErSpo4=HDaWTusKf+tRU6aXmj-mC1i7CswnDzDLZii21i9NaQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] ACPI: Add acpi_pr_<level>() interfaces
+Date: Thu, 26 Jul 2012 13:23:29 -0600
+Message-ID: <CAErSpo64rOMfLB0abck20OEyeD1V96R-yzPUDt2gHa0zo26EYw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/4] ACPI: Update CPU hotplug messages
 To: Toshi Kani <toshi.kani@hp.com>
 Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         joe@perches.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
@@ -26,148 +26,155 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Jul 25, 2012 at 5:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> This patch introduces acpi_pr_<level>(), where <level> is a kernel
-> message level such as err/warn/info, to support improved logging
-> messages for ACPI, esp. in hotplug operations.  acpi_pr_<level>()
-> appends "ACPI" prefix and ACPI object path to the messages.  This
-> improves diagnostics in hotplug operations since it identifies an
-> object that caused an issue in a log file.
->
-> acpi_pr_<level>() takes acpi_handle as an argument, which is passed
-> to ACPI hotplug notify handlers from the ACPICA.  Therefore, it is
-> always available unlike other kernel objects, such as device.
->
-> For example, the statement below
->   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
-> logs an error message like this at KERN_ERR.
->   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
->
-> ACPI drivers can use acpi_pr_<level>() when they need to identify
-> a target ACPI object in their messages, such as error messages.
-
-It's definitely an improvement to have *something* that identifies a
-device in these messages.  But the ACPI namespace path is not really
-intended to be user-consumable, so I don't think we should expose it
-indiscriminately.  I think we should be using the ACPI device name
-("PNP0C02:00") whenever possible.  Given the device name, we can get
-the path from the sysfs "path" file.
-
-> The usage model is similar to dev_<level>().  acpi_pr_<level>() can
-> be used when device is not created/valid, which may be the case for
-> ACPI hotplug handlers.  ACPI drivers can continue to use dev_<level>()
-> when device is valid.
-
-I'd argue that ACPI driver code should never be called unless the
-device is valid, so drivers should *always* be able to use
-dev_<level>.  Obviously, ACPI hotplug is currently screwed up (it's
-mostly handled in drivers rather than in the ACPI core), so in some of
-those hotplug paths in the drivers, we may not have a device yet.  But
-those cases should be minimal.
-
-Another possible approach to this is to add a %p extension rather than
-adding acpi_printk().  Then you could do, e.g., 'printk("%pA ...\n",
-handle)', and printk could interpolate the namespace path.  But I
-really think there should be very few places where we need the path,
-so I'm not sure it's worth it.
-
-> ACPI drivers also continue to use pr_<level>() when ACPI device
-> path does not have to be appended to the messages, such as boot-up
-> messages.
->
-> Note: ACPI_[WARNING|INFO|ERROR]() are intended for the ACPICA and
-> are not associated with the kernel message level.
+> Updated CPU hotplug log messages with acpi_pr_<level>(),
+> dev_<level>() and pr_<level>().  Some messages are also
+> changed for clarity.
 >
 > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 > Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
 > ---
->  drivers/acpi/utils.c    |   34 ++++++++++++++++++++++++++++++++++
->  include/acpi/acpi_bus.h |   31 +++++++++++++++++++++++++++++++
->  2 files changed, 65 insertions(+), 0 deletions(-)
+>  drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
+>  1 files changed, 21 insertions(+), 15 deletions(-)
 >
-> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-> index 3e87c9c..ec0c6f9 100644
-> --- a/drivers/acpi/utils.c
-> +++ b/drivers/acpi/utils.c
-> @@ -454,3 +454,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
->  #endif
->  }
->  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
-> +
-> +/**
-> + * acpi_printk: Print messages with ACPI prefix and object path
-> + *
-> + * This function is intended to be called through acpi_pr_<level> macros.
-> + */
-> +void
-> +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-> +{
-> +       struct va_format vaf;
-> +       va_list args;
-> +       struct acpi_buffer buffer = {
-> +               .length = ACPI_ALLOCATE_BUFFER,
-> +               .pointer = NULL
-> +       };
-> +       const char *path;
-> +       acpi_status ret;
-> +
-> +       va_start(args, fmt);
-> +       vaf.fmt = fmt;
-> +       vaf.va = &args;
-> +
-> +       ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-> +       if (ret == AE_OK)
-> +               path = buffer.pointer;
-> +       else
-> +               path = "<n/a>";
-> +
-> +       printk("%sACPI: %s: %pV", level, path, &vaf);
-> +
-> +       va_end(args);
-> +       kfree(buffer.pointer);
-> +}
-> +EXPORT_SYMBOL(acpi_printk);
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index bde976e..1c855b8 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -85,6 +85,37 @@ struct acpi_pld {
+> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> index a6bdeaa..225f252 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -282,7 +282,9 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>                 /* Declared with "Processor" statement; match ProcessorID */
+>                 status = acpi_evaluate_object(pr->handle, NULL, NULL, &buffer);
+>                 if (ACPI_FAILURE(status)) {
+> -                       printk(KERN_ERR PREFIX "Evaluating processor object\n");
+> +                       acpi_pr_err(pr->handle,
+> +                               "Failed to evaluate processor object (0x%x)\n",
+> +                               status);
+
+This looks like it could be a dev_err().
+
+>                         return -ENODEV;
+>                 }
 >
->  acpi_status
->  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld *pld);
-> +
-> +void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
-> +
-> +#define acpi_pr_emerg(handle, fmt, ...)                                \
-> +       acpi_printk(KERN_EMERG, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_alert(handle, fmt, ...)                                \
-> +       acpi_printk(KERN_ALERT, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_crit(handle, fmt, ...)                         \
-> +       acpi_printk(KERN_CRIT, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_err(handle, fmt, ...)                          \
-> +       acpi_printk(KERN_ERR, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_warn(handle, fmt, ...)                         \
-> +       acpi_printk(KERN_WARNING, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_notice(handle, fmt, ...)                       \
-> +       acpi_printk(KERN_NOTICE, handle, fmt, ##__VA_ARGS__)
-> +#define acpi_pr_info(handle, fmt, ...)                         \
-> +       acpi_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
-> +
-> +/* REVISIT: Need to support CONFIG_DYNAMIC_DEBUG */
-> +#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
-> +#define acpi_pr_debug(handle, fmt, ...)                                        \
-> +       acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
-> +#else
-> +#define acpi_pr_debug(handle, fmt, ...)                                        \
-> +({                                                                     \
-> +       if (0)                                                          \
-> +               acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__);    \
-> +       0;                                                              \
-> +})
-> +#endif
-> +
->  #ifdef CONFIG_ACPI
+> @@ -301,8 +303,9 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>                 status = acpi_evaluate_integer(pr->handle, METHOD_NAME__UID,
+>                                                 NULL, &value);
+>                 if (ACPI_FAILURE(status)) {
+> -                       printk(KERN_ERR PREFIX
+> -                           "Evaluating processor _UID [%#x]\n", status);
+> +                       acpi_pr_err(pr->handle,
+> +                               "Failed to evaluate processor _UID (0x%x)\n",
+> +                               status);
+
+And this.
+
+>                         return -ENODEV;
+>                 }
+>                 device_declaration = 1;
+> @@ -345,7 +348,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>         if (!object.processor.pblk_address)
+>                 ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No PBLK (NULL address)\n"));
+>         else if (object.processor.pblk_length != 6)
+> -               printk(KERN_ERR PREFIX "Invalid PBLK length [%d]\n",
+> +               acpi_pr_err(pr->handle, "Invalid PBLK length [%d]\n",
+
+And this.
+
+>                             object.processor.pblk_length);
+>         else {
+>                 pr->throttling.address = object.processor.pblk_address;
+> @@ -429,8 +432,8 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+>                  * Initialize missing things
+>                  */
+>                 if (pr->flags.need_hotplug_init) {
+> -                       printk(KERN_INFO "Will online and init hotplugged "
+> -                              "CPU: %d\n", pr->id);
+> +                       pr_info("Will online and init hotplugged CPU: %d\n",
+> +                               pr->id);
+>                         WARN(acpi_processor_start(pr), "Failed to start CPU:"
+>                                 " %d\n", pr->id);
+>                         pr->flags.need_hotplug_init = 0;
+> @@ -491,14 +494,16 @@ static __ref int acpi_processor_start(struct acpi_processor *pr)
+>                                    &pr->cdev->device.kobj,
+>                                    "thermal_cooling");
+>         if (result) {
+> -               printk(KERN_ERR PREFIX "Create sysfs link\n");
+> +               dev_err(&device->dev,
+> +                       "Failed to create sysfs link 'thermal_cooling'\n");
+>                 goto err_thermal_unregister;
+>         }
+>         result = sysfs_create_link(&pr->cdev->device.kobj,
+>                                    &device->dev.kobj,
+>                                    "device");
+>         if (result) {
+> -               printk(KERN_ERR PREFIX "Create sysfs link\n");
+> +               dev_err(&pr->cdev->device,
+> +                       "Failed to create sysfs link 'device'\n");
+>                 goto err_remove_sysfs_thermal;
+>         }
 >
->  #include <linux/proc_fs.h>
+> @@ -560,8 +565,7 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+>          */
+>         if (per_cpu(processor_device_array, pr->id) != NULL &&
+>             per_cpu(processor_device_array, pr->id) != device) {
+> -               printk(KERN_WARNING "BIOS reported wrong ACPI id "
+> -                       "for the processor\n");
+> +               pr_warn("BIOS reported wrong ACPI id for the processor\n");
+
+And this.
+
+>                 result = -ENODEV;
+>                 goto err_free_cpumask;
+>         }
+> @@ -715,7 +719,7 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+>
+>                 result = acpi_processor_device_add(handle, &device);
+>                 if (result) {
+> -                       pr_err(PREFIX "Unable to add the device\n");
+> +                       acpi_pr_err(handle, "Unable to add the device\n");
+>                         break;
+>                 }
+>
+> @@ -727,17 +731,19 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+>                                   "received ACPI_NOTIFY_EJECT_REQUEST\n"));
+>
+>                 if (acpi_bus_get_device(handle, &device)) {
+> -                       pr_err(PREFIX "Device don't exist, dropping EJECT\n");
+> +                       acpi_pr_err(handle,
+> +                               "Device don't exist, dropping EJECT\n");
+>                         break;
+>                 }
+>                 if (!acpi_driver_data(device)) {
+> -                       pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
+> +                       acpi_pr_err(handle,
+> +                               "Driver data is NULL, dropping EJECT\n");
+
+And this.
+
+>                         break;
+>                 }
+>
+>                 ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+>                 if (!ej_event) {
+> -                       pr_err(PREFIX "No memory, dropping EJECT\n");
+> +                       acpi_pr_err(handle, "No memory, dropping EJECT\n");
+
+And this.
+
+>                         break;
+>                 }
+>
+> @@ -847,7 +853,7 @@ static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
+>          * and do it when the CPU gets online the first time
+>          * TBD: Cleanup above functions and try to do this more elegant.
+>          */
+> -       printk(KERN_INFO "CPU %d got hotplugged\n", pr->id);
+> +       pr_info("CPU %d got hotplugged\n", pr->id);
+
+And this.  The caller (acpi_processor_get_info()) has an acpi_device
+*, so we should be able to use it here.
+
+>         pr->flags.need_hotplug_init = 1;
+>
+>         return AE_OK;
 > --
 > 1.7.7.6
 >
