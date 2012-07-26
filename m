@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab2GZRyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:54:09 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:33779
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752147Ab2GZRyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:54:04 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6QHrwSg023884
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] Problem with commit cf03c5dac83609f09d9f0e9fa3c09d86daed614d
-In-Reply-To: <20120726152121.GB10452@thinkpad-t410> (Seth Forshee's message of
-	"Thu, 26 Jul 2012 10:21:21 -0500")
-References: <gik3xqtzw3.fsf@karga.hank.lab>
-	<20120726134926.GA10452@thinkpad-t410>
-	<gi7gtqlfw2.fsf@mx10.gouders.net>
-	<20120726152121.GB10452@thinkpad-t410>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Thu, 26 Jul 2012 19:53:57 +0200
-Message-ID: <gizk6mjtmy.fsf@mx10.gouders.net>
+	id S1752754Ab2GZRy2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:54:28 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:43118 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752547Ab2GZRy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 13:54:27 -0400
+Date: Thu, 26 Jul 2012 19:54:21 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 12/13] driver core: firmware loader: use small
+ timeout for cache device firmware
+Message-ID: <20120726175421.GB9161@aftab.osrc.amd.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+ <1343149213-10160-13-git-send-email-ming.lei@canonical.com>
+ <20120726123655.GE30717@aftab.osrc.amd.com>
+ <CACVXFVOvkdCG_cAsCQPuNQB_4BnXq8f=+RnVXH=NS5GNPvQgtg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 26 Jul 2012 19:53:58 +0200 (CEST)
+Content-Disposition: inline
+In-Reply-To: <CACVXFVOvkdCG_cAsCQPuNQB_4BnXq8f=+RnVXH=NS5GNPvQgtg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seth Forshee <seth.forshee@canonical.com> writes:
+On Thu, Jul 26, 2012 at 11:48:17PM +0800, Ming Lei wrote:
+> On Thu, Jul 26, 2012 at 8:36 PM, Borislav Petkov <bp@amd64.org> wrote:
+> > On Wed, Jul 25, 2012 at 01:00:12AM +0800, Ming Lei wrote:
+> >> Because device_cache_firmwares only cache the firmware which has been
+> >> loaded sucessfully at leat once, using a small loading timeout should
+> >
+> >                         least
+> >
+> >> be OK.
+> >
+> > Your commit message doesn't explain why exactly we decrease the timeout:
+> 
+> I have explained it. Because the firmware has been loaded successfully at least
+> once, so it is very probably to not timeout.
+> 
+> > you should probably say that this patch overrides the default 60s
+> > timeout because we're in pre-suspend/-hibernate mode where we have
+> > userspace and are able to load the firmware quickly.
+> 
+> No, it is not what I was saying.
 
-> On Thu, Jul 26, 2012 at 05:07:57PM +0200, Dirk Gouders wrote:
->> Hi Seth,
->> 
->> thanks for your reply and sorry for the noise.
->> 
->> I followed your advice and tried to boot with the WLAN interface turned
->> off, and the problem still exists.  I'll start a new bisect session,
->> probably with one of the commits you mentioned as the first good commit.
->
-> Just to make sure three's not any confusion ...
->
-> What I was suggesting was not just disabling the network interface but
-> completely preventing brcmsmac from being loaded. The oops you saw
-> happens in the context of the driver's probe function and would happen
-> regardless of whether or not the interface is enabled.
+Ok, maybe I'm not understanding this then. So explain to me this: why
+do you need that timeout value of 10, how did we decide it to be 10
+(and not 20 or 30 or whatever)? Generally, why do we need to reprogram
+the timer to a smaller timeout instead of simply doing the completion
+without a timeout?
 
-Sorry for the confusion.
+-- 
+Regards/Gruss,
+Boris.
 
-I already started a new bisect session, with a bad commit I disabled
-brcmsmac in the kernel config and the problem still exists.  Now, I
-continue with brcmsmac disabled and will see where the bisect ends.
-
-Dirk
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
