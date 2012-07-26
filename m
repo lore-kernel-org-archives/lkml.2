@@ -1,155 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab2GZPT1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:19:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38217 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab2GZPTZ (ORCPT
+	id S1751872Ab2GZPTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:19:39 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61059 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab2GZPTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:19:25 -0400
-Date: Thu, 26 Jul 2012 08:19:02 -0700
-From: tip-bot for Tony Luck <tony.luck@intel.com>
-Message-ID: <tip-61b0fccd7f114573f973dfe25d864608822dc09e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        seto.hidetoshi@jp.fujitsu.com, tony.luck@intel.com,
-        gong.chen@linux.intel.com, bp@amd64.org, ying.huang@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        seto.hidetoshi@jp.fujitsu.com, tony.luck@intel.com, bp@amd64.org,
-        gong.chen@linux.intel.com, ying.huang@intel.com, tglx@linutronix.de
-In-Reply-To: <180a06f3f357cf9f78259ae443a082b14a29535b.1343078495.git.tony.luck@intel.com>
-References: <180a06f3f357cf9f78259ae443a082b14a29535b.1343078495.git.tony.luck@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mce:
-  Add quirk for instruction recovery on Sandy Bridge processors
-Git-Commit-ID: 61b0fccd7f114573f973dfe25d864608822dc09e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 26 Jul 2012 11:19:36 -0400
+Message-ID: <50116005.6050008@linaro.org>
+Date: Thu, 26 Jul 2012 16:19:33 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 20/21] ASoC: codecs: Enable AB8500 CODEC for Device Tree
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-21-git-send-email-lee.jones@linaro.org> <20120726115055.GD3099@opensource.wolfsonmicro.com> <501150E5.6010503@linaro.org> <20120726144336.GL3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120726144336.GL3099@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jul 2012 08:19:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  61b0fccd7f114573f973dfe25d864608822dc09e
-Gitweb:     http://git.kernel.org/tip/61b0fccd7f114573f973dfe25d864608822dc09e
-Author:     Tony Luck <tony.luck@intel.com>
-AuthorDate: Thu, 19 Jul 2012 11:28:46 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 26 Jul 2012 15:05:47 +0200
+On 26/07/12 15:43, Mark Brown wrote:
+> On Thu, Jul 26, 2012 at 03:15:01PM +0100, Lee Jones wrote:
+>> Sorry missed this:
+>
+>>> Why are we doing this?  The MFD cells are a totally Linux specific
+>>> thing, there's no reason to represent them in the device tree unless
+>>> they're in some way reusable and the "ab8500-codec" name suggests that's
+>>> unlikely.  Just put the properties on the parent node and instantiate
+>>> the MFD cell as normal.
+>
+>> We have all of the AB8500 devices into the Device Tree to accurately
+>> represent the hardware. We will also be passing configuration
+>> information into the AB8500 Codec from Device Tree. The only reason
+>> we're still registering them using the MFD API is to overcome
+>> addressing issues encountered earlier. Each 'device' still belongs
+>> in the 'device' tree.
+>
+> The device here is the AB8500.  The fact that Linux chooses to represent
+> it as an MFD with a particular set of subdrivers is a Linux specific
+> decision and may well change over time.  For example it's likely that
+> we'll want to migrate the clocks out of the audio driver and into the
+> clock API when that becomes useful.  Similarly currently a lot of these
+> devices use ASoC level jack detection but that's going to move over to
+> extcon over time.
+>
+> There's no way you're going to be able to reuse this for anything that
+> isn't an AB8500, there's no abstraction of the SoC integration here.  If
+> you had clearly identifiable, repeatable IPs which you could reasonably
+> bind to a different bit of silicon then that'd be different but there's
+> nothing like that here.  We already know that the functionality covered
+> by the driver is going to be present simply by virtue of knowing that
+> there's an AB8500 and similarly there's no real way this driver could
+> ever be used without the core driver.  All the "device" in the device
+> tree is doing is serving as a container to place some of the DT
+> properties into, this needs to be separated out from the instantiation
+> of the Linux device driver.  There's nothing stopping the driver from
+> looking at the OF node of its parent here.
+>
+> The goal here isn't just to copy the Linux device model and platform
+> data into device tree bindings, the device tree bindings need to think
+> about what the chip actually is so they can be reused by other OSs and
+> by future versions of Linux.
+>
+>> If we were to take this Device Tree and use it on something
+>> non-Linux, that OS will still need to know about each of the AB8500
+>> devices and every associated configuration option. Only in Linux do
+>> we continue to register them though a different API, which doesn't
+>> affect any other OS.
+>
+> Another OS might have a different idea about how it's going to split up
+> the chip which better fits with the models which that OS has for the
+> functions present on the device.  The reason this is a distinct device
+> in Linux is all to do with how Linux models the hardware.
 
-x86/mce: Add quirk for instruction recovery on Sandy Bridge processors
+Okay, so your suggestion is to strip out all of the sub-devices under 
+the AB8500. It's doable, but will take some restructuring and thinking 
+about. This is a job for another day. I think it's okay to continue with 
+the current semantics for the time-being. The line we're discussing does 
+need to be split out though. I didn't mean to merge it in with the ASoC 
+stuff.
 
-Sandy Bridge processors follow the SDM (Vol 3B, Table 15-20) and
-set both the RIPV and EIPV bits in the MCG_STATUS register to
-zero for machine checks during instruction fetch. This is more
-than a little counter-intuitive and means that Linux cannot
-recover from these errors. Rather than insert special case code
-at several places in mce.c and mce-severity.c, we pretend the
-EIPV bit was set for just this case early in processing the
-machine check.
-
-Acked-by: Borislav Petkov <bp@amd64.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>
-Cc: Huang Ying <ying.huang@intel.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Link: http://lkml.kernel.org/r/180a06f3f357cf9f78259ae443a082b14a29535b.1343078495.git.tony.luck@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   43 +++++++++++++++++++++++++++++++++++--
- 1 files changed, 40 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 5a5a5dc..8cf60e2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -105,6 +105,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
- 
- static DEFINE_PER_CPU(struct work_struct, mce_work);
- 
-+static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
-+
- /*
-  * CPU/chipset specific EDAC code can register a notifier call here to print
-  * MCE errors in a human-readable form.
-@@ -652,14 +654,18 @@ EXPORT_SYMBOL_GPL(machine_check_poll);
-  * Do a quick check if any of the events requires a panic.
-  * This decides if we keep the events around or clear them.
-  */
--static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp)
-+static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
-+			  struct pt_regs *regs)
- {
- 	int i, ret = 0;
- 
- 	for (i = 0; i < banks; i++) {
- 		m->status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
--		if (m->status & MCI_STATUS_VAL)
-+		if (m->status & MCI_STATUS_VAL) {
- 			__set_bit(i, validp);
-+			if (quirk_no_way_out)
-+				quirk_no_way_out(i, m, regs);
-+		}
- 		if (mce_severity(m, tolerant, msg) >= MCE_PANIC_SEVERITY)
- 			ret = 1;
- 	}
-@@ -1042,7 +1048,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	*final = m;
- 
- 	memset(valid_banks, 0, sizeof(valid_banks));
--	no_way_out = mce_no_way_out(&m, &msg, valid_banks);
-+	no_way_out = mce_no_way_out(&m, &msg, valid_banks, regs);
- 
- 	barrier();
- 
-@@ -1418,6 +1424,34 @@ static void __mcheck_cpu_init_generic(void)
- 	}
- }
- 
-+/*
-+ * During IFU recovery Sandy Bridge -EP4S processors set the RIPV and
-+ * EIPV bits in MCG_STATUS to zero on the affected logical processor (SDM
-+ * Vol 3B Table 15-20). But this confuses both the code that determines
-+ * whether the machine check occurred in kernel or user mode, and also
-+ * the severity assessment code. Pretend that EIPV was set, and take the
-+ * ip/cs values from the pt_regs that mce_gather_info() ignored earlier.
-+ */
-+static void quirk_sandybridge_ifu(int bank, struct mce *m, struct pt_regs *regs)
-+{
-+	if (bank != 0)
-+		return;
-+	if ((m->mcgstatus & (MCG_STATUS_EIPV|MCG_STATUS_RIPV)) != 0)
-+		return;
-+	if ((m->status & (MCI_STATUS_OVER|MCI_STATUS_UC|
-+		          MCI_STATUS_EN|MCI_STATUS_MISCV|MCI_STATUS_ADDRV|
-+			  MCI_STATUS_PCC|MCI_STATUS_S|MCI_STATUS_AR|
-+			  MCACOD)) !=
-+			 (MCI_STATUS_UC|MCI_STATUS_EN|
-+			  MCI_STATUS_MISCV|MCI_STATUS_ADDRV|MCI_STATUS_S|
-+			  MCI_STATUS_AR|MCACOD_INSTR))
-+		return;
-+
-+	m->mcgstatus |= MCG_STATUS_EIPV;
-+	m->ip = regs->ip;
-+	m->cs = regs->cs;
-+}
-+
- /* Add per CPU specific workarounds here */
- static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- {
-@@ -1515,6 +1549,9 @@ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- 		 */
- 		if (c->x86 == 6 && c->x86_model <= 13 && mce_bootlog < 0)
- 			mce_bootlog = 0;
-+
-+		if (c->x86 == 6 && c->x86_model == 45)
-+			quirk_no_way_out = quirk_sandybridge_ifu;
- 	}
- 	if (monarch_timeout < 0)
- 		monarch_timeout = 0;
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
