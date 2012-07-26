@@ -1,437 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab2GZXt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 19:49:28 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:60381 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753359Ab2GZXsk (ORCPT
+	id S1752792Ab2GZX4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 19:56:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46779 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab2GZX4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 19:48:40 -0400
-From: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com,
-        gregkh@linuxfoundation.org,
-        "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Subject: [vmw_vmci 07/11] Apply VMCI hash table
-Date: Thu, 26 Jul 2012 16:39:36 -0700
-Message-Id: <1343345980-32397-8-git-send-email-astiegmann@vmware.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
+	Thu, 26 Jul 2012 19:56:10 -0400
+Date: Thu, 26 Jul 2012 16:56:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com
+Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
+Message-ID: <20120726235606.GD3849@kroah.com>
 References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
+ <1343345980-32397-12-git-send-email-astiegmann@vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343345980-32397-12-git-send-email-astiegmann@vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implements a hash table for VMCI's use.
+On Thu, Jul 26, 2012 at 04:39:40PM -0700, Andrew Stiegmann (stieg) wrote:
+> +#define ASSERT(cond) BUG_ON(!(cond))
 
-Signed-off-by: Andrew Stiegmann (stieg) <astiegmann@vmware.com>
----
- drivers/misc/vmw_vmci/vmci_hash_table.c |  332 +++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_hash_table.h |   56 +++++
- 2 files changed, 388 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_hash_table.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_hash_table.h
+Don't do that, you just crashed someone's box and now they have no way
+to recover it and tell you that you broke it.
 
-diff --git a/drivers/misc/vmw_vmci/vmci_hash_table.c b/drivers/misc/vmw_vmci/vmci_hash_table.c
-new file mode 100644
-index 0000000..a7423df
---- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_hash_table.c
-@@ -0,0 +1,332 @@
-+/*
-+ * VMware VMCI Driver
-+ *
-+ * Copyright (C) 2012 VMware, Inc. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation version 2 and no later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-+ */
-+
-+#include <linux/vmw_vmci_defs.h>
-+
-+#include "vmci_context.h"
-+#include "vmci_common_int.h"
-+#include "vmci_driver.h"
-+#include "vmci_hash_table.h"
-+
-+#define VMCI_HANDLE_TO_CONTEXT_ID(_handle) ((_handle).context)
-+#define VMCI_HANDLE_TO_RESOURCE_ID(_handle) ((_handle).resource)
-+#define VMCI_HASHTABLE_HASH(_h, _sz)				\
-+	vmci_hash_calc(VMCI_HANDLE_TO_RESOURCE_ID(_h), (_sz))
-+
-+struct vmci_hash_table *vmci_hash_create(int size)
-+{
-+	struct vmci_hash_table *table;
-+
-+	table = kmalloc(sizeof *table, GFP_KERNEL);
-+	if (table == NULL)
-+		return NULL;
-+
-+	table->entries = kcalloc(size, sizeof *table->entries, GFP_KERNEL);
-+	if (table->entries == NULL) {
-+		kfree(table);
-+		return NULL;
-+	}
-+
-+	table->size = size;
-+	spin_lock_init(&table->lock);
-+
-+	return table;
-+}
-+
-+/*
-+ * This function should be called at module exit time.
-+ * We rely on the module ref count to insure that no one is accessing any
-+ * hash table entries at this point in time. Hence we should be able to just
-+ * remove all entries from the hash table.
-+ */
-+void vmci_hash_destroy(struct vmci_hash_table *table)
-+{
-+	ASSERT(table);
-+
-+	spin_lock_bh(&table->lock);
-+	kfree(table->entries);
-+	table->entries = NULL;
-+	spin_unlock_bh(&table->lock);
-+	kfree(table);
-+}
-+
-+void vmci_hash_init_entry(struct vmci_hash_entry *entry,
-+			  struct vmci_handle handle)
-+{
-+	ASSERT(entry);
-+	entry->handle = handle;
-+	entry->refCount = 0;
-+}
-+
-+/*
-+ * Unlocked version of vmci_hash_exists.
-+ * True if handle already in hashtable. false otherwise.
-+ */
-+static bool hash_exists_locked(struct vmci_hash_table *table,
-+			       struct vmci_handle handle)
-+{
-+	struct vmci_hash_entry *entry;
-+	int idx;
-+
-+	ASSERT(table);
-+
-+	idx = VMCI_HASHTABLE_HASH(handle, table->size);
-+
-+	for (entry = table->entries[idx]; entry; entry = entry->next) {
-+		if (VMCI_HANDLE_TO_RESOURCE_ID(entry->handle) ==
-+		    VMCI_HANDLE_TO_RESOURCE_ID(handle) &&
-+		    ((VMCI_HANDLE_TO_CONTEXT_ID(entry->handle) ==
-+		      VMCI_HANDLE_TO_CONTEXT_ID(handle)) ||
-+		     (VMCI_INVALID_ID == VMCI_HANDLE_TO_CONTEXT_ID(handle))
-+		     || (VMCI_INVALID_ID ==
-+			 VMCI_HANDLE_TO_CONTEXT_ID(entry->handle)))) {
-+			return true;
-+		}
-+	}
-+
-+	return false;
-+}
-+
-+/*
-+ * Assumes caller holds table lock.
-+ */
-+static int hash_unlink(struct vmci_hash_table *table,
-+		       struct vmci_hash_entry *entry)
-+{
-+	int result;
-+	struct vmci_hash_entry *prev, *cur;
-+	const int idx = VMCI_HASHTABLE_HASH(entry->handle, table->size);
-+
-+	prev = NULL;
-+	cur = table->entries[idx];
-+	while (true) {
-+		if (cur == NULL) {
-+			result = VMCI_ERROR_NOT_FOUND;
-+			break;
-+		}
-+		if (VMCI_HANDLE_EQUAL(cur->handle, entry->handle)) {
-+			ASSERT(cur == entry);
-+
-+			/* Remove entry and break. */
-+			if (prev)
-+				prev->next = cur->next;
-+			else
-+				table->entries[idx] = cur->next;
-+
-+			cur->next = NULL;
-+			result = VMCI_SUCCESS;
-+			break;
-+		}
-+		prev = cur;
-+		cur = cur->next;
-+	}
-+
-+	return result;
-+}
-+
-+int vmci_hash_add(struct vmci_hash_table *table,
-+		  struct vmci_hash_entry *entry)
-+{
-+	int idx;
-+
-+	ASSERT(entry);
-+	ASSERT(table);
-+
-+	spin_lock_bh(&table->lock);
-+
-+	/* Creation of a new hashtable entry is always allowed. */
-+	if (hash_exists_locked(table, entry->handle)) {
-+		pr_devel("Entry (handle=0x%x:0x%x) already exists.",
-+			 entry->handle.context, entry->handle.resource);
-+		spin_unlock_bh(&table->lock);
-+		return VMCI_ERROR_DUPLICATE_ENTRY;
-+	}
-+
-+	idx = VMCI_HASHTABLE_HASH(entry->handle, table->size);
-+	ASSERT(idx < table->size);
-+
-+	/* New entry is added to top/front of hash bucket. */
-+	entry->refCount++;
-+	entry->next = table->entries[idx];
-+	table->entries[idx] = entry;
-+	spin_unlock_bh(&table->lock);
-+
-+	return VMCI_SUCCESS;
-+}
-+
-+int vmci_hash_remove(struct vmci_hash_table *table,
-+		     struct vmci_hash_entry *entry)
-+{
-+	int result;
-+
-+	ASSERT(table);
-+	ASSERT(entry);
-+
-+	spin_lock_bh(&table->lock);
-+
-+	/* First unlink the entry. */
-+	result = hash_unlink(table, entry);
-+	if (result == VMCI_SUCCESS) {
-+		/* Decrement refcount and check if this is last reference. */
-+		entry->refCount--;
-+		if (entry->refCount == 0)
-+			result = VMCI_SUCCESS_ENTRY_DEAD;
-+	}
-+
-+	spin_unlock_bh(&table->lock);
-+
-+	return result;
-+}
-+
-+/*
-+ * Looks up an entry in the hash table, that is already locked.
-+ * If the element is found, a pointer to the element is returned.
-+ * Else NULL.
-+ */
-+static struct vmci_hash_entry *hash_get_locked(struct vmci_hash_table *table,
-+					       struct vmci_handle handle)
-+{
-+	struct vmci_hash_entry *cur = NULL;
-+	int idx;
-+
-+	ASSERT(!VMCI_HANDLE_EQUAL(handle, VMCI_INVALID_HANDLE));
-+	ASSERT(table);
-+
-+	idx = VMCI_HASHTABLE_HASH(handle, table->size);
-+
-+	for (cur = table->entries[idx]; cur != NULL; cur = cur->next) {
-+		if (VMCI_HANDLE_TO_RESOURCE_ID(cur->handle) ==
-+		    VMCI_HANDLE_TO_RESOURCE_ID(handle) &&
-+		    ((VMCI_HANDLE_TO_CONTEXT_ID(cur->handle) ==
-+		      VMCI_HANDLE_TO_CONTEXT_ID(handle)) ||
-+		     (VMCI_INVALID_ID ==
-+		      VMCI_HANDLE_TO_CONTEXT_ID(cur->handle)))) {
-+			cur->refCount++;
-+			break;
-+		}
-+	}
-+
-+	return cur;
-+}
-+
-+struct vmci_hash_entry *vmci_hash_get(struct vmci_hash_table *table,
-+				      struct vmci_handle handle)
-+{
-+	struct vmci_hash_entry *entry;
-+
-+	if (VMCI_HANDLE_EQUAL(handle, VMCI_INVALID_HANDLE))
-+		return NULL;
-+
-+	ASSERT(table);
-+
-+	spin_lock_bh(&table->lock);
-+	entry = hash_get_locked(table, handle);
-+	spin_unlock_bh(&table->lock);
-+
-+	return entry;
-+}
-+
-+/*
-+ * Hold the given entry.  This will increment the entry's reference count.
-+ * This is like a GetEntry() but without having to lookup the entry by
-+ * handle.
-+ */
-+void vmci_hash_hold(struct vmci_hash_table *table,
-+		    struct vmci_hash_entry *entry)
-+{
-+	ASSERT(table);
-+	ASSERT(entry);
-+
-+	spin_lock_bh(&table->lock);
-+	entry->refCount++;
-+	spin_unlock_bh(&table->lock);
-+}
-+
-+/*
-+ * Releases an element previously obtained with hash_get_locked.
-+ * If the entry is removed from the hash table, VMCI_SUCCESS_ENTRY_DEAD
-+ * is returned. Otherwise, VMCI_SUCCESS is returned.
-+ */
-+static int hash_release_locked(struct vmci_hash_table *table,
-+			       struct vmci_hash_entry *entry)
-+{
-+	int result = VMCI_SUCCESS;
-+
-+	ASSERT(table);
-+	ASSERT(entry);
-+
-+	entry->refCount--;
-+	/* Check if this is last reference and report if so. */
-+	if (entry->refCount == 0) {
-+		/*
-+		 * Remove entry from hash table if not already
-+		 * removed. This could have happened already because
-+		 * vmci_hash_remove was called to unlink it. We ignore
-+		 * if it is not found. Datagram handles will often
-+		 * have RemoveEntry called, whereas SharedMemory
-+		 * regions rely on ReleaseEntry to unlink the entry,
-+		 * since the creator does not call RemoveEntry when it
-+		 * detaches.
-+		 */
-+		hash_unlink(table, entry);
-+		result = VMCI_SUCCESS_ENTRY_DEAD;
-+	}
-+
-+	return result;
-+}
-+
-+int vmci_hash_release(struct vmci_hash_table *table,
-+		      struct vmci_hash_entry *entry)
-+{
-+	int result;
-+
-+	spin_lock_bh(&table->lock);
-+	result = hash_release_locked(table, entry);
-+	spin_unlock_bh(&table->lock);
-+
-+	return result;
-+}
-+
-+bool vmci_hash_exists(struct vmci_hash_table *table,
-+		      struct vmci_handle handle)
-+{
-+	bool exists;
-+
-+	spin_lock_bh(&table->lock);
-+	exists = hash_exists_locked(table, handle);
-+	spin_unlock_bh(&table->lock);
-+
-+	return exists;
-+}
-+
-+/*
-+ * Hash function used by the Simple Datagram API. Hashes only a VMCI id
-+ * (not the full VMCI handle) Based on the djb2 hash function by
-+ * Dan Bernstein.
-+ */
-+int vmci_hash_calc(uint32_t id, unsigned size)
-+{
-+	unsigned i;
-+	int hash = 5381;
-+
-+	for (i = 0; i < sizeof id; i++)
-+		hash = ((hash << 5) + hash) + (uint8_t) (id >> (i * 8));
-+
-+	return hash & (size - 1);
-+}
-diff --git a/drivers/misc/vmw_vmci/vmci_hash_table.h b/drivers/misc/vmw_vmci/vmci_hash_table.h
-new file mode 100644
-index 0000000..8e5c83b
---- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_hash_table.h
-@@ -0,0 +1,56 @@
-+/*
-+ * VMware VMCI Driver
-+ *
-+ * Copyright (C) 2012 VMware, Inc. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation version 2 and no later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-+ */
-+
-+#ifndef _VMCI_HASH_TABLE_H_
-+#define _VMCI_HASH_TABLE_H_
-+
-+#include <linux/vmw_vmci_defs.h>
-+
-+struct vmci_hash_entry {
-+	struct vmci_handle handle;
-+	int refCount;
-+	struct vmci_hash_entry *next;
-+};
-+
-+struct vmci_hash_table {
-+	struct vmci_hash_entry **entries;
-+	int size;		/* Number of buckets in above array. */
-+	spinlock_t lock;
-+};
-+
-+struct vmci_hash_table *vmci_hash_create(int size);
-+void vmci_hash_destroy(struct vmci_hash_table *table);
-+void vmci_hash_init_entry(struct vmci_hash_entry *entry,
-+			  struct vmci_handle handle);
-+int vmci_hash_add(struct vmci_hash_table *table,
-+		  struct vmci_hash_entry *entry);
-+int vmci_hash_remove(struct vmci_hash_table *table,
-+		     struct vmci_hash_entry *entry);
-+struct vmci_hash_entry *vmci_hash_get(struct vmci_hash_table
-+				      *table,
-+				      struct vmci_handle handle);
-+void vmci_hash_hold(struct vmci_hash_table *table,
-+		    struct vmci_hash_entry *entry);
-+int vmci_hash_release(struct vmci_hash_table *table,
-+		      struct vmci_hash_entry *entry);
-+bool vmci_hash_exists(struct vmci_hash_table *table,
-+		      struct vmci_handle handle);
-+int vmci_hash_calc(uint32_t id, unsigned size);
-+
-+#endif /* _VMCI_HASH_TABLE_H_ */
--- 
-1.7.0.4
+> +#define CAN_BLOCK(_f) (!((_f) & VMCI_QPFLAG_NONBLOCK))
+> +#define QP_PINNED(_f) ((_f) & VMCI_QPFLAG_PINNED)
+> +
+> +#define PCI_VENDOR_ID_VMWARE	0x15AD
 
+What's wrong with the one in pci_ids.h?
+
+> +#define PCI_DEVICE_ID_VMWARE_VMCI	0x0740
+> +#define VMCI_DRIVER_VERSION_STRING	"9.5.5.0-k"
+
+Do you really need this?
+
+> +#define MODULE_NAME "vmw_vmci"
+
+The kernel provides this for you already, don't duplicate it.
+
+> +
+> +/* Print magic... whee! */
+> +#ifdef pr_fmt
+> +#undef pr_fmt
+
+No need for these 2 lines
+
+> +#define pr_fmt(fmt) MODULE_NAME ": " fmt
+> +#endif
+
+Or this one.
+
+> +/*
+> + * Linux defines _IO* macros, but the core kernel code ignore the encoded
+> + * ioctl value. It is up to individual drivers to decode the value (for
+> + * example to look at the size of a structure to determine which version
+> + * of a specific command should be used) or not (which is what we
+> + * currently do, so right now the ioctl value for a given command is the
+> + * command itself).
+> + *
+> + * Hence, we just define the IOCTL_VMCI_foo values directly, with no
+> + * intermediate IOCTLCMD_ representation.
+> + */
+> +#  define IOCTLCMD(_cmd) IOCTL_VMCI_ ## _cmd
+
+Are you sure about this comment?
+
+
+> +
+> +enum {
+> +	/*
+> +	 * We need to bracket the range of values used for ioctls,
+> +	 * because x86_64 Linux forces us to explicitly register ioctl
+> +	 * handlers by value for handling 32 bit ioctl syscalls.
+> +	 * Hence FIRST and LAST.  Pick something for FIRST that
+> +	 * doesn't collide with vmmon (2001+).
+> +	 */
+> +	IOCTLCMD(FIRST) = 1951,
+> +	IOCTLCMD(VERSION) = IOCTLCMD(FIRST),
+> +
+> +	/* BEGIN VMCI */
+> +	IOCTLCMD(INIT_CONTEXT),
+> +
+> +	/*
+> +	 * The following two were used for process and datagram
+> +	 * process creation.  They are not used anymore and reserved
+> +	 * for future use.  They will fail if issued.
+> +	 */
+> +	IOCTLCMD(RESERVED1),
+> +	IOCTLCMD(RESERVED2),
+> +
+> +	/*
+> +	 * The following used to be for shared memory. It is now
+> +	 * unused and and is reserved for future use. It will fail if
+> +	 * issued.
+> +	 */
+> +	IOCTLCMD(RESERVED3),
+> +
+> +	/*
+> +	 * The follwoing three were also used to be for shared
+> +	 * memory. An old WS6 user-mode client might try to use them
+> +	 * with the new driver, but since we ensure that only contexts
+> +	 * created by VMX'en of the appropriate version
+> +	 * (VMCI_VERSION_NOTIFY or VMCI_VERSION_NEWQP) or higher use
+> +	 * these ioctl, everything is fine.
+> +	 */
+> +	IOCTLCMD(QUEUEPAIR_SETVA),
+> +	IOCTLCMD(NOTIFY_RESOURCE),
+> +	IOCTLCMD(NOTIFICATIONS_RECEIVE),
+> +	IOCTLCMD(VERSION2),
+> +	IOCTLCMD(QUEUEPAIR_ALLOC),
+> +	IOCTLCMD(QUEUEPAIR_SETPAGEFILE),
+> +	IOCTLCMD(QUEUEPAIR_DETACH),
+> +	IOCTLCMD(DATAGRAM_SEND),
+> +	IOCTLCMD(DATAGRAM_RECEIVE),
+> +	IOCTLCMD(DATAGRAM_REQUEST_MAP),
+> +	IOCTLCMD(DATAGRAM_REMOVE_MAP),
+> +	IOCTLCMD(CTX_ADD_NOTIFICATION),
+> +	IOCTLCMD(CTX_REMOVE_NOTIFICATION),
+> +	IOCTLCMD(CTX_GET_CPT_STATE),
+> +	IOCTLCMD(CTX_SET_CPT_STATE),
+> +	IOCTLCMD(GET_CONTEXT_ID),
+> +	IOCTLCMD(LAST),
+> +	/* END VMCI */
+> +
+> +	/*
+> +	 * VMCI Socket IOCTLS are defined next and go from
+> +	 * IOCTLCMD(LAST) (1972) to 1990.  VMware reserves a range of
+> +	 * 4 ioctls for VMCI Sockets to grow.  We cannot reserve many
+> +	 * ioctls here since we are close to overlapping with vmmon
+> +	 * ioctls (2001+).  Define a meta-ioctl if running out of this
+> +	 * binary space.
+> +	 */
+> +	IOCTLCMD(SOCKETS_LAST) = 1994,	/* 1994 on Linux. */
+> +
+> +	/*
+> +	 * The VSockets ioctls occupy the block above.  We define a
+> +	 * new range of VMCI ioctls to maintain binary compatibility
+> +	 * between the user land and the kernel driver.  Careful,
+> +	 * vmmon ioctls start from 2001, so this means we can add only
+> +	 * 4 new VMCI ioctls.  Define a meta-ioctl if running out of
+> +	 * this binary space.
+> +	 */
+> +	IOCTLCMD(FIRST2),
+> +	IOCTLCMD(SET_NOTIFY) = IOCTLCMD(FIRST2),	/* 1995 on Linux. */
+> +	IOCTLCMD(LAST2),
+> +};
+
+That's a lot of ioctls.  Why not just create a new system call, or many
+system calls, instead?
+
+> +/*
+> + * This struct is used to contain data for events.  Size of this struct is a
+> + * multiple of 8 bytes, and all fields are aligned to their natural alignment.
+> + */
+> +struct vmci_event_data {
+> +	uint32_t event;		/* 4 bytes. */
+> +	uint32_t _pad;
+> +	/* Event payload is put here. */
+> +};
+
+Why not put an empty array so you can get to the data easier instead of
+having to do looney inline functions like this:
+
+> +/*
+> + * We use the following inline function to access the payload data
+> + * associated with an event data.
+> + */
+> +static inline void *vmci_event_data_payload(struct vmci_event_data *evData)
+> +{
+> +	return (void *)((char *)evData + sizeof *evData);
+> +}
+
+Same goes for other structures that you do this same thing.
+
+greg k-h
