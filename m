@@ -1,35 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab2GZU5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 16:57:35 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27984 "EHLO
+	id S1752802Ab2GZU5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 16:57:34 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27985 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab2GZU41 (ORCPT
+	with ESMTP id S1752664Ab2GZU41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jul 2012 16:56:27 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: [RFC PATCH] Boot PV guests with more than 128GB (v1) for 3.7
-Date: Thu, 26 Jul 2012 16:47:25 -0400
-Message-Id: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 5/7] xen/p2m: Add logic to revector a P2M tree to use __va leafs.
+Date: Thu, 26 Jul 2012 16:47:30 -0400
+Message-Id: <1343335652-5659-6-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
+References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-These depend on the "documentation, refactor and cleanups (v2) patches
-I posted" (https://lkml.org/lkml/2012/7/26/469).
-
-The details of this problem are nicely explained in:
-
- [PATCH 5/7] xen/p2m: Add logic to revector a P2M tree to use __va
- [PATCH 6/7] xen/mmu: Copy and revector the P2M tree.
- [PATCH 7/7] xen/mmu: Remove from __ka space PMD entries for
-
-and the supporting patches are just nice optimizations. Pasting in
-what those patches mentioned:
-
 
 During bootup Xen supplies us with a P2M array. It sticks
 it right after the ramdisk, as can be seen with a 128GB PV guest:
@@ -129,37 +119,106 @@ So we pick option 2).
 This patch only lays the groundwork in the P2M code. The patch
 that modifies the MMU is called "xen/mmu: Copy and revector the P2M tree."
 
--- xen/mmu: Copy and revector the P2M tree:
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/p2m.c     |   70 ++++++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/xen/xen-ops.h |    1 +
+ 2 files changed, 71 insertions(+), 0 deletions(-)
 
-The 'xen_revector_p2m_tree()' function allocates a new P2M tree
-copies the contents of the old one in it, and returns the new one.
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 6a2bfa4..bbfd085 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -394,7 +394,77 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 	 * Xen provided pagetable). Do it later in xen_reserve_internals.
+ 	 */
+ }
++#ifdef CONFIG_X86_64
++#include <linux/bootmem.h>
++unsigned long __init xen_revector_p2m_tree(void)
++{
++	unsigned long va_start;
++	unsigned long va_end;
++	unsigned long pfn;
++	unsigned long *mfn_list = NULL;
++	unsigned long size;
++
++	va_start = xen_start_info->mfn_list;
++	/*We copy in increments of P2M_PER_PAGE * sizeof(unsigned long),
++	 * so make sure it is rounded up to that */
++	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
++	va_end = va_start + size;
++
++	/* If we were revectored already, don't do it again. */
++	if (va_start <= __START_KERNEL_map && va_start >= __PAGE_OFFSET)
++		return 0;
++
++	mfn_list = alloc_bootmem_align(size, PAGE_SIZE);
++	if (!mfn_list) {
++		pr_warn("Could not allocate space for a new P2M tree!\n");
++		return xen_start_info->mfn_list;
++	}
++	/* Fill it out with INVALID_P2M_ENTRY value */
++	memset(mfn_list, 0xFF, size);
++
++	for (pfn = 0; pfn < ALIGN(MAX_DOMAIN_PAGES, P2M_PER_PAGE); pfn += P2M_PER_PAGE) {
++		unsigned topidx = p2m_top_index(pfn);
++		unsigned mididx;
++		unsigned long *mid_p;
++
++		if (!p2m_top[topidx])
++			continue;
++
++		if (p2m_top[topidx] == p2m_mid_missing)
++			continue;
++
++		mididx = p2m_mid_index(pfn);
++		mid_p = p2m_top[topidx][mididx];
++		if (!mid_p)
++			continue;
++		if ((mid_p == p2m_missing) || (mid_p == p2m_identity))
++			continue;
++
++		if ((unsigned long)mid_p == INVALID_P2M_ENTRY)
++			continue;
++
++		/* The old va. Rebase it on mfn_list */
++		if (mid_p >= (unsigned long *)va_start && mid_p <= (unsigned long *)va_end) {
++			unsigned long *new;
++
++			new = &mfn_list[pfn];
++
++			copy_page(new, mid_p);
++			p2m_top[topidx][mididx] = &mfn_list[pfn];
++			p2m_top_mfn_p[topidx][mididx] = virt_to_mfn(&mfn_list[pfn]);
+ 
++		}
++		/* This should be the leafs allocated for identity from _brk. */
++	}
++	return (unsigned long)mfn_list;
++
++}
++#else
++unsigned long __init xen_revector_p2m_tree(void)
++{
++	return 0;
++}
++#endif
+ unsigned long get_phys_to_machine(unsigned long pfn)
+ {
+ 	unsigned topidx, mididx, idx;
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 2230f57..bb5a810 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -45,6 +45,7 @@ void xen_hvm_init_shared_info(void);
+ void xen_unplug_emulated_devices(void);
+ 
+ void __init xen_build_dynamic_phys_to_machine(void);
++unsigned long __init xen_revector_p2m_tree(void);
+ 
+ void xen_init_irq_ops(void);
+ void xen_setup_timer(int cpu);
+-- 
+1.7.7.6
 
-At this stage, the __ka address space (which is what the old
-P2M tree was using) is partially disassembled. The cleanup_highmap
-has removed the PMD entries from 0-16MB and anything past _brk_end
-up to the max_pfn_mapped (which is the end of the ramdisk).
-
-We have revectored the P2M tree (and the one for save/restore as well)
-to use new shiny __va address to new MFNs. The xen_start_info
-has been taken care of already in 'xen_setup_kernel_pagetable()' and
-xen_start_info->shared_info in 'xen_setup_shared_info()', so
-we are free to roam and delete PMD entries - which is exactly what
-we are going to do. We rip out the __ka for the old P2M array.
-
--- xen/mmu:   Remove from __ka space PMD entries for
-
-At this stage, the __ka address space (which is what the old
-P2M tree was using) is partially disassembled. The cleanup_highmap
-has removed the PMD entries from 0-16MB and anything past _brk_end
-up to the max_pfn_mapped (which is the end of the ramdisk).
-
-The xen_remove_p2m_tree and code around has ripped out the __ka for
-the old P2M array.
-
-Here we continue on doing it to where the Xen page-tables were.
-It is safe to do it, as the page-tables are addressed using __va.
-For good measure we delete anything that is within MODULES_VADDR
-and up to the end of the PMD.
-
-At this point the __ka only contains PMD entries for the start
-of the kernel up to __brk.
