@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab2GZTwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 15:52:42 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58993 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590Ab2GZTwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 15:52:39 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 0/8] acpi-cpufreq: Move modern AMD cpufreq support to acpi-cpufreq
-Date: Thu, 26 Jul 2012 21:58:25 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Andre Przywara <andre.przywara@amd.com>, cpufreq@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1343305724-2809-1-git-send-email-andre.przywara@amd.com> <201207261601.23973.trenn@suse.de>
-In-Reply-To: <201207261601.23973.trenn@suse.de>
+	id S1752548Ab2GZTzM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 15:55:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44858 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab2GZTzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 15:55:09 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207262158.25936.rjw@sisk.pl>
+In-Reply-To: <1343329710-96747-1-git-send-email-tim.gardner@canonical.com>
+References: <1343329710-96747-1-git-send-email-tim.gardner@canonical.com>
+Date: Thu, 26 Jul 2012 12:55:07 -0700
+Message-ID: <CAPoiz9xoMF23FQOJjJviZjA-Db6Bhc9iQLPHTpFNX1USF4Oazw@mail.gmail.com>
+Subject: Re: [PATCH] vxge: Declare MODULE_FIRMWARE usage
+From: Jon Mason <jdmason@kudzu.us>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Joe Perches <joe@perches.com>, Jiri Pirko <jpirko@redhat.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 26, 2012, Thomas Renninger wrote:
-> On Thursday, July 26, 2012 02:28:36 PM Andre Przywara wrote:
-> > The programming model for cpufreq on current AMD CPUs is almost
-> > identical to the one used on Intel and VIA hardware. This patchset
-> > merges support into acpi-cpufreq and removes it from powernow-k8.
->  
-> > This patchset is heavily based on Matthew Garrett's V4 from last July.
-> > The boosting part has been mostly reworked and documentation for it
-> > has been added. Also there was a need for (yet another) BIOS quirk
-> > on AMD desktop boards.
-> > 
-> > Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-> 
-> I had a look at Matthew's patches and I like the idea.
-> 
-> I didn't review Andre's in detail, but if they are based on
-> Matthew's and I expect they got some testing, I guess it should
-> be fine to push them with the next merge window.
+On Thu, Jul 26, 2012 at 12:08 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
+> Cc: Jon Mason <jdmason@kudzu.us>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Jiri Pirko <jpirko@redhat.com>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/net/ethernet/neterion/vxge/vxge-main.c |    9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
+> index de21904..d4832b2 100644
+> --- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
+> +++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
+> @@ -4203,6 +4203,9 @@ out:
+>         return ret;
+>  }
+>
+> +#define VXGE_PXE_FIRMWARE "vxge/X3fw-pxe.ncf"
+> +#define VXGE_FIRMWARE "vxge/X3fw.ncf"
+> +
+>  static int vxge_probe_fw_update(struct vxgedev *vdev)
+>  {
+>         u32 maj, min, bld;
+> @@ -4245,9 +4248,9 @@ static int vxge_probe_fw_update(struct vxgedev *vdev)
+>                         }
+>         }
+>         if (gpxe)
+> -               fw_name = "vxge/X3fw-pxe.ncf";
+> +               fw_name = VXGE_PXE_FIRMWARE;
+>         else
+> -               fw_name = "vxge/X3fw.ncf";
+> +               fw_name = VXGE_FIRMWARE;
+>
+>         ret = vxge_fw_upgrade(vdev, fw_name, 0);
+>         /* -EINVAL and -ENOENT are not fatal errors for flashing firmware on
+> @@ -4855,3 +4858,5 @@ vxge_closer(void)
+>  }
+>  module_init(vxge_starter);
+>  module_exit(vxge_closer);
+> +MODULE_FIRMWARE(VXGE_PXE_FIRMWARE);
+> +MODULE_FIRMWARE(VXGE_FIRMWARE);
 
-Good, thanks for your opinion, it helps a lot! :-)
+IIUC, MODULE_FIRMWARE is only necessary for devices that need firmware
+to operate.  vxge hardware has an image in flash on the nic, and the
+modified code is used to update the firmware image on the adapter.
+So, this change isn't doing what you want it to do.
 
-I'll have a deeper look at the patches in the next couple of days and will
-queue them up for v3.7 if I don't find anything objectionable in them.
+Also, wasn't this already discussed (https://lkml.org/lkml/2012/4/12/401)?
 
 Thanks,
-Rafael
+Jon
+
+
+
+> --
+> 1.7.9.5
+>
