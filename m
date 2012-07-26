@@ -1,202 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab2GZQna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 12:43:30 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:38350 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab2GZQn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 12:43:29 -0400
-Date: Thu, 26 Jul 2012 12:33:52 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        linaro-dev@lists.linaro.org, Ian.Campbell@citrix.com, arnd@arndb.de,
-        catalin.marinas@arm.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Xen-devel] [PATCH 02/24] xen/arm: hypercalls
-Message-ID: <20120726163352.GC9222@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1752590Ab2GZQnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 12:43:43 -0400
+Received: from mail.tpi.com ([70.99.223.143]:1880 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752491Ab2GZQnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 12:43:42 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+Subject: [PATCH] cx25840: Declare MODULE_FIRMWARE usage
+Date: Thu, 26 Jul 2012 10:44:19 -0600
+Message-Id: <1343321059-124171-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 04:33:44PM +0100, Stefano Stabellini wrote:
-> Use r12 to pass the hypercall number to the hypervisor.
-> 
-> We need a register to pass the hypercall number because we might not
-> know it at compile time and HVC only takes an immediate argument.
-> 
-> Among the available registers r12 seems to be the best choice because it
-> is defined as "intra-procedure call scratch register".
-> 
-> Use the ISS to pass an hypervisor specific tag.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/include/asm/xen/hypercall.h |   50 ++++++++++++++++++++++++++
->  arch/arm/xen/Makefile                |    2 +-
->  arch/arm/xen/hypercall.S             |   65 ++++++++++++++++++++++++++++++++++
->  3 files changed, 116 insertions(+), 1 deletions(-)
->  create mode 100644 arch/arm/include/asm/xen/hypercall.h
->  create mode 100644 arch/arm/xen/hypercall.S
-> 
-> diff --git a/arch/arm/include/asm/xen/hypercall.h b/arch/arm/include/asm/xen/hypercall.h
-> new file mode 100644
-> index 0000000..4ac0624
-> --- /dev/null
-> +++ b/arch/arm/include/asm/xen/hypercall.h
-> @@ -0,0 +1,50 @@
-> +/******************************************************************************
-> + * hypercall.h
-> + *
-> + * Linux-specific hypervisor handling.
-> + *
-> + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2012
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version 2
-> + * as published by the Free Software Foundation; or, when distributed
-> + * separately from the Linux kernel or incorporated into other
-> + * software packages, subject to the following license:
-> + *
-> + * Permission is hereby granted, free of charge, to any person obtaining a copy
-> + * of this source file (the "Software"), to deal in the Software without
-> + * restriction, including without limitation the rights to use, copy, modify,
-> + * merge, publish, distribute, sublicense, and/or sell copies of the Software,
-> + * and to permit persons to whom the Software is furnished to do so, subject to
-> + * the following conditions:
-> + *
-> + * The above copyright notice and this permission notice shall be included in
-> + * all copies or substantial portions of the Software.
-> + *
-> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-> + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-> + * IN THE SOFTWARE.
-> + */
-> +
-> +#ifndef _ASM_ARM_XEN_HYPERCALL_H
-> +#define _ASM_ARM_XEN_HYPERCALL_H
-> +
-> +#include <xen/interface/xen.h>
-> +
-> +long privcmd_call(unsigned call, unsigned long a1,
-> +		unsigned long a2, unsigned long a3,
-> +		unsigned long a4, unsigned long a5);
-> +int HYPERVISOR_xen_version(int cmd, void *arg);
-> +int HYPERVISOR_console_io(int cmd, int count, char *str);
-> +int HYPERVISOR_grant_table_op(unsigned int cmd, void *uop, unsigned int count);
-> +int HYPERVISOR_sched_op(int cmd, void *arg);
-> +int HYPERVISOR_event_channel_op(int cmd, void *arg);
-> +unsigned long HYPERVISOR_hvm_op(int op, void *arg);
-> +int HYPERVISOR_memory_op(unsigned int cmd, void *arg);
-> +int HYPERVISOR_physdev_op(int cmd, void *arg);
-> +
-> +#endif /* _ASM_ARM_XEN_HYPERCALL_H */
-> diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
-> index 0bad594..b9d6acc 100644
-> --- a/arch/arm/xen/Makefile
-> +++ b/arch/arm/xen/Makefile
-> @@ -1 +1 @@
-> -obj-y		:= enlighten.o
-> +obj-y		:= enlighten.o hypercall.o
-> diff --git a/arch/arm/xen/hypercall.S b/arch/arm/xen/hypercall.S
-> new file mode 100644
-> index 0000000..038cc5b
-> --- /dev/null
-> +++ b/arch/arm/xen/hypercall.S
-> @@ -0,0 +1,65 @@
-> +/******************************************************************************
-> + * hypercall.S
-> + *
-> + * Xen hypercall wrappers
-> + *
-> + * The Xen hypercall calling convention is very similar to the ARM
-> + * procedure calling convention: the first paramter is passed in r0, the
-> + * second in r1, the third in r2 and the third in r3. Considering that
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-media@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/media/video/cx25840/cx25840-firmware.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-I think you meant 'and the fourth in r3'.
+diff --git a/drivers/media/video/cx25840/cx25840-firmware.c b/drivers/media/video/cx25840/cx25840-firmware.c
+index 8150200..b3169f9 100644
+--- a/drivers/media/video/cx25840/cx25840-firmware.c
++++ b/drivers/media/video/cx25840/cx25840-firmware.c
+@@ -61,6 +61,10 @@ static void end_fw_load(struct i2c_client *client)
+ 	cx25840_write(client, 0x803, 0x03);
+ }
+ 
++#define CX2388x_FIRMWARE "v4l-cx23885-avcore-01.fw"
++#define CX231xx_FIRMWARE "v4l-cx231xx-avcore-01.fw"
++#define CX25840_FIRMWARE "v4l-cx25840.fw"
++
+ static const char *get_fw_name(struct i2c_client *client)
+ {
+ 	struct cx25840_state *state = to_state(i2c_get_clientdata(client));
+@@ -68,10 +72,10 @@ static const char *get_fw_name(struct i2c_client *client)
+ 	if (firmware[0])
+ 		return firmware;
+ 	if (is_cx2388x(state))
+-		return "v4l-cx23885-avcore-01.fw";
++		return CX2388x_FIRMWARE;
+ 	if (is_cx231xx(state))
+-		return "v4l-cx231xx-avcore-01.fw";
+-	return "v4l-cx25840.fw";
++		return CX231xx_FIRMWARE;
++	return CX25840_FIRMWARE;
+ }
+ 
+ static int check_fw_load(struct i2c_client *client, int size)
+@@ -164,3 +168,8 @@ int cx25840_loadfw(struct i2c_client *client)
+ 
+ 	return check_fw_load(client, size);
+ }
++
++MODULE_FIRMWARE(CX2388x_FIRMWARE);
++MODULE_FIRMWARE(CX231xx_FIRMWARE);
++MODULE_FIRMWARE(CX25840_FIRMWARE);
++
+-- 
+1.7.9.5
 
-So where does the similarity end?  Just in that we use r12?
-
-> + * Xen hypercalls have 5 arguments at most, the fifth paramter is passed
-> + * in r4, differently from the procedure calling convention of using the
-
-> + * stack for that case.
-> + *
-> + * The hypercall number is passed in r12.
-> + *
-> + * The return value is in r0.
-> + *
-> + * The hvc ISS is required to be 0xEA1, that is the Xen specific ARM
-> + * hypercall tag.
-> + *
-> + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2012
-> + */
-> +
-> +#include <linux/linkage.h>
-> +#include <asm/assembler.h>
-> +#include <xen/interface/xen.h>
-> +
-> +
-> +/* HVC 0xEA1 */
-> +#ifdef CONFIG_THUMB2_KERNEL
-> +#define xen_hvc .word 0xf7e08ea1
-> +#else
-> +#define xen_hvc .word 0xe140ea71
-> +#endif
-> +
-> +/* We need to save and restore r4, because Xen clobbers it. */
-
-Hmm, the comment says r4, but right below I see r12?
-Should this comment be by 'privcmd_call'?
-
-> +#define HYPERCALL(hypercall)			\
-> +ENTRY(HYPERVISOR_##hypercall)			\
-> +	mov r12, #__HYPERVISOR_##hypercall;	\
-> +	xen_hvc;							\
-> +	mov pc, lr;							\
-> +ENDPROC(HYPERVISOR_##hypercall)
-> +
-> +                .text
-> +
-> +HYPERCALL(xen_version);
-> +HYPERCALL(console_io);
-> +HYPERCALL(grant_table_op);
-> +HYPERCALL(sched_op);
-> +HYPERCALL(event_channel_op);
-> +HYPERCALL(hvm_op);
-> +HYPERCALL(memory_op);
-> +HYPERCALL(physdev_op);
-> +
-> +ENTRY(privcmd_call)
-> +	stmdb	sp!, {r4}
-> +	mov r12, r0
-> +	mov r0, r1
-> +	mov r1, r2
-> +	mov r2, r3
-> +	ldr r3, [sp, #8]
-> +	ldr r4, [sp, #4]
-> +	xen_hvc
-> +	pop {r4}
-> +	mov pc, lr
-> +ENDPROC(privcmd_call);
-> -- 
-> 1.7.2.5
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
