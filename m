@@ -1,121 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab2GZCB0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 22:01:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56083 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751521Ab2GZCBY (ORCPT
+	id S1752218Ab2GZCJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 22:09:51 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:40362 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab2GZCJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 22:01:24 -0400
-Message-ID: <1343268072.5132.194.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] posix_types.h: Cleanup stale __NFDBITS and related
- definitions
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, law@redhat.com,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 26 Jul 2012 03:01:12 +0100
-In-Reply-To: <20120726012713.GA2356@zod.bos.redhat.com>
-References: <20120725144033.GK10534@zod.bos.redhat.com>
-	 <1343258796.5132.164.camel@deadeye.wl.decadent.org.uk>
-	 <20120726012713.GA2356@zod.bos.redhat.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-r5FwtFtSjh/S3ET2eYzm"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 25 Jul 2012 22:09:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <5010A386.4080209@familyross.net>
+References: <501078B2.8070707@familyross.net>
+	<501096C3.5060700@turmel.org>
+	<5010A386.4080209@familyross.net>
+Date: Thu, 26 Jul 2012 06:09:48 +0400
+Message-ID: <CAGqmV7p3c4PCgzJOwP+QGrRSPq=Kszh4a2ncmasWaUdSagv_HQ@mail.gmail.com>
+Subject: Re: RAID extremely slow
+From: CoolCold <coolthecold@gmail.com>
+To: Kevin Ross <kevin@familyross.net>
+Cc: Phil Turmel <philip@turmel.org>, linux-kernel@vger.kernel.org,
+        linux-raid <linux-raid@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 26, 2012 at 5:55 AM, Kevin Ross <kevin@familyross.net> wrote:
+>
+> Thank you very much for taking the time to look into this.
+>
+>
+> On 07/25/2012 06:00 PM, Phil Turmel wrote:
+>>
+>> Piles of small reads  scattered across multiple drives, and a
+>> concentration of queued writes to /dev/sda.  What's on /dev/sda?
+>> It's not a member of the raid, so it must be some other system task
+>> involved.
+>
+>
+> /dev/sda1 is the root filesystem.  The writes were most likely by MySQL,
+> but I would have to run iotop to be sure.
+>
+>
+>> [ The output of "lsdrv" [1] might be useful here, along with
+>> "mdadm -D /dev/md0" and "mdadm -E /dev/[b-j]" ]
+>
+>
+> Here you go: http://pastebin.ca/2174740
+>
+>
+>> MythTV is trying to flush recorded video to disk, I presume.  Sync is
+>> known to cause stalls--a great deal of work is on-going to improve
+>> this.  How old is this kernel?
+>
+>
+> After rebooting, MythTV is currently recording two shows, and the resync
+> is running at full speed.
+>
+>
+> # cat /proc/mdstat
+> Personalities : [raid6] [raid5] [raid4]
+> md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4]
+> sdf1[3] sdg1[8] sdj1[1]
+>       6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 [9/9]
+> [UUUUUUUUU]
+>       [=>...................]  resync =  9.3% (91363840/976758784)
+> finish=1434.3min speed=10287K/sec
+>
+> unused devices: <none>
+>
+> atop shows the avio of all the drives to be less than 1ms, where before
+> they were much higher.  It will run for a couple days under load just fine,
+> and then it will come to a halt.
+>
+> It's a 3.2.21 kernel.  I'm running Debian Testing, and the exact Debian
+> package version is:
+>
+> ii  linux-image-3.2.0-3-686-pae                    3.2.21-3
+> Linux 3.2 for modern PCs
+>
+>
+>>
+>>> [51000.672258]  [<c12c409f>] ? sysenter_do_call+0x12/0x28
+>>> [51000.672261]  [<c12b0000>] ? quirk_usb_early_handoff+0x4a9/0x522
+>>>
+>>> Here is some other possibly relevant info:
+>>>
+>>> # cat /proc/mdstat
+>>> Personalities : [raid6] [raid5] [raid4]
+>>> md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4]
+>>> sdf1[3] sdg1[8] sdj1[1]
+>>>        6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2
+>>> [9/9]
+>>> [UUUUUUUUU]
+>>>        [==========>..........]  resync = 51.3% (501954432/976758784)
+>>> finish=28755.6min speed=275K/sec
+>>
+>> Is this resync a weekly check, or did something else trigger it?
+>
+>
+> This is not a scheduled check.  It was triggered by, I believe, an unclean
+> shutdown.  An unclean shutdown will trigger a resync.  I don't think it used
+> to do this, but I could be remembering wrong.
+>
+>
+>>
+>>> unused devices:<none>
+>>>
+>>> # cat /proc/sys/dev/raid/speed_limit_min
+>>> 10000
+>>
+>> MD is unable to reach its minimum rebuild rate while other system
+>> activity is ongoing.  You might want to lower this number to see if that
+>> gets you out of the stalls.
+>>
+>> Or temporarily shut down mythtv.
+>
+>
+> I will try lowering those numbers next time this happens, which will
+> probably be within the next day or two.  That's about how often this
+> happens.
+You might be interested in write intent bitmap then, it gonna help a lot.
+(resending in plain text)
+>
+>
+>>> # cat /proc/sys/dev/raid/speed_limit_max
+>>> 200000
+>>>
+>>> Thanks in advance!
+>>> -- Kevin
+>>
+>> HTH,
+>>
+>> Phil
+>>
+>> [1] http://github.com/pturmel/lsdrv
+>>
+>
+> Thanks!
+> -- Kevin
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-raid" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
---=-r5FwtFtSjh/S3ET2eYzm
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-07-25 at 21:27 -0400, Josh Boyer wrote:
-> On Thu, Jul 26, 2012 at 12:26:36AM +0100, Ben Hutchings wrote:
-> > On Wed, 2012-07-25 at 10:40 -0400, Josh Boyer wrote:
-> > > Recently, glibc made a change to suppress sign-conversion warnings in=
- FD_SET
-> > > (glibc commit ceb9e56b3d1).  This uncovered an issue with the kernel'=
-s
-> > > definition of __NFDBITS if applications #include <linux/types.h> afte=
-r
-> > > including <sys/select.h>.  A build failure would be seen when passing=
- the
-> > > -Werror=3Dsign-compare and -D_FORTIFY_SOURCE=3D2 flags to gcc.
-> > >=20
-> > > It was suggested that the kernel should either match the glibc defini=
-tion of
-> > > __NFDBITS or remove that entirely.  The current in-kernel uses of __N=
-FDBITS
-> > > can be replaced with BITS_PER_LONG, and there are no uses of the rela=
-ted
-> > > __FDELT and __FDMASK defines.  Given that, we'll continue the cleanup=
- that
-> > > was started with commit 8b3d1cda4f5f ("posix_types: Remove fd_set mac=
-ros")
-> > > and drop the remaining unused macros.
-> > >=20
-> > > Additionally, linux/time.h has similar macros defined that expand to =
-nothing
-> > > so we'll remove those at the same time.
-> > >=20
-> > > Reported-by: Jeff Law <law@redhat.com>
-> > > Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > > CC: <stable@vger.kernel.org>
-> >=20
-> > # v3.4+
-> >=20
-> > (as 8b3d1cda4f5f went into 3.4)
-> >
->=20
-> Indeed.  However, I believe Linus pointed out that even before
-> 8b3d1cda4f5f the macros that were removed weren't actually used.
-> It's likely safe to go back further than just 3.4.
->=20
-> I'll verify again in the morning and include the furthest back we could
-> remove these.  For now, let's go with what you suggest to be safe.
 
-Yes, on reflection, this is mostly independent of commit 8b3d1cda4f5f.
 
-The problem is that userland might accidentally be depending on getting
-the definitions of NFDBITS and FD_SETSIZE from <linux/time.h>.  But,
-having now read Linus's history of the rotting of these particular bits
-<http://article.gmane.org/gmane.linux.kernel/1332560>, I agree this is
-very unlikely.  So, I withdraw my request to restrict the target stable
-versions.
-
-Ben.
-
---=20
-Ben Hutchings
-Humans are not rational beings; they are rationalising beings.
-
---=-r5FwtFtSjh/S3ET2eYzm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUBCk6Oe/yOyVhhEJAQoMMw//eWvC803kut6pFpS+FoYHXcJgjZ4PFn9K
-RUHr660KCdC9EcvsJW8gBPfzin4Uyzs7NDsEgod3JjxQcxZMSn6W4/GZzzKPZ/NI
-MBQNKmb16t5uXgzjCDmzbuFZHxvz7xc7P5l1/pQW9cFPdSdHHNwcLn2Nledav73e
-x+u2nHKotAhnICSB3nLrsW5vUBUUDLvsQlyxcDpYaeXX1ArRZQtDgL02Gs2i8CAB
-gyOV7dOZ0NmLJ5TEsEhgctwVL5A4dssiSt18pbz4Kr48i13yCdBxo/6DUeOFsbvo
-yftK+Th75Sl+CJfyQtivDI+9HxVJSMBGmmynRsYS/bFbMtKfh8g73Siz1CuDSl5w
-JyNV1TqeJFEUFQWRf7iujqBZe2Aj8skETffOoESF9z1suEOuRK9CB+L+PXQDigu3
-MNS/ja/tltQF1hsM2X+NLhLVLIwTKu7/Z775ryaGnFAOcmuZj0bVx3jPNeuOpNbK
-wuFey4Vs3LRpBwdtBXWbucK0XxrsNgiypWE9PbeT7PW2e26jPONJAJbcDetmtw/4
-3AK2BHiFHNzTQbbr800N8QuYUqeVegmrv1DM7AXKtuMRTtZLeXkol5ft1azAElej
-WJhM97/IESsSolaPwbPkIsR+xno258ZuL65Qy/mHvt1Jou4DtCuP0oJYemj82Oxs
-Gw66bZR0NRE=
-=CO7s
------END PGP SIGNATURE-----
-
---=-r5FwtFtSjh/S3ET2eYzm--
+--
+Best regards,
+[COOLCOLD-RIPN]
