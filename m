@@ -1,50 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab2GZRUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:20:41 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:32391 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab2GZRUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:20:40 -0400
-X-IronPort-AV: E=Sophos;i="4.77,660,1336348800"; 
-   d="scan'208";a="13721023"
-Date: Thu, 26 Jul 2012 18:19:46 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: David Vrabel <dvrabel@cantab.net>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 02/24] xen/arm: hypercalls
-In-Reply-To: <501176AF.3000607@cantab.net>
-Message-ID: <alpine.DEB.2.02.1207261813080.26163@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com> <501176AF.3000607@cantab.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752745Ab2GZRVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:21:42 -0400
+Received: from mail.tpi.com ([70.99.223.143]:1765 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752367Ab2GZRVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 13:21:41 -0400
+Message-ID: <50117C91.8090207@canonical.com>
+Date: Thu, 26 Jul 2012 11:21:21 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: linux-kernel@vger.kernel.org
+CC: Andy Walls <awalls@md.metrocast.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH v2] cx18: Declare MODULE_FIRMWARE usage
+References: <1343322358-128310-1-git-send-email-tim.gardner@canonical.com>
+In-Reply-To: <1343322358-128310-1-git-send-email-tim.gardner@canonical.com>
+Content-Type: multipart/mixed;
+ boundary="------------020407030802040605000401"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012, David Vrabel wrote:
-> On 26/07/12 16:33, Stefano Stabellini wrote:
-> > 
-> > + * The hvc ISS is required to be 0xEA1, that is the Xen specific ARM
-> > + * hypercall tag.
-> 
-> Is this number, 0xea1, assigned to Xen by some external body?
+This is a multi-part message in MIME format.
+--------------020407030802040605000401
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-I am not aware of any "external body" that could assign us such a number
-but it is specified in the Xen hypercall calling convention, documented
-here:
+Missed a firmware file in cx18-av-firmware.c
 
-http://xenbits.xensource.com/hg/xen-unstable.hg/file/663eb766cdde/xen/include/public/arch-arm.h
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
+
+--------------020407030802040605000401
+Content-Type: text/x-patch;
+ name="0001-cx18-Declare-MODULE_FIRMWARE-usage.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-cx18-Declare-MODULE_FIRMWARE-usage.patch"
+
+>From 9b4be013f173efc12bb2776394bf6a5abb8725b6 Mon Sep 17 00:00:00 2001
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Thu, 26 Jul 2012 11:03:51 -0600
+Subject: [PATCH v2] cx18: Declare MODULE_FIRMWARE usage
+
+Cc: Andy Walls <awalls@md.metrocast.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: ivtv-devel@ivtvdriver.org
+Cc: linux-media@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/media/video/cx18/cx18-av-firmware.c |    2 ++
+ drivers/media/video/cx18/cx18-driver.c      |    1 +
+ drivers/media/video/cx18/cx18-firmware.c    |   10 ++++++++--
+ 3 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/cx18/cx18-av-firmware.c b/drivers/media/video/cx18/cx18-av-firmware.c
+index 280aa4d..a34fd08 100644
+--- a/drivers/media/video/cx18/cx18-av-firmware.c
++++ b/drivers/media/video/cx18/cx18-av-firmware.c
+@@ -221,3 +221,5 @@ int cx18_av_loadfw(struct cx18 *cx)
+ 	release_firmware(fw);
+ 	return 0;
+ }
++
++MODULE_FIRMWARE(FWFILE);
+diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
+index 7e5ffd6..c67733d 100644
+--- a/drivers/media/video/cx18/cx18-driver.c
++++ b/drivers/media/video/cx18/cx18-driver.c
+@@ -1357,3 +1357,4 @@ static void __exit module_cleanup(void)
+ 
+ module_init(module_start);
+ module_exit(module_cleanup);
++MODULE_FIRMWARE(XC2028_DEFAULT_FIRMWARE);
+diff --git a/drivers/media/video/cx18/cx18-firmware.c b/drivers/media/video/cx18/cx18-firmware.c
+index b85c292..a1c1cec 100644
+--- a/drivers/media/video/cx18/cx18-firmware.c
++++ b/drivers/media/video/cx18/cx18-firmware.c
+@@ -376,6 +376,9 @@ void cx18_init_memory(struct cx18 *cx)
+ 	cx18_write_reg(cx, 0x00000101, CX18_WMB_CLIENT14);  /* AVO */
+ }
+ 
++#define CX18_CPU_FIRMWARE "v4l-cx23418-cpu.fw"
++#define CX18_APU_FIRMWARE "v4l-cx23418-apu.fw"
++
+ int cx18_firmware_init(struct cx18 *cx)
+ {
+ 	u32 fw_entry_addr;
+@@ -400,7 +403,7 @@ int cx18_firmware_init(struct cx18 *cx)
+ 	cx18_sw1_irq_enable(cx, IRQ_CPU_TO_EPU | IRQ_APU_TO_EPU);
+ 	cx18_sw2_irq_enable(cx, IRQ_CPU_TO_EPU_ACK | IRQ_APU_TO_EPU_ACK);
+ 
+-	sz = load_cpu_fw_direct("v4l-cx23418-cpu.fw", cx->enc_mem, cx);
++	sz = load_cpu_fw_direct(CX18_CPU_FIRMWARE, cx->enc_mem, cx);
+ 	if (sz <= 0)
+ 		return sz;
+ 
+@@ -408,7 +411,7 @@ int cx18_firmware_init(struct cx18 *cx)
+ 	cx18_init_scb(cx);
+ 
+ 	fw_entry_addr = 0;
+-	sz = load_apu_fw_direct("v4l-cx23418-apu.fw", cx->enc_mem, cx,
++	sz = load_apu_fw_direct(CX18_APU_FIRMWARE, cx->enc_mem, cx,
+ 				&fw_entry_addr);
+ 	if (sz <= 0)
+ 		return sz;
+@@ -451,3 +454,6 @@ int cx18_firmware_init(struct cx18 *cx)
+ 	cx18_write_reg_expect(cx, 0x14001400, 0xc78110, 0x00001400, 0x14001400);
+ 	return 0;
+ }
++
++MODULE_FIRMWARE(CX18_CPU_FIRMWARE);
++MODULE_FIRMWARE(CX18_APU_FIRMWARE);
+-- 
+1.7.9.5
+
+
+--------------020407030802040605000401--
