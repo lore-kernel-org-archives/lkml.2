@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab2GZVWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:22:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49659 "EHLO
+	id S1753077Ab2GZVWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:22:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55834 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab2GZVVw (ORCPT
+	with ESMTP id S1753228Ab2GZVWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:21:52 -0400
+	Thu, 26 Jul 2012 17:22:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 20/23] dm raid1: fix crash with mirror recovery and discard
-Date: Thu, 26 Jul 2012 14:19:59 -0700
-Message-Id: <20120726211407.699019627@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 19/23] dm thin: do not send discards to shared blocks
+Date: Thu, 26 Jul 2012 14:19:58 -0700
+Message-Id: <20120726211407.616176925@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -33,108 +33,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 751f188dd5ab95b3f2b5f2f467c38aae5a2877eb upstream.
+commit 650d2a06b4fe1cc1d218c20e256650f68bf0ca31 upstream.
 
-This patch fixes a crash when a discard request is sent during mirror
-recovery.
+When process_discard receives a partial discard that doesn't cover a
+full block, it sends this discard down to that block. Unfortunately, the
+block can be shared and the discard would corrupt the other snapshots
+sharing this block.
 
-Firstly, some background.  Generally, the following sequence happens during
-mirror synchronization:
-- function do_recovery is called
-- do_recovery calls dm_rh_recovery_prepare
-- dm_rh_recovery_prepare uses a semaphore to limit the number
-  simultaneously recovered regions (by default the semaphore value is 1,
-  so only one region at a time is recovered)
-- dm_rh_recovery_prepare calls __rh_recovery_prepare,
-  __rh_recovery_prepare asks the log driver for the next region to
-  recover. Then, it sets the region state to DM_RH_RECOVERING. If there
-  are no pending I/Os on this region, the region is added to
-  quiesced_regions list. If there are pending I/Os, the region is not
-  added to any list. It is added to the quiesced_regions list later (by
-  dm_rh_dec function) when all I/Os finish.
-- when the region is on quiesced_regions list, there are no I/Os in
-  flight on this region. The region is popped from the list in
-  dm_rh_recovery_start function. Then, a kcopyd job is started in the
-  recover function.
-- when the kcopyd job finishes, recovery_complete is called. It calls
-  dm_rh_recovery_end. dm_rh_recovery_end adds the region to
-  recovered_regions or failed_recovered_regions list (depending on
-  whether the copy operation was successful or not).
+This patch detects block sharing and ends the discard with success when
+sending it to the shared block.
 
-The above mechanism assumes that if the region is in DM_RH_RECOVERING
-state, no new I/Os are started on this region. When I/O is started,
-dm_rh_inc_pending is called, which increases reg->pending count. When
-I/O is finished, dm_rh_dec is called. It decreases reg->pending count.
-If the count is zero and the region was in DM_RH_RECOVERING state,
-dm_rh_dec adds it to the quiesced_regions list.
+The above change means that if the device supports discard it can't be
+guaranteed that a discard request zeroes data. Therefore, we set
+ti->discard_zeroes_data_unsupported.
 
-Consequently, if we call dm_rh_inc_pending/dm_rh_dec while the region is
-in DM_RH_RECOVERING state, it could be added to quiesced_regions list
-multiple times or it could be added to this list when kcopyd is copying
-data (it is assumed that the region is not on any list while kcopyd does
-its jobs). This results in memory corruption and crash.
-
-There already exist bypasses for REQ_FLUSH requests: REQ_FLUSH requests
-do not belong to any region, so they are always added to the sync list
-in do_writes. dm_rh_inc_pending does not increase count for REQ_FLUSH
-requests. In mirror_end_io, dm_rh_dec is never called for REQ_FLUSH
-requests. These bypasses avoid the crash possibility described above.
-
-These bypasses were improperly implemented for REQ_DISCARD when
-the mirror target gained discard support in commit
-5fc2ffeabb9ee0fc0e71ff16b49f34f0ed3d05b4 (dm raid1: support discard).
-
-In do_writes, REQ_DISCARD requests is always added to the sync queue and
-immediately dispatched (even if the region is in DM_RH_RECOVERING).  However,
-dm_rh_inc and dm_rh_dec is called for REQ_DISCARD resusts.  So it violates the
-rule that no I/Os are started on DM_RH_RECOVERING regions, and causes the list
-corruption described above.
-
-This patch changes it so that REQ_DISCARD requests follow the same path
-as REQ_FLUSH. This avoids the crash.
-
-Reference: https://bugzilla.redhat.com/837607
+Thin target discard support with this bug arrived in commit
+104655fd4dcebd50068ef30253a001da72e3a081 (dm thin: support discards).
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-raid1.c       |    2 +-
- drivers/md/dm-region-hash.c |    5 ++++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/md/dm-thin.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-raid1.c
-+++ b/drivers/md/dm-raid1.c
-@@ -1214,7 +1214,7 @@ static int mirror_end_io(struct dm_targe
- 	 * We need to dec pending if this was a write.
- 	 */
- 	if (rw == WRITE) {
--		if (!(bio->bi_rw & REQ_FLUSH))
-+		if (!(bio->bi_rw & (REQ_FLUSH | REQ_DISCARD)))
- 			dm_rh_dec(ms->rh, map_context->ll);
- 		return error;
- 	}
---- a/drivers/md/dm-region-hash.c
-+++ b/drivers/md/dm-region-hash.c
-@@ -404,6 +404,9 @@ void dm_rh_mark_nosync(struct dm_region_
- 		return;
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1240,7 +1240,10 @@ static void process_discard(struct thin_
+ 
+ 			cell_release_singleton(cell, bio);
+ 			cell_release_singleton(cell2, bio);
+-			remap_and_issue(tc, bio, lookup_result.block);
++			if ((!lookup_result.shared) && pool->pf.discard_passdown)
++				remap_and_issue(tc, bio, lookup_result.block);
++			else
++				bio_endio(bio, 0);
+ 		}
+ 		break;
+ 
+@@ -2575,6 +2578,7 @@ static int thin_ctr(struct dm_target *ti
+ 	if (tc->pool->pf.discard_enabled) {
+ 		ti->discards_supported = 1;
+ 		ti->num_discard_requests = 1;
++		ti->discard_zeroes_data_unsupported = 1;
  	}
  
-+	if (bio->bi_rw & REQ_DISCARD)
-+		return;
-+
- 	/* We must inform the log that the sync count has changed. */
- 	log->type->set_region_sync(log, region, 0);
- 
-@@ -524,7 +527,7 @@ void dm_rh_inc_pending(struct dm_region_
- 	struct bio *bio;
- 
- 	for (bio = bios->head; bio; bio = bio->bi_next) {
--		if (bio->bi_rw & REQ_FLUSH)
-+		if (bio->bi_rw & (REQ_FLUSH | REQ_DISCARD))
- 			continue;
- 		rh_inc(rh, dm_rh_bio_to_region(rh, bio));
- 	}
+ 	dm_put(pool_md);
 
 
