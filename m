@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab2GZVgn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:36:43 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55921 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab2GZVbG (ORCPT
+	id S1753483Ab2GZVg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:36:56 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58435 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450Ab2GZVa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:31:06 -0400
+	Thu, 26 Jul 2012 17:30:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 21/40] mm: migration: clean up unmap_and_move()
-Date: Thu, 26 Jul 2012 14:29:39 -0700
-Message-Id: <20120726211413.024008770@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>
+Subject: [ 09/40] mm: reduce the amount of work done when updating min_free_kbytes
+Date: Thu, 26 Jul 2012 14:29:27 -0700
+Message-Id: <20120726211411.924302819@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -35,148 +30,86 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Minchan Kim <minchan.kim@gmail.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 0dabec93de633a87adfbbe1d800a4c56cd19d73b upstream.
+commit 938929f14cb595f43cd1a4e63e22d36cab1e4a1f upstream.
 
-Stable note: Not tracked in Bugzilla. This patch makes later patches
-	easier to apply but has no other impact.
+Stable note: Fixes https://bugzilla.novell.com/show_bug.cgi?id=726210 .
+        Large machines with 1TB or more of RAM take a long time to boot
+        without this patch and may spew out soft lockup warnings.
 
-unmap_and_move() is one a big messy function.  Clean it up.
+When min_free_kbytes is updated, some pageblocks are marked
+MIGRATE_RESERVE.  Ordinarily, this work is unnoticable as it happens early
+in boot but on large machines with 1TB of memory, this has been reported
+to delay boot times, probably due to the NUMA distances involved.
 
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
+The bulk of the work is due to calling calling pageblock_is_reserved() an
+unnecessary amount of times and accessing far more struct page metadata
+than is necessary.  This patch significantly reduces the amount of work
+done by setup_zone_migrate_reserve() improving boot times on 1TB machines.
+
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/migrate.c |   75 +++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 40 insertions(+), 35 deletions(-)
+ mm/page_alloc.c |   40 ++++++++++++++++++++++++----------------
+ 1 file changed, 24 insertions(+), 16 deletions(-)
 
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -621,38 +621,18 @@ static int move_to_new_page(struct page
- 	return rc;
- }
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3418,25 +3418,33 @@ static void setup_zone_migrate_reserve(s
+ 		if (page_to_nid(page) != zone_to_nid(zone))
+ 			continue;
  
--/*
-- * Obtain the lock on page, remove all ptes and migrate the page
-- * to the newly allocated page in newpage.
-- */
--static int unmap_and_move(new_page_t get_new_page, unsigned long private,
--			struct page *page, int force, bool offlining, bool sync)
-+static int __unmap_and_move(struct page *page, struct page *newpage,
-+				int force, bool offlining, bool sync)
- {
--	int rc = 0;
--	int *result = NULL;
--	struct page *newpage = get_new_page(page, private, &result);
-+	int rc = -EAGAIN;
- 	int remap_swapcache = 1;
- 	int charge = 0;
- 	struct mem_cgroup *mem;
- 	struct anon_vma *anon_vma = NULL;
+-		/* Blocks with reserved pages will never free, skip them. */
+-		block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
+-		if (pageblock_is_reserved(pfn, block_end_pfn))
+-			continue;
+-
+ 		block_migratetype = get_pageblock_migratetype(page);
  
--	if (!newpage)
--		return -ENOMEM;
--
--	if (page_count(page) == 1) {
--		/* page was freed from under us. So we are done. */
--		goto move_newpage;
--	}
--	if (unlikely(PageTransHuge(page)))
--		if (unlikely(split_huge_page(page)))
--			goto move_newpage;
--
--	/* prepare cgroup just returns 0 or -ENOMEM */
--	rc = -EAGAIN;
--
- 	if (!trylock_page(page)) {
- 		if (!force || !sync)
--			goto move_newpage;
-+			goto out;
+-		/* If this block is reserved, account for it */
+-		if (reserve > 0 && block_migratetype == MIGRATE_RESERVE) {
+-			reserve--;
+-			continue;
+-		}
++		/* Only test what is necessary when the reserves are not met */
++		if (reserve > 0) {
++			/*
++			 * Blocks with reserved pages will never free, skip
++			 * them.
++			 */
++			block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
++			if (pageblock_is_reserved(pfn, block_end_pfn))
++				continue;
+ 
+-		/* Suitable for reserving if this block is movable */
+-		if (reserve > 0 && block_migratetype == MIGRATE_MOVABLE) {
+-			set_pageblock_migratetype(page, MIGRATE_RESERVE);
+-			move_freepages_block(zone, page, MIGRATE_RESERVE);
+-			reserve--;
+-			continue;
++			/* If this block is reserved, account for it */
++			if (block_migratetype == MIGRATE_RESERVE) {
++				reserve--;
++				continue;
++			}
++
++			/* Suitable for reserving if this block is movable */
++			if (block_migratetype == MIGRATE_MOVABLE) {
++				set_pageblock_migratetype(page,
++							MIGRATE_RESERVE);
++				move_freepages_block(zone, page,
++							MIGRATE_RESERVE);
++				reserve--;
++				continue;
++			}
+ 		}
  
  		/*
- 		 * It's not safe for direct compaction to call lock_page.
-@@ -668,7 +648,7 @@ static int unmap_and_move(new_page_t get
- 		 * altogether.
- 		 */
- 		if (current->flags & PF_MEMALLOC)
--			goto move_newpage;
-+			goto out;
- 
- 		lock_page(page);
- 	}
-@@ -785,27 +765,52 @@ uncharge:
- 		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
- unlock:
- 	unlock_page(page);
-+out:
-+	return rc;
-+}
-+
-+/*
-+ * Obtain the lock on page, remove all ptes and migrate the page
-+ * to the newly allocated page in newpage.
-+ */
-+static int unmap_and_move(new_page_t get_new_page, unsigned long private,
-+			struct page *page, int force, bool offlining, bool sync)
-+{
-+	int rc = 0;
-+	int *result = NULL;
-+	struct page *newpage = get_new_page(page, private, &result);
-+
-+	if (!newpage)
-+		return -ENOMEM;
- 
--move_newpage:
-+	if (page_count(page) == 1) {
-+		/* page was freed from under us. So we are done. */
-+		goto out;
-+	}
-+
-+	if (unlikely(PageTransHuge(page)))
-+		if (unlikely(split_huge_page(page)))
-+			goto out;
-+
-+	rc = __unmap_and_move(page, newpage, force, offlining, sync);
-+out:
- 	if (rc != -EAGAIN) {
-- 		/*
-- 		 * A page that has been migrated has all references
-- 		 * removed and will be freed. A page that has not been
-- 		 * migrated will have kepts its references and be
-- 		 * restored.
-- 		 */
-- 		list_del(&page->lru);
-+		/*
-+		 * A page that has been migrated has all references
-+		 * removed and will be freed. A page that has not been
-+		 * migrated will have kepts its references and be
-+		 * restored.
-+		 */
-+		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
- 		putback_lru_page(page);
- 	}
--
- 	/*
- 	 * Move the new page to the LRU. If migration was not successful
- 	 * then this will free the page.
- 	 */
- 	putback_lru_page(newpage);
--
- 	if (result) {
- 		if (rc)
- 			*result = rc;
 
 
