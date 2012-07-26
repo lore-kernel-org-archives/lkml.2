@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab2GZLza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:55:30 -0400
+	id S1752416Ab2GZLzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:55:38 -0400
 Received: from mail-gh0-f174.google.com ([209.85.160.174]:53878 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab2GZLz1 (ORCPT
+	with ESMTP id S1752321Ab2GZLzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:55:27 -0400
+	Thu, 26 Jul 2012 07:55:35 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v4 00/17] vfs: add the ability to retry on ESTALE to several syscalls
-Date: Thu, 26 Jul 2012 07:55:03 -0400
-Message-Id: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v4 05/17] vfs: remove user_path_at_empty
+Date: Thu, 26 Jul 2012 07:55:08 -0400
+Message-Id: <1343303720-11199-6-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
+References: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is a respin of the one I sent on June 29th. The main
-reason for the resend is to deal with some minor merge conflicts that
-have cropped up due to recent changes.
+...there are no more callers.
 
-This series depends on the "audit" series that I sent earlier today.
-It's also available via the "estale" branch of my git tree:
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c            | 12 +++---------
+ include/linux/namei.h |  1 -
+ 2 files changed, 3 insertions(+), 10 deletions(-)
 
-    git://git.samba.org/jlayton/linux.git estale
-
-The original cover letter text follows:
-
-ESTALE errors are a source of pain for many users, primarily those who
-are doing work on NFS. When userspace provides a path to a syscall, then
-there's really little excuse for returning ESTALE. If userspace gave us
-a path that we had to lookup in order to do the call, then it's not
-particularly helpful to return ESTALE just because that path went stale
-before we could do the actual operation.
-
-We can and should do better here. The kernel should instead catch that
-error and retry the lookup and call, while forcing a revalidation of all
-dentries involved.
-
-Unfortunately fixing this requires touching the syscalls themselves, or
-at least their immediate helper functions. Not all syscalls can be
-retried -- only those that take a pathname as an argument.
-
-With this patchset, I've decided to take the relatively less
-controversial approach of just having the kernel retry once when it gets
-an ESTALE error. I still think that it's not as strong as it should be,
-but it should improve the situation in many common cases.
-
-I've also tried to engineer this in such a way that if we do decide that
-we need to retry more than once, then it should be easy to change that
-later. This should cover all of the syscalls in fs/stat.c and
-fs/namei.c.
-
-Once these are merged, I'll look at adding similar handling to other
-path-based syscalls in a later set. A quick look shows that we have
-about 50-odd path-based syscalls that will need similar handling, so
-this is just a start.
-
-Jeff Layton (17):
-  vfs: add a retry_estale helper function to handle retries on ESTALE
-  vfs: add a kern_path_at function
-  vfs: make fstatat retry on ESTALE errors from getattr call
-  vfs: fix readlinkat to retry on ESTALE
-  vfs: remove user_path_at_empty
-  vfs: turn "empty" arg in getname_flags into a bool
-  vfs: add new "reval" argument to kern_path_create
-  vfs: fix mknodat to retry on ESTALE errors
-  vfs: fix mkdir to retry on ESTALE errors
-  vfs: fix symlinkat to retry on ESTALE errors
-  vfs: fix linkat to retry on ESTALE errors
-  vfs: make rmdir retry on ESTALE errors
-  vfs: make do_unlinkat retry on ESTALE errors
-  vfs: fix renameat to retry on ESTALE errors
-  vfs: remove user_path_parent
-  vfs: have do_sys_truncate retry once on an ESTALE error
-  vfs: have faccessat retry once on an ESTALE error
-
- drivers/base/devtmpfs.c |   7 +-
- fs/namei.c              | 407 +++++++++++++++++++++++++++++-------------------
- fs/open.c               | 162 ++++++++++---------
- fs/stat.c               |  44 ++++--
- include/linux/fs.h      |  22 +++
- include/linux/namei.h   |   4 +-
- net/unix/af_unix.c      |   3 +-
- 7 files changed, 400 insertions(+), 249 deletions(-)
-
+diff --git a/fs/namei.c b/fs/namei.c
+index 1ab4400..244ee8b 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1988,10 +1988,10 @@ int kern_path_at(int dfd, const char *name, unsigned flags, struct path *path)
+ 	return err;
+ }
+ 
+-int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
+-		 struct path *path, int *empty)
++int user_path_at(int dfd, const char __user *name, unsigned flags,
++		 struct path *path)
+ {
+-	char *tmp = getname_flags(name, flags, empty);
++	char *tmp = getname_flags(name, flags, NULL);
+ 	int err;
+ 
+ 	if (IS_ERR(tmp)) {
+@@ -2003,12 +2003,6 @@ int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
+ 	return err;
+ }
+ 
+-int user_path_at(int dfd, const char __user *name, unsigned flags,
+-		 struct path *path)
+-{
+-	return user_path_at_empty(dfd, name, flags, path, NULL);
+-}
+-
+ static int user_path_parent(int dfd, const char __user *path,
+ 			struct nameidata *nd, char **name)
+ {
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 002dc55..dc2a306 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -57,7 +57,6 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+ 
+ extern int kern_path_at(int, const char *, unsigned, struct path *);
+ extern int user_path_at(int, const char __user *, unsigned, struct path *);
+-extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
+ 
+ #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
+ #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
 -- 
 1.7.11.2
 
