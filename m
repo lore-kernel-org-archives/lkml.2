@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab2GZEYU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 00:24:20 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:40153 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab2GZEYS (ORCPT
+	id S1751331Ab2GZEZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 00:25:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33950 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab2GZEZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 00:24:18 -0400
-Date: Thu, 26 Jul 2012 01:24:11 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Masatake YAMATO <yamato@redhat.com>
-Cc: andrei.emeltchenko.news@gmail.com, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH v5 8/8] Added /proc/net/sco via bt_procfs_init()
-Message-ID: <20120726042411.GA3226@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Masatake YAMATO <yamato@redhat.com>,
-	andrei.emeltchenko.news@gmail.com, linux-kernel@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org
-References: <20120716.222018.2029110835026223294.yamato@redhat.com>
- <20120725001214.GP20029@joana>
- <20120725003507.GR20029@joana>
- <20120726.013012.2228722667223437938.yamato@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120726.013012.2228722667223437938.yamato@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Jul 2012 00:25:46 -0400
+Date: Thu, 26 Jul 2012 14:25:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: linux-next: manual merge of the akpm tree with the rr tree
+Message-Id: <20120726142538.655bbbff1cc64fd141f950b1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__26_Jul_2012_14_25_38_+1000_sYtt9v0Mrla=mTKV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masatake,
+--Signature=_Thu__26_Jul_2012_14_25_38_+1000_sYtt9v0Mrla=mTKV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* Masatake YAMATO <yamato@redhat.com> [2012-07-26 01:30:12 +0900]:
+Hi Andrew,
 
-> Added /proc/net/sco via bt_procfs_init().
-> 
-> Signed-off-by: Masatake YAMATO <yamato@redhat.com>
-> ---
->  net/bluetooth/sco.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
+Today's linux-next merge of the akpm tree got a conflict in
+arch/s390/Kconfig arch/x86/Kconfig between commit 380470027b5c ("Make
+most arch asm/module.h files use asm-generic/module.h") from the rr tree
+and commit 3fcc9766e733 ("atomic64_test: simplify the #ifdef for
+atomic64_dec_if_positive() test") from the akpm tree.
 
-All 8 patches have been applied to bluetooth-next. Thanks.
+Just context changes.  I fixed it up and can carry it as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	Gustavo
+--Signature=_Thu__26_Jul_2012_14_25_38_+1000_sYtt9v0Mrla=mTKV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQEMbCAAoJEECxmPOUX5FEi/EP/iddUsKlk/BQH6sj84sUozW5
+9fTRmRbxPxAX8+/gn4mM7oEeS4N2iLmPO8wwYgEvYof+oOrS2EEM+8l00SHzB1vv
+Hkul/IbTrUv21EUNY97sePojiYFIvMlmLCDc8LkC7uq/G5DmB0Te1x3OCPOT7r8N
+A6TWkcqyITSz+/0B1fd8sUuATBa2Iydy6yBZ0i8UnkGeiB40iFsWxztJzyzUOCpy
+erNvWT2P9DyYQEUmfsZJxQxowI41gUrm4J8PJkQ4M9Qe33n9Zy/5EYAZSk6cO8ID
+YLK7+kpqXmy2AX7hTxJ3TzqUbIrPKHbNAqI/FHvZj2xj/TSavsEhi+QOOBZFrjYi
+CxFH9HLX0NUOW8OpKGX0geCkvgJckT+ZG/CsesyLiHTiKtMu2HFBrBfeFn2Td26u
++wKDr7xHNVucCsCI0S5rqLpRYiz1o6MSfZTDfPxq86e0nWhoedRsjiECd7zI6no+
+XwRp5WsgEbMeR/fEbESiNmRaqzT/mqksf2qiC7mDAqFVRk84FEUuMJ21DOXF2no6
+fLTYWuZ/SmEArntQ4wwkQMe1t8HkxI43eDLROEfNPUeuIw2vi7jQHWhrN5lux8eE
+RUMKsBbNT8VKofk8zQXeFY/F/bizbiOxrp8T5xamU2JsAYZUGxEMRxA1RTlfERBd
+wANUCebtYF2BOvNMDEfM
+=hKyV
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__26_Jul_2012_14_25_38_+1000_sYtt9v0Mrla=mTKV--
