@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab2GZMrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 08:47:48 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61287 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab2GZMrn (ORCPT
+	id S1752443Ab2GZMyw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 08:54:52 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38386 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab2GZMyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 08:47:43 -0400
-Date: Thu, 26 Jul 2012 20:47:32 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jeff Garzik <jgarzik@pobox.com>, Lin Ming <minggr@gmail.com>,
-        Jeff Wu <jeff.wu@amd.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>
-Subject: Re: [PATCH v3 6/7] scsi: sr: balance sr disk events block depth
-Message-ID: <20120726124729.GB2022@localhost.localdomain>
-References: <1343297129-28174-1-git-send-email-aaron.lu@amd.com>
- <1343297129-28174-7-git-send-email-aaron.lu@amd.com>
- <501121C9.7080806@mvista.com>
+	Thu, 26 Jul 2012 08:54:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <501121C9.7080806@mvista.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <CALyraeOQZ+FPTqaOk6XjHsZwwCfNuo2XLo6bhw44maSEkDf7tA@mail.gmail.com>
+References: <CALyraeOQZ+FPTqaOk6XjHsZwwCfNuo2XLo6bhw44maSEkDf7tA@mail.gmail.com>
+Date: Thu, 26 Jul 2012 08:54:49 -0400
+Message-ID: <CALyraeM9WXraZeV-6-YC7NqGfY8yokkepjeznwJoZ+EbHhdxnQ@mail.gmail.com>
+Subject: Re: orphan process is causing deadlock in __kernel_vsyscall ()
+From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
+        linux-newbie@vger.kernel.org, linux-netdev <netdev@vger.kernel.org>,
+        kernelnewbies <Kernelnewbies@kernelnewbies.org>,
+        Kernel-newbies <kernelnewbies@nl.linux.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 02:54:01PM +0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 26-07-2012 14:05, Aaron Lu wrote:
-> 
-> >When the ODD is resumed, disk_unblock_events should be called when:
-> >1 The ODD is runtime resumed;
-> >2 System is resuming from S3 and the ODD is runtime suspended before S3;
-> >But not when the system is resuming from S3 and the ODD is runtime
-> >active before S3.
-> 
-> >So seperate the resume calls, one for system resume and one for runtime
-> >resume to do different things accordingly.
-> 
-> >Signed-off-by: Aaron Lu <aaron.lu@amd.com>
-> >---
-> >  drivers/scsi/sr.c | 21 +++++++++++++++++++++
-> >  1 file changed, 21 insertions(+)
-> 
-> >diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-> >index fd1c2f6..b8c2f9d 100644
-> >--- a/drivers/scsi/sr.c
-> >+++ b/drivers/scsi/sr.c
-> [...]
-> >@@ -211,6 +217,21 @@ static int sr_suspend(struct device *dev, pm_message_t msg)
-> >
-> >  static int sr_resume(struct device *dev)
-> >  {
-> >+	struct scsi_cd *cd = dev_get_drvdata(dev);
-> >+
-> >+	/*
-> >+	 * If ODD is runtime suspended before system pm, unblock disk
-> >+	 * events now since on system resume, we will fully resume it
-> 
->    Comma not needed.
+> Hello All,
+>
+> I am debugging a problem which I do not know how to solve. I know what
+> is happening, but cannot find solution to it. If anyone has any
+> suggestions or solution that would be really grateful and I appreciate
+> it.
+>
+> Here is the description.
+>
+> I have a thread which spawns a child process using fork() and in child
+> context it execv to shell and parent thread waits on waitpid(). This
+> child process is nothing but a shell /bin/sh, so that from program I
+> can create shell and run some commands.
+> In this shell instance, I run tshark for capturing network traffic. I
+> have really high traffic going, so system is really busy. All is good
+> so far, but when I send SIGKILL to child process (shell) from another
+> thread from same application,
+> child process (shell) gets terminated and tshark is assigned to
+> init(1) process as orphan. The parent thread which spawned the child
+> process unblocks from waitpid() after cleaning child instance and
+> continues it execution.
+>
+> Here is the problem:
+> Once the parent thread resumes from waitpid(), it hits fprintf to
+> print message "exiting from shell" to console. In here the main thread
+> gets blocked in __kernel_vsyscall () entered from fprintf. Following
+> is my stack trace from gdb.
+> But after some more debugging and found that, if I kill from another
+> shell "tshark" process which is assigned to init(1) as child, the
+> parent thread unblocks from __kernel_vsyscall ().
+>
+> Can anyone tell what is going on, is this related to futex spinning
+> problem where lock is been held by tshark. How would I approach this
+> problem?
+> Or is there a way to kill all child process of a process without
+> making them orphan. Because when a child process is running at the
+> time parent is exiting, that child process is assigned to init(1) as
+> orphan process.
+> Can this behavior be modified. Please let me know any suggestions and
+> thoughts. Thanks in advance.
+>
+> --
+> Regards,
+> Sri.
+>
+> (gdb) backtrace
+> #0  0xffffe424 in __kernel_vsyscall ()
+> #1  0xb7e6396b in write () from /lib/libc.so.6
+> #2  0xb7e0c2ef in _IO_new_file_write () from /lib/libc.so.6
+> #3  0xb7e0bf93 in new_do_write () from /lib/libc.so.6
+> #4  0xb7e0c296 in _IO_new_do_write () from /lib/libc.so.6
+> #5  0xb7e0ce20 in _IO_new_file_overflow () from /lib/libc.so.6
+> #6  0xb7e0c0cd in _IO_new_file_xsputn () from /lib/libc.so.6
+> #7  0xb7de3634 in vfprintf () from /lib/libc.so.6
+> #8  0x09ad62a2 in acme_fprintf (stream=0xb7ee2560,
+>     format=0x9f17694 "shell exited. returning to acli\n")
+>     at /home/svemulpali/cc/svemulpali_SCOTTY_main/linux/private/common/src/coutOverride.cpp:42
+> #9  0x094a9345 in vxShellCmdStartWait (syscmd=0x0)
+>     at /home/svemulpali/cc/svemulpali_SCOTTY_main/linux/private/lib/stub/vxShellLib.cpp:210
 
-Thanks.
 
-> 
-> >+	 * and set its rumtime status to active.
-> 
->    s/rumtime/runtime/. Nice typo. %-)
 
-Thanks, and I'll use a spell checker next time to avoid such mistakes.
-
--Aaron
+-- 
+Regards,
+Sri.
