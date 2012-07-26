@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2GZVbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:31:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58435 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab2GZVbC (ORCPT
+	id S1753472Ab2GZVbA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:31:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62132 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab2GZVas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:31:02 -0400
+	Thu, 26 Jul 2012 17:30:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 20/40] mm: zone_reclaim: make isolate_lru_page() filter-aware
-Date: Thu, 26 Jul 2012 14:29:38 -0700
-Message-Id: <20120726211412.942842840@linuxfoundation.org>
+        Johannes Weiner <jweiner@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [ 16/40] vmscan: abort reclaim/compaction if compaction can proceed
+Date: Thu, 26 Jul 2012 14:29:34 -0700
+Message-Id: <20120726211412.557769929@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -35,29 +33,24 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Minchan Kim <minchan.kim@gmail.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit f80c0673610e36ae29d63e3297175e22f70dde5f upstream.
+commit e0c23279c9f800c403f37511484d9014ac83adec upstream.
 
-Stable note: Not tracked in Bugzilla. THP and compaction disrupt the LRU list
-	leading to poor reclaim decisions which has a variable
-	performance impact.
+Stable note: Not tracked on Bugzilla. THP and compaction was found to
+	aggressively reclaim pages and stall systems under different
+	situations that was addressed piecemeal over time.
 
-In __zone_reclaim case, we don't want to shrink mapped page.  Nonetheless,
-we have isolated mapped page and re-add it into LRU's head.  It's
-unnecessary CPU overhead and makes LRU churning.
+If compaction can proceed, shrink_zones() stops doing any work but its
+callers still call shrink_slab() which raises the priority and potentially
+sleeps.  This is unnecessary and wasteful so this patch aborts direct
+reclaim/compaction entirely if compaction can proceed.
 
-Of course, when we isolate the page, the page might be mapped but when we
-try to migrate the page, the page would be not mapped.  So it could be
-migrated.  But race is rare and although it happens, it's no big deal.
-
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <jweiner@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
@@ -65,74 +58,81 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h |    2 ++
- mm/vmscan.c            |   20 ++++++++++++++++++--
- 2 files changed, 20 insertions(+), 2 deletions(-)
+ mm/vmscan.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -164,6 +164,8 @@ static inline int is_unevictable_lru(enu
- #define ISOLATE_ACTIVE		((__force isolate_mode_t)0x2)
- /* Isolate clean file */
- #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
-+/* Isolate unmapped file */
-+#define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
- 
- /* LRU Isolation modes. */
- typedef unsigned __bitwise__ isolate_mode_t;
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1048,6 +1048,9 @@ int __isolate_lru_page(struct page *page
- 	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
- 		return ret;
+@@ -2037,14 +2037,19 @@ restart:
+  *
+  * If a zone is deemed to be full of pinned pages then just give it a light
+  * scan then give up on it.
++ *
++ * This function returns true if a zone is being reclaimed for a costly
++ * high-order allocation and compaction is either ready to begin or deferred.
++ * This indicates to the caller that it should retry the allocation or fail.
+  */
+-static void shrink_zones(int priority, struct zonelist *zonelist,
++static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
++	bool should_abort_reclaim = false;
  
-+	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
-+		return ret;
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2061,19 +2066,20 @@ static void shrink_zones(int priority, s
+ 				continue;	/* Let kswapd poll it */
+ 			if (COMPACTION_BUILD) {
+ 				/*
+-				 * If we already have plenty of memory
+-				 * free for compaction, don't free any
+-				 * more.  Even though compaction is
+-				 * invoked for any non-zero order,
+-				 * only frequent costly order
+-				 * reclamation is disruptive enough to
+-				 * become a noticable problem, like
+-				 * transparent huge page allocations.
++				 * If we already have plenty of memory free for
++				 * compaction in this zone, don't free any more.
++				 * Even though compaction is invoked for any
++				 * non-zero order, only frequent costly order
++				 * reclamation is disruptive enough to become a
++				 * noticable problem, like transparent huge page
++				 * allocations.
+ 				 */
+ 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+ 					(compaction_suitable(zone, sc->order) ||
+-					 compaction_deferred(zone)))
++					 compaction_deferred(zone))) {
++					should_abort_reclaim = true;
+ 					continue;
++				}
+ 			}
+ 			/*
+ 			 * This steals pages from memory cgroups over softlimit
+@@ -2092,6 +2098,8 @@ static void shrink_zones(int priority, s
+ 
+ 		shrink_zone(priority, zone, sc);
+ 	}
 +
- 	if (likely(get_page_unless_zero(page))) {
++	return should_abort_reclaim;
+ }
+ 
+ static bool zone_reclaimable(struct zone *zone)
+@@ -2156,7 +2164,9 @@ static unsigned long do_try_to_free_page
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		shrink_zones(priority, zonelist, sc);
++		if (shrink_zones(priority, zonelist, sc))
++			break;
++
  		/*
- 		 * Be careful not to clear PageLRU until after we're
-@@ -1471,6 +1474,12 @@ shrink_inactive_list(unsigned long nr_to
- 		reclaim_mode |= ISOLATE_ACTIVE;
- 
- 	lru_add_drain();
-+
-+	if (!sc->may_unmap)
-+		reclaim_mode |= ISOLATE_UNMAPPED;
-+	if (!sc->may_writepage)
-+		reclaim_mode |= ISOLATE_CLEAN;
-+
- 	spin_lock_irq(&zone->lru_lock);
- 
- 	if (scanning_global_lru(sc)) {
-@@ -1588,19 +1597,26 @@ static void shrink_active_list(unsigned
- 	struct page *page;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
- 	unsigned long nr_rotated = 0;
-+	isolate_mode_t reclaim_mode = ISOLATE_ACTIVE;
- 
- 	lru_add_drain();
-+
-+	if (!sc->may_unmap)
-+		reclaim_mode |= ISOLATE_UNMAPPED;
-+	if (!sc->may_writepage)
-+		reclaim_mode |= ISOLATE_CLEAN;
-+
- 	spin_lock_irq(&zone->lru_lock);
- 	if (scanning_global_lru(sc)) {
- 		nr_taken = isolate_pages_global(nr_pages, &l_hold,
- 						&pgscanned, sc->order,
--						ISOLATE_ACTIVE, zone,
-+						reclaim_mode, zone,
- 						1, file);
- 		zone->pages_scanned += pgscanned;
- 	} else {
- 		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
- 						&pgscanned, sc->order,
--						ISOLATE_ACTIVE, zone,
-+						reclaim_mode, zone,
- 						sc->mem_cgroup, 1, file);
- 		/*
- 		 * mem_cgroup_isolate_pages() keeps track of
+ 		 * Don't shrink slabs when reclaiming memory from
+ 		 * over limit cgroups
 
 
