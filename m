@@ -1,46 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab2GZH60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 03:58:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18906 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab2GZH6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 03:58:25 -0400
-Message-ID: <5010F896.8090409@redhat.com>
-Date: Thu, 26 Jul 2012 09:58:14 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
-        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
- Fix address translation failure of HighMem pages used by sg list)
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com> <5010F07E.7050506@redhat.com> <5010F831.9030300@panasas.com>
-In-Reply-To: <5010F831.9030300@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751979Ab2GZIEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:04:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54124 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab2GZIEb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 04:04:31 -0400
+Message-ID: <1343289850.26034.79.camel@twins>
+Subject: Re: [PATCH 1/1] kthread: disable preemption during complete()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Boonstoppel <pboonstoppel@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Andy Walls <awalls@md.metrocast.net>,
+        Diwakar Tundlam <dtundlam@nvidia.com>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Date: Thu, 26 Jul 2012 10:04:10 +0200
+In-Reply-To: <20120725224044.GC32378@google.com>
+References: <5FBF8E85CA34454794F0F7ECBA79798F379D364859@HQMAIL04.nvidia.com>
+	 <20120725000901.GA5304@google.com>
+	 <5FBF8E85CA34454794F0F7ECBA79798F379D36485E@HQMAIL04.nvidia.com>
+	 <20120725224044.GC32378@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 26/07/2012 09:56, Boaz Harrosh ha scritto:
->> > In the meanwhile, we still have a bug to fix, and we need to choose
->> > between Sen Wang's v1 (sg_set_page) or v2 (value assignment).  I'm still
->> > leaning more towards v2, if only because I already tested that one myself.
+On Wed, 2012-07-25 at 15:40 -0700, Tejun Heo wrote:
+> (cc'ing Oleg and Peter)
+
+Right, if you're playing games with preemption, always add the rt and
+sched folks.. added mingo and tglx.
+
+> On Wed, Jul 25, 2012 at 03:35:32PM -0700, Peter Boonstoppel wrote:
+> > After a kthread is created it signals the requester using complete()
+> > and enters TASK_UNINTERRUPTIBLE. However, since complete() wakes up
+> > the requesting thread this can cause a preemption. The preemption will
+> > not remove the task from the runqueue (for that schedule() has to be
+> > invoked directly).
+> > 
+> > This is a problem if directly after kthread creation you try to do a
+> > kthread_bind(), which will block in HZ steps until the thread is off
+> > the runqueue.
+> > 
+> > This patch disables preemption during complete(), since we call
+> > schedule() directly afterwards, so it will correctly enter
+> > TASK_UNINTERRUPTIBLE. This speeds up kthread creation/binding during
+> > cpu hotplug significantly.
+
+tglx has patches that make the kthread create/destroy stuff from hotplug
+go away.. that seems like the better approach.
+
+
+> > Signed-off-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
+> > ---
+> >  kernel/kthread.c |   11 +++++++++++
+> >  1 files changed, 11 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/kthread.c b/kernel/kthread.c
+> > index b579af5..757d8dd 100644
+> > --- a/kernel/kthread.c
+> > +++ b/kernel/kthread.c
+> > @@ -16,6 +16,7 @@
+> >  #include <linux/mutex.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/freezer.h>
+> > +#include <linux/preempt.h>
+> >  #include <trace/events/sched.h>
+> >  
+> >  static DEFINE_SPINLOCK(kthread_create_lock);
+> > @@ -113,7 +114,17 @@ static int kthread(void *_create)
+> >  	/* OK, tell user we're spawned, wait for stop or wakeup */
+> >  	__set_current_state(TASK_UNINTERRUPTIBLE);
+> >  	create->result = current;
+> > +
+> > +	/*
+> > +	 * Disable preemption so we enter TASK_UNINTERRUPTIBLE after
+> > +	 * complete() instead of possibly being preempted. This speeds
+> > +	 * up clients that do a kthread_bind() directly after
+> > +	 * creation.
+> > +	 */
+> > +	preempt_disable();
 > 
-> It's your call, you know what I think ;-)
-> 
-> I Agree none of them are bugs in current code, they will both work
-> just the same.
+> Shouldn't this happen before setting current state to UNINTERRUPTIBLE?
+> What prevents preemption happening right above preempt_disable()?
 
-Cool.  Then, Sen, please fix the commit message in v2 and repost.
+Nothing, it also doesn't matter that much, you could get preempted right
+before preempt_disable() and end up in the same place.
 
-> Please CC me on the "convert to sg copy-less" patches, It looks interesting
+The main thing is avoiding the wakeup preemption from the complete()
+because we're going to sleep right after anyway.
 
-Sure.
+The comment doesn't really make that clear.
 
-Paolo
+> >  	complete(&create->done);
+> > +	preempt_enable_no_resched();
+> > +
+> >  	schedule();
+
+Other than that it seems fine, although I know tglx just loves new
+preempt_enable_no_resched() sites ;-)
