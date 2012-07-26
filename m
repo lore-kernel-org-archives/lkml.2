@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab2GZLUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:20:39 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:51703 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab2GZLUi (ORCPT
+	id S1752404Ab2GZLVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:21:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63779 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2GZLVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:20:38 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hideki EIRAKU <hdk@igel.co.jp>
-Cc: Russell King <linux@arm.linux.org.uk>, Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        alsa-devel@alsa-project.org, Katsuya MATSUBARA <matsu@igel.co.jp>
-Subject: Re: [PATCH v2 4/4] fbdev: sh_mobile_lcdc: use dma_mmap_coherent if available
-Date: Thu, 26 Jul 2012 13:20:44 +0200
-Message-ID: <1820152.JumtPU1V17@avalon>
-User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <1343301191-26001-5-git-send-email-hdk@igel.co.jp>
-References: <1343301191-26001-1-git-send-email-hdk@igel.co.jp> <1343301191-26001-5-git-send-email-hdk@igel.co.jp>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 26 Jul 2012 07:21:20 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: eparis@redhat.com, viro@zeniv.linux.org.uk
+Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 0/9] audit: overhaul audit_names handling to allow for retrying on path-based syscalls
+Date: Thu, 26 Jul 2012 07:21:04 -0400
+Message-Id: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eiraku-san,
+This patchset is a minor respin of the series that I posted June 26th.
+The main reason is to deal with some fairly minor merge conflicts that
+have cropped up due to recent changes. This patch also relies on the
+patch that I sent separately yesterday entitled "vfs: don't let do_last
+pass negative dentry to audit_inode".
 
-On Thursday 26 July 2012 20:13:11 Hideki EIRAKU wrote:
-> fb_mmap() implemented in fbmem.c uses smem_start as the physical
-> address of the frame buffer.  In the sh_mobile_lcdc driver, the
-> smem_start is a dma_addr_t that is not a physical address when IOMMU is
-> enabled.  dma_mmap_coherent() maps the address correctly.  It is
-> available on ARM platforms.
-> 
-> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
+This series is available via the "audit" branch of my git tree as well:
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+    git://git.samba.org/jlayton/linux.git audit
+
+The original cover letter text follows:
+
+I recently posted a set of patches to have the kernel retry the lookup
+and call when path-based syscalls would ordinarily return ESTALE. Al
+took a look and pointed out that this would break the fragile logic that
+handles the audit_names for syscall auditing.
+
+This patchset comprises a number of incremental changes that should make
+it ok to retry on a path-based syscall. The main caveat is that the retry
+mustn't redo the getname() on the strings involved.
+
+Unfortunately, we don't have anything that really describes what the
+correct behavior is for this stuff, so I'm shooting here for "no
+discernable difference" on a retry.
+
+This seems to do the right thing in the cases that I've tested; mostly
+the normal case where things succeed or fail for some reason and where
+the syscall is retried after an ESTALE error.
+
+Review is of course appreciated. There are some fixes in here too for
+some subtle bugs in the existing code. Some of these patches may also
+help performance in some cases, but I haven't measured it for that.
+
+I'd like to see this patchset go into 3.6 if at all possible.
+
+Eric Paris (1):
+  audit: make audit_compare_dname_path use parent_len helper
+
+Jeff Layton (8):
+  audit: remove unnecessary NULL ptr checks from do_path_lookup
+  audit: pass in dentry to audit_copy_inode wherever possible
+  audit: reverse arguments to audit_inode_child
+  audit: add a new "type" field to audit_names struct
+  audit: set the name_len in audit_inode for parent lookups
+  audit: remove dirlen argument to audit_compare_dname_path
+  audit: optimize audit_compare_dname_path
+  audit: overhaul __audit_inode_child to accomodate retrying
+
+ fs/btrfs/ioctl.c         |   2 +-
+ fs/namei.c               |  22 ++++-----
+ fs/open.c                |   4 +-
+ fs/xattr.c               |   8 ++--
+ include/linux/audit.h    |  36 ++++++++++-----
+ include/linux/fsnotify.h |   8 ++--
+ ipc/mqueue.c             |   8 ++--
+ kernel/audit.h           |   7 ++-
+ kernel/audit_watch.c     |   3 +-
+ kernel/auditfilter.c     |  65 +++++++++++++++++----------
+ kernel/auditsc.c         | 115 ++++++++++++++++++++++++++++-------------------
+ 11 files changed, 166 insertions(+), 112 deletions(-)
 
 -- 
-Regards,
-
-Laurent Pinchart
+1.7.11.2
 
