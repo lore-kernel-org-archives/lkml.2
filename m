@@ -1,83 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2GZPUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:20:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45177 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab2GZPUu (ORCPT
+	id S1752779Ab2GZPUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:20:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38243 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab2GZPUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:20:50 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH] uprobes: don't enable/disable signle step if the user did it
-Date: Thu, 26 Jul 2012 17:20:43 +0200
-Message-Id: <1343316043-13475-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 26 Jul 2012 11:20:53 -0400
+Date: Thu, 26 Jul 2012 08:19:55 -0700
+From: tip-bot for Julia Lawall <Julia.Lawall@lip6.fr>
+Message-ID: <tip-41fb433b63cc4745f4918fdaf295763da5ca826c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        Julia.Lawall@lip6.fr, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Julia.Lawall@lip6.fr, tglx@linutronix.de
+In-Reply-To: <1342284188-19176-7-git-send-email-Julia.Lawall@lip6.fr>
+References: <1342284188-19176-7-git-send-email-Julia.Lawall@lip6.fr>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] arch/x86/kernel/kdebugfs.c:
+  Ensure a consistent return value in error case
+Git-Commit-ID: 41fb433b63cc4745f4918fdaf295763da5ca826c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jul 2012 08:20:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If someone is using single stepping over uprobe brackpoint then after
-we pass the uprobe single step, single stepping is disabled and the user
-who enebaled them in the first place does not know anything about this.
+Commit-ID:  41fb433b63cc4745f4918fdaf295763da5ca826c
+Gitweb:     http://git.kernel.org/tip/41fb433b63cc4745f4918fdaf295763da5ca826c
+Author:     Julia Lawall <Julia.Lawall@lip6.fr>
+AuthorDate: Sat, 14 Jul 2012 18:43:08 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 26 Jul 2012 15:07:20 +0200
 
-This patch avoids enabling / disabling the single step mode if it is
-already enabled.
+arch/x86/kernel/kdebugfs.c: Ensure a consistent return value in error case
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Typically, the return value desired for the failure of a
+function with an integer return value is a negative integer.  In
+these cases, the return value is sometimes a negative integer
+and sometimes 0, due to a subsequent initialization of the
+return variable within the loop.
+
+A simplified version of the semantic match that finds this
+problem is: (http://coccinelle.lip6.fr/)
+
+//<smpl>
+@r exists@
+identifier ret;
+position p;
+constant C;
+expression e1,e3,e4;
+statement S;
+@@
+
+ret = -C
+... when != ret = e3
+    when any
+if@p (...) S
+... when any
+if (\(ret != 0\|ret < 0\|ret > 0\) || ...) { ... return ...; }
+... when != ret = e3
+    when any
+*if@p (...)
+{
+  ... when != ret = e4
+  return ret;
+}
+//</smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Link: http://lkml.kernel.org/r/1342284188-19176-7-git-send-email-Julia.Lawall@lip6.fr
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/uprobes.h |    2 ++
- kernel/events/uprobes.c |   10 ++++++++--
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/kernel/kdebugfs.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index efe4b33..1be2d44 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -44,6 +44,8 @@ struct inode;
- #define UPROBE_RUN_HANDLER	0x2
- /* Can skip singlestep */
- #define UPROBE_SKIP_SSTEP	0x4
-+/* user does also singlestep */
-+#define UPROBE_USER_SSTEP	0x8
+diff --git a/arch/x86/kernel/kdebugfs.c b/arch/x86/kernel/kdebugfs.c
+index 1d5d31e..dc1404b 100644
+--- a/arch/x86/kernel/kdebugfs.c
++++ b/arch/x86/kernel/kdebugfs.c
+@@ -107,7 +107,7 @@ static int __init create_setup_data_nodes(struct dentry *parent)
+ {
+ 	struct setup_data_node *node;
+ 	struct setup_data *data;
+-	int error = -ENOMEM;
++	int error;
+ 	struct dentry *d;
+ 	struct page *pg;
+ 	u64 pa_data;
+@@ -121,8 +121,10 @@ static int __init create_setup_data_nodes(struct dentry *parent)
  
- struct uprobe_consumer {
- 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index f935327..772eb3a 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1528,7 +1528,10 @@ static void handle_swbp(struct pt_regs *regs)
+ 	while (pa_data) {
+ 		node = kmalloc(sizeof(*node), GFP_KERNEL);
+-		if (!node)
++		if (!node) {
++			error = -ENOMEM;
+ 			goto err_dir;
++		}
  
- 	utask->state = UTASK_SSTEP;
- 	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
--		user_enable_single_step(current);
-+		if (test_tsk_thread_flag(current, TIF_SINGLESTEP))
-+			uprobe->flags |= UPROBE_USER_SSTEP;
-+		else
-+			user_enable_single_step(current);
- 		return;
- 	}
- 
-@@ -1569,7 +1572,10 @@ static void handle_singlestep(struct uprobe_task *utask, struct pt_regs *regs)
- 	put_uprobe(uprobe);
- 	utask->active_uprobe = NULL;
- 	utask->state = UTASK_RUNNING;
--	user_disable_single_step(current);
-+	if (uprobe->flags & UPROBE_USER_SSTEP)
-+		uprobe->flags &= ~UPROBE_USER_SSTEP;
-+	else
-+		user_disable_single_step(current);
- 	xol_free_insn_slot(current);
- 
- 	spin_lock_irq(&current->sighand->siglock);
--- 
-1.7.10.4
-
+ 		pg = pfn_to_page((pa_data+sizeof(*data)-1) >> PAGE_SHIFT);
+ 		if (PageHighMem(pg)) {
