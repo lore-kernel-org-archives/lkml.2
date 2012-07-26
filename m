@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab2GZSQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 14:16:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12454 "EHLO mx1.redhat.com"
+	id S1752333Ab2GZSRG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 14:17:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28024 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872Ab2GZSQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 14:16:40 -0400
-Message-ID: <50117829.5040303@draigBrady.com>
-Date: Thu, 26 Jul 2012 18:02:33 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1752421Ab2GZSRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 14:17:01 -0400
+Date: Thu, 26 Jul 2012 19:58:46 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 02/17] perf: Add ability to attach user level registers
+ dump to sample
+Message-ID: <20120726175846.GA13086@krava.brq.redhat.com>
+References: <1342959280-5361-1-git-send-email-jolsa@redhat.com>
+ <1342959280-5361-3-git-send-email-jolsa@redhat.com>
+ <CABPqkBQONxpNAm=rE9JpQ8Pjdfzf6dc707UZWhSzM+E0AAXE-w@mail.gmail.com>
+ <20120725182747.GB14996@krava.brq.redhat.com>
+ <CABPqkBQz88k4Srw+QLu-7OWC=xGtg1DDNFMiRfN10vRsZHVZ0w@mail.gmail.com>
 MIME-Version: 1.0
-To: Jidong Xiao <jidong.xiao@gmail.com>
-CC: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Question about the fallocate system call
-References: <CAG4AFWa5qKzUqmR+3o4Od_jBt0PT-osUPczbh=VhvLh45+E6ng@mail.gmail.com>
-In-Reply-To: <CAG4AFWa5qKzUqmR+3o4Od_jBt0PT-osUPczbh=VhvLh45+E6ng@mail.gmail.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQz88k4Srw+QLu-7OWC=xGtg1DDNFMiRfN10vRsZHVZ0w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 03:30 PM, Jidong Xiao wrote:
-> Hi,
+On Thu, Jul 26, 2012 at 07:42:55PM +0200, Stephane Eranian wrote:
+> On Wed, Jul 25, 2012 at 8:27 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Wed, Jul 25, 2012 at 07:39:18PM +0200, Stephane Eranian wrote:
+> >> On Sun, Jul 22, 2012 at 2:14 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> >
+> > SNIP
+> >
+> >> > +       if (sample_type & PERF_SAMPLE_REGS_USER) {
+> >> > +               u64 avail = (data->regs_user != NULL);
+> >> > +
+> >> > +               /*
+> >> > +                * If there are no regs to dump, notice it through
+> >> > +                * first u64 being zero.
+> >> > +                */
+> >> > +               perf_output_put(handle, avail);
+> >> > +
+> >> The only role of avail is to report whether or not you've captured actual
+> >> registers. Could it be used to report the sampled process ABI (32 vs. 64)
+> >> instead? Something like:
+> >>       PERF_SAMPLE_REGS_ABI_NONE -> no regs captured (emulate your
+> >> current behavior)
+> >>       PERF_SAMPLE_REGS_ABI_32 -> 32 bit ABI regs captured
+> >>       PERF_SAMPLE_REGS_ABI_64 -> 64 bit ABI regs captured
+> >>
+> >> That could help the tools interpret the register values.
+> >
+> > Yes, I think that could help once we start dealing with compat tasks.
+> >
+> You don't control whether or not you capture compat tasks. So
+> you have to deal with those right now.
 > 
-> I just have a simple question about fallocate.
-> 
-> I want to test the punch hole function of fallocate(). So I wrote such
-> a simple program:
-> 
-> yosemite:/mnt # cat test.c
-> #include <fcntl.h>
-> #include <errno.h>
-> #include <stdio.h>
-> #include <stdint.h>
-> #include <linux/fs.h>
-> #include <linux/falloc.h>
-> 
-> int main(void)
-> {
->         int fd;
-> 
->         fd = open("testfile", O_RDWR);
->         fallocate(fd,FALLOC_FL_PUNCH_HOLE,0,500*1024*1024);
->         close(fd);
-> 
->         return 0;
-> }
-> 
-> I created a file called "testfile" whose size is 1GB, however, when I
-> run the above program, the size of the testfile simply won't change,
-> if I use stat command to check the file status, nothing is changed when I
-> execute the above program. My filesystem is ext4, as I understand,
-> ideally when I run the above program, the file size should decrease
-> from 1GB to 512MB, is there anything wrong with the program or I just
-> understood incorrectly?
-> 
-> Thank you for any inputs/comments.
+> > The current userspace code stays untouched, because it checks for
+> > 'avail != 0', which stays even with your change.
+> >
+> > I think this could be sent later with all other fixes I'm already
+> > working on. But I can work/send it preferentially before whole patchset
+> > is taken if you like.
+> >
+> Well, why not do it now. You'd have to rename the available field
+> into something more sensible. Also need to prepare it for future
+> extension if they ever become necessary.
 
-code looks OK,
-but you're not checking the return from fallocate().
-I'm guessing it's returning -1 with errno = ENOTSUP
+I'll send new version shortly
 
-cheers,
-Pádraig.
+thanks,
+jirka
