@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab2GZOuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:50:44 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55226 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab2GZOun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 10:50:43 -0400
-MIME-Version: 1.0
-Date: Thu, 26 Jul 2012 09:50:40 -0500
-Message-ID: <CAC1Azdenr8rXqw=Vfq4Jfoj8qDN1HmDoDehYC5Ec_3-8cvSKJQ@mail.gmail.com>
-Subject: Add MODULE_ALIAS to autoload ipmi drivers on ACPI systems
-From: jordan hargrave <jharg93@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752519Ab2GZOvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:51:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37447 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752160Ab2GZOvM (ORCPT
+	<rfc822;linux-kernel@Vger.kernel.org>);
+	Thu, 26 Jul 2012 10:51:12 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Michael Jones <michael.jones@matrix-vision.de>, Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: core: Clarify grammar for dummy help text
+Date: Thu, 26 Jul 2012 15:51:11 +0100
+Message-Id: <1343314271-26550-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest versions of the kernel drivers for ipmi can use ACPI to
-determine the type of BMC device used in the system.  The following
-patch adds a module alias so that udev will autoload the ipmi_si
-driver.
+Too many thens in the if...then clause.
 
---- drivers/char/ipmi/ipmi_si_intf.c.orig	2012-07-26 09:18:58.000000000 -0500
-+++ drivers/char/ipmi/ipmi_si_intf.c	2012-07-26 09:29:37.000000000 -0500
-@@ -2267,6 +2267,8 @@ static struct pnp_driver ipmi_pnp_driver
- 	.remove		= __devexit_p(ipmi_pnp_remove),
- 	.id_table	= pnp_dev_table,
- };
-+
-+MODULE_DEVICE_TABLE(pnp, pnp_dev_table);
- #endif
+Reported-by: Michael Jones <michael.jones@matrix-vision.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/Kconfig |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
- #ifdef CONFIG_DMI
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 4e932cc..17c41ad 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -33,9 +33,8 @@ config REGULATOR_DUMMY
+ 	help
+ 	  If this option is enabled then when a regulator lookup fails
+ 	  and the board has not specified that it has provided full
+-	  constraints then the regulator core will provide an always
+-	  enabled dummy regulator will be provided, allowing consumer
+-	  drivers to continue.
++	  constraints the regulator core will provide an always
++	  enabled dummy regulator, allowing consumer drivers to continue.
+ 
+ 	  A warning will be generated when this substitution is done.
+ 
+-- 
+1.7.10.4
+
