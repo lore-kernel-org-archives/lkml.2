@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab2GZDaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 23:30:11 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:38669 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab2GZDaK (ORCPT
+	id S1751758Ab2GZDeI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 23:34:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50811 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab2GZDeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 23:30:10 -0400
+	Wed, 25 Jul 2012 23:34:06 -0400
+Date: Wed, 25 Jul 2012 22:34:01 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, law@redhat.com,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] posix_types.h: Cleanup stale __NFDBITS and related
+ definitions
+Message-ID: <20120726033401.GB2923@burratino>
+References: <20120725144033.GK10534@zod.bos.redhat.com>
+ <1343258796.5132.164.camel@deadeye.wl.decadent.org.uk>
+ <20120726012713.GA2356@zod.bos.redhat.com>
+ <20120726013322.GB3532@burratino>
+ <20120726014213.GB2356@zod.bos.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMbhsRS-TiBE92nL0Cwc-ssZAMaHE2ET0UE8h7RU3VG6F6+Xtw@mail.gmail.com>
-References: <1343176370-5856-1-git-send-email-ccross@android.com>
- <CAK5ve-LY1iw7CanrMSZ0PtK=Fk9Au9tXnmaOuZ5P7vnP+5VAgA@mail.gmail.com> <CAMbhsRS-TiBE92nL0Cwc-ssZAMaHE2ET0UE8h7RU3VG6F6+Xtw@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 26 Jul 2012 11:29:48 +0800
-X-Google-Sender-Auth: wU2Vl1xQQjkL3gHEqUYPIOqY4OY
-Message-ID: <CAK5ve-+11J4HRepAmK-Y0Pq55XhAwa8Ehpw8=KvRdu4Cy90FDQ@mail.gmail.com>
-Subject: Re: [PATCH] leds: triggers: send uevent when changing triggers
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120726014213.GB2356@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 2:54 AM, Colin Cross <ccross@android.com> wrote:
-> On Tue, Jul 24, 2012 at 11:11 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
->> On Wed, Jul 25, 2012 at 8:32 AM, Colin Cross <ccross@android.com> wrote:
->>> Some triggers create sysfs files when they are enabled.  Send a uevent
->>> "change" notification whenever the trigger is changed to allow userspace
->>> processes such as udev to modify permissions on the new files.
->>>
->>
->> This looks like an workaround only for led trigger, can we fix this in
->> sysfs level?
+Josh Boyer wrote:
+
+> That should be the question, yes.  The answer is:
 >
-> See the previous discussion here: https://lkml.org/lkml/2012/7/20/458
+> However far back people wish to use older stable kernel-headers to build
+> applications against newer glibc.
+>
+> It isn't a clear answer.
 
-Thanks, I went through this thread here. Actually it was archived in
-my email account, so I missed that during a trip.
+Thanks for explaining.
 
-Basically, I think this issue is a kind of general issue related to
-sysfs, not just only for led trigger system. And adding this uevent
-notification to a upper level LED driver is not good to me, if we got
-similar issue in other subsystem, we should add similar fix there. Why
-not we add this in sysfs when we call device_create_file(). And this
-will be benefit for other drivers.
+>                           Some people stick with older kernels while
+> they update their userspace.  I was thinking along the lines of the 3.0
+> kernel being the oldest I'd check for but if people think we shouldn't
+> bother than that's fine by me.
 
-Please point out me why we can't do that in sysfs level. Thanks.
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Based on your explanation, I think 3.0 makes sense, while older
+kernels like 2.6.32 are less likely to benefit.  Even when you are
+stuck with an old kernel, it is possible to use newer kernel headers.
+
+Thanks,
+Jonathan
