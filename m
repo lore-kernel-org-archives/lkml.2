@@ -1,49 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2GZUwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 16:52:24 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:48111 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab2GZUwV (ORCPT
+	id S1752705Ab2GZUwW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 16:52:22 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27044 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab2GZUwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jul 2012 16:52:21 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: [RFC PATCH] Xen-SWIOTLB fixes (v1) for 3.7
-Date: Thu, 26 Jul 2012 16:43:25 -0400
-Message-Id: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 1/2] xen/swiotlb: If iommu=soft was not passed in on > 4GB, don't turn it on.
+Date: Thu, 26 Jul 2012 16:43:26 -0400
+Message-Id: <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com>
+References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an RFC patch for 3.7.
+If we boot a 64-bit guest with more than 4GB memory, the SWIOTLB
+gets turned on:
+PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at [ffff8800fb43d000-ffff8800ff43cfff]
 
-I thought I had addressed this in the past but I can't seem to find
-the patches. There is one bug - if one boots a PV 64-bit guests
-with more than 4GB, the SWIOTLB gets turned on - and 64MB of precious
-low-memory gets used. If you launch more than 10 of them on a 32GB
-machines you are going to run in-to trouble as the lowmem gets
-exhausted.
+which is OK if we had PCI devices, but not if we did not. In a PV
+guest the SWIOTLB ends up asking the hypervisor for precious lowmem
+memory - and 64MB of it per guest. On a 32GB machine, this limits the
+amount of guests that are 4GB to start due to lowmem exhaustion.
 
-On the other hand, the user might want to have 10 guests with 4GB
-and each with a PCI device!
+What we do is detect whether the user supplied e820_hole=1
+parameter, which is used to construct an E820 that is similar to
+the machine  - so that the PCI regions do not overlap with RAM regions.
+We check for that by looking at the E820 and seeing if it diverges
+from the standard - and if so (and if iommu=soft was not turned on),
+we disable the check pci_swiotlb_detect_4gb code.
 
-So to fix this, we are going to figure out whether the user had
-provided the e820_hole=1 parameter in the guest config. The effect
-of that parameter is that a massaged host's E820 is used in the guest
- - and we check if it has E820_ACPI or E820_NVS. If so, the user
-really wanted to pass in PCI devices to the guest.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/pci-swiotlb-xen.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-Since we now have a routine to check for the e820_hole we can optimize and
-see if the user forgot the "iommu=soft" and automatically turn that
-on.
-
-The patches are RFC b/c it looks like something has gone bit-rotten the
-last time I used this (when Fedora Core 16 was released) b/c I can't
-get a guest to boot with e820_hole :-(. But they [the patches] look
-sound to me and they do fix the bug of allocating SWIOTLB for normal
-PV guests..
+diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+index 967633a..56f373e 100644
+--- a/arch/x86/xen/pci-swiotlb-xen.c
++++ b/arch/x86/xen/pci-swiotlb-xen.c
+@@ -8,6 +8,10 @@
+ #include <xen/xen.h>
+ #include <asm/iommu_table.h>
+ 
++#include <asm/e820.h>
++#include <asm/dma.h>
++#include <asm/iommu.h>
++
+ int xen_swiotlb __read_mostly;
+ 
+ static struct dma_map_ops xen_swiotlb_dma_ops = {
+@@ -24,7 +28,19 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+ 	.unmap_page = xen_swiotlb_unmap_page,
+ 	.dma_supported = xen_swiotlb_dma_supported,
+ };
++bool __init e820_has_acpi(void)
++{
++	int i;
+ 
++	/* Check if the user supplied the e820_hole parameter
++	 * which would create a machine looking E820 region. */
++	for (i = 0; i < e820.nr_map; i++) {
++		if ((e820.map[i].type == E820_ACPI) ||
++		    (e820.map[i].type == E820_NVS))
++			return true;
++	}
++	return false;
++}
+ /*
+  * pci_xen_swiotlb_detect - set xen_swiotlb to 1 if necessary
+  *
+@@ -33,7 +49,17 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+  */
+ int __init pci_xen_swiotlb_detect(void)
+ {
++#ifdef CONFIG_X86_64
+ 
++	/* Having more than 4GB triggers the native SWIOTLB to activate.
++	 * The way to turn it off is to set no_iommu. */
++	printk(KERN_INFO "swiotlb: %d\n", swiotlb);
++	if (xen_pv_domain() && !swiotlb && max_pfn > MAX_DMA32_PFN) {
++		/* Normal PV guests only have E820_RSV and E820_RAM regions */
++		if (!e820_has_acpi())
++			no_iommu = 1;
++	}
++#endif
+ 	/* If running as PV guest, either iommu=soft, or swiotlb=force will
+ 	 * activate this IOMMU. If running as PV privileged, activate it
+ 	 * irregardless.
+-- 
+1.7.7.6
 
