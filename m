@@ -1,94 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab2GZHXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 03:23:50 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59096 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab2GZHXs (ORCPT
+	id S1751646Ab2GZH0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 03:26:00 -0400
+Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:38812 "EHLO
+	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750946Ab2GZHZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 03:23:48 -0400
-Message-ID: <5010F07E.7050506@redhat.com>
-Date: Thu, 26 Jul 2012 09:23:42 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 26 Jul 2012 03:25:59 -0400
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Wang Sen <senwang@linux.vnet.ibm.com>, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com, stefanha@linux.vnet.ibm.com,
-        mc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
- Fix address translation failure of HighMem pages used by sg list)
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com>
-In-Reply-To: <50105F60.8050707@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1343251216-24106-1-git-send-email-ccross@android.com>
+References: <1343251216-24106-1-git-send-email-ccross@android.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Thu, 26 Jul 2012 09:25:36 +0200
+Message-ID: <CAMQu2gzh1=rkTuBr+RRtnzb0m9ZpqSY9X0o92q4BAQXNENoSQw@mail.gmail.com>
+Subject: Re: [PATCH] cpuidle: coupled: fix sleeping while atomic in cpu notifier
+To: Colin Cross <ccross@android.com>
+Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/07/2012 23:04, Boaz Harrosh ha scritto:
->> That not all architectures have ARCH_HAS_SG_CHAIN (though all those I
->> care about do).  So I need to go through all architectures and make sure
->> they use for_each_sg, or at least to change ARCH_HAS_SG_CHAIN to a
->> Kconfig define so that dependencies can be expressed properly.
-> 
-> What is actually preventing ARCH_HAS_SG_CHAIN from all these ARCHES?
-> is that the DMA drivers not using for_each_sg(). Sounds like easy
-> to fix.
-> 
-> But yes a deep change would convert ARCH_HAS_SG_CHAIN to a Kconfig.
-> 
-> If you want to be lazy, like me, You might just put a BUILD_BUG_ON
-> in code, requesting the user to disable the driver for this ARCH.
-> 
-> I bet there is more things to do at ARCH to enable virtualization
-> then just support ARCH_HAS_SG_CHAIN. Be it just another requirement.
+On Wed, Jul 25, 2012 at 11:20 PM, Colin Cross <ccross@android.com> wrote:
+> The cpu hotplug notifier gets called in both atomic and non-atomic
+> contexts, it is not always safe to lock a mutex.  Filter out all events
+> except the six necessary ones, which are all sleepable, before taking
+> the mutex.
+>
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+Agree.
+Have you observed any lock-up ?
 
-Actually, many arches run just fine with QEMU's binary code translation
-(alpha, mips, coldfire).  And since it's already pretty slow, using
-virtio to improve performance is nice even in that scenario (which does
-not require any kernel change).  But it's just an icing on the cake
-indeed.  I can live with a BUILD_BUG_ON or better a "depends on
-HAVE_SG_CHAIN" for the time being.
-
->>> And BTW you won't need that new __sg_set_page API anymore.
->>
->> Kind of.
->>
->>    sg_init_table(sg, 2);
->>    sg_set_buf(sg[0], req, sizeof(req));
->>    sg_chain(sg[1], scsi_out(sc));
->>
->> is still a little bit worse than
->>
->>    __sg_set_buf(sg[0], req, sizeof(req));
->>    __sg_chain(sg[1], scsi_out(sc));
-> 
-> 
-> I believe they are the same, specially for the
-> on the stack 2 elements array. Actually I think
-> In both cases you need to at least call sg_init_table()
-> once after allocation, No?
-
-Because the scatterlist here would be allocated on the stack, I would
-need to call it every time if I used sg_set_buf/sg_chain.
-
-But sg_init_table is really just memset + set SG_MAGIC + sg_mark_end.
-If you use the "full-init" APIs as above, you don't need any of those
-(sg_chain undoes the flag changes in sg_mark_end and vice versa).
-
-> But please for my sake do not call it __sg_chain. Call it
-> something like sg_chain_not_end(). I hate those "__" which
-> for god sack means what? 
-> (A good name is when I don't have to read the code, an "__"
->  means "fuck you go read the code")
-
-Right, better call them sg_init_buf/sg_init_page/sg_init_chain.
-
-In the meanwhile, we still have a bug to fix, and we need to choose
-between Sen Wang's v1 (sg_set_page) or v2 (value assignment).  I'm still
-leaning more towards v2, if only because I already tested that one myself.
-
-Paolo
+For that patch itself, Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
