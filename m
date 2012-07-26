@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2GZPfF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:35:05 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:7440 "EHLO SMTP02.CITRIX.COM"
+	id S1752224Ab2GZPe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:34:59 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:33772 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab2GZPfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:35:00 -0400
+	id S1752143Ab2GZPe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 11:34:57 -0400
 X-IronPort-AV: E=Sophos;i="4.77,659,1336363200"; 
-   d="scan'208";a="203308475"
+   d="scan'208";a="32688377"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
@@ -15,9 +15,9 @@ CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
         <catalin.marinas@arm.com>, <arnd@arndb.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 08/24] xen/arm: Introduce xen_pfn_t for pfn and mfn types
-Date: Thu, 26 Jul 2012 16:33:50 +0100
-Message-ID: <1343316846-25860-8-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 07/24] xen/arm: Xen detection and shared_info page mapping
+Date: Thu, 26 Jul 2012 16:33:49 +0100
+Message-ID: <1343316846-25860-7-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
@@ -27,199 +27,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the original Xen headers have xen_pfn_t as mfn and pfn type, however
-when they have been imported in Linux, xen_pfn_t has been replaced with
-unsigned long. That might work for x86 and ia64 but it does not for arm.
-Bring back xen_pfn_t and let each architecture define xen_pfn_t as they
-see fit.
+Check for a "/xen" node in the device tree, if it is present set
+xen_domain_type to XEN_HVM_DOMAIN and continue initialization.
+
+Map the real shared info page using XENMEM_add_to_physmap with
+XENMAPSPACE_shared_info.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/arm/include/asm/xen/interface.h  |    2 ++
- arch/ia64/include/asm/xen/interface.h |    2 +-
- arch/x86/include/asm/xen/interface.h  |    2 ++
- include/xen/interface/grant_table.h   |    4 ++--
- include/xen/interface/memory.h        |    6 +++---
- include/xen/interface/platform.h      |    4 ++--
- include/xen/interface/xen.h           |    6 +++---
- include/xen/privcmd.h                 |    2 --
- 8 files changed, 15 insertions(+), 13 deletions(-)
+ arch/arm/xen/enlighten.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 56 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
-index 6c3ab59..76b1ebe 100644
---- a/arch/arm/include/asm/xen/interface.h
-+++ b/arch/arm/include/asm/xen/interface.h
-@@ -25,6 +25,7 @@
- 	} while (0)
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index d27c2a6..8c923af 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -5,6 +5,9 @@
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
+ #include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_address.h>
  
- #ifndef __ASSEMBLY__
-+typedef uint64_t xen_pfn_t;
- /* Guest handles for primitive C types. */
- __DEFINE_GUEST_HANDLE(uchar, unsigned char);
- __DEFINE_GUEST_HANDLE(uint,  unsigned int);
-@@ -35,6 +36,7 @@ DEFINE_GUEST_HANDLE(long);
- DEFINE_GUEST_HANDLE(void);
- DEFINE_GUEST_HANDLE(uint64_t);
- DEFINE_GUEST_HANDLE(uint32_t);
-+DEFINE_GUEST_HANDLE(xen_pfn_t);
- 
- /* Maximum number of virtual CPUs in multi-processor guests. */
- #define MAX_VIRT_CPUS 1
-diff --git a/arch/ia64/include/asm/xen/interface.h b/arch/ia64/include/asm/xen/interface.h
-index 09d5f7f..9efa068 100644
---- a/arch/ia64/include/asm/xen/interface.h
-+++ b/arch/ia64/include/asm/xen/interface.h
-@@ -67,6 +67,7 @@
- #define set_xen_guest_handle(hnd, val)	do { (hnd).p = val; } while (0)
- 
- #ifndef __ASSEMBLY__
-+typedef unsigned long xen_pfn_t;
- /* Guest handles for primitive C types. */
- __DEFINE_GUEST_HANDLE(uchar, unsigned char);
- __DEFINE_GUEST_HANDLE(uint, unsigned int);
-@@ -79,7 +80,6 @@ DEFINE_GUEST_HANDLE(void);
- DEFINE_GUEST_HANDLE(uint64_t);
- DEFINE_GUEST_HANDLE(uint32_t);
- 
--typedef unsigned long xen_pfn_t;
- DEFINE_GUEST_HANDLE(xen_pfn_t);
- #define PRI_xen_pfn	"lx"
- #endif
-diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
-index cbf0c9d..24c1b07 100644
---- a/arch/x86/include/asm/xen/interface.h
-+++ b/arch/x86/include/asm/xen/interface.h
-@@ -47,6 +47,7 @@
- #endif
- 
- #ifndef __ASSEMBLY__
-+typedef unsigned long xen_pfn_t;
- /* Guest handles for primitive C types. */
- __DEFINE_GUEST_HANDLE(uchar, unsigned char);
- __DEFINE_GUEST_HANDLE(uint,  unsigned int);
-@@ -57,6 +58,7 @@ DEFINE_GUEST_HANDLE(long);
- DEFINE_GUEST_HANDLE(void);
- DEFINE_GUEST_HANDLE(uint64_t);
- DEFINE_GUEST_HANDLE(uint32_t);
-+DEFINE_GUEST_HANDLE(xen_pfn_t);
- #endif
- 
- #ifndef HYPERVISOR_VIRT_START
-diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
-index a17d844..7da811b 100644
---- a/include/xen/interface/grant_table.h
-+++ b/include/xen/interface/grant_table.h
-@@ -338,7 +338,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_dump_table);
- #define GNTTABOP_transfer                4
- struct gnttab_transfer {
-     /* IN parameters. */
--    unsigned long mfn;
-+    xen_pfn_t mfn;
-     domid_t       domid;
-     grant_ref_t   ref;
-     /* OUT parameters. */
-@@ -375,7 +375,7 @@ struct gnttab_copy {
- 	struct {
- 		union {
- 			grant_ref_t ref;
--			unsigned long   gmfn;
-+			xen_pfn_t   gmfn;
- 		} u;
- 		domid_t  domid;
- 		uint16_t offset;
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index eac3ce1..abbbff0 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -31,7 +31,7 @@ struct xen_memory_reservation {
-      *   OUT: GMFN bases of extents that were allocated
-      *   (NB. This command also updates the mach_to_phys translation table)
-      */
--    GUEST_HANDLE(ulong) extent_start;
-+    GUEST_HANDLE(xen_pfn_t) extent_start;
- 
-     /* Number of extents, and size/alignment of each (2^extent_order pages). */
-     unsigned long  nr_extents;
-@@ -130,7 +130,7 @@ struct xen_machphys_mfn_list {
-      * any large discontiguities in the machine address space, 2MB gaps in
-      * the machphys table will be represented by an MFN base of zero.
-      */
--    GUEST_HANDLE(ulong) extent_start;
-+    GUEST_HANDLE(xen_pfn_t) extent_start;
- 
-     /*
-      * Number of extents written to the above array. This will be smaller
-@@ -172,7 +172,7 @@ struct xen_add_to_physmap {
-     unsigned long idx;
- 
-     /* GPFN where the source mapping page should appear. */
--    unsigned long gpfn;
-+    xen_pfn_t gpfn;
- };
- DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap);
- 
-diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
-index 486653f..0bea470 100644
---- a/include/xen/interface/platform.h
-+++ b/include/xen/interface/platform.h
-@@ -54,7 +54,7 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_settime_t);
- #define XENPF_add_memtype         31
- struct xenpf_add_memtype {
- 	/* IN variables. */
--	unsigned long mfn;
-+	xen_pfn_t mfn;
- 	uint64_t nr_mfns;
- 	uint32_t type;
- 	/* OUT variables. */
-@@ -84,7 +84,7 @@ struct xenpf_read_memtype {
- 	/* IN variables. */
- 	uint32_t reg;
- 	/* OUT variables. */
--	unsigned long mfn;
-+	xen_pfn_t mfn;
- 	uint64_t nr_mfns;
- 	uint32_t type;
- };
-diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
-index 4f29f33..d59a991 100644
---- a/include/xen/interface/xen.h
-+++ b/include/xen/interface/xen.h
-@@ -192,7 +192,7 @@ struct mmuext_op {
- 	unsigned int cmd;
- 	union {
- 		/* [UN]PIN_TABLE, NEW_BASEPTR, NEW_USER_BASEPTR */
--		unsigned long mfn;
-+		xen_pfn_t mfn;
- 		/* INVLPG_LOCAL, INVLPG_ALL, SET_LDT */
- 		unsigned long linear_addr;
- 	} arg1;
-@@ -432,11 +432,11 @@ struct start_info {
- 	unsigned long nr_pages;     /* Total pages allocated to this domain.  */
- 	unsigned long shared_info;  /* MACHINE address of shared info struct. */
- 	uint32_t flags;             /* SIF_xxx flags.                         */
--	unsigned long store_mfn;    /* MACHINE page number of shared page.    */
-+	xen_pfn_t store_mfn;        /* MACHINE page number of shared page.    */
- 	uint32_t store_evtchn;      /* Event channel for store communication. */
- 	union {
- 		struct {
--			unsigned long mfn;  /* MACHINE page number of console page.   */
-+			xen_pfn_t mfn;      /* MACHINE page number of console page.   */
- 			uint32_t  evtchn;   /* Event channel for console page.        */
- 		} domU;
- 		struct {
-diff --git a/include/xen/privcmd.h b/include/xen/privcmd.h
-index 4d58881..45c1aa1 100644
---- a/include/xen/privcmd.h
-+++ b/include/xen/privcmd.h
-@@ -37,8 +37,6 @@
- #include <linux/compiler.h>
- #include <xen/interface/xen.h>
- 
--typedef unsigned long xen_pfn_t;
--
- struct privcmd_hypercall {
- 	__u64 op;
- 	__u64 arg[5];
+ struct start_info _xen_start_info;
+ struct start_info *xen_start_info = &_xen_start_info;
+@@ -33,3 +36,56 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 	return -ENOSYS;
+ }
+ EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
++
++/*
++ * == Xen Device Tree format ==
++ * - /xen node;
++ * - compatible "arm,xen";
++ * - one interrupt for Xen event notifications;
++ * - one memory region to map the grant_table.
++ */
++static int __init xen_guest_init(void)
++{
++	int cpu;
++	struct xen_add_to_physmap xatp;
++	static struct shared_info *shared_info_page = 0;
++	struct device_node *node;
++
++	node = of_find_compatible_node(NULL, NULL, "arm,xen");
++	if (!node) {
++		pr_info("No Xen support\n");
++		return 0;
++	}
++	xen_domain_type = XEN_HVM_DOMAIN;
++
++	if (!shared_info_page)
++		shared_info_page = (struct shared_info *)
++			get_zeroed_page(GFP_KERNEL);
++	if (!shared_info_page) {
++		pr_err("not enough memory");
++		return -ENOMEM;
++	}
++	xatp.domid = DOMID_SELF;
++	xatp.idx = 0;
++	xatp.space = XENMAPSPACE_shared_info;
++	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
++	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
++		BUG();
++
++	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
++
++	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
++	 * page, we use it in the event channel upcall and in some pvclock
++	 * related functions. We don't need the vcpu_info placement
++	 * optimizations because we don't use any pv_mmu or pv_irq op on
++	 * HVM.
++	 * When xen_hvm_init_shared_info is run at boot time only vcpu 0 is
++	 * online but xen_hvm_init_shared_info is run at resume time too and
++	 * in that case multiple vcpus might be online. */
++	for_each_online_cpu(cpu) {
++		per_cpu(xen_vcpu, cpu) =
++			&HYPERVISOR_shared_info->vcpu_info[cpu];
++	}
++	return 0;
++}
++core_initcall(xen_guest_init);
 -- 
 1.7.2.5
 
