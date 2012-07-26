@@ -1,85 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab2GZLVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:21:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63779 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133Ab2GZLVU (ORCPT
+	id S1752582Ab2GZLV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:21:27 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34575 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab2GZLVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:21:20 -0400
+	Thu, 26 Jul 2012 07:21:25 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: eparis@redhat.com, viro@zeniv.linux.org.uk
 Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 0/9] audit: overhaul audit_names handling to allow for retrying on path-based syscalls
-Date: Thu, 26 Jul 2012 07:21:04 -0400
-Message-Id: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v5 4/9] audit: add a new "type" field to audit_names struct
+Date: Thu, 26 Jul 2012 07:21:08 -0400
+Message-Id: <1343301673-10642-5-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
+References: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is a minor respin of the series that I posted June 26th.
-The main reason is to deal with some fairly minor merge conflicts that
-have cropped up due to recent changes. This patch also relies on the
-patch that I sent separately yesterday entitled "vfs: don't let do_last
-pass negative dentry to audit_inode".
+For now, we just have two possibilities:
 
-This series is available via the "audit" branch of my git tree as well:
+UNKNOWN: for a new audit_names record that we don't know anything about yet
+NORMAL: for everything else
 
-    git://git.samba.org/jlayton/linux.git audit
+In later patches, we'll add other types so we can distinguish and update
+records created under different circumstances.
 
-The original cover letter text follows:
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ include/linux/audit.h |  5 +++++
+ kernel/auditsc.c      | 15 ++++++++++-----
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-I recently posted a set of patches to have the kernel retry the lookup
-and call when path-based syscalls would ordinarily return ESTALE. Al
-took a look and pointed out that this would break the fragile logic that
-handles the audit_names for syscall auditing.
-
-This patchset comprises a number of incremental changes that should make
-it ok to retry on a path-based syscall. The main caveat is that the retry
-mustn't redo the getname() on the strings involved.
-
-Unfortunately, we don't have anything that really describes what the
-correct behavior is for this stuff, so I'm shooting here for "no
-discernable difference" on a retry.
-
-This seems to do the right thing in the cases that I've tested; mostly
-the normal case where things succeed or fail for some reason and where
-the syscall is retried after an ESTALE error.
-
-Review is of course appreciated. There are some fixes in here too for
-some subtle bugs in the existing code. Some of these patches may also
-help performance in some cases, but I haven't measured it for that.
-
-I'd like to see this patchset go into 3.6 if at all possible.
-
-Eric Paris (1):
-  audit: make audit_compare_dname_path use parent_len helper
-
-Jeff Layton (8):
-  audit: remove unnecessary NULL ptr checks from do_path_lookup
-  audit: pass in dentry to audit_copy_inode wherever possible
-  audit: reverse arguments to audit_inode_child
-  audit: add a new "type" field to audit_names struct
-  audit: set the name_len in audit_inode for parent lookups
-  audit: remove dirlen argument to audit_compare_dname_path
-  audit: optimize audit_compare_dname_path
-  audit: overhaul __audit_inode_child to accomodate retrying
-
- fs/btrfs/ioctl.c         |   2 +-
- fs/namei.c               |  22 ++++-----
- fs/open.c                |   4 +-
- fs/xattr.c               |   8 ++--
- include/linux/audit.h    |  36 ++++++++++-----
- include/linux/fsnotify.h |   8 ++--
- ipc/mqueue.c             |   8 ++--
- kernel/audit.h           |   7 ++-
- kernel/audit_watch.c     |   3 +-
- kernel/auditfilter.c     |  65 +++++++++++++++++----------
- kernel/auditsc.c         | 115 ++++++++++++++++++++++++++++-------------------
- 11 files changed, 166 insertions(+), 112 deletions(-)
-
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 51eca54..7acbfc8 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -449,6 +449,11 @@ struct audit_field {
+ extern int __init audit_register_class(int class, unsigned *list);
+ extern int audit_classify_syscall(int abi, unsigned syscall);
+ extern int audit_classify_arch(int arch);
++
++/* audit_names->type values */
++#define	AUDIT_TYPE_UNKNOWN	0	/* we don't know yet */
++#define AUDIT_TYPE_NORMAL	1	/* a "normal" audit record */
++
+ #ifdef CONFIG_AUDITSYSCALL
+ /* These are defined in auditsc.c */
+ 				/* Public API */
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 12b007b..21c4223 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -120,6 +120,7 @@ struct audit_names {
+ 	struct audit_cap_data fcap;
+ 	unsigned int	fcap_ver;
+ 	int		name_len;	/* number of name's characters to log */
++	unsigned char	type;		/* record type */
+ 	bool		name_put;	/* call __putname() for this name */
+ 	/*
+ 	 * This was an allocated audit_names and not from the array of
+@@ -2009,7 +2010,8 @@ retry:
+ #endif
+ }
+ 
+-static struct audit_names *audit_alloc_name(struct audit_context *context)
++static struct audit_names *audit_alloc_name(struct audit_context *context,
++						unsigned char type)
+ {
+ 	struct audit_names *aname;
+ 
+@@ -2024,6 +2026,7 @@ static struct audit_names *audit_alloc_name(struct audit_context *context)
+ 	}
+ 
+ 	aname->ino = (unsigned long)-1;
++	aname->type = type;
+ 	list_add_tail(&aname->list, &context->names_list);
+ 
+ 	context->name_count++;
+@@ -2054,7 +2057,7 @@ void __audit_getname(const char *name)
+ 		return;
+ 	}
+ 
+-	n = audit_alloc_name(context);
++	n = audit_alloc_name(context, AUDIT_TYPE_UNKNOWN);
+ 	if (!n)
+ 		return;
+ 
+@@ -2167,12 +2170,13 @@ void __audit_inode(const char *name, const struct dentry *dentry)
+ 	}
+ 
+ 	/* unable to find the name from a previous getname() */
+-	n = audit_alloc_name(context);
++	n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
+ 	if (!n)
+ 		return;
+ out:
+ 	handle_path(dentry);
+ 	audit_copy_inode(n, dentry, inode);
++	n->type = AUDIT_TYPE_NORMAL;
+ }
+ 
+ /**
+@@ -2229,6 +2233,7 @@ void __audit_inode_child(const struct inode *parent,
+ 				audit_copy_inode(n, dentry, inode);
+ 			else
+ 				n->ino = (unsigned long)-1;
++			n->type = AUDIT_TYPE_NORMAL;
+ 			found_child = n->name;
+ 			goto add_names;
+ 		}
+@@ -2236,14 +2241,14 @@ void __audit_inode_child(const struct inode *parent,
+ 
+ add_names:
+ 	if (!found_parent) {
+-		n = audit_alloc_name(context);
++		n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
+ 		if (!n)
+ 			return;
+ 		audit_copy_inode(n, NULL, parent);
+ 	}
+ 
+ 	if (!found_child) {
+-		n = audit_alloc_name(context);
++		n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
+ 		if (!n)
+ 			return;
+ 
 -- 
 1.7.11.2
 
