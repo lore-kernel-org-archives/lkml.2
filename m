@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab2GZVUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:20:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49659 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab2GZVUq (ORCPT
+	id S1752949Ab2GZVVG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:21:06 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:61705 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab2GZVVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:20:46 -0400
+	Thu, 26 Jul 2012 17:21:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 05/23] target: Clean up returning errors in PR handling code
-Date: Thu, 26 Jul 2012 14:19:44 -0700
-Message-Id: <20120726211406.329971244@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, Theodore Tso <tytso@mit.edu>
+Subject: [ 09/23] ext4: fix duplicated mnt_drop_write call in EXT4_IOC_MOVE_EXT
+Date: Thu, 26 Jul 2012 14:19:48 -0700
+Message-Id: <20120726211406.703258424@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -31,52 +30,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit d35212f3ca3bf4fb49d15e37f530c9931e2d2183 upstream.
+commit 331ae4962b975246944ea039697a8f1cadce42bb upstream.
 
- - instead of (PTR_ERR(file) < 0) just use IS_ERR(file)
- - return -EINVAL instead of EINVAL
- - all other error returns in target_scsi3_emulate_pr_out() use
-   "goto out" -- get rid of the one remaining straight "return."
+Caused, AFAICS, by mismerge in commit ff9cb1c4eead ("Merge branch
+'for_linus' into for_linus_merged")
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_pr.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ fs/ext4/ioctl.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -2038,7 +2038,7 @@ static int __core_scsi3_write_aptpl_to_f
- 	if (IS_ERR(file) || !file || !file->f_dentry) {
- 		pr_err("filp_open(%s) for APTPL metadata"
- 			" failed\n", path);
--		return (PTR_ERR(file) < 0 ? PTR_ERR(file) : -ENOENT);
-+		return IS_ERR(file) ? PTR_ERR(file) : -ENOENT;
- 	}
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -261,7 +261,6 @@ group_extend_out:
+ 		err = ext4_move_extents(filp, donor_filp, me.orig_start,
+ 					me.donor_start, me.len, &me.moved_len);
+ 		mnt_drop_write_file(filp);
+-		mnt_drop_write(filp->f_path.mnt);
  
- 	iov[0].iov_base = &buf[0];
-@@ -3826,7 +3826,7 @@ int target_scsi3_emulate_pr_out(struct s
- 			" SPC-2 reservation is held, returning"
- 			" RESERVATION_CONFLICT\n");
- 		cmd->scsi_sense_reason = TCM_RESERVATION_CONFLICT;
--		ret = EINVAL;
-+		ret = -EINVAL;
- 		goto out;
- 	}
- 
-@@ -3836,7 +3836,8 @@ int target_scsi3_emulate_pr_out(struct s
- 	 */
- 	if (!cmd->se_sess) {
- 		cmd->scsi_sense_reason = TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto out;
- 	}
- 
- 	if (cmd->data_length < 24) {
+ 		if (copy_to_user((struct move_extent __user *)arg,
+ 				 &me, sizeof(me)))
 
 
