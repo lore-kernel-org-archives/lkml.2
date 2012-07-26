@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245Ab2GZFAv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 01:00:51 -0400
-Received: from mail-hostigation.familyross.net ([69.85.93.112]:41119 "EHLO
-	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab2GZFAu (ORCPT
+	id S1751307Ab2GZFDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 01:03:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34883 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab2GZFDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 01:00:50 -0400
-Message-ID: <5010CEFF.5030606@familyross.net>
-Date: Wed, 25 Jul 2012 22:00:47 -0700
-From: Kevin Ross <kevin@familyross.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Thu, 26 Jul 2012 01:03:33 -0400
 MIME-Version: 1.0
-To: Phil Turmel <philip@turmel.org>
-CC: linux-kernel@vger.kernel.org, linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: RAID extremely slow
-References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net>
-In-Reply-To: <5010A386.4080209@familyross.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120726035958.GB7235@kroah.com>
+References: <1343176370-5856-1-git-send-email-ccross@android.com>
+ <CAK5ve-LY1iw7CanrMSZ0PtK=Fk9Au9tXnmaOuZ5P7vnP+5VAgA@mail.gmail.com>
+ <CAMbhsRS-TiBE92nL0Cwc-ssZAMaHE2ET0UE8h7RU3VG6F6+Xtw@mail.gmail.com>
+ <CAK5ve-+11J4HRepAmK-Y0Pq55XhAwa8Ehpw8=KvRdu4Cy90FDQ@mail.gmail.com> <20120726035958.GB7235@kroah.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Thu, 26 Jul 2012 13:03:11 +0800
+X-Google-Sender-Auth: r5MyYEpbXk17UWEeHTv6gok-t9k
+Message-ID: <CAK5ve-LbNeJngQPE=893-ChJXEWJHg9km1Ev6GZYx4=Zrrxg9g@mail.gmail.com>
+Subject: Re: [PATCH] leds: triggers: send uevent when changing triggers
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On Thu, Jul 26, 2012 at 11:59 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Jul 26, 2012 at 11:29:48AM +0800, Bryan Wu wrote:
+>> On Thu, Jul 26, 2012 at 2:54 AM, Colin Cross <ccross@android.com> wrote:
+>> > On Tue, Jul 24, 2012 at 11:11 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+>> >> On Wed, Jul 25, 2012 at 8:32 AM, Colin Cross <ccross@android.com> wrote:
+>> >>> Some triggers create sysfs files when they are enabled.  Send a uevent
+>> >>> "change" notification whenever the trigger is changed to allow userspace
+>> >>> processes such as udev to modify permissions on the new files.
+>> >>>
+>> >>
+>> >> This looks like an workaround only for led trigger, can we fix this in
+>> >> sysfs level?
+>> >
+>> > See the previous discussion here: https://lkml.org/lkml/2012/7/20/458
 >>
->>> unused devices:<none>
->>>
->>> # cat /proc/sys/dev/raid/speed_limit_min
->>> 10000
->> MD is unable to reach its minimum rebuild rate while other system
->> activity is ongoing.  You might want to lower this number to see if that
->> gets you out of the stalls.
+>> Thanks, I went through this thread here. Actually it was archived in
+>> my email account, so I missed that during a trip.
 >>
->> Or temporarily shut down mythtv.
+>> Basically, I think this issue is a kind of general issue related to
+>> sysfs, not just only for led trigger system. And adding this uevent
+>> notification to a upper level LED driver is not good to me, if we got
+>> similar issue in other subsystem, we should add similar fix there. Why
+>> not we add this in sysfs when we call device_create_file(). And this
+>> will be benefit for other drivers.
+>>
+>> Please point out me why we can't do that in sysfs level. Thanks.
 >
-> I will try lowering those numbers next time this happens, which will 
-> probably be within the next day or two.  That's about how often this 
-> happens.
+> Please point out to me how you _can_ do this at a sysfs level :)
+>
+> greg k-h
 
-Unfortunately, it has happened again, with speeds at near zero.
+Just one quick patch for my idea: emitting a uevent in sysfs_create_file().
 
-# cat /proc/mdstat
-Personalities : [raid6] [raid5] [raid4]
-md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4] 
-sdf1[3] sdg1[8] sdj1[1]
-       6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 
-[9/9] [UUUUUUUUU]
-       [=>...................]  resync =  8.3% (81251712/976758784) 
-finish=1057826.4min speed=14K/sec
+--
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 00012e3..04da869 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -570,10 +570,14 @@ int sysfs_add_file(struct sysfs_dirent *dir_sd,
+const struct attribute *attr,
 
-unused devices: <none>
+ int sysfs_create_file(struct kobject * kobj, const struct attribute * attr)
+ {
++       int err = 0;
++
+        BUG_ON(!kobj || !kobj->sd || !attr);
 
-atop doesn't show ANY activity on the raid device or the individual drives.
-http://img687.imageshack.us/img687/2913/screenshotfrom201207252.png
+-       return sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
++       err = sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
++       kobject_uevent(kobj, KOBJ_CHANGE);
 
-Also, I tried writing to a test file with the following command, and it 
-hangs.  I let it go for about 30 minutes, with no change.
++       return err;
+ }
 
-# dd if=/dev/zero of=test bs=1M count=1
+ int sysfs_create_files(struct kobject *kobj, const struct attribute **ptr)
+--
 
-dmesg only reports hung tasks.  It doesn't report any other problems.  
-Here's my dmesg output:
-http://pastebin.ca/2174778
 
-I'm going to try rebooting into single user mode, and see if the rebuild 
-succeeds without stalling.
-
--- Kevin
-
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
