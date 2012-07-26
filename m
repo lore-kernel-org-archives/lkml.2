@@ -1,115 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab2GZVg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:36:56 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58435 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab2GZVa7 (ORCPT
+	id S1753306Ab2GZVhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:37:36 -0400
+Received: from mail-we0-f202.google.com ([74.125.82.202]:56681 "EHLO
+	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237Ab2GZVhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>
-Subject: [ 09/40] mm: reduce the amount of work done when updating min_free_kbytes
-Date: Thu, 26 Jul 2012 14:29:27 -0700
-Message-Id: <20120726211411.924302819@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
-References: <20120726211424.GA7709@kroah.com>
- <20120726211411.164006056@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
+	Thu, 26 Jul 2012 17:37:33 -0400
+Date: Thu, 26 Jul 2012 15:37:30 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        joe@perches.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
+Subject: Re: [PATCH v3 1/4] ACPI: Add acpi_pr_<level>() interfaces
+Message-ID: <20120726213730.GA2149@google.com>
+References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
+ <1343257978-7085-2-git-send-email-toshi.kani@hp.com>
+ <CAErSpo4=HDaWTusKf+tRU6aXmj-mC1i7CswnDzDLZii21i9NaQ@mail.gmail.com>
+ <1343336330.3010.496.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343336330.3010.496.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Thu, Jul 26, 2012 at 02:58:50PM -0600, Toshi Kani wrote:
+> On Thu, 2012-07-26 at 13:22 -0600, Bjorn Helgaas wrote:
+> > On Wed, Jul 25, 2012 at 5:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > > This patch introduces acpi_pr_<level>(), where <level> is a kernel
+> > > message level such as err/warn/info, to support improved logging
+> > > messages for ACPI, esp. in hotplug operations.  acpi_pr_<level>()
+> > > appends "ACPI" prefix and ACPI object path to the messages.  This
+> > > improves diagnostics in hotplug operations since it identifies an
+> > > object that caused an issue in a log file.
+> > >
+> > > acpi_pr_<level>() takes acpi_handle as an argument, which is passed
+> > > to ACPI hotplug notify handlers from the ACPICA.  Therefore, it is
+> > > always available unlike other kernel objects, such as device.
+> > >
+> > > For example, the statement below
+> > >   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
+> > > logs an error message like this at KERN_ERR.
+> > >   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+> > >
+> > > ACPI drivers can use acpi_pr_<level>() when they need to identify
+> > > a target ACPI object in their messages, such as error messages.
+> > 
+> > It's definitely an improvement to have *something* that identifies a
+> > device in these messages.  But the ACPI namespace path is not really
+> > intended to be user-consumable, so I don't think we should expose it
+> > indiscriminately.  I think we should be using the ACPI device name
+> > ("PNP0C02:00") whenever possible.  Given the device name, we can get
+> > the path from the sysfs "path" file.
+> 
+> Hi Bjorn,
+> 
+> Thanks for reviewing!  Yes, ACPI device path is not good for regular
+> users to analyze from the info.  I also agree with you that device name
+> is a better choice when users always diagnose issues by themselves right
+> after they performed an operation.  However, there are also cases that
+> users ask someone to diagnose an issue remotely from the log files, and
+> hotplug operations are performed automatically.  In such cases, using
+> ACPI device name alone is problematic for hotplug operations since a
+> device name comes with an instance number that continues to change with
+> hot-add/remove operations.  Here is one example scenario.  Let's say,
+> user has automatic load-balancer or power-saving that can trigger
+> hundreds of CPU hotplug operations per a day.  This user then found that
+> there were multiple hotplug errors logged in the past few days, and
+> asked an IT guy to look at the error messages.  When this user found the
+> issue, all device names are gone from sysfs after repeated hotplug
+> operations.  This IT guy would have no idea if those errors were
+> happening on a particular device or not from the error messages since
+> their instance numbers continue to change.
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+I agree that it's useful to be able to debug from the dmesg log
+without having to ask a user to collect stuff from /sys.  But rather
+than including the namespace path in every message, I think it'd be
+better to do one dev_info() in the hotplug notify event handler and
+include the path there.  Subsequent messages can just use dev_info()
+without the namespace info.
 
-------------------
+> > Another possible approach to this is to add a %p extension rather than
+> > adding acpi_printk().  Then you could do, e.g., 'printk("%pA ...\n",
+> > handle)', and printk could interpolate the namespace path.  But I
+> > really think there should be very few places where we need the path,
+> > so I'm not sure it's worth it.
+> 
+> Address of handle is not very helpful either when someone needs to
+> analyze from log files.
 
-From: Mel Gorman <mgorman@suse.de>
+Sorry, I should have made this clearer.  The %pA would expand to the ACPI
+namespace path, so a "dev_info(dev, "new device for %pA\n", dev->handle)"
+would produce output like this:
 
-commit 938929f14cb595f43cd1a4e63e22d36cab1e4a1f upstream.
+    PNP0C01:00: new device for \_SB_.PCI0.ISA_.MBIO
 
-Stable note: Fixes https://bugzilla.novell.com/show_bug.cgi?id=726210 .
-        Large machines with 1TB or more of RAM take a long time to boot
-        without this patch and may spew out soft lockup warnings.
+I fiddled with this a while ago; it would look something like this:
 
-When min_free_kbytes is updated, some pageblocks are marked
-MIGRATE_RESERVE.  Ordinarily, this work is unnoticable as it happens early
-in boot but on large machines with 1TB of memory, this has been reported
-to delay boot times, probably due to the NUMA distances involved.
-
-The bulk of the work is due to calling calling pageblock_is_reserved() an
-unnecessary amount of times and accessing far more struct page metadata
-than is necessary.  This patch significantly reduces the amount of work
-done by setup_zone_migrate_reserve() improving boot times on 1TB machines.
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/page_alloc.c |   40 ++++++++++++++++++++++++----------------
- 1 file changed, 24 insertions(+), 16 deletions(-)
-
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3418,25 +3418,33 @@ static void setup_zone_migrate_reserve(s
- 		if (page_to_nid(page) != zone_to_nid(zone))
- 			continue;
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index c3f36d41..201dcdb 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -551,6 +551,29 @@ char *symbol_string(char *buf, char *end, void *ptr,
+ #endif
+ }
  
--		/* Blocks with reserved pages will never free, skip them. */
--		block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
--		if (pageblock_is_reserved(pfn, block_end_pfn))
--			continue;
--
- 		block_migratetype = get_pageblock_migratetype(page);
- 
--		/* If this block is reserved, account for it */
--		if (reserve > 0 && block_migratetype == MIGRATE_RESERVE) {
--			reserve--;
--			continue;
--		}
-+		/* Only test what is necessary when the reserves are not met */
-+		if (reserve > 0) {
-+			/*
-+			 * Blocks with reserved pages will never free, skip
-+			 * them.
-+			 */
-+			block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
-+			if (pageblock_is_reserved(pfn, block_end_pfn))
-+				continue;
- 
--		/* Suitable for reserving if this block is movable */
--		if (reserve > 0 && block_migratetype == MIGRATE_MOVABLE) {
--			set_pageblock_migratetype(page, MIGRATE_RESERVE);
--			move_freepages_block(zone, page, MIGRATE_RESERVE);
--			reserve--;
--			continue;
-+			/* If this block is reserved, account for it */
-+			if (block_migratetype == MIGRATE_RESERVE) {
-+				reserve--;
-+				continue;
-+			}
++#ifdef CONFIG_ACPI
++#include <acpi/acpi.h>
 +
-+			/* Suitable for reserving if this block is movable */
-+			if (block_migratetype == MIGRATE_MOVABLE) {
-+				set_pageblock_migratetype(page,
-+							MIGRATE_RESERVE);
-+				move_freepages_block(zone, page,
-+							MIGRATE_RESERVE);
-+				reserve--;
-+				continue;
-+			}
- 		}
++static noinline_for_stack
++char *acpi_name_string(char *buf, char *end, acpi_handle handle,
++		       struct printf_spec spec, const char *fmt)
++{
++	acpi_status status;
++	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
++	u32 type = ACPI_SINGLE_NAME;
++	char *p = buf;
++
++	if (fmt[0] == 'A')
++		type = ACPI_FULL_PATHNAME;
++
++	status = acpi_get_name(handle, type, &buffer);
++	if (ACPI_SUCCESS(status))
++		p = string(buf, end, buffer.pointer, spec);
++	kfree(buffer.pointer);
++	return p;
++}
++#endif
++
+ static noinline_for_stack
+ char *resource_string(char *buf, char *end, struct resource *res,
+ 		      struct printf_spec spec, const char *fmt)
+@@ -921,6 +944,8 @@ int kptr_restrict __read_mostly;
+  *
+  * Right now we handle:
+  *
++ * - 'A' For full ACPI namespace names
++ * - 'a' For single segment ACPI namespace names
+  * - 'F' For symbolic function descriptor pointers with offset
+  * - 'f' For simple symbolic function names without offset
+  * - 'S' For symbolic direct pointers with offset
+@@ -982,6 +1007,9 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 	}
  
- 		/*
-
-
+ 	switch (*fmt) {
++	case 'A':
++	case 'a':
++		return acpi_name_string(buf, end, ptr, spec, fmt);
+ 	case 'F':
+ 	case 'f':
+ 		ptr = dereference_function_descriptor(ptr);
