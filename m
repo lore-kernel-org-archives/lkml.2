@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab2GZIHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 04:07:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54182 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab2GZIHq convert rfc822-to-8bit (ORCPT
+	id S1751321Ab2GZIIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:08:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33876 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab2GZIIp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 04:07:46 -0400
-Message-ID: <1343290057.26034.81.camel@twins>
+	Thu, 26 Jul 2012 04:08:45 -0400
+Message-ID: <1343290109.26034.82.camel@twins>
 Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
 From: Peter Zijlstra <peterz@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>, David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Thu, 26 Jul 2012 10:07:37 +0200
-In-Reply-To: <20120726055011.GP26120@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Date: Thu, 26 Jul 2012 10:08:29 +0200
+In-Reply-To: <5010D2B1.3000206@gmail.com>
 References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
 	 <1342826756-64663-9-git-send-email-dsahern@gmail.com>
 	 <20120723181358.GC6717@infradead.org> <500EAF23.8060909@gmail.com>
-	 <20120724161507.GG3732@erda.amd.com> <1343248546.26034.68.camel@twins>
-	 <20120726055011.GP26120@redhat.com>
+	 <20120724161507.GG3732@erda.amd.com> <500EDB50.3070704@gmail.com>
+	 <20120724180312.GJ6717@infradead.org> <5010D2B1.3000206@gmail.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -31,43 +32,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 08:50 +0300, Gleb Natapov wrote:
-> On Wed, Jul 25, 2012 at 10:35:46PM +0200, Peter Zijlstra wrote:
-> > On Tue, 2012-07-24 at 18:15 +0200, Robert Richter wrote:
-> > > David,
-> > > 
-> > > On 24.07.12 08:20:19, David Ahern wrote:
-> > > > On 7/23/12 12:13 PM, Arnaldo Carvalho de Melo wrote:
-> > > > > Em Fri, Jul 20, 2012 at 05:25:53PM -0600, David Ahern escreveu:
-> > > > >> PEBS cannot be used with guest mode. If user adds :p modifier set
-> > > > >> exclude_guest as well.
-> > > > >
-> > > > > Is this something Intel specific? Or can someone think of an arch where
-> > > > > this limitation wouldn't exist?
-> > > > 
-> > > > Good point. So far precise_ip is used by arch/x86 only. I don't have an 
-> > > > AMD based server so I don't know if there is a conflict between 
-> > > > virtualization and IBS. Added Robert for advice.
-> > > 
-> > > thanks for this hint.
-> > > 
-> > > On AMD cpus precise_ip maps to IBS, which does not support hardware
-> > > options as perfctrs do. Thus, following attr flags are not supported:
-> > > 
-> > >  exclude_user, exclude_kernel, exclude_host, exclude_guest
-> > > 
-> > > Counting in guest mode is possible with IBS, but not the exclusion of
-> > > a certain mode. If precise_ip counting is enabled on AMD we may not
-> > > set the exclude_guest flag.
-> > 
-> > IIRC we have SVM enter/exit hooks in kvm/perf already, we could use
-> > those to implement exclude_guest for IBS.
-> > 
-> > Now I've been trying to find the patches that introduced that, but I'm
-> > failing horridly. Gleb, got us a pointer here?
+On Wed, 2012-07-25 at 23:16 -0600, David Ahern wrote:
 
-> The commit is 144d31e6, but it introduces hook that is used on VMX only.
-> SVM does not need it to implement guest/host only counters since it
-> has HW support for that in the PMU.
+> Peter's patch (see https://lkml.org/lkml/2012/7/9/298) changes kernel 
+> side to require the use of exclude_guest if the precise modifier is 
+> used, returning -EOPNOTSUPP if exclude_guest is not set. This patch goes 
+> after the user experience: Today if a user specifies -e <event>:p all 
+> other modifiers are reset - including exclude_guest. Going forward we 
+> need :p to imply :pH if a user has not specified a GH modifer.
+> 
+> We could do nothing and handle the unsupported error and try setting the 
+> exclude_guest option - like perf handles other new parameters. But 
+> EOPNOTSUPP is not uniquely tied to this error -- e.g., it could be the 
+> BTS is not supported (:pp). Also, we have no easy way to discriminate :p 
+> from :pG or :pGH. It seems to me perf should not silently undo a user 
+> request on the modifier, but inform the user the request is wrong. For 
+> example if a user request -e cycles:pG it should not be silently turned 
+> into :pH.
+> 
+> And then yesterday, Robert stated that none of the exclude_xxxx 
+> modifiers can be set for the AMD if the precise modifier is used, so we 
+> cannot blindly set exclude_guest if precise_ip is set.
+> 
+> So, seems to me perf need's one action for Intel processors and another 
+> for AMD.
 
-Right, seems that has changed now that we support IBS.
+No, we just need to teach the IBS code about SVM enter/exit.
+
