@@ -1,132 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab2GZBQn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 21:16:43 -0400
-Received: from atl.turmel.org ([74.117.157.138]:48344 "EHLO atl.turmel.org"
+	id S1751839Ab2GZB1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 21:27:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21838 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770Ab2GZBQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 21:16:42 -0400
-X-Greylist: delayed 949 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Jul 2012 21:16:42 EDT
-Message-ID: <501096C3.5060700@turmel.org>
-Date: Wed, 25 Jul 2012 21:00:51 -0400
-From: Phil Turmel <philip@turmel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120707 Thunderbird/13.0
+	id S1751107Ab2GZB13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Jul 2012 21:27:29 -0400
+Date: Wed, 25 Jul 2012 21:27:14 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, law@redhat.com,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] posix_types.h: Cleanup stale __NFDBITS and related
+ definitions
+Message-ID: <20120726012713.GA2356@zod.bos.redhat.com>
+References: <20120725144033.GK10534@zod.bos.redhat.com>
+ <1343258796.5132.164.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: Kevin Ross <kevin@familyross.net>
-CC: linux-kernel@vger.kernel.org, linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: RAID extremely slow
-References: <501078B2.8070707@familyross.net>
-In-Reply-To: <501078B2.8070707@familyross.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343258796.5132.164.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added linux-raid to the CC]
-
-Hi Kevin,
-
-Notes interleaved:
-
-On 07/25/2012 06:52 PM, Kevin Ross wrote:
-> Hello,
+On Thu, Jul 26, 2012 at 12:26:36AM +0100, Ben Hutchings wrote:
+> On Wed, 2012-07-25 at 10:40 -0400, Josh Boyer wrote:
+> > Recently, glibc made a change to suppress sign-conversion warnings in FD_SET
+> > (glibc commit ceb9e56b3d1).  This uncovered an issue with the kernel's
+> > definition of __NFDBITS if applications #include <linux/types.h> after
+> > including <sys/select.h>.  A build failure would be seen when passing the
+> > -Werror=sign-compare and -D_FORTIFY_SOURCE=2 flags to gcc.
+> > 
+> > It was suggested that the kernel should either match the glibc definition of
+> > __NFDBITS or remove that entirely.  The current in-kernel uses of __NFDBITS
+> > can be replaced with BITS_PER_LONG, and there are no uses of the related
+> > __FDELT and __FDMASK defines.  Given that, we'll continue the cleanup that
+> > was started with commit 8b3d1cda4f5f ("posix_types: Remove fd_set macros")
+> > and drop the remaining unused macros.
+> > 
+> > Additionally, linux/time.h has similar macros defined that expand to nothing
+> > so we'll remove those at the same time.
+> > 
+> > Reported-by: Jeff Law <law@redhat.com>
+> > Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > CC: <stable@vger.kernel.org>
 > 
-> I'm having a problem.  After a while, my software RAID rebuild becomes
-> extremely slow, and the filesystem on the RAID is essentially blocked. 
-> I don't know what is causing this.  I guess it could be a bad drive, but
-> how can I find out?
-
-Probably not.  That pretty much always shows up in dmesg.
-
-> I used atop to show the transfer speeds to each drive. Here's a
-> screenshot:
-> http://img402.imageshack.us/img402/6484/screenshotfrom201207251.png
-
-Piles of small reads  scattered across multiple drives, and a
-concentration of queued writes to /dev/sda.  What's on /dev/sda?
-It's not a member of the raid, so it must be some other system task
-involved.
-
-[ The output of "lsdrv" [1] might be useful here, along with
-"mdadm -D /dev/md0" and "mdadm -E /dev/[b-j]" ]
-
-> "smartctl -a" for all the drives looks good to me, no pending failures,
-> or errors logged.  dmesg doesn't report anything wrong with any of the
-> drives.  It does, however, report lots of hung tasks, which are trying
-> to access the RAID volume.  For example:
+> # v3.4+
 > 
-> [51000.672064] INFO: task mythbackend:10677 blocked for more than 120
-> seconds.
-> [51000.672098] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> disables this message.
-> [51000.672143] mythbackend     D 0000000e     0 10677      1 0x00000000
-> [51000.672146]  f38bea00 00000086 c1095415 0000000e 00000002 00000000
-> 00000000 c147aac0
-> [51000.672152]  f38bebac c147aac0 eb2cff04 003d2f4b 00000000 c109cacb
-> 01872f02 eb2cfe50
-> [51000.672157]  c100f28b c13df480 01872f02 eb2cfe68 c10532b1 0069a8d0
-> f79d6ac0 00000000
-> [51000.672162] Call Trace:
-> [51000.672169]  [<c1095415>] ? find_get_pages_tag+0x2f/0xa2
-> [51000.672173]  [<c109cacb>] ? pagevec_lookup_tag+0x18/0x1e
-> [51000.672176]  [<c100f28b>] ? read_tsc+0xa/0x28
-> [51000.672179]  [<c10532b1>] ? timekeeping_get_ns+0x11/0x55
-> [51000.672182]  [<c10536a4>] ? ktime_get_ts+0x7a/0x82
-> [51000.672186]  [<c12bea8b>] ? io_schedule+0x4a/0x5f
-> [51000.672188]  [<c1095659>] ? sleep_on_page+0x5/0x8
-> [51000.672191]  [<c12bedeb>] ? __wait_on_bit+0x2f/0x54
-> [51000.672193]  [<c1095654>] ? lock_page+0x1d/0x1d
-> [51000.672196]  [<c1095754>] ? wait_on_page_bit+0x57/0x5e
-> [51000.672199]  [<c104d171>] ? autoremove_wake_function+0x29/0x29
-> [51000.672201]  [<c1095823>] ? filemap_fdatawait_range+0x71/0x11e
-> [51000.672205]  [<c109630f>] ? filemap_write_and_wait_range+0x3e/0x4c
-> [51000.672232]  [<f86bfb39>] ? xfs_file_fsync+0x68/0x214 [xfs]
-> [51000.672246]  [<f86bfad1>] ? xfs_file_splice_write+0x144/0x144 [xfs]
-> [51000.672249]  [<c10e7e3b>] ? vfs_fsync_range+0x27/0x2d
-> [51000.672252]  [<c10e7e52>] ? vfs_fsync+0x11/0x15
-> [51000.672254]  [<c10e80b8>] ? sys_fdatasync+0x20/0x2e
+> (as 8b3d1cda4f5f went into 3.4)
+>
 
-MythTV is trying to flush recorded video to disk, I presume.  Sync is
-known to cause stalls--a great deal of work is on-going to improve
-this.  How old is this kernel?
+Indeed.  However, I believe Linus pointed out that even before
+8b3d1cda4f5f the macros that were removed weren't actually used.
+It's likely safe to go back further than just 3.4.
 
-> [51000.672258]  [<c12c409f>] ? sysenter_do_call+0x12/0x28
-> [51000.672261]  [<c12b0000>] ? quirk_usb_early_handoff+0x4a9/0x522
-> 
-> Here is some other possibly relevant info:
-> 
-> # cat /proc/mdstat
-> Personalities : [raid6] [raid5] [raid4]
-> md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4]
-> sdf1[3] sdg1[8] sdj1[1]
->       6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 [9/9]
-> [UUUUUUUUU]
->       [==========>..........]  resync = 51.3% (501954432/976758784)
-> finish=28755.6min speed=275K/sec
+I'll verify again in the morning and include the furthest back we could
+remove these.  For now, let's go with what you suggest to be safe.
 
-Is this resync a weekly check, or did something else trigger it?
-
-> unused devices: <none>
-> 
-> # cat /proc/sys/dev/raid/speed_limit_min
-> 10000
-
-MD is unable to reach its minimum rebuild rate while other system
-activity is ongoing.  You might want to lower this number to see if that
-gets you out of the stalls.
-
-Or temporarily shut down mythtv.
-
-> # cat /proc/sys/dev/raid/speed_limit_max
-> 200000
-> 
-> Thanks in advance!
-> -- Kevin
-
-HTH,
-
-Phil
-
-[1] http://github.com/pturmel/lsdrv
-
+josh
