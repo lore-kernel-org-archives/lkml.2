@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab2GZWBv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 18:01:51 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46447 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914Ab2GZWBi (ORCPT
+	id S1754014Ab2GZWDL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 18:03:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43468 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab2GZWDH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 18:01:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120726210925.GD17928@shiny>
-References: <20120726210925.GD17928@shiny>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 26 Jul 2012 15:01:15 -0700
-X-Google-Sender-Auth: 90rvUCsguQxI_tAhAQVHwq02BV4
-Message-ID: <CA+55aFyY-wVYZYp=m3YpUi-tf0ctHPTu9rrei21VOaf2aVroLQ@mail.gmail.com>
-Subject: Re: [GIT PULL] a large btrfs update
-To: Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Josef Bacik <jbacik@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Jul 2012 18:03:07 -0400
+Message-ID: <1343340164.32120.21.camel@twins>
+Subject: Re: [ 028/108] sched/nohz: Rewrite and fix load-avg computation --
+ again
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Jul 2012 00:02:44 +0200
+In-Reply-To: <20120726220107.GG1894@decadent.org.uk>
+References: <20120723010655.768372060@decadent.org.uk>
+	 <1343138818.5132.98.camel@deadeye.wl.decadent.org.uk>
+	 <1343337937.32120.20.camel@twins> <20120726220107.GG1894@decadent.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 2:09 PM, Chris Mason <chris.mason@fusionio.com> wrote:
->
-> for-linus-merged has an extra commit on top as well that changes the
-> btrfs send/receive code to Al's new dentry_open.  It's a small commit,
-> and my guess is that you'll cherry pick it and do your own merge.
+On Thu, 2012-07-26 at 23:01 +0100, Ben Hutchings wrote:
+> 
+> That's what I thought, so I went ahead with just the one.
+> Should I queue up the other two for a future 3.2.y update? 
 
-Indeed. And I dd the semantic merge differently from what you had
-done, more like what Al did for XFS in commit 765927b2d508 (see the
-fairly equivalent case in fs/xfs/xfs_ioctl.c).
-
-IOW, instead of doing the unnecessary mntget() (and then undoing it
-with the path_put()), I just let dentry_open() get the references it
-needs, and then just dput() the dentry in the caller (to match the
-dget() done by d_obtain_alias()). No need to mess with the mnt
-refcounts, since dentry_open() will get whatever refcount it needs.
-
-But while it compiles, I haven't actually *tested* the btrfs
-BTRFS_IOC_SEND send/receive path, so please do double-check my merge.
-
-                Linus
+Yeah, why not.. 
