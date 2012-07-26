@@ -1,123 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab2GZGx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 02:53:59 -0400
-Received: from mail.nonattached.net ([193.160.39.60]:41609 "EHLO
-	mail.nonattached.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab2GZGx5 (ORCPT
+	id S1751500Ab2GZGzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 02:55:14 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:47902 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab2GZGzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 02:53:57 -0400
-From: Dan Luedtke <mail@danrl.de>
-To: rdunlap@xenotime.net, linux-kernel@vger.kernel.org
-Cc: Dan Luedtke <mail@danrl.de>
-Subject: [PATCH 3/3] scripts/kernel-doc: added ids to articles for reference
-Date: Thu, 26 Jul 2012 08:52:33 +0200
-Message-Id: <1343285553-14275-3-git-send-email-mail@danrl.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1343285553-14275-1-git-send-email-mail@danrl.de>
-References: <50103793.8000600@xenotime.net>
- <1343285553-14275-1-git-send-email-mail@danrl.de>
+	Thu, 26 Jul 2012 02:55:12 -0400
+Date: Thu, 26 Jul 2012 08:55:06 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/build change for v3.6
+Message-ID: <20120726065506.GA8421@gmail.com>
+References: <20120722134451.GA7099@gmail.com>
+ <20120722135807.GA17513@shutemov.name>
+ <20120722142204.GA9085@gmail.com>
+ <20120725201511.GA888@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120725201511.GA888@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An id has been added to block-level elements "article". This allows
-jumping to a particular article via url. E.g. doc.html#func:foo
-would sroll down to the documentation of function foo.
 
-Signed-off-by: Dan Luedtke <mail@danrl.de>
----
- scripts/kernel-doc |   30 +++++++++++++++++++++++-------
- 1 file changed, 23 insertions(+), 7 deletions(-)
+* Sam Ravnborg <sam@ravnborg.org> wrote:
 
-diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-index 1d3c779..97e037a 100755
---- a/scripts/kernel-doc
-+++ b/scripts/kernel-doc
-@@ -499,7 +499,7 @@ sub output_highlight {
-     }
- }
- 
--#output sections in html
-+# output sections in html
- sub output_section_html(%) {
-     my %args = %{$_[0]};
-     my $section;
-@@ -659,7 +659,7 @@ sub output_blockhead_html(%) {
-     print "<hr>\n";
- }
- 
--#output sections in html5
-+# output sections in html5
- sub output_section_html5(%) {
-     my %args = %{$_[0]};
-     my $section;
-@@ -679,7 +679,11 @@ sub output_enum_html5(%) {
-     my %args = %{$_[0]};
-     my ($parameter);
-     my $count;
--    print "<article class=\"enum\">\n";
-+    my $html5id;
-+
-+    $html5id = $args{'enum'};
-+    $html5id =~ s/[^a-zA-Z0-9\-]+/_/g;
-+    print "<article class=\"enum\" id=\"enum:". $html5id . "\">";
-     print "<h1>enum " . $args{'enum'} . "</h1>\n";
-     print "<ol class=\"code\">\n";
-     print "<li>";
-@@ -719,8 +723,11 @@ sub output_typedef_html5(%) {
-     my %args = %{$_[0]};
-     my ($parameter);
-     my $count;
-+    my $html5id;
- 
--    print "<article class=\"typedef\">\n";
-+    $html5id = $args{'typedef'};
-+    $html5id =~ s/[^a-zA-Z0-9\-]+/_/g;
-+    print "<article class=\"typedef\" id=\"typedef:" . $html5id . "\">\n";
-     print "<h1>typedef " . $args{'typedef'} . "</h1>\n";
- 
-     print "<ol class=\"code\">\n";
-@@ -737,8 +744,11 @@ sub output_typedef_html5(%) {
- sub output_struct_html5(%) {
-     my %args = %{$_[0]};
-     my ($parameter);
-+    my $html5id;
- 
--    print "<article class=\"struct\">\n";
-+    $html5id = $args{'struct'};
-+    $html5id =~ s/[^a-zA-Z0-9\-]+/_/g;
-+    print "<article class=\"struct\" id=\"struct:" . $html5id . "\">\n";
-     print "<hgroup>\n";
-     print "<h1>" . $args{'type'} . " " . $args{'struct'} . "</h1>";
-     print "<h2>". $args{'purpose'} . "</h2>\n";
-@@ -806,8 +816,11 @@ sub output_function_html5(%) {
-     my %args = %{$_[0]};
-     my ($parameter, $section);
-     my $count;
-+    my $html5id;
- 
--    print "<article class=\"function\">\n";
-+    $html5id = $args{'function'};
-+    $html5id =~ s/[^a-zA-Z0-9\-]+/_/g;
-+    print "<article class=\"function\" id=\"func:". $html5id . "\">\n";
-     print "<hgroup>\n";
-     print "<h1>" . $args{'function'} . "</h1>";
-     print "<h2>" . $args{'purpose'} . "</h2>\n";
-@@ -865,9 +878,12 @@ sub output_blockhead_html5(%) {
-     my %args = %{$_[0]};
-     my ($parameter, $section);
-     my $count;
-+    my $html5id;
- 
-     foreach $section (@{$args{'sectionlist'}}) {
--	print "<article class=\"doc\">\n";
-+	$html5id = $section;
-+	$html5id =~ s/[^a-zA-Z0-9\-]+/_/g;
-+	print "<article class=\"doc\" id=\"doc:". $html5id . "\">\n";
- 	print "<h1>$section</h1>\n";
- 	print "<p>\n";
- 	output_highlight($args{'sections'}{$section});
--- 
-1.7.10
+> > 
+> > No, the reason for the odd looking diff is that lots of lines in 
+> > arch/x86/Makefile have 8-space tabs for histerical reasons but 
+> > new code (such as this one) has proper tabs.
+> 
+> Use of tabs for indent in a Makefile is just asking for 
+> trouble.
 
+Ok, I guess you are right - see the patch below which was 
+another type of bug that could be introduced via not using 
+spaces properly.
+
+We could do it the other way around: turn all tabs into spaces 
+and add Makefile checking in kbuild so that the build fails if
+a tab is added to a Makefile?
+
+Alternatively, is there perhaps some way to teach make to not be 
+so broken to depend on whitespace details that are *invisible* 
+to humans?
+
+Thanks,
+
+	Ingo
+
+Index: linux/arch/x86/Makefile
+===================================================================
+--- linux.orig/arch/x86/Makefile
++++ linux/arch/x86/Makefile
+@@ -96,7 +96,7 @@ ifdef CONFIG_X86_X32
+ 		KBUILD_AFLAGS += -DCONFIG_X86_X32_ABI
+ 		KBUILD_CFLAGS += -DCONFIG_X86_X32_ABI
+ 	else
+-		$(warning CONFIG_X86_X32 enabled but no binutils support)
++ 		$(warning CONFIG_X86_X32 enabled but no binutils support)
+ 	endif
+ endif
+ export CONFIG_X86_X32_ABI
