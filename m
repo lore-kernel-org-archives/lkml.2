@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab2GZVja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:39:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55952 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752Ab2GZVj1 (ORCPT
+	id S1753119Ab2GZVk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:40:28 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55921 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab2GZVaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:39:27 -0400
-Date: Thu, 26 Jul 2012 23:39:23 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@linux.intel.com>
-cc: Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 9/9 v3] dma: shdma: convert to the shdma base library
-In-Reply-To: <1343301622.1726.9021.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1207262338130.2723@axis700.grange>
-References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de> 
- <1336576161-27082-10-git-send-email-g.liakhovetski@gmx.de> 
- <20120725035935.GA30468@linux-sh.org>  <1343285361.1726.8980.camel@vkoul-udesk3>
-  <20120726065804.GF30468@linux-sh.org> <1343301622.1726.9021.camel@vkoul-udesk3>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:zZe9oyns4kism8RJedRKUG3eDPnpFEdOwUftaN4hR6S
- rueSKaiATTLSAimnW3JD1uETEpZPu53nNKW1qohV6tsyat0ksb
- TJ3XqvyR+SZMXsNWx07VFDAsLFfLKEREiVb4x0+14JBNqiDPWC
- vLDfopT2RQiGholWS+Mu420yQ+MBK9+ShE4ZJeNMBuvKi4nDik
- 4vRT06U8ZOK1m4fG2BfNm/9E7MWrZSykdaSRNdJfazQ5/01g4J
- SWlM05h0/JqAvwVIf6L8w4GJfYpOY6zyBrCJzAlcCMBYDsQFMy
- EqrsanIOA76Ie7OoX4yimWRbX8TQjw7hFds9u3YjQuOkXoffn1
- 2EcBfIqIFhIKnUlexJYcJVwCXgPiJQroZgqYJkzoIvIkhQ7Sic
- nx2SIugJaKv2w==
+	Thu, 26 Jul 2012 17:30:23 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dimitri Sivanich <sivanich@sgi.com>, Christoph Lameter <cl@gentwo.org>,
+        Mel Gorman <mel@csn.ul.ie>, Mel Gorman <mgorman@suse.de>
+Subject: [ 07/40] mm/vmstat.c: cache align vm_stat
+Date: Thu, 26 Jul 2012 14:29:25 -0700
+Message-Id: <20120726211411.751682159@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
+References: <20120726211424.GA7709@kroah.com>
+ <20120726211411.164006056@linuxfoundation.org>
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012, Vinod Koul wrote:
+From: Greg KH <gregkh@linuxfoundation.org>
 
-> On Thu, 2012-07-26 at 15:58 +0900, Paul Mundt wrote:
-> > On Thu, Jul 26, 2012 at 12:19:21PM +0530, Vinod Koul wrote:
-> > > On Wed, 2012-07-25 at 12:59 +0900, Paul Mundt wrote:
-> > > > On Wed, May 09, 2012 at 05:09:21PM +0200, Guennadi Liakhovetski wrote:
-> > > > > The shdma base library has originally been extracted from the shdma driver,
-> > > > > which now can be converted to actually use it.
-> > > > > 
-> > > > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > > > > ---
-> > > > >  drivers/dma/sh/shdma.c | 1122 ++++++++++++------------------------------------
-> > > > >  drivers/dma/sh/shdma.h |   44 +-
-> > > > >  include/linux/sh_dma.h |   33 +-
-> > > > >  3 files changed, 302 insertions(+), 897 deletions(-)
-> > > > > 
-> > > > Now that this has hit mainline, the sh-sci with DMA enabled build is
-> > > > broken:
-> > > > 
-> > > >   CC      drivers/tty/serial/sh-sci.o
-> > > > drivers/tty/serial/sh-sci.c: In function 'work_fn_rx':
-> > > > drivers/tty/serial/sh-sci.c:1413:67: error: dereferencing pointer to incomplete type
-> > > > drivers/tty/serial/sh-sci.c:1413:81: warning: type defaults to 'int' in declaration of '__mptr'
-> > > > drivers/tty/serial/sh-sci.c:1413:90: warning: initialization from incompatible pointer type
-> > > > drivers/tty/serial/sh-sci.c:1413:161: error: invalid use of undefined type 'struct sh_desc'
-> > > > drivers/tty/serial/sh-sci.c:1419:83: error: dereferencing pointer to incomplete type
-> > > > drivers/tty/serial/sh-sci.c:1419:101: error: dereferencing pointer to incomplete type
-> > > > drivers/tty/serial/sh-sci.c:1423:42: error: dereferencing pointer to incomplete type
-> > > This was in -next for quite some time :(
-> > > 
-> > It seems we don't have any configs that have this default-enabled under
-> > -next, so it wasn't noticed before. Still, as Guennadi wrote this code
-> > I'm surprised it was overlooked.
-> So did my script :(
-> 
-> 
-> I tried checking this, struct sh_desc have moved to struct shdma_desc in
-> shdma-base.h. But the field partial was dropped, so we need to use
-> residue here. But, shdma or base doesn't calculate residue for err
-> transactions, so you cannot use it to start a new one.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Vinod, Paul
+------------------
 
-I'm on a holiday ATM, coming back late Saturday / Sunday. I'll have a look 
-at this breakage ASAP and submit a fix.
+From: Dimitri Sivanich <sivanich@sgi.com>
 
-Thank
-Guennadi
+commit a1cb2c60ddc98ff4e5246f410558805401ceee67 upstream.
+
+Stable note: Not tracked on Bugzilla. This patch is known to make a big
+        difference to tmpfs performance on larger machines.
+
+This was found to adversely affect tmpfs I/O performance.
+
+Tests run on a 640 cpu UV system.
+
+With 120 threads doing parallel writes, each to different tmpfs mounts:
+No patch:		~300 MB/sec
+With vm_stat alignment:	~430 MB/sec
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Acked-by: Christoph Lameter <cl@gentwo.org>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ mm/vmstat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -78,7 +78,7 @@ void vm_events_fold_cpu(int cpu)
+  *
+  * vm_stat contains the global counters
+  */
+-atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
++atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS] __cacheline_aligned_in_smp;
+ EXPORT_SYMBOL(vm_stat);
+ 
+ #ifdef CONFIG_SMP
+
+
