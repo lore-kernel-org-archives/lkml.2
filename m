@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2GZVan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:30:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40055 "EHLO
+	id S1753416Ab2GZVat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:30:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51347 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304Ab2GZVad (ORCPT
+	with ESMTP id S1753391Ab2GZVap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:33 -0400
+	Thu, 26 Jul 2012 17:30:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shaohua Li <shaohua.li@intel.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
         Minchan Kim <minchan.kim@gmail.com>
-Subject: [ 11/40] vmscan: clear ZONE_CONGESTED for zone with good watermark
-Date: Thu, 26 Jul 2012 14:29:29 -0700
-Message-Id: <20120726211412.097882882@linuxfoundation.org>
+Subject: [ 15/40] vmscan: limit direct reclaim for higher order allocations
+Date: Thu, 26 Jul 2012 14:29:33 -0700
+Message-Id: <20120726211412.465241050@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -31,72 +32,73 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Shaohua Li <shaohua.li@intel.com>
+From: Rik van Riel <riel@redhat.com>
 
-commit 439423f6894aa0dec22187526827456f5004baed upstream.
+commit e0887c19b2daa140f20ca8104bdc5740f39dbb86 upstream.
 
-Stable note: Not tracked in Bugzilla. kswapd is responsible for clearing
-	ZONE_CONGESTED after it balances a zone and this patch fixes a bug
-	where that was failing to happen. Without this patch, processes
-	can stall in wait_iff_congested unnecessarily. For users, this can
-	look like an interactivity stall but some workloads would see it
-	as sudden drop in throughput.
+Stable note: Not tracked on Bugzilla. THP and compaction was found to
+	aggressively reclaim pages and stall systems under different
+	situations that was addressed piecemeal over time.  Paragraph
+	3 of this changelog is the motivation for this patch.
 
-ZONE_CONGESTED is only cleared in kswapd, but pages can be freed in any
-task.  It's possible ZONE_CONGESTED isn't cleared in some cases:
+When suffering from memory fragmentation due to unfreeable pages, THP page
+faults will repeatedly try to compact memory.  Due to the unfreeable
+pages, compaction fails.
 
- 1. the zone is already balanced just entering balance_pgdat() for
-    order-0 because concurrent tasks free memory.  In this case, later
-    check will skip the zone as it's balanced so the flag isn't cleared.
+Needless to say, at that point page reclaim also fails to create free
+contiguous 2MB areas.  However, that doesn't stop the current code from
+trying, over and over again, and freeing a minimum of 4MB (2UL <<
+sc->order pages) at every single invocation.
 
- 2. high order balance fallbacks to order-0.  quote from Mel: At the
-    end of balance_pgdat(), kswapd uses the following logic;
+This resulted in my 12GB system having 2-3GB free memory, a corresponding
+amount of used swap and very sluggish response times.
 
-	If reclaiming at high order {
-		for each zone {
-			if all_unreclaimable
-				skip
-			if watermark is not met
-				order = 0
-				loop again
+This can be avoided by having the direct reclaim code not reclaim from
+zones that already have plenty of free memory available for compaction.
 
-			/* watermark is met */
-			clear congested
-		}
-	}
+If compaction still fails due to unmovable memory, doing additional
+reclaim will only hurt the system, not help.
 
-    i.e. it clears ZONE_CONGESTED if it the zone is balanced.  if not,
-    it restarts balancing at order-0.  However, if the higher zones are
-    balanced for order-0, kswapd will miss clearing ZONE_CONGESTED as
-    that only happens after a zone is shrunk.  This can mean that
-    wait_iff_congested() stalls unnecessarily.
-
-This patch makes kswapd clear ZONE_CONGESTED during its initial
-highmem->dma scan for zones that are already balanced.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+[jweiner@redhat.com: change comment to explain the order check]
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Johannes Weiner <jweiner@redhat.com>
 Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/vmscan.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2456,6 +2456,9 @@ loop_again:
- 					high_wmark_pages(zone), 0, 0)) {
- 				end_zone = i;
- 				break;
-+			} else {
-+				/* If balanced, clear the congested flag */
-+				zone_clear_flag(zone, ZONE_CONGESTED);
- 			}
- 		}
- 		if (i < 0)
+@@ -2059,6 +2059,22 @@ static void shrink_zones(int priority, s
+ 				continue;
+ 			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
+ 				continue;	/* Let kswapd poll it */
++			if (COMPACTION_BUILD) {
++				/*
++				 * If we already have plenty of memory
++				 * free for compaction, don't free any
++				 * more.  Even though compaction is
++				 * invoked for any non-zero order,
++				 * only frequent costly order
++				 * reclamation is disruptive enough to
++				 * become a noticable problem, like
++				 * transparent huge page allocations.
++				 */
++				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
++					(compaction_suitable(zone, sc->order) ||
++					 compaction_deferred(zone)))
++					continue;
++			}
+ 			/*
+ 			 * This steals pages from memory cgroups over softlimit
+ 			 * and returns the number of reclaimed pages and
 
 
