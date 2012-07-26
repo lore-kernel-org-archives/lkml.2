@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab2GZVbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:31:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35774 "EHLO
+	id S1753591Ab2GZVbg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:31:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51347 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab2GZVbQ (ORCPT
+	with ESMTP id S1753535Ab2GZVbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:31:16 -0400
+	Thu, 26 Jul 2012 17:31:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>, Nai Xia <nai.xia@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: [ 24/40] mm: page allocator: do not call direct reclaim for THP allocations while compaction is deferred
-Date: Thu, 26 Jul 2012 14:29:42 -0700
-Message-Id: <20120726211413.292204809@linuxfoundation.org>
+        Alex Shi <alex.shi@intel.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>
+Subject: =?UTF-8?q?=5B=2027/40=5D=20kswapd=3A=20assign=20new=5Forder=20and=20new=5Fclasszone=5Fidx=20after=20wakeup=20in=20sleeping?=
+Date: Thu, 26 Jul 2012 14:29:45 -0700
+Message-Id: <20120726211413.553466477@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
  <20120726211411.164006056@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,140 +35,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Alex Shi <alex.shi@intel.com>
 
-commit 66199712e9eef5aede09dbcd9dfff87798a66917 upstream.
+commit f0dfcde099453aa4c0dc42473828d15a6d492936 upstream.
 
-Stable note: Not tracked in Buzilla. This was part of a series that
-	reduced interactivity stalls experienced when THP was enabled.
+Stable note: Fixes https://bugzilla.redhat.com/show_bug.cgi?id=712019.  This
+	patch reduces kswapd CPU usage.
 
-If compaction is deferred, direct reclaim is used to try to free enough
-pages for the allocation to succeed.  For small high-orders, this has a
-reasonable chance of success.  However, if the caller has specified
-__GFP_NO_KSWAPD to limit the disruption to the system, it makes more sense
-to fail the allocation rather than stall the caller in direct reclaim.
-This patch skips direct reclaim if compaction is deferred and the caller
-specifies __GFP_NO_KSWAPD.
+There 2 places to read pgdat in kswapd.  One is return from a successful
+balance, another is waked up from kswapd sleeping.  The new_order and
+new_classzone_idx represent the balance input order and classzone_idx.
 
-Async compaction only considers a subset of pages so it is possible for
-compaction to be deferred prematurely and not enter direct reclaim even in
-cases where it should.  To compensate for this, this patch also defers
-compaction only if sync compaction failed.
+But current new_order and new_classzone_idx are not assigned after
+kswapd_try_to_sleep(), that will cause a bug in the following scenario.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: Rik van Riel<riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
+1: after a successful balance, kswapd goes to sleep, and new_order = 0;
+   new_classzone_idx = __MAX_NR_ZONES - 1;
+
+2: kswapd waked up with order = 3 and classzone_idx = ZONE_NORMAL
+
+3: in the balance_pgdat() running, a new balance wakeup happened with
+   order = 5, and classzone_idx = ZONE_NORMAL
+
+4: the first wakeup(order = 3) finished successufly, return order = 3
+   but, the new_order is still 0, so, this balancing will be treated as a
+   failed balance.  And then the second tighter balancing will be missed.
+
+So, to avoid the above problem, the new_order and new_classzone_idx need
+to be assigned for later successful comparison.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Tested-by: Pádraig Brady <P@draigBrady.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |   45 +++++++++++++++++++++++++++++++++++----------
- 1 file changed, 35 insertions(+), 10 deletions(-)
+ mm/vmscan.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1897,14 +1897,20 @@ static struct page *
- __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, unsigned long *did_some_progress,
--	bool sync_migration)
-+	int migratetype, bool sync_migration,
-+	bool *deferred_compaction,
-+	unsigned long *did_some_progress)
- {
- 	struct page *page;
- 
--	if (!order || compaction_deferred(preferred_zone))
-+	if (!order)
- 		return NULL;
- 
-+	if (compaction_deferred(preferred_zone)) {
-+		*deferred_compaction = true;
-+		return NULL;
-+	}
-+
- 	current->flags |= PF_MEMALLOC;
- 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
- 						nodemask, sync_migration);
-@@ -1932,7 +1938,13 @@ __alloc_pages_direct_compact(gfp_t gfp_m
- 		 * but not enough to satisfy watermarks.
- 		 */
- 		count_vm_event(COMPACTFAIL);
--		defer_compaction(preferred_zone);
-+
-+		/*
-+		 * As async compaction considers a subset of pageblocks, only
-+		 * defer if the failure was a sync compaction failure.
-+		 */
-+		if (sync_migration)
-+			defer_compaction(preferred_zone);
- 
- 		cond_resched();
- 	}
-@@ -1944,8 +1956,9 @@ static inline struct page *
- __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, unsigned long *did_some_progress,
--	bool sync_migration)
-+	int migratetype, bool sync_migration,
-+	bool *deferred_compaction,
-+	unsigned long *did_some_progress)
- {
- 	return NULL;
- }
-@@ -2095,6 +2108,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
- 	unsigned long pages_reclaimed = 0;
- 	unsigned long did_some_progress;
- 	bool sync_migration = false;
-+	bool deferred_compaction = false;
- 
- 	/*
- 	 * In the slowpath, we sanity check order to avoid ever trying to
-@@ -2175,12 +2189,22 @@ rebalance:
- 					zonelist, high_zoneidx,
- 					nodemask,
- 					alloc_flags, preferred_zone,
--					migratetype, &did_some_progress,
--					sync_migration);
-+					migratetype, sync_migration,
-+					&deferred_compaction,
-+					&did_some_progress);
- 	if (page)
- 		goto got_pg;
- 	sync_migration = true;
- 
-+	/*
-+	 * If compaction is deferred for high-order allocations, it is because
-+	 * sync compaction recently failed. In this is the case and the caller
-+	 * has requested the system not be heavily disrupted, fail the
-+	 * allocation now instead of entering direct reclaim
-+	 */
-+	if (deferred_compaction && (gfp_mask & __GFP_NO_KSWAPD))
-+		goto nopage;
-+
- 	/* Try direct reclaim and then allocating */
- 	page = __alloc_pages_direct_reclaim(gfp_mask, order,
- 					zonelist, high_zoneidx,
-@@ -2243,8 +2267,9 @@ rebalance:
- 					zonelist, high_zoneidx,
- 					nodemask,
- 					alloc_flags, preferred_zone,
--					migratetype, &did_some_progress,
--					sync_migration);
-+					migratetype, sync_migration,
-+					&deferred_compaction,
-+					&did_some_progress);
- 		if (page)
- 			goto got_pg;
- 	}
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2908,6 +2908,8 @@ static int kswapd(void *p)
+ 						balanced_classzone_idx);
+ 			order = pgdat->kswapd_max_order;
+ 			classzone_idx = pgdat->classzone_idx;
++			new_order = order;
++			new_classzone_idx = classzone_idx;
+ 			pgdat->kswapd_max_order = 0;
+ 			pgdat->classzone_idx = pgdat->nr_zones - 1;
+ 		}
 
 
