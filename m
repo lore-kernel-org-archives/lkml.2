@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2GZWWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 18:22:16 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:42763 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752712Ab2GZWWP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 18:22:15 -0400
-Subject: Re: [PATCH] ivtv: Declare MODULE_FIRMWARE usage
-From: Andy Walls <awalls@md.metrocast.net>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
-Date: Thu, 26 Jul 2012 18:21:35 -0400
-In-Reply-To: <1343327180-94759-1-git-send-email-tim.gardner@canonical.com>
-References: <1343327180-94759-1-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1752884Ab2GZW2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 18:28:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43230 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752547Ab2GZW2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 18:28:47 -0400
+Message-ID: <5011C47E.1090503@zytor.com>
+Date: Thu, 26 Jul 2012 15:28:14 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Kent Yoder <key@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        m.selhorst@sirrix.com, safford@us.ibm.com,
+        Jeff Garzik <jeff@garzik.org>
+Subject: Re: [PATCH 2/2] hw_random: add support for the TPM chip as a hardware
+ RNG source
+References: <1339094567.21398.2.camel@key-ThinkPad-W510> <1339094862.21398.6.camel@key-ThinkPad-W510> <5011BD8C.4010301@zytor.com>
+In-Reply-To: <5011BD8C.4010301@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <1343341295.2575.18.camel@palomino.walls.org>
-Mime-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-07-26_06:2012-07-26,2012-07-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1203120001 definitions=main-1207260269
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 12:26 -0600, Tim Gardner wrote:
-> Cc: Andy Walls <awalls@md.metrocast.net>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: ivtv-devel@ivtvdriver.org
-> Cc: linux-media@vger.kernel.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->  drivers/media/video/ivtv/ivtv-firmware.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/media/video/ivtv/ivtv-firmware.c b/drivers/media/video/ivtv/ivtv-firmware.c
-> index 02c5ade..6ec7705 100644
-> --- a/drivers/media/video/ivtv/ivtv-firmware.c
-> +++ b/drivers/media/video/ivtv/ivtv-firmware.c
-> @@ -396,3 +396,7 @@ int ivtv_firmware_check(struct ivtv *itv, char *where)
->  
->  	return res;
->  }
-> +
-> +MODULE_FIRMWARE(CX2341X_FIRM_ENC_FILENAME);
-> +MODULE_FIRMWARE(CX2341X_FIRM_DEC_FILENAME);
-> +MODULE_FIRMWARE(IVTV_DECODE_INIT_MPEG_FILENAME);
+On 07/26/2012 02:58 PM, H. Peter Anvin wrote:
+> On 06/07/2012 11:47 AM, Kent Yoder wrote:
+>> This driver will make use of any available TPM chip on the system as a
+>> hwrng source.
+>>
+>> Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+>> ---
+>>   drivers/char/hw_random/Kconfig   |   13 +++++++++
+>>   drivers/char/hw_random/Makefile  |    1 +
+>>   drivers/char/hw_random/tpm-rng.c |   55
+>> ++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 69 insertions(+), 0 deletions(-)
+>>   create mode 100644 drivers/char/hw_random/tpm-rng.c
+>>
+>
+> So I just noticed this patch being pushed.
+>
+> /dev/hw_random is used by rngd, which already has support for the TPM
+> directly.  However, the TPM support in rngd conflict with tcsd (from
+> TrouSerS).
+>
+> Does this driver solve the coexistence problem?  If so, this is a Very
+> Good Thing and should be accepted (and the TPM support in rngd
+> deprecated/removed.)
+>
+> If it does *not* solve the coexistence problem, then it just prevents a
+> user space solution and the patch really should be rejected.
+>
+> It would be great to get that clarified as soon as possible.
+>
 
-Only the PVR-350, based on the iTVC-15/CX23415 chip, needs the
-CX2341X_FIRM_DEC_FILENAME and IVTV_DECODE_INIT_MPEG_FILENAME.  (And even
-in the case of that card, not having the IVTV_DECODE_INIT_MPEG_FILENAME
-file is non-fatal.)
+To answer my own question: this *does* seem to resolve the coexistence 
+problem.  However, please see the type violation/memory overwrite bug I 
+posted about in my other mail.
 
-I would not want anything in user-space or kernel space preventing the
-ivtv module from loading, if some of those files don't exist.
+	-hpa
 
-Regards,
-Andy
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
