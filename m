@@ -1,144 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab2GZAik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 20:38:40 -0400
-Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:52698 "EHLO
-	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751863Ab2GZAii (ORCPT
+	id S1752630Ab2GZApQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 20:45:16 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49218 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab2GZApP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 20:38:38 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [RFC][PATCH 0/14] PM / shmobile: Pass power domain information via DT (was: Re: [RFD] PM: Device tree representation of power domains)
-Organization: Texas Instruments, Inc.
-References: <201207032302.17805.rjw@sisk.pl> <201207242237.28051.rjw@sisk.pl>
-	<201207251300.34892.arnd@arndb.de> <201207260032.40159.rjw@sisk.pl>
-Date: Wed, 25 Jul 2012 17:38:35 -0700
-In-Reply-To: <201207260032.40159.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Thu, 26 Jul 2012 00:32:39 +0200")
-Message-ID: <87vchb4ar8.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 25 Jul 2012 20:45:15 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-15-501093185657
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ulrich Drepper <drepper@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 15/19] perf tools: use XSI-complaint version of strerror_r() instead of GNU-specific
+References: <1343238094-12481-1-git-send-email-acme@infradead.org>
+	<1343238094-12481-16-git-send-email-acme@infradead.org>
+Date: Thu, 26 Jul 2012 09:39:59 +0900
+In-Reply-To: <1343238094-12481-16-git-send-email-acme@infradead.org> (Arnaldo
+	Carvalho de Melo's message of "Wed, 25 Jul 2012 14:41:30 -0300")
+Message-ID: <87lii75p9c.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
-
-> On Wednesday, July 25, 2012, Arnd Bergmann wrote:
->> On Tuesday 24 July 2012, Rafael J. Wysocki wrote:
->> > On Tuesday, July 24, 2012, Arnd Bergmann wrote:
->> > > On Tuesday 24 July 2012, Rafael J. Wysocki wrote:
->> > > > On Tuesday, July 24, 2012, Arnd Bergmann wrote:
->> > > > > On Saturday 21 July 2012, Rafael J. Wysocki wrote:
->> > > 
->> > > > > 
->> > > > > Sorry for taking so long to reply. I am really not that familiar with the
->> > > > > power domain requirements, but I do have two comments on your approach:
->> > > > > 
->> > > > > * I think when we want to add a generic concept to the device tree such
->> > > > >   as power domains, we should always make it specified in a generic way.
->> > > > 
->> > > > Do we really want that?  I'm a bit skeptical, because apparently nobody
->> > > > cares, as the (zero) response to this patchset evidently indicates and
->> > > > since nobody cares, it's probably better not to add such "generic" things
->> > > > just yet.
-
-Sorry to jump in late, but it's been another busy dev cycle and I
-haven't had the time to look at this series in detail.  But just so you
-know that somebody cares, we're also interested in bindings that will be
-useful on other SoCs for PM domains.
-
-However, since OMAP powerdomain support pre-dates generic powerdomains ,
-the "generic" power domains aren't quite generic enough get for OMAP,
-and I haven't had the time to extend the generic code, we haven't yet
-moved to generic powerdomains.
-
->> > > 
->> > > Well, the trouble with bindings is that they are much harder to change
->> > > later, at least in incompatible ways. 
->> > 
->> > Hmm, so I think you wanted to say that it might be burdensome to retain the
->> > code handling the old binding once we had started to use a new generic one.
->> > 
->> > I can agree with that, but that's quite similar to user space interfaces.
->> > Once we've exposed a user space interface of some kind and someone starts
->> > to use it, we'll have to maintain it going forward for the user in question.
->> > However, there is a way to deprecate old user space interfaces and it has
->> > happened.
->> > 
->> > In this particular case the burden would be on Renesas, but I don't think it
->> > would affect anybody else.
->> 
->> [adding devicetree-discuss@lists.ozlabs.org]
->> 
->> In case of user space interfaces, we also try very hard to avoid cases
->> where we know that we will have to change things later.
+On Wed, 25 Jul 2012 14:41:30 -0300, Arnaldo Carvalho de Melo wrote:
+> From: Kirill A. Shutemov <kirill@shutemov.name>
 >
-> [Cough, cough]  Yeah, sure.  Except that that's rather difficult to anticipate
-> usually.
+> Perf uses GNU-specific version of strerror_r(). The GNU-specific strerror_r()
+> returns a pointer to a string containing the error message.  This may be either
+> a pointer to a string that the function stores in buf, or a pointer to some
+> (immutable) static string (in which case buf is unused).
 >
->> I don't think it's that hard to define a generic binding here, we just
->> need to make sure it's extensible.
->> 
->> One thing I would like to avoid is having to add to every single
->> device binding two separate optional properties defined like
->> 
->> diff --git a/Documentation/devicetree/bindings/mmc/mmci.txt b/Documentation/devicetree/bindings/mmc/mmci.txt
->> index 2b584ca..353152e 100644
->> --- a/Documentation/devicetree/bindings/mmc/mmci.txt
->> +++ b/Documentation/devicetree/bindings/mmc/mmci.txt
->> @@ -13,3 +13,9 @@ Required properties:
->>  Optional properties:
->>  - mmc-cap-mmc-highspeed  : indicates whether MMC is high speed capable
->>  - mmc-cap-sd-highspeed   : indicates whether SD is high speed capable
->> +- pm-domain		 : a phandle pointing to the power domain
->> +			   controlling this device
->> +			   See ../pm-domain/generic.txt
->> +- renesas,pm-domain	 : a string with the name of the power domain
->> +			   controlling this device.
->> +			   See ../pm-domain/renesas.txt
->> 
->> Even if you say that the burden is only on Renesas to maintain all those
->> changes to every binding they use, there is also a burden on people trying
->> to understand the binding and deciding which one to use.
+> In glibc-2.16 GNU version was marked with attribute warn_unused_result.  It
+> triggers few warnings in perf:
 >
-> What about (tongue in cheek) "renesas,hwmod", then?  That won't be confused
-> with the generic "pm-domain" in any way, will it?  And since TI did that, we
-> surely should be allowed to do it as well, no?
+> util/target.c: In function ‘perf_target__strerror’:
+> util/target.c:114:13: error: ignoring return value of ‘strerror_r’, declared with attribute warn_unused_result [-Werror=unused-result]
+> ui/browsers/hists.c: In function ‘hist_browser__dump’:
+> ui/browsers/hists.c:981:13: error: ignoring return value of ‘strerror_r’, declared with attribute warn_unused_result [-Werror=unused-result]
 >
-> Seriously, I'm not fundamentally opposed to using phandles for that in analogy
-> with regulators, but I'm afraid we won't get it right from the start and it
-> will turn out that we need to change the definition of the binding somehow
-> and _that_ is going to be painful.  Pretty much like changing generic user
-> space interfaces is (as opposed to changing interfaces of limited scope).
+> They are bugs.
 >
-> However, if that route is taken, I'll expect you to require TI to change their
-> hwmod binding in the analogous way.
+> Let's fix strerror_r() usage.
+>
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> Acked-by: Ulrich Drepper <drepper@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ulrich Drepper <drepper@gmail.com>
+> Link: http://lkml.kernel.org/r/20120723210654.GA25248@shutemov.name
+> [ committer note: s/assert/BUG_ON/g ]
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/ui/browsers/hists.c |    4 ++--
+>  tools/perf/util/target.c       |   11 ++++++++++-
+>  2 files changed, 12 insertions(+), 3 deletions(-)
+>
+> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+> index 482f051..413bd62 100644
+> --- a/tools/perf/ui/browsers/hists.c
+> +++ b/tools/perf/ui/browsers/hists.c
+> @@ -978,8 +978,8 @@ static int hist_browser__dump(struct hist_browser *browser)
+>  	fp = fopen(filename, "w");
+>  	if (fp == NULL) {
+>  		char bf[64];
+> -		strerror_r(errno, bf, sizeof(bf));
+> -		ui_helpline__fpush("Couldn't write to %s: %s", filename, bf);
+> +		const char *err = strerror_r(errno, bf, sizeof(bf));
+> +		ui_helpline__fpush("Couldn't write to %s: %s", filename, err);
+>  		return -1;
+>  	}
+>  
+> diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
+> index 1064d5b..3f59c49 100644
+> --- a/tools/perf/util/target.c
+> +++ b/tools/perf/util/target.c
+> @@ -110,8 +110,17 @@ int perf_target__strerror(struct perf_target *target, int errnum,
+>  	int idx;
+>  	const char *msg;
+>  
+> +	BUG_ON(buflen > 0);
+> +
 
-FWIW, we're already working on making ti,hwmods disappear.  That was a
-temporary step to allow us to easily migrate to DT using our existing,
-in-tree description of device IP blocks (hwmods.)
+No! It should be
 
-That being said, I'm not sure why ti,hwmods is being used as an example
-for powerdomains.  hwmods describe the integration of SoC IP blocks
-(base addr, IRQ, DMA channel etc., which are being moved to DT) as well
-as a bunch of SoC specific PM register descriptions.  This stuff is
-SoC-specific PM register layout, so being very SoC specific, it has the
-'ti' prefix in the DT binding.
+  	BUG_ON(buflen == 0);
 
-Anyways, I hope to have a closer look this week, and I know Benoit
-Cousson (CC'd) has some ideas for DT bindings for power domains as well.
-Unfortunately, he's out until next week.
+Thanks,
+Namhyung
 
-Kevin
+
+>  	if (errnum >= 0) {
+> -		strerror_r(errnum, buf, buflen);
+> +		const char *err = strerror_r(errnum, buf, buflen);
+> +
+> +		if (err != buf) {
+> +			size_t len = strlen(err);
+> +			char *c = mempcpy(buf, err, min(buflen - 1, len));
+> +			*c = '\0';
+> +		}
+> +
+>  		return 0;
+>  	}
