@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab2GZLMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:12:42 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:57207 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab2GZLMl (ORCPT
+	id S1752349Ab2GZLNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:13:23 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:39410 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab2GZLNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:12:41 -0400
+	Thu, 26 Jul 2012 07:13:22 -0400
+Message-ID: <50112647.1020206@linux.vnet.ibm.com>
+Date: Thu, 26 Jul 2012 16:43:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <CANfBPZ-amdTBXMbj0E2SrMHBjHFnd8cuC4ASoygkbXC+5oeAGg@mail.gmail.com>
-References: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
-	<CANfBPZ-amdTBXMbj0E2SrMHBjHFnd8cuC4ASoygkbXC+5oeAGg@mail.gmail.com>
-Date: Thu, 26 Jul 2012 16:42:40 +0530
-Message-ID: <CAKVbJB96Y87=a1dOskYX472Um3w=_orQWN19_Yj+iRp7js9Anw@mail.gmail.com>
-Subject: Re: [PATCH V3 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
-From: vinayak holikatti <vinholikatti@gmail.com>
-To: "S, Venkatraman" <svenkatr@ti.com>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
-        sreekumar.c@samsung.com
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Alan Stern <stern@rowland.harvard.edu>, mingo@kernel.org,
+        peterz@infradead.org, rusty@rustcorp.com.au,
+        paulmck@linux.vnet.ibm.com, namhyung@kernel.org, tj@kernel.org,
+        rjw@sisk.pl, nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
+ during CPU hotplug
+References: <Pine.LNX.4.44L0.1207251054420.2008-100000@iolanthe.rowland.org> <50101733.4030205@linux.vnet.ibm.com> <alpine.LFD.2.02.1207251758340.32033@ionos> <50103955.9020301@linux.vnet.ibm.com> <alpine.LFD.2.02.1207261248130.32033@ionos>
+In-Reply-To: <alpine.LFD.2.02.1207261248130.32033@ionos>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072611-3864-0000-0000-000003EC2823
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 4:02 PM, S, Venkatraman <svenkatr@ti.com> wrote:
-> On Thu, Jul 26, 2012 at 2:12 PM, Vinayak Holikatti
-> <vinholikatti@gmail.com> wrote:
->> This patch set adds following features
->>  - Seggregate PCI specific code in ufshcd.c
->>  - Adds PCI glue driver ufshcd-pci.c and ufshcd.c become core module
->>  - Adds Platform glue driver ufshcd-pltfrm.c
->>  - Update correct transfer size in Command UPIU
+On 07/26/2012 04:25 PM, Thomas Gleixner wrote:
+> On Wed, 25 Jul 2012, Srivatsa S. Bhat wrote:
+>> On 07/25/2012 10:00 PM, Thomas Gleixner wrote:
+>>> struct hotplug_event hotplug_events_bp[CPU_HOTPLUG_MAX_EVENTS];
+>>> struct hotplug_event hotplug_events_ap[CPU_HOTPLUG_MAX_EVENTS];
+>>>    
+>>> The _bp one is the list of events which are executed on the active cpu
+>>> and the _ap ones are those executed on the hotplugged cpu.
+>>>
+>>> The core code advances the events in sync steps, so both BP and AP can
+>>> issue a stop on the process and cause a rollback.
 >>
->> Vinayak Holikatti (4):
->>   [SCSI] drivers/scsi/ufs: Seggregate PCI Specific Code
->>   [SCSI] drivers/scsi/ufs: Separate PCI code into glue driver
->>   [SCSI] ufs: Add Platform glue driver for ufshcd
->>   [SCSI] ufs: Correct the expected data transfer size
->>
->>  drivers/scsi/ufs/Kconfig         |   37 +++-
->>  drivers/scsi/ufs/Makefile        |    2 +
->>  drivers/scsi/ufs/ufshcd-pci.c    |  228 ++++++++++++++++++++
->>  drivers/scsi/ufs/ufshcd-pltfrm.c |  222 ++++++++++++++++++++
->>  drivers/scsi/ufs/ufshcd.c        |  422 ++++++--------------------------------
->>  drivers/scsi/ufs/ufshcd.h        |  206 +++++++++++++++++++
->>  drivers/scsi/ufs/ufshcd_common.h |   53 +++++
->>  7 files changed, 813 insertions(+), 357 deletions(-)
->
-> Two minor observations..
-> 1) If both pci and platform have to do the exact same thing in their
-> _suspend() and _resume() routines, perhaps there is scope for making
-> them as common (the steps outlined in them should be done in core
-> ufshcd) ?
-Both will not have to do the exact same thing. We have plan to implement
-ufshcd_suspend and ufshcd_resume which will be generic and will be part
-of ufshcd core, as you said.
->
-> 2) Need to include ufshcd_common.h in ufshcd.c so that the prototypes
-> are supplied for the exported functions.
-Thank you, I will make necessary changes in next version of patches.
+>> What exactly does "sync steps" mean in this context? Also, for the CPU
+> 
+> Sync step means, that both sides need to synchronize - not at every
+> step, but at well defined synchronization points. You can't advance
+> the AP to online state unless the BP has done the preparatory stuff
+> already.
+> 
+>> offline event, the event could start off with both the BP and the AP being
+>> the same CPU.. Does this design take care of that case?
+> 
+> Once the AP leaves the state where tasks can be freely scheduled on
+> it, the take down thread migrates automagically. And that's one of the
+> first things I'm trying to do so the first synchronization point is
+> after that.
+> 
 
--- 
+Oh.. Ok.. Thanks for the explanation!
+
 Regards,
-Vinayak Holikatti
+Srivatsa S. Bhat
+
