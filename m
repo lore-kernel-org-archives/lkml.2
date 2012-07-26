@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab2GZVbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:31:51 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58435 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab2GZVbn (ORCPT
+	id S1753776Ab2GZVeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:34:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35774 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab2GZVbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:31:43 -0400
+	Thu, 26 Jul 2012 17:31:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Shaohua Li <shaohua.li@intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>
-Subject: [ 32/40] vmscan: promote shared file mapped pages
-Date: Thu, 26 Jul 2012 14:29:50 -0700
-Message-Id: <20120726211414.048342475@linuxfoundation.org>
+        Miao Xie <miaox@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Mel Gorman <mgorman@suse.de>
+Subject: [ 38/40] cpusets: stall when updating mems_allowed for mempolicy or disjoint nodemask
+Date: Thu, 26 Jul 2012 14:29:56 -0700
+Message-Id: <20120726211414.650273026@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -36,80 +33,113 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: David Rientjes <rientjes@google.com>
 
-commit 34dbc67a644f11ab3475d822d72e25409911e760 upstream.
+commit b246272ecc5ac68c743b15c9e41a2275f7ce70e2 upstream.
 
-Stable note: Not tracked in Bugzilla. There were reports of shared
-	mapped pages being unfairly reclaimed in comparison to older kernels.
-	This is being addressed over time. The specific workload being
-	addressed here in described in paragraph four and while paragraph
-	five says it did not help performance as such, it made a difference
-	to major page faults. I'm aware of at least one bug for a large
-	vendor that was due to increased major faults.
+Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
+	expensive and severely impacted page allocator performance. This is
+	part of a series of patches that reduce page allocator overhead.
 
-Commit 645747462435 ("vmscan: detect mapped file pages used only once")
-greatly decreases lifetime of single-used mapped file pages.
-Unfortunately it also decreases life time of all shared mapped file
-pages.  Because after commit bf3f3bc5e7347 ("mm: don't mark_page_accessed
-in fault path") page-fault handler does not mark page active or even
-referenced.
+Kernels where MAX_NUMNODES > BITS_PER_LONG may temporarily see an empty
+nodemask in a tsk's mempolicy if its previous nodemask is remapped onto a
+new set of allowed cpuset nodes where the two nodemasks, as a result of
+the remap, are now disjoint.
 
-Thus page_check_references() activates file page only if it was used twice
-while it stays in inactive list, meanwhile it activates anon pages after
-first access.  Inactive list can be small enough, this way reclaimer can
-accidentally throw away any widely used page if it wasn't used twice in
-short period.
+c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
+cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
+nodes from changing for a thread.  This causes any update to a set of
+allowed nodes to stall until put_mems_allowed() is called.
 
-After this patch page_check_references() also activate file mapped page at
-first inactive list scan if this page is already used multiple times via
-several ptes.
+This stall is unncessary, however, if at least one node remains unchanged
+in the update to the set of allowed nodes.  This was addressed by
+89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
+node remains set"), but it's still possible that an empty nodemask may be
+read from a mempolicy because the old nodemask may be remapped to the new
+nodemask during rebind.  To prevent this, only avoid the stall if there is
+no mempolicy for the thread being changed.
 
-I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5
-(~2.6.18).  There a complete mess with >100 web/mail/spam/ftp containers,
-they share all their files but there a lot of anonymous pages: ~500mb
-shared file mapped memory and 15-20Gb non-shared anonymous memory.  In
-this situation major-pagefaults are very costly, because all containers
-share the same page.  In my load kernel created a disproportionate
-pressure on the file memory, compared with the anonymous, they equaled
-only if I raise swappiness up to 150 =)
+This is a temporary solution until all reads from mempolicy nodemasks can
+be guaranteed to not be empty without the get_mems_allowed()
+synchronization.
 
-These patches actually wasn't helped a lot in my problem, but I saw
-noticable (10-20 times) reduce in count and average time of
-major-pagefault in file-mapped areas.
+Also moves the check for nodemask intersection inside task_lock() so that
+tsk->mems_allowed cannot change.  This ensures that nothing can set this
+tsk's mems_allowed out from under us and also protects tsk->mempolicy.
 
-Actually both patches are fixes for commit v2.6.33-5448-g6457474, because
-it was aimed at one scenario (singly used pages), but it breaks the logic
-in other scenarios (shared and/or executable pages)
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Acked-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Shaohua Li <shaohua.li@intel.com>
-Cc: Rik van Riel <riel@redhat.com>
+Reported-by: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/cpuset.c |   29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -723,7 +723,7 @@ static enum page_references page_check_r
- 		 */
- 		SetPageReferenced(page);
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -123,6 +123,19 @@ static inline struct cpuset *task_cs(str
+ 			    struct cpuset, css);
+ }
  
--		if (referenced_page)
-+		if (referenced_page || referenced_ptes > 1)
- 			return PAGEREF_ACTIVATE;
++#ifdef CONFIG_NUMA
++static inline bool task_has_mempolicy(struct task_struct *task)
++{
++	return task->mempolicy;
++}
++#else
++static inline bool task_has_mempolicy(struct task_struct *task)
++{
++	return false;
++}
++#endif
++
++
+ /* bits in struct cpuset flags field */
+ typedef enum {
+ 	CS_CPU_EXCLUSIVE,
+@@ -949,7 +962,7 @@ static void cpuset_migrate_mm(struct mm_
+ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 					nodemask_t *newmems)
+ {
+-	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
++	bool need_loop;
  
- 		return PAGEREF_KEEP;
+ repeat:
+ 	/*
+@@ -962,6 +975,14 @@ repeat:
+ 		return;
+ 
+ 	task_lock(tsk);
++	/*
++	 * Determine if a loop is necessary if another thread is doing
++	 * get_mems_allowed().  If at least one node remains unchanged and
++	 * tsk does not have a mempolicy, then an empty nodemask will not be
++	 * possible when mems_allowed is larger than a word.
++	 */
++	need_loop = task_has_mempolicy(tsk) ||
++			!nodes_intersects(*newmems, tsk->mems_allowed);
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+ 
+@@ -981,11 +1002,9 @@ repeat:
+ 
+ 	/*
+ 	 * Allocation of memory is very fast, we needn't sleep when waiting
+-	 * for the read-side.  No wait is necessary, however, if at least one
+-	 * node remains unchanged.
++	 * for the read-side.
+ 	 */
+-	while (masks_disjoint &&
+-			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
++	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
+ 		task_unlock(tsk);
+ 		if (!task_curr(tsk))
+ 			yield();
 
 
