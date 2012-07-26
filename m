@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab2GZVVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:21:06 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61705 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab2GZVVA (ORCPT
+	id S1752916Ab2GZVU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:20:57 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59645 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab2GZVUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:21:00 -0400
+	Thu, 26 Jul 2012 17:20:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>, Theodore Tso <tytso@mit.edu>
-Subject: [ 09/23] ext4: fix duplicated mnt_drop_write call in EXT4_IOC_MOVE_EXT
-Date: Thu, 26 Jul 2012 14:19:48 -0700
-Message-Id: <20120726211406.703258424@linuxfoundation.org>
+        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 07/23] ntp: Fix STA_INS/DEL clearing bug
+Date: Thu, 26 Jul 2012 14:19:46 -0700
+Message-Id: <20120726211406.509018217@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211405.959857593@linuxfoundation.org>
 References: <20120726211420.GA7678@kroah.com>
@@ -30,31 +34,57 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: John Stultz <johnstul@us.ibm.com>
 
-commit 331ae4962b975246944ea039697a8f1cadce42bb upstream.
+commit 6b1859dba01c7d512b72d77e3fd7da8354235189 upstream.
 
-Caused, AFAICS, by mismerge in commit ff9cb1c4eead ("Merge branch
-'for_linus' into for_linus_merged")
+In commit 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d, I
+introduced a bug that kept the STA_INS or STA_DEL bit
+from being cleared from time_status via adjtimex()
+without forcing STA_PLL first.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Usually once the STA_INS is set, it isn't cleared
+until the leap second is applied, so its unlikely this
+affected anyone. However during testing I noticed it
+took some effort to cancel a leap second once STA_INS
+was set.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1342156917-25092-2-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ioctl.c |    1 -
- 1 file changed, 1 deletion(-)
+ kernel/time/ntp.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -261,7 +261,6 @@ group_extend_out:
- 		err = ext4_move_extents(filp, donor_filp, me.orig_start,
- 					me.donor_start, me.len, &me.moved_len);
- 		mnt_drop_write_file(filp);
--		mnt_drop_write(filp->f_path.mnt);
- 
- 		if (copy_to_user((struct move_extent __user *)arg,
- 				 &me, sizeof(me)))
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -409,7 +409,9 @@ int second_overflow(unsigned long secs)
+ 			time_state = TIME_DEL;
+ 		break;
+ 	case TIME_INS:
+-		if (secs % 86400 == 0) {
++		if (!(time_status & STA_INS))
++			time_state = TIME_OK;
++		else if (secs % 86400 == 0) {
+ 			leap = -1;
+ 			time_state = TIME_OOP;
+ 			time_tai++;
+@@ -418,7 +420,9 @@ int second_overflow(unsigned long secs)
+ 		}
+ 		break;
+ 	case TIME_DEL:
+-		if ((secs + 1) % 86400 == 0) {
++		if (!(time_status & STA_DEL))
++			time_state = TIME_OK;
++		else if ((secs + 1) % 86400 == 0) {
+ 			leap = 1;
+ 			time_tai--;
+ 			time_state = TIME_WAIT;
 
 
