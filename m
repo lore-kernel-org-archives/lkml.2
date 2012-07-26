@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab2GZPII (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:08:08 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:39144
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752452Ab2GZPIF (ORCPT
+	id S1752452Ab2GZPIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:08:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38021 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab2GZPIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:08:05 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6QF7wpl032592
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] Problem with commit cf03c5dac83609f09d9f0e9fa3c09d86daed614d
-In-Reply-To: <20120726134926.GA10452@thinkpad-t410> (Seth Forshee's message of
-	"Thu, 26 Jul 2012 08:49:26 -0500")
-References: <gik3xqtzw3.fsf@karga.hank.lab>
-	<20120726134926.GA10452@thinkpad-t410>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Thu, 26 Jul 2012 17:07:57 +0200
-Message-ID: <gi7gtqlfw2.fsf@mx10.gouders.net>
+	Thu, 26 Jul 2012 11:08:49 -0400
+Date: Thu, 26 Jul 2012 08:08:26 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-45afb1734fa6323a8ba08bd6c392ee227df67dde@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <1341647342-6742-1-git-send-email-namhyung@kernel.org>
+References: <1341647342-6742-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Use task_rq_unlock()
+  in __sched_setscheduler()
+Git-Commit-ID: 45afb1734fa6323a8ba08bd6c392ee227df67dde
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 26 Jul 2012 17:08:00 +0200 (CEST)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jul 2012 08:08:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seth Forshee <seth.forshee@canonical.com> writes:
+Commit-ID:  45afb1734fa6323a8ba08bd6c392ee227df67dde
+Gitweb:     http://git.kernel.org/tip/45afb1734fa6323a8ba08bd6c392ee227df67dde
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Sat, 7 Jul 2012 16:49:02 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 26 Jul 2012 11:46:59 +0200
 
-> On Thu, Jul 26, 2012 at 03:28:44PM +0200, Dirk Gouders wrote:
->> Hi Seth,
->> 
->> today, I noticed a problem with the current kernel
->> (3.5.0-04773-gbdc0077): my laptop hangs during boot -- the last message
->> on the console is printed just before invoking `udevadm trigger'.
->> 
->> I bisected the problem and ended at commit
->> cf03c5dac83609f09d9f0e9fa3c09d86daed614d (brcm80211: smac: inform
->> mac80211 of the X2 regulatory domain).  However, I'm not sure that this
->> commit really is the reason for my problems, because the behaviour is a
->> bit different: at that state the machine not just hangs but the console
->> shows a trace which I append to the end of this mail -- but the trace
->> happens at the same state during the boot process.
->
-> Hi Dirk,
->
-> The NULL pointer dereference in wlc_phy_chanspec_band_validch is already
-> fixed in edc7651f3a4ffa7fca37d92401562694121512ad. There was also
-> another related crash that appeared after the introduction of 802.11ad
-> support that's fixed in 32c336a5dfd16b4645c8a0dbc534efd02f079e02.
->
-> So in all likelihood whatever problem your seeing in current -git is a
-> different issue. One easy way to test this would be to prevent the
-> brcmsmac module from loading and verify that you still get the hang,
-> then rerun the bisection that way to keep those bugs from affecting your
-> results.
+sched: Use task_rq_unlock() in __sched_setscheduler()
 
-Hi Seth,
+It seems there's no specific reason to open-code it.  I guess
+commit 0122ec5b02f76 ("sched: Add p->pi_lock to task_rq_lock()")
+simply missed it.  Let's be consistent with others.
 
-thanks for your reply and sorry for the noise.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1341647342-6742-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-I followed your advice and tried to boot with the WLAN interface turned
-off, and the problem still exists.  I'll start a new bisect session,
-probably with one of the commits you mentioned as the first good commit.
-
-Best regards,
-
-Dirk
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5d011ef..2cb4e77 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4340,9 +4340,7 @@ recheck:
+ 	 */
+ 	if (unlikely(policy == p->policy && (!rt_policy(policy) ||
+ 			param->sched_priority == p->rt_priority))) {
+-
+-		__task_rq_unlock(rq);
+-		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
++		task_rq_unlock(rq, p, &flags);
+ 		return 0;
+ 	}
+ 
