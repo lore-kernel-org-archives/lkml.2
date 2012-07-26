@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab2GZVh6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:37:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51347 "EHLO
+	id S1753393Ab2GZVap (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:30:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35774 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab2GZVaz (ORCPT
+	with ESMTP id S1753283Ab2GZVa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:55 -0400
+	Thu, 26 Jul 2012 17:30:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+        Johannes Weiner <jweiner@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        Balbir Singh <bsingharora@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 18/40] mm: change isolate mode from #define to bitwise type
-Date: Thu, 26 Jul 2012 14:29:36 -0700
-Message-Id: <20120726211412.744390662@linuxfoundation.org>
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Mel Gorman <mel@csn.ul.ie>, Mel Gorman <mgorman@suse.de>
+Subject: [ 10/40] mm: vmscan: fix force-scanning small targets without swap
+Date: Thu, 26 Jul 2012 14:29:28 -0700
+Message-Id: <20120726211412.004590506@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -35,278 +36,86 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Minchan Kim <minchan.kim@gmail.com>
+From: Johannes Weiner <jweiner@redhat.com>
 
-commit 4356f21d09283dc6d39a6f7287a65ddab61e2808 upstream.
+commit a4d3e9e76337059406fcf3ead288c0df22a790e9 upstream.
 
-Stable note: Not tracked in Bugzilla. This patch makes later patches
-	easier to apply but has no other impact.
+Stable note: Not tracked in Bugzilla. This patch augments an earlier commit
+        that avoids scanning priority being artificially raised. The older
+	fix was particularly important for small memcgs to avoid calling
+	wait_iff_congested() unnecessarily.
 
-Change ISOLATE_XXX macro with bitwise isolate_mode_t type.  Normally,
-macro isn't recommended as it's type-unsafe and making debugging harder as
-symbol cannot be passed throught to the debugger.
+Without swap, anonymous pages are not scanned.  As such, they should not
+count when considering force-scanning a small target if there is no swap.
 
-Quote from Johannes
-" Hmm, it would probably be cleaner to fully convert the isolation mode
-into independent flags.  INACTIVE, ACTIVE, BOTH is currently a
-tri-state among flags, which is a bit ugly."
+Otherwise, targets are not force-scanned even when their effective scan
+number is zero and the other conditions--kswapd/memcg--apply.
 
-This patch moves isolate mode from swap.h to mmzone.h by memcontrol.h
+This fixes 246e87a93934 ("memcg: fix get_scan_count() for small
+targets").
 
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+[akpm@linux-foundation.org: fix comment]
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Ying Han <yinghan@google.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- Documentation/trace/postprocess/trace-vmscan-postprocess.pl |    8 +-
- include/linux/memcontrol.h                                  |    3 
- include/linux/mmzone.h                                      |    8 ++
- include/linux/swap.h                                        |    7 --
- include/trace/events/vmscan.h                               |    8 +-
- mm/compaction.c                                             |    3 
- mm/memcontrol.c                                             |    3 
- mm/vmscan.c                                                 |   37 ++++++------
- 8 files changed, 43 insertions(+), 34 deletions(-)
+ mm/vmscan.c |   27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
---- a/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
-+++ b/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
-@@ -379,10 +379,10 @@ EVENT_PROCESS:
- 
- 			# To closer match vmstat scanning statistics, only count isolate_both
- 			# and isolate_inactive as scanning. isolate_active is rotation
--			# isolate_inactive == 0
--			# isolate_active   == 1
--			# isolate_both     == 2
--			if ($isolate_mode != 1) {
-+			# isolate_inactive == 1
-+			# isolate_active   == 2
-+			# isolate_both     == 3
-+			if ($isolate_mode != 2) {
- 				$perprocesspid{$process_pid}->{HIGH_NR_SCANNED} += $nr_scanned;
- 			}
- 			$perprocesspid{$process_pid}->{HIGH_NR_CONTIG_DIRTY} += $nr_contig_dirty;
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -35,7 +35,8 @@ enum mem_cgroup_page_stat_item {
- extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
- 					struct list_head *dst,
- 					unsigned long *scanned, int order,
--					int mode, struct zone *z,
-+					isolate_mode_t mode,
-+					struct zone *z,
- 					struct mem_cgroup *mem_cont,
- 					int active, int file);
- 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -158,6 +158,14 @@ static inline int is_unevictable_lru(enu
- 	return (l == LRU_UNEVICTABLE);
- }
- 
-+/* Isolate inactive pages */
-+#define ISOLATE_INACTIVE	((__force isolate_mode_t)0x1)
-+/* Isolate active pages */
-+#define ISOLATE_ACTIVE		((__force isolate_mode_t)0x2)
-+
-+/* LRU Isolation modes. */
-+typedef unsigned __bitwise__ isolate_mode_t;
-+
- enum zone_watermarks {
- 	WMARK_MIN,
- 	WMARK_LOW,
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -243,11 +243,6 @@ static inline void lru_cache_add_file(st
- 	__lru_cache_add(page, LRU_INACTIVE_FILE);
- }
- 
--/* LRU Isolation modes. */
--#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
--#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
--#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
--
- /* linux/mm/vmscan.c */
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
-@@ -259,7 +254,7 @@ extern unsigned long mem_cgroup_shrink_n
- 						unsigned int swappiness,
- 						struct zone *zone,
- 						unsigned long *nr_scanned);
--extern int __isolate_lru_page(struct page *page, int mode, int file);
-+extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
- extern unsigned long shrink_all_memory(unsigned long nr_pages);
- extern int vm_swappiness;
- extern int remove_mapping(struct address_space *mapping, struct page *page);
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -266,7 +266,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolat
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		int isolate_mode),
-+		isolate_mode_t isolate_mode),
- 
- 	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
- 
-@@ -278,7 +278,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolat
- 		__field(unsigned long, nr_lumpy_taken)
- 		__field(unsigned long, nr_lumpy_dirty)
- 		__field(unsigned long, nr_lumpy_failed)
--		__field(int, isolate_mode)
-+		__field(isolate_mode_t, isolate_mode)
- 	),
- 
- 	TP_fast_assign(
-@@ -312,7 +312,7 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_templ
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		int isolate_mode),
-+		isolate_mode_t isolate_mode),
- 
- 	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
- 
-@@ -327,7 +327,7 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_templ
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		int isolate_mode),
-+		isolate_mode_t isolate_mode),
- 
- 	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
- 
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -371,7 +371,8 @@ static isolate_migrate_t isolate_migrate
- 		}
- 
- 		/* Try isolate the page */
--		if (__isolate_lru_page(page, ISOLATE_BOTH, 0) != 0)
-+		if (__isolate_lru_page(page,
-+				ISOLATE_ACTIVE|ISOLATE_INACTIVE, 0) != 0)
- 			continue;
- 
- 		VM_BUG_ON(PageTransCompound(page));
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1251,7 +1251,8 @@ mem_cgroup_get_reclaim_stat_from_page(st
- unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
- 					struct list_head *dst,
- 					unsigned long *scanned, int order,
--					int mode, struct zone *z,
-+					isolate_mode_t mode,
-+					struct zone *z,
- 					struct mem_cgroup *mem_cont,
- 					int active, int file)
- {
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1012,23 +1012,27 @@ keep_lumpy:
-  *
-  * returns 0 on success, -ve errno on failure.
-  */
--int __isolate_lru_page(struct page *page, int mode, int file)
-+int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
- {
-+	bool all_lru_mode;
- 	int ret = -EINVAL;
+@@ -1747,23 +1747,15 @@ static void get_scan_count(struct zone *
+ 	u64 fraction[2], denominator;
+ 	enum lru_list l;
+ 	int noswap = 0;
+-	int force_scan = 0;
++	bool force_scan = false;
+ 	unsigned long nr_force_scan[2];
  
- 	/* Only take pages on the LRU. */
- 	if (!PageLRU(page))
- 		return ret;
+-
+-	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
+-		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
+-	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
+-		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
+-
+-	if (((anon + file) >> priority) < SWAP_CLUSTER_MAX) {
+-		/* kswapd does zone balancing and need to scan this zone */
+-		if (scanning_global_lru(sc) && current_is_kswapd())
+-			force_scan = 1;
+-		/* memcg may have small limit and need to avoid priority drop */
+-		if (!scanning_global_lru(sc))
+-			force_scan = 1;
+-	}
++	/* kswapd does zone balancing and needs to scan this zone */
++	if (scanning_global_lru(sc) && current_is_kswapd())
++		force_scan = true;
++	/* memcg may have small limit and need to avoid priority drop */
++	if (!scanning_global_lru(sc))
++		force_scan = true;
  
-+	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
-+		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
-+
- 	/*
- 	 * When checking the active state, we need to be sure we are
- 	 * dealing with comparible boolean values.  Take the logical not
- 	 * of each.
- 	 */
--	if (mode != ISOLATE_BOTH && (!PageActive(page) != !mode))
-+	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
- 		return ret;
- 
--	if (mode != ISOLATE_BOTH && page_is_file_cache(page) != file)
-+	if (!all_lru_mode && !!page_is_file_cache(page) != file)
- 		return ret;
- 
- 	/*
-@@ -1076,7 +1080,8 @@ int __isolate_lru_page(struct page *page
-  */
- static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 		struct list_head *src, struct list_head *dst,
--		unsigned long *scanned, int order, int mode, int file)
-+		unsigned long *scanned, int order, isolate_mode_t mode,
-+		int file)
- {
- 	unsigned long nr_taken = 0;
- 	unsigned long nr_lumpy_taken = 0;
-@@ -1201,8 +1206,8 @@ static unsigned long isolate_lru_pages(u
- static unsigned long isolate_pages_global(unsigned long nr,
- 					struct list_head *dst,
- 					unsigned long *scanned, int order,
--					int mode, struct zone *z,
--					int active, int file)
-+					isolate_mode_t mode,
-+					struct zone *z,	int active, int file)
- {
- 	int lru = LRU_BASE;
- 	if (active)
-@@ -1448,6 +1453,7 @@ shrink_inactive_list(unsigned long nr_to
- 	unsigned long nr_taken;
- 	unsigned long nr_anon;
- 	unsigned long nr_file;
-+	isolate_mode_t reclaim_mode = ISOLATE_INACTIVE;
- 
- 	while (unlikely(too_many_isolated(zone, file, sc))) {
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
-@@ -1458,15 +1464,15 @@ shrink_inactive_list(unsigned long nr_to
+ 	/* If we have no swap space, do not bother scanning anon pages. */
+ 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
+@@ -1776,6 +1768,11 @@ static void get_scan_count(struct zone *
+ 		goto out;
  	}
  
- 	set_reclaim_mode(priority, sc, false);
-+	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
-+		reclaim_mode |= ISOLATE_ACTIVE;
++	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
++		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
++	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
++		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
 +
- 	lru_add_drain();
- 	spin_lock_irq(&zone->lru_lock);
- 
  	if (scanning_global_lru(sc)) {
--		nr_taken = isolate_pages_global(nr_to_scan,
--			&page_list, &nr_scanned, sc->order,
--			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
--					ISOLATE_BOTH : ISOLATE_INACTIVE,
--			zone, 0, file);
-+		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
-+			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
- 		zone->pages_scanned += nr_scanned;
- 		if (current_is_kswapd())
- 			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
-@@ -1475,12 +1481,9 @@ shrink_inactive_list(unsigned long nr_to
- 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
- 					       nr_scanned);
- 	} else {
--		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
--			&page_list, &nr_scanned, sc->order,
--			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
--					ISOLATE_BOTH : ISOLATE_INACTIVE,
--			zone, sc->mem_cgroup,
--			0, file);
-+		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
-+			&nr_scanned, sc->order, reclaim_mode, zone,
-+			sc->mem_cgroup, 0, file);
- 		/*
- 		 * mem_cgroup_isolate_pages() keeps track of
- 		 * scanned pages on its own.
+ 		free  = zone_page_state(zone, NR_FREE_PAGES);
+ 		/* If we have very few page cache pages,
 
 
