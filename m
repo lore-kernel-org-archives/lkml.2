@@ -1,98 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab2GZBiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 21:38:04 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15208 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab2GZBiD (ORCPT
+	id S1752029Ab2GZBli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 21:41:38 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20848 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab2GZBlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 21:38:03 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6783"; a="212239912"
-X-IronPort-AV: E=Sophos;i="4.77,656,1336374000"; 
-   d="scan'208";a="121870262"
-Message-ID: <50109F78.4040409@quicinc.com>
-Date: Wed, 25 Jul 2012 18:38:00 -0700
-From: Stephen Boyd <sboyd@quicinc.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 25 Jul 2012 21:41:37 -0400
+Message-ID: <5010A067.8050300@oracle.com>
+Date: Thu, 26 Jul 2012 09:41:59 +0800
+From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] vsprintf: Fix %ps on non symbols when using kallsyms
-References: <1335217525-30709-1-git-send-email-sboyd@codeaurora.org> <20120423145545.e7c41906.akpm@linux-foundation.org>
-In-Reply-To: <20120423145545.e7c41906.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.30.39.5]
+CC: khali@linux-fr.org, linux-kernel@vger.kernel.org,
+        Feng Jin <joe.jin@oracle.com>
+Subject: Re: [PATCH 2/2] Fetch dmi version from SMBIOS if it exist
+References: <500FD2E5.3010307@oracle.com> <20120725125518.d89b78a6.akpm@linux-foundation.org>
+In-Reply-To: <20120725125518.d89b78a6.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
 
-On 4/23/2012 2:55 PM, Andrew Morton wrote:
-> On Mon, 23 Apr 2012 14:45:24 -0700
-> Stephen Boyd <sboyd@codeaurora.org> wrote:
+
+于 2012-07-26 03:55, Andrew Morton 写道:
+> On Wed, 25 Jul 2012 19:05:09 +0800
+> "zhenzhong.duan"<zhenzhong.duan@oracle.com>  wrote:
 >
->> Using %ps in a printk format will sometimes fail silently and
->> print the empty string if the address passed in does not match a
->> symbol that kallsyms knows about.
+>> The right dmi version is in SMBIOS if it's zero in DMI region
+>>
+> This description is too brief to permit me to understand the patch.
+> Can you please provide a more detailed explanation?
+>
+This issue was originally found from an oracle bug.
+One customer noticed system UUID doesn't match between dmidecode & uek2.
+HP ProLiant BL460c G6 :
+# cat /sys/devices/virtual/dmi/id/product_uuid
+00000000-0000-4C48-3031-4D5030333531
+# dmidecode | grep -i uuid
+UUID: 00000000-0000-484C-3031-4D5030333531
+ From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than 
+network byte order.
+So we need to get dmi version to distinguish. If version is 0.0, the 
+real version is taken from the SMBIOS version. This is part of original 
+kernel comment in code.
 
-A coworker pointed out that the second patch in this series now prints
-the symbol closest to the address passed in if kallsyms sees the address
-is between two symbols. So if I have a pointer to some member of a
-structure %ps prints the symbol for the containing structure, which is
-not really helpful.
-
-For example
-
-struct test {
-  int i;
-  int j;
-} my_test;
-
-printk("%ps\n", &my_test.j)
-
-
-would print out "my_test" instead of "0xc4523400".
-
-This is especially bad for the spinlock debugging case where there could
-be two locks embedded in some static structure. I think it would be a
-good idea to apply this patch so we get a good middle ground by printing
-the name and the offset. Or we can revert the patch and I'll add more
-info by printing lockdep information about the lock.
-
------8<------
-
-From: Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH] spinlock_debug: Print offset in addition to symbol name
-
-If there are two spinlocks embedded in a structure that kallsyms
-knows about and one of the spinlocks locks up we will print the
-name of the containing structure instead of the address of the
-lock. This is quite bad, so let's use %pS instead of %ps so we
-get an offset in addition to the symbol so we can determine which
-particular lock is having problems.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- lib/spinlock_debug.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
-index e91fbc2..eb10578 100644
---- a/lib/spinlock_debug.c
-+++ b/lib/spinlock_debug.c
-@@ -58,7 +58,7 @@ static void spin_dump(raw_spinlock_t *lock, const char *msg)
- 	printk(KERN_EMERG "BUG: spinlock %s on CPU#%d, %s/%d\n",
- 		msg, raw_smp_processor_id(),
- 		current->comm, task_pid_nr(current));
--	printk(KERN_EMERG " lock: %ps, .magic: %08x, .owner: %s/%d, "
-+	printk(KERN_EMERG " lock: %pS, .magic: %08x, .owner: %s/%d, "
- 			".owner_cpu: %d\n",
- 		lock, lock->magic,
- 		owner ? owner->comm : "<none>",
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+thanks
+zduan
