@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab2GZPZh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:25:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60079 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752313Ab2GZPZf (ORCPT
+	id S1752808Ab2GZP0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:26:20 -0400
+Received: from mail2.matrix-vision.com ([85.214.244.251]:45755 "EHLO
+	mail2.matrix-vision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab2GZP0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:25:35 -0400
-Date: Thu, 26 Jul 2012 16:25:34 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 07/21] ASoC: io: Prevent use of regmap if request fails
-Message-ID: <20120726152533.GS3099@opensource.wolfsonmicro.com>
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
- <1343298534-13611-8-git-send-email-lee.jones@linaro.org>
- <20120726113204.GY3099@opensource.wolfsonmicro.com>
- <50112C29.6020606@linaro.org>
- <20120726114215.GB3099@opensource.wolfsonmicro.com>
- <50115961.6060509@linaro.org>
- <20120726151217.GO3099@opensource.wolfsonmicro.com>
- <501160F5.5050807@linaro.org>
+	Thu, 26 Jul 2012 11:26:19 -0400
+Message-ID: <5011624A.4040309@matrix-vision.de>
+Date: Thu, 26 Jul 2012 17:29:14 +0200
+From: Michael Jones <michael.jones@matrix-vision.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Rnz0oC2K6vQ5doJs"
-Content-Disposition: inline
-In-Reply-To: <501160F5.5050807@linaro.org>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: whitespace
+References: <1343311644-19739-1-git-send-email-michael.jones@matrix-vision.de> <1343311644-19739-2-git-send-email-michael.jones@matrix-vision.de> <20120726144457.GM3099@opensource.wolfsonmicro.com> <50115E7B.3010400@matrix-vision.de> <20120726151546.GQ3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120726151546.GQ3099@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-MV-Disclaimer: true (erinome)
+X-AV-Checked: ClamAV using ClamSMTP (erinome)
+X-AV-Checked: ClamAV using ClamSMTP (mail2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/26/2012 05:15 PM, Mark Brown wrote:
+> On Thu, Jul 26, 2012 at 05:12:59PM +0200, Michael Jones wrote:
+>> On 07/26/2012 04:44 PM, Mark Brown wrote:
+>
+>>> Your changelog says "whitespace" and is otherwise blank...  what is the
+>>> problem you think you are fixing here?
+>
+>> I don't see what you're seeing.
+>
+> I'm not seeing anything at all.  That's the problem.
+>
+>> Here:
+>> https://lkml.org/lkml/2012/7/26/255
+>> I see the patch which replaces non-uniform spaces with tabs.
+>
+> ...and only has a one word changelog.
+>
 
---Rnz0oC2K6vQ5doJs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry, I misunderstood.  I thought you saw _only_ a one word change log, 
+and not even the patch.  I think I answered your question above now, right?
+Q: what is the problem you think you are fixing here?
+A: some lines were indented with spaces, while most of them are indented 
+with tabs.
 
-On Thu, Jul 26, 2012 at 04:23:33PM +0100, Lee Jones wrote:
+So I suppose the changelog should have been something like:
+regulator: whitespace- indent with tabs not spaces
 
-> What's my 'control data'? It's not used in the original codec patch.
-
-> The old way wants to go:
-
-> snd_soc_update_bits() -> snd_soc_read() -> ab8500_codec_read_reg()
-
-> When then calls back into the abx500.
-
-> So what 'control data' should I be storing in the codec struct?
-
-You're supposed to use it for the data you use to call back into the
-underlying I/O code.
-
---Rnz0oC2K6vQ5doJs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQEWFmAAoJEBus8iNuMP3d8QEP/2oL+z1MeWLQSD8YFGzK2Ob7
-gWdPOUOmFYfvGHUNK+1cshwG2yqa34MrQy84L6Pcq+NNTmoWz6w+YAfJVjmc6dHH
-+dDmUVGl5oKzov7bJPdqNh06F0ChQkiLFFP/Rims/UpX3+3KJKM46jZh1P7DEk7C
-TnYZKOgMglFLhYXc71MZVXw18XZ4lCE4bjwS7NntYnTahIJRTW3mz4SLCPL0LLuj
-TyPo3BnbdGEtyuEuYgfAnu1hEZbZu125h9SJZ0jGZlWaNpnUYBUWYvYwl3XlK7dZ
-CO1alKEuiTNtaE4Khzkq97jn40pncVjzU+bk9l9Tokko1nzJHLXKrhf3bXyS82CU
-3U/5JLCrCA8l87YwVml7rTyiklZUALgV3uTn3dEy8iT1zk4tOJUcC7UvSYQil4ca
-4zbuSn28zrmHBBTnmuGjVYHjDuKF0orDzB4E/kpsJ45qr5SWqsOgI4mn0TkXPaRO
-nvMg0yTxKy/ElZ/J+qqLSLW/+if5xnqVYycx2muCtZz/PR9mCCV7qb+JXnXQhYb+
-57uF+ozUM6y83sSem/KBqS46diXQAXmXbNMSB0dYqJzTuSpP4p7AylUNRGVkTaRb
-9D7S0rGTo8+U4wtI4gdJxMmDf5ZngVPN3gA4w5E0PY5weyvk3YitD2va/pykieli
-9DC97Z96jBV1vOyR0mVW
-=4sRm
------END PGP SIGNATURE-----
-
---Rnz0oC2K6vQ5doJs--
+MATRIX VISION GmbH, Talstrasse 16, DE-71570 Oppenweiler
+Registergericht: Amtsgericht Stuttgart, HRB 271090
+Geschaeftsfuehrer: Gerhard Thullner, Werner Armingeon, Uwe Furtner, Erhard Meier
