@@ -1,29 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab2GZVfO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:35:14 -0400
+	id S1753098Ab2GZVfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:35:47 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:62132 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555Ab2GZVbc (ORCPT
+	with ESMTP id S1753406Ab2GZVbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:31:32 -0400
+	Thu, 26 Jul 2012 17:31:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Nai Xia <nai.xia@gmail.com>, Johannes Weiner <jweiner@redhat.com>
-Subject: [ 29/40] mm: vmscan: when reclaiming for compaction, ensure there are sufficient free pages available
-Date: Thu, 26 Jul 2012 14:29:47 -0700
-Message-Id: <20120726211413.746514438@linuxfoundation.org>
+        Alex Shi <alex.shi@intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>,
+        =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: =?UTF-8?q?=5B=2026/40=5D=20kswapd=3A=20avoid=20unnecessary=20rebalance=20after=20an=20unsuccessful=20balancing?=
+Date: Thu, 26 Jul 2012 14:29:44 -0700
+Message-Id: <20120726211413.473612142@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
  <20120726211411.164006056@linuxfoundation.org>
 User-Agent: quilt/0.60-20.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,118 +37,93 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Alex Shi <alex.shi@intel.com>
 
-commit fe4b1b244bdb96136855f2c694071cb09d140766 upstream.
+commit d2ebd0f6b89567eb93ead4e2ca0cbe03021f344b upstream.
 
-Stable note: Not tracked on Bugzilla. THP and compaction was found to
-	aggressively reclaim pages and stall systems under different
-	situations that was addressed piecemeal over time. This patch
-	addresses a problem where the fix regressed THP allocation
-	success rates.
+Stable note: Fixes https://bugzilla.redhat.com/show_bug.cgi?id=712019.  This
+	patch reduces kswapd CPU usage.
 
-In commit e0887c19 ("vmscan: limit direct reclaim for higher order
-allocations"), Rik noted that reclaim was too aggressive when THP was
-enabled.  In his initial patch he used the number of free pages to decide
-if reclaim should abort for compaction.  My feedback was that reclaim and
-compaction should be using the same logic when deciding if reclaim should
-be aborted.
+In commit 215ddd66 ("mm: vmscan: only read new_classzone_idx from pgdat
+when reclaiming successfully") , Mel Gorman said kswapd is better to sleep
+after a unsuccessful balancing if there is tighter reclaim request pending
+in the balancing.  But in the following scenario, kswapd do something that
+is not matched our expectation.  The patch fixes this issue.
 
-Unfortunately, this had the effect of reducing THP success rates when the
-workload included something like streaming reads that continually
-allocated pages.  The window during which compaction could run and return
-a THP was too small.
+1, Read pgdat request A (classzone_idx, order = 3)
+2, balance_pgdat()
+3, During pgdat, a new pgdat request B (classzone_idx, order = 5) is placed
+4, balance_pgdat() returns but failed since returned order = 0
+5, pgdat of request A assigned to balance_pgdat(), and do balancing again.
+   While the expectation behavior of kswapd should try to sleep.
 
-This patch combines Rik's two patches together.  compaction_suitable() is
-still used to decide if reclaim should be aborted to allow compaction is
-used.  However, it will also ensure that there is a reasonable buffer of
-free pages available.  This improves upon the THP allocation success rates
-but bounds the number of pages that are freed for compaction.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel<riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Reviewed-by: Tim Chen <tim.c.chen@linux.intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Tested-by: Pádraig Brady <P@draigBrady.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |   44 +++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 39 insertions(+), 5 deletions(-)
+ mm/vmscan.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2075,6 +2075,42 @@ restart:
- 	throttle_vm_writeout(sc->gfp_mask);
- }
+@@ -2844,7 +2844,9 @@ static void kswapd_try_to_sleep(pg_data_
+ static int kswapd(void *p)
+ {
+ 	unsigned long order, new_order;
++	unsigned balanced_order;
+ 	int classzone_idx, new_classzone_idx;
++	int balanced_classzone_idx;
+ 	pg_data_t *pgdat = (pg_data_t*)p;
+ 	struct task_struct *tsk = current;
  
-+/* Returns true if compaction should go ahead for a high-order request */
-+static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-+{
-+	unsigned long balance_gap, watermark;
-+	bool watermark_ok;
-+
-+	/* Do not consider compaction for orders reclaim is meant to satisfy */
-+	if (sc->order <= PAGE_ALLOC_COSTLY_ORDER)
-+		return false;
-+
-+	/*
-+	 * Compaction takes time to run and there are potentially other
-+	 * callers using the pages just freed. Continue reclaiming until
-+	 * there is a buffer of free pages available to give compaction
-+	 * a reasonable chance of completing and allocating the page
-+	 */
-+	balance_gap = min(low_wmark_pages(zone),
-+		(zone->present_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
-+			KSWAPD_ZONE_BALANCE_GAP_RATIO);
-+	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
-+	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
-+
-+	/*
-+	 * If compaction is deferred, reclaim up to a point where
-+	 * compaction will have a chance of success when re-enabled
-+	 */
-+	if (compaction_deferred(zone))
-+		return watermark_ok;
-+
-+	/* If compaction is not ready to start, keep reclaiming */
-+	if (!compaction_suitable(zone, sc->order))
-+		return false;
-+
-+	return watermark_ok;
-+}
-+
- /*
-  * This is the direct reclaim path, for page-allocating processes.  We only
-  * try to reclaim pages from zones which will satisfy the caller's allocation
-@@ -2092,8 +2128,8 @@ restart:
-  * scan then give up on it.
-  *
-  * This function returns true if a zone is being reclaimed for a costly
-- * high-order allocation and compaction is either ready to begin or deferred.
-- * This indicates to the caller that it should retry the allocation or fail.
-+ * high-order allocation and compaction is ready to begin. This indicates to
-+ * the caller that it should retry the allocation or fail.
-  */
- static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
-@@ -2127,9 +2163,7 @@ static bool shrink_zones(int priority, s
- 				 * noticable problem, like transparent huge page
- 				 * allocations.
- 				 */
--				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
--					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone))) {
-+				if (compaction_ready(zone, sc)) {
- 					should_abort_reclaim = true;
- 					continue;
- 				}
+@@ -2875,7 +2877,9 @@ static int kswapd(void *p)
+ 	set_freezable();
+ 
+ 	order = new_order = 0;
++	balanced_order = 0;
+ 	classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
++	balanced_classzone_idx = classzone_idx;
+ 	for ( ; ; ) {
+ 		int ret;
+ 
+@@ -2884,7 +2888,8 @@ static int kswapd(void *p)
+ 		 * new request of a similar or harder type will succeed soon
+ 		 * so consider going to sleep on the basis we reclaimed at
+ 		 */
+-		if (classzone_idx >= new_classzone_idx && order == new_order) {
++		if (balanced_classzone_idx >= new_classzone_idx &&
++					balanced_order == new_order) {
+ 			new_order = pgdat->kswapd_max_order;
+ 			new_classzone_idx = pgdat->classzone_idx;
+ 			pgdat->kswapd_max_order =  0;
+@@ -2899,7 +2904,8 @@ static int kswapd(void *p)
+ 			order = new_order;
+ 			classzone_idx = new_classzone_idx;
+ 		} else {
+-			kswapd_try_to_sleep(pgdat, order, classzone_idx);
++			kswapd_try_to_sleep(pgdat, balanced_order,
++						balanced_classzone_idx);
+ 			order = pgdat->kswapd_max_order;
+ 			classzone_idx = pgdat->classzone_idx;
+ 			pgdat->kswapd_max_order = 0;
+@@ -2916,7 +2922,9 @@ static int kswapd(void *p)
+ 		 */
+ 		if (!ret) {
+ 			trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
+-			order = balance_pgdat(pgdat, order, &classzone_idx);
++			balanced_classzone_idx = classzone_idx;
++			balanced_order = balance_pgdat(pgdat, order,
++						&balanced_classzone_idx);
+ 		}
+ 	}
+ 	return 0;
 
 
