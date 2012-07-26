@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab2GZLKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:10:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47665 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751720Ab2GZLKd (ORCPT
+	id S1752286Ab2GZLL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:11:28 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:36530 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab2GZLL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:10:33 -0400
-Date: Thu, 26 Jul 2012 12:10:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: lrg@ti.com, balbi@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] drivers: regulator: add error checks for exported
- APIs
-Message-ID: <20120726111030.GU3099@opensource.wolfsonmicro.com>
-References: <1343298603-25442-1-git-send-email-kishon@ti.com>
+	Thu, 26 Jul 2012 07:11:26 -0400
+Message-ID: <501125D3.9050705@linux.vnet.ibm.com>
+Date: Thu, 26 Jul 2012 16:41:15 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qKhyKP9HH88saeqA"
-Content-Disposition: inline
-In-Reply-To: <1343298603-25442-1-git-send-email-kishon@ti.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Alan Stern <stern@rowland.harvard.edu>, mingo@kernel.org,
+        peterz@infradead.org, rusty@rustcorp.com.au,
+        paulmck@linux.vnet.ibm.com, namhyung@kernel.org, tj@kernel.org,
+        rjw@sisk.pl, nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
+ during CPU hotplug
+References: <Pine.LNX.4.44L0.1207251054420.2008-100000@iolanthe.rowland.org> <50101733.4030205@linux.vnet.ibm.com> <alpine.LFD.2.02.1207251758340.32033@ionos> <50102424.5010301@linux.vnet.ibm.com> <alpine.LFD.2.02.1207261256030.32033@ionos>
+In-Reply-To: <alpine.LFD.2.02.1207261256030.32033@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072611-8878-0000-0000-000003647697
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/26/2012 04:32 PM, Thomas Gleixner wrote:
+> On Wed, 25 Jul 2012, Srivatsa S. Bhat wrote:
+>> On 07/25/2012 10:00 PM, Thomas Gleixner wrote:
+>>> While I thought about having a full dependency tracking system, I'm
+>>> quite convinced by now, that hotplug is a rather linear sequence which
+>>> does not provide much room for paralell setup/teardown.
+>>>
+>>
+>> Pretty much, when considering hotplug of a single CPU.
+>>
+>> (But when considering booting, Arjan had proposed (while discussing
+>> about his asynchronous booting patch) that it would be good to split
+>> up physical vs logical parts of the booting/hotplug, so that the
+>> physical part can happen in parallel with other CPUs, while the
+>> logical online can be done serially, much later. Anyway, this is
+>> slightly off-topic here, since we are mainly talking about hotplug
+>> of a single cpu here. I just thought of putting a word about that
+>> here, since we are discussing hotplug redesign anyways..)
+> 
+> Well, the nice thing about having a proper state machine is that you
+> can tell the code to advance the BP only to the "kick the other cpu"
+> step, which is before the first sync point, so you can leave the state
+> there and continue with "bring it fully online" later. 
+> 
+> So that feature comes basically for free. :)
+> 
 
---qKhyKP9HH88saeqA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ah! Nice :-)
 
-On Thu, Jul 26, 2012 at 04:00:03PM +0530, Kishon Vijay Abraham I wrote:
+Regards,
+Srivatsa S. Bhat
 
-> Added error checks for exported APIs in regulator framework so that
-> incorrect use of these APIs does not result in a crash.
-
-The commit (especially the subject) should be more descriptive, it's not
-that we're missing error checks it's that you're handling garbage passed
-in from the user a bit more gracefully.
-
-I'm not sure how useful this is as-is -  if you're not checking your
-errors you're not checking your errors so it's probably just pushing the
-robustness failures around, especially since...
-
-> +	if (IS_ERR_OR_NULL(regulator))
-> +		return -ENODEV;
-
-...this is too quiet, this should at the very least be generating a loud
-warning so people can see there's a problem (probably with WARN_ON so we
-can see what called it).  Can you respin with something noisier please?
-
-Also NULL is a valid regulator (though we don't use it right now).
-
---qKhyKP9HH88saeqA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQESWcAAoJEBus8iNuMP3dOe8P/0afMkWWPp0VUGGlkDjLTH8l
-y6oE+nrim4YNy+bzX+ZMRdww+5HAiYk4B9xIDnCuXtmvbU5PL99jr0+dXFMFbRpC
-XvfcmrYltXenGy3njhcyhT4hsLR/mLZNAixb/fCUHghouTvSjA8oyyKuwc6F6QkF
-+9pm7DANhBkKhqgMGjXqRJYqcgAXlnpFFgq9TkliHEWXzm5PKebtq9iUVD/zfowv
-1Yo2AEW8PqwDjZE3sgq86XdKxk4my6HPSi7W44OrhyzJ70GZNEJ+543UyR+yr2UN
-kgiJfj6C+O29Ke+4t0lyYEgSzBqqJ2/NqrblAx1jkaCXnCilzZRVYTq4PQ2ZprF6
-sNQ6bDfRj6OlyQA17BYJbLUiI699sbiWRMpHVpi3ZisSkyrHbhzj2YptShnpdVNS
-qMXBcQXaxE74ShXScuSdvbnN/Xp+eeM2TKsTFBlZE1AMddpvtPsLiNuxQqs1ZGUD
-WhauEKkKcE58BSfiBn7Pad3y1yRne8JHabvPLGlnyJnQCINGMYUWDDCjKqMMolAH
-I6RWdKnpGMRDYm9k5eLpv5cTYI1/a7GDGQxb8Ed289ebfpvRiJhP+bP8WDfIjcMq
-Ucgm4pfCV7Luz0n0TthzPUsHrX498SnOXiwq2sItTkgMS0+rWp6MeRumm9jXMF8c
-OiklbL5L2uSlVsH/wnYA
-=gX2l
------END PGP SIGNATURE-----
-
---qKhyKP9HH88saeqA--
