@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab2GZIFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 04:05:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56696 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751889Ab2GZIFZ convert rfc822-to-8bit (ORCPT
+	id S1751985Ab2GZIHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:07:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54182 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab2GZIHq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 04:05:25 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: "Hilman, Kevin" <khilman@ti.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v2 6/6] arm/dts: am33xx rtc node
-Thread-Topic: [PATCH v2 6/6] arm/dts: am33xx rtc node
-Thread-Index: AQHNaiyGJuGQat7MTEqFmhFrCStuC5c5fpEAgACJOID//9VZAIABV+8w
-Date: Thu, 26 Jul 2012 08:04:10 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93E9ADBE5@DBDE01.ent.ti.com>
-References: <cover.1343191280.git.afzal@ti.com>
- <d16976055462214af276d7242faa2bc6e621fd44.1343191280.git.afzal@ti.com>
- <500FD698.30906@mvista.com>
- <C8443D0743D26F4388EA172BF4E2A7A93E9AD8B1@DBDE01.ent.ti.com>
- <501025EC.6010600@mvista.com>
-In-Reply-To: <501025EC.6010600@mvista.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 26 Jul 2012 04:07:46 -0400
+Message-ID: <1343290057.26034.81.camel@twins>
+Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
+From: Peter Zijlstra <peterz@infradead.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Thu, 26 Jul 2012 10:07:37 +0200
+In-Reply-To: <20120726055011.GP26120@redhat.com>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+	 <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+	 <20120723181358.GC6717@infradead.org> <500EAF23.8060909@gmail.com>
+	 <20120724161507.GG3732@erda.amd.com> <1343248546.26034.68.camel@twins>
+	 <20120726055011.GP26120@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+On Thu, 2012-07-26 at 08:50 +0300, Gleb Natapov wrote:
+> On Wed, Jul 25, 2012 at 10:35:46PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-07-24 at 18:15 +0200, Robert Richter wrote:
+> > > David,
+> > > 
+> > > On 24.07.12 08:20:19, David Ahern wrote:
+> > > > On 7/23/12 12:13 PM, Arnaldo Carvalho de Melo wrote:
+> > > > > Em Fri, Jul 20, 2012 at 05:25:53PM -0600, David Ahern escreveu:
+> > > > >> PEBS cannot be used with guest mode. If user adds :p modifier set
+> > > > >> exclude_guest as well.
+> > > > >
+> > > > > Is this something Intel specific? Or can someone think of an arch where
+> > > > > this limitation wouldn't exist?
+> > > > 
+> > > > Good point. So far precise_ip is used by arch/x86 only. I don't have an 
+> > > > AMD based server so I don't know if there is a conflict between 
+> > > > virtualization and IBS. Added Robert for advice.
+> > > 
+> > > thanks for this hint.
+> > > 
+> > > On AMD cpus precise_ip maps to IBS, which does not support hardware
+> > > options as perfctrs do. Thus, following attr flags are not supported:
+> > > 
+> > >  exclude_user, exclude_kernel, exclude_host, exclude_guest
+> > > 
+> > > Counting in guest mode is possible with IBS, but not the exclusion of
+> > > a certain mode. If precise_ip counting is enabled on AMD we may not
+> > > set the exclude_guest flag.
+> > 
+> > IIRC we have SVM enter/exit hooks in kvm/perf already, we could use
+> > those to implement exclude_guest for IBS.
+> > 
+> > Now I've been trying to find the patches that introduced that, but I'm
+> > failing horridly. Gleb, got us a pointer here?
 
-On Wed, Jul 25, 2012 at 22:29:24, Sergei Shtylyov wrote:
+> The commit is 144d31e6, but it introduces hook that is used on VMX only.
+> SVM does not need it to implement guest/host only counters since it
+> has HW support for that in the PMU.
 
-> >>> +		rtc@44e3e000 {
-> 
-> >>     Address postfix in the node name without "reg" property?
-> 
-> > As per [1], "The unit-address is included if the node describes
-> > a device with an address".
-> 
->    Which in this case it doesn't.
-> 
-> > Here even though reg property is not present, as via hwmod
-> > (see below) it is getting address, isn't it better to have it
-> 
->    I think not.
-
-Ok, I will remove it
- 
-> >>> +			compatible = "ti,da830-rtc";
-> >>> +			ti,hwmods = "rtc";
-
-Regards
-Afzal
+Right, seems that has changed now that we support IBS.
