@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab2GZP5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:57:10 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:7827 "EHLO SMTP.CITRIX.COM"
+	id S1753086Ab2GZP50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:57:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10630 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752819Ab2GZP5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:57:08 -0400
-X-IronPort-AV: E=Sophos;i="4.77,659,1336363200"; 
-   d="scan'208";a="32691226"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>, <tim@xen.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
-        <catalin.marinas@arm.com>, <arnd@arndb.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 14/24] xen/arm: initialize grant_table on ARM
-Date: Thu, 26 Jul 2012 16:33:56 +0100
-Message-ID: <1343316846-25860-14-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+	id S1753061Ab2GZP5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 11:57:24 -0400
+Date: Thu, 26 Jul 2012 17:54:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Peter Boonstoppel <pboonstoppel@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Andy Walls <awalls@md.metrocast.net>,
+        Diwakar Tundlam <dtundlam@nvidia.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 1/1] kthread: disable preemption during complete()
+Message-ID: <20120726155409.GB20964@redhat.com>
+References: <5FBF8E85CA34454794F0F7ECBA79798F379D364859@HQMAIL04.nvidia.com> <20120725000901.GA5304@google.com> <5FBF8E85CA34454794F0F7ECBA79798F379D36485E@HQMAIL04.nvidia.com> <20120725224044.GC32378@google.com> <1343289850.26034.79.camel@twins> <alpine.LFD.2.02.1207261242240.32033@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1207261242240.32033@ionos>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize the grant table mapping at the address specified at index 0
-in the DT under the /xen node.
-After the grant table is initialized, call xenbus_probe (if not dom0).
+On 07/26, Thomas Gleixner wrote:
+>
+> On Thu, 26 Jul 2012, Peter Zijlstra wrote:
+> > On Wed, 2012-07-25 at 15:40 -0700, Tejun Heo wrote:
+> > > > This patch disables preemption during complete(), since we call
+> > > > schedule() directly afterwards, so it will correctly enter
+> > > > TASK_UNINTERRUPTIBLE. This speeds up kthread creation/binding during
+> > > > cpu hotplug significantly.
+> >
+> > tglx has patches that make the kthread create/destroy stuff from hotplug
+> > go away.. that seems like the better approach.
+>
+> Right. That cpu hotplug setup/teardown stuff is ugly.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/arm/xen/enlighten.c  |   13 +++++++++++++
- drivers/xen/grant-table.c |    2 +-
- 2 files changed, 14 insertions(+), 1 deletions(-)
+Could you cc me if you send these patches?
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 2e013cf..854af1e 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -1,8 +1,12 @@
- #include <xen/xen.h>
- #include <xen/interface/xen.h>
- #include <xen/interface/memory.h>
-+#include <xen/interface/hvm/params.h>
- #include <xen/platform_pci.h>
- #include <xen/features.h>
-+#include <xen/grant_table.h>
-+#include <xen/hvm.h>
-+#include <xen/xenbus.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
- #include <linux/module.h>
-@@ -51,12 +55,16 @@ int __init xen_guest_init(void)
- 	struct xen_add_to_physmap xatp;
- 	static struct shared_info *shared_info_page = 0;
- 	struct device_node *node;
-+	struct resource res;
- 
- 	node = of_find_compatible_node(NULL, NULL, "arm,xen");
- 	if (!node) {
- 		pr_info("No Xen support\n");
- 		return 0;
- 	}
-+	if (of_address_to_resource(node, 0, &res))
-+		return -EINVAL;
-+	xen_hvm_resume_frames = res.start >> PAGE_SHIFT;
- 	xen_domain_type = XEN_HVM_DOMAIN;
- 
- 	xen_setup_features();
-@@ -97,6 +105,11 @@ int __init xen_guest_init(void)
- 		per_cpu(xen_vcpu, cpu) =
- 			&HYPERVISOR_shared_info->vcpu_info[cpu];
- 	}
-+
-+	gnttab_init();
-+	if (!xen_initial_domain())
-+		xenbus_probe(NULL);
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(xen_guest_init);
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 1d0d95e..fd2137a 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -62,7 +62,7 @@
- 
- static grant_ref_t **gnttab_list;
- static unsigned int nr_grant_frames;
--static unsigned int boot_max_nr_grant_frames;
-+static unsigned int boot_max_nr_grant_frames = 1;
- static int gnttab_free_count;
- static grant_ref_t gnttab_free_head;
- static DEFINE_SPINLOCK(gnttab_list_lock);
--- 
-1.7.2.5
+> > The comment doesn't really make that clear.
+>
+> Right, the comment is crap. It has nothing to do with kthread_bind()
+> and stuff. The whole purpose is to avoid the pointless preemption
+> after wakeup.
+
+Yes, but this "avoid the preemption after wakeup" can actually help
+kthread_bind()->wait_task_inactive() ?
+
+This reminds me, Peter had a patch which teaches wait_task_inactive()
+to use sched_in/sched_out notifiers to avoid the polling...
+
+Oleg.
 
