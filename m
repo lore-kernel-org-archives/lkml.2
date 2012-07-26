@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab2GZLNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:13:23 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:39410 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab2GZLNW (ORCPT
+	id S1752423Ab2GZLNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:13:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44389 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab2GZLNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:13:22 -0400
-Message-ID: <50112647.1020206@linux.vnet.ibm.com>
-Date: Thu, 26 Jul 2012 16:43:11 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Alan Stern <stern@rowland.harvard.edu>, mingo@kernel.org,
-        peterz@infradead.org, rusty@rustcorp.com.au,
-        paulmck@linux.vnet.ibm.com, namhyung@kernel.org, tj@kernel.org,
-        rjw@sisk.pl, nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
- during CPU hotplug
-References: <Pine.LNX.4.44L0.1207251054420.2008-100000@iolanthe.rowland.org> <50101733.4030205@linux.vnet.ibm.com> <alpine.LFD.2.02.1207251758340.32033@ionos> <50103955.9020301@linux.vnet.ibm.com> <alpine.LFD.2.02.1207261248130.32033@ionos>
-In-Reply-To: <alpine.LFD.2.02.1207261248130.32033@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072611-3864-0000-0000-000003EC2823
+	Thu, 26 Jul 2012 07:13:38 -0400
+From: Hideki EIRAKU <hdk@igel.co.jp>
+To: Russell King <linux@arm.linux.org.uk>, Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        alsa-devel@alsa-project.org, Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Hideki EIRAKU <hdk@igel.co.jp>
+Subject: [PATCH v2 0/4] Use dma_mmap_coherent to support IOMMU mapper
+Date: Thu, 26 Jul 2012 20:13:07 +0900
+Message-Id: <1343301191-26001-1-git-send-email-hdk@igel.co.jp>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 04:25 PM, Thomas Gleixner wrote:
-> On Wed, 25 Jul 2012, Srivatsa S. Bhat wrote:
->> On 07/25/2012 10:00 PM, Thomas Gleixner wrote:
->>> struct hotplug_event hotplug_events_bp[CPU_HOTPLUG_MAX_EVENTS];
->>> struct hotplug_event hotplug_events_ap[CPU_HOTPLUG_MAX_EVENTS];
->>>    
->>> The _bp one is the list of events which are executed on the active cpu
->>> and the _ap ones are those executed on the hotplugged cpu.
->>>
->>> The core code advances the events in sync steps, so both BP and AP can
->>> issue a stop on the process and cause a rollback.
->>
->> What exactly does "sync steps" mean in this context? Also, for the CPU
-> 
-> Sync step means, that both sides need to synchronize - not at every
-> step, but at well defined synchronization points. You can't advance
-> the AP to online state unless the BP has done the preparatory stuff
-> already.
-> 
->> offline event, the event could start off with both the BP and the AP being
->> the same CPU.. Does this design take care of that case?
-> 
-> Once the AP leaves the state where tasks can be freely scheduled on
-> it, the take down thread migrates automagically. And that's one of the
-> first things I'm trying to do so the first synchronization point is
-> after that.
-> 
+There is a dma_mmap_coherent() API in some architectures.  This API
+provides a mmap function for memory allocated by dma_alloc_coherent().
+Some drivers mmap a dma_addr_t returned by dma_alloc_coherent() as a
+physical address.  But such drivers do not work correctly when IOMMU
+mapper is used.
 
-Oh.. Ok.. Thanks for the explanation!
+v2:
+- Rebase on fbdev-next branch of
+  git://github.com/schandinat/linux-2.6.git.
+- Initialize .fb_mmap in both sh_mobile_lcdc_overlay_ops and
+  sh_mobile_lcdc_ops.
+- Add Laurent's clean up patch.
 
-Regards,
-Srivatsa S. Bhat
+Hideki EIRAKU (3):
+  ARM: dma-mapping: define ARCH_HAS_DMA_MMAP_COHERENT
+  media: videobuf2-dma-contig: use dma_mmap_coherent if available
+  fbdev: sh_mobile_lcdc: use dma_mmap_coherent if available
+
+Laurent Pinchart (1):
+  ALSA: pcm - Don't define ARCH_HAS_DMA_MMAP_COHERENT privately for ARM
+
+ arch/arm/include/asm/dma-mapping.h         |    1 +
+ drivers/media/video/videobuf2-dma-contig.c |   18 ++++++++++++++++++
+ drivers/video/sh_mobile_lcdcfb.c           |   28 ++++++++++++++++++++++++++++
+ sound/core/pcm_native.c                    |    7 -------
+ 4 files changed, 47 insertions(+), 7 deletions(-)
 
