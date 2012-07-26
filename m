@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab2GZVaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:30:25 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53162 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab2GZVaU (ORCPT
+	id S1753299Ab2GZVab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:30:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62132 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271Ab2GZVa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:30:20 -0400
+	Thu, 26 Jul 2012 17:30:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 06/40] dm raid1: fix crash with mirror recovery and discard
-Date: Thu, 26 Jul 2012 14:29:24 -0700
-Message-Id: <20120726211411.652200420@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [ 08/40] mm: memory hotplug: Check if pages are correctly reserved on a per-section basis
+Date: Thu, 26 Jul 2012 14:29:26 -0700
+Message-Id: <20120726211411.849674275@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -31,110 +33,125 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 751f188dd5ab95b3f2b5f2f467c38aae5a2877eb upstream.
+commit 2bbcb8788311a40714b585fc11b51da6ffa2ab92 upstream.
 
-This patch fixes a crash when a discard request is sent during mirror
-recovery.
+Stable note: Fixes https://bugzilla.novell.com/show_bug.cgi?id=721039 .
+        Without the patch, memory hot-add can fail for kernel configurations
+        that do not set CONFIG_SPARSEMEM_VMEMMAP.
 
-Firstly, some background.  Generally, the following sequence happens during
-mirror synchronization:
-- function do_recovery is called
-- do_recovery calls dm_rh_recovery_prepare
-- dm_rh_recovery_prepare uses a semaphore to limit the number
-  simultaneously recovered regions (by default the semaphore value is 1,
-  so only one region at a time is recovered)
-- dm_rh_recovery_prepare calls __rh_recovery_prepare,
-  __rh_recovery_prepare asks the log driver for the next region to
-  recover. Then, it sets the region state to DM_RH_RECOVERING. If there
-  are no pending I/Os on this region, the region is added to
-  quiesced_regions list. If there are pending I/Os, the region is not
-  added to any list. It is added to the quiesced_regions list later (by
-  dm_rh_dec function) when all I/Os finish.
-- when the region is on quiesced_regions list, there are no I/Os in
-  flight on this region. The region is popped from the list in
-  dm_rh_recovery_start function. Then, a kcopyd job is started in the
-  recover function.
-- when the kcopyd job finishes, recovery_complete is called. It calls
-  dm_rh_recovery_end. dm_rh_recovery_end adds the region to
-  recovered_regions or failed_recovered_regions list (depending on
-  whether the copy operation was successful or not).
+(Resending as I am not seeing it in -next so maybe it got lost)
 
-The above mechanism assumes that if the region is in DM_RH_RECOVERING
-state, no new I/Os are started on this region. When I/O is started,
-dm_rh_inc_pending is called, which increases reg->pending count. When
-I/O is finished, dm_rh_dec is called. It decreases reg->pending count.
-If the count is zero and the region was in DM_RH_RECOVERING state,
-dm_rh_dec adds it to the quiesced_regions list.
+mm: memory hotplug: Check if pages are correctly reserved on a per-section basis
 
-Consequently, if we call dm_rh_inc_pending/dm_rh_dec while the region is
-in DM_RH_RECOVERING state, it could be added to quiesced_regions list
-multiple times or it could be added to this list when kcopyd is copying
-data (it is assumed that the region is not on any list while kcopyd does
-its jobs). This results in memory corruption and crash.
+It is expected that memory being brought online is PageReserved
+similar to what happens when the page allocator is being brought up.
+Memory is onlined in "memory blocks" which consist of one or more
+sections. Unfortunately, the code that verifies PageReserved is
+currently assuming that the memmap backing all these pages is virtually
+contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
+As a result, memory hot-add is failing on those configurations with
+the message;
 
-There already exist bypasses for REQ_FLUSH requests: REQ_FLUSH requests
-do not belong to any region, so they are always added to the sync list
-in do_writes. dm_rh_inc_pending does not increase count for REQ_FLUSH
-requests. In mirror_end_io, dm_rh_dec is never called for REQ_FLUSH
-requests. These bypasses avoid the crash possibility described above.
+kernel: section number XXX page number 256 not reserved, was it already online?
 
-These bypasses were improperly implemented for REQ_DISCARD when
-the mirror target gained discard support in commit
-5fc2ffeabb9ee0fc0e71ff16b49f34f0ed3d05b4 (dm raid1: support discard).
+This patch updates the PageReserved check to lookup struct page once
+per section to guarantee the correct struct page is being checked.
 
-In do_writes, REQ_DISCARD requests is always added to the sync queue and
-immediately dispatched (even if the region is in DM_RH_RECOVERING).  However,
-dm_rh_inc and dm_rh_dec is called for REQ_DISCARD resusts.  So it violates the
-rule that no I/Os are started on DM_RH_RECOVERING regions, and causes the list
-corruption described above.
-
-This patch changes it so that REQ_DISCARD requests follow the same path
-as REQ_FLUSH. This avoids the crash.
-
-Reference: https://bugzilla.redhat.com/837607
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[Check pages within sections properly: rientjes@google.com]
+[original patch by: nfont@linux.vnet.ibm.com]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Tested-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-raid1.c       |    2 +-
- drivers/md/dm-region-hash.c |    5 ++++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/base/memory.c |   58 ++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 40 insertions(+), 18 deletions(-)
 
---- a/drivers/md/dm-raid1.c
-+++ b/drivers/md/dm-raid1.c
-@@ -1210,7 +1210,7 @@ static int mirror_end_io(struct dm_targe
- 	 * We need to dec pending if this was a write.
- 	 */
- 	if (rw == WRITE) {
--		if (!(bio->bi_rw & REQ_FLUSH))
-+		if (!(bio->bi_rw & (REQ_FLUSH | REQ_DISCARD)))
- 			dm_rh_dec(ms->rh, map_context->ll);
- 		return error;
- 	}
---- a/drivers/md/dm-region-hash.c
-+++ b/drivers/md/dm-region-hash.c
-@@ -404,6 +404,9 @@ void dm_rh_mark_nosync(struct dm_region_
- 		return;
- 	}
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long
+ }
  
-+	if (bio->bi_rw & REQ_DISCARD)
-+		return;
+ /*
++ * The probe routines leave the pages reserved, just as the bootmem code does.
++ * Make sure they're still that way.
++ */
++static bool pages_correctly_reserved(unsigned long start_pfn,
++					unsigned long nr_pages)
++{
++	int i, j;
++	struct page *page;
++	unsigned long pfn = start_pfn;
 +
- 	/* We must inform the log that the sync count has changed. */
- 	log->type->set_region_sync(log, region, 0);
++	/*
++	 * memmap between sections is not contiguous except with
++	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
++	 * and assume memmap is contiguous within each section
++	 */
++	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
++		if (WARN_ON_ONCE(!pfn_valid(pfn)))
++			return false;
++		page = pfn_to_page(pfn);
++
++		for (j = 0; j < PAGES_PER_SECTION; j++) {
++			if (PageReserved(page + j))
++				continue;
++
++			printk(KERN_WARNING "section number %ld page number %d "
++				"not reserved, was it already online?\n",
++				pfn_to_section_nr(pfn), j);
++
++			return false;
++		}
++	}
++
++	return true;
++}
++
++/*
+  * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
+  * OK to have direct references to sparsemem variables in here.
+  */
+ static int
+ memory_block_action(unsigned long phys_index, unsigned long action)
+ {
+-	int i;
+ 	unsigned long start_pfn, start_paddr;
+ 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
+ 	struct page *first_page;
+@@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_i
  
-@@ -524,7 +527,7 @@ void dm_rh_inc_pending(struct dm_region_
- 	struct bio *bio;
+ 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
  
- 	for (bio = bios->head; bio; bio = bio->bi_next) {
--		if (bio->bi_rw & REQ_FLUSH)
-+		if (bio->bi_rw & (REQ_FLUSH | REQ_DISCARD))
- 			continue;
- 		rh_inc(rh, dm_rh_bio_to_region(rh, bio));
- 	}
+-	/*
+-	 * The probe routines leave the pages reserved, just
+-	 * as the bootmem code does.  Make sure they're still
+-	 * that way.
+-	 */
+-	if (action == MEM_ONLINE) {
+-		for (i = 0; i < nr_pages; i++) {
+-			if (PageReserved(first_page+i))
+-				continue;
+-
+-			printk(KERN_WARNING "section number %ld page number %d "
+-				"not reserved, was it already online?\n",
+-				phys_index, i);
+-			return -EBUSY;
+-		}
+-	}
+-
+ 	switch (action) {
+ 		case MEM_ONLINE:
+ 			start_pfn = page_to_pfn(first_page);
++
++			if (!pages_correctly_reserved(start_pfn, nr_pages))
++				return -EBUSY;
++
+ 			ret = online_pages(start_pfn, nr_pages);
+ 			break;
+ 		case MEM_OFFLINE:
 
 
