@@ -1,63 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab2GZOFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 10:05:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56092 "EHLO mga09.intel.com"
+	id S1752194Ab2GZOFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 10:05:39 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48203 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab2GZOFh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751090Ab2GZOFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jul 2012 10:05:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="177842225"
-From: "Love, Robert W" <robert.w.love@intel.com>
-To: Sha Zhengju <handai.szj@gmail.com>
-CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH] mainline 3.5, fcoe: remove the __exit annotation of
- fcoe_transport_exit()
-Thread-Topic: [PATCH] mainline 3.5, fcoe: remove the __exit annotation of
- fcoe_transport_exit()
-Thread-Index: AQHNatsqI6bfWpza7kuufbNrvbHRFJc8Dt4A
-Date: Thu, 26 Jul 2012 14:05:08 +0000
-Message-ID: <50114E80.70303@intel.com>
-References: <1343271764-17501-1-git-send-email-handai.szj@taobao.com>
-In-Reply-To: <1343271764-17501-1-git-send-email-handai.szj@taobao.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
- Thunderbird/14.0
-x-originating-ip: [10.19.9.42]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <6FDAFB903AD809448DB7E1CFDCFDD7C9@intel.com>
-Content-Transfer-Encoding: 7BIT
+Message-ID: <50114E05.1040201@parallels.com>
+Date: Thu, 26 Jul 2012 18:02:45 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
+        <cgroups@vger.kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 05/10] slab: allow enable_cpu_cache to use preset values
+ for its tunables
+References: <1343227101-14217-1-git-send-email-glommer@parallels.com> <1343227101-14217-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1207251204450.3543@router.home> <501039F9.7040309@parallels.com> <alpine.DEB.2.00.1207251331480.4995@router.home>
+In-Reply-To: <alpine.DEB.2.00.1207251331480.4995@router.home>
+Content-Type: multipart/mixed;
+	boundary="------------010800000600070305040105"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/25/2012 8:02 PM, Sha Zhengju wrote:
+--------------010800000600070305040105
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 
-From: Sha Zhengju <handai.szj@taobao.com><mailto:handai.szj@taobao.com>
+On 07/25/2012 10:33 PM, Christoph Lameter wrote:
+> On Wed, 25 Jul 2012, Glauber Costa wrote:
+> 
+>> It is certainly not through does the same method as SLAB, right ?
+>> Writing to /proc/slabinfo gives me an I/O error
+>> I assume it is something through sysfs, but schiming through the code
+>> now, I can't find any per-cache tunables. Would you mind pointing me to
+>> them?
+> 
+> The slab attributes in /sys/kernel/slab/<slabname>/<attr> can be modified
+> for some values. I think that could be the default method for the future
+> since it allows easy addition of new tunables as needed.
+> 
 
-While testing linux mainline v3.5, it comes out the following warning:
-
-WARNING: drivers/scsi/fcoe/libfcoe.o(.init.text+0x21): Section mismatch in reference from the function
-init_module() to the function .exit.text:fcoe_transport_exit()
-The function __init init_module() references a function __exit fcoe_transport_exit().
-This is often seen when error handling in the init function uses functionality in the exit path.
-The fix is often to remove the __exit annotation of fcoe_transport_exit() so it may be used outside an exit section.
+Christoph, would the following PoC patch be enough?
 
 
 
-Hi Sha,
+--------------010800000600070305040105
+Content-Type: text/x-patch; name="0001-slub-propagation.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="0001-slub-propagation.patch"
 
-    Thanks for the patch. I have seen this same change a few times. The warning has existed for the entirety of the 3.5 development cycle. It's currently in scsi.git/for-next. Take a look at this tread from linux-scsi for the discussion about it.
+>From 7c582c5c6321cbde93c5e73c6c2096b4432a2a04 Mon Sep 17 00:00:00 2001
+From: Glauber Costa <glommer@parallels.com>
+Date: Thu, 26 Jul 2012 15:19:08 +0400
+Subject: [PATCH] slub propagation
 
-http://marc.info/?l=linux-scsi&m=134103414011479&w=2
+---
+ mm/slub.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Thanks, //Rob
+diff --git a/mm/slub.c b/mm/slub.c
+index 55946c3..a136a75 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5130,6 +5130,10 @@ static ssize_t slab_attr_store(struct kobject *kobj,
+ 	struct slab_attribute *attribute;
+ 	struct kmem_cache *s;
+ 	int err;
++#ifdef CONFIG_MEMCG_KMEM
++	struct kmem_cache *c;
++	struct mem_cgroup_cache_params *p;
++#endif
+ 
+ 	attribute = to_slab_attr(attr);
+ 	s = to_slab(kobj);
+@@ -5138,7 +5142,19 @@ static ssize_t slab_attr_store(struct kobject *kobj,
+ 		return -EIO;
+ 
+ 	err = attribute->store(s, buf, len);
++#ifdef CONFIG_MEMCG_KMEM
++	if (slab_state < FULL)
++		return err;
+ 
++	if ((err < 0) || (s->memcg_params.id == -1))
++		return err;
++
++	list_for_each_entry(p, &s->memcg_params.sibling_list, sibling_list) {
++		c = container_of(p, struct kmem_cache, memcg_params);
++		/* return value determined by the parent cache only */
++		attribute->store(c, buf, len);
++	}
++#endif
+ 	return err;
+ }
+ 
+-- 
+1.7.10.4
+
+
+--------------010800000600070305040105--
