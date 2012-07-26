@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2GZPLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:11:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38083 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab2GZPLV (ORCPT
+	id S1752632Ab2GZPMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:12:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49099 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752349Ab2GZPMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:11:21 -0400
-Date: Thu, 26 Jul 2012 08:11:06 -0700
-From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-4f3f713fc78d966d81ad87d2f3587369f9b34ae6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, zheng.z.yan@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1343024611-4692-1-git-send-email-zheng.z.yan@intel.com>
-References: <1343024611-4692-1-git-send-email-zheng.z.yan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86:
-  Fix typo in format definition of uncore PCU filter
-Git-Commit-ID: 4f3f713fc78d966d81ad87d2f3587369f9b34ae6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 26 Jul 2012 11:12:22 -0400
+Date: Thu, 26 Jul 2012 16:12:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 07/21] ASoC: io: Prevent use of regmap if request fails
+Message-ID: <20120726151217.GO3099@opensource.wolfsonmicro.com>
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
+ <1343298534-13611-8-git-send-email-lee.jones@linaro.org>
+ <20120726113204.GY3099@opensource.wolfsonmicro.com>
+ <50112C29.6020606@linaro.org>
+ <20120726114215.GB3099@opensource.wolfsonmicro.com>
+ <50115961.6060509@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rdeY6f/ml8+xnc5C"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 26 Jul 2012 08:11:12 -0700 (PDT)
+In-Reply-To: <50115961.6060509@linaro.org>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4f3f713fc78d966d81ad87d2f3587369f9b34ae6
-Gitweb:     http://git.kernel.org/tip/4f3f713fc78d966d81ad87d2f3587369f9b34ae6
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Mon, 23 Jul 2012 14:23:30 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 26 Jul 2012 12:23:11 +0200
 
-perf/x86: Fix typo in format definition of uncore PCU filter
+--rdeY6f/ml8+xnc5C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The format definition of uncore PCU filter should be filter_band*
-instead of filter_brand*.
+On Thu, Jul 26, 2012 at 03:51:13PM +0100, Lee Jones wrote:
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1343024611-4692-1-git-send-email-zheng.z.yan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+> I don't think we want to use regmap at all, but we're forced to by
+> soc-core. How do we over-ride that behavior? By writing some
+> nonsense into codec->control_data?
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 19faffc..a5de59f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -33,10 +33,10 @@ DEFINE_UNCORE_FORMAT_ATTR(filter_tid, filter_tid, "config1:0-4");
- DEFINE_UNCORE_FORMAT_ATTR(filter_nid, filter_nid, "config1:10-17");
- DEFINE_UNCORE_FORMAT_ATTR(filter_state, filter_state, "config1:18-22");
- DEFINE_UNCORE_FORMAT_ATTR(filter_opc, filter_opc, "config1:23-31");
--DEFINE_UNCORE_FORMAT_ATTR(filter_brand0, filter_brand0, "config1:0-7");
--DEFINE_UNCORE_FORMAT_ATTR(filter_brand1, filter_brand1, "config1:8-15");
--DEFINE_UNCORE_FORMAT_ATTR(filter_brand2, filter_brand2, "config1:16-23");
--DEFINE_UNCORE_FORMAT_ATTR(filter_brand3, filter_brand3, "config1:24-31");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_band0, filter_band0, "config1:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_band1, filter_band1, "config1:8-15");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_band2, filter_band2, "config1:16-23");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_band3, filter_band3, "config1:24-31");
- 
- /* Sandy Bridge-EP uncore support */
- static struct intel_uncore_type snbep_uncore_cbox;
-@@ -272,10 +272,10 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- 	&format_attr_thresh5.attr,
- 	&format_attr_occ_invert.attr,
- 	&format_attr_occ_edge.attr,
--	&format_attr_filter_brand0.attr,
--	&format_attr_filter_brand1.attr,
--	&format_attr_filter_brand2.attr,
--	&format_attr_filter_brand3.attr,
-+	&format_attr_filter_band0.attr,
-+	&format_attr_filter_band1.attr,
-+	&format_attr_filter_band2.attr,
-+	&format_attr_filter_band3.attr,
- 	NULL,
- };
- 
+You should use that for your control data, yes - you're not forced to
+use regmap at all.  Like I say we've got a bunch of drivers doing so
+already.
+
+--rdeY6f/ml8+xnc5C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQEV5CAAoJEBus8iNuMP3d9PMP/0wH5OQjI/xPStJ6xFo/dICo
+vm0H1jWcWYo9HNi2ZxhqD0hCGUvKnvaWFF545ZsfiC4x1ePG2cmrd9I1rQUiKMKO
+Xf3+9peLXNYkcw2ennfL2Hf0e5ARiQCA1k518sAnJmG3WFs78vO+0r9T0WYVUl5Q
+0K1IvS0wuQTbNFXfIfPr4wBqnG9fUaMiXxgbbo6r7eIDrNOSMLMy/6CtNw0QWi97
+TdoZqxcLEOHulQSESLTM3Zy7hJjDJfOK1nlXNOIlI+hnsaF5+UnQN05qnCUpQtCc
+0wFEzkkFaGwNDG43qA0DPa3YtyPngJIIC8aoYHKcL+eaJi83HcAMRYDjf8Y7dg62
+Cttm7H3Os7B+Eq8PJt57NUrFbaMF52N0XJ76MXL58yFzazju+FForHRCG/Nb762p
+OVXcIz7z+JFUi1oIq6PJqS0odqJEABsidYfSxOJHNUrr8Fzx1jcp9j7aNjSgntIW
+dBIqM2FY+bRbMeA8HsqrqcdkwMYFd5/nHVNZdDnRYG7CPgOL20AblzhREtSIaUmW
+dEGc/GMrIsGTag9FuTeVKUez0QNJj7kYqXeipuCWFsY0P6X0h0OQSYSriglLmWRs
+eOOVAMyjJGGhQQohkqQf1Sc5Us5cKlRLnr9VoHBtkyhOuzKqgK8oG7lIsjl9O8cR
+tzccHGS3IyDGNhe1uJTj
+=bSDe
+-----END PGP SIGNATURE-----
+
+--rdeY6f/ml8+xnc5C--
