@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab2GZPWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:22:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21843 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab2GZPWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:22:34 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAHO5Pa3yQQH+Wc-G=u4EncCt2O6vLdNDe=rV8wEgHvQowzk0ZQ@mail.gmail.com>
-References: <CAHO5Pa3yQQH+Wc-G=u4EncCt2O6vLdNDe=rV8wEgHvQowzk0ZQ@mail.gmail.com> <20120720215636.14854.41208.stgit@warthog.procyon.org.uk> <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com> <28702.1343135952@warthog.procyon.org.uk> <CAHO5Pa310CYFKvyN4N21CHoCKJG-eJ04Q-yg1VmgwvgR5N91Rg@mail.gmail.com> <6193.1343211798@warthog.procyon.org.uk> <CAHO5Pa2ck_wqUwiuFUxEeU=k3dJvByyjpygpUhrSFRsMyBZ8Eg@mail.gmail.com> <12201.1343215232@warthog.procyon.org.uk> <CAHO5Pa1rCV+Od4q3SVHbGf_08q1uAeaNZEHH6NEuouviOS0awA@mail.gmail.com> <6228.1343313133@warthog.procyon.org.uk>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de, tglx@linutronix.de,
-        mingo@kernel.org, davej@redhat.com
-Subject: Re: [PATCH 00/13] UAPI header file split
-Date: Thu, 26 Jul 2012 16:22:20 +0100
-Message-ID: <25789.1343316140@warthog.procyon.org.uk>
+	id S1752748Ab2GZPXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:23:38 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39734 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab2GZPXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 11:23:36 -0400
+Message-ID: <501160F5.5050807@linaro.org>
+Date: Thu, 26 Jul 2012 16:23:33 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 07/21] ASoC: io: Prevent use of regmap if request fails
+References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org> <1343298534-13611-8-git-send-email-lee.jones@linaro.org> <20120726113204.GY3099@opensource.wolfsonmicro.com> <50112C29.6020606@linaro.org> <20120726114215.GB3099@opensource.wolfsonmicro.com> <50115961.6060509@linaro.org> <20120726151217.GO3099@opensource.wolfsonmicro.com>
+In-Reply-To: <20120726151217.GO3099@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+On 26/07/12 16:12, Mark Brown wrote:
+> On Thu, Jul 26, 2012 at 03:51:13PM +0100, Lee Jones wrote:
+>
+>> I don't think we want to use regmap at all, but we're forced to by
+>> soc-core. How do we over-ride that behavior? By writing some
+>> nonsense into codec->control_data?
+>
+> You should use that for your control data, yes - you're not forced to
+> use regmap at all.  Like I say we've got a bunch of drivers doing so
+> already.
 
-> I haven't looked over the changes yet, but what do my scripts now say?
-> (If all's well, they generate no output beyond the list of files.)
+What's my 'control data'? It's not used in the original codec patch.
 
-Okay, the comparator script gives me:
+The old way wants to go:
 
-	warthog>sh /tmp/mtk-cmp.sh 
-	======== include/linux/irqnr.h include/uapi/linux/irqnr.h
-		 * Generic irq_desc iterators:
+snd_soc_update_bits() -> snd_soc_read() -> ab8500_codec_read_reg()
 
-That loss I can live with, and so can Thomas.  I suspect the comment is in the
-wrong place anyway, so it can be added back after in the right place.
+When then calls back into the abx500.
 
-David
+So what 'control data' should I be storing in the codec struct?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
