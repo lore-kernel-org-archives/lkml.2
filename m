@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2GZL77 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:59:59 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:47085 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752344Ab2GZL74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:59:56 -0400
-X-Greylist: delayed 1144 seconds by postgrey-1.27 at vger.kernel.org; Thu, 26 Jul 2012 07:59:56 EDT
-From: Pavel Andrianov <andrianov@ispras.ru>
-To: Neela Syam Kolli <megaraidlinux@lsi.com>
-Cc: Pavel Andrianov <andrianov@ispras.ru>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: [PATCH] scsi_megaraid: addition spin_lock in megaraid_abort()
-Date: Thu, 26 Jul 2012 15:40:15 +0400
-Message-Id: <1343302815-13064-1-git-send-email-andrianov@ispras.ru>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752690Ab2GZMAM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 08:00:12 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47073 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752209Ab2GZMAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 08:00:09 -0400
+Date: Thu, 26 Jul 2012 12:59:49 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120726115949.GA29764@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+Thread-Topic: [PATCH 00/36] AArch64 Linux kernel port
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In function megaraid_abort() there are calls to megaraid_abort_and_reset()
-and mega_rundoneq() which access shared data (like pending_list) without
-synchronization.In function megaraid_reset() the same calls were done with
-spin_lock held. So, the patch adds spin_lock_irq and spin_unlock_irq to
-megaraid_abort().
+On Fri, Jul 06, 2012 at 10:05:41PM +0100, Catalin Marinas wrote:
+> This set of patches implements the core Linux support for the AArch64
+> (64-bit ARM) architecture.
+...
+> These patches are also available on this branch:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git upstream
 
-Found by Linux Driver Verification project (linuxtesting.org)
+Just an update - the 'master' branch in the above Git tree contains the
+latest changes following the feedback received so far (and it's not
+rebased). The 'upstream' branch has the individual patches as they will
+be posted on LKML (it may be rebased). The trees are updated to 3.5.
 
-Signed-off-by: Pavel Andrianov <andrianov@ispras.ru>
----
- drivers/scsi/megaraid.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+The Linux port directory has been renamed to arch/arm64/.
 
-diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
-index 4d39a9f..7572d86 100644
---- a/drivers/scsi/megaraid.c
-+++ b/drivers/scsi/megaraid.c
-@@ -1898,6 +1898,8 @@ megaraid_abort(Scsi_Cmnd *cmd)
- 
- 	adapter = (adapter_t *)cmd->device->host->hostdata;
- 
-+	spin_lock_irq(&adapter->lock);
-+
- 	rval =  megaraid_abort_and_reset(adapter, cmd, SCB_ABORT);
- 
- 	/*
-@@ -1905,6 +1907,7 @@ megaraid_abort(Scsi_Cmnd *cmd)
- 	 * to be communicated over to the mid layer.
- 	 */
- 	mega_rundoneq(adapter);
-+	spin_unlock_irq(&adapter->lock);
- 
- 	return rval;
- }
+I'll be on holiday from tomorrow for nearly two weeks with little access
+to email. I plan to post version 2 of the series when I get back, most
+likely based on 3.6-rc1.
+
 -- 
-1.7.4.1
-
+Catalin
