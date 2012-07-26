@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab2GZQr3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 12:47:29 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:30840 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab2GZQr2 (ORCPT
+	id S1752597Ab2GZQvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 12:51:19 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36540 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab2GZQvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 12:47:28 -0400
-Date: Thu, 26 Jul 2012 12:37:59 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        linaro-dev@lists.linaro.org, Ian.Campbell@citrix.com, arnd@arndb.de,
-        catalin.marinas@arm.com, tim@xen.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Xen-devel] [PATCH 04/24] xen/arm: sync_bitops
-Message-ID: <20120726163759.GE9222@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-4-git-send-email-stefano.stabellini@eu.citrix.com>
+	Thu, 26 Jul 2012 12:51:17 -0400
+Date: Thu, 26 Jul 2012 09:51:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org
+Subject: Re: [PATCH] leds: triggers: send uevent when changing triggers
+Message-ID: <20120726165112.GA23857@kroah.com>
+References: <1343176370-5856-1-git-send-email-ccross@android.com>
+ <CAK5ve-LY1iw7CanrMSZ0PtK=Fk9Au9tXnmaOuZ5P7vnP+5VAgA@mail.gmail.com>
+ <CAMbhsRS-TiBE92nL0Cwc-ssZAMaHE2ET0UE8h7RU3VG6F6+Xtw@mail.gmail.com>
+ <CAK5ve-+11J4HRepAmK-Y0Pq55XhAwa8Ehpw8=KvRdu4Cy90FDQ@mail.gmail.com>
+ <20120726035958.GB7235@kroah.com>
+ <CAK5ve-LbNeJngQPE=893-ChJXEWJHg9km1Ev6GZYx4=Zrrxg9g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343316846-25860-4-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <CAK5ve-LbNeJngQPE=893-ChJXEWJHg9km1Ev6GZYx4=Zrrxg9g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 04:33:46PM +0100, Stefano Stabellini wrote:
-> sync_bitops functions are equivalent to the SMP implementation of the
-> original functions, independently from CONFIG_SMP being defined.
+On Thu, Jul 26, 2012 at 01:03:11PM +0800, Bryan Wu wrote:
+> Just one quick patch for my idea: emitting a uevent in sysfs_create_file().
+> 
+> --
+> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+> index 00012e3..04da869 100644
+> --- a/fs/sysfs/file.c
+> +++ b/fs/sysfs/file.c
+> @@ -570,10 +570,14 @@ int sysfs_add_file(struct sysfs_dirent *dir_sd,
+> const struct attribute *attr,
+> 
+>  int sysfs_create_file(struct kobject * kobj, const struct attribute * attr)
+>  {
+> +       int err = 0;
+> +
+>         BUG_ON(!kobj || !kobj->sd || !attr);
+> 
+> -       return sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
+> +       err = sysfs_add_file(kobj->sd, attr, SYSFS_KOBJ_ATTR);
+> +       kobject_uevent(kobj, KOBJ_CHANGE);
 
-So why can't the code be changed to use that? Is it that
-the _set_bit, _clear_bit, etc are not available with !CONFIG_SMP?
+That's a veritable flood of change events when a new kobject is created,
+right?  It also created uevents for a device that has not told userspace
+that it is even present, which could cause massive confusion, don't you
+think?
 
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/include/asm/sync_bitops.h |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/include/asm/sync_bitops.h
-> 
-> diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
-> new file mode 100644
-> index 0000000..d975092903
-> --- /dev/null
-> +++ b/arch/arm/include/asm/sync_bitops.h
-> @@ -0,0 +1,17 @@
-> +#ifndef __ASM_SYNC_BITOPS_H__
-> +#define __ASM_SYNC_BITOPS_H__
-> +
-> +#include <asm/bitops.h>
-> +#include <asm/system.h>
-> +
-> +#define sync_set_bit(nr, p)		_set_bit(nr, p)
-> +#define sync_clear_bit(nr, p)		_clear_bit(nr, p)
-> +#define sync_change_bit(nr, p)		_change_bit(nr, p)
-> +#define sync_test_and_set_bit(nr, p)	_test_and_set_bit(nr, p)
-> +#define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
-> +#define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
-> +#define sync_test_bit(nr, addr)		test_bit(nr, addr)
-> +#define sync_cmpxchg			cmpxchg
-> +
-> +
-> +#endif
-> -- 
-> 1.7.2.5
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+greg k-h
