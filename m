@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab2GZVMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:12:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40654 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab2GZVMT (ORCPT
+	id S1752752Ab2GZVO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:14:26 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47034 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab2GZVOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:12:19 -0400
+	Thu, 26 Jul 2012 17:14:24 -0400
+Date: Thu, 26 Jul 2012 14:14:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/23] 3.4.7-stable review
+Message-ID: <20120726211420.GA7678@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
-References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 26 Jul 2012 14:11:58 -0700
-X-Google-Sender-Auth: v4-SZpEMqeFS3p3l0pGdwQ5WdaU
-Message-ID: <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
-Subject: Re: [GIT PULL] PWM subsystem for v3.6
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 12:16 AM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
->
-> The new PWM subsystem aims at collecting all implementations of the
-> legacy PWM API and to eventually replace it completely. The subsystem
-> has been in development for over half a year now and many drivers have
-> already been converted. It has been in linux-next for a couple of weeks
-> and there have been no major issues so I think it is ready for inclusion
-> in your tree.
+This is the start of the stable review cycle for the 3.4.7 release.
+There are 23 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-For new subsystems like this, I really want ack's from the people who
-are expected to use it.
+Responses should be made by Sat Jul 28 21:14:04 UTC 2012.
+Anything received after that time might be too late.
 
-For a gitorious pull like this, I also want signed tags with the gpg
-key having signatures from people I recognize. I don't think I have
-such a key from you.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.7-rc1.gz
+and the diffstat can be found below.
 
-              Linus
+thanks,
+
+greg k-h
+
+-------------
+ Makefile                            |    4 +--
+ arch/arm/plat-s5p/clock.c           |    1 +
+ arch/mips/include/asm/thread_info.h |    4 +--
+ arch/mips/kernel/vmlinux.lds.S      |    3 +-
+ drivers/hid/hid-core.c              |    1 +
+ drivers/hid/hid-ids.h               |    6 ++++
+ drivers/hid/hid-input.c             |    3 ++
+ drivers/hid/hid-multitouch.c        |    4 +++
+ drivers/hid/usbhid/hid-quirks.c     |    1 +
+ drivers/md/dm-raid1.c               |    3 +-
+ drivers/md/dm-region-hash.c         |    5 ++-
+ drivers/md/dm-thin.c                |    6 +++-
+ drivers/md/md.c                     |   36 ++++++++++++-------
+ drivers/md/raid1.c                  |   10 ++++--
+ drivers/target/target_core_cdb.c    |    2 +-
+ drivers/target/target_core_pr.c     |    7 ++--
+ drivers/target/tcm_fc/tfc_cmd.c     |    2 ++
+ fs/cifs/cifssmb.c                   |   30 ++++++++++++++++
+ fs/cifs/connect.c                   |   18 ++++++++++
+ fs/cifs/readdir.c                   |    7 ++--
+ fs/exofs/ore.c                      |    8 +----
+ fs/exofs/ore_raid.c                 |   67 +++++++++++++++++++----------------
+ fs/ext4/ioctl.c                     |    1 -
+ fs/nfs/objlayout/objio_osd.c        |    9 +++--
+ fs/ubifs/sb.c                       |    8 +++--
+ kernel/time/ntp.c                   |    8 +++--
+ mm/vmscan.c                         |    5 ++-
+ 27 files changed, 184 insertions(+), 75 deletions(-)
+
