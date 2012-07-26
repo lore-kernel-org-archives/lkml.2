@@ -1,127 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab2GZVos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:44:48 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:18087 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab2GZVoq (ORCPT
+	id S1753164Ab2GZVpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:45:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57537 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab2GZVo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:44:46 -0400
-Date: Thu, 26 Jul 2012 23:44:45 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: [PATCH 5/5] staging: vt6656: remove commented out stuff from
- hostap.c
-In-Reply-To: <alpine.LNX.2.00.1207262335340.14949@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1207262341510.14949@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1207262335340.14949@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 26 Jul 2012 17:44:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Yaniv Gardi <ygardi@codeaurora.org>
+Subject: Re: [PATCH v8 2/2] mmc: card: Adding support for sanitize in eMMC 4.5
+Date: Thu, 26 Jul 2012 13:27:49 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+References: <1343208766-8046-1-git-send-email-ygardi@codeaurora.org> <1343208766-8046-3-git-send-email-ygardi@codeaurora.org>
+In-Reply-To: <1343208766-8046-3-git-send-email-ygardi@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207261327.49781.arnd@arndb.de>
+X-Provags-ID: V02:K0:NAgf0uDackCHRaWtT+OO+SGUcuDwQ1qipLOz+FCZQKD
+ 6BviQIT9xD6hMaalGJSx7tlLxThT6QHzslluv/EYTsOE3nyA19
+ /kfLo2huSJ5kjudQANuu4ZJO4I9Zk+xFW7egLX6sc3M9GpvJwq
+ 0LLLQvwH2aJF1kOKsZVWWnzZ4mtahJ5zP8lNHVi+bUq1CMEwp7
+ t1oXmM/WIFSbNGGVA8RuBDWcOcmtR3kkbNm8AcXwvXcAf1bofq
+ ybKffFPriE54dVuYYS/xHG46gpDahOwFnbB5FriPWlX/o2Ops8
+ DzUCrbGyO7VDvmJ7UU4Pnbh1zmz8bZ3yKgMr+5vsUQHi5lCgEB
+ pHhZLKffn8UhtH+VEKyE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Git has the code if we ever need it, so instead of having chunks of 
-commented out code clutter up the file  get rid of it.
+On Wednesday 25 July 2012, Yaniv Gardi wrote:
+> This feature delete the unmap memory region of the eMMC card,
+> by writing to a specific register in the EXT_CSD
+> unmap region is the memory region that were previously deleted
+> (by erase, trim or discard operation)
+> 
+> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/vt6656/hostap.c | 45 +----------------------------------------
- 1 file changed, 1 insertion(+), 44 deletions(-)
+This looks like it will only work for eMMC-4.5 but not for SD-3.01, which
+offers the same funcitonality in the form of the "start recording" option
+to CMD20. Is there any reason why you would want to implement one but
+not the other?
 
-diff --git a/drivers/staging/vt6656/hostap.c b/drivers/staging/vt6656/hostap.c
-index 1f7a860..f6b42e1 100644
---- a/drivers/staging/vt6656/hostap.c
-+++ b/drivers/staging/vt6656/hostap.c
-@@ -54,7 +54,6 @@
- /*---------------------  Static Classes  ----------------------------*/
- 
- /*---------------------  Static Variables  --------------------------*/
--//static int          msglevel                =MSG_LEVEL_DEBUG;
- static int msglevel = MSG_LEVEL_INFO;
- 
- /*---------------------  Static Functions  --------------------------*/
-@@ -233,7 +232,7 @@ static int hostap_add_sta(PSDevice pDevice,
- 	pMgmt->sNodeDBTable[uNodeIndex].eNodeState = NODE_ASSOC;
- 	pMgmt->sNodeDBTable[uNodeIndex].wCapInfo = param->u.add_sta.capability;
- // TODO listenInterval
--//    pMgmt->sNodeDBTable[uNodeIndex].wListenInterval = 1;
-+//	pMgmt->sNodeDBTable[uNodeIndex].wListenInterval = 1;
- 	pMgmt->sNodeDBTable[uNodeIndex].bPSEnable = FALSE;
- 	pMgmt->sNodeDBTable[uNodeIndex].bySuppRate = param->u.add_sta.tx_supp_rates;
- 
-@@ -295,36 +294,6 @@ static int hostap_get_info_sta(PSDevice pDevice,
- 
- /*
-  * Description:
-- *      reset txexec
-- *
-- * Parameters:
-- *  In:
-- *      pDevice   -
-- *      param     -
-- *  Out:
-- *      TURE, FALSE
-- *
-- * Return Value:
-- *
-- */
--/*
--static int hostap_reset_txexc_sta(PSDevice pDevice,
--			struct viawget_hostapd_param *param)
--{
--	PSMgmtObject pMgmt = &(pDevice->sMgmtObj);
--	unsigned int uNodeIndex;
--
--	if (BSSbIsSTAInNodeDB(pDevice, param->sta_addr, &uNodeIndex)) {
--		pMgmt->sNodeDBTable[uNodeIndex].uTxAttempts = 0;
--	} else {
--		return -ENOENT;
--	}
--	return 0;
--}
--*/
--
--/*
-- * Description:
-  *      set station flag
-  *
-  * Parameters:
-@@ -445,12 +414,6 @@ static int hostap_set_encryption(PSDevice pDevice,
- 	WORD wKeyCtl = 0;
- 
- 	param->u.crypt.err = 0;
--/*
--	if (param_len !=
--		(int)((char *)param->u.crypt.key - (char *)param) +
--		param->u.crypt.key_len)
--		return -EINVAL;
--*/
- 
- 	if (param->u.crypt.alg > WPA_ALG_CCMP)
- 		return -EINVAL;
-@@ -738,12 +701,6 @@ int vt6656_hostap_ioctl(PSDevice pDevice, struct iw_point *p)
- 		ret = hostap_get_info_sta(pDevice, param);
- 		ap_ioctl = 1;
- 		break;
--/*
--	case VIAWGET_HOSTAPD_RESET_TXEXC_STA:
--		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_RESET_TXEXC_STA \n");
--		ret = hostap_reset_txexc_sta(pDevice, param);
--		break;
--*/
- 	case VIAWGET_HOSTAPD_SET_FLAGS_STA:
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_HOSTAPD_SET_FLAGS_STA \n");
- 		ret = hostap_set_flags_sta(pDevice, param);
--- 
-1.7.11.3
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+	Arnd
 
