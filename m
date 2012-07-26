@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab2GZD6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 23:58:44 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43912 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab2GZD61 (ORCPT
+	id S1752043Ab2GZD7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 23:59:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49557 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab2GZD7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 23:58:27 -0400
-Message-ID: <5010C037.6070604@linux.vnet.ibm.com>
-Date: Thu, 26 Jul 2012 11:57:43 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 25 Jul 2012 23:59:08 -0400
+Date: Wed, 25 Jul 2012 20:59:03 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: wwang <wei_wang@realsil.com.cn>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: realtek card reader core driver
+Message-ID: <20120726035903.GA7235@kroah.com>
+References: <1343036558-8189-1-git-send-email-wei_wang@realsil.com.cn>
+ <20120723111757.GC4352@mwanda>
+ <5010B576.6040600@realsil.com.cn>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 1/3] KVM: MMU: use kvm_release_pfn_clean to release pfn
-References: <5010C008.4030304@linux.vnet.ibm.com>
-In-Reply-To: <5010C008.4030304@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072603-0260-0000-0000-000001936D97
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5010B576.6040600@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code depends on the fact that fault_page is the normal page,
-however, we will use the error code instead of these dummy pages in the
-later patch, so we use kvm_release_pfn_clean to release pfn which will
-release the error code properly
+On Thu, Jul 26, 2012 at 11:11:50AM +0800, wwang wrote:
+> Hi Dan:
+> 
+> Sorry to bother you.
+> I can't find the maintainer of drivers/misc. So if I want to submit my
+> driver as misc device, who should I contact to send my patch?
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>From the MAINTAINERS file:
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 2419934..a9a2052 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3275,7 +3275,7 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
- 	if (!async)
- 		return false; /* *pfn has correct page already */
+CHAR and MISC DRIVERS
+M:      Arnd Bergmann <arnd@arndb.de>
+M:      Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git
+S:      Supported
+F:      drivers/char/*
+F:      drivers/misc/*
 
--	put_page(pfn_to_page(*pfn));
-+	kvm_release_pfn_clean(*pfn);
+But note, this is the merge window time, when patches are sent to Linus
+that have been in linux-next prior to the opening of the window.  That
+means I can't look at any new patches like this driver, until after
+3.6-rc1 is out in a week or so.
 
- 	if (!prefault && can_do_async_pf(vcpu)) {
- 		trace_kvm_try_async_get_page(gva, gfn);
--- 
-1.7.7.6
+So please be patient.
 
+thanks,
+
+greg k-h
