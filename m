@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab2GZLXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:23:54 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:48840 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752412Ab2GZLXw (ORCPT
+	id S1752557Ab2GZLYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:24:21 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34575 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab2GZLVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:23:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120726112237.GV3099@opensource.wolfsonmicro.com>
-References: <1343298603-25442-1-git-send-email-kishon@ti.com>
-	<20120726111030.GU3099@opensource.wolfsonmicro.com>
-	<CAAe_U6LhrBnsU9nC0yXqyNmEjmDfrvYP5BYhAOhJiGxLZbk_Qw@mail.gmail.com>
-	<20120726112237.GV3099@opensource.wolfsonmicro.com>
-Date: Thu, 26 Jul 2012 16:53:50 +0530
-Message-ID: <CAAe_U6Kwetj8KKaio6wEQp_Tmy6EZWftkxYfcqmmgq5xygNATA@mail.gmail.com>
-Subject: Re: [RFC PATCH] drivers: regulator: add error checks for exported APIs
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: lrg@ti.com, balbi@ti.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Jul 2012 07:21:22 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: eparis@redhat.com, viro@zeniv.linux.org.uk
+Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 1/9] audit: remove unnecessary NULL ptr checks from do_path_lookup
+Date: Thu, 26 Jul 2012 07:21:05 -0400
+Message-Id: <1343301673-10642-2-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
+References: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 4:52 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Jul 26, 2012 at 04:49:21PM +0530, ABRAHAM, KISHON VIJAY wrote:
->> On Thu, Jul 26, 2012 at 4:40 PM, Mark Brown
->
->> > Also NULL is a valid regulator (though we don't use it right now).
->
->> I see a lot of dereferencing *regulator*. How is it supposed to work
->> when *regulator* is NULL?
->
-> Like I say we don't use this now but the spec in the API is that
-> anything except an error pointer is valid.
+As best I can tell, whenever retval == 0, nd->path.dentry and nd->inode
+are also non-NULL. Eliminate those checks and the superfluous
+audit_context check.
 
-Ok.
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-Thanks
-Kishon
+diff --git a/fs/namei.c b/fs/namei.c
+index 0b951d4..f252f36 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1856,12 +1856,8 @@ static int do_path_lookup(int dfd, const char *name,
+ 	if (unlikely(retval == -ESTALE))
+ 		retval = path_lookupat(dfd, name, flags | LOOKUP_REVAL, nd);
+ 
+-	if (likely(!retval)) {
+-		if (unlikely(!audit_dummy_context())) {
+-			if (nd->path.dentry && nd->inode)
+-				audit_inode(name, nd->path.dentry);
+-		}
+-	}
++	if (likely(!retval))
++		audit_inode(name, nd->path.dentry);
+ 	return retval;
+ }
+ 
+-- 
+1.7.11.2
+
