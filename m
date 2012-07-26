@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2GZLXL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:23:11 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51624 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab2GZLXI (ORCPT
+	id S1752539Ab2GZLVZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:21:25 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:56132 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2GZLVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:23:08 -0400
-Message-ID: <50112890.1000901@linux.vnet.ibm.com>
-Date: Thu, 26 Jul 2012 16:52:56 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Alan Stern <stern@rowland.harvard.edu>, mingo@kernel.org,
-        peterz@infradead.org, rusty@rustcorp.com.au,
-        paulmck@linux.vnet.ibm.com, namhyung@kernel.org, tj@kernel.org,
-        rjw@sisk.pl, nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+	Thu, 26 Jul 2012 07:21:23 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: eparis@redhat.com, viro@zeniv.linux.org.uk
+Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers
- during CPU hotplug
-References: <Pine.LNX.4.44L0.1207251054420.2008-100000@iolanthe.rowland.org> <50101733.4030205@linux.vnet.ibm.com> <alpine.LFD.2.02.1207251758340.32033@ionos>
-In-Reply-To: <alpine.LFD.2.02.1207251758340.32033@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072611-5564-0000-0000-000003C104EB
+Subject: [PATCH v5 2/9] audit: pass in dentry to audit_copy_inode wherever possible
+Date: Thu, 26 Jul 2012 07:21:06 -0400
+Message-Id: <1343301673-10642-3-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
+References: <1343301673-10642-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2012 10:00 PM, Thomas Gleixner wrote:
-> On Wed, 25 Jul 2012, Srivatsa S. Bhat wrote:
->> On 07/25/2012 08:27 PM, Alan Stern wrote:
->> One of the other ideas to improve the hotplug notifier stuff that came up during some
->> of the discussions was to implement explicit dependency tracking between the notifiers
->> and perhaps get rid of the priority numbers that are currently being used to provide
->> some sort of ordering between the callbacks. Links to some of the related discussions
->> are provided below.
-> 
-> The current code which brings up/down a CPU (mostly architecture
-> specific) code is comnpletely asymetric.
-> 
-> We really want a fully symetric state machine here, which also gives
-> us the proper invocation points for the other subsystems callbacks.
-> 
-> While I thought about having a full dependency tracking system, I'm
-> quite convinced by now, that hotplug is a rather linear sequence which
-> does not provide much room for paralell setup/teardown.
-> 
-> At least we should start with a simple linear chain.
-> 
-> The problem with the current notifiers is, that we only have ordering
-> for a few specific callbacks, but we don't have the faintest idea in
-> which order all other random stuff is brought up and torn down.
-> 
-> So I started experimenting with the following:
-> 
-> struct hotplug_event {
->        int (*bring_up)(unsigned int cpu);
->        int (*tear_down)(unsigned int cpu);
-> };
-> 
-> enum hotplug_events {
->      CPU_HOTPLUG_START,
->      CPU_HOTPLUG_CREATE_THREADS,
->      CPU_HOTPLUG_INIT_TIMERS,
->      ...
->      CPU_HOTPLUG_KICK_CPU,
->      ...
->      CPU_HOTPLUG_START_THREADS,
->      ...
->      CPU_HOTPLUG_SET_ONLINE,
->      ...
->      CPU_HOTPLUG_MAX_EVENTS,
-> };
-> 
-> Now I have two arrays:
-> 
-> struct hotplug_event hotplug_events_bp[CPU_HOTPLUG_MAX_EVENTS];
-> struct hotplug_event hotplug_events_ap[CPU_HOTPLUG_MAX_EVENTS];
->    
-> The _bp one is the list of events which are executed on the active cpu
-> and the _ap ones are those executed on the hotplugged cpu.
-> 
-> The core code advances the events in sync steps, so both BP and AP can
-> issue a stop on the process and cause a rollback.
-> 
-> Most of the callbacks can be added to the arrays at compile time, just
-> the stuff which is in modules requires an register/unregister
-> interface.
-> 
-> Though in any case the enum gives us a very explicit ordering of
-> setup/teardown, so rollback or partial online/offline should be simple
-> to achieve.
->
+In some cases, we were passing in NULL even when we have a dentry.
 
-Is there anything I can help you with, in implementing this new design?
+Reported-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ kernel/auditsc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Regards,
-Srivatsa S. Bhat
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 4b96415..5c45b9b 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -2226,7 +2226,7 @@ void __audit_inode_child(const struct dentry *dentry,
+ 		if (!strcmp(dname, n->name) ||
+ 		     !audit_compare_dname_path(dname, n->name, &dirlen)) {
+ 			if (inode)
+-				audit_copy_inode(n, NULL, inode);
++				audit_copy_inode(n, dentry, inode);
+ 			else
+ 				n->ino = (unsigned long)-1;
+ 			found_child = n->name;
+@@ -2258,7 +2258,7 @@ add_names:
+ 		}
+ 
+ 		if (inode)
+-			audit_copy_inode(n, NULL, inode);
++			audit_copy_inode(n, dentry, inode);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(__audit_inode_child);
+-- 
+1.7.11.2
 
