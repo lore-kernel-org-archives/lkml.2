@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab2GZSFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 14:05:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752269Ab2GZSFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752810Ab2GZSFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 14:05:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41083 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab2GZSFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jul 2012 14:05:05 -0400
-Message-ID: <501186C4.5030106@redhat.com>
-Date: Thu, 26 Jul 2012 14:04:52 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118182.8030308@redhat.com>
-In-Reply-To: <50118182.8030308@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Date: Thu, 26 Jul 2012 11:05:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20120726110501.e296b672.akpm@linux-foundation.org>
+In-Reply-To: <20120725122613.b971360b.akpm@linux-foundation.org>
+References: <20120725140827.4332a5448e4d8d200164ea2e@canb.auug.org.au>
+	<20120725071044.GA27535@gmail.com>
+	<20120725073503.GB1112@cmpxchg.org>
+	<20120725115713.e56239b5.akpm@linux-foundation.org>
+	<20120725190351.GA4143@gmail.com>
+	<20120725122613.b971360b.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 01:42 PM, Rik van Riel wrote:
-> On 07/23/2012 12:04 AM, Hugh Dickins wrote:
->
->> Please don't be upset if I say that I don't like either of your patches.
->> Mainly for obvious reasons - I don't like Mel's because anything with
->> trylock retries and nested spinlocks worries me before I can even start
->> to think about it; and I don't like Michal's for the same reason as Mel,
->> that it spreads more change around in common paths than we would like.
->
-> I have a naive question.
->
-> In huge_pmd_share, we protect ourselves by taking
-> the mapping->i_mmap_mutex.
->
-> Is there any reason we could not take the i_mmap_mutex
-> in the huge_pmd_unshare path?
+On Wed, 25 Jul 2012 12:26:13 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-I think it is already taken on every path into huge_pmd_unshare().
+> On Wed, 25 Jul 2012 21:03:51 +0200
+> Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > > This means that if the above code reappears in linux-next or 
+> > > mainline, the current copy of 
+> > > mm-memcg-fix-compaction-migration-failing-due-to-memcg-limits.patch 
+> > > will no longer update it, and I probably won't notice that 
+> > > omission.
+> > 
+> > Did you plan to send Johannes's memcg bits to Linus in this 
+> > merge window?
+> 
+> Yes.  I was kinda thinking of starting the bombing run on Monday but I
+> guess I could do the MM queue on Thursday.
 
-Larry
->
-> I see that hugetlb_change_protection already takes that
-> lock. Is there something preventing __unmap_hugepage_range
-> from also taking mapping->i_mmap_mutex?
->
-> That way the sharing and the unsharing code are
-> protected by the same, per shm segment, lock.
+Sorry, this didn't work out: there's still too much stuff which hasn't
+gone into mainline yet (slab, NFS, others).  Merging the MM code now
+would involve a worrying amount of last-minute code rework and would
+cause the owners of those trees to have to do last-minute rework as
+well.  This is why I always go last.
 
+I'll take another look on Monday.
