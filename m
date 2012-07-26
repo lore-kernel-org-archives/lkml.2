@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab2GZRGW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:06:22 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:33739 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab2GZRGU (ORCPT
+	id S1752764Ab2GZRGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:06:46 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55806 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab2GZRGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:06:20 -0400
-Date: Thu, 26 Jul 2012 10:04:11 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] power_supply: Added support for power supply
- attribute sources
-Message-ID: <20120726170411.GA19112@lizard>
-References: <1343315844-18824-1-git-send-email-ramakrishna.pallala@intel.com>
+	Thu, 26 Jul 2012 13:06:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1343315844-18824-1-git-send-email-ramakrishna.pallala@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1343193053.3139.6.camel@dabdike>
+References: <20120722163058.GB13376@localhost>
+	<20120723111619.GT9222@suse.de>
+	<1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
+	<20120723114258.GV9222@suse.de>
+	<20120723122905.GA22476@localhost>
+	<BLU0-SMTP2254F8872DDE5FA6035CDE97DD0@phx.gbl>
+	<20120724074844.GA9519@localhost>
+	<BLU0-SMTP6C7CFCFF734FE10A39B6E97DC0@phx.gbl>
+	<1343193053.3139.6.camel@dabdike>
+Date: Thu, 26 Jul 2012 10:06:41 -0700
+Message-ID: <CA+8MBbJkGN+zGBdD5Hg26wW_6E9L_ufoutn7wj+Y+nhtW7WKWg@mail.gmail.com>
+Subject: Re: [next:akpm 129/309] net/core/sock.c:274:36: error: initializer
+ element is not constant
+From: Tony Luck <tony.luck@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: John David Anglin <dave.anglin@bell.net>,
+        Fengguang Wu <fengguang.wu@intel.com>, Mel Gorman <mgorman@suse.de>,
+        kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@parisc-linux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ramakrishna,
+On Tue, Jul 24, 2012 at 10:10 PM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+>> Here is the line in sock.i:
+>>
+>> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+>> ((atomic_t) { (0) }) });
+>
+> The above line contains two compound literals.  It also uses a designated
+> initializer to initialize the field enabled.  A compound literal is not a
+> constant expression.
 
-On Thu, Jul 26, 2012 at 08:47:24PM +0530, Ramakrishna Pallala wrote:
-> On some platforms one driver(or HW chip) may not be able to provide all
-> the necessary attributes of the power supply connected to the platform or
-> may provide very limited info which can be used by core/primary drivers.
-> 
-> For example a temperature sensor chip placed near the battery can be used
-> to report battery ambient temperature but it does not makes sense to register
-> sensor driver with power supply class. Or even a ADC driver or platform
-> driver may report power supply properties like voltage/current or charging
-> status but registering all those driver with power supply class is not a
-> practical or ideal approach.
-> 
-> This patch adds the generic support to register the drivers as power
-> supply attribute(properties) sources and adds an interface to read
-> these attributes from power supply class drivers.
-> 
-> If there are multiple attribute sources of the same type then caller has
-> to do source selection by passing the source string in the query struct.
-> 
-> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> ---
-[...]
-> +extern int power_supply_attributes_register(struct device *parent,
-> +				struct power_supply_attr_source *psy_attr);
+Seeing the same thing on ia64 building next-20120726.  Same fix works
+for me ... so I'll steal this whole changelog and attributes.
 
-Can you please show some user of the new calls? If I understand
-correctly, you're going to call these from sensing (ADC, or some
-other) drivers, which would be very very wrong thing to do.
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+-Tony
