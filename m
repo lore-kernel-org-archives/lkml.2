@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab2GZIn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 04:43:57 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:43363 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab2GZIna (ORCPT
+	id S1752125Ab2GZIpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:45:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46559 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab2GZIn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 04:43:30 -0400
+	Thu, 26 Jul 2012 04:43:57 -0400
 From: Vinayak Holikatti <vinholikatti@gmail.com>
 To: James.Bottomley@hansenpartnership.com
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,40 +14,44 @@ Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         girish.shivananjappa@linaro.org, saugata.das@linaro.org,
         vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
         dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
-        sreekumar.c@samsung.com, Vinayak Holikatti <vinholikatti@gmail.com>
-Subject: [PATCH V3 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
-Date: Thu, 26 Jul 2012 14:12:46 +0530
-Message-Id: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
+        sreekumar.c@samsung.com, Vinayak Holikatti <vinholikatti@gmail.com>,
+        Santosh Yaraganavi <santoshsy@gmail.com>
+Subject: [PATCH V3 4/4] [SCSI] ufs: Correct the expected data transfer size
+Date: Thu, 26 Jul 2012 14:12:50 +0530
+Message-Id: <1343292170-2599-5-git-send-email-vinholikatti@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
+References: <1343292170-2599-1-git-send-email-vinholikatti@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds following features
- - Seggregate PCI specific code in ufshcd.c
- - Adds PCI glue driver ufshcd-pci.c and ufshcd.c become core module
- - Adds Platform glue driver ufshcd-pltfrm.c
- - Update correct transfer size in Command UPIU
+This patch corrects the expected data transfer size of the
+command UPIU. The current implementation of cmd->transfersize
+is wrong as it probably equal to sector size. With this
+implementation the transfer size is updated correctly
 
-Vinayak Holikatti (4):
-  [SCSI] drivers/scsi/ufs: Seggregate PCI Specific Code
-  [SCSI] drivers/scsi/ufs: Separate PCI code into glue driver
-  [SCSI] ufs: Add Platform glue driver for ufshcd
-  [SCSI] ufs: Correct the expected data transfer size
+Reported-by: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
+Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
+---
+ drivers/scsi/ufs/ufshcd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/scsi/ufs/Kconfig         |   37 +++-
- drivers/scsi/ufs/Makefile        |    2 +
- drivers/scsi/ufs/ufshcd-pci.c    |  228 ++++++++++++++++++++
- drivers/scsi/ufs/ufshcd-pltfrm.c |  222 ++++++++++++++++++++
- drivers/scsi/ufs/ufshcd.c        |  422 ++++++--------------------------------
- drivers/scsi/ufs/ufshcd.h        |  206 +++++++++++++++++++
- drivers/scsi/ufs/ufshcd_common.h |   53 +++++
- 7 files changed, 813 insertions(+), 357 deletions(-)
- create mode 100644 drivers/scsi/ufs/ufshcd-pci.c
- create mode 100644 drivers/scsi/ufs/ufshcd-pltfrm.c
- create mode 100644 drivers/scsi/ufs/ufshcd.h
- create mode 100644 drivers/scsi/ufs/ufshcd_common.h
-
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index dfc3e85..5e732c3 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -488,7 +488,7 @@ static void ufshcd_compose_upiu(struct ufshcd_lrb *lrbp)
+ 		ucd_cmd_ptr->header.dword_2 = 0;
+ 
+ 		ucd_cmd_ptr->exp_data_transfer_len =
+-			cpu_to_be32(lrbp->cmd->transfersize);
++			cpu_to_be32(lrbp->cmd->sdb.length);
+ 
+ 		memcpy(ucd_cmd_ptr->cdb,
+ 		       lrbp->cmd->cmnd,
 -- 
 1.7.9.5
 
