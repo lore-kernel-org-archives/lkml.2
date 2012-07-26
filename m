@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab2GZP4B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 11:56:01 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:47816 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab2GZPz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 11:55:59 -0400
+	id S1752828Ab2GZP4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 11:56:12 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:47903 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab2GZP4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 11:56:09 -0400
 X-IronPort-AV: E=Sophos;i="4.77,659,1336363200"; 
-   d="scan'208";a="32691104"
+   d="scan'208";a="203311643"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>, <tim@xen.org>,
         <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
         <catalin.marinas@arm.com>, <arnd@arndb.de>,
+        Ian Campbell <ian.campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 21/24] arm/v2m: initialize arch_timers even if v2m_timer is not present
-Date: Thu, 26 Jul 2012 16:34:03 +0100
-Message-ID: <1343316846-25860-21-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 22/24] ARM: enable earlyprintk=xen
+Date: Thu, 26 Jul 2012 16:34:04 +0100
+Message-ID: <1343316846-25860-22-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
@@ -27,38 +29,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ian Campbell <ian.campbell@citrix.com>
+
+Currently ARM setup_early_printk does not support alternative early
+consoles and it always registers early_console only.
+
+This patch adds support for xenboot_console.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/arm/mach-vexpress/v2m.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ arch/arm/kernel/early_printk.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-index fde26ad..dee1451 100644
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@ -637,16 +637,17 @@ static void __init v2m_dt_timer_init(void)
- 	node = of_find_compatible_node(NULL, NULL, "arm,sp810");
- 	v2m_sysctl_init(of_iomap(node, 0));
+diff --git a/arch/arm/kernel/early_printk.c b/arch/arm/kernel/early_printk.c
+index 85aa2b2..eecfa21 100644
+--- a/arch/arm/kernel/early_printk.c
++++ b/arch/arm/kernel/early_printk.c
+@@ -11,6 +11,8 @@
+ #include <linux/kernel.h>
+ #include <linux/console.h>
+ #include <linux/init.h>
++#include <linux/string.h>
++#include <xen/hvc-console.h>
  
--	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
--	if (WARN_ON(err))
--		return;
--	node = of_find_node_by_path(path);
--	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
- 	if (arch_timer_of_register() != 0)
- 		twd_local_timer_of_register();
+ extern void printch(int);
  
- 	if (arch_timer_sched_clock_init() != 0)
- 		versatile_sched_clock_init(v2m_sysreg_base + V2M_SYS_24MHZ, 24000000);
+@@ -50,7 +52,14 @@ asmlinkage void early_printk(const char *fmt, ...)
+ 
+ static int __init setup_early_printk(char *buf)
+ {
+-	register_console(&early_console);
++	if (!buf || !strncmp(buf, "serial", 6))
++		register_console(&early_console);
 +
-+	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
-+	if (WARN_ON(err))
-+		return;
-+	node = of_find_node_by_path(path);
-+	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
++#ifdef CONFIG_HVC_XEN
++	if (!strncmp(buf, "xen", 3))
++		register_console(&xenboot_console);
++#endif
++
+ 	return 0;
  }
  
- static struct sys_timer v2m_dt_timer = {
 -- 
 1.7.2.5
 
