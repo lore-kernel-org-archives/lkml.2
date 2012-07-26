@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab2GZIEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 04:04:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54124 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab2GZIEb convert rfc822-to-8bit (ORCPT
+	id S1752022Ab2GZIFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 04:05:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56696 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751889Ab2GZIFZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 04:04:31 -0400
-Message-ID: <1343289850.26034.79.camel@twins>
-Subject: Re: [PATCH 1/1] kthread: disable preemption during complete()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Boonstoppel <pboonstoppel@nvidia.com>,
+	Thu, 26 Jul 2012 04:05:25 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: "Hilman, Kevin" <khilman@ti.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Diwakar Tundlam <dtundlam@nvidia.com>, Oleg Nesterov <oleg@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Date: Thu, 26 Jul 2012 10:04:10 +0200
-In-Reply-To: <20120725224044.GC32378@google.com>
-References: <5FBF8E85CA34454794F0F7ECBA79798F379D364859@HQMAIL04.nvidia.com>
-	 <20120725000901.GA5304@google.com>
-	 <5FBF8E85CA34454794F0F7ECBA79798F379D36485E@HQMAIL04.nvidia.com>
-	 <20120725224044.GC32378@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v2 6/6] arm/dts: am33xx rtc node
+Thread-Topic: [PATCH v2 6/6] arm/dts: am33xx rtc node
+Thread-Index: AQHNaiyGJuGQat7MTEqFmhFrCStuC5c5fpEAgACJOID//9VZAIABV+8w
+Date: Thu, 26 Jul 2012 08:04:10 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93E9ADBE5@DBDE01.ent.ti.com>
+References: <cover.1343191280.git.afzal@ti.com>
+ <d16976055462214af276d7242faa2bc6e621fd44.1343191280.git.afzal@ti.com>
+ <500FD698.30906@mvista.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93E9AD8B1@DBDE01.ent.ti.com>
+ <501025EC.6010600@mvista.com>
+In-Reply-To: <501025EC.6010600@mvista.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-25 at 15:40 -0700, Tejun Heo wrote:
-> (cc'ing Oleg and Peter)
+Hi Sergei,
 
-Right, if you're playing games with preemption, always add the rt and
-sched folks.. added mingo and tglx.
+On Wed, Jul 25, 2012 at 22:29:24, Sergei Shtylyov wrote:
 
-> On Wed, Jul 25, 2012 at 03:35:32PM -0700, Peter Boonstoppel wrote:
-> > After a kthread is created it signals the requester using complete()
-> > and enters TASK_UNINTERRUPTIBLE. However, since complete() wakes up
-> > the requesting thread this can cause a preemption. The preemption will
-> > not remove the task from the runqueue (for that schedule() has to be
-> > invoked directly).
-> > 
-> > This is a problem if directly after kthread creation you try to do a
-> > kthread_bind(), which will block in HZ steps until the thread is off
-> > the runqueue.
-> > 
-> > This patch disables preemption during complete(), since we call
-> > schedule() directly afterwards, so it will correctly enter
-> > TASK_UNINTERRUPTIBLE. This speeds up kthread creation/binding during
-> > cpu hotplug significantly.
-
-tglx has patches that make the kthread create/destroy stuff from hotplug
-go away.. that seems like the better approach.
-
-
-> > Signed-off-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
-> > ---
-> >  kernel/kthread.c |   11 +++++++++++
-> >  1 files changed, 11 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/kthread.c b/kernel/kthread.c
-> > index b579af5..757d8dd 100644
-> > --- a/kernel/kthread.c
-> > +++ b/kernel/kthread.c
-> > @@ -16,6 +16,7 @@
-> >  #include <linux/mutex.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/freezer.h>
-> > +#include <linux/preempt.h>
-> >  #include <trace/events/sched.h>
-> >  
-> >  static DEFINE_SPINLOCK(kthread_create_lock);
-> > @@ -113,7 +114,17 @@ static int kthread(void *_create)
-> >  	/* OK, tell user we're spawned, wait for stop or wakeup */
-> >  	__set_current_state(TASK_UNINTERRUPTIBLE);
-> >  	create->result = current;
-> > +
-> > +	/*
-> > +	 * Disable preemption so we enter TASK_UNINTERRUPTIBLE after
-> > +	 * complete() instead of possibly being preempted. This speeds
-> > +	 * up clients that do a kthread_bind() directly after
-> > +	 * creation.
-> > +	 */
-> > +	preempt_disable();
+> >>> +		rtc@44e3e000 {
 > 
-> Shouldn't this happen before setting current state to UNINTERRUPTIBLE?
-> What prevents preemption happening right above preempt_disable()?
+> >>     Address postfix in the node name without "reg" property?
+> 
+> > As per [1], "The unit-address is included if the node describes
+> > a device with an address".
+> 
+>    Which in this case it doesn't.
+> 
+> > Here even though reg property is not present, as via hwmod
+> > (see below) it is getting address, isn't it better to have it
+> 
+>    I think not.
 
-Nothing, it also doesn't matter that much, you could get preempted right
-before preempt_disable() and end up in the same place.
+Ok, I will remove it
+ 
+> >>> +			compatible = "ti,da830-rtc";
+> >>> +			ti,hwmods = "rtc";
 
-The main thing is avoiding the wakeup preemption from the complete()
-because we're going to sleep right after anyway.
-
-The comment doesn't really make that clear.
-
-> >  	complete(&create->done);
-> > +	preempt_enable_no_resched();
-> > +
-> >  	schedule();
-
-Other than that it seems fine, although I know tglx just loves new
-preempt_enable_no_resched() sites ;-)
+Regards
+Afzal
