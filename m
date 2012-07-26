@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2GZWAt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 18:00:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753697Ab2GZWAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 18:00:46 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: matt.fleming@intel.com
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] X86: Improve GOP detection in the EFI boot stub
-Date: Thu, 26 Jul 2012 18:00:27 -0400
-Message-Id: <1343340027-7641-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.41.104
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1753927Ab2GZWBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 18:01:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35909 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753802Ab2GZWBU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 18:01:20 -0400
+Date: Thu, 26 Jul 2012 23:01:07 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20120726220107.GG1894@decadent.org.uk>
+References: <20120723010655.768372060@decadent.org.uk>
+ <1343138818.5132.98.camel@deadeye.wl.decadent.org.uk>
+ <1343337937.32120.20.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343337937.32120.20.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 028/108] sched/nohz: Rewrite and fix load-avg computation --
+ again
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently use the PCI IO protocol as a proxy for a functional GOP. This
-is less than ideal, since some platforms will put the GOP on output devices
-rather than the GPU itself. Move to using the conout protocol. This is not
-guaranteed per-spec, but is part of the consplitter implementation that
-causes this problem in the first place and so should be reliable.
+On Thu, Jul 26, 2012 at 11:25:37PM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-07-24 at 15:06 +0100, Ben Hutchings wrote:
+> > On Mon, 2012-07-23 at 02:07 +0100, Ben Hutchings wrote:
+> > > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > 
+> > > commit 5167e8d5417bf5c322a703d2927daec727ea40dd upstream.
+> > > 
+> > > Thanks to Charles Wang for spotting the defects in the current code:
+> > > 
+> > >  - If we go idle during the sample window -- after sampling, we get a
+> > >    negative bias because we can negate our own sample.
+> > > 
+> > >  - If we wake up during the sample window we get a positive bias
+> > >    because we push the sample to a known active period.
+> > > 
+> > > So rewrite the entire nohz load-avg muck once again, now adding
+> > > copious documentation to the code.
+> > [...]
+> > 
+> > Based on <http://bugs.debian.org/674153>, I think we also need:
+> > 
+> > 556061b sched/nohz: Fix rq->cpu_load[] calculations
+> > 5aaa0b7 sched/nohz: Fix rq->cpu_load calculations some more
+> > 
+> > Does this ('sched/nohz: Rewrite and fix load-avg computation -- again')
+> > depend in any way on those, or are they separate fixes?
+> 
+> they might touch on a few entry points but the logic is separate.
+> 
+> ->cpu_load[] is per-cpu weight tracking for the load-balancer.
+ 
+That's what I thought, so I went ahead with just the one.
+Should I queue up the other two for a future 3.2.y update?
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- arch/x86/boot/compressed/eboot.c |   29 ++++++++++++++++-------------
- arch/x86/boot/compressed/eboot.h |    4 ++++
- 2 files changed, 20 insertions(+), 13 deletions(-)
+Ben.
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b3e0227..d5e4044 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -276,8 +276,9 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
- 	nr_gops = size / sizeof(void *);
- 	for (i = 0; i < nr_gops; i++) {
- 		struct efi_graphics_output_mode_info *info;
--		efi_guid_t pciio_proto = EFI_PCI_IO_PROTOCOL_GUID;
--		void *pciio;
-+		efi_guid_t conout_proto = EFI_CONSOLE_OUT_DEVICE_GUID;
-+		bool conout_found = false;
-+		void *dummy;
- 		void *h = gop_handle[i];
- 
- 		status = efi_call_phys3(sys_table->boottime->handle_protocol,
-@@ -285,19 +286,21 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
--		efi_call_phys3(sys_table->boottime->handle_protocol,
--			       h, &pciio_proto, &pciio);
-+		status = efi_call_phys3(sys_table->boottime->handle_protocol,
-+					h, &conout_proto, &dummy);
-+
-+		if (status == EFI_SUCCESS)
-+			conout_found = true;
- 
- 		status = efi_call_phys4(gop->query_mode, gop,
- 					gop->mode->mode, &size, &info);
--		if (status == EFI_SUCCESS && (!first_gop || pciio)) {
-+		if (status == EFI_SUCCESS && (!first_gop || conout_found)) {
- 			/*
--			 * Apple provide GOPs that are not backed by
--			 * real hardware (they're used to handle
--			 * multiple displays). The workaround is to
--			 * search for a GOP implementing the PCIIO
--			 * protocol, and if one isn't found, to just
--			 * fallback to the first GOP.
-+			 * Systems that use the UEFI Console Splitter may
-+			 * provide multiple GOP devices, not all of which are
-+			 * backed by real hardware. The workaround is to search
-+			 * for a GOP implementing the ConOut protocol, and if
-+			 * one isn't found, to just fall back to the first GOP.
- 			 */
- 			width = info->horizontal_resolution;
- 			height = info->vertical_resolution;
-@@ -308,10 +311,10 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
- 			pixels_per_scan_line = info->pixels_per_scan_line;
- 
- 			/*
--			 * Once we've found a GOP supporting PCIIO,
-+			 * Once we've found a GOP supporting ConOut,
- 			 * don't bother looking any further.
- 			 */
--			if (pciio)
-+			if (conout_found)
- 				break;
- 
- 			first_gop = gop;
-diff --git a/arch/x86/boot/compressed/eboot.h b/arch/x86/boot/compressed/eboot.h
-index 3b6e156..e5b0a8f 100644
---- a/arch/x86/boot/compressed/eboot.h
-+++ b/arch/x86/boot/compressed/eboot.h
-@@ -14,6 +14,10 @@
- #define EFI_PAGE_SIZE		(1UL << EFI_PAGE_SHIFT)
- #define EFI_READ_CHUNK_SIZE	(1024 * 1024)
- 
-+#define EFI_CONSOLE_OUT_DEVICE_GUID    \
-+	EFI_GUID(0xd3b36f2c, 0xd551, 0x11d4, 0x9a, 0x46, 0x0, 0x90, 0x27, \
-+		  0x3f, 0xc1, 0x4d)
-+
- #define PIXEL_RGB_RESERVED_8BIT_PER_COLOR		0
- #define PIXEL_BGR_RESERVED_8BIT_PER_COLOR		1
- #define PIXEL_BIT_MASK					2
 -- 
-1.7.10.4
-
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
