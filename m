@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133Ab2GZLyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 07:54:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37791 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751758Ab2GZLyx (ORCPT
+	id S1752193Ab2GZLza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 07:55:30 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:53878 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840Ab2GZLz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:54:53 -0400
-Date: Thu, 26 Jul 2012 12:54:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, olalilja@yahoo.se,
-        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 06/21] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-Message-ID: <20120726115450.GE3099@opensource.wolfsonmicro.com>
-References: <1343298534-13611-1-git-send-email-lee.jones@linaro.org>
- <1343298534-13611-7-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VZLKKa0PG5KXlQhV"
-Content-Disposition: inline
-In-Reply-To: <1343298534-13611-7-git-send-email-lee.jones@linaro.org>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 26 Jul 2012 07:55:27 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
+        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
+Subject: [PATCH v4 00/17] vfs: add the ability to retry on ESTALE to several syscalls
+Date: Thu, 26 Jul 2012 07:55:03 -0400
+Message-Id: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset is a respin of the one I sent on June 29th. The main
+reason for the resend is to deal with some minor merge conflicts that
+have cropped up due to recent changes.
 
---VZLKKa0PG5KXlQhV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This series depends on the "audit" series that I sent earlier today.
+It's also available via the "estale" branch of my git tree:
 
-On Thu, Jul 26, 2012 at 11:28:39AM +0100, Lee Jones wrote:
+    git://git.samba.org/jlayton/linux.git estale
 
-> If a list of widgets is provided and one of them fails to be added as
-> a control, the present semantics fail all subsequent widgets. A better
-> solution would be to only fail that widget, but pursue in attempting
-> to add the rest of the list.
+The original cover letter text follows:
 
-Why?
+ESTALE errors are a source of pain for many users, primarily those who
+are doing work on NFS. When userspace provides a path to a syscall, then
+there's really little excuse for returning ESTALE. If userspace gave us
+a path that we had to lookup in order to do the call, then it's not
+particularly helpful to return ESTALE just because that path went stale
+before we could do the actual operation.
 
---VZLKKa0PG5KXlQhV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We can and should do better here. The kernel should instead catch that
+error and retry the lookup and call, while forcing a revalidation of all
+dentries involved.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Unfortunately fixing this requires touching the syscalls themselves, or
+at least their immediate helper functions. Not all syscalls can be
+retried -- only those that take a pathname as an argument.
 
-iQIcBAEBAgAGBQJQETABAAoJEBus8iNuMP3dqxIQAJMqeSzER9BBBf6Z6Qbv/B9/
-2mkXg3YL4l1AVrQ3nRdqfu765QxTIL1P82Eu+yJH3kQUOvvAoqDjjGCrmT3AEflE
-DVK8dplcIiT1CrqMbk+ZLOhyzuPna0AwwgTJI85RM+py+9ppzk2V+PILk2H1Z5H5
-YD9mLIlQV4vsxqDJAXSC485xtc6c+u5EAA8s4+9ZoCvbyUT2AtiTKxAV+sydAY4x
-7RB57XfceusEnuQAcbWHnRy5e8/wp2yDJe2GX/Co+4QOuUN/BIo9trBQCQgQW3CD
-LHlC/yQ5KIzqncEGfl4ymrm1ecBcja4AjqGBkxo+aEMNH0JFvG/hoKQv2dxwe+Gq
-gSoIxx8k8fO9v6BWe04NRBFUV3+AieMlkviHWlRoao02j5RI9Nqys2iGpZn64qKN
-QiD1gjBzBrSNJEpRuceMVYeWKwwB6nNOkmxxYTiK8NgIK8o8IOtfKhZFIINBTJFi
-J06iPwsRwPBhL7Kqnka6RtQskr2f1Fc0SDEfhWgHTc1LYOVFH+swiNFmZ7H8YFt4
-ibeHQYSCz65cP5hayIMIak78x0hZC+RkrR+b1TcVLfb069jFVHwqHFKSuTQYz/x9
-2SWCTvJsYqmYxV49ofLPfLtBuM7igy836MNoLXPgjYsUSSuwDJBooaVgtNZlgyAk
-FWtYPJZNvZVAksmAk32Y
-=5/Sj
------END PGP SIGNATURE-----
+With this patchset, I've decided to take the relatively less
+controversial approach of just having the kernel retry once when it gets
+an ESTALE error. I still think that it's not as strong as it should be,
+but it should improve the situation in many common cases.
 
---VZLKKa0PG5KXlQhV--
+I've also tried to engineer this in such a way that if we do decide that
+we need to retry more than once, then it should be easy to change that
+later. This should cover all of the syscalls in fs/stat.c and
+fs/namei.c.
+
+Once these are merged, I'll look at adding similar handling to other
+path-based syscalls in a later set. A quick look shows that we have
+about 50-odd path-based syscalls that will need similar handling, so
+this is just a start.
+
+Jeff Layton (17):
+  vfs: add a retry_estale helper function to handle retries on ESTALE
+  vfs: add a kern_path_at function
+  vfs: make fstatat retry on ESTALE errors from getattr call
+  vfs: fix readlinkat to retry on ESTALE
+  vfs: remove user_path_at_empty
+  vfs: turn "empty" arg in getname_flags into a bool
+  vfs: add new "reval" argument to kern_path_create
+  vfs: fix mknodat to retry on ESTALE errors
+  vfs: fix mkdir to retry on ESTALE errors
+  vfs: fix symlinkat to retry on ESTALE errors
+  vfs: fix linkat to retry on ESTALE errors
+  vfs: make rmdir retry on ESTALE errors
+  vfs: make do_unlinkat retry on ESTALE errors
+  vfs: fix renameat to retry on ESTALE errors
+  vfs: remove user_path_parent
+  vfs: have do_sys_truncate retry once on an ESTALE error
+  vfs: have faccessat retry once on an ESTALE error
+
+ drivers/base/devtmpfs.c |   7 +-
+ fs/namei.c              | 407 +++++++++++++++++++++++++++++-------------------
+ fs/open.c               | 162 ++++++++++---------
+ fs/stat.c               |  44 ++++--
+ include/linux/fs.h      |  22 +++
+ include/linux/namei.h   |   4 +-
+ net/unix/af_unix.c      |   3 +-
+ 7 files changed, 400 insertions(+), 249 deletions(-)
+
+-- 
+1.7.11.2
+
