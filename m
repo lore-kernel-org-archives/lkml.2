@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab2GZRDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 13:03:16 -0400
-Received: from oproxy10-pub.bluehost.com ([67.222.39.61]:44439 "HELO
-	oproxy10-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752401Ab2GZRDO (ORCPT
+	id S1752699Ab2GZRDk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 13:03:40 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49166 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab2GZRDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 13:03:14 -0400
-Message-ID: <50117812.5080302@xenotime.net>
-Date: Thu, 26 Jul 2012 10:02:10 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Salar Ali Mumtaz <salaarali@gmail.com>
-CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xconfig: Display dependency values in debug_info
-References: <1343256982-11421-1-git-send-email-salaarali@gmail.com> <50107EB7.8000009@xenotime.net> <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com>
-In-Reply-To: <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Jul 2012 13:03:38 -0400
+Date: Thu, 26 Jul 2012 18:07:09 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: Re: [PATCH 6/7] kdb: Mark safe commands as KDB_SAFE and
+ KDB_SAFE_NO_ARGS
+Message-ID: <20120726180709.09777a3b@pyramind.ukuu.org.uk>
+In-Reply-To: <1343312791-9138-6-git-send-email-anton.vorontsov@linaro.org>
+References: <20120726142514.GA32158@lizard>
+	<1343312791-9138-6-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 09:19 AM, Salar Ali Mumtaz wrote:
-
-> Hi.
+> The following commands were marked as "safe":
 > 
-> Thanks for the quick reply.
-> 
-> This adds the current values to the dependencies in the debug_info, which you get when you select "Show debug info" 
-> from the popup you get after you right click. For some values, there is no help available. For those, there is usually 
-> information in the debug_info that is not displayed normally.
-> 
-> COMPAT_BINFMT_ELF
-> 
-> //This is added by debug_info
-> type: boolean
-> reverse dep: (IA32_EMULATION n && X86_64 n ) =n
-> unknown property: symbol
->     dep: ( COMPAT n && BINFMT_ELF y ) =n
-> //This is added by debug_info
-> 
-> defined at fs/Kconfig.binfmt:26
-> 
-> There is no help available for this option.
-> Symbol: COMPAT_BINFMT_ELF [=n]
-> Type : boolean
-> Selected by: IA32_EMULATION [=n] && X86_64 [=n]
-> 
-> Hope this helps.
-> 
+> 	Clear Breakpoint
+> 	Enable Breakpoint
+> 	Disable Breakpoint
+> 	Display exception frame
+> 	Stack traceback
+
+This is sufficient to steal cryptographic keys in many environments. In
+fact you merely need two or three breakpoints and to log the order they
+are hit through the crypto computation.
+
+> 	Display stack for process
+
+Exposes all sorts of user data unless you mean just the call trace, in
+which case it's still quite useful.
+
+> 	Display stack all processes
+
+Ditto
+
+> 	Send a signal to a process
+
+Like say sending SIGSTOP to security monitoring threads or the battery
+manager on locked devices that rely on software battery management ?
 
 
-Yes, it does help.  Thanks.
+It's an interesting idea but you need almost nothing to extract keys from
+a system or to subvert it.
 
-
-For BINFMT_ELF (not your example of COMPAT_BINFMT_ELF)
-in Linux 3.5, I see this:
-
-
-BEFORE PATCH:
-
-type: boolean
-unknown property: symbol
-    dep: MMU && (BROKEN || !FRV)
-prompt: Kernel support for ELF binaries
-    dep: MMU && (BROKEN || !FRV)
-default: y
-    dep: MMU && (BROKEN || !FRV)
-
-defined at fs/Kconfig.binfmt:1
-
-
-
-AFTER PATCH:
-
-type: boolean
-unknown property: symbol
-    dep: ( MMU y && (BROKEN n || !FRV FRV) ) =y
-prompt: Kernel support for ELF binaries
-    dep: ( MMU y && (BROKEN n || !FRV FRV) ) =y
-default: y
-    dep: ( MMU y && (BROKEN n || !FRV FRV) ) =y
-
-defined at fs/Kconfig.binfmt:1
-
-
-
-
-The added y/n/m are clear, but the "!FRV FRV" is confusing,
-isn't it?
-
-
--- 
-~Randy
+Alan
