@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab2GZDDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Jul 2012 23:03:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44503 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab2GZDC7 (ORCPT
+	id S1751719Ab2GZDMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Jul 2012 23:12:05 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:37533 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab2GZDME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Jul 2012 23:02:59 -0400
-From: Sha Zhengju <handai.szj@gmail.com>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        devel@open-fcoe.org
-Cc: Sha Zhengju <handai.szj@taobao.com>, robert.w.love@intel.com
-Subject: [PATCH] mainline 3.5, fcoe: remove the __exit annotation of fcoe_transport_exit()
-Date: Thu, 26 Jul 2012 11:02:44 +0800
-Message-Id: <1343271764-17501-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 25 Jul 2012 23:12:04 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6Q3BnFo000316, This message is released by code: ctaloc0852
+Message-ID: <5010B576.6040600@realsil.com.cn>
+Date: Thu, 26 Jul 2012 11:11:50 +0800
+From: wwang <wei_wang@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: realtek card reader core driver
+References: <1343036558-8189-1-git-send-email-wei_wang@realsil.com.cn> <20120723111757.GC4352@mwanda>
+In-Reply-To: <20120723111757.GC4352@mwanda>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sha Zhengju <handai.szj@taobao.com>
+Hi Dan:
 
-While testing linux mainline v3.5, it comes out the following warning:
+Sorry to bother you.
+I can't find the maintainer of drivers/misc. So if I want to submit my
+driver as misc device, who should I contact to send my patch?
 
-WARNING: drivers/scsi/fcoe/libfcoe.o(.init.text+0x21): Section mismatch in reference from the function
-init_module() to the function .exit.text:fcoe_transport_exit()
-The function __init init_module() references a function __exit fcoe_transport_exit().
-This is often seen when error handling in the init function uses functionality in the exit path.
-The fix is often to remove the __exit annotation of fcoe_transport_exit() so it may be used outside an exit section.
+Thank you very much. I really appreciate this help.
 
-
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-Cc: robert.w.love@intel.com
----
- drivers/scsi/fcoe/fcoe_transport.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/fcoe/fcoe_transport.c b/drivers/scsi/fcoe/fcoe_transport.c
-index b46f43d..71cc909 100644
---- a/drivers/scsi/fcoe/fcoe_transport.c
-+++ b/drivers/scsi/fcoe/fcoe_transport.c
-@@ -502,7 +502,7 @@ static int __init fcoe_transport_init(void)
- 	return 0;
- }
- 
--static int __exit fcoe_transport_exit(void)
-+static int fcoe_transport_exit(void)
- {
- 	struct fcoe_transport *ft;
- 
--- 
-1.7.1
-
+BR,
+wwang
