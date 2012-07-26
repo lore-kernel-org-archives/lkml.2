@@ -1,325 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab2GZEZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 00:25:57 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35971 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab2GZEZx (ORCPT
+	id S1751245Ab2GZEcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 00:32:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57106 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab2GZEcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 00:25:53 -0400
-Message-ID: <5010C6CC.9060109@kernel.org>
-Date: Thu, 26 Jul 2012 00:25:48 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-acpi <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: ACPI & Power Management Patches for Linux-3.6-merge
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Jul 2012 00:32:53 -0400
+Date: Thu, 26 Jul 2012 14:32:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: linux-next: manual merge of the akpm tree with the rr tree
+Message-Id: <20120726143250.190ff4ecb4bfecf556ba18b5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__26_Jul_2012_14_32_50_+1000_6h7OV/fUCqJ1h5D."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Thu__26_Jul_2012_14_32_50_+1000_6h7OV/fUCqJ1h5D.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull these ACPI & Power Management patches.
+Hi Andrew,
 
-re-write of the turbostat tool.
-	lower overhead was necessary for measuring very large system
-	when they are very idle.
+Today's linux-next merge of the akpm tree got conflicts in
+arch/alpha/Kconfig, arch/avr32/Kconfig, arch/blackfin/Kconfig,
+arch/cris/Kconfig, arch/h8300/Kconfig, arch/m32r/Kconfig,
+arch/m68k/Kconfig, arch/microblaze/Kconfig, arch/mips/Kconfig,
+arch/mn10300/Kconfig, arch/powerpc/Kconfig, arch/sh/Kconfig and
+arch/sparc/Kconfig between commit 380470027b5c ("Make most arch
+asm/module.h files use asm-generic/module.h") from the rr tree and commit
+"ipc: use Kconfig options for __ARCH_WANT_[COMPAT_]IPC_PARSE_VERSION"
+from the akpm tree.
 
-IVB support in intel_idle
-	It's what I run on my IVB, others should be able to also:-)
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-ACPICA core update
-	We have found some bugs due to divergence between Linux
-	and the upstream ACPICA base.  Most of these patches
-	are to reduce that divergence to reduce the risk
-	of future bugs.
+diff --cc arch/alpha/Kconfig
+index 6f580de,1c2172b..0000000
+--- a/arch/alpha/Kconfig
++++ b/arch/alpha/Kconfig
+@@@ -17,8 -17,7 +17,9 @@@ config ALPH
+  	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+  	select GENERIC_SMP_IDLE_THREAD
+  	select GENERIC_CMOS_UPDATE
+ +	select HAVE_MOD_ARCH_SPECIFIC
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+  	help
+  	  The Alpha is a 64-bit general-purpose processor designed and
+  	  marketed by the Digital Equipment Corporation of blessed memory,
+diff --cc arch/avr32/Kconfig
+index 2779913,5602831..0000000
+--- a/arch/avr32/Kconfig
++++ b/arch/avr32/Kconfig
+@@@ -14,8 -14,7 +14,9 @@@ config AVR3
+  	select ARCH_HAVE_CUSTOM_GPIO_H
+  	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+  	select GENERIC_CLOCKEVENTS
+ +	select HAVE_MOD_ARCH_SPECIFIC
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+  	help
+  	  AVR32 is a high-performance 32-bit RISC microprocessor core,
+  	  designed for cost-sensitive embedded applications, with particular
+diff --cc arch/blackfin/Kconfig
+index d8dcd9f,0bc1298..0000000
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@@ -40,8 -40,7 +40,9 @@@ config BLACKFI
+  	select HAVE_NMI_WATCHDOG if NMI_WATCHDOG
+  	select GENERIC_SMP_IDLE_THREAD
+  	select ARCH_USES_GETTIMEOFFSET if !GENERIC_CLOCKEVENTS
+ +	select HAVE_MOD_ARCH_SPECIFIC
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config GENERIC_CSUM
+  	def_bool y
+diff --cc arch/cris/Kconfig
+index 67ff98b,253cc2f..0000000
+--- a/arch/cris/Kconfig
++++ b/arch/cris/Kconfig
+@@@ -46,7 -46,7 +46,8 @@@ config CRI
+  	select GENERIC_IOMAP
+  	select GENERIC_SMP_IDLE_THREAD if ETRAX_ARCH_V32
+  	select GENERIC_CMOS_UPDATE
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config HZ
+  	int
+diff --cc arch/h8300/Kconfig
+index 9eaefdd,82379089..0000000
+--- a/arch/h8300/Kconfig
++++ b/arch/h8300/Kconfig
+@@@ -5,7 -5,7 +5,8 @@@ config H830
+  	select HAVE_GENERIC_HARDIRQS
+  	select GENERIC_IRQ_SHOW
+  	select GENERIC_CPU_DEVICES
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config SYMBOL_PREFIX
+  	string
+diff --cc arch/m32r/Kconfig
+index a30478e,828e5af..0000000
+--- a/arch/m32r/Kconfig
++++ b/arch/m32r/Kconfig
+@@@ -12,7 -12,7 +12,8 @@@ config M32
+  	select GENERIC_IRQ_SHOW
+  	select GENERIC_ATOMIC64
+  	select ARCH_USES_GETTIMEOFFSET
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config SBUS
+  	bool
+diff --cc arch/m68k/Kconfig
+index 02fe99e,fd1c1cb..0000000
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@@ -11,9 -11,7 +11,10 @@@ config M68
+  	select GENERIC_STRNLEN_USER if MMU
+  	select FPU if MMU
+  	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
+ +	select HAVE_MOD_ARCH_SPECIFIC
+ +	select MODULES_USE_ELF_REL
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config RWSEM_GENERIC_SPINLOCK
+  	bool
+diff --cc arch/microblaze/Kconfig
+index ee395d3,b5ebd9f..0000000
+--- a/arch/microblaze/Kconfig
++++ b/arch/microblaze/Kconfig
+@@@ -23,7 -23,7 +23,8 @@@ config MICROBLAZ
+  	select GENERIC_CPU_DEVICES
+  	select GENERIC_ATOMIC64
+  	select GENERIC_CLOCKEVENTS
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config SWAP
+  	def_bool n
+diff --cc arch/mips/Kconfig
+index ce65880,6c71388..0000000
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@@ -35,9 -35,7 +35,10 @@@ config MIP
+  	select BUILDTIME_EXTABLE_SORT
+  	select GENERIC_CLOCKEVENTS
+  	select GENERIC_CMOS_UPDATE
+ +	select HAVE_MOD_ARCH_SPECIFIC
+ +	select MODULES_USE_ELF_REL
+ +	select MODULES_USE_ELF_RELA if 64BIT
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  menu "Machine selection"
+ =20
+diff --cc arch/mn10300/Kconfig
+index f8fec1c,17f0ada..0000000
+--- a/arch/mn10300/Kconfig
++++ b/arch/mn10300/Kconfig
+@@@ -7,7 -7,7 +7,8 @@@ config MN1030
+  	select HAVE_ARCH_KGDB
+  	select HAVE_NMI_WATCHDOG if MN10300_WD_TIMER
+  	select GENERIC_CLOCKEVENTS
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config AM33_2
+  	def_bool n
+diff --cc arch/powerpc/Kconfig
+index 68d76dd,a47089f..0000000
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@@ -138,8 -138,7 +138,9 @@@ config PP
+  	select GENERIC_CLOCKEVENTS
+  	select GENERIC_STRNCPY_FROM_USER
+  	select GENERIC_STRNLEN_USER
+ +	select HAVE_MOD_ARCH_SPECIFIC
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config EARLY_PRINTK
+  	bool
+diff --cc arch/sh/Kconfig
+index 365ecf5,b1ad435..0000000
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@@ -34,8 -34,7 +34,9 @@@ config SUPER
+  	select GENERIC_CMOS_UPDATE if SH_SH03 || SH_DREAMCAST
+  	select GENERIC_STRNCPY_FROM_USER
+  	select GENERIC_STRNLEN_USER
+ +	select HAVE_MOD_ARCH_SPECIFIC if DWARF_UNWINDER
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+  	help
+  	  The SuperH is a RISC processor targeted for use in embedded systems
+  	  and consumer electronics; it was also used in the Sega Dreamcast
+diff --cc arch/sparc/Kconfig
+index acf5577,9245798..0000000
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@@ -36,7 -36,7 +36,8 @@@ config SPAR
+  	select GENERIC_CLOCKEVENTS
+  	select GENERIC_STRNCPY_FROM_USER
+  	select GENERIC_STRNLEN_USER
+ +	select MODULES_USE_ELF_RELA
++ 	select ARCH_WANT_IPC_PARSE_VERSION
+ =20
+  config SPARC32
+  	def_bool !64BIT
 
-Some cpuidle updates, mostly for non-Intel
-	more will be coming, as they depend on this part.
+--Signature=_Thu__26_Jul_2012_14_32_50_+1000_6h7OV/fUCqJ1h5D.
+Content-Type: application/pgp-signature
 
-Some thermal management changes needed by non-ACPI systems.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Some _OST (OS Status Indication) updates for hot ACPI hot-plug.
+iQIcBAEBCAAGBQJQEMhyAAoJEECxmPOUX5FEARMP/iF8XON6B9Q6DwzIjdq7QhMy
+28nFAnQSDNKAzolmjc7agyDn47lQZWumAnV9/q7W2thDc05dXZSuGsqE2vO+ERg2
+Hr1MfIJs9yiW/fi2OD1ojPdxuWEtTlLByBSCllXhlggud9tZVwdj2IrZK3fnRDrT
+MQ0Yt+LPflMkh7IzBrIeOirUQqw5JxW8gtJ6E00zBuBB203VvAzuEw3GNv6bNN7X
+g6VFERIUxO6liv6muspRRwGjUyGxk4UASXRwNsqyBTtSOdmrkGaKcWU7yPf7dScZ
+JCEY9+ywznNY2VxBUSDy/fDsRCBzac/Gktz7iIaIiKlfG0uv4buoOpUoDTgpV4M6
+yALSfbBA9UjmEvLE1o/p+tHabaTv3gsOHmoObmjUS4c3KS701qDPBz6rgxxZ5o8D
+tpkmZLVYn5tWMCrQlSKibCnoxCSKURSUo90DvphD37uJ2fjAGx8ZK/3tjoBuxhLm
+ewelPcje+EudHWZQcrGOzQL9NTmBqVdzC5L2OINubHnVKUHD1wuQ6qjEmxD/c1RC
+e51/+vnXVY/QsrHwB2IlS5MWJzD/RuphKvwZOXYNTh8dyMMNmzYXXA55hxVNkncP
++O0Utm7h+T6YP64VXt6MdHPCOCiTgkGCTsiDzQmhr9rZUoGdFd9EjDujSSMU1ynN
+zWLnWFPeWAAetgWAC1TI
+=4lSh
+-----END PGP SIGNATURE-----
 
-thanks!
-Len Brown, Intel Open Source Technology Center
-
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
-
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
-
-for you to fetch changes up to ec033d0a02901551346b9f43f8ff9bad51378891:
-
-  Merge branches 'acpi_pad', 'acpica', 'apei-bugzilla-43282', 'battery', 'cpuidle-coupled', 'cpuidle-tweaks', 'intel_idle-ivb', 'ost', 'red-hat-bz-772730', 'thermal', 'thermal-spear' and 'turbostat-v2' into release (2012-07-26 00:03:58 -0400)
-
-----------------------------------------------------------------
-
-Bob Moore (24):
-      ACPICA: Object dump routines: Use common function for string output
-      ACPICA: Lint fixes for acpi_write, no functional changes
-      ACPICA: Add support for multiple notify handlers
-      ACPICA: Update to version 20120420
-      ACPICA: Disassembler: Add support for Operation Region externals
-      ACPICA: ACPI 5/iASL: Add support for PCC keyword
-      ACPICA: iASL: Improved pathname support
-      ACPICA: Add FADT error message for GAS BitWidth overflow
-      ACPICA: Update to version 20120518
-      ACPICA: Disassembler: Emit descriptions for ACPI predefined names
-      ACPICA: Utilities: conditionally compile backslash removal function
-      ACPICA: Update comments; no functional change
-      ACPICA: Add support for implicit notify on multiple devices
-      ACPICA: Update to version 20120620
-      ACPICA: Split exception code utilities to a new file, utexcep.c
-      ACPICA: Add new interfaces for BIOS(firmware) errors and warnings
-      ACPICA: Table manager: deploy new firmware error/warning interfaces
-      ACPICA: Fix some comment fields
-      ACPICA: Add PCC address space to space ID decode function
-      ACPICA: Split file: tbxface.c -> tbxfload.c
-      ACPICA: Add new ACPI table load/unload external interfaces
-      ACPICA: Update header files copyrights to 2012
-      ACPICA: AcpiSrc: Fix some translation issues for Linux conversion
-      ACPICA: Update to version 20120711
-
-Colin Cross (4):
-      cpuidle: refactor out cpuidle_enter_state
-      cpuidle: fix error handling in __cpuidle_register_device
-      cpuidle: add support for states that affect multiple cpus
-      cpuidle: coupled: add parallel barrier function
-
-Durgadoss R (2):
-      Thermal: Make Thermal trip points writeable
-      Thermal: Add Hysteresis attributes
-
-Jean Delvare (1):
-      ACPI, APEI: Fixup common access width firmware bug
-
-Jesper Juhl (1):
-      ACPICA: AML Parser: Fix two possible memory leaks in error path
-
-Lan Tianyu (1):
-      ACPI/AC: prevent OOPS on some boxes due to missing check power_supply_register() return value check
-
-Len Brown (7):
-      intel_idle: initial IVB support
-      ACPI: remove acpi_pad MAINTAINERS entry
-      ACPI: acpi_pad: rename "power_saving" thread to "acpi_pad" thread
-      ACPI: acpi_pad: tune round_robin_time
-      tools/power: turbostat v2 - re-write for efficiency
-      tools/power: turbostat: fix large c1% issue
-      Merge branches 'acpi_pad', 'acpica', 'apei-bugzilla-43282', 'battery', 'cpuidle-coupled', 'cpuidle-tweaks', 'intel_idle-ivb', 'ost', 'red-hat-bz-772730', 'thermal', 'thermal-spear' and 'turbostat-v2' into release
-
-Lin Ming (1):
-      ACPICA: Remove argument of acpi_os_wait_events_complete
-
-Sergey Senozhatsky (1):
-      cpuidle: remove unused hrtimer_peek_ahead_timers() call
-
-Srivatsa S. Bhat (1):
-      cpuidle: add checks to avoid NULL pointer dereference
-
-Toshi Kani (6):
-      ACPI: Add an interface to evaluate _OST
-      ACPI: Add _OST support for sysfs eject
-      ACPI: Add _OST support for ACPI CPU hotplug
-      ACPI: Add _OST support for ACPI memory hotplug
-      ACPI: Add _OST support for ACPI container hotplug
-      ACPI: Set hotplug _OST support bit to _OSC
-
-Viresh Kumar (1):
-      drivers/thermal/spear_thermal.c: add Device Tree probing capability
-
-Zhang Rui (1):
-      Thermal: Documentation update
-
-srinivas pandruvada (1):
-      ACPI Battery: Added capacity
-
- .../devicetree/bindings/thermal/spear-thermal.txt  |   14 +
- Documentation/thermal/sysfs-api.txt                |   30 +-
- MAINTAINERS                                        |    7 -
- drivers/acpi/ac.c                                  |    4 +-
- drivers/acpi/acpi_memhotplug.c                     |   43 +-
- drivers/acpi/acpi_pad.c                            |    4 +-
- drivers/acpi/acpica/Makefile                       |    2 +
- drivers/acpi/acpica/acevents.h                     |    2 +-
- drivers/acpi/acpica/acglobal.h                     |   19 +-
- drivers/acpi/acpica/aclocal.h                      |   43 +-
- drivers/acpi/acpica/acmacros.h                     |    6 +-
- drivers/acpi/acpica/acobject.h                     |   15 +-
- drivers/acpi/acpica/acpredef.h                     |    8 +-
- drivers/acpi/acpica/acstruct.h                     |    2 +-
- drivers/acpi/acpica/acutils.h                      |    2 +
- drivers/acpi/acpica/amlcode.h                      |    4 +-
- drivers/acpi/acpica/amlresrc.h                     |    4 +-
- drivers/acpi/acpica/dsargs.c                       |    2 +-
- drivers/acpi/acpica/dscontrol.c                    |    4 +-
- drivers/acpi/acpica/dsfield.c                      |  103 +-
- drivers/acpi/acpica/dsinit.c                       |    4 +-
- drivers/acpi/acpica/dsmethod.c                     |    6 +-
- drivers/acpi/acpica/dsmthdat.c                     |   32 +-
- drivers/acpi/acpica/dsobject.c                     |   14 +-
- drivers/acpi/acpica/dsopcode.c                     |   12 +-
- drivers/acpi/acpica/dsutils.c                      |    6 +-
- drivers/acpi/acpica/dswscope.c                     |    4 +-
- drivers/acpi/acpica/dswstate.c                     |   20 +-
- drivers/acpi/acpica/evevent.c                      |    2 +-
- drivers/acpi/acpica/evglock.c                      |    4 +-
- drivers/acpi/acpica/evgpe.c                        |   22 +-
- drivers/acpi/acpica/evgpeblk.c                     |    2 +-
- drivers/acpi/acpica/evgpeutil.c                    |   22 +-
- drivers/acpi/acpica/evmisc.c                       |  191 +--
- drivers/acpi/acpica/evregion.c                     |   24 +-
- drivers/acpi/acpica/evrgnini.c                     |   28 +-
- drivers/acpi/acpica/evsci.c                        |    4 +-
- drivers/acpi/acpica/evxface.c                      |  474 +++----
- drivers/acpi/acpica/evxfevnt.c                     |    8 +-
- drivers/acpi/acpica/evxfgpe.c                      |  112 +-
- drivers/acpi/acpica/evxfregn.c                     |   18 +-
- drivers/acpi/acpica/exconfig.c                     |    8 +-
- drivers/acpi/acpica/exconvrt.c                     |   10 +-
- drivers/acpi/acpica/excreate.c                     |    2 +-
- drivers/acpi/acpica/exdebug.c                      |    4 +-
- drivers/acpi/acpica/exdump.c                       |   51 +-
- drivers/acpi/acpica/exfldio.c                      |   14 +-
- drivers/acpi/acpica/exmisc.c                       |   26 +-
- drivers/acpi/acpica/exmutex.c                      |    6 +-
- drivers/acpi/acpica/exprep.c                       |    6 +-
- drivers/acpi/acpica/exregion.c                     |   38 +-
- drivers/acpi/acpica/exresolv.c                     |    4 +-
- drivers/acpi/acpica/exresop.c                      |   10 +-
- drivers/acpi/acpica/exstore.c                      |    6 +-
- drivers/acpi/acpica/exstorob.c                     |    2 +-
- drivers/acpi/acpica/exsystem.c                     |    8 +-
- drivers/acpi/acpica/exutils.c                      |   10 +-
- drivers/acpi/acpica/hwacpi.c                       |    2 +-
- drivers/acpi/acpica/hwesleep.c                     |   15 +-
- drivers/acpi/acpica/hwregs.c                       |   22 +-
- drivers/acpi/acpica/hwsleep.c                      |    6 +-
- drivers/acpi/acpica/hwtimer.c                      |    4 +-
- drivers/acpi/acpica/hwvalid.c                      |    4 +-
- drivers/acpi/acpica/hwxface.c                      |   12 +-
- drivers/acpi/acpica/hwxfsleep.c                    |    6 +-
- drivers/acpi/acpica/nsaccess.c                     |    8 +-
- drivers/acpi/acpica/nsalloc.c                      |   10 +-
- drivers/acpi/acpica/nsdump.c                       |   18 +-
- drivers/acpi/acpica/nsdumpdv.c                     |    6 +-
- drivers/acpi/acpica/nseval.c                       |   10 +-
- drivers/acpi/acpica/nsinit.c                       |    6 +-
- drivers/acpi/acpica/nsload.c                       |    4 +-
- drivers/acpi/acpica/nsnames.c                      |   10 +-
- drivers/acpi/acpica/nsobject.c                     |   28 +-
- drivers/acpi/acpica/nspredef.c                     |   38 +-
- drivers/acpi/acpica/nsrepair.c                     |   14 +-
- drivers/acpi/acpica/nsrepair2.c                    |   26 +-
- drivers/acpi/acpica/nssearch.c                     |   12 +-
- drivers/acpi/acpica/nsutils.c                      |   26 +-
- drivers/acpi/acpica/nswalk.c                       |    8 +-
- drivers/acpi/acpica/nsxfeval.c                     |   26 +-
- drivers/acpi/acpica/nsxfname.c                     |   16 +-
- drivers/acpi/acpica/nsxfobj.c                      |    8 +-
- drivers/acpi/acpica/psargs.c                       |    6 +-
- drivers/acpi/acpica/psloop.c                       |   16 +-
- drivers/acpi/acpica/psopcode.c                     |    4 +-
- drivers/acpi/acpica/psparse.c                      |    6 +-
- drivers/acpi/acpica/psscope.c                      |    6 +-
- drivers/acpi/acpica/pstree.c                       |   14 +-
- drivers/acpi/acpica/psutils.c                      |    8 +-
- drivers/acpi/acpica/psxface.c                      |   16 +-
- drivers/acpi/acpica/rsaddr.c                       |   14 +-
- drivers/acpi/acpica/rscalc.c                       |    2 +-
- drivers/acpi/acpica/rscreate.c                     |    6 +-
- drivers/acpi/acpica/rsdump.c                       |   10 +-
- drivers/acpi/acpica/rslist.c                       |    2 +-
- drivers/acpi/acpica/rsmisc.c                       |   22 +-
- drivers/acpi/acpica/rsutils.c                      |   44 +-
- drivers/acpi/acpica/rsxface.c                      |   14 +-
- drivers/acpi/acpica/tbfadt.c                       |  144 ++-
- drivers/acpi/acpica/tbfind.c                       |    2 +-
- drivers/acpi/acpica/tbinstal.c                     |   23 +-
- drivers/acpi/acpica/tbutils.c                      |   58 +-
- drivers/acpi/acpica/tbxface.c                      |  225 +---
- drivers/acpi/acpica/tbxfload.c                     |  389 ++++++
- drivers/acpi/acpica/tbxfroot.c                     |   12 +-
- drivers/acpi/acpica/utaddress.c                    |   10 +-
- drivers/acpi/acpica/utalloc.c                      |   20 +-
- drivers/acpi/acpica/utcopy.c                       |    2 +-
- drivers/acpi/acpica/utdebug.c                      |   32 +-
- drivers/acpi/acpica/utdecode.c                     |   70 +-
- drivers/acpi/acpica/utdelete.c                     |   38 +-
- drivers/acpi/acpica/uteval.c                       |    6 +-
- drivers/acpi/acpica/utexcep.c                      |  153 +++
- drivers/acpi/acpica/utglobal.c                     |   11 +-
- drivers/acpi/acpica/utids.c                        |    2 +-
- drivers/acpi/acpica/utlock.c                       |    6 +-
- drivers/acpi/acpica/utmath.c                       |    4 +-
- drivers/acpi/acpica/utmisc.c                       |  104 +-
- drivers/acpi/acpica/utmutex.c                      |    8 +-
- drivers/acpi/acpica/utobject.c                     |   14 +-
- drivers/acpi/acpica/utosi.c                        |    2 +-
- drivers/acpi/acpica/utresrc.c                      |   34 +-
- drivers/acpi/acpica/utstate.c                      |   16 +-
- drivers/acpi/acpica/utxface.c                      |   18 +-
- drivers/acpi/acpica/utxferror.c                    |   90 +-
- drivers/acpi/acpica/utxfmutex.c                    |   14 +-
- drivers/acpi/apei/apei-base.c                      |    5 +
- drivers/acpi/battery.c                             |    9 +
- drivers/acpi/bus.c                                 |    4 +
- drivers/acpi/container.c                           |   43 +-
- drivers/acpi/osl.c                                 |    4 +-
- drivers/acpi/processor_driver.c                    |   28 +-
- drivers/acpi/processor_idle.c                      |   12 +-
- drivers/acpi/scan.c                                |   58 +-
- drivers/acpi/sleep.c                               |    2 +-
- drivers/acpi/thermal.c                             |   10 +-
- drivers/acpi/utils.c                               |   42 +
- drivers/cpuidle/Kconfig                            |    3 +
- drivers/cpuidle/Makefile                           |    1 +
- drivers/cpuidle/coupled.c                          |  715 +++++++++++
- drivers/cpuidle/cpuidle.c                          |   85 +-
- drivers/cpuidle/cpuidle.h                          |   32 +
- drivers/idle/intel_idle.c                          |   37 +
- drivers/platform/x86/acerhdf.c                     |    2 +-
- drivers/platform/x86/intel_mid_thermal.c           |    2 +-
- drivers/thermal/Kconfig                            |    1 +
- drivers/thermal/spear_thermal.c                    |   28 +-
- drivers/thermal/thermal_sys.c                      |  223 +++-
- include/acpi/acexcep.h                             |    7 +-
- include/acpi/acnames.h                             |    2 +-
- include/acpi/acoutput.h                            |    6 +-
- include/acpi/acpi.h                                |    2 +-
- include/acpi/acpi_bus.h                            |   12 +-
- include/acpi/acpiosxf.h                            |    4 +-
- include/acpi/acpixf.h                              |   25 +-
- include/acpi/acrestyp.h                            |    6 +-
- include/acpi/actbl.h                               |   10 +-
- include/acpi/actbl1.h                              |   10 +-
- include/acpi/actbl2.h                              |   10 +-
- include/acpi/actbl3.h                              |    2 +-
- include/acpi/actypes.h                             |   13 +-
- include/acpi/platform/acenv.h                      |    2 +-
- include/acpi/platform/acgcc.h                      |    2 +-
- include/acpi/platform/aclinux.h                    |    2 +-
- include/linux/acpi.h                               |   40 +-
- include/linux/cpuidle.h                            |   11 +
- include/linux/platform_data/spear_thermal.h        |   26 -
- include/linux/thermal.h                            |   20 +-
- tools/power/x86/turbostat/Makefile                 |    1 +
- tools/power/x86/turbostat/turbostat.8              |   77 +-
- tools/power/x86/turbostat/turbostat.c              | 1333 ++++++++++++--------
- 172 files changed, 4203 insertions(+), 2340 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/thermal/spear-thermal.txt
- create mode 100644 drivers/acpi/acpica/tbxfload.c
- create mode 100644 drivers/acpi/acpica/utexcep.c
- create mode 100644 drivers/cpuidle/coupled.c
- delete mode 100644 include/linux/platform_data/spear_thermal.h
-
+--Signature=_Thu__26_Jul_2012_14_32_50_+1000_6h7OV/fUCqJ1h5D.--
