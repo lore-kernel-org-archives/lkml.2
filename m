@@ -1,115 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab2GZN2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 09:28:47 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34848 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab2GZN2e (ORCPT
+	id S1752507Ab2GZN3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 09:29:38 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35042 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab2GZN3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 09:28:34 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, kvm@vger.kernel.org, JBottomley@parallels.com,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 2/2] virtio-scsi: support online resizing of disks
-Date: Thu, 26 Jul 2012 15:28:08 +0200
-Message-Id: <1343309288-32615-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1343309288-32615-1-git-send-email-pbonzini@redhat.com>
-References: <1343309288-32615-1-git-send-email-pbonzini@redhat.com>
+	Thu, 26 Jul 2012 09:29:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <19755.1343299583@warthog.procyon.org.uk>
+References: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
+ <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com>
+ <28702.1343135952@warthog.procyon.org.uk> <CAHO5Pa310CYFKvyN4N21CHoCKJG-eJ04Q-yg1VmgwvgR5N91Rg@mail.gmail.com>
+ <6193.1343211798@warthog.procyon.org.uk> <CAHO5Pa2ck_wqUwiuFUxEeU=k3dJvByyjpygpUhrSFRsMyBZ8Eg@mail.gmail.com>
+ <5901.1343244093@warthog.procyon.org.uk> <CAHO5Pa1yOxBhorYBGJUsy8MehRUbbrwc=uq7Vs+bevtCXGjGMQ@mail.gmail.com>
+ <19755.1343299583@warthog.procyon.org.uk>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Thu, 26 Jul 2012 15:29:14 +0200
+X-Google-Sender-Auth: mpHt8y5CmFfjpw_3FlY_RJ8GOU0
+Message-ID: <CAHO5Pa2j0wGKrjr39AOeqA=7rz43gsDKKveqUYeHdAebaiE_2w@mail.gmail.com>
+Subject: Re: [PATCH 00/13] UAPI header file split
+To: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        tglx@linutronix.de, mingo@kernel.org, davej@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support the LUN parameter change event.  Currently, the host fires this event
-when the capacity of a disk is changed from the virtual machine monitor.
-The resize then appears in the kernel log like this:
+On Thu, Jul 26, 2012 at 12:46 PM, David Howells <dhowells@redhat.com> wrote:
+>
+> Oh, and thanks for the write up!
 
-  sd 0:0:0:0: [sda] 46137344 512-byte logical blocks: (23.6 GB/22.0 GIb)
-  sda: detected capacity change from 22548578304 to 23622320128
+You're welcome. You may want to respond to comments that appear there,
+such as this one
+https://lwn.net/Articles/508203/
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- drivers/scsi/virtio_scsi.c  |   31 ++++++++++++++++++++++++++++++-
- include/linux/virtio_scsi.h |    2 ++
- 2 files changed, 32 insertions(+), 1 deletions(-)
+(You can sign up to receive comments on a specific article by mail)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 8b6b927..c1a5e60 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -279,6 +279,31 @@ static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
- 	}
- }
- 
-+static void virtscsi_handle_param_change(struct virtio_scsi *vscsi,
-+					 struct virtio_scsi_event *event)
-+{
-+	struct scsi_device *sdev;
-+	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
-+	unsigned int target = event->lun[1];
-+	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
-+	u8 asc = event->reason & 255;
-+	u8 ascq = event->reason >> 8;
-+
-+	sdev = scsi_device_lookup(shost, 0, target, lun);
-+	if (!sdev) {
-+		pr_err("SCSI device %d 0 %d %d not found\n",
-+			shost->host_no, target, lun);
-+		return;
-+	}
-+
-+	/* Handle "Parameters changed", "Mode parameters changed", and
-+	   "Capacity data has changed".  */
-+	if (asc == 0x2a && (ascq == 0x00 || ascq == 0x01 || ascq == 0x09))
-+		scsi_rescan_device(&sdev->sdev_gendev);
-+
-+	scsi_device_put(sdev);
-+}
-+
- static void virtscsi_handle_event(struct work_struct *work)
- {
- 	struct virtio_scsi_event_node *event_node =
-@@ -297,6 +322,9 @@ static void virtscsi_handle_event(struct work_struct *work)
- 	case VIRTIO_SCSI_T_TRANSPORT_RESET:
- 		virtscsi_handle_transport_reset(vscsi, event);
- 		break;
-+	case VIRTIO_SCSI_T_PARAM_CHANGE:
-+		virtscsi_handle_param_change(vscsi, event);
-+		break;
- 	default:
- 		pr_err("Unsupport virtio scsi event %x\n", event->event);
- 	}
-@@ -737,7 +765,8 @@ static struct virtio_device_id id_table[] = {
- };
- 
- static unsigned int features[] = {
--	VIRTIO_SCSI_F_HOTPLUG
-+	VIRTIO_SCSI_F_HOTPLUG,
-+	VIRTIO_SCSI_F_CHANGE,
- };
- 
- static struct virtio_driver virtio_scsi_driver = {
-diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
-index dc8d305..d6b4440 100644
---- a/include/linux/virtio_scsi.h
-+++ b/include/linux/virtio_scsi.h
-@@ -72,6 +72,7 @@ struct virtio_scsi_config {
- /* Feature Bits */
- #define VIRTIO_SCSI_F_INOUT                    0
- #define VIRTIO_SCSI_F_HOTPLUG                  1
-+#define VIRTIO_SCSI_F_CHANGE                   2
- 
- /* Response codes */
- #define VIRTIO_SCSI_S_OK                       0
-@@ -108,6 +109,7 @@ struct virtio_scsi_config {
- #define VIRTIO_SCSI_T_NO_EVENT                 0
- #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
- #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
-+#define VIRTIO_SCSI_T_PARAM_CHANGE             3
- 
- /* Reasons of transport reset event */
- #define VIRTIO_SCSI_EVT_RESET_HARD             0
 -- 
-1.7.1
-
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
