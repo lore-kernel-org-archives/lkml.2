@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab2GZWEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 18:04:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13093 "EHLO mx1.redhat.com"
+	id S1754047Ab2GZWEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 18:04:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43054 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753962Ab2GZWDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 18:03:09 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: matt.fleming@intel.com
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 3/4] PCI: Add support for non-BAR ROMs
-Date: Thu, 26 Jul 2012 18:02:48 -0400
-Message-Id: <1343340169-7772-4-git-send-email-mjg@redhat.com>
-In-Reply-To: <1343340169-7772-1-git-send-email-mjg@redhat.com>
-References: <1343340169-7772-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.41.104
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1753045Ab2GZWEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 18:04:36 -0400
+Message-ID: <5011BD8C.4010301@zytor.com>
+Date: Thu, 26 Jul 2012 14:58:36 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Kent Yoder <key@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        m.selhorst@sirrix.com, safford@us.ibm.com,
+        Jeff Garzik <jeff@garzik.org>
+Subject: Re: [PATCH 2/2] hw_random: add support for the TPM chip as a hardware
+ RNG source
+References: <1339094567.21398.2.camel@key-ThinkPad-W510> <1339094862.21398.6.camel@key-ThinkPad-W510>
+In-Reply-To: <1339094862.21398.6.camel@key-ThinkPad-W510>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platforms may provide their own mechanisms for obtaining ROMs. Add support
-for using data provided by the platform in that case.
+On 06/07/2012 11:47 AM, Kent Yoder wrote:
+> This driver will make use of any available TPM chip on the system as a
+> hwrng source.
+>
+> Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+> ---
+>   drivers/char/hw_random/Kconfig   |   13 +++++++++
+>   drivers/char/hw_random/Makefile  |    1 +
+>   drivers/char/hw_random/tpm-rng.c |   55 ++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 69 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/char/hw_random/tpm-rng.c
+>
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- drivers/pci/rom.c   |    9 ++++++++-
- include/linux/pci.h |    2 ++
- 2 files changed, 10 insertions(+), 1 deletion(-)
+So I just noticed this patch being pushed.
 
-diff --git a/drivers/pci/rom.c b/drivers/pci/rom.c
-index 48ebdb2..7ebaab6 100644
---- a/drivers/pci/rom.c
-+++ b/drivers/pci/rom.c
-@@ -126,6 +126,12 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
- 		/* primary video rom always starts here */
- 		start = (loff_t)0xC0000;
- 		*size = 0x20000; /* cover C000:0 through E000:0 */
-+	/*
-+	 * Some devices may provide ROMs via a source other than the BAR
-+	 */
-+	} else if (pdev->rom && pdev->romlen) {
-+		*size = pdev->romlen;
-+		return phys_to_virt(pdev->rom);
- 	} else {
- 		if (res->flags &
- 			(IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY)) {
-@@ -219,7 +225,8 @@ void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
- 	if (res->flags & (IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY))
- 		return;
- 
--	iounmap(rom);
-+	if (!pdev->rom || !pdev->romlen)
-+		iounmap(rom);
- 
- 	/* Disable again before continuing, leave enabled if pci=rom */
- 	if (!(res->flags & (IORESOURCE_ROM_ENABLE | IORESOURCE_ROM_SHADOW)))
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 6a2625c..2668bb9 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -355,6 +355,8 @@ struct pci_dev {
- 	};
- 	struct pci_ats	*ats;	/* Address Translation Service */
- #endif
-+	void *rom; /* Physical pointer to ROM if it's not from the BAR */
-+	size_t romlen; /* Length of ROM if it's not from the BAR */
- };
- 
- static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+/dev/hw_random is used by rngd, which already has support for the TPM 
+directly.  However, the TPM support in rngd conflict with tcsd (from 
+TrouSerS).
+
+Does this driver solve the coexistence problem?  If so, this is a Very 
+Good Thing and should be accepted (and the TPM support in rngd 
+deprecated/removed.)
+
+If it does *not* solve the coexistence problem, then it just prevents a 
+user space solution and the patch really should be rejected.
+
+It would be great to get that clarified as soon as possible.
+
+Thanks,
+
+	-hpa
+
+
 -- 
-1.7.10.4
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
