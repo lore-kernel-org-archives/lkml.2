@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab2GZMA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 08:00:57 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:46818 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab2GZLzd (ORCPT
+	id S1752819Ab2GZMBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 08:01:16 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60450 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab2GZLzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 07:55:33 -0400
+	Thu, 26 Jul 2012 07:55:32 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v4 04/17] vfs: fix readlinkat to retry on ESTALE
-Date: Thu, 26 Jul 2012 07:55:07 -0400
-Message-Id: <1343303720-11199-5-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v4 03/17] vfs: make fstatat retry on ESTALE errors from getattr call
+Date: Thu, 26 Jul 2012 07:55:06 -0400
+Message-Id: <1343303720-11199-4-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
 References: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
@@ -24,53 +24,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/stat.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+ fs/namei.c         |  2 +-
+ fs/stat.c          | 21 ++++++++++++++++-----
+ include/linux/fs.h |  1 +
+ 3 files changed, 18 insertions(+), 6 deletions(-)
 
+diff --git a/fs/namei.c b/fs/namei.c
+index b6fbe3d..1ab4400 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -117,7 +117,7 @@
+  * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
+  * PATH_MAX includes the nul terminator --RR.
+  */
+-static char *getname_flags(const char __user *filename, int flags, int *empty)
++char *getname_flags(const char __user *filename, int flags, int *empty)
+ {
+ 	char *result = __getname(), *err;
+ 	int len;
 diff --git a/fs/stat.c b/fs/stat.c
-index 5afeb37..c9d88f7 100644
+index b6ff118..5afeb37 100644
 --- a/fs/stat.c
 +++ b/fs/stat.c
-@@ -307,14 +307,25 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 	struct path path;
- 	int error;
- 	int empty = 0;
+@@ -72,9 +72,11 @@ EXPORT_SYMBOL(vfs_fstat);
+ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 		int flag)
+ {
 +	char *name;
+ 	struct path path;
+ 	int error = -EINVAL;
+-	int lookup_flags = 0;
 +	unsigned int try = 0;
-+	unsigned int lookup_flags = LOOKUP_EMPTY;
++	unsigned int lookup_flags = 0;
  
- 	if (bufsiz <= 0)
- 		return -EINVAL;
+ 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
+ 		      AT_EMPTY_PATH)) != 0)
+@@ -85,12 +87,21 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 	if (flag & AT_EMPTY_PATH)
+ 		lookup_flags |= LOOKUP_EMPTY;
  
--	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
--	if (!error) {
--		struct inode *inode = path.dentry->d_inode;
-+	name = getname_flags(pathname, lookup_flags, &empty);
-+	if (IS_ERR(name))
-+		return PTR_ERR(name);
-+
+-	error = user_path_at(dfd, filename, lookup_flags, &path);
+-	if (error)
++	name = getname_flags(filename, lookup_flags, NULL);
++	if (IS_ERR(name)) {
++		error = PTR_ERR(name);
+ 		goto out;
++	}
 +	do {
-+		struct inode *inode;
-+
 +		error = kern_path_at(dfd, name, lookup_flags, &path);
 +		if (error)
 +			break;
  
-+		inode = path.dentry->d_inode;
- 		error = empty ? -ENOENT : -EINVAL;
- 		if (inode->i_op->readlink) {
- 			error = security_inode_readlink(path.dentry);
-@@ -325,7 +336,9 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 			}
- 		}
- 		path_put(&path);
--	}
+-	error = vfs_getattr(path.mnt, path.dentry, stat);
+-	path_put(&path);
++		error = vfs_getattr(path.mnt, path.dentry, stat);
++		path_put(&path);
 +		lookup_flags |= LOOKUP_REVAL;
 +	} while (retry_estale(error, try++));
 +	putname(name);
+ out:
  	return error;
  }
- 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 138d93a..00db714 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2062,6 +2062,7 @@ extern struct file *file_open_root(struct dentry *, struct vfsmount *,
+ 				   const char *, int);
+ extern struct file * dentry_open(const struct path *, int, const struct cred *);
+ extern int filp_close(struct file *, fl_owner_t id);
++extern char *getname_flags(const char __user *, int, int *);
+ extern char * getname(const char __user *);
+ enum {
+ 	FILE_CREATED = 1,
 -- 
 1.7.11.2
 
