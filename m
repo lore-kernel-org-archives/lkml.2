@@ -1,692 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab2GZXtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 19:49:31 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:60365 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752465Ab2GZXsj (ORCPT
+	id S1753477Ab2GZXta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 19:49:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55869 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269Ab2GZXt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 19:48:39 -0400
-From: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com,
-        gregkh@linuxfoundation.org,
-        "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Subject: [vmw_vmci 02/11] Apply VMCI datagram code
-Date: Thu, 26 Jul 2012 16:39:31 -0700
-Message-Id: <1343345980-32397-3-git-send-email-astiegmann@vmware.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
-References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
+	Thu, 26 Jul 2012 19:49:26 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>, linux-kernel@vger.kernel.org,
+        Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/olpc_dcon: fix checkpatch warnings
+Date: Fri, 27 Jul 2012 08:49:19 +0900
+Message-Id: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implements datagrams to allow data to be sent between host
-and guest.
+Now checkpatch clean.
 
-Signed-off-by: Andrew Stiegmann (stieg) <astiegmann@vmware.com>
+$ find drivers/staging/olpc_dcon/ -name "*.[ch]"|xargs ./scripts/checkpatch.pl \
+-f --terse --nosummary|cut -f3- -d":"|sort |uniq -c|sort -n
+      2  WARNING: msleep < 20ms can sleep for up to 20ms; see Documentation/timers/timers-howto.txt
+      3  WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
+      3  WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
+      6  WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+     19  WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
+
+And added pr_fmt.
+
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
 ---
- drivers/misc/vmw_vmci/vmci_datagram.c |  586 +++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_datagram.h |   56 ++++
- 2 files changed, 642 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.h
+ drivers/staging/olpc_dcon/olpc_dcon.c        |   56 +++++++++++++-------------
+ drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |   15 ++++---
+ drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |    6 ++-
+ 3 files changed, 41 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/misc/vmw_vmci/vmci_datagram.c b/drivers/misc/vmw_vmci/vmci_datagram.c
-new file mode 100644
-index 0000000..a804f99
---- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_datagram.c
-@@ -0,0 +1,586 @@
-+/*
-+ * VMware VMCI Driver
-+ *
-+ * Copyright (C) 2012 VMware, Inc. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation version 2 and no later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-+ */
-+
-+#include <linux/bug.h>
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/vmw_vmci_api.h>
-+#include <linux/vmw_vmci_defs.h>
-+
-+#include "vmci_common_int.h"
-+#include "vmci_context.h"
-+#include "vmci_datagram.h"
-+#include "vmci_driver.h"
-+#include "vmci_event.h"
-+#include "vmci_hash_table.h"
-+#include "vmci_resource.h"
-+#include "vmci_route.h"
-+
-+/*
-+ * struct datagram_entry describes the datagram entity. It is used for datagram
-+ * entities created only on the host.
-+ */
-+struct datagram_entry {
-+	struct vmci_resource resource;
-+	uint32_t flags;
-+	bool runDelayed;
-+	VMCIDatagramRecvCB recvCB;
-+	void *clientData;
-+	wait_queue_head_t destroyEvent;
-+	uint32_t privFlags;
-+};
-+
-+struct delayed_datagram_info {
-+	bool inDGHostQueue;
-+	struct datagram_entry *entry;
-+	struct vmci_dg msg;
-+};
-+
-+static atomic_t delayedDGHostQueueSize;
-+
-+static void dg_free_cb(void *clientData)
-+{
-+	struct datagram_entry *entry = (struct datagram_entry *)clientData;
-+	ASSERT(entry);
-+
-+	/*
-+	 * Entry is freed in VMCIDatagram_DestroyHnd, who waits for
-+	 * the signal.
-+	 */
-+	wake_up(&entry->destroyEvent);
-+}
-+
-+static int dg_release_cb(void *clientData)
-+{
-+	struct datagram_entry *entry = (struct datagram_entry *)clientData;
-+	ASSERT(entry);
-+	vmci_resource_release(&entry->resource);
-+	return 0;
-+}
-+
-+/*
-+ * Create a datagram entry given a handle pointer.
-+ */
-+static int dg_create_handle(uint32_t resourceID,
-+			    uint32_t flags,
-+			    uint32_t privFlags,
-+			    VMCIDatagramRecvCB recvCB,
-+			    void *clientData,
-+			    struct vmci_handle *outHandle)
-+{
-+	int result;
-+	uint32_t contextID;
-+	struct vmci_handle handle;
-+	struct datagram_entry *entry;
-+
-+	ASSERT(recvCB != NULL);
-+	ASSERT(outHandle != NULL);
-+	ASSERT(!(privFlags & ~VMCI_PRIVILEGE_ALL_FLAGS));
-+
-+	if ((flags & VMCI_FLAG_WELLKNOWN_DG_HND) != 0) {
-+		return VMCI_ERROR_INVALID_ARGS;
-+	} else {
-+		if ((flags & VMCI_FLAG_ANYCID_DG_HND) != 0) {
-+			contextID = VMCI_INVALID_ID;
-+		} else {
-+			contextID = VMCI_GetContextID();
-+			if (contextID == VMCI_INVALID_ID)
-+				return VMCI_ERROR_NO_RESOURCES;
-+		}
-+
-+		if (resourceID == VMCI_INVALID_ID) {
-+			resourceID = vmci_resource_get_id(contextID);
-+			if (resourceID == VMCI_INVALID_ID)
-+				return VMCI_ERROR_NO_HANDLE;
-+		}
-+
-+		handle = vmci_make_handle(contextID, resourceID);
-+	}
-+
-+	entry = kmalloc(sizeof *entry, GFP_KERNEL);
-+	if (entry == NULL) {
-+		pr_warn("Failed allocating memory for datagram entry.");
-+		return VMCI_ERROR_NO_MEM;
-+	}
-+
-+	entry->runDelayed = (flags & VMCI_FLAG_DG_DELAYED_CB) ? true : false;
-+	entry->flags = flags;
-+	entry->recvCB = recvCB;
-+	entry->clientData = clientData;
-+	init_waitqueue_head(&entry->destroyEvent);
-+	entry->privFlags = privFlags;
-+
-+	/* Make datagram resource live. */
-+	result = vmci_resource_add(&entry->resource,
-+				   VMCI_RESOURCE_TYPE_DATAGRAM,
-+				   handle, dg_free_cb, entry);
-+	if (result != VMCI_SUCCESS) {
-+		pr_warn("Failed to add new resource (handle=0x%x:0x%x).",
-+			handle.context, handle.resource);
-+		kfree(entry);
-+		return result;
-+	}
-+	*outHandle = handle;
-+
-+	return VMCI_SUCCESS;
-+}
-+
-+int __init vmci_dg_init(void)
-+{
-+	atomic_set(&delayedDGHostQueueSize, 0);
-+	return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * Internal utilility function with the same purpose as
-+ * vmci_dg_get_priv_flags that also takes a contextID.
-+ */
-+static int vmci_dg_get_priv_flags(uint32_t contextID,
-+				  struct vmci_handle handle,
-+				  uint32_t *privFlags)
-+{
-+	ASSERT(privFlags);
-+	ASSERT(contextID != VMCI_INVALID_ID);
-+
-+	if (contextID == VMCI_HOST_CONTEXT_ID) {
-+		struct datagram_entry *srcEntry;
-+		struct vmci_resource *resource;
-+
-+		resource =
-+			vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
-+		if (resource == NULL)
-+			return VMCI_ERROR_INVALID_ARGS;
-+
-+		srcEntry = container_of(resource, struct datagram_entry,
-+					resource);
-+		*privFlags = srcEntry->privFlags;
-+		vmci_resource_release(resource);
-+	} else if (contextID == VMCI_HYPERVISOR_CONTEXT_ID) {
-+		*privFlags = VMCI_MAX_PRIVILEGE_FLAGS;
-+	} else {
-+		*privFlags = VMCIContext_GetPrivFlags(contextID);
-+	}
-+
-+	return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * Calls the specified callback in a delayed context.
-+ */
-+static void dg_delayed_dispatch_cb(void *data)
-+{
-+	bool inDGHostQueue;
-+	struct delayed_datagram_info *dgInfo =
-+		(struct delayed_datagram_info *)data;
-+
-+	ASSERT(data);
-+
-+	dgInfo->entry->recvCB(dgInfo->entry->clientData, &dgInfo->msg);
-+
-+	vmci_resource_release(&dgInfo->entry->resource);
-+
-+	inDGHostQueue = dgInfo->inDGHostQueue;
-+	kfree(dgInfo);
-+
-+	if (inDGHostQueue)
-+		atomic_dec(&delayedDGHostQueueSize);
-+}
-+
-+/*
-+ * Dispatch datagram as a host, to the host, or other vm context. This
-+ * function cannot dispatch to hypervisor context handlers. This should
-+ * have been handled before we get here by VMCIDatagramDispatch.
-+ * Returns number of bytes sent on success, error code otherwise.
-+ */
-+static int dg_dispatch_as_host(uint32_t contextID,
-+			       struct vmci_dg *dg)
-+{
-+	int retval;
-+	size_t dgSize;
-+	uint32_t srcPrivFlags;
-+
-+	ASSERT(dg);
-+	ASSERT(vmci_host_code_active());
-+
-+	dgSize = VMCI_DG_SIZE(dg);
-+
-+	if (contextID == VMCI_HOST_CONTEXT_ID &&
-+	    dg->dst.context == VMCI_HYPERVISOR_CONTEXT_ID)
-+		return VMCI_ERROR_DST_UNREACHABLE;
-+
-+	ASSERT(dg->dst.context != VMCI_HYPERVISOR_CONTEXT_ID);
-+
-+	/* Check that source handle matches sending context. */
-+	if (dg->src.context != contextID) {
-+		pr_devel("Sender context (ID=0x%x) is not owner of src " \
-+			 "datagram entry (handle=0x%x:0x%x).",
-+			 contextID, dg->src.context, dg->src.resource);
-+		return VMCI_ERROR_NO_ACCESS;
-+	}
-+
-+	/* Get hold of privileges of sending endpoint. */
-+	retval = vmci_dg_get_priv_flags(contextID, dg->src, &srcPrivFlags);
-+	if (retval != VMCI_SUCCESS) {
-+		pr_warn("Couldn't get privileges (handle=0x%x:0x%x).",
-+			dg->src.context, dg->src.resource);
-+		return retval;
-+	}
-+
-+	/* Determine if we should route to host or guest destination. */
-+	if (dg->dst.context == VMCI_HOST_CONTEXT_ID) {
-+		/* Route to host datagram entry. */
-+		struct datagram_entry *dstEntry;
-+		struct vmci_resource *resource;
-+
-+		if (dg->src.context == VMCI_HYPERVISOR_CONTEXT_ID &&
-+		    dg->dst.resource == VMCI_EVENT_HANDLER) {
-+			return vmci_event_dispatch(dg);
-+		}
-+
-+		resource = vmci_resource_get(dg->dst,
-+					     VMCI_RESOURCE_TYPE_DATAGRAM);
-+		if (resource == NULL) {
-+			pr_devel("Sending to invalid destination " \
-+				 "(handle=0x%x:0x%x).", dg->dst.context,
-+				 dg->dst.resource);
-+			return VMCI_ERROR_INVALID_RESOURCE;
-+		}
-+		dstEntry =
-+			container_of(resource, struct datagram_entry,
-+				     resource);
-+		if (vmci_deny_interaction(srcPrivFlags, dstEntry->privFlags)) {
-+			vmci_resource_release(resource);
-+			return VMCI_ERROR_NO_ACCESS;
-+		}
-+		ASSERT(dstEntry->recvCB);
-+
-+		/*
-+		 * If a VMCI datagram destined for the host is also sent by the
-+		 * host, we always run it delayed. This ensures that no locks
-+		 * are held when the datagram callback runs.
-+		 */
-+		if (dstEntry->runDelayed
-+		    || dg->src.context == VMCI_HOST_CONTEXT_ID) {
-+			struct delayed_datagram_info *dgInfo;
-+
-+			if (atomic_add_return(1, &delayedDGHostQueueSize)
-+			    == VMCI_MAX_DELAYED_DG_HOST_QUEUE_SIZE) {
-+				atomic_dec(&delayedDGHostQueueSize);
-+				vmci_resource_release(resource);
-+				return VMCI_ERROR_NO_MEM;
-+			}
-+
-+			dgInfo =
-+				kmalloc(sizeof *dgInfo +
-+					(size_t) dg->payloadSize, GFP_ATOMIC);
-+			if (NULL == dgInfo) {
-+				atomic_dec(&delayedDGHostQueueSize);
-+				vmci_resource_release(resource);
-+				return VMCI_ERROR_NO_MEM;
-+			}
-+
-+			dgInfo->inDGHostQueue = true;
-+			dgInfo->entry = dstEntry;
-+			memcpy(&dgInfo->msg, dg, dgSize);
-+			retval =
-+			  vmci_drv_schedule_delayed_work(dg_delayed_dispatch_cb,
-+							 dgInfo);
-+			if (retval < VMCI_SUCCESS) {
-+				pr_warn("Failed to schedule delayed " \
-+					"work for datagram (result=%d).",
-+					retval);
-+				kfree(dgInfo);
-+				vmci_resource_release(resource);
-+				atomic_dec(&delayedDGHostQueueSize);
-+				return retval;
-+			}
-+		} else {
-+			retval = dstEntry->recvCB(dstEntry->clientData, dg);
-+			vmci_resource_release(resource);
-+			if (retval < VMCI_SUCCESS)
-+				return retval;
-+		}
-+	} else {
-+		/* Route to destination VM context. */
-+		struct vmci_dg *newDG;
-+
-+		if (contextID != dg->dst.context) {
-+			if (vmci_deny_interaction(srcPrivFlags,
-+						  VMCIContext_GetPrivFlags
-+						  (dg->dst.context))) {
-+				return VMCI_ERROR_NO_ACCESS;
-+			} else if (VMCI_CONTEXT_IS_VM(contextID)) {
-+				/*
-+				 * If the sending context is a VM, it
-+				 * cannot reach another VM.
-+				 */
-+
-+				pr_devel("Datagram communication between VMs " \
-+					 "not supported (src=0x%x, dst=0x%x).",
-+					 contextID, dg->dst.context);
-+				return VMCI_ERROR_DST_UNREACHABLE;
-+			}
-+		}
-+
-+		/* We make a copy to enqueue. */
-+		newDG = kmalloc(dgSize, GFP_KERNEL);
-+		if (newDG == NULL)
-+			return VMCI_ERROR_NO_MEM;
-+
-+		memcpy(newDG, dg, dgSize);
-+		retval = vmci_ctx_enqueue_dg(dg->dst.context, newDG);
-+		if (retval < VMCI_SUCCESS) {
-+			kfree(newDG);
-+			return retval;
-+		}
-+	}
-+
-+	/*
-+	 * We currently truncate the size to signed 32 bits. This doesn't
-+	 * matter for this handler as it only support 4Kb messages.
-+	 */
-+	return (int)dgSize;
-+}
-+
-+/*
-+ * Dispatch datagram as a guest, down through the VMX and potentially to
-+ * the host.
-+ * Returns number of bytes sent on success, error code otherwise.
-+ */
-+static int dg_dispatch_as_guest(struct vmci_dg *dg)
-+{
-+	int retval;
-+	struct vmci_resource *resource;
-+
-+	resource = vmci_resource_get(dg->src, VMCI_RESOURCE_TYPE_DATAGRAM);
-+	if (NULL == resource)
-+		return VMCI_ERROR_NO_HANDLE;
-+
-+	retval = vmci_send_dg(dg);
-+	vmci_resource_release(resource);
-+	return retval;
-+}
-+
-+/*
-+ * Dispatch datagram.  This will determine the routing for the datagram
-+ * and dispatch it accordingly.
-+ * Returns number of bytes sent on success, error code otherwise.
-+ */
-+int vmci_dg_dispatch(uint32_t contextID,
-+		     struct vmci_dg *dg, bool fromGuest)
-+{
-+	int retval;
-+	enum vmci_route route;
-+
-+	ASSERT(dg);
-+	BUILD_BUG_ON(sizeof(struct vmci_dg) != 24);
-+
-+	if (VMCI_DG_SIZE(dg) > VMCI_MAX_DG_SIZE) {
-+		pr_devel("Payload (size=%llu bytes) too big to " \
-+			 "send.", (unsigned long long) dg->payloadSize);
-+		return VMCI_ERROR_INVALID_ARGS;
-+	}
-+
-+	retval = vmci_route(&dg->src, &dg->dst, fromGuest, &route);
-+	if (retval < VMCI_SUCCESS) {
-+		pr_devel("Failed to route datagram (src=0x%x, dst=0x%x, " \
-+			 "err=%d).", dg->src.context, dg->dst.context,
-+			 retval);
-+		return retval;
-+	}
-+
-+	if (VMCI_ROUTE_AS_HOST == route) {
-+		if (VMCI_INVALID_ID == contextID)
-+			contextID = VMCI_HOST_CONTEXT_ID;
-+		return dg_dispatch_as_host(contextID, dg);
-+	}
-+
-+	if (VMCI_ROUTE_AS_GUEST == route)
-+		return dg_dispatch_as_guest(dg);
-+
-+	pr_warn("Unknown route (%d) for datagram.", route);
-+	return VMCI_ERROR_DST_UNREACHABLE;
-+}
-+
-+/*
-+ * Invoke the handler for the given datagram.  This is intended to be
-+ * called only when acting as a guest and receiving a datagram from the
-+ * virtual device.
-+ */
-+int vmci_dg_invoke_guest_handler(struct vmci_dg *dg)
-+{
-+	int retval;
-+	struct vmci_resource *resource;
-+	struct datagram_entry *dstEntry;
-+
-+	ASSERT(dg);
-+
-+	resource = vmci_resource_get(dg->dst, VMCI_RESOURCE_TYPE_DATAGRAM);
-+	if (NULL == resource) {
-+		pr_devel("destination (handle=0x%x:0x%x) doesn't exist.",
-+			 dg->dst.context, dg->dst.resource);
-+		return VMCI_ERROR_NO_HANDLE;
-+	}
-+
-+	dstEntry =
-+		container_of(resource, struct datagram_entry, resource);
-+	if (dstEntry->runDelayed) {
-+		struct delayed_datagram_info *dgInfo;
-+
-+		dgInfo =
-+			kmalloc(sizeof *dgInfo + (size_t) dg->payloadSize,
-+				GFP_ATOMIC);
-+		if (NULL == dgInfo) {
-+			vmci_resource_release(resource);
-+			retval = VMCI_ERROR_NO_MEM;
-+			goto exit;
-+		}
-+
-+		dgInfo->inDGHostQueue = false;
-+		dgInfo->entry = dstEntry;
-+		memcpy(&dgInfo->msg, dg, VMCI_DG_SIZE(dg));
-+
-+		retval =
-+			vmci_drv_schedule_delayed_work(dg_delayed_dispatch_cb,
-+						       dgInfo);
-+		if (retval < VMCI_SUCCESS) {
-+			pr_warn("Failed to schedule delayed work for " \
-+				"datagram (result=%d).", retval);
-+			kfree(dgInfo);
-+			vmci_resource_release(resource);
-+			dgInfo = NULL;
-+			goto exit;
-+		}
-+	} else {
-+		dstEntry->recvCB(dstEntry->clientData, dg);
-+		vmci_resource_release(resource);
-+		retval = VMCI_SUCCESS;
-+	}
-+
-+exit:
-+	return retval;
-+}
-+
-+/**
-+ * VMCIDatagram_CreateHndPriv() - Create host context datagram endpoint
-+ * @resourceID:	The resource ID.
-+ * @flags:	Datagram Flags.
-+ * @privFlags:	Privilege Flags.
-+ * @recvCB:	Callback when receiving datagrams.
-+ * @clientData:	Pointer for a datagram_entry struct
-+ * @outHandle:	vmci_handle that is populated as a result of this function.
-+ *
-+ * Creates a host context datagram endpoint and returns a handle to it.
-+ */
-+int VMCIDatagram_CreateHndPriv(uint32_t resourceID,
-+			       uint32_t flags,
-+			       uint32_t privFlags,
-+			       VMCIDatagramRecvCB recvCB,
-+			       void *clientData,
-+			       struct vmci_handle *outHandle)
-+{
-+	if (outHandle == NULL)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	if (recvCB == NULL) {
-+		pr_devel("Client callback needed when creating " \
-+			 "datagram.");
-+		return VMCI_ERROR_INVALID_ARGS;
-+	}
-+
-+	if (privFlags & ~VMCI_PRIVILEGE_ALL_FLAGS)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	return dg_create_handle(resourceID, flags, privFlags, recvCB,
-+				clientData, outHandle);
-+}
-+EXPORT_SYMBOL(VMCIDatagram_CreateHndPriv);
-+
-+/**
-+ * VMCIDatagram_CreateHnd() - Create host context datagram endpoint
-+ * @resourceID:	Resource ID.
-+ * @flags:	Datagram Flags.
-+ * @recvCB:	Callback when receiving datagrams.
-+ * @clientData:	Pointer for a datagram_entry struct
-+ * @outHandle:	vmci_handle that is populated as a result of this function.
-+ *
-+ * Creates a host context datagram endpoint and returns a handle to
-+ * it.  Same as VMCIDatagram_CreateHndPriv without the priviledge
-+ * flags argument.
-+ */
-+int VMCIDatagram_CreateHnd(uint32_t resourceID,
-+			   uint32_t flags,
-+			   VMCIDatagramRecvCB recvCB,
-+			   void *clientData,
-+			   struct vmci_handle *outHandle)
-+{
-+	return VMCIDatagram_CreateHndPriv(resourceID, flags,
-+					  VMCI_DEFAULT_PROC_PRIVILEGE_FLAGS,
-+					  recvCB, clientData, outHandle);
-+}
-+EXPORT_SYMBOL(VMCIDatagram_CreateHnd);
-+
-+/**
-+ * VMCIDatagram_DestroyHnd() - Destroys datagram handle
-+ * @handle:	vmci_handle to be destroyed and reaped.
-+ *
-+ * Use this function to destroy any datagram handles created by
-+ * VMCIDatagram_CreateHnd{,Priv} functions.
-+ */
-+int VMCIDatagram_DestroyHnd(struct vmci_handle handle)
-+{
-+	struct datagram_entry *entry;
-+	struct vmci_resource *resource;
-+
-+	resource = vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
-+	if (resource == NULL) {
-+		pr_devel("Failed to destroy datagram (handle=0x%x:0x%x)" \
-+			 ".", handle.context, handle.resource);
-+		return VMCI_ERROR_NOT_FOUND;
-+	}
-+
-+	entry = container_of(resource, struct datagram_entry, resource);
-+	vmci_resource_remove(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
-+
-+	/*
-+	 * We now wait on the destroyEvent and release the reference we got
-+	 * above.
-+	 */
-+	vmci_drv_wait_on_event_intr(&entry->destroyEvent, dg_release_cb,
-+				    entry);
-+	kfree(entry);
-+
-+	return VMCI_SUCCESS;
-+}
-+EXPORT_SYMBOL(VMCIDatagram_DestroyHnd);
-+
-+/**
-+ * VMCIDatagram_Send() - Send a datagram
-+ * @msg:	The datagram to send.
-+ *
-+ * Sends the provided datagram on its merry way.
-+ */
-+int VMCIDatagram_Send(struct vmci_dg *msg)
-+{
-+	if (msg == NULL)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	return vmci_dg_dispatch(VMCI_INVALID_ID, msg, false);
-+}
-+EXPORT_SYMBOL(VMCIDatagram_Send);
-diff --git a/drivers/misc/vmw_vmci/vmci_datagram.h b/drivers/misc/vmw_vmci/vmci_datagram.h
-new file mode 100644
-index 0000000..e5e54c2
---- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_datagram.h
-@@ -0,0 +1,56 @@
-+/*
-+ * VMware VMCI Driver
-+ *
-+ * Copyright (C) 2012 VMware, Inc. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation version 2 and no later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-+ */
-+
-+#ifndef _VMCI_DATAGRAM_H_
-+#define _VMCI_DATAGRAM_H_
-+
-+#include "vmci_context.h"
-+
-+#define VMCI_MAX_DELAYED_DG_HOST_QUEUE_SIZE 256
-+
-+/*
-+ * The struct vmci_dg_queue_entry is a queue header for the in-kernel VMCI
-+ * datagram queues. It is allocated in non-paged memory, as the
-+ * content is accessed while holding a spinlock. The pending datagram
-+ * itself may be allocated from paged memory. We shadow the size of
-+ * the datagram in the non-paged queue entry as this size is used
-+ * while holding the same spinlock as above.
-+ */
-+struct vmci_dg_queue_entry {
-+	struct list_head listItem;	/* For queuing. */
-+	size_t dgSize;		/* Size of datagram. */
-+	struct vmci_dg *dg;	/* Pending datagram. */
-+};
-+
-+/* VMCIDatagramSendRecvInfo */
-+struct vmci_dg_snd_rcv_info {
-+	uint64_t addr;
-+	uint32_t len;
-+	int32_t result;
-+};
-+
-+/* Init functions. */
-+int vmci_dg_init(void);
-+
-+/* Datagram API for non-public use. */
-+int vmci_dg_dispatch(uint32_t contextID, struct vmci_dg *dg,
-+		     bool fromGuest);
-+int vmci_dg_invoke_guest_handler(struct vmci_dg *dg);
-+
-+#endif /* _VMCI_DATAGRAM_H_ */
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+index 992275c..4e6efc1 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+@@ -11,6 +11,7 @@
+  * License as published by the Free Software Foundation.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/kernel.h>
+ #include <linux/fb.h>
+@@ -71,18 +72,18 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
+ 
+ 	ver = dcon_read(dcon, DCON_REG_ID);
+ 	if ((ver >> 8) != 0xDC) {
+-		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
+-			ver);
++		pr_err("olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
++		       ver);
+ 		rc = -ENXIO;
+ 		goto err;
+ 	}
+ 
+ 	if (is_init) {
+-		printk(KERN_INFO "olpc-dcon:  Discovered DCON version %x\n",
+-				ver & 0xFF);
++		pr_info("olpc-dcon:  Discovered DCON version %x\n",
++			ver & 0xFF);
+ 		rc = pdata->init(dcon);
+ 		if (rc != 0) {
+-			printk(KERN_ERR "olpc-dcon:  Unable to init.\n");
++			pr_err("olpc-dcon:  Unable to init.\n");
+ 			goto err;
+ 		}
+ 	}
+@@ -136,21 +137,21 @@ power_up:
+ 		x = 1;
+ 		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
+ 		if (x) {
+-			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power up: %d!\n",
++			pr_warn("olpc-dcon:  unable to force dcon to power up: %d!\n",
+ 				x);
+ 			return x;
+ 		}
+-		msleep(10); /* we'll be conservative */
++		usleep_range(10000, 20000);
+ 	}
+ 
+ 	pdata->bus_stabilize_wiggle();
+ 
+ 	for (x = -1, timeout = 50; timeout && x < 0; timeout--) {
+-		msleep(1);
++		usleep_range(1000, 2000);
+ 		x = dcon_read(dcon, DCON_REG_ID);
+ 	}
+ 	if (x < 0) {
+-		printk(KERN_ERR "olpc-dcon:  unable to stabilize dcon's smbus, reasserting power and praying.\n");
++		pr_err("olpc-dcon:  unable to stabilize dcon's smbus, reasserting power and praying.\n");
+ 		BUG_ON(olpc_board_at_least(olpc_board(0xc2)));
+ 		x = 0;
+ 		olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
+@@ -221,7 +222,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
+ 		x = 0;
+ 		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
+ 		if (x)
+-			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power down: %d!\n",
++			pr_warn("olpc-dcon:  unable to force dcon to power down: %d!\n",
+ 				x);
+ 		else
+ 			dcon->asleep = sleep;
+@@ -231,7 +232,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
+ 			dcon->disp_mode |= MODE_BL_ENABLE;
+ 		x = dcon_bus_stabilize(dcon, 1);
+ 		if (x)
+-			printk(KERN_WARNING "olpc-dcon:  unable to reinit dcon hardware: %d!\n",
++			pr_warn("olpc-dcon:  unable to reinit dcon hardware: %d!\n",
+ 				x);
+ 		else
+ 			dcon->asleep = sleep;
+@@ -303,12 +304,11 @@ static void dcon_source_switch(struct work_struct *work)
+ 
+ 	switch (source) {
+ 	case DCON_SOURCE_CPU:
+-		printk(KERN_INFO "dcon_source_switch to CPU\n");
++		pr_info("dcon_source_switch to CPU\n");
+ 		/* Enable the scanline interrupt bit */
+ 		if (dcon_write(dcon, DCON_REG_MODE,
+ 				dcon->disp_mode | MODE_SCAN_INT))
+-			printk(KERN_ERR
+-			       "olpc-dcon:  couldn't enable scanline interrupt!\n");
++			pr_err("olpc-dcon:  couldn't enable scanline interrupt!\n");
+ 		else {
+ 			/* Wait up to one second for the scanline interrupt */
+ 			wait_event_timeout(dcon_wait_queue,
+@@ -316,11 +316,11 @@ static void dcon_source_switch(struct work_struct *work)
+ 		}
+ 
+ 		if (!dcon->switched)
+-			printk(KERN_ERR "olpc-dcon:  Timeout entering CPU mode; expect a screen glitch.\n");
++			pr_err("olpc-dcon:  Timeout entering CPU mode; expect a screen glitch.\n");
+ 
+ 		/* Turn off the scanline interrupt */
+ 		if (dcon_write(dcon, DCON_REG_MODE, dcon->disp_mode))
+-			printk(KERN_ERR "olpc-dcon:  couldn't disable scanline interrupt!\n");
++			pr_err("olpc-dcon:  couldn't disable scanline interrupt!\n");
+ 
+ 		/*
+ 		 * Ideally we'd like to disable interrupts here so that the
+@@ -331,7 +331,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 		 * For now, we just hope..
+ 		 */
+ 		if (!dcon_blank_fb(dcon, false)) {
+-			printk(KERN_ERR "olpc-dcon:  Failed to enter CPU mode\n");
++			pr_err("olpc-dcon:  Failed to enter CPU mode\n");
+ 			dcon->pending_src = DCON_SOURCE_DCON;
+ 			return;
+ 		}
+@@ -340,14 +340,14 @@ static void dcon_source_switch(struct work_struct *work)
+ 		pdata->set_dconload(1);
+ 		getnstimeofday(&dcon->load_time);
+ 
+-		printk(KERN_INFO "olpc-dcon: The CPU has control\n");
++		pr_info("olpc-dcon: The CPU has control\n");
+ 		break;
+ 	case DCON_SOURCE_DCON:
+ 	{
+ 		int t;
+ 		struct timespec delta_t;
+ 
+-		printk(KERN_INFO "dcon_source_switch to DCON\n");
++		pr_info("dcon_source_switch to DCON\n");
+ 
+ 		add_wait_queue(&dcon_wait_queue, &wait);
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+@@ -361,7 +361,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 		set_current_state(TASK_RUNNING);
+ 
+ 		if (!dcon->switched) {
+-			printk(KERN_ERR "olpc-dcon: Timeout entering DCON mode; expect a screen glitch.\n");
++			pr_err("olpc-dcon: Timeout entering DCON mode; expect a screen glitch.\n");
+ 		} else {
+ 			/* sometimes the DCON doesn't follow its own rules,
+ 			 * and doesn't wait for two vsync pulses before
+@@ -377,7 +377,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 			delta_t = timespec_sub(dcon->irq_time, dcon->load_time);
+ 			if (dcon->switched && delta_t.tv_sec == 0 &&
+ 					delta_t.tv_nsec < NSEC_PER_MSEC * 20) {
+-				printk(KERN_ERR "olpc-dcon: missed loading, retrying\n");
++				pr_err("olpc-dcon: missed loading, retrying\n");
+ 				pdata->set_dconload(1);
+ 				mdelay(41);
+ 				pdata->set_dconload(0);
+@@ -387,7 +387,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 		}
+ 
+ 		dcon_blank_fb(dcon, true);
+-		printk(KERN_INFO "olpc-dcon: The DCON has control\n");
++		pr_info("olpc-dcon: The DCON has control\n");
+ 		break;
+ 	}
+ 	default:
+@@ -475,7 +475,7 @@ static ssize_t dcon_freeze_store(struct device *dev,
+ 	if (ret)
+ 		return ret;
+ 
+-	printk(KERN_INFO "dcon_freeze_store: %lu\n", output);
++	pr_info("dcon_freeze_store: %lu\n", output);
+ 
+ 	switch (output) {
+ 	case 0:
+@@ -649,7 +649,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	dcon_device = platform_device_alloc("dcon", -1);
+ 
+ 	if (dcon_device == NULL) {
+-		printk(KERN_ERR "dcon:  Unable to create the DCON device\n");
++		pr_err("dcon:  Unable to create the DCON device\n");
+ 		rc = -ENOMEM;
+ 		goto eirq;
+ 	}
+@@ -657,7 +657,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	platform_set_drvdata(dcon_device, dcon);
+ 
+ 	if (rc) {
+-		printk(KERN_ERR "dcon:  Unable to add the DCON device\n");
++		pr_err("dcon:  Unable to add the DCON device\n");
+ 		goto edev;
+ 	}
+ 
+@@ -761,7 +761,7 @@ irqreturn_t dcon_interrupt(int irq, void *id)
+ 
+ 	switch (status & 3) {
+ 	case 3:
+-		printk(KERN_DEBUG "olpc-dcon: DCONLOAD_MISSED interrupt\n");
++		pr_debug("olpc-dcon: DCONLOAD_MISSED interrupt\n");
+ 		break;
+ 
+ 	case 2:	/* switch to DCON mode */
+@@ -783,9 +783,9 @@ irqreturn_t dcon_interrupt(int irq, void *id)
+ 			dcon->switched = true;
+ 			getnstimeofday(&dcon->irq_time);
+ 			wake_up(&dcon_wait_queue);
+-			printk(KERN_DEBUG "olpc-dcon: switching w/ status 0/0\n");
++			pr_debug("olpc-dcon: switching w/ status 0/0\n");
+ 		} else {
+-			printk(KERN_DEBUG "olpc-dcon: scanline interrupt w/CPU\n");
++			pr_debug("olpc-dcon: scanline interrupt w/CPU\n");
+ 		}
+ 	}
+ 
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+index c87fdfa..e83467e 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+@@ -10,6 +10,9 @@
+  * modify it under the terms of version 2 of the GNU General Public
+  * License as published by the Free Software Foundation.
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/cs5535.h>
+ #include <linux/gpio.h>
+ #include <linux/delay.h>
+@@ -22,23 +25,23 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
+ 	unsigned char lob;
+ 
+ 	if (gpio_request(OLPC_GPIO_DCON_STAT0, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request STAT0 GPIO\n");
++		pr_err("olpc-dcon: failed to request STAT0 GPIO\n");
+ 		return -EIO;
+ 	}
+ 	if (gpio_request(OLPC_GPIO_DCON_STAT1, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request STAT1 GPIO\n");
++		pr_err("olpc-dcon: failed to request STAT1 GPIO\n");
+ 		goto err_gp_stat1;
+ 	}
+ 	if (gpio_request(OLPC_GPIO_DCON_IRQ, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request IRQ GPIO\n");
++		pr_err("olpc-dcon: failed to request IRQ GPIO\n");
+ 		goto err_gp_irq;
+ 	}
+ 	if (gpio_request(OLPC_GPIO_DCON_LOAD, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request LOAD GPIO\n");
++		pr_err("olpc-dcon: failed to request LOAD GPIO\n");
+ 		goto err_gp_load;
+ 	}
+ 	if (gpio_request(OLPC_GPIO_DCON_BLANK, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request BLANK GPIO\n");
++		pr_err("olpc-dcon: failed to request BLANK GPIO\n");
+ 		goto err_gp_blank;
+ 	}
+ 
+@@ -83,7 +86,7 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
+ 
+ 	/* Register the interrupt handler */
+ 	if (request_irq(DCON_IRQ, &dcon_interrupt, 0, "DCON", dcon)) {
+-		printk(KERN_ERR "olpc-dcon: failed to request DCON's irq\n");
++		pr_err("olpc-dcon: failed to request DCON's irq\n");
+ 		goto err_req_irq;
+ 	}
+ 
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+index 69415ee..352dd3d 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+@@ -6,6 +6,8 @@
+  * License as published by the Free Software Foundation.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/acpi.h>
+ #include <linux/delay.h>
+ #include <linux/pci.h>
+@@ -66,7 +68,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
+ 	pdev = pci_get_device(PCI_VENDOR_ID_VIA,
+ 			      PCI_DEVICE_ID_VIA_VX855, NULL);
+ 	if (!pdev) {
+-		printk(KERN_ERR "cannot find VX855 PCI ID\n");
++		pr_err("cannot find VX855 PCI ID\n");
+ 		return 1;
+ 	}
+ 
+@@ -104,7 +106,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
+ 	/* we're sharing the IRQ with ACPI */
+ 	irq = acpi_gbl_FADT.sci_interrupt;
+ 	if (request_irq(irq, &dcon_interrupt, IRQF_SHARED, "DCON", dcon)) {
+-		printk(KERN_ERR PREFIX "DCON (IRQ%d) allocation failed\n", irq);
++		pr_err("DCON (IRQ%d) allocation failed\n", irq);
+ 		return 1;
+ 	}
+ 
 -- 
-1.7.0.4
+1.7.5.4
 
