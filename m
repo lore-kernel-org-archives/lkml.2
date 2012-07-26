@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab2GZVcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 17:32:14 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58435 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab2GZVcL (ORCPT
+	id S1753805Ab2GZVcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 17:32:18 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:52843 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab2GZVcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 17:32:11 -0400
+	Thu, 26 Jul 2012 17:32:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [ 36/40] mm: vmscan: convert global reclaim to per-memcg LRU lists
-Date: Thu, 26 Jul 2012 14:29:54 -0700
-Message-Id: <20120726211414.464540343@linuxfoundation.org>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Paul Menage <paul@paulmenage.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [ 37/40] cpusets: avoid looping when storing to mems_allowed if one node remains set
+Date: Thu, 26 Jul 2012 14:29:55 -0700
+Message-Id: <20120726211414.550266170@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120726211411.164006056@linuxfoundation.org>
 References: <20120726211424.GA7709@kroah.com>
@@ -29,52 +33,87 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Johannes Weiner <jweiner@redhat.com>
+From: David Rientjes <rientjes@google.com>
 
-commit b95a2f2d486d0d768a92879c023a03757b9c7e58 upstream - WARNING: this is a substitute patch.
+commit 89e8a244b97e48f1f30e898b6f32acca477f2a13 upstream.
 
-Stable note: Not tracked in Bugzilla. This is a partial backport of an
-	upstream commit addressing a completely different issue
-	that accidentally contained an important fix. The workload
-	this patch helps was memcached when IO is started in the
-	background. memcached should stay resident but without this patch
-	it gets swapped. Sometimes this manifests as a drop in throughput
-	but mostly it was observed through /proc/vmstat.
+Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is
+	extremely expensive and severely impacted page allocator performance.
+	This is part of a series of patches that reduce page allocator
+	overhead.
 
-Commit [246e87a9: memcg: fix get_scan_count() for small targets] was meant
-to fix a problem whereby small scan targets on memcg were ignored causing
-priority to raise too sharply. It forced scanning to take place if the
-target was small, memcg or kswapd.
+{get,put}_mems_allowed() exist so that general kernel code may locklessly
+access a task's set of allowable nodes without having the chance that a
+concurrent write will cause the nodemask to be empty on configurations
+where MAX_NUMNODES > BITS_PER_LONG.
 
->From the time it was introduced it caused excessive reclaim by kswapd
-with workloads being pushed to swap that previously would have stayed
-resident. This was accidentally fixed in commit [b95a2f2d: mm: vmscan:
-convert global reclaim to per-memcg LRU lists] by making it harder for
-kswapd to force scan small targets but that patchset is not suitable for
-backporting. This was later changed again by commit [90126375: mm/vmscan:
-push lruvec pointer into get_scan_count()] into a format that looks
-like it would be a straight-forward backport but there is a subtle
-difference due to the use of lruvecs.
+This could incur a significant delay, however, especially in low memory
+conditions because the page allocator is blocking and reclaim requires
+get_mems_allowed() itself.  It is not atypical to see writes to
+cpuset.mems take over 2 seconds to complete, for example.  In low memory
+conditions, this is problematic because it's one of the most imporant
+times to change cpuset.mems in the first place!
 
-The impact of the accidental fix is to make it harder for kswapd to force
-scan small targets by taking zone->all_unreclaimable into account. This
-patch is the closest equivalent available based on what is backported.
+The only way a task's set of allowable nodes may change is through cpusets
+by writing to cpuset.mems and when attaching a task to a generic code is
+not reading the nodemask with get_mems_allowed() at the same time, and
+then clearing all the old nodes.  This prevents the possibility that a
+reader will see an empty nodemask at the same time the writer is storing a
+new nodemask.
+
+If at least one node remains unchanged, though, it's possible to simply
+set all new nodes and then clear all the old nodes.  Changing a task's
+nodemask is protected by cgroup_mutex so it's guaranteed that two threads
+are not changing the same task's nodemask at the same time, so the
+nodemask is guaranteed to be stored before another thread changes it and
+determines whether a node remains set or not.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Paul Menage <paul@paulmenage.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/cpuset.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1850,7 +1850,8 @@ static void get_scan_count(struct zone *
- 	unsigned long nr_force_scan[2];
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -949,6 +949,8 @@ static void cpuset_migrate_mm(struct mm_
+ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 					nodemask_t *newmems)
+ {
++	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
++
+ repeat:
+ 	/*
+ 	 * Allow tasks that have access to memory reserves because they have
+@@ -963,7 +965,6 @@ repeat:
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
  
- 	/* kswapd does zone balancing and needs to scan this zone */
--	if (scanning_global_lru(sc) && current_is_kswapd())
-+	if (scanning_global_lru(sc) && current_is_kswapd() &&
-+	    zone->all_unreclaimable)
- 		force_scan = true;
- 	/* memcg may have small limit and need to avoid priority drop */
- 	if (!scanning_global_lru(sc))
+-
+ 	/*
+ 	 * ensure checking ->mems_allowed_change_disable after setting all new
+ 	 * allowed nodes.
+@@ -980,9 +981,11 @@ repeat:
+ 
+ 	/*
+ 	 * Allocation of memory is very fast, we needn't sleep when waiting
+-	 * for the read-side.
++	 * for the read-side.  No wait is necessary, however, if at least one
++	 * node remains unchanged.
+ 	 */
+-	while (ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
++	while (masks_disjoint &&
++			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
+ 		task_unlock(tsk);
+ 		if (!task_curr(tsk))
+ 			yield();
 
 
