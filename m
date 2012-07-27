@@ -1,73 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab2G0OFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 10:05:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42136 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab2G0OFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 10:05:14 -0400
-Date: Fri, 27 Jul 2012 16:05:06 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chris Leech <christopher.leech@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jiri Bohac <jbohac@suse.cz>
-Subject: [PATCH] tcp: perform DMA to userspace only if there is a task waiting
- for it
-Message-ID: <alpine.LNX.2.00.1207271556320.11375@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752449Ab2G0OGQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 10:06:16 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:41056
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752383Ab2G0OF7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 10:05:59 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zzzz1202hzz15d4R8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
+From: <sandeep@freescale.com>
+To: <linuxppc-dev@lists.ozlabs.org>, <linux-arm-kernel@lists.infradead.org>
+CC: <galak@kernel.crashing.org>, <linux-kernel@vger.kernel.org>,
+        <devel@driverdev.osuosl.org>, Sandeep Singh <Sandeep@freescale.com>
+Subject: [1/3][PATCH][v2] Adding documentation for TDM
+Date: Fri, 27 Jul 2012 19:35:39 +0530
+Message-ID: <1343397940-12975-2-git-send-email-sandeep@freescale.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Back in 2006, commit 1a2449a87b ("[I/OAT]: TCP recv offload to I/OAT") 
-added support for receive offloading to IOAT dma engine if available.
+From: Sandeep Singh <Sandeep@freescale.com>
 
-The code in tcp_rcv_established() tries to perform early DMA copy if 
-applicable. It however does so without checking whether the userspace task 
-is actually expecting the data in the buffer.
+ tdm-summary.txt contains general description about TDM.
+ tdm-framework.txt contains specific description of TDM framework.
 
-This is not a problem under normal circumstances, but there is a corner 
-case where this doesn't work -- and that's when MSG_TRUNC flag to 
-recvmsg() is used.
-
-If the IOAT dma engine is not used, the code properly checks whether there 
-is a valid ucopy.task and the socket is owned by userspace, but misses the 
-check in the dmaengine case.
-
-This problem can be observed in real trivially -- for example 'tbench' is 
-a good reproducer, as it makes a heavy use of MSG_TRUNC. On systems 
-utilizing IOAT, you will soon find tbench waiting indefinitely in 
-sk_wait_data(), as the data have already been early-copied in 
-tcp_rcv_established() using dma engine.
-
-This patch introduces the same check we are performing in the simple iovec 
-copy case to the IOAT case as well. It fixes the indefinite 
-recvmsg(MSG_TRUNC) hangs.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Sandeep Singh <Sandeep@freescale.com>
+Signed-off-by: Poonam Aggrwal <poonam.aggrwal@freescale.com>
 ---
- net/ipv4/tcp_input.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Changes since v1:
+	Incorporated Laight's comments.
+	-Removed reference to unused config.
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 3e07a64..f8059f9 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5475,7 +5475,10 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
- 			if (tp->copied_seq == tp->rcv_nxt &&
- 			    len - tcp_header_len <= tp->ucopy.len) {
- #ifdef CONFIG_NET_DMA
--				if (tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
-+				if (tp->ucopy.task == current &&
-+						sock_owned_by_user(sk) &&
-+						tcp_dma_try_early_copy(sk,
-+							skb, tcp_header_len)) {
- 					copied_early = 1;
- 					eaten = 1;
- 				}
+ Documentation/tdm/tdm-framework.txt |  258 +++++++++++++++++++++++++++++++++++
+ Documentation/tdm/tdm-summary.txt   |  103 ++++++++++++++
+ 2 files changed, 361 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/tdm/tdm-framework.txt
+ create mode 100644 Documentation/tdm/tdm-summary.txt
+
+diff --git a/Documentation/tdm/tdm-framework.txt b/Documentation/tdm/tdm-framework.txt
+new file mode 100644
+index 0000000..f96189a
+--- /dev/null
++++ b/Documentation/tdm/tdm-framework.txt
+@@ -0,0 +1,258 @@
++This document gives an overview of TDM framework and its interface with low
++level drivers and upper level users/clients.
++
++Terminology:
++============
++1. TDM: Time Division Multiplexing.
++2. TDM channel: The channel is the smallest entity on which all the TDM read/
++   write operations will occur. Technically each channel maps to a set of
++   consecutive time slots on the physical TDM frame. The channels will be
++   dynamically created and destroyed using tdm_open_channel and
++   tdm_close_channel.
++3. TDM adapter or Adapter: Refers to an instance of TDM controller/device on
++   the system.
++4. TDM frame: Is a set of TDM channels which is transmitted sequentially over
++   time. The frame start is identified by a frame sync signal that is briefly
++   asserted at the beginning of each frame.
++
++X----------TDM Frame 0-------------X------TDM Frame 1-----------------X
++|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
++| 0  | 1  | 2  | 3  | 4  | ...|  n |  0 | 1  |  2 |  3 | 4  | ...| n  |...
++|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
++<---->				   <---->
++ch 0				   ch 0
++
++4. TDM client: Application/driver which registers with TDM framework to use TDM
++   device.
++5. TDM port: It can be seen as a virtual device exposed to a client. At a time
++   TDM port can work in one of the follwing configurations:
++   full/fractional/E1/T1/raw.
++
++TDM modes
++========
++A TDM device can operate in one of the following modes:
++1. Single port full mode - Single user/no interleaving
++2. Single port channelised mode (raw, E1, T1)- many users using different
++   channels
++3. Single port fractional mode -
++4. Multi port mode - multiple users using different ports in different
++   configurations.
++
++All the above configurations differ in number of TDM client they support,
++number of TDM channels and number of TDM ports.
++
++Currently we are supporting only single port channelised mode. Hence all the
++explanations below refer to channelised mode of TDM. This framework can be
++easily extended to support other modes.
++
++Single port Channelised Mode
++==============================
++In single port channelised mode there can be only one port and each channel
++can have only one time slot.The number of active channels can be less than
++the maximum supported channels/slots.
++
++X----------TDM Frame 0-------------X------TDM Frame 1-----------------X
++|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
++| 0  | 1  | 2  | 3  | 4  | ...|  n |  0 | 1  |  2 |  3 | 4  | ...| n  |...
++|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
++<----><--->				   <---->
++ch 0	ch1			   ch 0
++client0 client1
++
++TDM Subsystem Overview
++========================
++
++	 |-----------------------|
++	 |user mode TDM clients  |
++	 |-----------------------|
++		||
++-------------------------------------------------------------------
++  tdm-dev.c     ||
++		||
++	        ||                    	     |------------------------|
++	    client register            	     | kernel mode TDM clients|
++	        ||                     	     |------------------------|
++	        ||					||
++	        || 					||
++		||		  		client register
++		||					||
++		\/		   		        \/
++      ______________________________________________________________
++      |                 					   |
++      |                 client interface                           |
++      |------------------------------------------------------------|
++      |             TDM Subsystem Framework         	           |
++      |                   (tdm-core.c)                             |
++      |                                                            |
++      | ->buffer handling                                          |
++      | ->interleaving/de-interleaving                             |
++      |                                                            |
++      |------------------------------------------------------------|
++      |    TDM interface                  Line control interface   |
++      |____________________________________________________________|
++          /\                                       /\
++          ||                                       ||
++    device register                          device register
++          ||                                       ||
++          ||                                       ||
++
++     fsl_tdm.c                 ucc_tdm.c         slic_zarlink.c framer.c
++--------------------------------------------------------------------------
++_______________________    _____________________  ________    ________
++|		      |	   |		       |  |	 |    |      |
++|[h/w] TDM controller |    |UCC TDM controller |  | SLIC |    |Framer|
++|_____________________|    |___________________|  |______|    |______|
++
++
++
++TDM Adapter Registration:
++=========================
++All the TDM adapter drivers will get registered as platform drivers to Linux.
++For every instance of the TDM adapter the relevant driver will be probed.
++As part of probe the driver will
++1. Do the basic initialization in terms of memory allocation for various
++   driver specific data structures, interrupts registration, etc.
++2. Initialize the TDM adapter and configure it in default configuration.
++   like operating mode, number of channels, channel type, etc.
++3. Add the TDM adapter to the TDM Framework via tdm_add_adapter() API.
++   As a result TDM framework will add this adapter to it's queue of
++   available adapters. As part of this adapter registration TDM framework
++   is also supplied a list of access algorithms for the particular TDM
++   adapter.
++4. Notifies the clients
++
++TDM Client Registration:
++========================
++Every TDM client gets itself registered with the TDM framework layer as
++a TDM driver using the API tdm_add_driver(). As part of this the TDM client
++supplies to the TDM framework the adapter with which it wants to hook and
++the function pointers of attach and detach functions which must be called
++as soon as the requested adapter is available.
++
++As a result the TDM framework keeps association of TDM adapters and TDM
++client drivers.
++As soon as this association gets established a tasklet is created for the
++adapter which is handled by tdm_data_tasklet_fn. The primary function of
++this tasklet acts as an interface to transfer the TDM data between the
++TDM adapter and the TDM client drivers.
++
++
++Currently TDM adaper can only be used in the default configuration.
++ie the configuration cannot be modified by TDM clients. This will
++be enhanced in future.
++
++Data handling:
++==============
++Some basic assumptions about data handling:
++
++1. As per standard voice rate of 8Khz or 8192Hz. Which means 8192 samples must
++be sent every second. So if there are multiple clients sending voice data
++over TDM interface the rate should be such that the individual samples
++sent by them must be transmitted at 8Kz.
++
++This is defined in the driver as
++
++	#define CH_1_MS_FRAMES		8
++
++2. Number of milliseconds at which TDM Rx interrupts occur
++This is basically the time for which the TDM data is sent in one Tx or Rx
++cycle of TDM controller hardware. In one DMA we send the data for 10ms.
++This gives enough time so that no buffer overflow or under-run occurs for
++transmit and receive respectively.
++
++	#define NUM_MS                  10
++
++3. TDM has programmable slot length (8 bits or 16 bits). It can be configured
++depending on the type of sample. For example the sample could be 16 bit linear
++or 8bit u-law encoded etc. Presently only word length of 16 is supported
++which is the default configuration.
++
++4. Number of channels means the total number of channels per TDM port.
++For example for E1 mode it will be 24, for T1 it will be 32, etc.
++There can also be raw mode, where the use case is not E1 or T1.
++Here the number of channels can be any number as per the use case.
++
++The whole framework follows a triple buffer approach to make sure that TDM data
++is played continuously at the desired rate.
++
++Buffers Involved:
++=================
++
++1.TDM driver or device buffers:
++These buffers are the device level buffers. They contain the TDM data which is
++transmitted/received on the TDM physical signals. As such these buffers must
++be allocated from driver layer so that all the hardware requirements are met.
++As an optimized design to remove extra memcopies, the client can pass the data
++in the same buffers. But this is only true for full mode of TDM. Where the
++user data can be straightaway passed to the hardware for transmission.
++Although in other cases memcopy cannot be avoided, because the framework layer
++will have to interleave the individual channels data to create the TDM frame
++data buffer.For channelised mode size of this buffer will be governed by:
++
++-	number of channels
++- 	number of slots per channel
++-	number of bytes per slot
++- 	number of frames per ms
++-	number of ms
++
++For a channelised mode with single port the size of the device level buffer
++will be:
++
++channels * slots per channel * bytes per slot * frames per ms *
++number of ms channels * NUM_BYTES_PER_SLOT * NUM_MS * CH_1_MS_FRAMES
++
++There will be 3 such buffers.
++
++2.Channel level buffers:
++In case the TDM device is configured for multiport/multichannel the Framework
++layer needs to maintain the data for each channel. Hence for each channel
++opened a Buffer Descriptor ring of 3 BDs(see note below) is allocated both for
++transmit and receive. The client reads from/writes to the buffers pointed by
++these BD rings.
++
++The framework layer maintains a Data Process Tasklet per TDM device which is
++scheduled from every Rx interrupt. The interrupt handling periodicity is
++governed by the TDM data buffer size configured in the above section. The data
++tasklet when scheduled, will do Rx and Tx processing to copy the data from/to
++the channel specific interleaved buffers. The TDM controller will DMA the
++data which is copied in the interleaved buffers or device level buffers.
++
++TDM framework provides the port level APIs and channel level APIs to the TDM
++client drivers to send and receive the respective data on different TDM slots.
++
++
++num of buffers = 3
++
++TDM client1           	TDM Client2
++
++buf0------->buf1	buf0------->buf1
++^            |		^            |
++|            V		|            V
++----buf2------		------buf2----
++     |				|
++     |				|
++     |				|
++     V				V
++-----------------------------------------
++|					|
++|    	 DATA Tasklet			|
++|					|
++-----------------------------------------
++		|
++		|
++		V
++-----------------------------------------
++|    	 TDM buffer interleaved * 3	|
++-----------------------------------------
++
++
++Not Implemented/Future work:
++============================
++1. TDM client will use the default configuration which is done at init time
++   and is not configurable. In future this should be made configurable as per
++   the needs of client.
++2. The TDM framework still needs to be enhanced to configure the ports and
++   their attributes. Currently only single port channelised mode is supported.
++3. Line control interface is not available in the framework presently.
++   Presently it offer very minimal kind of interface.
++4. SLIC interface will be enhanced as per Zarlink Open source APIs in future.
+diff --git a/Documentation/tdm/tdm-summary.txt b/Documentation/tdm/tdm-summary.txt
+new file mode 100644
+index 0000000..f010f76
+--- /dev/null
++++ b/Documentation/tdm/tdm-summary.txt
+@@ -0,0 +1,103 @@
++Time Division Multiplexing (TDM)
++=================================
++
++TDM is a type of digital or analog multiplexing in which two or more bit
++streams or signals are transferred apparently simultaneously as sub-channels
++in one communication channel, but are physically taking turns on the channel.
++
++The time domain is divided into several recurrent timeslots of fixed duration.
++These timeslot are grouped together to form a channel. A sample byte or data
++block of channel 1 is transmitted during timeslots allocated to channel 1,
++channel 2 during timeslot for channel 2, etc.
++
++One TDM frame consists of multiple channels. After the last channel the cycle
++starts all over again with a new frame, starting with the second sample, byte
++or data block from channel 1, and so on.
++
++X----------TDM Frame 0-------------X------TDM Frame 1-----------------X
++|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
++| 0  | 1  | 2  | 3  | 4  | ...|  n |  0 | 1  |  2 |  3 | 4  | ...| n  |...
++|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
++<---->				   <---->
++channel 0			   channel 0
++-------------------------------------------------------------------->
++         Increasing Time
++
++Physical TDM interface
++=======================
++
++Physically TDM interface is a serial full duplex interface designed to
++communicate with variety of serial devices like industry standard framers,
++codecs, other DSPs, and microprocessors. It is typically used to transfer
++samples in a periodic manner. The TDM consists of independent transmitter and
++receiver sections with independent clock generation and frame synchronization.
++
++External TDM signals are:
++1. TDM_TCK: TDM Transmit clock
++2. TDM_RCK: TDM Receive clock
++3. TDM_TFS: TDM Tx frame sync to identify frame boundary
++4. TDM_RFS: TDM Rx Frame sync to identify frame boundary
++5. TDM_TD: TDM Tx data
++6. TDM_RD: TDM Rx data
++
++TDM is generally used to simultaneously transmit periodic data for multiple
++users. Common use cases would be to carry voice for various telephone
++subscribers in the telephone networks. It is widely used to carry telephonic
++data of various industry standards like E1/T1 data, etc.
++
++T1 Details
++==========
++T1 frame consists of 24 channels of 8 bits each plus one frame alignment bit.
++So a T1 frame has a total of 24x8 + 1 = 193 bits. Since each T1 frame contains
++one byte of voice data for each of 24 channels and the system needs to maintain
++a data rate of 8000 samples/sec. This would require 8000 frames/sec to be sent,
++yielding a data rate of 8000x193 bit/sec = 1.544 Mbps.
++
++E1 Details
++===========
++E1 frame consists of 32 channels each of 8 bits. Thus having a total frame
++length of 32x8 = 256 bits. Similar to the case of T1 it has to maintain a data
++rate of 8000 frames/sec. Thus having a data rate of 8000 x 256 bits/sec =
++2.048 Mbps.
++
++TDM use cases
++=============
++
++With SLIC kind of devices
++=========================
++SLIC stands for Subscriber Line Interface Card.
++Typically TDM systems consist of TDM controller and a line control device.
++
++The TDM controller interfaces to the line control device through TDM interface
++which is digital TDM multiplexed data.
++
++The Line controller has the functionality to interface with the TDM controller
++at one end and interface with the analog units at the other. For example if the
++line control device is a SLIC kind of device.
++The typical setup would be:
++
++|------------------|
++|		   |
++|		   | /-------\  |---------|
++|   TDM controller |/   TDM   \ |  SLIC   |<--------> s-ch0 analog phone 1
++|		   |\   data  / |         |<--------> s-ch1 analog phone 2
++|		   | \-------/  |---------|<--------> s-ch2 analog phone 3
++|		   |<----digital---->     <analog>
++|------------------|
++
++
++
++Another use case (VoIP):
++========================
++
++                             Voice packets on network
++     |--------|     |------|      _________      |------|     |------|
++>----|        |/---\|  TDM |     (         )     | TDM  |/---\|      |----->
++<----| SLIC   |\---/|      |     ( n/w     )     |      |\---/| SLIC |-----<
++>----|        |     |------|      ---------      |------|     |      |----->
++     |--------|      mux                          demux       |------|
++
++In the above figure analog phones are connected to the hosts via SLICs.
++The voice spoken on the phones is multiplexed converted into VoIP packets
++and sent over network. At the rendering end the multiplexed data
++is de-multiplexed and sent to respective listeners via SLIC.
 -- 
-Jiri Kosina
-SUSE Labs
+1.5.6.5
+
+
