@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab2G0TCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:02:24 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60091 "EHLO
+	id S1752619Ab2G0TDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:03:05 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38947 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab2G0TCJ (ORCPT
+	with ESMTP id S1752246Ab2G0TDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:02:09 -0400
+	Fri, 27 Jul 2012 15:03:03 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 3/3] regmap: enhance regmap-irq to handle 1 IRQ feeding n chips
-Date: Fri, 27 Jul 2012 13:01:56 -0600
-Message-Id: <1343415716-27134-3-git-send-email-swarren@wwwdotorg.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] mfd: arizona: convert to regmap_add_irq_chips
+Date: Fri, 27 Jul 2012 13:02:56 -0600
+Message-Id: <1343415776-27176-1-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org>
-References: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org>
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,266 +22,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-Some devices contain a single interrupt output, and multiple separate
-interrupt controllers that all trigger that interrupt output, yet provide
-no top-level interrupt controller/registers to allow determination of
-which child interrupt controller caused the interrupt.
+The Arizona chip contains a single interrupt that represents the unified
+output of multiple internal interrupt controllers. This pattern has been
+factored out into regmap-irq, so convert the Arizona driver to use the
+new regmap-irq code.
 
-In this case, a regmap irq_chip can be created for each of the individual
-"child" interrupt controllers, alongside some infra-structure to hook the
-interrupt and distribute it to each "child". This patch introduces
-regmap_add_irq_chips() which sets up such infra-structure, and creates
-a number of child regmap irq_chips.
+This introduces some hopefully minor functional changes:
+
+1) regmap_add_irq_chips() calls regmap_add_irq_chip() with irq==0 rather
+   than -1, so in turn irq_domain_add_linear() is called rather than
+   irq_domain_add_legacy(). This change could be avoided by providing an
+   irq_bases array to regmap_add_irq_chips().
+
+2) regmap_add_irq_chips() requests the top-level interrupt itself, so this
+   happens before the Arizona driver hooks the child BOOT_DONE and
+   CTRLIF_ERR interrupts. In the original, all the IRQ chips were created
+   first, and then the top-level IRQ was requested. This may cause a
+   functional difference if those interrupts are pending at probe() time.
+
+3) The top-level interrupt domain set up by regmap_add_irq_chips() does
+   not have a .xlate op, whereas the removed domain in the Arizona driver
+   did. However, I don't think this is an issue, since the original code
+   simply used the default irq_domain_xlate_twocell, which didn't handle
+   mapping the IRQ numbers to the child interrupt controllers anyway, and
+   hence probably wasn't that useful. regmap-irq could easily be extended
+   to provide a useful xlate function if required.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/base/regmap/regmap-irq.c |  187 ++++++++++++++++++++++++++++++++++++++
- include/linux/regmap.h           |    9 ++
- 2 files changed, 196 insertions(+), 0 deletions(-)
+Note, this depends on the regmap series I just posted to compile.
+---
+ drivers/mfd/arizona-irq.c        |  132 ++++++--------------------------------
+ include/linux/mfd/arizona/core.h |    4 +-
+ 2 files changed, 20 insertions(+), 116 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 6bb4364..9d7894c 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -2,6 +2,7 @@
-  * regmap based irq_chip
-  *
-  * Copyright 2011 Wolfson Microelectronics plc
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-  *
-@@ -16,6 +17,7 @@
- #include <linux/irq.h>
- #include <linux/interrupt.h>
- #include <linux/irqdomain.h>
-+#include <linux/pm_runtime.h>
- #include <linux/slab.h>
+diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+index 98ac345..f693f85 100644
+--- a/drivers/mfd/arizona-irq.c
++++ b/drivers/mfd/arizona-irq.c
+@@ -28,11 +28,15 @@
  
- #include "internal.h"
-@@ -40,6 +42,14 @@ struct regmap_irq_chip_data {
- 	unsigned int irq_reg_stride;
- };
+ static int arizona_map_irq(struct arizona *arizona, int irq)
+ {
++	struct regmap_irq_chip_data *irq_chip;
+ 	int ret;
  
-+struct regmap_irq_chips_data {
-+	struct device *dev;
-+	int irq;
-+	int nchips;
-+	struct irq_domain *irqdom;
-+	struct regmap_irq_chip_data **datas;
-+};
-+
- static inline const
- struct regmap_irq *irq_to_regmap_irq(struct regmap_irq_chip_data *data,
- 				     int irq)
-@@ -463,3 +473,180 @@ int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq)
- 	return irq_create_mapping(data->domain, irq);
- }
- EXPORT_SYMBOL_GPL(regmap_irq_get_virq);
-+
-+static void regmaps_irq_enable(struct irq_data *data)
-+{
-+}
-+
-+static void regmaps_irq_disable(struct irq_data *data)
-+{
-+}
-+
-+static struct irq_chip regmaps_irq_chip = {
-+	.name		= "regmaps",
-+	.irq_disable	= regmaps_irq_disable,
-+	.irq_enable	= regmaps_irq_enable,
-+};
-+
-+static int regmaps_irq_map(struct irq_domain *h, unsigned int virq,
-+			   irq_hw_number_t hw)
-+{
-+	struct regmap_irq_chips_data *data = h->host_data;
-+
-+	irq_set_chip_data(virq, data);
-+	irq_set_chip_and_handler(virq, &regmaps_irq_chip, handle_edge_irq);
-+	irq_set_nested_thread(virq, 1);
-+
-+	/* ARM needs us to explicitly flag the IRQ as valid
-+	 * and will set them noprobe when we do so. */
-+#ifdef CONFIG_ARM
-+	set_irq_flags(virq, IRQF_VALID);
-+#else
-+	irq_set_noprobe(virq);
-+#endif
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops regmaps_domain_ops = {
-+	.map	= regmaps_irq_map,
-+};
-+
-+static irqreturn_t regmaps_irq_thread(int irq, void *data)
-+{
-+	struct regmap_irq_chips_data *d = data;
-+	int ret, i;
-+
-+	ret = pm_runtime_get_sync(d->dev);
+-	ret = regmap_irq_get_virq(arizona->aod_irq_chip, irq);
+-	if (ret < 0)
+-		ret = regmap_irq_get_virq(arizona->irq_chip, irq);
++	irq_chip = regmap_irq_chips_get_chip(arizona->irq_chips, 0);
++	ret = regmap_irq_get_virq(irq_chip, irq);
 +	if (ret < 0) {
-+		dev_err(d->dev, "Failed to resume device: %d\n", ret);
-+		return IRQ_NONE;
++		irq_chip = regmap_irq_chips_get_chip(arizona->irq_chips, 1);
++		ret = regmap_irq_get_virq(irq_chip, irq);
 +	}
-+
-+	for (i = 0; i < d->nchips; i++)
-+		handle_nested_irq(irq_find_mapping(d->irqdom, i));
-+
-+	pm_runtime_mark_last_busy(d->dev);
-+	pm_runtime_put_autosuspend(d->dev);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * regmap_add_irq_chips(): Call regmap_add_irq_chip for n chips on one IRQ
-+ *
-+ * @irq:       Primary IRQ for the device
-+ * @irq_flags: The IRQF_ flags to use for the primary interrupt.
-+ * @nchips:    The number of IRQ chips attached to the interrupt.
-+ * @maps:      The regmap for each IRQ chip.
-+ * @irq_bases  The base Linux IRQ number for each chip, or NULL.
-+ * @chips:     Configuration for each interrupt controller.
-+ * @data:      Runtime data structure set of controllers, allocated on success
-+ *
-+ * Some devices contain a single interrupt output, and multiple separate
-+ * interrupt controllers that all trigger that interrupt output, yet provide
-+ * no top-level interrupt controller to allow determination of which child
-+ * interrupt controller caused the interrupt. regmap_add_irq_chips() creates
-+ * the required N regmap irq_chips, and handles demultiplexing this virtual
-+ * top-level interrupt.
-+ *
-+ * Returns 0 on success or an errno on failure.
-+ *
-+ * In order for this to be efficient the chip really should use a
-+ * register cache.  The chip driver is responsible for restoring the
-+ * register values used by the IRQ controller over suspend and resume.
-+ */
-+int regmap_add_irq_chips(int irq, int irq_flags, int nchips,
-+			 struct regmap **maps, int *irq_bases,
-+			 const struct regmap_irq_chip **chips,
-+			 struct regmap_irq_chips_data **data)
-+{
-+	int ret = -ENOMEM;
-+	struct regmap_irq_chips_data *d;
-+	int i;
-+
-+	d = kzalloc(sizeof(*d), GFP_KERNEL);
-+	if (!d)
-+		return -ENOMEM;
-+
-+	d->dev = maps[0]->dev;
-+	d->irq = irq;
-+	d->nchips = nchips;
-+
-+	d->datas = kzalloc(nchips * sizeof(*(d->datas)), GFP_KERNEL);
-+	if (!d->datas)
-+		goto err_alloc;
-+
-+	d->irqdom = irq_domain_add_linear(NULL, nchips, &regmaps_domain_ops, d);
-+	if (!d->irqdom) {
-+		ret = -EINVAL;
-+		goto err_alloc;
-+	}
-+
-+	for (i = 0; i < nchips; i++) {
-+		ret = regmap_add_irq_chip(maps[i],
-+					  irq_create_mapping(d->irqdom, i),
-+					  IRQF_ONESHOT,
-+					  irq_bases ? irq_bases[i] : 0,
-+					  chips[i], &d->datas[i]);
-+		if (ret != 0) {
-+			dev_err(maps[i]->dev,
-+				"Failed to add chip %d IRQs: %d\n", i, ret);
-+			goto err_chips;
-+		}
-+	}
-+
-+	ret = request_threaded_irq(irq, NULL, regmaps_irq_thread,
-+				   irq_flags, dev_name(d->dev), d);
-+	if (ret != 0) {
-+		dev_err(d->dev, "Failed to request IRQ %d: %d\n", irq, ret);
-+		goto err_chips;
-+	}
-+
-+	*data = d;
-+
-+	return 0;
-+
-+err_chips:
-+	for (i--; i >= 0; i--)
-+		regmap_del_irq_chip(irq_create_mapping(d->irqdom, i),
-+				    d->datas[i]);
-+	/* We should unmap the domain but... */
-+err_alloc:
-+	kfree(d->datas);
-+	kfree(d);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(regmap_add_irq_chips);
-+
-+/**
-+ * regmap_del_irq_chips(): Undo regmap_add_irq_chips()
-+ *
-+ * @irq:    Primary IRQ for the device
-+ * @d:      regmap_irq_chips_data allocated by regmap_add_irq_chips()
-+ */
-+void regmap_del_irq_chips(struct regmap_irq_chips_data *d)
-+{
-+	int i;
-+
-+	free_irq(d->irq, d);
-+
-+	for (i = d->nchips - 1; i >= 0; i--)
-+		regmap_del_irq_chip(irq_create_mapping(d->irqdom, i),
-+				    d->datas[i]);
-+
-+	/* We should unmap the domain but... */
-+
-+	kfree(d->datas);
-+	kfree(d);
-+}
-+EXPORT_SYMBOL_GPL(regmap_del_irq_chips);
-+
-+struct regmap_irq_chip_data *regmap_irq_chips_get_chip(
-+				struct regmap_irq_chips_data *d, int chip)
-+{
-+	if (chip >= d->nchips)
-+		return NULL;
-+	return d->datas[chip];
-+}
-+EXPORT_SYMBOL(regmap_irq_chips_get_chip);
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 7f7e00d..b5d9699 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -307,6 +307,7 @@ struct regmap_irq_chip {
- };
  
- struct regmap_irq_chip_data;
-+struct regmap_irq_chips_data;
+ 	return ret;
+ }
+@@ -91,83 +95,24 @@ static irqreturn_t arizona_ctrlif_err(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
  
- int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 			int irq_base, const struct regmap_irq_chip *chip,
-@@ -315,6 +316,14 @@ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *data);
- int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data);
- int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq);
+-static irqreturn_t arizona_irq_thread(int irq, void *data)
+-{
+-	struct arizona *arizona = data;
+-	int i, ret;
+-
+-	ret = pm_runtime_get_sync(arizona->dev);
+-	if (ret < 0) {
+-		dev_err(arizona->dev, "Failed to resume device: %d\n", ret);
+-		return IRQ_NONE;
+-	}
+-
+-	/* Check both domains */
+-	for (i = 0; i < 2; i++)
+-		handle_nested_irq(irq_find_mapping(arizona->virq, i));
+-
+-	pm_runtime_mark_last_busy(arizona->dev);
+-	pm_runtime_put_autosuspend(arizona->dev);
+-
+-	return IRQ_HANDLED;
+-}
+-
+-static void arizona_irq_enable(struct irq_data *data)
+-{
+-}
+-
+-static void arizona_irq_disable(struct irq_data *data)
+-{
+-}
+-
+-static struct irq_chip arizona_irq_chip = {
+-	.name			= "arizona",
+-	.irq_disable		= arizona_irq_disable,
+-	.irq_enable		= arizona_irq_enable,
+-};
+-
+-static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
+-			      irq_hw_number_t hw)
+-{
+-	struct regmap_irq_chip_data *data = h->host_data;
+-
+-	irq_set_chip_data(virq, data);
+-	irq_set_chip_and_handler(virq, &arizona_irq_chip, handle_edge_irq);
+-	irq_set_nested_thread(virq, 1);
+-
+-	/* ARM needs us to explicitly flag the IRQ as valid
+-	 * and will set them noprobe when we do so. */
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+-	irq_set_noprobe(virq);
+-#endif
+-
+-	return 0;
+-}
+-
+-static struct irq_domain_ops arizona_domain_ops = {
+-	.map	= arizona_irq_map,
+-	.xlate	= irq_domain_xlate_twocell,
+-};
+-
+ int arizona_irq_init(struct arizona *arizona)
+ {
+ 	int flags = IRQF_ONESHOT;
+ 	int ret, i;
+-	const struct regmap_irq_chip *aod, *irq;
++	struct regmap *maps[2] = { arizona->regmap, arizona->regmap };
++	const struct regmap_irq_chip *chips[2];
  
-+int regmap_add_irq_chips(int irq, int irq_flags, int nchips,
-+			 struct regmap **maps, int *irq_bases,
-+			 const struct regmap_irq_chip **chips,
-+			 struct regmap_irq_chips_data **data);
-+void regmap_del_irq_chips(struct regmap_irq_chips_data *d);
-+struct regmap_irq_chip_data *regmap_irq_chips_get_chip(
-+				struct regmap_irq_chips_data *d, int chip);
-+
- #else
+ 	switch (arizona->type) {
+ #ifdef CONFIG_MFD_WM5102
+ 	case WM5102:
+-		aod = &wm5102_aod;
+-		irq = &wm5102_irq;
++		chips[0] = &wm5102_aod;
++		chips[1] = &wm5102_irq;
+ 		break;
+ #endif
+ #ifdef CONFIG_MFD_WM5110
+ 	case WM5110:
+-		aod = &wm5110_aod;
+-		irq = &wm5110_irq;
++		chips[0] = &wm5110_aod;
++		chips[1] = &wm5110_irq;
+ 		break;
+ #endif
+ 	default:
+@@ -189,30 +134,11 @@ int arizona_irq_init(struct arizona *arizona)
+ 		flags |= IRQF_TRIGGER_LOW;
+ 	}
  
- /*
+-	/* Allocate a virtual IRQ domain to distribute to the regmap domains */
+-	arizona->virq = irq_domain_add_linear(NULL, 2, &arizona_domain_ops,
+-					      arizona);
+-	if (!arizona->virq) {
+-		ret = -EINVAL;
+-		goto err;
+-	}
+-
+-	ret = regmap_add_irq_chip(arizona->regmap,
+-				  irq_create_mapping(arizona->virq, 0),
+-				  IRQF_ONESHOT, -1, aod,
+-				  &arizona->aod_irq_chip);
++	ret = regmap_add_irq_chips(arizona->irq, flags, 2, maps, NULL, chips,
++				   &arizona->irq_chips);
+ 	if (ret != 0) {
+-		dev_err(arizona->dev, "Failed to add AOD IRQs: %d\n", ret);
+-		goto err_domain;
+-	}
+-
+-	ret = regmap_add_irq_chip(arizona->regmap,
+-				  irq_create_mapping(arizona->virq, 1),
+-				  IRQF_ONESHOT, -1, irq,
+-				  &arizona->irq_chip);
+-	if (ret != 0) {
+-		dev_err(arizona->dev, "Failed to add AOD IRQs: %d\n", ret);
+-		goto err_aod;
++		dev_err(arizona->dev, "Failed to add IRQs: %d\n", ret);
++		goto err;
+ 	}
+ 
+ 	/* Make sure the boot done IRQ is unmasked for resumes */
+@@ -235,28 +161,12 @@ int arizona_irq_init(struct arizona *arizona)
+ 		goto err_ctrlif;
+ 	}
+ 
+-	ret = request_threaded_irq(arizona->irq, NULL, arizona_irq_thread,
+-				   flags, "arizona", arizona);
+-
+-	if (ret != 0) {
+-		dev_err(arizona->dev, "Failed to request IRQ %d: %d\n",
+-			arizona->irq, ret);
+-		goto err_main_irq;
+-	}
+-
+ 	return 0;
+ 
+-err_main_irq:
+-	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
+ err_ctrlif:
+ 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
+ err_boot_done:
+-	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 1),
+-			    arizona->irq_chip);
+-err_aod:
+-	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 0),
+-			    arizona->aod_irq_chip);
+-err_domain:
++	regmap_del_irq_chips(arizona->irq_chips);
+ err:
+ 	return ret;
+ }
+@@ -265,11 +175,7 @@ int arizona_irq_exit(struct arizona *arizona)
+ {
+ 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
+ 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
+-	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 1),
+-			    arizona->irq_chip);
+-	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 0),
+-			    arizona->aod_irq_chip);
+-	free_irq(arizona->irq, arizona);
++	regmap_del_irq_chips(arizona->irq_chips);
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
+index dd231ac..769b3a0 100644
+--- a/include/linux/mfd/arizona/core.h
++++ b/include/linux/mfd/arizona/core.h
+@@ -92,9 +92,7 @@ struct arizona {
+ 	struct arizona_pdata pdata;
+ 
+ 	int irq;
+-	struct irq_domain *virq;
+-	struct regmap_irq_chip_data *aod_irq_chip;
+-	struct regmap_irq_chip_data *irq_chip;
++	struct regmap_irq_chips_data *irq_chips;
+ 
+ 	struct mutex clk_lock;
+ 	int clk32k_ref;
 -- 
 1.7.0.4
 
