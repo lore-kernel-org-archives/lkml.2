@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab2G0LYt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 07:24:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33782 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab2G0LYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 07:24:48 -0400
-Date: Fri, 27 Jul 2012 13:24:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Ken Chen <kenchen@google.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mm: hugetlbfs: Close race during teardown of
- hugetlbfs shared page tables
-Message-ID: <20120727112445.GF26351@tiehlicka.suse.cz>
-References: <1343385965-7738-1-git-send-email-mgorman@suse.de>
- <1343385965-7738-3-git-send-email-mgorman@suse.de>
+	id S1751832Ab2G0L05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 07:26:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36575 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab2G0L04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 07:26:56 -0400
+Message-ID: <50127B16.5040401@gmail.com>
+Date: Fri, 27 Jul 2012 13:27:18 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343385965-7738-3-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: paulmck@linux.vnet.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
+References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com>
+In-Reply-To: <50112D3B.4020201@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a nit
+On 07/26/2012 01:42 PM, Avi Kivity wrote:
+> On 07/24/2012 08:10 PM, Sasha Levin wrote:
+>> [  215.026612] NMI backtrace for cpu 1
+>> [  215.026612] CPU 1
+>> [  215.026612] Pid: 2395, comm: pageattr-test Tainted: G        W    3.5.0-sasha-01644-g824681b #267
+>> [  215.026612] RIP: 0010:[<ffffffff8109bd5a>]  [<ffffffff8109bd5a>] native_write_msr_safe+0xa/0x10
+>> [  215.026612] RSP: 0018:ffff88001b803f70  EFLAGS: 00000046
+>> [  215.026612] RAX: 0000000000000000 RBX: 000000000000ef80 RCX: 000000000000080b
+>> [  215.026612] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 000000000000080b
+>> [  215.026612] RBP: ffff88001b803f70 R08: 00003ffffffff000 R09: ffff880000000000
+>> [  215.026612] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
+>> [  215.026612] R13: ffff880007a98000 R14: ffff88001fc3a4b8 R15: ffff880000000000
+>> [  215.026612] FS:  0000000000000000(0000) GS:ffff88001b800000(0000) knlGS:0000000000000000
+>> [  215.026612] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [  215.026612] CR2: 000000000000000c CR3: 0000000019dcf000 CR4: 00000000000406e0
+>> [  215.026612] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [  215.026612] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [  215.026612] Process pageattr-test (pid: 2395, threadinfo ffff88000ced0000, task ffff88000d773000)
+>> [  215.026612] Stack:
+>> [  215.026612]  ffff88001b803f88 ffffffff81095d07 000000000000ef80 ffff88001b803fa8
+>> [  215.026612]  ffffffff810901c4 ffff88000ced1db0 0000000000007a98 ffff88000ced1d00
+>> [  215.026612]  ffffffff8369c4af ffff88000ced1c78 <EOI>  ffff88000ced1d00 ffffffff8369aeb4
+>> [  215.026612] Call Trace:
+>> [  215.026612]  <IRQ>
+>> [  215.026612]  [<ffffffff81095d07>] native_apic_msr_eoi_write+0x27/0x30
+>> [  215.026612]  [<ffffffff810901c4>] smp_apic_timer_interrupt+0x34/0xa0
+>> [  215.026612]  [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
+>> [  215.026612]  <EOI>
+>> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
+>> [  215.026612]  [<ffffffff810a2cb2>] ? lookup_address+0x112/0x170
+>> [  215.026612]  [<ffffffff810a32ae>] print_split+0x7e/0x200
+>> [  215.026612]  [<ffffffff810a4300>] pageattr_test+0x80/0x4a0
+>> [  215.026612]  [<ffffffff8114a2f8>] ? trace_hardirqs_on_caller+0x118/0x140
+>> [  215.026612]  [<ffffffff83696cbe>] ? schedule_timeout+0x2ce/0x370
+>> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
+>> [  215.026612]  [<ffffffff810a4720>] ? pageattr_test+0x4a0/0x4a0
+>> [  215.026612]  [<ffffffff810a473f>] do_pageattr_test+0x1f/0x50
+>> [  215.026612]  [<ffffffff8110607d>] kthread+0xad/0xc0
+>> [  215.026612]  [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
+>> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
+>> [  215.026612]  [<ffffffff81105fd0>] ? kthread_flush_work_fn+0x10/0x10
+>> [  215.026612]  [<ffffffff8369cdb0>] ? gs_change+0x13/0x13
+>> [  215.026612] Code: 00 55 89 f9 48 89 e5 0f 32 45 31 c0 89 c7 48 89 d0 44 89 06 48 c1 e0 20 89 f9 5d 48 09 c8 c3 66 90 55 89 f0 89 f9 48 89 e5 0f 30 <31> c0 5d c3 66 90 55 89 f9 48 89 e5 0f 33 89 c7 48 89 d0 5d 48
+> 
+> This is immediately after the EOI.  It looks like the timer interrupt is
+> stuck somehow.  Can you run kvm_stat and confirm?
 
-On Fri 27-07-12 11:46:05, Mel Gorman wrote:
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index fd1d530..8c6e5a5 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2429,6 +2429,25 @@ again:
->  	tlb_end_vma(tlb, vma);
->  }
->
+Yup, looks like it. kvm_stats is something like this:
 
-I would welcome a comment here. Something like:
-/*
- * Called when the VMA is on the way out and page tables will be freed
- * by free_pagetables.
- * i_mmap_mutex has to be held when calling this function
- */
+ kvm_entry                                142104033  939393
+ kvm_exit                                 142104004  939390
+ kvm_apic                                  84781115  582714
+ kvm_msr                                   84682085  582714
+ kvm_apic_accept_irq                       65219959  522263
+ kvm_inj_virq                              43173709  291385
 
-> +void __unmap_hugepage_range_final(struct mmu_gather *tlb,
-> +			  struct vm_area_struct *vma, unsigned long start,
-> +			  unsigned long end, struct page *ref_page)
-> +{
-> +	__unmap_hugepage_range(tlb, vma, start, end, ref_page);
-> +
-> +	/*
-> +	 * Clear this flag so that x86's huge_pmd_share page_table_shareable
-> +	 * test will fail on a vma being torn down, and not grab a page table
-> +	 * on its way out.  We're lucky that the flag has such an appropriate
-> +	 * name, and can in fact be safely cleared here. We could clear it
-> +	 * before the __unmap_hugepage_range above, but all that's necessary
-> +	 * is to clear it before releasing the i_mmap_mutex. This works
-> +	 * because in the context this is called, the VMA is about to be
-> +	 * destroyed and the i_mmap_mutex is held.
-> +	 */
-> +	vma->vm_flags &= ~VM_MAYSHARE;
-> +}
-> +
+With everything else at 0 when it happens.
 
--- 
-Michal Hocko
-SUSE Labs
+
