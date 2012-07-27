@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab2G0Bkv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 21:40:51 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57325 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752790Ab2G0Bku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 21:40:50 -0400
-Message-ID: <1343353248.2271.8.camel@joe2Laptop>
-Subject: Re: [PATCH] staging/olpc_dcon: fix checkpatch warnings
-From: Joe Perches <joe@perches.com>
-To: Toshiaki Yamane <yamanetoshi@gmail.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, Andres Salomon <dilinger@queued.net>,
-        Chris Ball <cjb@laptop.org>, Jon Nettleton <jon.nettleton@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 26 Jul 2012 18:40:48 -0700
-In-Reply-To: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
-References: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
+	id S1752806Ab2G0BoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 21:44:23 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:10512
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752002Ab2G0BoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 21:44:22 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zzbb2dI98dI9371I1432I1447Izz1202hzz8275bhz2dh2a8h668h839h93fhd25he5bhf0ah107ah)
+Message-ID: <5011F25B.7080103@freescale.com>
+Date: Thu, 26 Jul 2012 20:43:55 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Li Yang <leoli@freescale.com>
+CC: Zhao Chenhui <chenhui.zhao@freescale.com>, <galak@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 0/7] power management patch set
+References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com> <CADRPPNSw5Yn7EgHt5fm2vYr+zxC4T+JbsvT812u2JPKELNcA6g@mail.gmail.com>
+In-Reply-To: <CADRPPNSw5Yn7EgHt5fm2vYr+zxC4T+JbsvT812u2JPKELNcA6g@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 08:49 +0900, Toshiaki Yamane wrote:
-> Now checkpatch clean.
-[]
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-[]
-> @@ -11,6 +11,7 @@
-[]
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-[]
-> @@ -71,18 +72,18 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
->  
->  	ver = dcon_read(dcon, DCON_REG_ID);
->  	if ((ver >> 8) != 0xDC) {
-> -		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
-> -			ver);
-> +		pr_err("olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
-> +		       ver);
->  		rc = -ENXIO;
->  		goto err;
->  	}
->  
->  	if (is_init) {
-> -		printk(KERN_INFO "olpc-dcon:  Discovered DCON version %x\n",
-> -				ver & 0xFF);
-> +		pr_info("olpc-dcon:  Discovered DCON version %x\n",
-> +			ver & 0xFF);
+On 07/26/2012 09:02 AM, Li Yang wrote:
+> On Fri, Jul 20, 2012 at 8:42 PM, Zhao Chenhui
+> <chenhui.zhao@freescale.com> wrote:
+>> Changes for v8:
+>> * Separated the cpu hotplug patch into three patches, as follows
+>>   [PATCH v8 1/7] powerpc/smp: use a struct epapr_spin_table to replace macros
+>>   [PATCH v8 2/7] powerpc/smp: add generic_set_cpu_up() to set cpu_state as CPU_UP_PREPARE
+>>   [PATCH v8 4/7] powerpc/85xx: add HOTPLUG_CPU support
+>>
+>> * Replaced magic numbers with macros in "[PATCH 5/7] powerpc/85xx: add sleep and deep sleep support"
+>>
+>> * no change to the rest of the patch set
+> 
+> Hi Kumar,
+> 
+> How about picking about this series for 3.6?  The review seems to
+> settle down for this revision.
+> 
+> 
+> Hi Scott,
+> 
+> Thanks for the review comments provided.  We'd like to get the ACK
+> from you for the series if you can.
 
-Hello.
+I ACKed v7; I assume v8 hasn't made anything worse. :-)
 
-Please remove all the embedded "olpc-dcon: " prefixes.
-There is a pr_fmt define that adds "olpc_dcon" already.
+I think it's time to merge this, and deal with any issues as they come up.
 
-You can use the strings program on the output .o files to
-verify the formats that are produced.
+-Scott
 
 
