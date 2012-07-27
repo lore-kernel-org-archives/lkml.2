@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314Ab2G0QMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 12:12:05 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:51784 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab2G0QMD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 12:12:03 -0400
-X-IronPort-AV: E=Sophos;i="4.77,667,1336348800"; 
-   d="scan'208";a="13739072"
-Message-ID: <1343405479.25096.25.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH 12/24] xen/arm: Introduce xen_guest_init
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Date: Fri, 27 Jul 2012 17:11:19 +0100
-In-Reply-To: <alpine.DEB.2.02.1207271613200.26163@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
-	 <1343316846-25860-12-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <1343382151.6812.124.camel@zakaz.uk.xensource.com>
-	 <alpine.DEB.2.02.1207271613200.26163@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	id S1752402Ab2G0QUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 12:20:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929Ab2G0QUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 12:20:48 -0400
+Date: Fri, 27 Jul 2012 12:20:38 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: lockdep trace from posix timers
+Message-ID: <20120727162038.GD12244@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <20120724203613.GA9637@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724203613.GA9637@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 16:54 +0100, Stefano Stabellini wrote:
-> On Fri, 27 Jul 2012, Ian Campbell wrote:
-> > On Thu, 2012-07-26 at 16:33 +0100, Stefano Stabellini wrote:
-> > > We used to rely on a core_initcall to initialize Xen on ARM, however
-> > > core_initcalls are actually called after early consoles are initialized.
-> > > That means that hvc_xen.c is going to be initialized before Xen.
-> > > 
-> > > Given the lack of a better alternative, just call a new Xen
-> > > initialization function (xen_guest_init) from xen_cons_init.
-> > 
-> > Can't we just arrange for this to be called super early on from
-> > setup_arch? That's got to be better than calling it from some random
-> > function which happens to get called early enough.
-> 
-> While I agree with you that an explicit call to xen_guest_init from
-> generic code might be better, xen_cons_init is not just a random
-> function: it is a console_initcall and therefore we know for sure that
-> it is going be the first one to be called.
+On Tue, Jul 24, 2012 at 04:36:13PM -0400, Dave Jones wrote:
+ > Linus tree as of 5fecc9d8f59e765c2a48379dd7c6f5cf88c7d75a
+ > 
+ > 	Dave
+ > 
+ > ======================================================
+ > [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
+ > 3.5.0+ #122 Not tainted
+ > ------------------------------------------------------
+ > trinity-child2/5327 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+ > blocked:  (tasklist_lock){.+.+..}, instance: ffffffff81c05098, at: [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
+ > 
+ > and this task is already holding:
+ > blocked:  (&(&new_timer->it_lock)->rlock){-.-...}, instance: ffff880143bce170, at: [<ffffffff81093d49>] __lock_timer+0x89/0x1f0
+ > which would create a new lock dependency:
+ >  (&(&new_timer->it_lock)->rlock){-.-...} -> (tasklist_lock){.+.+..}
+ > 
+ > but this new dependency connects a HARDIRQ-irq-safe lock:
+ >  (&(&new_timer->it_lock)->rlock){-.-...}
+ > ... which became HARDIRQ-irq-safe at:
 
-Initialising something != console in a console_initcall just because it
-happens to be called early enough meets my definition of calling it from
-a random place.
+Shall I start bisecting this ? I can trigger it very easily, but if you
+can give me a set of commits to narrow down, it'll speed up the bisection.
 
-> In fact if we didn't want the PV console to work so early we could just
-> rely on a core_initcall to initialize everything and we wouldn't have
-> any issues.
-> 
-> 
-> In any case if the ARM maintainers agree I could add a generic
-> hypervisor initialization call the end of setup_arch.
-> 
-> 
-> 
-> > I presume that KVM is going to want some similarly early init hooks etc
-> > and therefore ARM could benefit from the same sort of infrastructure as
-> > is in arch/x86/include/asm/hypervisor.h?
-
-
+	Dave
