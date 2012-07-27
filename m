@@ -1,439 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2G0UaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 16:30:09 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:46256 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab2G0UaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 16:30:05 -0400
-Date: Fri, 27 Jul 2012 15:30:00 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Bryan Freed <bfreed@chromium.org>,
-        David Safford <safford@linux.vnet.ibm.com>
-Subject: Re: [GIT PULL] New TPM driver, hwrng driver and fixes
-Message-ID: <20120727203000.GA22684@linux.vnet.ibm.com>
-References: <20120727181436.GA6271@linux.vnet.ibm.com>
- <5012DCF9.7010408@zytor.com>
+	id S1752644Ab2G0Uay (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 16:30:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38168 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752268Ab2G0Uax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 16:30:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127715225"
+Date: Fri, 27 Jul 2012 16:30:51 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: Keith Busch <keith.busch@intel.com>, linux-nvme@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] NVMe: Add a character device for each nvme device
+Message-ID: <20120727203051.GQ22985@linux.intel.com>
+References: <1343407458-29909-1-git-send-email-keith.busch@intel.com>
+ <20120727181212.GM22985@linux.intel.com>
+ <20120727182546.GA23874@kroah.com>
+ <20120727190821.GO22985@linux.intel.com>
+ <20120727192100.GA2247@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5012DCF9.7010408@zytor.com>
+In-Reply-To: <20120727192100.GA2247@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072720-7408-0000-0000-00000725BB49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> Since you no longer modify *max anywhere in this function, why leave it
-> a pointer?  Making it pass by value seems more logical at that point
-> (and cleaner).
+On Fri, Jul 27, 2012 at 12:21:00PM -0700, Greg KH wrote:
+> > > Also, why are you creating your own class?  Can't this just be a misc
+> > > device?  And if you want to create your own class, please don't, use a
+> > > bus, as that is what is really happening here, right?  We are trying to
+> > > move away from using 'struct class' wherever possible (one of these days
+> > > we'll just remove it...)
+> > 
+> > What we're trying to achieve here is to create one character device
+> > per NVMe controller that gets plugged in.  Each NVMe controller is-a
+> > PCI function.  The reason we're trying to do this is so that we can send
+> > commands to the NVMe controller, even when there is no storage present
+> > (eg a drive is shipped from the factory with no configured storage).
+> > 
+> > So we have no particular desire to create a new struct class, or struct
+> > bus.  If we can create a misc device per PCIe function that's bound to our
+> > driver, that's great!  Can you recommend a driver that does this already?
 > 
-> The only consumer which can make use of partial result is
-> tpm_rng_read(), but that will now return zero unless the buffer is filled.
+> I don't think there is one, but it shouldn't be that hard to just create
+> a 'struct misdevice' for each one of the devices you want to create,
+> would it?
 > 
-> My suggestion would be to drop the pointer and instead return a positive
-> result (number of bytes) if you read anything and a negative result
-> (-errno) on error.
-> 
-> That way, a caller which can only use an exact number of bytes should do:
-> 
-> 	rv = tpm_get_random(chip, buf, size);
-> 	if (rv != size)
-> 		/* error! */
-> 
-> ... and tpm_rng_read() can do something smarter.
-> 
-> 	-hpa
+> But, as you really are a "specific type", a bus_type might be overkill,
+> so the original use of device_create() should be fine.  Just be sure to
+> fix the parent pointer issue, and you should be fine, right?
 
-  Alrighty, please take a look at these two updated patches that should
-address your comments. This made the rng driver even simpler than it
-was, and simplified the trusted keys changes. I only needed to make one
-update in tpm_get_random to cover for the case when the error was returned
-by the tpm itself, where that error code could be a positive value.
-
-Dave, I'd appreciate one more Ack here, since your code did change.
-
-Thanks,
-Kent
-
-commit 477ec712124adb9a3317139288d550ec4f6c2b2e
-Author: Kent Yoder <key@linux.vnet.ibm.com>
-Date:   Thu Jun 7 13:47:42 2012 -0500
-
-    hw_random: add support for the TPM chip as a hardware RNG source
-    
-    This driver will make use of any available TPM chip on the system as a
-    hwrng source.
-    
-    Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-    Acked-by: David Safford <safford@linux.vnet.ibm.com>
-
-diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
-index f45dad3..4e8c01a 100644
---- a/drivers/char/hw_random/Kconfig
-+++ b/drivers/char/hw_random/Kconfig
-@@ -263,3 +263,16 @@ config HW_RANDOM_PSERIES
- 	  module will be called pseries-rng.
- 
- 	  If unsure, say Y.
-+
-+config HW_RANDOM_TPM
-+	tristate "TPM HW Random Number Generator support"
-+	depends on HW_RANDOM && TCG_TPM
-+	default HW_RANDOM
-+	---help---
-+	  This driver provides kernel-side support for the Random Number
-+	  Generator in the Trusted Platform Module
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called tpm-rng.
-+
-+	  If unsure, say Y.
-diff --git a/drivers/char/hw_random/Makefile b/drivers/char/hw_random/Makefile
-index d901dfa..5dc10da 100644
---- a/drivers/char/hw_random/Makefile
-+++ b/drivers/char/hw_random/Makefile
-@@ -23,3 +23,4 @@ obj-$(CONFIG_HW_RANDOM_NOMADIK) += nomadik-rng.o
- obj-$(CONFIG_HW_RANDOM_PICOXCELL) += picoxcell-rng.o
- obj-$(CONFIG_HW_RANDOM_PPC4XX) += ppc4xx-rng.o
- obj-$(CONFIG_HW_RANDOM_PSERIES) += pseries-rng.o
-+obj-$(CONFIG_HW_RANDOM_TPM) += tpm-rng.o
-diff --git a/drivers/char/hw_random/tpm-rng.c b/drivers/char/hw_random/tpm-rng.c
-new file mode 100644
-index 0000000..d6d4482
---- /dev/null
-+++ b/drivers/char/hw_random/tpm-rng.c
-@@ -0,0 +1,50 @@
-+/*
-+ * Copyright (C) 2012 Kent Yoder IBM Corporation
-+ *
-+ * HWRNG interfaces to pull RNG data from a TPM
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/hw_random.h>
-+#include <linux/tpm.h>
-+
-+#define MODULE_NAME "tpm-rng"
-+
-+static int tpm_rng_read(struct hwrng *rng, void *data, size_t max, bool wait)
-+{
-+	return tpm_get_random(TPM_ANY_NUM, data, max);
-+}
-+
-+static struct hwrng tpm_rng = {
-+	.name = MODULE_NAME,
-+	.read = tpm_rng_read,
-+};
-+
-+static int __init rng_init(void)
-+{
-+	return hwrng_register(&tpm_rng);
-+}
-+module_init(rng_init);
-+
-+static void __exit rng_exit(void)
-+{
-+	hwrng_unregister(&tpm_rng);
-+}
-+module_exit(rng_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Kent Yoder <key@linux.vnet.ibm.com>");
-+MODULE_DESCRIPTION("RNG driver for TPM devices");
-
-
-commit ad5f963f7b69b9f798944ebc0bbb02520ecf5cae
-Author: Kent Yoder <key@linux.vnet.ibm.com>
-Date:   Thu Jun 7 13:47:14 2012 -0500
-
-    tpm: Move tpm_get_random api into the TPM device driver
-    
-    Move the tpm_get_random api from the trusted keys code into the TPM
-    device driver itself so that other callers can make use of it. Also,
-    change the api slightly so that the number of bytes read is returned in
-    the call, since the TPM command can potentially return fewer bytes than
-    requested.
-    
-    Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-    Acked-by: David Safford <safford@linux.vnet.ibm.com>
-
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index beb98c3..60051e2 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -32,12 +32,6 @@
- #include "tpm.h"
- #include "tpm_eventlog.h"
- 
--enum tpm_const {
--	TPM_MINOR = 224,	/* officially assigned */
--	TPM_BUFSIZE = 4096,
--	TPM_NUM_DEVICES = 256,
--};
--
- enum tpm_duration {
- 	TPM_SHORT = 0,
- 	TPM_MEDIUM = 1,
-@@ -483,6 +477,7 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
- #define TPM_INTERNAL_RESULT_SIZE 200
- #define TPM_TAG_RQU_COMMAND cpu_to_be16(193)
- #define TPM_ORD_GET_CAP cpu_to_be32(101)
-+#define TPM_ORD_GET_RANDOM cpu_to_be32(70)
- 
- static const struct tpm_input_header tpm_getcap_header = {
- 	.tag = TPM_TAG_RQU_COMMAND,
-@@ -1327,6 +1322,64 @@ int tpm_pm_resume(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(tpm_pm_resume);
- 
-+#define TPM_GETRANDOM_RESULT_SIZE	18
-+static struct tpm_input_header tpm_getrandom_header = {
-+	.tag = TPM_TAG_RQU_COMMAND,
-+	.length = cpu_to_be32(14),
-+	.ordinal = TPM_ORD_GET_RANDOM
-+};
-+
-+/**
-+ * tpm_get_random() - Get random bytes from the tpm's RNG
-+ * @chip_num: A specific chip number for the request or TPM_ANY_NUM
-+ * @out: destination buffer for the random bytes
-+ * @max: the max number of bytes to write to @out
-+ *
-+ * Returns < 0 on error and the number of bytes read on success
-+ */
-+int tpm_get_random(u32 chip_num, u8 *out, size_t max)
-+{
-+	struct tpm_chip *chip;
-+	struct tpm_cmd_t tpm_cmd;
-+	u32 recd, num_bytes = min_t(u32, max, TPM_MAX_RNG_DATA);
-+	int err, total = 0, retries = 5;
-+	u8 *dest = out;
-+
-+	chip = tpm_chip_find_get(chip_num);
-+	if (chip == NULL)
-+		return -ENODEV;
-+
-+	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
-+		return -EINVAL;
-+
-+	do {
-+		tpm_cmd.header.in = tpm_getrandom_header;
-+		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
-+
-+		err = transmit_cmd(chip, &tpm_cmd,
-+				   TPM_GETRANDOM_RESULT_SIZE + num_bytes,
-+				   "attempting get random");
-+		if (err) {
-+			/* err can be positive if it came from the TPM itself,
-+			 * so return a negative value here instead. */
-+			err = -EFAULT;
-+			goto out_err;
-+		}
-+
-+		recd = be32_to_cpu(tpm_cmd.params.getrandom_out.rng_data_len);
-+		memcpy(dest, tpm_cmd.params.getrandom_out.rng_data, recd);
-+
-+		dest += recd;
-+		total += recd;
-+		num_bytes -= recd;
-+	} while (retries-- && total < max);
-+
-+	err = total;
-+out_err:
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(tpm_get_random);
-+
- /* In case vendor provided release function, call it too.*/
- 
- void tpm_dev_vendor_release(struct tpm_chip *chip)
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index b1c5280..610fe42 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -28,6 +28,12 @@
- #include <linux/io.h>
- #include <linux/tpm.h>
- 
-+enum tpm_const {
-+	TPM_MINOR = 224,	/* officially assigned */
-+	TPM_BUFSIZE = 4096,
-+	TPM_NUM_DEVICES = 256,
-+};
-+
- enum tpm_timeout {
- 	TPM_TIMEOUT = 5,	/* msecs */
- };
-@@ -269,6 +275,21 @@ struct tpm_pcrextend_in {
- 	u8	hash[TPM_DIGEST_SIZE];
- }__attribute__((packed));
- 
-+/* 128 bytes is an arbitrary cap. This could be as large as TPM_BUFSIZE - 18
-+ * bytes, but 128 is still a relatively large number of random bytes and
-+ * anything much bigger causes users of struct tpm_cmd_t to start getting
-+ * compiler warnings about stack frame size. */
-+#define TPM_MAX_RNG_DATA	128
-+
-+struct tpm_getrandom_out {
-+	__be32 rng_data_len;
-+	u8     rng_data[TPM_MAX_RNG_DATA];
-+}__attribute__((packed));
-+
-+struct tpm_getrandom_in {
-+	__be32 num_bytes;
-+}__attribute__((packed));
-+
- typedef union {
- 	struct	tpm_getcap_params_out getcap_out;
- 	struct	tpm_readpubek_params_out readpubek_out;
-@@ -277,6 +298,8 @@ typedef union {
- 	struct	tpm_pcrread_in	pcrread_in;
- 	struct	tpm_pcrread_out	pcrread_out;
- 	struct	tpm_pcrextend_in pcrextend_in;
-+	struct	tpm_getrandom_in getrandom_in;
-+	struct	tpm_getrandom_out getrandom_out;
- } tpm_cmd_params;
- 
- struct tpm_cmd_t {
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index fdc718a..fcb627f 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -32,6 +32,7 @@
- extern int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf);
- extern int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash);
- extern int tpm_send(u32 chip_num, void *cmd, size_t buflen);
-+extern int tpm_get_random(u32 chip_num, u8 *data, size_t max);
- #else
- static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
- 	return -ENODEV;
-@@ -42,5 +43,8 @@ static inline int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash) {
- static inline int tpm_send(u32 chip_num, void *cmd, size_t buflen) {
- 	return -ENODEV;
- }
-+static inline int tpm_get_random(u32 chip_num, u8 *data, size_t max) {
-+	return -ENODEV;
-+}
- #endif
- #endif
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 2d5d041..e1dc198 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -369,38 +369,6 @@ static int trusted_tpm_send(const u32 chip_num, unsigned char *cmd,
- }
- 
- /*
-- * get a random value from TPM
-- */
--static int tpm_get_random(struct tpm_buf *tb, unsigned char *buf, uint32_t len)
--{
--	int ret;
--
--	INIT_BUF(tb);
--	store16(tb, TPM_TAG_RQU_COMMAND);
--	store32(tb, TPM_GETRANDOM_SIZE);
--	store32(tb, TPM_ORD_GETRANDOM);
--	store32(tb, len);
--	ret = trusted_tpm_send(TPM_ANY_NUM, tb->data, sizeof tb->data);
--	if (!ret)
--		memcpy(buf, tb->data + TPM_GETRANDOM_SIZE, len);
--	return ret;
--}
--
--static int my_get_random(unsigned char *buf, int len)
--{
--	struct tpm_buf *tb;
--	int ret;
--
--	tb = kmalloc(sizeof *tb, GFP_KERNEL);
--	if (!tb)
--		return -ENOMEM;
--	ret = tpm_get_random(tb, buf, len);
--
--	kfree(tb);
--	return ret;
--}
--
--/*
-  * Lock a trusted key, by extending a selected PCR.
-  *
-  * Prevents a trusted key that is sealed to PCRs from being accessed.
-@@ -413,7 +381,7 @@ static int pcrlock(const int pcrnum)
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
--	ret = my_get_random(hash, SHA1_DIGEST_SIZE);
-+	ret = tpm_get_random(TPM_ANY_NUM, hash, SHA1_DIGEST_SIZE);
- 	if (ret < 0)
- 		return ret;
- 	return tpm_pcr_extend(TPM_ANY_NUM, pcrnum, hash) ? -EINVAL : 0;
-@@ -429,7 +397,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
- 	unsigned char ononce[TPM_NONCE_SIZE];
- 	int ret;
- 
--	ret = tpm_get_random(tb, ononce, TPM_NONCE_SIZE);
-+	ret = tpm_get_random(TPM_ANY_NUM, ononce, TPM_NONCE_SIZE);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -524,7 +492,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
- 	if (ret < 0)
- 		goto out;
- 
--	ret = tpm_get_random(tb, td->nonceodd, TPM_NONCE_SIZE);
-+	ret = tpm_get_random(TPM_ANY_NUM, td->nonceodd, TPM_NONCE_SIZE);
- 	if (ret < 0)
- 		goto out;
- 	ordinal = htonl(TPM_ORD_SEAL);
-@@ -634,7 +602,7 @@ static int tpm_unseal(struct tpm_buf *tb,
- 
- 	ordinal = htonl(TPM_ORD_UNSEAL);
- 	keyhndl = htonl(SRKHANDLE);
--	ret = tpm_get_random(tb, nonceodd, TPM_NONCE_SIZE);
-+	ret = tpm_get_random(TPM_ANY_NUM, nonceodd, TPM_NONCE_SIZE);
- 	if (ret < 0) {
- 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
- 		return ret;
-@@ -935,6 +903,7 @@ static int trusted_instantiate(struct key *key, const void *data,
- 	char *datablob;
- 	int ret = 0;
- 	int key_cmd;
-+	size_t key_len;
- 
- 	if (datalen <= 0 || datalen > 32767 || !data)
- 		return -EINVAL;
-@@ -974,7 +943,8 @@ static int trusted_instantiate(struct key *key, const void *data,
- 			pr_info("trusted_key: key_unseal failed (%d)\n", ret);
- 		break;
- 	case Opt_new:
--		ret = my_get_random(payload->key, payload->key_len);
-+		key_len = payload->key_len;
-+		ret = tpm_get_random(TPM_ANY_NUM, payload->key, key_len);
- 		if (ret < 0) {
- 			pr_info("trusted_key: key_create failed (%d)\n", ret);
- 			goto out;
-
+Works for me.  I don't think we're going to have any software that
+depends on it being a class or a bus, so it's easy to change later.
+All we really care about is /dev/nvmeN being created.
