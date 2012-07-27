@@ -1,137 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab2G0QlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 12:41:18 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:37013 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab2G0QlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 12:41:17 -0400
-Date: Fri, 27 Jul 2012 09:40:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
-Message-ID: <20120727164054.GJ2442@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
- <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072716-2398-0000-0000-000008E531F0
+	id S1751950Ab2G0Qow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 12:44:52 -0400
+Received: from mail.tpi.com ([70.99.223.143]:1228 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751131Ab2G0Qov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 12:44:51 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Andy Walls <awalls@md.metrocast.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
+Subject: [PATCH v3] cx18: Declare MODULE_FIRMWARE usage
+Date: Fri, 27 Jul 2012 10:45:21 -0600
+Message-Id: <1343407521-45720-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343340453.2575.10.camel@palomino.walls.org>
+References: <1343340453.2575.10.camel@palomino.walls.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 05:40:30PM +0200, Frederic Weisbecker wrote:
-> Create a new subsystem that handles the hooks on kernel/user
-> boundaries currently used by RCU for its userspace extended
-> quiescent state.
-> 
-> We need to pull this up from RCU into this new level of indirection
-> because these hooks are also going to be used to implement an "on
-> demand" generic virtual cputime accounting. A necessary step to
-> shutdown the tick while still accounting the cputime.
+Cc: Andy Walls <awalls@md.metrocast.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: ivtv-devel@ivtvdriver.org
+Cc: linux-media@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/media/video/cx18/cx18-av-firmware.c |    2 ++
+ drivers/media/video/cx18/cx18-driver.c      |    1 +
+ drivers/media/video/cx18/cx18-dvb.c         |    6 +++++-
+ drivers/media/video/cx18/cx18-firmware.c    |   10 ++++++++--
+ 4 files changed, 16 insertions(+), 3 deletions(-)
 
-So this eliminates the case where the architecture might enter an
-RCU extended quiescent state multiple times, but exit it only once?
-(I am hoping that it does...)
-
-							Thanx, Paul
-
-[ . . . ]
-
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 318d00e..f6a24cb 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -212,9 +212,6 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
->  DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
->  	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
->  	.dynticks = ATOMIC_INIT(1),
-> -#if defined(CONFIG_RCU_USER_QS) && !defined(CONFIG_RCU_USER_QS_FORCE)
-> -	.ignore_user_qs = true,
-> -#endif
->  };
-> 
->  static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
-> @@ -448,18 +445,7 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
->   */
->  void rcu_user_enter(void)
->  {
-> -	unsigned long flags;
-> -	struct rcu_dynticks *rdtp;
-> -
-> -	WARN_ON_ONCE(!current->mm);
-> -
-> -	local_irq_save(flags);
-> -	rdtp = &__get_cpu_var(rcu_dynticks);
-> -	if (!rdtp->ignore_user_qs && !rdtp->in_user) {
-> -		rdtp->in_user = true;
-> -		rcu_eqs_enter(1);
-> -	}
-> -	local_irq_restore(flags);
-> +	rcu_eqs_enter(1);
->  }
->  EXPORT_SYMBOL_GPL(rcu_user_enter);
-> 
-> @@ -597,16 +583,7 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
->   */
->  void rcu_user_exit(void)
->  {
-> -	unsigned long flags;
-> -	struct rcu_dynticks *rdtp;
-> -
-> -	local_irq_save(flags);
-> -	rdtp = &__get_cpu_var(rcu_dynticks);
-> -	if (rdtp->in_user) {
-> -		rdtp->in_user = false;
-> -		rcu_eqs_exit(1);
-> -	}
-> -	local_irq_restore(flags);
-> +	rcu_eqs_exit(1);
->  }
->  EXPORT_SYMBOL_GPL(rcu_user_exit);
-> 
-> @@ -730,21 +707,6 @@ int rcu_is_cpu_idle(void)
->  }
->  EXPORT_SYMBOL(rcu_is_cpu_idle);
-> 
-> -#ifdef CONFIG_RCU_USER_QS
-> -void rcu_user_hooks_switch(struct task_struct *prev,
-> -			   struct task_struct *next)
-> -{
-> -	struct rcu_dynticks *rdtp;
-> -
-> -	/* Interrupts are disabled in context switch */
-> -	rdtp = &__get_cpu_var(rcu_dynticks);
-> -	if (!rdtp->ignore_user_qs) {
-> -		clear_tsk_thread_flag(prev, TIF_NOHZ);
-> -		set_tsk_thread_flag(next, TIF_NOHZ);
-> -	}
-> -}
-> -#endif /* #ifdef CONFIG_RCU_USER_QS */
-> -
->  #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
-> 
->  /*
-
-[ . . . ]
+diff --git a/drivers/media/video/cx18/cx18-av-firmware.c b/drivers/media/video/cx18/cx18-av-firmware.c
+index 280aa4d..a34fd08 100644
+--- a/drivers/media/video/cx18/cx18-av-firmware.c
++++ b/drivers/media/video/cx18/cx18-av-firmware.c
+@@ -221,3 +221,5 @@ int cx18_av_loadfw(struct cx18 *cx)
+ 	release_firmware(fw);
+ 	return 0;
+ }
++
++MODULE_FIRMWARE(FWFILE);
+diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
+index 7e5ffd6..c67733d 100644
+--- a/drivers/media/video/cx18/cx18-driver.c
++++ b/drivers/media/video/cx18/cx18-driver.c
+@@ -1357,3 +1357,4 @@ static void __exit module_cleanup(void)
+ 
+ module_init(module_start);
+ module_exit(module_cleanup);
++MODULE_FIRMWARE(XC2028_DEFAULT_FIRMWARE);
+diff --git a/drivers/media/video/cx18/cx18-dvb.c b/drivers/media/video/cx18/cx18-dvb.c
+index f41922b..3eac59c 100644
+--- a/drivers/media/video/cx18/cx18-dvb.c
++++ b/drivers/media/video/cx18/cx18-dvb.c
+@@ -40,6 +40,8 @@
+ 
+ DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
+ 
++#define FWFILE "dvb-cx18-mpc718-mt352.fw"
++
+ #define CX18_REG_DMUX_NUM_PORT_0_CONTROL 0xd5a000
+ #define CX18_CLOCK_ENABLE2		 0xc71024
+ #define CX18_DMUX_CLK_MASK		 0x0080
+@@ -135,7 +137,7 @@ static int yuan_mpc718_mt352_reqfw(struct cx18_stream *stream,
+ 				   const struct firmware **fw)
+ {
+ 	struct cx18 *cx = stream->cx;
+-	const char *fn = "dvb-cx18-mpc718-mt352.fw";
++	const char *fn = FWFILE;
+ 	int ret;
+ 
+ 	ret = request_firmware(fw, fn, &cx->pci_dev->dev);
+@@ -603,3 +605,5 @@ static int dvb_register(struct cx18_stream *stream)
+ 
+ 	return ret;
+ }
++
++MODULE_FIRMWARE(FWFILE);
+diff --git a/drivers/media/video/cx18/cx18-firmware.c b/drivers/media/video/cx18/cx18-firmware.c
+index b85c292..a1c1cec 100644
+--- a/drivers/media/video/cx18/cx18-firmware.c
++++ b/drivers/media/video/cx18/cx18-firmware.c
+@@ -376,6 +376,9 @@ void cx18_init_memory(struct cx18 *cx)
+ 	cx18_write_reg(cx, 0x00000101, CX18_WMB_CLIENT14);  /* AVO */
+ }
+ 
++#define CX18_CPU_FIRMWARE "v4l-cx23418-cpu.fw"
++#define CX18_APU_FIRMWARE "v4l-cx23418-apu.fw"
++
+ int cx18_firmware_init(struct cx18 *cx)
+ {
+ 	u32 fw_entry_addr;
+@@ -400,7 +403,7 @@ int cx18_firmware_init(struct cx18 *cx)
+ 	cx18_sw1_irq_enable(cx, IRQ_CPU_TO_EPU | IRQ_APU_TO_EPU);
+ 	cx18_sw2_irq_enable(cx, IRQ_CPU_TO_EPU_ACK | IRQ_APU_TO_EPU_ACK);
+ 
+-	sz = load_cpu_fw_direct("v4l-cx23418-cpu.fw", cx->enc_mem, cx);
++	sz = load_cpu_fw_direct(CX18_CPU_FIRMWARE, cx->enc_mem, cx);
+ 	if (sz <= 0)
+ 		return sz;
+ 
+@@ -408,7 +411,7 @@ int cx18_firmware_init(struct cx18 *cx)
+ 	cx18_init_scb(cx);
+ 
+ 	fw_entry_addr = 0;
+-	sz = load_apu_fw_direct("v4l-cx23418-apu.fw", cx->enc_mem, cx,
++	sz = load_apu_fw_direct(CX18_APU_FIRMWARE, cx->enc_mem, cx,
+ 				&fw_entry_addr);
+ 	if (sz <= 0)
+ 		return sz;
+@@ -451,3 +454,6 @@ int cx18_firmware_init(struct cx18 *cx)
+ 	cx18_write_reg_expect(cx, 0x14001400, 0xc78110, 0x00001400, 0x14001400);
+ 	return 0;
+ }
++
++MODULE_FIRMWARE(CX18_CPU_FIRMWARE);
++MODULE_FIRMWARE(CX18_APU_FIRMWARE);
+-- 
+1.7.9.5
 
