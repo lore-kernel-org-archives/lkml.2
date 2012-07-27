@@ -1,104 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2G0Mu0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:50:26 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:51791 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab2G0MqK (ORCPT
+	id S1752358Ab2G0MvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:51:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:65157 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab2G0MvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:46:10 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 01/18] Documentation: Describe the ux500 realated audio related DT nodes
-Date: Fri, 27 Jul 2012 13:45:45 +0100
-Message-Id: <1343393162-11938-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
-References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
+	Fri, 27 Jul 2012 08:51:03 -0400
+Date: Fri, 27 Jul 2012 14:48:06 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Eric =?utf-8?Q?B=C3=A9nard?= <eric@eukrea.com>,
+        Axel Lin <axel.lin@gmail.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: Re: [GIT PULL] PWM subsystem for v3.6
+Message-ID: <20120727124806.GA25435@avionic-0098.mockup.avionic-design.de>
+References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
+ <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
+ <20120727051054.GA30771@avionic-0098.mockup.avionic-design.de>
+ <CAFLxGvyOwa9uzKvdTMao7M4SMy1p6+OfQMxKAo-V9ma_OtTjww@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvyOwa9uzKvdTMao7M4SMy1p6+OfQMxKAo-V9ma_OtTjww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:yj58qcq6PPDtDrrNvbK1Od1Whjw63zLkkYnHrbQqb9A
+ O7IhakDz14Iyyyb9X52XXRaQ4M+W5r1enpIrxFfsEG4mlRKoMC
+ AuUhnYLB7pgZsDXfCQKE3gpvfEMWdxULZu/xjHuBMkuf7Hnw+e
+ JtpgB30RaociFpF6YoSE0bLeQzoa+C8DQ7g9UcAM4QWKnPQ/BB
+ fTauJpPzchrewF5rqN2GJryCU3WSz+pz1E5SH16nrH0eOPLCfY
+ Ozq15/qGhjXF1wshr7PINZyHUfoimFoQYIGKSFKy05rkShB6+g
+ BseUI91tfpLrtMgIR+YnG2SCcXlxY3IoUPKVxAzDkEdSH1d2Pj
+ Q4m12a8eK0cD/L/SrntlW6JPmqOUBCXzJKprhyyl6Xsce7Uqo0
+ GQKI6bgzhT1wgeegaxvni76/C7wWvem1Qk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also explains the related AB8500 CODEC configuration properties.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- Documentation/devicetree/bindings/sound/ux500.txt |   62 +++++++++++++++++++++
- 1 file changed, 62 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/ux500.txt
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/Documentation/devicetree/bindings/sound/ux500.txt b/Documentation/devicetree/bindings/sound/ux500.txt
-new file mode 100644
-index 0000000..af1c902
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/ux500.txt
-@@ -0,0 +1,62 @@
-+* ux500 Audio Driver and ab8500 Audio CODEC
-+
-+Required properties:
-+ - compatible:
-+   - Machine Driver : "stericsson,snd-soc-mop500"
-+   - CPU-side DAI   : "stericsson,ux500-msp-i2s"
-+   - DMA (platform) : "stericsson,ux500-pcm"
-+   - Audio CODEC    : "stericsson,ab8500-codec"
-+
-+Optional properties:
-+ - reg              : Physical base address and length of the device's registers.
-+ - interrupts       : The interrupt outputs from the device.
-+ - interrupt-parent : The parent interrupt controller.
-+ - <name>-supply    : Phandle to the regulator <name> supply
-+
-+Non-standard properties:
-+ - Machine Driver:
-+   - stericsson,platform-pcm-dma : Phandle to the DMA (platform) node
-+   - stericsson,cpu-dai          : Phandle to the CPU-side DAI
-+   - stericsson,audio-codec      : Phandle to the Audio CODEC
-+ - CPU-side DAI:
-+   - stericcson,use-pinctrl      : Indicates whether an MSP port has pinctrl support
-+ - Audio CODEC:
-+   - stericsson,amic[1|2]-type-single-ended : Single-ended Analoge Mic (default: differential)
-+   - stericsson,amic1a-bias-vamic2          : Analoge Mic wishes to use a non-standard Vamic
-+   - stericsson,amic1b-bias-vamic2          : Analoge Mic wishes to use a non-standard Vamic
-+   - stericsson,amic2-bias-vamic1           : Analoge Mic wishes to use a non-standard Vamic
-+   - stericsson,earpeice-cmv                : Earpeice voltage (only: 950 | 1100 | 1270 | 1580)
-+
-+Example:
-+
-+	sound {
-+		compatible = "stericsson,snd-soc-mop500";
-+
-+		stericsson,platform-pcm-dma = <&pcm>;
-+		stericsson,cpu-dai = <&msp1 &msp3>;
-+		stericsson,audio-codec = <&codec>;
-+	};
-+
-+	pcm: ux500-pcm {
-+		compatible = "stericsson,ux500-pcm";
-+	};
-+
-+	msp1: msp@80124000 {
-+		compatible = "stericsson,ux500-msp-i2s";
-+		reg = <0x80124000 0x1000>;
-+		interrupts = <0 62 0x4>;
-+		v-ape-supply = <&db8500_vape_reg>;
-+		stericcson,use-pinctrl;
-+	};
-+
-+	msp3: msp@80125000 {
-+		compatible = "stericsson,ux500-msp-i2s";
-+		reg = <0x80125000 0x1000>;
-+		interrupts = <0 62 0x4>;
-+		v-ape-supply = <&db8500_vape_reg>;
-+	};
-+
-+	codec: ab8500-codec {
-+		compatible = "stericsson,ab8500-codec";
-+		stericsson,earpeice-cmv = <950>; /* Units in mV. */
-+	};
--- 
-1.7.9.5
+On Fri, Jul 27, 2012 at 02:38:33PM +0200, richard -rw- weinberger wrote:
+> On Fri, Jul 27, 2012 at 7:10 AM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > Right. I don't have any signatures on my GPG key, but I'm not aware of
+> > any kernel developers in my area and unfortunately I don't get around
+> > much either. I can request key-signing via users@kernel.org and see if
+> > I missed anyone. I think that is the correct mailing list? I remember
+> > reading about it a while back but I can't find the link anymore.
+>=20
+> Are you from .de?
+> Lots of kernel developers are located in Germany and/or Europe.
 
+Yes, I'm from Hamburg, Germany. I know some kernel developers are based
+in Germany but I don't know of anyone in my area. I've requested key
+signing via users@kernel.org so we'll see what results from that.
+
+Thierry
+
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQEo4GAAoJEN0jrNd/PrOhhuUQAKyH5IDcIGyKCuHJxHdDs6KF
+XiFNk4SrulgH6f/B0Iip5EIuFHSLYCBooxMgqhr9fwDUeHeaVF21nASnNaMEf+8d
+vwzKm6JOiprgZ6CmTvFHZIqZKY9mOdoZKbQDmANhJ84mNoV3iaM8qWoO31sqXxBa
+XyO71QBGyokforYyiZS1AJoeSgvPwNuNCzWcKHLAPfY2uFByvVqafyR5qiuQYB52
+J0tpf0tQ3ZhS0NbLNeLndPVmio5B/431uF8pQQ3f2eZGYVgRxJzPxkWLcHlrzqyy
+aZtBhmGc6ZXBL6BD/DNHE78gh0Vy2TfP19IyRDv3pwH4UNACBhk+gfADVodi6kAR
+UzLaM0mE7vo95vT0rsOBLk5452t4rZYyuujskbmyy6qBiy/kGZFUGzdUfxzsOFD8
+Wj6eRcX6nEjz1C1qPscum4OEllMJsLAsuM8EGjz0P6NM2W5NQOeoGqVzVWvluiHv
+YRp3h9MT8J0bglyXUS4csPe8/TjDlxRx0IkBlQa1wBUjr4+IEc2LA++TjQouxu21
+zCghvgti4Kv+NKVSD9ELk062YnSAQdL+KE4N3GhPHv1c7dUbUhYVUQ0AAdTGXId3
+chDI16NrMk81B/xW8vGRohO6bRloZ2SKtZFDH3S0xs4ZxNi58B5kM8wZrAakBbgF
+aqnMgcPGTuw7zJx0yyY3
+=g7+M
+-----END PGP SIGNATURE-----
+
+--MGYHOYXEY6WxJCY8--
