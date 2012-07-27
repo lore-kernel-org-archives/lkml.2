@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab2G0E1A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 00:27:00 -0400
-Received: from ozlabs.org ([203.10.76.45]:43409 "EHLO ozlabs.org"
+	id S1753385Ab2G0E07 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 00:26:59 -0400
+Received: from ozlabs.org ([203.10.76.45]:48546 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752851Ab2G0E06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753007Ab2G0E06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Jul 2012 00:26:58 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Asias He <asias@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH V3 3/3] virtio-blk: Add bio-based IO path for virtio-blk
-In-Reply-To: <1342168731-11797-4-git-send-email-asias@redhat.com>
-References: <1342168731-11797-1-git-send-email-asias@redhat.com> <1342168731-11797-4-git-send-email-asias@redhat.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>
+Cc: Alex Shi <alex.shi@intel.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Jim Cromie <jim.cromie@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PULL] trivial comment changes, init and cpumask.
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 27 Jul 2012 10:03:48 +0930
-Message-ID: <87d33initv.fsf@rustcorp.com.au>
+Date: Fri, 27 Jul 2012 09:34:18 +0930
+Message-ID: <87ehnynk71.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012 16:38:51 +0800, Asias He <asias@redhat.com> wrote:
-> Add 'virtio_blk.use_bio=1' to kernel cmdline or 'modprobe virtio_blk
-> use_bio=1' to enable ->make_request_fn() based I/O path.
+The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c:
 
-This patch conflicts with Paolo's Bonzini's 'virtio-blk: allow toggling
-host cache between writeback and writethrough' which is also queued (see
-linux-next).
+  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
 
-I'm not sure what the correct behavior for bio & cacheflush is, if any.
+are available in the git repository at:
 
-But as to the patch itself: it's a hack.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git tags/cpumask-for-linus
 
-1) Leaving the guest's admin to turn on the switch is a terrible choice.
-2) The block layer should stop merging and sorting when a device is
-   fast, not the driver.
-3) I pointed out that slow disks have low IOPS, so why is this
-   conditional?  Sure, more guest exits, but it's still a small number
-   for a slow device.
-4) The only case where we want merging is on a slow device when the host
-   isn't doing it.
+for you to fetch changes up to 231daf0751ccaf21373f591c524a3f557a15d03f:
 
-Now, despite this, I'm prepared to commit it.  But in my mind it's a
-hack: we should aim for use_bio to be based on a feature bit fed from
-the host, and use the module parameter only if we want to override it.
+  cpumask: cpulist_parse() comments correction (2012-07-27 09:29:42 +0930)
 
-Cheers,
-Rusty.
+----------------------------------------------------------------
+Trivial comment changes to cpumask code.  I guess it's getting boring.
+
+----------------------------------------------------------------
+Alex Shi (2):
+      cpumask: add a few comments of cpumask functions
+      cpumask: cpulist_parse() comments correction
+
+Jim Cromie (1):
+      init: add comments to keep initcall-names in sync with initcall levels
+
+ include/linux/cpumask.h |   15 +++++++++++++--
+ include/linux/init.h    |    3 ++-
+ init/main.c             |    1 +
+ 3 files changed, 16 insertions(+), 3 deletions(-)
