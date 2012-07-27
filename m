@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab2G0RyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 13:54:18 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:52638 "EHLO
+	id S1752422Ab2G0Rzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 13:55:52 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:52657 "EHLO
 	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2G0RyR (ORCPT
+	with ESMTP id S1752089Ab2G0Rzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 13:54:17 -0400
-Date: Fri, 27 Jul 2012 13:54:08 -0400
+	Fri, 27 Jul 2012 13:55:51 -0400
+Date: Fri, 27 Jul 2012 13:55:46 -0400
 From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Jan Beulich <JBeulich@suse.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, xen-devel <xen-devel@lists.xen.org>
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [Xen-devel] [PATCH 1/2] xen/swiotlb: If iommu=soft was not passed in on > 4GB, don't turn it on.
-Message-ID: <20120727175408.GG17427@andromeda.dapyr.net>
-References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com> <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com> <50125F0B0200007800090DFB@nat28.tlf.novell.com>
+Message-ID: <20120727175546.GH17427@andromeda.dapyr.net>
+References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com> <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1207271204500.26163@kaball.uk.xensource.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50125F0B0200007800090DFB@nat28.tlf.novell.com>
+In-Reply-To: <alpine.DEB.2.02.1207271204500.26163@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 08:27:39AM +0100, Jan Beulich wrote:
-> >>> On 26.07.12 at 22:43, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+On Fri, Jul 27, 2012 at 12:06:27PM +0100, Stefano Stabellini wrote:
+> On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
 > > If we boot a 64-bit guest with more than 4GB memory, the SWIOTLB
 > > gets turned on:
 > > PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
-> > software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at 
-> > [ffff8800fb43d000-ffff8800ff43cfff]
+> > software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at [ffff8800fb43d000-ffff8800ff43cfff]
 > > 
 > > which is OK if we had PCI devices, but not if we did not. In a PV
 > > guest the SWIOTLB ends up asking the hypervisor for precious lowmem
@@ -43,85 +43,17 @@ On Fri, Jul 27, 2012 at 08:27:39AM +0100, Jan Beulich wrote:
 > > We check for that by looking at the E820 and seeing if it diverges
 > > from the standard - and if so (and if iommu=soft was not turned on),
 > > we disable the check pci_swiotlb_detect_4gb code.
-> > 
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  arch/x86/xen/pci-swiotlb-xen.c |   26 ++++++++++++++++++++++++++
-> >  1 files changed, 26 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-> > index 967633a..56f373e 100644
-> > --- a/arch/x86/xen/pci-swiotlb-xen.c
-> > +++ b/arch/x86/xen/pci-swiotlb-xen.c
-> > @@ -8,6 +8,10 @@
-> >  #include <xen/xen.h>
-> >  #include <asm/iommu_table.h>
-> >  
-> > +#include <asm/e820.h>
-> > +#include <asm/dma.h>
-> > +#include <asm/iommu.h>
-> > +
-> >  int xen_swiotlb __read_mostly;
-> >  
-> >  static struct dma_map_ops xen_swiotlb_dma_ops = {
-> > @@ -24,7 +28,19 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
-> >  	.unmap_page = xen_swiotlb_unmap_page,
-> >  	.dma_supported = xen_swiotlb_dma_supported,
-> >  };
-> > +bool __init e820_has_acpi(void)
-> > +{
-> > +	int i;
-> >  
-> > +	/* Check if the user supplied the e820_hole parameter
-> > +	 * which would create a machine looking E820 region. */
-> > +	for (i = 0; i < e820.nr_map; i++) {
-> > +		if ((e820.map[i].type == E820_ACPI) ||
-> > +		    (e820.map[i].type == E820_NVS))
-> > +			return true;
 > 
-> Tying this decision to the presence of ACPI regions in E820 is
-> problematic for two reasons imo: For one, it precludes cleaning
-> up this (bogus!) construct where it gets produced (PV DomU-s
-> really shouldn't ever see such E820 entries, they should get
-> converted to simple reserved entries, to wipe any notion of
-> ACPI presence). And second it ties you to running on systems
-> that actually have ACPI, whereas it is my rudimentary
-> understanding that systems with e.g. SFI would not have any
-> ACPI).
+> What kind of paramter is it?
+> Is it a Linux cmdline paramter? Or maybe a Xen toolstack parameter?
 
-Right. The other idea was to check the XenBus for the existence
-of vpci backend. But at this stage it is not up yet.
+Its a guest config option.
 
-Perhaps what I should check for is the existence of two E820_RSV
-and two E820_RAM regions - and that would be a normal PV guest.
-Anything that is outside of that scope would be considered
-a PCI PV guest?
+> 
+> Surely there must be a better way to let Linux know if this paramter has
+> been turned on than looking for ACPI entries in the E820.
 
-The other thought I had was to skip this check altogether and
-either do:
-1). initialize SWIOTLB when xen-pcifront start up and detects
-    that it has devices (so later on initialization - similar to
-    how IA64 does it) - but I am not sure how the PCI-DMA works
-    with these late bloomers (especially as one could just make
-    xen-pcifront be a module).
-2). If xen-pcifront starts and does not detect any backends
-    it calls swiotlb_free. But that also requires the PCI-DMA
-    to swap in the dma_ops, and I am not entirely sure how
-    that would work out.
-3). Have an "early_init" xen-pcifront components that does a
-    a quick XenBus init (similar to how hvmloader checks for
-    DMI overwrites) and if it finds vpci then declare its
-    time to turn SWIOTLB on.
-4). The other thing is to wrap this code with something like
-    this:
-
-#ifdef CONFIG_SWIOTLB
-#ifdef CONFIG_XEN_PCI_FRONTEND
-	if (.. blah balh) do the check as outlined in 3).
-#else // PCI_FRONTEND is not present, so we won't need SWIOTLB
-	swiotlb = 0;
-	iommu = 1;
-#endif
-#endif
-
-That would take care of the built-in issues.
+I am all open for suggestions. The best way I can think of is to have
+some early_init variant of XenBus-detect-this-backend-parameter. Can
+one unhook an "old" XenBus and reset with the full-fledged XenBus
+init later on?
