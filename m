@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab2G0MYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:24:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60551 "EHLO mx1.redhat.com"
+	id S1752769Ab2G0MYn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:24:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59997 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468Ab2G0MYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:24:37 -0400
+	id S1752641Ab2G0MYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 08:24:40 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,81 +14,249 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/7] perf, x86: Add copy_from_user_nmi_nochk for best effort copy
-Date: Fri, 27 Jul 2012 14:23:44 +0200
-Message-Id: <1343391834-10851-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 6/7] perf: Add ability to attach user stack dump to sample
+Date: Fri, 27 Jul 2012 14:23:47 +0200
+Message-Id: <1343391834-10851-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding copy_from_user_nmi_nochk that provides the best effort
-copy regardless the requesting size crossing the task boundary.
+Introducing PERF_SAMPLE_STACK_USER sample type bit to trigger
+the dump of the user level stack on sample. The size of the
+dump is specified by sample_stack_user value.
 
-This is going to be useful for stack dump we need in post
-DWARF CFI based unwind, where we have predefined size of
-the user stack to dump, and we need to store the most of
-the requested dump size, regardless this size is crossing
-the task boundary.
+Being able to dump parts of the user stack, starting from the
+stack pointer, will be useful to make a post mortem dwarf CFI
+based stack unwinding.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/x86/include/asm/uaccess.h |    2 ++
- arch/x86/lib/usercopy.c        |   15 +++++++++++----
- 2 files changed, 13 insertions(+), 4 deletions(-)
+ include/linux/perf_event.h |   18 ++++++-
+ kernel/events/core.c       |  121 +++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 137 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index e1f3a17..d8d6bcd 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -562,6 +562,8 @@ struct __large_struct { unsigned long buf[100]; };
- #endif /* CONFIG_X86_WP_WORKS_OK */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index ba68ed3..8c399df 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -131,8 +131,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_RAW				= 1U << 10,
+ 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
++	PERF_SAMPLE_STACK_USER			= 1U << 13,
  
- extern unsigned long
-+copy_from_user_nmi_nochk(void *to, const void __user *from, unsigned long n);
-+extern unsigned long
- copy_from_user_nmi(void *to, const void __user *from, unsigned long n);
- extern __must_check long
- strncpy_from_user(char *dst, const char __user *src, long count);
-diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-index 4f74d94..29ca1c7 100644
---- a/arch/x86/lib/usercopy.c
-+++ b/arch/x86/lib/usercopy.c
-@@ -14,7 +14,7 @@
-  * best effort, GUP based copy_from_user() that is NMI-safe
-  */
- unsigned long
--copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-+copy_from_user_nmi_nochk(void *to, const void __user *from, unsigned long n)
- {
- 	unsigned long offset, addr = (unsigned long)from;
- 	unsigned long size, len = 0;
-@@ -22,9 +22,6 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
- 	void *map;
- 	int ret;
+-	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
+ };
  
--	if (__range_not_ok(from, n, TASK_SIZE))
--		return len;
--
- 	do {
- 		ret = __get_user_pages_fast(addr, 1, 0, &page);
- 		if (!ret)
-@@ -46,4 +43,14 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+ /*
+@@ -205,6 +206,7 @@ enum perf_event_read_format {
+ #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
+ #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
+ #define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
++#define PERF_ATTR_SIZE_VER4	96	/* add: sample_stack_user */
  
- 	return len;
+ /*
+  * Hardware event_id to monitor via a performance monitoring event:
+@@ -289,6 +291,14 @@ struct perf_event_attr {
+ 	 * See asm/perf_regs.h for details.
+ 	 */
+ 	__u64	sample_regs_user;
++
++	/*
++	 * Defines size of the user stack to dump on samples.
++	 */
++	__u32	sample_stack_user;
++
++	/* Align to u64. */
++	__u32	__reserved_2;
+ };
+ 
+ /*
+@@ -568,6 +578,10 @@ enum perf_event_type {
+ 	 *
+ 	 * 	{ u64			abi; # enum perf_sample_regs_abi
+ 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
++	 *
++	 * 	{ u64			size;
++	 * 	  char			data[size];
++	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+@@ -1160,6 +1174,7 @@ struct perf_sample_data {
+ 	struct perf_raw_record		*raw;
+ 	struct perf_branch_stack	*br_stack;
+ 	struct perf_regs_user		regs_user;
++	u64				stack_user_size;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -1172,6 +1187,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->period = period;
+ 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
+ 	data->regs_user.regs = NULL;
++	data->stack_user_size = 0;
  }
-+EXPORT_SYMBOL_GPL(copy_from_user_nmi_nochk);
-+
-+unsigned long
-+copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index ffc6f7e..9f2af5a 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3787,6 +3787,45 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
+ 	}
+ }
+ 
++static void
++perf_output_sample_ustack(struct perf_output_handle *handle, u64 dump_size,
++			  struct pt_regs *regs)
 +{
-+	if (__range_not_ok(from, n, TASK_SIZE) == 0)
-+		return 0;
++	/* Case of a kernel thread, nothing to dump */
++	if (!regs) {
++		u64 size = 0;
++		perf_output_put(handle, size);
++	} else {
++		unsigned long sp;
++		unsigned int rem;
++		u64 dyn_size;
 +
-+	return copy_from_user_nmi_nochk(to, from, n);
++		/*
++		 * We dump:
++		 * static size
++		 *   - the size requested by user or the best one we can fit
++		 *     in to the sample max size
++		 * data
++		 *   - user stack dump data
++		 * dynamic size
++		 *   - the actual dumped size
++		 */
++
++		/* Static size. */
++		perf_output_put(handle, dump_size);
++
++		/* Data. */
++		sp = user_stack_pointer(regs);
++		rem = __output_copy_user(handle, (void *) sp, dump_size);
++		dyn_size = dump_size - rem;
++
++		perf_output_skip(handle, rem);
++
++		/* Dynamic size. */
++		perf_output_put(handle, dyn_size);
++	}
 +}
- EXPORT_SYMBOL_GPL(copy_from_user_nmi);
++
+ static void __perf_event_header__init_id(struct perf_event_header *header,
+ 					 struct perf_sample_data *data,
+ 					 struct perf_event *event)
+@@ -4064,6 +4103,11 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 						mask);
+ 		}
+ 	}
++
++	if (sample_type & PERF_SAMPLE_STACK_USER)
++		perf_output_sample_ustack(handle,
++					  data->stack_user_size,
++					  data->regs_user.regs);
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -4129,6 +4173,66 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 
+ 		header->size += size;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_STACK_USER) {
++		/*
++		 * A first field that tells the _static_ size of the
++		 * dump. 0 if there is nothing to dump (ie: we are in
++		 * a kernel thread) otherwise the requested size.
++		 */
++		u16 size = sizeof(u64);
++		u16 stack_size = 0;
++
++		if (!data->regs_user.regs)
++			perf_sample_regs_user(&data->regs_user, regs);
++
++		/*
++		 * If there is something to dump, add space for the
++		 * dump itself and for the field that tells the
++		 * dynamic size, which is how many have been actually
++		 * dumped.
++		 */
++		if (data->regs_user.regs) {
++			/*
++			 * XXX We need to check if we fit in with the
++			 * requested stack size into the sample. If we
++			 * don't, we customize the stack size to fit in.
++			 *
++			 * Either we need PERF_SAMPLE_STACK_USER bit to
++			 * be allways processed as the last one or have
++			 * additional check added in case new sample type
++			 * is added, because we could eat up the rest of
++			 * the sample size.
++			 */
++
++			u16 header_size = header->size;
++
++			stack_size = (u16) event->attr.sample_stack_user;
++
++			/*
++			 * Current header size plus static size and
++			 * dynamic size.
++			 */
++			header_size += 2 * sizeof(u64);
++
++			/* Do we fit in with the current stack dump size? */
++			if ((u16) (header_size + stack_size) < header_size) {
++				/*
++				 * If we overflow the maximum size for the
++				 * sample, we customize the stack dump size
++				 * to fit in.
++				 */
++				stack_size = USHRT_MAX - header_size
++					     - sizeof(u64);
++				stack_size = round_up(stack_size, sizeof(u64));
++			}
++
++			size += sizeof(u64) + stack_size;
++		}
++
++		data->stack_user_size = stack_size;
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event,
+@@ -6179,8 +6283,23 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 		}
+ 	}
+ 
+-	if (attr->sample_type & PERF_SAMPLE_REGS_USER)
++	if (attr->sample_type & PERF_SAMPLE_REGS_USER) {
+ 		ret = perf_reg_validate(attr->sample_regs_user);
++		if (ret)
++			return ret;
++	}
++
++	if (attr->sample_type & PERF_SAMPLE_STACK_USER) {
++		/*
++		 * We have __u32 type for the size, but so far
++		 * we can only use __u16 as maximum due to the
++		 * __u16 sample size limit.
++		 */
++		if (attr->sample_stack_user >= USHRT_MAX)
++			ret = -EINVAL;
++		else if (!IS_ALIGNED(attr->sample_stack_user, sizeof(u64)))
++			ret = -EINVAL;
++	}
+ 
+ out:
+ 	return ret;
 -- 
 1.7.7.6
 
