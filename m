@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab2G0MZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:25:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9089 "EHLO mx1.redhat.com"
+	id S1751004Ab2G0MZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:25:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39424 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab2G0MZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:25:14 -0400
+	id S1751316Ab2G0MZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 08:25:21 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,137 +14,34 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 7/7] perf: Add attribute to filter out callchains
-Date: Fri, 27 Jul 2012 14:23:48 +0200
-Message-Id: <1343391834-10851-8-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 08/13] perf, tool: Adding PERF_ATTR_SIZE_VER2 to the header swap check
+Date: Fri, 27 Jul 2012 14:23:49 +0200
+Message-Id: <1343391834-10851-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+Updating attr_file_abi_sizes array with PERF_ATTR_SIZE_VER2 version,
+so we have the swap check complete.
 
-Introducing following bits to the the perf_event_attr struct:
-  - exclude_callchain_kernel to filter out kernel callchain
-    from the sample dump
-  - exclude_callchain_user to filter out user callchain
-    from the sample dump
-
-We need to be able to disable standard user callchain dump
-when we use the dwarf cfi callchain mode, because frame
-pointer based user callchains are useless in this mode.
-
-Implementing also exclude_callchain_kernel to have complete
-set of options.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-[ Added kernel callchains filtering ]
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/perf_event.h |    5 ++++-
- kernel/events/callchain.c  |   25 +++++++++++++++----------
- kernel/events/core.c       |    5 ++++-
- kernel/events/internal.h   |    3 ++-
- 4 files changed, 25 insertions(+), 13 deletions(-)
+ tools/perf/util/header.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8c399df..224ffa7 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -268,7 +268,10 @@ struct perf_event_attr {
- 				exclude_host   :  1, /* don't count in host   */
- 				exclude_guest  :  1, /* don't count in guest  */
- 
--				__reserved_1   : 43;
-+				exclude_callchain_kernel : 1, /* exclude kernel callchains */
-+				exclude_callchain_user   : 1, /* exclude user callchains */
-+
-+				__reserved_1   : 41;
- 
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
-diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-index 6581a04..905ffb2 100644
---- a/kernel/events/callchain.c
-+++ b/kernel/events/callchain.c
-@@ -153,12 +153,12 @@ put_callchain_entry(int rctx)
- 	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
- }
- 
--struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
-+struct perf_callchain_entry *perf_callchain(struct pt_regs *regs,
-+					    int kernel, int user)
- {
- 	int rctx;
- 	struct perf_callchain_entry *entry;
- 
--
- 	entry = get_callchain_entry(&rctx);
- 	if (rctx == -1)
- 		return NULL;
-@@ -168,18 +168,23 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 
- 	entry->nr = 0;
- 
--	if (!user_mode(regs)) {
-+	if (kernel && !user_mode(regs)) {
- 		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
- 		perf_callchain_kernel(entry, regs);
--		if (current->mm)
--			regs = task_pt_regs(current);
--		else
--			regs = NULL;
- 	}
- 
--	if (regs) {
--		perf_callchain_store(entry, PERF_CONTEXT_USER);
--		perf_callchain_user(entry, regs);
-+	if (user) {
-+		if (!user_mode(regs)) {
-+			if  (current->mm)
-+				regs = task_pt_regs(current);
-+			else
-+				regs = NULL;
-+		}
-+
-+		if (regs) {
-+			perf_callchain_store(entry, PERF_CONTEXT_USER);
-+			perf_callchain_user(entry, regs);
-+		}
- 	}
- 
- exit_put:
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9f2af5a..b435fb6 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4130,8 +4130,11 @@ void perf_prepare_sample(struct perf_event_header *header,
- 
- 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		int size = 1;
-+		int kernel = !event->attr.exclude_callchain_kernel;
-+		int user   = !event->attr.exclude_callchain_user;
- 
--		data->callchain = perf_callchain(regs);
-+		if (kernel || user)
-+			data->callchain = perf_callchain(regs, kernel, user);
- 
- 		if (data->callchain)
- 			size += data->callchain->nr;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index be1ef29..abcc03d 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -125,7 +125,8 @@ DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
- DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
- 
- /* Callchain handling */
--extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
-+extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs,
-+						   int kernel, int user);
- extern int get_callchain_buffers(void);
- extern void put_callchain_buffers(void);
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 3a6d204..5d470a3 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1820,6 +1820,7 @@ out_free:
+ static const int attr_file_abi_sizes[] = {
+ 	[0] = PERF_ATTR_SIZE_VER0,
+ 	[1] = PERF_ATTR_SIZE_VER1,
++	[2] = PERF_ATTR_SIZE_VER2,
+ 	0,
+ };
  
 -- 
 1.7.7.6
