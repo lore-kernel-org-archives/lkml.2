@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2G0PjW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 11:39:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41460 "EHLO mx1.redhat.com"
+	id S1752769Ab2G0Pj3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 11:39:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63237 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab2G0PjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 11:39:17 -0400
+	id S1752627Ab2G0PjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 11:39:24 -0400
 From: Cong Wang <amwang@redhat.com>
 To: netdev@vger.kernel.org
 Cc: Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Eric Dumazet <edumazet@google.com>,
+        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
         Cong Wang <xiyou.wangcong@gmail.com>, Joe Perches <joe@perches.com>,
         Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] netpoll: use GFP_ATOMIC in slave_enable_netpoll() and __netpoll_setup()
-Date: Fri, 27 Jul 2012 23:37:58 +0800
-Message-Id: <1343403484-29347-2-git-send-email-amwang@redhat.com>
+Subject: [PATCH 5/7] netpoll: take rcu_read_lock_bh() in netpoll_rx()
+Date: Fri, 27 Jul 2012 23:38:02 +0800
+Message-Id: <1343403484-29347-6-git-send-email-amwang@redhat.com>
 In-Reply-To: <1343403484-29347-1-git-send-email-amwang@redhat.com>
 References: <1343403484-29347-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-slave_enable_netpoll() and __netpoll_setup() may be called
-with read_lock() held, so should use GFP_ATOMIC to allocate
-memory.
+In __netpoll_rx(), it dereferences ->npinfo without rcu_dereference_bh(),
+this patch fixes it by using the 'npinfo' passed from netpoll_rx()
+where it is already dereferenced with rcu_dereference_bh().
 
 Cc: "David S. Miller" <davem@davemloft.net>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- drivers/net/bonding/bond_main.c |    2 +-
- net/core/netpoll.c              |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/netpoll.h |    4 ++--
+ net/core/netpoll.c      |    3 +--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 6fae5f3..ab773d4 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1235,7 +1235,7 @@ static inline int slave_enable_netpoll(struct slave *slave)
- 	struct netpoll *np;
- 	int err = 0;
+diff --git a/include/linux/netpoll.h b/include/linux/netpoll.h
+index 5011d74..36f938c 100644
+--- a/include/linux/netpoll.h
++++ b/include/linux/netpoll.h
+@@ -52,7 +52,7 @@ void netpoll_set_trap(int trap);
+ void __netpoll_cleanup(struct netpoll *np);
+ void __netpoll_free_rcu(struct netpoll *np);
+ void netpoll_cleanup(struct netpoll *np);
+-int __netpoll_rx(struct sk_buff *skb);
++int __netpoll_rx(struct sk_buff *skb, struct netpoll_info *npinfo);
+ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 			     struct net_device *dev);
+ static inline void netpoll_send_skb(struct netpoll *np, struct sk_buff *skb)
+@@ -77,7 +77,7 @@ static inline bool netpoll_rx(struct sk_buff *skb)
  
--	np = kzalloc(sizeof(*np), GFP_KERNEL);
-+	np = kzalloc(sizeof(*np), GFP_ATOMIC);
- 	err = -ENOMEM;
- 	if (!np)
- 		goto out;
+ 	spin_lock(&npinfo->rx_lock);
+ 	/* check rx_flags again with the lock held */
+-	if (npinfo->rx_flags && __netpoll_rx(skb))
++	if (npinfo->rx_flags && __netpoll_rx(skb, npinfo))
+ 		ret = true;
+ 	spin_unlock(&npinfo->rx_lock);
+ 
 diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index b4c90e4..c78a966 100644
+index 19dddef..3965fdb 100644
 --- a/net/core/netpoll.c
 +++ b/net/core/netpoll.c
-@@ -734,7 +734,7 @@ int __netpoll_setup(struct netpoll *np, struct net_device *ndev)
- 	}
+@@ -543,13 +543,12 @@ static void arp_reply(struct sk_buff *skb)
+ 	spin_unlock_irqrestore(&npinfo->rx_lock, flags);
+ }
  
- 	if (!ndev->npinfo) {
--		npinfo = kmalloc(sizeof(*npinfo), GFP_KERNEL);
-+		npinfo = kmalloc(sizeof(*npinfo), GFP_ATOMIC);
- 		if (!npinfo) {
- 			err = -ENOMEM;
- 			goto out;
+-int __netpoll_rx(struct sk_buff *skb)
++int __netpoll_rx(struct sk_buff *skb, struct netpoll_info *npinfo)
+ {
+ 	int proto, len, ulen;
+ 	int hits = 0;
+ 	const struct iphdr *iph;
+ 	struct udphdr *uh;
+-	struct netpoll_info *npinfo = skb->dev->npinfo;
+ 	struct netpoll *np, *tmp;
+ 
+ 	if (list_empty(&npinfo->rx_np))
 -- 
 1.7.7.6
 
