@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab2G0GM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 02:12:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:8369 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751597Ab2G0GMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 02:12:24 -0400
-X-IronPort-AV: E=Sophos;i="4.77,665,1336320000"; 
-   d="scan'208";a="5493556"
-Message-ID: <5012326F.80702@cn.fujitsu.com>
-Date: Fri, 27 Jul 2012 14:17:19 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752790Ab2G0GOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 02:14:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29825 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751240Ab2G0GOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 02:14:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="178179653"
+Date: Thu, 26 Jul 2012 23:14:30 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Daniel J Blueman <daniel@quora.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] Add Etron XHCI quirk to avoid warning spam
+Message-ID: <20120727061430.GC11608@xanatos>
+References: <1343361824-11417-1-git-send-email-daniel@quora.org>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v4 12/13] memory-hotplug : add node_device_release
-References: <50068974.1070409@jp.fujitsu.com> <50068D41.9090109@jp.fujitsu.com>
-In-Reply-To: <50068D41.9090109@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/27 14:12:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/27 14:12:52,
-	Serialize complete at 2012/07/27 14:12:52
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343361824-11417-1-git-send-email-daniel@quora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/18/2012 06:17 PM, Yasuaki Ishimatsu Wrote:
-> When calling unregister_node(), the function shows following message at
-> device_release().
+Hi Daniel,
+
+I already have a patch in my queue for this.  However, it keys off the
+PCI_DEVICE_ID_ASROCK_P67 PCI device ID.  Do you have another Etron
+device with a different device ID that needs this quirk?
+
+Sarah Sharp
+
+On Fri, Jul 27, 2012 at 12:03:44PM +0800, Daniel J Blueman wrote:
+> When various USB3 devices with Etron XHCI controllers, we see a bunch of
+> warnings:
+> xhci_hcd 0000:02:00.0: WARN Successful completion on short TX: needs
+> XHCI_TRUST_TX_LENGTH quirk?
 > 
-> Device 'node2' does not have a release() function, it is broken and must be
-> fixed.
+> Acknowledge the issue by adding the quirk.
 > 
-> So the patch implements node_device_release()
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org> 
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
+> Signed-off-by: Daniel J Blueman <daniel@quora.org>
 > ---
->  drivers/base/node.c |    7 +++++++
->  1 file changed, 7 insertions(+)
+>  drivers/usb/host/xhci-pci.c |   11 +++++++----
+>  1 file changed, 7 insertions(+), 4 deletions(-)
 > 
-> Index: linux-3.5-rc6/drivers/base/node.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/drivers/base/node.c	2012-07-18 18:24:29.191121066 +0900
-> +++ linux-3.5-rc6/drivers/base/node.c	2012-07-18 18:25:47.111146983 +0900
-> @@ -252,6 +252,12 @@ static inline void hugetlb_register_node
->  static inline void hugetlb_unregister_node(struct node *node) {}
->  #endif
->  
-> +static void node_device_release(struct device *dev)
-> +{
-> +	struct node *node_dev = to_node(dev);
+> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+> index 18b231b..715ad11 100644
+> --- a/drivers/usb/host/xhci-pci.c
+> +++ b/drivers/usb/host/xhci-pci.c
+> @@ -95,10 +95,13 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+>  		xhci->limit_active_eps = 64;
+>  		xhci->quirks |= XHCI_SW_BW_CHECKING;
+>  	}
+> -	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+> -			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+> -		xhci->quirks |= XHCI_RESET_ON_RESUME;
+> -		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
+> +	if (pdev->vendor == PCI_VENDOR_ID_ETRON) {
+> +		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
 > +
-> +	memset(node_dev, 0, sizeof(struct node));
-
-This line is wrong. node_dev->work_struct may be queued in workqueue.
-So, it is very dangerous to clear node_dev->work_struct here.
-In my test, it will cause kernel panicked.
-
-Thanks
-Wen Congyang
-> +}
->  
->  /*
->   * register_node - Setup a sysfs device for a node.
-> @@ -265,6 +271,7 @@ int register_node(struct node *node, int
->  
->  	node->dev.id = num;
->  	node->dev.bus = &node_subsys;
-> +	node->dev.release = node_device_release;
->  	error = device_register(&node->dev);
->  
->  	if (!error){
+> +		if (pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+> +			xhci->quirks |= XHCI_RESET_ON_RESUME;
+> +			xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
+> +		}
+>  	}
+>  	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+>  		xhci->quirks |= XHCI_RESET_ON_RESUME;
+> -- 
+> 1.7.9.5
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
