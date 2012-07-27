@@ -1,677 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab2G0K21 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:28:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37740 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752602Ab2G0K2Z (ORCPT
+	id S1753103Ab2G0K2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:28:34 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33576 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab2G0K2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:28:25 -0400
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH] regmap: Add regmap dummy driver
-Date: Fri, 27 Jul 2012 11:28:20 +0100
-Message-Id: <1343384900-4497-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.11.3
+	Fri, 27 Jul 2012 06:28:31 -0400
+From: Sha Zhengju <handai.szj@gmail.com>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org
+Cc: fengguang.wu@intel.com, gthelen@google.com, akpm@linux-foundation.org,
+        yinghan@google.com, mhocko@suse.cz, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH V2 4/6] memcg: add per cgroup dirty pages accounting
+Date: Fri, 27 Jul 2012 18:28:28 +0800
+Message-Id: <1343384908-20166-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
+References: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a pseudo-driver for debugging and stress-testing the
-regmap/regcache APIs.  A standard set of tools for working
-with this driver (mainly sh scripts) will be put in a repo
-at https://github.com/quantumdream/regmap-tools.
+From: Sha Zhengju <handai.szj@taobao.com>
 
-Change-Id: Ie6498f18d6f9a1f7a7cf813240e87ffed0d6f047
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+This patch adds memcg routines to count dirty pages, which allows memory controller
+to maintain an accurate view of the amount of its dirty memory and can provide some
+info for users while group's direct reclaim is working.
+
+After Kame's commit 89c06bd5(memcg: use new logic for page stat accounting), we can
+use 'struct page' flag to test page state instead of per page_cgroup flag. But memcg
+has a feature to move a page from a cgroup to another one and may have race between
+"move" and "page stat accounting". So in order to avoid the race we have designed a
+bigger lock:
+
+         mem_cgroup_begin_update_page_stat()
+         modify page information        -->(a)
+         mem_cgroup_update_page_stat()  -->(b)
+         mem_cgroup_end_update_page_stat()
+
+It requires (a) and (b)(dirty pages accounting) can stay close enough.
+
+In the previous two prepare patches, we have reworked the vfs set page dirty routines
+and now the interfaces are more explicit:
+        incrementing (2):
+                __set_page_dirty
+                __set_page_dirty_nobuffers
+        decrementing (2):
+                clear_page_dirty_for_io
+                cancel_dirty_page
+
+
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Acked-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
- This is an initial implementation of the regdummy driver for regmap.
+ fs/buffer.c                |   16 +++++++++++++---
+ include/linux/memcontrol.h |    1 +
+ mm/filemap.c               |    9 +++++++++
+ mm/memcontrol.c            |   28 +++++++++++++++++++++-------
+ mm/page-writeback.c        |   31 ++++++++++++++++++++++++++-----
+ mm/truncate.c              |    6 ++++++
+ 6 files changed, 76 insertions(+), 15 deletions(-)
 
- This is mainly useful for debugging/stress-testing regcache as it
- removes the need for real hardware and can be done in an emulated
- environment very easily.
-
- There'll be incremental patches adding more features such as,
- support for configurable volatile/readable/etc. registers via
- debugfs entries.
-
- drivers/base/regmap/Kconfig        |   8 +
- drivers/base/regmap/Makefile       |   1 +
- drivers/base/regmap/regmap-dummy.c | 599 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 608 insertions(+)
- create mode 100644 drivers/base/regmap/regmap-dummy.c
-
-diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-index 6be390b..5a1ab02 100644
---- a/drivers/base/regmap/Kconfig
-+++ b/drivers/base/regmap/Kconfig
-@@ -20,3 +20,11 @@ config REGMAP_MMIO
+diff --git a/fs/buffer.c b/fs/buffer.c
+index ffcfb87..e7b5766 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -613,11 +613,19 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+ int __set_page_dirty(struct page *page,
+ 		struct address_space *mapping, int warn)
+ {
++	bool locked;
++	unsigned long flags;
++	int ret = 1;
++
+ 	if (unlikely(!mapping))
+ 		return !TestSetPageDirty(page);
  
- config REGMAP_IRQ
- 	bool
+-	if (TestSetPageDirty(page))
+-		return 0;
++	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
 +
-+config REGMAP_DUMMY
-+	tristate
-+	select REGMAP_MMIO
-+	help
-+	  Say Y or M if you want to add the regdummy driver for regmap.
-+	  This is a pseudo-driver used for debugging and stress-testing
-+	  the regmap/regcache APIs.
-diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-index 5e75d1b..c5d70f1 100644
---- a/drivers/base/regmap/Makefile
-+++ b/drivers/base/regmap/Makefile
-@@ -5,3 +5,4 @@ obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
- obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
- obj-$(CONFIG_REGMAP_MMIO) += regmap-mmio.o
- obj-$(CONFIG_REGMAP_IRQ) += regmap-irq.o
-+obj-$(CONFIG_REGMAP_DUMMY) += regmap-dummy.o
-diff --git a/drivers/base/regmap/regmap-dummy.c b/drivers/base/regmap/regmap-dummy.c
-new file mode 100644
-index 0000000..76310db
---- /dev/null
-+++ b/drivers/base/regmap/regmap-dummy.c
-@@ -0,0 +1,599 @@
-+/*
-+ * Register map access API - Dummy regmap driver
-+ *
-+ * Copyright 2012 Wolfson Microelectronics PLC.
-+ *
-+ * Author: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/uaccess.h>
-+#include <linux/platform_device.h>
-+#include <linux/device.h>
-+#include <linux/slab.h>
-+#include <linux/debugfs.h>
-+#include <linux/mutex.h>
-+#include <linux/regmap.h>
-+
-+#define DEFAULT_REGS_SIZE 1024
-+
-+struct regdummy_dev {
-+	struct device *dev;
-+	struct mutex lock;
-+
-+	/* Set when regdummy defaults have been modified.
-+	 * This is useful to know so we don't reinit the
-+	 * cache if there is no reason to do so. */
-+	unsigned int dirty:1;
-+
-+	void *regs;
-+	unsigned int regs_size;
-+	unsigned int regs_size_new;
-+
-+	struct regmap *map;
-+	struct regmap_config *config;
-+	struct reg_default *regdef;
-+};
-+
-+static struct dentry *regdummy_debugfs_root;
-+
-+/* Default volatile register callback, this should
-+ * normally be configured by the user via a debugfs
-+ * entry */
-+static bool regdummy_volatile_reg(struct device *dev,
-+				  unsigned int reg)
-+{
-+	return false;
-+}
-+
-+/* Default readable register callback, this should
-+ * normally be configured by the user via a debugfs
-+ * entry */
-+static bool regdummy_readable_reg(struct device *dev,
-+				  unsigned int reg)
-+{
-+	return true;
-+}
-+
-+/* Default precious register callback, this should
-+ * normally be configured by the user via a debugfs
-+ * entry */
-+static bool regdummy_precious_reg(struct device *dev,
-+				  unsigned int reg)
-+{
-+	return false;
-+}
-+
-+/* Calculate the length of a fixed format  */
-+static size_t regmap_calc_reg_len(int max_val, char *buf, size_t buf_size)
-+{
-+	snprintf(buf, buf_size, "%x", max_val);
-+	return strlen(buf);
-+}
-+
-+static ssize_t regdummy_defaults_read_file(struct file *file, char __user *user_buf,
-+					   size_t count, loff_t *ppos)
-+{
-+	int reg_len, val_len, tot_len;
-+	size_t buf_pos = 0;
-+	loff_t p = 0;
-+	ssize_t ret;
-+	int i;
-+	struct regdummy_dev *rdevp = file->private_data;
-+	struct regmap_config *config;
-+	struct reg_default *regdef;
-+	unsigned int val;
-+	unsigned int j;
-+	unsigned int regdef_num;
-+	char *buf;
-+
-+	if (*ppos < 0 || !count)
-+		return -EINVAL;
-+
-+	buf = kmalloc(count, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	mutex_lock(&rdevp->lock);
-+
-+	config = rdevp->config;
-+	regdef = rdevp->regdef;
-+	regdef_num = rdevp->regs_size / config->reg_stride;
-+
-+	/* Calculate the length of a fixed format  */
-+	reg_len = regmap_calc_reg_len(config->max_register, buf, count);
-+	val_len = 2 * DIV_ROUND_UP(config->val_bits, 8);
-+	tot_len = reg_len + val_len + 3;      /* : \n */
-+
-+	for (i = 0; i <= config->max_register; i += config->reg_stride) {
-+		if (!regdummy_readable_reg(rdevp->dev, i))
-+			continue;
-+
-+		if (regdummy_precious_reg(rdevp->dev, i))
-+			continue;
-+
-+		/* If we're in the region the user is trying to read */
-+		if (p >= *ppos) {
-+			/* ...but not beyond it */
-+			if (buf_pos >= count - 1 - tot_len)
-+				break;
-+
-+			/* Format the register */
-+			snprintf(buf + buf_pos, count - buf_pos, "%.*x: ",
-+				 reg_len, i);
-+			buf_pos += reg_len + 2;
-+
-+			/* Format the value, write all X if we can't read */
-+			for (j = 0; j < regdef_num; j++) {
-+				if (regdef[j].reg == i) {
-+					val = regdef[j].def;
-+					snprintf(buf + buf_pos, count - buf_pos,
-+						 "%.*x", val_len, val);
-+					break;
-+				}
-+			}
-+			if (j == regdef_num)
-+				memset(buf + buf_pos, 'X', val_len);
-+			buf_pos += 2 * DIV_ROUND_UP(config->val_bits, 8);
-+
-+			buf[buf_pos++] = '\n';
-+		}
-+		p += tot_len;
-+	}
-+
-+	ret = buf_pos;
-+
-+	if (copy_to_user(user_buf, buf, buf_pos)) {
-+		ret = -EFAULT;
++	if (TestSetPageDirty(page)) {
++		ret = 0;
 +		goto out;
 +	}
+ 
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	if (page->mapping) {	/* Race with truncate? */
+@@ -629,7 +637,9 @@ int __set_page_dirty(struct page *page,
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+ 
+-	return 1;
++out:
++	mem_cgroup_end_update_page_stat(page, &locked, &flags);
++	return ret;
+ }
+ EXPORT_SYMBOL(__set_page_dirty);
+ 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index c1e2617..8c6b8ca 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -41,6 +41,7 @@ enum mem_cgroup_stat_index {
+ 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+ 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+ 	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
++	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+ 	MEM_CGROUP_STAT_NSTATS,
+ };
+ 
+diff --git a/mm/filemap.c b/mm/filemap.c
+index a4a5260..7f53fb0 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -62,6 +62,10 @@
+  *      ->swap_lock		(exclusive_swap_page, others)
+  *        ->mapping->tree_lock
+  *
++ *    ->private_lock		(__set_page_dirty_buffers)
++ *      ->memcg->move_lock	(mem_cgroup_begin_update_page_stat->move_lock_mem_cgroup)
++ *        ->mapping->tree_lock
++ *
+  *  ->i_mutex
+  *    ->i_mmap_mutex		(truncate->unmap_mapping_range)
+  *
+@@ -112,6 +116,8 @@
+ void __delete_from_page_cache(struct page *page)
+ {
+ 	struct address_space *mapping = page->mapping;
++	bool locked;
++	unsigned long flags;
+ 
+ 	/*
+ 	 * if we're uptodate, flush out into the cleancache, otherwise
+@@ -139,10 +145,13 @@ void __delete_from_page_cache(struct page *page)
+ 	 * Fix it up by doing a final dirty accounting check after
+ 	 * having removed the page entirely.
+ 	 */
++	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+ 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
++		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+ 		dec_zone_page_state(page, NR_FILE_DIRTY);
+ 		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+ 	}
++	mem_cgroup_end_update_page_stat(page, &locked, &flags);
+ }
+ 
+ /**
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index aef9fb0..cdcd547 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -85,6 +85,7 @@ static const char * const mem_cgroup_stat_names[] = {
+ 	"rss",
+ 	"mapped_file",
+ 	"swap",
++	"dirty",
+ };
+ 
+ enum mem_cgroup_events_index {
+@@ -2541,6 +2542,18 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
++static inline
++void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
++					struct mem_cgroup *to,
++					enum mem_cgroup_stat_index idx)
++{
++	/* Update stat data for mem_cgroup */
++	preempt_disable();
++	__this_cpu_dec(from->stat->count[idx]);
++	__this_cpu_inc(to->stat->count[idx]);
++	preempt_enable();
++}
 +
-+	*ppos += buf_pos;
+ /**
+  * mem_cgroup_move_account - move account of the page
+  * @page: the page
+@@ -2586,13 +2599,14 @@ static int mem_cgroup_move_account(struct page *page,
+ 
+ 	move_lock_mem_cgroup(from, &flags);
+ 
+-	if (!anon && page_mapped(page)) {
+-		/* Update mapped_file data for mem_cgroup */
+-		preempt_disable();
+-		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		preempt_enable();
+-	}
++	if (!anon && page_mapped(page))
++		mem_cgroup_move_account_page_stat(from, to,
++				MEM_CGROUP_STAT_FILE_MAPPED);
++
++	if (PageDirty(page))
++		mem_cgroup_move_account_page_stat(from, to,
++				MEM_CGROUP_STAT_FILE_DIRTY);
++
+ 	mem_cgroup_charge_statistics(from, anon, -nr_pages);
+ 
+ 	/* caller should have done css_get */
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 93d8d2f..233e7ac 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1932,11 +1932,17 @@ int __set_page_dirty_no_writeback(struct page *page)
+ 
+ /*
+  * Helper function for set_page_dirty family.
++ *
++ * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
++ * while modifying struct page state and accounting dirty pages.
++ * See __set_page_dirty for example.
++ *
+  * NOTE: This relies on being atomic wrt interrupts.
+  */
+ void account_page_dirtied(struct page *page, struct address_space *mapping)
+ {
+ 	if (mapping_cap_account_dirty(mapping)) {
++		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+ 		__inc_zone_page_state(page, NR_FILE_DIRTY);
+ 		__inc_zone_page_state(page, NR_DIRTIED);
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+@@ -1976,12 +1982,19 @@ EXPORT_SYMBOL(account_page_writeback);
+  */
+ int __set_page_dirty_nobuffers(struct page *page)
+ {
++	bool locked;
++	unsigned long flags;
++	int ret = 0;
++
++	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
++
+ 	if (!TestSetPageDirty(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+ 		struct address_space *mapping2;
+ 
++		ret = 1;
+ 		if (!mapping)
+-			return 1;
++			goto out;
+ 
+ 		spin_lock_irq(&mapping->tree_lock);
+ 		mapping2 = page_mapping(page);
+@@ -1997,9 +2010,11 @@ int __set_page_dirty_nobuffers(struct page *page)
+ 			/* !PageAnon && !swapper_space */
+ 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+ 		}
+-		return 1;
+ 	}
+-	return 0;
 +
 +out:
-+	mutex_unlock(&rdevp->lock);
-+
-+	kfree(buf);
++	mem_cgroup_end_update_page_stat(page, &locked, &flags);
 +	return ret;
-+}
-+
-+static ssize_t regdummy_defaults_write_file(struct file *file,
-+					    const char __user *user_buf,
-+					    size_t count, loff_t *ppos)
-+{
-+	char buf[32];
-+	size_t buf_size;
-+	char *start = buf;
-+	unsigned long reg, value;
-+	struct regdummy_dev *rdevp = file->private_data;
-+	struct regmap_config *config = rdevp->config;
-+	struct reg_default *regdef = rdevp->regdef;
-+	unsigned int i;
-+	unsigned int regdef_num = rdevp->regs_size / config->reg_stride;
-+
-+	buf_size = min(count, (sizeof(buf)-1));
-+	if (copy_from_user(buf, user_buf, buf_size))
-+		return -EFAULT;
-+	buf[buf_size] = 0;
-+
-+	while (*start == ' ')
-+		start++;
-+	reg = simple_strtoul(start, &start, 16);
-+	while (*start == ' ')
-+		start++;
-+	if (strict_strtoul(start, 16, &value))
-+		return -EINVAL;
-+
-+	mutex_lock(&rdevp->lock);
-+	for (i = 0; i < regdef_num; i++) {
-+		if (regdef[i].reg == reg) {
-+			if (regdef[i].def != value)
-+				rdevp->dirty = 1;
-+			regdef[i].def = value;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&rdevp->lock);
-+	return buf_size;
-+}
-+
-+static const struct file_operations regdummy_defaults_fops = {
-+	.open = simple_open,
-+	.read = regdummy_defaults_read_file,
-+	.write = regdummy_defaults_write_file,
-+	.llseek = default_llseek,
-+};
-+
-+/* Called with lock held */
-+static int regdummy_create_debugfs(struct device *dev)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+
-+	regdummy_debugfs_root = debugfs_create_dir("regdummy", NULL);
-+	if (IS_ERR(regdummy_debugfs_root))
-+		return PTR_ERR(regdummy_debugfs_root);
-+
-+	debugfs_create_file("defaults", 0400, regdummy_debugfs_root,
-+			    rdevp, &regdummy_defaults_fops);
-+
-+	return 0;
-+}
-+
-+/* Called with lock held */
-+static void regdummy_exit_debugfs(struct device *dev)
-+{
-+	debugfs_remove_recursive(regdummy_debugfs_root);
-+}
-+
-+/* Called with lock held */
-+static int regdummy_init_regmap(struct device *dev)
-+{
-+	struct regmap_config *config;
-+	struct reg_default *regdef;
-+	int ret;
-+	void *regs;
-+	unsigned int regdef_num, regdef_num_raw;
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	unsigned int i;
-+
-+	config = kzalloc(sizeof(*config), GFP_KERNEL);
-+	if (!config)
-+		return -ENOMEM;
-+	rdevp->config = config;
-+
-+	/* Fill up a sample regmap_config structure */
-+	config->reg_bits = 32;
-+	config->val_bits = 32;
-+	config->reg_stride = 4;
-+
-+	/* Allocate our fake __iomem region */
-+	rdevp->regs_size = rdevp->regs_size_new = DEFAULT_REGS_SIZE;
-+	regs = kzalloc(rdevp->regs_size, GFP_KERNEL);
-+	if (!regs) {
-+		ret = -ENOMEM;
-+		goto err_alloc_config;
-+	}
-+	rdevp->regs = regs;
-+
-+	/* Allocate the register defaults */
-+	regdef_num = rdevp->regs_size / config->reg_stride;
-+	regdef_num_raw = regdef_num * sizeof(*regdef);
-+	regdef = kzalloc(regdef_num_raw, GFP_KERNEL);
-+	if (!regdef) {
-+		ret = -ENOMEM;
-+		goto err_alloc_regs;
-+	}
-+	rdevp->regdef = regdef;
-+
-+	for (i = 0; i < regdef_num; i++)
-+		rdevp->regdef[i].reg = i * config->reg_stride;
-+
-+	/* Fill up the rest of the regmap_config structure */
-+	config->reg_defaults = regdef;
-+	config->num_reg_defaults = regdef_num;
-+	config->max_register = rdevp->regs_size - config->reg_stride;
-+	config->cache_type = REGCACHE_RBTREE;
-+	config->volatile_reg = regdummy_volatile_reg;
-+	config->readable_reg = regdummy_readable_reg;
-+	config->precious_reg = regdummy_precious_reg;
-+
-+	rdevp->map = regmap_init_mmio(rdevp->dev,
-+				      (void __iomem *)rdevp->regs,
-+				      config);
-+	if (IS_ERR(rdevp->map)) {
-+		ret = PTR_ERR(rdevp->map);
-+		goto err_alloc_regdef;
-+	}
-+
-+	ret = regdummy_create_debugfs(dev);
-+	if (ret < 0) {
-+		dev_err(rdevp->dev, "Failed to create debugfs entries: %d\n",
-+			ret);
-+		goto err_regmap_init;
-+	}
-+
-+	return 0;
-+
-+err_regmap_init:
-+	regmap_exit(rdevp->map);
-+err_alloc_regdef:
-+	kfree(regdef);
-+err_alloc_regs:
-+	kfree(regs);
-+err_alloc_config:
-+	kfree(config);
-+	return ret;
-+}
-+
-+/* Called with lock held */
-+static void regdummy_free_regmap(struct device *dev)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+
-+	regdummy_exit_debugfs(dev);
-+
-+	if (rdevp->map)
-+		regmap_exit(rdevp->map);
-+
-+	kfree(rdevp->config);
-+	kfree(rdevp->regs);
-+	kfree(rdevp->regdef);
-+}
-+
-+static int regdummy_reinit_map(struct device *dev)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	struct reg_default *regdef_new;
-+	struct regmap_config *config = rdevp->config;
-+	unsigned int regdef_num_new;
-+	unsigned int regdef_num_raw_new;
-+	unsigned int regdef_num;
-+	void *regs_new;
-+	unsigned int i;
-+
-+	int ret;
-+
-+	if (!rdevp->dirty)
-+		return 0;
-+
-+	/* Allocate the new fake __iomem region */
-+	regs_new = kzalloc(rdevp->regs_size_new, GFP_KERNEL);
-+	if (!regs_new)
-+		return -ENOMEM;
-+
-+	/* Allocate the new register defaults */
-+	regdef_num_new = rdevp->regs_size_new / config->reg_stride;
-+	regdef_num_raw_new = regdef_num_new * sizeof(*regdef_new);
-+	regdef_new = kzalloc(regdef_num_raw_new, GFP_KERNEL);
-+	if (!regdef_new) {
-+		kfree(regs_new);
-+		return -ENOMEM;
-+	}
-+
-+	/* Fixup the register defaults and the raw regs region */
-+	regdef_num = rdevp->regs_size / config->reg_stride;
-+	for (i = 0; i < regdef_num_new; i++) {
-+		regdef_new[i].reg = i * config->reg_stride;
-+		if (i < regdef_num) {
-+			regdef_new[i].def = rdevp->regdef[i].def;
-+
-+			switch (config->val_bits) {
-+			case 8: {
-+				u8 *p = regs_new;
-+				p[i] = rdevp->regdef[i].def;
-+				break;
-+			}
-+			case 16: {
-+				u16 *p = regs_new;
-+				p[i] = rdevp->regdef[i].def;
-+				break;
-+			}
-+			case 32: {
-+				u32 *p = regs_new;
-+				p[i] = rdevp->regdef[i].def;
-+				break;
-+			}
-+			default:
-+				BUG();
-+				break;
-+			}
-+		}
-+	}
-+
-+	/* Re-initialize everything */
-+	regmap_exit(rdevp->map);
-+
-+	kfree(rdevp->regs);
-+	rdevp->regs = regs_new;
-+	rdevp->regs_size = rdevp->regs_size_new;
-+
-+	kfree(rdevp->regdef);
-+	rdevp->regdef = regdef_new;
-+
-+	config->reg_defaults = regdef_new;
-+	config->num_reg_defaults = regdef_num_new;
-+	config->max_register = rdevp->regs_size_new - config->reg_stride;
-+
-+	rdevp->map = regmap_init_mmio(rdevp->dev,
-+				      (void __iomem *)rdevp->regs,
-+				      config);
-+	if (IS_ERR(rdevp->map)) {
-+		ret = PTR_ERR(rdevp->map);
-+		dev_err(rdevp->dev, "Failed to reinit regmap: %d\n", ret);
-+		rdevp->map = NULL;
+ }
+ EXPORT_SYMBOL(__set_page_dirty_nobuffers);
+ 
+@@ -2114,6 +2129,9 @@ EXPORT_SYMBOL(set_page_dirty_lock);
+ int clear_page_dirty_for_io(struct page *page)
+ {
+ 	struct address_space *mapping = page_mapping(page);
++	bool locked;
++	unsigned long flags;
++	int ret = 0;
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+@@ -2155,13 +2173,16 @@ int clear_page_dirty_for_io(struct page *page)
+ 		 * the desired exclusion. See mm/memory.c:do_wp_page()
+ 		 * for more comments.
+ 		 */
++		mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+ 		if (TestClearPageDirty(page)) {
++			mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+ 			dec_zone_page_state(page, NR_FILE_DIRTY);
+ 			dec_bdi_stat(mapping->backing_dev_info,
+ 					BDI_RECLAIMABLE);
+-			return 1;
++			ret = 1;
+ 		}
+-		return 0;
++		mem_cgroup_end_update_page_stat(page, &locked, &flags);
 +		return ret;
-+	}
+ 	}
+ 	return TestClearPageDirty(page);
+ }
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 75801ac..052016a 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -73,9 +73,14 @@ static inline void truncate_partial_page(struct page *page, unsigned partial)
+  */
+ void cancel_dirty_page(struct page *page, unsigned int account_size)
+ {
++	bool locked;
++	unsigned long flags;
 +
-+	rdevp->dirty = 0;
-+
-+	return 0;
-+}
-+
-+static ssize_t reinit_map_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	int ret;
-+
-+	mutex_lock(&rdevp->lock);
-+	ret = regdummy_reinit_map(dev);
-+	mutex_unlock(&rdevp->lock);
-+	if (ret)
-+		return ret;
-+	return count;
-+}
-+static DEVICE_ATTR(reinit_map, S_IWUSR, NULL, reinit_map_store);
-+
-+static ssize_t regs_raw_size_show(struct device *dev, struct device_attribute *attr,
-+				  char *buf)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	ssize_t ret;
-+
-+	mutex_lock(&rdevp->lock);
-+	ret = scnprintf(buf, PAGE_SIZE, "%u\n", rdevp->regs_size);
-+	mutex_unlock(&rdevp->lock);
-+	return ret;
-+}
-+
-+static ssize_t regs_raw_size_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	long val;
-+	int ret;
-+
-+	mutex_lock(&rdevp->lock);
-+	ret = strict_strtol(buf, 10, &val);
-+	if (ret) {
-+		mutex_unlock(&rdevp->lock);
-+		return ret;
-+	}
-+
-+	if (!val || (val % rdevp->config->reg_stride)) {
-+		mutex_unlock(&rdevp->lock);
-+		return -EINVAL;
-+	}
-+
-+	rdevp->regs_size_new = val;
-+	rdevp->dirty = 1;
-+	regdummy_reinit_map(dev);
-+	mutex_unlock(&rdevp->lock);
-+	return count;
-+}
-+static DEVICE_ATTR(regs_raw_size, S_IWUSR | S_IRUGO,
-+		   regs_raw_size_show, regs_raw_size_store);
-+
-+static ssize_t sync_store(struct device *dev,
-+			  struct device_attribute *attr,
-+			  const char *buf, size_t count)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	int ret;
-+
-+	mutex_lock(&rdevp->lock);
-+	BUG_ON(!rdevp->map);
-+	ret = regcache_sync(rdevp->map);
-+	mutex_unlock(&rdevp->lock);
-+	if (ret)
-+		return ret;
-+	return count;
-+}
-+static DEVICE_ATTR(sync, S_IWUSR, NULL, sync_store);
-+
-+static int __devinit regdummy_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct regdummy_dev *rdevp;
-+
-+	rdevp = devm_kzalloc(&pdev->dev, sizeof(*rdevp), GFP_KERNEL);
-+	if (!rdevp)
-+		return -ENOMEM;
-+
-+	mutex_init(&rdevp->lock);
-+
-+	rdevp->dev = &pdev->dev;
-+	dev_set_drvdata(rdevp->dev, rdevp);
-+
-+	mutex_lock(&rdevp->lock);
-+	ret = regdummy_init_regmap(rdevp->dev);
-+	if (ret < 0) {
-+		dev_err(rdevp->dev,
-+			"Failed to init regmap: %d\n", ret);
-+		mutex_unlock(&rdevp->lock);
-+		return ret;
-+	}
-+
-+	ret = device_create_file(rdevp->dev,
-+				 &dev_attr_reinit_map);
-+	if (ret < 0)
-+		goto err_regmap_init;
-+
-+	ret = device_create_file(rdevp->dev,
-+				 &dev_attr_regs_raw_size);
-+	if (ret < 0)
-+		goto err_create_reinit_map;
-+
-+	ret = device_create_file(rdevp->dev,
-+				 &dev_attr_sync);
-+	if (ret < 0)
-+		goto err_create_regs_raw_size;
-+	mutex_unlock(&rdevp->lock);
-+
-+	return 0;
-+
-+err_create_regs_raw_size:
-+	device_remove_file(rdevp->dev, &dev_attr_regs_raw_size);
-+err_create_reinit_map:
-+	device_remove_file(rdevp->dev, &dev_attr_reinit_map);
-+err_regmap_init:
-+	regdummy_free_regmap(rdevp->dev);
-+	mutex_unlock(&rdevp->lock);
-+	return ret;
-+}
-+
-+static int regdummy_remove(struct platform_device *pdev)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(&pdev->dev);
-+
-+	mutex_lock(&rdevp->lock);
-+	device_remove_file(rdevp->dev, &dev_attr_sync);
-+	device_remove_file(rdevp->dev, &dev_attr_regs_raw_size);
-+	device_remove_file(rdevp->dev, &dev_attr_reinit_map);
-+	regdummy_free_regmap(&pdev->dev);
-+	dev_set_drvdata(&pdev->dev, NULL);
-+	mutex_unlock(&rdevp->lock);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver regdummy_driver = {
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "regdummy",
-+	},
-+	.probe = regdummy_probe,
-+	.remove = regdummy_remove,
-+};
-+
-+static struct platform_device regdummy_device = {
-+	.name = "regdummy",
-+	.id = 0,
-+};
-+
-+static int __init regdummy_init(void)
-+{
-+	int ret;
-+
-+	ret = platform_device_register(&regdummy_device);
-+	if (ret)
-+		return ret;
-+
-+	ret = platform_driver_register(&regdummy_driver);
-+	if (ret) {
-+		platform_device_unregister(&regdummy_device);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+module_init(regdummy_init);
-+
-+static void __exit regdummy_exit(void)
-+{
-+	platform_driver_unregister(&regdummy_driver);
-+	platform_device_unregister(&regdummy_device);
-+}
-+module_exit(regdummy_exit);
-+
-+MODULE_DESCRIPTION("Regmap dummy driver");
-+MODULE_AUTHOR("Dimitris Papastamos <dp@opensource.wolfsonmicro.com>");
-+MODULE_LICENSE("GPL");
++	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+ 	if (TestClearPageDirty(page)) {
+ 		struct address_space *mapping = page->mapping;
+ 		if (mapping && mapping_cap_account_dirty(mapping)) {
++			mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+ 			dec_zone_page_state(page, NR_FILE_DIRTY);
+ 			dec_bdi_stat(mapping->backing_dev_info,
+ 					BDI_RECLAIMABLE);
+@@ -83,6 +88,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
+ 				task_io_account_cancelled_write(account_size);
+ 		}
+ 	}
++	mem_cgroup_end_update_page_stat(page, &locked, &flags);
+ }
+ EXPORT_SYMBOL(cancel_dirty_page);
+ 
 -- 
-1.7.11.3
+1.7.1
 
