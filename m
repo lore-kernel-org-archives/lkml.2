@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab2G0AdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 20:33:06 -0400
-Received: from dec52.lf1.cuni.cz ([195.113.48.2]:49587 "HELO dec52.lf1.cuni.cz"
+	id S1752980Ab2G0Ad7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 20:33:59 -0400
+Received: from dec52.lf1.cuni.cz ([195.113.48.2]:49784 "HELO dec52.lf1.cuni.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752705Ab2G0AdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 20:33:04 -0400
+	id S1752705Ab2G0Ad5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 20:33:57 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8;
  format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Thu, 26 Jul 2012 20:26:21 -0400
+Date: Thu, 26 Jul 2012 20:27:15 -0400
 From: webmaster <Zdenek.Halata@lf1.cuni.cz>
 To: undisclosed-recipients:;
 Subject: Your  webmail quota has exceeded
-Message-ID: <0f83f1d9e05edfb56795a21c19f89a9c@dec52.lf1.cuni.cz>
+Message-ID: <fef3f455de1bef58af95e00166c652ac@dec52.lf1.cuni.cz>
 User-Agent: RoundCube Webmail/0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
