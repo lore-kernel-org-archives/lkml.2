@@ -1,121 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab2G0GXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 02:23:00 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:35679 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578Ab2G0GW7 (ORCPT
+	id S1752890Ab2G0GXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 02:23:17 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36478 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751286Ab2G0GXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 02:22:59 -0400
-Date: Fri, 27 Jul 2012 11:52:23 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] uprobes: rename vma_address() and make it return
- "unsigned long"
-Message-ID: <20120727062223.GA3906@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120712170934.GA25455@redhat.com>
- <20120712171022.GA25507@redhat.com>
- <20120726050018.GD3810@linux.vnet.ibm.com>
- <20120726102812.GB7197@redhat.com>
+	Fri, 27 Jul 2012 02:23:14 -0400
+Date: Fri, 27 Jul 2012 10:23:10 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 3/7] procfs: Add ability to plug in auxiliary fdinfo
+ providers
+Message-ID: <20120727062310.GC21246@moon>
+References: <20120725094718.089879534@openvz.org>
+ <20120725095024.842540518@openvz.org>
+ <50120F8C.8010001@parallels.com>
+ <20120727060009.GB21246@moon>
+ <50123066.20909@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120726102812.GB7197@redhat.com>
+In-Reply-To: <50123066.20909@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072706-4242-0000-0000-00000272B119
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-07-26 12:28:12]:
+On Fri, Jul 27, 2012 at 10:08:38AM +0400, Pavel Emelyanov wrote:
+> >>> +static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
+> >>> +{
+> >>> +	struct proc_fdinfo_extra *extra = m->private;
+> >>> +	void *v = NULL;
+> >>> +
+> >>> +	if (extra->driver) {
+> >>> +		int ret = 0;
+> >>> +
+> >>> +		if (*pos == 0) {
+> >>> +			v = extra->driver->ops->start(m, pos);
+> >>> +			if (v) {
+> >>> +				ret = extra->driver->ops->show(m, v);
+> >>
+> >> Why is it necessary to call ->show here? The logic should be
+> >>
+> >> seq_start = (pos == 0 ? nop : extra->start)
+> >> seq_next  = (pos == 0 ? extra->start : extra->next)
+> >> seq_stop  = (pos == 0 ? nop : extra->stop)
+> >> seq_show  = (pos == 0 ? proc_show : extra->show)
+> >>
+> >> Or I'm missing something?
+> > 
+> > Well, I thought about it as two sequences -- first is procfs
+> > seq-file, which prints out a general header, and second
+> > is extra fdinfo provider.
+> > 
+> > Everything starts with printing procfs header
+> > 
+> > seq_start -> seq_show (prints "pos:\t%lli\nflags:\t0%o\n") ->
+> > seq_next -> (if have extra driver we do extra's start/show at first,
+> 
+> Why show? The generic seq_file.c will call ->next (which will result in
+> extra->start), then ->show (which _should_ result in extra->show) thus
+> providing correct output.
 
-> On 07/26, Srikar Dronamraju wrote:
-> >
-> > * Oleg Nesterov <oleg@redhat.com> [2012-07-12 19:10:22]:
-> >
-> > > 1. vma_address() returns loff_t, this looks confusing and this is
-> > >    unnecessary after the previous change. Make it return "ulong",
-> > >    all callers truncate the result anyway.
-> > >
-> > > 2. Its name conflicts with mm/rmap.c:vma_address(), rename it to
-> > >    offset_to_vaddr(), this matches vaddr_to_offset().
-> > >
-> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> >
-> > Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> 
-> Thanks.
-> 
-> Could you please ack v2 below?
-> 
-> I forgot to update "loff_t vaddr" in mmap/munmap. IOW, this is the
-> same patch plus
-> 
-> 	- loff_t vaddr = offset_to_vaddr(...);
-> 	+ unsigned long vaddr = offset_to_vaddr(...);
-> 
-> in uprobe_mmap/munmap.
-> 
+Yes, indeed i think i've made it more complex than it should be.
+Will update, thanks!
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-> In fact I was going to do this in
-> "uprobes: teach build_probe_list() to consider the range" but
-> forgot as well.
-> 
-> Oleg.
-> 
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -112,14 +112,9 @@ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
->  	return false;
->  }
-> 
-> -static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
-> +static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
->  {
-> -	loff_t vaddr;
-> -
-> -	vaddr = vma->vm_start + offset;
-> -	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
-> -
-> -	return vaddr;
-> +	return vma->vm_start + offset - ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
->  }
-> 
->  static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
-> @@ -775,7 +770,7 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
->  		curr = info;
-> 
->  		info->mm = vma->vm_mm;
-> -		info->vaddr = vma_address(vma, offset);
-> +		info->vaddr = offset_to_vaddr(vma, offset);
->  	}
->  	mutex_unlock(&mapping->i_mmap_mutex);
-> 
-> @@ -1042,7 +1037,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
-> 
->  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
->  		if (!ret) {
-> -			loff_t vaddr = vma_address(vma, uprobe->offset);
-> +			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
-> 
->  			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
->  			/*
-> @@ -1103,7 +1098,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
->  	build_probe_list(inode, vma, start, end, &tmp_list);
-> 
->  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-> -		loff_t vaddr = vma_address(vma, uprobe->offset);
-> +		unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
->  		/*
->  		 * An unregister could have removed the probe before
->  		 * unmap. So check before we decrement the count.
-> 
-
+	Cyrill
