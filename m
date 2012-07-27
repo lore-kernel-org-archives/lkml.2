@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab2G0DO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:14:29 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42601 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab2G0DO2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:14:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <B5854411-6C9A-43BA-BF5D-FB1AD76E28D1@kernel.crashing.org>
-References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com>
-	<CADRPPNSw5Yn7EgHt5fm2vYr+zxC4T+JbsvT812u2JPKELNcA6g@mail.gmail.com>
-	<B5854411-6C9A-43BA-BF5D-FB1AD76E28D1@kernel.crashing.org>
-Date: Fri, 27 Jul 2012 11:14:27 +0800
-X-Google-Sender-Auth: -_232ccn_k67vlSeQuY3ySXZ3rI
-Message-ID: <CADRPPNRxBJX3Wgkj2aPmw8w=Ayj57CTCOkTEwBDCKwbjein1Ew@mail.gmail.com>
-Subject: Re: [PATCH v8 0/7] power management patch set
-From: Li Yang <leoli@freescale.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Zhao Chenhui <chenhui.zhao@freescale.com>, scottwood@freescale.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1752863Ab2G0DQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:16:56 -0400
+Received: from mga14.intel.com ([143.182.124.37]:1914 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752250Ab2G0DQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 23:16:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="173770473"
+Subject: Re: [PATCH] dma: imx-dma: Fix kernel crash due to missing clock
+ conversion
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, javier.martin@vista-silicon.com,
+        Fabio Estevam <festevam@gmail.com>
+In-Reply-To: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
+References: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 27 Jul 2012 08:47:30 +0530
+Message-ID: <1343359050.1726.9033.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 1:29 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
->
-> On Jul 26, 2012, at 9:02 AM, Li Yang wrote:
->
->> On Fri, Jul 20, 2012 at 8:42 PM, Zhao Chenhui
->> <chenhui.zhao@freescale.com> wrote:
->>> Changes for v8:
->>> * Separated the cpu hotplug patch into three patches, as follows
->>> [PATCH v8 1/7] powerpc/smp: use a struct epapr_spin_table to replace macros
->>> [PATCH v8 2/7] powerpc/smp: add generic_set_cpu_up() to set cpu_state as CPU_UP_PREPARE
->>> [PATCH v8 4/7] powerpc/85xx: add HOTPLUG_CPU support
->>>
->>> * Replaced magic numbers with macros in "[PATCH 5/7] powerpc/85xx: add sleep and deep sleep support"
->>>
->>> * no change to the rest of the patch set
->>
->> Hi Kumar,
->>
->> How about picking about this series for 3.6?  The review seems to
->> settle down for this revision.
->
-> Its too late for 3.6, but will look at queuing it up for 3.7.
+On Tue, 2012-07-03 at 15:33 -0300, Fabio Estevam wrote:
+> From: Fabio Estevam <festevam@gmail.com>
+> 
+> With the new i.MX clock infrastructure we need to request the dma clocks
+> seperately: ahb and ipg clocks.
+> 
+> This fixes the following kernel crash and make audio to be functional again:
+> 
+> root@freescale /home$ aplay audio48k16S.wav 
+> Playing WAVE 'audio48k16S.wav' : Signed 16 bit Little Endian, Rate 48000 Hz, Stereo
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> pgd = c7b74000
+> [00000000] *pgd=a7bb5831, *pte=00000000, *ppte=00000000
+> Internal error: Oops: 17 [#1] PREEMPT ARM
+> Modules linked in:
+> CPU: 0    Not tainted  (3.5.0-rc5-next-20120702-00007-g3028b64 #1128)
+> PC is at snd_dmaengine_pcm_get_chan+0x8/0x10
+> LR is at snd_imx_pcm_hw_params+0x18/0xdc
+> pc : [<c02d3cf8>]    lr : [<c02e95ec>]    psr: a0000013
+> sp : c7b45e30  ip : ffffffff  fp : c7ae58e0
+> r10: 00000000  r9 : c7ae981c  r8 : c7b88800
+> r7 : c7ae5a60  r6 : c7ae5b20  r5 : c7ae9810  r4 : c7afa060
+> r3 : 00000000  r2 : 00000001  r1 : c7b88800  r0 : c7afa060
+> Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> Control: 0005317f  Table: a7b74000  DAC: 00000015
+> Process aplay (pid: 701, stack limit = 0xc7b44270)
+> Stack: (0xc7b45e30 to 0xc7b46000)
+> 5e20:                                     00100000 00000029 c7b88800 c02db870
+> 5e40: c7ae5a60 c02d4594 00000010 01ae5a60 c7ae5a60 c7ae9810 c7ae9810 c7afa060
+> 5e60: c7ae5b20 c7ae5a60 c7b88800 c02e3ef0 c02e3e08 c7b1e400 c7afa060 c7b88800
+> 5e80: 00000000 c0014da8 c7b44000 00000000 bec566ac c02cd400 c7afa060 c7afa060
+> 5ea0: bec56800 c7b88800 c0014da8 c02cdd7c c04ee710 c04ee7b8 00000003 c005fc74
+> 5ec0: 00000000 7fffffff c7b45f00 c7afa060 c7b67420 c7ba3070 00000004 c0014da8
+> 5ee0: c7b44000 00000000 bec566ac c02ced88 c04e95f8 b6f5ab04 c7b45fb0 0145a468
+> 5f00: 0145a600 bec566bc bec56800 c7b67420 c7ba3070 c00d499c c7b45f18 c7b45f18
+> 5f20: 0000001a 00000004 00000001 c7b44000 c0527f40 00000009 00000008 00000000
+> 5f40: c7b44000 c002c9ec 00000001 c04f0ab0 c04ebec0 00000101 00000000 0000000a
+> 5f60: 60000093 c7b67420 bec56800 c25c4111 00000004 c0014da8 c7b44000 00000000
+> 5f80: bec566ac c00d4f38 b6ffb658 00000000 c0522d80 0145a468 b6fd5000 0145a418
+> 5fa0: 00000036 c0014c00 0145a468 b6fd5000 00000004 c25c4111 bec56800 00020001
+> 5fc0: 0145a468 b6fd5000 0145a418 00000036 0145a468 0145a600 bec566bc bec566ac
+> 5fe0: 0145a468 bec56388 b6f65ce4 b6dcebec 20000010 00000004 00000000 00000000
+> [<c02d3cf8>] (snd_dmaengine_pcm_get_chan+0x8/0x10) from [<c02e95ec>] (snd_imx_pcm_hw_params+0x18/0xdc)
+> [<c02e95ec>] (snd_imx_pcm_hw_params+0x18/0xdc) from [<c02e3ef0>] (soc_pcm_hw_params+0xe8/0x1f0)
+> [<c02e3ef0>] (soc_pcm_hw_params+0xe8/0x1f0) from [<c02cd400>] (snd_pcm_hw_params+0x124/0x474)
+> [<c02cd400>] (snd_pcm_hw_params+0x124/0x474) from [<c02cdd7c>] (snd_pcm_common_ioctl1+0x4b4/0xf74)
+> [<c02cdd7c>] (snd_pcm_common_ioctl1+0x4b4/0xf74) from [<c02ced88>] (snd_pcm_playback_ioctl1+0x30/0x510)
+> [<c02ced88>] (snd_pcm_playback_ioctl1+0x30/0x510) from [<c00d499c>] (do_vfs_ioctl+0x80/0x5e4)
+> [<c00d499c>] (do_vfs_ioctl+0x80/0x5e4) from [<c00d4f38>] (sys_ioctl+0x38/0x60)
+> [<c00d4f38>] (sys_ioctl+0x38/0x60) from [<c0014c00>] (ret_fast_syscall+0x0/0x2c)
+> Code: e593000c e12fff1e e59030a0 e59330bc (e5930000) 
+> ---[ end trace fa518c8ba3a74e97 ]--
+> 
+> Reported-by: Javier Martin <javier.martin@vista-silicon.com>
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Applied thanks (to fixes-for 3.7)
 
-Too late?  The latest version were submitted on Jul 20 and you are
-still picking up other patches today.  :)  I do think the patches have
-been floating around for too long time to wait for another release
-cycle.  If there are problems, we can work on addressing them in
-follow up patches.
+Sorry for missing this out, please ping if you dont see a response to
+patch in week or so.
 
-Leo
+-- 
+~Vinod
+
