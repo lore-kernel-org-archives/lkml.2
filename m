@@ -1,101 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab2G0Qw5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 12:52:57 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4161 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab2G0Qwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 12:52:55 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net
-Subject: [PATCH v2] ene_ub6250: Use macros for firmware names
-Date: Fri, 27 Jul 2012 10:53:21 -0600
-Message-Id: <1343408001-50174-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343167097.25735.79.camel@ejdallLaptop>
-References: <1343167097.25735.79.camel@ejdallLaptop>
+	id S1752785Ab2G0QxC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 12:53:02 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35287 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab2G0Qw7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 12:52:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120709074158.GS30009@pengutronix.de>
+References: <1341606020-26449-1-git-send-email-fabio.estevam@freescale.com>
+	<20120709074158.GS30009@pengutronix.de>
+Date: Fri, 27 Jul 2012 13:52:58 -0300
+Message-ID: <CAOMZO5D+W_VwW=oQaSanogU=9yT=86hV1UN+M3-8JEo0_S9fDQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] hw_random: mxc-rnga: Adapt clocks to new i.mx clock framework
+From: Fabio Estevam <festevam@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Advertise firmware files using MODULE_FIRMWARE macros.
+On Mon, Jul 9, 2012 at 4:41 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
 
-Fix a debug string: SD_RDWR_PATTERN --> SD_RW_PATTERN
+> Uhh, that's a driver bug that should be fixed. Although right now there
+> is no reference counting for clocks, the driver should keep the clk
+> internally instead of simply calling clk_get whenever it needs access to
+> a clk.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
-Cc: usb-storage@lists.one-eyed-alien.net
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/usb/storage/ene_ub6250.c |   28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/usb/storage/ene_ub6250.c b/drivers/usb/storage/ene_ub6250.c
-index b28f2ad..95edee5 100644
---- a/drivers/usb/storage/ene_ub6250.c
-+++ b/drivers/usb/storage/ene_ub6250.c
-@@ -29,9 +29,21 @@
- #include "protocol.h"
- #include "debug.h"
- 
-+#define SD_INIT1_FIRMWARE "ene-ub6250/sd_init1.bin"
-+#define SD_INIT2_FIRMWARE "ene-ub6250/sd_init2.bin"
-+#define SD_RW_FIRMWARE "ene-ub6250/sd_rdwr.bin"
-+#define MS_INIT_FIRMWARE "ene-ub6250/ms_init.bin"
-+#define MSP_RW_FIRMWARE "ene-ub6250/msp_rdwr.bin"
-+#define MS_RW_FIRMWARE "ene-ub6250/ms_rdwr.bin"
-+
- MODULE_DESCRIPTION("Driver for ENE UB6250 reader");
- MODULE_LICENSE("GPL");
--
-+MODULE_FIRMWARE(SD_INIT1_FIRMWARE);
-+MODULE_FIRMWARE(SD_INIT2_FIRMWARE);
-+MODULE_FIRMWARE(SD_RW_FIRMWARE);
-+MODULE_FIRMWARE(MS_INIT_FIRMWARE);
-+MODULE_FIRMWARE(MSP_RW_FIRMWARE);
-+MODULE_FIRMWARE(MS_RW_FIRMWARE);
- 
- /*
-  * The table of devices
-@@ -1883,28 +1895,28 @@ static int ene_load_bincode(struct us_data *us, unsigned char flag)
- 	/* For SD */
- 	case SD_INIT1_PATTERN:
- 		US_DEBUGP("SD_INIT1_PATTERN\n");
--		fw_name = "ene-ub6250/sd_init1.bin";
-+		fw_name = SD_INIT1_FIRMWARE;
- 		break;
- 	case SD_INIT2_PATTERN:
- 		US_DEBUGP("SD_INIT2_PATTERN\n");
--		fw_name = "ene-ub6250/sd_init2.bin";
-+		fw_name = SD_INIT2_FIRMWARE;
- 		break;
- 	case SD_RW_PATTERN:
--		US_DEBUGP("SD_RDWR_PATTERN\n");
--		fw_name = "ene-ub6250/sd_rdwr.bin";
-+		US_DEBUGP("SD_RW_PATTERN\n");
-+		fw_name = SD_RW_FIRMWARE;
- 		break;
- 	/* For MS */
- 	case MS_INIT_PATTERN:
- 		US_DEBUGP("MS_INIT_PATTERN\n");
--		fw_name = "ene-ub6250/ms_init.bin";
-+		fw_name = MS_INIT_FIRMWARE;
- 		break;
- 	case MSP_RW_PATTERN:
- 		US_DEBUGP("MSP_RW_PATTERN\n");
--		fw_name = "ene-ub6250/msp_rdwr.bin";
-+		fw_name = MSP_RW_FIRMWARE;
- 		break;
- 	case MS_RW_PATTERN:
- 		US_DEBUGP("MS_RW_PATTERN\n");
--		fw_name = "ene-ub6250/ms_rdwr.bin";
-+		fw_name = MS_RW_FIRMWARE;
- 		break;
- 	default:
- 		US_DEBUGP("----------- Unknown PATTERN ----------\n");
--- 
-1.7.9.5
-
+Yes, I just sent a fix for this.
