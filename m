@@ -1,291 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab2G0Pk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 11:40:57 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37559 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab2G0Pkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 11:40:53 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 4/5] cputime: Rename account_system_vtime to account_vtime
-Date: Fri, 27 Jul 2012 17:40:33 +0200
-Message-Id: <1343403634-31555-5-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
-References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
+	id S1752438Ab2G0Pr4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 11:47:56 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3136 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751365Ab2G0Prz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 11:47:55 -0400
+Message-ID: <5012B792.20400@canonical.com>
+Date: Fri, 27 Jul 2012 09:45:22 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Andy Walls <awalls@md.metrocast.net>
+CC: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH] ivtv: Declare MODULE_FIRMWARE usage
+References: <1343327180-94759-1-git-send-email-tim.gardner@canonical.com> <1343341295.2575.18.camel@palomino.walls.org>
+In-Reply-To: <1343341295.2575.18.camel@palomino.walls.org>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-account_system_vtime() can be called from random places:
-hard/softirq entry/exit, kvm guest entry/exit, and even
-context switches on powerpc.
+On 07/26/2012 04:21 PM, Andy Walls wrote:
+> On Thu, 2012-07-26 at 12:26 -0600, Tim Gardner wrote:
+>> Cc: Andy Walls <awalls@md.metrocast.net>
+>> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+>> Cc: ivtv-devel@ivtvdriver.org
+>> Cc: linux-media@vger.kernel.org
+>> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+>> ---
+>>  drivers/media/video/ivtv/ivtv-firmware.c |    4 ++++
+>>  1 file changed, 4 insertions(+)
+>>
+>> diff --git a/drivers/media/video/ivtv/ivtv-firmware.c b/drivers/media/video/ivtv/ivtv-firmware.c
+>> index 02c5ade..6ec7705 100644
+>> --- a/drivers/media/video/ivtv/ivtv-firmware.c
+>> +++ b/drivers/media/video/ivtv/ivtv-firmware.c
+>> @@ -396,3 +396,7 @@ int ivtv_firmware_check(struct ivtv *itv, char *where)
+>>  
+>>  	return res;
+>>  }
+>> +
+>> +MODULE_FIRMWARE(CX2341X_FIRM_ENC_FILENAME);
+>> +MODULE_FIRMWARE(CX2341X_FIRM_DEC_FILENAME);
+>> +MODULE_FIRMWARE(IVTV_DECODE_INIT_MPEG_FILENAME);
+> 
+> Only the PVR-350, based on the iTVC-15/CX23415 chip, needs the
+> CX2341X_FIRM_DEC_FILENAME and IVTV_DECODE_INIT_MPEG_FILENAME.  (And even
+> in the case of that card, not having the IVTV_DECODE_INIT_MPEG_FILENAME
+> file is non-fatal.)
+> 
+> I would not want anything in user-space or kernel space preventing the
+> ivtv module from loading, if some of those files don't exist.
+> 
+> Regards,
+> Andy
+> 
 
-Rename it to the even more generic account_vtime() name,
-this reflect well that we are in a random place in the
-kernel where we have either system, idle or user time
-to account.
+MODULE_FIRMWARE is informational only and has no runtime impact.
 
-This way we can reuse the "system" version and expand it
-with other domains such as "user" or "idle" to prepare
-for the user hooks based virtual cputime accounting that
-knows better when to flush the time for which domain of
-execution.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Max Krasnyansky <maxk@qualcomm.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/ia64/kernel/time.c    |    4 ++--
- arch/powerpc/kernel/time.c |    8 ++++----
- arch/s390/kernel/vtime.c   |    4 ++--
- include/linux/hardirq.h    |    8 ++++----
- include/linux/kvm_host.h   |    4 ++--
- kernel/sched/cputime.c     |    8 ++++----
- kernel/softirq.c           |    6 +++---
- 7 files changed, 21 insertions(+), 21 deletions(-)
-
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 7afcf93..03de550 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -116,7 +116,7 @@ void account_switch_vtime(struct task_struct *prev)
-  * Account time for a transition between system, hard irq or soft irq state.
-  * Note that this function is called with interrupts enabled.
-  */
--void account_system_vtime(struct task_struct *tsk)
-+void account_vtime(struct task_struct *tsk)
- {
- 	struct thread_info *ti = task_thread_info(tsk);
- 	unsigned long flags;
-@@ -138,7 +138,7 @@ void account_system_vtime(struct task_struct *tsk)
- 
- 	local_irq_restore(flags);
- }
--EXPORT_SYMBOL_GPL(account_system_vtime);
-+EXPORT_SYMBOL_GPL(account_vtime);
- 
- /*
-  * Called from the timer interrupt handler to charge accumulated user time
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 3f1918a..fba763d 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -291,7 +291,7 @@ static inline u64 calculate_stolen_time(u64 stop_tb)
-  * Account time for a transition between system, hard irq
-  * or soft irq state.
-  */
--void account_system_vtime(struct task_struct *tsk)
-+void account_vtime(struct task_struct *tsk)
- {
- 	u64 now, nowscaled, delta, deltascaled;
- 	unsigned long flags;
-@@ -343,14 +343,14 @@ void account_system_vtime(struct task_struct *tsk)
- 	}
- 	local_irq_restore(flags);
- }
--EXPORT_SYMBOL_GPL(account_system_vtime);
-+EXPORT_SYMBOL_GPL(account_vtime);
- 
- /*
-  * Transfer the user and system times accumulated in the paca
-  * by the exception entry and exit code to the generic process
-  * user and system time records.
-  * Must be called with interrupts disabled.
-- * Assumes that account_system_vtime() has been called recently
-+ * Assumes that account_vtime() has been called recently
-  * (i.e. since the last entry from usermode) so that
-  * get_paca()->user_time_scaled is up to date.
-  */
-@@ -368,7 +368,7 @@ void account_process_tick_vtime(struct task_struct *tsk, int user_tick)
- 
- void account_switch_vtime(struct task_struct *prev)
- {
--	account_system_vtime(prev);
-+	account_vtime(prev);
- 	account_process_tick(prev, 0);
- }
- 
-diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
-index 29f20fc..95f8105 100644
---- a/arch/s390/kernel/vtime.c
-+++ b/arch/s390/kernel/vtime.c
-@@ -108,7 +108,7 @@ void account_process_tick_vtime(struct task_struct *tsk, int user_tick)
-  * Update process times based on virtual cpu times stored by entry.S
-  * to the lowcore fields user_timer, system_timer & steal_clock.
-  */
--void account_system_vtime(struct task_struct *tsk)
-+void account_vtime(struct task_struct *tsk)
- {
- 	struct thread_info *ti = task_thread_info(tsk);
- 	__u64 timer, system;
-@@ -122,7 +122,7 @@ void account_system_vtime(struct task_struct *tsk)
- 	ti->system_timer = S390_lowcore.system_timer;
- 	account_system_time(tsk, 0, system, system);
- }
--EXPORT_SYMBOL_GPL(account_system_vtime);
-+EXPORT_SYMBOL_GPL(account_vtime);
- 
- void __kprobes vtime_stop_cpu(void)
- {
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index bb7f309..6432e33 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -132,11 +132,11 @@ extern void synchronize_irq(unsigned int irq);
- struct task_struct;
- 
- #if !defined(CONFIG_VIRT_CPU_ACCOUNTING) && !defined(CONFIG_IRQ_TIME_ACCOUNTING)
--static inline void account_system_vtime(struct task_struct *tsk)
-+static inline void account_vtime(struct task_struct *tsk)
- {
- }
- #else
--extern void account_system_vtime(struct task_struct *tsk);
-+extern void account_vtime(struct task_struct *tsk);
- #endif
- 
- #if defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
-@@ -162,7 +162,7 @@ extern void rcu_nmi_exit(void);
-  */
- #define __irq_enter()					\
- 	do {						\
--		account_system_vtime(current);		\
-+		account_vtime(current);		\
- 		add_preempt_count(HARDIRQ_OFFSET);	\
- 		trace_hardirq_enter();			\
- 	} while (0)
-@@ -178,7 +178,7 @@ extern void irq_enter(void);
- #define __irq_exit()					\
- 	do {						\
- 		trace_hardirq_exit();			\
--		account_system_vtime(current);		\
-+		account_vtime(current);		\
- 		sub_preempt_count(HARDIRQ_OFFSET);	\
- 	} while (0)
- 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index c446435..54b5859 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -676,7 +676,7 @@ static inline int kvm_deassign_device(struct kvm *kvm,
- static inline void kvm_guest_enter(void)
- {
- 	BUG_ON(preemptible());
--	account_system_vtime(current);
-+	account_vtime(current);
- 	current->flags |= PF_VCPU;
- 	/* KVM does not hold any references to rcu protected data when it
- 	 * switches CPU into a guest mode. In fact switching to a guest mode
-@@ -690,7 +690,7 @@ static inline void kvm_guest_enter(void)
- 
- static inline void kvm_guest_exit(void)
- {
--	account_system_vtime(current);
-+	account_vtime(current);
- 	current->flags &= ~PF_VCPU;
- }
- 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index ff525ca..53b03cc 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -9,11 +9,11 @@
- 
- /*
-  * There are no locks covering percpu hardirq/softirq time.
-- * They are only modified in account_system_vtime, on corresponding CPU
-+ * They are only modified in account_vtime, on corresponding CPU
-  * with interrupts disabled. So, writes are safe.
-  * They are read and saved off onto struct rq in update_rq_clock().
-  * This may result in other CPU reading this CPU's irq time and can
-- * race with irq/account_system_vtime on this CPU. We would either get old
-+ * race with irq/account_vtime on this CPU. We would either get old
-  * or new value with a side effect of accounting a slice of irq time to wrong
-  * task when irq is in progress while we read rq->clock. That is a worthy
-  * compromise in place of having locks on each irq in account_system_time.
-@@ -42,7 +42,7 @@ DEFINE_PER_CPU(seqcount_t, irq_time_seq);
-  * Called before incrementing preempt_count on {soft,}irq_enter
-  * and before decrementing preempt_count on {soft,}irq_exit.
-  */
--void account_system_vtime(struct task_struct *curr)
-+void account_vtime(struct task_struct *curr)
- {
- 	unsigned long flags;
- 	s64 delta;
-@@ -72,7 +72,7 @@ void account_system_vtime(struct task_struct *curr)
- 	irq_time_write_end();
- 	local_irq_restore(flags);
- }
--EXPORT_SYMBOL_GPL(account_system_vtime);
-+EXPORT_SYMBOL_GPL(account_vtime);
- 
- static int irqtime_account_hi_update(void)
- {
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 671f959..8e20a7d 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -212,7 +212,7 @@ asmlinkage void __do_softirq(void)
- 	int cpu;
- 
- 	pending = local_softirq_pending();
--	account_system_vtime(current);
-+	account_vtime(current);
- 
- 	__local_bh_disable((unsigned long)__builtin_return_address(0),
- 				SOFTIRQ_OFFSET);
-@@ -263,7 +263,7 @@ restart:
- 
- 	lockdep_softirq_exit();
- 
--	account_system_vtime(current);
-+	account_vtime(current);
- 	__local_bh_enable(SOFTIRQ_OFFSET);
- }
- 
-@@ -331,7 +331,7 @@ static inline void invoke_softirq(void)
-  */
- void irq_exit(void)
- {
--	account_system_vtime(current);
-+	account_vtime(current);
- 	trace_hardirq_exit();
- 	sub_preempt_count(IRQ_EXIT_OFFSET);
- 	if (!in_interrupt() && local_softirq_pending())
+rtg
 -- 
-1.7.5.4
-
+Tim Gardner tim.gardner@canonical.com
