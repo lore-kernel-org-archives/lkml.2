@@ -1,82 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab2G0LkO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 07:40:14 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:38960 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab2G0LkL (ORCPT
+	id S1752262Ab2G0LqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 07:46:03 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42269 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab2G0LqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 07:40:11 -0400
-Date: Fri, 27 Jul 2012 13:40:09 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: lkml <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] of: drop of_pdt_build_more in pdt.c
-Message-ID: <20120727114009.GA5227@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 27 Jul 2012 07:46:01 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/olpc_dcon: fix checkpatch warnings
+Date: Fri, 27 Jul 2012 20:45:52 +0900
+Message-Id: <1343389552-14684-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
+References: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From bc1fde5cacff425c4bddc061a72e52d3ecb9eeb2 Mon Sep 17 00:00:00 2001
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Fri, 27 Jul 2012 13:34:54 +0200
-Subject: [PATCH] of: drop of_pdt_build_more in pdt.c
+fixed some checkpatch warnings.
+(Excluding -WARNING: msleep < 20ms can sleep for up to 20ms-)
 
-It is no longer used - as the sparc usage was dropped in:
-d884297acac228f15a793850be167ba8f9dd3818 -
-"sparc32,leon: drop leon_init()"
+$ find drivers/staging/olpc_dcon/ -name "*.[ch]"|xargs ./scripts/checkpatch.pl \
+-f --terse --nosummary|cut -f3- -d":"|sort |uniq -c|sort -n
+      2  WARNING: msleep < 20ms can sleep for up to 20ms; see Documentation/timers/timers-howto.txt
+      3  WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
+      3  WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
+      6  WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+     19  WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: David S. Miller <davem@davemloft.net>
+And added pr_fmt.
+
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
 ---
- drivers/of/pdt.c       |    6 ------
- include/linux/of_pdt.h |    3 ---
- 2 files changed, 0 insertions(+), 9 deletions(-)
+ drivers/staging/olpc_dcon/olpc_dcon.c        |   53 ++++++++++++--------------
+ drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |   15 ++++---
+ drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |    6 ++-
+ 3 files changed, 37 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-index 07cc1d6..fd86ddb 100644
---- a/drivers/of/pdt.c
-+++ b/drivers/of/pdt.c
-@@ -26,9 +26,6 @@
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+index 992275c..280751a 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+@@ -11,6 +11,7 @@
+  * License as published by the Free Software Foundation.
+  */
  
- static struct of_pdt_ops *of_pdt_prom_ops __initdata;
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
--void __initdata (*of_pdt_build_more)(struct device_node *dp,
--		struct device_node ***nextp);
--
- #if defined(CONFIG_SPARC)
- unsigned int of_pdt_unique_id __initdata;
+ #include <linux/kernel.h>
+ #include <linux/fb.h>
+@@ -71,18 +72,16 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
  
-@@ -220,9 +217,6 @@ static struct device_node * __init of_pdt_build_tree(struct device_node *parent,
- 		dp->child = of_pdt_build_tree(dp,
- 				of_pdt_prom_ops->getchild(node), nextp);
- 
--		if (of_pdt_build_more)
--			of_pdt_build_more(dp, nextp);
--
- 		node = of_pdt_prom_ops->getsibling(node);
+ 	ver = dcon_read(dcon, DCON_REG_ID);
+ 	if ((ver >> 8) != 0xDC) {
+-		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
+-			ver);
++		pr_err("DCON ID not 0xDCxx: 0x%04x instead.\n", ver);
+ 		rc = -ENXIO;
+ 		goto err;
  	}
  
-diff --git a/include/linux/of_pdt.h b/include/linux/of_pdt.h
-index c65a18a..cb5cf3c 100644
---- a/include/linux/of_pdt.h
-+++ b/include/linux/of_pdt.h
-@@ -39,7 +39,4 @@ extern void *prom_early_alloc(unsigned long size);
- /* for building the device tree */
- extern void of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops);
+ 	if (is_init) {
+-		printk(KERN_INFO "olpc-dcon:  Discovered DCON version %x\n",
+-				ver & 0xFF);
++		pr_info("Discovered DCON version %x\n", ver & 0xFF);
+ 		rc = pdata->init(dcon);
+ 		if (rc != 0) {
+-			printk(KERN_ERR "olpc-dcon:  Unable to init.\n");
++			pr_err("Unable to init.\n");
+ 			goto err;
+ 		}
+ 	}
+@@ -136,8 +135,7 @@ power_up:
+ 		x = 1;
+ 		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
+ 		if (x) {
+-			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power up: %d!\n",
+-				x);
++			pr_warn("unable to force dcon to power up: %d!\n", x);
+ 			return x;
+ 		}
+ 		msleep(10); /* we'll be conservative */
+@@ -150,7 +148,7 @@ power_up:
+ 		x = dcon_read(dcon, DCON_REG_ID);
+ 	}
+ 	if (x < 0) {
+-		printk(KERN_ERR "olpc-dcon:  unable to stabilize dcon's smbus, reasserting power and praying.\n");
++		pr_err("unable to stabilize dcon's smbus, reasserting power and praying.\n");
+ 		BUG_ON(olpc_board_at_least(olpc_board(0xc2)));
+ 		x = 0;
+ 		olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
+@@ -221,8 +219,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
+ 		x = 0;
+ 		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
+ 		if (x)
+-			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power down: %d!\n",
+-				x);
++			pr_warn("unable to force dcon to power down: %d!\n", x);
+ 		else
+ 			dcon->asleep = sleep;
+ 	} else {
+@@ -231,8 +228,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
+ 			dcon->disp_mode |= MODE_BL_ENABLE;
+ 		x = dcon_bus_stabilize(dcon, 1);
+ 		if (x)
+-			printk(KERN_WARNING "olpc-dcon:  unable to reinit dcon hardware: %d!\n",
+-				x);
++			pr_warn("unable to reinit dcon hardware: %d!\n", x);
+ 		else
+ 			dcon->asleep = sleep;
  
--extern void (*of_pdt_build_more)(struct device_node *dp,
--		struct device_node ***nextp);
--
- #endif /* _LINUX_OF_PDT_H */
+@@ -303,12 +299,11 @@ static void dcon_source_switch(struct work_struct *work)
+ 
+ 	switch (source) {
+ 	case DCON_SOURCE_CPU:
+-		printk(KERN_INFO "dcon_source_switch to CPU\n");
++		pr_info("dcon_source_switch to CPU\n");
+ 		/* Enable the scanline interrupt bit */
+ 		if (dcon_write(dcon, DCON_REG_MODE,
+ 				dcon->disp_mode | MODE_SCAN_INT))
+-			printk(KERN_ERR
+-			       "olpc-dcon:  couldn't enable scanline interrupt!\n");
++			pr_err("couldn't enable scanline interrupt!\n");
+ 		else {
+ 			/* Wait up to one second for the scanline interrupt */
+ 			wait_event_timeout(dcon_wait_queue,
+@@ -316,11 +311,11 @@ static void dcon_source_switch(struct work_struct *work)
+ 		}
+ 
+ 		if (!dcon->switched)
+-			printk(KERN_ERR "olpc-dcon:  Timeout entering CPU mode; expect a screen glitch.\n");
++			pr_err("Timeout entering CPU mode; expect a screen glitch.\n");
+ 
+ 		/* Turn off the scanline interrupt */
+ 		if (dcon_write(dcon, DCON_REG_MODE, dcon->disp_mode))
+-			printk(KERN_ERR "olpc-dcon:  couldn't disable scanline interrupt!\n");
++			pr_err("couldn't disable scanline interrupt!\n");
+ 
+ 		/*
+ 		 * Ideally we'd like to disable interrupts here so that the
+@@ -331,7 +326,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 		 * For now, we just hope..
+ 		 */
+ 		if (!dcon_blank_fb(dcon, false)) {
+-			printk(KERN_ERR "olpc-dcon:  Failed to enter CPU mode\n");
++			pr_err("Failed to enter CPU mode\n");
+ 			dcon->pending_src = DCON_SOURCE_DCON;
+ 			return;
+ 		}
+@@ -340,14 +335,14 @@ static void dcon_source_switch(struct work_struct *work)
+ 		pdata->set_dconload(1);
+ 		getnstimeofday(&dcon->load_time);
+ 
+-		printk(KERN_INFO "olpc-dcon: The CPU has control\n");
++		pr_info("The CPU has control\n");
+ 		break;
+ 	case DCON_SOURCE_DCON:
+ 	{
+ 		int t;
+ 		struct timespec delta_t;
+ 
+-		printk(KERN_INFO "dcon_source_switch to DCON\n");
++		pr_info("dcon_source_switch to DCON\n");
+ 
+ 		add_wait_queue(&dcon_wait_queue, &wait);
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+@@ -361,7 +356,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 		set_current_state(TASK_RUNNING);
+ 
+ 		if (!dcon->switched) {
+-			printk(KERN_ERR "olpc-dcon: Timeout entering DCON mode; expect a screen glitch.\n");
++			pr_err("Timeout entering DCON mode; expect a screen glitch.\n");
+ 		} else {
+ 			/* sometimes the DCON doesn't follow its own rules,
+ 			 * and doesn't wait for two vsync pulses before
+@@ -377,7 +372,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 			delta_t = timespec_sub(dcon->irq_time, dcon->load_time);
+ 			if (dcon->switched && delta_t.tv_sec == 0 &&
+ 					delta_t.tv_nsec < NSEC_PER_MSEC * 20) {
+-				printk(KERN_ERR "olpc-dcon: missed loading, retrying\n");
++				pr_err("missed loading, retrying\n");
+ 				pdata->set_dconload(1);
+ 				mdelay(41);
+ 				pdata->set_dconload(0);
+@@ -387,7 +382,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 		}
+ 
+ 		dcon_blank_fb(dcon, true);
+-		printk(KERN_INFO "olpc-dcon: The DCON has control\n");
++		pr_info("The DCON has control\n");
+ 		break;
+ 	}
+ 	default:
+@@ -475,7 +470,7 @@ static ssize_t dcon_freeze_store(struct device *dev,
+ 	if (ret)
+ 		return ret;
+ 
+-	printk(KERN_INFO "dcon_freeze_store: %lu\n", output);
++	pr_info("dcon_freeze_store: %lu\n", output);
+ 
+ 	switch (output) {
+ 	case 0:
+@@ -649,7 +644,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	dcon_device = platform_device_alloc("dcon", -1);
+ 
+ 	if (dcon_device == NULL) {
+-		printk(KERN_ERR "dcon:  Unable to create the DCON device\n");
++		pr_err("Unable to create the DCON device\n");
+ 		rc = -ENOMEM;
+ 		goto eirq;
+ 	}
+@@ -657,7 +652,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	platform_set_drvdata(dcon_device, dcon);
+ 
+ 	if (rc) {
+-		printk(KERN_ERR "dcon:  Unable to add the DCON device\n");
++		pr_err("Unable to add the DCON device\n");
+ 		goto edev;
+ 	}
+ 
+@@ -761,7 +756,7 @@ irqreturn_t dcon_interrupt(int irq, void *id)
+ 
+ 	switch (status & 3) {
+ 	case 3:
+-		printk(KERN_DEBUG "olpc-dcon: DCONLOAD_MISSED interrupt\n");
++		pr_debug("DCONLOAD_MISSED interrupt\n");
+ 		break;
+ 
+ 	case 2:	/* switch to DCON mode */
+@@ -783,9 +778,9 @@ irqreturn_t dcon_interrupt(int irq, void *id)
+ 			dcon->switched = true;
+ 			getnstimeofday(&dcon->irq_time);
+ 			wake_up(&dcon_wait_queue);
+-			printk(KERN_DEBUG "olpc-dcon: switching w/ status 0/0\n");
++			pr_debug("switching w/ status 0/0\n");
+ 		} else {
+-			printk(KERN_DEBUG "olpc-dcon: scanline interrupt w/CPU\n");
++			pr_debug("scanline interrupt w/CPU\n");
+ 		}
+ 	}
+ 
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+index c87fdfa..77e8eb5 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+@@ -10,6 +10,9 @@
+  * modify it under the terms of version 2 of the GNU General Public
+  * License as published by the Free Software Foundation.
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/cs5535.h>
+ #include <linux/gpio.h>
+ #include <linux/delay.h>
+@@ -22,23 +25,23 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
+ 	unsigned char lob;
+ 
+ 	if (gpio_request(OLPC_GPIO_DCON_STAT0, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request STAT0 GPIO\n");
++		pr_err("failed to request STAT0 GPIO\n");
+ 		return -EIO;
+ 	}
+ 	if (gpio_request(OLPC_GPIO_DCON_STAT1, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request STAT1 GPIO\n");
++		pr_err("failed to request STAT1 GPIO\n");
+ 		goto err_gp_stat1;
+ 	}
+ 	if (gpio_request(OLPC_GPIO_DCON_IRQ, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request IRQ GPIO\n");
++		pr_err("failed to request IRQ GPIO\n");
+ 		goto err_gp_irq;
+ 	}
+ 	if (gpio_request(OLPC_GPIO_DCON_LOAD, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request LOAD GPIO\n");
++		pr_err("failed to request LOAD GPIO\n");
+ 		goto err_gp_load;
+ 	}
+ 	if (gpio_request(OLPC_GPIO_DCON_BLANK, "OLPC-DCON")) {
+-		printk(KERN_ERR "olpc-dcon: failed to request BLANK GPIO\n");
++		pr_err("failed to request BLANK GPIO\n");
+ 		goto err_gp_blank;
+ 	}
+ 
+@@ -83,7 +86,7 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
+ 
+ 	/* Register the interrupt handler */
+ 	if (request_irq(DCON_IRQ, &dcon_interrupt, 0, "DCON", dcon)) {
+-		printk(KERN_ERR "olpc-dcon: failed to request DCON's irq\n");
++		pr_err("failed to request DCON's irq\n");
+ 		goto err_req_irq;
+ 	}
+ 
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+index 69415ee..352dd3d 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+@@ -6,6 +6,8 @@
+  * License as published by the Free Software Foundation.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/acpi.h>
+ #include <linux/delay.h>
+ #include <linux/pci.h>
+@@ -66,7 +68,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
+ 	pdev = pci_get_device(PCI_VENDOR_ID_VIA,
+ 			      PCI_DEVICE_ID_VIA_VX855, NULL);
+ 	if (!pdev) {
+-		printk(KERN_ERR "cannot find VX855 PCI ID\n");
++		pr_err("cannot find VX855 PCI ID\n");
+ 		return 1;
+ 	}
+ 
+@@ -104,7 +106,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
+ 	/* we're sharing the IRQ with ACPI */
+ 	irq = acpi_gbl_FADT.sci_interrupt;
+ 	if (request_irq(irq, &dcon_interrupt, IRQF_SHARED, "DCON", dcon)) {
+-		printk(KERN_ERR PREFIX "DCON (IRQ%d) allocation failed\n", irq);
++		pr_err("DCON (IRQ%d) allocation failed\n", irq);
+ 		return 1;
+ 	}
+ 
 -- 
-1.6.0.6
+1.7.5.4
 
