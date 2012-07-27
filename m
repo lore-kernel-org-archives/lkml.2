@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab2G0MqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:46:23 -0400
+	id S1753015Ab2G0Mq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:46:29 -0400
 Received: from mail-wi0-f178.google.com ([209.85.212.178]:34184 "EHLO
 	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab2G0MqU (ORCPT
+	with ESMTP id S1752292Ab2G0Mq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:46:20 -0400
+	Fri, 27 Jul 2012 08:46:26 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
         alsa-devel@alsa-project.org, lrg@ti.com,
         broonie@opensource.wolfsonmicro.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 07/18] ARM: ux500: Clean-up MSP platform code
-Date: Fri, 27 Jul 2012 13:45:51 +0100
-Message-Id: <1343393162-11938-8-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 11/18] ARM: ux500: Pass MSP DMA platform data though AUXDATA
+Date: Fri, 27 Jul 2012 13:45:55 +0100
+Message-Id: <1343393162-11938-12-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
 References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
@@ -23,118 +23,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains a couple of general MSP clean-ups pertaining to
-layout changes and changing functions to be void instead of int instead
-of regardlessly returning '0'.
+It isn't currently possible to pass all platform specific configuration
+though Device Tree. Thinks like device names used in the clock
+infrastructure, call-backs and DMA information have to be passed in via
+AUXDATA structures and the MSP is no exception. Here we're passing DMA
+settings.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-msp.c |   26 ++++++++++++--------------
- arch/arm/mach-ux500/board-mop500-msp.h |   14 --------------
- arch/arm/mach-ux500/board-mop500.c     |    1 -
- arch/arm/mach-ux500/board-mop500.h     |    3 +++
- 4 files changed, 15 insertions(+), 29 deletions(-)
- delete mode 100644 arch/arm/mach-ux500/board-mop500-msp.h
+ arch/arm/mach-ux500/board-mop500-msp.c |    8 ++++----
+ arch/arm/mach-ux500/board-mop500.c     |    9 +++++++++
+ arch/arm/mach-ux500/board-mop500.h     |    5 +++++
+ 3 files changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-msp.c
-index a740e8a..719db15 100644
+index ec5857b..7691f71 100644
 --- a/arch/arm/mach-ux500/board-mop500-msp.c
 +++ b/arch/arm/mach-ux500/board-mop500-msp.c
-@@ -144,21 +144,21 @@ static struct platform_device *db8500_add_msp_i2s(struct device *parent,
- }
- 
- /* Platform device for ASoC U8500 machine */
--static struct platform_device snd_soc_u8500 = {
--		.name = "snd-soc-u8500",
--		.id = 0,
--		.dev = {
--			.platform_data = NULL,
--		},
-+static struct platform_device snd_soc_mop500 = {
-+	.name = "snd-soc-mop500",
-+	.id = 0,
-+	.dev = {
-+		.platform_data = NULL,
-+	},
+@@ -49,7 +49,7 @@ static struct stedma40_chan_cfg msp0_dma_tx = {
+ 	/* data_width is set during configuration */
  };
  
- /* Platform device for Ux500-PCM */
- static struct platform_device ux500_pcm = {
--		.name = "ux500-pcm",
--		.id = 0,
--		.dev = {
--			.platform_data = NULL,
--		},
-+	.name = "ux500-pcm",
-+	.id = 0,
-+	.dev = {
-+		.platform_data = NULL,
-+	},
+-static struct msp_i2s_platform_data msp0_platform_data = {
++struct msp_i2s_platform_data msp0_platform_data = {
+ 	.id = MSP_I2S_0,
+ 	.msp_i2s_dma_rx = &msp0_dma_rx,
+ 	.msp_i2s_dma_tx = &msp0_dma_tx,
+@@ -81,7 +81,7 @@ static struct stedma40_chan_cfg msp1_dma_tx = {
+ 	/* data_width is set during configuration */
  };
  
- static struct msp_i2s_platform_data msp2_platform_data = {
-@@ -174,7 +174,7 @@ static struct msp_i2s_platform_data msp3_platform_data = {
- 	.use_pinctrl    = true,
+-static struct msp_i2s_platform_data msp1_platform_data = {
++struct msp_i2s_platform_data msp1_platform_data = {
+ 	.id = MSP_I2S_1,
+ 	.msp_i2s_dma_rx = NULL,
+ 	.msp_i2s_dma_tx = &msp1_dma_tx,
+@@ -161,13 +161,13 @@ static struct platform_device ux500_pcm = {
+ 	},
  };
  
--int mop500_msp_init(struct device *parent)
-+void mop500_msp_init(struct device *parent)
- {
- 	pr_info("%s: Register platform-device 'snd-soc-u8500'.\n", __func__);
- 	platform_device_register(&snd_soc_mop500);
-@@ -191,6 +191,4 @@ int mop500_msp_init(struct device *parent)
+-static struct msp_i2s_platform_data msp2_platform_data = {
++struct msp_i2s_platform_data msp2_platform_data = {
+ 	.id = MSP_I2S_2,
+ 	.msp_i2s_dma_rx = &msp2_dma_rx,
+ 	.msp_i2s_dma_tx = &msp2_dma_tx,
+ };
  
- 	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
- 	platform_device_register(&ux500_pcm);
--
--	return 0;
- }
-diff --git a/arch/arm/mach-ux500/board-mop500-msp.h b/arch/arm/mach-ux500/board-mop500-msp.h
-deleted file mode 100644
-index 6fcfb5e..0000000
---- a/arch/arm/mach-ux500/board-mop500-msp.h
-+++ /dev/null
-@@ -1,14 +0,0 @@
--/*
-- * Copyright (C) ST-Ericsson SA 2012
-- *
-- * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
-- *         for ST-Ericsson.
-- *
-- * License terms:
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as published
-- * by the Free Software Foundation.
-- */
--
--void mop500_msp_init(struct device *parent);
+-static struct msp_i2s_platform_data msp3_platform_data = {
++struct msp_i2s_platform_data msp3_platform_data = {
+ 	.id		= MSP_I2S_3,
+ 	.msp_i2s_dma_rx	= &msp1_dma_rx,
+ 	.msp_i2s_dma_tx	= NULL,
 diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 87a5cd7..6f53a6f 100644
+index 6f53a6f..d455a61 100644
 --- a/arch/arm/mach-ux500/board-mop500.c
 +++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -54,7 +54,6 @@
- #include "devices-db8500.h"
- #include "board-mop500.h"
- #include "board-mop500-regulators.h"
--#include "board-mop500-msp.h"
+@@ -753,6 +753,15 @@ struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+ 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x8012a000, "nmk-i2c.4", NULL),
+ 	/* Requires device name bindings. */
+ 	OF_DEV_AUXDATA("stericsson,nmk_pinctrl", 0, "pinctrl-db8500", NULL),
++	/* Requires clock name and DMA bindings. */
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
++		"ux500-msp-i2s.0", &msp0_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80124000,
++		"ux500-msp-i2s.1", &msp1_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80117000,
++		"ux500-msp-i2s.2", &msp2_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80125000,
++		"ux500-msp-i2s.3", &msp3_platform_data),
+ 	{},
+ };
  
- static struct gpio_led snowball_led_array[] = {
- 	{
 diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
-index d04a8e6..1d7316b 100644
+index 1d7316b..3fbf48f 100644
 --- a/arch/arm/mach-ux500/board-mop500.h
 +++ b/arch/arm/mach-ux500/board-mop500.h
-@@ -92,6 +92,9 @@ void __init mop500_stuib_init(void);
- void __init mop500_pinmaps_init(void);
- void __init snowball_pinmaps_init(void);
- void __init hrefv60_pinmaps_init(void);
-+void mop500_msp_init(struct device *parent);
-+/* Due for removal once the MSP driver has been fully DT:ed. */
-+void mop500_of_msp_init(struct device *parent);
+@@ -9,6 +9,7 @@
  
- int __init mop500_uib_init(void);
- void mop500_uib_i2c_add(int busnum, struct i2c_board_info *info,
+ /* For NOMADIK_NR_GPIO */
+ #include <mach/irqs.h>
++#include <mach/msp.h>
+ #include <linux/amba/mmci.h>
+ 
+ /* Snowball specific GPIO assignments, this board has no GPIO expander */
+@@ -81,6 +82,10 @@ struct device;
+ struct i2c_board_info;
+ extern struct mmci_platform_data mop500_sdi0_data;
+ extern struct mmci_platform_data mop500_sdi4_data;
++extern struct msp_i2s_platform_data msp0_platform_data;
++extern struct msp_i2s_platform_data msp1_platform_data;
++extern struct msp_i2s_platform_data msp2_platform_data;
++extern struct msp_i2s_platform_data msp3_platform_data;
+ extern struct arm_pmu_platdata db8500_pmu_platdata;
+ 
+ extern void mop500_sdi_init(struct device *parent);
 -- 
 1.7.9.5
 
