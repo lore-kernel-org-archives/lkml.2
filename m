@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab2G0Bya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 21:54:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38961 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab2G0By3 (ORCPT
+	id S1752992Ab2G0B4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 21:56:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37668 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab2G0B4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 21:54:29 -0400
+	Thu, 26 Jul 2012 21:56:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120726175421.GB9161@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<1343149213-10160-13-git-send-email-ming.lei@canonical.com>
-	<20120726123655.GE30717@aftab.osrc.amd.com>
-	<CACVXFVOvkdCG_cAsCQPuNQB_4BnXq8f=+RnVXH=NS5GNPvQgtg@mail.gmail.com>
-	<20120726175421.GB9161@aftab.osrc.amd.com>
-Date: Fri, 27 Jul 2012 09:54:25 +0800
-Message-ID: <CACVXFVM5VhaqKRcWu-6Hj_ja4OrEA63udcL_sLoSWtQm4NFNag@mail.gmail.com>
-Subject: Re: [RFC PATCH 12/13] driver core: firmware loader: use small timeout
- for cache device firmware
-From: Ming Lei <ming.lei@canonical.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+Date: Thu, 26 Jul 2012 18:56:45 -0700
+Message-ID: <CAOesGMiyPjMhLLV9_u8tRHE9UZZAx7_YCs_NS0D_E5kZJuy3vw@mail.gmail.com>
+Subject: [GIT PULL] ARM: SoC fixes
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 1:54 AM, Borislav Petkov <bp@amd64.org> wrote:
-
->> No, it is not what I was saying.
-
-I just mean the point is not mentioned in my commit log, but I admit it should
-be a appropriate cause.
-
->
-> Ok, maybe I'm not understanding this then. So explain to me this: why
-> do you need that timeout value of 10, how did we decide it to be 10
-
-If one firmware image was loaded successfully before, the probability of
-loading it successfully at this time should be much higher than the 1st time
-because something crazy(for example, the firmware is deleted) happens
-with low probability.
-
-Choosing 10 secs is just a estimation for loading time because the maximum
-size of firmware in current distributions is about 2M bytes, since we know
-it has been loaded successfully before.
-
-> (and not 20 or 30 or whatever)? Generally, why do we need to reprogram
-> the timer to a smaller timeout instead of simply doing the completion
-> without a timeout?
-
-No, it should be crazy without a timeout, and it can be triggered in init call
-easily.
+Hi Linus,
 
 
-Thanks,
---
-Ming Lei
+The following changes since commit 9161c3b796a2841a9a7be3d9c9dd121269ce90e8:
+
+  Merge tag 'clk-for-linus' of
+git://git.linaro.org/people/mturquette/linux (2012-07-24 16:40:57
+-0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
+tags/fixes-for-linus
+
+for you to fetch changes up to fa7c865ad999d6ca340bca471fab7f3a3e6ae011:
+
+  ARM: mxs: fix compile error caused by prom_update_property change
+(2012-07-25 22:36:39 -0700)
+
+----------------------------------------------------------------
+ARM: SoC fixes
+
+A mixed bag of fixes, some for merge window fallout (tegra, MXS), and
+a short series of fixes for marvell platforms that didn't make it in
+before 3.5.
+
+----------------------------------------------------------------
+Andrew Lunn (2):
+      ARM: Kirkwood: Ensure runit clock always ticks.
+      ARM: Kirkwood: Replace mrvl with marvell
+
+Arnd Bergmann (2):
+      Merge branch 'master' of git://git.kernel.org/.../torvalds/linux
+into fixes
+      Merge branch 'v3.5-rc7-fixes' of git://github.com/lunn/linux into fixes
+
+Hannes Reinecke (1):
+      ARM: Dove: Fixup ge00 initialisation
+
+Laxman Dewangan (1):
+      ARM: tegra: harmony: add regulator supply name and its input supply
+
+Pawel Moll (1):
+      ARM: versatile: Don't use platform clock for Integrator & VE
+
+Shawn Guo (1):
+      ARM: mxs: fix compile error caused by prom_update_property change
+
+Simon Baatz (2):
+      ARM: Kirkwood: Fix PHY disable clk problems
+      ARM: Orion: fix driver probe error handling with respect to clk
+
+Stephen Warren (2):
+      ARM: dt: tegra trimslice: add vbus-gpio property
+      ARM: dt: tegra trimslice: enable USB2 port
+
+Tony Prisk (1):
+      ARM: vt8500: Add maintainer for VT8500 architecture
+
+ .../devicetree/bindings/mtd/orion-nand.txt         |  4 +-
+ MAINTAINERS                                        | 11 ++++
+ arch/arm/Kconfig                                   |  2 -
+ arch/arm/boot/dts/kirkwood-dns320.dts              |  2 +-
+ arch/arm/boot/dts/kirkwood-dns325.dts              |  2 +-
+ arch/arm/boot/dts/kirkwood-dreamplug.dts           |  2 +-
+ arch/arm/boot/dts/kirkwood-ib62x0.dts              |  2 +-
+ arch/arm/boot/dts/kirkwood-iconnect.dts            |  2 +-
+ arch/arm/boot/dts/kirkwood.dtsi                    |  6 +-
+ arch/arm/boot/dts/tegra20-trimslice.dts            |  2 +
+ arch/arm/mach-dove/common.c                        |  4 +-
+ arch/arm/mach-kirkwood/common.c                    | 70 +++++++++++++++++-----
+ arch/arm/mach-mxs/mach-mxs.c                       |  8 +--
+ arch/arm/mach-tegra/board-harmony-power.c          | 33 ++++++----
+ drivers/crypto/mv_cesa.c                           |  4 ++
+ drivers/mmc/host/mvsdio.c                          |  4 ++
+ drivers/mtd/nand/orion_nand.c                      |  6 +-
+ drivers/net/ethernet/marvell/mv643xx_eth.c         |  6 ++
+ drivers/rtc/rtc-mv.c                               |  2 +-
+ drivers/usb/host/ehci-orion.c                      |  4 ++
+ sound/soc/kirkwood/kirkwood-i2s.c                  |  8 ++-
+ 21 files changed, 133 insertions(+), 51 deletions(-)
