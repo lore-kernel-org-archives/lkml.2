@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab2G0HET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 03:04:19 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:55595 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab2G0HES convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
-	Fri, 27 Jul 2012 03:04:18 -0400
-Message-Id: <5012598C0200007800090DB9@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 27 Jul 2012 08:04:12 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: <catalin.marinas@arm.com>, <arnd@arndb.de>, <Ian.Campbell@citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <tim@xen.org>
-Subject: Re: [Xen-devel] [PATCH 17/24] xen: allow privcmd for HVM
- guests
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-17-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1343316846-25860-17-git-send-email-stefano.stabellini@eu.citrix.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751909Ab2G0HHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 03:07:50 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51378 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab2G0HHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 03:07:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <19738.1343299564@warthog.procyon.org.uk>
+References: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
+ <CAHO5Pa0NOUk=Z8SNQ9t=Oi6aU96o-JtMuAytAoXJ2v1L0ntNww@mail.gmail.com>
+ <28702.1343135952@warthog.procyon.org.uk> <CAHO5Pa310CYFKvyN4N21CHoCKJG-eJ04Q-yg1VmgwvgR5N91Rg@mail.gmail.com>
+ <6193.1343211798@warthog.procyon.org.uk> <CAHO5Pa2ck_wqUwiuFUxEeU=k3dJvByyjpygpUhrSFRsMyBZ8Eg@mail.gmail.com>
+ <5901.1343244093@warthog.procyon.org.uk> <CAHO5Pa1yOxBhorYBGJUsy8MehRUbbrwc=uq7Vs+bevtCXGjGMQ@mail.gmail.com>
+ <19738.1343299564@warthog.procyon.org.uk>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Fri, 27 Jul 2012 09:07:25 +0200
+X-Google-Sender-Auth: SxCbfd_kAFJpajROQCnTSTTaPIQ
+Message-ID: <CAHO5Pa1OBiLd5oEQ_9-7YrK5W-aD3bd1PwCS4TcAVDP3a7PWcg@mail.gmail.com>
+Subject: Re: [PATCH 00/13] UAPI header file split
+To: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        tglx@linutronix.de, mingo@kernel.org, davej@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.07.12 at 17:33, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> In order for privcmd mmap to work correctly, xen_remap_domain_mfn_range
-> needs to be implemented for HVM guests.
-> If it is not, mmap is going to fail later on.
+On Thu, Jul 26, 2012 at 12:46 PM, David Howells <dhowells@redhat.com> wrote:
+> Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+>
+>> >> >> 3. HEADER COMMENTS NOT RETAINED IN KAPI FILES
+>> >
+>> > How about the attached changes?  This is a delta to the disintegrate markers
+>> > diff I sent earlier.
+>>
+>> That looks about right to me.
+>>
+>> Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+>
+> Excellent, thanks.  The question is where can I attach your ack?  I'm not
+> going to simply tag these on the end as a new patch, but rather the changes
+> are included in the regenerated patches as I changed the scripts.
+>
+> So just the main set of scripted commits?
 
-Somehow, for me at least, this description doesn't connect to the
-actual change.
+Modulo the following statements:
+* The conceptual approach of your scripts makes sense to me.
+* I checked a significant, but far from complete, sample of the output
+files, and the results look correct.
+* My comparator scripts support the belief that no content is being
+lost in the resulting header files (once you've made the changes noted
+yesterday).
 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  drivers/xen/privcmd.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-> index ccee0f1..85226cb 100644
-> --- a/drivers/xen/privcmd.c
-> +++ b/drivers/xen/privcmd.c
-> @@ -380,10 +380,6 @@ static struct vm_operations_struct privcmd_vm_ops = {
->  
->  static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
->  {
-> -	/* Unsupported for auto-translate guests. */
-> -	if (xen_feature(XENFEAT_auto_translated_physmap))
-> -		return -ENOSYS;
-> -
+then you could add my Acked-by: for the commits generated by the scripts.
 
-Is this safe on x86?
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
 
-Jan
+Cheers,
 
->  	/* DONTCOPY is essential for Xen because copy_page_range doesn't know
->  	 * how to recreate these mappings */
->  	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY | VM_PFNMAP;
+Michael
 
-
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
