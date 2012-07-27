@@ -1,332 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab2G0Eqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 00:46:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57371 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab2G0Eqh (ORCPT
+	id S1752597Ab2G0FBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 01:01:42 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:23648 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab2G0FBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 00:46:37 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/olpc_dcon: fix checkpatch warnings
-Date: Fri, 27 Jul 2012 13:46:30 +0900
-Message-Id: <1343364390-11410-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
-References: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
+	Fri, 27 Jul 2012 01:01:41 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-bf-501220b2a6f9
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: anton.vorontsov@linaro.org
+Cc: cbouatmailru@gmail.com, jenny.tc@intel.com, ramakrishna.pallala@intel.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 2/2] charger-manager: Use replacement variable to check state
+ of battery
+Date: Fri, 27 Jul 2012 14:01:37 +0900
+Message-id: <1343365297-3530-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t9jAd3NCkIBBl2n2Cwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGooUXWQtu8Fa8mPuEsYHxIHcXIyeHhICJxJf9H9kgbDGJC/fW
+	A9lcHEICixgl7m2cxwqSEBJYyiTx5W8+iM0moCWx/8UNsAYRATmJ12v/MoE0MAucYpR4dPEE
+	M0hCWCBK4vGVdWBFLAKqErv/fmUBsXkFXCQm7OtmhdimING67BD7BEbuBYwMqxhFUwuSC4qT
+	0nMN9YoTc4tL89L1kvNzNzGCffhMagfjygaLQ4wCHIxKPLwTeYUChFgTy4orcw8xSnAwK4nw
+	PucDCvGmJFZWpRblxxeV5qQWH2KU5mBREuc19v7qLySQnliSmp2aWpBaBJNl4uCUamD0KXye
+	4FVybb7g7sS12sX75ZgtL/QyxsXotS2wjhA96KOcw3ik9nymVkPryxOZf1USE5X+vzj5siDm
+	ZlOXdNmJrj5nHrn6awl2Nntv7Niyz8FmrY1oz8E011uNjVPPL/vMNkEzVZn1TMdb/ckPsxks
+	fAU+/k75uj9nJderbdtV23Q4WHJb7iqxFGckGmoxFxUnAgAYpXOU3QEAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed some checkpatch warnings.
-(Excluding -WARNING: msleep < 20ms can sleep for up to 20ms-)
+This patch remove unnecessary variable(cm->fullbatt_vchk_uV) by using
+'desc->fullbatt_uV' field directly in fullbatt_handler() function
+to check the state of battery.
 
-$ find drivers/staging/olpc_dcon/ -name "*.[ch]"|xargs ./scripts/checkpatch.pl \
--f --terse --nosummary|cut -f3- -d":"|sort |uniq -c|sort -n
-      2  WARNING: msleep < 20ms can sleep for up to 20ms; see Documentation/timers/timers-howto.txt
-      3  WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
-      3  WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
-      6  WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-     19  WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
-
-And added pr_fmt.
-
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/staging/olpc_dcon/olpc_dcon.c        |   52 +++++++++++++-------------
- drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |   15 ++++---
- drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |    6 ++-
- 3 files changed, 39 insertions(+), 34 deletions(-)
+ drivers/power/charger-manager.c       |    2 +-
+ include/linux/power/charger-manager.h |    3 ---
+ 2 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index 992275c..f092c80 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -11,6 +11,7 @@
-  * License as published by the Free Software Foundation.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/kernel.h>
- #include <linux/fb.h>
-@@ -71,18 +72,18 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
- 
- 	ver = dcon_read(dcon, DCON_REG_ID);
- 	if ((ver >> 8) != 0xDC) {
--		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x instead.\n",
--			ver);
-+		pr_err("DCON ID not 0xDCxx: 0x%04x instead.\n",
-+		       ver);
- 		rc = -ENXIO;
- 		goto err;
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 240de49..cdf29d2 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -415,7 +415,7 @@ static void fullbatt_vchk(struct work_struct *work)
+ 		return;
  	}
  
- 	if (is_init) {
--		printk(KERN_INFO "olpc-dcon:  Discovered DCON version %x\n",
--				ver & 0xFF);
-+		pr_info("Discovered DCON version %x\n",
-+			ver & 0xFF);
- 		rc = pdata->init(dcon);
- 		if (rc != 0) {
--			printk(KERN_ERR "olpc-dcon:  Unable to init.\n");
-+			pr_err("Unable to init.\n");
- 			goto err;
- 		}
- 	}
-@@ -136,7 +137,7 @@ power_up:
- 		x = 1;
- 		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
- 		if (x) {
--			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power up: %d!\n",
-+			pr_warn("unable to force dcon to power up: %d!\n",
- 				x);
- 			return x;
- 		}
-@@ -150,7 +151,7 @@ power_up:
- 		x = dcon_read(dcon, DCON_REG_ID);
- 	}
- 	if (x < 0) {
--		printk(KERN_ERR "olpc-dcon:  unable to stabilize dcon's smbus, reasserting power and praying.\n");
-+		pr_err("unable to stabilize dcon's smbus, reasserting power and praying.\n");
- 		BUG_ON(olpc_board_at_least(olpc_board(0xc2)));
- 		x = 0;
- 		olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
-@@ -221,7 +222,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
- 		x = 0;
- 		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
- 		if (x)
--			printk(KERN_WARNING "olpc-dcon:  unable to force dcon to power down: %d!\n",
-+			pr_warn("unable to force dcon to power down: %d!\n",
- 				x);
- 		else
- 			dcon->asleep = sleep;
-@@ -231,7 +232,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
- 			dcon->disp_mode |= MODE_BL_ENABLE;
- 		x = dcon_bus_stabilize(dcon, 1);
- 		if (x)
--			printk(KERN_WARNING "olpc-dcon:  unable to reinit dcon hardware: %d!\n",
-+			pr_warn("unable to reinit dcon hardware: %d!\n",
- 				x);
- 		else
- 			dcon->asleep = sleep;
-@@ -303,12 +304,11 @@ static void dcon_source_switch(struct work_struct *work)
+-	diff = cm->fullbatt_vchk_uV;
++	diff = desc->fullbatt_uV;
+ 	diff -= batt_uV;
  
- 	switch (source) {
- 	case DCON_SOURCE_CPU:
--		printk(KERN_INFO "dcon_source_switch to CPU\n");
-+		pr_info("dcon_source_switch to CPU\n");
- 		/* Enable the scanline interrupt bit */
- 		if (dcon_write(dcon, DCON_REG_MODE,
- 				dcon->disp_mode | MODE_SCAN_INT))
--			printk(KERN_ERR
--			       "olpc-dcon:  couldn't enable scanline interrupt!\n");
-+			pr_err("couldn't enable scanline interrupt!\n");
- 		else {
- 			/* Wait up to one second for the scanline interrupt */
- 			wait_event_timeout(dcon_wait_queue,
-@@ -316,11 +316,11 @@ static void dcon_source_switch(struct work_struct *work)
- 		}
+ 	dev_dbg(cm->dev, "VBATT dropped %duV after full-batt.\n", diff);
+diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
+index cd22029..7d7b90f 100644
+--- a/include/linux/power/charger-manager.h
++++ b/include/linux/power/charger-manager.h
+@@ -194,8 +194,6 @@ struct charger_desc {
+  * @charger_enabled: the state of charger
+  * @fullbatt_vchk_jiffies_at:
+  *	jiffies at the time full battery check will occur.
+- * @fullbatt_vchk_uV: voltage in microvolt
+- *	criteria for full battery
+  * @fullbatt_vchk_work: work queue for full battery check
+  * @emergency_stop:
+  *	When setting true, stop charging
+@@ -218,7 +216,6 @@ struct charger_manager {
+ 	bool charger_enabled;
  
- 		if (!dcon->switched)
--			printk(KERN_ERR "olpc-dcon:  Timeout entering CPU mode; expect a screen glitch.\n");
-+			pr_err("Timeout entering CPU mode; expect a screen glitch.\n");
+ 	unsigned long fullbatt_vchk_jiffies_at;
+-	unsigned int fullbatt_vchk_uV;
+ 	struct delayed_work fullbatt_vchk_work;
  
- 		/* Turn off the scanline interrupt */
- 		if (dcon_write(dcon, DCON_REG_MODE, dcon->disp_mode))
--			printk(KERN_ERR "olpc-dcon:  couldn't disable scanline interrupt!\n");
-+			pr_err("couldn't disable scanline interrupt!\n");
- 
- 		/*
- 		 * Ideally we'd like to disable interrupts here so that the
-@@ -331,7 +331,7 @@ static void dcon_source_switch(struct work_struct *work)
- 		 * For now, we just hope..
- 		 */
- 		if (!dcon_blank_fb(dcon, false)) {
--			printk(KERN_ERR "olpc-dcon:  Failed to enter CPU mode\n");
-+			pr_err("Failed to enter CPU mode\n");
- 			dcon->pending_src = DCON_SOURCE_DCON;
- 			return;
- 		}
-@@ -340,14 +340,14 @@ static void dcon_source_switch(struct work_struct *work)
- 		pdata->set_dconload(1);
- 		getnstimeofday(&dcon->load_time);
- 
--		printk(KERN_INFO "olpc-dcon: The CPU has control\n");
-+		pr_info("The CPU has control\n");
- 		break;
- 	case DCON_SOURCE_DCON:
- 	{
- 		int t;
- 		struct timespec delta_t;
- 
--		printk(KERN_INFO "dcon_source_switch to DCON\n");
-+		pr_info("dcon_source_switch to DCON\n");
- 
- 		add_wait_queue(&dcon_wait_queue, &wait);
- 		set_current_state(TASK_UNINTERRUPTIBLE);
-@@ -361,7 +361,7 @@ static void dcon_source_switch(struct work_struct *work)
- 		set_current_state(TASK_RUNNING);
- 
- 		if (!dcon->switched) {
--			printk(KERN_ERR "olpc-dcon: Timeout entering DCON mode; expect a screen glitch.\n");
-+			pr_err("Timeout entering DCON mode; expect a screen glitch.\n");
- 		} else {
- 			/* sometimes the DCON doesn't follow its own rules,
- 			 * and doesn't wait for two vsync pulses before
-@@ -377,7 +377,7 @@ static void dcon_source_switch(struct work_struct *work)
- 			delta_t = timespec_sub(dcon->irq_time, dcon->load_time);
- 			if (dcon->switched && delta_t.tv_sec == 0 &&
- 					delta_t.tv_nsec < NSEC_PER_MSEC * 20) {
--				printk(KERN_ERR "olpc-dcon: missed loading, retrying\n");
-+				pr_err("missed loading, retrying\n");
- 				pdata->set_dconload(1);
- 				mdelay(41);
- 				pdata->set_dconload(0);
-@@ -387,7 +387,7 @@ static void dcon_source_switch(struct work_struct *work)
- 		}
- 
- 		dcon_blank_fb(dcon, true);
--		printk(KERN_INFO "olpc-dcon: The DCON has control\n");
-+		pr_info("The DCON has control\n");
- 		break;
- 	}
- 	default:
-@@ -475,7 +475,7 @@ static ssize_t dcon_freeze_store(struct device *dev,
- 	if (ret)
- 		return ret;
- 
--	printk(KERN_INFO "dcon_freeze_store: %lu\n", output);
-+	pr_info("dcon_freeze_store: %lu\n", output);
- 
- 	switch (output) {
- 	case 0:
-@@ -649,7 +649,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	dcon_device = platform_device_alloc("dcon", -1);
- 
- 	if (dcon_device == NULL) {
--		printk(KERN_ERR "dcon:  Unable to create the DCON device\n");
-+		pr_err("Unable to create the DCON device\n");
- 		rc = -ENOMEM;
- 		goto eirq;
- 	}
-@@ -657,7 +657,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	platform_set_drvdata(dcon_device, dcon);
- 
- 	if (rc) {
--		printk(KERN_ERR "dcon:  Unable to add the DCON device\n");
-+		pr_err("Unable to add the DCON device\n");
- 		goto edev;
- 	}
- 
-@@ -761,7 +761,7 @@ irqreturn_t dcon_interrupt(int irq, void *id)
- 
- 	switch (status & 3) {
- 	case 3:
--		printk(KERN_DEBUG "olpc-dcon: DCONLOAD_MISSED interrupt\n");
-+		pr_debug("DCONLOAD_MISSED interrupt\n");
- 		break;
- 
- 	case 2:	/* switch to DCON mode */
-@@ -783,9 +783,9 @@ irqreturn_t dcon_interrupt(int irq, void *id)
- 			dcon->switched = true;
- 			getnstimeofday(&dcon->irq_time);
- 			wake_up(&dcon_wait_queue);
--			printk(KERN_DEBUG "olpc-dcon: switching w/ status 0/0\n");
-+			pr_debug("switching w/ status 0/0\n");
- 		} else {
--			printk(KERN_DEBUG "olpc-dcon: scanline interrupt w/CPU\n");
-+			pr_debug("scanline interrupt w/CPU\n");
- 		}
- 	}
- 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-index c87fdfa..77e8eb5 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-@@ -10,6 +10,9 @@
-  * modify it under the terms of version 2 of the GNU General Public
-  * License as published by the Free Software Foundation.
-  */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/cs5535.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
-@@ -22,23 +25,23 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
- 	unsigned char lob;
- 
- 	if (gpio_request(OLPC_GPIO_DCON_STAT0, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request STAT0 GPIO\n");
-+		pr_err("failed to request STAT0 GPIO\n");
- 		return -EIO;
- 	}
- 	if (gpio_request(OLPC_GPIO_DCON_STAT1, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request STAT1 GPIO\n");
-+		pr_err("failed to request STAT1 GPIO\n");
- 		goto err_gp_stat1;
- 	}
- 	if (gpio_request(OLPC_GPIO_DCON_IRQ, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request IRQ GPIO\n");
-+		pr_err("failed to request IRQ GPIO\n");
- 		goto err_gp_irq;
- 	}
- 	if (gpio_request(OLPC_GPIO_DCON_LOAD, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request LOAD GPIO\n");
-+		pr_err("failed to request LOAD GPIO\n");
- 		goto err_gp_load;
- 	}
- 	if (gpio_request(OLPC_GPIO_DCON_BLANK, "OLPC-DCON")) {
--		printk(KERN_ERR "olpc-dcon: failed to request BLANK GPIO\n");
-+		pr_err("failed to request BLANK GPIO\n");
- 		goto err_gp_blank;
- 	}
- 
-@@ -83,7 +86,7 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
- 
- 	/* Register the interrupt handler */
- 	if (request_irq(DCON_IRQ, &dcon_interrupt, 0, "DCON", dcon)) {
--		printk(KERN_ERR "olpc-dcon: failed to request DCON's irq\n");
-+		pr_err("failed to request DCON's irq\n");
- 		goto err_req_irq;
- 	}
- 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-index 69415ee..352dd3d 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-@@ -6,6 +6,8 @@
-  * License as published by the Free Software Foundation.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/acpi.h>
- #include <linux/delay.h>
- #include <linux/pci.h>
-@@ -66,7 +68,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
- 	pdev = pci_get_device(PCI_VENDOR_ID_VIA,
- 			      PCI_DEVICE_ID_VIA_VX855, NULL);
- 	if (!pdev) {
--		printk(KERN_ERR "cannot find VX855 PCI ID\n");
-+		pr_err("cannot find VX855 PCI ID\n");
- 		return 1;
- 	}
- 
-@@ -104,7 +106,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
- 	/* we're sharing the IRQ with ACPI */
- 	irq = acpi_gbl_FADT.sci_interrupt;
- 	if (request_irq(irq, &dcon_interrupt, IRQF_SHARED, "DCON", dcon)) {
--		printk(KERN_ERR PREFIX "DCON (IRQ%d) allocation failed\n", irq);
-+		pr_err("DCON (IRQ%d) allocation failed\n", irq);
- 		return 1;
- 	}
- 
+ 	int emergency_stop;
 -- 
-1.7.5.4
+1.7.0.4
 
