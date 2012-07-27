@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab2G0OiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 10:38:25 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:40373 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2G0OiW (ORCPT
+	id S1751376Ab2G0Ojf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 10:39:35 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:63002 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab2G0Oje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 10:38:22 -0400
-Message-ID: <5012A7D3.4040800@redhat.com>
-Date: Fri, 27 Jul 2012 16:38:11 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Fri, 27 Jul 2012 10:39:34 -0400
+X-IronPort-AV: E=Sophos;i="4.77,667,1336348800"; 
+   d="scan'208";a="13737399"
+Message-ID: <1343399971.25096.8.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 02/24] xen/arm: hypercalls
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 27 Jul 2012 15:39:31 +0100
+In-Reply-To: <20120727142101.GA6802@n2100.arm.linux.org.uk>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+	 <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20120726163352.GC9222@phenom.dumpdata.com>
+	 <1343380659.6812.106.camel@zakaz.uk.xensource.com>
+	 <alpine.DEB.2.02.1207271350370.26163@kaball.uk.xensource.com>
+	 <20120727142101.GA6802@n2100.arm.linux.org.uk>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>, mst@redhat.com,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: mashirle@us.ibm.com, krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 3/5] virtio: intorduce an API to set affinity
- for a virtqueue
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1341484194-8108-4-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/07/2012 12:29, Jason Wang ha scritto:
-> Sometimes, virtio device need to configure irq affiniry hint to maximize the
-> performance. Instead of just exposing the irq of a virtqueue, this patch
-> introduce an API to set the affinity for a virtqueue.
+On Fri, 2012-07-27 at 15:21 +0100, Russell King - ARM Linux wrote:
+> On Fri, Jul 27, 2012 at 02:02:18PM +0100, Stefano Stabellini wrote:
+> > > > > +/******************************************************************************
+> > > > > + * hypercall.h
+> > > > > + *
+> > > > > + * Linux-specific hypervisor handling.
+> > > > > + *
+> > > > > + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2012
+> > > > > + *
+> > > > > + * This program is free software; you can redistribute it and/or
+> > > > > + * modify it under the terms of the GNU General Public License version 2
+> > > > > + * as published by the Free Software Foundation; or, when distributed
+> > > > > + * separately from the Linux kernel or incorporated into other
+> > > > > + * software packages, subject to the following license:
+> > > > > + *
+> > > > > + * Permission is hereby granted, free of charge, to any person obtaining a copy
+> > > > > + * of this source file (the "Software"), to deal in the Software without
 > 
-> The api is best-effort, the affinity hint may not be set as expected due to
-> platform support, irq sharing or irq type. Currently, only pci method were
-> implemented and we set the affinity according to:
-> 
-> - if device uses INTX, we just ignore the request
-> - if device has per vq vector, we force the affinity hint
-> - if the virtqueues share MSI, make the affinity OR over all affinities
->  requested
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Erm, is that an additional restriction on the GPL which prevents me from
+> shipping this code on a CD and charging for the act of creating the CD
+> and shipping it?  That would technically make the above statement
+> incompatible with the GPL.
 
-Hmm, I don't see any benefit from this patch, I need to use
-irq_set_affinity (which however is not exported) to actually bind IRQs
-to CPUs.  Example:
+There's an "or" in there.
 
-with irq_set_affinity_hint:
- 43:   89  107  100   97   PCI-MSI-edge   virtio0-request
- 44:  178  195  268  199   PCI-MSI-edge   virtio0-request
- 45:   97  100   97  155   PCI-MSI-edge   virtio0-request
- 46:  234  261  213  218   PCI-MSI-edge   virtio0-request
+The non-GPL alternative license is the standard one applied by upstream
+Xen to the interface headers:
+        http://xenbits.xen.org/hg/xen-unstable.hg/file/tip/xen/include/public/COPYING
 
-with irq_set_affinity:
- 43:  721    0    0    1   PCI-MSI-edge   virtio0-request
- 44:    0  746    0    1   PCI-MSI-edge   virtio0-request
- 45:    0    0  658    0   PCI-MSI-edge   virtio0-request
- 46:    0    0    1  547   PCI-MSI-edge   virtio0-request
+It's the X11/MIT license IIRC, which the FSF say is GPL compatible.
+http://www.gnu.org/licenses/license-list.html#X11License
 
-I gathered these quickly after boot, but real benchmarks show the same
-behavior, and performance gets actually worse with virtio-scsi
-multiqueue+irq_set_affinity_hint than with irq_set_affinity.
+The same license is used a few other places in the kernel, e.g. the DRM
+code.
 
-I also tried adding IRQ_NO_BALANCING, but the only effect is that I
-cannot set the affinity
+Ian.
 
-The queue steering algorithm I use in virtio-scsi is extremely simple
-and based on your tx code.  See how my nice pinning is destroyed:
 
-# taskset -c 0 dd if=/dev/sda bs=1M count=1000 of=/dev/null iflag=direct
-# cat /proc/interrupts
- 43:  2690 2709 2691 2696   PCI-MSI-edge      virtio0-request
- 44:   109  122  199  124   PCI-MSI-edge      virtio0-request
- 45:   170  183  170  237   PCI-MSI-edge      virtio0-request
- 46:   143  166  125  125   PCI-MSI-edge      virtio0-request
-
-All my requests come from CPU#0 and thus go to the first virtqueue, but
-the interrupts are serviced all over the place.
-
-Did you set the affinity manually in your experiments, or perhaps there
-is a difference between scsi and networking... (interrupt mitigation?)
-
-Paolo
