@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319Ab2G0IX0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 04:23:26 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12143 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab2G0IXY (ORCPT
+	id S1752597Ab2G0IdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 04:33:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46871 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab2G0Ics convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 04:23:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 27 Jul 2012 01:18:50 -0700
-Message-ID: <50124D54.3020405@nvidia.com>
-Date: Fri, 27 Jul 2012 13:42:04 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] dma: tegra: enable/disable dma clock
-References: <1342771268-5252-1-git-send-email-ldewangan@nvidia.com> <1343106498.1726.5974.camel@vkoul-udesk3> <500E2BE0.7060602@nvidia.com>
-In-Reply-To: <500E2BE0.7060602@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Jul 2012 04:32:48 -0400
+Message-ID: <1343377963.32120.30.camel@twins>
+Subject: Re: [PATCH 1/2] sched: recover SD_WAKE_AFFINE in
+ select_task_rq_fair and code clean up
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com
+Date: Fri, 27 Jul 2012 10:32:43 +0200
+In-Reply-To: <5011F323.10202@intel.com>
+References: <1343280446-24019-1-git-send-email-alex.shi@intel.com>
+	 <1343295457.6863.43.camel@marge.simpson.net> <5011F323.10202@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 24 July 2012 10:30 AM, Laxman Dewangan wrote:
-> On Tuesday 24 July 2012 10:38 AM, Vinod Koul wrote:
->> On Fri, 2012-07-20 at 13:31 +0530, Laxman Dewangan wrote:
->>> Enable the DMA clock when allocating channel and
->>> disable clock when freeing channels.
->>>
->>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
->>> ---
->>> +	clk_disable_unprepare(tdma->dma_clk);
->> What if another channel is active, disabling clock can cause bad
->> behavior. You should check here if all channels are idle and then
->> disable, or is this handled by clock API?
-> Yes, clock driver keeps the reference count and so client driver need
-> not to take care.
->
-Hi Vinod,
-Is there any thing remaining from my side here?
-Is it possible to make it for K3.6?
+On Fri, 2012-07-27 at 09:47 +0800, Alex Shi wrote:
 
-Thanks,
-Laxman
+> From 610515185d8a98c14c7c339c25381bc96cd99d93 Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Thu, 26 Jul 2012 08:55:34 +0800
+> Subject: [PATCH 1/3] sched: recover SD_WAKE_AFFINE in select_task_rq_fair and
+>  code clean up
+> 
+> Since power saving code was removed from sched now, the implement
+> code is out of service in this function, and even pollute other logical.
+> like, 'want_sd' never has chance to be set '0', that remove the effect
+> of SD_WAKE_AFFINE here.
+> 
+> So, clean up the obsolete code and some other unnecessary code.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
 
+I think your code leaves an unused definition of SD_PREFER_LOCAL around.
