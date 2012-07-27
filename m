@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab2G0Eh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 00:37:27 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56467 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376Ab2G0Eh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 00:37:26 -0400
-Message-ID: <1343363833.2118.14.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Jul 2012 14:37:13 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753409Ab2G0EnZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 00:43:25 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58985 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab2G0EnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 00:43:23 -0400
+From: Filipe Brandenburger <filbranden@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Filipe Brandenburger <filbranden@gmail.com>
+Subject: [PATCHv3] locks: prevent side-effects of locks_release_private before file_lock is initialized
+Date: Fri, 27 Jul 2012 00:42:52 -0400
+Message-Id: <1343364172-1763-1-git-send-email-filbranden@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <20120707190451.GA17049@fieldses.org>
+References: <20120707190451.GA17049@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+When calling fcntl(fd, F_SETLEASE, lck) [with lck=F_WRLCK or F_RDLCK],
+the custom signal or owner (if any were previously set using F_SETSIG
+or F_SETOWN fcntls) would be reset when F_SETLEASE was called for the
+second time on the same file descriptor.
 
-Here's a handful of powerpc patches, a couple of regression fixes
-for problems introduced in the main batch in this merge window,
-a couple of defconfig updates, and some trivials. The radeonfb
-one is something that was long standing in SLES which I forgot
-to pickup earlier.
+This bug is a regression of 2.6.37 and is described here:
+https://bugzilla.kernel.org/show_bug.cgi?id=43336
 
-Cheers,
-Ben.
+This patch reverts a commit from Oct 2004 (with subject "nfs4 lease:
+move the f_delown processing") which originally introduced the
+lm_release_private callback.
 
-The following changes since commit bdc0077af574800d24318b6945cf2344e8dbb050:
+Signed-off-by: Filipe Brandenburger <filbranden@gmail.com>
+---
+ fs/locks.c |   17 ++++++-----------
+ 1 files changed, 6 insertions(+), 11 deletions(-)
 
-  Merge tag 'scsi-misc' of git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi (2012-07-24 18:11:22 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to bac821a6e3404330d509fd3a245bf7701f210c7c:
-
-  powerpc/ftrace: Trace function graph entry before updating index (2012-07-27 11:42:34 +1000)
-
-----------------------------------------------------------------
-Alexander Graf (1):
-      powerpc/kvm/bookehv: Fix build regression
-
-Anton Blanchard (2):
-      powerpc: Enable pseries hardware RNG and crypto modules
-      powerpc: Lack of firmware flash support is not an error
-
-Benjamin Herrenschmidt (1):
-      powerpc: Update g5_defconfig
-
-Steven Rostedt (1):
-      powerpc/ftrace: Trace function graph entry before updating index
-
-Stuart Yoder (1):
-      powerpc: Set stack limit properly in crit_transfer_to_handler
-
-Tony Breeds (1):
-      radeonfb: Add quirk for the graphics adapter in some JSxx
-
- arch/powerpc/configs/g5_defconfig      |  103 ++++++++++----------------------
- arch/powerpc/configs/ppc64_defconfig   |    6 +-
- arch/powerpc/configs/pseries_defconfig |    6 +-
- arch/powerpc/kernel/entry_32.S         |   12 +++-
- arch/powerpc/kernel/ftrace.c           |   11 ++--
- arch/powerpc/kernel/rtas_flash.c       |    2 +-
- arch/powerpc/kvm/bookehv_interrupts.S  |   77 ++++++++++++------------
- drivers/video/aty/radeon_monitor.c     |   35 +++++++++++
- 8 files changed, 128 insertions(+), 124 deletions(-)
-
+diff --git a/fs/locks.c b/fs/locks.c
+index 82c3533..6595882 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -427,18 +427,8 @@ static void lease_break_callback(struct file_lock *fl)
+ 	kill_fasync(&fl->fl_fasync, SIGIO, POLL_MSG);
+ }
+ 
+-static void lease_release_private_callback(struct file_lock *fl)
+-{
+-	if (!fl->fl_file)
+-		return;
+-
+-	f_delown(fl->fl_file);
+-	fl->fl_file->f_owner.signum = 0;
+-}
+-
+ static const struct lock_manager_operations lease_manager_ops = {
+ 	.lm_break = lease_break_callback,
+-	.lm_release_private = lease_release_private_callback,
+ 	.lm_change = lease_modify,
+ };
+ 
+@@ -1155,8 +1145,13 @@ int lease_modify(struct file_lock **before, int arg)
+ 		return error;
+ 	lease_clear_pending(fl, arg);
+ 	locks_wake_up_blocks(fl);
+-	if (arg == F_UNLCK)
++	if (arg == F_UNLCK) {
++		struct file *filp = fl->fl_file;
++
++		f_delown(filp);
++		filp->f_owner.signum = 0;
+ 		locks_delete_lock(before);
++	}
+ 	return 0;
+ }
+ 
+-- 
+1.7.7.6
 
