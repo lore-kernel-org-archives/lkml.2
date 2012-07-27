@@ -1,78 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab2G0MrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:47:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50577 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab2G0Mqc (ORCPT
+	id S1753200Ab2G0Mrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:47:33 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:46607 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071Ab2G0Mra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:46:32 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 15/18] ARM: ux500: Add MSP devices to DB8500 Device Tree
-Date: Fri, 27 Jul 2012 13:45:59 +0100
-Message-Id: <1343393162-11938-16-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
-References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
+	Fri, 27 Jul 2012 08:47:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <E1SuVpz-00028P-QG@eag09.americas.sgi.com>
+References: <E1SuVpz-00028P-QG@eag09.americas.sgi.com>
+Date: Fri, 27 Jul 2012 20:47:29 +0800
+Message-ID: <CAJd=RBDW5f2LxgL9cjr53z+CJdX4DjG9nOiYX-mwrG6FE-dycA@mail.gmail.com>
+Subject: Re: [PATCH] list corruption by gather_surplus
+From: Hillf Danton <dhillf@gmail.com>
+To: Cliff Wickman <cpw@sgi.com>, LKML <linux-kernel@vger.kernel.org>
+Cc: cmetcalf@tilera.com, dave@linux.vnet.ibm.com, dwg@au1.ibm.com,
+        kamezawa.hiroyuki@gmail.com, khlebnikov@openvz.org,
+        lee.schermerhorn@hp.com, mgorman@suse.de, mhocko@suse.cz,
+        shhuiw@gmail.com, viro@zeniv.linux.org.uk, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-List all four MSP devices which exist on all DB8500 based platforms,
-to ensure correct device probing and configuration passing when booting
-with DT.
+On Fri, Jul 27, 2012 at 5:43 AM, Cliff Wickman <cpw@sgi.com> wrote:
+> From: Cliff Wickman <cpw@sgi.com>
+>
+> Gentlemen,
+> I see that you all have done maintenance on mm/hugetlb.c, so I'm hoping one
+> or two of you could comment on a problem and proposed fix.
+>
+>
+> I am seeing list corruption occurring from within gather_surplus_pages()
+> (mm/hugetlb.c).  The problem occurs under a heavy load, and seems to be
+> because this function drops the hugetlb_lock.
+>
+> I have CONFIG_DEBUG_LIST=y, and am running an MPI application with 64 threads
+> and a library that creates a large heap of hugetlbfs pages for it.
+>
+> The below patch fixes the problem.
+> The gist of this patch is that gather_surplus_pages() does not have to drop
+> the lock if alloc_buddy_huge_page() is told whether the lock is already held.
+>
+> But I may be missing some reason why gather_surplus_pages() is unlocking and
+> locking the hugetlb_lock several times (besides around the allocator).
+>
+> Could you take a look and advise?
+>
+> Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> ---
+>  mm/hugetlb.c |   28 +++++++++++++++++-----------
+>  1 file changed, 17 insertions(+), 11 deletions(-)
+>
+> Index: linux/mm/hugetlb.c
+> ===================================================================
+> --- linux.orig/mm/hugetlb.c
+> +++ linux/mm/hugetlb.c
+> @@ -747,7 +747,9 @@ static int free_pool_huge_page(struct hs
+>         return ret;
+>  }
+>
+> -static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+> +/* already_locked means the caller has already locked hugetlb_lock */
+> +static struct page *alloc_buddy_huge_page(struct hstate *h, int nid,
+> +                                               int already_locked)
+>  {
+>         struct page *page;
+>         unsigned int r_nid;
+> @@ -778,7 +780,8 @@ static struct page *alloc_buddy_huge_pag
+>          * the node values until we've gotten the hugepage and only the
+>          * per-node value is checked there.
+>          */
+> -       spin_lock(&hugetlb_lock);
+> +       if (!already_locked)
+> +               spin_lock(&hugetlb_lock);
+>         if (h->surplus_huge_pages >= h->nr_overcommit_huge_pages) {
+>                 spin_unlock(&hugetlb_lock);
+>                 return NULL;
+> @@ -787,6 +790,7 @@ static struct page *alloc_buddy_huge_pag
+>                 h->surplus_huge_pages++;
+>         }
+>         spin_unlock(&hugetlb_lock);
+> +       /* page allocation may sleep, so the lock must be unlocked */
+>
+>         if (nid == NUMA_NO_NODE)
+>                 page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
+> @@ -799,6 +803,9 @@ static struct page *alloc_buddy_huge_pag
+>
+>         if (page && arch_prepare_hugepage(page)) {
+>                 __free_pages(page, huge_page_order(h));
+> +               if (already_locked)
+> +                       /* leave it like it was */
+> +                       spin_lock(&hugetlb_lock);
+>                 return NULL;
+>         }
+>
+> @@ -817,7 +824,9 @@ static struct page *alloc_buddy_huge_pag
+>                 h->surplus_huge_pages--;
+>                 __count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
+>         }
+> -       spin_unlock(&hugetlb_lock);
+> +       if (!already_locked)
+> +               /* leave it like it was */
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/db8500.dtsi |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
 
-diff --git a/arch/arm/boot/dts/db8500.dtsi b/arch/arm/boot/dts/db8500.dtsi
-index a3fb05f..b9d4405 100644
---- a/arch/arm/boot/dts/db8500.dtsi
-+++ b/arch/arm/boot/dts/db8500.dtsi
-@@ -595,6 +595,36 @@
- 			compatible = "stericsson,ux500-pcm";
- 		};
- 
-+		msp0: msp@80123000 {
-+			compatible = "stericsson,ux500-msp-i2s";
-+			reg = <0x80123000 0x1000>;
-+			interrupts = <0 31 0x4>;
-+			v-ape-supply = <&db8500_vape_reg>;
-+		};
-+
-+		msp1: msp@80124000 {
-+			compatible = "stericsson,ux500-msp-i2s";
-+			reg = <0x80124000 0x1000>;
-+			interrupts = <0 62 0x4>;
-+			v-ape-supply = <&db8500_vape_reg>;
-+			stericcson,use-pinctrl;
-+		};
-+
-+		// HDMI sound
-+		msp2: msp@80117000 {
-+			compatible = "stericsson,ux500-msp-i2s";
-+			reg = <0x80117000 0x1000>;
-+			interrupts = <0 98 0x4>;
-+			v-ape-supply = <&db8500_vape_reg>;
-+		};
-+
-+		msp3: msp@80125000 {
-+			compatible = "stericsson,ux500-msp-i2s";
-+			reg = <0x80125000 0x1000>;
-+			interrupts = <0 62 0x4>;
-+			v-ape-supply = <&db8500_vape_reg>;
-+		};
-+
- 		external-bus@50000000 {
- 			compatible = "simple-bus";
- 			reg = <0x50000000 0x4000000>;
--- 
-1.7.9.5
+Same comment for two different checks?
 
+
+> +               spin_unlock(&hugetlb_lock);
+>
+>         return page;
+>  }
+> @@ -836,7 +845,7 @@ struct page *alloc_huge_page_node(struct
+>         spin_unlock(&hugetlb_lock);
+>
+>         if (!page)
+> -               page = alloc_buddy_huge_page(h, nid);
+> +               page = alloc_buddy_huge_page(h, nid, 0);
+>
+>         return page;
+>  }
+> @@ -844,6 +853,7 @@ struct page *alloc_huge_page_node(struct
+>  /*
+>   * Increase the hugetlb pool such that it can accomodate a reservation
+>   * of size 'delta'.
+> + * This is entered and exited with hugetlb_lock locked.
+>   */
+>  static int gather_surplus_pages(struct hstate *h, int delta)
+>  {
+> @@ -863,9 +873,8 @@ static int gather_surplus_pages(struct h
+>
+>         ret = -ENOMEM;
+>  retry:
+> -       spin_unlock(&hugetlb_lock);
+>         for (i = 0; i < needed; i++) {
+> -               page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+> +               page = alloc_buddy_huge_page(h, NUMA_NO_NODE, 1);
+>                 if (!page)
+>                         /*
+>                          * We were not able to allocate enough pages to
+
+Hm, what tree are you using(next tree please if not)?
+
+Good Weekend
+Hillf
