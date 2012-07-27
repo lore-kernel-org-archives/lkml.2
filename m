@@ -1,82 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709Ab2G0KLl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:11:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59123 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751502Ab2G0KLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:11:15 -0400
-Date: Fri, 27 Jul 2012 11:10:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
-        Axel Lin <axel.lin@gmail.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>
-Subject: Re: [GIT PULL] PWM subsystem for v3.6
-Message-ID: <20120727101051.GB7777@opensource.wolfsonmicro.com>
-References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
- <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
- <20120727051054.GA30771@avionic-0098.mockup.avionic-design.de>
+	id S1751555Ab2G0KQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:16:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:35861 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab2G0KP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:15:57 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
+   d="scan'208";a="5496282"
+Message-ID: <50126B83.3050201@cn.fujitsu.com>
+Date: Fri, 27 Jul 2012 18:20:51 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
-Content-Disposition: inline
-In-Reply-To: <20120727051054.GA30771@avionic-0098.mockup.avionic-design.de>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH v5 00/19] memory-hotplug: hot-remove physical memory
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:16:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:16:24,
+	Serialize complete at 2012/07/27 18:16:24
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series aims to support physical memory hot-remove.
 
---3uo+9/B/ebqu+fSQ
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The patches can free/remove following things:
 
-On Fri, Jul 27, 2012 at 07:10:54AM +0200, Thierry Reding wrote:
+  - acpi_memory_info                          : [RFC PATCH 4/19]
+  - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 8/19]
+  - iomem_resource                            : [RFC PATCH 9/19]
+  - mem_section and related sysfs files       : [RFC PATCH 10-11, 13-16/19]
+  - page table of removed memory              : [RFC PATCH 12/19]
+  - node and related sysfs files              : [RFC PATCH 18-19/19]
 
-> At least the patch that adds me as the maintainer is Acked-by: Sascha
-> Hauer, who did the original work, and Arnd Bergmann who was involved in
-> the review process. Other people such as Shawn Guo and Mark Brown have
-> also been reviewing these patches and new patches have been contributed
-> by Eric B=E9nard, Axel Lin, Sachin Kamat, Alexandre Courbot, Alexandre
-> Pereira da Silva and Philip Avinash.
+If you find lack of function for physical memory hot-remove, please let me
+know.
 
-I'm happy with it - I'm intending to push at least one driver for it
-fairly shortly (well, as time allows).  I'm also comfortable that
-Thierry will look after the system longer term.
+change log of v5:
+ * merge the patchset to clear page table and the patchset to hot remove
+   memory(from ishimatsu) to one big patchset.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+ [RFC PATCH v5 1/19]
+   * rename remove_memory() to offline_memory()/offline_pages()
 
-(I did ack quite a few of the patches individually too).
+ [RFC PATCH v5 2/19]
+   * new patch: implement offline_memory(). This function offlines pages,
+     update memory block's state, and notify the userspace that the memory
+     block's state is changed.
 
---3uo+9/B/ebqu+fSQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ [RFC PATCH v5 4/19]
+   * offline and remove memory in acpi_memory_disable_device() too.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ [RFC PATCH v5 17/19]
+   * new patch: add a new function __remove_zone() to revert the things done
+     in the function __add_zone().
 
-iQIcBAEBAgAGBQJQEmkkAAoJEBus8iNuMP3dYcYP/1g13YGraE8sbp6MAIEfeUCD
-f1O8vJiBxcob9kid51NB4yvU+zNU7kx4eHnT011Tnyr6fWHd2r935CE5DzvJ2S6h
-3IV9fyCANRWd+cQUZFzCVmP1Ee6/fnVntfbgWLiUliWLCzRkkpEdITscg+q0mTS7
-31Mk1Rs4e986o68AnQgSuaZGYc53apzg9SqOe9FXXJeTf9TaUpKuw5WbB9rdjy5P
-dSJd2k3N+wkd4yApuWYSzwFTt5JZkMHNgXqbF4aL7Jo2hZrT/UplVNlmCHc9jBtc
-eGqB8/WJHzGZBNX917YOIVnyAC40SeIW/xJf3V7w0T5wRy9vwtJ+4z1EVNvx6rRG
-0fiSKMjfVMp3qI23tEYrjE53ZMBanDjbJRzeNkj2dnc/GBCkSKeCpnlXFYwsTmid
-V80ditlBedk+QR/haw6A5SMuBF9+m6u5rgeuChk+H3MOVXR2j14VD+C7lK9P6ubo
-C74k+24HjlfhZE1Q0ga3sTeTEttDFJcDiTwMd25SPj7VkOHiXte2oLgvb5e7Ai6+
-PhTbgcz7NaYTF7bQWJGUKACYtt9ruFoH+nWfi1bo8swD9AdNxq2El/wQPuh3sM7U
-nw+70lHi9MtQUe8oSDtIfjkScVzhpSiDMyEVJtt7WcD+ULNV3vQCKwiVZKwW6Ph5
-UdCjrzN6VF6zVOtQ7Mmy
-=3095
------END PGP SIGNATURE-----
+ [RFC PATCH v5 18/19]
+   * flush work befor reseting node device.
 
---3uo+9/B/ebqu+fSQ--
+change log of v4:
+ * remove "memory-hotplug : unify argument of firmware_map_add_early/hotplug"
+   from the patch series, since the patch is a bugfix. It is being disccussed
+   on other thread. But for testing the patch series, the patch is needed.
+   So I added the patch as [PATCH 0/13].
+
+ [RFC PATCH v4 2/13]
+   * check memory is online or not at remove_memory()
+   * add memory_add_physaddr_to_nid() to acpi_memory_device_remove() for
+     getting node id
+ 
+ [RFC PATCH v4 3/13]
+   * create new patch : check memory is online or not at online_pages()
+
+ [RFC PATCH v4 4/13]
+   * add __ref section to remove_memory()
+   * call firmware_map_remove_entry() before remove_sysfs_fw_map_entry()
+
+ [RFC PATCH v4 11/13]
+   * rewrite register_page_bootmem_memmap() for removing page used as PT/PMD
+
+change log of v3:
+ * rebase to 3.5.0-rc6
+
+ [RFC PATCH v2 2/13]
+   * remove extra kobject_put()
+
+   * The patch was commented by Wen. Wen's comment is
+     "acpi_memory_device_remove() should ignore a return value of
+     remove_memory() since caller does not care the return value".
+     But I did not change it since I think caller should care the
+     return value. And I am trying to fix it as follow:
+
+     https://lkml.org/lkml/2012/7/5/624
+
+ [RFC PATCH v2 4/13]
+   * remove a firmware_memmap_entry allocated by kzmalloc()
+
+change log of v2:
+ [RFC PATCH v2 2/13]
+   * check whether memory block is offline or not before calling offline_memory()
+   * check whether section is valid or not in is_memblk_offline()
+   * call kobject_put() for each memory_block in is_memblk_offline()
+
+ [RFC PATCH v2 3/13]
+   * unify the end argument of firmware_map_add_early/hotplug
+
+ [RFC PATCH v2 4/13]
+   * add release_firmware_map_entry() for freeing firmware_map_entry
+
+ [RFC PATCH v2 6/13]
+  * add release_memory_block() for freeing memory_block
+
+ [RFC PATCH v2 11/13]
+  * fix wrong arguments of free_pages()
+
+
+Wen Congyang (5):
+  memory-hotplug: implement offline_memory()
+  memory-hotplug: store the node id in acpi_memory_device
+  memory-hotplug: export the function acpi_bus_remove()
+  memory-hotplug: call acpi_bus_remove() to remove memory device
+  memory-hotplug: introduce new function arch_remove_memory()
+
+Yasuaki Ishimatsu (14):
+  memory-hotplug: rename remove_memory() to
+    offline_memory()/offline_pages()
+  memory-hotplug: offline and remove memory when removing the memory
+    device
+  memory-hotplug: check whether memory is present or not
+  memory-hotplug: remove /sys/firmware/memmap/X sysfs
+  memory-hotplug: does not release memory region in PAGES_PER_SECTION
+    chunks
+  memory-hotplug: add memory_block_release
+  memory-hotplug: remove_memory calls __remove_pages
+  memory-hotplug: check page type in get_page_bootmem
+  memory-hotplug: move register_page_bootmem_info_node and
+    put_page_bootmem for sparse-vmemmap
+  memory-hotplug: implement register_page_bootmem_info_section of
+    sparse-vmemmap
+  memory-hotplug: free memmap of sparse-vmemmap
+  memory_hotplug: clear zone when the memory is removed
+  memory-hotplug: add node_device_release
+  memory-hotplug: remove sysfs file of node
+
+ arch/ia64/mm/init.c                             |   16 +
+ arch/powerpc/mm/mem.c                           |   14 +
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
+ arch/s390/mm/init.c                             |    8 +
+ arch/sh/mm/init.c                               |   15 +
+ arch/tile/mm/init.c                             |    8 +
+ arch/x86/include/asm/pgtable_types.h            |    1 +
+ arch/x86/mm/init_32.c                           |   10 +
+ arch/x86/mm/init_64.c                           |  333 ++++++++++++++++++++++
+ arch/x86/mm/pageattr.c                          |   47 ++--
+ drivers/acpi/acpi_memhotplug.c                  |   51 +++-
+ drivers/acpi/scan.c                             |    3 +-
+ drivers/base/memory.c                           |   90 ++++++-
+ drivers/base/node.c                             |    8 +
+ drivers/firmware/memmap.c                       |   78 +++++-
+ include/acpi/acpi_bus.h                         |    1 +
+ include/linux/firmware-map.h                    |    6 +
+ include/linux/memory.h                          |    5 +
+ include/linux/memory_hotplug.h                  |   25 +-
+ include/linux/mm.h                              |    5 +-
+ include/linux/mmzone.h                          |   19 ++
+ mm/memory_hotplug.c                             |  337 +++++++++++++++++++++--
+ mm/sparse.c                                     |    5 +-
+ 23 files changed, 1010 insertions(+), 91 deletions(-)
+
