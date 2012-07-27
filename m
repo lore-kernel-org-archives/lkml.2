@@ -1,259 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab2G0QsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 12:48:04 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:16055
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752214Ab2G0QsA (ORCPT
+	id S1752627Ab2G0Qsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 12:48:30 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:32393 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab2G0Qs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 12:48:00 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(zz78fbmzz1202hzz8275bh8275dh84d07hz2dh2a8h668h839hd24he5bhf0ah107ah)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <kernel@pengutronix.de>, Fabio Estevam <fabio.estevam@freescale.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/2] hw_random: mxc-rnga: Access data via structure
-Date: Fri, 27 Jul 2012 13:47:52 -0300
-Message-ID: <1343407672-27185-2-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1343407672-27185-1-git-send-email-fabio.estevam@freescale.com>
-References: <1343407672-27185-1-git-send-email-fabio.estevam@freescale.com>
+	Fri, 27 Jul 2012 12:48:29 -0400
+X-IronPort-AV: E=Sophos;i="4.77,668,1336348800"; 
+   d="scan'208";a="13739492"
+Date: Fri, 27 Jul 2012 17:47:30 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Jan Beulich <JBeulich@suse.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>
+Subject: Re: [Xen-devel] [PATCH 06/24] xen: missing includes
+In-Reply-To: <501257F30200007800090D9E@nat28.tlf.novell.com>
+Message-ID: <alpine.DEB.2.02.1207271739550.26163@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-6-git-send-email-stefano.stabellini@eu.citrix.com> <501257F30200007800090D9E@nat28.tlf.novell.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current driver, everytime we need to access the rng clock (,ie to enable or disable it) a call to clk_get is done.
+On Fri, 27 Jul 2012, Jan Beulich wrote:
+> >>> On 26.07.12 at 17:33, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> > --- a/include/xen/interface/xen.h
+> > +++ b/include/xen/interface/xen.h
+> > @@ -10,7 +10,10 @@
+> >  #define __XEN_PUBLIC_XEN_H__
+> >  
+> >  #include <asm/xen/interface.h>
+> > +#include <linux/types.h>
+> > +#ifdef CONFIG_X86
+> >  #include <asm/pvclock-abi.h>
+> > +#endif
+> 
+> Rather than hacking around this, why not clean it up:
+> asm/pvclock-abi.h clearly isn't intended to be included here
+> (from the perspective of the origin of xen/interface/xen.h, at
+> least), nor is linux/types.h.
+> 
+> Or if it is really needed to deviate from the original header in
+> this respect, then clearly the inclusion ought to not be arch
+> specific or be moved to an arch specific header.
 
-This is not correct and the preferred way is to provide a rng data structure that could be used for accessing rng resources. 
-
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Herbert Xu <herbert@gondor.apana.org.au> 
-Cc: <linux-kernel@vger.kernel.org>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
-Changes since v1:
-- No changes. Newly introduced in this version
- drivers/char/hw_random/mxc-rnga.c |  108 +++++++++++++++++-------------------
- 1 files changed, 51 insertions(+), 57 deletions(-)
-
-diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
-index 62c7efe..f05d857 100644
---- a/drivers/char/hw_random/mxc-rnga.c
-+++ b/drivers/char/hw_random/mxc-rnga.c
-@@ -59,16 +59,21 @@
- #define RNGA_STATUS_LAST_READ_STATUS	0x00000002
- #define RNGA_STATUS_SECURITY_VIOLATION	0x00000001
- 
--static struct platform_device *rng_dev;
-+struct mxc_rng {
-+	struct device *dev;
-+	struct hwrng rng;
-+	void __iomem *mem;
-+	struct clk *clk;
-+};
- 
- static int mxc_rnga_data_present(struct hwrng *rng, int wait)
- {
--	void __iomem *rng_base = (void __iomem *)rng->priv;
- 	int i;
-+	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
- 
- 	for (i = 0; i < 20; i++) {
- 		/* how many random numbers are in FIFO? [0-16] */
--		int level = (__raw_readl(rng_base + RNGA_STATUS) &
-+		int level = (__raw_readl(mxc_rng->mem + RNGA_STATUS) &
- 				RNGA_STATUS_LEVEL_MASK) >> 8;
- 		if (level || !wait)
- 			return !!level;
-@@ -81,20 +86,20 @@ static int mxc_rnga_data_read(struct hwrng *rng, u32 * data)
- {
- 	int err;
- 	u32 ctrl;
--	void __iomem *rng_base = (void __iomem *)rng->priv;
-+	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
- 
- 	/* retrieve a random number from FIFO */
--	*data = __raw_readl(rng_base + RNGA_OUTPUT_FIFO);
-+	*data = __raw_readl(mxc_rng->mem + RNGA_OUTPUT_FIFO);
- 
- 	/* some error while reading this random number? */
--	err = __raw_readl(rng_base + RNGA_STATUS) & RNGA_STATUS_ERROR_INT;
-+	err = __raw_readl(mxc_rng->mem + RNGA_STATUS) & RNGA_STATUS_ERROR_INT;
- 
- 	/* if error: clear error interrupt, but doesn't return random number */
- 	if (err) {
--		dev_dbg(&rng_dev->dev, "Error while reading random number!\n");
--		ctrl = __raw_readl(rng_base + RNGA_CONTROL);
-+		dev_dbg(mxc_rng->dev, "Error while reading random number!\n");
-+		ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
- 		__raw_writel(ctrl | RNGA_CONTROL_CLEAR_INT,
--					rng_base + RNGA_CONTROL);
-+					mxc_rng->mem + RNGA_CONTROL);
- 		return 0;
- 	} else
- 		return 4;
-@@ -103,22 +108,22 @@ static int mxc_rnga_data_read(struct hwrng *rng, u32 * data)
- static int mxc_rnga_init(struct hwrng *rng)
- {
- 	u32 ctrl, osc;
--	void __iomem *rng_base = (void __iomem *)rng->priv;
-+	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
- 
- 	/* wake up */
--	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
--	__raw_writel(ctrl & ~RNGA_CONTROL_SLEEP, rng_base + RNGA_CONTROL);
-+	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
-+	__raw_writel(ctrl & ~RNGA_CONTROL_SLEEP, mxc_rng->mem + RNGA_CONTROL);
- 
- 	/* verify if oscillator is working */
--	osc = __raw_readl(rng_base + RNGA_STATUS);
-+	osc = __raw_readl(mxc_rng->mem + RNGA_STATUS);
- 	if (osc & RNGA_STATUS_OSC_DEAD) {
--		dev_err(&rng_dev->dev, "RNGA Oscillator is dead!\n");
-+		dev_err(mxc_rng->dev, "RNGA Oscillator is dead!\n");
- 		return -ENODEV;
- 	}
- 
- 	/* go running */
--	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
--	__raw_writel(ctrl | RNGA_CONTROL_GO, rng_base + RNGA_CONTROL);
-+	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
-+	__raw_writel(ctrl | RNGA_CONTROL_GO, mxc_rng->mem + RNGA_CONTROL);
- 
- 	return 0;
- }
-@@ -126,40 +131,40 @@ static int mxc_rnga_init(struct hwrng *rng)
- static void mxc_rnga_cleanup(struct hwrng *rng)
- {
- 	u32 ctrl;
--	void __iomem *rng_base = (void __iomem *)rng->priv;
-+	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
- 
--	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
-+	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
- 
- 	/* stop rnga */
--	__raw_writel(ctrl & ~RNGA_CONTROL_GO, rng_base + RNGA_CONTROL);
-+	__raw_writel(ctrl & ~RNGA_CONTROL_GO, mxc_rng->mem + RNGA_CONTROL);
- }
- 
--static struct hwrng mxc_rnga = {
--	.name = "mxc-rnga",
--	.init = mxc_rnga_init,
--	.cleanup = mxc_rnga_cleanup,
--	.data_present = mxc_rnga_data_present,
--	.data_read = mxc_rnga_data_read
--};
--
- static int __init mxc_rnga_probe(struct platform_device *pdev)
- {
- 	int err = -ENODEV;
--	struct clk *clk;
- 	struct resource *res, *mem;
--	void __iomem *rng_base = NULL;
--
--	if (rng_dev)
--		return -EBUSY;
--
--	clk = clk_get(&pdev->dev, NULL);
--	if (IS_ERR(clk)) {
-+	struct mxc_rng *mxc_rng;
-+
-+	mxc_rng = devm_kzalloc(&pdev->dev, sizeof(struct mxc_rng),
-+					GFP_KERNEL);
-+	if (!mxc_rng)
-+		return -ENOMEM;
-+
-+	mxc_rng->dev = &pdev->dev;
-+	mxc_rng->rng.name = "mxc-rnga";
-+	mxc_rng->rng.init = mxc_rnga_init;
-+	mxc_rng->rng.cleanup = mxc_rnga_cleanup,
-+	mxc_rng->rng.data_present = mxc_rnga_data_present,
-+	mxc_rng->rng.data_read = mxc_rnga_data_read,
-+
-+	mxc_rng->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(mxc_rng->clk)) {
- 		dev_err(&pdev->dev, "Could not get rng_clk!\n");
--		err = PTR_ERR(clk);
-+		err = PTR_ERR(mxc_rng->clk);
- 		goto out;
- 	}
- 
--	clk_prepare_enable(clk);
-+	clk_prepare_enable(mxc_rng->clk);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
-@@ -173,36 +178,27 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
- 		goto err_region;
- 	}
- 
--	rng_base = ioremap(res->start, resource_size(res));
--	if (!rng_base) {
-+	mxc_rng->mem = ioremap(res->start, resource_size(res));
-+	if (!mxc_rng->mem) {
- 		err = -ENOMEM;
- 		goto err_ioremap;
- 	}
- 
--	mxc_rnga.priv = (unsigned long)rng_base;
--
--	err = hwrng_register(&mxc_rnga);
-+	err = hwrng_register(&mxc_rng->rng);
- 	if (err) {
- 		dev_err(&pdev->dev, "MXC RNGA registering failed (%d)\n", err);
--		goto err_register;
-+		goto err_ioremap;
- 	}
- 
--	rng_dev = pdev;
--
- 	dev_info(&pdev->dev, "MXC RNGA Registered.\n");
- 
- 	return 0;
- 
--err_register:
--	iounmap(rng_base);
--	rng_base = NULL;
--
- err_ioremap:
- 	release_mem_region(res->start, resource_size(res));
- 
- err_region:
--	clk_disable_unprepare(clk);
--	clk_put(clk);
-+	clk_disable_unprepare(mxc_rng->clk);
- 
- out:
- 	return err;
-@@ -211,17 +207,15 @@ out:
- static int __exit mxc_rnga_remove(struct platform_device *pdev)
- {
- 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	void __iomem *rng_base = (void __iomem *)mxc_rnga.priv;
--	struct clk *clk = clk_get(&pdev->dev, NULL);
-+	struct mxc_rng *mxc_rng = platform_get_drvdata(pdev);
- 
--	hwrng_unregister(&mxc_rnga);
-+	hwrng_unregister(&mxc_rng->rng);
- 
--	iounmap(rng_base);
-+	iounmap(mxc_rng->mem);
- 
- 	release_mem_region(res->start, resource_size(res));
- 
--	clk_disable_unprepare(clk);
--	clk_put(clk);
-+	clk_disable_unprepare(mxc_rng->clk);
- 
- 	return 0;
- }
--- 
-1.7.1
-
-
+I think you are right: linux/types.h is not actually needed and
+pvclock-abi.h should probably be included by asm/xen/interface.h.
