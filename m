@@ -1,267 +1,727 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab2G0TDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:03:05 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38947 "EHLO
+	id S1752511Ab2G0TEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:04:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59842 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246Ab2G0TDD (ORCPT
+	with ESMTP id S1752235Ab2G0TEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:03:03 -0400
+	Fri, 27 Jul 2012 15:04:38 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] mfd: arizona: convert to regmap_add_irq_chips
-Date: Fri, 27 Jul 2012 13:02:56 -0600
-Message-Id: <1343415776-27176-1-git-send-email-swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V2] mfd: add MAX8907 core driver
+Date: Fri, 27 Jul 2012 13:04:31 -0600
+Message-Id: <1343415871-27273-1-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Gyungoh Yoo <jack.yoo@maxim-ic.com>
 
-The Arizona chip contains a single interrupt that represents the unified
-output of multiple internal interrupt controllers. This pattern has been
-factored out into regmap-irq, so convert the Arizona driver to use the
-new regmap-irq code.
+The MAX8907 is an I2C-based power-management IC containing voltage
+regulators, a reset controller, a real-time clock, and a touch-screen
+controller.
 
-This introduces some hopefully minor functional changes:
+The original driver was written by:
+* Gyungoh Yoo <jack.yoo@maxim-ic.com>
 
-1) regmap_add_irq_chips() calls regmap_add_irq_chip() with irq==0 rather
-   than -1, so in turn irq_domain_add_linear() is called rather than
-   irq_domain_add_legacy(). This change could be avoided by providing an
-   irq_bases array to regmap_add_irq_chips().
+Various fixes and enhancements by:
+* Jin Park <jinyoungp@nvidia.com>
+* Tom Cherry <tcherry@nvidia.com>
+* Prashant Gaikwad <pgaikwad@nvidia.com>
+* Dan Willemsen <dwillemsen@nvidia.com>
+* Laxman Dewangan <ldewangan@nvidia.com>
 
-2) regmap_add_irq_chips() requests the top-level interrupt itself, so this
-   happens before the Arizona driver hooks the child BOOT_DONE and
-   CTRLIF_ERR interrupts. In the original, all the IRQ chips were created
-   first, and then the top-level IRQ was requested. This may cause a
-   functional difference if those interrupts are pending at probe() time.
+During upstreaming, I (swarren):
+* Converted to regmap.
+* Converted to regmap-irq.
+* Allowed probing from device tree.
+* Renamed from max8907c->max8907, since the driver covers at least the
+  C and B revisions.
+* General cleanup.
 
-3) The top-level interrupt domain set up by regmap_add_irq_chips() does
-   not have a .xlate op, whereas the removed domain in the Arizona driver
-   did. However, I don't think this is an issue, since the original code
-   simply used the default irq_domain_xlate_twocell, which didn't handle
-   mapping the IRQ numbers to the child interrupt controllers anyway, and
-   hence probably wasn't that useful. regmap-irq could easily be extended
-   to provide a useful xlate function if required.
-
+Signed-off-by: Gyungoh Yoo <jack.yoo@maxim-ic.com>
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
 Note, this depends on the regmap series I just posted to compile.
----
- drivers/mfd/arizona-irq.c        |  132 ++++++--------------------------------
- include/linux/mfd/arizona/core.h |    4 +-
- 2 files changed, 20 insertions(+), 116 deletions(-)
 
-diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
-index 98ac345..f693f85 100644
---- a/drivers/mfd/arizona-irq.c
-+++ b/drivers/mfd/arizona-irq.c
-@@ -28,11 +28,15 @@
+v2:
+* Rework interrupt code to use regmap-irq. NOTE: This depends on new regmap
+  feature/patches not yet checked in.
+* Implement precious regmap callback to prevent debugfs reading clear-on-
+  read IRQ status registers
+* Fix devm_regmap_init_i2c() parameter
+* Add *-supply properties to DT binding doc.
+---
+ .../devicetree/bindings/regulator/max8907.txt      |   62 ++++
+ drivers/mfd/Kconfig                                |   12 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/max8907.c                              |  317 ++++++++++++++++++++
+ include/linux/mfd/max8907.h                        |  219 ++++++++++++++
+ 5 files changed, 611 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/max8907.txt
+ create mode 100644 drivers/mfd/max8907.c
+ create mode 100644 include/linux/mfd/max8907.h
+
+diff --git a/Documentation/devicetree/bindings/regulator/max8907.txt b/Documentation/devicetree/bindings/regulator/max8907.txt
+new file mode 100644
+index 0000000..4ec4877
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/max8907.txt
+@@ -0,0 +1,62 @@
++MAX8907 regulator
++
++Required properties:
++- compatible: "maxim,max8907"
++- reg: I2C slave address
++- interrupts: The interrupt output of the controller
++- in-v1-supply: The input supply for SD1.
++- in-v2-supply: The input supply for SD2.
++- in-v3-supply: The input supply for SD3.
++- in1-supply: The input supply for LDO1.
++...
++- in20-supply: The input supply for LDO20.
++- lxw-supply: The input supply for WLED.
++- regulators: A node that houses a sub-node for each regulator within the
++  device. Each sub-node is identified using the regulator-compatible
++  property, with valid values listed below. The content of each sub-node
++  is defined by the standard binding for regulators; see regulator.txt.
++
++Valid regulator-compatible values are:
++
++  sd1, sd2, sd3, ldo1, ldo2, ldo3, ldo4, ldo5, ldo6, ldo7, ldo8, ldo9, ldo10,
++  ldo11, ldo12, ldo13, ldo14, ldo15, ldo16, ldo17, ldo18, ldo19, ldo20, out5v,
++  out33v, bbat, sdby, vrtc, wled.
++
++Example:
++
++		max8907@3c {
++			compatible = "maxim,max8907";
++			reg = <0x3c>;
++			interrupts = <0 86 0x4>;
++
++			in-v1-supply = <&some_reg>;
++			...
++			in1-supply = <&some_reg>;
++			...
++			lxw-supply = <&some_reg>;
++
++			regulators {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				regulator@0 {
++					reg = <0>;
++					regulator-compatible = "sd1";
++					regulator-name = "nvvdd_sv1,vdd_cpu_pmu";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++				};
++
++				regulator@1 {
++					reg = <1>;
++					regulator-compatible = "sd2";
++					regulator-name = "nvvdd_sv2,vdd_core";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++					regulator-always-on;
++				};
++...
++			};
++		};
++	};
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 66fd378..fda6ff8 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -476,6 +476,18 @@ config MFD_MAX77693
+ 	  additional drivers must be enabled in order to use the functionality
+ 	  of the device.
  
- static int arizona_map_irq(struct arizona *arizona, int irq)
- {
-+	struct regmap_irq_chip_data *irq_chip;
- 	int ret;
++config MFD_MAX8907
++	tristate "Maxim Semiconductor MAX8907 PMIC Support"
++	select MFD_CORE
++	depends on I2C=y && GENERIC_HARDIRQS
++	select REGMAP_I2C
++	select REGMAP_IRQ
++	help
++	  Say yes here to support for Maxim Semiconductor MAX8907. This is
++	  a Power Management IC. This driver provides common support for
++	  accessing the device; additional drivers must be enabled in order
++	  to use the functionality of the device.
++
+ config MFD_MAX8925
+ 	bool "Maxim Semiconductor MAX8925 PMIC Support"
+ 	depends on I2C=y && GENERIC_HARDIRQS
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 79dd22d..2a4108d 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -92,6 +92,7 @@ obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
  
--	ret = regmap_irq_get_virq(arizona->aod_irq_chip, irq);
--	if (ret < 0)
--		ret = regmap_irq_get_virq(arizona->irq_chip, irq);
-+	irq_chip = regmap_irq_chips_get_chip(arizona->irq_chips, 0);
-+	ret = regmap_irq_get_virq(irq_chip, irq);
-+	if (ret < 0) {
-+		irq_chip = regmap_irq_chips_get_chip(arizona->irq_chips, 1);
-+		ret = regmap_irq_get_virq(irq_chip, irq);
+ obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
+ obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
++obj-$(CONFIG_MFD_MAX8907)	+= max8907.o
+ max8925-objs			:= max8925-core.o max8925-i2c.o
+ obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
+ obj-$(CONFIG_MFD_MAX8997)	+= max8997.o max8997-irq.o
+diff --git a/drivers/mfd/max8907.c b/drivers/mfd/max8907.c
+new file mode 100644
+index 0000000..a4ffdf4
+--- /dev/null
++++ b/drivers/mfd/max8907.c
+@@ -0,0 +1,317 @@
++/*
++ * max8907.c - mfd driver for MAX8907
++ *
++ * Copyright (C) 2010 Gyungoh Yoo <jack.yoo@maxim-ic.com>
++ * Copyright (C) 2010-2012, NVIDIA CORPORATION. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/max8907.h>
++#include <linux/module.h>
++#include <linux/of_device.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
++
++static struct mfd_cell max8907_cells[] = {
++	{ .name = "max8907-regulator", },
++	{ .name = "max8907-rtc", },
++};
++
++static bool max8907_gen_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case MAX8907_REG_ON_OFF_IRQ1:
++	case MAX8907_REG_ON_OFF_STAT:
++	case MAX8907_REG_ON_OFF_IRQ2:
++	case MAX8907_REG_CHG_IRQ1:
++	case MAX8907_REG_CHG_IRQ2:
++	case MAX8907_REG_CHG_STAT:
++		return true;
++	default:
++		return false;
 +	}
- 
- 	return ret;
- }
-@@ -91,83 +95,24 @@ static irqreturn_t arizona_ctrlif_err(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
--static irqreturn_t arizona_irq_thread(int irq, void *data)
--{
--	struct arizona *arizona = data;
--	int i, ret;
--
--	ret = pm_runtime_get_sync(arizona->dev);
--	if (ret < 0) {
--		dev_err(arizona->dev, "Failed to resume device: %d\n", ret);
--		return IRQ_NONE;
--	}
--
--	/* Check both domains */
--	for (i = 0; i < 2; i++)
--		handle_nested_irq(irq_find_mapping(arizona->virq, i));
--
--	pm_runtime_mark_last_busy(arizona->dev);
--	pm_runtime_put_autosuspend(arizona->dev);
--
--	return IRQ_HANDLED;
--}
--
--static void arizona_irq_enable(struct irq_data *data)
--{
--}
--
--static void arizona_irq_disable(struct irq_data *data)
--{
--}
--
--static struct irq_chip arizona_irq_chip = {
--	.name			= "arizona",
--	.irq_disable		= arizona_irq_disable,
--	.irq_enable		= arizona_irq_enable,
--};
--
--static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
--			      irq_hw_number_t hw)
--{
--	struct regmap_irq_chip_data *data = h->host_data;
--
--	irq_set_chip_data(virq, data);
--	irq_set_chip_and_handler(virq, &arizona_irq_chip, handle_edge_irq);
--	irq_set_nested_thread(virq, 1);
--
--	/* ARM needs us to explicitly flag the IRQ as valid
--	 * and will set them noprobe when we do so. */
--#ifdef CONFIG_ARM
--	set_irq_flags(virq, IRQF_VALID);
--#else
--	irq_set_noprobe(virq);
--#endif
--
--	return 0;
--}
--
--static struct irq_domain_ops arizona_domain_ops = {
--	.map	= arizona_irq_map,
--	.xlate	= irq_domain_xlate_twocell,
--};
--
- int arizona_irq_init(struct arizona *arizona)
- {
- 	int flags = IRQF_ONESHOT;
- 	int ret, i;
--	const struct regmap_irq_chip *aod, *irq;
-+	struct regmap *maps[2] = { arizona->regmap, arizona->regmap };
-+	const struct regmap_irq_chip *chips[2];
- 
- 	switch (arizona->type) {
- #ifdef CONFIG_MFD_WM5102
- 	case WM5102:
--		aod = &wm5102_aod;
--		irq = &wm5102_irq;
-+		chips[0] = &wm5102_aod;
-+		chips[1] = &wm5102_irq;
- 		break;
- #endif
- #ifdef CONFIG_MFD_WM5110
- 	case WM5110:
--		aod = &wm5110_aod;
--		irq = &wm5110_irq;
-+		chips[0] = &wm5110_aod;
-+		chips[1] = &wm5110_irq;
- 		break;
- #endif
- 	default:
-@@ -189,30 +134,11 @@ int arizona_irq_init(struct arizona *arizona)
- 		flags |= IRQF_TRIGGER_LOW;
- 	}
- 
--	/* Allocate a virtual IRQ domain to distribute to the regmap domains */
--	arizona->virq = irq_domain_add_linear(NULL, 2, &arizona_domain_ops,
--					      arizona);
--	if (!arizona->virq) {
--		ret = -EINVAL;
--		goto err;
--	}
--
--	ret = regmap_add_irq_chip(arizona->regmap,
--				  irq_create_mapping(arizona->virq, 0),
--				  IRQF_ONESHOT, -1, aod,
--				  &arizona->aod_irq_chip);
-+	ret = regmap_add_irq_chips(arizona->irq, flags, 2, maps, NULL, chips,
-+				   &arizona->irq_chips);
- 	if (ret != 0) {
--		dev_err(arizona->dev, "Failed to add AOD IRQs: %d\n", ret);
--		goto err_domain;
--	}
--
--	ret = regmap_add_irq_chip(arizona->regmap,
--				  irq_create_mapping(arizona->virq, 1),
--				  IRQF_ONESHOT, -1, irq,
--				  &arizona->irq_chip);
--	if (ret != 0) {
--		dev_err(arizona->dev, "Failed to add AOD IRQs: %d\n", ret);
--		goto err_aod;
-+		dev_err(arizona->dev, "Failed to add IRQs: %d\n", ret);
-+		goto err;
- 	}
- 
- 	/* Make sure the boot done IRQ is unmasked for resumes */
-@@ -235,28 +161,12 @@ int arizona_irq_init(struct arizona *arizona)
- 		goto err_ctrlif;
- 	}
- 
--	ret = request_threaded_irq(arizona->irq, NULL, arizona_irq_thread,
--				   flags, "arizona", arizona);
--
--	if (ret != 0) {
--		dev_err(arizona->dev, "Failed to request IRQ %d: %d\n",
--			arizona->irq, ret);
--		goto err_main_irq;
--	}
--
- 	return 0;
- 
--err_main_irq:
--	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
- err_ctrlif:
- 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
- err_boot_done:
--	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 1),
--			    arizona->irq_chip);
--err_aod:
--	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 0),
--			    arizona->aod_irq_chip);
--err_domain:
-+	regmap_del_irq_chips(arizona->irq_chips);
- err:
- 	return ret;
- }
-@@ -265,11 +175,7 @@ int arizona_irq_exit(struct arizona *arizona)
- {
- 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
- 	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
--	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 1),
--			    arizona->irq_chip);
--	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 0),
--			    arizona->aod_irq_chip);
--	free_irq(arizona->irq, arizona);
-+	regmap_del_irq_chips(arizona->irq_chips);
- 
- 	return 0;
- }
-diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
-index dd231ac..769b3a0 100644
---- a/include/linux/mfd/arizona/core.h
-+++ b/include/linux/mfd/arizona/core.h
-@@ -92,9 +92,7 @@ struct arizona {
- 	struct arizona_pdata pdata;
- 
- 	int irq;
--	struct irq_domain *virq;
--	struct regmap_irq_chip_data *aod_irq_chip;
--	struct regmap_irq_chip_data *irq_chip;
-+	struct regmap_irq_chips_data *irq_chips;
- 
- 	struct mutex clk_lock;
- 	int clk32k_ref;
++}
++
++static bool max8907_gen_is_precious_reg(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case MAX8907_REG_ON_OFF_IRQ1:
++	case MAX8907_REG_ON_OFF_IRQ2:
++	case MAX8907_REG_CHG_IRQ1:
++	case MAX8907_REG_CHG_IRQ2:
++		return true;
++	default:
++		return false;
++	}
++}
++
++static bool max8907_gen_is_writeable_reg(struct device *dev, unsigned int reg)
++{
++	return !max8907_gen_is_volatile_reg(dev, reg);
++}
++
++static const struct regmap_config max8907_regmap_gen_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.volatile_reg = max8907_gen_is_volatile_reg,
++	.precious_reg = max8907_gen_is_precious_reg,
++	.writeable_reg = max8907_gen_is_writeable_reg,
++	.max_register = MAX8907_REG_LDO20VOUT,
++	.cache_type = REGCACHE_RBTREE,
++};
++
++static bool max8907_rtc_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	if (reg <= MAX8907_REG_RTC_YEAR2)
++		return true;
++
++	switch (reg) {
++	case MAX8907_REG_RTC_STATUS:
++	case MAX8907_REG_RTC_IRQ:
++		return true;
++	default:
++		return false;
++	}
++}
++
++static bool max8907_rtc_is_precious_reg(struct device *dev, unsigned int reg)
++{
++	if (reg <= MAX8907_REG_RTC_YEAR2)
++		return true;
++
++	switch (reg) {
++	case MAX8907_REG_RTC_IRQ:
++		return true;
++	default:
++		return false;
++	}
++}
++
++static bool max8907_rtc_is_writeable_reg(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case MAX8907_REG_RTC_STATUS:
++	case MAX8907_REG_RTC_IRQ:
++		return false;
++	default:
++		return true;
++	}
++}
++
++static const struct regmap_config max8907_regmap_rtc_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.volatile_reg = max8907_rtc_is_volatile_reg,
++	.precious_reg = max8907_rtc_is_precious_reg,
++	.writeable_reg = max8907_rtc_is_writeable_reg,
++	.max_register = MAX8907_REG_MPL_CNTL,
++	.cache_type = REGCACHE_RBTREE,
++};
++
++static const struct regmap_irq max8907_chg_irqs[] = {
++	{ .reg_offset = 0, .mask = 1 << 0, },
++	{ .reg_offset = 0, .mask = 1 << 1, },
++	{ .reg_offset = 0, .mask = 1 << 2, },
++	{ .reg_offset = 1, .mask = 1 << 0, },
++	{ .reg_offset = 1, .mask = 1 << 1, },
++	{ .reg_offset = 1, .mask = 1 << 2, },
++	{ .reg_offset = 1, .mask = 1 << 3, },
++	{ .reg_offset = 1, .mask = 1 << 4, },
++	{ .reg_offset = 1, .mask = 1 << 5, },
++	{ .reg_offset = 1, .mask = 1 << 6, },
++	{ .reg_offset = 1, .mask = 1 << 7, },
++};
++
++static const struct regmap_irq_chip max8907_chg_irq_chip = {
++	.name = "max8907 chg",
++	.status_base = MAX8907_REG_CHG_IRQ1,
++	.mask_base = MAX8907_REG_CHG_IRQ1_MASK,
++	.wake_base = MAX8907_REG_CHG_IRQ1_MASK,
++	.irq_reg_stride = MAX8907_REG_CHG_IRQ2 - MAX8907_REG_CHG_IRQ1,
++	.num_regs = 2,
++	.irqs = max8907_chg_irqs,
++	.num_irqs = ARRAY_SIZE(max8907_chg_irqs),
++};
++
++static const struct regmap_irq max8907_on_off_irqs[] = {
++	{ .reg_offset = 0, .mask = 1 << 0, },
++	{ .reg_offset = 0, .mask = 1 << 1, },
++	{ .reg_offset = 0, .mask = 1 << 2, },
++	{ .reg_offset = 0, .mask = 1 << 3, },
++	{ .reg_offset = 0, .mask = 1 << 4, },
++	{ .reg_offset = 0, .mask = 1 << 5, },
++	{ .reg_offset = 0, .mask = 1 << 6, },
++	{ .reg_offset = 0, .mask = 1 << 7, },
++	{ .reg_offset = 1, .mask = 1 << 0, },
++	{ .reg_offset = 1, .mask = 1 << 1, },
++};
++
++static const struct regmap_irq_chip max8907_on_off_irq_chip = {
++	.name = "max8907 on_off",
++	.status_base = MAX8907_REG_ON_OFF_IRQ1,
++	.mask_base = MAX8907_REG_ON_OFF_IRQ1_MASK,
++	.wake_base = MAX8907_REG_ON_OFF_IRQ1_MASK,
++	.irq_reg_stride = MAX8907_REG_ON_OFF_IRQ2 - MAX8907_REG_ON_OFF_IRQ1,
++	.num_regs = 2,
++	.irqs = max8907_on_off_irqs,
++	.num_irqs = ARRAY_SIZE(max8907_on_off_irqs),
++};
++
++static const struct regmap_irq max8907_rtc_irqs[] = {
++	{ .reg_offset = 0, .mask = 1 << 2, },
++	{ .reg_offset = 0, .mask = 1 << 3, },
++};
++
++static const struct regmap_irq_chip max8907_rtc_irq_chip = {
++	.name = "max8907 rtc",
++	.status_base = MAX8907_REG_RTC_IRQ,
++	.mask_base = MAX8907_REG_RTC_IRQ_MASK,
++	.wake_base = MAX8907_REG_RTC_IRQ_MASK,
++	.num_regs = 1,
++	.irqs = max8907_rtc_irqs,
++	.num_irqs = ARRAY_SIZE(max8907_rtc_irqs),
++};
++
++static const struct regmap_irq_chip *max8907_irq_chips[3] = {
++	&max8907_chg_irq_chip,
++	&max8907_on_off_irq_chip,
++	&max8907_rtc_irq_chip,
++};
++
++static __devinit int max8907_i2c_probe(struct i2c_client *i2c,
++				       const struct i2c_device_id *id)
++{
++	struct max8907 *max8907;
++	struct regmap *maps[3];
++	int ret;
++
++	max8907 = devm_kzalloc(&i2c->dev, sizeof(struct max8907), GFP_KERNEL);
++	if (!max8907) {
++		ret = -ENOMEM;
++		goto err_alloc_drvdata;
++	}
++
++	max8907->dev = &i2c->dev;
++	dev_set_drvdata(max8907->dev, max8907);
++
++	max8907->i2c_gen = i2c;
++	i2c_set_clientdata(i2c, max8907);
++	max8907->regmap_gen = devm_regmap_init_i2c(i2c,
++						&max8907_regmap_gen_config);
++	if (IS_ERR(max8907->regmap_gen)) {
++		ret = PTR_ERR(max8907->regmap_gen);
++		dev_err(&i2c->dev, "gen regmap init failed: %d\n", ret);
++		goto err_regmap_gen;
++	}
++
++	max8907->i2c_rtc = i2c_new_dummy(i2c->adapter, MAX8907_RTC_I2C_ADDR);
++	if (!max8907->i2c_rtc) {
++		ret = -ENOMEM;
++		goto err_dummy_rtc;
++	}
++	i2c_set_clientdata(max8907->i2c_rtc, max8907);
++	max8907->regmap_rtc = devm_regmap_init_i2c(max8907->i2c_rtc,
++						&max8907_regmap_rtc_config);
++	if (IS_ERR(max8907->regmap_rtc)) {
++		ret = PTR_ERR(max8907->regmap_rtc);
++		dev_err(&i2c->dev, "rtc regmap init failed: %d\n", ret);
++		goto err_regmap_rtc;
++	}
++
++	maps[0] = max8907->regmap_gen;
++	maps[1] = max8907->regmap_gen;
++	maps[2] = max8907->regmap_rtc;
++	ret = regmap_add_irq_chips(max8907->i2c_gen->irq, IRQF_ONESHOT,
++				   ARRAY_SIZE(max8907_irq_chips), maps,
++				   NULL, max8907_irq_chips,
++				   &max8907->regmap_irq_chips);
++	if (ret != 0)
++		goto err_irq_init;
++
++	ret = mfd_add_devices(max8907->dev, -1, max8907_cells,
++			      ARRAY_SIZE(max8907_cells), NULL, 0);
++	if (ret != 0) {
++		dev_err(&i2c->dev, "failed to add MFD devices %d\n", ret);
++		goto err_add_devices;
++	}
++
++	return 0;
++
++err_add_devices:
++	regmap_del_irq_chips(max8907->regmap_irq_chips);
++err_irq_init:
++err_regmap_rtc:
++	i2c_unregister_device(max8907->i2c_rtc);
++err_dummy_rtc:
++err_regmap_gen:
++err_alloc_drvdata:
++	return ret;
++}
++
++static __devexit int max8907_i2c_remove(struct i2c_client *i2c)
++{
++	struct max8907 *max8907 = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(max8907->dev);
++
++	regmap_del_irq_chips(max8907->regmap_irq_chips);
++
++	i2c_unregister_device(max8907->i2c_rtc);
++
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static struct of_device_id max8907_of_match[] = {
++	{ .compatible = "maxim,max8907" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, max8907_of_match);
++#endif
++
++static const struct i2c_device_id max8907_i2c_id[] = {
++	{"max8907", 0},
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, max8907_i2c_id);
++
++static struct i2c_driver max8907_i2c_driver = {
++	.driver = {
++		.name = "max8907",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(max8907_of_match),
++	},
++	.probe = max8907_i2c_probe,
++	.remove = max8907_i2c_remove,
++	.id_table = max8907_i2c_id,
++};
++
++static int __init max8907_i2c_init(void)
++{
++	int ret = -ENODEV;
++
++	ret = i2c_add_driver(&max8907_i2c_driver);
++	if (ret != 0)
++		pr_err("Failed to register I2C driver: %d\n", ret);
++
++	return ret;
++}
++subsys_initcall(max8907_i2c_init);
++
++static void __exit max8907_i2c_exit(void)
++{
++	i2c_del_driver(&max8907_i2c_driver);
++}
++module_exit(max8907_i2c_exit);
++
++MODULE_DESCRIPTION("MAX8907 multi-function core driver");
++MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@maxim-ic.com>");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mfd/max8907.h b/include/linux/mfd/max8907.h
+new file mode 100644
+index 0000000..b62f5b3
+--- /dev/null
++++ b/include/linux/mfd/max8907.h
+@@ -0,0 +1,219 @@
++/*
++ * Functions to access MAX8907 power management chip.
++ *
++ * Copyright (C) 2010 Gyungoh Yoo <jack.yoo@maxim-ic.com>
++ * Copyright (C) 2012, NVIDIA CORPORATION. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __LINUX_MFD_MAX8907_H
++#define __LINUX_MFD_MAX8907_H
++
++#include <linux/mutex.h>
++#include <linux/pm.h>
++
++#define MAX8907_GEN_I2C_ADDR		(0x78 >> 1)
++#define MAX8907_ADC_I2C_ADDR		(0x8e >> 1)
++#define MAX8907_RTC_I2C_ADDR		(0xd0 >> 1)
++
++/* MAX8907 register map */
++#define MAX8907_REG_SYSENSEL		0x00
++#define MAX8907_REG_ON_OFF_IRQ1		0x01
++#define MAX8907_REG_ON_OFF_IRQ1_MASK	0x02
++#define MAX8907_REG_ON_OFF_STAT		0x03
++#define MAX8907_REG_SDCTL1		0x04
++#define MAX8907_REG_SDSEQCNT1		0x05
++#define MAX8907_REG_SDV1		0x06
++#define MAX8907_REG_SDCTL2		0x07
++#define MAX8907_REG_SDSEQCNT2		0x08
++#define MAX8907_REG_SDV2		0x09
++#define MAX8907_REG_SDCTL3		0x0A
++#define MAX8907_REG_SDSEQCNT3		0x0B
++#define MAX8907_REG_SDV3		0x0C
++#define MAX8907_REG_ON_OFF_IRQ2		0x0D
++#define MAX8907_REG_ON_OFF_IRQ2_MASK	0x0E
++#define MAX8907_REG_RESET_CNFG		0x0F
++#define MAX8907_REG_LDOCTL16		0x10
++#define MAX8907_REG_LDOSEQCNT16		0x11
++#define MAX8907_REG_LDO16VOUT		0x12
++#define MAX8907_REG_SDBYSEQCNT		0x13
++#define MAX8907_REG_LDOCTL17		0x14
++#define MAX8907_REG_LDOSEQCNT17		0x15
++#define MAX8907_REG_LDO17VOUT		0x16
++#define MAX8907_REG_LDOCTL1		0x18
++#define MAX8907_REG_LDOSEQCNT1		0x19
++#define MAX8907_REG_LDO1VOUT		0x1A
++#define MAX8907_REG_LDOCTL2		0x1C
++#define MAX8907_REG_LDOSEQCNT2		0x1D
++#define MAX8907_REG_LDO2VOUT		0x1E
++#define MAX8907_REG_LDOCTL3		0x20
++#define MAX8907_REG_LDOSEQCNT3		0x21
++#define MAX8907_REG_LDO3VOUT		0x22
++#define MAX8907_REG_LDOCTL4		0x24
++#define MAX8907_REG_LDOSEQCNT4		0x25
++#define MAX8907_REG_LDO4VOUT		0x26
++#define MAX8907_REG_LDOCTL5		0x28
++#define MAX8907_REG_LDOSEQCNT5		0x29
++#define MAX8907_REG_LDO5VOUT		0x2A
++#define MAX8907_REG_LDOCTL6		0x2C
++#define MAX8907_REG_LDOSEQCNT6		0x2D
++#define MAX8907_REG_LDO6VOUT		0x2E
++#define MAX8907_REG_LDOCTL7		0x30
++#define MAX8907_REG_LDOSEQCNT7		0x31
++#define MAX8907_REG_LDO7VOUT		0x32
++#define MAX8907_REG_LDOCTL8		0x34
++#define MAX8907_REG_LDOSEQCNT8		0x35
++#define MAX8907_REG_LDO8VOUT		0x36
++#define MAX8907_REG_LDOCTL9		0x38
++#define MAX8907_REG_LDOSEQCNT9		0x39
++#define MAX8907_REG_LDO9VOUT		0x3A
++#define MAX8907_REG_LDOCTL10		0x3C
++#define MAX8907_REG_LDOSEQCNT10		0x3D
++#define MAX8907_REG_LDO10VOUT		0x3E
++#define MAX8907_REG_LDOCTL11		0x40
++#define MAX8907_REG_LDOSEQCNT11		0x41
++#define MAX8907_REG_LDO11VOUT		0x42
++#define MAX8907_REG_LDOCTL12		0x44
++#define MAX8907_REG_LDOSEQCNT12		0x45
++#define MAX8907_REG_LDO12VOUT		0x46
++#define MAX8907_REG_LDOCTL13		0x48
++#define MAX8907_REG_LDOSEQCNT13		0x49
++#define MAX8907_REG_LDO13VOUT		0x4A
++#define MAX8907_REG_LDOCTL14		0x4C
++#define MAX8907_REG_LDOSEQCNT14		0x4D
++#define MAX8907_REG_LDO14VOUT		0x4E
++#define MAX8907_REG_LDOCTL15		0x50
++#define MAX8907_REG_LDOSEQCNT15		0x51
++#define MAX8907_REG_LDO15VOUT		0x52
++#define MAX8907_REG_OUT5VEN		0x54
++#define MAX8907_REG_OUT5VSEQ		0x55
++#define MAX8907_REG_OUT33VEN		0x58
++#define MAX8907_REG_OUT33VSEQ		0x59
++#define MAX8907_REG_LDOCTL19		0x5C
++#define MAX8907_REG_LDOSEQCNT19		0x5D
++#define MAX8907_REG_LDO19VOUT		0x5E
++#define MAX8907_REG_LBCNFG		0x60
++#define MAX8907_REG_SEQ1CNFG		0x64
++#define MAX8907_REG_SEQ2CNFG		0x65
++#define MAX8907_REG_SEQ3CNFG		0x66
++#define MAX8907_REG_SEQ4CNFG		0x67
++#define MAX8907_REG_SEQ5CNFG		0x68
++#define MAX8907_REG_SEQ6CNFG		0x69
++#define MAX8907_REG_SEQ7CNFG		0x6A
++#define MAX8907_REG_LDOCTL18		0x72
++#define MAX8907_REG_LDOSEQCNT18		0x73
++#define MAX8907_REG_LDO18VOUT		0x74
++#define MAX8907_REG_BBAT_CNFG		0x78
++#define MAX8907_REG_CHG_CNTL1		0x7C
++#define MAX8907_REG_CHG_CNTL2		0x7D
++#define MAX8907_REG_CHG_IRQ1		0x7E
++#define MAX8907_REG_CHG_IRQ2		0x7F
++#define MAX8907_REG_CHG_IRQ1_MASK	0x80
++#define MAX8907_REG_CHG_IRQ2_MASK	0x81
++#define MAX8907_REG_CHG_STAT		0x82
++#define MAX8907_REG_WLED_MODE_CNTL	0x84
++#define MAX8907_REG_ILED_CNTL		0x84
++#define MAX8907_REG_II1RR		0x8E
++#define MAX8907_REG_II2RR		0x8F
++#define MAX8907_REG_LDOCTL20		0x9C
++#define MAX8907_REG_LDOSEQCNT20		0x9D
++#define MAX8907_REG_LDO20VOUT		0x9E
++
++/* RTC register map */
++#define MAX8907_REG_RTC_SEC		0x00
++#define MAX8907_REG_RTC_MIN		0x01
++#define MAX8907_REG_RTC_HOURS		0x02
++#define MAX8907_REG_RTC_WEEKDAY		0x03
++#define MAX8907_REG_RTC_DATE		0x04
++#define MAX8907_REG_RTC_MONTH		0x05
++#define MAX8907_REG_RTC_YEAR1		0x06
++#define MAX8907_REG_RTC_YEAR2		0x07
++#define MAX8907_REG_ALARM0_SEC		0x08
++#define MAX8907_REG_ALARM0_MIN		0x09
++#define MAX8907_REG_ALARM0_HOURS	0x0A
++#define MAX8907_REG_ALARM0_WEEKDAY	0x0B
++#define MAX8907_REG_ALARM0_DATE		0x0C
++#define MAX8907_REG_ALARM0_MONTH	0x0D
++#define MAX8907_REG_ALARM0_YEAR1	0x0E
++#define MAX8907_REG_ALARM0_YEAR2	0x0F
++#define MAX8907_REG_ALARM1_SEC		0x10
++#define MAX8907_REG_ALARM1_MIN		0x11
++#define MAX8907_REG_ALARM1_HOURS	0x12
++#define MAX8907_REG_ALARM1_WEEKDAY	0x13
++#define MAX8907_REG_ALARM1_DATE		0x14
++#define MAX8907_REG_ALARM1_MONTH	0x15
++#define MAX8907_REG_ALARM1_YEAR1	0x16
++#define MAX8907_REG_ALARM1_YEAR2	0x17
++#define MAX8907_REG_ALARM0_CNTL		0x18
++#define MAX8907_REG_ALARM1_CNTL		0x19
++#define MAX8907_REG_RTC_STATUS		0x1A
++#define MAX8907_REG_RTC_CNTL		0x1B
++#define MAX8907_REG_RTC_IRQ		0x1C
++#define MAX8907_REG_RTC_IRQ_MASK	0x1D
++#define MAX8907_REG_MPL_CNTL		0x1E
++
++/* ADC and Touch Screen Controller register map */
++#define MAX8907_CTL			0
++#define MAX8907_SEQCNT			1
++#define MAX8907_VOUT			2
++
++/* mask bit fields */
++#define MAX8907_MASK_LDO_SEQ		0x1C
++#define MAX8907_MASK_LDO_EN		0x01
++#define MAX8907_MASK_VBBATTCV		0x03
++#define MAX8907_MASK_OUT5V_VINEN	0x10
++#define MAX8907_MASK_OUT5V_ENSRC	0x0E
++#define MAX8907_MASK_OUT5V_EN		0x01
++
++/* Regulator IDs */
++#define MAX8907_SD1	0
++#define MAX8907_SD2	1
++#define MAX8907_SD3	2
++#define MAX8907_LDO1	3
++#define MAX8907_LDO2	4
++#define MAX8907_LDO3	5
++#define MAX8907_LDO4	6
++#define MAX8907_LDO5	7
++#define MAX8907_LDO6	8
++#define MAX8907_LDO7	9
++#define MAX8907_LDO8	10
++#define MAX8907_LDO9	11
++#define MAX8907_LDO10	12
++#define MAX8907_LDO11	13
++#define MAX8907_LDO12	14
++#define MAX8907_LDO13	15
++#define MAX8907_LDO14	16
++#define MAX8907_LDO15	17
++#define MAX8907_LDO16	18
++#define MAX8907_LDO17	19
++#define MAX8907_LDO18	20
++#define MAX8907_LDO19	21
++#define MAX8907_LDO20	22
++#define MAX8907_OUT5V	23
++#define MAX8907_OUT33V	24
++#define MAX8907_BBAT	25
++#define MAX8907_SDBY	26
++#define MAX8907_VRTC	27
++#define MAX8907_WLED	28
++#define MAX8907_NUM_REGULATORS (MAX8907_WLED + 1)
++
++struct max8907_platform_data {
++	struct regulator_init_data *init_data[MAX8907_NUM_REGULATORS];
++};
++
++struct regmap_irq_chips_data;
++
++struct max8907 {
++	struct device		*dev;
++	struct mutex		irq_lock;
++	struct i2c_client	*i2c_gen;
++	struct i2c_client	*i2c_rtc;
++	struct regmap		*regmap_gen;
++	struct regmap		*regmap_rtc;
++	struct regmap_irq_chips_data *regmap_irq_chips;
++};
++
++#endif
 -- 
 1.7.0.4
 
