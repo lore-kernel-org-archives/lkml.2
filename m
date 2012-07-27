@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab2G0Ad7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 20:33:59 -0400
-Received: from dec52.lf1.cuni.cz ([195.113.48.2]:49784 "HELO dec52.lf1.cuni.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752705Ab2G0Ad5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 20:33:57 -0400
+	id S1753057Ab2G0AiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 20:38:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38796 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900Ab2G0AiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 20:38:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 26 Jul 2012 20:27:15 -0400
-From: webmaster <Zdenek.Halata@lf1.cuni.cz>
-To: undisclosed-recipients:;
-Subject: Your  webmail quota has exceeded
-Message-ID: <fef3f455de1bef58af95e00166c652ac@dec52.lf1.cuni.cz>
-User-Agent: RoundCube Webmail/0.6
+In-Reply-To: <20120726194324.GG5637@redhat.com>
+References: <1343191185-7746-1-git-send-email-ming.lei@canonical.com>
+	<20120726194324.GG5637@redhat.com>
+Date: Fri, 27 Jul 2012 08:38:21 +0800
+Message-ID: <CACVXFVPdKzHXE=mV=FOx8xV4BLUEo_Ey9p6e9CkSOHxxYBfVgA@mail.gmail.com>
+Subject: Re: [PATCH] kernel/watchdog.c : fix smp_processor_id() warning
+From: Ming Lei <ming.lei@canonical.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Sameer Nanda <snanda@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 27, 2012 at 3:43 AM, Don Zickus <dzickus@redhat.com> wrote:
+> On Wed, Jul 25, 2012 at 12:39:45PM +0800, Ming Lei wrote:
+>> Use raw_smp_processor_id in lockup_detector_bootcpu_resume()
+>> because it is enough when non-boot CPUs are offline.
+>>
+>> This patch fixes the following warning when DEBUG_PREEMPT
+>> is enabled.
+>
+> Is this patched on top of linux-next?
+
+Yes.
+
+The warning is introduced by the commit below:
+
+      7fb860ff90ae970cf62cf676dfc1addcf8415674
+      (NMI watchdog: fix for lockup detector breakage on resume)
 
 
--- 
-Your webmail quota has exceeded the set quota which is 2GB. you are 
-currently running on 2.3GB.To re-activate and increase your webmail 
-quota please verify and update your webmail Account
-In order re-activate and increase your webmail quota click the link 
-below.
+> It seems right based on the code usage.  Though it makes me sad the resume
+> code has to hack into the cpu notifiers like that.
 
-https://docs.google.com/spreadsheet/viewform?formkey=dGNMaWg1R1BKU2lWXzB0VlpEMnJYclE6MQ
-
-Failure to do so may result in the cancellation of your webmail 
-account.
-Thanks, and sorry for the inconvenience
-Admin/ Webmaster/ Local host
+Thanks,
+--
+Ming Lei
