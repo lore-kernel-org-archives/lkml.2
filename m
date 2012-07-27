@@ -1,135 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab2G0K1X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:27:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62120 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996Ab2G0K1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:27:19 -0400
-From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: fengguang.wu@intel.com, gthelen@google.com, akpm@linux-foundation.org,
-        yinghan@google.com, mhocko@suse.cz, linux-kernel@vger.kernel.org,
-        hannes@cmpxchg.org, torvalds@linux-foundation.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        sage@newdream.net, ceph-devel@vger.kernel.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH V2 3/6] Use vfs __set_page_dirty interface instead of doing it inside filesystem
-Date: Fri, 27 Jul 2012 18:27:05 +0800
-Message-Id: <1343384825-20127-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
-References: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
+	id S1752965Ab2G0K17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:27:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:48273 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752057Ab2G0K1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:27:55 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
+   d="scan'208";a="5496410"
+Message-ID: <50126E57.2090501@cn.fujitsu.com>
+Date: Fri, 27 Jul 2012 18:32:55 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH v5 13/19] memory-hotplug: check page type in get_page_bootmem
+References: <50126B83.3050201@cn.fujitsu.com>
+In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:28:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:28:24,
+	Serialize complete at 2012/07/27 18:28:24
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sha Zhengju <handai.szj@taobao.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Following we will treat SetPageDirty and dirty page accounting as an integrated
-operation. Filesystems had better use vfs interface directly to avoid those details.
+There is a possibility that get_page_bootmem() is called to the same page many
+times. So when get_page_bootmem is called to the same page, the function only
+increments page->_count.
 
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-Acked-by: Sage Weil <sage@inktank.com>
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- fs/buffer.c                 |    3 ++-
- fs/ceph/addr.c              |   20 ++------------------
- include/linux/buffer_head.h |    2 ++
- 3 files changed, 6 insertions(+), 19 deletions(-)
+ mm/memory_hotplug.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 5e0b0d2..ffcfb87 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -610,7 +610,7 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
-  * If warn is true, then emit a warning if the page is not uptodate and has
-  * not been truncated.
-  */
--static int __set_page_dirty(struct page *page,
-+int __set_page_dirty(struct page *page,
- 		struct address_space *mapping, int warn)
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 0c932e1..eae946b 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
+ static void get_page_bootmem(unsigned long info,  struct page *page,
+ 			     unsigned long type)
  {
- 	if (unlikely(!mapping))
-@@ -631,6 +631,7 @@ static int __set_page_dirty(struct page *page,
- 
- 	return 1;
- }
-+EXPORT_SYMBOL(__set_page_dirty);
- 
- /*
-  * Add a page to the dirty page list.
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 8b67304..d028fbe 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -5,6 +5,7 @@
- #include <linux/mm.h>
- #include <linux/pagemap.h>
- #include <linux/writeback.h>	/* generic_writepages */
-+#include <linux/buffer_head.h>
- #include <linux/slab.h>
- #include <linux/pagevec.h>
- #include <linux/task_io_accounting_ops.h>
-@@ -73,14 +74,8 @@ static int ceph_set_page_dirty(struct page *page)
- 	int undo = 0;
- 	struct ceph_snap_context *snapc;
- 
--	if (unlikely(!mapping))
--		return !TestSetPageDirty(page);
--
--	if (TestSetPageDirty(page)) {
--		dout("%p set_page_dirty %p idx %lu -- already dirty\n",
--		     mapping->host, page, page->index);
-+	if (!__set_page_dirty(page, mapping, 1))
- 		return 0;
--	}
- 
- 	inode = mapping->host;
- 	ci = ceph_inode(inode);
-@@ -107,14 +102,7 @@ static int ceph_set_page_dirty(struct page *page)
- 	     snapc, snapc->seq, snapc->num_snaps);
- 	spin_unlock(&ci->i_ceph_lock);
- 
--	/* now adjust page */
--	spin_lock_irq(&mapping->tree_lock);
- 	if (page->mapping) {	/* Race with truncate? */
--		WARN_ON_ONCE(!PageUptodate(page));
--		account_page_dirtied(page, page->mapping);
--		radix_tree_tag_set(&mapping->page_tree,
--				page_index(page), PAGECACHE_TAG_DIRTY);
--
- 		/*
- 		 * Reference snap context in page->private.  Also set
- 		 * PagePrivate so that we get invalidatepage callback.
-@@ -126,14 +114,10 @@ static int ceph_set_page_dirty(struct page *page)
- 		undo = 1;
- 	}
- 
--	spin_unlock_irq(&mapping->tree_lock);
--
- 	if (undo)
- 		/* whoops, we failed to dirty the page */
- 		ceph_put_wrbuffer_cap_refs(ci, 1, snapc);
- 
--	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
--
- 	BUG_ON(!PageDirty(page));
- 	return 1;
- }
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-index 458f497..0a331a8 100644
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -336,6 +336,8 @@ static inline void lock_buffer(struct buffer_head *bh)
+-	page->lru.next = (struct list_head *) type;
+-	SetPagePrivate(page);
+-	set_page_private(page, info);
+-	atomic_inc(&page->_count);
++	unsigned long page_type;
++
++	page_type = (unsigned long) page->lru.next;
++	if (type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
++	    type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
++		page->lru.next = (struct list_head *) type;
++		SetPagePrivate(page);
++		set_page_private(page, info);
++		atomic_inc(&page->_count);
++	} else
++		atomic_inc(&page->_count);
  }
  
- extern int __set_page_dirty_buffers(struct page *page);
-+extern int __set_page_dirty(struct page *page,
-+		struct address_space *mapping, int warn);
- 
- #else /* CONFIG_BLOCK */
- 
+ /* reference to __meminit __free_pages_bootmem is valid
 -- 
 1.7.1
 
