@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab2G0QUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 12:20:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29290 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751929Ab2G0QUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 12:20:48 -0400
-Date: Fri, 27 Jul 2012 12:20:38 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: lockdep trace from posix timers
-Message-ID: <20120727162038.GD12244@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <20120724203613.GA9637@redhat.com>
+	id S1752440Ab2G0Q0G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 12:26:06 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:64520 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab2G0Q0E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 12:26:04 -0400
+X-IronPort-AV: E=Sophos;i="4.77,668,1336348800"; 
+   d="scan'208";a="13739250"
+Date: Fri, 27 Jul 2012 17:25:09 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH 18/24] xen/arm: compile blkfront and blkback
+In-Reply-To: <1343382495.6812.127.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1207271618310.26163@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>  <1343316846-25860-18-git-send-email-stefano.stabellini@eu.citrix.com> <1343382495.6812.127.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724203613.GA9637@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 04:36:13PM -0400, Dave Jones wrote:
- > Linus tree as of 5fecc9d8f59e765c2a48379dd7c6f5cf88c7d75a
- > 
- > 	Dave
- > 
- > ======================================================
- > [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
- > 3.5.0+ #122 Not tainted
- > ------------------------------------------------------
- > trinity-child2/5327 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
- > blocked:  (tasklist_lock){.+.+..}, instance: ffffffff81c05098, at: [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
- > 
- > and this task is already holding:
- > blocked:  (&(&new_timer->it_lock)->rlock){-.-...}, instance: ffff880143bce170, at: [<ffffffff81093d49>] __lock_timer+0x89/0x1f0
- > which would create a new lock dependency:
- >  (&(&new_timer->it_lock)->rlock){-.-...} -> (tasklist_lock){.+.+..}
- > 
- > but this new dependency connects a HARDIRQ-irq-safe lock:
- >  (&(&new_timer->it_lock)->rlock){-.-...}
- > ... which became HARDIRQ-irq-safe at:
+On Fri, 27 Jul 2012, Ian Campbell wrote:
+> On Thu, 2012-07-26 at 16:34 +0100, Stefano Stabellini wrote:
+> > 
+> > +#define XEN_IO_PROTO_ABI_ARM        "arm-abi" 
+> 
+> I wonder if we ought to call this arm-aarch32-abi or something?
 
-Shall I start bisecting this ? I can trigger it very easily, but if you
-can give me a set of commits to narrow down, it'll speed up the bisection.
+So aarch64 has just been renamed to arm64 and you want to rename arm-abi
+to aarch32-abi? :-)
 
-	Dave
+
+> I wonder if we can also take the opportunity to fix the ABI cockup for
+> disks on ARM and make the structs the same for both 32 and 64 bit?
+
+I think it should be a separate patch, but I'll try to come up with one
