@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab2G0UqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 16:46:00 -0400
-Received: from fieldses.org ([174.143.236.118]:56022 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab2G0Up7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 16:45:59 -0400
-Date: Fri, 27 Jul 2012 16:45:52 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Filipe Brandenburger <filbranden@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] locks: prevent side-effects of locks_release_private
- before file_lock is initialized
-Message-ID: <20120727204552.GA6388@fieldses.org>
-References: <20120707190451.GA17049@fieldses.org>
- <1343364172-1763-1-git-send-email-filbranden@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343364172-1763-1-git-send-email-filbranden@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752234Ab2G0Uq2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 16:46:28 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36699 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab2G0Uq0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 16:46:26 -0400
+Date: Fri, 27 Jul 2012 13:46:26 -0700 (PDT)
+Message-Id: <20120727.134626.1235770035400663747.davem@davemloft.net>
+To: sam@ravnborg.org
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com
+Subject: Re: [PATCH] of: drop of_pdt_build_more in pdt.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120727114009.GA5227@merkur.ravnborg.org>
+References: <20120727114009.GA5227@merkur.ravnborg.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 12:42:52AM -0400, Filipe Brandenburger wrote:
-> When calling fcntl(fd, F_SETLEASE, lck) [with lck=F_WRLCK or F_RDLCK],
-> the custom signal or owner (if any were previously set using F_SETSIG
-> or F_SETOWN fcntls) would be reset when F_SETLEASE was called for the
-> second time on the same file descriptor.
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Fri, 27 Jul 2012 13:40:09 +0200
+
+> From bc1fde5cacff425c4bddc061a72e52d3ecb9eeb2 Mon Sep 17 00:00:00 2001
+> From: Sam Ravnborg <sam@ravnborg.org>
+> Date: Fri, 27 Jul 2012 13:34:54 +0200
+> Subject: [PATCH] of: drop of_pdt_build_more in pdt.c
 > 
-> This bug is a regression of 2.6.37 and is described here:
-> https://bugzilla.kernel.org/show_bug.cgi?id=43336
+> It is no longer used - as the sparc usage was dropped in:
+> d884297acac228f15a793850be167ba8f9dd3818 -
+> "sparc32,leon: drop leon_init()"
 > 
-> This patch reverts a commit from Oct 2004 (with subject "nfs4 lease:
-> move the f_delown processing") which originally introduced the
-> lm_release_private callback.
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
 
-Looks fine, thanks.  I think can also do something like the following
-(on top of your patch).
-
---b.
-
-commit 96d6d59ceaeaacba4088862f3c57fcd011f52832
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Fri Jul 27 16:18:00 2012 -0400
-
-    locks: move lease-specific code out of locks_delete_lock
-    
-    No point putting something only used by one caller into common code.
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
-diff --git a/fs/locks.c b/fs/locks.c
-index 86668dd..541075a 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -570,12 +570,6 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
- 	fl->fl_next = NULL;
- 	list_del_init(&fl->fl_link);
- 
--	fasync_helper(0, fl->fl_file, 0, &fl->fl_fasync);
--	if (fl->fl_fasync != NULL) {
--		printk(KERN_ERR "locks_delete_lock: fasync == %p\n", fl->fl_fasync);
--		fl->fl_fasync = NULL;
--	}
--
- 	if (fl->fl_nspid) {
- 		put_pid(fl->fl_nspid);
- 		fl->fl_nspid = NULL;
-@@ -1150,6 +1144,11 @@ int lease_modify(struct file_lock **before, int arg)
- 
- 		f_delown(filp);
- 		filp->f_owner.signum = 0;
-+		fasync_helper(0, fl->fl_file, 0, &fl->fl_fasync);
-+		if (fl->fl_fasync != NULL) {
-+			printk(KERN_ERR "locks_delete_lock: fasync == %p\n", fl->fl_fasync);
-+			fl->fl_fasync = NULL;
-+		}
- 		locks_delete_lock(before);
- 	}
- 	return 0;
+Acked-by: David S. Miller <davem@davemloft.net>
