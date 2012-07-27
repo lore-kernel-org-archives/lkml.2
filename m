@@ -1,61 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab2G0TB1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:01:27 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:60748 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab2G0TBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:01:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Subject: Re: [RFC] PCI/PM: Add ABI document for sysfs file d3cold_allowed
-Date: Fri, 27 Jul 2012 21:07:10 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        Bjorn Mork <bjorn@mork.no>
-References: <1343376454-28520-1-git-send-email-ying.huang@intel.com>
-In-Reply-To: <1343376454-28520-1-git-send-email-ying.huang@intel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207272107.11080.rjw@sisk.pl>
+	id S1752678Ab2G0TCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:02:10 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59708 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab2G0TCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 15:02:07 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 2/3] regmap: implement irq chip suspend/resume operations
+Date: Fri, 27 Jul 2012 13:01:55 -0600
+Message-Id: <1343415716-27134-2-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org>
+References: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org>
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 27, 2012, Huang Ying wrote:
-> This patch adds ABI document for the following sysfs file:
-> 
-> /sys/bus/pci/devices/.../d3cold_allowed
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+When suspending, we set up the wake mask registers as required. Some
+chips don't have separate wake mask registers, so they set mask_base
+equal to wake_base. In that case, when resuming, we re-program the
+interrupt enable registers based on enable state rather than wake state.
 
-> ---
->  Documentation/ABI/testing/sysfs-bus-pci |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> --- a/Documentation/ABI/testing/sysfs-bus-pci
-> +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> @@ -210,3 +210,15 @@ Users:
->  		firmware assigned instance number of the PCI
->  		device that can help in understanding the firmware
->  		intended order of the PCI device.
-> +
-> +What:		/sys/bus/pci/devices/.../d3cold_allowed
-> +Date:		July 2012
-> +Contact:	Huang Ying <ying.huang@intel.com>
-> +Description:
-> +		d3cold_allowed is bit to control whether the corresponding PCI
-> +		device can be put into D3Cold state.  If it is cleared, the
-> +		device will never be put into D3Cold state.  If it is set, the
-> +		device may be put into D3Cold state if other requirement are
-> +		satisfied too.  Reading this attribute will show the current
-> +		value of d3cold_allowed bit.  Writting this attribute will set
-> +		the value of d3cold_allowed bit.
-> 
-> 
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/base/regmap/regmap-irq.c |   62 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 62 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index c7e5b18..6bb4364 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -129,6 +129,61 @@ static int regmap_irq_set_wake(struct irq_data *data, unsigned int on)
+ 	return 0;
+ }
+ 
++static void regmap_irq_suspend(struct irq_data *data)
++{
++	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
++	struct regmap *map = d->map;
++	int i, ret;
++	u32 reg;
++
++	if (!d->wake_buf)
++		return;
++
++	/*
++	 * Mask all non-wakeup interrupts. This writes to wake_base, which
++	 * may be identical to mask_base.
++	 */
++	for (i = 0; i < d->chip->num_regs; i++) {
++		reg = d->chip->wake_base +
++			(i * map->reg_stride * d->irq_reg_stride);
++		ret = regmap_update_bits(d->map, reg, d->mask_buf_def[i],
++					 d->wake_buf[i]);
++		if (ret != 0)
++			dev_err(d->map->dev, "Failed to sync masks in %x\n",
++				reg);
++	}
++}
++
++static void regmap_irq_resume(struct irq_data *data)
++{
++	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
++	struct regmap *map = d->map;
++	int i, ret;
++	u32 reg;
++
++	if (!d->wake_buf)
++		return;
++
++	/*
++	 * If mask_base is a separate register to wake_base, then
++	 * regmap_irq_suspend() didn't trash the enable registers,
++	 * so there's no need to restore them.
++	 */
++	if (d->chip->mask_base != d->chip->wake_base)
++		return;
++
++	/* Mask all non-enabled interrupts */
++	for (i = 0; i < d->chip->num_regs; i++) {
++		reg = d->chip->mask_base +
++			(i * map->reg_stride * d->irq_reg_stride);
++		ret = regmap_update_bits(d->map, reg, d->mask_buf_def[i],
++					 d->mask_buf[i]);
++		if (ret != 0)
++			dev_err(d->map->dev, "Failed to sync masks in %x\n",
++				reg);
++	}
++}
++
+ static struct irq_chip regmap_irq_chip = {
+ 	.name			= "regmap",
+ 	.irq_bus_lock		= regmap_irq_lock,
+@@ -136,6 +191,8 @@ static struct irq_chip regmap_irq_chip = {
+ 	.irq_disable		= regmap_irq_disable,
+ 	.irq_enable		= regmap_irq_enable,
+ 	.irq_set_wake		= regmap_irq_set_wake,
++	.irq_suspend		= regmap_irq_suspend,
++	.irq_resume		= regmap_irq_resume,
+ };
+ 
+ static irqreturn_t regmap_irq_thread(int irq, void *d)
+@@ -314,6 +371,11 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 		}
+ 	}
+ 
++	/* Wake is disabled by default */
++	if (d->wake_buf)
++		for (i = 0; i < chip->num_regs; i++)
++			d->wake_buf[i] = d->mask_buf_def[i];
++
+ 	if (irq_base)
+ 		d->domain = irq_domain_add_legacy(map->dev->of_node,
+ 						  chip->num_irqs, irq_base, 0,
+-- 
+1.7.0.4
 
