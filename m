@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab2G0MZs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:25:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19803 "EHLO mx1.redhat.com"
+	id S1753036Ab2G0M0T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:26:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752961Ab2G0MZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:25:45 -0400
+	id S1752057Ab2G0MZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 08:25:10 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,301 +14,309 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/7] perf: Add ability to attach user level registers dump to sample
-Date: Fri, 27 Jul 2012 14:23:43 +0200
-Message-Id: <1343391834-10851-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 11/13] perf, tool: Support user regs and stack in sample parsing
+Date: Fri, 27 Jul 2012 14:23:52 +0200
+Message-Id: <1343391834-10851-12-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing PERF_SAMPLE_REGS_USER sample type bit to trigger
-the dump of user level registers on sample. Registers we want
-to dump are specified by sample_regs_user bitmask.
+Adding following info to be parsed out of the event sample:
+ - user register set
+ - user stack dump
 
-Only user level registers are dumped at the moment. Meaning the
-register values of the user space context as it was before the
-user entered the kernel for whatever reason (syscall, irq,
-exception, or a PMI happening in userspace).
+Both are global and specific to all events within the session.
+This info will be used in the unwind patches coming in shortly.
 
-The layout of the sample_regs_user bitmap is described in
-asm/perf_regs.h for archs that support register dump.
-
-This is going to be useful to bring Dwarf CFI based stack
-unwinding on top of samples.
+Adding simple output printout (report -D) for both register and
+stack dumps.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
-[ Dump registers ABI specification. ]
-Suggested-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/perf_regs.c |   15 ++++++++++
- include/linux/perf_event.h  |   35 +++++++++++++++++++++--
- include/linux/perf_regs.h   |    6 ++++
- kernel/events/core.c        |   66 +++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 119 insertions(+), 3 deletions(-)
+ tools/perf/builtin-test.c |    4 ++--
+ tools/perf/util/event.h   |   16 +++++++++++++++-
+ tools/perf/util/evlist.c  |    8 ++++++++
+ tools/perf/util/evlist.h  |    1 +
+ tools/perf/util/evsel.c   |   30 +++++++++++++++++++++++++++++-
+ tools/perf/util/header.c  |    2 ++
+ tools/perf/util/python.c  |    3 ++-
+ tools/perf/util/session.c |   36 ++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.h |    8 ++++++--
+ 9 files changed, 101 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
-index c00c92a..83cf975 100644
---- a/arch/x86/kernel/perf_regs.c
-+++ b/arch/x86/kernel/perf_regs.c
-@@ -1,5 +1,7 @@
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index d909eb7..000efb0 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -564,7 +564,7 @@ static int test__basic_mmap(void)
+ 		}
  
- #include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/perf_event.h>
- #include <linux/bug.h>
- #include <linux/stddef.h>
- #include <asm/perf_regs.h>
-@@ -71,6 +73,11 @@ int perf_reg_validate(u64 mask)
+ 		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
+-					       false, &sample, false);
++					       false, 0, &sample, false);
+ 		if (err) {
+ 			pr_err("Can't parse sample, err = %d\n", err);
+ 			goto out_munmap;
+@@ -790,7 +790,7 @@ static int test__PERF_RECORD(void)
  
- 	return 0;
- }
-+
-+u64 perf_reg_abi(struct task_struct *task)
-+{
-+	return PERF_SAMPLE_REGS_ABI_32;
-+}
- #else /* CONFIG_X86_64 */
- #define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
- 		       (1ULL << PERF_REG_X86_ES) | \
-@@ -87,4 +94,12 @@ int perf_reg_validate(u64 mask)
- 
- 	return 0;
- }
-+
-+u64 perf_reg_abi(struct task_struct *task)
-+{
-+	if (test_tsk_thread_flag(task, TIF_IA32))
-+		return PERF_SAMPLE_REGS_ABI_32;
-+	else
-+		return PERF_SAMPLE_REGS_ABI_64;
-+}
- #endif /* CONFIG_X86_32 */
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 76c5c8b..ab28ac6 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -130,8 +130,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
- 	PERF_SAMPLE_RAW				= 1U << 10,
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
-+	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 
--	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
+ 				err = perf_event__parse_sample(event, sample_type,
+ 							       sample_size, true,
+-							       &sample, false);
++							       0, &sample, false);
+ 				if (err < 0) {
+ 					if (verbose)
+ 						perf_event__fprintf(event, stderr);
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 1b19728..ed978eb 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -69,6 +69,16 @@ struct sample_event {
+ 	u64 array[];
  };
  
- /*
-@@ -163,6 +164,15 @@ enum perf_branch_sample_type {
- 	 PERF_SAMPLE_BRANCH_HV)
- 
- /*
-+ * Values to determine ABI of the registers dump.
-+ */
-+enum perf_sample_regs_abi {
-+	PERF_SAMPLE_REGS_ABI_NONE	= 0,
-+	PERF_SAMPLE_REGS_ABI_32		= 1,
-+	PERF_SAMPLE_REGS_ABI_64		= 2,
++struct regs_dump {
++	u64 *regs;
 +};
 +
-+/*
-  * The format of the data returned by read() on a perf event fd,
-  * as specified by attr.read_format:
-  *
-@@ -194,6 +204,7 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
- #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
-+#define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
- 
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-@@ -271,7 +282,13 @@ struct perf_event_attr {
- 		__u64		bp_len;
- 		__u64		config2; /* extension of config1 */
- 	};
--	__u64	branch_sample_type; /* enum branch_sample_type */
-+	__u64	branch_sample_type; /* enum perf_branch_sample_type */
-+
-+	/*
-+	 * Defines set of user regs to dump on samples.
-+	 * See asm/perf_regs.h for details.
-+	 */
-+	__u64	sample_regs_user;
- };
- 
- /*
-@@ -548,6 +565,9 @@ enum perf_event_type {
- 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
- 	 *
- 	 *	{ u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
-+	 *
-+	 * 	{ u64			abi; # enum perf_sample_regs_abi
-+	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -609,6 +629,7 @@ struct perf_guest_info_callbacks {
- #include <linux/static_key.h>
- #include <linux/atomic.h>
- #include <linux/sysfs.h>
-+#include <linux/perf_regs.h>
- #include <asm/local.h>
- 
- struct perf_callchain_entry {
-@@ -654,6 +675,11 @@ struct perf_branch_stack {
- 	struct perf_branch_entry	entries[0];
- };
- 
-+struct perf_regs_user {
-+	__u64		abi;
-+	struct pt_regs	*regs;
++struct stack_dump {
++	u16 offset;
++	u64 size;
++	char *data;
 +};
 +
- struct task_struct;
- 
- /*
-@@ -1133,6 +1159,7 @@ struct perf_sample_data {
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
-+	struct perf_regs_user		regs_user;
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+@@ -82,6 +92,8 @@ struct perf_sample {
+ 	void *raw_data;
+ 	struct ip_callchain *callchain;
+ 	struct branch_stack *branch_stack;
++	struct regs_dump  user_regs;
++	struct stack_dump user_stack;
  };
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -1142,7 +1169,9 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->addr = addr;
- 	data->raw  = NULL;
- 	data->br_stack = NULL;
--	data->period	= period;
-+	data->period = period;
-+	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
-+	data->regs_user.regs = NULL;
+ #define BUILD_ID_SIZE 20
+@@ -199,7 +211,9 @@ const char *perf_event__name(unsigned int id);
+ 
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *sample, bool swapped);
++			     u64 sample_regs_user, struct perf_sample *data,
++			     bool swapped);
++
+ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 				  const struct perf_sample *sample,
+ 				  bool swapped);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 3edfd34..057a27d 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -689,6 +689,14 @@ bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist)
+ 	return true;
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/linux/perf_regs.h b/include/linux/perf_regs.h
-index a2f1a98..3c73d5f 100644
---- a/include/linux/perf_regs.h
-+++ b/include/linux/perf_regs.h
-@@ -5,6 +5,7 @@
- #include <asm/perf_regs.h>
- u64 perf_reg_value(struct pt_regs *regs, int idx);
- int perf_reg_validate(u64 mask);
-+u64 perf_reg_abi(struct task_struct *task);
- #else
- static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
- {
-@@ -15,5 +16,10 @@ static inline int perf_reg_validate(u64 mask)
- {
- 	return mask ? -ENOSYS : 0;
- }
-+
-+static inline u64 perf_reg_abi(struct task_struct *task)
++u64 perf_evlist__sample_regs_user(const struct perf_evlist *evlist)
 +{
-+	return PERF_SAMPLE_REGS_ABI_NONE;
++	struct perf_evsel *first;
++
++	first = list_entry(evlist->entries.next, struct perf_evsel, node);
++	return first->attr.sample_regs_user;
 +}
- #endif /* CONFIG_HAVE_PERF_REGS */
- #endif /* _LINUX_PERF_REGS_H */
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f1cf0ed..ffc6f7e 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3756,6 +3756,37 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
- }
- EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
++
+ u64 perf_evlist__sample_type(const struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *first;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 40d4d3c..8dbf46c 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -124,6 +124,7 @@ u16 perf_evlist__id_hdr_size(const struct perf_evlist *evlist);
  
-+static void
-+perf_output_sample_regs(struct perf_output_handle *handle,
-+			struct pt_regs *regs, u64 mask)
-+{
-+	int bit;
-+
-+	for_each_set_bit(bit, (const unsigned long *) &mask,
-+			 sizeof(mask) * BITS_PER_BYTE) {
-+		u64 val;
-+
-+		val = perf_reg_value(regs, bit);
-+		perf_output_put(handle, val);
-+	}
-+}
-+
-+static void perf_sample_regs_user(struct perf_regs_user *regs_user,
-+				  struct pt_regs *regs)
-+{
-+	if (!user_mode(regs)) {
-+		if (current->mm)
-+			regs = task_pt_regs(current);
-+		else
-+			regs = NULL;
-+	}
-+
-+	if (regs) {
-+		regs_user->regs = regs;
-+		regs_user->abi  = perf_reg_abi(current);
-+	}
-+}
-+
- static void __perf_event_header__init_id(struct perf_event_header *header,
- 					 struct perf_sample_data *data,
- 					 struct perf_event *event)
-@@ -4016,6 +4047,23 @@ void perf_output_sample(struct perf_output_handle *handle,
- 			perf_output_put(handle, nr);
- 		}
+ bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist);
+ bool perf_evlist__valid_sample_id_all(const struct perf_evlist *evlist);
++u64 perf_evlist__sample_regs_user(const struct perf_evlist *evlist);
+ 
+ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+ 				   struct list_head *list,
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index e817713..3a284b1 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include <byteswap.h>
++#include <linux/bitops.h>
+ #include "asm/bug.h"
+ #include "evsel.h"
+ #include "evlist.h"
+@@ -730,7 +731,8 @@ static bool sample_overlap(const union perf_event *event,
+ 
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *data, bool swapped)
++			     u64 sample_regs_user, struct perf_sample *data,
++			     bool swapped)
+ {
+ 	const u64 *array;
+ 
+@@ -868,6 +870,32 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 		sz /= sizeof(u64);
+ 		array += sz;
  	}
 +
-+	if (sample_type & PERF_SAMPLE_REGS_USER) {
-+		u64 abi = data->regs_user.abi;
++	if (type & PERF_SAMPLE_REGS_USER) {
++		/* First u64 tells us if we have any regs in sample. */
++		u64 avail = *array++;
 +
-+		/*
-+		 * If there are no regs to dump, notice it through
-+		 * first u64 being zero (PERF_SAMPLE_REGS_ABI_NONE).
-+		 */
-+		perf_output_put(handle, abi);
-+
-+		if (abi) {
-+			u64 mask = event->attr.sample_regs_user;
-+			perf_output_sample_regs(handle,
-+						data->regs_user.regs,
-+						mask);
++		if (avail) {
++			data->user_regs.regs = (u64 *)array;
++			array += hweight_long(sample_regs_user);
 +		}
 +	}
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -4067,6 +4115,20 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		}
- 		header->size += size;
- 	}
 +
-+	if (sample_type & PERF_SAMPLE_REGS_USER) {
-+		/* regs dump ABI info */
-+		int size = sizeof(u64);
++	if (type & PERF_SAMPLE_STACK_USER) {
++		u64 size = *array++;
 +
-+		perf_sample_regs_user(&data->regs_user, regs);
++		data->user_stack.offset = ((char *)(array - 1)
++					  - (char *) event);
 +
-+		if (data->regs_user.regs) {
-+			u64 mask = event->attr.sample_regs_user;
-+			size += hweight64(mask) * sizeof(u64);
++		if (!size) {
++			data->user_stack.size = 0;
++		} else {
++			data->user_stack.data = (char *)array;
++			array += size / sizeof(*array);
++			data->user_stack.size = *array;
 +		}
-+
-+		header->size += size;
 +	}
++
+ 	return 0;
  }
  
- static void perf_event_output(struct perf_event *event,
-@@ -6116,6 +6178,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 			attr->branch_sample_type = mask;
- 		}
- 	}
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 5d470a3..6ebf32c 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1821,6 +1821,8 @@ static const int attr_file_abi_sizes[] = {
+ 	[0] = PERF_ATTR_SIZE_VER0,
+ 	[1] = PERF_ATTR_SIZE_VER1,
+ 	[2] = PERF_ATTR_SIZE_VER2,
++	[3] = PERF_ATTR_SIZE_VER3,
++	[4] = PERF_ATTR_SIZE_VER4,
+ 	0,
+ };
+ 
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index e03b58a..a35d9c9 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -807,7 +807,8 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
+ 		first = list_entry(evlist->entries.next, struct perf_evsel, node);
+ 		err = perf_event__parse_sample(event, first->attr.sample_type,
+ 					       perf_evsel__sample_size(first),
+-					       sample_id_all, &pevent->sample, false);
++					       sample_id_all, 0,
++					       &pevent->sample, false);
+ 		if (err)
+ 			return PyErr_Format(PyExc_OSError,
+ 					    "perf: can't parse sample, err=%d", err);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 8e4f075..ed6d8b5 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -15,6 +15,7 @@
+ #include "util.h"
+ #include "cpumap.h"
+ #include "event-parse.h"
++#include "perf_regs.h"
+ 
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+@@ -88,6 +89,7 @@ void perf_session__update_sample_type(struct perf_session *self)
+ 	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
+ 	self->host_machine.id_hdr_size = self->id_hdr_size;
+ 	machines__set_id_hdr_size(&self->machines, self->id_hdr_size);
++	self->sample_regs_user = perf_evlist__sample_regs_user(self->evlist);
+ }
+ 
+ int perf_session__create_kernel_maps(struct perf_session *self)
+@@ -861,6 +863,34 @@ static void branch_stack__printf(struct perf_sample *sample)
+ 			sample->branch_stack->entries[i].to);
+ }
+ 
++static void regs_dump__printf(u64 mask, u64 *regs)
++{
++	unsigned rid, i = 0;
 +
-+	if (attr->sample_type & PERF_SAMPLE_REGS_USER)
-+		ret = perf_reg_validate(attr->sample_regs_user);
++	for_each_set_bit(rid, (unsigned long *) &mask, sizeof(mask) * 8) {
++		u64 val = regs[i++];
 +
- out:
- 	return ret;
++		printf(".... %-5s 0x%" PRIx64 "\n",
++		       perf_reg_name(rid), val);
++	}
++}
++
++static void regs_user__printf(struct perf_sample *sample, u64 mask)
++{
++	struct regs_dump *user_regs = &sample->user_regs;
++
++	if (user_regs->regs) {
++		printf("... user regs: mask 0x%" PRIx64 "\n", mask);
++		regs_dump__printf(mask, user_regs->regs);
++	}
++}
++
++static void stack_user__printf(struct stack_dump *dump)
++{
++	printf("... ustack: size %" PRIu64 ", offset 0x%x\n",
++	       dump->size, dump->offset);
++}
++
+ static void perf_session__print_tstamp(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_sample *sample)
+@@ -911,6 +941,12 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 
+ 	if (session->sample_type & PERF_SAMPLE_BRANCH_STACK)
+ 		branch_stack__printf(sample);
++
++	if (session->sample_type & PERF_SAMPLE_REGS_USER)
++		regs_user__printf(sample, session->sample_regs_user);
++
++	if (session->sample_type & PERF_SAMPLE_STACK_USER)
++		stack_user__printf(&sample->user_stack);
+ }
+ 
+ static struct machine *
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 7c435bd..3436064 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -43,6 +43,7 @@ struct perf_session {
+ 	struct hists		hists;
+ 	u64			sample_type;
+ 	int			sample_size;
++	u64			sample_regs_user;
+ 	int			fd;
+ 	bool			fd_pipe;
+ 	bool			repipe;
+@@ -134,9 +135,12 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+ 					     const union perf_event *event,
+ 					     struct perf_sample *sample)
+ {
+-	return perf_event__parse_sample(event, session->sample_type,
++	return perf_event__parse_sample(event,
++					session->sample_type,
+ 					session->sample_size,
+-					session->sample_id_all, sample,
++					session->sample_id_all,
++					session->sample_regs_user,
++					sample,
+ 					session->header.needs_swap);
+ }
  
 -- 
 1.7.7.6
