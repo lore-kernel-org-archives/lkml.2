@@ -1,174 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab2G0Ke7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:34:59 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:13407 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab2G0Ke6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:34:58 -0400
-Date: Fri, 27 Jul 2012 12:34:55 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com,
-        gregkh@linuxfoundation.org
-Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
-Message-ID: <20120727103455.GA4639@merkur.ravnborg.org>
-References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com> <1343345980-32397-12-git-send-email-astiegmann@vmware.com>
+	id S1752918Ab2G0Kf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:35:59 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:46603 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061Ab2G0Kf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:35:57 -0400
+Date: Fri, 27 Jul 2012 12:35:51 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 12/13] driver core: firmware loader: use small
+ timeout for cache device firmware
+Message-ID: <20120727103551.GC14445@aftab.osrc.amd.com>
+References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
+ <1343149213-10160-13-git-send-email-ming.lei@canonical.com>
+ <20120726123655.GE30717@aftab.osrc.amd.com>
+ <CACVXFVOvkdCG_cAsCQPuNQB_4BnXq8f=+RnVXH=NS5GNPvQgtg@mail.gmail.com>
+ <20120726175421.GB9161@aftab.osrc.amd.com>
+ <CACVXFVM5VhaqKRcWu-6Hj_ja4OrEA63udcL_sLoSWtQm4NFNag@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343345980-32397-12-git-send-email-astiegmann@vmware.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CACVXFVM5VhaqKRcWu-6Hj_ja4OrEA63udcL_sLoSWtQm4NFNag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew.
-
-A few things noted in the following..
-
+On Fri, Jul 27, 2012 at 09:54:25AM +0800, Ming Lei wrote:
+> On Fri, Jul 27, 2012 at 1:54 AM, Borislav Petkov <bp@amd64.org> wrote:
 > 
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 2661f6e..fe38c7a 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -517,4 +517,5 @@ source "drivers/misc/lis3lv02d/Kconfig"
->  source "drivers/misc/carma/Kconfig"
->  source "drivers/misc/altera-stapl/Kconfig"
->  source "drivers/misc/mei/Kconfig"
-> +source "drivers/misc/vmw_vmci/Kconfig"
->  endmenu
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 456972f..af9e413 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -51,3 +51,4 @@ obj-y				+= carma/
->  obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
->  obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
->  obj-$(CONFIG_INTEL_MEI)		+= mei/
-> +obj-y				+= vmw_vmci/
+> >> No, it is not what I was saying.
+> 
+> I just mean the point is not mentioned in my commit log, but I admit it should
+> be a appropriate cause.
+> 
+> >
+> > Ok, maybe I'm not understanding this then. So explain to me this: why
+> > do you need that timeout value of 10, how did we decide it to be 10
+> 
+> If one firmware image was loaded successfully before, the probability of
+> loading it successfully at this time should be much higher than the 1st time
+> because something crazy(for example, the firmware is deleted) happens
+> with low probability.
 
-Please use obj-$(CONFIG_VMWARE_VMCI) += vmw_vmci/
+Believe it or not, I'm addressing exactly the possibility of the
+firmware disappearing from under us in the AMD microcode driver
+currently :) (and some other annoyances, of course).
 
-like we do in the other cases. This prevents us from visiting the directory
-when this feature is not enabled.
+> Choosing 10 secs is just a estimation for loading time because the maximum
+> size of firmware in current distributions is about 2M bytes, since we know
+> it has been loaded successfully before.
 
-> +++ b/drivers/misc/vmw_vmci/Makefile
-> @@ -0,0 +1,43 @@
-> +################################################################################
-> +#
-> +# Linux driver for VMware's VMCI device.
-> +#
-> +# Copyright (C) 2007-2012, VMware, Inc. All Rights Reserved.
-> +#
-> +# This program is free software; you can redistribute it and/or modify it
-> +# under the terms of the GNU General Public License as published by the
-> +# Free Software Foundation; version 2 of the License and no later version.
-> +#
-> +# This program is distributed in the hope that it will be useful, but
-> +# WITHOUT ANY WARRANTY; without even the implied warranty of
-> +# MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-> +# NON INFRINGEMENT.  See the GNU General Public License for more
-> +# details.
-> +#
-> +# You should have received a copy of the GNU General Public License
-> +# along with this program; if not, write to the Free Software
-> +# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-> +#
-> +# The full GNU General Public License is included in this distribution in
-> +# the file called "COPYING".
-> +#
-> +# Maintained by: Andrew Stiegmann <pv-drivers@vmware.com>
-> +#
-> +################################################################################
-Lot's of boilerplate noise for such a simple file...
+This is exactly the comment we want over the code to explain to others
+why we're choosing 10 secs. Simply add that sentence above the 10s
+assignment and we're perfect! :-)
 
-> +
-> +#
-> +# Makefile for the VMware VMCI
-> +#
-> +
-> +obj-$(CONFIG_VMWARE_VMCI) += vmw_vmci.o
-> +
-> +vmw_vmci-objs += vmci_context.o
-> +vmw_vmci-objs += vmci_datagram.o
-> +vmw_vmci-objs += vmci_doorbell.o
-> +vmw_vmci-objs += vmci_driver.o
-> +vmw_vmci-objs += vmci_event.o
-> +vmw_vmci-objs += vmci_handle_array.o
-> +vmw_vmci-objs += vmci_hash_table.o
-> +vmw_vmci-objs += vmci_queue_pair.o
-> +vmw_vmci-objs += vmci_resource.o
-> +vmw_vmci-objs += vmci_route.o
+> > (and not 20 or 30 or whatever)? Generally, why do we need to reprogram
+> > the timer to a smaller timeout instead of simply doing the completion
+> > without a timeout?
+> 
+> No, it should be crazy without a timeout, and it can be triggered in init call
+> easily.
 
-please use:
-vmw_vmci-y += vmci_context.o
-vmw_vmci-y += vmci_datagram.o
-vmw_vmci-y += vmci_doorbell.o
+Ok.
 
-This is recommended these days and allows you to enable/disable
-single files later using a config option.
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
 
-
-> diff --git a/drivers/misc/vmw_vmci/vmci_common_int.h b/drivers/misc/vmw_vmci/vmci_common_int.h
-> +
-> +#ifndef _VMCI_COMMONINT_H_
-> +#define _VMCI_COMMONINT_H_
-> +
-> +#include <linux/printk.h>
-> +#include <linux/vmw_vmci_defs.h>
-
-Use inverse chrismas tree here.
-Longer include lines first, and soret alphabetically when
-lines are of the same length.
-This applies likely in many cases.
-
-> +#include "vmci_handle_array.h"
-> +
-> +#define ASSERT(cond) BUG_ON(!(cond))
-> +
-> +#define CAN_BLOCK(_f) (!((_f) & VMCI_QPFLAG_NONBLOCK))
-> +#define QP_PINNED(_f) ((_f) & VMCI_QPFLAG_PINNED)
-
-Looks like poor obscufation.
-Use a statis inline function if you need a helper for this.
-
-> +
-> +/*
-> + * Utilility function that checks whether two entities are allowed
-> + * to interact. If one of them is restricted, the other one must
-> + * be trusted.
-> + */
-> +static inline bool vmci_deny_interaction(uint32_t partOne,
-> +					 uint32_t partTwo)
-
-The kernel types are u32 not uint32_t - these types belongs in user-space.
-
-> +++ b/include/linux/vmw_vmci_api.h
-> +
-> +#ifndef __VMW_VMCI_API_H__
-> +#define __VMW_VMCI_API_H__
-> +
-> +#include <linux/vmw_vmci_defs.h>
-> +
-> +#undef  VMCI_KERNEL_API_VERSION
-> +#define VMCI_KERNEL_API_VERSION_2 2
-> +#define VMCI_KERNEL_API_VERSION   VMCI_KERNEL_API_VERSION_2
-> +
-> +typedef void (VMCI_DeviceShutdownFn) (void *deviceRegistration, void *userData);
-> +
-> +bool VMCI_DeviceGet(uint32_t *apiVersion,
-> +		    VMCI_DeviceShutdownFn *deviceShutdownCB,
-> +		    void *userData, void **deviceRegistration);
-
-The kernel style is to use lower_case for everything.
-So this would become:
-
-    vmci_device_get()
-
-This is obviously a very general comment and applies everywhere.
-
-	Sam
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
