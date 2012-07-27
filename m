@@ -1,912 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab2G0K4z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:56:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29330 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab2G0K4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:56:53 -0400
-Date: Fri, 27 Jul 2012 06:56:30 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
-        pstaubach@exagrid.com
-Subject: Re: [PATCH v4 00/17] vfs: add the ability to retry on ESTALE to
- several syscalls
-Message-ID: <20120727065630.0a3c5870@tlielax.poochiereds.net>
-In-Reply-To: <CAKYAXd99VMYSX=k9eadB6MZvjQjQrOngOjUicjo+c9LtHvpz9w@mail.gmail.com>
-References: <1343303720-11199-1-git-send-email-jlayton@redhat.com>
-	<CAKYAXd99VMYSX=k9eadB6MZvjQjQrOngOjUicjo+c9LtHvpz9w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="MP_/nTK.xUeJt./FswLnknRI64L"
+	id S1751917Ab2G0LHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 07:07:22 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:62663 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab2G0LHV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 07:07:21 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
+   d="scan'208";a="13732979"
+Date: Fri, 27 Jul 2012 12:06:27 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 1/2] xen/swiotlb: If iommu=soft was not passed in on >
+ 4GB, don't turn it on.
+In-Reply-To: <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1207271204500.26163@kaball.uk.xensource.com>
+References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com> <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---MP_/nTK.xUeJt./FswLnknRI64L
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-
-On Fri, 27 Jul 2012 11:15:23 +0900
-Namjae Jeon <linkinjeon@gmail.com> wrote:
-
-> Hi Jeff.
+On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> If we boot a 64-bit guest with more than 4GB memory, the SWIOTLB
+> gets turned on:
+> PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+> software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at [ffff8800fb43d000-ffff8800ff43cfff]
 > 
-> Which testcase(or test method) do I use to know improved point from
-> ESTALE error ?
-> I want to know before & after using testcase with this patch-set.
+> which is OK if we had PCI devices, but not if we did not. In a PV
+> guest the SWIOTLB ends up asking the hypervisor for precious lowmem
+> memory - and 64MB of it per guest. On a 32GB machine, this limits the
+> amount of guests that are 4GB to start due to lowmem exhaustion.
 > 
-
-It's a bit labor intensive, I'm afraid...
-
-Attached is a cleaned-up copy of the test program that Peter wrote to
-test his original patchset. The basic idea is to run this on both the
-client and server at the same time so they race against each other. He
-was able to run it overnight when testing with his patchset.
-
-With this patchset, that doesn't work since we're only retrying the
-lookup and call once. So, what I've been doing is modifying the program
-so that it just runs one test at a time, and sniffing traffic to see
-whether the lookups and calls are retried after an ESTALE return from
-the server.
-
--- 
-Jeff Layton <jlayton@redhat.com>
-
---MP_/nTK.xUeJt./FswLnknRI64L
-Content-Type: text/x-csrc
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename=estale_test.c
-
-#define _XOPEN_SOURCE 500
-#define _LARGEFILE64_SOURCE
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/statfs.h>
-#include <sys/inotify.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <utime.h>
-#include <wait.h>
-#include <attr/xattr.h>
-#include <sys/time.h>
-
-void mkdir_test(void);
-void link_test(void);
-void open_test(void);
-void access_test(void);
-void chmod_test(void);
-void chown_test(void);
-void readlink_test(void);
-void utimes_test(void);
-void chdir_test(void);
-void chroot_test(void);
-void rename_test(void);
-void exec_test(void);
-void mknod_test(void);
-void statfs_test(void);
-void truncate_test(void);
-void xattr_test(void);
-void inotify_test(void);
-
-struct tests {
-	void (*test)(void);
-};
-
-struct tests tests[] = {
-	{ mkdir_test },
-	{ link_test },
-	{ open_test },
-	{ access_test },
-	{ chmod_test },
-	{ chown_test },
-	{ readlink_test },
-	{ utimes_test },
-	{ chdir_test },
-	{ chroot_test },
-	{ rename_test },
-	{ exec_test },
-	{ mknod_test },
-	{ statfs_test },
-	{ truncate_test },
-	{ xattr_test },
-	{ inotify_test }
-};
-
-pid_t test_pids[sizeof(tests) / sizeof(tests[0])];
-
-pid_t parent_pid;
-
-void kill_tests(int);
-
-int
-main(int argc, char *argv[])
-{
-	int i;
-
-	parent_pid = getpid();
-
-	sigset(SIGINT, kill_tests);
-
-	sighold(SIGINT);
-
-	for (i = 0; i < sizeof(tests) / sizeof(tests[0]); i++) {
-		test_pids[i] = fork();
-		if (test_pids[i] == 0) {
-			for (;;)
-				(*tests[i].test)();
-			/* NOTREACHED */
-		}
-	}
-
-	sigrelse(SIGINT);
-
-	pause();
-	return 0;
-}
-
-void
-kill_tests(int sig)
-{
-	int i;
-
-	for (i = 0; i < sizeof(tests) / sizeof(tests[0]); i++) {
-		if (test_pids[i] != -1) {
-			if (kill(test_pids[i], SIGTERM) < 0)
-				perror("kill");
-		}
-	}
-
-	exit(0);
-}
-
-void
-check_error(int error, char *operation)
-{
-
-	if (error < 0 && errno == ESTALE) {
-		perror(operation);
-		kill(parent_pid, SIGINT);
-		pause();
-	}
-}
-
-void
-check_error_child(int error, char *operation)
-{
-
-	if (error < 0 && errno == ESTALE) {
-		perror(operation);
-		kill(parent_pid, SIGINT);
-		exit(1);
-	}
-}
-
-void
-do_stats(char *file)
-{
-	int error;
-	struct stat stbuf;
-	struct stat64 stbuf64;
-
-	error = stat(file, &stbuf);
-	check_error(error, "stat");
-
-	error = stat64(file, &stbuf64);
-	check_error(error, "stat64");
-
-	error = lstat(file, &stbuf);
-	check_error(error, "lstat");
-
-	error = lstat64(file, &stbuf64);
-	check_error(error, "lstat64");
-}
-
-void
-do_stats_child(char *file)
-{
-	int error;
-	struct stat stbuf;
-	struct stat64 stbuf64;
-
-	error = stat(file, &stbuf);
-	check_error_child(error, "stat");
-
-	error = stat64(file, &stbuf64);
-	check_error_child(error, "stat64");
-
-	error = lstat(file, &stbuf);
-	check_error_child(error, "lstat");
-
-	error = lstat64(file, &stbuf64);
-	check_error_child(error, "lstat64");
-}
-
-char *mkdir_dirs[] = {
-	"mkdir/a",
-	"mkdir/a/b",
-	"mkdir/a/b/c",
-	"mkdir/a/b/c/d",
-	"mkdir/a/b/c/d/e",
-	"mkdir/a/b/c/d/e/f",
-	"mkdir/a/b/c/d/e/f/g",
-	"mkdir/a/b/c/d/e/f/g/h",
-	"mkdir/a/b/c/d/e/f/g/h/i",
-	"mkdir/a/b/c/d/e/f/g/h/i/j",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w/x",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w/x/y",
-	"mkdir/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w/x/y/z",
-	NULL
-};
-
-void
-mkdir_test()
-{
-	int i;
-	int error;
-
-	error = mkdir("mkdir", 0755);
-	check_error(error, "mkdir");
-
-	for (i = 0; mkdir_dirs[i] != NULL; i++) {
-		error = mkdir(mkdir_dirs[i], 0755);
-		check_error(error, "mkdir");
-		do_stats(mkdir_dirs[i]);
-	}
-
-	while (--i >= 0) {
-		do_stats(mkdir_dirs[i]);
-		error = rmdir(mkdir_dirs[i]);
-		check_error(error, "rmdir");
-	}
-
-	error = rmdir("mkdir");
-	check_error(error, "rmdir");
-}
-
-char *link_file_a = "link/a";
-char *link_file_b = "link/b";
-
-void
-link_test()
-{
-	int error;
-	int fd;
-
-	error = mkdir("link", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(link_file_a, O_CREAT, 0644);
-	check_error(fd, "open");
-
-	(void) close(fd);
-
-	do_stats(link_file_a);
-
-	error = link(link_file_a, link_file_b);
-	check_error(error, "link");
-	do_stats(link_file_a);
-	do_stats(link_file_b);
-
-	error = unlink(link_file_a);
-	check_error(error, "unlink");
-	do_stats(link_file_a);
-	do_stats(link_file_b);
-
-	error = link(link_file_b, link_file_a);
-	check_error(error, "link");
-	do_stats(link_file_a);
-	do_stats(link_file_b);
-
-	error = unlink(link_file_b);
-	check_error(error, "unlink");
-	do_stats(link_file_a);
-	do_stats(link_file_b);
-
-	error = unlink(link_file_a);
-	check_error(error, "unlink");
-	do_stats(link_file_a);
-	do_stats(link_file_b);
-
-	error = rmdir("link");
-	check_error(error, "rmdir");
-}
-
-char *open_file = "open/a";
-
-void
-open_test()
-{
-	int error;
-	int fd;
-
-	error = mkdir("open", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(open_file, O_CREAT | O_RDWR, 0644);
-	check_error(fd, "open: O_CREAT");
-
-	(void) close(fd);
-
-	do_stats(open_file);
-
-	fd = open(open_file, O_RDWR);
-	check_error(fd, "open: O_RDWR");
-
-	(void) close(fd);
-
-	do_stats(open_file);
-
-	error = unlink(open_file);
-	check_error(error, "unlink");
-
-	error = rmdir("open");
-	check_error(error, "rmdir");
-}
-
-char *access_file = "access/a";
-
-void
-access_test()
-{
-	int error;
-	int fd;
-
-	error = mkdir("access", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(access_file, O_CREAT | O_RDWR, 0644);
-	check_error(fd, "open: O_CREAT");
-
-	(void) close(fd);
-
-	do_stats(access_file);
-
-	error = access(access_file, F_OK);
-	check_error(error, "access");
-
-	do_stats(access_file);
-
-	error = unlink(access_file);
-	check_error(error, "unlink");
-
-	error = rmdir("access");
-	check_error(error, "rmdir");
-}
-
-char *chmod_file = "chmod/a";
-
-void
-chmod_test()
-{
-	int error;
-	int fd;
-
-	error = mkdir("chmod", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(chmod_file, O_CREAT | O_RDWR, 0644);
-	check_error(fd, "open: O_CREAT");
-
-	(void) close(fd);
-
-	do_stats(chmod_file);
-
-	error = chmod(chmod_file, 0600);
-	check_error(error, "chmod");
-
-	do_stats(chmod_file);
-
-	error = unlink(chmod_file);
-	check_error(error, "unlink");
-
-	error = rmdir("chmod");
-	check_error(error, "rmdir");
-}
-
-char *chown_file = "chown/a";
-
-void
-chown_test()
-{
-	int error;
-	int fd;
-
-	error = mkdir("chown", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(chown_file, O_CREAT | O_RDWR, 0644);
-	check_error(fd, "open: O_CREAT");
-
-	(void) close(fd);
-
-	do_stats(chown_file);
-
-	error = chown(chown_file, 4597, 4597);
-	check_error(error, "chown");
-
-	do_stats(chown_file);
-
-	error = lchown(chown_file, 4596, 4596);
-	check_error(error, "lchown");
-
-	do_stats(chown_file);
-
-	error = unlink(chown_file);
-	check_error(error, "unlink");
-
-	error = rmdir("chown");
-	check_error(error, "rmdir");
-}
-
-char *readlink_file = "readlink/a";
-
-void
-readlink_test()
-{
-	int error;
-	char buf[BUFSIZ];
-
-	error = mkdir("readlink", 0755);
-	check_error(error, "mkdir");
-
-	error = symlink("b", readlink_file);
-	check_error(error, "symlink");
-
-	do_stats(readlink_file);
-
-	error = readlink(readlink_file, buf, sizeof(buf));
-	check_error(error, "readlink");
-
-	do_stats(readlink_file);
-
-	error = unlink(readlink_file);
-	check_error(error, "unlink");
-
-	error = rmdir("readlink");
-	check_error(error, "rmdir");
-}
-
-char *utimes_file = "utimes/a";
-
-void
-utimes_test()
-{
-	int error;
-	int fd;
-
-	error = mkdir("utimes", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(utimes_file, O_CREAT | O_RDWR, 0644);
-	check_error(fd, "open: O_CREAT");
-
-	(void) close(fd);
-
-	do_stats(utimes_file);
-
-	error = utime(utimes_file, NULL);
-	check_error(error, "utime");
-
-	do_stats(utimes_file);
-
-	error = utimes(utimes_file, NULL);
-	check_error(error, "utimes");
-
-	do_stats(utimes_file);
-
-	error = unlink(utimes_file);
-	check_error(error, "unlink");
-
-	error = rmdir("utimes");
-	check_error(error, "rmdir");
-}
-
-char *chdir_dir = "chdir/dir";
-
-void
-chdir_test()
-{
-	int error;
-	int pid;
-	int status;
-
-	error = mkdir("chdir", 0755);
-	check_error(error, "mkdir");
-
-	pid = fork();
-	if (pid == 0) {
-		error = mkdir(chdir_dir, 0755);
-		check_error_child(error, "mkdir");
-
-		do_stats_child(chdir_dir);
-
-		error = chdir(chdir_dir);
-		check_error_child(error, "chdir");
-
-		do_stats_child(chdir_dir);
-
-		exit(0);
-	}
-
-	(void) wait(&status);
-
-	do_stats(chdir_dir);
-
-	error = rmdir(chdir_dir);
-	check_error(error, "rmdir");
-
-	error = rmdir("chdir");
-	check_error(error, "rmdir");
-}
-
-char *chroot_dir = "chroot/dir";
-
-void
-chroot_test()
-{
-	int error;
-	int pid;
-	int status;
-
-	error = mkdir("chroot", 0755);
-	check_error(error, "mkdir");
-
-	pid = fork();
-	if (pid == 0) {
-		error = mkdir(chroot_dir, 0755);
-		check_error_child(error, "mkdir");
-
-		do_stats_child(chroot_dir);
-
-		error = chroot(chroot_dir);
-		check_error_child(error, "chroot");
-
-		do_stats_child(chroot_dir);
-
-		exit(0);
-	}
-
-	(void) wait(&status);
-
-	do_stats(chroot_dir);
-
-	error = rmdir(chroot_dir);
-	check_error(error, "rmdir");
-
-	error = rmdir("chroot");
-	check_error(error, "rmdir");
-}
-
-char *rename_file_a = "rename/a";
-char *rename_file_b = "rename/b";
-
-void
-rename_test()
-{
-	int error;
-	int fd;
-
-	error = mkdir("rename", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(rename_file_a, O_CREAT, 0644);
-	check_error(fd, "open");
-
-	(void) close(fd);
-
-	do_stats(rename_file_a);
-
-	error = rename(rename_file_a, rename_file_b);
-	check_error(error, "rename");
-
-	do_stats(rename_file_a);
-	do_stats(rename_file_b);
-
-	error = rename(rename_file_b, rename_file_a);
-	check_error(error, "rename");
-
-	do_stats(rename_file_a);
-	do_stats(rename_file_b);
-
-	error = unlink(rename_file_a);
-	check_error(error, "unlink");
-
-	error = rmdir("rename");
-	check_error(error, "rmdir");
-}
-
-char *exec_file = "exec/a";
-char *exec_source_file = "exec_test";
-
-void
-exec_test()
-{
-	int error;
-	int pid;
-	int status;
-
-	error = mkdir("exec", 0755);
-	check_error(error, "mkdir");
-
-	error = link(exec_source_file, exec_file);
-	check_error(error, "link");
-	do_stats(exec_file);
-
-	pid = fork();
-	if (pid == 0) {
-		error = execl(exec_file, exec_file, NULL);
-		check_error_child(error, "execl");
-
-		exit(1);
-	}
-
-	wait(&status);
-
-	do_stats(exec_file);
-
-	error = unlink(exec_file);
-	check_error(error, "unlink");
-
-	error = rmdir("exec");
-	check_error(error, "rmdir");
-}
-
-char *mknod_file = "mknod/a";
-
-void
-mknod_test()
-{
-	int error;
-
-	error = mkdir("mknod", 0755);
-	check_error(error, "mkdir");
-
-	error = mknod(mknod_file, S_IFCHR | 0644, 0);
-	check_error(error, "mknod");
-
-	do_stats(mknod_file);
-
-	error = unlink(mknod_file);
-	check_error(error, "unlink");
-
-	error = rmdir("mknod");
-	check_error(error, "rmdir");
-}
-
-char *statfs_dir = "statfs/a";
-
-void
-statfs_test()
-{
-	int error;
-	struct statfs stbuf;
-	struct statfs64 stbuf64;
-
-	error = mkdir("statfs", 0755);
-	check_error(error, "mkdir");
-
-	do_stats("statfs");
-
-	error = mkdir(statfs_dir, 0755);
-	check_error(error, "mkdir");
-
-	do_stats(statfs_dir);
-
-	error = statfs(statfs_dir, &stbuf);
-	check_error(error, "statfs");
-
-	error = statfs64(statfs_dir, &stbuf64);
-	check_error(error, "statfs64");
-
-	error = rmdir(statfs_dir);
-	check_error(error, "rmdir");
-
-	error = rmdir("statfs");
-	check_error(error, "rmdir");
-}
-
-char *truncate_file = "truncate/a";
-
-void
-truncate_test()
-{
-	int error;
-	int fd;
-
-	error = mkdir("truncate", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(truncate_file, O_CREAT | O_RDWR, 0644);
-	check_error(fd, "open: O_CREAT");
-
-	(void) close(fd);
-
-	do_stats(truncate_file);
-
-	error = truncate(truncate_file, 1024);
-	check_error(error, "truncate");
-
-	do_stats(truncate_file);
-
-	error = unlink(truncate_file);
-	check_error(error, "unlink");
-
-	error = rmdir("truncate");
-	check_error(error, "rmdir");
-}
-
-char *xattr_file = "xattr/a";
-
-#define ACL_USER_OBJ	(0x01)
-#define ACL_USER	(0x02)
-#define ACL_GROUP_OBJ	(0x04)
-#define ACL_MASK	(0x10)
-#define ACL_OTHER	(0x20)
-
-struct posix_acl_xattr_entry {
-	unsigned short e_tag;
-	unsigned short e_perm;
-	unsigned int e_id;
-};
-
-#define POSIX_ACL_XATTR_VERSION	0x0002
-
-struct posix_acl_xattr_header {
-	unsigned int a_version;
-	struct posix_acl_xattr_entry a_entries[5];
-};
-
-void
-xattr_test()
-{
-	int error;
-	int fd;
-	char buf[1024];
-	struct posix_acl_xattr_header ents;
-
-	error = mkdir("xattr", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(xattr_file, O_CREAT | O_RDWR, 0444);
-	check_error(fd, "open: O_CREAT");
-
-	(void) close(fd);
-
-	do_stats(xattr_file);
-
-	error = getxattr(xattr_file, "system.posix_acl_access", buf,
-			sizeof (buf));
-	check_error(error, "getxattr");
-	error = lgetxattr(xattr_file, "system.posix_acl_access", buf,
-			sizeof (buf));
-	check_error(error, "lgetxattr");
-
-	ents.a_version = POSIX_ACL_XATTR_VERSION;
-	ents.a_entries[0].e_tag = ACL_USER_OBJ;
-	ents.a_entries[0].e_perm = 06;
-	ents.a_entries[0].e_id = -1;
-	ents.a_entries[1].e_tag = ACL_USER;
-	ents.a_entries[1].e_perm = 06;
-	ents.a_entries[1].e_id = 10;
-	ents.a_entries[2].e_tag = ACL_GROUP_OBJ;
-	ents.a_entries[2].e_perm = 06;
-	ents.a_entries[2].e_id = -1;
-	ents.a_entries[3].e_tag = ACL_MASK;
-	ents.a_entries[3].e_perm = 06;
-	ents.a_entries[3].e_id = -1;
-	ents.a_entries[4].e_tag = ACL_OTHER;
-	ents.a_entries[4].e_perm = 06;
-	ents.a_entries[4].e_id = -1;
-
-	error = setxattr(xattr_file, "system.posix_acl_access",
-			&ents, sizeof (ents), 0);
-	check_error(error, "setxattr");
-
-	do_stats(xattr_file);
-
-	error = lsetxattr(xattr_file, "system.posix_acl_access",
-			&ents, sizeof (ents), 0);
-	check_error(error, "lsetxattr");
-
-	do_stats(xattr_file);
-
-	error = getxattr(xattr_file, "system.posix_acl_access", buf,
-			sizeof (buf));
-	check_error(error, "getxattr");
-	error = lgetxattr(xattr_file, "system.posix_acl_access", buf,
-			sizeof (buf));
-	check_error(error, "lgetxattr");
-
-	error = listxattr(xattr_file, buf, sizeof (buf));
-	check_error(error, "listxattr");
-	error = llistxattr(xattr_file, buf, sizeof (buf));
-	check_error(error, "llistxattr");
-
-	error = removexattr(xattr_file, "system.posix_acl_access");
-	check_error(error, "removexattr");
-
-	do_stats(xattr_file);
-
-	error = setxattr(xattr_file, "system.posix_acl_access",
-			&ents, sizeof (ents), 0);
-	check_error(error, "setxattr");
-
-	do_stats(xattr_file);
-
-	error = lremovexattr(xattr_file, "system.posix_acl_access");
-	check_error(error, "lremovexattr");
-
-	do_stats(xattr_file);
-
-	error = unlink(xattr_file);
-	check_error(error, "unlink");
-
-	error = rmdir("xattr");
-	check_error(error, "rmdir");
-}
-
-char *inotify_file = "inotify/a";
-
-void
-inotify_test()
-{
-	int error;
-	int fd;
-	int wd;
-
-	error = mkdir("inotify", 0755);
-	check_error(error, "mkdir");
-
-	fd = open(inotify_file, O_CREAT | O_RDWR, 0644);
-	check_error(fd, "open: O_CREAT");
-
-	(void) close(fd);
-
-	do_stats(inotify_file);
-
-	fd = inotify_init();
-	check_error(error, "inotify_init");
-
-	do_stats(inotify_file);
-
-	wd = inotify_add_watch(fd, inotify_file, IN_ALL_EVENTS);
-	check_error(wd, "inotify_add_watch");
-
-	do_stats(inotify_file);
-
-	error = inotify_rm_watch(fd, wd);
-	check_error(error, "inotify_rm_watch");
-
-	(void) close(fd);
-
-	do_stats(inotify_file);
-
-	error = unlink(inotify_file);
-	check_error(error, "unlink");
-
-	error = rmdir("inotify");
-	check_error(error, "rmdir");
-}
-
---MP_/nTK.xUeJt./FswLnknRI64L--
+> What we do is detect whether the user supplied e820_hole=1
+> parameter, which is used to construct an E820 that is similar to
+> the machine  - so that the PCI regions do not overlap with RAM regions.
+> We check for that by looking at the E820 and seeing if it diverges
+> from the standard - and if so (and if iommu=soft was not turned on),
+> we disable the check pci_swiotlb_detect_4gb code.
+
+What kind of paramter is it?
+Is it a Linux cmdline paramter? Or maybe a Xen toolstack parameter?
+
+Surely there must be a better way to let Linux know if this paramter has
+been turned on than looking for ACPI entries in the E820.
+
+
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/pci-swiotlb-xen.c |   26 ++++++++++++++++++++++++++
+>  1 files changed, 26 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+> index 967633a..56f373e 100644
+> --- a/arch/x86/xen/pci-swiotlb-xen.c
+> +++ b/arch/x86/xen/pci-swiotlb-xen.c
+> @@ -8,6 +8,10 @@
+>  #include <xen/xen.h>
+>  #include <asm/iommu_table.h>
+>  
+> +#include <asm/e820.h>
+> +#include <asm/dma.h>
+> +#include <asm/iommu.h>
+> +
+>  int xen_swiotlb __read_mostly;
+>  
+>  static struct dma_map_ops xen_swiotlb_dma_ops = {
+> @@ -24,7 +28,19 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+>  	.unmap_page = xen_swiotlb_unmap_page,
+>  	.dma_supported = xen_swiotlb_dma_supported,
+>  };
+> +bool __init e820_has_acpi(void)
+> +{
+> +	int i;
+>  
+> +	/* Check if the user supplied the e820_hole parameter
+> +	 * which would create a machine looking E820 region. */
+> +	for (i = 0; i < e820.nr_map; i++) {
+> +		if ((e820.map[i].type == E820_ACPI) ||
+> +		    (e820.map[i].type == E820_NVS))
+> +			return true;
+> +	}
+> +	return false;
+> +}
+>  /*
+>   * pci_xen_swiotlb_detect - set xen_swiotlb to 1 if necessary
+>   *
+> @@ -33,7 +49,17 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+>   */
+>  int __init pci_xen_swiotlb_detect(void)
+>  {
+> +#ifdef CONFIG_X86_64
+>  
+> +	/* Having more than 4GB triggers the native SWIOTLB to activate.
+> +	 * The way to turn it off is to set no_iommu. */
+> +	printk(KERN_INFO "swiotlb: %d\n", swiotlb);
+> +	if (xen_pv_domain() && !swiotlb && max_pfn > MAX_DMA32_PFN) {
+> +		/* Normal PV guests only have E820_RSV and E820_RAM regions */
+> +		if (!e820_has_acpi())
+> +			no_iommu = 1;
+> +	}
+> +#endif
+>  	/* If running as PV guest, either iommu=soft, or swiotlb=force will
+>  	 * activate this IOMMU. If running as PV privileged, activate it
+>  	 * irregardless.
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
