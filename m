@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2G0Xzm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 19:55:42 -0400
+	id S1753081Ab2G0X4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 19:56:35 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:47011 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab2G0Xzj (ORCPT
+	with ESMTP id S1752899Ab2G0Xzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 19:55:39 -0400
+	Fri, 27 Jul 2012 19:55:41 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
@@ -14,9 +14,9 @@ Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
         ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/15] workqueue: reorganize try_to_grab_pending() and __cancel_timer_work()
-Date: Fri, 27 Jul 2012 16:55:04 -0700
-Message-Id: <1343433308-26614-12-git-send-email-tj@kernel.org>
+Subject: [PATCH 12/15] workqueue: mark a work item being canceled as such
+Date: Fri, 27 Jul 2012 16:55:05 -0700
+Message-Id: <1343433308-26614-13-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1343433308-26614-1-git-send-email-tj@kernel.org>
 References: <1343433308-26614-1-git-send-email-tj@kernel.org>
@@ -24,98 +24,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Move timer handling from __cancel_work_timer() to
-  try_to_grab_pending().
+There can be two reasons try_to_grab_pending() can fail with -EAGAIN.
+One is when someone else is queueing or deqeueing the work item.  With
+the previous patches, it is guaranteed that PENDING and queued state
+will soon agree making it safe to busy-retry in this case.
 
-* Make try_to_grab_pending() use -EAGAIN instead of -1 for
-  busy-looping and drop the ret local variable.
+The other is if multiple __cancel_work_timer() invocations are racing
+one another.  __cancel_work_timer() grabs PENDING and then waits for
+running instances of the target work item on all CPUs while holding
+PENDING and !queued.  try_to_grab_pending() invoked from another task
+will keep returning -EAGAIN while the current owner is waiting.
 
-* Add proper function comment to try_to_grab_pending().
+Not distinguishing the two cases is okay because __cancel_work_timer()
+is the only user of try_to_grab_pending() and it invokes
+wait_on_work() whenever grabbing fails.  For the first case, busy
+looping should be fine but wait_on_work() doesn't cause any critical
+problem.  For the latter case, the new contender usually waits for the
+same condition as the current owner, so no unnecessarily extended
+busy-looping happens.  Combined, these make __cancel_work_timer()
+technically correct even without preemption protection while grabbing
+PENDING or distinguishing the two different cases.
 
-This makes the code a bit easier to understand and will ease further
-changes.  This patch doesn't make any functional change.
+While the current code is technically correct, not distinguishing the
+two cases makes it difficult to use try_to_grab_pending() for other
+purposes than canceling because it's impossible to tell whether it's
+safe to busy-retry grabbing.
+
+This patch adds a mechanism to mark a work item being canceled.
+try_to_grab_pending() now requires the caller to have preemption
+disabled and returns -EAGAIN to indicate that grabbing failed but
+PENDING and queued states are gonna agree soon and it's safe to
+busy-loop.  It returns -ENOENT if the work item is being canceled and
+it may stay PENDING && !queued for arbitrary amount of time.
+
+__cancel_work_timer() is modified to mark the work canceling with
+WORK_OFFQ_CANCELING after grabbing PENDING, thus making
+try_to_grab_pending() fail with -ENOENT instead of -EAGAIN.  Also, it
+invokes wait_on_work() iff grabbing failed with -ENOENT.  This isn't
+necessary for correctness but makes it consistent with other future
+users of try_to_grab_pending().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/workqueue.c |   36 +++++++++++++++++++++++++-----------
- 1 files changed, 25 insertions(+), 11 deletions(-)
+ include/linux/workqueue.h |    5 +++-
+ kernel/workqueue.c        |   67 ++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 61 insertions(+), 11 deletions(-)
 
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index f562674..5f4aeaa 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -70,7 +70,10 @@ enum {
+ 
+ 	/* data contains off-queue information when !WORK_STRUCT_CWQ */
+ 	WORK_OFFQ_FLAG_BASE	= WORK_STRUCT_FLAG_BITS,
+-	WORK_OFFQ_FLAG_BITS	= 0,
++
++	WORK_OFFQ_CANCELING	= (1 << WORK_OFFQ_FLAG_BASE),
++
++	WORK_OFFQ_FLAG_BITS	= 1,
+ 	WORK_OFFQ_CPU_SHIFT	= WORK_OFFQ_FLAG_BASE + WORK_OFFQ_FLAG_BITS,
+ 
+ 	/* convenience constants */
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 358779c..a0eb033 100644
+index a0eb033..c90f00e 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1004,15 +1004,29 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color,
- 		complete(&cwq->wq->first_flusher->done);
+@@ -537,15 +537,20 @@ static int work_next_color(int color)
+  * contain the pointer to the queued cwq.  Once execution starts, the flag
+  * is cleared and the high bits contain OFFQ flags and CPU number.
+  *
+- * set_work_cwq(), set_work_cpu_and_clear_pending() and clear_work_data()
+- * can be used to set the cwq, cpu or clear work->data.  These functions
+- * should only be called while the work is owned - ie. while the PENDING
+- * bit is set.
++ * set_work_cwq(), set_work_cpu_and_clear_pending(), mark_work_canceling()
++ * and clear_work_data() can be used to set the cwq, cpu or clear
++ * work->data.  These functions should only be called while the work is
++ * owned - ie. while the PENDING bit is set.
+  *
+- * get_work_[g]cwq() can be used to obtain the gcwq or cwq
+- * corresponding to a work.  gcwq is available once the work has been
+- * queued anywhere after initialization.  cwq is available only from
+- * queueing until execution starts.
++ * get_work_[g]cwq() can be used to obtain the gcwq or cwq corresponding to
++ * a work.  gcwq is available once the work has been queued anywhere after
++ * initialization until it is sync canceled.  cwq is available only while
++ * the work item is queued.
++ *
++ * %WORK_OFFQ_CANCELING is used to mark a work item which is being
++ * canceled.  While being canceled, a work item may have its PENDING set
++ * but stay off timer and worklist for arbitrarily long and nobody should
++ * try to steal the PENDING bit.
+  */
+ static inline void set_work_data(struct work_struct *work, unsigned long data,
+ 				 unsigned long flags)
+@@ -600,6 +605,22 @@ static struct global_cwq *get_work_gcwq(struct work_struct *work)
+ 	return get_gcwq(cpu);
  }
  
--/*
-- * Upon a successful return (>= 0), the caller "owns" WORK_STRUCT_PENDING bit,
-- * so this work can't be re-armed in any way.
-+/**
-+ * try_to_grab_pending - steal work item from worklist
-+ * @work: work item to steal
-+ *
-+ * Try to grab PENDING bit of @work.  This function can handle @work in any
-+ * stable state - idle, on timer or on worklist.  Return values are
-+ *
-+ *  1		if @work was pending and we successfully stole PENDING
-+ *  0		if @work was idle and we claimed PENDING
-+ *  -EAGAIN	if PENDING couldn't be grabbed at the moment, safe to busy-retry
-+ *
-+ * On >= 0 return, the caller owns @work's PENDING bit.
++static void mark_work_canceling(struct work_struct *work)
++{
++	struct global_cwq *gcwq = get_work_gcwq(work);
++	unsigned long cpu = gcwq ? gcwq->cpu : WORK_CPU_NONE;
++
++	set_work_data(work, (cpu << WORK_OFFQ_CPU_SHIFT) | WORK_OFFQ_CANCELING,
++		      WORK_STRUCT_PENDING);
++}
++
++static bool work_is_canceling(struct work_struct *work)
++{
++	unsigned long data = atomic_long_read(&work->data);
++
++	return !(data & WORK_STRUCT_CWQ) && (data & WORK_OFFQ_CANCELING);
++}
++
+ /*
+  * Policy functions.  These define the policies on how the global worker
+  * pools are managed.  Unless noted otherwise, these functions assume that
+@@ -1014,14 +1035,21 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color,
+  *  1		if @work was pending and we successfully stole PENDING
+  *  0		if @work was idle and we claimed PENDING
+  *  -EAGAIN	if PENDING couldn't be grabbed at the moment, safe to busy-retry
++ *  -ENOENT	if someone else is canceling @work, this state may persist
++ *		for arbitrarily long
+  *
+- * On >= 0 return, the caller owns @work's PENDING bit.
++ * On >= 0 return, the caller owns @work's PENDING bit.  To avoid getting
++ * preempted while holding PENDING and @work off queue, preemption must be
++ * disabled on entry.  This ensures that we don't return -EAGAIN while
++ * another task is preempted in this function.
   */
--static int try_to_grab_pending(struct work_struct *work)
-+static int try_to_grab_pending(struct work_struct *work,
-+			       struct timer_list *timer)
+ static int try_to_grab_pending(struct work_struct *work,
+ 			       struct timer_list *timer)
  {
  	struct global_cwq *gcwq;
--	int ret = -1;
  
-+	/* try to steal the timer if it exists */
-+	if (timer && likely(del_timer(timer)))
-+		return 1;
++	WARN_ON_ONCE(!preempt_count());
 +
-+	/* try to claim PENDING the normal way */
- 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work)))
- 		return 0;
- 
-@@ -1022,7 +1036,7 @@ static int try_to_grab_pending(struct work_struct *work)
- 	 */
- 	gcwq = get_work_gcwq(work);
- 	if (!gcwq)
--		return ret;
-+		return -EAGAIN;
- 
- 	spin_lock_irq(&gcwq->lock);
- 	if (!list_empty(&work->entry)) {
-@@ -1038,12 +1052,14 @@ static int try_to_grab_pending(struct work_struct *work)
- 			cwq_dec_nr_in_flight(get_work_cwq(work),
- 				get_work_color(work),
- 				*work_data_bits(work) & WORK_STRUCT_DELAYED);
--			ret = 1;
-+
-+			spin_unlock_irq(&gcwq->lock);
-+			return 1;
- 		}
+ 	/* try to steal the timer if it exists */
+ 	if (timer && likely(del_timer(timer)))
+ 		return 1;
+@@ -1059,6 +1087,10 @@ static int try_to_grab_pending(struct work_struct *work,
  	}
  	spin_unlock_irq(&gcwq->lock);
  
--	return ret;
-+	return -EAGAIN;
++	if (unlikely(work_is_canceling(work)))
++		return -ENOENT;
++
++	cpu_relax();
+ 	return -EAGAIN;
  }
  
- /**
-@@ -2823,9 +2839,7 @@ static bool __cancel_work_timer(struct work_struct *work,
+@@ -2838,11 +2870,26 @@ static bool __cancel_work_timer(struct work_struct *work,
+ {
  	int ret;
  
++	preempt_disable();
++
  	do {
--		ret = (timer && likely(del_timer(timer)));
--		if (!ret)
--			ret = try_to_grab_pending(work);
-+		ret = try_to_grab_pending(work, timer);
- 		wait_on_work(work);
+ 		ret = try_to_grab_pending(work, timer);
+-		wait_on_work(work);
++		/*
++		 * If someone else is canceling, wait for the same event it
++		 * would be waiting for before retrying.
++		 */
++		if (unlikely(ret == -ENOENT)) {
++			preempt_enable();
++			wait_on_work(work);
++			preempt_disable();
++		}
  	} while (unlikely(ret < 0));
  
++	/* tell other tasks trying to grab @work to back off */
++	mark_work_canceling(work);
++	preempt_enable();
++
++	wait_on_work(work);
+ 	clear_work_data(work);
+ 	return ret;
+ }
 -- 
 1.7.7.3
 
