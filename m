@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab2G0WaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 18:30:13 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:54274 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751709Ab2G0WaK (ORCPT
+	id S1752533Ab2G0Wa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 18:30:26 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:3816 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab2G0WaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 18:30:10 -0400
-Message-ID: <5013162C.9030606@xenotime.net>
-Date: Fri, 27 Jul 2012 15:29:00 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [PATCH] Documentation: fix DOCBOOKS=... building
-References: <1339577020.4519.19.camel@jlt3.sipsolutions.net>
-In-Reply-To: <1339577020.4519.19.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 27 Jul 2012 18:30:23 -0400
+Message-ID: <1343427931.3010.582.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] create sun sysfs file
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 27 Jul 2012 16:25:31 -0600
+In-Reply-To: <5012051A.4050706@jp.fujitsu.com>
+References: <5012051A.4050706@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 01:43 AM, Johannes Berg wrote:
+On Fri, 2012-07-27 at 12:03 +0900, Yasuaki Ishimatsu wrote:
+> Even if a device has _SUN method, there is no way to know the slot unique-ID.
+> Thus the patch creates "sun" file in sysfs so that we can recognize it.
 
-> From: Johannes Berg <johannes.berg@intel.com>
-> 
-> Prior to 
-> commit 4266129964b8238526936d723de65b419d8069c6
-> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Date:   Tue May 31 16:27:44 2011 -0300
-> 
->     [media] DocBook: Move all media docbook stuff into its own directory
-> 
-> it was possible to build only a single (or more)
-> book(s) by calling, for example
-> 	make htmldocs DOCBOOKS=80211.xml
-> 
-> This now fails:
-> cp: target `.../Documentation/DocBook//media_api' is not a directory
-> 
-> Ignore errors from that copy to make this possible again.
-> 
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-> ---
-> I complained about this a long time ago, but now it finally bothered me
-> enough to fix it ... :-)
+Hi Yasuaki,
+
+Thanks for the update.  This version looks good to me.
+Did you forget to add your Signed-off?
 
 
-Thanks.
-
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Mauro??
-
-
-> 
->  Documentation/DocBook/media/Makefile |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/Documentation/DocBook/media/Makefile	2012-06-13 10:39:58.000000000 +0200
-> +++ b/Documentation/DocBook/media/Makefile	2012-06-13 10:40:05.000000000 +0200
-> @@ -195,7 +195,7 @@ DVB_DOCUMENTED = \
->  #
+> Index: linux-3.5/include/acpi/acpi_bus.h
+> ===================================================================
+> --- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-22 05:58:29.000000000 +0900
+> +++ linux-3.5/include/acpi/acpi_bus.h	2012-07-27 10:05:13.860598455 +0900
+> @@ -209,6 +209,7 @@ struct acpi_device_pnp {
+>  	struct list_head ids;		/* _HID and _CIDs */
+>  	acpi_device_name device_name;	/* Driver-determined */
+>  	acpi_device_class device_class;	/*        "          */
+> +	unsigned long sun;		/* _SUN */
+>  };
 >  
->  install_media_images = \
-> -	$(Q)cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
-> +	$(Q)-cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
+>  #define acpi_device_bid(d)	((d)->pnp.bus_id)
+> Index: linux-3.5/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-3.5.orig/drivers/acpi/scan.c	2012-07-22 05:58:29.000000000 +0900
+> +++ linux-3.5/drivers/acpi/scan.c	2012-07-27 10:17:55.670550879 +0900
+> @@ -192,10 +192,21 @@ end:
+>  }
+>  static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
 >  
->  $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%.b64
->  	$(Q)base64 -d $< >$@
+> +static ssize_t
+> +acpi_device_sun_show(struct device *dev, struct device_attribute *attr, char *buf) {
+> +	struct acpi_device *acpi_dev = to_acpi_device(dev);
+> +	int result;
+> +
+> +	result = sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
+> +	return result;
+> +}
+> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
+> +
+>  static int acpi_device_setup_files(struct acpi_device *dev)
+>  {
+>  	acpi_status status;
+>  	acpi_handle temp;
+> +	unsigned long long sun;
+>  	int result = 0;
+>  
+>  	/*
+> @@ -217,6 +228,14 @@ static int acpi_device_setup_files(struc
+>  			goto end;
+>  	}
+>  
+> +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
+> +	if (ACPI_SUCCESS(status)) {
+> +		dev->pnp.sun = (unsigned long)sun;
+> +		result = device_create_file(&dev->dev, &dev_attr_sun);
+> +		if (result)
+> +			goto end;
+> +	}
+> +
+
+I'd suggest we add the else condition below to invalidate the field when
+_SUN does not exist.
+
+	else {
+		dev->pnp.sun = (unsigned long)-1;
+	}
+
+
+Thanks,
+-Toshi
+
+>          /*
+>           * If device has _EJ0, 'eject' file is created that is used to trigger
+>           * hot-removal function from userland.
+> @@ -241,6 +260,10 @@ static void acpi_device_remove_files(str
+>  	if (ACPI_SUCCESS(status))
+>  		device_remove_file(&dev->dev, &dev_attr_eject);
+>  
+> +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
+> +	if (ACPI_SUCCESS(status))
+> +		device_remove_file(&dev->dev, &dev_attr_sun);
+> +
+>  	device_remove_file(&dev->dev, &dev_attr_modalias);
+>  	device_remove_file(&dev->dev, &dev_attr_hid);
+>  	if (dev->handle)
 > 
-> 
 
 
-
--- 
-~Randy
