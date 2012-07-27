@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab2G0R5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 13:57:08 -0400
+	id S1752566Ab2G0R5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 13:57:01 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:62184 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab2G0R5E (ORCPT
+	with ESMTP id S1752472Ab2G0R46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 13:57:04 -0400
+	Fri, 27 Jul 2012 13:56:58 -0400
 From: Joonsoo Kim <js1304@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, Christoph Lameter <cl@linux.com>
-Subject: [RESEND PATCH 3/4 v3] mm: fix return value in __alloc_contig_migrate_range()
-Date: Sat, 28 Jul 2012 02:55:02 +0900
-Message-Id: <1343411703-2720-3-git-send-email-js1304@gmail.com>
+        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>
+Subject: [RESEND PATCH 1/4 v3] mm: correct return value of migrate_pages() and migrate_huge_pages()
+Date: Sat, 28 Jul 2012 02:55:00 +0900
+Message-Id: <1343411703-2720-1-git-send-email-js1304@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343411703-2720-1-git-send-email-js1304@gmail.com>
+In-Reply-To: <Yes>
 References: <Yes>
- <1343411703-2720-1-git-send-email-js1304@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-migrate_pages() can return positive value while at the same time emptying
-the list of pages it was called with.  Such situation means that it went
-through all the pages on the list some of which failed to be migrated.
+migrate_pages() should return number of pages not migrated or error code.
+When unmap_and_move return -EAGAIN, outer loop is re-execution without
+initialising nr_failed. This makes nr_failed over-counted.
 
-If that happens, __alloc_contig_migrate_range()'s loop may finish without
-"++tries == 5" never being checked.  This in turn means that at the end
-of the function, ret may have a positive value, which should be treated
-as an error.
+So this patch correct it by initialising nr_failed in outer loop.
 
-This patch changes __alloc_contig_migrate_range() so that the return
-statement converts positive ret value into -EBUSY error.
+migrate_huge_pages() is identical case as migrate_pages()
 
 Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>
 Cc: Christoph Lameter <cl@linux.com>
 Acked-by: Christoph Lameter <cl@linux.com>
 Acked-by: Michal Nazarewicz <mina86@mina86.com>
+---
+[Patch 2/4]: add "Acked-by: Michal Nazarewicz <mina86@mina86.com>"
+[Patch 3/4]: commit log is changed according to Michal Nazarewicz's suggestion.
+There is no other change from v2.
+Just resend as ping for Andrew.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4403009..02d4519 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5673,7 +5673,6 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 			}
- 			tries = 0;
- 		} else if (++tries == 5) {
--			ret = ret < 0 ? ret : -EBUSY;
- 			break;
- 		}
+diff --git a/mm/migrate.c b/mm/migrate.c
+index be26d5c..f495c58 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -982,6 +982,7 @@ int migrate_pages(struct list_head *from,
  
-@@ -5683,7 +5682,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 	}
+ 	for(pass = 0; pass < 10 && retry; pass++) {
+ 		retry = 0;
++		nr_failed = 0;
  
- 	putback_lru_pages(&cc.migratepages);
--	return ret > 0 ? 0 : ret;
-+	return ret <= 0 ? ret : -EBUSY;
- }
+ 		list_for_each_entry_safe(page, page2, from, lru) {
+ 			cond_resched();
+@@ -1029,6 +1030,7 @@ int migrate_huge_pages(struct list_head *from,
  
- /*
+ 	for (pass = 0; pass < 10 && retry; pass++) {
+ 		retry = 0;
++		nr_failed = 0;
+ 
+ 		list_for_each_entry_safe(page, page2, from, lru) {
+ 			cond_resched();
 -- 
 1.7.9.5
 
