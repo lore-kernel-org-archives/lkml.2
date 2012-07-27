@@ -1,50 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab2G0SMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 14:12:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37398 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab2G0SMM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 14:12:12 -0400
-Date: Fri, 27 Jul 2012 11:12:08 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: sandeep@freescale.com
-Cc: linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        devel@driverdev.osuosl.org, galak@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [2/3][PATCH][v2] TDM Framework
-Message-ID: <20120727181208.GC23105@kroah.com>
-References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+	id S1752627Ab2G0SMR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 14:12:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7057 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752549Ab2G0SMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 14:12:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="187863356"
+Date: Fri, 27 Jul 2012 14:12:12 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Keith Busch <keith.busch@intel.com>
+Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] NVMe: Add a character device for each nvme device
+Message-ID: <20120727181212.GM22985@linux.intel.com>
+References: <1343407458-29909-1-git-send-email-keith.busch@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+In-Reply-To: <1343407458-29909-1-git-send-email-keith.busch@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 07:35:38PM +0530, sandeep@freescale.com wrote:
-> +static struct kobj_type tdm_type = {
-> +	.sysfs_ops = &tdm_ops,
-> +	.default_attrs = tdm_attr,
+On Fri, Jul 27, 2012 at 10:44:18AM -0600, Keith Busch wrote:
+> Registers a character device for the nvme module and creates character
+> files as /dev/nvmeN for each nvme device probed, where N is the device
+> instance. The character devices support nvme admin ioctl commands so
+> that nvme devices without namespaces can be managed.
+
+I don't see a problem here, but I'm no expert at sysfs / character devices.
+Alan, Greg, anyone else see any problems with how this character device is
+created / destroyed?
+
+> 
+> Signed-off-by: Keith Busch <keith.busch@intel.com>
+> ---
+>  drivers/block/nvme.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 54 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/block/nvme.c b/drivers/block/nvme.c
+> index 7bcd882..8a16ac8 100644
+> --- a/drivers/block/nvme.c
+> +++ b/drivers/block/nvme.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/bio.h>
+>  #include <linux/bitops.h>
+>  #include <linux/blkdev.h>
+> +#include <linux/cdev.h>
+>  #include <linux/delay.h>
+>  #include <linux/errno.h>
+>  #include <linux/fs.h>
+> @@ -45,6 +46,7 @@
+>  #define SQ_SIZE(depth)		(depth * sizeof(struct nvme_command))
+>  #define CQ_SIZE(depth)		(depth * sizeof(struct nvme_completion))
+>  #define NVME_MINORS 64
+> +#define NVME_MAX_DEVS 1024
+>  #define NVME_IO_TIMEOUT	(5 * HZ)
+>  #define ADMIN_TIMEOUT	(60 * HZ)
+>  
+> @@ -54,9 +56,13 @@ module_param(nvme_major, int, 0);
+>  static int use_threaded_interrupts;
+>  module_param(use_threaded_interrupts, int, 0);
+>  
+> +static int nvme_char_major;
+> +module_param(nvme_char_major, int, 0);
+> +
+>  static DEFINE_SPINLOCK(dev_list_lock);
+>  static LIST_HEAD(dev_list);
+>  static struct task_struct *nvme_thread;
+> +static struct class *nvme_char_cl;
+>  
+>  /*
+>   * Represents an NVM Express device.  Each nvme_dev is a PCI function.
+> @@ -1222,6 +1228,35 @@ static const struct block_device_operations nvme_fops = {
+>  	.compat_ioctl	= nvme_ioctl,
+>  };
+>  
+> +static long nvme_char_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+> +{
+> +	struct nvme_dev *dev;
+> +	int instance = iminor(f->f_dentry->d_inode);
+> +
+> +	spin_lock(&dev_list_lock);
+> +	list_for_each_entry(dev, &dev_list, node) {
+> +		if (dev->instance == instance)
+> +			break;
+> +	}
+> +	spin_unlock(&dev_list_lock);
+> +
+> +	if (&dev->node == &dev_list)
+> +		return -ENOTTY;
+> +	
+> +	switch (cmd) {
+> +	case NVME_IOCTL_ADMIN_CMD:
+> +		return nvme_user_admin_cmd(dev, (void __user *)arg);
+> +	default:
+> +		return -ENOTTY;
+> +	}
+> +}
+> +
+> +static const struct file_operations nvme_char_fops = {
+> +	.owner		= THIS_MODULE,
+> +	.unlocked_ioctl	= nvme_char_ioctl,
+> +	.compat_ioctl	= nvme_char_ioctl,
 > +};
-
-Ah, also, as per the documentation in the kernel (go look, it's there),
-I now get to publicly mock you for ignoring the error messages that
-the kernel is giving you when you try to shut down your code path.
-
-Well, to be fair, you are leaking memory like a sieve, so I doubt you
-ever saw those error messages because you never cleaned up after
-yourself, so perhaps I can forgive you, but your users can't, sorry.
-They like to rely on the fact that Linux is a reliable operating system,
-don't cause them to doubt that.
-
-Please fix this code, it's horribly broken.  Read
-Documentation/kobject.txt for why.  That file was written for a reason,
-and not just because we like writing documentation (hint, we hate to...)
-
-Ugh,
-
-greg k-h
+> +
+>  static void nvme_timeout_ios(struct nvme_queue *nvmeq)
+>  {
+>  	int depth = nvmeq->q_depth - 1;
+> @@ -1632,6 +1667,8 @@ static int __devinit nvme_probe(struct pci_dev *pdev,
+>  	if (result)
+>  		goto delete;
+>  
+> +	device_create(nvme_char_cl, NULL, MKDEV(nvme_char_major, dev->instance),
+> +						NULL, "nvme%d", dev->instance);
+>  	return 0;
+>  
+>   delete:
+> @@ -1660,6 +1697,7 @@ static void __devexit nvme_remove(struct pci_dev *pdev)
+>  {
+>  	struct nvme_dev *dev = pci_get_drvdata(pdev);
+>  	nvme_dev_remove(dev);
+> +	device_destroy(nvme_char_cl, MKDEV(nvme_char_major, dev->instance));
+>  	pci_disable_msix(pdev);
+>  	iounmap(dev->bar);
+>  	nvme_release_instance(dev);
+> @@ -1721,11 +1759,24 @@ static int __init nvme_init(void)
+>  	else if (result > 0)
+>  	    nvme_major = result;
+>  
+> +	result = __register_chrdev(nvme_char_major, 0, NVME_MAX_DEVS, "nvme",
+> +							&nvme_char_fops);
+> +	if (result < 0)
+> +		goto unregister_blkdev;
+> +	else if (result > 0)
+> +		nvme_char_major = result;
+> +	nvme_char_cl = class_create(THIS_MODULE, "nvme");
+> +	if (!nvme_char_cl)
+> +		goto unregister_chrdev;
+>  	result = pci_register_driver(&nvme_driver);
+>  	if (result)
+> -		goto unregister_blkdev;
+> +		goto destroy_class;
+>  	return 0;
+>  
+> + destroy_class:
+> +	class_destroy(nvme_char_cl);
+> + unregister_chrdev:
+> +	__unregister_chrdev(nvme_char_major, 0, NVME_MAX_DEVS, "nvme");
+>   unregister_blkdev:
+>  	unregister_blkdev(nvme_major, "nvme");
+>   kill_kthread:
+> @@ -1736,6 +1787,8 @@ static int __init nvme_init(void)
+>  static void __exit nvme_exit(void)
+>  {
+>  	pci_unregister_driver(&nvme_driver);
+> +	class_destroy(nvme_char_cl);
+> +	__unregister_chrdev(nvme_char_major, 0, NVME_MAX_DEVS, "nvme");
+>  	unregister_blkdev(nvme_major, "nvme");
+>  	kthread_stop(nvme_thread);
+>  }
+> -- 
+> 1.7.0.4
+> 
+> 
+> _______________________________________________
+> Linux-nvme mailing list
+> Linux-nvme@lists.infradead.org
+> http://merlin.infradead.org/mailman/listinfo/linux-nvme
