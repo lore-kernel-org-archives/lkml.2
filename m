@@ -1,289 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab2G0L5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 07:57:04 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:24086 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab2G0L5C (ORCPT
+	id S1752094Ab2G0MEL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:04:11 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:61675 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab2G0MEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 07:57:02 -0400
-X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
-   d="scan'208";a="13733788"
-Date: Fri, 27 Jul 2012 12:56:07 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 01/24] arm: initial Xen support
-In-Reply-To: <20120726163020.GB9222@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1207271246080.26163@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-1-git-send-email-stefano.stabellini@eu.citrix.com> <20120726163020.GB9222@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Fri, 27 Jul 2012 08:04:09 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-ab-501283b7b879
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Subash Patel <subashrp@gmail.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCHv5 0/2] ARM: replace custom consistent dma region with vmalloc
+Date: Fri, 27 Jul 2012 14:03:37 +0200
+Message-id: <1343390619-20456-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t9jQd0dzUIBBjcdLC7vmsPmwOjxeZNc
+	AGMUl01Kak5mWWqRvl0CV8aztjcsBZMFKloXNjE1ML7g6WLk5JAQMJFY/O0AI4QtJnHh3nq2
+	LkYuDiGB6YwSv07cZYdwVjNJXFq9HqyKTcBQouttF1AVB4eIQI3EvBmMIDXMAnOZJe7t/MkO
+	UiMs4CvRuHECC4jNIqAqMX/BLVYQm1fAQ+L18zXMENvkJZ7e72ObwMi9gJFhFaNoakFyQXFS
+	eq6hXnFibnFpXrpecn7uJkawB59J7WBc2WBxiFGAg1GJh3cir1CAEGtiWXFl7iFGCQ5mJRHe
+	r7ZAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rzG3l/9hQTSE0tSs1NTC1KLYLJMHJxSDYylUpd3
+	fI9fIny+nctwbddp13e+Jb8XPPp46JLuvK8/kzdk/XVbM/u60VnD/QE/9m4+eWV+IBuj4Uwr
+	5Q9TvyfnNhku3T2pWKWn78Kyn/onq02OerJv+c109b79jC2r70ZcWt66sbLiaddUu/zdlxyZ
+	D/WlONyeY/Puj9T+7sOO9dYXA6ekPv65TImlOCPRUIu5qDgRAG/30OfcAQAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jul 26, 2012 at 04:33:43PM +0100, Stefano Stabellini wrote:
-> > - Basic hypervisor.h and interface.h definitions.
-> > - Skelethon enlighten.c, set xen_start_info to an empty struct.
-> 
-> Skeleton
-> 
-> > - Do not limit xen_initial_domain to PV guests.
-> 
-> Better wording: Make xen_initial_domain dependent on the SIF_PRIVILIGED_BIT.
-> 
-> Which reminds me - what about PV guests that do PCI passthrough. Aren't
-> they "more" priviligied than normal PV guests? Or not really?
+Hello!
 
-Not really, from the Xen POV.
+This is yet another quick update on the patchset which replaces custom 
+consistent dma regions usage in dma-mapping framework in favour of
+generic vmalloc areas created on demand for each allocation. The main
+purpose for this patchset is to remove 2MiB limit of dma
+coherent/writecombine allocations.
 
+This version addresses a few minor issues pointed by Minchan Kim.
 
-> > The new code only compiles when CONFIG_XEN is set, that is going to be
-> > added to arch/arm/Kconfig in a later patch.
-> 
-> s/later patch/<name of patch>/
-> 
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/arm/Makefile                     |    1 +
-> >  arch/arm/include/asm/hypervisor.h     |    6 +++
-> >  arch/arm/include/asm/xen/hypervisor.h |   19 ++++++++++
-> >  arch/arm/include/asm/xen/interface.h  |   64 +++++++++++++++++++++++++++++++++
-> >  arch/arm/xen/Makefile                 |    1 +
-> >  arch/arm/xen/enlighten.c              |   35 ++++++++++++++++++
-> >  include/xen/xen.h                     |    2 +-
-> >  7 files changed, 127 insertions(+), 1 deletions(-)
-> >  create mode 100644 arch/arm/include/asm/hypervisor.h
-> >  create mode 100644 arch/arm/include/asm/xen/hypervisor.h
-> >  create mode 100644 arch/arm/include/asm/xen/interface.h
-> >  create mode 100644 arch/arm/xen/Makefile
-> >  create mode 100644 arch/arm/xen/enlighten.c
-> > 
-> > diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-> > index 0298b00..70aaa82 100644
-> > --- a/arch/arm/Makefile
-> > +++ b/arch/arm/Makefile
-> > @@ -246,6 +246,7 @@ endif
-> >  core-$(CONFIG_FPE_NWFPE)	+= arch/arm/nwfpe/
-> >  core-$(CONFIG_FPE_FASTFPE)	+= $(FASTFPE_OBJ)
-> >  core-$(CONFIG_VFP)		+= arch/arm/vfp/
-> > +core-$(CONFIG_XEN)		+= arch/arm/xen/
-> >  
-> >  # If we have a machine-specific directory, then include it in the build.
-> >  core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
-> > diff --git a/arch/arm/include/asm/hypervisor.h b/arch/arm/include/asm/hypervisor.h
-> > new file mode 100644
-> > index 0000000..b90d9e5
-> > --- /dev/null
-> > +++ b/arch/arm/include/asm/hypervisor.h
-> > @@ -0,0 +1,6 @@
-> > +#ifndef _ASM_ARM_HYPERVISOR_H
-> > +#define _ASM_ARM_HYPERVISOR_H
-> > +
-> > +#include <asm/xen/hypervisor.h>
-> > +
-> > +#endif
-> > diff --git a/arch/arm/include/asm/xen/hypervisor.h b/arch/arm/include/asm/xen/hypervisor.h
-> > new file mode 100644
-> > index 0000000..d7ab99a
-> > --- /dev/null
-> > +++ b/arch/arm/include/asm/xen/hypervisor.h
-> > @@ -0,0 +1,19 @@
-> > +#ifndef _ASM_ARM_XEN_HYPERVISOR_H
-> > +#define _ASM_ARM_XEN_HYPERVISOR_H
-> > +
-> > +extern struct shared_info *HYPERVISOR_shared_info;
-> > +extern struct start_info *xen_start_info;
-> > +
-> > +/* Lazy mode for batching updates / context switch */
-> > +enum paravirt_lazy_mode {
-> > +	PARAVIRT_LAZY_NONE,
-> > +	PARAVIRT_LAZY_MMU,
-> > +	PARAVIRT_LAZY_CPU,
-> > +};
-> > +
-> > +static inline enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
-> > +{
-> > +	return PARAVIRT_LAZY_NONE;
-> > +}
-> > +
-> > +#endif /* _ASM_ARM_XEN_HYPERVISOR_H */
-> > diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
-> > new file mode 100644
-> > index 0000000..6c3ab59
-> > --- /dev/null
-> > +++ b/arch/arm/include/asm/xen/interface.h
-> > @@ -0,0 +1,64 @@
-> > +/******************************************************************************
-> > + * Guest OS interface to ARM Xen.
-> > + *
-> > + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2011
-> 
-> 2012
-> 
-> > + */
-> > +
-> > +#ifndef _ASM_ARM_XEN_INTERFACE_H
-> > +#define _ASM_ARM_XEN_INTERFACE_H
-> > +
-> > +#include <linux/types.h>
-> > +
-> > +#define __DEFINE_GUEST_HANDLE(name, type) \
-> > +	typedef type * __guest_handle_ ## name
-> > +
-> > +#define DEFINE_GUEST_HANDLE_STRUCT(name) \
-> > +	__DEFINE_GUEST_HANDLE(name, struct name)
-> > +#define DEFINE_GUEST_HANDLE(name) __DEFINE_GUEST_HANDLE(name, name)
-> > +#define GUEST_HANDLE(name)        __guest_handle_ ## name
-> > +
-> > +#define set_xen_guest_handle(hnd, val)			\
-> > +	do {						\
-> > +		if (sizeof(hnd) == 8)			\
-> > +			*(uint64_t *)&(hnd) = 0;	\
-> > +		(hnd) = val;				\
-> > +	} while (0)
-> > +
-> > +#ifndef __ASSEMBLY__
-> > +/* Guest handles for primitive C types. */
-> > +__DEFINE_GUEST_HANDLE(uchar, unsigned char);
-> > +__DEFINE_GUEST_HANDLE(uint,  unsigned int);
-> > +__DEFINE_GUEST_HANDLE(ulong, unsigned long);
-> > +DEFINE_GUEST_HANDLE(char);
-> > +DEFINE_GUEST_HANDLE(int);
-> > +DEFINE_GUEST_HANDLE(long);
-> > +DEFINE_GUEST_HANDLE(void);
-> > +DEFINE_GUEST_HANDLE(uint64_t);
-> > +DEFINE_GUEST_HANDLE(uint32_t);
-> > +
-> > +/* Maximum number of virtual CPUs in multi-processor guests. */
-> > +#define MAX_VIRT_CPUS 1
-> > +
-> > +struct arch_vcpu_info { };
-> > +struct arch_shared_info { };
-> > +
-> > +/* XXX: Move pvclock definitions some place arch independent */
-> > +struct pvclock_vcpu_time_info {
-> > +	u32   version;
-> > +	u32   pad0;
-> > +	u64   tsc_timestamp;
-> > +	u64   system_time;
-> > +	u32   tsc_to_system_mul;
-> > +	s8    tsc_shift;
-> > +	u8    flags;
-> > +	u8    pad[2];
-> > +} __attribute__((__packed__)); /* 32 bytes */
-> > +
-> > +struct pvclock_wall_clock {
-> > +	u32   version;
-> > +	u32   sec;
-> > +	u32   nsec;
-> > +} __attribute__((__packed__));
-> 
-> That is weird. It is 4+4+4 = 12 bytes? Don't you want it to be 16 bytes?
+This patch is based on vanilla v3.5 release.
 
-I agree that 16 bytes would be a better choice, but it needs to match
-the struct in Xen that is defined as follow:
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
 
-    uint32_t wc_version;      /* Version counter: see vcpu_time_info_t. */
-    uint32_t wc_sec;          /* Secs  00:00:00 UTC, Jan 1, 1970.  */
-    uint32_t wc_nsec;         /* Nsecs 00:00:00 UTC, Jan 1, 1970.  */
+Changelog:
 
-in xen/include/public/xen.h.
+v5:
+- fixed another minor issues pointed by Minchan Kim: added more comments
+  here and there, changed pr_err() + stack_dump() to WARN(), added a fix
+  for no-MMU systems
+
+v4: http://thread.gmane.org/gmane.linux.kernel.mm/80906
+- replaced arch-independent VM_DMA flag with ARM-specific
+  VM_ARM_DMA_CONSISTENT flag
+
+v3: http://thread.gmane.org/gmane.linux.kernel.mm/80028
+- rebased onto v3.4-rc2: added support for IOMMU-aware implementation 
+  of dma-mapping calls, unified with CMA coherent dma pool
+- implemented changes requested by Minchan Kim: added more checks for
+  vmarea->flags & VM_DMA, renamed some variables, removed obsole locks,
+  squashed find_vm_area() exporting patch into the main redesign patch 
+
+v2: http://thread.gmane.org/gmane.linux.kernel.mm/78563
+- added support for atomic allocations (served from preallocated pool)
+- minor cleanup here and there
+- rebased onto v3.4-rc7
+
+v1: http://thread.gmane.org/gmane.linux.kernel.mm/76703
+- initial version
+
+Patch summary:
 
 
-> > +#endif
-> > +
-> > +#endif /* _ASM_ARM_XEN_INTERFACE_H */
-> > diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
-> > new file mode 100644
-> > index 0000000..0bad594
-> > --- /dev/null
-> > +++ b/arch/arm/xen/Makefile
-> > @@ -0,0 +1 @@
-> > +obj-y		:= enlighten.o
-> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> > new file mode 100644
-> > index 0000000..d27c2a6
-> > --- /dev/null
-> > +++ b/arch/arm/xen/enlighten.c
-> > @@ -0,0 +1,35 @@
-> > +#include <xen/xen.h>
-> > +#include <xen/interface/xen.h>
-> > +#include <xen/interface/memory.h>
-> > +#include <xen/platform_pci.h>
-> > +#include <asm/xen/hypervisor.h>
-> > +#include <asm/xen/hypercall.h>
-> > +#include <linux/module.h>
-> > +
-> > +struct start_info _xen_start_info;
-> > +struct start_info *xen_start_info = &_xen_start_info;
-> > +EXPORT_SYMBOL_GPL(xen_start_info);
-> > +
-> > +enum xen_domain_type xen_domain_type = XEN_NATIVE;
-> > +EXPORT_SYMBOL_GPL(xen_domain_type);
-> > +
-> > +struct shared_info xen_dummy_shared_info;
-> > +struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
-> > +
-> > +DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
-> > +
-> > +/* XXX: to be removed */
-> 
-> In this patch series later on? Or just when you try to collapse the x86 and arm variant
-> together?
+Marek Szyprowski (2):
+  mm: vmalloc: use const void * for caller argument
+  ARM: dma-mapping: remove custom consistent dma region
 
-The latter.
-It is not harmful but we don't need xen_have_vector_callback on ARM, so it
-would be nice if we didn't have to define it here.
+ Documentation/kernel-parameters.txt |    2 +-
+ arch/arm/include/asm/dma-mapping.h  |    2 +-
+ arch/arm/mm/dma-mapping.c           |  511 +++++++++++++----------------------
+ arch/arm/mm/mm.h                    |    3 +
+ include/linux/vmalloc.h             |    9 +-
+ mm/vmalloc.c                        |   28 ++-
+ 6 files changed, 210 insertions(+), 345 deletions(-)
 
+-- 
+1.7.1.569.g6f426
 
-> > +__read_mostly int xen_have_vector_callback;
-> > +EXPORT_SYMBOL_GPL(xen_have_vector_callback);
-> > +
-> > +int xen_platform_pci_unplug = XEN_UNPLUG_ALL;
-> > +EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
-> > +
-> > +int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
-> > +			       unsigned long addr,
-> > +			       unsigned long mfn, int nr,
-> > +			       pgprot_t prot, unsigned domid)
-> > +{
-> > +	return -ENOSYS;
-> > +}
-> > +EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
-> > diff --git a/include/xen/xen.h b/include/xen/xen.h
-> > index a164024..2c0d3a5 100644
-> > --- a/include/xen/xen.h
-> > +++ b/include/xen/xen.h
-> > @@ -23,7 +23,7 @@ extern enum xen_domain_type xen_domain_type;
-> >  #include <xen/interface/xen.h>
-> >  #include <asm/xen/hypervisor.h>
-> >  
-> > -#define xen_initial_domain()	(xen_pv_domain() && \
-> > +#define xen_initial_domain()	(xen_domain() && \
-> >  				 xen_start_info->flags & SIF_INITDOMAIN)
-> >  #else  /* !CONFIG_XEN_DOM0 */
-> >  #define xen_initial_domain()	(0)
-> > -- 
-> > 1.7.2.5
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> 
