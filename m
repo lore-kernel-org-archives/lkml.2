@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2G0D7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:59:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39263 "EHLO
+	id S1751286Ab2G0EC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 00:02:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39274 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab2G0D7r (ORCPT
+	with ESMTP id S1750756Ab2G0EC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:59:47 -0400
-Date: Thu, 26 Jul 2012 22:59:40 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: matt.fleming@intel.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: efi, x86, pci: Improve graphics support on some Apple hardware
-Message-ID: <20120727035940.GA7119@thinkpad-t410>
-Mail-Followup-To: Matthew Garrett <mjg@redhat.com>, matt.fleming@intel.com,
-	linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	x86@kernel.org, linux-pci@vger.kernel.org, bhelgaas@google.com
-References: <1343340169-7772-1-git-send-email-mjg@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343340169-7772-1-git-send-email-mjg@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Jul 2012 00:02:56 -0400
+From: Bryan Wu <bryan.wu@canonical.com>
+To: gregkh@linuxfoundation.org, ccross@android.com, hmh@hmh.eng.br,
+        rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org
+Subject: [PATCH 0/3] add new API to sysfs and device core code 
+Date: Fri, 27 Jul 2012 12:02:40 +0800
+Message-Id: <1343361763-10307-1-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 06:02:45PM -0400, Matthew Garrett wrote:
-> Some Apple machines only provide their video ROM via an EFI-specific mechanism
-> and don't permit it to be retrieved from the BAR. Add infrastructure to stash
-> it and provide access to drivers.
+Send out a uevent when create file in sysfs, which is required by userspace
+application such udev in Android
 
-I've verified that these patches produce funtioning radeon graphics on
-both the Macbook Pro 8,2 and Mac Mini 5,2 under native EFI boot.
-Previously the radeon driver did not work on these machines due to
-failure to locate the video ROM. So for the whole series:
+Bryan Wu (3):
+  sysfs: introduce a sysfs_create_file_uevent new API
+  drivers: add a new device_create_file_uevent API
+  ledtrig-timer: convert to use device_create_file_uevent API
 
-Tested-by: Seth Forshee <seth.forshee@canonical.com>
+ drivers/base/core.c          | 19 +++++++++++++++++++
+ drivers/leds/ledtrig-timer.c |  6 ++++--
+ fs/sysfs/file.c              | 28 ++++++++++++++++++++++++++++
+ include/linux/device.h       |  4 ++++
+ include/linux/sysfs.h        | 13 +++++++++++++
+ 5 files changed, 68 insertions(+), 2 deletions(-)
+
+-- 
+1.7.11.1
 
