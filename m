@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab2G0UmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 16:42:08 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50081 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab2G0UmG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 16:42:06 -0400
-Message-ID: <5012FD19.5090100@pobox.com>
-Date: Fri, 27 Jul 2012 16:42:01 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1751999Ab2G0UqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 16:46:00 -0400
+Received: from fieldses.org ([174.143.236.118]:56022 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab2G0Up7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 16:45:59 -0400
+Date: Fri, 27 Jul 2012 16:45:52 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Filipe Brandenburger <filbranden@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] locks: prevent side-effects of locks_release_private
+ before file_lock is initialized
+Message-ID: <20120727204552.GA6388@fieldses.org>
+References: <20120707190451.GA17049@fieldses.org>
+ <1343364172-1763-1-git-send-email-filbranden@gmail.com>
 MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>
-CC: Keith Busch <keith.busch@intel.com>, linux-nvme@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <greg@kroah.com>, Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [PATCH] NVMe: Add a character device for each nvme device
-References: <1343407458-29909-1-git-send-email-keith.busch@intel.com> <20120727181212.GM22985@linux.intel.com> <5012EBD9.8010602@pobox.com> <20120727202655.GP22985@linux.intel.com>
-In-Reply-To: <20120727202655.GP22985@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343364172-1763-1-git-send-email-filbranden@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2012 04:26 PM, Matthew Wilcox wrote:
-> Maybe we should design such a mechanism, but maybe we shouldn't ... as we
-> find common things to do, we tend to move those to sysfs, not ioctls,
-> and the kinds of commands that are being sent here are essentially
-> vendor-specific NVMe commands; it's not clear they'd fit neatly into a
-> generic mechanism.
+On Fri, Jul 27, 2012 at 12:42:52AM -0400, Filipe Brandenburger wrote:
+> When calling fcntl(fd, F_SETLEASE, lck) [with lck=F_WRLCK or F_RDLCK],
+> the custom signal or owner (if any were previously set using F_SETSIG
+> or F_SETOWN fcntls) would be reset when F_SETLEASE was called for the
+> second time on the same file descriptor.
+> 
+> This bug is a regression of 2.6.37 and is described here:
+> https://bugzilla.kernel.org/show_bug.cgi?id=43336
+> 
+> This patch reverts a commit from Oct 2004 (with subject "nfs4 lease:
+> move the f_delown processing") which originally introduced the
+> lm_release_private callback.
 
-You're delivering arbitrary packets to the device from userspace, and it 
-is returning arbitrary packets to userspace.
+Looks fine, thanks.  I think can also do something like the following
+(on top of your patch).
 
-This is a familiar pattern...  It is quite analagous to "send 
-vendor-specific commands from userspace to a drive"
+--b.
 
-	Jeff
+commit 96d6d59ceaeaacba4088862f3c57fcd011f52832
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Fri Jul 27 16:18:00 2012 -0400
 
+    locks: move lease-specific code out of locks_delete_lock
+    
+    No point putting something only used by one caller into common code.
+    
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
+diff --git a/fs/locks.c b/fs/locks.c
+index 86668dd..541075a 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -570,12 +570,6 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
+ 	fl->fl_next = NULL;
+ 	list_del_init(&fl->fl_link);
+ 
+-	fasync_helper(0, fl->fl_file, 0, &fl->fl_fasync);
+-	if (fl->fl_fasync != NULL) {
+-		printk(KERN_ERR "locks_delete_lock: fasync == %p\n", fl->fl_fasync);
+-		fl->fl_fasync = NULL;
+-	}
+-
+ 	if (fl->fl_nspid) {
+ 		put_pid(fl->fl_nspid);
+ 		fl->fl_nspid = NULL;
+@@ -1150,6 +1144,11 @@ int lease_modify(struct file_lock **before, int arg)
+ 
+ 		f_delown(filp);
+ 		filp->f_owner.signum = 0;
++		fasync_helper(0, fl->fl_file, 0, &fl->fl_fasync);
++		if (fl->fl_fasync != NULL) {
++			printk(KERN_ERR "locks_delete_lock: fasync == %p\n", fl->fl_fasync);
++			fl->fl_fasync = NULL;
++		}
+ 		locks_delete_lock(before);
+ 	}
+ 	return 0;
