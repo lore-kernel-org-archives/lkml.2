@@ -1,86 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab2G0HBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 03:01:51 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:55528 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab2G0HBu convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
-	Fri, 27 Jul 2012 03:01:50 -0400
-Message-Id: <501258FB0200007800090DB6@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 27 Jul 2012 08:01:47 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: <catalin.marinas@arm.com>, <arnd@arndb.de>, <Ian.Campbell@citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <tim@xen.org>
-Subject: Re: [Xen-devel] [PATCH 10/24] xen: do not compile manage,
- balloon, pci, acpi and cpu_hotplug on ARM
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
- <1343316846-25860-10-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1343316846-25860-10-git-send-email-stefano.stabellini@eu.citrix.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751813Ab2G0HDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 03:03:13 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:46470 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab2G0HDM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 03:03:12 -0400
+MIME-Version: 1.0
+Date: Fri, 27 Jul 2012 12:33:11 +0530
+Message-ID: <CAJ8eaTw_g6s0SO7uePnksb_g64TN2R5R69W+vk-8sYHrv3nCGw@mail.gmail.com>
+Subject: Issue with block I/O cgroup in case of threads
+From: naveen yadav <yad.naveen@gmail.com>
+To: tj@kernel.org, khlebnikov@openvz.org, david@fromorbit.com,
+        akpm@linux-foundation.org, mgorman@suse.de, riel@redhat.com,
+        minchan.kim@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.07.12 at 17:33, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> --- a/drivers/xen/Makefile
-> +++ b/drivers/xen/Makefile
-> @@ -1,11 +1,15 @@
-> -obj-y	+= grant-table.o features.o events.o manage.o balloon.o
-> +ifneq ($(CONFIG_ARM),y)
-> +obj-y	+= manage.o balloon.o
-
-While I assume that this part (and the cpu_hotplug one below) is
-temporary, ...
-
-> +obj-$(CONFIG_XEN_DOM0)			+= pci.o acpi.o
-
-... at least this one should imo be solved with a proper long term
-mechanism, i.e. the usual var-$(CONFIG_...) approach, i.e.
-
-dom0-$(CONFIG_PCI) := pci.o
-dom0-$(CONFIG_ACPI) := acpi.o
-obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
-
-Jan
-
-> +obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
-> +endif
-> +obj-y	+= grant-table.o features.o events.o
->  obj-y	+= xenbus/
->  
->  nostackp := $(call cc-option, -fno-stack-protector)
->  CFLAGS_features.o			:= $(nostackp)
->  
->  obj-$(CONFIG_BLOCK)			+= biomerge.o
-> -obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
->  obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
->  obj-$(CONFIG_XEN_BALLOON)		+= xen-balloon.o
->  obj-$(CONFIG_XEN_SELFBALLOONING)	+= xen-selfballoon.o
-> @@ -17,7 +21,6 @@ obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
->  obj-$(CONFIG_XEN_PVHVM)			+= platform-pci.o
->  obj-$(CONFIG_XEN_TMEM)			+= tmem.o
->  obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
-> -obj-$(CONFIG_XEN_DOM0)			+= pci.o acpi.o
->  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
->  obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
->  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
-> -- 
-> 1.7.2.5
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org 
-> http://lists.xen.org/xen-devel 
+Hi All,
 
 
+I am testing the cgroup block IO attributes in multiple threads scenario.
+I tried testing Throttling policy (max read/write bytes per second per device)
+ that can be set using the following attribute-
+"blkio.throttle.write_bps_device"
+"blkio.throttle.read_bps_device"
+but  I am not getting appropriate bandwidth readings, in case of
+process and threads.
 
+The following is my kernel configuration-
+# CONFIG_RCU_BOOST is not set
+# CONFIG_IKCONFIG is not set
+CONFIG_LOG_BUF_SHIFT=17
+CONFIG_CGROUPS=y
+# CONFIG_CGROUP_DEBUG is not set
+# CONFIG_CGROUP_FREEZER is not set
+CONFIG_CGROUP_DEVICE=y
+# CONFIG_CPUSETS is not set
+# CONFIG_CGROUP_CPUACCT is not set
+CONFIG_RESOURCE_COUNTERS=y
+CONFIG_CGROUP_MEM_RES_CTLR=y
+CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
+CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=y
+# CONFIG_CGROUP_PERF is not set
+CONFIG_CGROUP_SCHED=y
+CONFIG_FAIR_GROUP_SCHED=y
+CONFIG_RT_GROUP_SCHED=y
+CONFIG_BLK_CGROUP=y
+CONFIG_DEBUG_BLK_CGROUP=y
+# CONFIG_NAMESPACES is not set
+CONFIG_BLK_DEV_THROTTLING=y
+CONFIG_CFQ_GROUP_IOSCHED=y
+
+Below is the procedure that I followed for testing-
+first of all I mounted the cgroup blkio on /mnt
+$mount -t cgroup -o blkio none /mnt
+$mount | grep "cgroup"		
+==> output
+none on /sys/fs/cgroup type cgroup (rw,relatime,cpu)
+none on /mnt type cgroup (rw,relatime,blkio)
+
+The default readings were taken through dd command
+$dd if=linux.3.0.20.tgz of=/dev/null bs=4096 count=51200
+28419+1 records in
+28419+1 records out
+116405611 bytes (111.0MB) copied, 6.041795 seconds, 18.4MB/s
+$dd if=/dev/zero of=test1 bs=4096 count=51200
+51200+0 records in
+51200+0 records out
+209715200 bytes (200.0MB) copied, 31.203680 seconds, 6.4MB/s
+
+Then I made two groups in /mnt named g1 and g2 and set the bandwidth -
+$echo "8:0 2097152" > /mnt/g1/blkio.throttle.read_bps_device 		//2MB
+$echo "8:0 16777216" > /mnt/g2/blkio.throttle.read_bps_device 		//16MB
+$echo "8:0 1048576" > /mnt/g1/blkio.throttle.write_bps_device 		//1MB
+$echo "8:0 5242880" > /mnt/g2/blkio.throttle.write_bps_device 		//5MB
+
+Test program -
+////////////////////////////////////////////////////////////////////////////////////
+#define MAX_NAME_LEN 	16
+#define NO_THREADS		2
+
+volatile char flag=0;
+struct sigaction sigact;
+static char count=0;
+
+void *threadFunc(void *arg)
+{
+		char cmd[100];
+		sprintf(cmd,"dd if=/dev/zero of=ThreadTest%d bs=4096 count=51200",++count);
+		while(flag != 2);
+		system("echo 3 > /proc/sys/vm/drop_caches");
+			
+		system("dd if=Linux.3.0.20.tgz of=/dev/null bs=4096 count=51200");
+		system("echo 3 > /proc/sys/vm/drop_caches");
+		system(cmd);
+     	while(1);
+		return NULL;
+}
+
+static void signal_handler(int sig)	{
+	printf("Caught signal SIGUSR1 : %d\n",sig);
+	flag = 1;
+}
+
+void init_signals(void)	{
+	sigact.sa_handler = signal_handler;
+	sigemptyset(&sigact.sa_mask);
+	sigact.sa_flags = 0;
+	sigaction(SIGUSR1, &sigact, (struct sigaction *)NULL);
+}
+
+int main(int argc, char *argv[])
+{
+        pid_t pid;
+		pthread_t pth[2];
+        struct sched_param mysched;
+        char name[MAX_NAME_LEN + 1];
+        int i;
+		int j;
+
+		init_signals();
+        mysched.sched_priority = 19;
+
+        for (i=0; i<3; ++i) {
+                pid = fork();
+                if (pid == 0) {
+                        sprintf(name, "%d",i);
+                        prctl(PR_SET_NAME, (unsigned long)&name);
+
+                        if (argc==2 && !strcmp(argv[1], "FIFO")) {
+                                sched_setscheduler(0, SCHED_FIFO, &mysched);
+                        } else if (argc==2 && !strcmp(argv[1], "RR")) {
+                                sched_setscheduler(0, SCHED_RR, &mysched);
+                        }
+                        printf("\nPID=%d, Sched Policy=%d\n",
+getpid(),sched_getscheduler );
+						
+						sleep(30);
+						printf("Starting Thread Creation\n");
+
+						for(j=0;j<NO_THREADS;j++)	{
+							pthread_create(&pth[j],NULL,threadFunc,NULL);
+						}
+							
+						while(!flag);
+						printf("InProcess\n");
+						system("echo 3 > /proc/sys/vm/drop_caches");
+						system("dd if=Linux.3.0.20.tgz of=/dev/null bs=4096 count=51200");
+						system("echo 3 > /proc/sys/vm/drop_caches");
+						system("dd if=/dtv/usb/sda1/temp of=ProcessTest bs=4096 count=51200");
+						flag++;
+
+						for(j=0;j<NO_THREADS;j++)	{
+							pthread_join(pth[j], NULL);
+						}
+                }
+        }
+        return 0;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ProcedureProcedure to run:
+
+linux#> ./cgroup_thread_test_arm_blk
+cgroup_thread_test_arm_blk   cgroup_thread_test_arm_blk3
+linux#> ./cgroup_thread_test_arm_blk
+
+PID=130, Sched Policy=0
+linux#>
+PID=132, Sched Policy=0
+
+PID=131, Sched Policy=0
+
+linux#> echo 130  > /mnt/g1/tasks
+linux#> echo 131  > /mnt/g2/tasks
+linux#> Starting Thread Creation
+Starting Thread Creation
+Starting Thread Creation
+
+linux#>
+linux#> kill -SIGUSR1 130
+linux#> Caught signal SIGUSR1 : 10
+InProcess
+28419+1 records in
+28419+1 records out
+116405611 bytes (111.0MB) copied, 56.019700 seconds, 2.0MB/s
+51200+0 records in
+51200+0 records out
+209715200 bytes (200.0MB) copied, 30.881699 seconds, 6.5MB/s
+28419+1 records in
+28419+1 records out
+116405611 bytes (111.0MB) copied, 28419+1 records in
+28419+1 records out
+116405611 bytes (111.0MB) copied, 63.842881 seconds, 1.7MB/s
+63.844210 seconds, 1.7MB/s
+51200+0 records in
+51200+0 records out
+209715200 bytes (200.0MB) copied, 51200+0 records in
+51200+0 records out
+209715200 bytes (200.0MB) copied, 62.031691 seconds, 3.2MB/s
+62.029856 seconds, 3.2MB/s
+
+linux#> kill -SIGUSR1 131
+linux#> Caught signal SIGUSR1 : 10
+InProcess
+28419+1 records in
+28419+1 records out
+116405611 bytes (111.0MB) copied, 11.231604 seconds, 9.9MB/s
+51200+0 records in
+51200+0 records out
+209715200 bytes (200.0MB) copied, 38.505295 seconds, 5.2MB/s
+28419+1 records in
+28419+1 records out
+116405611 bytes (111.0MB) copied, 28419+1 records in
+28419+1 records out
+116405611 bytes (111.0MB) copied, 28.580193 seconds, 3.9MB/s
+28.578926 seconds, 3.9MB/s
+51200+0 records in
+51200+0 records out
+209715200 bytes (200.0MB) copied, 267.614328 seconds, 765.3KB/s
+51200+0 records in
+51200+0 records out
+209715200 bytes (200.0MB) copied, 269.800526 seconds, 759.1KB/s
+
+The limits assigned to the cgroups are not followed by process.
+
+
+
+Thanks
