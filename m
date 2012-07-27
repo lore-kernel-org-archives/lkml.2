@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab2G0L05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 07:26:57 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36575 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2G0L04 (ORCPT
+	id S1752081Ab2G0Lc5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 07:32:57 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:48675 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab2G0Lc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 07:26:56 -0400
-Message-ID: <50127B16.5040401@gmail.com>
-Date: Fri, 27 Jul 2012 13:27:18 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+	Fri, 27 Jul 2012 07:32:56 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
+   d="scan'208";a="13733398"
+Date: Fri, 27 Jul 2012 12:31:17 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 7/7] xen/mmu: Remove from __ka space PMD
+ entries for pagetables.
+In-Reply-To: <1343335652-5659-8-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1207271230150.26163@kaball.uk.xensource.com>
+References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com> <1343335652-5659-8-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: paulmck@linux.vnet.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
-References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com>
-In-Reply-To: <50112D3B.4020201@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 01:42 PM, Avi Kivity wrote:
-> On 07/24/2012 08:10 PM, Sasha Levin wrote:
->> [  215.026612] NMI backtrace for cpu 1
->> [  215.026612] CPU 1
->> [  215.026612] Pid: 2395, comm: pageattr-test Tainted: G        W    3.5.0-sasha-01644-g824681b #267
->> [  215.026612] RIP: 0010:[<ffffffff8109bd5a>]  [<ffffffff8109bd5a>] native_write_msr_safe+0xa/0x10
->> [  215.026612] RSP: 0018:ffff88001b803f70  EFLAGS: 00000046
->> [  215.026612] RAX: 0000000000000000 RBX: 000000000000ef80 RCX: 000000000000080b
->> [  215.026612] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 000000000000080b
->> [  215.026612] RBP: ffff88001b803f70 R08: 00003ffffffff000 R09: ffff880000000000
->> [  215.026612] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
->> [  215.026612] R13: ffff880007a98000 R14: ffff88001fc3a4b8 R15: ffff880000000000
->> [  215.026612] FS:  0000000000000000(0000) GS:ffff88001b800000(0000) knlGS:0000000000000000
->> [  215.026612] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [  215.026612] CR2: 000000000000000c CR3: 0000000019dcf000 CR4: 00000000000406e0
->> [  215.026612] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> [  215.026612] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->> [  215.026612] Process pageattr-test (pid: 2395, threadinfo ffff88000ced0000, task ffff88000d773000)
->> [  215.026612] Stack:
->> [  215.026612]  ffff88001b803f88 ffffffff81095d07 000000000000ef80 ffff88001b803fa8
->> [  215.026612]  ffffffff810901c4 ffff88000ced1db0 0000000000007a98 ffff88000ced1d00
->> [  215.026612]  ffffffff8369c4af ffff88000ced1c78 <EOI>  ffff88000ced1d00 ffffffff8369aeb4
->> [  215.026612] Call Trace:
->> [  215.026612]  <IRQ>
->> [  215.026612]  [<ffffffff81095d07>] native_apic_msr_eoi_write+0x27/0x30
->> [  215.026612]  [<ffffffff810901c4>] smp_apic_timer_interrupt+0x34/0xa0
->> [  215.026612]  [<ffffffff8369c4af>] apic_timer_interrupt+0x6f/0x80
->> [  215.026612]  <EOI>
->> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
->> [  215.026612]  [<ffffffff810a2cb2>] ? lookup_address+0x112/0x170
->> [  215.026612]  [<ffffffff810a32ae>] print_split+0x7e/0x200
->> [  215.026612]  [<ffffffff810a4300>] pageattr_test+0x80/0x4a0
->> [  215.026612]  [<ffffffff8114a2f8>] ? trace_hardirqs_on_caller+0x118/0x140
->> [  215.026612]  [<ffffffff83696cbe>] ? schedule_timeout+0x2ce/0x370
->> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
->> [  215.026612]  [<ffffffff810a4720>] ? pageattr_test+0x4a0/0x4a0
->> [  215.026612]  [<ffffffff810a473f>] do_pageattr_test+0x1f/0x50
->> [  215.026612]  [<ffffffff8110607d>] kthread+0xad/0xc0
->> [  215.026612]  [<ffffffff8369cdb4>] kernel_thread_helper+0x4/0x10
->> [  215.026612]  [<ffffffff8369aeb4>] ? retint_restore_args+0x13/0x13
->> [  215.026612]  [<ffffffff81105fd0>] ? kthread_flush_work_fn+0x10/0x10
->> [  215.026612]  [<ffffffff8369cdb0>] ? gs_change+0x13/0x13
->> [  215.026612] Code: 00 55 89 f9 48 89 e5 0f 32 45 31 c0 89 c7 48 89 d0 44 89 06 48 c1 e0 20 89 f9 5d 48 09 c8 c3 66 90 55 89 f0 89 f9 48 89 e5 0f 30 <31> c0 5d c3 66 90 55 89 f9 48 89 e5 0f 33 89 c7 48 89 d0 5d 48
+On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> Please first read the description in "xen/mmu: Copy and revector the
+> P2M tree."
 > 
-> This is immediately after the EOI.  It looks like the timer interrupt is
-> stuck somehow.  Can you run kvm_stat and confirm?
+> At this stage, the __ka address space (which is what the old
+> P2M tree was using) is partially disassembled. The cleanup_highmap
+> has removed the PMD entries from 0-16MB and anything past _brk_end
+> up to the max_pfn_mapped (which is the end of the ramdisk).
+> 
+> The xen_remove_p2m_tree and code around has ripped out the __ka for
+> the old P2M array.
+> 
+> Here we continue on doing it to where the Xen page-tables were.
+> It is safe to do it, as the page-tables are addressed using __va.
+> For good measure we delete anything that is within MODULES_VADDR
+> and up to the end of the PMD.
+> 
+> At this point the __ka only contains PMD entries for the start
+> of the kernel up to __brk.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/mmu.c |   20 ++++++++++++++++++++
+>  1 files changed, 20 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 05e8492..738feca 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1241,6 +1241,26 @@ static void __init xen_pagetable_setup_done(pgd_t *base)
+>  			xen_start_info->mfn_list = new_mfn_list;
+>  		}
+>  	}
+> +#ifdef CONFIG_X86_64
+> +	/* At this stage, cleanup_highmap has already cleaned __ka space
+> +	 * from _brk_limit way up to the max_pfn_mapped (which is the end of
+> +	 * the ramdisk). We continue on, erasing PMD entries that point to page
+> +	 * tables - do note that they are accessible at this stage via __va.
+> +	 * For good measure we also round up to the PMD - which means that if
+> +	 * anybody is using __ka address to the initial boot-stack - and try
+> +	 * to use it - they are going to crash. The xen_start_info has been
+> +	 * taken care of already in xen_setup_kernel_pagetable. */
+> +	addr = xen_start_info->pt_base;
+> +	size = roundup(xen_start_info->nr_pt_frames * PAGE_SIZE, PMD_SIZE);
+> +
+> +	xen_cleanhighmap(addr, addr + size);
+> +	xen_start_info->pt_base = (unsigned long)__va(__pa(xen_start_info->pt_base));
+> +
+> +	/* This is superflous and shouldn't be neccessary, but you know what
+> +	 * lets do it. The MODULES_VADDR -> MODULES_END should be clear of
+> +	 * anything at this stage. */
+> +	xen_cleanhighmap(MODULES_VADDR, roundup(MODULES_VADDR, PUD_SIZE) - 1);
 
-Yup, looks like it. kvm_stats is something like this:
-
- kvm_entry                                142104033  939393
- kvm_exit                                 142104004  939390
- kvm_apic                                  84781115  582714
- kvm_msr                                   84682085  582714
- kvm_apic_accept_irq                       65219959  522263
- kvm_inj_virq                              43173709  291385
-
-With everything else at 0 when it happens.
+I would stick an #ifdef CONFIG_DEBUG of some kind around it
 
 
+> +#endif
+>  	xen_post_allocator_init();
+>  }
+>  
+> -- 
+> 1.7.7.6
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
