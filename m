@@ -1,125 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab2G0Qow (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 12:44:52 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1228 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751131Ab2G0Qov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 12:44:51 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
-Subject: [PATCH v3] cx18: Declare MODULE_FIRMWARE usage
-Date: Fri, 27 Jul 2012 10:45:21 -0600
-Message-Id: <1343407521-45720-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343340453.2575.10.camel@palomino.walls.org>
-References: <1343340453.2575.10.camel@palomino.walls.org>
+	id S1752158Ab2G0Qr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 12:47:59 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:25177
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751131Ab2G0Qr6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 12:47:58 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h839hd24he5bhf0ah107ah)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <kernel@pengutronix.de>, Fabio Estevam <fabio.estevam@freescale.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/2] hw_random: mxc-rnga: Adapt clocks to new i.mx clock framework
+Date: Fri, 27 Jul 2012 13:47:51 -0300
+Message-ID: <1343407672-27185-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Andy Walls <awalls@md.metrocast.net>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: ivtv-devel@ivtvdriver.org
-Cc: linux-media@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/media/video/cx18/cx18-av-firmware.c |    2 ++
- drivers/media/video/cx18/cx18-driver.c      |    1 +
- drivers/media/video/cx18/cx18-dvb.c         |    6 +++++-
- drivers/media/video/cx18/cx18-firmware.c    |   10 ++++++++--
- 4 files changed, 16 insertions(+), 3 deletions(-)
+Adapt clocks to the new i.mx clock framework and fix the following warning:
+                             
+------------[ cut here ]------------                                            
+WARNING: at drivers/clk/clk.c:511 __clk_enable+0x9c/0xac()                      
+Modules linked in:                                                              
+Backtrace:                                                                      
+[<800124c8>] (dump_backtrace+0x0/0x10c) from [<804172dc>] (dump_stack+0x18/0x1c)
+ r7:00000009 r6:000001ff r5:8032cb50 r4:00000000                                
+[<804172c4>] (dump_stack+0x0/0x1c) from [<80021834>] (warn_slowpath_common+0x54)
+[<800217e0>] (warn_slowpath_common+0x0/0x6c) from [<80021870>] (warn_slowpath_n)
+ r9:80581cac r8:8700a9c0 r7:805ab070 r6:80000013 r5:806133d4                    
+r4:8700a9c0                                                                     
+[<8002184c>] (warn_slowpath_null+0x0/0x2c) from [<8032cb50>] (__clk_enable+0x9c)
+[<8032cab4>] (__clk_enable+0x0/0xac) from [<8032cb88>] (clk_enable+0x28/0x44)   
+ r5:806133d4 r4:8700a9c0                                                        
+[<8032cb60>] (clk_enable+0x0/0x44) from [<80560f14>] (mxc_rnga_probe+0x68/0x164)
+ r7:805ab070 r6:8706ec00 r5:80611314 r4:00000000                                
+[<80560eac>] (mxc_rnga_probe+0x0/0x164) from [<8025914c>] (platform_drv_probe+0)
+[<8025912c>] (platform_drv_probe+0x0/0x24) from [<80257c7c>] (driver_probe_devi)
+[<80257bfc>] (driver_probe_device+0x0/0x204) from [<80257e94>] (__driver_attach)
+ r9:80581cac r8:0000008e r7:00000000 r6:8706ec3c r5:805ab070                    
+r4:8706ec08                                                                     
+[<80257e00>] (__driver_attach+0x0/0x98) from [<8025642c>] (bus_for_each_dev+0x6)
+ r7:00000000 r6:80257e00 r5:87035e98 r4:805ab070                                
+[<802563c4>] (bus_for_each_dev+0x0/0x94) from [<80257adc>] (driver_attach+0x20/)
+ r7:00000000 r6:873f2380 r5:805ab338 r4:805ab070                                
+[<80257abc>] (driver_attach+0x0/0x28) from [<80256d50>] (bus_add_driver+0x18c/0)
+[<80256bc4>] (bus_add_driver+0x0/0x268) from [<802584c4>] (driver_register+0x80)
+[<80258444>] (driver_register+0x0/0x134) from [<802594f4>] (platform_driver_reg)
+ r7:00000000 r6:805c2e00 r5:00000007 r4:805ab05c                                
+[<802594a8>] (platform_driver_register+0x0/0x60) from [<80259528>] (platform_dr)
+[<80259508>] (platform_driver_probe+0x0/0xa4) from [<80560ea0>] (mod_init+0x18/)
+ r7:00000000 r6:805c2e00 r5:00000007 r4:87034000                                
+[<80560e88>] (mod_init+0x0/0x24) from [<800086b4>] (do_one_initcall+0x40/0x194) 
+[<80008674>] (do_one_initcall+0x0/0x194) from [<8053d3f4>] (kernel_init+0xfc/0x)
+[<8053d2f8>] (kernel_init+0x0/0x1cc) from [<80027190>] (do_exit+0x0/0x7ec)      
+---[ end trace 4198eed02050f461 ]---                                            
+mxc_rnga mxc_rnga: MXC RNGA Registered
 
-diff --git a/drivers/media/video/cx18/cx18-av-firmware.c b/drivers/media/video/cx18/cx18-av-firmware.c
-index 280aa4d..a34fd08 100644
---- a/drivers/media/video/cx18/cx18-av-firmware.c
-+++ b/drivers/media/video/cx18/cx18-av-firmware.c
-@@ -221,3 +221,5 @@ int cx18_av_loadfw(struct cx18 *cx)
- 	release_firmware(fw);
- 	return 0;
- }
-+
-+MODULE_FIRMWARE(FWFILE);
-diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
-index 7e5ffd6..c67733d 100644
---- a/drivers/media/video/cx18/cx18-driver.c
-+++ b/drivers/media/video/cx18/cx18-driver.c
-@@ -1357,3 +1357,4 @@ static void __exit module_cleanup(void)
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Herbert Xu <herbert@gondor.apana.org.au> 
+Cc: <linux-kernel@vger.kernel.org>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v1:
+- Converted a missing 'clk_disable' to 'clk_disable_unprepare'
+
+ drivers/char/hw_random/mxc-rnga.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
+index 85074de..62c7efe 100644
+--- a/drivers/char/hw_random/mxc-rnga.c
++++ b/drivers/char/hw_random/mxc-rnga.c
+@@ -152,14 +152,14 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
+ 	if (rng_dev)
+ 		return -EBUSY;
  
- module_init(module_start);
- module_exit(module_cleanup);
-+MODULE_FIRMWARE(XC2028_DEFAULT_FIRMWARE);
-diff --git a/drivers/media/video/cx18/cx18-dvb.c b/drivers/media/video/cx18/cx18-dvb.c
-index f41922b..3eac59c 100644
---- a/drivers/media/video/cx18/cx18-dvb.c
-+++ b/drivers/media/video/cx18/cx18-dvb.c
-@@ -40,6 +40,8 @@
+-	clk = clk_get(&pdev->dev, "rng");
++	clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(clk)) {
+ 		dev_err(&pdev->dev, "Could not get rng_clk!\n");
+ 		err = PTR_ERR(clk);
+ 		goto out;
+ 	}
  
- DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
+-	clk_enable(clk);
++	clk_prepare_enable(clk);
  
-+#define FWFILE "dvb-cx18-mpc718-mt352.fw"
-+
- #define CX18_REG_DMUX_NUM_PORT_0_CONTROL 0xd5a000
- #define CX18_CLOCK_ENABLE2		 0xc71024
- #define CX18_DMUX_CLK_MASK		 0x0080
-@@ -135,7 +137,7 @@ static int yuan_mpc718_mt352_reqfw(struct cx18_stream *stream,
- 				   const struct firmware **fw)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+@@ -201,7 +201,7 @@ err_ioremap:
+ 	release_mem_region(res->start, resource_size(res));
+ 
+ err_region:
+-	clk_disable(clk);
++	clk_disable_unprepare(clk);
+ 	clk_put(clk);
+ 
+ out:
+@@ -212,7 +212,7 @@ static int __exit mxc_rnga_remove(struct platform_device *pdev)
  {
- 	struct cx18 *cx = stream->cx;
--	const char *fn = "dvb-cx18-mpc718-mt352.fw";
-+	const char *fn = FWFILE;
- 	int ret;
+ 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	void __iomem *rng_base = (void __iomem *)mxc_rnga.priv;
+-	struct clk *clk = clk_get(&pdev->dev, "rng");
++	struct clk *clk = clk_get(&pdev->dev, NULL);
  
- 	ret = request_firmware(fw, fn, &cx->pci_dev->dev);
-@@ -603,3 +605,5 @@ static int dvb_register(struct cx18_stream *stream)
+ 	hwrng_unregister(&mxc_rnga);
  
- 	return ret;
- }
-+
-+MODULE_FIRMWARE(FWFILE);
-diff --git a/drivers/media/video/cx18/cx18-firmware.c b/drivers/media/video/cx18/cx18-firmware.c
-index b85c292..a1c1cec 100644
---- a/drivers/media/video/cx18/cx18-firmware.c
-+++ b/drivers/media/video/cx18/cx18-firmware.c
-@@ -376,6 +376,9 @@ void cx18_init_memory(struct cx18 *cx)
- 	cx18_write_reg(cx, 0x00000101, CX18_WMB_CLIENT14);  /* AVO */
- }
+@@ -220,7 +220,7 @@ static int __exit mxc_rnga_remove(struct platform_device *pdev)
  
-+#define CX18_CPU_FIRMWARE "v4l-cx23418-cpu.fw"
-+#define CX18_APU_FIRMWARE "v4l-cx23418-apu.fw"
-+
- int cx18_firmware_init(struct cx18 *cx)
- {
- 	u32 fw_entry_addr;
-@@ -400,7 +403,7 @@ int cx18_firmware_init(struct cx18 *cx)
- 	cx18_sw1_irq_enable(cx, IRQ_CPU_TO_EPU | IRQ_APU_TO_EPU);
- 	cx18_sw2_irq_enable(cx, IRQ_CPU_TO_EPU_ACK | IRQ_APU_TO_EPU_ACK);
+ 	release_mem_region(res->start, resource_size(res));
  
--	sz = load_cpu_fw_direct("v4l-cx23418-cpu.fw", cx->enc_mem, cx);
-+	sz = load_cpu_fw_direct(CX18_CPU_FIRMWARE, cx->enc_mem, cx);
- 	if (sz <= 0)
- 		return sz;
+-	clk_disable(clk);
++	clk_disable_unprepare(clk);
+ 	clk_put(clk);
  
-@@ -408,7 +411,7 @@ int cx18_firmware_init(struct cx18 *cx)
- 	cx18_init_scb(cx);
- 
- 	fw_entry_addr = 0;
--	sz = load_apu_fw_direct("v4l-cx23418-apu.fw", cx->enc_mem, cx,
-+	sz = load_apu_fw_direct(CX18_APU_FIRMWARE, cx->enc_mem, cx,
- 				&fw_entry_addr);
- 	if (sz <= 0)
- 		return sz;
-@@ -451,3 +454,6 @@ int cx18_firmware_init(struct cx18 *cx)
- 	cx18_write_reg_expect(cx, 0x14001400, 0xc78110, 0x00001400, 0x14001400);
  	return 0;
- }
-+
-+MODULE_FIRMWARE(CX18_CPU_FIRMWARE);
-+MODULE_FIRMWARE(CX18_APU_FIRMWARE);
 -- 
-1.7.9.5
+1.7.1
+
 
