@@ -1,183 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab2G0KXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:23:18 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36793 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab2G0KXO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:23:14 -0400
-From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: fengguang.wu@intel.com, gthelen@google.com, akpm@linux-foundation.org,
-        yinghan@google.com, mhocko@suse.cz, linux-kernel@vger.kernel.org,
-        hannes@cmpxchg.org, Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH V2 1/6] memcg: remove MEMCG_NR_FILE_MAPPED
-Date: Fri, 27 Jul 2012 18:23:05 +0800
-Message-Id: <1343384585-20046-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
-References: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
+	id S1752507Ab2G0KX2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:23:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32189 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752415Ab2G0KXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:23:20 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
+   d="scan'208";a="5496348"
+Message-ID: <50126D44.7070608@cn.fujitsu.com>
+Date: Fri, 27 Jul 2012 18:28:20 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH v5 05/19] memory-hotplug: check whether memory is present
+ or not
+References: <50126B83.3050201@cn.fujitsu.com>
+In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:23:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:23:48,
+	Serialize complete at 2012/07/27 18:23:48
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sha Zhengju <handai.szj@taobao.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-While accounting memcg page stat, it's not worth to use MEMCG_NR_FILE_MAPPED
-as an extra layer of indirection because of the complexity and presumed
-performance overhead. We can use MEM_CGROUP_STAT_FILE_MAPPED directly.
+If system supports memory hot-remove, online_pages() may online removed pages.
+So online_pages() need to check whether onlining pages are present or not.
 
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Fengguang Wu <fengguang.wu@intel.com>
-Reviewed-by: Greg Thelen <gthelen@google.com>
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- include/linux/memcontrol.h |   28 ++++++++++++++++++++--------
- mm/memcontrol.c            |   25 +++----------------------
- mm/rmap.c                  |    4 ++--
- 3 files changed, 25 insertions(+), 32 deletions(-)
+ include/linux/mmzone.h |   19 +++++++++++++++++++
+ mm/memory_hotplug.c    |   13 +++++++++++++
+ 2 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 83e7ba9..c1e2617 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -27,9 +27,21 @@ struct page_cgroup;
- struct page;
- struct mm_struct;
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 458988b..822f705 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -1168,6 +1168,25 @@ void sparse_init(void);
+ #define sparse_index_init(_sec, _nid)  do {} while (0)
+ #endif /* CONFIG_SPARSEMEM */
  
--/* Stats that can be updated by kernel. */
--enum mem_cgroup_page_stat_item {
--	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
-+/*
-+ * Statistics for memory cgroup.
-+ *
-+ * The corresponding mem_cgroup_stat_names is defined in mm/memcontrol.c,
-+ * These two lists should keep in accord with each other.
-+ */
-+enum mem_cgroup_stat_index {
++#ifdef CONFIG_SPARSEMEM
++static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
++{
++	int i;
++	for (i = 0; i < nr_pages; i++) {
++		if (pfn_present(pfn + 1))
++			continue;
++		else
++			return -EINVAL;
++	}
++	return 0;
++}
++#else
++static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
++{
++	return 0;
++}
++#endif /* CONFIG_SPARSEMEM*/
++
+ #ifdef CONFIG_NODES_SPAN_OTHER_NODES
+ bool early_pfn_in_nid(unsigned long pfn, int nid);
+ #else
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 5af0a9f..d510be0 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -467,6 +467,19 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
+ 	struct memory_notify arg;
+ 
+ 	lock_memory_hotplug();
 +	/*
-+	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
++	 * If system supports memory hot-remove, the memory may have been
++	 * removed. So we check whether the memory has been removed or not.
++	 *
++	 * Note: When CONFIG_SPARSEMEM is defined, pfns_present() become
++	 *       effective. If CONFIG_SPARSEMEM is not defined, pfns_present()
++	 *       always returns 0.
 +	 */
-+	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
-+	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
-+	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
-+	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
-+	MEM_CGROUP_STAT_NSTATS,
- };
- 
- struct mem_cgroup_reclaim_cookie {
-@@ -164,17 +176,17 @@ static inline void mem_cgroup_end_update_page_stat(struct page *page,
- }
- 
- void mem_cgroup_update_page_stat(struct page *page,
--				 enum mem_cgroup_page_stat_item idx,
-+				 enum mem_cgroup_stat_index idx,
- 				 int val);
- 
- static inline void mem_cgroup_inc_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- 	mem_cgroup_update_page_stat(page, idx, 1);
- }
- 
- static inline void mem_cgroup_dec_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- 	mem_cgroup_update_page_stat(page, idx, -1);
- }
-@@ -349,12 +361,12 @@ static inline void mem_cgroup_end_update_page_stat(struct page *page,
- }
- 
- static inline void mem_cgroup_inc_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- }
- 
- static inline void mem_cgroup_dec_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- }
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1940ba8..aef9fb0 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -76,21 +76,10 @@ static int really_do_swap_account __initdata = 0;
- #define do_swap_account		0
- #endif
- 
--
- /*
-- * Statistics for memory cgroup.
-+ * The corresponding mem_cgroup_stat_index is defined in include/linux/memcontrol.h,
-+ * These two lists should keep in accord with each other.
-  */
--enum mem_cgroup_stat_index {
--	/*
--	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
--	 */
--	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
--	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
--	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
--	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
--	MEM_CGROUP_STAT_NSTATS,
--};
--
- static const char * const mem_cgroup_stat_names[] = {
- 	"cache",
- 	"rss",
-@@ -1926,7 +1915,7 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
- }
- 
- void mem_cgroup_update_page_stat(struct page *page,
--				 enum mem_cgroup_page_stat_item idx, int val)
-+				 enum mem_cgroup_stat_index idx, int val)
- {
- 	struct mem_cgroup *memcg;
- 	struct page_cgroup *pc = lookup_page_cgroup(page);
-@@ -1939,14 +1928,6 @@ void mem_cgroup_update_page_stat(struct page *page,
- 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
- 		return;
- 
--	switch (idx) {
--	case MEMCG_NR_FILE_MAPPED:
--		idx = MEM_CGROUP_STAT_FILE_MAPPED;
--		break;
--	default:
--		BUG();
--	}
--
- 	this_cpu_add(memcg->stat->count[idx], val);
- }
- 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 0f3b7cd..cd7e54e 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1148,7 +1148,7 @@ void page_add_file_rmap(struct page *page)
- 	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
- 	if (atomic_inc_and_test(&page->_mapcount)) {
- 		__inc_zone_page_state(page, NR_FILE_MAPPED);
--		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED);
-+		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
- 	}
- 	mem_cgroup_end_update_page_stat(page, &locked, &flags);
- }
-@@ -1202,7 +1202,7 @@ void page_remove_rmap(struct page *page)
- 					      NR_ANON_TRANSPARENT_HUGEPAGES);
- 	} else {
- 		__dec_zone_page_state(page, NR_FILE_MAPPED);
--		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
-+		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
- 	}
- 	/*
- 	 * It would be tidy to reset the PageAnon mapping here,
++	ret = pfns_present(pfn, nr_pages);
++	if (ret) {
++		unlock_memory_hotplug();
++		return ret;
++	}
+ 	arg.start_pfn = pfn;
+ 	arg.nr_pages = nr_pages;
+ 	arg.status_change_nid = -1;
 -- 
 1.7.1
 
