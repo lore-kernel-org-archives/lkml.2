@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab2G0ILt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 04:11:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51347 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab2G0ILp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 04:11:45 -0400
-Message-ID: <50124D2E.7050407@redhat.com>
-Date: Fri, 27 Jul 2012 10:11:26 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752319Ab2G0IX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 04:23:26 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12143 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab2G0IXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 04:23:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 27 Jul 2012 01:18:50 -0700
+Message-ID: <50124D54.3020405@nvidia.com>
+Date: Fri, 27 Jul 2012 13:42:04 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Boaz Harrosh <bharrosh@panasas.com>, Wang Sen <senwang@linux.vnet.ibm.com>,
-        linux-scsi@vger.kernel.org, JBottomley@parallels.com,
-        stefanha@linux.vnet.ibm.com, mc@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
- Fix address translation failure of HighMem pages used by sg list)
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com> <5010F07E.7050506@redhat.com> <5010F831.9030300@panasas.com> <5010F896.8090409@redhat.com> <501140A3.9090908@redhat.com> <874notoh02.fsf@rustcorp.com.au>
-In-Reply-To: <874notoh02.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] dma: tegra: enable/disable dma clock
+References: <1342771268-5252-1-git-send-email-ldewangan@nvidia.com> <1343106498.1726.5974.camel@vkoul-udesk3> <500E2BE0.7060602@nvidia.com>
+In-Reply-To: <500E2BE0.7060602@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 27/07/2012 08:27, Rusty Russell ha scritto:
->> > +int virtqueue_add_buf_sg(struct virtqueue *_vq,
->> > +			 struct scatterlist *sg_out,
->> > +			 unsigned int out,
->> > +			 struct scatterlist *sg_in,
->> > +			 unsigned int in,
->> > +			 void *data,
->> > +			 gfp_t gfp)
-> The point of chained scatterlists is they're self-terminated, so the
-> in & out counts should be calculated.
-> 
-> Counting them is not *that* bad, since we're about to read them all
-> anyway.
-> 
-> (Yes, the chained scatterlist stuff is complete crack, but I lost that
-> debate years ago.)
-> 
-> Here's my variant.  Networking, console and block seem OK, at least
-> (ie. it booted!).
+On Tuesday 24 July 2012 10:30 AM, Laxman Dewangan wrote:
+> On Tuesday 24 July 2012 10:38 AM, Vinod Koul wrote:
+>> On Fri, 2012-07-20 at 13:31 +0530, Laxman Dewangan wrote:
+>>> Enable the DMA clock when allocating channel and
+>>> disable clock when freeing channels.
+>>>
+>>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+>>> ---
+>>> +	clk_disable_unprepare(tdma->dma_clk);
+>> What if another channel is active, disabling clock can cause bad
+>> behavior. You should check here if all channels are idle and then
+>> disable, or is this handled by clock API?
+> Yes, clock driver keeps the reference count and so client driver need
+> not to take care.
+>
+Hi Vinod,
+Is there any thing remaining from my side here?
+Is it possible to make it for K3.6?
 
-I hate the for loops, even though we're about indeed to read all the
-scatterlists anyway... all they do is lengthen critical sections.  Also,
-being the first user of chained scatterlist doesn't exactly give me warm
-fuzzies.
-
-I think it's simpler if we provide an API to add individual buffers to
-the virtqueue, so that you can do multiple virtqueue_add_buf_more
-(whatever) before kicking the virtqueue.  The idea is that I can still
-use indirect buffers for the scatterlists that come from the block layer
-or from an skb, but I will use direct buffers for the request/response
-descriptors.  The direct buffers are always a small number (usually 2),
-so you can balance the effect by making the virtqueue bigger.  And for
-small reads and writes, you save a kmalloc on a very hot path.
-
-(BTW, scatterlists will have separate entries for each page; we do not
-need this in virtio buffers.  Collapsing physically-adjacent entries
-will speed up QEMU and will also help avoiding indirect buffers).
-
-Paolo
-
-
+Thanks,
+Laxman
 
