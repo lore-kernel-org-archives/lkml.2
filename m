@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab2G0Ivk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 04:51:40 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:46349 "EHLO e3.ny.us.ibm.com"
+	id S1751813Ab2G0Iwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 04:52:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54699 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751889Ab2G0Ivh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 04:51:37 -0400
-Date: Fri, 27 Jul 2012 14:10:55 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
-        benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, michael@ellerman.id.au,
-        Ingo Molnar <mingo@elte.hu>, peterz@infradead.org, oleg@redhat.com
-Subject: Re: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120727084055.GA6679@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120726051902.GA29466@in.ibm.com>
- <20120726052029.GB29466@in.ibm.com>
+	id S1751113Ab2G0Iwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 04:52:53 -0400
+Date: Fri, 27 Jul 2012 09:52:50 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH] mm: hugetlbfs: Close race during teardown of hugetlbfs
+ shared page tables v2
+Message-ID: <20120727085250.GC612@suse.de>
+References: <20120720134937.GG9222@suse.de>
+ <5011AFEC.2040609@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20120726052029.GB29466@in.ibm.com>
+In-Reply-To: <5011AFEC.2040609@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072708-8974-0000-0000-00000B879B7A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ananth N Mavinakayanahalli <ananth@in.ibm.com> [2012-07-26 10:50:29]:
+On Thu, Jul 26, 2012 at 05:00:28PM -0400, Rik van Riel wrote:
+> On 07/20/2012 09:49 AM, Mel Gorman wrote:
+> >This V2 is still the mmap_sem approach that fixes a potential deadlock
+> >problem pointed out by Michal.
+> 
+> Larry and I were looking around the hugetlb code some
+> more, and found what looks like yet another race.
+> 
+> In hugetlb_no_page, we have the following code:
+> 
+> 
+>         spin_lock(&mm->page_table_lock);
+>         size = i_size_read(mapping->host) >> huge_page_shift(h);
+>         if (idx >= size)
+>                 goto backout;
+> 
+>         ret = 0;
+>         if (!huge_pte_none(huge_ptep_get(ptep)))
+>                 goto backout;
+> 
+>         if (anon_rmap)
+>                 hugepage_add_new_anon_rmap(page, vma, address);
+>         else
+>                 page_dup_rmap(page);
+>         new_pte = make_huge_pte(vma, page, ((vma->vm_flags & VM_WRITE)
+>                                 && (vma->vm_flags & VM_SHARED)));
+>         set_huge_pte_at(mm, address, ptep, new_pte);
+> 	...
+> 	spin_unlock(&mm->page_table_lock);
+> 
+> Notice how we check !huge_pte_none with our own
+> mm->page_table_lock held.
+> 
+> This offers no protection at all against other
+> processes, that also hold their own page_table_lock.
+> 
 
-> From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> 
-> This is the port of uprobes to powerpc. Usage is similar to x86.
-> 
-> [root@xxxx ~]# ./bin/perf probe -x /lib64/libc.so.6 malloc
-> Added new event:
->   probe_libc:malloc    (on 0xb4860)
-> 
-> You can now use it in all perf tools, such as:
-> 
-> 	perf record -e probe_libc:malloc -aR sleep 1
-> 
-> [root@xxxx ~]# ./bin/perf record -e probe_libc:malloc -aR sleep 20
-> [ perf record: Woken up 22 times to write data ]
-> [ perf record: Captured and wrote 5.843 MB perf.data (~255302 samples) ]
-> [root@xxxx ~]# ./bin/perf report --stdio
-> ...
-> 
-> # Samples: 83K of event 'probe_libc:malloc'
-> # Event count (approx.): 83484
-> #
-> # Overhead       Command  Shared Object      Symbol
-> # ........  ............  .............  ..........
-> #
->     69.05%           tar  libc-2.12.so   [.] malloc
->     28.57%            rm  libc-2.12.so   [.] malloc
->      1.32%  avahi-daemon  libc-2.12.so   [.] malloc
->      0.58%          bash  libc-2.12.so   [.] malloc
->      0.28%          sshd  libc-2.12.so   [.] malloc
->      0.08%    irqbalance  libc-2.12.so   [.] malloc
->      0.05%         bzip2  libc-2.12.so   [.] malloc
->      0.04%         sleep  libc-2.12.so   [.] malloc
->      0.03%    multipathd  libc-2.12.so   [.] malloc
->      0.01%      sendmail  libc-2.12.so   [.] malloc
->      0.01%     automount  libc-2.12.so   [.] malloc
-> 
-> Patch applies on the current master branch of Linus' tree (bdc0077af).
-> The trap_nr addition patch is a prereq.
-> 
-> Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Yes, the page_table_lock is close to useless once shared page tables are
+involved. It's why if we ever wanted to make shared page tables a core MM
+thing we'd have to revisit how PTE locking at any level that can share
+page tables works.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com> 
- 
+> In short, it looks like it is possible for multiple
+> processes to go through the above code simultaneously,
+> potentially resulting in:
+> 
+> 1) one process overwriting the pte just created by
+>    another process
+> 
+> 2) data corruption, as one partially written page
+>    gets superceded by an newly zeroed page, but no
+>    TLB invalidates get sent to other CPUs
+> 
+> 3) a memory leak of a huge page
+> 
+> Is there anything that would make this race impossible,
+> or is this a real bug?
+> 
 
+In this case it all happens under the hugetlb instantiation mutex in
+hugetlb_fault(). It's yet another reason why removing that mutex would
+be a serious undertaking and the gain for doing so is marginal.
+
+-- 
+Mel Gorman
+SUSE Labs
