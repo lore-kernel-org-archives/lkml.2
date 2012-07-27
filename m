@@ -1,187 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab2G0MVM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:21:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42483 "EHLO mx1.redhat.com"
+	id S1752550Ab2G0MYX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:24:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49014 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab2G0MVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:21:10 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, gregkh@linuxfoundation.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, lwoodman@redhat.com,
-        jbaron@redhat.com, alan@linux.intel.com
-Subject: [PATCH] tty, add kref to sysrq handlers
-Date: Fri, 27 Jul 2012 08:19:47 -0400
-Message-Id: <1343391587-20240-1-git-send-email-prarit@redhat.com>
+	id S1752443Ab2G0MYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 08:24:21 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
+        mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org
+Subject: [PATCHv8 00/13] perf: Add backtrace post dwarf unwind 
+Date: Fri, 27 Jul 2012 14:23:41 +0200
+Message-Id: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3rd try on this one ...
+hi,
+patches available also as tarball in here:
+http://people.redhat.com/~jolsa/perf_post_unwind_v8.tar.bz2
 
-----8<-----
+v8 changes:
+   - patch 2 - added dump registers ABI specification as suggested
+               by Stephane
+   - v7 patches 9,10,16,17 already in
 
-On a large system with a large number of tasks, the output of
+v7 changes:
+   - omitted v6 patches 9 and 15
+     They need more work and will be sent separately. I dont want to hold off whole
+     patchset because of them. We could miss some related backtraces (syscall, vdso)
+     in this version.
+   - v6 patch 11, 14, 20 already in
 
-echo t > /proc/sysrq-trigger
+v6 changes:
+   patch 01/23 - unrelated - ftrace stuff
+   patch 03/23 - added PERF_SAMPLE_REGS_USER bit
+               - added regs_user initialization
+   patch 07/23 - added PERF_SAMPLE_STACK_USER bit
+               - sample_stack_user changed to u32 and
+                 added size check
+   new patches 1,9,10,20
 
-can take a long period of time.  If this period is greater than the period
-of the current clocksource, the clocksource watchdog will mark the
-clocksource as unstable and fail the clocksource over.
+v5 changes:
+   patch 1/19 - having just one enum set of the perf registers
+   patch 2/19 - using for_each_set_bit for scanning the mask
+              - single regs enum for both 32 and 64 bits versions
+              - using regs mask != 0 trigger to trigger the regs dump
+   patch 5/19 - adding perf_output_skip so we can skip undumped part of the stack in RB
+   patch 6/19 - using stack size != 0 trigger to trigger the stack dump
+              - do not zero the memory for non retrieved part of the stack dump
+   patch 7/19 - adding exclude_callchain_kernel attribute
+   patch 8/19 - this could be taken without the rest of the series
 
-The problem with sysrq is that __handle_sysrq() takes a spin_lock with
-interrupts disabled and disables interrupts for the duration of the
-handler.  If this happens during sysrq-t on a large system with a large
-number of tasks, the result is a "brown-out" of the system.
+v4 changes:
+   - no real change from v3, just rebase
+   - v3 patch 06/17 got already merged
 
-The spin_lock in question, sysrq_key_table_lock, is in place to prevent
-the removal of a sysrq handler while it is being executed in
-__handle_sysrq().
+v3 changes:
+   patch 01/17
+   - added HAVE_PERF_REGS config option
+   patch 02/17, 04/17
+   - regs and stack perf interface is more general now
+   patch 06/17
+   - unrelated online fix for i386 compilation
+   patch 16/17
+   - few namespace fixies
 
-A kref is added to each sysrq handler and is incremented and decremented
-in __handle_sysrq().  This, while more complicated than a lock , leads to
-minimizing the time that the sysrq_key_table_lock is acquired and results
-in a functional sysrq-t.
-
-I've tested both options and I no longer see the clocksource watchdog
-marking the TSC clocksource as unstable.
-
-Acked-by: Don Zickus <dzickus@redhat.com>
-Cc: gregkh@linuxfoundation.org
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: lwoodman@redhat.com
-Cc: jbaron@redhat.com
-Cc: alan@linux.intel.com
 ---
- drivers/tty/sysrq.c   |   42 +++++++++++++++++++++++++++++++++++++++---
- include/linux/sysrq.h |    2 ++
- 2 files changed, 41 insertions(+), 3 deletions(-)
+Adding the post unwinding user stack backtrace using dwarf unwind
+via libunwind. The original work was done by Frederic. I mostly took
+his patches and make them compile in current kernel code plus I added
+some stuff here and there.
 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index 05728894..38c6ae6 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -458,6 +458,20 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
- 	&sysrq_ftrace_dump_op,		/* z */
- };
- 
-+void sysrq_release(struct kref *kref)
-+{
-+	struct sysrq_key_op *release_op;
-+	int i;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&sysrq_key_table_lock, flags);
-+	release_op = container_of(kref, struct sysrq_key_op, kref);
-+	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
-+		if (sysrq_key_table[i] == release_op)
-+			sysrq_key_table[i] = NULL;
-+	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-+}
-+
- /* key2index calculation, -1 on invalid index */
- static int sysrq_key_table_key2index(int key)
- {
-@@ -502,7 +516,6 @@ void __handle_sysrq(int key, bool check_mask)
- 	int i;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sysrq_key_table_lock, flags);
- 	/*
- 	 * Raise the apparent loglevel to maximum so that the sysrq header
- 	 * is shown to provide the user with positive feedback.  We do not
-@@ -513,7 +526,12 @@ void __handle_sysrq(int key, bool check_mask)
- 	console_loglevel = 7;
- 	printk(KERN_INFO "SysRq : ");
- 
-+	spin_lock_irqsave(&sysrq_key_table_lock, flags);
-         op_p = __sysrq_get_key_op(key);
-+	if (op_p)
-+		kref_get(&op_p->kref);
-+	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-+
-         if (op_p) {
- 		/*
- 		 * Should we check for enabled operations (/proc/sysrq-trigger
-@@ -526,9 +544,14 @@ void __handle_sysrq(int key, bool check_mask)
- 		} else {
- 			printk("This sysrq operation is disabled.\n");
- 		}
-+
-+		spin_lock_irqsave(&sysrq_key_table_lock, flags);
-+		kref_put(&op_p->kref, sysrq_release);
-+		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
- 	} else {
- 		printk("HELP : ");
- 		/* Only print the help msg once per handler */
-+		spin_lock_irqsave(&sysrq_key_table_lock, flags);
- 		for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++) {
- 			if (sysrq_key_table[i]) {
- 				int j;
-@@ -541,10 +564,10 @@ void __handle_sysrq(int key, bool check_mask)
- 				printk("%s ", sysrq_key_table[i]->help_msg);
- 			}
- 		}
-+		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
- 		printk("\n");
- 		console_loglevel = orig_log_level;
- 	}
--	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
- }
- 
- void handle_sysrq(int key)
-@@ -837,7 +860,12 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
- 
- 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
- 	if (__sysrq_get_key_op(key) == remove_op_p) {
--		__sysrq_put_key_op(key, insert_op_p);
-+		if (!remove_op_p) { /* register */
-+			__sysrq_put_key_op(key, insert_op_p);
-+			kref_init(&insert_op_p->kref);
-+		}
-+		if (!insert_op_p) /* unregister */
-+			kref_put(&remove_op_p->kref, sysrq_release);
- 		retval = 0;
- 	} else {
- 		retval = -1;
-@@ -898,6 +926,14 @@ static inline void sysrq_init_procfs(void)
- 
- static int __init sysrq_init(void)
- {
-+	int i;
-+
-+	spin_lock_irqsave(&sysrq_key_table_lock, flags);
-+	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
-+		if (sysrq_key_table[i])
-+			kref_init(&sysrq_key_table[i]->kref);
-+	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-+
- 	sysrq_init_procfs();
- 
- 	if (sysrq_on())
-diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
-index 7faf933..d458f39 100644
---- a/include/linux/sysrq.h
-+++ b/include/linux/sysrq.h
-@@ -16,6 +16,7 @@
- 
- #include <linux/errno.h>
- #include <linux/types.h>
-+#include <linux/kref.h>
- 
- /* Enable/disable SYSRQ support by default (0==no, 1==yes). */
- #define SYSRQ_DEFAULT_ENABLE	1
-@@ -36,6 +37,7 @@ struct sysrq_key_op {
- 	char *help_msg;
- 	char *action_msg;
- 	int enable_mask;
-+	struct kref kref;
- };
- 
- #ifdef CONFIG_MAGIC_SYSRQ
--- 
-1.7.9.3
+The main idea is to store user registers and portion of user
+stack when the sample data during the record phase. Then during
+the report, when the data is presented, perform the actual dwarf
+dwarf unwind.
 
+attached patches:
+  01/13 perf: Unified API to record selective sets of arch registers
+  02/13 perf: Add ability to attach user level registers dump to sample
+  03/13 perf, x86: Add copy_from_user_nmi_nochk for best effort copy
+  04/13 perf: Factor __output_copy to be usable with specific copy function
+  05/13 perf: Add perf_output_skip function to skip bytes in sample
+  06/13 perf: Add ability to attach user stack dump to sample
+  07/13 perf: Add attribute to filter out callchains
+  08/13 perf, tool: Adding PERF_ATTR_SIZE_VER2 to the header swap check
+  09/13 perf, tool: Add interface to arch registers sets
+  10/13 perf, tool: Add libunwind dependency for dwarf cfi unwinding
+  11/13 perf, tool: Support user regs and stack in sample parsing
+  12/13 perf, tool: Support for dwarf cfi unwinding on post processing
+  13/13 perf, tool: Support for dwarf mode callchain on perf record
+
+
+I tested on Fedora. There was not much gain on i386, because the
+binaries are compiled with frame pointers. Thought the dwarf
+backtrace is more accurate and unwraps calls in more details
+(functions that do not set the frame pointers).
+
+I could see some improvement on x86_64, where I got full backtrace
+where current code could got just the first address out of the
+instruction pointer.
+
+Example on x86_64:
+[dwarf]
+   perf record -g dwarf -e syscalls:sys_enter_write date
+
+   100.00%     date  libc-2.14.90.so  [.] __GI___libc_write
+               |
+               --- __GI___libc_write
+                   _IO_file_write@@GLIBC_2.2.5
+                   new_do_write
+                   _IO_do_write@@GLIBC_2.2.5
+                   _IO_file_overflow@@GLIBC_2.2.5
+                   0x4022cd
+                   0x401ee6
+                   __libc_start_main
+                   0x4020b9
+
+
+[frame pointer]
+   perf record -g fp -e syscalls:sys_enter_write date
+
+   100.00%     date  libc-2.14.90.so  [.] __GI___libc_write
+               |
+               --- __GI___libc_write
+
+Also I tested on coreutils binaries mainly, but I could see
+getting wider backtraces with dwarf unwind for more complex
+application like firefox.
+
+Attached patches should work on both x86 and x86_64.
+
+The unwind backtrace can be interrupted by following reasons:
+    - bug in unwind information of processed shared library
+    - bug in unwind processing code (most likely ;) )
+    - insufficient dump stack size
+    - until full syscall register storage and vdso support
+      we could miss some related backtraces 
+
+jirka
+---
+ arch/Kconfig                                       |    6 +
+ arch/x86/Kconfig                                   |    1 +
+ arch/x86/include/asm/perf_event.h                  |    2 +
+ arch/x86/include/asm/perf_regs.h                   |   33 ++
+ arch/x86/include/asm/uaccess.h                     |    2 +
+ arch/x86/kernel/Makefile                           |    2 +
+ arch/x86/kernel/perf_regs.c                        |  105 ++++
+ arch/x86/lib/usercopy.c                            |   15 +-
+ include/linux/perf_event.h                         |   60 ++-
+ include/linux/perf_regs.h                          |   25 +
+ kernel/events/callchain.c                          |   25 +-
+ kernel/events/core.c                               |  190 +++++++-
+ kernel/events/internal.h                           |   69 ++-
+ kernel/events/ring_buffer.c                        |   10 +-
+ tools/perf/Makefile                                |   45 ++-
+ tools/perf/arch/x86/Makefile                       |    3 +
+ tools/perf/arch/x86/include/perf_regs.h            |   80 +++
+ tools/perf/arch/x86/util/unwind.c                  |  111 ++++
+ tools/perf/builtin-record.c                        |  108 ++++-
+ tools/perf/builtin-report.c                        |   24 +-
+ tools/perf/builtin-script.c                        |   16 +-
+ tools/perf/builtin-test.c                          |    4 +-
+ tools/perf/builtin-top.c                           |    5 +-
+ tools/perf/config/feature-tests.mak                |   25 +
+ tools/perf/perf.h                                  |    9 +-
+ tools/perf/util/event.h                            |   16 +-
+ tools/perf/util/evlist.c                           |    8 +
+ tools/perf/util/evlist.h                           |    1 +
+ tools/perf/util/evsel.c                            |   43 ++-
+ tools/perf/util/header.c                           |    3 +
+ tools/perf/util/include/linux/compiler.h           |    1 +
+ tools/perf/util/map.h                              |    7 +-
+ tools/perf/util/perf_regs.h                        |   14 +
+ tools/perf/util/python.c                           |    3 +-
+ .../perf/util/scripting-engines/trace-event-perl.c |    3 +-
+ .../util/scripting-engines/trace-event-python.c    |    3 +-
+ tools/perf/util/session.c                          |   97 +++-
+ tools/perf/util/session.h                          |   11 +-
+ tools/perf/util/trace-event-scripting.c            |    3 +-
+ tools/perf/util/trace-event.h                      |    5 +-
+ tools/perf/util/unwind.c                           |  567 ++++++++++++++++++++
+ tools/perf/util/unwind.h                           |   34 ++
+ 42 files changed, 1700 insertions(+), 94 deletions(-)
