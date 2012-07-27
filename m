@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab2G0DQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:16:56 -0400
-Received: from mga14.intel.com ([143.182.124.37]:1914 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab2G0DQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:16:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="173770473"
-Subject: Re: [PATCH] dma: imx-dma: Fix kernel crash due to missing clock
- conversion
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, javier.martin@vista-silicon.com,
-        Fabio Estevam <festevam@gmail.com>
-In-Reply-To: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
-References: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Jul 2012 08:47:30 +0530
-Message-ID: <1343359050.1726.9033.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752936Ab2G0DR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:17:58 -0400
+Received: from mail-hostigation.familyross.net ([69.85.93.112]:46688 "EHLO
+	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab2G0DR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 23:17:56 -0400
+Message-ID: <50120861.5020605@familyross.net>
+Date: Thu, 26 Jul 2012 20:17:53 -0700
+From: Kevin Ross <kevin@familyross.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: David Dillow <dave@thedillows.org>
+CC: Phil Turmel <philip@turmel.org>, linux-kernel@vger.kernel.org,
+        linux-raid <linux-raid@vger.kernel.org>
+Subject: Re: RAID extremely slow
+References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org>   <5010A386.4080209@familyross.net>   <1343355303.29938.5.camel@obelisk.thedillows.org>  <1343355430.29938.6.camel@obelisk.thedillows.org>  <5011FA45.7030407@familyross.net> <1343356044.29938.7.camel@obelisk.thedillows.org> <5012028C.9080107@familyross.net>
+In-Reply-To: <5012028C.9080107@familyross.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-03 at 15:33 -0300, Fabio Estevam wrote:
-> From: Fabio Estevam <festevam@gmail.com>
-> 
-> With the new i.MX clock infrastructure we need to request the dma clocks
-> seperately: ahb and ipg clocks.
-> 
-> This fixes the following kernel crash and make audio to be functional again:
-> 
-> root@freescale /home$ aplay audio48k16S.wav 
-> Playing WAVE 'audio48k16S.wav' : Signed 16 bit Little Endian, Rate 48000 Hz, Stereo
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> pgd = c7b74000
-> [00000000] *pgd=a7bb5831, *pte=00000000, *ppte=00000000
-> Internal error: Oops: 17 [#1] PREEMPT ARM
-> Modules linked in:
-> CPU: 0    Not tainted  (3.5.0-rc5-next-20120702-00007-g3028b64 #1128)
-> PC is at snd_dmaengine_pcm_get_chan+0x8/0x10
-> LR is at snd_imx_pcm_hw_params+0x18/0xdc
-> pc : [<c02d3cf8>]    lr : [<c02e95ec>]    psr: a0000013
-> sp : c7b45e30  ip : ffffffff  fp : c7ae58e0
-> r10: 00000000  r9 : c7ae981c  r8 : c7b88800
-> r7 : c7ae5a60  r6 : c7ae5b20  r5 : c7ae9810  r4 : c7afa060
-> r3 : 00000000  r2 : 00000001  r1 : c7b88800  r0 : c7afa060
-> Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> Control: 0005317f  Table: a7b74000  DAC: 00000015
-> Process aplay (pid: 701, stack limit = 0xc7b44270)
-> Stack: (0xc7b45e30 to 0xc7b46000)
-> 5e20:                                     00100000 00000029 c7b88800 c02db870
-> 5e40: c7ae5a60 c02d4594 00000010 01ae5a60 c7ae5a60 c7ae9810 c7ae9810 c7afa060
-> 5e60: c7ae5b20 c7ae5a60 c7b88800 c02e3ef0 c02e3e08 c7b1e400 c7afa060 c7b88800
-> 5e80: 00000000 c0014da8 c7b44000 00000000 bec566ac c02cd400 c7afa060 c7afa060
-> 5ea0: bec56800 c7b88800 c0014da8 c02cdd7c c04ee710 c04ee7b8 00000003 c005fc74
-> 5ec0: 00000000 7fffffff c7b45f00 c7afa060 c7b67420 c7ba3070 00000004 c0014da8
-> 5ee0: c7b44000 00000000 bec566ac c02ced88 c04e95f8 b6f5ab04 c7b45fb0 0145a468
-> 5f00: 0145a600 bec566bc bec56800 c7b67420 c7ba3070 c00d499c c7b45f18 c7b45f18
-> 5f20: 0000001a 00000004 00000001 c7b44000 c0527f40 00000009 00000008 00000000
-> 5f40: c7b44000 c002c9ec 00000001 c04f0ab0 c04ebec0 00000101 00000000 0000000a
-> 5f60: 60000093 c7b67420 bec56800 c25c4111 00000004 c0014da8 c7b44000 00000000
-> 5f80: bec566ac c00d4f38 b6ffb658 00000000 c0522d80 0145a468 b6fd5000 0145a418
-> 5fa0: 00000036 c0014c00 0145a468 b6fd5000 00000004 c25c4111 bec56800 00020001
-> 5fc0: 0145a468 b6fd5000 0145a418 00000036 0145a468 0145a600 bec566bc bec566ac
-> 5fe0: 0145a468 bec56388 b6f65ce4 b6dcebec 20000010 00000004 00000000 00000000
-> [<c02d3cf8>] (snd_dmaengine_pcm_get_chan+0x8/0x10) from [<c02e95ec>] (snd_imx_pcm_hw_params+0x18/0xdc)
-> [<c02e95ec>] (snd_imx_pcm_hw_params+0x18/0xdc) from [<c02e3ef0>] (soc_pcm_hw_params+0xe8/0x1f0)
-> [<c02e3ef0>] (soc_pcm_hw_params+0xe8/0x1f0) from [<c02cd400>] (snd_pcm_hw_params+0x124/0x474)
-> [<c02cd400>] (snd_pcm_hw_params+0x124/0x474) from [<c02cdd7c>] (snd_pcm_common_ioctl1+0x4b4/0xf74)
-> [<c02cdd7c>] (snd_pcm_common_ioctl1+0x4b4/0xf74) from [<c02ced88>] (snd_pcm_playback_ioctl1+0x30/0x510)
-> [<c02ced88>] (snd_pcm_playback_ioctl1+0x30/0x510) from [<c00d499c>] (do_vfs_ioctl+0x80/0x5e4)
-> [<c00d499c>] (do_vfs_ioctl+0x80/0x5e4) from [<c00d4f38>] (sys_ioctl+0x38/0x60)
-> [<c00d4f38>] (sys_ioctl+0x38/0x60) from [<c0014c00>] (ret_fast_syscall+0x0/0x2c)
-> Code: e593000c e12fff1e e59030a0 e59330bc (e5930000) 
-> ---[ end trace fa518c8ba3a74e97 ]--
-> 
-> Reported-by: Javier Martin <javier.martin@vista-silicon.com>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Applied thanks (to fixes-for 3.7)
+On 07/26/2012 07:53 PM, Kevin Ross wrote:
+> On 07/26/2012 07:27 PM, David Dillow wrote:
+>> On Thu, 2012-07-26 at 19:17 -0700, Kevin Ross wrote:
+>>> On 07/26/2012 07:17 PM, David Dillow wrote:
+>>>> On Thu, 2012-07-26 at 22:15 -0400, David Dillow wrote:
+>>>>> If you can, upgrade to the latest 3.4 stable kernel (3.4.6 right 
+>>>>> now).
+>>>>> As far as I can see, the latest 3.2 stable does not contain the 
+>>>>> delayed
+>>>>> stripe fix.
+>>>> And I was looking at the wrong version; 3.2.24 does indeed have the 
+>>>> fix.
+>>>>
+>>> I'm running 3.2.21, does that contain the fix?
+>> No, that was the one I looked at. It is commit
+>> c0159c780e8d42309d04e83271986274d3880826.
+>>
+>
+> Okay, I grabbed 3.4.4 from Debian experimental, and I'm running with 
+> that now.  Hopefully this fixes the problem.
+>
+> Thanks for your help!
+> -- Kevin
 
-Sorry for missing this out, please ping if you dont see a response to
-patch in week or so.
+Just noticed I need 3.4.5 or later.  Doh!  I'll grab a vanilla kernel 
+from kernel.org and build it.
 
--- 
-~Vinod
+Thanks!
+-- Kevin
 
