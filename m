@@ -1,67 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab2G0Pz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 11:55:26 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:55718 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab2G0PzZ (ORCPT
+	id S1752686Ab2G0QAS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 12:00:18 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48773 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974Ab2G0QAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 11:55:25 -0400
-X-IronPort-AV: E=Sophos;i="4.77,667,1336348800"; 
-   d="scan'208";a="13738808"
-Date: Fri, 27 Jul 2012 16:54:17 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH 12/24] xen/arm: Introduce xen_guest_init
-In-Reply-To: <1343382151.6812.124.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1207271613200.26163@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>  <1343316846-25860-12-git-send-email-stefano.stabellini@eu.citrix.com> <1343382151.6812.124.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 27 Jul 2012 12:00:16 -0400
+Date: Fri, 27 Jul 2012 11:58:06 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2012-07-27
+Message-ID: <20120727155806.GB6110@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jul 2012, Ian Campbell wrote:
-> On Thu, 2012-07-26 at 16:33 +0100, Stefano Stabellini wrote:
-> > We used to rely on a core_initcall to initialize Xen on ARM, however
-> > core_initcalls are actually called after early consoles are initialized.
-> > That means that hvc_xen.c is going to be initialized before Xen.
-> > 
-> > Given the lack of a better alternative, just call a new Xen
-> > initialization function (xen_guest_init) from xen_cons_init.
-> 
-> Can't we just arrange for this to be called super early on from
-> setup_arch? That's got to be better than calling it from some random
-> function which happens to get called early enough.
 
-While I agree with you that an explicit call to xen_guest_init from
-generic code might be better, xen_cons_init is not just a random
-function: it is a console_initcall and therefore we know for sure that
-it is going be the first one to be called.
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In fact if we didn't want the PV console to work so early we could just
-rely on a core_initcall to initialize everything and we wouldn't have
-any issues.
+commit 28ea499ac5b90f6266a24b826c6d469fc503758c
+
+Dave,
+
+These fixes are intended for the 3.6 stream.
+
+Hauke Mehrtens provides a pair of bcma fixes, one to fix a build
+regression on mips and another to correct a pair of missing iounmap
+calls.
+
+Thomas Huehn offers a mac80211_hwsim fix to avoid a possible
+use-after-free bug.
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
+---
+
+The following changes since commit 6ee127b7dd63afe4d6d0a58293786bf4bf336850:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2012-07-=
+26 18:14:11 -0700)
+
+are available in the git repository at:
 
 
-In any case if the ARM maintainers agree I could add a generic
-hypervisor initialization call the end of setup_arch.
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
+avem
 
+for you to fetch changes up to 28ea499ac5b90f6266a24b826c6d469fc503758c:
 
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
+nville/wireless into for-davem (2012-07-27 11:15:03 -0400)
 
-> I presume that KVM is going to want some similarly early init hooks etc
-> and therefore ARM could benefit from the same sort of infrastructure as
-> is in arch/x86/include/asm/hypervisor.h?
+----------------------------------------------------------------
+
+Hauke Mehrtens (2):
+      bcma: fix regression in interrupt assignment on mips
+      bcma: add missing iounmap on error path
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
+nto for-davem
+
+Thomas Huehn (1):
+      mac80211_hwsim: fix possible race condition in usage of info->control=
+=2Esta & control.vif
+
+ drivers/bcma/driver_mips.c            |    6 +++---
+ drivers/bcma/scan.c                   |   15 ++++++++++-----
+ drivers/net/wireless/mac80211_hwsim.c |    5 -----
+ 3 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/bcma/driver_mips.c b/drivers/bcma/driver_mips.c
+index b013b04..cc65b45 100644
+--- a/drivers/bcma/driver_mips.c
++++ b/drivers/bcma/driver_mips.c
+@@ -131,7 +131,7 @@ static void bcma_core_mips_set_irq(struct bcma_device *=
+dev, unsigned int irq)
+ 			/* backplane irq line is in use, find out who uses
+ 			 * it and set user to irq 0
+ 			 */
+-			list_for_each_entry_reverse(core, &bus->cores, list) {
++			list_for_each_entry(core, &bus->cores, list) {
+ 				if ((1 << bcma_core_mips_irqflag(core)) =3D=3D
+ 				    oldirqflag) {
+ 					bcma_core_mips_set_irq(core, 0);
+@@ -161,7 +161,7 @@ static void bcma_core_mips_dump_irq(struct bcma_bus *bu=
+s)
+ {
+ 	struct bcma_device *core;
+=20
+-	list_for_each_entry_reverse(core, &bus->cores, list) {
++	list_for_each_entry(core, &bus->cores, list) {
+ 		bcma_core_mips_print_irq(core, bcma_core_mips_irq(core));
+ 	}
+ }
+@@ -224,7 +224,7 @@ void bcma_core_mips_init(struct bcma_drv_mips *mcore)
+ 		mcore->assigned_irqs =3D 1;
+=20
+ 	/* Assign IRQs to all cores on the bus */
+-	list_for_each_entry_reverse(core, &bus->cores, list) {
++	list_for_each_entry(core, &bus->cores, list) {
+ 		int mips_irq;
+ 		if (core->irq)
+ 			continue;
+diff --git a/drivers/bcma/scan.c b/drivers/bcma/scan.c
+index 5672b13..8d0b571 100644
+--- a/drivers/bcma/scan.c
++++ b/drivers/bcma/scan.c
+@@ -462,8 +462,10 @@ int bcma_bus_scan(struct bcma_bus *bus)
+ 	while (eromptr < eromend) {
+ 		struct bcma_device *other_core;
+ 		struct bcma_device *core =3D kzalloc(sizeof(*core), GFP_KERNEL);
+-		if (!core)
+-			return -ENOMEM;
++		if (!core) {
++			err =3D -ENOMEM;
++			goto out;
++		}
+ 		INIT_LIST_HEAD(&core->list);
+ 		core->bus =3D bus;
+=20
+@@ -478,7 +480,7 @@ int bcma_bus_scan(struct bcma_bus *bus)
+ 			} else if (err =3D=3D -ESPIPE) {
+ 				break;
+ 			}
+-			return err;
++			goto out;
+ 		}
+=20
+ 		core->core_index =3D core_num++;
+@@ -494,10 +496,12 @@ int bcma_bus_scan(struct bcma_bus *bus)
+ 		list_add_tail(&core->list, &bus->cores);
+ 	}
+=20
++	err =3D 0;
++out:
+ 	if (bus->hosttype =3D=3D BCMA_HOSTTYPE_SOC)
+ 		iounmap(eromptr);
+=20
+-	return 0;
++	return err;
+ }
+=20
+ int __init bcma_bus_scan_early(struct bcma_bus *bus,
+@@ -537,7 +541,7 @@ int __init bcma_bus_scan_early(struct bcma_bus *bus,
+ 		else if (err =3D=3D -ESPIPE)
+ 			break;
+ 		else if (err < 0)
+-			return err;
++			goto out;
+=20
+ 		core->core_index =3D core_num++;
+ 		bus->nr_cores++;
+@@ -551,6 +555,7 @@ int __init bcma_bus_scan_early(struct bcma_bus *bus,
+ 		break;
+ 	}
+=20
++out:
+ 	if (bus->hosttype =3D=3D BCMA_HOSTTYPE_SOC)
+ 		iounmap(eromptr);
+=20
+diff --git a/drivers/net/wireless/mac80211_hwsim.c b/drivers/net/wireless/m=
+ac80211_hwsim.c
+index 643f968..0083839 100644
+--- a/drivers/net/wireless/mac80211_hwsim.c
++++ b/drivers/net/wireless/mac80211_hwsim.c
+@@ -739,11 +739,6 @@ static void mac80211_hwsim_tx(struct ieee80211_hw *hw,=
+ struct sk_buff *skb)
+=20
+ 	txi =3D IEEE80211_SKB_CB(skb);
+=20
+-	if (txi->control.vif)
+-		hwsim_check_magic(txi->control.vif);
+-	if (txi->control.sta)
+-		hwsim_check_sta_magic(txi->control.sta);
+-
+ 	ieee80211_tx_info_clear_status(txi);
+=20
+ 	/* frame was transmitted at most favorable rate at first attempt */
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
+
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQErqOAAoJEJctW/TcYTgGZpYP/Aui8yUW4Gq9VVTqxTFFW/2i
+5ck/cDj5SZJwIyj77zfDihnUZn/maZnrZuQ0ZmGfg7joObDVBuXsjrtPsI0B4aBT
+QXLrDqocX+Vc0qP5lPeQgmx9cEd2DGbnX3YxZKJ5+wLYgkAnC7iWEipSMr8fuh99
+TOFTJCnmPvG54YyL2W/W0JN/ndn255/XZVK+3TM1QxgqBxeI22eZukelRB+kzpPr
+9/WRQatJdea4RhZljQe/98nhM8N+pUukuEXzOQdzA8O+tZJem64qx6ytXnuJsqK1
+YYLPoKFyD34KoAKw3mkWMjeA1vqM9SypH1eHDmtqiYWx6R0mxJf6Ebrr/2WFjOlh
+ObkTG5nWsnj+c+/sfH4Fu+WQGylJiUwvK2EYqAI9zcTzD9m2qfECx5A0WBZHxNZr
+oJ2Ekjd73zH2MzTBktENErh7J6og78meECzomy7kHvMr2pFXIIcMuVc6ve4SqHUQ
+Z9khx1q1sHpukqvjn4eEsRHo80GNVK6ekfxctyaX6PfOzkD+7NvbMuOm4hB6lBf5
+mVgqPO8tqBZ+xGrAkDoOLiJ6FG3kBBkfhUwZ+hhltTqfkxGi69YaK2xcvHW2Igzu
+CWGUr3qzzafJgu01U7Txyl+mieOMCallXkh80ST87k/EZuc+ZWnPGG4hHdHUXO82
+SZd6sP5ewZXY7dnc9L4w
+=Ofhx
+-----END PGP SIGNATURE-----
+
+--6TrnltStXW4iwmi0--
