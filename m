@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab2G0Xzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 19:55:32 -0400
+	id S1752994Ab2G0X5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 19:57:47 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:47011 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661Ab2G0XzY (ORCPT
+	with ESMTP id S1752454Ab2G0Xzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 19:55:24 -0400
+	Fri, 27 Jul 2012 19:55:31 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         padovan@profusion.mobi, marcel@holtmann.org, peterz@infradead.org,
         mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
         ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 04/15] workqueue: disable preemption while manipulating PENDING
-Date: Fri, 27 Jul 2012 16:54:57 -0700
-Message-Id: <1343433308-26614-5-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 07/15] workqueue: fix zero @delay handling of queue_delayed_work_on()
+Date: Fri, 27 Jul 2012 16:55:00 -0700
+Message-Id: <1343433308-26614-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1343433308-26614-1-git-send-email-tj@kernel.org>
 References: <1343433308-26614-1-git-send-email-tj@kernel.org>
@@ -24,183 +24,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Queueing operations use WORK_STRUCT_PENDING_BIT to synchronize access
-to the target work item.  They first try to claim the bit and proceed
-with queueing only after that succeeds and there's a window between
-PENDING being set and the actual queueing where the task can be
-preempted.
+If @delay is zero and the dealyed_work is idle, queue_delayed_work()
+queues it for immediate execution; however, queue_delayed_work_on()
+lacks this logic and always goes through timer regardless of @delay.
 
-There's also a similar window in process_one_work() when clearing
-PENDING.  A work item is dequeued, gcwq->lock is released and then
-PENDING is cleared and the worker might get preempted between
-releasing gcwq->lock and clearing PENDING.
-
-cancel[_delayed]_work_sync() tries to claim or steal PENDING.  The
-function assumes that a work item with PENDING is either queued, or in
-the process of being queued.  In the latter case, it busy-loops until
-either the work item loses PENDING or is queued.  If canceling
-coincides with the above described preemptions, the canceling task
-will busy-loop while the queueing or executing task is preempted.
-
-This patch keeps preemption disabled across claiming PENDING and
-actual queueing and moves PENDING clearing in process_one_work()
-inside gcwq->lock so that busy looping from PENDING && !queued doesn't
-wait for preempted tasks.  Note that, in process_one_work(), setting
-last CPU and clearing PENDING got merged into single operation.
+This patch moves 0 @delay handling logic from queue_delayed_work() to
+queue_delayed_work_on() so that both functions behave the same.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/workqueue.c |   55 +++++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 44 insertions(+), 11 deletions(-)
+ kernel/workqueue.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5c26d36..147869a 100644
+index 4beb9bf..e3383e8 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -537,9 +537,10 @@ static int work_next_color(int color)
-  * work is on queue.  Once execution starts, WORK_STRUCT_CWQ is
-  * cleared and the work data contains the cpu number it was last on.
+@@ -1123,7 +1123,9 @@ EXPORT_SYMBOL_GPL(delayed_work_timer_fn);
+  * @dwork: work to queue
+  * @delay: number of jiffies to wait before queueing
   *
-- * set_work_{cwq|cpu}() and clear_work_data() can be used to set the
-- * cwq, cpu or clear work->data.  These functions should only be
-- * called while the work is owned - ie. while the PENDING bit is set.
-+ * set_work_cwq(), set_work_cpu_and_clear_pending() and clear_work_data()
-+ * can be used to set the cwq, cpu or clear work->data.  These functions
-+ * should only be called while the work is owned - ie. while the PENDING
-+ * bit is set.
-  *
-  * get_work_[g]cwq() can be used to obtain the gcwq or cwq
-  * corresponding to a work.  gcwq is available once the work has been
-@@ -561,9 +562,10 @@ static void set_work_cwq(struct work_struct *work,
- 		      WORK_STRUCT_PENDING | WORK_STRUCT_CWQ | extra_flags);
- }
- 
--static void set_work_cpu(struct work_struct *work, unsigned int cpu)
-+static void set_work_cpu_and_clear_pending(struct work_struct *work,
-+					   unsigned int cpu)
- {
--	set_work_data(work, cpu << WORK_STRUCT_FLAG_BITS, WORK_STRUCT_PENDING);
-+	set_work_data(work, cpu << WORK_STRUCT_FLAG_BITS, 0);
- }
- 
- static void clear_work_data(struct work_struct *work)
-@@ -983,6 +985,15 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- 	unsigned int work_flags;
- 	unsigned long flags;
- 
-+	/*
-+	 * While a work item is PENDING && off queue, a task trying to
-+	 * steal the PENDING will busy-loop waiting for it to either get
-+	 * queued or lose PENDING, so a task shouldn't be preempted between
-+	 * grabbing PENDING and queueing @work.  Make sure the caller has
-+	 * preemption disabled.
-+	 */
-+	WARN_ON_ONCE(!preempt_count());
-+
- 	debug_work_activate(work);
- 
- 	/* if dying, only works from the same workqueue are allowed */
-@@ -1068,10 +1079,14 @@ bool queue_work_on(int cpu, struct workqueue_struct *wq,
- {
- 	bool ret = false;
- 
-+	preempt_disable();
-+
- 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
- 		__queue_work(cpu, wq, work);
- 		ret = true;
- 	}
-+
-+	preempt_enable();
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(queue_work_on);
-@@ -1121,6 +1136,12 @@ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+- * Returns %false if @work was already on a queue, %true otherwise.
++ * Returns %false if @work was already on a queue, %true otherwise.  If
++ * @delay is zero and @dwork is idle, it will be scheduled for immediate
++ * execution.
+  */
+ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+ 			   struct delayed_work *dwork, unsigned long delay)
+@@ -1132,6 +1134,9 @@ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
  	struct work_struct *work = &dwork->work;
  	bool ret = false;
  
-+	/*
-+	 * We shouldn't get preempted between claiming PENDING and adding
-+	 * timer.  Read the comment in __queue_work() for details.
-+	 */
-+	preempt_disable();
++	if (!delay)
++		return queue_work_on(cpu, wq, &dwork->work);
 +
- 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
- 		unsigned int lcpu;
- 
-@@ -1156,6 +1177,8 @@ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
- 			add_timer(timer);
- 		ret = true;
- 	}
-+
-+	preempt_enable();
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(queue_delayed_work_on);
-@@ -1970,15 +1993,13 @@ __acquires(&gcwq->lock)
- 		return;
- 	}
- 
--	/* claim and process */
-+	/* claim and dequeue */
- 	debug_work_deactivate(work);
- 	hlist_add_head(&worker->hentry, bwh);
- 	worker->current_work = work;
- 	worker->current_cwq = cwq;
- 	work_color = get_work_color(work);
- 
--	/* record the current cpu number in the work data and dequeue */
--	set_work_cpu(work, gcwq->cpu);
- 	list_del_init(&work->entry);
- 
  	/*
-@@ -1995,10 +2016,18 @@ __acquires(&gcwq->lock)
- 	if ((worker->flags & WORKER_UNBOUND) && need_more_worker(pool))
- 		wake_up_worker(pool);
- 
--	spin_unlock_irq(&gcwq->lock);
-+	/*
-+	 * Record the last CPU and clear PENDING.  The following wmb is
-+	 * paired with the implied mb in test_and_set_bit(PENDING) and
-+	 * ensures all updates to @work made here are visible to and
-+	 * precede any updates by the next PENDING owner.  Also, clearing
-+	 * PENDING is inside @gcwq->lock so that we don't get preempted
-+	 * with PENDING set and @work off queue.
-+	 */
-+	smp_wmb();
-+	set_work_cpu_and_clear_pending(work, gcwq->cpu);
- 
--	smp_wmb();	/* paired with test_and_set_bit(PENDING) */
--	work_clear_pending(work);
-+	spin_unlock_irq(&gcwq->lock);
- 
- 	lock_map_acquire_read(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
-@@ -2836,9 +2865,11 @@ EXPORT_SYMBOL_GPL(cancel_work_sync);
+ 	 * We shouldn't get preempted between claiming PENDING and adding
+ 	 * timer.  Read the comment in __queue_work() for details.
+@@ -1185,14 +1190,11 @@ EXPORT_SYMBOL_GPL(queue_delayed_work_on);
+  * @dwork: delayable work to queue
+  * @delay: number of jiffies to wait before queueing
+  *
+- * Returns %false if @work was already on a queue, %true otherwise.
++ * Equivalent to queue_delayed_work_on() but tries to use the local CPU.
   */
- bool flush_delayed_work(struct delayed_work *dwork)
+ bool queue_delayed_work(struct workqueue_struct *wq,
+ 			struct delayed_work *dwork, unsigned long delay)
  {
-+	preempt_disable();
- 	if (del_timer_sync(&dwork->timer))
- 		__queue_work(raw_smp_processor_id(),
- 			     get_work_cwq(&dwork->work)->wq, &dwork->work);
-+	preempt_enable();
- 	return flush_work(&dwork->work);
+-	if (delay == 0)
+-		return queue_work(wq, &dwork->work);
+-
+ 	return queue_delayed_work_on(WORK_CPU_UNBOUND, wq, dwork, delay);
  }
- EXPORT_SYMBOL(flush_delayed_work);
-@@ -2857,9 +2888,11 @@ EXPORT_SYMBOL(flush_delayed_work);
-  */
- bool flush_delayed_work_sync(struct delayed_work *dwork)
- {
-+	preempt_disable();
- 	if (del_timer_sync(&dwork->timer))
- 		__queue_work(raw_smp_processor_id(),
- 			     get_work_cwq(&dwork->work)->wq, &dwork->work);
-+	preempt_enable();
- 	return flush_work_sync(&dwork->work);
- }
- EXPORT_SYMBOL(flush_delayed_work_sync);
+ EXPORT_SYMBOL_GPL(queue_delayed_work);
 -- 
 1.7.7.3
 
