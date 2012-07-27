@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab2G0GZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 02:25:10 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:51631
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750785Ab2G0GZH (ORCPT
+	id S1751604Ab2G0Gk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 02:40:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:63547 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab2G0Gk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 02:25:07 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6R6OuHN000849
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] Problem with commit cf03c5dac83609f09d9f0e9fa3c09d86daed614d
-In-Reply-To: <gizk6mjtmy.fsf@mx10.gouders.net> (Dirk Gouders's message of
-	"Thu, 26 Jul 2012 19:53:57 +0200")
-References: <gik3xqtzw3.fsf@karga.hank.lab>
-	<20120726134926.GA10452@thinkpad-t410>
-	<gi7gtqlfw2.fsf@mx10.gouders.net>
-	<20120726152121.GB10452@thinkpad-t410>
-	<gizk6mjtmy.fsf@mx10.gouders.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Fri, 27 Jul 2012 08:24:54 +0200
-Message-ID: <givch9k9ft.fsf@mx10.gouders.net>
+	Fri, 27 Jul 2012 02:40:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Fri, 27 Jul 2012 08:24:57 +0200 (CEST)
+X-Originating-IP: [115.42.131.38]
+In-Reply-To: <20120727061430.GC11608@xanatos>
+References: <1343361824-11417-1-git-send-email-daniel@quora.org>
+	<20120727061430.GC11608@xanatos>
+Date: Fri, 27 Jul 2012 14:40:56 +0800
+Message-ID: <CAMVG2sv1vDe-jmS+U-6QCLX67S57zxkAk-jYiFX59jcOEEGfPA@mail.gmail.com>
+Subject: Re: [PATCH] Add Etron XHCI quirk to avoid warning spam
+From: Daniel J Blueman <daniel@quora.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
-
-> Seth Forshee <seth.forshee@canonical.com> writes:
->
->> On Thu, Jul 26, 2012 at 05:07:57PM +0200, Dirk Gouders wrote:
->>> Hi Seth,
->>> 
->>> thanks for your reply and sorry for the noise.
->>> 
->>> I followed your advice and tried to boot with the WLAN interface turned
->>> off, and the problem still exists.  I'll start a new bisect session,
->>> probably with one of the commits you mentioned as the first good commit.
+On 27 July 2012 14:14, Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+> On Fri, Jul 27, 2012 at 12:03:44PM +0800, Daniel J Blueman wrote:
+>> When various USB3 devices with Etron XHCI controllers, we see a bunch of
+>> warnings:
+>> xhci_hcd 0000:02:00.0: WARN Successful completion on short TX: needs
+>> XHCI_TRUST_TX_LENGTH quirk?
 >>
->> Just to make sure three's not any confusion ...
+>> Acknowledge the issue by adding the quirk.
 >>
->> What I was suggesting was not just disabling the network interface but
->> completely preventing brcmsmac from being loaded. The oops you saw
->> happens in the context of the driver's probe function and would happen
->> regardless of whether or not the interface is enabled.
->
-> Sorry for the confusion.
->
-> I already started a new bisect session, with a bad commit I disabled
-> brcmsmac in the kernel config and the problem still exists.  Now, I
-> continue with brcmsmac disabled and will see where the bisect ends.
+>> Signed-off-by: Daniel J Blueman <daniel@quora.org>
+[]
+> I already have a patch in my queue for this.  However, it keys off the
+> PCI_DEVICE_ID_ASROCK_P67 PCI device ID.  Do you have another Etron
+> device with a different device ID that needs this quirk?
 
-Hi Seth,
+Yes, the subsystem ID is different [1] (but Zotac program it the same
+as the vendor and device IDs here), however what you say suggests the
+problem is general to this Etron XHCI controller (1b6f:7023), as we'd
+suspect anyway.
 
-I just want to let you know that the problem with my laptop has been
-fixed.
+Thus the more general patch I posted makes better sense perhaps?
 
-Yesterday, I found commit b9562545ef0b to cause the problem
-and after a pull this morning I noticed that the problem introduced by
-it has been fixed by commit 1f03bf06e4e3 (bcma: fix invalid PMU chip
-control masks).
+Thanks,
+  Daniel
 
-Thanks again for your help.
+--- [1]
 
-Dirk
+# lspci -vs 02:00.0
+02:00.0 USB controller: Etron Technology, Inc. EJ168 USB 3.0 Host
+Controller (rev 01) (prog-if 30 [XHCI])
+	Subsystem: Etron Technology, Inc. EJ168 USB 3.0 Host Controller
+[]
+# lspci -vns 02:00.0
+02:00.0 0c03: 1b6f:7023 (rev 01) (prog-if 30 [XHCI])
+	Subsystem: 1b6f:7023
+-- 
+Daniel J Blueman
