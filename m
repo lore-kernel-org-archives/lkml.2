@@ -1,153 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2G0DK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:10:56 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:16764 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab2G0DKw (ORCPT
+	id S1753263Ab2G0DNC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:13:02 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64735 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609Ab2G0DNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:10:52 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: lenb@kernel.org, linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v4 1/4] ACPI: Add acpi_pr_<level>() interfaces
-Date: Thu, 26 Jul 2012 21:05:41 -0600
-Message-Id: <1343358344-31517-2-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1343358344-31517-1-git-send-email-toshi.kani@hp.com>
-References: <1343358344-31517-1-git-send-email-toshi.kani@hp.com>
+	Thu, 26 Jul 2012 23:13:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <500FE952.9030001@panasas.com>
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com>
+	<500FB1DE.1000100@redhat.com>
+	<CAKviJvVrrtyjFOzu7jmmD7cpXZcXtyQ+7HDy1G1o2_a0JRss5w@mail.gmail.com>
+	<500FE952.9030001@panasas.com>
+Date: Fri, 27 Jul 2012 11:12:58 +0800
+Message-ID: <CAKviJvV00Br4e455+_gdYyg6pdbdDqQnMC2NMTv-3ZyFgxvZ9A@mail.gmail.com>
+Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
+ HighMem pages used by sg list
+From: Wang Sen <kelvin.xupt@gmail.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Wang Sen <senwang@linux.vnet.ibm.com>,
+        linux-scsi@vger.kernel.org, JBottomley@parallels.com,
+        stefanha@linux.vnet.ibm.com, mc@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces acpi_pr_<level>(), where <level> is a kernel
-message level such as err/warn/info, to support improved logging
-messages for ACPI, esp. in hotplug operations.  acpi_pr_<level>()
-appends "ACPI" prefix and ACPI object path to the messages.  This
-improves diagnostics in hotplug operations since it identifies an
-object that caused an issue in a log file.
+2012/7/25 Boaz Harrosh <bharrosh@panasas.com>:
+> On 07/25/2012 02:44 PM, Sen Wang wrote:
+>
+>> 2012/7/25 Paolo Bonzini <pbonzini@redhat.com>:
+>>> Il 25/07/2012 10:29, Wang Sen ha scritto:
+>>>> When using the commands below to write some data to a virtio-scsi LUN of the
+>>>> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
+>>>>
+>>>>       # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
+>>>>       # sudo mount /dev/sdb /mnt
+>>>>       # dd if=/dev/zero of=/mnt/file bs=1M count=1024
+>>>>
+>>>> In current implementation, sg_set_buf is called to add buffers to sg list which
+>>>> is put into the virtqueue eventually. But there are some HighMem pages in
+>>>> table->sgl can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
+>>>> return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
+>>>> in QEMU because an invalid GPA is passed by virtqueue.
+>>>
+>>> Heh, I was compiling (almost) the same patch as we speak. :)
+>>
+>> Uh, what a coincidence! :)
+>>
+>>>
+>>> I've never seen QEMU crash; the VM would more likely just fail to boot
+>>> with a panic.  But it's the same bug anyway.
+>>
+>> I never met this before. How this situation happens?
+>>
+>>>
+>>>> My solution is using sg_set_page instead of sg_set_buf.
+>>>>
+>>>> I have tested the patch on my workstation. QEMU would not crash any more.
+>>>>
+>>>> Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
+>>>> ---
+>>>>  drivers/scsi/virtio_scsi.c |    3 ++-
+>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+>>>> index 1b38431..fc5c88a 100644
+>>>> --- a/drivers/scsi/virtio_scsi.c
+>>>> +++ b/drivers/scsi/virtio_scsi.c
+>>>> @@ -198,7 +198,8 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+>>>>       int i;
+>>>>
+>>>>       for_each_sg(table->sgl, sg_elem, table->nents, i)
+>>>> -             sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
+>>>> +             sg_set_page(&sg[idx++], sg_page(sg_elem), sg_elem->length,
+>>>> +                     sg_elem->offset);
+>>>
+>>> This can simply be
+>>>
+>>>    sg[idx++] = *sg_elem;
+>>>
+>>
+>> Yes, I saw your another E-mail. I think you're right. Simply calling
+>> sg_set_page can not handle
+>> the flag bits correctly. So, I'll repost the patch soon. Thank you!
+>>
+>
+>
+> No this code is correct, though you will need to make sure to properly
+> terminate the destination sg_list.
 
-acpi_pr_<level>() takes acpi_handle as an argument, which is passed
-to ACPI hotplug notify handlers from the ACPICA.  Therefore, it is
-always available unlike other kernel objects, such as device.
+Yes, the terminate marker in the destination list is set when initialization.
+sg_set_page would not break this marker because it saved both the two
+maker bits at sg_asign_page.
 
-For example, the statement below
-  acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
-logs an error message like this at KERN_ERR.
-  ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+Also, the allocation of destination sg list considered the total number of
+the source sg_list. So, sg_set_page can work correctly.
 
-ACPI drivers can use acpi_pr_<level>() when they need to identify
-a target ACPI object path in their messages, such as error messages.
-The usage model is similar to dev_<level>().  acpi_pr_<level>() can
-be used when device is not created/valid, which may be the case for
-ACPI hotplug handlers.  ACPI object path is also consistent on the
-platform.  Device name changes over hotplug operations.
+The value assignment method also can also work correctly, because the
+termination marker in source sg_list has been set in blk_rq_map_sg(), as
+the last entry of source sg_list is just copied to the the last entry
+in destination
+list.
 
-ACPI drivers should use dev_<level>() when device is valid and
-acpi_pr_<level>() is already used by the caller in its error path.
-Device name provides more user friendly information.
+Uh, Paolo, Boaz, have  you reached agreement on which method to use?
+>
+> But since old code was using sg_set_buf(), than it means it was properly
+> terminated before, and there for this code is good as is please don't
+> touch it.
+>
+> Thanks
+> Boaz
+>
+>>> Can you repost it with this change, and also add stable@vger.kernel.org
+>>> to the Cc?  Thanks very much!
+>>>
+>>> Paolo
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>>
+>
 
-ACPI drivers also continue to use pr_<level>() when messages do not
-need to specify device information, such as boot-up messages.
 
-Note: ACPI_[WARNING|INFO|ERROR]() are intended for the ACPICA and
-are not associated with the kernel message level.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
----
- drivers/acpi/utils.c    |   34 ++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 65 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index 3e87c9c..ec0c6f9 100644
---- a/drivers/acpi/utils.c
-+++ b/drivers/acpi/utils.c
-@@ -454,3 +454,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
- #endif
- }
- EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
-+
-+/**
-+ * acpi_printk: Print messages with ACPI prefix and object path
-+ *
-+ * This function is intended to be called through acpi_pr_<level> macros.
-+ */
-+void
-+acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	struct acpi_buffer buffer = {
-+		.length = ACPI_ALLOCATE_BUFFER,
-+		.pointer = NULL
-+	};
-+	const char *path;
-+	acpi_status ret;
-+
-+	va_start(args, fmt);
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-+	if (ret == AE_OK)
-+		path = buffer.pointer;
-+	else
-+		path = "<n/a>";
-+
-+	printk("%sACPI: %s: %pV", level, path, &vaf);
-+
-+	va_end(args);
-+	kfree(buffer.pointer);
-+}
-+EXPORT_SYMBOL(acpi_printk);
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index bde976e..1c855b8 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -85,6 +85,37 @@ struct acpi_pld {
- 
- acpi_status
- acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld *pld);
-+
-+void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
-+
-+#define acpi_pr_emerg(handle, fmt, ...)				\
-+	acpi_printk(KERN_EMERG, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_alert(handle, fmt, ...)				\
-+	acpi_printk(KERN_ALERT, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_crit(handle, fmt, ...)				\
-+	acpi_printk(KERN_CRIT, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_err(handle, fmt, ...)				\
-+	acpi_printk(KERN_ERR, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_warn(handle, fmt, ...)				\
-+	acpi_printk(KERN_WARNING, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_notice(handle, fmt, ...)			\
-+	acpi_printk(KERN_NOTICE, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_info(handle, fmt, ...)				\
-+	acpi_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
-+
-+/* REVISIT: Need to support CONFIG_DYNAMIC_DEBUG */
-+#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
-+#define acpi_pr_debug(handle, fmt, ...)					\
-+	acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
-+#else
-+#define acpi_pr_debug(handle, fmt, ...)					\
-+({									\
-+	if (0)								\
-+		acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__);	\
-+	0;								\
-+})
-+#endif
-+
- #ifdef CONFIG_ACPI
- 
- #include <linux/proc_fs.h>
 -- 
-1.7.7.6
-
+------------------------------------------
+Wang Sen
+Addr: XUPT,Xi'an,Shaanxi,China
+Email: kelvin.xupt@gmail.com
+------------------------------------------
