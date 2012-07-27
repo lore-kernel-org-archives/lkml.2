@@ -1,72 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab2G0KQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:16:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57824 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643Ab2G0KQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:16:08 -0400
-Message-ID: <50126A64.9040206@suse.de>
-Date: Fri, 27 Jul 2012 12:16:04 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	id S1751720Ab2G0KRi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:17:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:17888 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108Ab2G0KRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:17:36 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
+   d="scan'208";a="5496295"
+Message-ID: <50126BE9.2010803@cn.fujitsu.com>
+Date: Fri, 27 Jul 2012 18:22:33 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] sd: do not set changed flag on all unit attention conditions
-References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>  <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>  <50044D56.6000400@redhat.com>  <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>  <50052390.7030908@redhat.com>  <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com>  <5005285E.8060706@redhat.com>  <1342516317.3039.35.camel@dabdike.int.hansenpartnership.com>  <20120717163612.GA15995@infradead.org> <1342562390.3039.100.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1342562390.3039.100.camel@dabdike.int.hansenpartnership.com>
-X-Enigmail-Version: 1.4.2
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH 0/19] firmware_map : unify argument of firmware_map_add_early/hotplug
+References: <50126B83.3050201@cn.fujitsu.com>
+In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:18:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:18:05,
+	Serialize complete at 2012/07/27 18:18:05
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 11:59 PM, James Bottomley wrote:
-> On Tue, 2012-07-17 at 12:36 -0400, Christoph Hellwig wrote:
->> On Tue, Jul 17, 2012 at 10:11:57AM +0100, James Bottomley wrote:
->>> There's no such thing in the market today as a removable disk that's
->>> resizeable.  Removable disks are for things like backup cartridges and
->>> ageing jazz drives.  Worse: most removeable devices today are USB card
->>> readers whose standards compliance varies from iffy to non existent.
->>> Resizeable disks are currently the province of storage arrays.
->>
->> The virtual disks exported by aacraid are both marked removable and
->> can be resized.
-> 
-> So what are properties of these things? ... or is this just an instance
-> of a RAID manufacturer hacking around a problem by adding a removable
-> flag?
-> 
-Presumably.
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-The general intention is to automatically catch any disk resizing.
-As the SCSI stack (used to) ignore these things that was their way
-of working around it.
+There are two ways to create /sys/firmware/memmap/X sysfs:
 
-Curiously, though; the aacraid driver is the only one doing this,
-plus the process is quite involved (using a proprietary application
-for doing so etc).
+  - firmware_map_add_early
+    When the system starts, it is calledd from e820_reserve_resources()
+  - firmware_map_add_hotplug
+    When the memory is hot plugged, it is called from add_memory()
 
-None of the FC driver do this, despite the fact that resizing a disk
-is even easier here.
+But these functions are called without unifying value of end argument as below:
 
-I even tried to remove that line once, but then got told off by then
-Adaptec that I would break their apps.
-Since then there's a patch in the SLES kernel for adding a module
-option switching off this behaviour.
+  - end argument of firmware_map_add_early()   : start + size - 1
+  - end argument of firmware_map_add_hogplug() : start + size
 
-We should ask Adaptec/PMC-Sierra here.
+The patch unifies them to "start + size". Even if applying the patch,
+/sys/firmware/memmap/X/end file content does not change.
 
-Cheers,
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+---
+ arch/x86/kernel/e820.c    |    2 +-
+ drivers/firmware/memmap.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+Index: linux-3.5-rc6/arch/x86/kernel/e820.c
+===================================================================
+--- linux-3.5-rc6.orig/arch/x86/kernel/e820.c	2012-07-18 17:19:38.391365260 +0900
++++ linux-3.5-rc6/arch/x86/kernel/e820.c	2012-07-18 17:19:43.616300222 +0900
+@@ -944,7 +944,7 @@ void __init e820_reserve_resources(void)
+ 	for (i = 0; i < e820_saved.nr_map; i++) {
+ 		struct e820entry *entry = &e820_saved.map[i];
+ 		firmware_map_add_early(entry->addr,
+-			entry->addr + entry->size - 1,
++			entry->addr + entry->size,
+ 			e820_type_to_string(entry->type));
+ 	}
+ }
+Index: linux-3.5-rc6/drivers/firmware/memmap.c
+===================================================================
+--- linux-3.5-rc6.orig/drivers/firmware/memmap.c	2012-07-18 17:19:38.388365299 +0900
++++ linux-3.5-rc6/drivers/firmware/memmap.c	2012-07-18 18:30:47.608390251 +0900
+@@ -98,7 +98,7 @@ static LIST_HEAD(map_entries);
+ /**
+  * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
+  * @start: Start of the memory range.
+- * @end:   End of the memory range (inclusive).
++ * @end:   End of the memory range.
+  * @type:  Type of the memory range.
+  * @entry: Pre-allocated (either kmalloc() or bootmem allocator), uninitialised
+  *         entry.
+@@ -113,7 +113,7 @@ static int firmware_map_add_entry(u64 st
+ 	BUG_ON(start > end);
+ 
+ 	entry->start = start;
+-	entry->end = end;
++	entry->end = end - 1;
+ 	entry->type = type;
+ 	INIT_LIST_HEAD(&entry->list);
+ 	kobject_init(&entry->kobj, &memmap_ktype);
+@@ -148,7 +148,7 @@ static int add_sysfs_fw_map_entry(struct
+  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+  * memory hotplug.
+  * @start: Start of the memory range.
+- * @end:   End of the memory range (inclusive).
++ * @end:   End of the memory range.
+  * @type:  Type of the memory range.
+  *
+  * Adds a firmware mapping entry. This function is for memory hotplug, it is
+@@ -175,7 +175,7 @@ int __meminit firmware_map_add_hotplug(u
+ /**
+  * firmware_map_add_early() - Adds a firmware mapping entry.
+  * @start: Start of the memory range.
+- * @end:   End of the memory range (inclusive).
++ * @end:   End of the memory range.
+  * @type:  Type of the memory range.
+  *
+  * Adds a firmware mapping entry. This function uses the bootmem allocator
+
 
 
