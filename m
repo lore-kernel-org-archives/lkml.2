@@ -1,81 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab2G0Kf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:35:59 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:46603 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab2G0Kf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:35:57 -0400
-Date: Fri, 27 Jul 2012 12:35:51 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 12/13] driver core: firmware loader: use small
- timeout for cache device firmware
-Message-ID: <20120727103551.GC14445@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
- <1343149213-10160-13-git-send-email-ming.lei@canonical.com>
- <20120726123655.GE30717@aftab.osrc.amd.com>
- <CACVXFVOvkdCG_cAsCQPuNQB_4BnXq8f=+RnVXH=NS5GNPvQgtg@mail.gmail.com>
- <20120726175421.GB9161@aftab.osrc.amd.com>
- <CACVXFVM5VhaqKRcWu-6Hj_ja4OrEA63udcL_sLoSWtQm4NFNag@mail.gmail.com>
+	id S1753057Ab2G0KgR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:36:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752181Ab2G0KgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:36:15 -0400
+Message-ID: <50126F12.4010302@redhat.com>
+Date: Fri, 27 Jul 2012 06:36:02 -0400
+From: Larry Woodman <lwoodman@redhat.com>
+Reply-To: lwoodman@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120422 Thunderbird/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVM5VhaqKRcWu-6Hj_ja4OrEA63udcL_sLoSWtQm4NFNag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com> <50120FA8.20409@redhat.com> <20120727102356.GD612@suse.de>
+In-Reply-To: <20120727102356.GD612@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 09:54:25AM +0800, Ming Lei wrote:
-> On Fri, Jul 27, 2012 at 1:54 AM, Borislav Petkov <bp@amd64.org> wrote:
-> 
-> >> No, it is not what I was saying.
-> 
-> I just mean the point is not mentioned in my commit log, but I admit it should
-> be a appropriate cause.
-> 
-> >
-> > Ok, maybe I'm not understanding this then. So explain to me this: why
-> > do you need that timeout value of 10, how did we decide it to be 10
-> 
-> If one firmware image was loaded successfully before, the probability of
-> loading it successfully at this time should be much higher than the 1st time
-> because something crazy(for example, the firmware is deleted) happens
-> with low probability.
+On 07/27/2012 06:23 AM, Mel Gorman wrote:
+> On Thu, Jul 26, 2012 at 11:48:56PM -0400, Larry Woodman wrote:
+>> On 07/26/2012 02:37 PM, Rik van Riel wrote:
+>>> On 07/23/2012 12:04 AM, Hugh Dickins wrote:
+>>>
+>>>> I spent hours trying to dream up a better patch, trying various
+>>>> approaches.  I think I have a nice one now, what do you think?  And
+>>>> more importantly, does it work?  I have not tried to test it at all,
+>>>> that I'm hoping to leave to you, I'm sure you'll attack it with gusto!
+>>>>
+>>>> If you like it, please take it over and add your comments and signoff
+>>>> and send it in.  The second part won't come up in your testing,
+>>>> and could
+>>>> be made a separate patch if you prefer: it's a related point that struck
+>>>> me while I was playing with a different approach.
+>>>>
+>>>> I'm sorely tempted to leave a dangerous pair of eyes off the Cc,
+>>>> but that too would be unfair.
+>>>>
+>>>> Subject-to-your-testing-
+>>>> Signed-off-by: Hugh Dickins<hughd@google.com>
+>>> This patch looks good to me.
+>>>
+>>> Larry, does Hugh's patch survive your testing?
+>>>
+>>>
+>> Like I said earlier, no.
+> That is a surprise. Can you try your test case on 3.4 and tell us if the
+> patch fixes the problem there? I would like to rule out the possibility
+> that the locking rules are slightly different in RHEL. If it hits on 3.4
+> then it's also possible you are seeing a different bug, more on this later.
+Sure, it will take me a little while because the machine is shared between
+several users.
+>
+>> However, I finally set up a reproducer
+>> that only takes a few seconds
+>> on a large system and this totally fixes the problem:
+>>
+> The other possibility is that your reproducer case is triggering a
+> different race to mine. Would it be possible to post?
+Let me ask, I only have the binary and dont know if its OK to distribute
+so I dont know exactly what is going on.  I did some tracing and saw 
+forking,
+group exits, multi-threading, hufetlbfs file creation, mmap'ng munmap'ng &
+deleting the hugetlbfs
+files.
 
-Believe it or not, I'm addressing exactly the possibility of the
-firmware disappearing from under us in the AMD microcode driver
-currently :) (and some other annoyances, of course).
+>
+>> -------------------------------------------------------------------------------------------------------------------------
+>> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>> index c36febb..cc023b8 100644
+>> --- a/mm/hugetlb.c
+>> +++ b/mm/hugetlb.c
+>> @@ -2151,7 +2151,7 @@ int copy_hugetlb_page_range(struct mm_struct
+>> *dst, struct mm_struct *src,
+>>                          goto nomem;
+>>
+>>                  /* If the pagetables are shared don't copy or take references */
+>> -               if (dst_pte == src_pte)
+>> +               if (*(unsigned long *)dst_pte == *(unsigned long *)src_pte)
+>>                          continue;
+>>
+>>                  spin_lock(&dst->page_table_lock);
+>> ---------------------------------------------------------------------------------------------------------------------------
+>>
+>> When we compare what the src_pte&  dst_pte point to instead of their
+>> addresses everything works,
+> The dst_pte and src_pte are pointing to the PMD page though which is what
+> we're meant to be checking. Your patch appears to change that to check if
+> they are sharing data which is quite different. This is functionally
+> similar to if you just checked VM_MAYSHARE at the start of the function
+> and bailed if so. The PTEs would be populated at fault time instead.
+>
+>> I suspect there is a missing memory barrier somewhere ???
+>>
+> Possibly but hard to tell whether it's barriers that are the real
+> problem during fork. The copy routine is suspicious.
+>
+> On the barrier side - in normal PTE alloc routines there is a write
+> barrier which is documented in __pte_alloc. If hugepage table sharing is
+> successful, there is no similar barrier in huge_pmd_share before the PUD
+> is populated. By rights, there should be a smp_wmb() before the page table
+> spinlock is taken in huge_pmd_share().
+>
+> The lack of a write barrier leads to a possible snarls between fork()
+> and fault. Take three processes, parent, child and other. Parent is
+> forking to create child. Other is calling fault.
+>
+> Other faults
+> 	hugetlb_fault()->huge_pte_alloc->allocate a PMD (write barrier)
+> 	It is about to enter hugetlb_no_fault()
+>
+> Parent forks() runs at the same time
+> 	Child shares a page table page but NOT with the forking process (dst_pte
+> 	!= src_pte) and calls huge_pte_offset.
+>
+> As it's not reading the contents of the PMD page, there is no implicit read
+> barrier to pair with the write barrier from hugetlb_fault that updates
+> the PMD page and they are not serialised by the page table lock. Hard to
+> see exactly where that would cause a problem though.
+>
+> Thing is, in this scenario I think it's possible that page table sharing
+> is not correctly detected by that dst_pte == src_pte check.  dst_pte !=
+> src_pte but that does not mean it's not sharing with somebody! If it's
+> sharing and it falls though then it copies the src PTE even though the
+> dst PTE could already be populated and updates the mapcount accordingly.
+> That would be a mess in its own right.
+I think this is exactly what is happening.  I'll put more cave-man debugging
+code in and let you know.
 
-> Choosing 10 secs is just a estimation for loading time because the maximum
-> size of firmware in current distributions is about 2M bytes, since we know
-> it has been loaded successfully before.
+Larry
 
-This is exactly the comment we want over the code to explain to others
-why we're choosing 10 secs. Simply add that sentence above the 10s
-assignment and we're perfect! :-)
+>
+> There might be two bugs here.
+>
 
-> > (and not 20 or 30 or whatever)? Generally, why do we need to reprogram
-> > the timer to a smaller timeout instead of simply doing the completion
-> > without a timeout?
-> 
-> No, it should be crazy without a timeout, and it can be triggered in init call
-> easily.
-
-Ok.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
