@@ -1,98 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab2G0Lc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 07:32:57 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:48675 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab2G0Lc4 (ORCPT
+	id S1751950Ab2G0Lht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 07:37:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36224 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab2G0Lhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 07:32:56 -0400
-X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
-   d="scan'208";a="13733398"
-Date: Fri, 27 Jul 2012 12:31:17 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 7/7] xen/mmu: Remove from __ka space PMD
- entries for pagetables.
-In-Reply-To: <1343335652-5659-8-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1207271230150.26163@kaball.uk.xensource.com>
-References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com> <1343335652-5659-8-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 27 Jul 2012 07:37:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <1343359050.1726.9033.camel@vkoul-udesk3>
+References: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
+	<1343359050.1726.9033.camel@vkoul-udesk3>
+Date: Fri, 27 Jul 2012 08:37:48 -0300
+Message-ID: <CAOMZO5DCEgjw1cyCV5nP-aoksboF2HFQ_emzSUXRCgGAGNuqUg@mail.gmail.com>
+Subject: Re: [PATCH] dma: imx-dma: Fix kernel crash due to missing clock conversion
+From: Fabio Estevam <festevam@gmail.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        javier.martin@vista-silicon.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> Please first read the description in "xen/mmu: Copy and revector the
-> P2M tree."
-> 
-> At this stage, the __ka address space (which is what the old
-> P2M tree was using) is partially disassembled. The cleanup_highmap
-> has removed the PMD entries from 0-16MB and anything past _brk_end
-> up to the max_pfn_mapped (which is the end of the ramdisk).
-> 
-> The xen_remove_p2m_tree and code around has ripped out the __ka for
-> the old P2M array.
-> 
-> Here we continue on doing it to where the Xen page-tables were.
-> It is safe to do it, as the page-tables are addressed using __va.
-> For good measure we delete anything that is within MODULES_VADDR
-> and up to the end of the PMD.
-> 
-> At this point the __ka only contains PMD entries for the start
-> of the kernel up to __brk.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/mmu.c |   20 ++++++++++++++++++++
->  1 files changed, 20 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 05e8492..738feca 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1241,6 +1241,26 @@ static void __init xen_pagetable_setup_done(pgd_t *base)
->  			xen_start_info->mfn_list = new_mfn_list;
->  		}
->  	}
-> +#ifdef CONFIG_X86_64
-> +	/* At this stage, cleanup_highmap has already cleaned __ka space
-> +	 * from _brk_limit way up to the max_pfn_mapped (which is the end of
-> +	 * the ramdisk). We continue on, erasing PMD entries that point to page
-> +	 * tables - do note that they are accessible at this stage via __va.
-> +	 * For good measure we also round up to the PMD - which means that if
-> +	 * anybody is using __ka address to the initial boot-stack - and try
-> +	 * to use it - they are going to crash. The xen_start_info has been
-> +	 * taken care of already in xen_setup_kernel_pagetable. */
-> +	addr = xen_start_info->pt_base;
-> +	size = roundup(xen_start_info->nr_pt_frames * PAGE_SIZE, PMD_SIZE);
-> +
-> +	xen_cleanhighmap(addr, addr + size);
-> +	xen_start_info->pt_base = (unsigned long)__va(__pa(xen_start_info->pt_base));
-> +
-> +	/* This is superflous and shouldn't be neccessary, but you know what
-> +	 * lets do it. The MODULES_VADDR -> MODULES_END should be clear of
-> +	 * anything at this stage. */
-> +	xen_cleanhighmap(MODULES_VADDR, roundup(MODULES_VADDR, PUD_SIZE) - 1);
+On Fri, Jul 27, 2012 at 12:17 AM, Vinod Koul <vinod.koul@linux.intel.com> wrote:
 
-I would stick an #ifdef CONFIG_DEBUG of some kind around it
+>> Reported-by: Javier Martin <javier.martin@vista-silicon.com>
+>> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> Applied thanks (to fixes-for 3.7)
 
-
-> +#endif
->  	xen_post_allocator_init();
->  }
->  
-> -- 
-> 1.7.7.6
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-> 
+You mentioned that you would also copy stable. Would it be applied
+into stable soon too?
