@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab2G0TUd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:20:33 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:48390 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab2G0TUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:20:32 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 0/5] time/jiffies changes for tip/timers/core
-Date: Fri, 27 Jul 2012 14:48:08 -0400
-Message-Id: <1343414893-45779-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072718-5112-0000-0000-00000A766313
+	id S1752626Ab2G0TVE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:21:04 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34835 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751369Ab2G0TVB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 15:21:01 -0400
+X-Sasl-enc: SCZ6D5x7/GZ4CFX7eSgS9v3T2jaOdLjUoRXcmhmdKZom 1343416861
+Date: Fri, 27 Jul 2012 12:21:00 -0700
+From: Greg KH <greg@kroah.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Keith Busch <keith.busch@intel.com>, linux-nvme@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] NVMe: Add a character device for each nvme device
+Message-ID: <20120727192100.GA2247@kroah.com>
+References: <1343407458-29909-1-git-send-email-keith.busch@intel.com>
+ <20120727181212.GM22985@linux.intel.com>
+ <20120727182546.GA23874@kroah.com>
+ <20120727190821.GO22985@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120727190821.GO22985@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas, Ingo,
-	Here's updated time/jiffies patches including Ingo's
-feedback for tip/timers/core.
+On Fri, Jul 27, 2012 at 03:08:21PM -0400, Matthew Wilcox wrote:
+> On Fri, Jul 27, 2012 at 11:25:46AM -0700, Greg KH wrote:
+> > On Fri, Jul 27, 2012 at 02:12:12PM -0400, Matthew Wilcox wrote:
+> > > I don't see a problem here, but I'm no expert at sysfs / character devices.
+> > > Alan, Greg, anyone else see any problems with how this character device is
+> > > created / destroyed?
+> > 
+> > Yes, see below:
+> 
+> Thanks!
+> 
+> > > > +	device_create(nvme_char_cl, NULL, MKDEV(nvme_char_major, dev->instance),
+> > > > +						NULL, "nvme%d", dev->instance);
+> > 
+> > You just created a device at the "root" of sysfs, which is wrong,
+> > especially when you do have a parent device here.  Please use it.
+> 
+> OK, that makes sense; this device should be the child of the pci_dev that
+> it belongs to.
+> 
+> > Also, why are you creating your own class?  Can't this just be a misc
+> > device?  And if you want to create your own class, please don't, use a
+> > bus, as that is what is really happening here, right?  We are trying to
+> > move away from using 'struct class' wherever possible (one of these days
+> > we'll just remove it...)
+> 
+> What we're trying to achieve here is to create one character device
+> per NVMe controller that gets plugged in.  Each NVMe controller is-a
+> PCI function.  The reason we're trying to do this is so that we can send
+> commands to the NVMe controller, even when there is no storage present
+> (eg a drive is shipped from the factory with no configured storage).
+> 
+> So we have no particular desire to create a new struct class, or struct
+> bus.  If we can create a misc device per PCIe function that's bound to our
+> driver, that's great!  Can you recommend a driver that does this already?
 
-Let me know if there's any further tweaks you'd like to see.
+I don't think there is one, but it shouldn't be that hard to just create
+a 'struct misdevice' for each one of the devices you want to create,
+would it?
 
-thanks
--john
+But, as you really are a "specific type", a bus_type might be overkill,
+so the original use of device_create() should be fine.  Just be sure to
+fix the parent pointer issue, and you should be fine, right?
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-
-
-Catalin Marinas (1):
-  jiffies: Allow CLOCK_TICK_RATE to be undefined
-
-John Stultz (4):
-  jiffies: Rename ACTHZ to SHIFTED_HZ
-  time: Stray newline cleanups
-  time: Cleanup offs_real/wall_to_mono and offs_boot/total_sleep_time
-    updates
-  time: Remove all direct references to timekeeper
-
- include/linux/jiffies.h   |   29 ++--
- include/linux/timex.h     |    2 +-
- kernel/time/jiffies.c     |    2 +-
- kernel/time/ntp.c         |    2 +-
- kernel/time/timekeeping.c |  373 +++++++++++++++++++++++++--------------------
- 5 files changed, 226 insertions(+), 182 deletions(-)
-
--- 
-1.7.9.5
-
+greg k-h
