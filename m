@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab2G0IHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 04:07:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53305 "EHLO mga02.intel.com"
+	id S1752472Ab2G0ILt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 04:11:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51347 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752459Ab2G0IHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 04:07:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="172107134"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Bjorn Mork <bjorn@mork.no>, Huang Ying <ying.huang@intel.com>
-Subject: [RFC] PCI/PM: Add ABI document for sysfs file d3cold_allowed
-Date: Fri, 27 Jul 2012 16:07:34 +0800
-Message-Id: <1343376454-28520-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751877Ab2G0ILp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 04:11:45 -0400
+Message-ID: <50124D2E.7050407@redhat.com>
+Date: Fri, 27 Jul 2012 10:11:26 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Boaz Harrosh <bharrosh@panasas.com>, Wang Sen <senwang@linux.vnet.ibm.com>,
+        linux-scsi@vger.kernel.org, JBottomley@parallels.com,
+        stefanha@linux.vnet.ibm.com, mc@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com> <5010F07E.7050506@redhat.com> <5010F831.9030300@panasas.com> <5010F896.8090409@redhat.com> <501140A3.9090908@redhat.com> <874notoh02.fsf@rustcorp.com.au>
+In-Reply-To: <874notoh02.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ABI document for the following sysfs file:
+Il 27/07/2012 08:27, Rusty Russell ha scritto:
+>> > +int virtqueue_add_buf_sg(struct virtqueue *_vq,
+>> > +			 struct scatterlist *sg_out,
+>> > +			 unsigned int out,
+>> > +			 struct scatterlist *sg_in,
+>> > +			 unsigned int in,
+>> > +			 void *data,
+>> > +			 gfp_t gfp)
+> The point of chained scatterlists is they're self-terminated, so the
+> in & out counts should be calculated.
+> 
+> Counting them is not *that* bad, since we're about to read them all
+> anyway.
+> 
+> (Yes, the chained scatterlist stuff is complete crack, but I lost that
+> debate years ago.)
+> 
+> Here's my variant.  Networking, console and block seem OK, at least
+> (ie. it booted!).
 
-/sys/bus/pci/devices/.../d3cold_allowed
+I hate the for loops, even though we're about indeed to read all the
+scatterlists anyway... all they do is lengthen critical sections.  Also,
+being the first user of chained scatterlist doesn't exactly give me warm
+fuzzies.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- Documentation/ABI/testing/sysfs-bus-pci |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+I think it's simpler if we provide an API to add individual buffers to
+the virtqueue, so that you can do multiple virtqueue_add_buf_more
+(whatever) before kicking the virtqueue.  The idea is that I can still
+use indirect buffers for the scatterlists that come from the block layer
+or from an skb, but I will use direct buffers for the request/response
+descriptors.  The direct buffers are always a small number (usually 2),
+so you can balance the effect by making the virtqueue bigger.  And for
+small reads and writes, you save a kmalloc on a very hot path.
 
---- a/Documentation/ABI/testing/sysfs-bus-pci
-+++ b/Documentation/ABI/testing/sysfs-bus-pci
-@@ -210,3 +210,15 @@ Users:
- 		firmware assigned instance number of the PCI
- 		device that can help in understanding the firmware
- 		intended order of the PCI device.
-+
-+What:		/sys/bus/pci/devices/.../d3cold_allowed
-+Date:		July 2012
-+Contact:	Huang Ying <ying.huang@intel.com>
-+Description:
-+		d3cold_allowed is bit to control whether the corresponding PCI
-+		device can be put into D3Cold state.  If it is cleared, the
-+		device will never be put into D3Cold state.  If it is set, the
-+		device may be put into D3Cold state if other requirement are
-+		satisfied too.  Reading this attribute will show the current
-+		value of d3cold_allowed bit.  Writting this attribute will set
-+		the value of d3cold_allowed bit.
+(BTW, scatterlists will have separate entries for each page; we do not
+need this in virtio buffers.  Collapsing physically-adjacent entries
+will speed up QEMU and will also help avoiding indirect buffers).
+
+Paolo
+
+
+
