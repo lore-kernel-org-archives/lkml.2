@@ -1,35 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab2G0C6Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 22:58:16 -0400
-Received: from matrix.voodoobox.net ([75.127.97.206]:44590 "EHLO
-	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab2G0C6O (ORCPT
+	id S1753229Ab2G0DAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:00:38 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16408 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963Ab2G0DAh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 22:58:14 -0400
-Message-ID: <1343355430.29938.6.camel@obelisk.thedillows.org>
-Subject: Re: RAID extremely slow
-From: David Dillow <dave@thedillows.org>
-To: Kevin Ross <kevin@familyross.net>
-Cc: Phil Turmel <philip@turmel.org>, linux-kernel@vger.kernel.org,
-        linux-raid <linux-raid@vger.kernel.org>
-Date: Thu, 26 Jul 2012 22:17:10 -0400
-In-Reply-To: <1343355303.29938.5.camel@obelisk.thedillows.org>
-References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org>
-	 <5010A386.4080209@familyross.net>
-	 <1343355303.29938.5.camel@obelisk.thedillows.org>
+	Thu, 26 Jul 2012 23:00:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 26 Jul 2012 20:00:21 -0700
+Subject: RE: How to use the generic thermal sysfs.
+From: Wei Ni <wni@nvidia.com>
+To: Zhang Rui <rui.zhang@intel.com>
+CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@ger.kernel.org>,
+        Alex Courbot <acourbot@nvidia.com>
+In-Reply-To: <1343352098.1682.447.camel@rui.sh.intel.com>
+References: <1342088573.27605.101.camel@tegra-chromium-2>
+	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
+	 <1342144273.1682.237.camel@rui.sh.intel.com>
+	 <1342164616.27605.129.camel@tegra-chromium-2>
+	 <1342165278.1682.259.camel@rui.sh.intel.com>
+	 <1343295094.4042.24.camel@tegra-chromium-2>
+	 <1343352098.1682.447.camel@rui.sh.intel.com>
+Date: Fri, 27 Jul 2012 10:58:21 +0800
+Message-ID: <1343357901.4042.70.camel@tegra-chromium-2>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 22:15 -0400, David Dillow wrote:
-> If you can, upgrade to the latest 3.4 stable kernel (3.4.6 right now).
-> As far as I can see, the latest 3.2 stable does not contain the delayed
-> stripe fix.
+On Fri, 2012-07-27 at 09:21 +0800, Zhang Rui wrote:
+> On 四, 2012-07-26 at 17:31 +0800, Wei Ni wrote:
+> > On Fri, 2012-07-13 at 15:41 +0800, Zhang Rui wrote:
+> > > On 五, 2012-07-13 at 15:30 +0800, Wei Ni wrote:
+> > > > 
+> > > > Our tegra thermal framework also will use the generic thermal layer. It
+> > > > will register the cooling device, and run the throttling in this generic
+> > > > framework.
+> > > > But we have a special mechanism, when the temp is below the trip temp,
+> > > > we will set different cpu capability for different temp range. For
+> > > > example, set the low/high temp as 20C/30C to the sensor, and set the cpu
+> > > > to the max capability, it mean the cpu can run up to the max freq and
+> > > > voltage in this temp range. if the temp is out that range, the sensor
+> > > > will have irq/alert to notify the tegra framework, then we will set to
+> > > > another temperature range and cpu capability.
+> > > > I think we can try to add this mechanism to the generic framework as a
+> > > > new policy, right?
+> > > > 
+> > > I think you can make use of the upper&lower limit in my patch set.
+> > > Say, here is your thermal policy
+> > > 20C - 30C, P0
+> > > 30C - 40C, P1 - P2
+> > > 40C - 60C, P3 - P5
+> > > 60C+, P6 ~ Pn
+> > > 
+> > > you can register to the thermal layer 4 passive trip points,
+> > > 20C, 30C, 40C, 60C, and then
+> > > 1) for trip 0 (20C), upper limit 0, lower limit 0
+> > > 2) for trip 1 (30C), upper limit 2, lower limit 1
+> > > 3) for trip 2 (40C), upper limit 5, lower limit 3
+> > > 4) for trip 3 (60C), upper limit n, lower limit 6
+> > > 
+> > > you can program your own sensor to get interrupt when the temperature
+> > > hits 20C/30C/40C/60C, and the generic thermal layer will put the
+> > > processors to proper frequency for each trip point.
+> > > 
+> > > what do you think?
+> > 
+> > Hi, Rui
+> > I'm trying your upper/lower codes on our tegra platform.
+> > Since we want to set limit value to the sensor to get interrupt, and
+> > many sensor drivers can support the limit alert property, could we add a
+> > new callback .set_limits() for the thermal zone device, so that we can
+> > program it in the generic layer. when the temperature hits the
+> > trip_temp,
+> 
+> at this time, there should be an interrupt, right?
 
-And I was looking at the wrong version; 3.2.24 does indeed have the fix.
+Yes, there will have an interrupt.
+
+> 
+> >  we can try to set to the next limit range.
+> 
+> is it possible to program the sensor at this time, in your own thermal
+> driver?
+
+Since we are using the generic thermal driver lm90.c, I'm not sure if we
+could program these limits in the generic driver, I think it's better to
+have a generic interface to set the limits, so I wish to add a
+callback .set_limits() in the generic thermal framework.
+
+> 
+> thanks,
+> rui
+> > I can try to add these codes base on your patches.
+> > 
+> > Thanks.
+> > Wei.
+> > 
+> > > 
+> > > BTW, the upper and lower limit is introduced in the patch set I'm
+> > > testing, so maybe you were not aware of it.
+> > > 
+> > > thanks,
+> > > rui
+> > 
+> > 
+> > 
+> 
+> 
+
 
