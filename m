@@ -1,116 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab2G0Vyf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 17:54:35 -0400
-Received: from fieldses.org ([174.143.236.118]:56865 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab2G0Vyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 17:54:33 -0400
-Date: Fri, 27 Jul 2012 17:54:31 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v2 00/15] Lockd: grace period containerization
-Message-ID: <20120727215431.GE6388@fieldses.org>
-References: <20120725125258.24376.82525.stgit@localhost.localdomain>
+	id S1752466Ab2G0Vzt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 17:55:49 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34956 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab2G0Vzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 17:55:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120725125258.24376.82525.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1343419466.32120.50.camel@twins>
+References: <1342787467-5493-1-git-send-email-walken@google.com>
+	<1342787467-5493-5-git-send-email-walken@google.com>
+	<1343419466.32120.50.camel@twins>
+Date: Fri, 27 Jul 2012 14:55:46 -0700
+Message-ID: <CANN689HSP-yKt6z6Szv-=_MT8sEWJ8dmJ5sr+HzkYgTD2P3xug@mail.gmail.com>
+Subject: Re: [PATCH 4/6] rbtree: faster augmented insert
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
+        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 04:55:45PM +0400, Stanislav Kinsbursky wrote:
-> Bruce, I feel this patch set is ready for inclusion.
-> 
-> v2:
-> 1) Rebase on Bruce's "for-3.6" branch.
-> 
-> This patch set makes grace period and hosts reclaiming network namespace
-> aware.
+On Fri, Jul 27, 2012 at 1:04 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2012-07-20 at 05:31 -0700, Michel Lespinasse wrote:
+>> +static void augment_rotate(struct rb_node *rb_old, struct rb_node *rb_new)
+>> +{
+>> +       struct test_node *old = rb_entry(rb_old, struct test_node, rb);
+>> +       struct test_node *new = rb_entry(rb_new, struct test_node, rb);
+>> +
+>> +       /* Rotation doesn't change subtree's augmented value */
+>> +       new->augmented = old->augmented;
+>> +       old->augmented = augment_recompute(old);
+>> +}
+>
+>> +static inline void augment_propagate(struct rb_node *rb)
+>> +{
+>> +       while (rb) {
+>> +               struct test_node *node = rb_entry(rb, struct test_node, rb);
+>> +               node->augmented = augment_recompute(node);
+>> +               rb = rb_parent(&node->rb);
+>> +       }
+>> +}
+>
+> So why do we have to introduce these two new function pointers to pass
+> along when they can both be trivially expressed in the old single
+> augment function?
 
-On a quick skim--yes, that looks reasonable to me.
+Its because augment_rotate() needs to be a static function that we can
+take the address of and pass along as a callback to the tree
+rebalancing functions, while augment_propagate() needs to be an inline
+function that gets compiled within an __rb_erase() variant for a given
+type of augmented rbtree.
 
-It doesn't help with active/active cluster exports, because in that case
-we need some additional coordination between nfsd's.
-
-But it looks good enough to handle the case where each filesystem is
-exported from at most one server at a time, which is more than we
-currently handle.
-
-It's a little late for 3.6.  Also I get the impression Al Viro has some
-lockd rework in progress, which we may want to wait for.
-
-So I'll likely look again into queueing this up for 3.7 once 3.6-rc1 is
-out.
-
---b.
-
-> 
-> Main ideas:
-> 1)  moving of 
-> 
-> 	unsigned long next_gc;
-> 	unsigned long nrhosts;
-> 
-> 	struct delayed_work grace_period_end;
-> 	struct lock_manager lockd_manager;
-> 	struct list_head grace_list;
-> 
-> to per-net Lockd data.
-> 
-> 2) moving of 
-> 
-> 	struct lock_manager nfsd4_manager;
-> 
-> to per-net NFSd data.
-> 
-> 3) shutdown + gc of NLM hosts done now network namespace aware.
-> 
-> 4) restart_grace() now works only for init_net.
-> 
-> The following series implements...
-> 
-> ---
-> 
-> Stanislav Kinsbursky (15):
->       LockD: mark host per network namespace on garbage collect
->       LockD: make garbage collector network namespace aware.
->       LockD: manage garbage collection timeout per networks namespace
->       LockD: manage used host count per networks namespace
->       Lockd: host complaining function introduced
->       Lockd: add more debug to host shutdown functions
->       LockD: manage grace period per network namespace
->       LockD: make lockd manager allocated per network namespace
->       NFSd: make nfsd4_manager allocated per network namespace context.
->       SUNRPC: service request network namespace helper introduced
->       LockD: manage grace list per network namespace
->       LockD: pass actual network namespace to grace period management functions
->       Lockd: move grace period management from lockd() to per-net functions
->       NFSd: make grace end flag per network namespace
->       NFSd: make boot_time variable per network namespace
-> 
-> 
->  fs/lockd/grace.c            |   16 +++++--
->  fs/lockd/host.c             |   92 ++++++++++++++++++++++++++------------
->  fs/lockd/netns.h            |    7 +++
->  fs/lockd/svc.c              |   43 ++++++++++--------
->  fs/lockd/svc4proc.c         |   13 +++--
->  fs/lockd/svclock.c          |   16 +++----
->  fs/lockd/svcproc.c          |   15 ++++--
->  fs/lockd/svcsubs.c          |   19 +++++---
->  fs/nfs/callback_xdr.c       |    4 +-
->  fs/nfsd/export.c            |    4 +-
->  fs/nfsd/netns.h             |    4 ++
->  fs/nfsd/nfs4idmap.c         |    4 +-
->  fs/nfsd/nfs4proc.c          |   18 ++++---
->  fs/nfsd/nfs4state.c         |  104 ++++++++++++++++++++++++-------------------
->  fs/nfsd/state.h             |    4 +-
->  include/linux/fs.h          |    5 +-
->  include/linux/lockd/lockd.h |    6 +-
->  include/linux/sunrpc/svc.h  |    2 +
->  18 files changed, 231 insertions(+), 145 deletions(-)
-> 
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
