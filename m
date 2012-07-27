@@ -1,118 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab2G0KZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:25:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:34920 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab2G0KZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752862Ab2G0KZd (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 27 Jul 2012 06:25:33 -0400
-X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
-   d="scan'208";a="5496385"
-Message-ID: <50126DCA.9010201@cn.fujitsu.com>
-Date: Fri, 27 Jul 2012 18:30:34 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
-CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [RFC PATCH v5 09/19] memory-hotplug: does not release memory region
- in PAGES_PER_SECTION chunks
-References: <50126B83.3050201@cn.fujitsu.com>
-In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/27 18:26:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/27 18:26:02,
-	Serialize complete at 2012/07/27 18:26:02
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57431 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab2G0KZ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:25:29 -0400
+From: Sha Zhengju <handai.szj@gmail.com>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org
+Cc: fengguang.wu@intel.com, gthelen@google.com, akpm@linux-foundation.org,
+        yinghan@google.com, mhocko@suse.cz, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        npiggin@kernel.dk, Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH V2 2/6] Make TestSetPageDirty and dirty page accounting in one func
+Date: Fri, 27 Jul 2012 18:25:20 +0800
+Message-Id: <1343384720-20084-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
+References: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Sha Zhengju <handai.szj@taobao.com>
 
-Since applying a patch(de7f0cba96786c), release_mem_region() has been changed
-as called in PAGES_PER_SECTION chunks because register_memory_resource() is
-called in PAGES_PER_SECTION chunks by add_memory(). But it seems firmware
-dependency. If CRS are written in the PAGES_PER_SECTION chunks in ACPI DSDT
-Table, register_memory_resource() is called in PAGES_PER_SECTION chunks.
-But if CRS are written in the DIMM unit in ACPI DSDT Table,
-register_memory_resource() is called in DIMM unit. So release_mem_region()
-should not be called in PAGES_PER_SECTION chunks. The patch fixes it.
+Commit a8e7d49a(Fix race in create_empty_buffers() vs __set_page_dirty_buffers())
+extracts TestSetPageDirty from __set_page_dirty and is far away from
+account_page_dirtied.But it's better to make the two operations in one single
+function to keep modular.So in order to avoid the potential race mentioned in
+commit a8e7d49a, we can hold private_lock until __set_page_dirty completes.
+I guess there's no deadlock between ->private_lock and ->tree_lock by quick look.
+It's a prepare patch for following memcg dirty page accounting patches.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+Here is some test numbers that before/after this patch:
+
+Test steps(Mem-24g, ext4):
+drop_cache; sync
+fio (buffered/randwrite/bs=4k/size=128m/filesize=1g/numjobs=8/sync)
+
+We test it for 10 times and get the average numbers:
+Before:
+write: io=1024.0MB, bw=334678 KB/s, iops=83669.2 , runt=  3136 msec
+lat (usec): min=1 , max=26203.1 , avg=81.473, stdev=275.754
+After:
+write: io=1024.0MB, bw=331583 KB/s, iops=82895.3 , runt=  3164.4 msec
+lat (usec): min=1.1 , max=19001.6 , avg=83.544, stdev=272.704
+
+Note that the impact is little(~1%).
+
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 ---
- arch/powerpc/platforms/pseries/hotplug-memory.c |   13 +++++++++----
- mm/memory_hotplug.c                             |    4 ++--
- 2 files changed, 11 insertions(+), 6 deletions(-)
+ fs/buffer.c |   25 +++++++++++++------------
+ 1 files changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
-index 11d8e05..dc0a035 100644
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -77,7 +77,8 @@ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_siz
+diff --git a/fs/buffer.c b/fs/buffer.c
+index c7062c8..5e0b0d2 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -610,9 +610,15 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+  * If warn is true, then emit a warning if the page is not uptodate and has
+  * not been truncated.
+  */
+-static void __set_page_dirty(struct page *page,
++static int __set_page_dirty(struct page *page,
+ 		struct address_space *mapping, int warn)
  {
- 	unsigned long start, start_pfn;
- 	struct zone *zone;
--	int ret;
-+	int i, ret;
-+	int sections_to_remove;
- 
- 	start_pfn = base >> PAGE_SHIFT;
- 
-@@ -97,9 +98,13 @@ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_siz
- 	 * to sysfs "state" file and we can't remove sysfs entries
- 	 * while writing to it. So we have to defer it to here.
- 	 */
--	ret = __remove_pages(zone, start_pfn, memblock_size >> PAGE_SHIFT);
--	if (ret)
--		return ret;
-+	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
-+	for (i = 0; i < sections_to_remove; i++) {
-+		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
-+		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	/*
- 	 * Update memory regions for memory remove
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 5237d49..d360c5c 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -358,11 +358,11 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
- 	BUG_ON(phys_start_pfn & ~PAGE_SECTION_MASK);
- 	BUG_ON(nr_pages % PAGES_PER_SECTION);
- 
-+	release_mem_region(phys_start_pfn << PAGE_SHIFT,  nr_pages * PAGE_SIZE);
++	if (unlikely(!mapping))
++		return !TestSetPageDirty(page);
 +
- 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
- 		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
--		release_mem_region(pfn << PAGE_SHIFT,
--				   PAGES_PER_SECTION << PAGE_SHIFT);
- 		ret = __remove_section(zone, __pfn_to_section(pfn));
- 		if (ret)
- 			break;
++	if (TestSetPageDirty(page))
++		return 0;
++
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	if (page->mapping) {	/* Race with truncate? */
+ 		WARN_ON_ONCE(warn && !PageUptodate(page));
+@@ -622,6 +628,8 @@ static void __set_page_dirty(struct page *page,
+ 	}
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
++
++	return 1;
+ }
+ 
+ /*
+@@ -667,11 +675,9 @@ int __set_page_dirty_buffers(struct page *page)
+ 			bh = bh->b_this_page;
+ 		} while (bh != head);
+ 	}
+-	newly_dirty = !TestSetPageDirty(page);
++	newly_dirty = __set_page_dirty(page, mapping, 1);
+ 	spin_unlock(&mapping->private_lock);
+ 
+-	if (newly_dirty)
+-		__set_page_dirty(page, mapping, 1);
+ 	return newly_dirty;
+ }
+ EXPORT_SYMBOL(__set_page_dirty_buffers);
+@@ -1119,14 +1125,9 @@ void mark_buffer_dirty(struct buffer_head *bh)
+ 			return;
+ 	}
+ 
+-	if (!test_set_buffer_dirty(bh)) {
+-		struct page *page = bh->b_page;
+-		if (!TestSetPageDirty(page)) {
+-			struct address_space *mapping = page_mapping(page);
+-			if (mapping)
+-				__set_page_dirty(page, mapping, 0);
+-		}
+-	}
++	if (!test_set_buffer_dirty(bh))
++		__set_page_dirty(bh->b_page, page_mapping(bh->b_page), 0);
++
+ }
+ EXPORT_SYMBOL(mark_buffer_dirty);
+ 
 -- 
 1.7.1
 
