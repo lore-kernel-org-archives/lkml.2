@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab2G0Kct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:32:49 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:46568 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab2G0Kcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:32:48 -0400
-Date: Fri, 27 Jul 2012 12:32:41 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 08/13] driver core: firmware loader: fix device
- lifetime
-Message-ID: <20120727103241.GB14445@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
- <1343149213-10160-9-git-send-email-ming.lei@canonical.com>
- <20120725160425.GK11152@aftab.osrc.amd.com>
- <CACVXFVO5HHFraBXsV2S_a_KUrBg3ffyO0qqaGCjzq8Rksr9KaA@mail.gmail.com>
- <20120726122016.GD30717@aftab.osrc.amd.com>
- <CACVXFVMxUKezcR5BBv6jM0wZr8UivF7dJGe1gLNiFx=1h4U59g@mail.gmail.com>
- <20120726174617.GA9161@aftab.osrc.amd.com>
- <CACVXFVOrQg56VKv22i3ydm5Vw6o=UTzDJP6-_NUiyXbD46wNhQ@mail.gmail.com>
+	id S1753015Ab2G0Kc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:32:58 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49034 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623Ab2G0Kcz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:32:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVOrQg56VKv22i3ydm5Vw6o=UTzDJP6-_NUiyXbD46wNhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120727051054.GA30771@avionic-0098.mockup.avionic-design.de>
+References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
+	<CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
+	<20120727051054.GA30771@avionic-0098.mockup.avionic-design.de>
+Date: Fri, 27 Jul 2012 07:32:54 -0300
+Message-ID: <CAAAP30GiFLCx3H7yZK9Gp_KggZ6B0Werfd0QY9t7GNqOp1o=5Q@mail.gmail.com>
+Subject: Re: [GIT PULL] PWM subsystem for v3.6
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>,
+        Axel Lin <axel.lin@gmail.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 09:30:57AM +0800, Ming Lei wrote:
-> No, the comment above is misleading and not useless, and I think the below
-> is good:
-> 
->  *      Asynchronous variant of request_firmware() for user contexts where
->  *      it is not possible to sleep for long time or can't sleep at all, depends
+On Fri, Jul 27, 2012 at 2:10 AM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> On Thu, Jul 26, 2012 at 02:11:58PM -0700, Linus Torvalds wrote:
+>> On Thu, Jul 26, 2012 at 12:16 AM, Thierry Reding
+>> <thierry.reding@avionic-design.de> wrote:
+>> >
+>> > The new PWM subsystem aims at collecting all implementations of the
+>> > legacy PWM API and to eventually replace it completely. The subsystem
+>> > has been in development for over half a year now and many drivers have
+>> > already been converted. It has been in linux-next for a couple of weeks
+>> > and there have been no major issues so I think it is ready for inclusion
+>> > in your tree.
+>>
+>> For new subsystems like this, I really want ack's from the people who
+>> are expected to use it.
+>
+> At least the patch that adds me as the maintainer is Acked-by: Sascha
+> Hauer, who did the original work, and Arnd Bergmann who was involved in
+> the review process. Other people such as Shawn Guo and Mark Brown have
+> also been reviewing these patches and new patches have been contributed
+> by Eric Bénard, Axel Lin, Sachin Kamat, Alexandre Courbot, Alexandre
+> Pereira da Silva and Philip Avinash.
+>
+> I'm adding all of them on Cc so they can ack this (I'm assuming acking
+> this email will suffice).
 
-									depending
+I'm using this on LPC32XX.
 
->  *      on the @gfp flag passed.
-> 
-> Anyway, the original part of 'It can't be called in atomic contexts.' is wrong
-> and should be removed.
-
-I still don't like too much the "not possible to sleep for long time"
-expression.
-
-Maybe change it to "should sleep for as small periods as possible since
-it increases boot time of device drivers requesting firmware in their
-->probe() methods."
-
-This way you explain exactly why - this way people who don't know the
-code will know exactly what the comments mean and what the intention
-was.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Acked-By: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
