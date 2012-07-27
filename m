@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab2G0VDS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 17:03:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:65369 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358Ab2G0VDR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 17:03:17 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 27 Jul 2012 14:03:37 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] hwmon: (applesmc) Decode and act on
- read/write status codes
-Message-ID: <20120727210337.GA11324@roeck-us.net>
-References: <1343412766-552-1-git-send-email-rydberg@euromail.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343412766-552-1-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752172Ab2G0VVH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 17:21:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38201 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197Ab2G0VVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 17:21:04 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: matt.fleming@intel.com
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        pjones@redhat.com, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] x86, EFI: Calculate the EFI framebuffer size instead of trusting the firmware
+Date: Fri, 27 Jul 2012 17:20:49 -0400
+Message-Id: <1343424049-7460-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+Seth Forshee reported that his system was reporting that the EFI framebuffer
+stretched from 0x90010000-0xb0010000 despite the GPU's BAR only covering
+0x90000000-0x9ffffff. It's safer to calculate this value from the pixel
+stride and screen height (values we already depend on) rather than face
+potential problems with resource allocation later on.
 
-On Fri, Jul 27, 2012 at 08:12:46PM +0200, Henrik Rydberg wrote:
-> The behavior of the SMC has changed several times over the years,
-> causing read failures in the driver. It seems the problem can be
-> explained by a shift in SMC speed combined with improper action on
-> status codes.
-> 
-> We should first wait for the SMC to settle, which was the most
-> frequent response on the old slow machines. Then, if the SMC is busy,
-> we need to try again later by resending the command. This was the most
-> likely response until 2012. Now, with a shorter wait time, we are
-> again most likely to poll while the SMC is settling, and as a result
-> we see high failure rates on many old and new models.
-> 
-> With the distinction between busy and failure, we can also wait longer
-> before retrying, without sacrificing speed.  This seems to bring
-> failures down to virtually zero on all models.
-> 
-> Tested on: MBA1,1 MBA3,1 MBA5,1 MBA5,2 MBP9,2
-> 
-> Tested-by: Adam Somerville <adamsomerville@gmail.com>
-> Tested-by: Hubert Eichner <hubert.georg.eichner@gmail.com>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Tested-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ arch/x86/boot/compressed/eboot.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Applied.
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index b329312..fc7da79 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -447,7 +447,6 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 	si->lfb_width = width;
+ 	si->lfb_height = height;
+ 	si->lfb_base = fb_base;
+-	si->lfb_size = fb_size;
+ 	si->pages = 1;
+ 
+ 	if (pixel_format == PIXEL_RGB_RESERVED_8BIT_PER_COLOR) {
+@@ -495,6 +494,8 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 		si->rsvd_pos = 0;
+ 	}
+ 
++	si->lfb_size = si->lfb_linelength * si->lfb_height;
++
+ 	si->capabilities |= VIDEO_CAPABILITY_SKIP_QUIRKS;
+ 
+ free_handle:
+-- 
+1.7.10.4
 
-> ---
-> Hi Guenter,
-> 
-> It turns out the mid-2012 Macbooks need additional changes in order to
-> work reliably. Since the needed change is a great improvement also on
-> other problematic machines, it would make a lot of sense if this patch
-> could be squeezed into the merge window.
-> 
-> As I mentioned in a previous mail, backporting e70acc100 by itself is
-> not a good idea, but together with this patch it should be ok.
-> 
-I think the patches should mature a bit in mainline. We can decide in a month
-or so if we want to backport them to previous releases.
-
-Thanks,
-Guenter
