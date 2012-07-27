@@ -1,144 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab2G0KYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:24:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58083 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358Ab2G0KYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:24:03 -0400
-Date: Fri, 27 Jul 2012 11:23:56 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Larry Woodman <lwoodman@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-Message-ID: <20120727102356.GD612@suse.de>
-References: <20120720134937.GG9222@suse.de>
- <20120720141108.GH9222@suse.de>
- <20120720143635.GE12434@tiehlicka.suse.cz>
- <20120720145121.GJ9222@suse.de>
- <alpine.LSU.2.00.1207222033030.6810@eggly.anvils>
- <50118E7F.8000609@redhat.com>
- <50120FA8.20409@redhat.com>
+	id S1752639Ab2G0KYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:24:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:34883 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752319Ab2G0KYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:24:33 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
+   d="scan'208";a="5496371"
+Message-ID: <50126D8C.4030205@cn.fujitsu.com>
+Date: Fri, 27 Jul 2012 18:29:32 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50120FA8.20409@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH v5 07/19] memory-hotplug: call acpi_bus_remove() to remove
+ memory device
+References: <50126B83.3050201@cn.fujitsu.com>
+In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:25:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:25:00,
+	Serialize complete at 2012/07/27 18:25:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 11:48:56PM -0400, Larry Woodman wrote:
-> On 07/26/2012 02:37 PM, Rik van Riel wrote:
-> >On 07/23/2012 12:04 AM, Hugh Dickins wrote:
-> >
-> >>I spent hours trying to dream up a better patch, trying various
-> >>approaches.  I think I have a nice one now, what do you think?  And
-> >>more importantly, does it work?  I have not tried to test it at all,
-> >>that I'm hoping to leave to you, I'm sure you'll attack it with gusto!
-> >>
-> >>If you like it, please take it over and add your comments and signoff
-> >>and send it in.  The second part won't come up in your testing,
-> >>and could
-> >>be made a separate patch if you prefer: it's a related point that struck
-> >>me while I was playing with a different approach.
-> >>
-> >>I'm sorely tempted to leave a dangerous pair of eyes off the Cc,
-> >>but that too would be unfair.
-> >>
-> >>Subject-to-your-testing-
-> >>Signed-off-by: Hugh Dickins <hughd@google.com>
-> >
-> >This patch looks good to me.
-> >
-> >Larry, does Hugh's patch survive your testing?
-> >
-> >
->
-> Like I said earlier, no. 
+The memory device has been ejected and powoffed, so we can call
+acpi_bus_remove() to remove the memory device from acpi bus.
 
-That is a surprise. Can you try your test case on 3.4 and tell us if the
-patch fixes the problem there? I would like to rule out the possibility
-that the locking rules are slightly different in RHEL. If it hits on 3.4
-then it's also possible you are seeing a different bug, more on this later.
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ drivers/acpi/acpi_memhotplug.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-> However, I finally set up a reproducer
-> that only takes a few seconds
-> on a large system and this totally fixes the problem:
-> 
-
-The other possibility is that your reproducer case is triggering a
-different race to mine. Would it be possible to post?
-
-> -------------------------------------------------------------------------------------------------------------------------
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index c36febb..cc023b8 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2151,7 +2151,7 @@ int copy_hugetlb_page_range(struct mm_struct
-> *dst, struct mm_struct *src,
->                         goto nomem;
-> 
->                 /* If the pagetables are shared don't copy or take references */
-> -               if (dst_pte == src_pte)
-> +               if (*(unsigned long *)dst_pte == *(unsigned long *)src_pte)
->                         continue;
-> 
->                 spin_lock(&dst->page_table_lock);
-> ---------------------------------------------------------------------------------------------------------------------------
-> 
-> When we compare what the src_pte & dst_pte point to instead of their
-> addresses everything works,
-
-The dst_pte and src_pte are pointing to the PMD page though which is what
-we're meant to be checking. Your patch appears to change that to check if
-they are sharing data which is quite different. This is functionally
-similar to if you just checked VM_MAYSHARE at the start of the function
-and bailed if so. The PTEs would be populated at fault time instead.
-
-> I suspect there is a missing memory barrier somewhere ???
-> 
-
-Possibly but hard to tell whether it's barriers that are the real
-problem during fork. The copy routine is suspicious.
-
-On the barrier side - in normal PTE alloc routines there is a write
-barrier which is documented in __pte_alloc. If hugepage table sharing is
-successful, there is no similar barrier in huge_pmd_share before the PUD
-is populated. By rights, there should be a smp_wmb() before the page table
-spinlock is taken in huge_pmd_share().
-
-The lack of a write barrier leads to a possible snarls between fork()
-and fault. Take three processes, parent, child and other. Parent is
-forking to create child. Other is calling fault.
-
-Other faults
-	hugetlb_fault()->huge_pte_alloc->allocate a PMD (write barrier)
-	It is about to enter hugetlb_no_fault()
-
-Parent forks() runs at the same time
-	Child shares a page table page but NOT with the forking process (dst_pte
-	!= src_pte) and calls huge_pte_offset.
-
-As it's not reading the contents of the PMD page, there is no implicit read
-barrier to pair with the write barrier from hugetlb_fault that updates
-the PMD page and they are not serialised by the page table lock. Hard to
-see exactly where that would cause a problem though.
-
-Thing is, in this scenario I think it's possible that page table sharing
-is not correctly detected by that dst_pte == src_pte check.  dst_pte !=
-src_pte but that does not mean it's not sharing with somebody! If it's
-sharing and it falls though then it copies the src PTE even though the
-dst PTE could already be populated and updates the mapcount accordingly.
-That would be a mess in its own right.
-
-There might be two bugs here.
-
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index ed37fc2..755cc31 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -423,8 +423,9 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+ 		}
+ 
+ 		/*
+-		 * TBD: Invoke acpi_bus_remove to cleanup data structures
++		 * Invoke acpi_bus_remove() to remove memory device
+ 		 */
++		acpi_bus_remove(device, 1);
+ 
+ 		/* _EJ0 succeeded; _OST is not necessary */
+ 		return;
 -- 
-Mel Gorman
-SUSE Labs
+1.7.1
+
