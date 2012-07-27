@@ -1,63 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab2G0Hik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 03:38:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9906 "EHLO mga03.intel.com"
+	id S1752422Ab2G0Hss (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 03:48:48 -0400
+Received: from ozlabs.org ([203.10.76.45]:57165 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab2G0Hij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 03:38:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="127493775"
-Message-ID: <1343374793.1682.475.camel@rui.sh.intel.com>
-Subject: Re: How to use the generic thermal sysfs.
-From: Zhang Rui <rui.zhang@intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Wei Ni <wni@nvidia.com>, "R, Durgadoss" <durgadoss.r@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, akpm@linux-foundation.org,
-        joe@perches.com, linux-kernel@vger.kernel.org,
-        linux-tegra@ger.kernel.org, Alex Courbot <acourbot@nvidia.com>
-Date: Fri, 27 Jul 2012 15:39:53 +0800
-In-Reply-To: <20120727093037.094335eb@endymion.delvare>
-References: <1342088573.27605.101.camel@tegra-chromium-2>
-	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
-	 <1342144273.1682.237.camel@rui.sh.intel.com>
-	 <1342164616.27605.129.camel@tegra-chromium-2>
-	 <1342165278.1682.259.camel@rui.sh.intel.com>
-	 <1343295094.4042.24.camel@tegra-chromium-2>
-	 <1343352098.1682.447.camel@rui.sh.intel.com>
-	 <1343357901.4042.70.camel@tegra-chromium-2>
-	 <20120727093037.094335eb@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1751894Ab2G0Hsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 03:48:43 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: x86@kernel.org, "LKML" <linux-kernel@vger.kernel.org>
+Cc: "Paul McKenney" <paul.mckenney@us.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: [PATCH] x86: don't ever patch back to UP if we unplug cpus.
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 27 Jul 2012 17:08:07 +0930
+Message-ID: <87y5m5mz6o.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 五, 2012-07-27 at 09:30 +0200, Jean Delvare wrote:
-> On Fri, 27 Jul 2012 10:58:21 +0800, Wei Ni wrote:
-> > On Fri, 2012-07-27 at 09:21 +0800, Zhang Rui wrote:
-> > > is it possible to program the sensor at this time, in your own thermal
-> > > driver?
-> > 
-> > Since we are using the generic thermal driver lm90.c, I'm not sure if we
-> > could program these limits in the generic driver, I think it's better to
-> > have a generic interface to set the limits, so I wish to add a
-> > callback .set_limits() in the generic thermal framework.
-> 
-> I can confirm that hwmon drivers do not set limits, it is up to
-> user-space to do it if they want. So if there is a need to do so in the
-> kernel itself, a proper interface at the generic thermal framework
-> level seems appropriate.
-> 
-oh, setting limits from userspace?
-I think you can program the senor when writing the trip point?
-with this patch,
-http://marc.info/?l=linux-acpi&m=134318814620429&w=2
+Paul McKenney points out:
 
-thanks,
-rui
+ mean offline overhead is 6251/48=130.2 milliseconds.
 
+ If I remove the alternatives_smp_switch() from the offline
+ path [...] the mean offline overhead is 550/42=13.1 milliseconds
 
+Basically, we're never going to get those 120ms back, and the code is
+pretty messy.
+
+We get rid of:
+1) The "smp-alt-once" boot option.  It's actually "smp-alt-boot", the
+   documentation is wrong.  It's now the default.
+2) The skip_smp_alternatives flag used by suspend.
+3) arch_disable_nonboot_cpus_begin() and arch_disable_nonboot_cpus_end()
+   which were only used to set this one flag.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ Documentation/kernel-parameters.txt |    3 -
+ arch/x86/include/asm/alternative.h  |    4 -
+ arch/x86/kernel/alternative.c       |  104 +++++++-----------------------------
+ arch/x86/kernel/smpboot.c           |   20 ------
+ kernel/cpu.c                        |   11 ---
+ 5 files changed, 27 insertions(+), 115 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2638,9 +2638,6 @@ bytes respectively. Such letter suffixes
+ 	smart2=		[HW]
+ 			Format: <io1>[,<io2>[,...,<io8>]]
+ 
+-	smp-alt-once	[X86-32,SMP] On a hotplug CPU system, only
+-			attempt to substitute SMP alternatives once at boot.
+-
+ 	smsc-ircc2.nopnp	[HW] Don't use PNP to discover SMC devices
+ 	smsc-ircc2.ircc_cfg=	[HW] Device configuration I/O port
+ 	smsc-ircc2.ircc_sir=	[HW] SIR base I/O port
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -60,7 +60,7 @@ extern void alternatives_smp_module_add(
+ 					void *locks, void *locks_end,
+ 					void *text, void *text_end);
+ extern void alternatives_smp_module_del(struct module *mod);
+-extern void alternatives_smp_switch(int smp);
++extern void alternatives_enable_smp(void);
+ extern int alternatives_text_reserved(void *start, void *end);
+ extern bool skip_smp_alternatives;
+ #else
+@@ -68,7 +68,7 @@ static inline void alternatives_smp_modu
+ 					       void *locks, void *locks_end,
+ 					       void *text, void *text_end) {}
+ static inline void alternatives_smp_module_del(struct module *mod) {}
+-static inline void alternatives_smp_switch(int smp) {}
++static inline void alternatives_enable_smp(void) {}
+ static inline int alternatives_text_reserved(void *start, void *end)
+ {
+ 	return 0;
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -23,19 +23,6 @@
+ 
+ #define MAX_PATCH_LEN (255-1)
+ 
+-#ifdef CONFIG_HOTPLUG_CPU
+-static int smp_alt_once;
+-
+-static int __init bootonly(char *str)
+-{
+-	smp_alt_once = 1;
+-	return 1;
+-}
+-__setup("smp-alt-boot", bootonly);
+-#else
+-#define smp_alt_once 1
+-#endif
+-
+ static int __initdata_or_module debug_alternative;
+ 
+ static int __init debug_alt(char *str)
+@@ -326,9 +313,6 @@ static void alternatives_smp_unlock(cons
+ {
+ 	const s32 *poff;
+ 
+-	if (noreplace_smp)
+-		return;
+-
+ 	mutex_lock(&text_mutex);
+ 	for (poff = start; poff < end; poff++) {
+ 		u8 *ptr = (u8 *)poff + *poff;
+@@ -359,7 +343,7 @@ struct smp_alt_module {
+ };
+ static LIST_HEAD(smp_alt_modules);
+ static DEFINE_MUTEX(smp_alt);
+-static int smp_mode = 1;	/* protected by smp_alt */
++static bool uniproc_patched = false;	/* protected by smp_alt */
+ 
+ void __init_or_module alternatives_smp_module_add(struct module *mod,
+ 						  char *name,
+@@ -368,19 +352,18 @@ void __init_or_module alternatives_smp_m
+ {
+ 	struct smp_alt_module *smp;
+ 
+-	if (noreplace_smp)
+-		return;
++	mutex_lock(&smp_alt);
++	if (!uniproc_patched)
++		goto unlock;
+ 
+-	if (smp_alt_once) {
+-		if (boot_cpu_has(X86_FEATURE_UP))
+-			alternatives_smp_unlock(locks, locks_end,
+-						text, text_end);
+-		return;
+-	}
++	if (num_possible_cpus() == 1)
++		/* Don't bother remembering, we'll never have to undo it. */
++		goto smp_unlock;
+ 
+ 	smp = kzalloc(sizeof(*smp), GFP_KERNEL);
+ 	if (NULL == smp)
+-		return; /* we'll run the (safe but slow) SMP code then ... */
++		/* we'll run the (safe but slow) SMP code then ... */
++		goto unlock;
+ 
+ 	smp->mod	= mod;
+ 	smp->name	= name;
+@@ -392,11 +375,10 @@ void __init_or_module alternatives_smp_m
+ 		__func__, smp->locks, smp->locks_end,
+ 		smp->text, smp->text_end, smp->name);
+ 
+-	mutex_lock(&smp_alt);
+ 	list_add_tail(&smp->next, &smp_alt_modules);
+-	if (boot_cpu_has(X86_FEATURE_UP))
+-		alternatives_smp_unlock(smp->locks, smp->locks_end,
+-					smp->text, smp->text_end);
++smp_unlock:
++	alternatives_smp_unlock(locks, locks_end, text, text_end);
++unlock:
+ 	mutex_unlock(&smp_alt);
+ }
+ 
+@@ -404,24 +386,18 @@ void __init_or_module alternatives_smp_m
+ {
+ 	struct smp_alt_module *item;
+ 
+-	if (smp_alt_once || noreplace_smp)
+-		return;
+-
+ 	mutex_lock(&smp_alt);
+ 	list_for_each_entry(item, &smp_alt_modules, next) {
+ 		if (mod != item->mod)
+ 			continue;
+ 		list_del(&item->next);
+-		mutex_unlock(&smp_alt);
+-		DPRINTK("%s: %s\n", __func__, item->name);
+ 		kfree(item);
+-		return;
++		break;
+ 	}
+ 	mutex_unlock(&smp_alt);
+ }
+ 
+-bool skip_smp_alternatives;
+-void alternatives_smp_switch(int smp)
++void alternatives_enable_smp(void)
+ {
+ 	struct smp_alt_module *mod;
+ 
+@@ -436,34 +412,21 @@ void alternatives_smp_switch(int smp)
+ 	pr_info("lockdep: fixing up alternatives\n");
+ #endif
+ 
+-	if (noreplace_smp || smp_alt_once || skip_smp_alternatives)
+-		return;
+-	BUG_ON(!smp && (num_online_cpus() > 1));
++	/* Why bother if there are no other CPUs? */
++	BUG_ON(num_possible_cpus() == 1);
+ 
+ 	mutex_lock(&smp_alt);
+ 
+-	/*
+-	 * Avoid unnecessary switches because it forces JIT based VMs to
+-	 * throw away all cached translations, which can be quite costly.
+-	 */
+-	if (smp == smp_mode) {
+-		/* nothing */
+-	} else if (smp) {
++	if (uniproc_patched) {
+ 		pr_info("switching to SMP code\n");
++		BUG_ON(num_online_cpus() != 1);
+ 		clear_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+ 		clear_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+ 		list_for_each_entry(mod, &smp_alt_modules, next)
+ 			alternatives_smp_lock(mod->locks, mod->locks_end,
+ 					      mod->text, mod->text_end);
+-	} else {
+-		pr_info("switching to UP code\n");
+-		set_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+-		set_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+-		list_for_each_entry(mod, &smp_alt_modules, next)
+-			alternatives_smp_unlock(mod->locks, mod->locks_end,
+-						mod->text, mod->text_end);
++		uniproc_patched = false;
+ 	}
+-	smp_mode = smp;
+ 	mutex_unlock(&smp_alt);
+ }
+ 
+@@ -540,37 +503,16 @@ void __init alternative_instructions(voi
+ 
+ 	apply_alternatives(__alt_instructions, __alt_instructions_end);
+ 
+-	/* switch to patch-once-at-boottime-only mode and free the
+-	 * tables in case we know the number of CPUs will never ever
+-	 * change */
+-#ifdef CONFIG_HOTPLUG_CPU
+-	if (num_possible_cpus() < 2)
+-		smp_alt_once = 1;
+-#endif
+-
+-#ifdef CONFIG_SMP
+-	if (smp_alt_once) {
+-		if (1 == num_possible_cpus()) {
+-			pr_info("switching to UP code\n");
+-			set_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+-			set_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+-
+-			alternatives_smp_unlock(__smp_locks, __smp_locks_end,
+-						_text, _etext);
+-		}
+-	} else {
++	/* Patch to UP if other cpus not imminent. */
++	if (noreplace_smp || num_present_cpus() == 1 || setup_max_cpus <= 1) {
++		uniproc_patched = true;
+ 		alternatives_smp_module_add(NULL, "core kernel",
+ 					    __smp_locks, __smp_locks_end,
+ 					    _text, _etext);
+-
+-		/* Only switch to UP mode if we don't immediately boot others */
+-		if (num_present_cpus() == 1 || setup_max_cpus <= 1)
+-			alternatives_smp_switch(0);
+ 	}
+-#endif
+  	apply_paravirt(__parainstructions, __parainstructions_end);
+ 
+-	if (smp_alt_once)
++	if (!uniproc_patched || num_possible_cpus() == 1)
+ 		free_init_pages("SMP alternatives",
+ 				(unsigned long)__smp_locks,
+ 				(unsigned long)__smp_locks_end);
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -665,7 +665,8 @@ static int __cpuinit do_boot_cpu(int api
+ 	unsigned long boot_error = 0;
+ 	int timeout;
+ 
+-	alternatives_smp_switch(1);
++	/* Just in case we booted with a single CPU. */
++	alternatives_enable_smp();
+ 
+ 	idle->thread.sp = (unsigned long) (((struct pt_regs *)
+ 			  (THREAD_SIZE +  task_stack_page(idle))) - 1);
+@@ -1053,20 +1054,6 @@ out:
+ 	preempt_enable();
+ }
+ 
+-void arch_disable_nonboot_cpus_begin(void)
+-{
+-	/*
+-	 * Avoid the smp alternatives switch during the disable_nonboot_cpus().
+-	 * In the suspend path, we will be back in the SMP mode shortly anyways.
+-	 */
+-	skip_smp_alternatives = true;
+-}
+-
+-void arch_disable_nonboot_cpus_end(void)
+-{
+-	skip_smp_alternatives = false;
+-}
+-
+ void arch_enable_nonboot_cpus_begin(void)
+ {
+ 	set_mtrr_aps_delayed_init();
+@@ -1256,9 +1243,6 @@ void native_cpu_die(unsigned int cpu)
+ 		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+ 			if (system_state == SYSTEM_RUNNING)
+ 				pr_info("CPU %u is now offline\n", cpu);
+-
+-			if (1 == num_online_cpus())
+-				alternatives_smp_switch(0);
+ 			return;
+ 		}
+ 		msleep(100);
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -439,14 +439,6 @@ EXPORT_SYMBOL_GPL(cpu_up);
+ #ifdef CONFIG_PM_SLEEP_SMP
+ static cpumask_var_t frozen_cpus;
+ 
+-void __weak arch_disable_nonboot_cpus_begin(void)
+-{
+-}
+-
+-void __weak arch_disable_nonboot_cpus_end(void)
+-{
+-}
+-
+ int disable_nonboot_cpus(void)
+ {
+ 	int cpu, first_cpu, error = 0;
+@@ -458,7 +450,6 @@ int disable_nonboot_cpus(void)
+ 	 * with the userspace trying to use the CPU hotplug at the same time
+ 	 */
+ 	cpumask_clear(frozen_cpus);
+-	arch_disable_nonboot_cpus_begin();
+ 
+ 	printk("Disabling non-boot CPUs ...\n");
+ 	for_each_online_cpu(cpu) {
+@@ -474,8 +465,6 @@ int disable_nonboot_cpus(void)
+ 		}
+ 	}
+ 
+-	arch_disable_nonboot_cpus_end();
+-
+ 	if (!error) {
+ 		BUG_ON(num_online_cpus() > 1);
+ 		/* Make sure the CPUs won't be enabled by someone else */
