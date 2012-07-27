@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2G0UHL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 16:07:11 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:53948 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752549Ab2G0UHH (ORCPT
+	id S1752790Ab2G0UIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 16:08:20 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:40368 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab2G0UIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 16:07:07 -0400
-Date: Fri, 27 Jul 2012 13:07:07 -0700 (PDT)
-From: Andrew Stiegmann <astiegmann@vmware.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com,
-        gregkh@linuxfoundation.org
-Message-ID: <1365693798.5911635.1343419627088.JavaMail.root@vmware.com>
-In-Reply-To: <20120727195320.GA5822@merkur.ravnborg.org>
-Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
+	Fri, 27 Jul 2012 16:08:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC20 (Linux)/7.2.0_GA_2669)
+In-Reply-To: <alpine.LNX.2.00.1207271527550.11375@pobox.suse.cz>
+References: <alpine.LNX.2.00.1207210000190.21929@pobox.suse.cz>
+	<alpine.LNX.2.00.1207271527550.11375@pobox.suse.cz>
+Date: Fri, 27 Jul 2012 13:08:18 -0700
+Message-ID: <CAHtARFHgG_8hQ85r5=W0E8d4BU-HVFLw7xkOFZA+H6kvH_83Nw@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] [SCSI] mpt fusion: add support for 0x1000/0x0055
+From: adam radford <aradford@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Eric Moore <Eric.Moore@lsi.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 7/27/12, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Sat, 21 Jul 2012, Jiri Kosina wrote:
+>
+>> The device identifies itself as
+>>
+>> 0d:05.0 SCSI storage controller: LSI Logic / Symbios Logic SAS1068 PCI-X
+>> Fusion-MPT SAS (rev 01) Subsystem: NEC Corporation SAS1068
+>>
+>> and seems to be functionally compatible with 0x0054 PID.
+>>
+>> The request for support of this device has been raised on mailinglists
+>> several
+>> times in the past (see [1] [2] and more), but aparently the PCI ID never
+>> made it
+>> to mptsas_pci_table[].
+>>
+>> [1] http://comments.gmane.org/gmane.linux.scsi/63836
+>> [2] http://lkml.indiana.edu/hypermail/linux/kernel/0701.2/1715.html
+>>
+>> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>> ---
+>>
+>>
+>> I guess the "Subsystem: NEC Corporation" is telling us some rebranding
+>> story, including the PID change ... ?
+>
+> Hi guys,
+>
+> any feedback on this please?
+>
+> Thanks.
 
+NACK.
 
------ Original Message -----
-> From: "Sam Ravnborg" <sam@ravnborg.org>
-> To: "Andrew Stiegmann" <astiegmann@vmware.com>
-> Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
-> vm-crosstalk@vmware.com, cschamp@vmware.com, gregkh@linuxfoundation.org
-> Sent: Friday, July 27, 2012 12:53:20 PM
-> Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
-> 
-> > > > +
-> > > > +#define CAN_BLOCK(_f) (!((_f) & VMCI_QPFLAG_NONBLOCK))
-> > > > +#define QP_PINNED(_f) ((_f) & VMCI_QPFLAG_PINNED)
-> > > 
-> > > Looks like poor obscufation.
-> > > Use a statis inline function if you need a helper for this.
-> > 
-> > These definitions are intended more as a helper to make reading the
-> > code easier.  IMHO ts a lot easier to read
-> > 
-> > if (CAN_BLOCK(flags))
-> > 
-> > compared to
-> > 
-> > if (!(flags & VMCI_QPFLAG_NONBLOCK))
-> > 
-> > Wouldn't you agree?  I'm not sure something this simple warrants a
-> > static inline
-> > function but I don't see any harm in converting it over to that.
-> 
-> I would put it the other way around. I cannot see that such simple
-> stuff warrants a #define.
-> A static inline is (almost) always preferable to hide code in a
-> macro.
-> 
-> For once you get better type-checks.
-> And semantics are also much simpler. With a macro you can do so many
-> silly things.
+Vendor 0x1000, Device id 0x0055 is actually an old LSI MegaRAID 1068
+based software raid board.  This device was never qualified nor
+intended to be used with the mpt fusion driver.
 
-Fair enough.  I'll make them into static inline functions.
-
-> 	Sam
-> 
+-Adam
