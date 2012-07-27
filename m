@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab2G0BbB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 21:31:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38898 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab2G0BbA (ORCPT
+	id S1752745Ab2G0Bjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 21:39:46 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:51603 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab2G0Bjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 21:31:00 -0400
+	Thu, 26 Jul 2012 21:39:44 -0400
+Message-ID: <5011F15A.3060007@kernel.org>
+Date: Thu, 26 Jul 2012 21:39:38 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120726174617.GA9161@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<1343149213-10160-9-git-send-email-ming.lei@canonical.com>
-	<20120725160425.GK11152@aftab.osrc.amd.com>
-	<CACVXFVO5HHFraBXsV2S_a_KUrBg3ffyO0qqaGCjzq8Rksr9KaA@mail.gmail.com>
-	<20120726122016.GD30717@aftab.osrc.amd.com>
-	<CACVXFVMxUKezcR5BBv6jM0wZr8UivF7dJGe1gLNiFx=1h4U59g@mail.gmail.com>
-	<20120726174617.GA9161@aftab.osrc.amd.com>
-Date: Fri, 27 Jul 2012 09:30:57 +0800
-Message-ID: <CACVXFVOrQg56VKv22i3ydm5Vw6o=UTzDJP6-_NUiyXbD46wNhQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 08/13] driver core: firmware loader: fix device lifetime
-From: Ming Lei <ming.lei@canonical.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        Pavel Vasilyev <pavel@pavlinux.ru>, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH] ACPI: replace strlen("string") with sizeof("string") -1
+References: <Pine.LNX.4.44L0.1206301023540.29029-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1206301023540.29029-100000@netrider.rowland.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 1:46 AM, Borislav Petkov <bp@amd64.org> wrote:
-> On Thu, Jul 26, 2012 at 11:44:48PM +0800, Ming Lei wrote:
->> On Thu, Jul 26, 2012 at 8:20 PM, Borislav Petkov <bp@amd64.org> wrote:
->> >
->> > Ok, here's what I got from looking at the patch:
->> >
->> > Your commit message says: "Also request_firmware_nowait should be called
->> > in atomic context now, so fix the obsolete comments."
->> >
->> > Atomic context in my book means you're not allowed to sleep at all.
->>
->> In fact, I mean the function can be called in atomic context now, and
->> I know some time ago the function will create kthread to execute
->> the request_firmware, and atomic context is not allowed.
->
-> Right, but when called with GFP_KERNEL mask, it can sleep, right?
+...both give the number of chars in the string
+without the '\0', as strncmp() wants,
+but sizeof() is compile-time.
 
->
->> > But the comment says that it is possible to sleep a little. This is very
->> > wrongly formulated AFAICT.
->>
->> The function can be run in both contexts, and I don't see any words which
->> says the function will sleep.
->
-> "
-> ...
->  *      Asynchronous variant of request_firmware() for user contexts where
->  *      it is not possible to sleep for long time.
->  **/
-> "
->
-> Not possible to sleep for a long time means the function still *can*
-> sleep... even for short time. For a certain definion of "short."
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+Cc: Pavel Vasilyev <pavel@pavlinux.ru>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/sysfs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-In fact, many drivers like to use it in its probe() because too long sleep
-in probe will slow down kernel boot if driver is built in kernel. During
-kernel boot, rootfs is not mounted and user space is not ready, request_firmware
-will timeout to cause problem.
+diff --git a/drivers/acpi/sysfs.c b/drivers/acpi/sysfs.c
+index 240a244..7c3f98b 100644
+--- a/drivers/acpi/sysfs.c
++++ b/drivers/acpi/sysfs.c
+@@ -173,7 +173,7 @@ static int param_set_trace_state(const char *val,
+struct kernel_param *kp)
+ {
+ 	int result = 0;
 
-Also after introducing work in this function, it is allowed to be called in
-atomic context if 'gfp' is passed as GFP_ATOMIC, so I removed the obsolete
-comments.
+-	if (!strncmp(val, "enable", strlen("enable"))) {
++	if (!strncmp(val, "enable", sizeof("enable") - 1)) {
+ 		result = acpi_debug_trace(trace_method_name, trace_debug_level,
+ 					  trace_debug_layer, 0);
+ 		if (result)
+@@ -181,7 +181,7 @@ static int param_set_trace_state(const char *val,
+struct kernel_param *kp)
+ 		goto exit;
+ 	}
 
->
->> > But, since request_firmware_nowait receives a GFP mask as one of its
->> > arguments and some of its callers don't supply GFP_ATOMIC then this
->> > has nothing to do with atomic contexts at all. Then, you should simply
->> > explain in the comment why exactly callers aren't allowed to be sleeping
->> > for a long time. And using adjectives like "long" or "short" is very
->> > misleading in such explanations so please be more specific as to why the
->>
->> It is the original one, and I don't think it is wrong. Also it
->> shouldn't be covered
->> by this patch.
->>
->> Maybe I shouldn't have fixed the comment in this patch.
->
-> Why, simply fix the comment to adhere to what the function does. And
-> since it can sleep, maybe the easiest fix is to say simply that:
-> "function can sleep", right?
+-	if (!strncmp(val, "disable", strlen("disable"))) {
++	if (!strncmp(val, "disable", sizeof("disable") - 1)) {
+ 		int name = 0;
+ 		result = acpi_debug_trace((char *)&name, trace_debug_level,
+ 					  trace_debug_layer, 0);
+-- 
+1.7.12.rc0
 
-No, the comment above is misleading and not useless, and I think the below
-is good:
-
- *      Asynchronous variant of request_firmware() for user contexts where
- *      it is not possible to sleep for long time or can't sleep at all, depends
- *      on the @gfp flag passed.
-
-Anyway, the original part of 'It can't be called in atomic contexts.' is wrong
-and should be removed.
-
-
-Thanks,
---
-Ming Lei
