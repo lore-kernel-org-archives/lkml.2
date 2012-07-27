@@ -1,136 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab2G0Khx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:37:53 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:7766 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab2G0Khw (ORCPT
+	id S1753049Ab2G0Kiy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:38:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52002 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab2G0Kiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:37:52 -0400
-X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
-   d="scan'208";a="13732068"
-Date: Fri, 27 Jul 2012 11:36:58 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 3/4] xen/mmu: The xen_setup_kernel_pagetable doesn't need
- to return anything.
-In-Reply-To: <1343334845-5340-4-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1207271136520.26163@kaball.uk.xensource.com>
-References: <1343334845-5340-1-git-send-email-konrad.wilk@oracle.com> <1343334845-5340-4-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 27 Jul 2012 06:38:52 -0400
+Message-ID: <50126FB8.5070200@suse.cz>
+Date: Fri, 27 Jul 2012 12:38:48 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120718 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Alin M Elena <alinm.elena@gmail.com>
+CC: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: bluetooth not working since kernel 3.4.4
+References: <10337447.lD117hnr9f@abbaton.ucd.ie>
+In-Reply-To: <10337447.lD117hnr9f@abbaton.ucd.ie>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> We don't need to return the new PGD - as we do not use it.
+FWD to upstream. For him, bluetooth in 3.5 vanilla does not work:
+
+On 07/27/2012 12:02 AM, Alin M Elena wrote:
+> since updating to kernel 3.4.4 my bluetooth stopped working...
+> kde claims there is no adapter available and the same gnome...
 > 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> the device is
+> Bus 004 Device 004: ID 0a5c:4500 Broadcom Corp. BCM2046B1 USB 2.0 Hub (part of 
+> BCM2046 Bluetooth)
+> [alin@abbaton:~]: dmesg | grep bt
+> [   15.862126] usbcore: registered new interface driver btusb
+> [alin@abbaton:~]: hcitool dev
+> Devices:
+> 
+> I have updated since to the new 3.5.0 kernel and the situation is the same.
+> 
+> 
+> [alin@abbaton:~]: uname -a
+> Linux abbaton.ucd.ie 3.5.0-1-desktop #1 SMP PREEMPT Tue Jul 24 13:38:05 UTC 
+> 2012 (fb9c50b) x86_64 x86_64 x86_64 GNU/Linux
+> 
+> Anyone else seeing the same? any advice?
 
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
->  arch/x86/xen/enlighten.c |    5 +----
->  arch/x86/xen/mmu.c       |   10 ++--------
->  arch/x86/xen/xen-ops.h   |    2 +-
->  3 files changed, 4 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 9b1afa4..2b67948 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1295,7 +1295,6 @@ asmlinkage void __init xen_start_kernel(void)
->  {
->  	struct physdev_set_iopl set_iopl;
->  	int rc;
-> -	pgd_t *pgd;
->  
->  	if (!xen_start_info)
->  		return;
-> @@ -1387,8 +1386,6 @@ asmlinkage void __init xen_start_kernel(void)
->  	acpi_numa = -1;
->  #endif
->  
-> -	pgd = (pgd_t *)xen_start_info->pt_base;
-> -
->  	/* Don't do the full vcpu_info placement stuff until we have a
->  	   possible map and a non-dummy shared_info. */
->  	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-> @@ -1397,7 +1394,7 @@ asmlinkage void __init xen_start_kernel(void)
->  	early_boot_irqs_disabled = true;
->  
->  	xen_raw_console_write("mapping kernel into physical memory\n");
-> -	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
-> +	xen_setup_kernel_pagetable((pgd_t *)xen_start_info->pt_base, xen_start_info->nr_pages);
->  
->  	xen_reserve_internals();
->  	/* Allocate and initialize top and mid mfn levels for p2m structure */
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 3a73785..4ac21a4 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1719,8 +1719,7 @@ static void convert_pfn_mfn(void *v)
->   * of the physical mapping once some sort of allocator has been set
->   * up.
->   */
-> -pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
-> -					 unsigned long max_pfn)
-> +void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  {
->  	pud_t *l3;
->  	pmd_t *l2;
-> @@ -1781,8 +1780,6 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
->  
->  	memblock_reserve(__pa(xen_start_info->pt_base),
->  			 xen_start_info->nr_pt_frames * PAGE_SIZE);
-> -
-> -	return pgd;
->  }
->  #else	/* !CONFIG_X86_64 */
->  static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
-> @@ -1825,8 +1822,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
->  	pv_mmu_ops.write_cr3 = &xen_write_cr3;
->  }
->  
-> -pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
-> -					 unsigned long max_pfn)
-> +void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  {
->  	pmd_t *kernel_pmd;
->  
-> @@ -1858,8 +1854,6 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
->  
->  	memblock_reserve(__pa(xen_start_info->pt_base),
->  			 xen_start_info->nr_pt_frames * PAGE_SIZE);
-> -
-> -	return initial_page_table;
->  }
->  #endif	/* CONFIG_X86_64 */
->  
-> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-> index 202d4c1..2230f57 100644
-> --- a/arch/x86/xen/xen-ops.h
-> +++ b/arch/x86/xen/xen-ops.h
-> @@ -27,7 +27,7 @@ void xen_setup_mfn_list_list(void);
->  void xen_setup_shared_info(void);
->  void xen_build_mfn_list_list(void);
->  void xen_setup_machphys_mapping(void);
-> -pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
-> +void xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
->  void xen_reserve_top(void);
->  extern unsigned long xen_max_p2m_pfn;
->  
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+On 07/27/2012 11:33 AM, Alin M Elena wrote:
+>> What was the last working kernel?
+> 3.4.2 iirc
+>
+>> Does kernel-vanilla work? I suppose
+>> not, if you confirm that, we could discuss this with upstream...
+> just tried the last kernel-vanilla from Kerned:Head 3.5.0-2.1 and no
+bluetooth
+> adapter found..
+>
+> I forgot to mention earlier.
+>
+> rfkill list
+> 0: hci0: Bluetooth
+>         Soft blocked: no
+>         Hard blocked: no
+>
+> and I have tried the device in mac OSX and it works...
+> the machine is a mac book pro 7,1.
+
+regards,
+-- 
+js
+suse labs
