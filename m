@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab2G0TxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:53:23 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:40659 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab2G0TxW (ORCPT
+	id S1752701Ab2G0UDH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 16:03:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56568 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab2G0UDF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:53:22 -0400
-Date: Fri, 27 Jul 2012 21:53:20 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Andrew Stiegmann <astiegmann@vmware.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com,
-        gregkh@linuxfoundation.org
-Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
-Message-ID: <20120727195320.GA5822@merkur.ravnborg.org>
-References: <20120727103455.GA4639@merkur.ravnborg.org> <1693394101.5749000.1343409643934.JavaMail.root@vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1693394101.5749000.1343409643934.JavaMail.root@vmware.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 27 Jul 2012 16:03:05 -0400
+Message-ID: <1343419375.32120.48.camel@twins>
+Subject: Re: [PATCH 5/6] rbtree: faster augmented erase
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
+        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 27 Jul 2012 22:02:55 +0200
+In-Reply-To: <1342787467-5493-6-git-send-email-walken@google.com>
+References: <1342787467-5493-1-git-send-email-walken@google.com>
+	 <1342787467-5493-6-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +
-> > > +#define CAN_BLOCK(_f) (!((_f) & VMCI_QPFLAG_NONBLOCK))
-> > > +#define QP_PINNED(_f) ((_f) & VMCI_QPFLAG_PINNED)
-> > 
-> > Looks like poor obscufation.
-> > Use a statis inline function if you need a helper for this.
-> 
-> These definitions are intended more as a helper to make reading the code easier.  IMHO ts a lot easier to read
-> 
-> if (CAN_BLOCK(flags))
-> 
-> compared to 
-> 
-> if (!(flags & VMCI_QPFLAG_NONBLOCK))
-> 
-> Wouldn't you agree?  I'm not sure something this simple warrants a static inline
-> function but I don't see any harm in converting it over to that.
+On Fri, 2012-07-20 at 05:31 -0700, Michel Lespinasse wrote:
+> +static inline void
+> +rb_erase_augmented(struct rb_node *node, struct rb_root *root,
+> +                  rb_augment_propagate *augment_propagate,
+> +                  rb_augment_rotate *augment_rotate) 
 
-I would put it the other way around. I cannot see that such simple stuff warrants a #define.
-A static inline is (almost) always preferable to hide code in a macro.
+So why put all this in a static inline in a header? As it stands
+rb_erase() isn't inlined and its rather big, why would you want to
+inline it for augmented callers? 
 
-For once you get better type-checks.
-And semantics are also much simpler. With a macro you can do so many silly things.
+You could at least pull out the initial erase stuff into a separate
+function, that way the rb_erase_augmented thing would shrink to
+something like:
 
-	Sam
+rb_erase_augmented(node, root)
+{
+	struct rb_node *parent, *child;
+	bool black;
+
+	__rb_erase(node, root, &parent, &child, &black);
+	augmented_propagate(parent);
+	if (black)
+		__rb_erase_color(child, parent, root, augment_rotate);
+}
+
+
