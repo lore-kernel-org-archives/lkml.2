@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2G0E07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 00:26:59 -0400
-Received: from ozlabs.org ([203.10.76.45]:48546 "EHLO ozlabs.org"
+	id S1753383Ab2G0Eh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 00:37:27 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56467 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753007Ab2G0E06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 00:26:58 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>
-Cc: Alex Shi <alex.shi@intel.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Jim Cromie <jim.cromie@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PULL] trivial comment changes, init and cpumask.
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 27 Jul 2012 09:34:18 +0930
-Message-ID: <87ehnynk71.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751376Ab2G0Eh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 00:37:26 -0400
+Message-ID: <1343363833.2118.14.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Jul 2012 14:37:13 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c:
+Hi Linus !
 
-  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
+Here's a handful of powerpc patches, a couple of regression fixes
+for problems introduced in the main batch in this merge window,
+a couple of defconfig updates, and some trivials. The radeonfb
+one is something that was long standing in SLES which I forgot
+to pickup earlier.
+
+Cheers,
+Ben.
+
+The following changes since commit bdc0077af574800d24318b6945cf2344e8dbb050:
+
+  Merge tag 'scsi-misc' of git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi (2012-07-24 18:11:22 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git tags/cpumask-for-linus
 
-for you to fetch changes up to 231daf0751ccaf21373f591c524a3f557a15d03f:
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
-  cpumask: cpulist_parse() comments correction (2012-07-27 09:29:42 +0930)
+for you to fetch changes up to bac821a6e3404330d509fd3a245bf7701f210c7c:
 
-----------------------------------------------------------------
-Trivial comment changes to cpumask code.  I guess it's getting boring.
+  powerpc/ftrace: Trace function graph entry before updating index (2012-07-27 11:42:34 +1000)
 
 ----------------------------------------------------------------
-Alex Shi (2):
-      cpumask: add a few comments of cpumask functions
-      cpumask: cpulist_parse() comments correction
+Alexander Graf (1):
+      powerpc/kvm/bookehv: Fix build regression
 
-Jim Cromie (1):
-      init: add comments to keep initcall-names in sync with initcall levels
+Anton Blanchard (2):
+      powerpc: Enable pseries hardware RNG and crypto modules
+      powerpc: Lack of firmware flash support is not an error
 
- include/linux/cpumask.h |   15 +++++++++++++--
- include/linux/init.h    |    3 ++-
- init/main.c             |    1 +
- 3 files changed, 16 insertions(+), 3 deletions(-)
+Benjamin Herrenschmidt (1):
+      powerpc: Update g5_defconfig
+
+Steven Rostedt (1):
+      powerpc/ftrace: Trace function graph entry before updating index
+
+Stuart Yoder (1):
+      powerpc: Set stack limit properly in crit_transfer_to_handler
+
+Tony Breeds (1):
+      radeonfb: Add quirk for the graphics adapter in some JSxx
+
+ arch/powerpc/configs/g5_defconfig      |  103 ++++++++++----------------------
+ arch/powerpc/configs/ppc64_defconfig   |    6 +-
+ arch/powerpc/configs/pseries_defconfig |    6 +-
+ arch/powerpc/kernel/entry_32.S         |   12 +++-
+ arch/powerpc/kernel/ftrace.c           |   11 ++--
+ arch/powerpc/kernel/rtas_flash.c       |    2 +-
+ arch/powerpc/kvm/bookehv_interrupts.S  |   77 ++++++++++++------------
+ drivers/video/aty/radeon_monitor.c     |   35 +++++++++++
+ 8 files changed, 128 insertions(+), 124 deletions(-)
+
+
