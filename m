@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab2G0Qwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 12:52:39 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:17982 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab2G0Qwi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 12:52:38 -0400
-X-IronPort-AV: E=Sophos;i="4.77,668,1336348800"; 
-   d="scan'208";a="13739578"
-Date: Fri, 27 Jul 2012 17:51:40 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Jan Beulich <JBeulich@suse.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Tim (Xen.org)" <tim@xen.org>
-Subject: Re: [Xen-devel] [PATCH 10/24] xen: do not compile manage, balloon,
- pci, acpi and cpu_hotplug on ARM
-In-Reply-To: <501258FB0200007800090DB6@nat28.tlf.novell.com>
-Message-ID: <alpine.DEB.2.02.1207271749420.26163@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-10-git-send-email-stefano.stabellini@eu.citrix.com> <501258FB0200007800090DB6@nat28.tlf.novell.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1752647Ab2G0Qwt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 12:52:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449Ab2G0Qwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 12:52:47 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: matt.fleming@intel.com
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH V2 3/4] PCI: Add support for non-BAR ROMs
+Date: Fri, 27 Jul 2012 12:52:13 -0400
+Message-Id: <1343407934-459-3-git-send-email-mjg@redhat.com>
+In-Reply-To: <1343407934-459-1-git-send-email-mjg@redhat.com>
+References: <1343407934-459-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jul 2012, Jan Beulich wrote:
-> >>> On 26.07.12 at 17:33, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > --- a/drivers/xen/Makefile
-> > +++ b/drivers/xen/Makefile
-> > @@ -1,11 +1,15 @@
-> > -obj-y	+= grant-table.o features.o events.o manage.o balloon.o
-> > +ifneq ($(CONFIG_ARM),y)
-> > +obj-y	+= manage.o balloon.o
-> 
-> While I assume that this part (and the cpu_hotplug one below) is
-> temporary, ...
-> 
-> > +obj-$(CONFIG_XEN_DOM0)			+= pci.o acpi.o
-> 
-> ... at least this one should imo be solved with a proper long term
-> mechanism, i.e. the usual var-$(CONFIG_...) approach, i.e.
-> 
-> dom0-$(CONFIG_PCI) := pci.o
-> dom0-$(CONFIG_ACPI) := acpi.o
-> obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
+Platforms may provide their own mechanisms for obtaining ROMs. Add support
+for using data provided by the platform in that case.
 
-That's a good suggestion, thanks!
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Tested-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/pci/rom.c   |    9 ++++++++-
+ include/linux/pci.h |    2 ++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/rom.c b/drivers/pci/rom.c
+index 48ebdb2..f913ce3 100644
+--- a/drivers/pci/rom.c
++++ b/drivers/pci/rom.c
+@@ -126,6 +126,12 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
+ 		/* primary video rom always starts here */
+ 		start = (loff_t)0xC0000;
+ 		*size = 0x20000; /* cover C000:0 through E000:0 */
++	/*
++	 * Some devices may provide ROMs via a source other than the BAR
++	 */
++	} else if (pdev->rom && pdev->romlen) {
++		*size = pdev->romlen;
++		return (void __iomem *)phys_to_virt(pdev->rom);
+ 	} else {
+ 		if (res->flags &
+ 			(IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY)) {
+@@ -219,7 +225,8 @@ void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
+ 	if (res->flags & (IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY))
+ 		return;
+ 
+-	iounmap(rom);
++	if (!pdev->rom || !pdev->romlen)
++		iounmap(rom);
+ 
+ 	/* Disable again before continuing, leave enabled if pci=rom */
+ 	if (!(res->flags & (IORESOURCE_ROM_ENABLE | IORESOURCE_ROM_SHADOW)))
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 6a2625c..2668bb9 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -355,6 +355,8 @@ struct pci_dev {
+ 	};
+ 	struct pci_ats	*ats;	/* Address Translation Service */
+ #endif
++	void *rom; /* Physical pointer to ROM if it's not from the BAR */
++	size_t romlen; /* Length of ROM if it's not from the BAR */
+ };
+ 
+ static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+-- 
+1.7.10.4
+
