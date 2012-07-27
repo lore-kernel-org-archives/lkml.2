@@ -1,137 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab2G0DNC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:13:02 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64735 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab2G0DNA (ORCPT
+	id S1753283Ab2G0DO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:14:29 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42601 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab2G0DO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:13:00 -0400
+	Thu, 26 Jul 2012 23:14:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <500FE952.9030001@panasas.com>
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com>
-	<500FB1DE.1000100@redhat.com>
-	<CAKviJvVrrtyjFOzu7jmmD7cpXZcXtyQ+7HDy1G1o2_a0JRss5w@mail.gmail.com>
-	<500FE952.9030001@panasas.com>
-Date: Fri, 27 Jul 2012 11:12:58 +0800
-Message-ID: <CAKviJvV00Br4e455+_gdYyg6pdbdDqQnMC2NMTv-3ZyFgxvZ9A@mail.gmail.com>
-Subject: Re: [PATCH] scsi: virtio-scsi: Fix address translation failure of
- HighMem pages used by sg list
-From: Wang Sen <kelvin.xupt@gmail.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Wang Sen <senwang@linux.vnet.ibm.com>,
-        linux-scsi@vger.kernel.org, JBottomley@parallels.com,
-        stefanha@linux.vnet.ibm.com, mc@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <B5854411-6C9A-43BA-BF5D-FB1AD76E28D1@kernel.crashing.org>
+References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com>
+	<CADRPPNSw5Yn7EgHt5fm2vYr+zxC4T+JbsvT812u2JPKELNcA6g@mail.gmail.com>
+	<B5854411-6C9A-43BA-BF5D-FB1AD76E28D1@kernel.crashing.org>
+Date: Fri, 27 Jul 2012 11:14:27 +0800
+X-Google-Sender-Auth: -_232ccn_k67vlSeQuY3ySXZ3rI
+Message-ID: <CADRPPNRxBJX3Wgkj2aPmw8w=Ayj57CTCOkTEwBDCKwbjein1Ew@mail.gmail.com>
+Subject: Re: [PATCH v8 0/7] power management patch set
+From: Li Yang <leoli@freescale.com>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: Zhao Chenhui <chenhui.zhao@freescale.com>, scottwood@freescale.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/25 Boaz Harrosh <bharrosh@panasas.com>:
-> On 07/25/2012 02:44 PM, Sen Wang wrote:
+On Fri, Jul 27, 2012 at 1:29 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
 >
->> 2012/7/25 Paolo Bonzini <pbonzini@redhat.com>:
->>> Il 25/07/2012 10:29, Wang Sen ha scritto:
->>>> When using the commands below to write some data to a virtio-scsi LUN of the
->>>> QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
->>>>
->>>>       # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
->>>>       # sudo mount /dev/sdb /mnt
->>>>       # dd if=/dev/zero of=/mnt/file bs=1M count=1024
->>>>
->>>> In current implementation, sg_set_buf is called to add buffers to sg list which
->>>> is put into the virtqueue eventually. But there are some HighMem pages in
->>>> table->sgl can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
->>>> return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
->>>> in QEMU because an invalid GPA is passed by virtqueue.
->>>
->>> Heh, I was compiling (almost) the same patch as we speak. :)
->>
->> Uh, what a coincidence! :)
->>
->>>
->>> I've never seen QEMU crash; the VM would more likely just fail to boot
->>> with a panic.  But it's the same bug anyway.
->>
->> I never met this before. How this situation happens?
->>
->>>
->>>> My solution is using sg_set_page instead of sg_set_buf.
->>>>
->>>> I have tested the patch on my workstation. QEMU would not crash any more.
->>>>
->>>> Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
->>>> ---
->>>>  drivers/scsi/virtio_scsi.c |    3 ++-
->>>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
->>>> index 1b38431..fc5c88a 100644
->>>> --- a/drivers/scsi/virtio_scsi.c
->>>> +++ b/drivers/scsi/virtio_scsi.c
->>>> @@ -198,7 +198,8 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
->>>>       int i;
->>>>
->>>>       for_each_sg(table->sgl, sg_elem, table->nents, i)
->>>> -             sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
->>>> +             sg_set_page(&sg[idx++], sg_page(sg_elem), sg_elem->length,
->>>> +                     sg_elem->offset);
->>>
->>> This can simply be
->>>
->>>    sg[idx++] = *sg_elem;
->>>
->>
->> Yes, I saw your another E-mail. I think you're right. Simply calling
->> sg_set_page can not handle
->> the flag bits correctly. So, I'll repost the patch soon. Thank you!
->>
+> On Jul 26, 2012, at 9:02 AM, Li Yang wrote:
 >
->
-> No this code is correct, though you will need to make sure to properly
-> terminate the destination sg_list.
-
-Yes, the terminate marker in the destination list is set when initialization.
-sg_set_page would not break this marker because it saved both the two
-maker bits at sg_asign_page.
-
-Also, the allocation of destination sg list considered the total number of
-the source sg_list. So, sg_set_page can work correctly.
-
-The value assignment method also can also work correctly, because the
-termination marker in source sg_list has been set in blk_rq_map_sg(), as
-the last entry of source sg_list is just copied to the the last entry
-in destination
-list.
-
-Uh, Paolo, Boaz, have  you reached agreement on which method to use?
->
-> But since old code was using sg_set_buf(), than it means it was properly
-> terminated before, and there for this code is good as is please don't
-> touch it.
->
-> Thanks
-> Boaz
->
->>> Can you repost it with this change, and also add stable@vger.kernel.org
->>> to the Cc?  Thanks very much!
+>> On Fri, Jul 20, 2012 at 8:42 PM, Zhao Chenhui
+>> <chenhui.zhao@freescale.com> wrote:
+>>> Changes for v8:
+>>> * Separated the cpu hotplug patch into three patches, as follows
+>>> [PATCH v8 1/7] powerpc/smp: use a struct epapr_spin_table to replace macros
+>>> [PATCH v8 2/7] powerpc/smp: add generic_set_cpu_up() to set cpu_state as CPU_UP_PREPARE
+>>> [PATCH v8 4/7] powerpc/85xx: add HOTPLUG_CPU support
 >>>
->>> Paolo
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> * Replaced magic numbers with macros in "[PATCH 5/7] powerpc/85xx: add sleep and deep sleep support"
+>>>
+>>> * no change to the rest of the patch set
 >>
+>> Hi Kumar,
 >>
->>
+>> How about picking about this series for 3.6?  The review seems to
+>> settle down for this revision.
 >
+> Its too late for 3.6, but will look at queuing it up for 3.7.
 
+Too late?  The latest version were submitted on Jul 20 and you are
+still picking up other patches today.  :)  I do think the patches have
+been floating around for too long time to wait for another release
+cycle.  If there are problems, we can work on addressing them in
+follow up patches.
 
-
--- 
-------------------------------------------
-Wang Sen
-Addr: XUPT,Xi'an,Shaanxi,China
-Email: kelvin.xupt@gmail.com
-------------------------------------------
+Leo
