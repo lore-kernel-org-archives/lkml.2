@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab2G0OGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 10:06:16 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:41056
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752383Ab2G0OF7 (ORCPT
+	id S1752146Ab2G0OGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 10:06:19 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:47866
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752386Ab2G0OGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 10:05:59 -0400
+	Fri, 27 Jul 2012 10:06:01 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -10
-X-BigFish: VS-10(zzzz1202hzz15d4R8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1202hzz8275ch8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
 From: <sandeep@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <galak@kernel.crashing.org>, <linux-kernel@vger.kernel.org>,
         <devel@driverdev.osuosl.org>, Sandeep Singh <Sandeep@freescale.com>
-Subject: [1/3][PATCH][v2] Adding documentation for TDM
-Date: Fri, 27 Jul 2012 19:35:39 +0530
-Message-ID: <1343397940-12975-2-git-send-email-sandeep@freescale.com>
+Subject: [3/3][PATCH][v2] Added TDM device support and Freescale Starlite driver 
+Date: Fri, 27 Jul 2012 19:35:40 +0530
+Message-ID: <1343397940-12975-3-git-send-email-sandeep@freescale.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+In-Reply-To: <1343397940-12975-2-git-send-email-sandeep@freescale.com>
 References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+ <1343397940-12975-2-git-send-email-sandeep@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -29,395 +30,1301 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sandeep Singh <Sandeep@freescale.com>
 
- tdm-summary.txt contains general description about TDM.
- tdm-framework.txt contains specific description of TDM framework.
+Freescale TDM controller consists of a TDM module supporting 128 channels
+running at up to 50 Mbps with 8-bit and 16-bit word size. The TDM bus connects
+gluelessly to most T1/E1 frames as well as to common buses such as the H.110,
+SCAS, and MVIP. TDM also supports an I2S mode. The TDM module operates in
+independent or shared mode when receiving or transmitting data.
+
+This controller is available on MPC8315, P1010, P1020, P1022 and P1024 Freescale SOCs.
+
+The driver registers itself with the TDM Framework & provides TDM functionality to the client modules.
+
+In its present form this driver supports only channelised mode.
 
 Signed-off-by: Sandeep Singh <Sandeep@freescale.com>
 Signed-off-by: Poonam Aggrwal <poonam.aggrwal@freescale.com>
 ---
-Changes since v1:
-	Incorporated Laight's comments.
-	-Removed reference to unused config.
 
- Documentation/tdm/tdm-framework.txt |  258 +++++++++++++++++++++++++++++++++++
- Documentation/tdm/tdm-summary.txt   |  103 ++++++++++++++
- 2 files changed, 361 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/tdm/tdm-framework.txt
- create mode 100644 Documentation/tdm/tdm-summary.txt
+Based on: git://git.am.freescale.net/gitolite/mirrors/galak-powerpc.git
+Branch: master
+Checkpatch: passed
 
-diff --git a/Documentation/tdm/tdm-framework.txt b/Documentation/tdm/tdm-framework.txt
+First patch version was RFC
+
+Changes from RFC:
+	- Enabling Tx FIFO for TDM
+	- Removed unused variables.
+	- PMUXCR has been removed as it is taken care by u-boot
+
+	Incorporated Timur's comments:
+	- Improved Copyright statement.
+	- Removed unused function.
+	- Introduced read after each write to register
+	- Used spin_event_timeout for polling
+	- Removed unused spinlock
+	- Moved all macros and structures from header file to tdm_fsl.c
+	- Rectified cosmetic problems.
+
+ drivers/tdm/Kconfig          |    3 -
+ drivers/tdm/Makefile         |    2 +-
+ drivers/tdm/device/Kconfig   |   15 +
+ drivers/tdm/device/Makefile  |    9 +
+ drivers/tdm/device/tdm_fsl.c | 1186 ++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 1211 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/tdm/device/Kconfig
+ create mode 100644 drivers/tdm/device/Makefile
+ create mode 100644 drivers/tdm/device/tdm_fsl.c
+
+diff --git a/drivers/tdm/Kconfig b/drivers/tdm/Kconfig
+index 0b0fda8..69b8987 100644
+--- a/drivers/tdm/Kconfig
++++ b/drivers/tdm/Kconfig
+@@ -13,6 +13,3 @@ menuconfig TDM
+ 	  This TDM support can also be built as a module.  If so, the module
+ 	  will be called tdm-core.
+ 
+-if TDM
+-
+-endif # TDM
+diff --git a/drivers/tdm/Makefile b/drivers/tdm/Makefile
+index 84e2cb9..a605b3d 100644
+--- a/drivers/tdm/Makefile
++++ b/drivers/tdm/Makefile
+@@ -2,4 +2,4 @@
+ # Makefile for the TDM core.
+ #
+ 
+-obj-$(CONFIG_TDM)		+= tdm-core.o
++obj-$(CONFIG_TDM)		+= tdm-core.o device/
+diff --git a/drivers/tdm/device/Kconfig b/drivers/tdm/device/Kconfig
 new file mode 100644
-index 0000000..f96189a
+index 0000000..9fd1b06
 --- /dev/null
-+++ b/Documentation/tdm/tdm-framework.txt
-@@ -0,0 +1,258 @@
-+This document gives an overview of TDM framework and its interface with low
-+level drivers and upper level users/clients.
++++ b/drivers/tdm/device/Kconfig
+@@ -0,0 +1,15 @@
++#
++# TDM device configuration
++#
 +
-+Terminology:
-+============
-+1. TDM: Time Division Multiplexing.
-+2. TDM channel: The channel is the smallest entity on which all the TDM read/
-+   write operations will occur. Technically each channel maps to a set of
-+   consecutive time slots on the physical TDM frame. The channels will be
-+   dynamically created and destroyed using tdm_open_channel and
-+   tdm_close_channel.
-+3. TDM adapter or Adapter: Refers to an instance of TDM controller/device on
-+   the system.
-+4. TDM frame: Is a set of TDM channels which is transmitted sequentially over
-+   time. The frame start is identified by a frame sync signal that is briefly
-+   asserted at the beginning of each frame.
++menu "TDM Device support"
 +
-+X----------TDM Frame 0-------------X------TDM Frame 1-----------------X
-+|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
-+| 0  | 1  | 2  | 3  | 4  | ...|  n |  0 | 1  |  2 |  3 | 4  | ...| n  |...
-+|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
-+<---->				   <---->
-+ch 0				   ch 0
-+
-+4. TDM client: Application/driver which registers with TDM framework to use TDM
-+   device.
-+5. TDM port: It can be seen as a virtual device exposed to a client. At a time
-+   TDM port can work in one of the follwing configurations:
-+   full/fractional/E1/T1/raw.
-+
-+TDM modes
-+========
-+A TDM device can operate in one of the following modes:
-+1. Single port full mode - Single user/no interleaving
-+2. Single port channelised mode (raw, E1, T1)- many users using different
-+   channels
-+3. Single port fractional mode -
-+4. Multi port mode - multiple users using different ports in different
-+   configurations.
-+
-+All the above configurations differ in number of TDM client they support,
-+number of TDM channels and number of TDM ports.
-+
-+Currently we are supporting only single port channelised mode. Hence all the
-+explanations below refer to channelised mode of TDM. This framework can be
-+easily extended to support other modes.
-+
-+Single port Channelised Mode
-+==============================
-+In single port channelised mode there can be only one port and each channel
-+can have only one time slot.The number of active channels can be less than
-+the maximum supported channels/slots.
-+
-+X----------TDM Frame 0-------------X------TDM Frame 1-----------------X
-+|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
-+| 0  | 1  | 2  | 3  | 4  | ...|  n |  0 | 1  |  2 |  3 | 4  | ...| n  |...
-+|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
-+<----><--->				   <---->
-+ch 0	ch1			   ch 0
-+client0 client1
-+
-+TDM Subsystem Overview
-+========================
-+
-+	 |-----------------------|
-+	 |user mode TDM clients  |
-+	 |-----------------------|
-+		||
-+-------------------------------------------------------------------
-+  tdm-dev.c     ||
-+		||
-+	        ||                    	     |------------------------|
-+	    client register            	     | kernel mode TDM clients|
-+	        ||                     	     |------------------------|
-+	        ||					||
-+	        || 					||
-+		||		  		client register
-+		||					||
-+		\/		   		        \/
-+      ______________________________________________________________
-+      |                 					   |
-+      |                 client interface                           |
-+      |------------------------------------------------------------|
-+      |             TDM Subsystem Framework         	           |
-+      |                   (tdm-core.c)                             |
-+      |                                                            |
-+      | ->buffer handling                                          |
-+      | ->interleaving/de-interleaving                             |
-+      |                                                            |
-+      |------------------------------------------------------------|
-+      |    TDM interface                  Line control interface   |
-+      |____________________________________________________________|
-+          /\                                       /\
-+          ||                                       ||
-+    device register                          device register
-+          ||                                       ||
-+          ||                                       ||
-+
-+     fsl_tdm.c                 ucc_tdm.c         slic_zarlink.c framer.c
-+--------------------------------------------------------------------------
-+_______________________    _____________________  ________    ________
-+|		      |	   |		       |  |	 |    |      |
-+|[h/w] TDM controller |    |UCC TDM controller |  | SLIC |    |Framer|
-+|_____________________|    |___________________|  |______|    |______|
-+
-+
-+
-+TDM Adapter Registration:
-+=========================
-+All the TDM adapter drivers will get registered as platform drivers to Linux.
-+For every instance of the TDM adapter the relevant driver will be probed.
-+As part of probe the driver will
-+1. Do the basic initialization in terms of memory allocation for various
-+   driver specific data structures, interrupts registration, etc.
-+2. Initialize the TDM adapter and configure it in default configuration.
-+   like operating mode, number of channels, channel type, etc.
-+3. Add the TDM adapter to the TDM Framework via tdm_add_adapter() API.
-+   As a result TDM framework will add this adapter to it's queue of
-+   available adapters. As part of this adapter registration TDM framework
-+   is also supplied a list of access algorithms for the particular TDM
-+   adapter.
-+4. Notifies the clients
-+
-+TDM Client Registration:
-+========================
-+Every TDM client gets itself registered with the TDM framework layer as
-+a TDM driver using the API tdm_add_driver(). As part of this the TDM client
-+supplies to the TDM framework the adapter with which it wants to hook and
-+the function pointers of attach and detach functions which must be called
-+as soon as the requested adapter is available.
-+
-+As a result the TDM framework keeps association of TDM adapters and TDM
-+client drivers.
-+As soon as this association gets established a tasklet is created for the
-+adapter which is handled by tdm_data_tasklet_fn. The primary function of
-+this tasklet acts as an interface to transfer the TDM data between the
-+TDM adapter and the TDM client drivers.
-+
-+
-+Currently TDM adaper can only be used in the default configuration.
-+ie the configuration cannot be modified by TDM clients. This will
-+be enhanced in future.
-+
-+Data handling:
-+==============
-+Some basic assumptions about data handling:
-+
-+1. As per standard voice rate of 8Khz or 8192Hz. Which means 8192 samples must
-+be sent every second. So if there are multiple clients sending voice data
-+over TDM interface the rate should be such that the individual samples
-+sent by them must be transmitted at 8Kz.
-+
-+This is defined in the driver as
-+
-+	#define CH_1_MS_FRAMES		8
-+
-+2. Number of milliseconds at which TDM Rx interrupts occur
-+This is basically the time for which the TDM data is sent in one Tx or Rx
-+cycle of TDM controller hardware. In one DMA we send the data for 10ms.
-+This gives enough time so that no buffer overflow or under-run occurs for
-+transmit and receive respectively.
-+
-+	#define NUM_MS                  10
-+
-+3. TDM has programmable slot length (8 bits or 16 bits). It can be configured
-+depending on the type of sample. For example the sample could be 16 bit linear
-+or 8bit u-law encoded etc. Presently only word length of 16 is supported
-+which is the default configuration.
-+
-+4. Number of channels means the total number of channels per TDM port.
-+For example for E1 mode it will be 24, for T1 it will be 32, etc.
-+There can also be raw mode, where the use case is not E1 or T1.
-+Here the number of channels can be any number as per the use case.
-+
-+The whole framework follows a triple buffer approach to make sure that TDM data
-+is played continuously at the desired rate.
-+
-+Buffers Involved:
-+=================
-+
-+1.TDM driver or device buffers:
-+These buffers are the device level buffers. They contain the TDM data which is
-+transmitted/received on the TDM physical signals. As such these buffers must
-+be allocated from driver layer so that all the hardware requirements are met.
-+As an optimized design to remove extra memcopies, the client can pass the data
-+in the same buffers. But this is only true for full mode of TDM. Where the
-+user data can be straightaway passed to the hardware for transmission.
-+Although in other cases memcopy cannot be avoided, because the framework layer
-+will have to interleave the individual channels data to create the TDM frame
-+data buffer.For channelised mode size of this buffer will be governed by:
-+
-+-	number of channels
-+- 	number of slots per channel
-+-	number of bytes per slot
-+- 	number of frames per ms
-+-	number of ms
-+
-+For a channelised mode with single port the size of the device level buffer
-+will be:
-+
-+channels * slots per channel * bytes per slot * frames per ms *
-+number of ms channels * NUM_BYTES_PER_SLOT * NUM_MS * CH_1_MS_FRAMES
-+
-+There will be 3 such buffers.
-+
-+2.Channel level buffers:
-+In case the TDM device is configured for multiport/multichannel the Framework
-+layer needs to maintain the data for each channel. Hence for each channel
-+opened a Buffer Descriptor ring of 3 BDs(see note below) is allocated both for
-+transmit and receive. The client reads from/writes to the buffers pointed by
-+these BD rings.
-+
-+The framework layer maintains a Data Process Tasklet per TDM device which is
-+scheduled from every Rx interrupt. The interrupt handling periodicity is
-+governed by the TDM data buffer size configured in the above section. The data
-+tasklet when scheduled, will do Rx and Tx processing to copy the data from/to
-+the channel specific interleaved buffers. The TDM controller will DMA the
-+data which is copied in the interleaved buffers or device level buffers.
-+
-+TDM framework provides the port level APIs and channel level APIs to the TDM
-+client drivers to send and receive the respective data on different TDM slots.
-+
-+
-+num of buffers = 3
-+
-+TDM client1           	TDM Client2
-+
-+buf0------->buf1	buf0------->buf1
-+^            |		^            |
-+|            V		|            V
-+----buf2------		------buf2----
-+     |				|
-+     |				|
-+     |				|
-+     V				V
-+-----------------------------------------
-+|					|
-+|    	 DATA Tasklet			|
-+|					|
-+-----------------------------------------
-+		|
-+		|
-+		V
-+-----------------------------------------
-+|    	 TDM buffer interleaved * 3	|
-+-----------------------------------------
-+
-+
-+Not Implemented/Future work:
-+============================
-+1. TDM client will use the default configuration which is done at init time
-+   and is not configurable. In future this should be made configurable as per
-+   the needs of client.
-+2. The TDM framework still needs to be enhanced to configure the ports and
-+   their attributes. Currently only single port channelised mode is supported.
-+3. Line control interface is not available in the framework presently.
-+   Presently it offer very minimal kind of interface.
-+4. SLIC interface will be enhanced as per Zarlink Open source APIs in future.
-diff --git a/Documentation/tdm/tdm-summary.txt b/Documentation/tdm/tdm-summary.txt
++config TDM_FSL
++        tristate "Driver for Freescale TDM controller"
++        depends on FSL_SOC
++        ---help---
++          This is a driver for Freescale TDM controller. The controller
++          is found in various Freescale SOCs viz MPC8315, P1020. The TDM driver
++          basically multiplexes and demultiplexes data from different channels.
++          The TDM can interface SLIC kind of devices.
++endmenu
+diff --git a/drivers/tdm/device/Makefile b/drivers/tdm/device/Makefile
 new file mode 100644
-index 0000000..f010f76
+index 0000000..4156d7f
 --- /dev/null
-+++ b/Documentation/tdm/tdm-summary.txt
-@@ -0,0 +1,103 @@
-+Time Division Multiplexing (TDM)
-+=================================
++++ b/drivers/tdm/device/Makefile
+@@ -0,0 +1,9 @@
++#
++# Makefile for the TDM device drivers.
++#
 +
-+TDM is a type of digital or analog multiplexing in which two or more bit
-+streams or signals are transferred apparently simultaneously as sub-channels
-+in one communication channel, but are physically taking turns on the channel.
++obj-y	+= tdm_fsl.o
 +
-+The time domain is divided into several recurrent timeslots of fixed duration.
-+These timeslot are grouped together to form a channel. A sample byte or data
-+block of channel 1 is transmitted during timeslots allocated to channel 1,
-+channel 2 during timeslot for channel 2, etc.
++#ifeq ($(CONFIG_TDM_DEBUG_BUS),y)
++#EXTRA_CFLAGS += -DDEBUG
++#endif
+diff --git a/drivers/tdm/device/tdm_fsl.c b/drivers/tdm/device/tdm_fsl.c
+new file mode 100644
+index 0000000..040b0ea
+--- /dev/null
++++ b/drivers/tdm/device/tdm_fsl.c
+@@ -0,0 +1,1186 @@
++/*
++ * Copyright 2007-2012 Freescale Semiconductor, Inc, All rights reserved.
++ *
++ * TDM driver for Freescale TDM controller.
++ * This driver can interface with SLIC device to run VOIP kind of
++ * applications.
++ *
++ * Author: P. V. Suresh <pala@freescale.com>
++ *	Hemant Agrawal <hemant@freescale.com>
++ *	Rajesh Gumasta <rajesh.gumasta@freescale.com>
++ *
++ * Modifier: Sandeep Kr. Singh <sandeep@freescale.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the  GNU General Public License along
++ * with this program; if not, write  to the Free Software Foundation, Inc.,
++ * 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
 +
-+One TDM frame consists of multiple channels. After the last channel the cycle
-+starts all over again with a new frame, starting with the second sample, byte
-+or data block from channel 1, and so on.
++/*
++ * Note that this is a complete rewrite of P.V. Suresh's driver code.
++ * But we have used so much of his original code and ideas that it seems
++ * only fair to recognize him as co-author -- Rajesh & Hemant
++ */
 +
-+X----------TDM Frame 0-------------X------TDM Frame 1-----------------X
-+|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
-+| 0  | 1  | 2  | 3  | 4  | ...|  n |  0 | 1  |  2 |  3 | 4  | ...| n  |...
-+|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
-+<---->				   <---->
-+channel 0			   channel 0
-+-------------------------------------------------------------------->
-+         Increasing Time
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/of_platform.h>
++#include <linux/io.h>
++#include <linux/tdm.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/dma-mapping.h>
++#include <linux/spinlock.h>
++#include <sysdev/fsl_soc.h>
 +
-+Physical TDM interface
-+=======================
++#define DRV_DESC "Freescale TDM Driver Adapter"
++#define DRV_NAME "fsl_tdm"
 +
-+Physically TDM interface is a serial full duplex interface designed to
-+communicate with variety of serial devices like industry standard framers,
-+codecs, other DSPs, and microprocessors. It is typically used to transfer
-+samples in a periodic manner. The TDM consists of independent transmitter and
-+receiver sections with independent clock generation and frame synchronization.
++/* TDM data register offset */
++#define TDM_TDR_OFFSET 0x108
++#define TDM_RDR_OFFSET 0x100
++#define TDM_DATAREG_OFFSET 0x100
++#define TDM_CLKREG_OFFSET 0x180
 +
-+External TDM signals are:
-+1. TDM_TCK: TDM Transmit clock
-+2. TDM_RCK: TDM Receive clock
-+3. TDM_TFS: TDM Tx frame sync to identify frame boundary
-+4. TDM_RFS: TDM Rx Frame sync to identify frame boundary
-+5. TDM_TD: TDM Tx data
-+6. TDM_RD: TDM Rx data
++/* TCD params */
++#define SOFF_VAL	0x08
++#define DOFF_VAL	0x08
++#define NBYTES		0x08 /*Minor Bytes transfer count*/
++#define SLAST		0x00 /* last source addr adjustment*/
++#define SLAST_SGA	0x00
++#define DLAST_SGA	0x00
 +
-+TDM is generally used to simultaneously transmit periodic data for multiple
-+users. Common use cases would be to carry voice for various telephone
-+subscribers in the telephone networks. It is widely used to carry telephonic
-+data of various industry standards like E1/T1 data, etc.
++/* RIR Params*/
++#define RIR_RFSD_VAL	0x01
++#define RIR_RFWM_VAL	0x00
 +
-+T1 Details
-+==========
-+T1 frame consists of 24 channels of 8 bits each plus one frame alignment bit.
-+So a T1 frame has a total of 24x8 + 1 = 193 bits. Since each T1 frame contains
-+one byte of voice data for each of 24 channels and the system needs to maintain
-+a data rate of 8000 samples/sec. This would require 8000 frames/sec to be sent,
-+yielding a data rate of 8000x193 bit/sec = 1.544 Mbps.
++/* TIR Params*/
++#define TIR_RFSD_VAL	0x01
++#define TIR_RFWM_VAL	0x00
 +
-+E1 Details
-+===========
-+E1 frame consists of 32 channels each of 8 bits. Thus having a total frame
-+length of 32x8 = 256 bits. Similar to the case of T1 it has to maintain a data
-+rate of 8000 frames/sec. Thus having a data rate of 8000 x 256 bits/sec =
-+2.048 Mbps.
-+
-+TDM use cases
-+=============
-+
-+With SLIC kind of devices
-+=========================
-+SLIC stands for Subscriber Line Interface Card.
-+Typically TDM systems consist of TDM controller and a line control device.
-+
-+The TDM controller interfaces to the line control device through TDM interface
-+which is digital TDM multiplexed data.
-+
-+The Line controller has the functionality to interface with the TDM controller
-+at one end and interface with the analog units at the other. For example if the
-+line control device is a SLIC kind of device.
-+The typical setup would be:
-+
-+|------------------|
-+|		   |
-+|		   | /-------\  |---------|
-+|   TDM controller |/   TDM   \ |  SLIC   |<--------> s-ch0 analog phone 1
-+|		   |\   data  / |         |<--------> s-ch1 analog phone 2
-+|		   | \-------/  |---------|<--------> s-ch2 analog phone 3
-+|		   |<----digital---->     <analog>
-+|------------------|
++/* TDMTCEN */
++#define NUM_TDMTCEN_REG		0x04
++#define TDMTCEN_REG_LEN		32
 +
 +
++#define DMAC_TX_INT 1
++#define DMAC_RX_INT 2
 +
-+Another use case (VoIP):
-+========================
++/* DMA GPOR */
++#define DMAGPOR_SNOOP	0x00000040	/* Enable Snooping */
 +
-+                             Voice packets on network
-+     |--------|     |------|      _________      |------|     |------|
-+>----|        |/---\|  TDM |     (         )     | TDM  |/---\|      |----->
-+<----| SLIC   |\---/|      |     ( n/w     )     |      |\---/| SLIC |-----<
-+>----|        |     |------|      ---------      |------|     |      |----->
-+     |--------|      mux                          demux       |------|
++/* DMA Control Register (DMACR) */
++#define DMACR_EMLM	0x00000080	/* Enable Minor loop Mapping */
++#define DMACR_CLM	0x00000040	/* Continuous link mode */
++#define DMACR_HALT	0x00000020	/* Halt DMA */
++#define DMACR_HOE	0x00000010	/* Halt on Error */
++#define DMACR_ERGA	0x00000008	/* Round robin among the groups */
++#define DMACR_ERCA	0x00000004	/* Round robin Port Arbitration */
++#define DMACR_EDBG	0x00000002	/* Debug */
++#define DMACR_EBW	0x00000001	/* Enable Buffer */
 +
-+In the above figure analog phones are connected to the hosts via SLICs.
-+The voice spoken on the phones is multiplexed converted into VoIP packets
-+and sent over network. At the rendering end the multiplexed data
-+is de-multiplexed and sent to respective listeners via SLIC.
++/* DMA Error Status DMAES */
++#define DMAES_VLD	0x80000000	/* Logical OR of all DMA errors. */
++#define DMAES_ECX	0x00010000	/* Transfer cancelled */
++#define DMAES_GPE	0x00008000	/* Group priority error */
++#define DMAES_CPE	0x00004000	/* Channel priority error */
++/* errored/cancelled channel */
++#define DMAES_ERRCHN(errch)	(((errch) & 0x1F00) >> 8)
++#define DMAES_SAE	0x00000080	/* Source address error */
++#define DMAES_SOE	0x00000040	/* Source offset error */
++#define DMAES_DAE	0x00000020	/* Destination address error */
++#define DMAES_DOE	0x00000010	/* Destination offset error */
++#define DMAES_NCE	0x00000008	/* Nbytes citer error */
++#define DMAES_SGE	0x00000004	/* Scatter gather error */
++#define DMAES_SBE	0x00000002	/* Source bus error */
++#define DMAES_DBE	0x00000001	/* Destination bus error */
++
++/* DMA Enable Request (DMAERQH, DMAERQL) Enable/disable device
++	request for the channel */
++#define DMA_SET_ENABLE_REQUEST(regs, ch)	out_8(((regs)->dmasreq), ch)
++#define DMA_CLEAR_ENABLE_REQUEST(regs, ch)	out_8(((regs)->dmacerq), ch)
++
++/* DMA Enable Error Interrupt (DMAEEIH, DMAEEIL) Enable/disable
++	error interrupt for the channel */
++#define DMA_SET_ENABLE_ERROR_INT(regs, ch)	out_8(((regs)->dmaseei), ch)
++#define DMA_CLEAR_ENABLE_ERROR_INT(regs, ch)	out_8(((regs)->dmaceei), ch)
++
++/*   Clear interrupt/error for the channel */
++#define DMA_CLEAR_INTT_REQUEST(regs, ch)	out_8(((regs)->dmacint), ch)
++#define DMA_CLEAR_ERROR(regs, ch)	out_8(((regs)->dmacerr), ch)
++
++/* Clear done bit for the channel */
++#define DMA_CLEAR_DONE_BIT(regs, ch)	out_8(((regs)->dmacdne), ch)
++/* Set start bit for the channel */
++#define DMA_SET_START_BIT(regs, ch)	out_8(((regs)->dmassrt), ch)
++
++#define TDMTX_DMA_CH	0	/* TDM Tx uses DMA channel 0 HardWired */
++#define TDMRX_DMA_CH	1	/* TDM Rx uses DMA channel 1 Hardwired */
++#define TCD_SIZE 64	/* 64 byte buffer for TCD */
++
++/* Source address modulo */
++#define DMA_TCD1_SMOD(smod)   (((smod) & 0x1F) << 27)
++/* Source data transfer size */
++#define DMA_TCD1_SSIZE(ssize) (((ssize) & 0x7) << 24)
++
++/* Destination address modulo */
++#define DMA_TCD1_DMOD(dmod)   (((dmod) & 0x1F) << 19)
++/* data transfer size  */
++#define DMA_TCD1_DSIZE(dsize) (((dsize) & 0x7) << 16)
++
++/* Source address signed offset */
++#define DMA_TCD1_SOFF(soff)   ((soff) & 0xFFFF)
++
++/* Enable link to another channel on minor iteration completion. */
++#define DMA_TCD5_E_MINOR_LINK 0x80000000
++/* Link to this channel. */
++#define DMA_TCD5_LINK_CH(ch) (((ch) & 0x3F) << 25)
++/* Current iteration count when linking disnabled */
++#define DMA_TCD5_CITER_DISABLE_LINK(citer) (((citer) & 0x7FFF) << 16)
++/* Current iteration count when linking enabled */
++#define DMA_TCD5_CITER_ENABLE_LINK(citer) (((citer) & 0x00FF) << 16)
++/*  Destination address signed offset */
++#define DMA_TCD5_DOFF(doff) ((doff) & 0xFFFF)
++
++/* Beginning iteration count when linking disabled */
++#define DMA_TCD7_BITER_DISABLE_LINK(citer) (((citer) & 0x7FFF) << 16)
++/* Beginning iteration count when linking enabled */
++#define DMA_TCD7_BITER_ENABLE_LINK(citer) (((citer) & 0x00FF) << 16)
++#define DMA_TCD7_BWC(bw) (((bw)&0x3)<<14)	/* BandWidth Control. */
++/* Link channel number */
++#define DMA_TCD7_LINKCH(ch)   (((ch) & 0x1F) << 8)
++#define DMA_TCD7_DONE		0x00000080	/* Channel done  */
++#define DMA_TCD7_ACTIVE		0x00000040	/* Channel active */
++#define DMA_TCD7_E_MAJOR_LINK	0x00000020	/* channel to channel linking */
++#define DMA_TCD7_E_SG		0x00000010	/* Enable scatter gather */
++#define DMA_TCD7_D_REQ		0x00000008	/* Disable request */
++/* interrupt on half major counter */
++#define DMA_TCD7_INT_HALF	0x00000004
++#define DMA_TCD7_INT_MAJ	0x00000002	/* interrupt on major counter */
++#define DMA_TCD7_START		0x00000001	/* Channel start */
++
++/* Source data transfer size */
++#define SSIZE_08BITS		0x00
++#define SSIZE_16BITS		0x01
++#define SSIZE_32BITS		0x02
++#define SSIZE_64BITS		0x03
++
++/* max number of TDM-DMA channels */
++#define DMA_MAX_CHANNELS 4
++
++/* each DMA-ch contains 8 Transfer Control Discriptors  */
++#define MAX_TCD_WORD 8
++
++/* TDMGIR  General Interface Register */
++#define GIR_LPBK	0x00000004	/* loopback mode */
++#define GIR_CTS		0x00000002	/* Common TDM signals */
++#define GIR_RTS		0x00000001	/* Rx & Tx sharing */
++
++/* TDMRIR Recieve Interface Rgister */
++#define RIR_RFWM_MASK	0x00000003	/* Recieve FIFO Watermark */
++#define RIR_RFWM_SHIFT	16
++#define RIR_RFWM(x)     ((x & RIR_RFWM_MASK) << RIR_RFWM_SHIFT)
++#define RIR_RFEN	0x00008000	/* Recieve FIFO Enable */
++#define RIR_RWEN	0x00004000	/* Recieve Wide FIFO Enable */
++#define RIR_RDMA	0x00000040	/* Recieve DMA Enable */
++#define RIR_RFSD_SHIFT	0x00000004	/* Recieve Frame Sync Delay */
++#define RIR_RFSD_MASK	0x00000003
++#define RIR_RFSD(x)	((x & RIR_RFSD_MASK) << RIR_RFSD_SHIFT)
++#define RIR_RSO		0x00002000	/* Recieve sync Out */
++#define RIR_RSL		0x00000800	/* Recieve sync Out Length */
++#define RIR_RSOE	0x00000400	/* Recieve sync Out Edge */
++#define RIR_RCOE	0x00000200	/* Recieve Clock Output Enable */
++#define RIR_RSA		0x00000008	/* Recieve Sync Active */
++#define RIR_RDE		0x00000004	/* Recieve Data Edge */
++#define RIR_RFSE	0x00000002	/* Recieve Frame Sync Edge */
++#define RIR_RRDO	0x00000001	/* Revieve Reversed Data Order */
++
++/* TDMTIR  Transmit Interface Rgister */
++#define TIR_TFWM_MASK	0x00000003	/* Transmit FIFO Watermark */
++#define TIR_TFWM_SHIFT	16
++#define TIR_TFWM(x)	((x & TIR_TFWM_MASK) << TIR_TFWM_SHIFT)
++#define TIR_TFEN	0x00008000	/* Transmit FIFO Enable */
++#define TIR_TWEN	0x00004000	/* Transmit Wide FIFO Enable */
++#define TIR_TDMA	0x00000040	/* Transmit DMA Enable */
++#define TIR_TFSD_SHIFT	0x00000004	/* Transmit Frame Sync Delay */
++#define TIR_TFSD_MASK	0x00000003
++#define TIR_TFSD(x)	((x & TIR_TFSD_MASK) << TIR_TFSD_SHIFT)
++#define TIR_TSO		0x00002000	/* Transmit Sync Output */
++#define TIR_TSL		0x00000800	/* Transmit sync Out Length */
++#define TIR_TSOE	0x00000400	/* Transmit sync Out Edge */
++#define TIR_TCOE	0x00000200	/* Transmit Clock Output Enable */
++#define TIR_TSA		0x00000008	/* Transmit Sync Active */
++#define TIR_TDE		0x00000004	/* Transmit Data Edge */
++#define TIR_TFSE	0x00000002	/* Transmit Frame Sync Edge */
++#define TIR_TRDO	0x00000001	/* Transmit Reversed Data Order */
++
++/*TDMRFP  Revieve Frame Parameters */
++#define RFP_RNCF_SHIFT	0x00000010	/* Number of Channels in TDM Frame */
++#define RFP_RNCF_MASK	0x000000FF
++#define RFP_RNCF(x)	(((x - 1) & RFP_RNCF_MASK) << RFP_RNCF_SHIFT)
++#define RFP_RCS_SHIFT	0x00000004	/* Recieve Channel Size */
++#define RFP_RCS_MASK	0x00000003
++#define RFP_RCS(x)	((x & RFP_RCS_MASK) << RFP_RCS_SHIFT)
++#define RFP_RT1		0x00000002	/* Recieve T1 Frame */
++
++/*TDMTFP Transmit Frame Parameters */
++#define TFP_TNCF_SHIFT	0x00000010	/* Number of Channels in TDM Frame */
++#define TFP_TNCF_MASK	0x000000FF
++#define TFP_TNCF(x)	(((x - 1) & TFP_TNCF_MASK) << TFP_TNCF_SHIFT)
++#define TFP_TCS_SHIFT	0x00000004	/* Transmit Channel Size */
++#define TFP_TCS_MASK	0x00000003
++#define TFP_TCS(x)	((x & RFP_RCS_MASK) << RFP_RCS_SHIFT)
++#define TFP_TT1		0x00000002	/* Transmit T1 Frame */
++
++
++/* TDMRCR  Recieve Control Register */
++#define RCR_REN		0x00000001	/* Recieve Enable */
++/* TDMTCR  Transmit Control Register */
++#define TCR_TEN		0x00000001	/* Transmit Enable */
++
++/* TDMRIER receive interrupt enable register */
++#define RIER_RCEUE	0x00000100	/* Channel Enable Update Enable */
++#define RIER_RLCEE	0x00000080	/* Recieve Last Channel Event Enable */
++#define RIER_RFSEE	0x00000040	/* Recieve Frame Sync Event Enable */
++#define RIER_RFFEE	0x00000020	/* Recieve FIFO Full Event Enable */
++#define RIER_RDREE	0x00000010	/* Recieve Data Ready Event Enable */
++#define RIER_RSEEE	0x00000008	/* Recieve Sync Error Event Enable */
++#define RIER_ROEE	0x00000004	/* Recieve Overrun Event Enable */
++
++/* TDMTIER  transmit interrupt enable register */
++#define TIER_TCEUE	0x00000100	/* Channel Enable Update Enable */
++#define TIER_TLCEE	0x00000080	/* Transmit Last Channel Event */
++#define TIER_TFSEE	0x00000040	/* Transmit Frame Sync Event Enable */
++#define TIER_TFFEE	0x00000020	/* Transmit FIFO Full Event Enable */
++#define TIER_TDREE	0x00000010	/* Transmit Data Ready Event Enable */
++#define TIER_TSEEE	0x00000008	/* Transmit Sync Error Event Enable */
++#define TIER_TUEE	0x00000004	/* Transmit Overrun Event Enable */
++
++/* TDMRER  Recieve Event Register */
++#define RER_RCEU	0x00000100	/* Recieve Channel Enable Update */
++#define RER_RLCE	0x00000080	/* Recieve Last Channel Event */
++#define RER_RFSE	0x00000040	/* Recieve Frame Sync Event */
++#define RER_RFFE	0x00000020	/* Recieve FIFO Full Event */
++#define RER_RDRE	0x00000010	/* Recieve Data Ready Event */
++#define RER_RSEE	0x00000008	/* Recieve Sync Error Event */
++#define RER_ROE		0x00000004	/* Recieve Overrun Event */
++
++/* TDMTER  Transmit Event Register */
++#define TER_TCEU	0x00000100	/* Transmit Channel Enable Update */
++#define TER_TLCE	0x00000080	/* Transmit Last Channel Event */
++#define TER_TFSE	0x00000040	/* Transmit Frame Sync Event */
++#define TER_TFEE	0x00000020	/* Transmit FIFO Full Event */
++#define TER_TDRE	0x00000010	/* Transmit Data Ready Event */
++#define TER_TSEE	0x00000008	/* Transmit Sync Error Event */
++#define TER_TUE		0x00000004	/* Transmit Overrun Event */
++
++/* TDMRSR  Recieve Status Register */
++#define RSR_RFCNT	0x00000038	/* Recieve FIFO counter */
++#define RSSS_MASK	0x00000003	/* Recieve SYNC Status */
++#define RSR_RSSS_SHIFT  1
++#define RSR_RSSS(sss)	(((sss) >> (RSR_RSSS_SHIFT)) & (RSR_RSSS_MASK))
++#define RSR_RENS	0x00000001	/* Recieve Enable Status */
++
++/* TDMTSR  Transmit Status Register */
++#define TSR_TFCNT	0x00000038	/* Transmit FIFO counter */
++#define TSR_TSSS_MASK	0x00000003	/* Transmit SYNC Status */
++#define TSR_TSSS_SHIFT	1
++#define TSR_TSSS(sss)	(((sss) >> (TSR_TSSS_SHIFT)) & TSR_TSSS_MASK)
++#define TSR_TENS	0x00000001	/* Transmit Enable Status */
++
++
++/* channel parameters   */
++#define TDM_ENABLE_TIMEOUT	1000	/* time out for TDM rx, tx enable */
++#define NUM_OF_TDM_BUF		3	/* Number of tdm buffers for startlite
++					   DMA */
++#define ALIGNED_2_BYTES		0x02	/* 2-bytes alignment */
++#define ALIGNED_4_BYTES		0x04	/* 4-bytes alignment */
++#define ALIGNED_8_BYTES		0x08	/* 8-bytes alignment */
++#define ALIGNED_16_BYTES	0x10	/* 16-bytes alignment */
++#define ALIGNED_32_BYTES	0x20	/* 32-bytes alignment */
++#define ALIGNED_64_BYTES	0x40	/* 64-bytes alignment */
++
++static int tdmen = 1;
++
++module_param(tdmen, int, S_IRUSR);
++MODULE_PARM_DESC(tdmen, "Enable TDM: Enable=1, Disable=0(default)");
++
++/* DMAC TCD structure */
++struct tcd {
++	u32 tcd[MAX_TCD_WORD];
++};
++
++/* DMA Controllor */
++struct dmac_regs {
++	u32 dmacr;		/* DMA Control Register			*/
++	u32 dmaes;		/* DMA Error Status Register		*/
++	u32 dmaerqh;		/* DMA Enable Request			*/
++	u32 dmaerql;		/* DMA Enable Request			*/
++	u32 dmaeeih;		/* DMA Enable Error Interrupt		*/
++	u32 dmaeeil;		/* DMA Enable Error Interrupt		*/
++
++	u8 dmaserq;		/* DMA Set Enable Request		*/
++	u8 dmacerq;		/* DMA Clear Enable Request		*/
++	u8 dmaseei;		/* DMA Set Enable Error Interrupt	*/
++	u8 dmaceei;		/* DMA Clear Enable Error Interrupt	*/
++
++	u8 dmacint;		/* DMA Clear Interrupt Request		*/
++	u8 dmacerr;		/* DMA Clear Error			*/
++	u8 dmassrt;		/* DMA Set Start Bit			*/
++	u8 dmacdne;		/* DMA Clear Done Bit			*/
++
++	u32 dmainth;		/* DMA Interrupt Request High		*/
++	u32 dmaintl;		/* DMA Interrupt Request		*/
++	u32 dmaerrh;		/* DMA Error				*/
++	u32 dmaerrl;		/* DMA Error				*/
++	u32 dmahrsh;		/* DMA Hardware Request status		*/
++	u32 dmahrsl;		/* DMA HardWired Request status		*/
++	u32 dmagpor;		/* DMA General Purpose Register		*/
++	u8 reserved0[0xC4];
++	u8 dchpri[DMA_MAX_CHANNELS];	/* DMA Port Priority		*/
++	u8 reserved1[0xEFC];
++	struct tcd tcd[DMA_MAX_CHANNELS];	/*Transfer Control Descriptor */
++};
++
++/* TDM  Control Registers. */
++struct tdm_regs {
++	u32 gir;		/*  General Interface Register  */
++	u32 rir;		/*  Receive Interface Register  */
++	u32 tir;		/*  Transmit Interface Register */
++	u32 rfp;		/*  Receive Frame Parameters    */
++	u32 tfp;		/*  Transmit Frame Parameters   */
++	u8 reserved0[0xC];
++	u32 rcen[4];		/*  Recieve Channel Enabled     */
++	u8 reserved1[0x10];
++	u32 tcen[4];		/*  Transmit Channel Enabled    */
++	u8 reservedd2[0x10];
++	u32 tcma[4];		/*  Transmit Channel Mask       */
++	u8 reservederved3[0x10];
++	u32 rcr;		/*  Receiver Control Register           */
++	u32 tcr;		/*  Transmitter Control Register        */
++	u32 rier;		/*  Receive Interrupt Enable Register   */
++	u32 tier;		/*  Transmit Interrupt Enable Register  */
++	u8 reserved4[0x10];
++	u32 rer;		/*  Receive Event Register              */
++	u32 ter;		/*  Transmit Event Register             */
++	u32 rsr;		/*  Receive Status Register             */
++	u32 tsr;		/*  Transmit Status Register            */
++};
++
++struct tdm_data {
++	u64 rdr;		/* Receive Data Register */
++	u64 tdr;		/* Transmit Dataa Register */
++};
++
++struct tdm_clock {
++	u32 rx;			/* Transmit Dataa Register */
++	u32 tx;			/* Receive Data Register */
++};
++
++
++struct tdm_priv {
++	struct tdm_regs __iomem *tdm_regs;
++	struct tdm_data __iomem *data_regs;
++	struct dmac_regs __iomem *dmac_regs;
++	struct tdm_clock __iomem *clk_regs;
++	u32 ptdm_base;
++	u8 *tdm_input_data;
++	u8 *tdm_output_data;
++	dma_addr_t dma_input_paddr;	/* dma mapped buffer for TDM Rx */
++	dma_addr_t dma_output_paddr;	/* dma mapped buffer for TDM Tx */
++	void *dma_input_vaddr;
++	void *dma_output_vaddr;
++	u32 phase_rx;
++	u32 phase_tx;
++	struct tcd *dma_rx_tcd[NUM_OF_TDM_BUF];
++	struct tcd *dma_tx_tcd[NUM_OF_TDM_BUF];
++	dma_addr_t dma_rx_tcd_paddr;
++	dma_addr_t dma_tx_tcd_paddr;
++	void *dma_rx_tcd_vaddr;
++	void *dma_tx_tcd_vaddr;
++	u32 tdm_buffer_size;
++	u32 tdm_err_intr;
++	u32 dmac_err_intr;
++	u32 dmac_done_intr;
++	int tdm_active;
++	struct device *device;
++	spinlock_t tdmlock;
++	struct tdm_adapter *adap;
++};
++
++/* Extend a given size to make it alignable */
++static inline int ALIGNABLE_SIZE(u32 size, u32 alignment)
++{
++	return size + alignment - 1;
++}
++
++/* Align a given address */
++static inline void *ALIGN_ADDRESS(void *address, u32 alignment)
++{
++	return (void *)(((unsigned long) address + alignment - 1) &
++			(~(alignment - 1)));
++}
++
++/* Size of the buffer */
++static inline int TDM_1BUF_SIZE(u32 num_ch, u32 channel_size, u32 frame_size)
++{
++	return frame_size *
++		ALIGN(channel_size * num_ch, ALIGNED_8_BYTES);
++}
++
++/* Alignable size of the 3 buffers */
++static inline int TDM_3BUF_SIZE(u32 num_ch, u32 channel_size, u32 frame_size)
++{
++	return
++	    ALIGNABLE_SIZE((TDM_1BUF_SIZE(num_ch, channel_size, frame_size) *
++			    NUM_OF_TDM_BUF), ALIGNED_8_BYTES);
++}
++
++
++
++/* Initialize the Tx Transmit Control Descriptor parameters*/
++static void tx_tcd_init(struct tdm_priv *priv)
++{
++	int i;
++	u32 iter;
++	u32 offset;
++	dma_addr_t physaddr;
++	struct tdm_adapter *adap;
++	int bytes_in_fifo_per_frame;
++	adap = priv->adap;
++
++	if (!adap) {
++		dev_err(priv->device, "%s:Invalid handle\n", __func__);
++		return;
++	}
++	bytes_in_fifo_per_frame =
++		ALIGN(adap->adapt_cfg.num_ch * adap->adapt_cfg.slot_width, 8);
++
++	iter = (bytes_in_fifo_per_frame / NBYTES) * adap->adapt_cfg.num_frames;
++
++	for (i = 0; i < NUM_OF_TDM_BUF; i++) {
++		offset = i * adap->adapt_cfg.num_frames *
++			bytes_in_fifo_per_frame;
++		/* TCD word 0: source addr */
++		priv->dma_tx_tcd[i]->tcd[0] = (u32)priv->dma_output_paddr
++			+ offset;
++
++		/* TCD word 1: ssize=dsize=64bit, soff=8, smod=dmod=0 */
++		priv->dma_tx_tcd[i]->tcd[1] =
++			DMA_TCD1_SOFF(SOFF_VAL) | DMA_TCD1_SSIZE(SSIZE_64BITS) |
++			DMA_TCD1_DSIZE(SSIZE_64BITS);
++
++		/*
++		 * TCD word 2: number of bytes for minor loop, wide fifo
++		 *  8 bytes for dma
++		 */
++		priv->dma_tx_tcd[i]->tcd[2] = NBYTES;
++
++		/* TCD word 3: last source addr adjustment = 0 */
++		priv->dma_tx_tcd[i]->tcd[3] = SLAST;
++
++		/* TCD word 4: destination addr */
++		priv->dma_tx_tcd[i]->tcd[4] = TDM_TDR_OFFSET + priv->ptdm_base;
++
++		/*
++		 * channel to channel linking is disabled ,
++		 * destination offset is inc destination adr by 8,
++		 * current iteration(citer) = number of transfers for frame
++		 */
++		/* TCD word 5: citer count, dest addr offset */
++		priv->dma_tx_tcd[i]->tcd[5] = DMA_TCD5_CITER_DISABLE_LINK(iter);
++
++		/* TCD word 6: enable scater gather, interrupt on 1 Frame, */
++		priv->dma_tx_tcd[i]->tcd[6] = SLAST_SGA;
++
++		/*
++		 * TCD word 7: begining major iteration count(biter),
++		 * channel control/status
++		 */
++		priv->dma_tx_tcd[i]->tcd[7] =
++			DMA_TCD7_BITER_DISABLE_LINK(iter) | DMA_TCD7_E_SG;
++	}
++
++	/* Linking the TCDs togather for SG operation */
++	physaddr = priv->dma_tx_tcd_paddr;
++	priv->dma_tx_tcd[2]->tcd[6] = ALIGN(physaddr, ALIGNED_32_BYTES);
++	physaddr += TCD_SIZE;
++	priv->dma_tx_tcd[0]->tcd[6] = ALIGN(physaddr, ALIGNED_32_BYTES);
++	physaddr += TCD_SIZE;
++	priv->dma_tx_tcd[1]->tcd[6] = ALIGN(physaddr, ALIGNED_32_BYTES);
++}
++
++/* Initialize the Rx Transmit Control Discriptor parameters */
++static void rx_tcd_init(struct tdm_priv *priv)
++{
++	int i;
++	u32 iter;
++	u32 offset;
++	dma_addr_t physaddr;
++	struct tdm_adapter *adap;
++	int bytes_in_fifo_per_frame;
++	adap = priv->adap;
++	bytes_in_fifo_per_frame =
++		ALIGN(adap->adapt_cfg.num_ch * adap->adapt_cfg.slot_width, 8);
++
++	iter = (bytes_in_fifo_per_frame / NBYTES) * adap->adapt_cfg.num_frames;
++
++	for (i = 0; i < NUM_OF_TDM_BUF; i++) {
++		/* TCD word 0: source addr */
++		priv->dma_rx_tcd[i]->tcd[0] = TDM_RDR_OFFSET + priv->ptdm_base;
++
++		/* TCD word 1: ssize=dsize=64bit, soff=smod=dmod=0 */
++		priv->dma_rx_tcd[i]->tcd[1] =
++			DMA_TCD1_SSIZE(SSIZE_64BITS) |
++			DMA_TCD1_DSIZE(SSIZE_64BITS);
++
++		/*
++		 * TCD word 2: number of bytes for minor loop,
++		 * wide fifo 8 bytes for dma
++		 */
++		priv->dma_rx_tcd[i]->tcd[2] = NBYTES;
++
++		/* TCD word 3: last source addr adjustment = 0 */
++		priv->dma_rx_tcd[i]->tcd[3] = SLAST;
++
++		offset = i * adap->adapt_cfg.num_frames *
++			bytes_in_fifo_per_frame;
++
++		/* TCD word 4: destination addr */
++		priv->dma_rx_tcd[i]->tcd[4] = (u32)priv->dma_input_paddr
++			+ offset;
++
++		/*
++		 * channel to channel linking is disabled ,
++		 * destination offset is inc destination adr by 8,
++		 * current iteration(citer) = number of transfers for frame
++		 */
++		/* TCD word 5: citer count, dest addr offset */
++		priv->dma_rx_tcd[i]->tcd[5] =
++			DMA_TCD5_DOFF(DOFF_VAL) |
++			DMA_TCD5_CITER_DISABLE_LINK(iter);
++
++		/* TCD word 6: enable scater gather, interrupt on 1 Frame, */
++		priv->dma_rx_tcd[i]->tcd[6] = DLAST_SGA;
++
++		/*
++		 * TCD word 7: begining major iteration count(biter),
++		 * channel control/status
++		 */
++		priv->dma_rx_tcd[i]->tcd[7] =
++			DMA_TCD7_BITER_DISABLE_LINK(iter) | DMA_TCD7_E_SG |
++			DMA_TCD7_INT_MAJ;
++	}
++
++	/* Next TCD for SG operation */
++	physaddr = priv->dma_rx_tcd_paddr;
++	priv->dma_rx_tcd[2]->tcd[6] = ALIGN(physaddr, ALIGNED_32_BYTES);
++	physaddr += TCD_SIZE;
++	priv->dma_rx_tcd[0]->tcd[6] = ALIGN(physaddr, ALIGNED_32_BYTES);
++	physaddr += TCD_SIZE;
++	priv->dma_rx_tcd[1]->tcd[6] = ALIGN(physaddr, ALIGNED_32_BYTES);
++}
++
++static irqreturn_t dmac_done_isr(int irq, void *p)
++{
++	u32 ch;
++	int ret = IRQ_NONE;
++	struct tdm_priv *priv;
++
++	priv = p;
++
++	ch = in_be32(&priv->dmac_regs->dmaintl);
++
++	/* clear interrupt */
++	if (ch & DMAC_RX_INT) {
++		out_8(&priv->dmac_regs->dmacint, TDMRX_DMA_CH);
++		ret = IRQ_HANDLED;
++		/* track phases for Rx/Tx */
++		priv->phase_rx += 1;
++		if (priv->phase_rx == NUM_OF_TDM_BUF)
++			priv->phase_rx = 0;
++	}
++	if (ch & DMAC_TX_INT) {
++		out_8(&priv->dmac_regs->dmacint, TDMTX_DMA_CH);
++		ret = IRQ_HANDLED;
++	}
++
++	if (ret == IRQ_HANDLED) {
++		/* set the flag and wake up the thread */
++		priv->adap->tdm_rx_flag = 1;
++
++		/* schedule the tasklet */
++		if (priv->adap->tasklet_conf)
++			tasklet_schedule(&priv->adap->tdm_data_tasklet);
++	}
++	return ret;
++}
++
++static int init_tdm(struct tdm_priv *priv)
++{
++	u8 *buf;
++	int i;
++	int buf_size;
++	dma_addr_t physaddr = 0;
++	int ret = 0;
++	struct tdm_adapter *adap;
++
++
++	adap = priv->adap;
++
++	/*
++	 * Allocate memory for Rx/Tx buffer according to active time slots
++	 * BufferSize = NUM_OF_TDM_BUF * NUM_SAMPLES_PER_FRAME * slot_width *
++	 * num_ch
++	 */
++	/*Allocating Rx Buffer*/
++	buf_size = TDM_3BUF_SIZE(adap->adapt_cfg.num_ch,
++			adap->adapt_cfg.slot_width,
++			adap->adapt_cfg.num_frames);
++	buf = dma_alloc_coherent(priv->device, buf_size, &physaddr, GFP_KERNEL);
++	if (!buf) {
++		ret = -ENOMEM;
++		goto err_alloc_ip;
++	}
++	priv->dma_input_paddr = physaddr;
++	priv->dma_input_vaddr = buf;
++	priv->tdm_input_data = ALIGN_ADDRESS(buf, ALIGNED_8_BYTES);
++
++	buf = dma_alloc_coherent(priv->device, buf_size, &physaddr, GFP_KERNEL);
++	if (!buf) {
++		ret = -ENOMEM;
++		goto err_alloc_op;
++	}
++	priv->dma_output_paddr = physaddr;
++	priv->dma_output_vaddr = buf;
++	priv->tdm_output_data = ALIGN_ADDRESS(buf, ALIGNED_8_BYTES);
++
++	/* allocate memory for TCD buffer descriptors */
++	buf = dma_alloc_coherent(priv->device, NUM_OF_TDM_BUF * TCD_SIZE,
++			&physaddr, GFP_KERNEL);
++	if (!buf) {
++		ret = -ENOMEM;
++		goto err_alloc_rx;
++	}
++
++	memset(buf, 0, NUM_OF_TDM_BUF * TCD_SIZE);
++	priv->dma_rx_tcd_paddr = physaddr;
++	priv->dma_rx_tcd_vaddr = buf;
++	for (i = 0; i < NUM_OF_TDM_BUF; i++) {
++		priv->dma_rx_tcd[i] = ALIGN_ADDRESS(buf, ALIGNED_32_BYTES);
++		buf += TCD_SIZE;
++	}
++
++	buf = dma_alloc_coherent(priv->device, 3 * TCD_SIZE, &physaddr,
++			GFP_KERNEL);
++	if (!buf) {
++		ret = -ENOMEM;
++		goto err_alloc_tx;
++	}
++	memset(buf, 0, NUM_OF_TDM_BUF * TCD_SIZE);
++	priv->dma_tx_tcd_paddr = physaddr;
++	priv->dma_tx_tcd_vaddr = buf;
++	for (i = 0; i < NUM_OF_TDM_BUF; i++) {
++		priv->dma_tx_tcd[i] = ALIGN_ADDRESS(buf, ALIGNED_32_BYTES);
++		buf += TCD_SIZE;
++	}
++
++	priv->phase_rx = 0;
++	priv->phase_tx = 0;
++	return 0;
++
++err_alloc_tx:
++	dma_free_coherent(priv->device, NUM_OF_TDM_BUF * TCD_SIZE,
++			priv->dma_rx_tcd_vaddr, priv->dma_rx_tcd_paddr);
++err_alloc_rx:
++	dma_free_coherent(priv->device, buf_size, priv->dma_output_vaddr,
++			priv->dma_output_paddr);
++err_alloc_op:
++	dma_free_coherent(priv->device, buf_size, priv->dma_input_vaddr,
++			priv->dma_input_paddr);
++err_alloc_ip:
++	return ret;
++}
++
++/* TDM register programming */
++static int tdm_fsl_reg_init(struct tdm_priv *priv)
++{
++	int i;
++	int ch_size_type;
++	struct tdm_adapter *adap;
++
++	if (!priv) {
++		pr_err("%s: Invalid handle\n", __func__);
++		return -EINVAL;
++	}
++	adap = priv->adap;
++
++	/* channel/group round robin */
++	out_be32(&priv->dmac_regs->dmacr, DMACR_ERGA | DMACR_ERCA);
++	/* Enable error Interrupts for TDM Rx &Tx */
++	out_8(&priv->dmac_regs->dmaseei, TDMTX_DMA_CH);
++	in_8(&priv->dmac_regs->dmaseei);
++	out_8(&priv->dmac_regs->dmaseei, TDMRX_DMA_CH);
++	in_8(&priv->dmac_regs->dmaseei);
++	out_be32(&priv->dmac_regs->dmagpor, DMAGPOR_SNOOP);
++
++	tx_tcd_init(priv);
++	rx_tcd_init(priv);
++
++	/* TDM RD->TD loopback, Share T/R Fsync,Clock */
++	if (adap->adapt_cfg.loopback)
++		out_be32(&priv->tdm_regs->gir, GIR_LPBK | GIR_RTS);
++	else
++		out_be32(&priv->tdm_regs->gir, GIR_RTS);
++
++	/*
++	 *  Rx Water mark 0,  FIFO enable,  Wide fifo, DMA enable for RX,
++	 *  Receive Sync out, syncwidth = ch width, Rx clk out,zero sync,
++	 *  falling edge , data order
++	 */
++
++	out_be32(&priv->tdm_regs->rir,
++			RIR_RFWM(RIR_RFWM_VAL) | RIR_RFEN | RIR_RWEN |
++			RIR_RDMA | RIR_RSL | RIR_RSO | RIR_RCOE | RIR_RRDO |
++			RIR_RFSD(RIR_RFSD_VAL));
++	out_be32(&priv->tdm_regs->tir,
++			TIR_TFWM(TIR_RFWM_VAL) | TIR_TFEN | TIR_TWEN |
++			TIR_TDMA | TIR_TSL | TIR_TSO | TIR_TRDO |
++			TIR_TFSD(TIR_RFSD_VAL));
++
++	/* no of channels ,Channel size-coading */
++	switch (adap->adapt_cfg.ch_size_type) {
++	case CHANNEL_8BIT_LIN:
++		ch_size_type = CHANNEL_8BIT_LIN;
++		break;
++	case CHANNEL_8BIT_ULAW:
++		ch_size_type = CHANNEL_8BIT_ULAW;
++		break;
++	case CHANNEL_8BIT_ALAW:
++		ch_size_type = CHANNEL_8BIT_ALAW;
++		break;
++	case CHANNEL_16BIT_LIN:
++		ch_size_type = CHANNEL_16BIT_LIN;
++		break;
++	default:
++		dev_err(priv->device, "%s:Invalid channel size_type\n"
++				"Setting channel to default size: 16 bits",
++				__func__);
++		ch_size_type = CHANNEL_16BIT_LIN;
++	}
++	out_be32(&priv->tdm_regs->rfp,
++			RFP_RNCF(adap->adapt_cfg.num_ch) |
++			RFP_RCS(ch_size_type));
++	out_be32(&priv->tdm_regs->tfp,
++			TFP_TNCF(adap->adapt_cfg.num_ch) |
++			TFP_TCS(ch_size_type));
++
++	out_be32(&priv->tdm_regs->rier, 0);
++	out_be32(&priv->tdm_regs->tier, 0);
++
++	/* clear all receive and transmit chs */
++	for (i = 0; i < 4; i++) {
++		out_be32(&priv->tdm_regs->tcma[i], 0);
++		out_be32(&priv->tdm_regs->tcen[i], 0);
++		out_be32(&priv->tdm_regs->rcen[i], 0);
++	}
++
++	return 0;
++
++}
++
++static void tdm_fsl_stop(struct tdm_priv *priv)
++{
++	/* stop the Tx & Rx */
++	out_be32(&priv->tdm_regs->tcr, 0);
++	out_be32(&priv->tdm_regs->rcr, 0);
++
++	/* Clear DMA error Enable Request DMAEEIH/L */
++	out_8(&priv->dmac_regs->dmaceei, TDMTX_DMA_CH);
++	in_8(&priv->dmac_regs->dmaceei);
++	out_8(&priv->dmac_regs->dmaceei, TDMRX_DMA_CH);
++	in_8(&priv->dmac_regs->dmaceei);
++	out_8(&priv->dmac_regs->dmacint, TDMRX_DMA_CH);
++	in_8(&priv->dmac_regs->dmacint);
++	out_8(&priv->dmac_regs->dmacint, TDMTX_DMA_CH);
++	in_8(&priv->dmac_regs->dmacint);
++
++	/* disable the dma request */
++	out_8(&priv->dmac_regs->dmacerq, TDMRX_DMA_CH);
++	in_8(&priv->dmac_regs->dmacerq);
++	out_8(&priv->dmac_regs->dmacerq, TDMTX_DMA_CH);
++}
++
++static int tdm_fsl_disable(struct tdm_adapter *adap)
++{
++	struct tdm_priv *priv;
++
++	priv = adap->data;
++	if (priv->tdm_active == 0) {
++		dev_warn(priv->device, "already Disabled");
++		return 0;
++	}
++
++	spin_lock(&priv->tdmlock);
++	priv->tdm_active = 0;
++	spin_unlock(&priv->tdmlock);
++
++	return 0;
++}
++
++static int tdm_fsl_enable(struct tdm_adapter *adap)
++{
++	int i;
++	u32 ch_enab[NUM_TDMTCEN_REG] = {0};
++	unsigned long timeout;
++	struct tdm_priv *priv;
++	u32 ph;
++
++	priv = adap->data;
++	ph = priv->phase_tx;
++
++	if (priv->tdm_active == 1) {
++		dev_warn(priv->device, "already Enabled");
++		return 0;
++	}
++
++	/* enable the Channels required 0 to number of ch -1 */
++	for (i = 0; i < adap->adapt_cfg.num_ch; i++)
++		ch_enab[i / TDMTCEN_REG_LEN] |= (1 << (i & 0x1F));
++
++	for (i = 0; i < NUM_TDMTCEN_REG; i++) {
++		out_be32(&priv->tdm_regs->rcen[i], ch_enab[i]);
++		out_be32(&priv->tdm_regs->tcen[i], ch_enab[i]);
++	}
++
++	/* Clear the DONE bit */
++	out_8(&priv->dmac_regs->dmacdne, TDMRX_DMA_CH);
++	in_8(&priv->dmac_regs->dmacdne);
++	out_8(&priv->dmac_regs->dmacdne, TDMTX_DMA_CH);
++
++	/* Load the Tx  transfer control descriptors */
++	for (i = 0; i < MAX_TCD_WORD; i++)
++		out_be32(&priv->dmac_regs->tcd[TDMTX_DMA_CH].tcd[i],
++				priv->dma_tx_tcd[ph]->tcd[i]);
++
++	/* Load the Rx  transfer control descriptors */
++	for (i = 0; i < MAX_TCD_WORD; i++)
++		out_be32(&priv->dmac_regs->tcd[TDMRX_DMA_CH].tcd[i],
++				priv->dma_rx_tcd[ph]->tcd[i]);
++
++	/* enable the dma request */
++	out_8(&priv->dmac_regs->dmaserq, TDMRX_DMA_CH);
++	in_8(&priv->dmac_regs->dmaserq);
++	out_8(&priv->dmac_regs->dmaserq, TDMTX_DMA_CH);
++
++	/* Enable Receiver, transmitter */
++	timeout = jiffies + TDM_ENABLE_TIMEOUT;
++	out_be32(&priv->tdm_regs->tcr, TCR_TEN);
++	spin_event_timeout(!(in_be32(&priv->tdm_regs->tsr) & TSR_TENS),
++			timeout, 0);
++
++	timeout = jiffies + TDM_ENABLE_TIMEOUT;
++	out_be32(&priv->tdm_regs->rcr, RCR_REN);
++	spin_event_timeout(!(in_be32(&priv->tdm_regs->rsr) & RSR_RENS),
++			timeout, 0);
++
++	spin_lock(&priv->tdmlock);
++	priv->tdm_active = 1;
++	spin_unlock(&priv->tdmlock);
++
++	return 1;
++}
++
++static int tdm_fsl_read(struct tdm_adapter *adap,
++		u16 **input_tdm_buffer)
++{
++	struct tdm_priv *priv;
++	u32 phase_rx;
++	u32 buf_addr;
++	int bytes_in_fifo_per_frame, buf_size;
++
++	/* point to where to start for the current phase data processing */
++	bytes_in_fifo_per_frame =
++		ALIGN(adap->adapt_cfg.num_ch * adap->adapt_cfg.slot_width, 8);
++
++	priv = adap->data;
++	if (!priv) {
++		pr_err("%s: Invalid handle\n", __func__);
++		return -EINVAL;
++	}
++
++	if (priv->tdm_active == 0) {
++		dev_warn(priv->device, "TDM is not ready");
++		return 0;
++	}
++
++	if (priv->phase_rx == 0)
++		phase_rx = NUM_OF_TDM_BUF - 1;
++	else
++		phase_rx = priv->phase_rx - 1;
++
++	buf_size = bytes_in_fifo_per_frame * adap->adapt_cfg.num_frames;
++	buf_addr = buf_size * phase_rx;
++	*input_tdm_buffer = (u16 *)(priv->tdm_input_data + buf_addr);
++
++	return buf_size;
++}
++
++static int tdm_fsl_get_write_buf(struct tdm_adapter *adap,
++		u16 **output_tdm_buffer)
++{
++	struct tdm_priv *priv;
++	u32 tmp;
++	u32 phase_tx;
++	u32 buf_addr;
++	int bytes_in_fifo_per_frame, buf_size;
++
++	/* point to where to start for the current phase data processing */
++	bytes_in_fifo_per_frame =
++		ALIGN(adap->adapt_cfg.num_ch * adap->adapt_cfg.slot_width, 8);
++
++	priv = adap->data;
++	if (!priv) {
++		pr_err("%s: Invalid handle\n", __func__);
++		return -EINVAL;
++	}
++
++	if (priv->tdm_active == 0) {
++		dev_warn(priv->device, "TDM is not ready");
++		return 0;
++	}
++
++	tmp = in_be32(&priv->dmac_regs->tcd[TDMTX_DMA_CH].tcd[0]);
++
++	tmp -= priv->dma_tx_tcd[0]->tcd[0];
++
++	priv->phase_tx = tmp/(bytes_in_fifo_per_frame *
++			adap->adapt_cfg.num_frames);
++
++	if (priv->phase_tx == 0)
++		phase_tx = NUM_OF_TDM_BUF - 1;
++	else
++		phase_tx = priv->phase_tx - 1;
++
++	buf_size = bytes_in_fifo_per_frame * adap->adapt_cfg.num_frames;
++	buf_addr = buf_size * phase_tx;
++	*output_tdm_buffer = (u16 *)(priv->tdm_output_data + buf_addr);
++
++	return buf_size;
++}
++
++static const struct tdm_adapt_algorithm tdm_algo = {
++	.tdm_read = tdm_fsl_read,
++	.tdm_get_write_buf = tdm_fsl_get_write_buf,
++	.tdm_enable = tdm_fsl_enable,
++	.tdm_disable = tdm_fsl_disable,
++};
++
++static struct tdm_adapter tdm_fsl_ops = {
++	.owner = THIS_MODULE,
++	.name = "fsl_tdm",
++	.algo = &tdm_algo,
++};
++
++static int __devinit tdm_fsl_probe(struct platform_device *pdev)
++{
++	int ret = 0;
++	struct tdm_priv *priv;
++	struct resource res;
++
++	priv = kzalloc(sizeof(struct tdm_priv), GFP_KERNEL);
++	if (!priv) {
++		ret = -ENOMEM;
++		goto err_alloc;
++	}
++
++	dev_set_drvdata(&pdev->dev, priv);
++	priv->device = &pdev->dev;
++	ret = of_address_to_resource(pdev->dev.of_node, 0, &res);
++	if (ret) {
++		ret = -EINVAL;
++		goto err_resource;
++	}
++
++	priv->ptdm_base = (u32)res.start;
++	priv->tdm_regs = of_iomap(pdev->dev.of_node, 0);
++	if (!priv->tdm_regs) {
++		ret = -ENOMEM;
++		goto err_tdmregs;
++	}
++
++	priv->dmac_regs = of_iomap(pdev->dev.of_node, 1);
++	if (!priv->dmac_regs) {
++		ret = -ENOMEM;
++		goto err_dmacreg;
++	}
++
++	priv->dmac_done_intr = irq_of_parse_and_map(pdev->dev.of_node, 0);
++	if (priv->dmac_done_intr ==  NO_IRQ) {
++		ret = -EINVAL;
++		goto err_dmacdone_irqmap;
++	}
++	ret = request_irq(priv->dmac_done_intr, dmac_done_isr, 0,
++			"dmac_done_isr", priv);
++	if (ret)
++		goto err_dmacdoneisr;
++
++	priv->adap = &tdm_fsl_ops;
++
++	/* Wait q initilization */
++	priv->adap->tdm_rx_flag = 0;
++	/* TODO - these should be configured by dts or init time */
++	priv->adap->data = priv;
++	priv->adap->parent = &pdev->dev;
++
++	ret = tdm_add_adapter(priv->adap);
++	if (ret < 0) {
++		dev_err(priv->device, "failed to add adapter\n");
++		goto fail_adapter;
++	}
++
++	/* Device does not supports 36 bit mode */
++	dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
++
++	ret = init_tdm(priv);
++	if (ret)
++		goto err_tdminit;
++
++	tdm_fsl_reg_init(priv);
++
++	spin_lock_init(&priv->tdmlock);
++	priv->tdm_active = 0;
++
++	if (tdmen) {
++		ret = tdm_fsl_enable(priv->adap);
++		if (!ret)
++			goto err_tdminit;
++	}
++
++	return 0;
++
++err_tdminit:
++fail_adapter:
++	free_irq(priv->dmac_done_intr, priv);
++err_dmacdoneisr:
++	free_irq(priv->tdm_err_intr, priv);
++err_dmacdone_irqmap:
++	irq_dispose_mapping(priv->dmac_done_intr);
++err_dmacreg:
++	iounmap(priv->dmac_regs);
++err_tdmregs:
++err_resource:
++	dev_set_drvdata(&pdev->dev, NULL);
++	kfree(priv);
++err_alloc:
++	return ret;
++}
++
++static int __devexit tdm_fsl_remove(struct platform_device *pdev)
++{
++	struct tdm_priv *priv;
++	int buf_size;
++	struct tdm_adapter *adap;
++
++	if (!pdev) {
++		pr_err("%s: Invalid handle\n", __func__);
++		return -EINVAL;
++	}
++
++	priv = dev_get_drvdata(&pdev->dev);
++	adap = priv->adap;
++
++	tdm_fsl_disable(priv->adap);
++
++	tdm_fsl_stop(priv);
++
++	tdm_del_adapter(priv->adap);
++	dev_set_drvdata(&pdev->dev, NULL);
++
++	/* free the irqs and dispose their mapping */
++	free_irq(priv->tdm_err_intr, priv);
++	free_irq(priv->dmac_done_intr, priv);
++	irq_dispose_mapping(priv->tdm_err_intr);
++	irq_dispose_mapping(priv->dmac_done_intr);
++	iounmap(priv->tdm_regs);
++	iounmap(priv->dmac_regs);
++
++	/* free the buffers */
++	buf_size =
++		TDM_3BUF_SIZE(adap->adapt_cfg.num_ch,
++				adap->adapt_cfg.slot_width,
++				adap->adapt_cfg.num_frames);
++	dma_free_coherent(priv->device, buf_size, priv->dma_input_vaddr,
++			priv->dma_input_paddr);
++	dma_free_coherent(priv->device, buf_size, priv->dma_output_vaddr,
++			priv->dma_output_paddr);
++
++	/* free the TCDs */
++	dma_free_coherent(priv->device, NUM_OF_TDM_BUF * TCD_SIZE,
++			priv->dma_rx_tcd_vaddr,  priv->dma_rx_tcd_paddr);
++	dma_free_coherent(priv->device, NUM_OF_TDM_BUF * TCD_SIZE,
++			priv->dma_tx_tcd_vaddr,  priv->dma_tx_tcd_paddr);
++	dev_set_drvdata(&pdev->dev, NULL);
++	kfree(priv);
++	return 0;
++}
++
++static const struct of_device_id fsl_tdm_match[] = {
++	{
++		.compatible = "fsl,tdm1.0",
++	},
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, fsl_tdm_match);
++
++static struct platform_driver tdm_fsl_driver = {
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= DRV_NAME,
++		.of_match_table	= fsl_tdm_match,
++
++	},
++	.probe		= tdm_fsl_probe,
++	.remove		= __devexit_p(tdm_fsl_remove),
++};
++
++static int __init tdm_fsl_init(void)
++{
++	int ret;
++	pr_info(DRV_NAME ": " DRV_DESC ":Init\n");
++	ret = platform_driver_register(&tdm_fsl_driver);
++	if (ret)
++		pr_err(DRV_NAME  "of_register_platform_driver failed (%i)\n",
++				ret);
++	return ret;
++}
++
++static void __exit tdm_fsl_exit(void)
++{
++	pr_info(DRV_NAME ": " DRV_DESC ":Exit\n");
++	platform_driver_unregister(&tdm_fsl_driver);
++}
++
++module_init(tdm_fsl_init);
++module_exit(tdm_fsl_exit);
++/*
++   module_platform_driver(tdm_fsl_driver);
++ */
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("P.V.Suresh, Freescale Semiconductor");
++MODULE_DESCRIPTION("Driver For Freescale TDM controller");
 -- 
 1.5.6.5
 
