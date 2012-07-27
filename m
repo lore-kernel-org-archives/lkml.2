@@ -1,67 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab2G0Thg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:37:36 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45599 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab2G0Thf (ORCPT
+	id S1752603Ab2G0Tix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:38:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43157 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab2G0Tiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:37:35 -0400
-Date: Fri, 27 Jul 2012 21:37:23 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC] platform: Add support for automatic device IDs
-Message-ID: <20120727213723.46b8b34f@endymion.delvare>
-In-Reply-To: <20120727182155.GD23564@kroah.com>
-References: <20120727134625.71e29d2d@endymion.delvare>
-	<20120727182155.GD23564@kroah.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Jul 2012 15:38:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120727155027.GA535@kroah.com>
+References: <1343361763-10307-1-git-send-email-bryan.wu@canonical.com>
+	<20120727155027.GA535@kroah.com>
+Date: Fri, 27 Jul 2012 12:38:50 -0700
+X-Google-Sender-Auth: oF3EyZtR3aWNkuX4YVhYWa0KxK0
+Message-ID: <CAMbhsRQvmQv+PjsY0r5B5vDpkAL1KAbN7MKL7mSFFvq_zRhqJQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] add new API to sysfs and device core code
+From: Colin Cross <ccross@android.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Bryan Wu <bryan.wu@canonical.com>, hmh@hmh.eng.br, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Fri, Jul 27, 2012 at 8:50 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Jul 27, 2012 at 12:02:40PM +0800, Bryan Wu wrote:
+>> Send out a uevent when create file in sysfs, which is required by userspace
+>> application such udev in Android
+>
+> There is no such thing as "udev in Android" the last time I looked.
+>
+> Has this changed?
 
-On Fri, 27 Jul 2012 11:21:55 -0700, Greg Kroah-Hartman wrote:
-> On Fri, Jul 27, 2012 at 01:46:25PM +0200, Jean Delvare wrote:
-> > Right now we have support for explicit platform device IDs, as well as
-> > ID-less platform devices when a given device type can only have one
-> > instance. However there are cases where multiple instances of a device
-> > type can exist, and their IDs aren't (and can't be) known in advance
-> > and do not matter. In that case we need automatic device IDs to avoid
-> > device name collisions.
-> > 
-> > I am using magic ID value -4 for this (I left -2 and -3 free in case
-> > we ever need a couple of other magic values.) The automatically
-> > allocated device IDs are global (to avoid an additional per-driver
-> > cost) and are stored internally as negative numbers, starting with -4.
-> > This is required so that the IDs can be freed later. Externally the
-> > positive value is used.
-> > 
-> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > ---
-> > If anyone has a problem with the -4 or using negative device IDs
-> > internally, it would be possible to avoid that by adding a boolean
-> > attribute to every platform device to record whether the ID needs to
-> > be freed. This would cost some memory.
-> 
-> A boolean is "free" don't worry about that.  Don't overload the device
-> id with "magic" values like this, I don't like that at all.
-
-I suspected so...
-
-> I'd prefer
-> to see another field added if this is really going to be needed.
-
-OK, I'll send a different implementation in a moment. Note though that
-PLATFORM_DEVID_AUTO will have to stay, as we still need a way to tell
-the platform subsystem that we want an automatic ID.
-
-Thanks,
--- 
-Jean Delvare
+Android does not use udev, but it does have a daemon that listens for
+uevents (ueventd).  I used udev in my previous examples because the
+issue is not specific to Android.
