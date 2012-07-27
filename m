@@ -1,114 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab2GZX6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 19:58:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57415 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2GZX63 (ORCPT
+	id S1752899Ab2G0AB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 20:01:27 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:54536 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752506Ab2G0AB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 19:58:29 -0400
-Date: Thu, 26 Jul 2012 16:58:28 -0700 (PDT)
-Message-Id: <20120726.165828.987529619428347919.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 26 Jul 2012 20:01:26 -0400
+Date: Thu, 26 Jul 2012 17:01:26 -0700 (PDT)
+From: Andrew Stiegmann <astiegmann@vmware.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com
+Message-ID: <1313122679.5122648.1343347286224.JavaMail.root@vmware.com>
+In-Reply-To: <20120726234850.GB3849@kroah.com>
+Subject: Re: [vmw_vmci 01/11] Apply VMCI context code
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.60.13]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC20 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Removed.  Thanks.
 
-Nothing much this merge window for sparc.
-
-1) Fix FPU state management in sparc32, from Tkhai Kirill.
-
-2) More sparc32 mm layer code cleanups, largely more side effects
-   of the sun4c support removal in the 3.5  From Sam Ravnborg.
-
-3) Remove unused code in sparc64, from Bjorn Helgaas and Kirill Tkhai.
-
-4) Some declaration and comment tidies in PROM support code, from
-   Geert Uytterhoeven.
-
-Please pull, thanks a lot!
-
-The following changes since commit d1346a6cbabf6d377d753f1adc16cb0b305830cc:
-
-  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2012-06-26 11:26:50 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
-
-for you to fetch changes up to 427f23cb3abc21c3784df8ae907c4c3a31d885d1:
-
-  sparc32, copy_thread: Clear TIF_USEDFPU flag of created task instead of current (2012-07-26 16:49:40 -0700)
-
-----------------------------------------------------------------
-Bjorn Helgaas (1):
-      sparc/PCI: remove unused pcibios_assign_resource() definition
-
-David S. Miller (1):
-      sparc64: Consistently use fsrc2 rather than fmovd in optimized asm.
-
-Geert Uytterhoeven (2):
-      sparc: Correct comments about prom_init() return values
-      sparc32: Remove superfluous extern declarations for prom_*() functions
-
-Kirill Tkhai (1):
-      sparc64: remove unused function straddles_64bit_va_hole()
-
-Sam Ravnborg (18):
-      sparc32: define a few srmmu functions __init
-      sparc32: sort includes in srmmu.c
-      sparc32: fix coding-style in srmmu.c
-      sparc32: use void * in nocache get/free
-      sparc32: beautify srmmu_inherit_prom_mappings()
-      sparc32: drop swapper_pg_dir
-      sparc32: drop unused kmap_atomic_to_page
-      sparc32: fixmap.h cleanup
-      sparc32: drop fixmap.h
-      sparc32,leon: drop leon_init()
-      sparc32: drop sparc_unmapped_base
-      sparc32: drop sparc model check in paging_init
-      sparc32: drop quicklist
-      sparc32: centralize all mmu context handling in srmmu.c
-      sparc32: drop unused BAD_PAGE stuff
-      sparc32: move probe_memory() to srmmu.c
-      sparc32: move kmap_init() to highmem.c
-      sparc32: delete dead code in show_mem()
-
-Tkhai Kirill (1):
-      sparc32, copy_thread: Clear TIF_USEDFPU flag of created task instead of current
-
- arch/sparc/include/asm/fixmap.h         | 110 --------------------
- arch/sparc/include/asm/highmem.h        |   3 -
- arch/sparc/include/asm/leon.h           |   1 -
- arch/sparc/include/asm/mmu_context_32.h |   8 +-
- arch/sparc/include/asm/page_32.h        |   3 +-
- arch/sparc/include/asm/pgalloc_32.h     |  29 ++----
- arch/sparc/include/asm/pgtable_32.h     |  44 +-------
- arch/sparc/include/asm/vaddrs.h         |  22 ++++
- arch/sparc/kernel/head_32.S             |   2 -
- arch/sparc/kernel/leon_kernel.c         |  16 ---
- arch/sparc/kernel/pcic.c                |   5 -
- arch/sparc/kernel/process_32.c          |   4 +-
- arch/sparc/kernel/setup_32.c            |   1 -
- arch/sparc/kernel/sys_sparc_64.c        |  17 ---
- arch/sparc/lib/NG2memcpy.S              |  72 ++++++-------
- arch/sparc/lib/U1memcpy.S               |   4 +-
- arch/sparc/lib/copy_page.S              |  56 +++++-----
- arch/sparc/mm/fault_32.c                |  18 ----
- arch/sparc/mm/highmem.c                 |  42 ++++----
- arch/sparc/mm/init_32.c                 |  58 +----------
- arch/sparc/mm/srmmu.c                   | 332 ++++++++++++++++++++++++++++++++++++-----------------------
- arch/sparc/prom/init_32.c               |   7 +-
- arch/sparc/prom/init_64.c               |   4 +-
- 23 files changed, 331 insertions(+), 527 deletions(-)
- delete mode 100644 arch/sparc/include/asm/fixmap.h
+----- Original Message -----
+> From: "Greg KH" <gregkh@linuxfoundation.org>
+> To: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+> Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+> vm-crosstalk@vmware.com, cschamp@vmware.com
+> Sent: Thursday, July 26, 2012 4:48:50 PM
+> Subject: Re: [vmw_vmci 01/11] Apply VMCI context code
+> 
+> On Thu, Jul 26, 2012 at 04:39:30PM -0700, Andrew Stiegmann (stieg)
+> wrote:
+> > Context code maintains state for vmci and allows the driver
+> > to communicate with multiple VMs.
+> > 
+> > Signed-off-by: Andrew Stiegmann (stieg) <astiegmann@vmware.com>
+> 
+> One tiny nit:
+> 
+> > diff --git a/drivers/misc/vmw_vmci/vmci_context.c
+> > b/drivers/misc/vmw_vmci/vmci_context.c
+> > new file mode 100644
+> > index 0000000..46faf10
+> > --- /dev/null
+> > +++ b/drivers/misc/vmw_vmci/vmci_context.c
+> > @@ -0,0 +1,1269 @@
+> > +/*
+> > + * VMware VMCI Driver
+> > + *
+> > + * Copyright (C) 2012 VMware, Inc. All rights reserved.
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > modify it
+> > + * under the terms of the GNU General Public License as published
+> > by the
+> > + * Free Software Foundation version 2 and no later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > but
+> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> > MERCHANTABILITY
+> > + * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+> > Public License
+> > + * for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public
+> > License along
+> > + * with this program; if not, write to the Free Software
+> > Foundation, Inc.,
+> > + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+> 
+> Are you prepared to track the office movements of the FSF for the
+> next
+> 40 years to keep this up to date?  If not, please don't include it,
+> it's
+> not needed at all.
+> 
+> greg k-h
+> 
