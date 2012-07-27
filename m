@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab2G0V6q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 17:58:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40084 "EHLO gate.crashing.org"
+	id S1752559Ab2G0WBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 18:01:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:60935 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081Ab2G0V6p convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 17:58:45 -0400
-Subject: Re: [PATCH] powerpc/smp: Do not disable IPI interrupts during suspend
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1342788421-27648-1-git-send-email-chenhui.zhao@freescale.com>
-Date: Fri, 27 Jul 2012 16:58:38 -0500
-Cc: Zhao Chenhui <chenhui.zhao@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Li Yang <leoli@freescale.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5028672F-1873-4E45-AA23-4CA9F191BE77@kernel.crashing.org>
-References: <1342788421-27648-1-git-send-email-chenhui.zhao@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-X-Mailer: Apple Mail (2.1278)
+	id S1752404Ab2G0WBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 18:01:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH] sh: pfc: Fix build issues in pinctrl.c
+Date: Sat, 28 Jul 2012 00:07:04 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: "Linux-sh list" <linux-sh@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207280007.04480.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Jul 20, 2012, at 7:47 AM, Zhao Chenhui wrote:
+First off, drivers/sh/pfc/pinctrl.c doesn't build after commit
+5d589b0 (pinctrl: remove pinctrl_remove_gpio_range), because
+sh_pfc_pinctrl_remove() uses the function that has been removed by
+that commit.  Fix this by removing the pinctrl_remove_gpio_range()
+call, which is not necessary any more, from sh_pfc_pinctrl_remove().
 
-> During suspend, all interrupts including IPI will be disabled. In this case,
-> the suspend process will hang in SMP. To prevent this, pass the flag
-> IRQF_NO_SUSPEND when requesting IPI irq.
-> 
-> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> Signed-off-by: Li Yang <leoli@freescale.com>
-> ---
-> arch/powerpc/kernel/smp.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
+Second, the compiler complains correctly that there's an unused
+local variable in sh_pfc_pinconf_set().  Fix this by removing the
+definition of that variable.
 
-BenH,
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/sh/pfc/pinctrl.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-Can you ack?
-
-- k
-
-> 
-> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-> index fecb038..d26bbf8 100644
-> --- a/arch/powerpc/kernel/smp.c
-> +++ b/arch/powerpc/kernel/smp.c
-> @@ -171,7 +171,7 @@ int smp_request_message_ipi(int virq, int msg)
-> 	}
-> #endif
-> 	err = request_irq(virq, smp_ipi_action[msg],
-> -			  IRQF_PERCPU | IRQF_NO_THREAD,
-> +			  IRQF_PERCPU | IRQF_NO_THREAD | IRQF_NO_SUSPEND,
-> 			  smp_ipi_name[msg], 0);
-> 	WARN(err < 0, "unable to request_irq %d for %s (rc %d)\n",
-> 		virq, smp_ipi_name[msg], err);
-> -- 
-> 1.6.4.1
-> 
-
+Index: linux/drivers/sh/pfc/pinctrl.c
+===================================================================
+--- linux.orig/drivers/sh/pfc/pinctrl.c
++++ linux/drivers/sh/pfc/pinctrl.c
+@@ -276,7 +276,6 @@ static int sh_pfc_pinconf_set(struct pin
+ 			      unsigned long config)
+ {
+ 	struct sh_pfc_pinctrl *pmx = pinctrl_dev_get_drvdata(pctldev);
+-	struct sh_pfc *pfc = pmx->pfc;
+ 
+ 	/* Validate the new type */
+ 	if (config >= PINMUX_FLAG_TYPE)
+@@ -481,7 +480,6 @@ static int __devexit sh_pfc_pinctrl_remo
+ {
+ 	struct sh_pfc_pinctrl *pmx = platform_get_drvdata(pdev);
+ 
+-	pinctrl_remove_gpio_range(pmx->pctl, &sh_pfc_gpio_range);
+ 	pinctrl_unregister(pmx->pctl);
+ 
+ 	platform_set_drvdata(pdev, NULL);
