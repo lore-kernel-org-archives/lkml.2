@@ -1,190 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab2G0AlI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 20:41:08 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:38786 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab2G0AlG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 20:41:06 -0400
+	id S1753134Ab2G0AvI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 20:51:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752924Ab2G0AvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 20:51:07 -0400
+Date: Thu, 26 Jul 2012 20:50:46 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Kent Overstreet <koverstreet@google.com>
+cc: Boaz Harrosh <bharrosh@panasas.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
+        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, vgoyal@redhat.com, sage@newdream.net,
+        yehuda@hq.newdream.net
+Subject: [PATCH] A possible deadlock with stacked devices (was: [PATCH v4
+ 08/12] block: Introduce new bio_split())
+In-Reply-To: <20120725232611.GD8673@moria.home.lan>
+Message-ID: <Pine.LNX.4.64.1207262005450.28322@file.rdu.redhat.com>
+References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
+ <1343160689-12378-9-git-send-email-koverstreet@google.com> <500FDEBC.9050607@panasas.com>
+ <20120725232611.GD8673@moria.home.lan>
 MIME-Version: 1.0
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Fri, 27 Jul 2012 08:40:44 +0800
-X-Google-Sender-Auth: PqDCNMtLFjn1qN8-8GiZZIbSydM
-Message-ID: <CAK5ve-Kt_Mw_wgp6E0nXEvNjh88rtARES+CpS7Kj=Zq0rHEYKA@mail.gmail.com>
-Subject: [GIT PULL] LED subsystem update for v3.6
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>, rpurdie@rpsys.net,
-        akpm <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please consider pulling the following changes since commit
-28a33cbc24e4256c143dce96c7d93bf423229f92:
 
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
+On Wed, 25 Jul 2012, Kent Overstreet wrote:
 
-are available in the git repository at:
+> On Wed, Jul 25, 2012 at 02:55:40PM +0300, Boaz Harrosh wrote:
+> > On 07/24/2012 11:11 PM, Kent Overstreet wrote:
+> > 
+> > > The new bio_split() can split arbitrary bios - it's not restricted to
+> > > single page bios, like the old bio_split() (previously renamed to
+> > > bio_pair_split()). It also has different semantics - it doesn't allocate
+> > > a struct bio_pair, leaving it up to the caller to handle completions.
+> > > 
+> > > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > > ---
+> > >  fs/bio.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > >  1 files changed, 99 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/fs/bio.c b/fs/bio.c
+> > > index 5d02aa5..a15e121 100644
+> > > --- a/fs/bio.c
+> > > +++ b/fs/bio.c
+> > > @@ -1539,6 +1539,105 @@ struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
+> > >  EXPORT_SYMBOL(bio_pair_split);
+> > >  
+> > >  /**
+> > > + * bio_split - split a bio
+> > > + * @bio:	bio to split
+> > > + * @sectors:	number of sectors to split from the front of @bio
+> > > + * @gfp:	gfp mask
+> > > + * @bs:		bio set to allocate from
+> > > + *
+> > > + * Allocates and returns a new bio which represents @sectors from the start of
+> > > + * @bio, and updates @bio to represent the remaining sectors.
+> > > + *
+> > > + * If bio_sectors(@bio) was less than or equal to @sectors, returns @bio
+> > > + * unchanged.
+> > > + *
+> > > + * The newly allocated bio will point to @bio's bi_io_vec, if the split was on a
+> > > + * bvec boundry; it is the caller's responsibility to ensure that @bio is not
+> > > + * freed before the split.
+> > > + *
+> > > + * If bio_split() is running under generic_make_request(), it's not safe to
+> > > + * allocate more than one bio from the same bio set. Therefore, if it is running
+> > > + * under generic_make_request() it masks out __GFP_WAIT when doing the
+> > > + * allocation. The caller must check for failure if there's any possibility of
+> > > + * it being called from under generic_make_request(); it is then the caller's
+> > > + * responsibility to retry from a safe context (by e.g. punting to workqueue).
+> > > + */
+> > > +struct bio *bio_split(struct bio *bio, int sectors,
+> > > +		      gfp_t gfp, struct bio_set *bs)
+> > > +{
+> > > +	unsigned idx, vcnt = 0, nbytes = sectors << 9;
+> > > +	struct bio_vec *bv;
+> > > +	struct bio *ret = NULL;
+> > > +
+> > > +	BUG_ON(sectors <= 0);
+> > > +
+> > > +	/*
+> > > +	 * If we're being called from underneath generic_make_request() and we
+> > > +	 * already allocated any bios from this bio set, we risk deadlock if we
+> > > +	 * use the mempool. So instead, we possibly fail and let the caller punt
+> > > +	 * to workqueue or somesuch and retry in a safe context.
+> > > +	 */
+> > > +	if (current->bio_list)
+> > > +		gfp &= ~__GFP_WAIT;
+> > 
+> > 
+> > NACK!
+> > 
+> > If as you said above in the comment:
+> > 	if there's any possibility of it being called from under generic_make_request();
+> >         it is then the caller's responsibility to ...
+> > 
+> > So all the comment needs to say is: 
+> > 	... caller's responsibility to not set __GFP_WAIT at gfp.
+> > 
+> > And drop this here. It is up to the caller to decide. If the caller wants he can do
+> > "if (current->bio_list)" by his own.
+> > 
+> > This is a general purpose utility you might not know it's context.
+> > for example with osdblk above will break.
+> 
+> Well I'm highly highly skeptical that using __GFP_WAIT under
+> generic_make_request() is ever a sane thing to do - it could certainly
+> be safe in specific circumstances, but it's just such a fragile thing to
+> rely on, you have to _never_ use the same bio pool more than once. And
+> even then I bet there's other subtle ways it could break.
+> 
+> But you're not the first to complain about it, and your point about
+> existing code is compelling.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-for-3.6-rc1
+Both md and dm use __GFP_WAIT allocations from mempools in 
+generic_make_request.
 
-for you to fetch changes up to d45bb11616c94c76c6e40960a120c0687b708a2e:
+I think you found an interesting bug here. Suppose that we have three 
+stacked devices: d1 depends on d2 and d2 depends on d3.
 
-  leds-lp8788: forgotten unlock at lp8788_led_work (2012-07-27 08:16:07 +0800)
+Now, a bio b1 comes to d1. d1 splits it to two bios: b2.1 and b2.2 and 
+sends them to the device d2 - these bios end up in current->bio_list. The 
+driver for d2 receives bio b2.1 and sends bio b3.1 to d3. Now, 
+current->bio_list contains bios b2.2, b3.1. Now, bio b2.2 is popped off 
+the bio list and the driver for d2 is called with b2.2 - suppose that for 
+some reason mempool in d2 is exhausted and the driver needs to wait until 
+b2.1 finishes. b2.1 never finishes, because b2.1 depends on b3.1 and b3.1 
+is still in current->bio_list. So it deadlocks.
 
-----------------------------------------------------------------
-Axel Lin (1):
-      leds: max8997: Simplify max8997_led_set_mode implementation
+Turning off __GFP_WAIT fixes nothing - it just turns one bug (a possible 
+deadlock) into another bug (a possible bio failure with -ENOMEM).
 
-Bryan Wu (22):
-      led-triggers: rename *trigger to *trig for unified naming scheme
-      leds: fix sparse warnings due to missing static
-      leds: convert Big Networks LED driver to devm_kzalloc()
-      leds: convert HTC ASIC3 LED driver to devm_kzalloc() and cleanup
-error exit path
-      leds: convert Atmel PWM LED driver to devm_kzalloc()
-      leds: convert LP3944 LED driver to devm_kzalloc()
-      leds: convert DA9030/DA9034 LED driver to devm_kzalloc() and
-cleanup error exit path
-      leds: convert LP5521 LED driver to devm_kzalloc() and cleanup
-error exit path
-      leds: convert BD2802 RGB LED driver to devm_kzalloc() and
-cleanup error exit path
-      leds: convert PCA9633 LED driver to devm_kzalloc()
-      leds: convert LP5523 LED driver to devm_kzalloc() and cleanup
-error exit path
-      leds: convert Renesas TPU LED driver to devm_kzalloc() and
-cleanup error exit path
-      leds: convert LT3593 LED driver to devm_kzalloc()
-      leds: convert PCA9532 LED driver to devm_kzalloc()
-      leds: convert Sun Fire LED driver to devm_kzalloc() and cleanup
-error exit path
-      leds: convert PCA955x LED driver to devm_kzalloc() and cleanup
-error exit path
-      leds: convert ADP5520 LED driver to devm_kzalloc() and cleanup
-error exit path
-      leds: convert Freescale MC13783 LED driver to devm_kzalloc() and
-cleanup error exit path
-      leds: convert TCA6507 LED driver to devm_kzalloc()
-      leds: convert LM3530 LED driver to devm_kzalloc() and cleanup
-error exit path
-      leds: convert DAC124S085 LED driver to devm_kzalloc()
-      leds: convert Network Space v2 LED driver to devm_kzalloc() and
-cleanup error exit path
+Increasing mempool sizes doesn't fix it either, the bio would just have to 
+be split to more pieces in the above example to make it deadlock.
 
-Dan Carpenter (3):
-      leds-lp5523: BUG() in error handling in probe()
-      LEDS: memory leak in blinkm_led_common_set()
-      LEDS: propagate error codes in blinkm_detect()
+I think the above possible deadlock scenario could be fixed by reversing 
+current->bio_list processing - i.e. when some device's make_request_fn 
+adds some bios to current->bio_list, these bios are processed before other 
+bios that were on the list before. This way, bio list would contain "b3.1, 
+b2.2" instead of "b2.2, b3.1" in the above example and the deadlock would 
+not happen.
 
-Devendra Naga (5):
-      leds: [trivial]Remove unnecesary return
-      leds-88pm860x: use devm_kzalloc function
-      leds-mc13783: set platform data to NULL at mc13783_led_remove
-      leds/leds-s3c24xx: use devm_gpio_request
-      leds-lp8788: forgotten unlock at lp8788_led_work
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
-Fabio Baltieri (5):
-      leds: add oneshot blink functions
-      ledtrig-ide-disk: use generic one-shot blink api
-      leds: fix led_brightness_set when soft-blinking
-      leds: add oneshot trigger
-      leds: use led_set_brightness in led_trigger_event
+---
+ block/blk-core.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-G.Shark Jeong (1):
-      leds: Add LED driver for lm3556 chip
-
-Jan-Simon Möller (1):
-      LEDS: add BlinkM RGB LED driver, documentation and update MAINTAINERS
-
-Jesper Dangaard Brouer (1):
-      leds: correct trivial type in drivers/leds/Kconfig
-
-Kim, Milo (1):
-      leds: add new lp8788 led driver
-
-Peter Meerwald (1):
-      leds: convert tca6507 driver to module_i2c_driver()
-
-Sachin Kamat (5):
-      leds: Use module_platform_driver() in leds-max8997.c file
-      leds: Use devm_kzalloc in leds-pwm.c file
-      leds: Use devm_kzalloc in leds-regulator.c file
-      leds: Use devm_kzalloc in leds-max8997.c file
-      leds: Use devm_kzalloc in leds-gpio.c file
-
-Shuah Khan (2):
-      leds: Rename led_set_brightness() to __led_set_brightness()
-      leds: Rename led_brightness_set() to led_set_brightness()
-
-Sylwester Nawrocki (2):
-      leds: Convert S3C24XX LED driver to devm_kzalloc()
-      leds: Convert S3C24XX LED driver to gpiolib API
-
- Documentation/leds/00-INDEX               |   2 +
- Documentation/leds/leds-blinkm.txt        |  80 +++
- Documentation/leds/leds-lm3556.txt        |  85 ++++
- Documentation/leds/ledtrig-oneshot.txt    |  59 +++
- MAINTAINERS                               |   5 +
- drivers/leds/Kconfig                      |  39 +-
- drivers/leds/Makefile                     |   4 +
- drivers/leds/led-class.c                  |  27 +-
- drivers/leds/led-core.c                   |  66 ++-
- drivers/leds/led-triggers.c               | 114 +++--
- drivers/leds/leds-88pm860x.c              |   9 +-
- drivers/leds/leds-adp5520.c               |   8 +-
- drivers/leds/leds-asic3.c                 |  16 +-
- drivers/leds/leds-atmel-pwm.c             |   5 +-
- drivers/leds/leds-bd2802.c                |   8 +-
- drivers/leds/leds-blinkm.c                | 815 ++++++++++++++++++++++++++++++
- drivers/leds/leds-da903x.c                |   9 +-
- drivers/leds/leds-dac124s085.c            |   4 +-
- drivers/leds/leds-gpio.c                  |  11 +-
- drivers/leds/leds-lm3530.c                |  24 +-
- drivers/leds/leds-lm3556.c                | 512 +++++++++++++++++++
- drivers/leds/leds-lp3944.c                |   9 +-
- drivers/leds/leds-lp5521.c                |  20 +-
- drivers/leds/leds-lp5523.c                |  30 +-
- drivers/leds/leds-lp8788.c                | 193 +++++++
- drivers/leds/leds-lt3593.c                |   9 +-
- drivers/leds/leds-max8997.c               |  93 +---
- drivers/leds/leds-mc13783.c               |   9 +-
- drivers/leds/leds-netxbig.c               |  10 +-
- drivers/leds/leds-ns2.c                   |  19 +-
- drivers/leds/leds-pca9532.c               |  10 +-
- drivers/leds/leds-pca955x.c               |  18 +-
- drivers/leds/leds-pca9633.c               |   6 +-
- drivers/leds/leds-pwm.c                   |   7 +-
- drivers/leds/leds-regulator.c             |   9 +-
- drivers/leds/leds-renesas-tpu.c           |  23 +-
- drivers/leds/leds-s3c24xx.c               |  44 +-
- drivers/leds/leds-sunfire.c               |  21 +-
- drivers/leds/leds-tca6507.c               |  17 +-
- drivers/leds/leds.h                       |   2 +-
- drivers/leds/ledtrig-backlight.c          |   8 +-
- drivers/leds/ledtrig-default-on.c         |   2 +-
- drivers/leds/ledtrig-gpio.c               |   6 +-
- drivers/leds/ledtrig-heartbeat.c          |   2 +-
- drivers/leds/ledtrig-ide-disk.c           |  25 +-
- drivers/leds/ledtrig-oneshot.c            | 204 ++++++++
- drivers/leds/ledtrig-timer.c              |   2 +-
- drivers/leds/ledtrig-transient.c          |   8 +-
- include/linux/leds.h                      |  29 +-
- include/linux/platform_data/leds-lm3556.h |  50 ++
- net/mac80211/led.c                        |   2 +-
- 51 files changed, 2376 insertions(+), 413 deletions(-)
- create mode 100644 Documentation/leds/leds-blinkm.txt
- create mode 100644 Documentation/leds/leds-lm3556.txt
- create mode 100644 Documentation/leds/ledtrig-oneshot.txt
- create mode 100644 drivers/leds/leds-blinkm.c
- create mode 100644 drivers/leds/leds-lm3556.c
- create mode 100644 drivers/leds/leds-lp8788.c
- create mode 100644 drivers/leds/ledtrig-oneshot.c
- create mode 100644 include/linux/platform_data/leds-lm3556.h
+Index: linux-3.5-fast/block/blk-core.c
+===================================================================
+--- linux-3.5-fast.orig/block/blk-core.c	2012-07-27 02:20:25.000000000 +0200
++++ linux-3.5-fast/block/blk-core.c	2012-07-27 02:34:37.000000000 +0200
+@@ -1740,6 +1740,7 @@ end_io:
+ void generic_make_request(struct bio *bio)
+ {
+ 	struct bio_list bio_list_on_stack;
++	struct bio_list current_bio_list;
+ 
+ 	if (!generic_make_request_checks(bio))
+ 		return;
+@@ -1789,14 +1790,22 @@ void generic_make_request(struct bio *bi
+ 	 * bio_list, and call into ->make_request() again.
+ 	 */
+ 	BUG_ON(bio->bi_next);
+-	bio_list_init(&bio_list_on_stack);
++	bio_list_init(&current_bio_list);
+ 	current->bio_list = &bio_list_on_stack;
+ 	do {
+ 		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
+ 
++		bio_list_init(&bio_list_on_stack);
++
+ 		q->make_request_fn(q, bio);
+ 
+-		bio = bio_list_pop(current->bio_list);
++		/*
++		 * To avoid a possible deadlock, bios that were added by
++		 * the most recent make_request_fn must be processed first.
++		 */
++		bio_list_merge_head(&current_bio_list, &bio_list_on_stack);
++
++		bio = bio_list_pop(&current_bio_list);
+ 	} while (bio);
+ 	current->bio_list = NULL; /* deactivate */
+ }
