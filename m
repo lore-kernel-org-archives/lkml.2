@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab2G0JT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 05:19:59 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:40417 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2G0JT6 (ORCPT
+	id S1752504Ab2G0JZA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 05:25:00 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:41129
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751565Ab2G0JY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 05:19:58 -0400
-X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
-   d="scan'208";a="13730295"
-Message-ID: <1343380764.6812.108.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH 02/24] xen/arm: hypercalls
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Christopher Covington <cov@codeaurora.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 27 Jul 2012 10:19:24 +0100
-In-Reply-To: <50119856.2020206@codeaurora.org>
-References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
-	 <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <50119856.2020206@codeaurora.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Fri, 27 Jul 2012 05:24:59 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6R9Otfa001533
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] netconsole.txt: "nc" needs "-p" to specify the listening port
+In-Reply-To: <CAM_iQpX3EFnoW=Vh2hgJwNPr-whJhcUctCyv_+afFB8DrnHRsQ@mail.gmail.com>
+	(Cong Wang's message of "Fri, 27 Jul 2012 17:02:53 +0800")
+References: <gir4rxk7c2.fsf@mx10.gouders.net>
+	<CAM_iQpX3EFnoW=Vh2hgJwNPr-whJhcUctCyv_+afFB8DrnHRsQ@mail.gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Fri, 27 Jul 2012 11:24:53 +0200
+Message-ID: <gihastk13u.fsf@mx10.gouders.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Fri, 27 Jul 2012 11:24:55 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 20:19 +0100, Christopher Covington wrote:
-> Hi Stefano,
-> 
-> On 07/26/2012 11:33 AM, Stefano Stabellini wrote:
-> > Use r12 to pass the hypercall number to the hypervisor.
-> > 
-> > We need a register to pass the hypercall number because we might not
-> > know it at compile time and HVC only takes an immediate argument.
-> 
-> You're not going to JIT assemble the appropriate HVC instruction? Darn.
+Cong Wang <xiyou.wangcong@gmail.com> writes:
 
-;-)
+> On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
+> <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
+>> Hi Jesse,
+>>
+>> I would like to ask you to check if the documentation of "nc" in
+>> netconsole.txt is still correct.  I tried two different netcat packages
+>> and both require "-p" to specify the listening port.  I am wondering if
+>> that changed after the use of "nc" has been documented.
+>
+> On Fedora 16, `nc -u -l <port number>` works fine.
 
-> How many call numbers are there, though? 8?
+Thanks for checking that.
 
-The maximum currently defined hypercall number is 55, although there are
-some small gaps so there's actually more like 45 in total.
+If the information I found is correct, Fedora uses OpenBSD's nc
+codebase.  The two netcat packages I tested on a Gentoo system differ in
+requiring the -p switch for the port specification.
 
->  It seems like it'd be
-> reasonable to take the approach that seems to be favored for MRC/MCR
-> instructions, using a function containing switch statement that chooses
-> between several inline assembly instructions based off an enum passed to
-> the function. See for example arch_timer_reg_read in
-> arch/arm/kernel/arch_timer.c.
-
-I don't think it is feasible with this number of hypercalls, even
-accepting that in many cases the number will be a constant so gcc can
-likely optimise almost all of it away.
-
-Is there something wrong with the r12 based approach?
-
-Ian.
-
+Dirk
