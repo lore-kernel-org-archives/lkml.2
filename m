@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab2G0TWg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:22:36 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:25864 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab2G0TWf convert rfc822-to-8bit (ORCPT
+	id S1752686Ab2G0TXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:23:39 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54221 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab2G0TXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:22:35 -0400
+	Fri, 27 Jul 2012 15:23:37 -0400
+Date: Fri, 27 Jul 2012 12:22:46 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] page-table walkers vs memory order
+In-Reply-To: <1343335169.32120.18.camel@twins>
+Message-ID: <alpine.LSU.2.00.1207271155440.1328@eggly.anvils>
+References: <1343064870.26034.23.camel@twins> <alpine.LSU.2.00.1207241356350.2094@eggly.anvils> <1343335169.32120.18.camel@twins>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Message-ID: <b95aec06-5a10-4f83-bdfd-e7f6adabd9df@default>
-Date: Fri, 27 Jul 2012 12:21:50 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: RE: [PATCH 0/4] promote zcache from staging
-References: <<1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>>
-In-Reply-To: <<1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: [PATCH 0/4] promote zcache from staging
+On Thu, 26 Jul 2012, Peter Zijlstra wrote:
+> On Tue, 2012-07-24 at 14:51 -0700, Hugh Dickins wrote:
+> > I do love the status quo, but an audit would be welcome.  When
+> > it comes to patches, personally I tend to prefer ACCESS_ONCE() and
+> > smp_read_barrier_depends() and accompanying comments to be hidden away
+> > in the underlying macros or inlines where reasonable, rather than
+> > repeated all over; but I may have my priorities wrong on that.
+
+I notice from that old radix_tree thread you pointed to in the previous
+mail (for which many thanks: lots of meat to digest in there) that this
+is also Linus's preference.
+
+> > 
+> > 
+> Yeah, I was being lazy, and I totally forgot to actually look at the
+> alpha code.
 > 
-> zcache is the remaining piece of code required to support in-kernel
-> memory compression.  The other two features, cleancache and frontswap,
-> have been promoted to mainline in 3.0 and 3.5.  This patchset
-> promotes zcache from the staging tree to mainline.
+> How about we do a generic (cribbed from rcu_dereference):
 > 
-> Based on the level of activity and contributions we're seeing from a
-> diverse set of people and interests, I think zcache has matured to the
-> point where it makes sense to promote this out of staging.
+> #define page_table_deref(p)					\
+> ({								\
+> 	typeof(*p) *______p = (typeof(*p) __force *)ACCESS_ONCE(p);\
+> 	smp_read_barrier_depends();				\
+> 	((typeof(*p) __force __kernel *)(______p));		\
+> })
+> 
+> and use that all over to dereference page-tables. That way all this
+> lives in one place. Granted, I'll have to go edit all arch code, but I
+> seem to be doing that on a frequent basis anyway :/
 
-Hi Seth --
+If you're convinced that we now have (or are in danger of growing)
+a number of places which need this safety, yes, I suppose so.
 
-Per offline communication, I'd like to see this delayed for three
-reasons:
+Personally, I'd have gone for just adding the relatively-understandable
+ACCESS_ONCEs in all the arch/*/include/asm macros (which you're going to
+visit to make the above change), and leave the smp_read_barrier_depends()
+entirely in Alpha - one level of indirection less for the reader.
+But that's just me, you're the one proposing to do the work, and
+you may have very good reason for the above.
 
-1) I've completely rewritten zcache and will post the rewrite soon.
-   The redesigned code fixes many of the weaknesses in zcache that
-   makes it (IMHO) unsuitable for an enterprise distro.  (Some of
-   these previously discussed in linux-mm [1].)
-2) zcache is truly mm (memory management) code and the fact that
-   it is in drivers at all was purely for logistical reasons
-   (e.g. the only in-tree "staging" is in the drivers directory).
-   My rewrite promotes it to (a subdirectory of) mm where IMHO it
-   belongs.
-3) Ramster heavily duplicates code from zcache.  My rewrite resolves
-   this.  My soon-to-be-post also places the re-factored ramster
-   in mm, though with some minor work zcache could go in mm and
-   ramster could stay in staging.
+I'm unfamiliar with what value the __force __kernel annotations add.
+But I am interested to notice that you are only 6/9ths as insane as
+Paul: any chance of helping global underscore availability by not
+hoarding quite so many in there? 
 
-Let's have this discussion, but unless the community decides
-otherwise, please consider this a NACK.
-
-Thanks,
-Dan
-
-[1] http://marc.info/?t=133886706700002&r=1&w=2
+Hugh
