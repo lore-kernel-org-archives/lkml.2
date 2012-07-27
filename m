@@ -1,35 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab2G0Hsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 03:48:47 -0400
-Received: from ozlabs.org ([203.10.76.45]:49919 "EHLO ozlabs.org"
+	id S1752235Ab2G0Hsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 03:48:45 -0400
+Received: from ozlabs.org ([203.10.76.45]:53579 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751957Ab2G0Hsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751329Ab2G0Hsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Jul 2012 03:48:43 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Asias He <asias@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH V3 3/3] virtio-blk: Add bio-based IO path for virtio-blk
-In-Reply-To: <1342168731-11797-4-git-send-email-asias@redhat.com>
-References: <1342168731-11797-1-git-send-email-asias@redhat.com> <1342168731-11797-4-git-send-email-asias@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, mingo@kernel.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com, namhyung@kernel.org,
+        tj@kernel.org, rjw@sisk.pl, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/6] CPU hotplug: Reverse invocation of notifiers during CPU hotplug
+In-Reply-To: <alpine.LFD.2.02.1207251758340.32033@ionos>
+References: <Pine.LNX.4.44L0.1207251054420.2008-100000@iolanthe.rowland.org> <50101733.4030205@linux.vnet.ibm.com> <alpine.LFD.2.02.1207251758340.32033@ionos>
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 27 Jul 2012 15:59:40 +0930
-Message-ID: <871ujxogx7.fsf@rustcorp.com.au>
+Date: Fri, 27 Jul 2012 17:10:29 +0930
+Message-ID: <87wr1pmz2q.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012 16:38:51 +0800, Asias He <asias@redhat.com> wrote:
-> This patch introduces bio-based IO path for virtio-blk.
+On Wed, 25 Jul 2012 18:30:41 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
+> The problem with the current notifiers is, that we only have ordering
+> for a few specific callbacks, but we don't have the faintest idea in
+> which order all other random stuff is brought up and torn down.
+> 
+> So I started experimenting with the following:
+> 
+> struct hotplug_event {
+>        int (*bring_up)(unsigned int cpu);
+>        int (*tear_down)(unsigned int cpu);
+> };
+> 
+> enum hotplug_events {
+>      CPU_HOTPLUG_START,
+>      CPU_HOTPLUG_CREATE_THREADS,
+>      CPU_HOTPLUG_INIT_TIMERS,
+>      ...
+>      CPU_HOTPLUG_KICK_CPU,
+>      ...
+>      CPU_HOTPLUG_START_THREADS,
+>      ...
+>      CPU_HOTPLUG_SET_ONLINE,
+>      ...
+>      CPU_HOTPLUG_MAX_EVENTS,
+> };
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+This looks awfully like hardcoded a list of calls, without the
+readability :)
 
-I just hope we can do better than a module option in future.
+OK, I finally got off my ass and looked at the different users of cpu
+hotplug.  Some are just doing crazy stuff, but most seem to fall into
+two types:
 
-Thanks,
+1) Hardware-style cpu callbacks (CPU_UP_PREPARE & CPU_DEAD)
+2) Live cpu callbacks (CPU_ONLINE & CPU_DOWN_PREPARE)
+
+I think this is what Srivatsa was referring to with "physical" and
+"logical" parts.  Maybe we should explicitly split them, with the idea
+that we'd automatically call the other one if we hit an error.
+
+struct cpu_hotplug_physical {
+       int (*coming)(unsigned int cpu);
+       void (*gone)(unsigned int cpu);
+};
+
+struct cpu_hotplug_logical {
+       void (*arrived)(unsigned int cpu);
+       int (*going)(unsigned int cpu);
+};
+
+Several of the live cpu callbacks seem racy to me, since we could be
+running userspace tasks before CPU_ONLINE.  It'd be nice to fix this,
+too.
+
+Anyway, if we get a model which fits 90%, we can always open-code the
+tricky ones.
+
+Cheers,
 Rusty.
