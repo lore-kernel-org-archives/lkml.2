@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab2G0D5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:57:07 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38704 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab2G0D5F (ORCPT
+	id S1753337Ab2G0D5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:57:37 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:64857 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab2G0D5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:57:05 -0400
-Date: Fri, 27 Jul 2012 13:57:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>, Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20120727135702.ad50880aec871d2d747aa2fb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Jul_2012_13_57_02_+1000_2xTKyEM4keEu3AEQ"
+	Thu, 26 Jul 2012 23:57:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1343361129-8802-1-git-send-email-dev@snitselaar.org>
+References: <1343361129-8802-1-git-send-email-dev@snitselaar.org>
+Date: Thu, 26 Jul 2012 20:57:35 -0700
+Message-ID: <CA+30oubMM0AVqH2PP+3mDcwjPMR9OXxUTdBcE5bRNCv8C6TPfw@mail.gmail.com>
+Subject: Re: [PATCH] watchdog: watchdog-test: make term() static
+From: Jerry Snitselaar <dev@snitselaar.org>
+To: linux-kernel@vger.kernel.org
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Jul_2012_13_57_02_+1000_2xTKyEM4keEu3AEQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 26, 2012 at 8:52 PM, Jerry Snitselaar <dev@snitselaar.org> wrote:
+> In 3.5 warning during build 'no previous prototype for term'. Since it
+> is only used in watchdog-test.c make term() static.
+>
+> Signed-off-by: Jerry Snitselaar <dev@snitselaar.org>
+> ---
+>  Documentation/watchdog/src/watchdog-test.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/Documentation/watchdog/src/watchdog-test.c b/Documentation/watchdog/src/watchdog-test.c
+> index 73ff5cc..3da8229 100644
+> --- a/Documentation/watchdog/src/watchdog-test.c
+> +++ b/Documentation/watchdog/src/watchdog-test.c
+> @@ -31,7 +31,7 @@ static void keep_alive(void)
+>   * or "-e" to enable the card.
+>   */
+>
+> -void term(int sig)
+> +static void term(int sig)
+>  {
+>      close(fd);
+>      fprintf(stderr, "Stopping watchdog ticks...\n");
+> --
+> 1.7.12.rc0
+>
 
-Hi Andrew,
+Disregard this patch. I didn't see Randy's patch when I did a search
+in my email.
 
-Today's linux-next merge of the akpm tree got a conflict in
-fs/btrfs/relocation.c between commit 23291a044c31 ("Btrfs: fix error
-handling in __add_reloc_root()") from Linus' tree and commit "btrfs: use
-printk_get_level and printk_skip_level, add __printf, fix fallout" from
-the akpm tree.
-
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/btrfs/relocation.c
-index c5dbd91,790f492..0000000
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@@ -1239,11 -1239,10 +1239,11 @@@ static int __must_check __add_reloc_roo
-  			      node->bytenr, &node->rb_node);
-  	spin_unlock(&rc->reloc_root_tree.lock);
-  	if (rb_node) {
- -		kfree(node);
-  		btrfs_panic(root->fs_info, -EEXIST, "Duplicate root found "
-  			    "for start=3D%llu while inserting into relocation "
-- 			    "tree\n");
-+ 			    "tree\n", node->bytenr);
- +		kfree(node);
- +		return -EEXIST;
-  	}
- =20
-  	list_add_tail(&root->root_list, &rc->reloc_roots);
-
---Signature=_Fri__27_Jul_2012_13_57_02_+1000_2xTKyEM4keEu3AEQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQEhGOAAoJEECxmPOUX5FEq24P/A6j44/qyapuUFcAOqU0W6l0
-vQM//7hudQiOzSequpl9zfvGquihIdVF8tjx1NB0wznIRG7W0+DAagB+OiqPMqqE
-te/VsoHdQh8cjQ6+EoKhjGFOrSw4c+1LdXOEY0sBb6l5FNBJo6QL6vgqE88H4CiP
-lq3XksYBSeziJvr9FQiNPpDvcsFfhd3Un78kLGzIUpqhz9ZvCTorux/O5muq4yPw
-ErJHyC2fMFFMwanUyL0Eu7Bs9qTOJoxzHvgucjuA0/8rwvS7BGsLWVCEGz06W7S7
-p7lPD4l5HR+ag9DTmVFucZsqnRCfl+1lCGmDRCJmmiWwE7diDzutWdgH/su9PY3M
-eQ82KKgDSIWBZg5BIyBmhT1RZMqRuDBAcqSDtmKfqOf41nJynFW6y64gG/aNjRiT
-etVDIqZruWDHf/ge1iJ+n2Al6nkzFDF6t5CTbfRG/NQsuxexbX/T+li3xaNp1Ama
-viom/IS7j4oGjPL//KRki1gM8RLRxcZ90P604N2Je3yZosw/+PCgg1Ov/ppA4uTh
-HvYims8GTyrluUmjVWw6ALh8N0HEygnOF45cTI/PPzYoNDBQwKFvdWAmuMBNzLz/
-f2HWC03NdFIKniIZZLfNFsKW7ZQVjdcqryx5/gZ3MCHRcfoyksur9hWAIyVs3R/n
-dGgBa/rRakyyC9xzYK5I
-=Q7XF
------END PGP SIGNATURE-----
-
---Signature=_Fri__27_Jul_2012_13_57_02_+1000_2xTKyEM4keEu3AEQ--
+Jerry
