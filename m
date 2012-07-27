@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab2G0O22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 10:28:28 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57892 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab2G0O20 (ORCPT
+	id S1752443Ab2G0OaV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 10:30:21 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:42171 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab2G0OaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 10:28:26 -0400
-Message-ID: <1343399335.7767.6.camel@cwalton-XPS-8300>
-Subject: Re: [BUG] NTFS code doesn't sanitize folder names sufficiently
-From: Calvin Walton <calvin.walton@kepstin.ca>
-To: Marian Beermann <public@enkore.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Date: Fri, 27 Jul 2012 10:28:55 -0400
-In-Reply-To: <501189DA.4030709@enkore.de>
-References: <501189DA.4030709@enkore.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 27 Jul 2012 10:30:19 -0400
+Date: Fri, 27 Jul 2012 09:29:21 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: James Morris <jmorris@namei.org>, Peter Huewe <peter.huewe@infineon.com>,
+        Bryan Freed <bfreed@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [GIT PULL] New TPM driver and features
+Message-ID: <20120727142921.GA28347@linux.vnet.ibm.com>
+References: <20120726143101.GA24237@linux.vnet.ibm.com>
+ <5011BAB1.6060300@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5011BAB1.6060300@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072714-7408-0000-0000-0000072299ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 20:18 +0200, Marian Beermann wrote:
-> Hello everyone,
-> 
-> today I noticed some very odd behaviour, which could lead people to 
-> believe a loss of data, because it is possible to create directories 
-> with backslashes in them.
-> 
-> I am currently running kernel 3.5.
-> 
-> To completly reproduce the problem to the full extend you'll need a 
-> Windows computer, but to see whats wrong Linux completly suffices :-)
-> 
-> On a Linux computer
-> 1. Create a directory named TestA on an NTFS partition
-> 2. Create a subdirectory of TestA named TestB
-> 3. Create a third directory alongside TestA named TestA\TestB (the 
-> fundamental problem is this: backslashes in directory names)
+Hi,
 
-If you're writing new directories to an NTFS partition, it's very
-probable that you're not actually using the in-kernel NTFS driver at
-all. It's more likely that you have the userspace (FUSE) NTFS driver
-instead:
-http://www.tuxera.com/community/ntfs-3g-download/
+On Thu, Jul 26, 2012 at 02:46:25PM -0700, H. Peter Anvin wrote:
+> On 07/26/2012 07:31 AM, Kent Yoder wrote:
+> >       hw_random: add support for the TPM chip as a hardware RNG source
+> 
+> Could you clarify this?  rngd (the user of /dev/hw_random) already
+> has support for the TPM... is this fundamentally different (e.g. can
+> it coexist with tcsd being in use at the same time)?
 
-In fact, they have a FAQ about it the issue that you're seeing:
-http://www.tuxera.com/community/ntfs-3g-faq/#posixfilenames2
-You use the 'windows_names' mount option to disable creating file and
-directory names that confuse windows.
+  These can coexist at the same time since /dev/tpm0 is only opened once
+from user-space (from tcsd) and this hwrng driver comes in through the
+kernel. There would be some amount of contention with the tpm, but its
+not likely to be noticable - grabbing rng data doesn't require any state
+in the tpm, like an auth session or key loading.
 
-Linux itself (and most native Linux programs) has no issues with
-directory names containing the '\' character, of course; the only
-characters that you cannot use are '/' and ASCII NUL, 0x00.
+  Since the rngd support for the tpm requires trousers, this patch will
+be useful in places where you don't want to have to deploy the full TSS,
+like embedded and early boot.
 
--- 
-Calvin Walton <calvin.walton@kepstin.ca>
+Kent
+
+> 
+> 	-hpa
+> 
+> -- 
+> H. Peter Anvin, Intel Open Source Technology Center
+> I work for Intel.  I don't speak on their behalf.
+> 
 
