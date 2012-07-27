@@ -1,49 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2G0NFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 09:05:50 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50369 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2G0NFt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 09:05:49 -0400
-Date: Fri, 27 Jul 2012 14:09:31 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jaeden Amero <jaeden.amero@ni.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] n_tty: Don't lose characters when PARMRK is enabled
-Message-ID: <20120727140931.19ed2bf4@pyramind.ukuu.org.uk>
-In-Reply-To: <1343340751-1942-1-git-send-email-jaeden.amero@ni.com>
-References: <y>
-	<1343340751-1942-1-git-send-email-jaeden.amero@ni.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752866Ab2G0NFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 09:05:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22232 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752778Ab2G0NFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 09:05:54 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, gregkh@linuxfoundation.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, lwoodman@redhat.com,
+        jbaron@redhat.com, alan@linux.intel.com
+Subject: [PATCH] tty, add kref to sysrq handlers
+Date: Fri, 27 Jul 2012 09:04:55 -0400
+Message-Id: <1343394295-21504-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012 17:12:31 -0500
-Jaeden Amero <jaeden.amero@ni.com> wrote:
+On a large system with a large number of tasks, the output of
 
-> When PARMRK is set and large transfers of characters that will get
-> marked are being received, n_tty could drop data silently (i.e.
-> without reporting any error to the client). This is because
-> characters have the potential to take up to three bytes in the line
-> discipline (when they get marked with parity or framing errors), but
-> the amount of free space reported to tty_buffer flush_to_ldisc (via
-> tty->receive_room) is based on the pre-marked data size.
-> 
-> With this patch, the n_tty layer will no longer assume that each byte
-> will only take up one byte in the line discipline. Instead, it will
-> make an overly conservative estimate that each byte will take up
-> three bytes in the line discipline when PARMRK is set.
-> 
-> Signed-off-by: Jaeden Amero <jaeden.amero@ni.com>
+echo t > /proc/sysrq-trigger
 
-What a fun corner case. Patch looks good to me.
+can take a long period of time.  If this period is greater than the period
+of the current clocksource, the clocksource watchdog will mark the
+clocksource as unstable and fail the clocksource over.
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+The problem with sysrq is that __handle_sysrq() takes a spin_lock with
+interrupts disabled and disables interrupts for the duration of the
+handler.  If this happens during sysrq-t on a large system with a large
+number of tasks, the result is a "brown-out" of the system.
+
+The spin_lock in question, sysrq_key_table_lock, is in place to prevent
+the removal of a sysrq handler while it is being executed in
+__handle_sysrq().
+
+A kref is added to each sysrq handler and is incremented and decremented
+in __handle_sysrq().  This, while more complicated than a lock , leads to
+minimizing the time that the sysrq_key_table_lock is acquired and results
+in a functional sysrq-t.
+
+I've tested both options and I no longer see the clocksource watchdog
+marking the TSC clocksource as unstable.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Cc: gregkh@linuxfoundation.org
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: lwoodman@redhat.com
+Cc: jbaron@redhat.com
+Cc: alan@linux.intel.com
+---
+ drivers/tty/sysrq.c   |   42 +++++++++++++++++++++++++++++++++++++++---
+ include/linux/sysrq.h |    2 ++
+ 2 files changed, 41 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 05728894..38c6ae6 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -458,6 +458,20 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
+ 	&sysrq_ftrace_dump_op,		/* z */
+ };
+ 
++void sysrq_release(struct kref *kref)
++{
++	struct sysrq_key_op *release_op;
++	int i;
++	unsigned long flags;
++
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	release_op = container_of(kref, struct sysrq_key_op, kref);
++	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
++		if (sysrq_key_table[i] == release_op)
++			sysrq_key_table[i] = NULL;
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++}
++
+ /* key2index calculation, -1 on invalid index */
+ static int sysrq_key_table_key2index(int key)
+ {
+@@ -502,7 +516,6 @@ void __handle_sysrq(int key, bool check_mask)
+ 	int i;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -513,7 +526,12 @@ void __handle_sysrq(int key, bool check_mask)
+ 	console_loglevel = 7;
+ 	printk(KERN_INFO "SysRq : ");
+ 
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+         op_p = __sysrq_get_key_op(key);
++	if (op_p)
++		kref_get(&op_p->kref);
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++
+         if (op_p) {
+ 		/*
+ 		 * Should we check for enabled operations (/proc/sysrq-trigger
+@@ -526,9 +544,14 @@ void __handle_sysrq(int key, bool check_mask)
+ 		} else {
+ 			printk("This sysrq operation is disabled.\n");
+ 		}
++
++		spin_lock_irqsave(&sysrq_key_table_lock, flags);
++		kref_put(&op_p->kref, sysrq_release);
++		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ 	} else {
+ 		printk("HELP : ");
+ 		/* Only print the help msg once per handler */
++		spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 		for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++) {
+ 			if (sysrq_key_table[i]) {
+ 				int j;
+@@ -541,10 +564,10 @@ void __handle_sysrq(int key, bool check_mask)
+ 				printk("%s ", sysrq_key_table[i]->help_msg);
+ 			}
+ 		}
++		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
+-	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ }
+ 
+ void handle_sysrq(int key)
+@@ -837,7 +860,12 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
+ 
+ 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 	if (__sysrq_get_key_op(key) == remove_op_p) {
+-		__sysrq_put_key_op(key, insert_op_p);
++		if (!remove_op_p) { /* register */
++			__sysrq_put_key_op(key, insert_op_p);
++			kref_init(&insert_op_p->kref);
++		}
++		if (!insert_op_p) /* unregister */
++			kref_put(&remove_op_p->kref, sysrq_release);
+ 		retval = 0;
+ 	} else {
+ 		retval = -1;
+@@ -898,6 +926,14 @@ static inline void sysrq_init_procfs(void)
+ 
+ static int __init sysrq_init(void)
+ {
++	int i;
++
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
++		if (sysrq_key_table[i])
++			kref_init(&sysrq_key_table[i]->kref);
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++
+ 	sysrq_init_procfs();
+ 
+ 	if (sysrq_on())
+diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
+index 7faf933..d458f39 100644
+--- a/include/linux/sysrq.h
++++ b/include/linux/sysrq.h
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/errno.h>
+ #include <linux/types.h>
++#include <linux/kref.h>
+ 
+ /* Enable/disable SYSRQ support by default (0==no, 1==yes). */
+ #define SYSRQ_DEFAULT_ENABLE	1
+@@ -36,6 +37,7 @@ struct sysrq_key_op {
+ 	char *help_msg;
+ 	char *action_msg;
+ 	int enable_mask;
++	struct kref kref;
+ };
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
+-- 
+1.7.9.3
+
