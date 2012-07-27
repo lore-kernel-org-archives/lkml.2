@@ -1,122 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab2G0KZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:25:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57431 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab2G0KZ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:25:29 -0400
-From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: fengguang.wu@intel.com, gthelen@google.com, akpm@linux-foundation.org,
-        yinghan@google.com, mhocko@suse.cz, linux-kernel@vger.kernel.org,
-        hannes@cmpxchg.org, torvalds@linux-foundation.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        npiggin@kernel.dk, Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH V2 2/6] Make TestSetPageDirty and dirty page accounting in one func
-Date: Fri, 27 Jul 2012 18:25:20 +0800
-Message-Id: <1343384720-20084-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
-References: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
+	id S1752991Ab2G0K0I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:26:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:34935 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752940Ab2G0K0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:26:05 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
+   d="scan'208";a="5496387"
+Message-ID: <50126DE8.2010404@cn.fujitsu.com>
+Date: Fri, 27 Jul 2012 18:31:04 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH v5 10/19] memory-hotplug: add memory_block_release
+References: <50126B83.3050201@cn.fujitsu.com>
+In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:26:32,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:26:33,
+	Serialize complete at 2012/07/27 18:26:33
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sha Zhengju <handai.szj@taobao.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Commit a8e7d49a(Fix race in create_empty_buffers() vs __set_page_dirty_buffers())
-extracts TestSetPageDirty from __set_page_dirty and is far away from
-account_page_dirtied.But it's better to make the two operations in one single
-function to keep modular.So in order to avoid the potential race mentioned in
-commit a8e7d49a, we can hold private_lock until __set_page_dirty completes.
-I guess there's no deadlock between ->private_lock and ->tree_lock by quick look.
-It's a prepare patch for following memcg dirty page accounting patches.
+When calling remove_memory_block(), the function shows following message at
+device_release().
 
+Device 'memory528' does not have a release() function, it is broken and must
+be fixed.
 
-Here is some test numbers that before/after this patch:
+remove_memory_block() calls kfree(mem). I think it shouled be called from
+device_release(). So the patch implements memory_block_release()
 
-Test steps(Mem-24g, ext4):
-drop_cache; sync
-fio (buffered/randwrite/bs=4k/size=128m/filesize=1g/numjobs=8/sync)
-
-We test it for 10 times and get the average numbers:
-Before:
-write: io=1024.0MB, bw=334678 KB/s, iops=83669.2 , runt=  3136 msec
-lat (usec): min=1 , max=26203.1 , avg=81.473, stdev=275.754
-After:
-write: io=1024.0MB, bw=331583 KB/s, iops=82895.3 , runt=  3164.4 msec
-lat (usec): min=1.1 , max=19001.6 , avg=83.544, stdev=272.704
-
-Note that the impact is little(~1%).
-
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- fs/buffer.c |   25 +++++++++++++------------
- 1 files changed, 13 insertions(+), 12 deletions(-)
+ drivers/base/memory.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index c7062c8..5e0b0d2 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -610,9 +610,15 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
-  * If warn is true, then emit a warning if the page is not uptodate and has
-  * not been truncated.
-  */
--static void __set_page_dirty(struct page *page,
-+static int __set_page_dirty(struct page *page,
- 		struct address_space *mapping, int warn)
- {
-+	if (unlikely(!mapping))
-+		return !TestSetPageDirty(page);
-+
-+	if (TestSetPageDirty(page))
-+		return 0;
-+
- 	spin_lock_irq(&mapping->tree_lock);
- 	if (page->mapping) {	/* Race with truncate? */
- 		WARN_ON_ONCE(warn && !PageUptodate(page));
-@@ -622,6 +628,8 @@ static void __set_page_dirty(struct page *page,
- 	}
- 	spin_unlock_irq(&mapping->tree_lock);
- 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
-+
-+	return 1;
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 038be73..1cd3ef3 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -109,6 +109,15 @@ bool is_memblk_offline(unsigned long start, unsigned long size)
  }
+ EXPORT_SYMBOL(is_memblk_offline);
  
++#define to_memory_block(device) container_of(device, struct memory_block, dev)
++
++static void release_memory_block(struct device *dev)
++{
++	struct memory_block *mem = to_memory_block(dev);
++
++	kfree(mem);
++}
++
  /*
-@@ -667,11 +675,9 @@ int __set_page_dirty_buffers(struct page *page)
- 			bh = bh->b_this_page;
- 		} while (bh != head);
- 	}
--	newly_dirty = !TestSetPageDirty(page);
-+	newly_dirty = __set_page_dirty(page, mapping, 1);
- 	spin_unlock(&mapping->private_lock);
+  * register_memory - Setup a sysfs device for a memory block
+  */
+@@ -119,6 +128,7 @@ int register_memory(struct memory_block *memory)
  
--	if (newly_dirty)
--		__set_page_dirty(page, mapping, 1);
- 	return newly_dirty;
- }
- EXPORT_SYMBOL(__set_page_dirty_buffers);
-@@ -1119,14 +1125,9 @@ void mark_buffer_dirty(struct buffer_head *bh)
- 			return;
- 	}
+ 	memory->dev.bus = &memory_subsys;
+ 	memory->dev.id = memory->start_section_nr / sections_per_block;
++	memory->dev.release = release_memory_block;
  
--	if (!test_set_buffer_dirty(bh)) {
--		struct page *page = bh->b_page;
--		if (!TestSetPageDirty(page)) {
--			struct address_space *mapping = page_mapping(page);
--			if (mapping)
--				__set_page_dirty(page, mapping, 0);
--		}
--	}
-+	if (!test_set_buffer_dirty(bh))
-+		__set_page_dirty(bh->b_page, page_mapping(bh->b_page), 0);
-+
- }
- EXPORT_SYMBOL(mark_buffer_dirty);
+ 	error = device_register(&memory->dev);
+ 	return error;
+@@ -674,7 +684,6 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+ 		mem_remove_simple_file(mem, phys_device);
+ 		mem_remove_simple_file(mem, removable);
+ 		unregister_memory(mem);
+-		kfree(mem);
+ 	} else
+ 		kobject_put(&mem->dev.kobj);
  
 -- 
 1.7.1
