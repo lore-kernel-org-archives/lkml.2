@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab2G0HdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 03:33:19 -0400
-Received: from mail2.tridentmicro.com ([180.168.84.41]:12407 "EHLO
-	mail2.trident.com.cn" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2G0HdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 03:33:17 -0400
-X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jul 2012 03:33:17 EDT
-From: Qipeng Zha <Qipeng_Zha@sigmadesigns.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 27 Jul 2012 15:26:37 +0800
-Subject: arm interrupt handling 
-Thread-Topic: arm interrupt handling 
-Thread-Index: Ac1enJVCipg1VDzESgKkqJA1XhmqOwNK5L2g
-Message-ID: <FF5886E7A1A0F346BD37602822BD01AA231CB282CC@cn-exh-02.CN.TRID.COM>
-References: <20120705024259.26317.16000.stgit@build.warmcat.com>
- <201207101437.54877.florian@openwrt.org> <4FFC2712.9020208@warmcat.com>
-In-Reply-To: <4FFC2712.9020208@warmcat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1751979Ab2G0HeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 03:34:20 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49394 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab2G0HeT convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 27 Jul 2012 03:34:19 -0400
+Message-Id: <501260980200007800090E08@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 27 Jul 2012 08:34:16 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ian Jackson" <Ian.Jackson@eu.citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [RFC PATCH] Boot PV guests with more than
+ 128GB (v1) for 3.7
+References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6R7XQ3d025694
 
-Hi
-When I study the interrupt handling code in 2.6.39 for omap soc, found don't clear CPSR.I to enable irq till each ISR finished.
-Is this true? Or I miss something, since this will be wired that the core will not service any other irq before complete before irq handling.
+>>> On 26.07.12 at 22:47, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>  2). Allocate a new array, copy the existing P2M into it,
+>     revector the P2M tree to use that, and return the old
+>     P2M to the memory allocate. This has the advantage that
+>     it sets the stage for using XEN_ELF_NOTE_INIT_P2M
+>     feature. That feature allows us to set the exact virtual
+>     address space we want for the P2M - and allows us to
+>     boot as initial domain on large machines.
 
+And I would hope that the tools would get updated to recognize
+this note too, so that huge DomU-s would become possible as
+well.
 
-Best wishes
-Qipeng
+Jan
 
-
------Original Message-----
-From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-bounces@lists.infradead.org] On Behalf Of "Andy Green (æ—å®‰å»¸)"
-Sent: 2012å¹´7æœˆ10æ—¥ 20:59
-To: Florian Fainelli
-Cc: s-jan@ti.com; arnd@arndb.de; patches@linaro.org; tony@atomide.com; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; rostedt@goodmis.org; linux-omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4 0/4] Add ability to set defaultless network device MAC addresses to deterministic computed locally administered values
-
-On 10/07/12 20:37, the mail apparently from Florian Fainelli included:
-
-Hi -
-
-> Le jeudi 05 juillet 2012 04:44:33, Andy Green a Ã©crit :
->> The following series adds some code to generate legal, locally administered
->> MAC addresses from OMAP4 CPU Die ID fuse data, and then adds a helper at
->> net/ethernet taking care of accepting device path / MAC mapping
->> registrations and running a notifier to enforce the requested MAC when the
->> matching network device turns up.
->
-> This looks like something you can solve by user-space entirely. Expose the
-
-That might seem so from a openwrt perspective, where you custom cook the 
-whole userland thing per-device, but it ain't so from a generic rootfs 
-perspective.
-
-Why should Ubuntu, Fedora etc stink up their OSes with Panda-specific 
-workarounds?  And Panda is not the only device with this issue.
-
--Andy
-
-_______________________________________________
-linux-arm-kernel mailing list
-linux-arm-kernel@lists.infradead.org
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
