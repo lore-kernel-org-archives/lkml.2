@@ -1,693 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab2G0N6Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 09:58:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33372 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751966Ab2G0N6Y (ORCPT
+	id S1752324Ab2G0N6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 09:58:47 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:31630 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab2G0N6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 09:58:24 -0400
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH v2] regmap: Add regmap dummy driver
-Date: Fri, 27 Jul 2012 14:58:20 +0100
-Message-Id: <1343397500-31283-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.11.3
+	Fri, 27 Jul 2012 09:58:46 -0400
+X-IronPort-AV: E=Sophos;i="4.77,667,1336348800"; 
+   d="scan'208";a="13736267"
+Date: Fri, 27 Jul 2012 14:57:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Christopher Covington <cov@codeaurora.org>
+CC: Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 02/24] xen/arm: hypercalls
+In-Reply-To: <50128FE6.5070109@codeaurora.org>
+Message-ID: <alpine.DEB.2.02.1207271454470.26163@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>  <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com>  <50119856.2020206@codeaurora.org> <1343380764.6812.108.camel@zakaz.uk.xensource.com>
+ <50128FE6.5070109@codeaurora.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a pseudo-driver for debugging and stress-testing the
-regmap/regcache APIs.  A standard set of tools for working
-with this driver (mainly sh scripts) will be put in a repo
-at https://github.com/quantumdream/regmap-tools
+On Fri, 27 Jul 2012, Christopher Covington wrote:
+> On 07/27/2012 05:19 AM, Ian Campbell wrote:
+> > On Thu, 2012-07-26 at 20:19 +0100, Christopher Covington wrote:
+> >> Hi Stefano,
+> >>
+> >> On 07/26/2012 11:33 AM, Stefano Stabellini wrote:
+> >>> Use r12 to pass the hypercall number to the hypervisor.
+> >>>
+> >>> We need a register to pass the hypercall number because we might not
+> >>> know it at compile time and HVC only takes an immediate argument.
+> >>
+> >> You're not going to JIT assemble the appropriate HVC instruction? Darn.
+> > 
+> > ;-)
+> > 
 
-Some of these tests will require one to build with
-REGMAP_ALLOW_WRITE_DEBUGFS defined.
+I admit having spent few hours thinking about how to implement a
+self-modifying function able to change the ISS at run time. Fortunately
+few hours later I was struck by common sense and I decided to follow a
+different direction ;-)
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- This is an initial implementation of the regdummy driver for regmap.
- This is mainly useful for debugging/stress-testing regcache as it
- removes the need for real hardware and can be done in an emulated
- environment very easily.
 
- There'll be incremental patches adding more features such as,
- support for configurable volatile/readable/etc. registers via
- debugfs entries.
+> > The maximum currently defined hypercall number is 55, although there are
+> > some small gaps so there's actually more like 45 in total.
+> > 
+> >>  It seems like it'd be
+> >> reasonable to take the approach that seems to be favored for MRC/MCR
+> >> instructions, using a function containing switch statement that chooses
+> >> between several inline assembly instructions based off an enum passed to
+> >> the function. See for example arch_timer_reg_read in
+> >> arch/arm/kernel/arch_timer.c.
+> > 
+> > I don't think it is feasible with this number of hypercalls, even
+> > accepting that in many cases the number will be a constant so gcc can
+> > likely optimise almost all of it away.
+> > 
+> > Is there something wrong with the r12 based approach?
+> 
+> Only that you're defining a custom interface for something that there is
+> a potentially more standard interface for. I just wanted to double check
+> that all the ways of using the potentially more standard interface had
+> been explored and found to be unreasonable.
 
- v2 updates:
- - Factored out the access to the MMIO region into a separate
- function.
- - Removed bogus Change-Id
-
- drivers/base/regmap/Kconfig        |   8 +
- drivers/base/regmap/Makefile       |   1 +
- drivers/base/regmap/regmap-dummy.c | 609 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 618 insertions(+)
- create mode 100644 drivers/base/regmap/regmap-dummy.c
-
-diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-index 6be390b..5a1ab02 100644
---- a/drivers/base/regmap/Kconfig
-+++ b/drivers/base/regmap/Kconfig
-@@ -20,3 +20,11 @@ config REGMAP_MMIO
- 
- config REGMAP_IRQ
- 	bool
-+
-+config REGMAP_DUMMY
-+	tristate
-+	select REGMAP_MMIO
-+	help
-+	  Say Y or M if you want to add the regdummy driver for regmap.
-+	  This is a pseudo-driver used for debugging and stress-testing
-+	  the regmap/regcache APIs.
-diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-index 5e75d1b..c5d70f1 100644
---- a/drivers/base/regmap/Makefile
-+++ b/drivers/base/regmap/Makefile
-@@ -5,3 +5,4 @@ obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
- obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
- obj-$(CONFIG_REGMAP_MMIO) += regmap-mmio.o
- obj-$(CONFIG_REGMAP_IRQ) += regmap-irq.o
-+obj-$(CONFIG_REGMAP_DUMMY) += regmap-dummy.o
-diff --git a/drivers/base/regmap/regmap-dummy.c b/drivers/base/regmap/regmap-dummy.c
-new file mode 100644
-index 0000000..078e090
---- /dev/null
-+++ b/drivers/base/regmap/regmap-dummy.c
-@@ -0,0 +1,609 @@
-+/*
-+ * Register map access API - Dummy regmap driver
-+ *
-+ * Copyright 2012 Wolfson Microelectronics PLC.
-+ *
-+ * Author: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/uaccess.h>
-+#include <linux/platform_device.h>
-+#include <linux/device.h>
-+#include <linux/slab.h>
-+#include <linux/debugfs.h>
-+#include <linux/mutex.h>
-+#include <linux/regmap.h>
-+
-+#define DEFAULT_REGS_SIZE 1024
-+
-+struct regdummy_dev {
-+	struct device *dev;
-+	struct mutex lock;
-+
-+	/* Set when regdummy defaults have been modified.
-+	 * This is useful to know so we don't reinit the
-+	 * cache if there is no reason to do so. */
-+	unsigned int dirty:1;
-+
-+	void *regs;
-+	unsigned int regs_size;
-+	unsigned int regs_size_new;
-+
-+	struct regmap *map;
-+	struct regmap_config *config;
-+	struct reg_default *regdef;
-+};
-+
-+static struct dentry *regdummy_debugfs_root;
-+
-+/* Default volatile register callback, this should
-+ * normally be configured by the user via a debugfs
-+ * entry */
-+static bool regdummy_volatile_reg(struct device *dev,
-+				  unsigned int reg)
-+{
-+	return false;
-+}
-+
-+/* Default readable register callback, this should
-+ * normally be configured by the user via a debugfs
-+ * entry */
-+static bool regdummy_readable_reg(struct device *dev,
-+				  unsigned int reg)
-+{
-+	return true;
-+}
-+
-+/* Default precious register callback, this should
-+ * normally be configured by the user via a debugfs
-+ * entry */
-+static bool regdummy_precious_reg(struct device *dev,
-+				  unsigned int reg)
-+{
-+	return false;
-+}
-+
-+/* Calculate the length of a fixed format  */
-+static size_t regmap_calc_reg_len(int max_val, char *buf, size_t buf_size)
-+{
-+	snprintf(buf, buf_size, "%x", max_val);
-+	return strlen(buf);
-+}
-+
-+static ssize_t regdummy_defaults_read_file(struct file *file, char __user *user_buf,
-+					   size_t count, loff_t *ppos)
-+{
-+	int reg_len, val_len, tot_len;
-+	size_t buf_pos = 0;
-+	loff_t p = 0;
-+	ssize_t ret;
-+	int i;
-+	struct regdummy_dev *rdevp = file->private_data;
-+	struct regmap_config *config;
-+	struct reg_default *regdef;
-+	unsigned int val;
-+	unsigned int j;
-+	unsigned int regdef_num;
-+	char *buf;
-+
-+	if (*ppos < 0 || !count)
-+		return -EINVAL;
-+
-+	buf = kmalloc(count, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	mutex_lock(&rdevp->lock);
-+
-+	config = rdevp->config;
-+	regdef = rdevp->regdef;
-+	regdef_num = rdevp->regs_size / config->reg_stride;
-+
-+	/* Calculate the length of a fixed format  */
-+	reg_len = regmap_calc_reg_len(config->max_register, buf, count);
-+	val_len = 2 * DIV_ROUND_UP(config->val_bits, 8);
-+	tot_len = reg_len + val_len + 3;      /* : \n */
-+
-+	for (i = 0; i <= config->max_register; i += config->reg_stride) {
-+		if (!regdummy_readable_reg(rdevp->dev, i))
-+			continue;
-+
-+		if (regdummy_precious_reg(rdevp->dev, i))
-+			continue;
-+
-+		/* If we're in the region the user is trying to read */
-+		if (p >= *ppos) {
-+			/* ...but not beyond it */
-+			if (buf_pos >= count - 1 - tot_len)
-+				break;
-+
-+			/* Format the register */
-+			snprintf(buf + buf_pos, count - buf_pos, "%.*x: ",
-+				 reg_len, i);
-+			buf_pos += reg_len + 2;
-+
-+			/* Format the value, write all X if we can't read */
-+			for (j = 0; j < regdef_num; j++) {
-+				if (regdef[j].reg == i) {
-+					val = regdef[j].def;
-+					snprintf(buf + buf_pos, count - buf_pos,
-+						 "%.*x", val_len, val);
-+					break;
-+				}
-+			}
-+			if (j == regdef_num)
-+				memset(buf + buf_pos, 'X', val_len);
-+			buf_pos += 2 * DIV_ROUND_UP(config->val_bits, 8);
-+
-+			buf[buf_pos++] = '\n';
-+		}
-+		p += tot_len;
-+	}
-+
-+	ret = buf_pos;
-+
-+	if (copy_to_user(user_buf, buf, buf_pos)) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+
-+	*ppos += buf_pos;
-+
-+out:
-+	mutex_unlock(&rdevp->lock);
-+
-+	kfree(buf);
-+	return ret;
-+}
-+
-+static ssize_t regdummy_defaults_write_file(struct file *file,
-+					    const char __user *user_buf,
-+					    size_t count, loff_t *ppos)
-+{
-+	char buf[32];
-+	size_t buf_size;
-+	char *start = buf;
-+	unsigned long reg, value;
-+	struct regdummy_dev *rdevp = file->private_data;
-+	struct regmap_config *config = rdevp->config;
-+	struct reg_default *regdef = rdevp->regdef;
-+	unsigned int i;
-+	unsigned int regdef_num = rdevp->regs_size / config->reg_stride;
-+
-+	buf_size = min(count, (sizeof(buf)-1));
-+	if (copy_from_user(buf, user_buf, buf_size))
-+		return -EFAULT;
-+	buf[buf_size] = 0;
-+
-+	while (*start == ' ')
-+		start++;
-+	reg = simple_strtoul(start, &start, 16);
-+	while (*start == ' ')
-+		start++;
-+	if (strict_strtoul(start, 16, &value))
-+		return -EINVAL;
-+
-+	mutex_lock(&rdevp->lock);
-+	for (i = 0; i < regdef_num; i++) {
-+		if (regdef[i].reg == reg) {
-+			if (regdef[i].def != value)
-+				rdevp->dirty = 1;
-+			regdef[i].def = value;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&rdevp->lock);
-+	return buf_size;
-+}
-+
-+static const struct file_operations regdummy_defaults_fops = {
-+	.open = simple_open,
-+	.read = regdummy_defaults_read_file,
-+	.write = regdummy_defaults_write_file,
-+	.llseek = default_llseek,
-+};
-+
-+/* Called with lock held */
-+static int regdummy_create_debugfs(struct device *dev)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+
-+	regdummy_debugfs_root = debugfs_create_dir("regdummy", NULL);
-+	if (IS_ERR(regdummy_debugfs_root))
-+		return PTR_ERR(regdummy_debugfs_root);
-+
-+	debugfs_create_file("defaults", 0400, regdummy_debugfs_root,
-+			    rdevp, &regdummy_defaults_fops);
-+
-+	return 0;
-+}
-+
-+/* Called with lock held */
-+static void regdummy_exit_debugfs(struct device *dev)
-+{
-+	debugfs_remove_recursive(regdummy_debugfs_root);
-+}
-+
-+/* Called with lock held */
-+static int regdummy_init_regmap(struct device *dev)
-+{
-+	struct regmap_config *config;
-+	struct reg_default *regdef;
-+	int ret;
-+	void *regs;
-+	unsigned int regdef_num, regdef_num_raw;
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	unsigned int i;
-+
-+	config = kzalloc(sizeof(*config), GFP_KERNEL);
-+	if (!config)
-+		return -ENOMEM;
-+	rdevp->config = config;
-+
-+	/* Fill up a sample regmap_config structure */
-+	config->reg_bits = 32;
-+	config->val_bits = 32;
-+	config->reg_stride = 4;
-+
-+	/* Allocate our fake __iomem region */
-+	rdevp->regs_size = rdevp->regs_size_new = DEFAULT_REGS_SIZE;
-+	regs = kzalloc(rdevp->regs_size, GFP_KERNEL);
-+	if (!regs) {
-+		ret = -ENOMEM;
-+		goto err_alloc_config;
-+	}
-+	rdevp->regs = regs;
-+
-+	/* Allocate the register defaults */
-+	regdef_num = rdevp->regs_size / config->reg_stride;
-+	regdef_num_raw = regdef_num * sizeof(*regdef);
-+	regdef = kzalloc(regdef_num_raw, GFP_KERNEL);
-+	if (!regdef) {
-+		ret = -ENOMEM;
-+		goto err_alloc_regs;
-+	}
-+	rdevp->regdef = regdef;
-+
-+	for (i = 0; i < regdef_num; i++)
-+		rdevp->regdef[i].reg = i * config->reg_stride;
-+
-+	/* Fill up the rest of the regmap_config structure */
-+	config->reg_defaults = regdef;
-+	config->num_reg_defaults = regdef_num;
-+	config->max_register = rdevp->regs_size - config->reg_stride;
-+	config->cache_type = REGCACHE_RBTREE;
-+	config->volatile_reg = regdummy_volatile_reg;
-+	config->readable_reg = regdummy_readable_reg;
-+	config->precious_reg = regdummy_precious_reg;
-+
-+	rdevp->map = regmap_init_mmio(rdevp->dev,
-+				      (void __iomem *)rdevp->regs,
-+				      config);
-+	if (IS_ERR(rdevp->map)) {
-+		ret = PTR_ERR(rdevp->map);
-+		goto err_alloc_regdef;
-+	}
-+
-+	ret = regdummy_create_debugfs(dev);
-+	if (ret < 0) {
-+		dev_err(rdevp->dev, "Failed to create debugfs entries: %d\n",
-+			ret);
-+		goto err_regmap_init;
-+	}
-+
-+	return 0;
-+
-+err_regmap_init:
-+	regmap_exit(rdevp->map);
-+err_alloc_regdef:
-+	kfree(regdef);
-+err_alloc_regs:
-+	kfree(regs);
-+err_alloc_config:
-+	kfree(config);
-+	return ret;
-+}
-+
-+/* Called with lock held */
-+static void regdummy_free_regmap(struct device *dev)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+
-+	regdummy_exit_debugfs(dev);
-+
-+	if (rdevp->map)
-+		regmap_exit(rdevp->map);
-+
-+	kfree(rdevp->config);
-+	kfree(rdevp->regs);
-+	kfree(rdevp->regdef);
-+}
-+
-+/* Called with lock held */
-+static void regdummy_write_raw(struct device *dev, void *buf,
-+			       unsigned int reg, unsigned int val)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	struct regmap_config *config = rdevp->config;
-+
-+	switch (config->val_bits) {
-+	case 8: {
-+		u8 *p = buf;
-+		p[reg] = val;
-+		break;
-+	}
-+	case 16: {
-+		u16 *p = buf;
-+		p[reg] = val;
-+		break;
-+	}
-+	case 32: {
-+		u32 *p = buf;
-+		p[reg] = val;
-+		break;
-+	}
-+	default:
-+		BUG();
-+		break;
-+	}
-+}
-+
-+static int regdummy_reinit_map(struct device *dev)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	struct reg_default *regdef_new;
-+	struct regmap_config *config = rdevp->config;
-+	unsigned int regdef_num_new;
-+	unsigned int regdef_num_raw_new;
-+	unsigned int regdef_num;
-+	void *regs_new;
-+	unsigned int i;
-+
-+	int ret;
-+
-+	if (!rdevp->dirty)
-+		return 0;
-+
-+	/* Allocate the new fake __iomem region */
-+	regs_new = kzalloc(rdevp->regs_size_new, GFP_KERNEL);
-+	if (!regs_new)
-+		return -ENOMEM;
-+
-+	/* Allocate the new register defaults */
-+	regdef_num_new = rdevp->regs_size_new / config->reg_stride;
-+	regdef_num_raw_new = regdef_num_new * sizeof(*regdef_new);
-+	regdef_new = kzalloc(regdef_num_raw_new, GFP_KERNEL);
-+	if (!regdef_new) {
-+		kfree(regs_new);
-+		return -ENOMEM;
-+	}
-+
-+	/* Fixup the register defaults and the raw regs region */
-+	regdef_num = rdevp->regs_size / config->reg_stride;
-+	for (i = 0; i < regdef_num_new; i++) {
-+		regdef_new[i].reg = i * config->reg_stride;
-+		if (i < regdef_num) {
-+			regdef_new[i].def = rdevp->regdef[i].def;
-+			regdummy_write_raw(dev, regs_new, i,
-+					   rdevp->regdef[i].def);
-+		}
-+	}
-+
-+	/* Re-initialize everything */
-+	regmap_exit(rdevp->map);
-+
-+	kfree(rdevp->regs);
-+	rdevp->regs = regs_new;
-+	rdevp->regs_size = rdevp->regs_size_new;
-+
-+	kfree(rdevp->regdef);
-+	rdevp->regdef = regdef_new;
-+
-+	config->reg_defaults = regdef_new;
-+	config->num_reg_defaults = regdef_num_new;
-+	config->max_register = rdevp->regs_size_new - config->reg_stride;
-+
-+	rdevp->map = regmap_init_mmio(rdevp->dev,
-+				      (void __iomem *)rdevp->regs,
-+				      config);
-+	if (IS_ERR(rdevp->map)) {
-+		ret = PTR_ERR(rdevp->map);
-+		dev_err(rdevp->dev, "Failed to reinit regmap: %d\n", ret);
-+		rdevp->map = NULL;
-+		return ret;
-+	}
-+
-+	rdevp->dirty = 0;
-+
-+	return 0;
-+}
-+
-+static ssize_t reinit_map_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	int ret;
-+
-+	mutex_lock(&rdevp->lock);
-+	ret = regdummy_reinit_map(dev);
-+	mutex_unlock(&rdevp->lock);
-+	if (ret)
-+		return ret;
-+	return count;
-+}
-+static DEVICE_ATTR(reinit_map, S_IWUSR, NULL, reinit_map_store);
-+
-+static ssize_t regs_raw_size_show(struct device *dev, struct device_attribute *attr,
-+				  char *buf)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	ssize_t ret;
-+
-+	mutex_lock(&rdevp->lock);
-+	ret = scnprintf(buf, PAGE_SIZE, "%u\n", rdevp->regs_size);
-+	mutex_unlock(&rdevp->lock);
-+	return ret;
-+}
-+
-+static ssize_t regs_raw_size_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	long val;
-+	int ret;
-+
-+	mutex_lock(&rdevp->lock);
-+	ret = strict_strtol(buf, 10, &val);
-+	if (ret) {
-+		mutex_unlock(&rdevp->lock);
-+		return ret;
-+	}
-+
-+	if (!val || (val % rdevp->config->reg_stride)) {
-+		mutex_unlock(&rdevp->lock);
-+		return -EINVAL;
-+	}
-+
-+	rdevp->regs_size_new = val;
-+	rdevp->dirty = 1;
-+	regdummy_reinit_map(dev);
-+	mutex_unlock(&rdevp->lock);
-+	return count;
-+}
-+static DEVICE_ATTR(regs_raw_size, S_IWUSR | S_IRUGO,
-+		   regs_raw_size_show, regs_raw_size_store);
-+
-+static ssize_t sync_store(struct device *dev,
-+			  struct device_attribute *attr,
-+			  const char *buf, size_t count)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(dev);
-+	int ret;
-+
-+	mutex_lock(&rdevp->lock);
-+	BUG_ON(!rdevp->map);
-+	ret = regcache_sync(rdevp->map);
-+	mutex_unlock(&rdevp->lock);
-+	if (ret)
-+		return ret;
-+	return count;
-+}
-+static DEVICE_ATTR(sync, S_IWUSR, NULL, sync_store);
-+
-+static int __devinit regdummy_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct regdummy_dev *rdevp;
-+
-+	rdevp = devm_kzalloc(&pdev->dev, sizeof(*rdevp), GFP_KERNEL);
-+	if (!rdevp)
-+		return -ENOMEM;
-+
-+	mutex_init(&rdevp->lock);
-+
-+	rdevp->dev = &pdev->dev;
-+	dev_set_drvdata(rdevp->dev, rdevp);
-+
-+	mutex_lock(&rdevp->lock);
-+	ret = regdummy_init_regmap(rdevp->dev);
-+	if (ret < 0) {
-+		dev_err(rdevp->dev,
-+			"Failed to init regmap: %d\n", ret);
-+		mutex_unlock(&rdevp->lock);
-+		return ret;
-+	}
-+
-+	ret = device_create_file(rdevp->dev,
-+				 &dev_attr_reinit_map);
-+	if (ret < 0)
-+		goto err_regmap_init;
-+
-+	ret = device_create_file(rdevp->dev,
-+				 &dev_attr_regs_raw_size);
-+	if (ret < 0)
-+		goto err_create_reinit_map;
-+
-+	ret = device_create_file(rdevp->dev,
-+				 &dev_attr_sync);
-+	if (ret < 0)
-+		goto err_create_regs_raw_size;
-+	mutex_unlock(&rdevp->lock);
-+
-+	return 0;
-+
-+err_create_regs_raw_size:
-+	device_remove_file(rdevp->dev, &dev_attr_regs_raw_size);
-+err_create_reinit_map:
-+	device_remove_file(rdevp->dev, &dev_attr_reinit_map);
-+err_regmap_init:
-+	regdummy_free_regmap(rdevp->dev);
-+	mutex_unlock(&rdevp->lock);
-+	return ret;
-+}
-+
-+static int regdummy_remove(struct platform_device *pdev)
-+{
-+	struct regdummy_dev *rdevp = dev_get_drvdata(&pdev->dev);
-+
-+	mutex_lock(&rdevp->lock);
-+	device_remove_file(rdevp->dev, &dev_attr_sync);
-+	device_remove_file(rdevp->dev, &dev_attr_regs_raw_size);
-+	device_remove_file(rdevp->dev, &dev_attr_reinit_map);
-+	regdummy_free_regmap(&pdev->dev);
-+	dev_set_drvdata(&pdev->dev, NULL);
-+	mutex_unlock(&rdevp->lock);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver regdummy_driver = {
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "regdummy",
-+	},
-+	.probe = regdummy_probe,
-+	.remove = regdummy_remove,
-+};
-+
-+static struct platform_device regdummy_device = {
-+	.name = "regdummy",
-+	.id = 0,
-+};
-+
-+static int __init regdummy_init(void)
-+{
-+	int ret;
-+
-+	ret = platform_device_register(&regdummy_device);
-+	if (ret)
-+		return ret;
-+
-+	ret = platform_driver_register(&regdummy_driver);
-+	if (ret) {
-+		platform_device_unregister(&regdummy_device);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+module_init(regdummy_init);
-+
-+static void __exit regdummy_exit(void)
-+{
-+	platform_driver_unregister(&regdummy_driver);
-+	platform_device_unregister(&regdummy_device);
-+}
-+module_exit(regdummy_exit);
-+
-+MODULE_DESCRIPTION("Regmap dummy driver");
-+MODULE_AUTHOR("Dimitris Papastamos <dp@opensource.wolfsonmicro.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.11.3
-
+Yep, thanks for helping us reviewing the code.
