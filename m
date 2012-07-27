@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab2G0GOi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 02:14:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29825 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751240Ab2G0GOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 02:14:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="178179653"
-Date: Thu, 26 Jul 2012 23:14:30 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Daniel J Blueman <daniel@quora.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] Add Etron XHCI quirk to avoid warning spam
-Message-ID: <20120727061430.GC11608@xanatos>
-References: <1343361824-11417-1-git-send-email-daniel@quora.org>
+	id S1752664Ab2G0GXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 02:23:00 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:35679 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578Ab2G0GW7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 02:22:59 -0400
+Date: Fri, 27 Jul 2012 11:52:23 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] uprobes: rename vma_address() and make it return
+ "unsigned long"
+Message-ID: <20120727062223.GA3906@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120712170934.GA25455@redhat.com>
+ <20120712171022.GA25507@redhat.com>
+ <20120726050018.GD3810@linux.vnet.ibm.com>
+ <20120726102812.GB7197@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1343361824-11417-1-git-send-email-daniel@quora.org>
+In-Reply-To: <20120726102812.GB7197@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072706-4242-0000-0000-00000272B119
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+* Oleg Nesterov <oleg@redhat.com> [2012-07-26 12:28:12]:
 
-I already have a patch in my queue for this.  However, it keys off the
-PCI_DEVICE_ID_ASROCK_P67 PCI device ID.  Do you have another Etron
-device with a different device ID that needs this quirk?
+> On 07/26, Srikar Dronamraju wrote:
+> >
+> > * Oleg Nesterov <oleg@redhat.com> [2012-07-12 19:10:22]:
+> >
+> > > 1. vma_address() returns loff_t, this looks confusing and this is
+> > >    unnecessary after the previous change. Make it return "ulong",
+> > >    all callers truncate the result anyway.
+> > >
+> > > 2. Its name conflicts with mm/rmap.c:vma_address(), rename it to
+> > >    offset_to_vaddr(), this matches vaddr_to_offset().
+> > >
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> >
+> > Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> Thanks.
+> 
+> Could you please ack v2 below?
+> 
+> I forgot to update "loff_t vaddr" in mmap/munmap. IOW, this is the
+> same patch plus
+> 
+> 	- loff_t vaddr = offset_to_vaddr(...);
+> 	+ unsigned long vaddr = offset_to_vaddr(...);
+> 
+> in uprobe_mmap/munmap.
+> 
 
-Sarah Sharp
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-On Fri, Jul 27, 2012 at 12:03:44PM +0800, Daniel J Blueman wrote:
-> When various USB3 devices with Etron XHCI controllers, we see a bunch of
-> warnings:
-> xhci_hcd 0000:02:00.0: WARN Successful completion on short TX: needs
-> XHCI_TRUST_TX_LENGTH quirk?
+> In fact I was going to do this in
+> "uprobes: teach build_probe_list() to consider the range" but
+> forgot as well.
 > 
-> Acknowledge the issue by adding the quirk.
+> Oleg.
 > 
-> Signed-off-by: Daniel J Blueman <daniel@quora.org>
-> ---
->  drivers/usb/host/xhci-pci.c |   11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -112,14 +112,9 @@ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
+>  	return false;
+>  }
 > 
-> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-> index 18b231b..715ad11 100644
-> --- a/drivers/usb/host/xhci-pci.c
-> +++ b/drivers/usb/host/xhci-pci.c
-> @@ -95,10 +95,13 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
->  		xhci->limit_active_eps = 64;
->  		xhci->quirks |= XHCI_SW_BW_CHECKING;
+> -static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
+> +static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
+>  {
+> -	loff_t vaddr;
+> -
+> -	vaddr = vma->vm_start + offset;
+> -	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+> -
+> -	return vaddr;
+> +	return vma->vm_start + offset - ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+>  }
+> 
+>  static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
+> @@ -775,7 +770,7 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
+>  		curr = info;
+> 
+>  		info->mm = vma->vm_mm;
+> -		info->vaddr = vma_address(vma, offset);
+> +		info->vaddr = offset_to_vaddr(vma, offset);
 >  	}
-> -	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
-> -			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
-> -		xhci->quirks |= XHCI_RESET_ON_RESUME;
-> -		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
-> +	if (pdev->vendor == PCI_VENDOR_ID_ETRON) {
-> +		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
-> +
-> +		if (pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
-> +			xhci->quirks |= XHCI_RESET_ON_RESUME;
-> +			xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
-> +		}
->  	}
->  	if (pdev->vendor == PCI_VENDOR_ID_VIA)
->  		xhci->quirks |= XHCI_RESET_ON_RESUME;
-> -- 
-> 1.7.9.5
+>  	mutex_unlock(&mapping->i_mmap_mutex);
 > 
+> @@ -1042,7 +1037,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+> 
+>  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+>  		if (!ret) {
+> -			loff_t vaddr = vma_address(vma, uprobe->offset);
+> +			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+> 
+>  			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+>  			/*
+> @@ -1103,7 +1098,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+>  	build_probe_list(inode, vma, start, end, &tmp_list);
+> 
+>  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> -		loff_t vaddr = vma_address(vma, uprobe->offset);
+> +		unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+>  		/*
+>  		 * An unregister could have removed the probe before
+>  		 * unmap. So check before we decrement the count.
+> 
+
