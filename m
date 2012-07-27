@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab2G0FLC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 01:11:02 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57116 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab2G0FLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 01:11:00 -0400
-Date: Fri, 27 Jul 2012 07:10:54 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Eric =?utf-8?Q?B=C3=A9nard?= <eric@eukrea.com>,
-        Axel Lin <axel.lin@gmail.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>
-Subject: Re: [GIT PULL] PWM subsystem for v3.6
-Message-ID: <20120727051054.GA30771@avionic-0098.mockup.avionic-design.de>
-References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
- <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
+	id S1752275Ab2G0FcN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 01:32:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:49626 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930Ab2G0FcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 01:32:11 -0400
+Date: Fri, 27 Jul 2012 15:32:06 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: torvalds@linux-foundation.org
+Cc: Alex Williamson <alex.williamson@redhat.com>, benh@kernel.crashing.org,
+        aik@ozlabs.ru, david@gibson.dropbear.id.au, gregkh@linuxfoundation.org,
+        joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
+        agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
+        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
+        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com, ddutile@redhat.com
+Subject: Re: [GIT PULL (PATCH 0/4)] VFIO driver for v3.6
+Message-ID: <20120727053206.GC11870@drongo>
+References: <20120725142254.12800.61860.stgit@bling.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
+In-Reply-To: <20120725142254.12800.61860.stgit@bling.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:BOFUkdanURbugoPy8ZkLILIHBfPsOHchza1+7SFT6gH
- K5qnEO+O371kYw/9bNKm16AS7FgwQTj0kz5WhucBXhD0F0jbOZ
- WaOdiSROWkriQ8EBEyAvCg/rwpiAIn3AKlegCfGaw4cGlOv/PI
- hPE9NLyspFjbzp+VgH04VthV5GfpNIaohY4Sfc89Se8Yj9M3uG
- Iv5ltUsTcc7c6JLg192eCUVCJAiET3FEQjfTQW42JUKgCE4cMz
- UpjiWG7OIDFrc8+2EIb3mjX07l2B3qsaTV8AXIZJ0mSuev7dld
- WrqmXqxMtua2GiNId0tzeicIpxywBZP+fXyqTSEwPaYHQb4AWW
- B6Qo1/w802E67oEZVo/zcHcVWtRjrWUrK+cEALOSiCxC14/Aon
- HAj2gHEnvhbSBc8e9tavJUtHgdQVBTFeb6ahOpMbYcCTVakQvt
- 3sEC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 25, 2012 at 08:53:06AM -0600, Alex Williamson wrote:
+> Hi Linus,
+> 
+> This series includes the VFIO userspace driver interface for the
+> 3.6 kernel merge window.  This driver is intended to provide a
+> secure interface for device access using IOMMU protection for
+> applications like assignment of physical devices to virtual
+> machines.  Qemu will be the first user of this interface, enabling
+> assignment of PCI devices to Qemu guests.  This interface is
+> intended to eventually replace the x86-specific assignment mechanism
+> currently available in KVM.  This interface has the advantage of
+> being more secure, by working with IOMMU groups to ensure device
+> isolation and providing it's own filtered resource access mechanism,
+> and also more flexible, in not being x86 or KVM specific (extensions
+> to enable POWER are already working).
+> 
+> As a new driver, I'm including both the individual patches in email,
+> as well as a branch to pull from:
+> 
+> git://github.com/awilliam/linux-vfio.git for-linus
+> 
+> This driver is originally the work of Tom Lyon, but has since been
+> handed over to me and gone through a complete overhaul thanks to the
+> input from David Gibson, Ben Herrenschmidt, Chris Wright, Joerg
+> Roedel, and others.  This driver has been available in linux-next for
+> the last month.  Thanks,
 
---u3/rZRmxL6MmkK24
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Linus,
 
-On Thu, Jul 26, 2012 at 02:11:58PM -0700, Linus Torvalds wrote:
-> On Thu, Jul 26, 2012 at 12:16 AM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> >
-> > The new PWM subsystem aims at collecting all implementations of the
-> > legacy PWM API and to eventually replace it completely. The subsystem
-> > has been in development for over half a year now and many drivers have
-> > already been converted. It has been in linux-next for a couple of weeks
-> > and there have been no major issues so I think it is ready for inclusion
-> > in your tree.
->=20
-> For new subsystems like this, I really want ack's from the people who
-> are expected to use it.
+Are you thinking of pulling this driver in for 3.6?  I would be glad
+to see it go in since we want to use it with KVM on PowerPC.  If
+possible we'd like the PowerPC bits for it to go in as well.
 
-At least the patch that adds me as the maintainer is Acked-by: Sascha
-Hauer, who did the original work, and Arnd Bergmann who was involved in
-the review process. Other people such as Shawn Guo and Mark Brown have
-also been reviewing these patches and new patches have been contributed
-by Eric B=C3=A9nard, Axel Lin, Sachin Kamat, Alexandre Courbot, Alexandre
-Pereira da Silva and Philip Avinash.
-
-I'm adding all of them on Cc so they can ack this (I'm assuming acking
-this email will suffice).
-
-> For a gitorious pull like this, I also want signed tags with the gpg
-> key having signatures from people I recognize. I don't think I have
-> such a key from you.
-
-Right. I don't have any signatures on my GPG key, but I'm not aware of
-any kernel developers in my area and unfortunately I don't get around
-much either. I can request key-signing via users@kernel.org and see if
-I missed anyone. I think that is the correct mailing list? I remember
-reading about it a while back but I can't find the link anymore.
-
-Thierry
-
---u3/rZRmxL6MmkK24
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQEiLeAAoJEN0jrNd/PrOh6KkP/0yEYTHmzebXKgiEaHMVHCpZ
-bqbbVOZFX9klXEGZ+3kXGW7d43a9G6MUHSD/KfvsCxWNWo4wldrYIekMbRVUlms3
-ltkvZbFBmiwiOoFblSwXbkodKtMPb21kY77TSYoISO356gyDFv5ZlpwPHgM8Y2I0
-b4VQc2HG+VsYOr+SSFBflW46WbT5C6q+5SYjKTJ3p0whpwT1KyVuSYpF0PN4nLo9
-UPa+t+mYpsPkq44L5PGqjSkFtHCFZh3UxzSBLhk2ZTibEovxNzMEDp3zDE1Yyksz
-huv9yvIJsLDOAd9gGw7Qiz/KrJVftmYxEd/twWaWlH0ttzVCmo6XaUhqMgm/jSpt
-XF3HIaG383Vcl4FKDe3rKI+rFy5sdoNmH1aLdV7erSpw20MVbuJk3gmWGeCoiCd0
-ytNLsRD2yxi/r0x/zmbqcMfIZCPNdN65qU9Oy5Y/AzkkQJtvj92mpElWXtJIuYRM
-stlfv5jk58duAJVfKz4BLqO2PDbT56DlhXREYOKolMU8qE6hlSNoe8ZsuC9GyI9+
-xBAhAD9UjkMvnd1xq+LB1C73tEEJMHr6wGv6teBixuMznCDBHJx25UUjx5QGDfJ5
-DpMymf77gOLFndICX4FlPy+yzUHZ3AQPppjStw2YpJMvDZ6C4DpiDlnzZOrfWAc6
-9ZZbb12i91++KWS/OeEu
-=d6Mh
------END PGP SIGNATURE-----
-
---u3/rZRmxL6MmkK24--
+Paul.
