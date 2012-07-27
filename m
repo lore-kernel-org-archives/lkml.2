@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab2G0JC4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 05:02:56 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:17275
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752275Ab2G0JCU (ORCPT
+	id S1752995Ab2G0JC7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 05:02:59 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:10840
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752415Ab2G0JCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 05:02:20 -0400
+	Fri, 27 Jul 2012 05:02:23 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M7TAFR-02-6OO-02
+X-WSS-ID: 0M7TAFS-02-6OQ-02
 X-M-MSG: 
 From: Aaron Lu <aaron.lu@amd.com>
 To: James Bottomley <James.Bottomley@HansenPartnership.com>,
@@ -22,13 +22,13 @@ CC: Jeff Wu <jeff.wu@amd.com>, Lin Ming <minggr@gmail.com>,
         <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
         <linux-scsi@vger.kernel.org>, <linux-ide@vger.kernel.org>,
         Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@amd.com>
-Subject: [PATCH v4 2/7] scsi: pm: add interface to autosuspend scsi device
-Date: Fri, 27 Jul 2012 17:00:45 +0800
-Message-ID: <1343379650-2867-3-git-send-email-aaron.lu@amd.com>
+Subject: [PATCH v4 3/7] scsi: sr: support zero power ODD(ZPODD)
+Date: Fri, 27 Jul 2012 17:00:46 +0800
+Message-ID: <1343379650-2867-4-git-send-email-aaron.lu@amd.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1343379650-2867-1-git-send-email-aaron.lu@amd.com>
 References: <1343379650-2867-1-git-send-email-aaron.lu@amd.com>
-X-OriginalArrivalTime: 27 Jul 2012 09:01:59.0252 (UTC) FILETIME=[7AE39140:01CD6BD6]
+X-OriginalArrivalTime: 27 Jul 2012 09:01:59.0299 (UTC) FILETIME=[7AEABD30:01CD6BD6]
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -36,49 +36,290 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new interface scsi_autopm_put_device_autosuspend to mark
-last busy for the device and then put autosuspend the device.
+The ODD will be placed into suspend state when:
+1 For tray type ODD, no media inside and door closed;
+2 For slot type ODD, no media inside;
+And together with ACPI, when we suspend the ODD's parent(the port it
+attached to), we will omit the power altogether to reduce power
+consumption(done in libata-acpi.c).
+
+The ODD can be resumed either by user or by software.
+
+For user to resume the suspended ODD:
+1 For tray type ODD, press the eject button;
+2 For slot type ODD, insert a disc;
+Once such events happened, an ACPI notification will be sent and in our
+handler, we will power up the ODD and set its status back to
+active(again in libata-acpi.c).
+
+For software to resume the suspended ODD, we did this in ODD's
+open/release function: we scsi_autopm_get/put_device in scsi_cd_get/put.
+
+On old distros, the udisk daemon will poll the ODD and thus ODD will be
+open/closed every 2 seconds. To make use of ZPODD, udisks' poll has to
+be inhibited:
+$ udisks --inhibit-polling /dev/sr0
+
+All of the above depends on if the device can be powered off runtime,
+which is reflected by the can_power_off flag.
 
 Signed-off-by: Aaron Lu <aaron.lu@amd.com>
 ---
- drivers/scsi/scsi_pm.c     | 7 +++++++
- include/scsi/scsi_device.h | 2 ++
- 2 files changed, 9 insertions(+)
+ drivers/ata/libata-acpi.c  |   4 +-
+ drivers/scsi/sr.c          | 131 ++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/scsi/sr.h          |   2 +
+ include/scsi/scsi_device.h |   1 +
+ 4 files changed, 136 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-index dc0ad85..83edb93 100644
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -201,6 +201,13 @@ void scsi_autopm_put_device(struct scsi_device *sdev)
- }
- EXPORT_SYMBOL_GPL(scsi_autopm_put_device);
+diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
+index 902b5a4..a2b16c9 100644
+--- a/drivers/ata/libata-acpi.c
++++ b/drivers/ata/libata-acpi.c
+@@ -985,8 +985,10 @@ static void ata_acpi_wake_dev(acpi_handle handle, u32 event, void *context)
+ 	struct ata_device *ata_dev = context;
  
-+void scsi_autopm_put_device_autosuspend(struct scsi_device *sdev)
+ 	if (event == ACPI_NOTIFY_DEVICE_WAKE && ata_dev &&
+-			pm_runtime_suspended(&ata_dev->sdev->sdev_gendev))
++			pm_runtime_suspended(&ata_dev->sdev->sdev_gendev)) {
++		ata_dev->sdev->wakeup_by_user = 1;
+ 		scsi_autopm_get_device(ata_dev->sdev);
++	}
+ }
+ 
+ static void ata_acpi_add_pm_notifier(struct ata_device *dev)
+diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+index abfefab..acfd10a 100644
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -45,6 +45,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/pm_runtime.h>
+ #include <asm/uaccess.h>
+ 
+ #include <scsi/scsi.h>
+@@ -79,6 +80,8 @@ static DEFINE_MUTEX(sr_mutex);
+ static int sr_probe(struct device *);
+ static int sr_remove(struct device *);
+ static int sr_done(struct scsi_cmnd *);
++static int sr_suspend(struct device *, pm_message_t msg);
++static int sr_resume(struct device *);
+ 
+ static struct scsi_driver sr_template = {
+ 	.owner			= THIS_MODULE,
+@@ -86,6 +89,8 @@ static struct scsi_driver sr_template = {
+ 		.name   	= "sr",
+ 		.probe		= sr_probe,
+ 		.remove		= sr_remove,
++		.suspend	= sr_suspend,
++		.resume		= sr_resume,
+ 	},
+ 	.done			= sr_done,
+ };
+@@ -147,8 +152,12 @@ static inline struct scsi_cd *scsi_cd_get(struct gendisk *disk)
+ 	kref_get(&cd->kref);
+ 	if (scsi_device_get(cd->device))
+ 		goto out_put;
++	if (cd->device->can_power_off && scsi_autopm_get_device(cd->device))
++		goto out_pm;
+ 	goto out;
+ 
++ out_pm:
++	scsi_device_put(cd->device);
+  out_put:
+ 	kref_put(&cd->kref, sr_kref_release);
+ 	cd = NULL;
+@@ -164,9 +173,93 @@ static void scsi_cd_put(struct scsi_cd *cd)
+ 	mutex_lock(&sr_ref_mutex);
+ 	kref_put(&cd->kref, sr_kref_release);
+ 	scsi_device_put(sdev);
++	if (sdev->can_power_off)
++		scsi_autopm_put_device_autosuspend(sdev);
+ 	mutex_unlock(&sr_ref_mutex);
+ }
+ 
++static int sr_suspend(struct device *dev, pm_message_t msg)
 +{
-+	pm_runtime_mark_last_busy(&sdev->sdev_gendev);
-+	pm_runtime_put_autosuspend(&sdev->sdev_gendev);
-+}
-+EXPORT_SYMBOL_GPL(scsi_autopm_put_device_autosuspend);
++	int poweroff;
++	struct scsi_sense_hdr sshdr;
++	struct scsi_cd *cd = dev_get_drvdata(dev);
 +
- void scsi_autopm_get_target(struct scsi_target *starget)
++	/* no action for system pm */
++	if (!PMSG_IS_AUTO(msg))
++		return 0;
++
++	/* do another TUR to see if the ODD is still ready to be powered off */
++	scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES, &sshdr);
++
++	if (cd->cdi.mask & CDC_CLOSE_TRAY)
++		/* no media for caddy/slot type ODD */
++		poweroff = scsi_sense_valid(&sshdr) && sshdr.asc == 0x3a;
++	else
++		/* no media and door closed for tray type ODD */
++		poweroff = scsi_sense_valid(&sshdr) && sshdr.asc == 0x3a &&
++			sshdr.ascq == 0x01;
++
++	if (!poweroff) {
++		pm_runtime_get_noresume(dev);
++		atomic_set(&cd->suspend_count, 1);
++		return -EBUSY;
++	}
++
++	return 0;
++}
++
++static int sr_resume(struct device *dev)
++{
++	struct scsi_cd *cd;
++	struct scsi_sense_hdr sshdr;
++
++	cd = dev_get_drvdata(dev);
++
++	/* get the disk ready */
++	scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES, &sshdr);
++
++	/* if user wakes up the ODD, eject the tray */
++	if (cd->device->wakeup_by_user) {
++		cd->device->wakeup_by_user = 0;
++		if (!(cd->cdi.mask & CDC_CLOSE_TRAY))
++			sr_tray_move(&cd->cdi, 1);
++		atomic_set(&cd->suspend_count, 1);
++	}
++
++	return 0;
++}
++
++static int sr_unit_load_done(struct scsi_cd *cd)
++{
++	u8 buf[8];
++	u8 cmd[] = { GET_EVENT_STATUS_NOTIFICATION,
++		     1,                 /* polled */
++		     0, 0,              /* reserved */
++		     1 << 6,            /* notification class: Device Busy */
++		     0, 0,              /* reserved */
++		     0, sizeof(buf),    /* allocation length */
++		     0,                 /* control */
++	};
++	struct event_header *eh = (void *)buf;
++	struct device_busy_event_desc *desc = (void *)(buf + 4);
++	struct scsi_sense_hdr sshdr;
++	int result;
++
++	result = scsi_execute_req(cd->device, cmd, DMA_FROM_DEVICE, buf,
++			sizeof(buf), &sshdr, SR_TIMEOUT, MAX_RETRIES, NULL);
++
++	if (result || be16_to_cpu(eh->data_len) < sizeof(*desc))
++		return 0;
++
++	if (eh->nea || eh->notification_class != 0x6)
++		return 0;
++
++	if (desc->device_busy_event == 2 && desc->device_busy_status == 0)
++		return 1;
++	else
++		return 0;
++}
++
+ static unsigned int sr_get_events(struct scsi_device *sdev)
  {
- 	pm_runtime_get_sync(&starget->dev);
+ 	u8 buf[8];
+@@ -215,12 +308,21 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+ 	bool last_present;
+ 	struct scsi_sense_hdr sshdr;
+ 	unsigned int events;
+-	int ret;
++	int ret, poweroff;
+ 
+ 	/* no changer support */
+ 	if (CDSL_CURRENT != slot)
+ 		return 0;
+ 
++	if (pm_runtime_suspended(&cd->device->sdev_gendev))
++		return 0;
++
++	/* if the logical unit just finished loading/unloading, do a TUR */
++	if (cd->device->can_power_off && cd->dbml && sr_unit_load_done(cd)) {
++		events = 0;
++		goto do_tur;
++	}
++
+ 	events = sr_get_events(cd->device);
+ 	cd->get_event_changed |= events & DISK_EVENT_MEDIA_CHANGE;
+ 
+@@ -270,6 +372,20 @@ do_tur:
+ 		cd->tur_changed = true;
+ 	}
+ 
++	if (cd->device->can_power_off && !cd->media_present) {
++		if (cd->cdi.mask & CDC_CLOSE_TRAY)
++			poweroff = 1;
++		else
++			poweroff = sshdr.ascq == 0x01;
++		/*
++		 * This function might be called concurrently by a kernel
++		 * thread (in-kernel polling) and old versions of udisks,
++		 * to avoid put the device twice, an atomic operation is used.
++		 */
++		if (poweroff && atomic_add_unless(&cd->suspend_count, -1, 0))
++			scsi_autopm_put_device_autosuspend(cd->device);
++	}
++
+ 	if (cd->ignore_get_event)
+ 		return events;
+ 
+@@ -703,6 +819,14 @@ static int sr_probe(struct device *dev)
+ 	get_capabilities(cd);
+ 	blk_queue_prep_rq(sdev->request_queue, sr_prep_fn);
+ 	sr_vendor_init(cd);
++	/* zero power support */
++	if (sdev->can_power_off) {
++		check_dbml(cd);
++		/* default delay time is 3 minutes */
++		pm_runtime_set_autosuspend_delay(dev, 180 * 1000);
++		pm_runtime_use_autosuspend(dev);
++		atomic_set(&cd->suspend_count, 1);
++	}
+ 
+ 	disk->driverfs_dev = &sdev->sdev_gendev;
+ 	set_capacity(disk, cd->capacity);
+@@ -988,6 +1112,11 @@ static int sr_remove(struct device *dev)
+ {
+ 	struct scsi_cd *cd = dev_get_drvdata(dev);
+ 
++	/* disable runtime pm and possibly resume the device */
++	if (cd->device->can_power_off &&
++			!atomic_dec_and_test(&cd->suspend_count))
++		scsi_autopm_get_device(cd->device);
++
+ 	blk_queue_prep_rq(cd->device->request_queue, scsi_prep_fn);
+ 	del_gendisk(cd->disk);
+ 
+diff --git a/drivers/scsi/sr.h b/drivers/scsi/sr.h
+index 7cc40ad..649fe76 100644
+--- a/drivers/scsi/sr.h
++++ b/drivers/scsi/sr.h
+@@ -49,6 +49,8 @@ typedef struct scsi_cd {
+ 	bool get_event_changed:1;	/* changed according to GET_EVENT */
+ 	bool ignore_get_event:1;	/* GET_EVENT is unreliable, use TUR */
+ 
++	atomic_t suspend_count;
++
+ 	struct cdrom_device_info cdi;
+ 	/* We hold gendisk and scsi_device references on probe and use
+ 	 * the refs on this kref to decide when to release them */
 diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index 9895f69..3636146 100644
+index 3636146..4bc4ac4 100644
 --- a/include/scsi/scsi_device.h
 +++ b/include/scsi/scsi_device.h
-@@ -395,9 +395,11 @@ extern int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
- #ifdef CONFIG_PM_RUNTIME
- extern int scsi_autopm_get_device(struct scsi_device *);
- extern void scsi_autopm_put_device(struct scsi_device *);
-+extern void scsi_autopm_put_device_autosuspend(struct scsi_device *);
- #else
- static inline int scsi_autopm_get_device(struct scsi_device *d) { return 0; }
- static inline void scsi_autopm_put_device(struct scsi_device *d) {}
-+static inline void scsi_autopm_put_device_autosuspend(struct scsi_device *d) {}
- #endif /* CONFIG_PM_RUNTIME */
+@@ -155,6 +155,7 @@ struct scsi_device {
+ 	unsigned try_rc_10_first:1;	/* Try READ_CAPACACITY_10 first */
+ 	unsigned is_visible:1;	/* is the device visible in sysfs */
+ 	unsigned can_power_off:1; /* Device supports runtime power off */
++	unsigned wakeup_by_user:1;	/* User wakes up the ODD */
+ 	unsigned wce_default_on:1;	/* Cache is ON by default */
  
- static inline int __must_check scsi_device_reprobe(struct scsi_device *sdev)
+ 	DECLARE_BITMAP(supported_events, SDEV_EVT_MAXBITS); /* supported events */
 -- 
 1.7.11.3
 
