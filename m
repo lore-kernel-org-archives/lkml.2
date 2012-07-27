@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab2G0DhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:37:18 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:34792 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab2G0DhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:37:01 -0400
-Message-ID: <1343359930.3010.542.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: Joe Perches <joe@perches.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
-Date: Thu, 26 Jul 2012 21:32:10 -0600
-In-Reply-To: <1343339854.17538.50.camel@joe2Laptop>
-References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
-	 <1343257978-7085-2-git-send-email-toshi.kani@hp.com>
-	 <CAErSpo4=HDaWTusKf+tRU6aXmj-mC1i7CswnDzDLZii21i9NaQ@mail.gmail.com>
-	 <1343336330.3010.496.camel@misato.fc.hp.com>
-	 <20120726213730.GA2149@google.com> <1343338982.17538.45.camel@joe2Laptop>
-	 <CAErSpo4cPuFLmp=b2JUUP-nDdtsFmJFda0az-9z9fEnys23L6w@mail.gmail.com>
-	 <1343339854.17538.50.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	id S1753057Ab2G0Dso (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:48:44 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:47725 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752678Ab2G0Dsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 23:48:43 -0400
+Message-ID: <50120F8C.8010001@parallels.com>
+Date: Fri, 27 Jul 2012 07:48:28 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 3/7] procfs: Add ability to plug in auxiliary fdinfo providers
+References: <20120725094718.089879534@openvz.org> <20120725095024.842540518@openvz.org>
+In-Reply-To: <20120725095024.842540518@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-26 at 14:57 -0700, Joe Perches wrote:
-> On Thu, 2012-07-26 at 15:50 -0600, Bjorn Helgaas wrote:
-> > On Thu, Jul 26, 2012 at 3:43 PM, Joe Perches <joe@perches.com> wrote:
-> > > On Thu, 2012-07-26 at 15:37 -0600, Bjorn Helgaas wrote:
-> > >>     PNP0C01:00: new device for \_SB_.PCI0.ISA_.MBIO
-> > >>
-> > >> I fiddled with this a while ago; it would look something like this:
-> > > []
-> > >> +static noinline_for_stack
-> > >> +char *acpi_name_string(char *buf, char *end, acpi_handle handle,
-> > >> +                    struct printf_spec spec, const char *fmt)
-> []
-> > Yes.  I'm hesitant about this approach in general, because I don't
-> > think printing the ACPI path is something we should be doing often.
-> > It's not like a struct resource or a MAC address, where there are
-> > dozens or hundreds of users.  I really think we should only print ACPI
-> > paths in one or two places, so adding a %p extension would waste a
-> > letter and encourage the wrong behavior.
-> 
-> I don't much care for adding ACPI specific calls to vsprintf
-> as acpi is supposed to be OS generic anyway.
-> 
-> I don't think there's anything wrong with Toshi's approach.
-> Anyone that looks for speed in a logging message is looking
-> for an oddly fitting thing.  Tracing sure, but logging?
+> +static int prep_fdinfo_driver(struct proc_fdinfo_extra *extra)
+> +{
+> +	struct proc_fdinfo_driver *s;
+> +
+> +	down_read(&fdinfo_drivers_sem);
+> +	list_for_each_entry(s, &fdinfo_drivers, list) {
+> +		if (s->probe(extra->f_file)) {
+> +			extra->driver = s;
+> +			break;
+> +		}
+> +	}
+> +	up_read(&fdinfo_drivers_sem);
+> +
+> +	return 0;
+> +}
 
-Fully agreed!  One cannot use printk in performance path.
+Maybe a simple list of file_operations:seq_operations mappings would be simpler?
+
+> +static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
+> +{
+> +	struct proc_fdinfo_extra *extra = m->private;
+> +	void *v = NULL;
+> +
+> +	if (extra->driver) {
+> +		int ret = 0;
+> +
+> +		if (*pos == 0) {
+> +			v = extra->driver->ops->start(m, pos);
+> +			if (v) {
+> +				ret = extra->driver->ops->show(m, v);
+
+Why is it necessary to call ->show here? The logic should be
+
+seq_start = (pos == 0 ? nop : extra->start)
+seq_next  = (pos == 0 ? extra->start : extra->next)
+seq_stop  = (pos == 0 ? nop : extra->stop)
+seq_show  = (pos == 0 ? proc_show : extra->show)
+
+Or I'm missing something?
 
 Thanks,
--Toshi
-
-
-> I also don't see anything wrong with renaming it to just
-> acpi_<level>, but that's a different discussion.
-> 
-> cheers, Joe
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Pavel
