@@ -1,126 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333Ab2G0S7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 14:59:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35744 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2G0S7K (ORCPT
+	id S1752422Ab2G0TBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:01:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34607 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab2G0TBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 14:59:10 -0400
+	Fri, 27 Jul 2012 15:01:21 -0400
+Date: Fri, 27 Jul 2012 12:01:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Miao Xie <miaox@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [ 39/40] cpuset: mm: reduce large amounts of memory barrier
+ related damage v3
+Message-ID: <20120727190116.GA29646@kroah.com>
+References: <20120726211424.GA7709@kroah.com>
+ <20120726211411.164006056@linuxfoundation.org>
+ <20120726211414.752069185@linuxfoundation.org>
+ <20120727150823.GD3033@herton-Z68MA-D2H-B3>
+ <20120727152347.GG612@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <500FAB33.4060301@hitachi.com>
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
- <CAAu8pHsfRBsfSCB5gBFX5pweN2j2PdNrQZyCfjJ3sYYmVjCRfA@mail.gmail.com> <500FAB33.4060301@hitachi.com>
-From: Blue Swirl <blauwirbel@gmail.com>
-Date: Fri, 27 Jul 2012 18:58:48 +0000
-Message-ID: <CAAu8pHsUkk8i_KVJNZtQJ8EaeiVWVt80_rV+p-sVstrmQ_j5dw@mail.gmail.com>
-Subject: Re: Re: [Qemu-devel] [RFC PATCH 0/6] virtio-trace: Support virtio-trace
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, qemu-devel@nongnu.org,
-        Borislav Petkov <bp@amd64.org>,
-        virtualization@lists.linux-foundation.org,
-        "Franch Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Shah <amit.shah@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120727152347.GG612@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 8:15 AM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2012/07/25 5:26), Blue Swirl wrote:>
->>> The following patch set provides a low-overhead system for collecting kernel
->>> tracing data of guests by a host in a virtualization environment.
->>>
->>> A guest OS generally shares some devices with other guests or a host, so
->>> reasons of any problems occurring in a guest may be from other guests or a
->>> host.
->>> Then, to collect some tracing data of a number of guests and a host is needed
->>> when some problems occur in a virtualization environment. One of methods to
->>> realize that is to collect tracing data of guests in a host. To do this,
->>> network
->>> is generally used. However, high load will be taken to applications on guests
->>> using network I/O because there are many network stack layers. Therefore,
->>> a communication method for collecting the data without using network is
->>> needed.
->>
->> I implemented something similar earlier by passing trace data from
->> OpenBIOS to QEMU using the firmware configuration device. The data
->> format was the same as QEMU used for simpletrace event structure
->> instead of ftrace. I didn't commit it because of a few problems.
->
-> Sounds interesting :)
-> I guess you traced BIOS events, right?
+On Fri, Jul 27, 2012 at 04:23:47PM +0100, Mel Gorman wrote:
+> > > --- a/mm/slub.c
+> > > +++ b/mm/slub.c
+> > > @@ -1457,6 +1457,7 @@ static struct page *get_any_partial(stru
+> > >  	struct zone *zone;
+> > >  	enum zone_type high_zoneidx = gfp_zone(flags);
+> > >  	struct page *page;
+> > > +	unsigned int cpuset_mems_cookie;
+> > >  
+> > >  	/*
+> > >  	 * The defrag ratio allows a configuration of the tradeoffs between
+> > > @@ -1480,22 +1481,32 @@ static struct page *get_any_partial(stru
+> > >  			get_cycles() % 1024 > s->remote_node_defrag_ratio)
+> > >  		return NULL;
+> > >  
+> > > -	get_mems_allowed();
+> > > -	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
+> > > -	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+> > > -		struct kmem_cache_node *n;
+> > > +	do {
+> > > +		cpuset_mems_cookie = get_mems_allowed();
+> > > +		zonelist = node_zonelist(slab_node(current->mempolicy), flags);
+> > > +		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+> > > +			struct kmem_cache_node *n;
+> > >  
+> > > -		n = get_node(s, zone_to_nid(zone));
+> > > +			n = get_node(s, zone_to_nid(zone));
+> > >  
+> > > -		if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
+> > > -				n->nr_partial > s->min_partial) {
+> > > -			page = get_partial_node(n);
+> > > -			if (page) {
+> > > -				put_mems_allowed();
+> > > -				return page;
+> > > +			if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
+> > > +					n->nr_partial > s->min_partial) {
+> > > +				page = get_partial_node(n);
+> > > +				if (page) {
+> > > +					/*
+> > > +					 * Return the object even if
+> > > +					 * put_mems_allowed indicated that
+> > > +					 * the cpuset mems_allowed was
+> > > +					 * updated in parallel. It's a
+> > > +					 * harmless race between the alloc
+> > > +					 * and the cpuset update.
+> > > +					 */
+> > > +					put_mems_allowed(cpuset_mems_cookie);
+> > > +					return page;
+> > > +				}
+> > >  			}
+> > >  		}
+> > > -	}
+> > > +	} while (!put_mems_allowed(cpuset_mems_cookie));
+> > >  	put_mems_allowed();
+> > 
+> > This doesn't build on 3.0, the backport left the stray put_mems_allowed
+> > above:
+> > 
+> > linux-stable/mm/slub.c: In function 'get_any_partial':
+> > linux-stable/mm/slub.c:1510:2: error: too few arguments to function 'put_mems_allowed'
+> > linux-stable/include/linux/cpuset.h:108:20: note: declared here
+> > 
+> 
+> That line should have been deleted and tests were based on slab. My
+> apologies.
+> 
+> ---8<---
+> cpuset: mm: Reduce large amounts of memory barrier related damage fix
+> 
+> linux-stable/mm/slub.c: In function 'get_any_partial':
+> linux-stable/mm/slub.c:1510:2: error: too few arguments to function 'put_mems_allowed'
+> linux-stable/include/linux/cpuset.h:108:20: note: declared here
+> 
+> Reported-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> 
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 00ccf2c..ae6e80e 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -1507,7 +1507,6 @@ static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags)
+>  			}
+>  		}
+>  	} while (!put_mems_allowed(cpuset_mems_cookie));
+> -	put_mems_allowed();
+>  #endif
+>  	return NULL;
+>  }
 
-Yes, I converted a few DPRINTFs to tracepoints as a proof of concept.
+Thanks, I've merged this with the "original" in the tree, so all should
+be good now.
 
->
->> I'm not familiar with ftrace, is it possible to trace two guest
->> applications (BIOS and kernel) at the same time?
->
-> Since ftrace itself is a tracing feature in the linux kernel, it
-> can trace two or more applications (processes) if those run on linux
-> kernel. However, I think OpenBIOS runs *under* the guest kernel.
-> If so, ftrace currently can't trace OpenBIOS from guest side.
-
-No, OpenBIOS boots the machine and then passes control to boot loader
-and that to kernel. The kernel will make a few calls to OpenBIOS at
-start but not later. OpenBIOS is used by QEMU as Sparc and PowerPC
-BIOS.
-
->
-> I think it may need another enhancement on both OpenBIOS and linux
-> kernel to trace BIOS event from linux kernel.
->
-
-Ideally both OpenBIOS and Linux should be able to feed trace events
-back to QEMU independently.
-
->> Or could this be
->> handled by opening two different virtio-serial pipes, one for BIOS and
->> the other for the kernel?
->
-> Of course, virtio-serial itself can open multiple channels, thus, if
-> OpenBIOS can handle virtio, it can pass trace data via another
-> channel.
-
-Currently OpenBIOS probes the PCI bus and identifies virtio devices
-but ignores them, adding virtio-serial support shouldn't be too hard.
-There's a time window between CPU boot and PCI probe when the the
-device will not be available though.
-
->
->> In my version, the tracepoint ID would have been used to demultiplex
->> QEMU tracepoints from BIOS tracepoints, but something like separate ID
->> spaces would have been better.
->
-> I guess your feature notifies events to QEMU and QEMU records that in
-> their own buffer. Therefore it must have different tracepoint IDs.
-> On the other hand, with this feature, QEMU just passes trace-data to
-> host-side pipe. Since outer tracing tool separately collects trace
-> data, we don't need to demultiplex the data.
->
-> Perhaps, in the analyzing phase (after tracing), we have to mix events
-> again. At that time, we'll add some guest-ID for each event-ID, but
-> it can be done offline.
-
-Yes, the multiplexing/demultiplexing is only needed in my version
-because the feeds are not independent.
-
->
-> Best Regards,
->
-> --
-> Masami HIRAMATSU
-> Software Platform Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
+greg k-h
