@@ -1,129 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab2G0H1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 03:27:42 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40987 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab2G0H1l convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 27 Jul 2012 03:27:41 -0400
-Message-Id: <50125F0B0200007800090DFB@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 27 Jul 2012 08:27:39 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/swiotlb: If iommu=soft was not
- passed in on > 4GB, don't turn it on.
-References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com>
- <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
+	id S1752011Ab2G0HbA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 03:31:00 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:11787 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab2G0Ha7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 03:30:59 -0400
+Date: Fri, 27 Jul 2012 09:30:37 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, "R, Durgadoss" <durgadoss.r@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, akpm@linux-foundation.org,
+        joe@perches.com, linux-kernel@vger.kernel.org,
+        linux-tegra@ger.kernel.org, Alex Courbot <acourbot@nvidia.com>
+Subject: Re: How to use the generic thermal sysfs.
+Message-ID: <20120727093037.094335eb@endymion.delvare>
+In-Reply-To: <1343357901.4042.70.camel@tegra-chromium-2>
+References: <1342088573.27605.101.camel@tegra-chromium-2>
+	<4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
+	<1342144273.1682.237.camel@rui.sh.intel.com>
+	<1342164616.27605.129.camel@tegra-chromium-2>
+	<1342165278.1682.259.camel@rui.sh.intel.com>
+	<1343295094.4042.24.camel@tegra-chromium-2>
+	<1343352098.1682.447.camel@rui.sh.intel.com>
+	<1343357901.4042.70.camel@tegra-chromium-2>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.07.12 at 22:43, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> If we boot a 64-bit guest with more than 4GB memory, the SWIOTLB
-> gets turned on:
-> PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
-> software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at 
-> [ffff8800fb43d000-ffff8800ff43cfff]
+On Fri, 27 Jul 2012 10:58:21 +0800, Wei Ni wrote:
+> On Fri, 2012-07-27 at 09:21 +0800, Zhang Rui wrote:
+> > is it possible to program the sensor at this time, in your own thermal
+> > driver?
 > 
-> which is OK if we had PCI devices, but not if we did not. In a PV
-> guest the SWIOTLB ends up asking the hypervisor for precious lowmem
-> memory - and 64MB of it per guest. On a 32GB machine, this limits the
-> amount of guests that are 4GB to start due to lowmem exhaustion.
-> 
-> What we do is detect whether the user supplied e820_hole=1
-> parameter, which is used to construct an E820 that is similar to
-> the machine  - so that the PCI regions do not overlap with RAM regions.
-> We check for that by looking at the E820 and seeing if it diverges
-> from the standard - and if so (and if iommu=soft was not turned on),
-> we disable the check pci_swiotlb_detect_4gb code.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/pci-swiotlb-xen.c |   26 ++++++++++++++++++++++++++
->  1 files changed, 26 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-> index 967633a..56f373e 100644
-> --- a/arch/x86/xen/pci-swiotlb-xen.c
-> +++ b/arch/x86/xen/pci-swiotlb-xen.c
-> @@ -8,6 +8,10 @@
->  #include <xen/xen.h>
->  #include <asm/iommu_table.h>
->  
-> +#include <asm/e820.h>
-> +#include <asm/dma.h>
-> +#include <asm/iommu.h>
-> +
->  int xen_swiotlb __read_mostly;
->  
->  static struct dma_map_ops xen_swiotlb_dma_ops = {
-> @@ -24,7 +28,19 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
->  	.unmap_page = xen_swiotlb_unmap_page,
->  	.dma_supported = xen_swiotlb_dma_supported,
->  };
-> +bool __init e820_has_acpi(void)
-> +{
-> +	int i;
->  
-> +	/* Check if the user supplied the e820_hole parameter
-> +	 * which would create a machine looking E820 region. */
-> +	for (i = 0; i < e820.nr_map; i++) {
-> +		if ((e820.map[i].type == E820_ACPI) ||
-> +		    (e820.map[i].type == E820_NVS))
-> +			return true;
+> Since we are using the generic thermal driver lm90.c, I'm not sure if we
+> could program these limits in the generic driver, I think it's better to
+> have a generic interface to set the limits, so I wish to add a
+> callback .set_limits() in the generic thermal framework.
 
-Tying this decision to the presence of ACPI regions in E820 is
-problematic for two reasons imo: For one, it precludes cleaning
-up this (bogus!) construct where it gets produced (PV DomU-s
-really shouldn't ever see such E820 entries, they should get
-converted to simple reserved entries, to wipe any notion of
-ACPI presence). And second it ties you to running on systems
-that actually have ACPI, whereas it is my rudimentary
-understanding that systems with e.g. SFI would not have any
-ACPI).
+I can confirm that hwmon drivers do not set limits, it is up to
+user-space to do it if they want. So if there is a need to do so in the
+kernel itself, a proper interface at the generic thermal framework
+level seems appropriate.
 
-Jan
-
-> +	}
-> +	return false;
-> +}
->  /*
->   * pci_xen_swiotlb_detect - set xen_swiotlb to 1 if necessary
->   *
-> @@ -33,7 +49,17 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
->   */
->  int __init pci_xen_swiotlb_detect(void)
->  {
-> +#ifdef CONFIG_X86_64
->  
-> +	/* Having more than 4GB triggers the native SWIOTLB to activate.
-> +	 * The way to turn it off is to set no_iommu. */
-> +	printk(KERN_INFO "swiotlb: %d\n", swiotlb);
-> +	if (xen_pv_domain() && !swiotlb && max_pfn > MAX_DMA32_PFN) {
-> +		/* Normal PV guests only have E820_RSV and E820_RAM regions */
-> +		if (!e820_has_acpi())
-> +			no_iommu = 1;
-> +	}
-> +#endif
->  	/* If running as PV guest, either iommu=soft, or swiotlb=force will
->  	 * activate this IOMMU. If running as PV privileged, activate it
->  	 * irregardless.
-> -- 
-> 1.7.7.6
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org 
-> http://lists.xen.org/xen-devel 
-
-
-
+-- 
+Jean Delvare
