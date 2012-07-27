@@ -1,132 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab2G0UTF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 16:19:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61325 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab2G0UTE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 16:19:04 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH] slub: remove one code path and reduce lock contention in __slab_free()
-Date: Sat, 28 Jul 2012 05:17:51 +0900
-Message-Id: <1343420271-3825-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752860Ab2G0UZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 16:25:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25995 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752699Ab2G0UZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 16:25:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="187949587"
+Subject: Re: [PATCH] x86: don't ever patch back to UP if we unplug cpus.
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@us.ibm.com>
+Date: Fri, 27 Jul 2012 13:28:29 -0700
+In-Reply-To: <87y5m5mz6o.fsf@rustcorp.com.au>
+References: <87y5m5mz6o.fsf@rustcorp.com.au>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1343420909.3696.560.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we try to free object, there is some of case that we need
-to take a node lock. This is the necessary step for preventing a race.
-After taking a lock, then we try to cmpxchg_double_slab().
-But, there is a possible scenario that cmpxchg_double_slab() is failed.
-Following example explains this.
+On Fri, 2012-07-27 at 17:08 +0930, Rusty Russell wrote:
+> Paul McKenney points out:
+> 
+>  mean offline overhead is 6251/48=130.2 milliseconds.
+> 
+>  If I remove the alternatives_smp_switch() from the offline
+>  path [...] the mean offline overhead is 550/42=13.1 milliseconds
+> 
+> Basically, we're never going to get those 120ms back, and the code is
+> pretty messy.
 
-CPU A               CPU B
-need lock
-...                 need lock
-...                 lock!!
-lock..but spin      free success
-spin...             unlock
-lock!!
-free fail
+I am ok with this proposal. If I follow correctly, you are still
+allowing the patching to UP happen on boot if there is only one online
+cpu currently but a possiblity of multiple cpu's that can come online
+later. Perhaps make this little more explicit in the changelog.
 
-In this case, retry with taking a lock is occured in CPU A.
+Also,
 
-I think that in this case,
-"release a lock first, and re-take a lock if necessary" is preferable way.
-There are two reasons for this.
-First, this makes __slab_free()'s logic somehow simple.
-Second, it may reduce lock contention.
-When we do retrying, status of slab is already changed,
-so we don't need a lock anymore in almost every case.
-"release a lock first, and re-take a lock if necessary" policy is
-helpful to this.
+> +	/* Patch to UP if other cpus not imminent. */
+> +	if (noreplace_smp || num_present_cpus() == 1 || setup_max_cpus <= 1) {
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>
----
-This is v2 of "slub: release a lock if freeing object with a lock is failed in __slab_free()"
-Subject and commit log are changed from v1.
-Code is same as v1.
+shouldn't this be
 
-diff --git a/mm/slub.c b/mm/slub.c
-index ca778e5..efce427 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2421,7 +2421,6 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 	void *prior;
- 	void **object = (void *)x;
- 	int was_frozen;
--	int inuse;
- 	struct page new;
- 	unsigned long counters;
- 	struct kmem_cache_node *n = NULL;
-@@ -2433,13 +2432,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 		return;
- 
- 	do {
-+		if (unlikely(n)) {
-+			spin_unlock_irqrestore(&n->list_lock, flags);
-+			n = NULL;
-+		}
- 		prior = page->freelist;
- 		counters = page->counters;
- 		set_freepointer(s, object, prior);
- 		new.counters = counters;
- 		was_frozen = new.frozen;
- 		new.inuse--;
--		if ((!new.inuse || !prior) && !was_frozen && !n) {
-+		if ((!new.inuse || !prior) && !was_frozen) {
- 
- 			if (!kmem_cache_debug(s) && !prior)
- 
-@@ -2464,7 +2467,6 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 
- 			}
- 		}
--		inuse = new.inuse;
- 
- 	} while (!cmpxchg_double_slab(s, page,
- 		prior, counters,
-@@ -2490,25 +2492,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-                 return;
-         }
- 
-+	if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
-+		goto slab_empty;
-+
- 	/*
--	 * was_frozen may have been set after we acquired the list_lock in
--	 * an earlier loop. So we need to check it here again.
-+	 * Objects left in the slab. If it was not on the partial list before
-+	 * then add it.
- 	 */
--	if (was_frozen)
--		stat(s, FREE_FROZEN);
--	else {
--		if (unlikely(!inuse && n->nr_partial > s->min_partial))
--                        goto slab_empty;
--
--		/*
--		 * Objects left in the slab. If it was not on the partial list before
--		 * then add it.
--		 */
--		if (unlikely(!prior)) {
--			remove_full(s, page);
--			add_partial(n, page, DEACTIVATE_TO_TAIL);
--			stat(s, FREE_ADD_PARTIAL);
--		}
-+	if (kmem_cache_debug(s) && unlikely(!prior)) {
-+		remove_full(s, page);
-+		add_partial(n, page, DEACTIVATE_TO_TAIL);
-+		stat(s, FREE_ADD_PARTIAL);
- 	}
- 	spin_unlock_irqrestore(&n->list_lock, flags);
- 	return;
--- 
-1.7.9.5
+	if (!noreplace_smp && (num_present_cpus() == 1 || setup_max_cpus <= 1))
+
+also, to be consistent with other checks, may be just use
+"num_possible_cpus() == 1" check instead of "setup_max_cpus <= 1".
+
+thanks,
+suresh
+
+> +		uniproc_patched = true;
+>  		alternatives_smp_module_add(NULL, "core kernel",
+>  					    __smp_locks, __smp_locks_end,
+>  					    _text, _etext);
+> -
+> -		/* Only switch to UP mode if we don't immediately boot others */
+> -		if (num_present_cpus() == 1 || setup_max_cpus <= 1)
+> -			alternatives_smp_switch(0);
+>  	}
+> -#endif
+>   	apply_paravirt(__parainstructions, __parainstructions_end);
+>  
+> -	if (smp_alt_once)
+> +	if (!uniproc_patched || num_possible_cpus() == 1)
+>  		free_init_pages("SMP alternatives",
+>  				(unsigned long)__smp_locks,
+>  				(unsigned long)__smp_locks_end);
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -665,7 +665,8 @@ static int __cpuinit do_boot_cpu(int api
+>  	unsigned long boot_error = 0;
+>  	int timeout;
+>  
+> -	alternatives_smp_switch(1);
+> +	/* Just in case we booted with a single CPU. */
+> +	alternatives_enable_smp();
+>  
+>  	idle->thread.sp = (unsigned long) (((struct pt_regs *)
+>  			  (THREAD_SIZE +  task_stack_page(idle))) - 1);
+> @@ -1053,20 +1054,6 @@ out:
+>  	preempt_enable();
+>  }
+>  
+> -void arch_disable_nonboot_cpus_begin(void)
+> -{
+> -	/*
+> -	 * Avoid the smp alternatives switch during the disable_nonboot_cpus().
+> -	 * In the suspend path, we will be back in the SMP mode shortly anyways.
+> -	 */
+> -	skip_smp_alternatives = true;
+> -}
+> -
+> -void arch_disable_nonboot_cpus_end(void)
+> -{
+> -	skip_smp_alternatives = false;
+> -}
+> -
+>  void arch_enable_nonboot_cpus_begin(void)
+>  {
+>  	set_mtrr_aps_delayed_init();
+> @@ -1256,9 +1243,6 @@ void native_cpu_die(unsigned int cpu)
+>  		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+>  			if (system_state == SYSTEM_RUNNING)
+>  				pr_info("CPU %u is now offline\n", cpu);
+> -
+> -			if (1 == num_online_cpus())
+> -				alternatives_smp_switch(0);
+>  			return;
+>  		}
+>  		msleep(100);
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -439,14 +439,6 @@ EXPORT_SYMBOL_GPL(cpu_up);
+>  #ifdef CONFIG_PM_SLEEP_SMP
+>  static cpumask_var_t frozen_cpus;
+>  
+> -void __weak arch_disable_nonboot_cpus_begin(void)
+> -{
+> -}
+> -
+> -void __weak arch_disable_nonboot_cpus_end(void)
+> -{
+> -}
+> -
+>  int disable_nonboot_cpus(void)
+>  {
+>  	int cpu, first_cpu, error = 0;
+> @@ -458,7 +450,6 @@ int disable_nonboot_cpus(void)
+>  	 * with the userspace trying to use the CPU hotplug at the same time
+>  	 */
+>  	cpumask_clear(frozen_cpus);
+> -	arch_disable_nonboot_cpus_begin();
+>  
+>  	printk("Disabling non-boot CPUs ...\n");
+>  	for_each_online_cpu(cpu) {
+> @@ -474,8 +465,6 @@ int disable_nonboot_cpus(void)
+>  		}
+>  	}
+>  
+> -	arch_disable_nonboot_cpus_end();
+> -
+>  	if (!error) {
+>  		BUG_ON(num_online_cpus() > 1);
+>  		/* Make sure the CPUs won't be enabled by someone else */
+
 
