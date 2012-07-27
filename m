@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab2G0N22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 09:28:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40384 "EHLO mx2.suse.de"
+	id S1751924Ab2G0NgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 09:36:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37761 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720Ab2G0N20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 09:28:26 -0400
-Date: Fri, 27 Jul 2012 15:28:19 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Eric Moore <Eric.Moore@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
-Cc: DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] [SCSI] mpt fusion: add support for 0x1000/0x0055
-In-Reply-To: <alpine.LNX.2.00.1207210000190.21929@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1207271527550.11375@pobox.suse.cz>
-References: <alpine.LNX.2.00.1207210000190.21929@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751735Ab2G0NgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 09:36:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127582186"
+Date: Fri, 27 Jul 2012 15:36:10 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        lrg@ti.com
+Subject: Re: [PATCH 3/7] mfd: db8500-prcmu: Ensure AB8500 platform data is
+ passed through MFD Core
+Message-ID: <20120727133610.GP16859@sortiz-mobl>
+References: <1343392734-11805-1-git-send-email-lee.jones@linaro.org>
+ <1343392734-11805-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343392734-11805-4-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Jul 2012, Jiri Kosina wrote:
+Hi Lee,
 
-> The device identifies itself as
+On Fri, Jul 27, 2012 at 01:38:50PM +0100, Lee Jones wrote:
+> When booting via platform code the AB8500 platform data is now passed
+> in though the DB8500. However, if pdata_size is not set it will not be
+> subsequently passed onto subordinate devices. This patch correctly
+> populates pdata_size.
 > 
-> 0d:05.0 SCSI storage controller: LSI Logic / Symbios Logic SAS1068 PCI-X Fusion-MPT SAS (rev 01) Subsystem: NEC Corporation SAS1068
-> 
-> and seems to be functionally compatible with 0x0054 PID.
-> 
-> The request for support of this device has been raised on mailinglists several
-> times in the past (see [1] [2] and more), but aparently the PCI ID never made it
-> to mptsas_pci_table[].
-> 
-> [1] http://comments.gmane.org/gmane.linux.scsi/63836
-> [2] http://lkml.indiana.edu/hypermail/linux/kernel/0701.2/1715.html
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
-> 
-> 
-> I guess the "Subsystem: NEC Corporation" is telling us some rebranding 
-> story, including the PID change ... ?
+>  drivers/mfd/db8500-prcmu.c |    1 +
+>  1 file changed, 1 insertion(+)
+Applied, thanks.
 
-Hi guys,
-
-any feedback on this please?
-
-Thanks.
-
-> 
-> 
-> 
->  drivers/message/fusion/lsi/mpi_cnfg.h |    1 +
->  drivers/message/fusion/mptsas.c       |    2 ++
->  2 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/message/fusion/lsi/mpi_cnfg.h b/drivers/message/fusion/lsi/mpi_cnfg.h
-> index d9bcfba..29d54c9 100644
-> --- a/drivers/message/fusion/lsi/mpi_cnfg.h
-> +++ b/drivers/message/fusion/lsi/mpi_cnfg.h
-> @@ -582,6 +582,7 @@ typedef struct _MSG_CONFIG_REPLY
->  #define MPI_MANUFACTPAGE_DEVID_SAS1066              (0x005E)
->  #define MPI_MANUFACTPAGE_DEVID_SAS1066E             (0x005A)
->  #define MPI_MANUFACTPAGE_DEVID_SAS1068              (0x0054)
-> +#define MPI_MANUFACTPAGE_DEVID_SAS1068_2            (0x0055)
->  #define MPI_MANUFACTPAGE_DEVID_SAS1068E             (0x0058)
->  #define MPI_MANUFACTPAGE_DEVID_SAS1068_820XELP      (0x0059)
->  #define MPI_MANUFACTPAGE_DEVID_SAS1078              (0x0062)
-> diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-> index 551262e..2475f8c 100644
-> --- a/drivers/message/fusion/mptsas.c
-> +++ b/drivers/message/fusion/mptsas.c
-> @@ -5370,6 +5370,8 @@ static struct pci_device_id mptsas_pci_table[] = {
->  		PCI_ANY_ID, PCI_ANY_ID },
->  	{ PCI_VENDOR_ID_LSI_LOGIC, MPI_MANUFACTPAGE_DEVID_SAS1068,
->  		PCI_ANY_ID, PCI_ANY_ID },
-> +	{ PCI_VENDOR_ID_LSI_LOGIC, MPI_MANUFACTPAGE_DEVID_SAS1068_2,
-> +		PCI_ANY_ID, PCI_ANY_ID },
->  	{ PCI_VENDOR_ID_LSI_LOGIC, MPI_MANUFACTPAGE_DEVID_SAS1064E,
->  		PCI_ANY_ID, PCI_ANY_ID },
->  	{ PCI_VENDOR_ID_LSI_LOGIC, MPI_MANUFACTPAGE_DEVID_SAS1068E,
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
-> 
+Cheers,
+Samuel.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
