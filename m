@@ -1,174 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab2G0SMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 14:12:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7057 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752549Ab2G0SMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 14:12:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="187863356"
-Date: Fri, 27 Jul 2012 14:12:12 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Keith Busch <keith.busch@intel.com>
-Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] NVMe: Add a character device for each nvme device
-Message-ID: <20120727181212.GM22985@linux.intel.com>
-References: <1343407458-29909-1-git-send-email-keith.busch@intel.com>
+	id S1752678Ab2G0SMy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 14:12:54 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:45074 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752438Ab2G0SMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 14:12:53 -0400
+X-Greylist: delayed 514 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jul 2012 14:12:53 EDT
+Date: Fri, 27 Jul 2012 11:04:19 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>, pv-drivers@vmware.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, vm-crosstalk@vmware.com
+Subject: Re: [Pv-drivers] [vmw_vmci 11/11] Apply the header code to make VMCI
+ build
+Message-ID: <20120727180419.GA8262@dtor-ws.eng.vmware.com>
+References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com>
+ <1343345980-32397-12-git-send-email-astiegmann@vmware.com>
+ <20120727105357.2e40dd10@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343407458-29909-1-git-send-email-keith.busch@intel.com>
+In-Reply-To: <20120727105357.2e40dd10@pyramind.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 10:44:18AM -0600, Keith Busch wrote:
-> Registers a character device for the nvme module and creates character
-> files as /dev/nvmeN for each nvme device probed, where N is the device
-> instance. The character devices support nvme admin ioctl commands so
-> that nvme devices without namespaces can be managed.
+Hi Alan,
 
-I don't see a problem here, but I'm no expert at sysfs / character devices.
-Alan, Greg, anyone else see any problems with how this character device is
-created / destroyed?
+On Fri, Jul 27, 2012 at 10:53:57AM +0100, Alan Cox wrote:
+> > +enum {
+> > +	VMCI_SUCCESS_QUEUEPAIR_ATTACH	=  5,
+> > +	VMCI_SUCCESS_QUEUEPAIR_CREATE	=  4,
+> > +	VMCI_SUCCESS_LAST_DETACH	=  3,
+> > +	VMCI_SUCCESS_ACCESS_GRANTED	=  2,
+> > +	VMCI_SUCCESS_ENTRY_DEAD	=  1,
+> 
+> We've got a nice collection of Linux error codes than you, and it would
+> make the driver enormously more readable on the Linux side if as low
+> level as possible it started using Linux error codes.
 
-> 
-> Signed-off-by: Keith Busch <keith.busch@intel.com>
-> ---
->  drivers/block/nvme.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 54 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/block/nvme.c b/drivers/block/nvme.c
-> index 7bcd882..8a16ac8 100644
-> --- a/drivers/block/nvme.c
-> +++ b/drivers/block/nvme.c
-> @@ -20,6 +20,7 @@
->  #include <linux/bio.h>
->  #include <linux/bitops.h>
->  #include <linux/blkdev.h>
-> +#include <linux/cdev.h>
->  #include <linux/delay.h>
->  #include <linux/errno.h>
->  #include <linux/fs.h>
-> @@ -45,6 +46,7 @@
->  #define SQ_SIZE(depth)		(depth * sizeof(struct nvme_command))
->  #define CQ_SIZE(depth)		(depth * sizeof(struct nvme_completion))
->  #define NVME_MINORS 64
-> +#define NVME_MAX_DEVS 1024
->  #define NVME_IO_TIMEOUT	(5 * HZ)
->  #define ADMIN_TIMEOUT	(60 * HZ)
->  
-> @@ -54,9 +56,13 @@ module_param(nvme_major, int, 0);
->  static int use_threaded_interrupts;
->  module_param(use_threaded_interrupts, int, 0);
->  
-> +static int nvme_char_major;
-> +module_param(nvme_char_major, int, 0);
-> +
->  static DEFINE_SPINLOCK(dev_list_lock);
->  static LIST_HEAD(dev_list);
->  static struct task_struct *nvme_thread;
-> +static struct class *nvme_char_cl;
->  
->  /*
->   * Represents an NVM Express device.  Each nvme_dev is a PCI function.
-> @@ -1222,6 +1228,35 @@ static const struct block_device_operations nvme_fops = {
->  	.compat_ioctl	= nvme_ioctl,
->  };
->  
-> +static long nvme_char_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
-> +{
-> +	struct nvme_dev *dev;
-> +	int instance = iminor(f->f_dentry->d_inode);
-> +
-> +	spin_lock(&dev_list_lock);
-> +	list_for_each_entry(dev, &dev_list, node) {
-> +		if (dev->instance == instance)
-> +			break;
-> +	}
-> +	spin_unlock(&dev_list_lock);
-> +
-> +	if (&dev->node == &dev_list)
-> +		return -ENOTTY;
-> +	
-> +	switch (cmd) {
-> +	case NVME_IOCTL_ADMIN_CMD:
-> +		return nvme_user_admin_cmd(dev, (void __user *)arg);
-> +	default:
-> +		return -ENOTTY;
-> +	}
-> +}
-> +
-> +static const struct file_operations nvme_char_fops = {
-> +	.owner		= THIS_MODULE,
-> +	.unlocked_ioctl	= nvme_char_ioctl,
-> +	.compat_ioctl	= nvme_char_ioctl,
-> +};
-> +
->  static void nvme_timeout_ios(struct nvme_queue *nvmeq)
->  {
->  	int depth = nvmeq->q_depth - 1;
-> @@ -1632,6 +1667,8 @@ static int __devinit nvme_probe(struct pci_dev *pdev,
->  	if (result)
->  		goto delete;
->  
-> +	device_create(nvme_char_cl, NULL, MKDEV(nvme_char_major, dev->instance),
-> +						NULL, "nvme%d", dev->instance);
->  	return 0;
->  
->   delete:
-> @@ -1660,6 +1697,7 @@ static void __devexit nvme_remove(struct pci_dev *pdev)
->  {
->  	struct nvme_dev *dev = pci_get_drvdata(pdev);
->  	nvme_dev_remove(dev);
-> +	device_destroy(nvme_char_cl, MKDEV(nvme_char_major, dev->instance));
->  	pci_disable_msix(pdev);
->  	iounmap(dev->bar);
->  	nvme_release_instance(dev);
-> @@ -1721,11 +1759,24 @@ static int __init nvme_init(void)
->  	else if (result > 0)
->  	    nvme_major = result;
->  
-> +	result = __register_chrdev(nvme_char_major, 0, NVME_MAX_DEVS, "nvme",
-> +							&nvme_char_fops);
-> +	if (result < 0)
-> +		goto unregister_blkdev;
-> +	else if (result > 0)
-> +		nvme_char_major = result;
-> +	nvme_char_cl = class_create(THIS_MODULE, "nvme");
-> +	if (!nvme_char_cl)
-> +		goto unregister_chrdev;
->  	result = pci_register_driver(&nvme_driver);
->  	if (result)
-> -		goto unregister_blkdev;
-> +		goto destroy_class;
->  	return 0;
->  
-> + destroy_class:
-> +	class_destroy(nvme_char_cl);
-> + unregister_chrdev:
-> +	__unregister_chrdev(nvme_char_major, 0, NVME_MAX_DEVS, "nvme");
->   unregister_blkdev:
->  	unregister_blkdev(nvme_major, "nvme");
->   kill_kthread:
-> @@ -1736,6 +1787,8 @@ static int __init nvme_init(void)
->  static void __exit nvme_exit(void)
->  {
->  	pci_unregister_driver(&nvme_driver);
-> +	class_destroy(nvme_char_cl);
-> +	__unregister_chrdev(nvme_char_major, 0, NVME_MAX_DEVS, "nvme");
->  	unregister_blkdev(nvme_major, "nvme");
->  	kthread_stop(nvme_thread);
->  }
-> -- 
-> 1.7.0.4
-> 
-> 
-> _______________________________________________
-> Linux-nvme mailing list
-> Linux-nvme@lists.infradead.org
-> http://merlin.infradead.org/mailman/listinfo/linux-nvme
+If VMCI was only used on Linux we'd definitely do that; however VMCI
+core is shared among several operating systems (much like ACPI is) and
+we'd like to limit divergencies between them while conforming to the
+kernel coding style as much as possible.
+
+We'll make sure that we will not leak VMCI-specific errors to the
+standard kernel APIs.
+
+Thanks,
+Dmitry
