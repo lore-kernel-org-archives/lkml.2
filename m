@@ -1,111 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab2G0S02 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 14:26:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50905 "EHLO mail.zytor.com"
+	id S1752860Ab2G0S0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 14:26:37 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:53795 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752426Ab2G0S01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 14:26:27 -0400
-Message-ID: <5012DCF9.7010408@zytor.com>
-Date: Fri, 27 Jul 2012 11:24:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Kent Yoder <key@linux.vnet.ibm.com>
-CC: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Bryan Freed <bfreed@chromium.org>
-Subject: Re: [GIT PULL] New TPM driver, hwrng driver and fixes
-References: <20120727181436.GA6271@linux.vnet.ibm.com>
-In-Reply-To: <20120727181436.GA6271@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752426Ab2G0S0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 14:26:34 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCH 0/4] promote zcache from staging
+Date: Fri, 27 Jul 2012 13:18:33 -0500
+Message-Id: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072718-1976-0000-0000-00000F947FB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2012 11:14 AM, Kent Yoder wrote:
-> Hi James,
-> 
-> Please pull from this new branch and ignore the 7-25-12 branch. This
-> new branch includes fixes for comments by hpa. I've also included one
-> additional patch from [1] to close a race and prevent possibly sensitive
-> data from being free'd before being zeroed. I'm attaching this entire
-> diff here since my fixes for hpa's comments aren't public yet.
-> 
-> Thanks,
-> Kent
+zcache is the remaining piece of code required to support in-kernel
+memory compression.  The other two features, cleancache and frontswap,
+have been promoted to mainline in 3.0 and 3.5.  This patchset
+promotes zcache from the staging tree to mainline.
 
-> +
-> +/**
-> + * tpm_get_random() - Get random bytes from the tpm's RNG
-> + * @chip_num: A specific chip number for the request or TPM_ANY_NUM
-> + * @out: destination buffer for the random bytes
-> + * @max: on input, the max number of bytes to write to @out, on output
-> + *       this is set to the actual number of bytes written to @out
-> + *
-> + * Note that @max will be capped at TPM_MAX_RNG_DATA bytes.
-> + */
-> +int tpm_get_random(u32 chip_num, u8 *out, size_t *max)
-> +{
-> +	struct tpm_chip *chip;
-> +	struct tpm_cmd_t tpm_cmd;
-> +	u32 recd, total = 0, num_bytes = min_t(u32, *max, TPM_MAX_RNG_DATA);
-> +	int err, retries = 5;
-> +	u8 *dest = out;
-> +
-> +	chip = tpm_chip_find_get(chip_num);
-> +	if (chip == NULL)
-> +		return -ENODEV;
-> +
-> +	if (!out || !num_bytes || *max > TPM_MAX_RN
-> +		return -EINVAL;
-> +
-> +	do {
-> +		tpm_cmd.header.in = tpm_getrandom_header;
-> +		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
-> +
-> +		err = transmit_cmd(chip, &tpm_cmd,
-> +				TPM_GETRANDOM_RESULT_SIZE + num_bytes,
-> +				"attempting get random");
-> +		if (err)
-> +			goto out_err;
-> +
-> +		recd = be32_to_cpu(tpm_cmd.params.getrandom_out.rng_data_len);
-> +		memcpy(dest, tpm_cmd.params.getrandom_out.rng_data, recd);
-> +
-> +		dest += recd;
-> +		total += recd;
-> +		num_bytes -= recd;
-> +	} while (retries-- && total < *max);
-> +
-> +	err = ((total < *max) ? -EAGAIN : 0);
-> +out_err:
-> +	return err;
-> +}
-> +EXPORT_SYMBOL_GPL(tpm_get_random);
-> +
+Based on the level of activity and contributions we're seeing from a
+diverse set of people and interests, I think zcache has matured to the
+point where it makes sense to promote this out of staging.
 
-Since you no longer modify *max anywhere in this function, why leave it
-a pointer?  Making it pass by value seems more logical at that point
-(and cleaner).
+Overview
+========
+zcache is a backend to frontswap and cleancache that accepts pages from
+those mechanisms and compresses them, leading to reduced I/O caused by
+swap and file re-reads.  This is very valuable in shared storage situations
+to reduce load on things like SANs.  Also, in the case of slow backing/swap
+devices, zcache can also yield a performance gain.
 
-The only consumer which can make use of partial result is
-tpm_rng_read(), but that will now return zero unless the buffer is filled.
+In-Kernel Memory Compression Overview:
 
-My suggestion would be to drop the pointer and instead return a positive
-result (number of bytes) if you read anything and a negative result
-(-errno) on error.
+ swap subsystem            page cache
+        +                      +
+    frontswap              cleancache
+        +                      +
+zcache frontswap glue  zcache cleancache glue
+        +                      +
+        +---------+------------+
+                  +
+            zcache/tmem core
+                  +
+        +---------+------------+
+        +                      +
+     zsmalloc                 zbud
 
-That way, a caller which can only use an exact number of bytes should do:
+Everything below the frontswap/cleancache layer is current inside the
+zcache driver expect for zsmalloc which is a shared between zcache and
+another memory compression driver, zram.
 
-	rv = tpm_get_random(chip, buf, size);
-	if (rv != size)
-		/* error! */
+Since zcache is dependent on zsmalloc, it is also being promoted by this
+patchset.
 
-... and tpm_rng_read() can do something smarter.
+For information on zsmalloc and the rationale behind it's design and use
+cases verses already existing allocators in the kernel:
 
-	-hpa
+https://lkml.org/lkml/2012/1/9/386
+
+zsmalloc is the allocator used by zcache to store persistent pages that
+comes from frontswap, as opposed to zbud which is the (internal) allocator
+used for ephemeral pages from cleancache.
+
+zsmalloc uses many fields of the page struct to create it's conceptual
+high-order page called a zspage.  Exactly which fields are used and for
+what purpose is documented at the top of the zsmalloc .c file.  Because
+zsmalloc uses struct page extensively, Andrew advised that the
+promotion location be mm/:
+
+https://lkml.org/lkml/2012/1/20/308
+
+Some benchmarking numbers demonstrating the I/O saving that can be had
+with zcache:
+
+https://lkml.org/lkml/2012/3/22/383
+
+Dan's presentation at LSF/MM this year on zcache:
+
+http://oss.oracle.com/projects/tmem/dist/documentation/presentations/LSFMM12-zcache-final.pdf
+
+This patchset is based on next-20120727 + 3-part zsmalloc patchset below
+
+https://lkml.org/lkml/2012/7/18/353
+
+The zsmalloc patchset is already acked and will be integrated by Greg after
+3.6-rc1 is out.
+
+Seth Jennings (4):
+  zsmalloc: collapse internal .h into .c
+  zsmalloc: promote to mm/
+  drivers: add memory management driver class
+  zcache: promote to drivers/mm/
+
+ drivers/Kconfig                                    |    2 +
+ drivers/Makefile                                   |    1 +
+ drivers/mm/Kconfig                                 |   13 ++
+ drivers/mm/Makefile                                |    1 +
+ drivers/{staging => mm}/zcache/Makefile            |    0
+ drivers/{staging => mm}/zcache/tmem.c              |    0
+ drivers/{staging => mm}/zcache/tmem.h              |    0
+ drivers/{staging => mm}/zcache/zcache-main.c       |    4 +-
+ drivers/staging/Kconfig                            |    4 -
+ drivers/staging/Makefile                           |    2 -
+ drivers/staging/zcache/Kconfig                     |   11 --
+ drivers/staging/zram/zram_drv.h                    |    3 +-
+ drivers/staging/zsmalloc/Kconfig                   |   10 --
+ drivers/staging/zsmalloc/Makefile                  |    3 -
+ drivers/staging/zsmalloc/zsmalloc_int.h            |  149 --------------------
+ .../staging/zsmalloc => include/linux}/zsmalloc.h  |    0
+ mm/Kconfig                                         |   18 +++
+ mm/Makefile                                        |    1 +
+ .../zsmalloc/zsmalloc-main.c => mm/zsmalloc.c      |  133 ++++++++++++++++-
+ 19 files changed, 170 insertions(+), 185 deletions(-)
+ create mode 100644 drivers/mm/Kconfig
+ create mode 100644 drivers/mm/Makefile
+ rename drivers/{staging => mm}/zcache/Makefile (100%)
+ rename drivers/{staging => mm}/zcache/tmem.c (100%)
+ rename drivers/{staging => mm}/zcache/tmem.h (100%)
+ rename drivers/{staging => mm}/zcache/zcache-main.c (99%)
+ delete mode 100644 drivers/staging/zcache/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Makefile
+ delete mode 100644 drivers/staging/zsmalloc/zsmalloc_int.h
+ rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
+ rename drivers/staging/zsmalloc/zsmalloc-main.c => mm/zsmalloc.c (86%)
+
+-- 
+1.7.9.5
+
