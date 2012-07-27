@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab2G0TVE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:21:04 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34835 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751369Ab2G0TVB (ORCPT
+	id S1752641Ab2G0TVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:21:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34733 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237Ab2G0TVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:21:01 -0400
-X-Sasl-enc: SCZ6D5x7/GZ4CFX7eSgS9v3T2jaOdLjUoRXcmhmdKZom 1343416861
-Date: Fri, 27 Jul 2012 12:21:00 -0700
-From: Greg KH <greg@kroah.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Keith Busch <keith.busch@intel.com>, linux-nvme@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] NVMe: Add a character device for each nvme device
-Message-ID: <20120727192100.GA2247@kroah.com>
-References: <1343407458-29909-1-git-send-email-keith.busch@intel.com>
- <20120727181212.GM22985@linux.intel.com>
- <20120727182546.GA23874@kroah.com>
- <20120727190821.GO22985@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120727190821.GO22985@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Jul 2012 15:21:47 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [RESEND PATCH] slub: reduce failure of this_cpu_cmpxchg in put_cpu_partial() after unfreezing
+Date: Sat, 28 Jul 2012 04:20:29 +0900
+Message-Id: <1343416829-3496-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 03:08:21PM -0400, Matthew Wilcox wrote:
-> On Fri, Jul 27, 2012 at 11:25:46AM -0700, Greg KH wrote:
-> > On Fri, Jul 27, 2012 at 02:12:12PM -0400, Matthew Wilcox wrote:
-> > > I don't see a problem here, but I'm no expert at sysfs / character devices.
-> > > Alan, Greg, anyone else see any problems with how this character device is
-> > > created / destroyed?
-> > 
-> > Yes, see below:
-> 
-> Thanks!
-> 
-> > > > +	device_create(nvme_char_cl, NULL, MKDEV(nvme_char_major, dev->instance),
-> > > > +						NULL, "nvme%d", dev->instance);
-> > 
-> > You just created a device at the "root" of sysfs, which is wrong,
-> > especially when you do have a parent device here.  Please use it.
-> 
-> OK, that makes sense; this device should be the child of the pci_dev that
-> it belongs to.
-> 
-> > Also, why are you creating your own class?  Can't this just be a misc
-> > device?  And if you want to create your own class, please don't, use a
-> > bus, as that is what is really happening here, right?  We are trying to
-> > move away from using 'struct class' wherever possible (one of these days
-> > we'll just remove it...)
-> 
-> What we're trying to achieve here is to create one character device
-> per NVMe controller that gets plugged in.  Each NVMe controller is-a
-> PCI function.  The reason we're trying to do this is so that we can send
-> commands to the NVMe controller, even when there is no storage present
-> (eg a drive is shipped from the factory with no configured storage).
-> 
-> So we have no particular desire to create a new struct class, or struct
-> bus.  If we can create a misc device per PCIe function that's bound to our
-> driver, that's great!  Can you recommend a driver that does this already?
+In current implementation, after unfreezing, we doesn't touch oldpage,
+so it remain 'NOT NULL'. When we call this_cpu_cmpxchg()
+with this old oldpage, this_cpu_cmpxchg() is mostly be failed.
 
-I don't think there is one, but it shouldn't be that hard to just create
-a 'struct misdevice' for each one of the devices you want to create,
-would it?
+We can change value of oldpage to NULL after unfreezing,
+because unfreeze_partial() ensure that all the cpu partial slabs is removed
+from cpu partial list. In this time, we could expect that
+this_cpu_cmpxchg is mostly succeed.
 
-But, as you really are a "specific type", a bus_type might be overkill,
-so the original use of device_create() should be fine.  Just be sure to
-fix the parent pointer issue, and you should be fine, right?
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: David Rientjes <rientjes@google.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+---
+Change log: Just add "Acked-by: Christoph Lameter <cl@linux.com>"
+Resend as ping for Penberg
 
-greg k-h
+diff --git a/mm/slub.c b/mm/slub.c
+index e517d43..ca778e5 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1952,6 +1952,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 				local_irq_save(flags);
+ 				unfreeze_partials(s);
+ 				local_irq_restore(flags);
++				oldpage = NULL;
+ 				pobjects = 0;
+ 				pages = 0;
+ 				stat(s, CPU_PARTIAL_DRAIN);
+-- 
+1.7.9.5
+
