@@ -1,171 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab2G0Rpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 13:45:40 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:52538 "EHLO
+	id S1752322Ab2G0RyS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 13:54:18 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:52638 "EHLO
 	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab2G0Rpj (ORCPT
+	with ESMTP id S1751369Ab2G0RyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 13:45:39 -0400
-Date: Fri, 27 Jul 2012 13:45:34 -0400
+	Fri, 27 Jul 2012 13:54:17 -0400
+Date: Fri, 27 Jul 2012 13:54:08 -0400
 From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/4] xen/x86: Use memblock_reserve for sensitive areas.
-Message-ID: <20120727174534.GF17427@andromeda.dapyr.net>
-References: <1343334845-5340-1-git-send-email-konrad.wilk@oracle.com> <1343334845-5340-3-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1207271139140.26163@kaball.uk.xensource.com>
+        linux-kernel@vger.kernel.org, xen-devel <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/swiotlb: If iommu=soft was not passed in on > 4GB, don't turn it on.
+Message-ID: <20120727175408.GG17427@andromeda.dapyr.net>
+References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com> <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com> <50125F0B0200007800090DFB@nat28.tlf.novell.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207271139140.26163@kaball.uk.xensource.com>
+In-Reply-To: <50125F0B0200007800090DFB@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 11:49:02AM +0100, Stefano Stabellini wrote:
-> On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> > instead of a big memblock_reserve. This way we can be more
-> > selective in freeing regions (and it also makes it easier
-> > to understand where is what).
+On Fri, Jul 27, 2012 at 08:27:39AM +0100, Jan Beulich wrote:
+> >>> On 26.07.12 at 22:43, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > If we boot a 64-bit guest with more than 4GB memory, the SWIOTLB
+> > gets turned on:
+> > PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+> > software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at 
+> > [ffff8800fb43d000-ffff8800ff43cfff]
 > > 
-> > [v1: Move the auto_translate_physmap to proper line]
+> > which is OK if we had PCI devices, but not if we did not. In a PV
+> > guest the SWIOTLB ends up asking the hypervisor for precious lowmem
+> > memory - and 64MB of it per guest. On a 32GB machine, this limits the
+> > amount of guests that are 4GB to start due to lowmem exhaustion.
+> > 
+> > What we do is detect whether the user supplied e820_hole=1
+> > parameter, which is used to construct an E820 that is similar to
+> > the machine  - so that the PCI regions do not overlap with RAM regions.
+> > We check for that by looking at the E820 and seeing if it diverges
+> > from the standard - and if so (and if iommu=soft was not turned on),
+> > we disable the check pci_swiotlb_detect_4gb code.
+> > 
 > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > > ---
-> >  arch/x86/xen/enlighten.c |   38 ++++++++++++++++++++++++++++++++++++++
-> >  arch/x86/xen/p2m.c       |    5 +++++
-> >  arch/x86/xen/setup.c     |    9 ---------
-> >  3 files changed, 43 insertions(+), 9 deletions(-)
+> >  arch/x86/xen/pci-swiotlb-xen.c |   26 ++++++++++++++++++++++++++
+> >  1 files changed, 26 insertions(+), 0 deletions(-)
 > > 
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index ff962d4..9b1afa4 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -998,7 +998,44 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+> > diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+> > index 967633a..56f373e 100644
+> > --- a/arch/x86/xen/pci-swiotlb-xen.c
+> > +++ b/arch/x86/xen/pci-swiotlb-xen.c
+> > @@ -8,6 +8,10 @@
+> >  #include <xen/xen.h>
+> >  #include <asm/iommu_table.h>
 > >  
-> >  	return ret;
-> >  }
-> > +static void __init xen_reserve_mfn(unsigned long mfn)
+> > +#include <asm/e820.h>
+> > +#include <asm/dma.h>
+> > +#include <asm/iommu.h>
+> > +
+> >  int xen_swiotlb __read_mostly;
+> >  
+> >  static struct dma_map_ops xen_swiotlb_dma_ops = {
+> > @@ -24,7 +28,19 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+> >  	.unmap_page = xen_swiotlb_unmap_page,
+> >  	.dma_supported = xen_swiotlb_dma_supported,
+> >  };
+> > +bool __init e820_has_acpi(void)
 > > +{
-> > +	unsigned long pfn;
-> > +
-> > +	if (!mfn)
-> > +		return;
-> > +	pfn = mfn_to_pfn(mfn);
-> > +	if (phys_to_machine_mapping_valid(pfn))
-> > +		memblock_reserve(PFN_PHYS(pfn), PAGE_SIZE);
-> > +}
+> > +	int i;
+> >  
+> > +	/* Check if the user supplied the e820_hole parameter
+> > +	 * which would create a machine looking E820 region. */
+> > +	for (i = 0; i < e820.nr_map; i++) {
+> > +		if ((e820.map[i].type == E820_ACPI) ||
+> > +		    (e820.map[i].type == E820_NVS))
+> > +			return true;
 > 
-> If the mfn is not in the m2p xen_reserve_mfn won't do anything. It is
-> worth writing it down in a comment.
+> Tying this decision to the presence of ACPI regions in E820 is
+> problematic for two reasons imo: For one, it precludes cleaning
+> up this (bogus!) construct where it gets produced (PV DomU-s
+> really shouldn't ever see such E820 entries, they should get
+> converted to simple reserved entries, to wipe any notion of
+> ACPI presence). And second it ties you to running on systems
+> that actually have ACPI, whereas it is my rudimentary
+> understanding that systems with e.g. SFI would not have any
+> ACPI).
 
-Meaning in a printk?
-> 
-> 
-> > +static void __init xen_reserve_internals(void)
-> > +{
-> > +	unsigned long size;
-> > +
-> > +	if (!xen_pv_domain())
-> > +		return;
-> > +
-> > +	memblock_reserve(__pa(xen_start_info), PAGE_SIZE);
-> 
-> xen_start_info is not in the m2p, so you cannot use xen_reserve_mfn
+Right. The other idea was to check the XenBus for the existence
+of vpci backend. But at this stage it is not up yet.
 
-It seems to work for me. For both the toolstack created guests
-and dom0. Let me double check thought.
-> 
-> 
-> > +	xen_reserve_mfn(PFN_DOWN(xen_start_info->shared_info));
-> > +	xen_reserve_mfn(xen_start_info->store_mfn);
-> 
-> Are we sure that shared_info points to an mfn that is in the m2p (rather
-> than a special mfn not present in the list)?
-> 
-> 
-> > +	if (!xen_initial_domain())
-> > +		xen_reserve_mfn(xen_start_info->console.domU.mfn);
-> > +
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> > +		return;
-> > +
-> > +	/*
-> > +	 * ALIGN up to compensate for the p2m_page pointing to an array that
-> > +	 * can partially filled (look in xen_build_dynamic_phys_to_machine).
-> > +	 */
-> > +
-> > +	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-> > +	memblock_reserve(__pa(xen_start_info->mfn_list), size);
-> 
-> I take that here you are using memblock_reserve again, rather than
-> xen_reserve_mfn, because the corresponding mfn is not in the m2p?
+Perhaps what I should check for is the existence of two E820_RSV
+and two E820_RAM regions - and that would be a normal PV guest.
+Anything that is outside of that scope would be considered
+a PCI PV guest?
 
-<nods> Well, they are - but they are 55555555..
-> 
-> 
-> > +	/* The pagetables are reserved in mmu.c */
-> > +}
-> >  void xen_setup_shared_info(void)
-> >  {
-> >  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-> > @@ -1362,6 +1399,7 @@ asmlinkage void __init xen_start_kernel(void)
-> >  	xen_raw_console_write("mapping kernel into physical memory\n");
-> >  	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
-> >  
-> > +	xen_reserve_internals();
-> >  	/* Allocate and initialize top and mid mfn levels for p2m structure */
-> >  	xen_build_mfn_list_list();
-> >  
-> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> > index e4adbfb..6a2bfa4 100644
-> > --- a/arch/x86/xen/p2m.c
-> > +++ b/arch/x86/xen/p2m.c
-> > @@ -388,6 +388,11 @@ void __init xen_build_dynamic_phys_to_machine(void)
-> >  	}
-> >  
-> >  	m2p_override_init();
-> > +
-> > +	/* NOTE: We cannot call memblock_reserve here for the mfn_list as there
-> > +	 * isn't enough pieces to make it work (for one - we are still using the
-> > +	 * Xen provided pagetable). Do it later in xen_reserve_internals.
-> > +	 */
-> >  }
-> >  
-> >  unsigned long get_phys_to_machine(unsigned long pfn)
-> > diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> > index a4790bf..9efca75 100644
-> > --- a/arch/x86/xen/setup.c
-> > +++ b/arch/x86/xen/setup.c
-> > @@ -424,15 +424,6 @@ char * __init xen_memory_setup(void)
-> >  	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
-> >  			E820_RESERVED);
-> >  
-> > -	/*
-> > -	 * Reserve Xen bits:
-> > -	 *  - mfn_list
-> > -	 *  - xen_start_info
-> > -	 * See comment above "struct start_info" in <xen/interface/xen.h>
-> > -	 */
-> > -	memblock_reserve(__pa(xen_start_info->mfn_list),
-> > -			 xen_start_info->pt_base - xen_start_info->mfn_list);
-> > -
-> >  	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-> >  
-> >  	return "Xen";
-> > -- 
-> > 1.7.7.6
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+The other thought I had was to skip this check altogether and
+either do:
+1). initialize SWIOTLB when xen-pcifront start up and detects
+    that it has devices (so later on initialization - similar to
+    how IA64 does it) - but I am not sure how the PCI-DMA works
+    with these late bloomers (especially as one could just make
+    xen-pcifront be a module).
+2). If xen-pcifront starts and does not detect any backends
+    it calls swiotlb_free. But that also requires the PCI-DMA
+    to swap in the dma_ops, and I am not entirely sure how
+    that would work out.
+3). Have an "early_init" xen-pcifront components that does a
+    a quick XenBus init (similar to how hvmloader checks for
+    DMI overwrites) and if it finds vpci then declare its
+    time to turn SWIOTLB on.
+4). The other thing is to wrap this code with something like
+    this:
+
+#ifdef CONFIG_SWIOTLB
+#ifdef CONFIG_XEN_PCI_FRONTEND
+	if (.. blah balh) do the check as outlined in 3).
+#else // PCI_FRONTEND is not present, so we won't need SWIOTLB
+	swiotlb = 0;
+	iommu = 1;
+#endif
+#endif
+
+That would take care of the built-in issues.
