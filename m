@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208Ab2G0EDY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 00:03:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39289 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044Ab2G0EDW (ORCPT
+	id S1751501Ab2G0EEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 00:04:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51119 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab2G0EEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 00:03:22 -0400
-From: Bryan Wu <bryan.wu@canonical.com>
-To: gregkh@linuxfoundation.org, ccross@android.com, hmh@hmh.eng.br,
-        rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org
-Subject: [PATCH 3/3] ledtrig-timer: convert to use device_create_file_uevent API
-Date: Fri, 27 Jul 2012 12:02:43 +0800
-Message-Id: <1343361763-10307-4-git-send-email-bryan.wu@canonical.com>
-X-Mailer: git-send-email 1.7.11.1
-In-Reply-To: <1343361763-10307-1-git-send-email-bryan.wu@canonical.com>
-References: <1343361763-10307-1-git-send-email-bryan.wu@canonical.com>
+	Fri, 27 Jul 2012 00:04:35 -0400
+From: Daniel J Blueman <daniel@quora.org>
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Daniel J Blueman <daniel@quora.org>
+Subject: [PATCH] Add Etron XHCI quirk to avoid warning spam
+Date: Fri, 27 Jul 2012 12:03:44 +0800
+Message-Id: <1343361824-11417-1-git-send-email-daniel@quora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To send KOBJ_CHANGE uevent to userspace which is required by Android
+When various USB3 devices with Etron XHCI controllers, we see a bunch of
+warnings:
+xhci_hcd 0000:02:00.0: WARN Successful completion on short TX: needs
+XHCI_TRUST_TX_LENGTH quirk?
 
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+Acknowledge the issue by adding the quirk.
+
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
 ---
- drivers/leds/ledtrig-timer.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-pci.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
-index 9010f7a..d8b6296 100644
---- a/drivers/leds/ledtrig-timer.c
-+++ b/drivers/leds/ledtrig-timer.c
-@@ -78,10 +78,12 @@ static void timer_trig_activate(struct led_classdev *led_cdev)
- 
- 	led_cdev->trigger_data = NULL;
- 
--	rc = device_create_file(led_cdev->dev, &dev_attr_delay_on);
-+	rc = device_create_file_uevent(led_cdev->dev, &dev_attr_delay_on,
-+				"TRIGGER=timer", KOBJ_CHANGE);
- 	if (rc)
- 		return;
--	rc = device_create_file(led_cdev->dev, &dev_attr_delay_off);
-+	rc = device_create_file_uevent(led_cdev->dev, &dev_attr_delay_off,
-+				"TRIGGER=timer", KOBJ_CHANGE);
- 	if (rc)
- 		goto err_out_delayon;
- 
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 18b231b..715ad11 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -95,10 +95,13 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 		xhci->limit_active_eps = 64;
+ 		xhci->quirks |= XHCI_SW_BW_CHECKING;
+ 	}
+-	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+-			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+-		xhci->quirks |= XHCI_RESET_ON_RESUME;
+-		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
++	if (pdev->vendor == PCI_VENDOR_ID_ETRON) {
++		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
++
++		if (pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
++			xhci->quirks |= XHCI_RESET_ON_RESUME;
++			xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
++		}
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
 -- 
-1.7.11.1
+1.7.9.5
 
