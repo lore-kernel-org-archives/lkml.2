@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab2G0SjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 14:39:25 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:39901 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751030Ab2G0SjY (ORCPT
+	id S1752158Ab2G0Skq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 14:40:46 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:50510 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab2G0Skp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 14:39:24 -0400
-Date: Fri, 27 Jul 2012 11:39:23 -0700 (PDT)
-From: Andrew Stiegmann <astiegmann@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
-        vm-crosstalk@vmware.com, cschamp@vmware.com
-Message-ID: <1258715407.5847225.1343414363506.JavaMail.root@vmware.com>
-In-Reply-To: <20120727181639.GA23564@kroah.com>
-Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
+	Fri, 27 Jul 2012 14:40:45 -0400
+Date: Fri, 27 Jul 2012 14:40:31 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Patrick McHardy <kaber@trash.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org
+Subject: Re: [PATCH 2/7] netpoll: make __netpoll_cleanup non-block
+Message-ID: <20120727184031.GB20938@hmsreliant.think-freely.org>
+References: <1343403484-29347-1-git-send-email-amwang@redhat.com>
+ <1343403484-29347-3-git-send-email-amwang@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC20 (Linux)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343403484-29347-3-git-send-email-amwang@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> From: "Greg KH" <gregkh@linuxfoundation.org>
-> To: "Andrew Stiegmann" <astiegmann@vmware.com>
-> Cc: "Sam Ravnborg" <sam@ravnborg.org>, linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-> pv-drivers@vmware.com, vm-crosstalk@vmware.com, cschamp@vmware.com
-> Sent: Friday, July 27, 2012 11:16:39 AM
-> Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
+On Fri, Jul 27, 2012 at 11:37:59PM +0800, Cong Wang wrote:
+> Like the previous patch, slave_disable_netpoll() and __netpoll_cleanup()
+> may be called with read_lock() held too, so we should make them
+> non-block, by moving the cleanup and kfree() to call_rcu_bh() callbacks.
 > 
-> On Fri, Jul 27, 2012 at 10:20:43AM -0700, Andrew Stiegmann wrote:
-> > > The kernel style is to use lower_case for everything.
-> > > So this would become:
-> > > 
-> > >     vmci_device_get()
-> > > 
-> > > This is obviously a very general comment and applies everywhere.
-> > 
-> > I wish I could lower case these symbols but VMCI has already
-> > existed
-> > outside the mainline Linux tree for some time now and changing
-> > these
-> > exported symbols would mean that other drivers that depend on VMCI
-> > (vSock, vmhgfs) would need to change as well.   One thought that
-> > did
-> > come to mind was exporting both VMCI_Device_Get and vmci_device_get
-> > but that would likely just confuse people.  So in short I have made
-> > function names lower case where possible, but exported symbols
-> > could
-> > not be changed.
-> 
-> Not true at all.  You want those drivers to be merged as well, right?
-> So they will need to have their functions changed, and their code as
-> well.
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Cong Wang <amwang@redhat.com>
+> ---
+>  drivers/net/bonding/bond_main.c |    4 +--
+>  include/linux/netpoll.h         |    3 ++
+>  net/8021q/vlan_dev.c            |    6 +----
+>  net/bridge/br_device.c          |    6 +----
+>  net/core/netpoll.c              |   42 +++++++++++++++++++++++++++++---------
+>  5 files changed, 38 insertions(+), 23 deletions(-)
+><snip>
 
-As previously mentioned VMware is working on upstreaming our vSock driver (one of a few drivers that uses vmw_vmci).  However there are no plans to upstream the other drivers that depend on vmw_vmci.  Because of this these symbols can not change.
+>  	struct netpoll_info *npinfo;
+> @@ -903,20 +921,24 @@ void __netpoll_cleanup(struct netpoll *np)
+>  			ops->ndo_netpoll_cleanup(np->dev);
+>  
+>  		RCU_INIT_POINTER(np->dev->npinfo, NULL);
+> +		call_rcu_bh(&npinfo->rcu, rcu_cleanup_netpoll_info);
+> +	}
+> +}
+> +EXPORT_SYMBOL_GPL(__netpoll_cleanup);
+>  
+> -		/* avoid racing with NAPI reading npinfo */
+> -		synchronize_rcu_bh();
+> +static void rcu_cleanup_netpoll(struct rcu_head *rcu_head)
+> +{
+> +	struct netpoll *np = container_of(rcu_head, struct netpoll, rcu);
+>  
+> -		skb_queue_purge(&npinfo->arp_tx);
+> -		skb_queue_purge(&npinfo->txq);
+> -		cancel_delayed_work_sync(&npinfo->tx_work);
+> +	__netpoll_cleanup(np);
+> +	kfree(np);
+> +}
+>  
+> -		/* clean after last, unfinished work */
+> -		__skb_queue_purge(&npinfo->txq);
+> -		kfree(npinfo);
+> -	}
+> +void __netpoll_free_rcu(struct netpoll *np)
+> +{
+> +	call_rcu_bh(&np->rcu, rcu_cleanup_netpoll);
+Here, and above I see you using an rcu_head to defer cleanup, until after all
+pointer uses are dropped, but I don't see any modification of code points that
+dereference any struct netpoll pointers to include
+rcu_read_lock()/rcu_read_unlock().  Without those using rcu to defer cleanup is
+pointless, as the rcu code won't know when its safe to run.  You're no better
+off that you would be just calling __netpoll_cleanup directly.
+Neil
 
-> Just wait until we get to the "change your functionality around"
-> requests, those will require those drivers to change.  Right now we
-> are
-> at the "silly and obvious things you did wrong" stage of the review
-> process :)
->
-> So please fix these, and also, post these drivers as well, so we can
-> see
-> how they interact with the core code.
+>  }
+> -EXPORT_SYMBOL_GPL(__netpoll_cleanup);
+> +EXPORT_SYMBOL_GPL(__netpoll_free_rcu);
+>  
+>  void netpoll_cleanup(struct netpoll *np)
+>  {
+> -- 
+> 1.7.7.6
 > 
-> Actually, if you are going to need lots of refactoring for these
-> drivers, and the core, I would recommend putting this all in the
-> staging
-> tree, to allow that to happen over time.  That would ensure that your
-> users keep having working systems, and let you modify the interfaces
-> better and easier, than having to keep it all out-of-tree.
-> 
-> What do you think?
-
-We will discuss this internally and let you know.
- 
-> greg k-h
 > 
