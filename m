@@ -1,114 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab2G0Wa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 18:30:26 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:3816 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab2G0WaX (ORCPT
+	id S1752731Ab2G0WhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 18:37:07 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35887 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab2G0WhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 18:30:23 -0400
-Message-ID: <1343427931.3010.582.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] create sun sysfs file
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 27 Jul 2012 16:25:31 -0600
-In-Reply-To: <5012051A.4050706@jp.fujitsu.com>
-References: <5012051A.4050706@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 27 Jul 2012 18:37:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxrbbbC9eSCCh=s1mrNk=bz=og2B-FxmoYpVuxVvMrRqQ@mail.gmail.com>
+References: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
+	<CA+55aFxrbbbC9eSCCh=s1mrNk=bz=og2B-FxmoYpVuxVvMrRqQ@mail.gmail.com>
+Date: Sat, 28 Jul 2012 00:37:05 +0200
+Message-ID: <CACRpkdYz1XMWJ4GsbudYv=rtkkOsmQFqfptBVAbY9hgLcesBgg@mail.gmail.com>
+Subject: Re: [GIT PULL] GPIO changes for v3.6
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        =?ISO-8859-1?Q?Beno=EEt_Th=E9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 12:03 +0900, Yasuaki Ishimatsu wrote:
-> Even if a device has _SUN method, there is no way to know the slot unique-ID.
-> Thus the patch creates "sun" file in sysfs so that we can recognize it.
+On Thu, Jul 26, 2012 at 10:58 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Jul 25, 2012 at 3:48 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>
+>> in Grants absence, these are my queued and -next-tested changes
+>> for v3.6, please pull them in. Grants "merge" branch prior to his
+>> absence was merged in as a base for this patch series.
+>
+> Please verify my conflict resolution in drivers/gpio/gpio-mxc.c.
+>
+> The resolution seemed pretty straight-forward, but I obviously didn't
+> test the result, so it would be best to double-check,
 
-Hi Yasuaki,
+LooksGoodToMe(TM).
 
-Thanks for the update.  This version looks good to me.
-Did you forget to add your Signed-off?
+Better page the MXC people so they can scream if something
+goes wild.
 
-
-> Index: linux-3.5/include/acpi/acpi_bus.h
-> ===================================================================
-> --- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-22 05:58:29.000000000 +0900
-> +++ linux-3.5/include/acpi/acpi_bus.h	2012-07-27 10:05:13.860598455 +0900
-> @@ -209,6 +209,7 @@ struct acpi_device_pnp {
->  	struct list_head ids;		/* _HID and _CIDs */
->  	acpi_device_name device_name;	/* Driver-determined */
->  	acpi_device_class device_class;	/*        "          */
-> +	unsigned long sun;		/* _SUN */
->  };
->  
->  #define acpi_device_bid(d)	((d)->pnp.bus_id)
-> Index: linux-3.5/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-3.5.orig/drivers/acpi/scan.c	2012-07-22 05:58:29.000000000 +0900
-> +++ linux-3.5/drivers/acpi/scan.c	2012-07-27 10:17:55.670550879 +0900
-> @@ -192,10 +192,21 @@ end:
->  }
->  static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
->  
-> +static ssize_t
-> +acpi_device_sun_show(struct device *dev, struct device_attribute *attr, char *buf) {
-> +	struct acpi_device *acpi_dev = to_acpi_device(dev);
-> +	int result;
-> +
-> +	result = sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
-> +	return result;
-> +}
-> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
-> +
->  static int acpi_device_setup_files(struct acpi_device *dev)
->  {
->  	acpi_status status;
->  	acpi_handle temp;
-> +	unsigned long long sun;
->  	int result = 0;
->  
->  	/*
-> @@ -217,6 +228,14 @@ static int acpi_device_setup_files(struc
->  			goto end;
->  	}
->  
-> +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
-> +	if (ACPI_SUCCESS(status)) {
-> +		dev->pnp.sun = (unsigned long)sun;
-> +		result = device_create_file(&dev->dev, &dev_attr_sun);
-> +		if (result)
-> +			goto end;
-> +	}
-> +
-
-I'd suggest we add the else condition below to invalidate the field when
-_SUN does not exist.
-
-	else {
-		dev->pnp.sun = (unsigned long)-1;
-	}
-
-
-Thanks,
--Toshi
-
->          /*
->           * If device has _EJ0, 'eject' file is created that is used to trigger
->           * hot-removal function from userland.
-> @@ -241,6 +260,10 @@ static void acpi_device_remove_files(str
->  	if (ACPI_SUCCESS(status))
->  		device_remove_file(&dev->dev, &dev_attr_eject);
->  
-> +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
-> +	if (ACPI_SUCCESS(status))
-> +		device_remove_file(&dev->dev, &dev_attr_sun);
-> +
->  	device_remove_file(&dev->dev, &dev_attr_modalias);
->  	device_remove_file(&dev->dev, &dev_attr_hid);
->  	if (dev->handle)
-> 
-
-
+Yours,
+Linus Walleij
