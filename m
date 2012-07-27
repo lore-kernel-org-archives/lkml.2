@@ -1,112 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab2G0Lqd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 07:46:33 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:32626 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab2G0Lqc (ORCPT
+	id S1752449Ab2G0Lqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 07:46:38 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:11690 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217Ab2G0Lqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 07:46:32 -0400
-X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
-   d="scan'208";a="13733601"
-Date: Fri, 27 Jul 2012 12:45:38 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 4/7] xen/mmu: Recycle the Xen provided L4,
- L3, and L2 pages
-In-Reply-To: <1343335652-5659-5-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1207271241580.26163@kaball.uk.xensource.com>
-References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com> <1343335652-5659-5-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Fri, 27 Jul 2012 07:46:36 -0400
+Date: Fri, 27 Jul 2012 13:46:25 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH/RFC] platform: Add support for automatic device IDs
+Message-ID: <20120727134625.71e29d2d@endymion.delvare>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> As we are not using them. We end up only using the L1 pagetables
-> and grafting those to our page-tables.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/mmu.c |   38 ++++++++++++++++++++++++++++++++------
->  1 files changed, 32 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 48bdc9f..7f54b75 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1724,6 +1724,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  {
->  	pud_t *l3;
->  	pmd_t *l2;
-> +	unsigned long addr[3];
-> +	unsigned long pt_base, pt_end;
-> +	unsigned i;
->  
->  	/* max_pfn_mapped is the last pfn mapped in the initial memory
->  	 * mappings. Considering that on Xen after the kernel mappings we
-> @@ -1731,6 +1734,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	 * set max_pfn_mapped to the last real pfn mapped. */
->  	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
->  
-> +	pt_base = PFN_DOWN(__pa(xen_start_info->pt_base));
-> +	pt_end = PFN_DOWN(__pa(xen_start_info->pt_base + (xen_start_info->nr_pt_frames * PAGE_SIZE)));
-> +
->  	/* Zap identity mapping */
->  	init_level4_pgt[0] = __pgd(0);
->  
-> @@ -1749,6 +1755,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
->  	l2 = m2v(l3[pud_index(__START_KERNEL_map)].pud);
->  
-> +	addr[0] = (unsigned long)pgd;
-> +	addr[1] = (unsigned long)l2;
-> +	addr[2] = (unsigned long)l3;
->  	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
->  	 * Both L4[272][0] and L4[511][511] have entries that point to the same
->  	 * L2 (PMD) tables. Meaning that if you modify it in __va space
-> @@ -1791,12 +1800,29 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	__xen_write_cr3(true, __pa(init_level4_pgt));
->  	xen_mc_issue(PARAVIRT_LAZY_CPU);
->  
-> -	/* Offset by one page since the original pgd is going bye bye */
-> -	memblock_reserve(__pa(xen_start_info->pt_base + PAGE_SIZE),
-> -			 (xen_start_info->nr_pt_frames * PAGE_SIZE) - PAGE_SIZE);
-> -	/* and also RW it so it can actually be used. */
-> -	set_page_prot(pgd, PAGE_KERNEL);
-> -	clear_page(pgd);
-> +	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
-> +	 * set out this way: [L4], [L1], [L2], [L3], [L1], [L1] ...  for
-> +	 * the initial domain. For guests using the toolstack, they are in:
-> +	 * [L4], [L3], [L2], [L1], [L1], order .. */
-> +	for (i = 0; i < ARRAY_SIZE(addr); i++) {
-> +		unsigned j;
-> +		/* No idea about the order the addr are in, so just do them twice. */
-> +		for (j = 0; j < ARRAY_SIZE(addr); j++) {
+Right now we have support for explicit platform device IDs, as well as
+ID-less platform devices when a given device type can only have one
+instance. However there are cases where multiple instances of a device
+type can exist, and their IDs aren't (and can't be) known in advance
+and do not matter. In that case we need automatic device IDs to avoid
+device name collisions.
 
-I don't think I understand this double loop.
-Shouldn't we be looping on pt_base or pt_end?
+I am using magic ID value -4 for this (I left -2 and -3 free in case
+we ever need a couple of other magic values.) The automatically
+allocated device IDs are global (to avoid an additional per-driver
+cost) and are stored internally as negative numbers, starting with -4.
+This is required so that the IDs can be freed later. Externally the
+positive value is used.
+
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+If anyone has a problem with the -4 or using negative device IDs
+internally, it would be possible to avoid that by adding a boolean
+attribute to every platform device to record whether the ID needs to
+be freed. This would cost some memory.
+
+ drivers/base/platform.c         |   33 +++++++++++++++++++++++++++++++--
+ include/linux/platform_device.h |    3 +++
+ 2 files changed, 34 insertions(+), 2 deletions(-)
+
+--- linux-3.5.orig/drivers/base/platform.c	2012-07-26 08:36:58.817173740 +0200
++++ linux-3.5/drivers/base/platform.c	2012-07-27 12:43:19.167592926 +0200
+@@ -20,9 +20,13 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/pm_runtime.h>
++#include <linux/idr.h>
+ 
+ #include "base.h"
+ 
++/* For automatically allocated device IDs */
++static DEFINE_IDA(platform_devid_ida);
++
+ #define to_platform_driver(drv)	(container_of((drv), struct platform_driver, \
+ 				 driver))
+ 
+@@ -273,10 +277,29 @@ int platform_device_add(struct platform_
+ 
+ 	pdev->dev.bus = &platform_bus_type;
+ 
+-	if (pdev->id != -1)
++	switch (pdev->id) {
++	default:
+ 		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
+-	else
++		break;
++	case PLATFORM_DEVID_NONE:
+ 		dev_set_name(&pdev->dev, "%s", pdev->name);
++		break;
++	case PLATFORM_DEVID_AUTO:
++		/*
++		 * Automatically allocated device ID. Stored as a negative
++		 * number so that we remember it must be freed. We use the
++		 * opposite in the device name so that the user still sees a
++		 * positive device ID. And we append a suffix to avoid
++		 * namespace collision with explicit IDs.
++		 */
++		i = ida_simple_get(&platform_devid_ida, -PLATFORM_DEVID_AUTO, 0,
++				   GFP_KERNEL);
++		if (i < 0)
++			return i;
++		pdev->id = -i;
++		dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name, -pdev->id);
++		break;
++	}
+ 
+ 	for (i = 0; i < pdev->num_resources; i++) {
+ 		struct resource *p, *r = &pdev->resource[i];
+@@ -309,6 +332,9 @@ int platform_device_add(struct platform_
+ 		return ret;
+ 
+  failed:
++	if (pdev->id <= PLATFORM_DEVID_AUTO)
++		ida_simple_remove(&platform_devid_ida, -pdev->id);
++
+ 	while (--i >= 0) {
+ 		struct resource *r = &pdev->resource[i];
+ 		unsigned long type = resource_type(r);
+@@ -336,6 +362,9 @@ void platform_device_del(struct platform
+ 	if (pdev) {
+ 		device_del(&pdev->dev);
+ 
++		if (pdev->id <= PLATFORM_DEVID_AUTO)
++			ida_simple_remove(&platform_devid_ida, -pdev->id);
++
+ 		for (i = 0; i < pdev->num_resources; i++) {
+ 			struct resource *r = &pdev->resource[i];
+ 			unsigned long type = resource_type(r);
+--- linux-3.5.orig/include/linux/platform_device.h	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/include/linux/platform_device.h	2012-07-27 10:57:20.378726053 +0200
+@@ -14,6 +14,9 @@
+ #include <linux/device.h>
+ #include <linux/mod_devicetable.h>
+ 
++#define PLATFORM_DEVID_NONE	(-1)
++#define PLATFORM_DEVID_AUTO	(-4)
++
+ struct mfd_cell;
+ 
+ struct platform_device {
 
 
-> +			if (pt_base == PFN_DOWN(__pa(addr[j]))) {
-> +				set_page_prot((void *)addr[j], PAGE_KERNEL);
-> +				clear_page((void *)addr[j]);
-> +				pt_base++;
-> +
-> +			}
-> +			if (pt_end == PFN_DOWN(__pa(addr[j]))) {
-> +				set_page_prot((void *)addr[j], PAGE_KERNEL);
-> +				clear_page((void *)addr[j]);
-> +				pt_end--;
-> +			}
-> +		}
-> +	}
-> +	/* Our (by three pages) smaller Xen pagetable that we are using */
-> +	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
-
-
+-- 
+Jean Delvare
