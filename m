@@ -1,207 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab2G0JIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 05:08:17 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:33522 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751365Ab2G0JIP (ORCPT
+	id S1752437Ab2G0JR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 05:17:58 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:24055 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab2G0JR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 05:08:15 -0400
+	Fri, 27 Jul 2012 05:17:56 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
+   d="scan'208";a="13730245"
+Message-ID: <1343380659.6812.106.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 02/24] xen/arm: hypercalls
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 27 Jul 2012 10:17:39 +0100
+In-Reply-To: <20120726163352.GC9222@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+	 <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20120726163352.GC9222@phenom.dumpdata.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-In-Reply-To: <f35f04238ad2e00e976d5f99b4b29648.squirrel@www.codeaurora.org>
-References: <34e29d774773a7dfa3e1b57232249b68.squirrel@www.codeaurora.org>
- <CANfBPZ9NZAdK4tEDJ8wiNKNjRUuqaLKk3qqVZVgod8vwYVuOYw@mail.gmail.com> <f35f04238ad2e00e976d5f99b4b29648.squirrel@www.codeaurora.org>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Fri, 27 Jul 2012 14:37:53 +0530
-Message-ID: <CANfBPZ9Pbsp4OXh-kCveiAm-ing8i4k5WZvAzrdi8G4d8tCDdA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] mmc: block: Add write packing control
-To: merez@codeaurora.org
-Cc: Chris Ball <cjb@laptop.org>, Muthu Kumar <muthu.lkml@gmail.com>,
-        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 12:24 AM,  <merez@codeaurora.org> wrote:
->
-> On Thu, July 26, 2012 8:28 am, S, Venkatraman wrote:
->> On Tue, Jul 24, 2012 at 2:14 PM,  <merez@codeaurora.org> wrote:
->>> On Mon, July 23, 2012 5:22 am, S, Venkatraman wrote:
->>>> On Mon, Jul 23, 2012 at 5:13 PM,  <merez@codeaurora.org> wrote:
->>>>> On Wed, July 18, 2012 12:26 am, Chris Ball wrote:
->>>>>> Hi,  [removing Jens and the documentation list, since now we're
->>> talking about the MMC side only]
->>>>>> On Wed, Jul 18 2012, merez@codeaurora.org wrote:
->>>>>>> Is there anything else that holds this patch from being pushed to
->>>>> mmc-next?
->>>>>> Yes, I'm still uncomfortable with the write packing patchsets for a
->>>>> couple of reasons, and I suspect that the sum of those reasons means
->>>>> that
->>>>> we should probably plan on holding off merging it until after 3.6.
->>>>>> Here are the open issues; please correct any misunderstandings: With
->>> Seungwon's patchset ("Support packed write command"):
->>>>>> * I still don't have a good set of representative benchmarks showing
->>>>>>   what kind of performance changes come with this patchset.  It seems
->>>>> like we've had a small amount of testing on one controller/eMMC part
->>>>> combo
->>>>> from Seungwon, and an entirely different test from Maya, and the
->>> results
->>>>> aren't documented fully anywhere to the level of describing what the
->>> hardware was, what the test was, and what the results were before and
->>> after the patchset.
->>>>> Currently, there is only one card vendor that supports packed
->>>>> commands.
->>> Following are our sequential write (LMDD) test results on 2 of our
->>> targets
->>>>> (in MB/s):
->>>>>                        No packing        packing
->>>>> Target 1 (SDR 50MHz)     15               25
->>>>> Target 2 (DDR 50MHz)     20               30
->>>>>> With the reads-during-writes regression:
->>>>>> * Venkat still has open questions about the nature of the read
->>>>>>   regression, and thinks we should understand it with blktrace before
->>>>> trying to fix it.  Maya has a theory about writes overwhelming reads,
->>>>> but
->>>>> Venkat doesn't understand why this would explain the observed
->>>>> bandwidth drop.
->>>>> The degradation of read due to writes is not a new behavior and exists
->>> also without the write packing feature (which only increases the
->>> degradation). Our investigation of this phenomenon led us to the
->>> Conclusion that a new scheduling policy should be used for mobile
->>> devices,
->>>>> but this is not related to the current discussion of the write packing
->>> feature.
->>>>> The write packing feature increases the degradation of read due to
->>> write
->>>>> since it allows the MMC to fetch many write requests in a row, instead
->>>>> of
->>>>> fetching only one at a time.  Therefore some of the read requests will
->>> have to wait for the completion of more write requests before they can
->>> be
->>>>> issued.
->>>>
->>>> I am a bit puzzled by this claim. One thing I checked carefully when
->>> reviewing write packing patches from SJeon was that the code didn't
->>> plough through a mixed list of reads and writes and selected only
->>> writes.
->>>> This section of the code in "mmc_blk_prep_packed_list()", from v8
->>> patchset..
->>>> <Quote>
->>>> +               if (rq_data_dir(cur) != rq_data_dir(next)) {
->>>> +                       put_back = 1;
->>>> +                       break;
->>>> +               }
->>>> </Quote>
->>>>
->>>> means that once a read is encountered in the middle of write packing,
->>> the packing is stopped at that point and it is executed. Then the next
->>> blk_fetch_request should get the next read and continue as before.
->>>>
->>>> IOW, the ordering of reads and writes is _not_ altered when using
->>>> packed
->>> commands.
->>>> For example if there were 5 write requests, followed by 1 read,
->>>> followed by 5 more write requests in the request_queue, the first 5
->>> writes will be executed as one "packed command", then the read will be
->>> executed, and then the remaining 5 writes will be executed as one
->>> "packed command". So the read does not have to wait any more than it
->>> waited before (packing feature)
->>>
->>> Let me try to better explain with your example.
->>> Without packing the MMC layer will fetch 2 write requests and wait for
->>> the
->>> first write request completion before fetching another write request.
->>> During this time the read request could be inserted into the CFQ and
->>> since
->>> it has higher priority than the async write it will be dispatched in the
->>> next fetch. So, the result would be 2 write requests followed by one
->>> read
->>> request and the read would have to wait for completion of only 2 write
->>> requests.
->>> With packing, all the 5 write requests will be fetched in a row, and
->>> then
->>> the read will arrive and be dispatched in the next fetch. Then the read
->>> will have to wait for the completion of 5 write requests.
->>>
->>> Few more clarifications:
->>> Due to the plug list mechanism in the block layer the applications can
->>> "aggregate" several requests to be inserted into the scheduler before
->>> waking the MMC queue thread.
->>> This leads to a situation where there are several write requests in the
->>> CFQ queue when MMC starts to do the fetches.
->>>
->>> If the read was inserted while we are building the packed command then I
->>> agree that we should have seen less effect on the read performance.
->>> However, the write packing statistics show that in most of the cases the
->>> packing stopped due to an empty queue, meaning that the read was
->>> inserted
->>> to the CFQ after all the pending write requests were fetched and packed.
->>>
->>> Following is an example for write packing statistics of a READ/WRITE
->>> parallel scenario:
->>> write packing statistics:
->>> Packed 1 reqs - 448 times
->>> Packed 2 reqs - 38 times
->>> Packed 3 reqs - 23 times
->>> Packed 4 reqs - 30 times
->>> Packed 5 reqs - 14 times
->>> Packed 6 reqs - 8 times
->>> Packed 7 reqs - 4 times
->>> Packed 8 reqs - 1 times
->>> Packed 10 reqs - 1 times
->>> Packed 34 reqs - 1 times
->>> stopped packing due to the following reasons:
->>> 2 times: wrong data direction (meaning a READ was fetched and stopped
->>> the
->>> packing)
->>> 1 times: flush or discard
->>> 565 times: empty queue (meaning blk_fetch_request returned NULL)
->>>
->>>>
->>>> And I requested blktrace to confirm that this is indeed the behaviour.
->>>
->>> The trace logs show that in case of no packing, there are maximum of 3-4
->>> requests issued before a read request, while with packing there are also
->>> cases of 6 and 7 requests dispatched before a read request.
->>>
->>> I'm waiting for an approval for sharing the block trace logs.
->>> Since this is a simple test to run you can collect the trace logs and
->>> let
->>> us know if you reach other conclusions.
->>>
->> Thanks for the brief. I don't have the eMMC4.5 device with me yet, so
->> I can't reproduce the result.
->
-> I sent the trace logs of both packing and non packing. Please let me know
-> if you have additional questions after reviewing them.
->
-> The problem you describe is most likely
->> applicable
->> to any block device driver with a large queue depth ( any queue depth >1).
->> I'll check to see what knobs in block affect the result.
->> Speaking of it, what is the host controller you use to test this ?
->
-> The controller I use is msm_sdcc.
->
->> I was wondering if host->max_seg_size is taken into account while packed
->> command
->> is in use. If not, shouldn't it be ?  - it could act as a better
->> throttle for "packing density".
->
-> The max segments (which is calculated from host->max_seg_size) is taking
-> into account when preparing the packed list (so that the whole packed
-> won't exceed the max number of segments).
-> I'm not sure I understand how host->max_seg_size can be used as a throttle
-> for "packing density". Can you please explain?
->
-Ok - I overlooked that max_segments is indeed used to limit the number
-of requests
-that are packed.(And this corresponds to max_seg_size, which is what I intended)
-I should be getting my MMC4.5 test gear in a couple of days - I'll run
-it through
-on some hosts and can either provide more feedback or Ack this patch.
-Regards,
-Venkat.
+On Thu, 2012-07-26 at 17:33 +0100, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jul 26, 2012 at 04:33:44PM +0100, Stefano Stabellini wrote:
+> > Use r12 to pass the hypercall number to the hypervisor.
+> > 
+> > We need a register to pass the hypercall number because we might not
+> > know it at compile time and HVC only takes an immediate argument.
+> > 
+> > Among the available registers r12 seems to be the best choice because it
+> > is defined as "intra-procedure call scratch register".
+> > 
+> > Use the ISS to pass an hypervisor specific tag.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/arm/include/asm/xen/hypercall.h |   50 ++++++++++++++++++++++++++
+> >  arch/arm/xen/Makefile                |    2 +-
+> >  arch/arm/xen/hypercall.S             |   65 ++++++++++++++++++++++++++++++++++
+> >  3 files changed, 116 insertions(+), 1 deletions(-)
+> >  create mode 100644 arch/arm/include/asm/xen/hypercall.h
+> >  create mode 100644 arch/arm/xen/hypercall.S
+> > 
+> > diff --git a/arch/arm/include/asm/xen/hypercall.h b/arch/arm/include/asm/xen/hypercall.h
+> > new file mode 100644
+> > index 0000000..4ac0624
+> > --- /dev/null
+> > +++ b/arch/arm/include/asm/xen/hypercall.h
+> > @@ -0,0 +1,50 @@
+> > +/******************************************************************************
+> > + * hypercall.h
+> > + *
+> > + * Linux-specific hypervisor handling.
+> > + *
+> > + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2012
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License version 2
+> > + * as published by the Free Software Foundation; or, when distributed
+> > + * separately from the Linux kernel or incorporated into other
+> > + * software packages, subject to the following license:
+> > + *
+> > + * Permission is hereby granted, free of charge, to any person obtaining a copy
+> > + * of this source file (the "Software"), to deal in the Software without
+> > + * restriction, including without limitation the rights to use, copy, modify,
+> > + * merge, publish, distribute, sublicense, and/or sell copies of the Software,
+> > + * and to permit persons to whom the Software is furnished to do so, subject to
+> > + * the following conditions:
+> > + *
+> > + * The above copyright notice and this permission notice shall be included in
+> > + * all copies or substantial portions of the Software.
+> > + *
+> > + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> > + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> > + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> > + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> > + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> > + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+> > + * IN THE SOFTWARE.
+> > + */
+> > +
+> > +#ifndef _ASM_ARM_XEN_HYPERCALL_H
+> > +#define _ASM_ARM_XEN_HYPERCALL_H
+> > +
+> > +#include <xen/interface/xen.h>
+> > +
+> > +long privcmd_call(unsigned call, unsigned long a1,
+> > +		unsigned long a2, unsigned long a3,
+> > +		unsigned long a4, unsigned long a5);
+> > +int HYPERVISOR_xen_version(int cmd, void *arg);
+> > +int HYPERVISOR_console_io(int cmd, int count, char *str);
+> > +int HYPERVISOR_grant_table_op(unsigned int cmd, void *uop, unsigned int count);
+> > +int HYPERVISOR_sched_op(int cmd, void *arg);
+> > +int HYPERVISOR_event_channel_op(int cmd, void *arg);
+> > +unsigned long HYPERVISOR_hvm_op(int op, void *arg);
+> > +int HYPERVISOR_memory_op(unsigned int cmd, void *arg);
+> > +int HYPERVISOR_physdev_op(int cmd, void *arg);
+> > +
+> > +#endif /* _ASM_ARM_XEN_HYPERCALL_H */
+> > diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
+> > index 0bad594..b9d6acc 100644
+> > --- a/arch/arm/xen/Makefile
+> > +++ b/arch/arm/xen/Makefile
+> > @@ -1 +1 @@
+> > -obj-y		:= enlighten.o
+> > +obj-y		:= enlighten.o hypercall.o
+> > diff --git a/arch/arm/xen/hypercall.S b/arch/arm/xen/hypercall.S
+> > new file mode 100644
+> > index 0000000..038cc5b
+> > --- /dev/null
+> > +++ b/arch/arm/xen/hypercall.S
+> > @@ -0,0 +1,65 @@
+> > +/******************************************************************************
+> > + * hypercall.S
+> > + *
+> > + * Xen hypercall wrappers
+> > + *
+> > + * The Xen hypercall calling convention is very similar to the ARM
+> > + * procedure calling convention: the first paramter is passed in r0, the
+> > + * second in r1, the third in r2 and the third in r3. Considering that
+> 
+> I think you meant 'and the fourth in r3'.
+> 
+> So where does the similarity end?  Just in that we use r12?
+
+The standard ARM function calling convention is arguments 1-4 on r0-r3
+and arguments 5+ on the stack. r12 is a scratch register which can be
+clobbered by the *linker* on subroutine call (r12 is also called "ip"
+the intra-procedure call scratch register).
+
+The hypervisor doesn't want to be accessing hypercall arguments off the
+guest stack, for obvious reasons, so we use r4 for the fifth argument
+(and if we even implemented 6 argument hypercalls we'd use r5, etc).
+There is no equivalent to the hypercall number in the procedure calling
+convention so we picked r12 because it is up and out of the way and is
+otherwise a scratch register. Obviously that you must not make a
+procedure call between setting the hypercall number in r12 and calling
+the hvc instruction.
+
+> 
+> > + * Xen hypercalls have 5 arguments at most, the fifth paramter is passed
+> > + * in r4, differently from the procedure calling convention of using the
+> 
+> > + * stack for that case.
+> > + *
+> > + * The hypercall number is passed in r12.
+> > + *
+> > + * The return value is in r0.
+> > + *
+> > + * The hvc ISS is required to be 0xEA1, that is the Xen specific ARM
+> > + * hypercall tag.
+> > + *
+> > + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2012
+> > + */
+> > +
+> > +#include <linux/linkage.h>
+> > +#include <asm/assembler.h>
+> > +#include <xen/interface/xen.h>
+> > +
+> > +
+> > +/* HVC 0xEA1 */
+> > +#ifdef CONFIG_THUMB2_KERNEL
+> > +#define xen_hvc .word 0xf7e08ea1
+> > +#else
+> > +#define xen_hvc .word 0xe140ea71
+> > +#endif
+> > +
+> > +/* We need to save and restore r4, because Xen clobbers it. */
+> 
+> Hmm, the comment says r4, but right below I see r12?
+
+The ARM procedure calling convention allows a subroutine to clobber
+r1..r3 (r0 is the return value) but not r4 which must be preserved. But
+the hypervisor ABI clobbers all argument registers so the caller has to
+specially preserve r4 in this context whenever there is a 5 argument
+hypercall.
+
+I presume that none of the hypercalls defined below have 5 arguments and
+therefore we don't need to preserve r4 except in the generic
+privcmd_call function. 
+
+To be honest I prefer the style which we use on x86 which is to define
+hypercall{0,1,2,3,4,5} macros and to wrap those with the specific names
+using inline functions.
+
+I find the x86 way more self documenting, and being in C prevents errors
+around the number of arguments. It also allows for better in-lining and
+exposes to gcc the actual clobbers, which might allow it to avoid saving
+r4 on the stack at all etc.
+
+> Should this comment be by 'privcmd_call'?
+
+When we add a 5 argument hypercall I suppose we'll see the required
+push/pop of r4 added to this macro too.
+
+> > +#define HYPERCALL(hypercall)			\
+> > +ENTRY(HYPERVISOR_##hypercall)			\
+> > +	mov r12, #__HYPERVISOR_##hypercall;	\
+> > +	xen_hvc;							\
+> > +	mov pc, lr;							\
+> > +ENDPROC(HYPERVISOR_##hypercall)
+> > +
+> > +                .text
+> > +
+> > +HYPERCALL(xen_version);
+> > +HYPERCALL(console_io);
+> > +HYPERCALL(grant_table_op);
+> > +HYPERCALL(sched_op);
+> > +HYPERCALL(event_channel_op);
+> > +HYPERCALL(hvm_op);
+> > +HYPERCALL(memory_op);
+> > +HYPERCALL(physdev_op);
+> > +
+> > +ENTRY(privcmd_call)
+> > +	stmdb	sp!, {r4}
+> > +	mov r12, r0
+> > +	mov r0, r1
+> > +	mov r1, r2
+> > +	mov r2, r3
+> > +	ldr r3, [sp, #8]
+> > +	ldr r4, [sp, #4]
+> > +	xen_hvc
+> > +	pop {r4}
+
+Why not ldmdb for symmetry?
+
+> > +	mov pc, lr
+> > +ENDPROC(privcmd_call);
+> > -- 
+> > 1.7.2.5
+> > 
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
+
+
