@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab2G0KRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:17:46 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:44177 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab2G0KRo convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Fri, 27 Jul 2012 06:17:44 -0400
-Message-Id: <501286E50200007800090ECB@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 27 Jul 2012 11:17:41 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ian Campbell" <Ian.Campbell@citrix.com>
-Cc: "Ian Jackson" <Ian.Jackson@eu.citrix.com>,
-        "xen-devel" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [RFC PATCH] Boot PV guests with more than
- 128GB (v1) for 3.7
-References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
- <501260980200007800090E08@nat28.tlf.novell.com>
- <1343383205.6812.137.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1343383205.6812.137.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751646Ab2G0KUZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:20:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:34701 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197Ab2G0KUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:20:22 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
+   d="scan'208";a="5496312"
+Message-ID: <50126C7A.1000508@cn.fujitsu.com>
+Date: Fri, 27 Jul 2012 18:24:58 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH 0.5/19] remove memory info from list before freeing it
+References: <50126B83.3050201@cn.fujitsu.com>
+In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:20:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/27 18:20:29,
+	Serialize complete at 2012/07/27 18:20:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.07.12 at 12:00, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> On Fri, 2012-07-27 at 08:34 +0100, Jan Beulich wrote:
->> >>> On 26.07.12 at 22:47, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> >  2). Allocate a new array, copy the existing P2M into it,
->> >     revector the P2M tree to use that, and return the old
->> >     P2M to the memory allocate. This has the advantage that
->> >     it sets the stage for using XEN_ELF_NOTE_INIT_P2M
->> >     feature. That feature allows us to set the exact virtual
->> >     address space we want for the P2M - and allows us to
->> >     boot as initial domain on large machines.
->> 
->> And I would hope that the tools would get updated to recognize
->> this note too, so that huge DomU-s would become possible as
->> well.
-> 
-> Does this help us with >160GB 32 bit PV guests too? I'm guessing not
-> since the real limitation there is the relatively small amount of kernel
-> address space.
+We free info, but we forget to remove it from the list. It will cause
+unexpected problem when we access the list next time.
 
-Correct - 32-bit PV guests are limited anyway (and it's for a
-reason the Dom0 support in the hypervisor only deals with
-64-bit ones). And honestly, considering the huge page
-information table such a memory amount would require, I
-doubt this big a PV guest would even boot (or if it does, be
-of any use).
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ drivers/acpi/acpi_memhotplug.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Jan
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 8fe0e02..5cafd6b 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -323,6 +323,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+ 			if (result)
+ 				return result;
+ 		}
++		list_del(&info->list);
+ 		kfree(info);
+ 	}
 
