@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab2G0T2o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 15:28:44 -0400
-Received: from mail.tmr.com ([64.65.253.246]:48369 "EHLO partygirl.tmr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752511Ab2G0T2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 15:28:42 -0400
-X-Greylist: delayed 1223 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jul 2012 15:28:36 EDT
-Message-ID: <5012E717.9070808@tmr.com>
-Date: Fri, 27 Jul 2012 15:08:07 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Firefox/13.0.1 SeaMonkey/2.10.1
+	id S1752497Ab2G0Tav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 15:30:51 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37148 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab2G0Tau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 15:30:50 -0400
 MIME-Version: 1.0
-To: Kevin Ross <kevin@familyross.net>, Linux RAID <linux-raid@vger.kernel.org>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RAID extremely slow
-References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net> <5010CEFF.5030606@familyross.net>
-In-Reply-To: <5010CEFF.5030606@familyross.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120726142514.GA32158@lizard>
+References: <20120726142514.GA32158@lizard>
+Date: Fri, 27 Jul 2012 12:30:49 -0700
+Message-ID: <CAMbhsRSM3QwwVfUMBWq1bDJxHX+Ox2CQtbvJVmemuMWjxfmDoQ@mail.gmail.com>
+Subject: Re: [PATCH 0/7] KDB: Kiosk (reduced capabilities) mode
+From: Colin Cross <ccross@google.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Ross wrote:
+On Thu, Jul 26, 2012 at 7:25 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> Hi all,
 >
->>>
->>>> unused devices:<none>
->>>>
->>>> # cat /proc/sys/dev/raid/speed_limit_min
->>>> 10000
->>> MD is unable to reach its minimum rebuild rate while other system
->>> activity is ongoing.  You might want to lower this number to see if that
->>> gets you out of the stalls.
->>>
->>> Or temporarily shut down mythtv.
->>
->> I will try lowering those numbers next time this happens, which will probably
->> be within the next day or two.  That's about how often this happens.
+> Here is a patchset that implements "kiosk" mode for KDB debugger. The
+> mode provides reduced set of features, so that it is no longer possible
+> to leak sensitive data via the debugger, and not possible to change
+> program flow in a predefined manner.
 >
-> Unfortunately, it has happened again, with speeds at near zero.
+> The are two use-cases for the mode, one is evil, but another is quite
+> legitimate.
 >
-> # cat /proc/mdstat
-> Personalities : [raid6] [raid5] [raid4]
-> md0 : active raid6 sdh1[0] sdd1[9] sde1[10] sdb1[6] sdi1[7] sdc1[4] sdf1[3]
-> sdg1[8] sdj1[1]
->        6837311488 blocks super 1.2 level 6, 512k chunk, algorithm 2 [9/9]
-> [UUUUUUUUU]
->        [=>...................]  resync =  8.3% (81251712/976758784)
-> finish=1057826.4min speed=14K/sec
->
-> unused devices: <none>
->
-> atop doesn't show ANY activity on the raid device or the individual drives.
-> http://img687.imageshack.us/img687/2913/screenshotfrom201207252.png
->
-> Also, I tried writing to a test file with the following command, and it hangs.
-> I let it go for about 30 minutes, with no change.
->
-> # dd if=/dev/zero of=test bs=1M count=1
->
-> dmesg only reports hung tasks.  It doesn't report any other problems. Here's my
-> dmesg output:
-> http://pastebin.ca/2174778
->
-> I'm going to try rebooting into single user mode, and see if the rebuild
-> succeeds without stalling.
->
-Have you set the io scheduler to deadline on all members of the array? That's 
-kind of "job one" on older kernels.
+> The evil use case is used by some (ahem) phone manufaturers that want
+> to have a debuging facilities on a production device, but still don't
+> want you to use the debugger to gain root access. I don't like locked
+> phones, and I would not touch this/get my hands dirty by implementing
+> the feature just for this evil (IMHO) use case.
 
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+The point of the reduced feature set in FIQ debugger is not to prevent
+you from accessing your own phone, it designed to prevent others from
+trivially rooting your phone and reading your data.  Both locked and
+unlocked phones run FIQ debugger.  Would you carry a phone with
+personal data on it and KGDB enabled on the serial console?
 
+An alternate option would be to allow userspace to write a password
+hash to a sysfs file, and require the password to be entered over the
+serial console to unlock KGDB or enable unsafe KGDB commands.
 
+> But there is another non-evil use case: limitting access to public
+> devices, i.e. "kiosks", ATMs (is that too much?) or just public
+> computers w/ guest access. I can imagine that an administrator would
+> want to setup a kernel so that upon an oops (or a sysrq event) the
+> kernel would enter KDB, but at the same time, he would not want to
+> leak sensitive data from the PC by means of the debugger.
+>
+> There are seven patches, the first five of them are just cleanups and
+> preparations. I believe these five patches are good even if not
+> considering the kiosk mode. And the rest of patches actually implement
+> the mode -- it is pretty straightforward.
+>
+> Note that we might impelement the same mode for KGDB stub, but so far
+> we don't bother.
+>
+> Thanks!
+>
+> --
+>  include/linux/kdb.h            |   16 ++--
+>  kernel/debug/kdb/kdb_bp.c      |   35 ++++----
+>  kernel/debug/kdb/kdb_main.c    |  183 +++++++++++++++++++++-------------------
+>  kernel/debug/kdb/kdb_private.h |    3 +-
+>  kernel/trace/trace_kdb.c       |    4 +-
+>  5 files changed, 126 insertions(+), 115 deletions(-)
+>
+> --
+> Anton Vorontsov
+> Email: cbouatmailru@gmail.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
