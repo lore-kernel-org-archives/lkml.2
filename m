@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab2G0O4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 10:56:42 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:44754 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab2G0O4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 10:56:41 -0400
-Date: Fri, 27 Jul 2012 09:51:29 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        m.selhorst@sirrix.com, safford@us.ibm.com
-Subject: Re: [PATCH 1/2] tpm: Move tpm_get_random api into the TPM device
- driver
-Message-ID: <20120727145129.GB22046@linux.vnet.ibm.com>
-References: <1339094567.21398.2.camel@key-ThinkPad-W510>
- <1339094834.21398.4.camel@key-ThinkPad-W510>
- <5011DC84.6010003@zytor.com>
+	id S1752082Ab2G0O7Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 10:59:24 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50556 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2G0O7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 10:59:23 -0400
+Date: Fri, 27 Jul 2012 15:59:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 02/24] xen/arm: hypercalls
+Message-ID: <20120727145900.GC6802@n2100.arm.linux.org.uk>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com> <1343316846-25860-2-git-send-email-stefano.stabellini@eu.citrix.com> <20120726163352.GC9222@phenom.dumpdata.com> <1343380659.6812.106.camel@zakaz.uk.xensource.com> <alpine.DEB.2.02.1207271350370.26163@kaball.uk.xensource.com> <20120727142101.GA6802@n2100.arm.linux.org.uk> <1343399971.25096.8.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5011DC84.6010003@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072714-3534-0000-0000-00000AD592CE
+In-Reply-To: <1343399971.25096.8.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 05:10:44PM -0700, H. Peter Anvin wrote:
-> On 06/07/2012 11:47 AM, Kent Yoder wrote:
-> >Move the tpm_get_random api from the trusted keys code into the TPM
-> >device driver itself so that other callers can make use of it. Also,
-> >change the api slightly so that the number of bytes read is returned in
-> >the call, since the TPM command can potentially return fewer bytes than
-> >requested.
-> >
-> >Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+On Fri, Jul 27, 2012 at 03:39:31PM +0100, Ian Campbell wrote:
+> On Fri, 2012-07-27 at 15:21 +0100, Russell King - ARM Linux wrote:
+> > On Fri, Jul 27, 2012 at 02:02:18PM +0100, Stefano Stabellini wrote:
+> > > > > > +/******************************************************************************
+> > > > > > + * hypercall.h
+> > > > > > + *
+> > > > > > + * Linux-specific hypervisor handling.
+> > > > > > + *
+> > > > > > + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2012
+> > > > > > + *
+> > > > > > + * This program is free software; you can redistribute it and/or
+> > > > > > + * modify it under the terms of the GNU General Public License version 2
+> > > > > > + * as published by the Free Software Foundation; or, when distributed
+> > > > > > + * separately from the Linux kernel or incorporated into other
+> > > > > > + * software packages, subject to the following license:
+> > > > > > + *
+> > > > > > + * Permission is hereby granted, free of charge, to any person obtaining a copy
+> > > > > > + * of this source file (the "Software"), to deal in the Software without
+> > 
+> > Erm, is that an additional restriction on the GPL which prevents me from
+> > shipping this code on a CD and charging for the act of creating the CD
+> > and shipping it?  That would technically make the above statement
+> > incompatible with the GPL.
 > 
-> I see a second problem with this patch: you don't seem to handle the
-> case where you get a short return anywhere in your code.  Presumably
-> this should either be considered an error condition, or you need to
-> create a private wrapper which can loop and make additional
-> requests.
+> There's an "or" in there.
 > 
-> As it is if you get a short return you simply proceed as if you had
-> gotten what you requested, since this was not an error mode
-> supported by the old code.
+> The non-GPL alternative license is the standard one applied by upstream
+> Xen to the interface headers:
+>         http://xenbits.xen.org/hg/xen-unstable.hg/file/tip/xen/include/public/COPYING
+> 
+> It's the X11/MIT license IIRC, which the FSF say is GPL compatible.
+> http://www.gnu.org/licenses/license-list.html#X11License
+> 
+> The same license is used a few other places in the kernel, e.g. the DRM
+> code.
 
-Right, I did notice this but didn't think I was creating a regression
-so I left it.  I'll add both a loop and then error out if that fails.
-
-Thanks,
-Kent
-
-> 
-> 	-hpa
-> 
-> -- 
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
-> 
-
+Ok, but be aware that you won't be able to take code from the Linux
+kernel and place it in a file marked with that license header (because
+the code authors haven't given permission for it to be placed under any
+other license other than GPLv2.)
