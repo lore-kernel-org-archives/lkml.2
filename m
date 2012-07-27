@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab2G0IdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 04:33:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46871 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab2G0Ics convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 04:32:48 -0400
-Message-ID: <1343377963.32120.30.camel@twins>
-Subject: Re: [PATCH 1/2] sched: recover SD_WAKE_AFFINE in
- select_task_rq_fair and code clean up
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com
-Date: Fri, 27 Jul 2012 10:32:43 +0200
-In-Reply-To: <5011F323.10202@intel.com>
-References: <1343280446-24019-1-git-send-email-alex.shi@intel.com>
-	 <1343295457.6863.43.camel@marge.simpson.net> <5011F323.10202@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752235Ab2G0InC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 04:43:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54388 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751565Ab2G0InA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 04:43:00 -0400
+Date: Fri, 27 Jul 2012 09:42:54 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+Message-ID: <20120727084254.GA612@suse.de>
+References: <20120720134937.GG9222@suse.de>
+ <20120720141108.GH9222@suse.de>
+ <20120720143635.GE12434@tiehlicka.suse.cz>
+ <20120720145121.GJ9222@suse.de>
+ <alpine.LSU.2.00.1207222033030.6810@eggly.anvils>
+ <50118182.8030308@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <50118182.8030308@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 09:47 +0800, Alex Shi wrote:
+On Thu, Jul 26, 2012 at 01:42:26PM -0400, Rik van Riel wrote:
+> On 07/23/2012 12:04 AM, Hugh Dickins wrote:
+> 
+> >Please don't be upset if I say that I don't like either of your patches.
+> >Mainly for obvious reasons - I don't like Mel's because anything with
+> >trylock retries and nested spinlocks worries me before I can even start
+> >to think about it; and I don't like Michal's for the same reason as Mel,
+> >that it spreads more change around in common paths than we would like.
+> 
+> I have a naive question.
+> 
+> In huge_pmd_share, we protect ourselves by taking
+> the mapping->i_mmap_mutex.
+> 
+> Is there any reason we could not take the i_mmap_mutex
+> in the huge_pmd_unshare path?
+> 
 
-> From 610515185d8a98c14c7c339c25381bc96cd99d93 Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Thu, 26 Jul 2012 08:55:34 +0800
-> Subject: [PATCH 1/3] sched: recover SD_WAKE_AFFINE in select_task_rq_fair and
->  code clean up
-> 
-> Since power saving code was removed from sched now, the implement
-> code is out of service in this function, and even pollute other logical.
-> like, 'want_sd' never has chance to be set '0', that remove the effect
-> of SD_WAKE_AFFINE here.
-> 
-> So, clean up the obsolete code and some other unnecessary code.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+We do, in 3.4 at least - callers of __unmap_hugepage_range hold the
+i_mmap_mutex. Locking changes in mmotm and there is a patch there that
+needs to be reverted. What tree are you looking at?
 
-I think your code leaves an unused definition of SD_PREFER_LOCAL around.
+-- 
+Mel Gorman
+SUSE Labs
