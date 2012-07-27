@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab2G0MYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:24:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3988 "EHLO mx1.redhat.com"
+	id S1752814Ab2G0MY7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:24:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29456 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab2G0MYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:24:45 -0400
+	id S1752559Ab2G0MY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 08:24:57 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,161 +14,80 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 4/7] perf: Factor __output_copy to be usable with specific copy function
-Date: Fri, 27 Jul 2012 14:23:45 +0200
-Message-Id: <1343391834-10851-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 5/7] perf: Add perf_output_skip function to skip bytes in sample
+Date: Fri, 27 Jul 2012 14:23:46 +0200
+Message-Id: <1343391834-10851-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+Introducing perf_output_skip function to be able to skip data
+within the perf ring buffer.
 
-Adding a generic way to use __output_copy function with
-specific copy function via DEFINE_PERF_OUTPUT_COPY macro.
+When writing data into perf ring buffer we first reserve needed
+place in ring buffer and then copy the actual data.
 
-Using this to add new __output_copy_user function, that provides
-output copy from user pointers. For x86 the copy_from_user_nmi_nochk
-function is used and __copy_from_user_inatomic for the rest
-of the architectures.
+There's a possibility we won't be able to fill all the reserved
+size with data, so we need a way to skip the remaining bytes.
 
-This new function will be used in user stack dump on sample,
-coming in next patches.
+This is going to be useful when storing the user stack dump,
+where we might end up with less data than we originally requested.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/x86/include/asm/perf_event.h |    2 +
- include/linux/perf_event.h        |    2 +-
- kernel/events/internal.h          |   62 ++++++++++++++++++++++++------------
- kernel/events/ring_buffer.c       |    4 +-
- 4 files changed, 46 insertions(+), 24 deletions(-)
+ include/linux/perf_event.h  |    2 ++
+ kernel/events/internal.h    |    4 ++++
+ kernel/events/ring_buffer.c |    6 ++++++
+ 3 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index dab3935..94bca49 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -257,4 +257,6 @@ static inline void perf_check_microcode(void) { }
-  static inline void amd_pmu_disable_virt(void) { }
- #endif
- 
-+#define arch_perf_out_copy_user copy_from_user_nmi_nochk
-+
- #endif /* _ASM_X86_PERF_EVENT_H */
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index ab28ac6..baa197e 100644
+index baa197e..ba68ed3 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -1318,7 +1318,7 @@ static inline bool has_branch_stack(struct perf_event *event)
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
+@@ -1320,6 +1320,8 @@ extern int perf_output_begin(struct perf_output_handle *handle,
  extern void perf_output_end(struct perf_output_handle *handle);
--extern void perf_output_copy(struct perf_output_handle *handle,
-+extern unsigned int perf_output_copy(struct perf_output_handle *handle,
+ extern unsigned int perf_output_copy(struct perf_output_handle *handle,
  			     const void *buf, unsigned int len);
++extern unsigned int perf_output_skip(struct perf_output_handle *handle,
++				     unsigned int len);
  extern int perf_swevent_get_recursion_context(void);
  extern void perf_swevent_put_recursion_context(int rctx);
+ extern void perf_event_enable(struct perf_event *event);
 diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index b0b107f..2206a0f 100644
+index 2206a0f..be1ef29 100644
 --- a/kernel/events/internal.h
 +++ b/kernel/events/internal.h
-@@ -2,6 +2,7 @@
- #define _KERNEL_EVENTS_INTERNAL_H
+@@ -114,6 +114,10 @@ static inline int memcpy_common(void *dst, const void *src, size_t n)
  
- #include <linux/hardirq.h>
-+#include <linux/uaccess.h>
+ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
  
- /* Buffer handling */
- 
-@@ -76,30 +77,49 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
- 	return rb->nr_pages << (PAGE_SHIFT + page_order(rb));
- }
- 
--static inline void
--__output_copy(struct perf_output_handle *handle,
--		   const void *buf, unsigned int len)
-+#define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
-+static inline unsigned int						\
-+func_name(struct perf_output_handle *handle,				\
-+	  const void *buf, unsigned int len)				\
-+{									\
-+	unsigned long size, written;					\
-+									\
-+	do {								\
-+		size = min_t(unsigned long, handle->size, len);		\
-+									\
-+		written = memcpy_func(handle->addr, buf, size);		\
-+									\
-+		len -= written;						\
-+		handle->addr += written;				\
-+		buf += written;						\
-+		handle->size -= written;				\
-+		if (!handle->size) {					\
-+			struct ring_buffer *rb = handle->rb;		\
-+									\
-+			handle->page++;					\
-+			handle->page &= rb->nr_pages - 1;		\
-+			handle->addr = rb->data_pages[handle->page];	\
-+			handle->size = PAGE_SIZE << page_order(rb);	\
-+		}							\
-+	} while (len && written == size);				\
-+									\
-+	return len;							\
-+}
++#define MEMCPY_SKIP(dst, src, n) (n)
 +
-+static inline int memcpy_common(void *dst, const void *src, size_t n)
- {
--	do {
--		unsigned long size = min_t(unsigned long, handle->size, len);
--
--		memcpy(handle->addr, buf, size);
--
--		len -= size;
--		handle->addr += size;
--		buf += size;
--		handle->size -= size;
--		if (!handle->size) {
--			struct ring_buffer *rb = handle->rb;
--
--			handle->page++;
--			handle->page &= rb->nr_pages - 1;
--			handle->addr = rb->data_pages[handle->page];
--			handle->size = PAGE_SIZE << page_order(rb);
--		}
--	} while (len);
-+	memcpy(dst, src, n);
-+	return n;
- }
- 
-+DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
++DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
 +
-+#ifndef arch_perf_out_copy_user
-+#define arch_perf_out_copy_user __copy_from_user_inatomic
-+#endif
-+
-+DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
-+
- /* Callchain handling */
- extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
- extern int get_callchain_buffers(void);
+ #ifndef arch_perf_out_copy_user
+ #define arch_perf_out_copy_user __copy_from_user_inatomic
+ #endif
 diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 6ddaba4..b4c2ad3 100644
+index b4c2ad3..23cb34f 100644
 --- a/kernel/events/ring_buffer.c
 +++ b/kernel/events/ring_buffer.c
-@@ -182,10 +182,10 @@ out:
- 	return -ENOSPC;
+@@ -188,6 +188,12 @@ unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 	return __output_copy(handle, buf, len);
  }
  
--void perf_output_copy(struct perf_output_handle *handle,
-+unsigned int perf_output_copy(struct perf_output_handle *handle,
- 		      const void *buf, unsigned int len)
- {
--	__output_copy(handle, buf, len);
-+	return __output_copy(handle, buf, len);
- }
- 
++unsigned int perf_output_skip(struct perf_output_handle *handle,
++			      unsigned int len)
++{
++	return __output_skip(handle, NULL, len);
++}
++
  void perf_output_end(struct perf_output_handle *handle)
+ {
+ 	perf_output_put_handle(handle);
 -- 
 1.7.7.6
 
