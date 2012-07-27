@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab2G0OWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 10:22:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab2G0OWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 10:22:08 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: majianpeng <majianpeng@gmail.com>
-Cc: viro <viro@ZenIV.linux.org.uk>, "Neil Brown" <neilb@suse.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: [RFC PATCH] fs/direct-io.c: Set bi_rw when alloc bio.
-References: <201207271602081096921@gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 27 Jul 2012 10:21:58 -0400
-In-Reply-To: <201207271602081096921@gmail.com> (majianpeng@gmail.com's message
-	of "Fri, 27 Jul 2012 16:02:10 +0800")
-Message-ID: <x496299708p.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752234Ab2G0O0n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 10:26:43 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:58365 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab2G0O0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 10:26:42 -0400
+X-IronPort-AV: E=Sophos;i="4.77,667,1336348800"; 
+   d="scan'208";a="13737083"
+Date: Fri, 27 Jul 2012 15:25:47 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH 13/24] xen/arm: get privilege status
+In-Reply-To: <1343382276.6812.126.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1207271514140.26163@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>  <1343316846-25860-13-git-send-email-stefano.stabellini@eu.citrix.com> <1343382276.6812.126.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-majianpeng <majianpeng@gmail.com> writes:
+On Fri, 27 Jul 2012, Ian Campbell wrote:
+> On Thu, 2012-07-26 at 16:33 +0100, Stefano Stabellini wrote:
+> > Use Xen features to figure out if we are privileged.
+> > 
+> > XENFEAT_dom0 was introduced by 23735 in xen-unstable.hg.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/arm/xen/enlighten.c         |    7 +++++++
+> >  include/xen/interface/features.h |    3 +++
+> >  2 files changed, 10 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> > index dc68074..2e013cf 100644
+> > --- a/arch/arm/xen/enlighten.c
+> > +++ b/arch/arm/xen/enlighten.c
+> > @@ -2,6 +2,7 @@
+> >  #include <xen/interface/xen.h>
+> >  #include <xen/interface/memory.h>
+> >  #include <xen/platform_pci.h>
+> > +#include <xen/features.h>
+> >  #include <asm/xen/hypervisor.h>
+> >  #include <asm/xen/hypercall.h>
+> >  #include <linux/module.h>
+> > @@ -58,6 +59,12 @@ int __init xen_guest_init(void)
+> >  	}
+> >  	xen_domain_type = XEN_HVM_DOMAIN;
+> >  
+> > +	xen_setup_features();
+> > +	if (xen_feature(XENFEAT_dom0))
+> > +		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
+> > +	else
+> > +		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
+> 
+> What happens here on platforms prior to hypervisor changeset 23735?
 
-> When exec bio_alloc, the bi_rw is zero.But after calling bio_add_page,
-> it will use bi_rw.
-> Fox example, in functiion __bio_add_page,it will call merge_bvec_fn().
-> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
->>> if ((bvm->bi_rw & 1) == WRITE)
->>>		return biovec->bv_len; /* always allow writes to be mergeable */
->
-> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-
-Good catch.  How did you find this?  Did you experience data corruption
-as a result of this oversight, reduced performance due to missed merge
-opportunities, or did you just notice it in reviewing the code?
-
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-
->
-> There are many place like this in kernel.If you think this patch ok, i will correct those.
-> ---
->  fs/direct-io.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index 1faf4cb..77f0bbf 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -349,6 +349,7 @@ dio_bio_alloc(struct dio *dio, struct dio_submit *sdio,
->  
->  	bio->bi_bdev = bdev;
->  	bio->bi_sector = first_sector;
-> +	bio->bi_rw = dio->rw;
->  	if (dio->is_async)
->  		bio->bi_end_io = dio_bio_end_aio;
->  	else
+It wouldn't work.
+Considering that we are certainly not going to backport ARM support to
+Xen 4.1, and that both ARM and XENFEAT_dom0 will be present in Xen 4.2,
+do we really need to support the Xen unstable changesets between ARM was
+introduced and XENFEAT_dom0 appeared?
