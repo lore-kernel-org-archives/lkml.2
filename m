@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab2G0Dtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:49:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17445 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab2G0DtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:49:11 -0400
-Message-ID: <50120FA8.20409@redhat.com>
-Date: Thu, 26 Jul 2012 23:48:56 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120422 Thunderbird/10.0.4
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com>
-In-Reply-To: <50118E7F.8000609@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753224Ab2G0Dul (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:50:41 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35401 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab2G0Duj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 23:50:39 -0400
+Date: Fri, 27 Jul 2012 13:50:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20120727135029.396efc08bc34e376376d251b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__27_Jul_2012_13_50_29_+1000_FqANtVRejT40ibkR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 02:37 PM, Rik van Riel wrote:
-> On 07/23/2012 12:04 AM, Hugh Dickins wrote:
->
->> I spent hours trying to dream up a better patch, trying various
->> approaches.  I think I have a nice one now, what do you think?  And
->> more importantly, does it work?  I have not tried to test it at all,
->> that I'm hoping to leave to you, I'm sure you'll attack it with gusto!
->>
->> If you like it, please take it over and add your comments and signoff
->> and send it in.  The second part won't come up in your testing, and 
->> could
->> be made a separate patch if you prefer: it's a related point that struck
->> me while I was playing with a different approach.
->>
->> I'm sorely tempted to leave a dangerous pair of eyes off the Cc,
->> but that too would be unfair.
->>
->> Subject-to-your-testing-
->> Signed-off-by: Hugh Dickins <hughd@google.com>
->
-> This patch looks good to me.
->
-> Larry, does Hugh's patch survive your testing?
->
->
-Like I said earlier, no.  However, I finally set up a reproducer that 
-only takes a few seconds
-on a large system and this totally fixes the problem:
+--Signature=_Fri__27_Jul_2012_13_50_29_+1000_FqANtVRejT40ibkR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--------------------------------------------------------------------------------------------------------------------------
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index c36febb..cc023b8 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2151,7 +2151,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, 
-struct mm_struct *src,
-                         goto nomem;
+Hi Andrew,
 
-                 /* If the pagetables are shared don't copy or take 
-references */
--               if (dst_pte == src_pte)
-+               if (*(unsigned long *)dst_pte == *(unsigned long *)src_pte)
-                         continue;
+Today's linux-next merge of the akpm tree got a conflict in
+arch/x86/kernel/cpu/perf_event_intel_uncore.h between commit 254298c726b9
+("perf/x86: Add Intel Nehalem-EX uncore support") from the tip tree and
+commit "arch/x86/kernel/cpu/perf_event_intel_uncore.h: make
+UNCORE_PMU_HRTIMER_INTERVAL 64-bit" from the akpm tree.
 
-                 spin_lock(&dst->page_table_lock);
----------------------------------------------------------------------------------------------------------------------------
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-When we compare what the src_pte & dst_pte point to instead of their 
-addresses everything works,
-I suspect there is a missing memory barrier somewhere ???
+diff --cc arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index f385189,d85c25d..0000000
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@@ -5,7 -5,9 +5,7 @@@
+  #include "perf_event.h"
+ =20
+  #define UNCORE_PMU_NAME_LEN		32
+- #define UNCORE_PMU_HRTIMER_INTERVAL	(60 * NSEC_PER_SEC)
+ -#define UNCORE_BOX_HASH_SIZE		8
+ -
++ #define UNCORE_PMU_HRTIMER_INTERVAL	(60LL * NSEC_PER_SEC)
+ =20
+  #define UNCORE_FIXED_EVENT		0xff
+  #define UNCORE_PMC_IDX_MAX_GENERIC	8
 
-Larry
+--Signature=_Fri__27_Jul_2012_13_50_29_+1000_FqANtVRejT40ibkR
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQEhAFAAoJEECxmPOUX5FEOnIQAKQ1MQbAZJBPob418/pupepA
+klSo4ADWiE/kFgaOzMhVDnfcq5R5Ajq3WHg34dim1Hp10KYf9VM+7ssZYCmUNeXA
+FCTovfvZVokIlJnj/6eukqZg+vlHRjef/UgrreGjMmkqGZP4XtcyGluj9RwRIY/E
+vxugJQHXcyKmi+nigOAu8zkHDsCRs7f5yv2NOgBq4WUTlind8MxBUbFQw52T+WOK
+yuuUj6Nf1lb1CQiSnIaEh27K3TK1H7zLKsx66+OBmRwb6CJFbPiQPrapSd7jI4Cv
+MsXj5vpk8Fe5AqKcGWpq9XZW0Ts+j41P3FPivdchMtBXnvnA5gyqZUtcpq0jevgn
+QBdfQ7t6C/sQCrMMnVigEBgkQWTL9WuWstEkl2/KHpfrE6SQAZ3wTUUFhFyNPhk4
+CMOGOXfGLBIsGTYlzVYKneJNkVqUsp1KaEhThoWrb5XvJl46GcEYmhuX/F1PMQK3
+wqouv92yinglr4xFLSoXZWYRYbGQ958778R380HotxmtDN/v1SZUHQ2116eEiWX3
+pnCr9FbcWc0NsJt5a4andmvFs50FdYL4W0TmM5QOBUPV9wesqTu1EK/zDmSzYXvu
+mGU4DAxvq3GOMGNZa3KNghVwbsuE4SK/CCq5CjH2IWpSRQfMIN5WrfwFnftEXK7f
+eFuSrb8/wockflVWVe4G
+=Fy+Q
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__27_Jul_2012_13_50_29_+1000_FqANtVRejT40ibkR--
