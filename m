@@ -1,46 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab2G0CxF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 22:53:05 -0400
-Received: from mail-hostigation.familyross.net ([69.85.93.112]:35189 "EHLO
-	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab2G0CxD (ORCPT
+	id S1753195Ab2G0Cy4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 22:54:56 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:34778 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab2G0Cyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 22:53:03 -0400
-Message-ID: <5012028C.9080107@familyross.net>
-Date: Thu, 26 Jul 2012 19:53:00 -0700
-From: Kevin Ross <kevin@familyross.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: David Dillow <dave@thedillows.org>
-CC: Phil Turmel <philip@turmel.org>, linux-kernel@vger.kernel.org,
-        linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: RAID extremely slow
-References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org>   <5010A386.4080209@familyross.net>   <1343355303.29938.5.camel@obelisk.thedillows.org>  <1343355430.29938.6.camel@obelisk.thedillows.org>  <5011FA45.7030407@familyross.net> <1343356044.29938.7.camel@obelisk.thedillows.org>
-In-Reply-To: <1343356044.29938.7.camel@obelisk.thedillows.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Thu, 26 Jul 2012 22:54:54 -0400
+Message-ID: <1343357402.3010.530.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 3/4] ACPI: Update Memory hotplug messages
+From: Toshi Kani <toshi.kani@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        joe@perches.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
+Date: Thu, 26 Jul 2012 20:50:02 -0600
+In-Reply-To: <CAErSpo6Dn8+pOsSuiMDNzwheH=LELRKhkWeSB__S0WjHBz13nA@mail.gmail.com>
+References: <1343257978-7085-1-git-send-email-toshi.kani@hp.com>
+	 <1343257978-7085-4-git-send-email-toshi.kani@hp.com>
+	 <CAErSpo6Dn8+pOsSuiMDNzwheH=LELRKhkWeSB__S0WjHBz13nA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 07:27 PM, David Dillow wrote:
-> On Thu, 2012-07-26 at 19:17 -0700, Kevin Ross wrote:
->> On 07/26/2012 07:17 PM, David Dillow wrote:
->>> On Thu, 2012-07-26 at 22:15 -0400, David Dillow wrote:
->>>> If you can, upgrade to the latest 3.4 stable kernel (3.4.6 right now).
->>>> As far as I can see, the latest 3.2 stable does not contain the delayed
->>>> stripe fix.
->>> And I was looking at the wrong version; 3.2.24 does indeed have the fix.
->>>
->> I'm running 3.2.21, does that contain the fix?
-> No, that was the one I looked at. It is commit
-> c0159c780e8d42309d04e83271986274d3880826.
->
+On Thu, 2012-07-26 at 13:23 -0600, Bjorn Helgaas wrote:
+> On Wed, Jul 25, 2012 at 5:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > Updated Memory hotplug log messages with acpi_pr_<level>()
+> > and pr_<level>().
+> >
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > ---
+> >  drivers/acpi/acpi_memhotplug.c |   24 ++++++++++++------------
+> >  1 files changed, 12 insertions(+), 12 deletions(-)
+> >
+> > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> > index 06c55cd..dcc8f4d 100644
+> > --- a/drivers/acpi/acpi_memhotplug.c
+> > +++ b/drivers/acpi/acpi_memhotplug.c
+> > @@ -170,7 +170,7 @@ acpi_memory_get_device(acpi_handle handle,
+> >         /* Get the parent device */
+> >         result = acpi_bus_get_device(phandle, &pdevice);
+> >         if (result) {
+> > -               printk(KERN_WARNING PREFIX "Cannot get acpi bus device");
+> > +               acpi_pr_warn(phandle, "Cannot get acpi bus device\n");
+> >                 return -EINVAL;
+> >         }
+> >
+> > @@ -180,14 +180,14 @@ acpi_memory_get_device(acpi_handle handle,
+> >          */
+> >         result = acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
+> >         if (result) {
+> > -               printk(KERN_WARNING PREFIX "Cannot add acpi bus");
+> > +               acpi_pr_warn(handle, "Cannot add acpi bus\n");
+> >                 return -EINVAL;
+> >         }
+> >
+> >        end:
+> >         *mem_device = acpi_driver_data(device);
+> >         if (!(*mem_device)) {
+> > -               printk(KERN_ERR "\n driver data not found");
+> > +               acpi_pr_err(handle, "driver data not found\n");
+> 
+> acpi_driver_data() requires a valid acpi_device *, so dev_err() should
+> work here.
 
-Okay, I grabbed 3.4.4 from Debian experimental, and I'm running with 
-that now.  Hopefully this fixes the problem.
+Agreed. Changed to use dev_err().
 
-Thanks for your help!
--- Kevin
+> 
+> >                 return -ENODEV;
+> >         }
+> >
+> > @@ -224,7 +224,7 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+> >         /* Get the range from the _CRS */
+> >         result = acpi_memory_get_device_resources(mem_device);
+> >         if (result) {
+> > -               printk(KERN_ERR PREFIX "get_device_resources failed\n");
+> > +               pr_err(PREFIX "get_device_resources failed\n");
+> 
+> And here.
+
+Changed to use dev_err().
+
+> 
+> >                 mem_device->state = MEMORY_INVALID_STATE;
+> >                 return result;
+> >         }
+> > @@ -257,7 +257,7 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+> >                 num_enabled++;
+> >         }
+> >         if (!num_enabled) {
+> > -               printk(KERN_ERR PREFIX "add_memory failed\n");
+> > +               acpi_pr_err(mem_device->device->handle, "add_memory failed\n");
+> 
+> And here.
+
+Changed to use dev_err().
+
+> 
+> >                 mem_device->state = MEMORY_INVALID_STATE;
+> >                 return -EINVAL;
+> >         }
+> > @@ -353,7 +353,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+> >                         ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> >                                           "\nReceived DEVICE CHECK notification for device\n"));
+> >                 if (acpi_memory_get_device(handle, &mem_device)) {
+> > -                       printk(KERN_ERR PREFIX "Cannot find driver data\n");
+> > +                       acpi_pr_err(handle, "Cannot find driver data\n");
+> >                         break;
+> >                 }
+> >
+> > @@ -361,7 +361,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+> >                         break;
+> >
+> >                 if (acpi_memory_enable_device(mem_device)) {
+> > -                       pr_err(PREFIX "Cannot enable memory device\n");
+> > +                       acpi_pr_err(handle, "Cannot enable memory device\n");
+> 
+> And here.
+
+No change since it is called directly from the handler.
+
+> >                         break;
+> >                 }
+> >
+> > @@ -373,12 +373,12 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+> >                                   "\nReceived EJECT REQUEST notification for device\n"));
+> >
+> >                 if (acpi_bus_get_device(handle, &device)) {
+> > -                       printk(KERN_ERR PREFIX "Device doesn't exist\n");
+> > +                       acpi_pr_err(handle, "Device doesn't exist\n");
+> >                         break;
+> >                 }
+> >                 mem_device = acpi_driver_data(device);
+> >                 if (!mem_device) {
+> > -                       printk(KERN_ERR PREFIX "Driver Data is NULL\n");
+> > +                       acpi_pr_err(handle, "Driver Data is NULL\n");
+> 
+> And here.
+
+No change since it is called directly from the handler.
+
+> >                         break;
+> >                 }
+> >
+> > @@ -389,7 +389,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+> >                  *      with generic sysfs driver
+> >                  */
+> >                 if (acpi_memory_disable_device(mem_device)) {
+> > -                       pr_err(PREFIX "Disable memory device\n");
+> > +                       acpi_pr_err(handle, "Disable memory device\n");
+> 
+> And here.  (What is this message supposed to mean, anyway?)
+
+I changed the message to "Failed to remove memory device\n". This case
+is failed in off-lining or ejecting the memory.
+
+> >                         /*
+> >                          * If _EJ0 was called but failed, _OST is not
+> >                          * necessary.
+> > @@ -449,7 +449,7 @@ static int acpi_memory_device_add(struct acpi_device *device)
+> >         /* Set the device state */
+> >         mem_device->state = MEMORY_POWER_ON_STATE;
+> >
+> > -       printk(KERN_DEBUG "%s \n", acpi_device_name(device));
+> > +       pr_debug("%s\n", acpi_device_name(device));
+> 
+> And here.  This message looks dubious anyway.
+
+It kept it as is since it is a debug message anyway. I expect it will be
+removed eventually.
+
+> >
+> >         /*
+> >          * Early boot code has recognized memory area by EFI/E820.
+> > @@ -464,7 +464,7 @@ static int acpi_memory_device_add(struct acpi_device *device)
+> >                 /* call add_memory func */
+> >                 result = acpi_memory_enable_device(mem_device);
+> >                 if (result)
+> > -                       printk(KERN_ERR PREFIX
+> > +                       acpi_pr_err(device->handle,
+> >                                 "Error in acpi_memory_enable_device\n");
+> 
+> And here.
+
+Changed to use dev_err().
+
+
+Thanks!
+-Toshi
+
+
+> 
+> >         }
+> >         return result;
+> > --
+> > 1.7.7.6
+> >
+
 
