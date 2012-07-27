@@ -1,66 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab2G0SHZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 14:07:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369Ab2G0SHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 14:07:24 -0400
-Date: Fri, 27 Jul 2012 20:04:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] uprobes: don't enable/disable signle step if the user
-	did it
-Message-ID: <20120727180423.GA21022@redhat.com>
-References: <1343316043-13475-1-git-send-email-bigeasy@linutronix.de> <20120726173126.GA5787@redhat.com> <5012D25B.3040302@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5012D25B.3040302@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752507Ab2G0SLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 14:11:01 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:49191 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab2G0SLA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 14:11:00 -0400
+X-SENDER-IP: [85.230.170.20]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al5NAH/YElBV5qoUPGdsb2JhbABFhQyFIK8iGQEBAQE3NIJ9EwEPGGoYChoTh34DELE7DYlOFIpUaBqGWgOTdIc+hSCHZIFd
+X-IronPort-AV: E=Sophos;i="4.77,668,1336341600"; 
+   d="scan'208";a="164916001"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH] hwmon: (applesmc) Decode and act on read/write status codes
+Date: Fri, 27 Jul 2012 20:12:46 +0200
+Message-Id: <1343412766-552-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27, Sebastian Andrzej Siewior wrote:
->
-> On 07/26/2012 07:31 PM, Oleg Nesterov wrote:
->> Well. I agree, this needs changes. To begin with, uprobe should avoid
->> user_enable_single_step() which does access_process_vm(). And I suspect
->> uprobes have the problems with TIF_FORCED_TF logic.
->
-> Why? Shouldn't wee keep the trap flag if the instruction on which we
-> placed the uprobe activates it?
+The behavior of the SMC has changed several times over the years,
+causing read failures in the driver. It seems the problem can be
+explained by a shift in SMC speed combined with improper action on
+status codes.
 
-Yes. But user_enable_single_step() is not the right interface.
+We should first wait for the SMC to settle, which was the most
+frequent response on the old slow machines. Then, if the SMC is busy,
+we need to try again later by resending the command. This was the most
+likely response until 2012. Now, with a shorter wait time, we are
+again most likely to poll while the SMC is settling, and as a result
+we see high failure rates on many old and new models.
 
->> But I am not sure about this patch...
->>
->> On 07/26, Sebastian Andrzej Siewior wrote:
->>>
->>> @@ -1528,7 +1528,10 @@ static void handle_swbp(struct pt_regs *regs)
->>>
->>>   	utask->state = UTASK_SSTEP;
->>>   	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
->>> -		user_enable_single_step(current);
->>> +		if (test_tsk_thread_flag(current, TIF_SINGLESTEP))
->>> +			uprobe->flags |= UPROBE_USER_SSTEP;
->>> +		else
->>> +			user_enable_single_step(current);
->>
->> This is x86 specific, TIF_SINGLESTEP is not defined on every arch.
->
-> It is not defined on every arch but I wouldn't say it is 86 specific.
-> From the architectures which have user_enable_single_step() defined I
-> see
+With the distinction between busy and failure, we can also wait longer
+before retrying, without sacrificing speed.  This seems to bring
+failures down to virtually zero on all models.
 
-But we do not need TIF_SINGLESTEP. At all. Again, this is ptrace thing
-connected to user_enable_single_step().
+Tested on: MBA1,1 MBA3,1 MBA5,1 MBA5,2 MBP9,2
 
-Sebastian, I am sorry for being terse, I'll write another email later.
+Tested-by: Adam Somerville <adamsomerville@gmail.com>
+Tested-by: Hubert Eichner <hubert.georg.eichner@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Hi Guenter,
 
-Oleg.
+It turns out the mid-2012 Macbooks need additional changes in order to
+work reliably. Since the needed change is a great improvement also on
+other problematic machines, it would make a lot of sense if this patch
+could be squeezed into the merge window.
+
+As I mentioned in a previous mail, backporting e70acc100 by itself is
+not a good idea, but together with this patch it should be ok.
+
+The patch has been wetted in the forums for a bit.
+
+Thanks,
+Henrik
+
+ drivers/hwmon/applesmc.c | 70 +++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 46 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 4d937a1..2827088 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -55,9 +55,9 @@
+ 
+ /* wait up to 32 ms for a status change. */
+ #define APPLESMC_MIN_WAIT	0x0010
++#define APPLESMC_RETRY_WAIT	0x0100
+ #define APPLESMC_MAX_WAIT	0x8000
+ 
+-#define APPLESMC_STATUS_MASK	0x0f
+ #define APPLESMC_READ_CMD	0x10
+ #define APPLESMC_WRITE_CMD	0x11
+ #define APPLESMC_GET_KEY_BY_INDEX_CMD	0x12
+@@ -162,51 +162,68 @@ static unsigned int key_at_index;
+ static struct workqueue_struct *applesmc_led_wq;
+ 
+ /*
+- * __wait_status - Wait up to 32ms for the status port to get a certain value
+- * (masked with 0x0f), returning zero if the value is obtained.  Callers must
++ * wait_read - Wait for a byte to appear on SMC port. Callers must
+  * hold applesmc_lock.
+  */
+-static int __wait_status(u8 val)
++static int wait_read(void)
+ {
++	u8 status;
+ 	int us;
+-
+-	val = val & APPLESMC_STATUS_MASK;
+-
+ 	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+ 		udelay(us);
+-		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == val)
++		status = inb(APPLESMC_CMD_PORT);
++		/* read: wait for smc to settle */
++		if (status & 0x01)
+ 			return 0;
+ 	}
+ 
++	pr_warn("wait_read() fail: 0x%02x\n", status);
+ 	return -EIO;
+ }
+ 
+ /*
+- * special treatment of command port - on newer macbooks, it seems necessary
+- * to resend the command byte before polling the status again. Callers must
+- * hold applesmc_lock.
++ * send_byte - Write to SMC port, retrying when necessary. Callers
++ * must hold applesmc_lock.
+  */
+-static int send_command(u8 cmd)
++static int send_byte(u8 cmd, u16 port)
+ {
++	u8 status;
+ 	int us;
++
++	outb(cmd, port);
+ 	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+-		outb(cmd, APPLESMC_CMD_PORT);
+ 		udelay(us);
+-		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == 0x0c)
++		status = inb(APPLESMC_CMD_PORT);
++		/* write: wait for smc to settle */
++		if (status & 0x02)
++			continue;
++		/* ready: cmd accepted, return */
++		if (status & 0x04)
+ 			return 0;
++		/* timeout: give up */
++		if (us << 1 == APPLESMC_MAX_WAIT)
++			break;
++		/* busy: long wait and resend */
++		udelay(APPLESMC_RETRY_WAIT);
++		outb(cmd, port);
+ 	}
++
++	pr_warn("send_byte(0x%02x, 0x%04x) fail: 0x%02x\n", cmd, port, status);
+ 	return -EIO;
+ }
+ 
++static int send_command(u8 cmd)
++{
++	return send_byte(cmd, APPLESMC_CMD_PORT);
++}
++
+ static int send_argument(const char *key)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < 4; i++) {
+-		outb(key[i], APPLESMC_DATA_PORT);
+-		if (__wait_status(0x04))
++	for (i = 0; i < 4; i++)
++		if (send_byte(key[i], APPLESMC_DATA_PORT))
+ 			return -EIO;
+-	}
+ 	return 0;
+ }
+ 
+@@ -219,11 +236,14 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+ 		return -EIO;
+ 	}
+ 
+-	outb(len, APPLESMC_DATA_PORT);
++	if (send_byte(len, APPLESMC_DATA_PORT)) {
++		pr_warn("%.4s: read len fail\n", key);
++		return -EIO;
++	}
+ 
+ 	for (i = 0; i < len; i++) {
+-		if (__wait_status(0x05)) {
+-			pr_warn("%.4s: read data fail\n", key);
++		if (wait_read()) {
++			pr_warn("%.4s: read data[%d] fail\n", key, i);
+ 			return -EIO;
+ 		}
+ 		buffer[i] = inb(APPLESMC_DATA_PORT);
+@@ -241,14 +261,16 @@ static int write_smc(u8 cmd, const char *key, const u8 *buffer, u8 len)
+ 		return -EIO;
+ 	}
+ 
+-	outb(len, APPLESMC_DATA_PORT);
++	if (send_byte(len, APPLESMC_DATA_PORT)) {
++		pr_warn("%.4s: write len fail\n", key);
++		return -EIO;
++	}
+ 
+ 	for (i = 0; i < len; i++) {
+-		if (__wait_status(0x04)) {
++		if (send_byte(buffer[i], APPLESMC_DATA_PORT)) {
+ 			pr_warn("%s: write data fail\n", key);
+ 			return -EIO;
+ 		}
+-		outb(buffer[i], APPLESMC_DATA_PORT);
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.11.3
 
