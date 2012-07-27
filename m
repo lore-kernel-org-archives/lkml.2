@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab2G0Skq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 14:40:46 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:50510 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab2G0Skp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 14:40:45 -0400
-Date: Fri, 27 Jul 2012 14:40:31 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Patrick McHardy <kaber@trash.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org
-Subject: Re: [PATCH 2/7] netpoll: make __netpoll_cleanup non-block
-Message-ID: <20120727184031.GB20938@hmsreliant.think-freely.org>
-References: <1343403484-29347-1-git-send-email-amwang@redhat.com>
- <1343403484-29347-3-git-send-email-amwang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343403484-29347-3-git-send-email-amwang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	id S1752184Ab2G0Ssi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 14:48:38 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60273 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab2G0Ssh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 14:48:37 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 1/5] jiffies: Allow CLOCK_TICK_RATE to be undefined
+Date: Fri, 27 Jul 2012 14:48:09 -0400
+Message-Id: <1343414893-45779-2-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343414893-45779-1-git-send-email-john.stultz@linaro.org>
+References: <1343414893-45779-1-git-send-email-john.stultz@linaro.org>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072718-9360-0000-0000-000008D68293
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 11:37:59PM +0800, Cong Wang wrote:
-> Like the previous patch, slave_disable_netpoll() and __netpoll_cleanup()
-> may be called with read_lock() held too, so we should make them
-> non-block, by moving the cleanup and kfree() to call_rcu_bh() callbacks.
-> 
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Signed-off-by: Cong Wang <amwang@redhat.com>
-> ---
->  drivers/net/bonding/bond_main.c |    4 +--
->  include/linux/netpoll.h         |    3 ++
->  net/8021q/vlan_dev.c            |    6 +----
->  net/bridge/br_device.c          |    6 +----
->  net/core/netpoll.c              |   42 +++++++++++++++++++++++++++++---------
->  5 files changed, 38 insertions(+), 23 deletions(-)
-><snip>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
->  	struct netpoll_info *npinfo;
-> @@ -903,20 +921,24 @@ void __netpoll_cleanup(struct netpoll *np)
->  			ops->ndo_netpoll_cleanup(np->dev);
->  
->  		RCU_INIT_POINTER(np->dev->npinfo, NULL);
-> +		call_rcu_bh(&npinfo->rcu, rcu_cleanup_netpoll_info);
-> +	}
-> +}
-> +EXPORT_SYMBOL_GPL(__netpoll_cleanup);
->  
-> -		/* avoid racing with NAPI reading npinfo */
-> -		synchronize_rcu_bh();
-> +static void rcu_cleanup_netpoll(struct rcu_head *rcu_head)
-> +{
-> +	struct netpoll *np = container_of(rcu_head, struct netpoll, rcu);
->  
-> -		skb_queue_purge(&npinfo->arp_tx);
-> -		skb_queue_purge(&npinfo->txq);
-> -		cancel_delayed_work_sync(&npinfo->tx_work);
-> +	__netpoll_cleanup(np);
-> +	kfree(np);
-> +}
->  
-> -		/* clean after last, unfinished work */
-> -		__skb_queue_purge(&npinfo->txq);
-> -		kfree(npinfo);
-> -	}
-> +void __netpoll_free_rcu(struct netpoll *np)
-> +{
-> +	call_rcu_bh(&np->rcu, rcu_cleanup_netpoll);
-Here, and above I see you using an rcu_head to defer cleanup, until after all
-pointer uses are dropped, but I don't see any modification of code points that
-dereference any struct netpoll pointers to include
-rcu_read_lock()/rcu_read_unlock().  Without those using rcu to defer cleanup is
-pointless, as the rcu code won't know when its safe to run.  You're no better
-off that you would be just calling __netpoll_cleanup directly.
-Neil
+CLOCK_TICK_RATE is a legacy constant that defines the timer
+device's granularity. On hardware with particularly coarse
+granularity, this constant is used to reduce accumulated
+time error when using jiffies as a clocksource, by calculating
+the hardware's actual tick length rather then just assuming
+it is 1sec/HZ.
 
->  }
-> -EXPORT_SYMBOL_GPL(__netpoll_cleanup);
-> +EXPORT_SYMBOL_GPL(__netpoll_free_rcu);
->  
->  void netpoll_cleanup(struct netpoll *np)
->  {
-> -- 
-> 1.7.7.6
-> 
-> 
+However, for the most part this is unnecessary, as most modern
+systems don't use jiffies for their clocksource, and their
+tick device is sufficiently fine grained to avoid major error.
+
+Thus, this patch allows an architecture to not define
+CLOCK_TICK_RATE, in which case ACTHZ defaults to (HZ << 8).
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+[jstultz: commit log & intention tweaks]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/jiffies.h |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 265e2c3..7d24466 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -39,9 +39,6 @@
+ # error Invalid value of HZ.
+ #endif
+ 
+-/* LATCH is used in the interval timer and ftape setup. */
+-#define LATCH  ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
+-
+ /* Suppose we want to divide two numbers NOM and DEN: NOM/DEN, then we can
+  * improve accuracy by shifting LSH bits, hence calculating:
+  *     (NOM << LSH) / DEN
+@@ -54,8 +51,15 @@
+ #define SH_DIV(NOM,DEN,LSH) (   (((NOM) / (DEN)) << (LSH))              \
+                              + ((((NOM) % (DEN)) << (LSH)) + (DEN) / 2) / (DEN))
+ 
++#ifdef CLOCK_TICK_RATE
++/* LATCH is used in the interval timer and ftape setup. */
++# define LATCH ((CLOCK_TICK_RATE + HZ/2) / HZ)	/* For divider */
++
+ /* HZ is the requested value. ACTHZ is actual HZ ("<< 8" is for accuracy) */
+-#define ACTHZ (SH_DIV (CLOCK_TICK_RATE, LATCH, 8))
++# define ACTHZ (SH_DIV(CLOCK_TICK_RATE, LATCH, 8))
++#else
++# define ACTHZ (HZ << 8)
++#endif
+ 
+ /* TICK_NSEC is the time between ticks in nsec assuming real ACTHZ */
+ #define TICK_NSEC (SH_DIV (1000000UL * 1000, ACTHZ, 8))
+-- 
+1.7.9.5
+
