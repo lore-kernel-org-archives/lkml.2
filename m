@@ -1,74 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab2G0MOY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:14:24 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52846 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab2G0MOW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 08:14:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120727051054.GA30771@avionic-0098.mockup.avionic-design.de>
-References: <20120726071636.GA28129@avionic-0098.mockup.avionic-design.de>
-	<CA+55aFy9JNZyhdTU+btUbBTKsHN1odX1-as=iTC_L9tZr=Oz1w@mail.gmail.com>
-	<20120727051054.GA30771@avionic-0098.mockup.avionic-design.de>
-Date: Fri, 27 Jul 2012 17:44:21 +0530
-Message-ID: <CAK9yfHyz=D=O=iZjAseKX5gmrp08E5vGjzQFPJ09vwebOAWoag@mail.gmail.com>
-Subject: Re: [GIT PULL] PWM subsystem for v3.6
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>,
-        Axel Lin <axel.lin@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752465Ab2G0MVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:21:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42483 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab2G0MVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 08:21:10 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, gregkh@linuxfoundation.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, lwoodman@redhat.com,
+        jbaron@redhat.com, alan@linux.intel.com
+Subject: [PATCH] tty, add kref to sysrq handlers
+Date: Fri, 27 Jul 2012 08:19:47 -0400
+Message-Id: <1343391587-20240-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2012 10:40, Thierry Reding <thierry.reding@avionic-design.de> wrote:
-> On Thu, Jul 26, 2012 at 02:11:58PM -0700, Linus Torvalds wrote:
->> On Thu, Jul 26, 2012 at 12:16 AM, Thierry Reding
->> <thierry.reding@avionic-design.de> wrote:
->> >
->> > The new PWM subsystem aims at collecting all implementations of the
->> > legacy PWM API and to eventually replace it completely. The subsystem
->> > has been in development for over half a year now and many drivers have
->> > already been converted. It has been in linux-next for a couple of weeks
->> > and there have been no major issues so I think it is ready for inclusion
->> > in your tree.
->>
->> For new subsystems like this, I really want ack's from the people who
->> are expected to use it.
->
-> At least the patch that adds me as the maintainer is Acked-by: Sascha
-> Hauer, who did the original work, and Arnd Bergmann who was involved in
-> the review process. Other people such as Shawn Guo and Mark Brown have
-> also been reviewing these patches and new patches have been contributed
-> by Eric Bénard, Axel Lin, Sachin Kamat, Alexandre Courbot, Alexandre
-> Pereira da Silva and Philip Avinash.
->
+3rd try on this one ...
 
-Using this on Samsung Exynos platform.
+----8<-----
 
-Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+On a large system with a large number of tasks, the output of
 
-> I'm adding all of them on Cc so they can ack this (I'm assuming acking
-> this email will suffice).
->
->> For a gitorious pull like this, I also want signed tags with the gpg
->> key having signatures from people I recognize. I don't think I have
->> such a key from you.
->
-> Right. I don't have any signatures on my GPG key, but I'm not aware of
-> any kernel developers in my area and unfortunately I don't get around
-> much either. I can request key-signing via users@kernel.org and see if
-> I missed anyone. I think that is the correct mailing list? I remember
-> reading about it a while back but I can't find the link anymore.
->
-> Thierry
+echo t > /proc/sysrq-trigger
+
+can take a long period of time.  If this period is greater than the period
+of the current clocksource, the clocksource watchdog will mark the
+clocksource as unstable and fail the clocksource over.
+
+The problem with sysrq is that __handle_sysrq() takes a spin_lock with
+interrupts disabled and disables interrupts for the duration of the
+handler.  If this happens during sysrq-t on a large system with a large
+number of tasks, the result is a "brown-out" of the system.
+
+The spin_lock in question, sysrq_key_table_lock, is in place to prevent
+the removal of a sysrq handler while it is being executed in
+__handle_sysrq().
+
+A kref is added to each sysrq handler and is incremented and decremented
+in __handle_sysrq().  This, while more complicated than a lock , leads to
+minimizing the time that the sysrq_key_table_lock is acquired and results
+in a functional sysrq-t.
+
+I've tested both options and I no longer see the clocksource watchdog
+marking the TSC clocksource as unstable.
+
+Acked-by: Don Zickus <dzickus@redhat.com>
+Cc: gregkh@linuxfoundation.org
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: lwoodman@redhat.com
+Cc: jbaron@redhat.com
+Cc: alan@linux.intel.com
+---
+ drivers/tty/sysrq.c   |   42 +++++++++++++++++++++++++++++++++++++++---
+ include/linux/sysrq.h |    2 ++
+ 2 files changed, 41 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 05728894..38c6ae6 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -458,6 +458,20 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
+ 	&sysrq_ftrace_dump_op,		/* z */
+ };
+ 
++void sysrq_release(struct kref *kref)
++{
++	struct sysrq_key_op *release_op;
++	int i;
++	unsigned long flags;
++
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	release_op = container_of(kref, struct sysrq_key_op, kref);
++	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
++		if (sysrq_key_table[i] == release_op)
++			sysrq_key_table[i] = NULL;
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++}
++
+ /* key2index calculation, -1 on invalid index */
+ static int sysrq_key_table_key2index(int key)
+ {
+@@ -502,7 +516,6 @@ void __handle_sysrq(int key, bool check_mask)
+ 	int i;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -513,7 +526,12 @@ void __handle_sysrq(int key, bool check_mask)
+ 	console_loglevel = 7;
+ 	printk(KERN_INFO "SysRq : ");
+ 
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+         op_p = __sysrq_get_key_op(key);
++	if (op_p)
++		kref_get(&op_p->kref);
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++
+         if (op_p) {
+ 		/*
+ 		 * Should we check for enabled operations (/proc/sysrq-trigger
+@@ -526,9 +544,14 @@ void __handle_sysrq(int key, bool check_mask)
+ 		} else {
+ 			printk("This sysrq operation is disabled.\n");
+ 		}
++
++		spin_lock_irqsave(&sysrq_key_table_lock, flags);
++		kref_put(&op_p->kref, sysrq_release);
++		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ 	} else {
+ 		printk("HELP : ");
+ 		/* Only print the help msg once per handler */
++		spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 		for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++) {
+ 			if (sysrq_key_table[i]) {
+ 				int j;
+@@ -541,10 +564,10 @@ void __handle_sysrq(int key, bool check_mask)
+ 				printk("%s ", sysrq_key_table[i]->help_msg);
+ 			}
+ 		}
++		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
+-	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ }
+ 
+ void handle_sysrq(int key)
+@@ -837,7 +860,12 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
+ 
+ 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+ 	if (__sysrq_get_key_op(key) == remove_op_p) {
+-		__sysrq_put_key_op(key, insert_op_p);
++		if (!remove_op_p) { /* register */
++			__sysrq_put_key_op(key, insert_op_p);
++			kref_init(&insert_op_p->kref);
++		}
++		if (!insert_op_p) /* unregister */
++			kref_put(&remove_op_p->kref, sysrq_release);
+ 		retval = 0;
+ 	} else {
+ 		retval = -1;
+@@ -898,6 +926,14 @@ static inline void sysrq_init_procfs(void)
+ 
+ static int __init sysrq_init(void)
+ {
++	int i;
++
++	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
++		if (sysrq_key_table[i])
++			kref_init(&sysrq_key_table[i]->kref);
++	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++
+ 	sysrq_init_procfs();
+ 
+ 	if (sysrq_on())
+diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
+index 7faf933..d458f39 100644
+--- a/include/linux/sysrq.h
++++ b/include/linux/sysrq.h
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/errno.h>
+ #include <linux/types.h>
++#include <linux/kref.h>
+ 
+ /* Enable/disable SYSRQ support by default (0==no, 1==yes). */
+ #define SYSRQ_DEFAULT_ENABLE	1
+@@ -36,6 +37,7 @@ struct sysrq_key_op {
+ 	char *help_msg;
+ 	char *action_msg;
+ 	int enable_mask;
++	struct kref kref;
+ };
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
+-- 
+1.7.9.3
+
