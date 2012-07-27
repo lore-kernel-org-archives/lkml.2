@@ -1,66 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab2G0SQp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 14:16:45 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54124 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab2G0SQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 14:16:44 -0400
-Date: Fri, 27 Jul 2012 11:16:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrew Stiegmann <astiegmann@vmware.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
-        vm-crosstalk@vmware.com, cschamp@vmware.com
-Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
-Message-ID: <20120727181639.GA23564@kroah.com>
-References: <20120727103455.GA4639@merkur.ravnborg.org>
- <1693394101.5749000.1343409643934.JavaMail.root@vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1693394101.5749000.1343409643934.JavaMail.root@vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752644Ab2G0SS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 14:18:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50422 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752404Ab2G0SS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 14:18:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="178432778"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH] smb347_charger: Add support for battery power supply attributes registration
+Date: Fri, 27 Jul 2012 22:25:31 +0530
+Message-Id: <1343408131-21949-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 10:20:43AM -0700, Andrew Stiegmann wrote:
-> > The kernel style is to use lower_case for everything.
-> > So this would become:
-> > 
-> >     vmci_device_get()
-> > 
-> > This is obviously a very general comment and applies everywhere.
-> 
-> I wish I could lower case these symbols but VMCI has already existed
-> outside the mainline Linux tree for some time now and changing these
-> exported symbols would mean that other drivers that depend on VMCI
-> (vSock, vmhgfs) would need to change as well.   One thought that did
-> come to mind was exporting both VMCI_Device_Get and vmci_device_get
-> but that would likely just confuse people.  So in short I have made
-> function names lower case where possible, but exported symbols could
-> not be changed.
+This patch adds the support to use power supply attributes registration
+mechanism for battery properties. This will be useful if the platform
+has a main/primary battery and it relies on smb347 driver to get
+some critical battery attributes.
 
-Not true at all.  You want those drivers to be merged as well, right?
-So they will need to have their functions changed, and their code as
-well.
+Anton, I have to rework on this patch once we get an agreement on the
+power supply attribute sources registration.
 
-Just wait until we get to the "change your functionality around"
-requests, those will require those drivers to change.  Right now we are
-at the "silly and obvious things you did wrong" stage of the review
-process :)
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ drivers/power/smb347-charger.c       |  124 +++++++++++++++++++++++++++++-----
+ include/linux/power/smb347-charger.h |    1 +
+ 2 files changed, 108 insertions(+), 17 deletions(-)
 
-So please fix these, and also, post these drivers as well, so we can see
-how they interact with the core code.
+diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
+index 332dd01..b232453 100644
+--- a/drivers/power/smb347-charger.c
++++ b/drivers/power/smb347-charger.c
+@@ -136,6 +136,7 @@ struct smb347_charger {
+ 	struct power_supply	mains;
+ 	struct power_supply	usb;
+ 	struct power_supply	battery;
++	struct power_supply_attr_source battery_attr;
+ 	bool			mains_online;
+ 	bool			usb_online;
+ 	bool			charging_enabled;
+@@ -731,7 +732,8 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
+ 		dev_err(smb->dev, "error in charger, disabling charging\n");
+ 
+ 		smb347_charging_disable(smb);
+-		power_supply_changed(&smb->battery);
++		if (smb->pdata->use_battery)
++			power_supply_changed(&smb->battery);
+ 		handled = true;
+ 	}
+ 
+@@ -741,7 +743,8 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
+ 	 * disabled by the hardware.
+ 	 */
+ 	if (irqstat_c & (IRQSTAT_C_TERMINATION_IRQ | IRQSTAT_C_TAPER_IRQ)) {
+-		if (irqstat_c & IRQSTAT_C_TERMINATION_STAT)
++		if ((irqstat_c & IRQSTAT_C_TERMINATION_STAT) &&
++					smb->pdata->use_battery)
+ 			power_supply_changed(&smb->battery);
+ 		handled = true;
+ 	}
+@@ -1061,6 +1064,80 @@ static int smb347_battery_get_property(struct power_supply *psy,
+ 	return 0;
+ }
+ 
++static int smb347_battery_get_attr_property(
++			struct power_supply_attr_source *psy_attr,
++			enum power_supply_property psp,
++			union power_supply_propval *val)
++{
++	struct smb347_charger *smb = container_of(psy_attr,
++				struct smb347_charger, battery_attr);
++	const struct smb347_charger_platform_data *pdata = smb->pdata;
++	int ret;
++
++	ret = smb347_update_ps_status(smb);
++	if (ret < 0)
++		return ret;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		if (!smb347_is_ps_online(smb)) {
++			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
++			break;
++		}
++		if (smb347_charging_status(smb))
++			val->intval = POWER_SUPPLY_STATUS_CHARGING;
++		else
++			val->intval = POWER_SUPPLY_STATUS_FULL;
++		break;
++
++	case POWER_SUPPLY_PROP_CHARGE_TYPE:
++		if (!smb347_is_ps_online(smb))
++			return -ENODATA;
++
++		/*
++		 * We handle trickle and pre-charging the same, and taper
++		 * and none the same.
++		 */
++		switch (smb347_charging_status(smb)) {
++		case 1:
++			val->intval = POWER_SUPPLY_CHARGE_TYPE_TRICKLE;
++			break;
++		case 2:
++			val->intval = POWER_SUPPLY_CHARGE_TYPE_FAST;
++			break;
++		default:
++			val->intval = POWER_SUPPLY_CHARGE_TYPE_NONE;
++			break;
++		}
++		break;
++
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = pdata->battery_info.technology;
++		break;
++
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
++		val->intval = pdata->battery_info.voltage_min_design;
++		break;
++
++	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
++		val->intval = pdata->battery_info.voltage_max_design;
++		break;
++
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
++		val->intval = pdata->battery_info.charge_full_design;
++		break;
++
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = pdata->battery_info.name;
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static enum power_supply_property smb347_battery_properties[] = {
+ 	POWER_SUPPLY_PROP_STATUS,
+ 	POWER_SUPPLY_PROP_CHARGE_TYPE,
+@@ -1184,20 +1261,30 @@ static int smb347_probe(struct i2c_client *client,
+ 		}
+ 	}
+ 
+-	smb->battery.name = "smb347-battery";
+-	smb->battery.type = POWER_SUPPLY_TYPE_BATTERY;
+-	smb->battery.get_property = smb347_battery_get_property;
+-	smb->battery.properties = smb347_battery_properties;
+-	smb->battery.num_properties = ARRAY_SIZE(smb347_battery_properties);
+-
+-
+-	ret = power_supply_register(dev, &smb->battery);
+-	if (ret < 0) {
+-		if (smb->pdata->use_usb)
+-			power_supply_unregister(&smb->usb);
+-		if (smb->pdata->use_mains)
+-			power_supply_unregister(&smb->mains);
+-		return ret;
++	if (smb->pdata->use_battery) {
++		smb->battery.name = "smb347-battery";
++		smb->battery.type = POWER_SUPPLY_TYPE_BATTERY;
++		smb->battery.get_property = smb347_battery_get_property;
++		smb->battery.properties = smb347_battery_properties;
++		smb->battery.num_properties =
++				ARRAY_SIZE(smb347_battery_properties);
++		ret = power_supply_register(dev, &smb->battery);
++		if (ret < 0) {
++			if (smb->pdata->use_usb)
++				power_supply_unregister(&smb->usb);
++			if (smb->pdata->use_mains)
++				power_supply_unregister(&smb->mains);
++			return ret;
++		}
++	} else {
++		smb->battery_attr.name = "smb347-battery";
++		smb->battery_attr.type = POWER_SUPPLY_TYPE_BATTERY;
++		smb->battery_attr.get_property =
++					smb347_battery_get_attr_property;
++		ret = power_supply_attributes_register(dev, &smb->battery_attr);
++		if (ret < 0)
++			dev_warn(dev,
++				"power supply attr register failed: %d\n", ret);
+ 	}
+ 
+ 	/*
+@@ -1227,7 +1314,10 @@ static int smb347_remove(struct i2c_client *client)
+ 		gpio_free(smb->pdata->irq_gpio);
+ 	}
+ 
+-	power_supply_unregister(&smb->battery);
++	if (smb->pdata->use_battery)
++		power_supply_unregister(&smb->battery);
++	else
++		power_supply_attributes_unregister(&smb->battery_attr);
+ 	if (smb->pdata->use_usb)
+ 		power_supply_unregister(&smb->usb);
+ 	if (smb->pdata->use_mains)
+diff --git a/include/linux/power/smb347-charger.h b/include/linux/power/smb347-charger.h
+index b3cb20d..4bccd01 100644
+--- a/include/linux/power/smb347-charger.h
++++ b/include/linux/power/smb347-charger.h
+@@ -109,6 +109,7 @@ struct smb347_charger_platform_data {
+ 	unsigned int	charge_current_compensation;
+ 	bool		use_mains;
+ 	bool		use_usb;
++	bool		use_battery;
+ 	bool		use_usb_otg;
+ 	int		irq_gpio;
+ 	enum smb347_chg_enable enable_control;
+-- 
+1.7.0.4
 
-Actually, if you are going to need lots of refactoring for these
-drivers, and the core, I would recommend putting this all in the staging
-tree, to allow that to happen over time.  That would ensure that your
-users keep having working systems, and let you modify the interfaces
-better and easier, than having to keep it all out-of-tree.
-
-What do you think?
-
-greg k-h
