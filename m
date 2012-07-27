@@ -1,100 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab2G0HQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 03:16:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:62460 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab2G0HQi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 03:16:38 -0400
-Date: Fri, 27 Jul 2012 09:16:34 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Ian Abbott <ian.abbott@mev.co.uk>, lkml <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: Oops after merge of tty-next
-Message-ID: <20120727071634.GA29885@avionic-0098.mockup.avionic-design.de>
-References: <5009D68A.3050301@mev.co.uk>
- <20120721234145.354e6ee9@pyramind.ukuu.org.uk>
- <500D64D7.3060902@mev.co.uk>
- <20120724230527.2135198e@bob.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
+	id S1751966Ab2G0H1m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 03:27:42 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:40987 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab2G0H1l convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Fri, 27 Jul 2012 03:27:41 -0400
+Message-Id: <50125F0B0200007800090DFB@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 27 Jul 2012 08:27:39 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/swiotlb: If iommu=soft was not
+ passed in on > 4GB, don't turn it on.
+References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com>
+ <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120724230527.2135198e@bob.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:/GCp25m2hIOWTygq1eiozXxw1qZV5yRDYUG1X1Ij/VU
- 5QYKCCRs6LhKMreQaB4hId57yBXprhc42h+2DU1ECgds48ExbZ
- LsIfgoSXtPcc77SGuSzM1P+gS7rZHnag8i4/6/hGRHHoEAE4DS
- UpoMRt7orJD2UYaZoZDl9AhQivcaqHQPC0xznrfIMyh6dX0g3D
- 4VzXyxljkVGvRn41NPR7GiiPBXFBXM4Dfb7shrWuckIHGxZq+P
- 7PwlGcZfflHqu/DUnfR6asd8eVdp27FAt3HtRgkceOeMewBAU4
- Nqqz+rcXnehQfDy//RhufEpjOeRqlWJg4CIS7cvf/moXGx5zdq
- GrO9CXfEg3ddGYtF3oNhZ+ZvRk7drCq21x6zcp+ZtvkDdMKvXt
- EXEBoYS+uicWum6ras2JmA3Q5zWRtCQku8q7/nRm6zgD364pZT
- Z/dH7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 26.07.12 at 22:43, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> If we boot a 64-bit guest with more than 4GB memory, the SWIOTLB
+> gets turned on:
+> PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+> software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at 
+> [ffff8800fb43d000-ffff8800ff43cfff]
+> 
+> which is OK if we had PCI devices, but not if we did not. In a PV
+> guest the SWIOTLB ends up asking the hypervisor for precious lowmem
+> memory - and 64MB of it per guest. On a 32GB machine, this limits the
+> amount of guests that are 4GB to start due to lowmem exhaustion.
+> 
+> What we do is detect whether the user supplied e820_hole=1
+> parameter, which is used to construct an E820 that is similar to
+> the machine  - so that the PCI regions do not overlap with RAM regions.
+> We check for that by looking at the E820 and seeing if it diverges
+> from the standard - and if so (and if iommu=soft was not turned on),
+> we disable the check pci_swiotlb_detect_4gb code.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/pci-swiotlb-xen.c |   26 ++++++++++++++++++++++++++
+>  1 files changed, 26 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+> index 967633a..56f373e 100644
+> --- a/arch/x86/xen/pci-swiotlb-xen.c
+> +++ b/arch/x86/xen/pci-swiotlb-xen.c
+> @@ -8,6 +8,10 @@
+>  #include <xen/xen.h>
+>  #include <asm/iommu_table.h>
+>  
+> +#include <asm/e820.h>
+> +#include <asm/dma.h>
+> +#include <asm/iommu.h>
+> +
+>  int xen_swiotlb __read_mostly;
+>  
+>  static struct dma_map_ops xen_swiotlb_dma_ops = {
+> @@ -24,7 +28,19 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+>  	.unmap_page = xen_swiotlb_unmap_page,
+>  	.dma_supported = xen_swiotlb_dma_supported,
+>  };
+> +bool __init e820_has_acpi(void)
+> +{
+> +	int i;
+>  
+> +	/* Check if the user supplied the e820_hole parameter
+> +	 * which would create a machine looking E820 region. */
+> +	for (i = 0; i < e820.nr_map; i++) {
+> +		if ((e820.map[i].type == E820_ACPI) ||
+> +		    (e820.map[i].type == E820_NVS))
+> +			return true;
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Tying this decision to the presence of ACPI regions in E820 is
+problematic for two reasons imo: For one, it precludes cleaning
+up this (bogus!) construct where it gets produced (PV DomU-s
+really shouldn't ever see such E820 entries, they should get
+converted to simple reserved entries, to wipe any notion of
+ACPI presence). And second it ties you to running on systems
+that actually have ACPI, whereas it is my rudimentary
+understanding that systems with e.g. SFI would not have any
+ACPI).
 
-On Tue, Jul 24, 2012 at 11:05:27PM +0100, Alan Cox wrote:
-> On Mon, 23 Jul 2012 15:51:03 +0100
-> Ian Abbott <abbotti@mev.co.uk> wrote:
->=20
-> > On 2012-07-21 23:41, Alan Cox wrote:
-> > > On Fri, 20 Jul 2012 23:07:06 +0100
-> > > Ian Abbott <abbotti@mev.co.uk> wrote:
-> > >
-> > >> I'm getting an Oops in the linux-next tree today after the merge
-> > >> of the remote-tracking branch 'tty/tty-next'.  I bisected it down
-> > >> to commit 36b3c070d2346c890d690d71f6eab02f8c511137 in
-> > >> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git :
->=20
-> Ok Greg you can you leave that one in -next but not push it for 3.6.
->=20
-> I need to go over this in some detail and figure out the remaining
-> race, and worse yet how to fix it without the mess of existing locks
-> turning it into something nasty.
->=20
-> I think I understand what is needed but I don't want to be doing it as
-> a mad panic for 3.6. On the bright side I think it explains the other
-> tty lock splitting mysteries.
+Jan
 
-I've also been able to reproduce this, or at least a very similar issue,
-on ARM (Tegra). The system boots into the initrd, which works as usual,
-but it hangs when executing the switch_root that starts systemd within
-the final root filesystem. With the above-mentioned commit reverted, the
-system successfully boots to the login prompt.
+> +	}
+> +	return false;
+> +}
+>  /*
+>   * pci_xen_swiotlb_detect - set xen_swiotlb to 1 if necessary
+>   *
+> @@ -33,7 +49,17 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+>   */
+>  int __init pci_xen_swiotlb_detect(void)
+>  {
+> +#ifdef CONFIG_X86_64
+>  
+> +	/* Having more than 4GB triggers the native SWIOTLB to activate.
+> +	 * The way to turn it off is to set no_iommu. */
+> +	printk(KERN_INFO "swiotlb: %d\n", swiotlb);
+> +	if (xen_pv_domain() && !swiotlb && max_pfn > MAX_DMA32_PFN) {
+> +		/* Normal PV guests only have E820_RSV and E820_RAM regions */
+> +		if (!e820_has_acpi())
+> +			no_iommu = 1;
+> +	}
+> +#endif
+>  	/* If running as PV guest, either iommu=soft, or swiotlb=force will
+>  	 * activate this IOMMU. If running as PV privileged, activate it
+>  	 * irregardless.
+> -- 
+> 1.7.7.6
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org 
+> http://lists.xen.org/xen-devel 
 
-Thierry
 
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQEkBSAAoJEN0jrNd/PrOh34YP/0mCUO5Wj/D8Is+6Aj8cFnXg
-f0mf0dKEuXo3IxWmCGKwjyBLnk3gTw0vnyObppES7rwTiAz9MOsITlDJDu0Dcnbj
-TM/BARwYIBT4jcN8tbU4t4yyZBaD6ITS5bGYJvaWx1mKFU/j+yAYqufPi43BNmQL
-OpHTIw6+KpqwELQfkjSd8SnX8OtOQeeaLytVxSdmSE6zsa2DZg08UCD6AND3s3pa
-xB6AptOWRh2RohG57OM8XB5sqIQWVfRLizHyNaZBh6NHlImIU/JnE2714YoPGvus
-HT1RLBKtf/FGhis7SO49hHL4hhBp/OOKyvHVYWGLSSfK4ZgToa2c+82lSqwZnHZc
-2hTqk31xvPgoKbWoQGAS+oehGZIEt6iTeT0qaUwcCMclb/l6VMR+N2lZVyUv3f3S
-sCuqasGBGWE5X6K2e0kzE+PrOEoADBefENbTavU3SUUFeGsFxl0GMXb3/9McxPya
-p3vcpXpcjdmrr6aSRtndmQq6nnES1DIIYzpvUSi/28ZOzCurzAkZsl38zpbRMBLQ
-JyRYHpyrIeMu/PlydBNx5O3Uuh9/O6jXUoQNjmwFhgBQvH6Y8y5RQNjAmF9CYqYH
-9OKBeX6d1mHmTWGfdUYmI36ZrnRZq7HywfxDjN1EZc4ycS/fKONb1xJmZbe0bowk
-7ES2X5GUeRebs59nd38g
-=vbAj
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
