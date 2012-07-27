@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536Ab2G0N0e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 09:26:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:18290 "EHLO mga14.intel.com"
+	id S1751612Ab2G0N2T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 09:28:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7774 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108Ab2G0N0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 09:26:33 -0400
+	id S1751233Ab2G0N2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 09:28:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="173934542"
-Date: Fri, 27 Jul 2012 15:26:34 +0200
+   d="scan'208";a="198930107"
+Date: Fri, 27 Jul 2012 15:28:10 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: linux-next: Tree for July 25 (mfd/arizona)
-Message-ID: <20120727132634.GN16859@sortiz-mobl>
-References: <20120725143020.8c96b6d54b66364b69c330ad@canb.auug.org.au>
- <501038CF.9090902@xenotime.net>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: a.zummo@towertech.it, broonie@opensource.wolfsonmicro.com,
+        ldewangan@nvidia.com, kyle.manna@fuel7.com, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+Message-ID: <20120727132810.GO16859@sortiz-mobl>
+References: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <501038CF.9090902@xenotime.net>
+In-Reply-To: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy
+Hi Venu,
 
-On Wed, Jul 25, 2012 at 11:19:59AM -0700, Randy Dunlap wrote:
-> On 07/24/2012 09:30 PM, Stephen Rothwell wrote:
+On Thu, Jul 26, 2012 at 12:05:19PM +0530, Venu Byravarasu wrote:
+> TPS65910 PMIC is a MFD with RTC as one of the device.
+> Adding RTC driver for supporting RTC device present
+> inside TPS65910 PMIC.
 > 
-> > Hi all,
-> > 
-> > 
-> > Changes since 20120724:
-> > 
-> > 
-> > The mfd tree gained a conflict against Linus' tree.
+> Only support for RTC alarm is implemented as part of this patch.
 > 
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
 > 
-> 
-> on i386 and x86_64:
-> 
-> CONFIG_MFD_ARIZONA=y
-> CONFIG_MFD_ARIZONA_I2C=m
-> CONFIG_MFD_CORE=m
-> 
-> drivers/built-in.o: In function `arizona_dev_init':
-> (.devinit.text+0x3ab0): undefined reference to `mfd_add_devices'
-> drivers/built-in.o: In function `arizona_dev_init':
-> (.devinit.text+0x3fdc): undefined reference to `mfd_add_devices'
-> drivers/built-in.o: In function `arizona_dev_init':
-> (.devinit.text+0x3fff): undefined reference to `mfd_add_devices'
-> drivers/built-in.o: In function `arizona_dev_init':
-> (.devinit.text+0x4059): undefined reference to `mfd_remove_devices'
-> drivers/built-in.o: In function `arizona_dev_exit':
-> (.devexit.text+0x9): undefined reference to `mfd_remove_devices'
-> 
-> because MFD_ARIZONA is bool, so builtin, while MFD_CORE=m,
-> so the builtin code cannot call the loadable module code.
-This is fixed now, by having MFD_ARIZONA selecting MFD_CORE.
+>  drivers/rtc/Kconfig          |   10 ++
+>  drivers/rtc/Makefile         |    1 +
+>  drivers/rtc/rtc-tps65910.c   |  353 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/tps65910.h |   10 ++
+>  4 files changed, 374 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/rtc/rtc-tps65910.c
+For the MFD parts:
+
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
 Cheers,
 Samuel.
