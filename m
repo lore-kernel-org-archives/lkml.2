@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab2G0KAl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:00:41 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:50980 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab2G0KAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:00:40 -0400
-X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
-   d="scan'208";a="13731251"
-Message-ID: <1343383205.6812.137.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [RFC PATCH] Boot PV guests with more than 128GB
- (v1) for 3.7
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: Ian Jackson <Ian.Jackson@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>
-Date: Fri, 27 Jul 2012 11:00:05 +0100
-In-Reply-To: <501260980200007800090E08@nat28.tlf.novell.com>
-References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
-	 <501260980200007800090E08@nat28.tlf.novell.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	id S1751520Ab2G0KLJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:11:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26164 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751011Ab2G0KLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:11:08 -0400
+Message-ID: <5012692F.5080501@redhat.com>
+Date: Fri, 27 Jul 2012 06:10:55 -0400
+From: Larry Woodman <lwoodman@redhat.com>
+Reply-To: lwoodman@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120422 Thunderbird/10.0.4
 MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com> <50120FA8.20409@redhat.com>
+In-Reply-To: <50120FA8.20409@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 08:34 +0100, Jan Beulich wrote:
-> >>> On 26.07.12 at 22:47, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> >  2). Allocate a new array, copy the existing P2M into it,
-> >     revector the P2M tree to use that, and return the old
-> >     P2M to the memory allocate. This has the advantage that
-> >     it sets the stage for using XEN_ELF_NOTE_INIT_P2M
-> >     feature. That feature allows us to set the exact virtual
-> >     address space we want for the P2M - and allows us to
-> >     boot as initial domain on large machines.
-> 
-> And I would hope that the tools would get updated to recognize
-> this note too, so that huge DomU-s would become possible as
-> well.
+On 07/26/2012 11:48 PM, Larry Woodman wrote:
 
-Does this help us with >160GB 32 bit PV guests too? I'm guessing not
-since the real limitation there is the relatively small amount of kernel
-address space.
+
+Mel, did you see this???
+
+Larry
+
+>> This patch looks good to me.
+>>
+>> Larry, does Hugh's patch survive your testing?
+>>
+>>
+>
+> Like I said earlier, no.  However, I finally set up a reproducer that 
+> only takes a few seconds
+> on a large system and this totally fixes the problem:
+>
+> ------------------------------------------------------------------------------------------------------------------------- 
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index c36febb..cc023b8 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2151,7 +2151,7 @@ int copy_hugetlb_page_range(struct mm_struct 
+> *dst, struct mm_struct *src,
+>                         goto nomem;
+>
+>                 /* If the pagetables are shared don't copy or take 
+> references */
+> -               if (dst_pte == src_pte)
+> +               if (*(unsigned long *)dst_pte == *(unsigned long 
+> *)src_pte)
+>                         continue;
+>
+>                 spin_lock(&dst->page_table_lock);
+> --------------------------------------------------------------------------------------------------------------------------- 
+>
+>
+> When we compare what the src_pte & dst_pte point to instead of their 
+> addresses everything works,
+> I suspect there is a missing memory barrier somewhere ???
+>
+> Larry
+>
 
