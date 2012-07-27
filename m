@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab2G0UsG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 16:48:06 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36735 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab2G0UsF (ORCPT
+	id S1752189Ab2G0Uyi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 16:54:38 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:29664 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751314Ab2G0Uyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 16:48:05 -0400
-Date: Fri, 27 Jul 2012 13:48:04 -0700 (PDT)
-Message-Id: <20120727.134804.412337393847863208.davem@davemloft.net>
-To: jkosina@suse.cz
-Cc: christopher.leech@intel.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, jbohac@suse.cz
-Subject: Re: [PATCH v2] tcp: perform DMA to userspace only if there is a
- task waiting for it
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1207272237470.30412@pobox.suse.cz>
-References: <alpine.LNX.2.00.1207271556320.11375@pobox.suse.cz>
-	<20120727.133135.2017747630291360657.davem@davemloft.net>
-	<alpine.LNX.2.00.1207272237470.30412@pobox.suse.cz>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Jul 2012 16:54:37 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: D75rDgIVM1lx6F76Elw_Rgd9QyCGHe096iI5WiZxU_IDQCn
+ GwvPRL3iWOdg9sv4Pr.JxZc1tVt3M23AV0yJKDagqdHCb.Q3m5BjxLxZyGIl
+ d8eTLHC4Qwg5e98gaWY4D7QK_Xs9twN1Qv1KC08V557YbUuOZ1e6DbxHi1n2
+ R1o7iH35nmjYFMjyrDZVHkc30rWRI1Itv2Zcq9uyCFrkJUPsQOxqnkKYryRw
+ V1SDrrSyfFhWIvmivU.jpYi1bkrXPuEENF_H0rV36fOC6n1kO29yDxuRLT_1
+ pRloRwdy2Hugm6BXnMt8S7yP8mW9n7oTNCtqC1nU0bbtYR7_XqjsX4o4XO6Q
+ Ga.n_VPMcUWwOQPYo0e5gk_UnWC9ei0_1eK4NC2qQjd0nT.SGD8em63k9fP6
+ jhaoZRdCXZrMWjhVfeCLgKZ6tiRTNSa70DXsqPpnviuaBaguiN6I-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 27 Jul 2012 15:54:34 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Joonsoo Kim <js1304@gmail.com>
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Brice Goglin <brice@myri.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value
+ of move_pages() syscall
+In-Reply-To: <1343411703-2720-4-git-send-email-js1304@gmail.com>
+Message-ID: <alpine.DEB.2.00.1207271550190.25434@router.home>
+References: <Yes> <1343411703-2720-1-git-send-email-js1304@gmail.com> <1343411703-2720-4-git-send-email-js1304@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
-Date: Fri, 27 Jul 2012 22:38:50 +0200 (CEST)
+On Sat, 28 Jul 2012, Joonsoo Kim wrote:
 
-> Back in 2006, commit 1a2449a87b ("[I/OAT]: TCP recv offload to I/OAT")
-> added support for receive offloading to IOAT dma engine if available.
-> 
-> The code in tcp_rcv_established() tries to perform early DMA copy if
-> applicable. It however does so without checking whether the userspace
-> task is actually expecting the data in the buffer.
-> 
-> This is not a problem under normal circumstances, but there is a corner
-> case where this doesn't work -- and that's when MSG_TRUNC flag to
-> recvmsg() is used.
-> 
-> If the IOAT dma engine is not used, the code properly checks whether
-> there is a valid ucopy.task and the socket is owned by userspace, but
-> misses the check in the dmaengine case.
-> 
-> This problem can be observed in real trivially -- for example 'tbench' is a
-> good reproducer, as it makes a heavy use of MSG_TRUNC. On systems utilizing
-> IOAT, you will soon find tbench waiting indefinitely in sk_wait_data(), as they
-> have been already early-copied in tcp_rcv_established() using dma engine.
-> 
-> This patch introduces the same check we are performing in the simple
-> iovec copy case to the IOAT case as well. It fixes the indefinite
-> recvmsg(MSG_TRUNC) hangs.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> move_pages() syscall may return success in case that
+> do_move_page_to_node_array return positive value which means migration failed.
 
-Applied.
+Nope. It only means that the migration for some pages has failed. This may
+still be considered successful for the app if it moves 10000 pages and one
+failed.
+
+This patch would break the move_pages() syscall because an error code
+return from do_move_pages_to_node_array() will cause the status byte for
+each page move to not be updated anymore. Application will not be able to
+tell anymore which pages were successfully moved and which are not.
