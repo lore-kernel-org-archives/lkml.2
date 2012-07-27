@@ -1,179 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab2G0KUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:20:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:21931 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab2G0KUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:20:50 -0400
-X-IronPort-AV: E=Sophos;i="4.77,666,1336320000"; 
-   d="scan'208";a="5496315"
-Message-ID: <50126CAA.7070600@cn.fujitsu.com>
-Date: Fri, 27 Jul 2012 18:25:46 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752217Ab2G0KVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:21:36 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:54414 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab2G0KVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 06:21:33 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
+   d="scan'208";a="13731670"
+Message-ID: <1343384489.6812.143.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [RFC PATCH] Boot PV guests with more than 128GB
+ (v1) for 3.7
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        xen-devel <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Jul 2012 11:21:29 +0100
+In-Reply-To: <501286E50200007800090ECB@nat28.tlf.novell.com>
+References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
+	 <501260980200007800090E08@nat28.tlf.novell.com>
+	 <1343383205.6812.137.camel@zakaz.uk.xensource.com>
+	 <501286E50200007800090ECB@nat28.tlf.novell.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
-CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [RFC PATCH v5 01/19] memory-hotplug: rename remove_memory() to offline_memory()/offline_pages()
-References: <50126B83.3050201@cn.fujitsu.com>
-In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/27 18:21:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/27 18:21:17,
-	Serialize complete at 2012/07/27 18:21:17
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On Fri, 2012-07-27 at 11:17 +0100, Jan Beulich wrote:
+> >>> On 27.07.12 at 12:00, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> > On Fri, 2012-07-27 at 08:34 +0100, Jan Beulich wrote:
+> >> >>> On 26.07.12 at 22:47, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> >> >  2). Allocate a new array, copy the existing P2M into it,
+> >> >     revector the P2M tree to use that, and return the old
+> >> >     P2M to the memory allocate. This has the advantage that
+> >> >     it sets the stage for using XEN_ELF_NOTE_INIT_P2M
+> >> >     feature. That feature allows us to set the exact virtual
+> >> >     address space we want for the P2M - and allows us to
+> >> >     boot as initial domain on large machines.
+> >> 
+> >> And I would hope that the tools would get updated to recognize
+> >> this note too, so that huge DomU-s would become possible as
+> >> well.
+> > 
+> > Does this help us with >160GB 32 bit PV guests too? I'm guessing not
+> > since the real limitation there is the relatively small amount of kernel
+> > address space.
+> 
+> Correct - 32-bit PV guests are limited anyway (and it's for a
+> reason the Dom0 support in the hypervisor only deals with
+> 64-bit ones). And honestly, considering the huge page
+> information table such a memory amount would require, I
+> doubt this big a PV guest would even boot (or if it does, be
+> of any use).
 
-remove_memory() only try to offline pages. It is called in two cases:
-1. hot remove a memory device
-2. echo offline >/sys/devices/system/memory/memoryXX/state
+Right.
 
-In the 1st case, we should also change memory block's state, and notify
-the userspace that the memory block's state is changed after offlining
-pages.
+I was actually think of the issue with 32 bit PV guests accessing MFN
+space > 160G, even if they are themselves small, which is a separate
+concern.
 
-So rename remove_memory() to offline_memory()/offline_pages(). And in
-the 1st case, offline_memory() will be used. The function offline_memory()
-is not implemented. In the 2nd case, offline_pages() will be used.
-
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- drivers/acpi/acpi_memhotplug.c |    2 +-
- drivers/base/memory.c          |    9 +++------
- include/linux/memory_hotplug.h |    3 ++-
- mm/memory_hotplug.c            |   22 ++++++++++++++--------
- 4 files changed, 20 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 81a9def..8957ed9 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -318,7 +318,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
- 	 */
- 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
- 		if (info->enabled) {
--			result = remove_memory(info->start_addr, info->length);
-+			result = offline_memory(info->start_addr, info->length);
- 			if (result)
- 				return result;
- 		}
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 7dda4f7..44e7de6 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -248,26 +248,23 @@ static bool pages_correctly_reserved(unsigned long start_pfn,
- static int
- memory_block_action(unsigned long phys_index, unsigned long action)
- {
--	unsigned long start_pfn, start_paddr;
-+	unsigned long start_pfn;
- 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
- 	struct page *first_page;
- 	int ret;
- 
- 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
-+	start_pfn = page_to_pfn(first_page);
- 
- 	switch (action) {
- 		case MEM_ONLINE:
--			start_pfn = page_to_pfn(first_page);
--
- 			if (!pages_correctly_reserved(start_pfn, nr_pages))
- 				return -EBUSY;
- 
- 			ret = online_pages(start_pfn, nr_pages);
- 			break;
- 		case MEM_OFFLINE:
--			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
--			ret = remove_memory(start_paddr,
--					    nr_pages << PAGE_SHIFT);
-+			ret = offline_pages(start_pfn, nr_pages);
- 			break;
- 		default:
- 			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 910550f..c183f39 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -233,7 +233,8 @@ static inline int is_mem_section_removable(unsigned long pfn,
- extern int mem_online_node(int nid);
- extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
--extern int remove_memory(u64 start, u64 size);
-+extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
-+extern int offline_memory(u64 start, u64 size);
- extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 								int nr_pages);
- extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 427bb29..7a6659f 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -865,7 +865,7 @@ check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
- 	return offlined;
- }
- 
--static int __ref offline_pages(unsigned long start_pfn,
-+static int __ref __offline_pages(unsigned long start_pfn,
- 		  unsigned long end_pfn, unsigned long timeout)
- {
- 	unsigned long pfn, nr_pages, expire;
-@@ -990,18 +990,24 @@ out:
- 	return ret;
- }
- 
--int remove_memory(u64 start, u64 size)
-+int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
- {
--	unsigned long start_pfn, end_pfn;
-+	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
-+}
- 
--	start_pfn = PFN_DOWN(start);
--	end_pfn = start_pfn + PFN_DOWN(size);
--	return offline_pages(start_pfn, end_pfn, 120 * HZ);
-+int offline_memory(u64 start, u64 size)
-+{
-+	return -EINVAL;
- }
- #else
--int remove_memory(u64 start, u64 size)
-+int offline_pages(u64 start, u64 size)
-+{
-+	return -EINVAL;
-+}
-+
-+int offline_memory(u64 start, u64 size)
- {
- 	return -EINVAL;
- }
- #endif /* CONFIG_MEMORY_HOTREMOVE */
--EXPORT_SYMBOL_GPL(remove_memory);
-+EXPORT_SYMBOL_GPL(offline_memory);
--- 
-1.7.1
+Ian.
 
