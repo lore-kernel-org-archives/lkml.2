@@ -1,189 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2G0Kgb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 06:36:31 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43930 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab2G0Kg2 (ORCPT
+	id S1752372Ab2G0Khx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 06:37:53 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:7766 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab2G0Khw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 06:36:28 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50126EFD.1060002@jp.fujitsu.com>
-Date: Fri, 27 Jul 2012 19:35:41 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Fri, 27 Jul 2012 06:37:52 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
+   d="scan'208";a="13732068"
+Date: Fri, 27 Jul 2012 11:36:58 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 3/4] xen/mmu: The xen_setup_kernel_pagetable doesn't need
+ to return anything.
+In-Reply-To: <1343334845-5340-4-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1207271136520.26163@kaball.uk.xensource.com>
+References: <1343334845-5340-1-git-send-email-konrad.wilk@oracle.com> <1343334845-5340-4-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH v5 00/19] memory-hotplug: hot-remove physical memory
-References: <50126B83.3050201@cn.fujitsu.com>
-In-Reply-To: <50126B83.3050201@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
-
-2012/07/27 19:20, Wen Congyang wrote:
-> This patch series aims to support physical memory hot-remove.
->
-> The patches can free/remove following things:
->
->    - acpi_memory_info                          : [RFC PATCH 4/19]
->    - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 8/19]
->    - iomem_resource                            : [RFC PATCH 9/19]
->    - mem_section and related sysfs files       : [RFC PATCH 10-11, 13-16/19]
->    - page table of removed memory              : [RFC PATCH 12/19]
->    - node and related sysfs files              : [RFC PATCH 18-19/19]
->
-> If you find lack of function for physical memory hot-remove, please let me
-> know.
->
-> change log of v5:
->   * merge the patchset to clear page table and the patchset to hot remove
->     memory(from ishimatsu) to one big patchset.
-
-Thank you for merging patches. I'll review next Monday.
-
-Thanks,
-Yasuaki Ishimatsu
-
->   [RFC PATCH v5 1/19]
->     * rename remove_memory() to offline_memory()/offline_pages()
->
->   [RFC PATCH v5 2/19]
->     * new patch: implement offline_memory(). This function offlines pages,
->       update memory block's state, and notify the userspace that the memory
->       block's state is changed.
->
->   [RFC PATCH v5 4/19]
->     * offline and remove memory in acpi_memory_disable_device() too.
->
->   [RFC PATCH v5 17/19]
->     * new patch: add a new function __remove_zone() to revert the things done
->       in the function __add_zone().
->
->   [RFC PATCH v5 18/19]
->     * flush work befor reseting node device.
->
-> change log of v4:
->   * remove "memory-hotplug : unify argument of firmware_map_add_early/hotplug"
->     from the patch series, since the patch is a bugfix. It is being disccussed
->     on other thread. But for testing the patch series, the patch is needed.
->     So I added the patch as [PATCH 0/13].
->
->   [RFC PATCH v4 2/13]
->     * check memory is online or not at remove_memory()
->     * add memory_add_physaddr_to_nid() to acpi_memory_device_remove() for
->       getting node id
->
->   [RFC PATCH v4 3/13]
->     * create new patch : check memory is online or not at online_pages()
->
->   [RFC PATCH v4 4/13]
->     * add __ref section to remove_memory()
->     * call firmware_map_remove_entry() before remove_sysfs_fw_map_entry()
->
->   [RFC PATCH v4 11/13]
->     * rewrite register_page_bootmem_memmap() for removing page used as PT/PMD
->
-> change log of v3:
->   * rebase to 3.5.0-rc6
->
->   [RFC PATCH v2 2/13]
->     * remove extra kobject_put()
->
->     * The patch was commented by Wen. Wen's comment is
->       "acpi_memory_device_remove() should ignore a return value of
->       remove_memory() since caller does not care the return value".
->       But I did not change it since I think caller should care the
->       return value. And I am trying to fix it as follow:
->
->       https://lkml.org/lkml/2012/7/5/624
->
->   [RFC PATCH v2 4/13]
->     * remove a firmware_memmap_entry allocated by kzmalloc()
->
-> change log of v2:
->   [RFC PATCH v2 2/13]
->     * check whether memory block is offline or not before calling offline_memory()
->     * check whether section is valid or not in is_memblk_offline()
->     * call kobject_put() for each memory_block in is_memblk_offline()
->
->   [RFC PATCH v2 3/13]
->     * unify the end argument of firmware_map_add_early/hotplug
->
->   [RFC PATCH v2 4/13]
->     * add release_firmware_map_entry() for freeing firmware_map_entry
->
->   [RFC PATCH v2 6/13]
->    * add release_memory_block() for freeing memory_block
->
->   [RFC PATCH v2 11/13]
->    * fix wrong arguments of free_pages()
->
->
-> Wen Congyang (5):
->    memory-hotplug: implement offline_memory()
->    memory-hotplug: store the node id in acpi_memory_device
->    memory-hotplug: export the function acpi_bus_remove()
->    memory-hotplug: call acpi_bus_remove() to remove memory device
->    memory-hotplug: introduce new function arch_remove_memory()
->
-> Yasuaki Ishimatsu (14):
->    memory-hotplug: rename remove_memory() to
->      offline_memory()/offline_pages()
->    memory-hotplug: offline and remove memory when removing the memory
->      device
->    memory-hotplug: check whether memory is present or not
->    memory-hotplug: remove /sys/firmware/memmap/X sysfs
->    memory-hotplug: does not release memory region in PAGES_PER_SECTION
->      chunks
->    memory-hotplug: add memory_block_release
->    memory-hotplug: remove_memory calls __remove_pages
->    memory-hotplug: check page type in get_page_bootmem
->    memory-hotplug: move register_page_bootmem_info_node and
->      put_page_bootmem for sparse-vmemmap
->    memory-hotplug: implement register_page_bootmem_info_section of
->      sparse-vmemmap
->    memory-hotplug: free memmap of sparse-vmemmap
->    memory_hotplug: clear zone when the memory is removed
->    memory-hotplug: add node_device_release
->    memory-hotplug: remove sysfs file of node
->
->   arch/ia64/mm/init.c                             |   16 +
->   arch/powerpc/mm/mem.c                           |   14 +
->   arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
->   arch/s390/mm/init.c                             |    8 +
->   arch/sh/mm/init.c                               |   15 +
->   arch/tile/mm/init.c                             |    8 +
->   arch/x86/include/asm/pgtable_types.h            |    1 +
->   arch/x86/mm/init_32.c                           |   10 +
->   arch/x86/mm/init_64.c                           |  333 ++++++++++++++++++++++
->   arch/x86/mm/pageattr.c                          |   47 ++--
->   drivers/acpi/acpi_memhotplug.c                  |   51 +++-
->   drivers/acpi/scan.c                             |    3 +-
->   drivers/base/memory.c                           |   90 ++++++-
->   drivers/base/node.c                             |    8 +
->   drivers/firmware/memmap.c                       |   78 +++++-
->   include/acpi/acpi_bus.h                         |    1 +
->   include/linux/firmware-map.h                    |    6 +
->   include/linux/memory.h                          |    5 +
->   include/linux/memory_hotplug.h                  |   25 +-
->   include/linux/mm.h                              |    5 +-
->   include/linux/mmzone.h                          |   19 ++
->   mm/memory_hotplug.c                             |  337 +++++++++++++++++++++--
->   mm/sparse.c                                     |    5 +-
->   23 files changed, 1010 insertions(+), 91 deletions(-)
->
+On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> We don't need to return the new PGD - as we do not use it.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
 
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+>  arch/x86/xen/enlighten.c |    5 +----
+>  arch/x86/xen/mmu.c       |   10 ++--------
+>  arch/x86/xen/xen-ops.h   |    2 +-
+>  3 files changed, 4 insertions(+), 13 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 9b1afa4..2b67948 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1295,7 +1295,6 @@ asmlinkage void __init xen_start_kernel(void)
+>  {
+>  	struct physdev_set_iopl set_iopl;
+>  	int rc;
+> -	pgd_t *pgd;
+>  
+>  	if (!xen_start_info)
+>  		return;
+> @@ -1387,8 +1386,6 @@ asmlinkage void __init xen_start_kernel(void)
+>  	acpi_numa = -1;
+>  #endif
+>  
+> -	pgd = (pgd_t *)xen_start_info->pt_base;
+> -
+>  	/* Don't do the full vcpu_info placement stuff until we have a
+>  	   possible map and a non-dummy shared_info. */
+>  	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> @@ -1397,7 +1394,7 @@ asmlinkage void __init xen_start_kernel(void)
+>  	early_boot_irqs_disabled = true;
+>  
+>  	xen_raw_console_write("mapping kernel into physical memory\n");
+> -	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
+> +	xen_setup_kernel_pagetable((pgd_t *)xen_start_info->pt_base, xen_start_info->nr_pages);
+>  
+>  	xen_reserve_internals();
+>  	/* Allocate and initialize top and mid mfn levels for p2m structure */
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 3a73785..4ac21a4 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1719,8 +1719,7 @@ static void convert_pfn_mfn(void *v)
+>   * of the physical mapping once some sort of allocator has been set
+>   * up.
+>   */
+> -pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+> -					 unsigned long max_pfn)
+> +void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  {
+>  	pud_t *l3;
+>  	pmd_t *l2;
+> @@ -1781,8 +1780,6 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+>  
+>  	memblock_reserve(__pa(xen_start_info->pt_base),
+>  			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+> -
+> -	return pgd;
+>  }
+>  #else	/* !CONFIG_X86_64 */
+>  static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
+> @@ -1825,8 +1822,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
+>  	pv_mmu_ops.write_cr3 = &xen_write_cr3;
+>  }
+>  
+> -pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+> -					 unsigned long max_pfn)
+> +void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  {
+>  	pmd_t *kernel_pmd;
+>  
+> @@ -1858,8 +1854,6 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+>  
+>  	memblock_reserve(__pa(xen_start_info->pt_base),
+>  			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+> -
+> -	return initial_page_table;
+>  }
+>  #endif	/* CONFIG_X86_64 */
+>  
+> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+> index 202d4c1..2230f57 100644
+> --- a/arch/x86/xen/xen-ops.h
+> +++ b/arch/x86/xen/xen-ops.h
+> @@ -27,7 +27,7 @@ void xen_setup_mfn_list_list(void);
+>  void xen_setup_shared_info(void);
+>  void xen_build_mfn_list_list(void);
+>  void xen_setup_machphys_mapping(void);
+> -pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
+> +void xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
+>  void xen_reserve_top(void);
+>  extern unsigned long xen_max_p2m_pfn;
+>  
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
