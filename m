@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab2G0JZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 05:25:00 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:41129
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751565Ab2G0JY7 (ORCPT
+	id S1752661Ab2G0J23 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 05:28:29 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:21089 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382Ab2G0J22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 05:24:59 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6R9Otfa001533
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] netconsole.txt: "nc" needs "-p" to specify the listening port
-In-Reply-To: <CAM_iQpX3EFnoW=Vh2hgJwNPr-whJhcUctCyv_+afFB8DrnHRsQ@mail.gmail.com>
-	(Cong Wang's message of "Fri, 27 Jul 2012 17:02:53 +0800")
-References: <gir4rxk7c2.fsf@mx10.gouders.net>
-	<CAM_iQpX3EFnoW=Vh2hgJwNPr-whJhcUctCyv_+afFB8DrnHRsQ@mail.gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Fri, 27 Jul 2012 11:24:53 +0200
-Message-ID: <gihastk13u.fsf@mx10.gouders.net>
+	Fri, 27 Jul 2012 05:28:28 -0400
+X-IronPort-AV: E=Sophos;i="4.77,666,1336348800"; 
+   d="scan'208";a="13730505"
+Message-ID: <1343381305.6812.116.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 04/24] xen/arm: sync_bitops
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 27 Jul 2012 10:28:25 +0100
+In-Reply-To: <20120726163759.GE9222@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1207251741470.26163@kaball.uk.xensource.com>
+	 <1343316846-25860-4-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20120726163759.GE9222@phenom.dumpdata.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Fri, 27 Jul 2012 11:24:55 +0200 (CEST)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cong Wang <xiyou.wangcong@gmail.com> writes:
+On Thu, 2012-07-26 at 17:37 +0100, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jul 26, 2012 at 04:33:46PM +0100, Stefano Stabellini wrote:
+> > sync_bitops functions are equivalent to the SMP implementation of the
+> > original functions, independently from CONFIG_SMP being defined.
+> 
+> So why can't the code be changed to use that? Is it that
+> the _set_bit, _clear_bit, etc are not available with !CONFIG_SMP?
 
-> On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
-> <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
->> Hi Jesse,
->>
->> I would like to ask you to check if the documentation of "nc" in
->> netconsole.txt is still correct.  I tried two different netcat packages
->> and both require "-p" to specify the listening port.  I am wondering if
->> that changed after the use of "nc" has been documented.
->
-> On Fedora 16, `nc -u -l <port number>` works fine.
+_set_bit etc are not SMP safe if !CONFIG_SMP. But under Xen you might be
+communicating with a completely external entity who might be on another
+CPU (e.g. two uniprocessor guests communicating via event channels and
+grant tables). So we need a variant of the bit ops which are SMP safe
+even on a UP kernel.
 
-Thanks for checking that.
+The users are common code and the sync_foo vs foo distinction matters on
+some platforms (e.g. x86 where a UP kernel would omit the LOCK prefix
+for the normal ones).
 
-If the information I found is correct, Fedora uses OpenBSD's nc
-codebase.  The two netcat packages I tested on a Gentoo system differ in
-requiring the -p switch for the port specification.
+> 
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/arm/include/asm/sync_bitops.h |   17 +++++++++++++++++
+> >  1 files changed, 17 insertions(+), 0 deletions(-)
+> >  create mode 100644 arch/arm/include/asm/sync_bitops.h
+> > 
+> > diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
+> > new file mode 100644
+> > index 0000000..d975092903
+> > --- /dev/null
+> > +++ b/arch/arm/include/asm/sync_bitops.h
+> > @@ -0,0 +1,17 @@
+> > +#ifndef __ASM_SYNC_BITOPS_H__
+> > +#define __ASM_SYNC_BITOPS_H__
+> > +
+> > +#include <asm/bitops.h>
+> > +#include <asm/system.h>
+> > +
+> > +#define sync_set_bit(nr, p)		_set_bit(nr, p)
+> > +#define sync_clear_bit(nr, p)		_clear_bit(nr, p)
+> > +#define sync_change_bit(nr, p)		_change_bit(nr, p)
+> > +#define sync_test_and_set_bit(nr, p)	_test_and_set_bit(nr, p)
+> > +#define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
+> > +#define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
+> > +#define sync_test_bit(nr, addr)		test_bit(nr, addr)
+> > +#define sync_cmpxchg			cmpxchg
+> > +
+> > +
+> > +#endif
+> > -- 
+> > 1.7.2.5
+> > 
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
 
-Dirk
+
