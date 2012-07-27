@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab2G0M0T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 08:26:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17025 "EHLO mx1.redhat.com"
+	id S1753053Ab2G0M0e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 08:26:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30567 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057Ab2G0MZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752048Ab2G0MZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Jul 2012 08:25:10 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
@@ -14,309 +14,242 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 11/13] perf, tool: Support user regs and stack in sample parsing
-Date: Fri, 27 Jul 2012 14:23:52 +0200
-Message-Id: <1343391834-10851-12-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 13/13] perf, tool: Support for dwarf mode callchain on perf record
+Date: Fri, 27 Jul 2012 14:23:54 +0200
+Message-Id: <1343391834-10851-14-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding following info to be parsed out of the event sample:
- - user register set
- - user stack dump
+This patch enables perf to use the dwarf unwind code.
 
-Both are global and specific to all events within the session.
-This info will be used in the unwind patches coming in shortly.
+It extends the perf record '-g' option with following arguments:
+  'fp'           - provides framepointer based user
+                   stack backtrace
+  'dwarf[,size]' - provides dwarf (libunwind) based user stack
+                   backtrace. The size specifies the size of the
+                   user stack dump. If omitted it is 8192 by default.
 
-Adding simple output printout (report -D) for both register and
-stack dumps.
+If libunwind is found during the perf build, then the 'dwarf'
+argument becomes available for record command. The 'fp' stays as
+default option in any case.
+
+Examples: (perf compiled with libunwind)
+
+   perf record -g dwarf ls
+      - provides dwarf unwind with 8192 as stack dump size
+
+   perf record -g dwarf,4096 ls
+      - provides dwarf unwind with 4096 as stack dump size
+
+   perf record -g -- ls
+   perf record -g fp ls
+      - provides frame pointer unwind
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/builtin-test.c |    4 ++--
- tools/perf/util/event.h   |   16 +++++++++++++++-
- tools/perf/util/evlist.c  |    8 ++++++++
- tools/perf/util/evlist.h  |    1 +
- tools/perf/util/evsel.c   |   30 +++++++++++++++++++++++++++++-
- tools/perf/util/header.c  |    2 ++
- tools/perf/util/python.c  |    3 ++-
- tools/perf/util/session.c |   36 ++++++++++++++++++++++++++++++++++++
- tools/perf/util/session.h |    8 ++++++--
- 9 files changed, 101 insertions(+), 7 deletions(-)
+ tools/perf/builtin-record.c |  108 ++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/perf.h           |    9 +++-
+ tools/perf/util/evsel.c     |   13 +++++-
+ 3 files changed, 126 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index d909eb7..000efb0 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -564,7 +564,7 @@ static int test__basic_mmap(void)
- 		}
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f5a6452..fff130b 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -31,6 +31,15 @@
+ #include <sched.h>
+ #include <sys/mman.h>
  
- 		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
--					       false, &sample, false);
-+					       false, 0, &sample, false);
- 		if (err) {
- 			pr_err("Can't parse sample, err = %d\n", err);
- 			goto out_munmap;
-@@ -790,7 +790,7 @@ static int test__PERF_RECORD(void)
- 
- 				err = perf_event__parse_sample(event, sample_type,
- 							       sample_size, true,
--							       &sample, false);
-+							       0, &sample, false);
- 				if (err < 0) {
- 					if (verbose)
- 						perf_event__fprintf(event, stderr);
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 1b19728..ed978eb 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -69,6 +69,16 @@ struct sample_event {
- 	u64 array[];
- };
- 
-+struct regs_dump {
-+	u64 *regs;
-+};
++#define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
 +
-+struct stack_dump {
-+	u16 offset;
-+	u64 size;
-+	char *data;
-+};
++#ifdef NO_LIBUNWIND_SUPPORT
++static char callchain_help[] = CALLCHAIN_HELP "[fp]";
++#else
++static unsigned long default_stack_dump_size = 8192;
++static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
++#endif
 +
- struct perf_sample {
- 	u64 ip;
- 	u32 pid, tid;
-@@ -82,6 +92,8 @@ struct perf_sample {
- 	void *raw_data;
- 	struct ip_callchain *callchain;
- 	struct branch_stack *branch_stack;
-+	struct regs_dump  user_regs;
-+	struct stack_dump user_stack;
- };
- 
- #define BUILD_ID_SIZE 20
-@@ -199,7 +211,9 @@ const char *perf_event__name(unsigned int id);
- 
- int perf_event__parse_sample(const union perf_event *event, u64 type,
- 			     int sample_size, bool sample_id_all,
--			     struct perf_sample *sample, bool swapped);
-+			     u64 sample_regs_user, struct perf_sample *data,
-+			     bool swapped);
-+
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 				  const struct perf_sample *sample,
- 				  bool swapped);
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 3edfd34..057a27d 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -689,6 +689,14 @@ bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist)
- 	return true;
+ enum write_mode_t {
+ 	WRITE_FORCE,
+ 	WRITE_APPEND
+@@ -732,6 +741,100 @@ error:
+ 	return ret;
  }
  
-+u64 perf_evlist__sample_regs_user(const struct perf_evlist *evlist)
++#ifndef NO_LIBUNWIND_SUPPORT
++static int get_stack_size(char *str, unsigned long *_size)
 +{
-+	struct perf_evsel *first;
++	char *endptr;
++	unsigned long size;
++	unsigned long max_size = round_down(USHRT_MAX, sizeof(u64));
 +
-+	first = list_entry(evlist->entries.next, struct perf_evsel, node);
-+	return first->attr.sample_regs_user;
++	size = strtoul(str, &endptr, 0);
++
++	do {
++		if (*endptr)
++			break;
++
++		size = round_up(size, sizeof(u64));
++		if (!size || size > max_size)
++			break;
++
++		*_size = size;
++		return 0;
++
++	} while (0);
++
++	pr_err("callchain: Incorrect stack dump size (max %ld): %s\n",
++	       max_size, str);
++	return -1;
++}
++#endif /* !NO_LIBUNWIND_SUPPORT */
++
++static int
++parse_callchain_opt(const struct option *opt __used, const char *arg,
++		    int unset)
++{
++	struct perf_record *rec = (struct perf_record *)opt->value;
++	char *tok, *name, *saveptr = NULL;
++	char buf[20];
++	int ret = -1;
++
++	/* --no-call-graph */
++	if (unset)
++		return 0;
++
++	/* We specified default option if none is provided. */
++	BUG_ON(!arg);
++
++	/* We need buffer that we know we can write to. */
++	snprintf(buf, 20, "%s", arg);
++
++	tok = strtok_r((char *)buf, ",", &saveptr);
++	name = tok ? : (char *)buf;
++
++	do {
++		/* Framepointer style */
++		if (!strncmp(name, "fp", sizeof("fp"))) {
++			if (!strtok_r(NULL, ",", &saveptr)) {
++				rec->opts.call_graph = CALLCHAIN_FP;
++				ret = 0;
++			} else
++				pr_err("callchain: No more arguments "
++				       "needed for -g fp\n");
++			break;
++
++#ifndef NO_LIBUNWIND_SUPPORT
++		/* Dwarf style */
++		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
++			ret = 0;
++			rec->opts.call_graph = CALLCHAIN_DWARF;
++			rec->opts.stack_dump_size = default_stack_dump_size;
++
++			tok = strtok_r(NULL, ",", &saveptr);
++			if (tok) {
++				unsigned long size = 0;
++
++				ret = get_stack_size(tok, &size);
++				rec->opts.stack_dump_size = size;
++			}
++
++			if (!ret)
++				pr_debug("callchain: stack dump size %d\n",
++					 rec->opts.stack_dump_size);
++#endif /* !NO_LIBUNWIND_SUPPORT */
++		} else {
++			pr_err("callchain: Unknown -g option "
++			       "value: %s\n", name);
++			break;
++		}
++
++	} while (0);
++
++	if (!ret)
++		pr_debug("callchain: type %d\n", rec->opts.call_graph);
++
++	return ret;
 +}
 +
- u64 perf_evlist__sample_type(const struct perf_evlist *evlist)
- {
- 	struct perf_evsel *first;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 40d4d3c..8dbf46c 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -124,6 +124,7 @@ u16 perf_evlist__id_hdr_size(const struct perf_evlist *evlist);
+ static const char * const record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -803,8 +906,9 @@ const struct option record_options[] = {
+ 		     "number of mmap data pages"),
+ 	OPT_BOOLEAN(0, "group", &record.opts.group,
+ 		    "put the counters into a counter group"),
+-	OPT_BOOLEAN('g', "call-graph", &record.opts.call_graph,
+-		    "do call-graph (stack chain/backtrace) recording"),
++	OPT_CALLBACK_DEFAULT('g', "call-graph", &record, "mode[,dump_size]",
++			     callchain_help, &parse_callchain_opt,
++			     "fp"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index f960ccb..87f4ec6 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -209,9 +209,15 @@ void pthread__unblock_sigwinch(void);
  
- bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist);
- bool perf_evlist__valid_sample_id_all(const struct perf_evlist *evlist);
-+u64 perf_evlist__sample_regs_user(const struct perf_evlist *evlist);
+ #include "util/target.h"
  
- void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
- 				   struct list_head *list,
++enum perf_call_graph_mode {
++	CALLCHAIN_NONE,
++	CALLCHAIN_FP,
++	CALLCHAIN_DWARF
++};
++
+ struct perf_record_opts {
+ 	struct perf_target target;
+-	bool	     call_graph;
++	int	     call_graph;
+ 	bool	     group;
+ 	bool	     inherit_stat;
+ 	bool	     no_delay;
+@@ -230,6 +236,7 @@ struct perf_record_opts {
+ 	u64          branch_stack;
+ 	u64	     default_interval;
+ 	u64	     user_interval;
++	u16	     stack_dump_size;
+ };
+ 
+ #endif
 diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e817713..3a284b1 100644
+index 3a284b1..4ae977e 100644
 --- a/tools/perf/util/evsel.c
 +++ b/tools/perf/util/evsel.c
-@@ -8,6 +8,7 @@
-  */
- 
- #include <byteswap.h>
-+#include <linux/bitops.h>
- #include "asm/bug.h"
- #include "evsel.h"
- #include "evlist.h"
-@@ -730,7 +731,8 @@ static bool sample_overlap(const union perf_event *event,
- 
- int perf_event__parse_sample(const union perf_event *event, u64 type,
- 			     int sample_size, bool sample_id_all,
--			     struct perf_sample *data, bool swapped)
-+			     u64 sample_regs_user, struct perf_sample *data,
-+			     bool swapped)
- {
- 	const u64 *array;
- 
-@@ -868,6 +870,32 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 		sz /= sizeof(u64);
- 		array += sz;
- 	}
-+
-+	if (type & PERF_SAMPLE_REGS_USER) {
-+		/* First u64 tells us if we have any regs in sample. */
-+		u64 avail = *array++;
-+
-+		if (avail) {
-+			data->user_regs.regs = (u64 *)array;
-+			array += hweight_long(sample_regs_user);
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_STACK_USER) {
-+		u64 size = *array++;
-+
-+		data->user_stack.offset = ((char *)(array - 1)
-+					  - (char *) event);
-+
-+		if (!size) {
-+			data->user_stack.size = 0;
-+		} else {
-+			data->user_stack.data = (char *)array;
-+			array += size / sizeof(*array);
-+			data->user_stack.size = *array;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 5d470a3..6ebf32c 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1821,6 +1821,8 @@ static const int attr_file_abi_sizes[] = {
- 	[0] = PERF_ATTR_SIZE_VER0,
- 	[1] = PERF_ATTR_SIZE_VER1,
- 	[2] = PERF_ATTR_SIZE_VER2,
-+	[3] = PERF_ATTR_SIZE_VER3,
-+	[4] = PERF_ATTR_SIZE_VER4,
- 	0,
- };
- 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index e03b58a..a35d9c9 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -807,7 +807,8 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
- 		first = list_entry(evlist->entries.next, struct perf_evsel, node);
- 		err = perf_event__parse_sample(event, first->attr.sample_type,
- 					       perf_evsel__sample_size(first),
--					       sample_id_all, &pevent->sample, false);
-+					       sample_id_all, 0,
-+					       &pevent->sample, false);
- 		if (err)
- 			return PyErr_Format(PyExc_OSError,
- 					    "perf: can't parse sample, err=%d", err);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8e4f075..ed6d8b5 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -15,6 +15,7 @@
- #include "util.h"
- #include "cpumap.h"
- #include "event-parse.h"
+@@ -17,6 +17,8 @@
+ #include "thread_map.h"
+ #include "target.h"
+ #include "../../../include/linux/hw_breakpoint.h"
++#include "../../include/linux/perf_event.h"
 +#include "perf_regs.h"
  
- static int perf_session__open(struct perf_session *self, bool force)
- {
-@@ -88,6 +89,7 @@ void perf_session__update_sample_type(struct perf_session *self)
- 	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
- 	self->host_machine.id_hdr_size = self->id_hdr_size;
- 	machines__set_id_hdr_size(&self->machines, self->id_hdr_size);
-+	self->sample_regs_user = perf_evlist__sample_regs_user(self->evlist);
- }
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+@@ -367,9 +369,18 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 		attr->mmap_data = track;
+ 	}
  
- int perf_session__create_kernel_maps(struct perf_session *self)
-@@ -861,6 +863,34 @@ static void branch_stack__printf(struct perf_sample *sample)
- 			sample->branch_stack->entries[i].to);
- }
+-	if (opts->call_graph)
++	if (opts->call_graph) {
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
  
-+static void regs_dump__printf(u64 mask, u64 *regs)
-+{
-+	unsigned rid, i = 0;
-+
-+	for_each_set_bit(rid, (unsigned long *) &mask, sizeof(mask) * 8) {
-+		u64 val = regs[i++];
-+
-+		printf(".... %-5s 0x%" PRIx64 "\n",
-+		       perf_reg_name(rid), val);
++		if (opts->call_graph == CALLCHAIN_DWARF) {
++			attr->sample_type |= PERF_SAMPLE_REGS_USER |
++					     PERF_SAMPLE_STACK_USER;
++			attr->sample_regs_user = PERF_REGS_MASK;
++			attr->sample_stack_user = opts->stack_dump_size;
++			attr->exclude_callchain_user = 1;
++		}
 +	}
-+}
 +
-+static void regs_user__printf(struct perf_sample *sample, u64 mask)
-+{
-+	struct regs_dump *user_regs = &sample->user_regs;
-+
-+	if (user_regs->regs) {
-+		printf("... user regs: mask 0x%" PRIx64 "\n", mask);
-+		regs_dump__printf(mask, user_regs->regs);
-+	}
-+}
-+
-+static void stack_user__printf(struct stack_dump *dump)
-+{
-+	printf("... ustack: size %" PRIu64 ", offset 0x%x\n",
-+	       dump->size, dump->offset);
-+}
-+
- static void perf_session__print_tstamp(struct perf_session *session,
- 				       union perf_event *event,
- 				       struct perf_sample *sample)
-@@ -911,6 +941,12 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
- 
- 	if (session->sample_type & PERF_SAMPLE_BRANCH_STACK)
- 		branch_stack__printf(sample);
-+
-+	if (session->sample_type & PERF_SAMPLE_REGS_USER)
-+		regs_user__printf(sample, session->sample_regs_user);
-+
-+	if (session->sample_type & PERF_SAMPLE_STACK_USER)
-+		stack_user__printf(&sample->user_stack);
- }
- 
- static struct machine *
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 7c435bd..3436064 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -43,6 +43,7 @@ struct perf_session {
- 	struct hists		hists;
- 	u64			sample_type;
- 	int			sample_size;
-+	u64			sample_regs_user;
- 	int			fd;
- 	bool			fd_pipe;
- 	bool			repipe;
-@@ -134,9 +135,12 @@ static inline int perf_session__parse_sample(struct perf_session *session,
- 					     const union perf_event *event,
- 					     struct perf_sample *sample)
- {
--	return perf_event__parse_sample(event, session->sample_type,
-+	return perf_event__parse_sample(event,
-+					session->sample_type,
- 					session->sample_size,
--					session->sample_id_all, sample,
-+					session->sample_id_all,
-+					session->sample_regs_user,
-+					sample,
- 					session->header.needs_swap);
- }
+ 	if (perf_target__has_cpu(&opts->target))
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
  
 -- 
 1.7.7.6
