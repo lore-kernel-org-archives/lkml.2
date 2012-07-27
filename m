@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab2G0XX5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 19:23:57 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58574 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab2G0XX4 (ORCPT
+	id S1752547Ab2G0Xb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 19:31:26 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:35023 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab2G0XbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 19:23:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <1343112660-12245-3-git-send-email-blogic@openwrt.org>
-References: <1343112660-12245-1-git-send-email-blogic@openwrt.org>
-	<1343112660-12245-3-git-send-email-blogic@openwrt.org>
-Date: Sat, 28 Jul 2012 01:23:55 +0200
-Message-ID: <CACRpkdYP8PdcnS2h_-+n9ZdBmMuBPUv9so9WsUyS-X5rMz1qsQ@mail.gmail.com>
-Subject: Re: [PATCH 3/6] OF: pinctrl: MIPS: lantiq: adds support for FALCON SoC
-From: Linus Walleij <linus.walleij@linaro.org>
-To: John Crispin <blogic@openwrt.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Langer <thomas.langer@lantiq.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 27 Jul 2012 19:31:24 -0400
+Message-ID: <1343431747.1803.12.camel@aeonflux>
+Subject: Re: [PATCH] Bluetooth: Another vendor specific ID for BCM20702A0
+ [0a5c:21f1]
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 27 Jul 2012 16:29:07 -0700
+In-Reply-To: <1343424081-2157-1-git-send-email-mmarek@suse.cz>
+References: <1343424081-2157-1-git-send-email-mmarek@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 8:50 AM, John Crispin <blogic@openwrt.org> wrote:
+Hi Michael,
 
-> Implement support for pinctrl on lantiq/falcon socs. The FALCON has 5 banks
-> of up to 32 pins.
->
-> Signed-off-by: John Crispin <blogic@openwrt.org>
-> Signed-off-by: Thomas Langer <thomas.langer@lantiq.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-kernel@vger.kernel.org
+> Bus 002 Device 003: ID 0a5c:21f1 Broadcom Corp.
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               2.00
+>   bDeviceClass          255 Vendor Specific Class
+>   bDeviceSubClass         1
+>   bDeviceProtocol         1
+>   bMaxPacketSize0        64
+>   idVendor           0x0a5c Broadcom Corp.
+>   idProduct          0x21f1
+>   bcdDevice            1.12
+>   iManufacturer           1 Broadcom Corp
+>   iProduct                2 BCM20702A0
+>   iSerial                 3 9CB70DCFF833
+>   bNumConfigurations      1
 
-No big issues and looking really sweet so:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+as usual include /sys/kernel/debug/usb/devices details for this device.
+I want the full set of endpoint descriptors in a simple compact format
+in the commit messages for reference.
 
-> --- a/arch/mips/lantiq/Kconfig
-> +++ b/arch/mips/lantiq/Kconfig
-> @@ -20,6 +20,7 @@ config SOC_XWAY
->
->  config SOC_FALCON
->         bool "FALCON"
-> +       select PINCTRL_FALCON
+Regards
 
-I think you need to add "select PINCTRL" above "select PINCTRL_FALCON"
-for this to work.
+Marcel
 
-Atleast I had to do that in the past to get things working.
 
-Yours,
-Linus Walleij
