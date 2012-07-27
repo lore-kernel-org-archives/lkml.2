@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab2G0Dso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jul 2012 23:48:44 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:47725 "EHLO relay.sw.ru"
+	id S1753291Ab2G0Dtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jul 2012 23:49:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17445 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752678Ab2G0Dsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jul 2012 23:48:43 -0400
-Message-ID: <50120F8C.8010001@parallels.com>
-Date: Fri, 27 Jul 2012 07:48:28 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1753243Ab2G0DtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jul 2012 23:49:11 -0400
+Message-ID: <50120FA8.20409@redhat.com>
+Date: Thu, 26 Jul 2012 23:48:56 -0400
+From: Larry Woodman <lwoodman@redhat.com>
+Reply-To: lwoodman@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120422 Thunderbird/10.0.4
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 3/7] procfs: Add ability to plug in auxiliary fdinfo providers
-References: <20120725094718.089879534@openvz.org> <20120725095024.842540518@openvz.org>
-In-Reply-To: <20120725095024.842540518@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rik van Riel <riel@redhat.com>
+CC: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com>
+In-Reply-To: <50118E7F.8000609@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static int prep_fdinfo_driver(struct proc_fdinfo_extra *extra)
-> +{
-> +	struct proc_fdinfo_driver *s;
-> +
-> +	down_read(&fdinfo_drivers_sem);
-> +	list_for_each_entry(s, &fdinfo_drivers, list) {
-> +		if (s->probe(extra->f_file)) {
-> +			extra->driver = s;
-> +			break;
-> +		}
-> +	}
-> +	up_read(&fdinfo_drivers_sem);
-> +
-> +	return 0;
-> +}
+On 07/26/2012 02:37 PM, Rik van Riel wrote:
+> On 07/23/2012 12:04 AM, Hugh Dickins wrote:
+>
+>> I spent hours trying to dream up a better patch, trying various
+>> approaches.  I think I have a nice one now, what do you think?  And
+>> more importantly, does it work?  I have not tried to test it at all,
+>> that I'm hoping to leave to you, I'm sure you'll attack it with gusto!
+>>
+>> If you like it, please take it over and add your comments and signoff
+>> and send it in.  The second part won't come up in your testing, and 
+>> could
+>> be made a separate patch if you prefer: it's a related point that struck
+>> me while I was playing with a different approach.
+>>
+>> I'm sorely tempted to leave a dangerous pair of eyes off the Cc,
+>> but that too would be unfair.
+>>
+>> Subject-to-your-testing-
+>> Signed-off-by: Hugh Dickins <hughd@google.com>
+>
+> This patch looks good to me.
+>
+> Larry, does Hugh's patch survive your testing?
+>
+>
+Like I said earlier, no.  However, I finally set up a reproducer that 
+only takes a few seconds
+on a large system and this totally fixes the problem:
 
-Maybe a simple list of file_operations:seq_operations mappings would be simpler?
+-------------------------------------------------------------------------------------------------------------------------
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c36febb..cc023b8 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2151,7 +2151,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, 
+struct mm_struct *src,
+                         goto nomem;
 
-> +static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
-> +{
-> +	struct proc_fdinfo_extra *extra = m->private;
-> +	void *v = NULL;
-> +
-> +	if (extra->driver) {
-> +		int ret = 0;
-> +
-> +		if (*pos == 0) {
-> +			v = extra->driver->ops->start(m, pos);
-> +			if (v) {
-> +				ret = extra->driver->ops->show(m, v);
+                 /* If the pagetables are shared don't copy or take 
+references */
+-               if (dst_pte == src_pte)
++               if (*(unsigned long *)dst_pte == *(unsigned long *)src_pte)
+                         continue;
 
-Why is it necessary to call ->show here? The logic should be
+                 spin_lock(&dst->page_table_lock);
+---------------------------------------------------------------------------------------------------------------------------
 
-seq_start = (pos == 0 ? nop : extra->start)
-seq_next  = (pos == 0 ? extra->start : extra->next)
-seq_stop  = (pos == 0 ? nop : extra->stop)
-seq_show  = (pos == 0 ? proc_show : extra->show)
+When we compare what the src_pte & dst_pte point to instead of their 
+addresses everything works,
+I suspect there is a missing memory barrier somewhere ???
 
-Or I'm missing something?
+Larry
 
-Thanks,
-Pavel
