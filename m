@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab2G1IMk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 04:12:40 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55142 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751398Ab2G1IMg (ORCPT
+	id S1751928Ab2G1Ieo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 04:34:44 -0400
+Received: from mail-hostigation.familyross.net ([69.85.93.112]:56916 "EHLO
+	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab2G1Iel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 04:12:36 -0400
-Message-ID: <1343463151.3328.4.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] debug: Do not permit CONFIG_DEBUG_STACK_USAGE=y on IA64
- or PARISC
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-ia64@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
-Date: Sat, 28 Jul 2012 09:12:31 +0100
-In-Reply-To: <4a613b26cc402fb3ed8130cd07a37e76f4c133ef.1342634029.git.tony.luck@intel.com>
-References: <4a613b26cc402fb3ed8130cd07a37e76f4c133ef.1342634029.git.tony.luck@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Sat, 28 Jul 2012 04:34:41 -0400
+Message-ID: <5013A41E.5070500@familyross.net>
+Date: Sat, 28 Jul 2012 01:34:38 -0700
+From: Kevin Ross <kevin@familyross.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Grant Coady <gcoady.lk@gmail.com>
+CC: Bill Davidsen <davidsen@tmr.com>, Linux RAID <linux-raid@vger.kernel.org>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: RAID extremely slow
+References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net> <5010CEFF.5030606@familyross.net> <5012E717.9070808@tmr.com> <50130BEE.8080402@familyross.net> <8oq618ldps0ijt76cr3k6vovkksm4b9vsb@4ax.com>
+In-Reply-To: <8oq618ldps0ijt76cr3k6vovkksm4b9vsb@4ax.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 10:35 -0700, Tony Luck wrote:
-> The stack_not_used() function in <linux/sched.h> assumes that stacks
-> grow downwards. This is not true on IA64 or PARISC, so this function
-> would walk off in the wrong direction and into the weeds.
+On 07/27/2012 09:45 PM, Grant Coady wrote:
+> On Fri, 27 Jul 2012 14:45:18 -0700, you wrote:
+>
+>> On 07/27/2012 12:08 PM, Bill Davidsen wrote:
+>>> Have you set the io scheduler to deadline on all members of the array?
+>>> That's kind of "job one" on older kernels.
+>>>
+>> I have not, thanks for the tip, I'll look into that now.
+> Plus I disable the on-drive queuing (NCQ) during startup, right now
+> I don't have benchmarks to show the difference.  This on a six by 1TB
+> drive RAID6 array I built over a year ago on Slackware64-13.37:
+>
+> # cat /etc/rc.d/rc.local
+> ...
+> # turn off NCQ on the RAID drives by adjusting queue depth to 1
+> n=1
+> echo "rc.local: Disable RAID drives' NCQ"
+> for d in a b c d e f
+> do
+>          echo "  set NCQ depth to $n on sd${d}"
+>          echo $n>  /sys/block/sd${d}/device/queue_depth
+> done
+> ...
+>
+> Maybe you could try that?  See if it makes a difference.  My drives
+> are Seagate.
+>
+> Grant.
+>
 
-OK, so looking at all of this, that statement's not quite true ... at
-least for parisc, we begin the stack where end_of_stack() says the end
-should be and so the walker will likely find the next word after the
-canary skip occupied and terminate there, so we think the stack is
-larger than it really is.  It gets the wrong value, but it will never
-even walk out of the stack area.
+Does disabling NCQ improve performance?
 
-> Found on IA64 because of a compilation failure with recursive dependencies
-> on IA64_TASKSIZE and IA64_THREAD_INFO_SIZE.
-> 
-> Fixing the code is possible, but should be combined with other
-> infrastructure additions to set up the "canary" at the end of the stack.
+The suggestion to use kernel 3.4.6 has been working quite well so far, 
+hopefully that fixes the problem.  I'll know for sure in a few more days...
 
-I agree with this.  Most of it looks easily fixable, but how would I
-enable the fix for ia64?  For PA it's simple: I'll just use
-CONFIG_STACK_GROWSUP, but that won't work for you.
-
-James
-
+Thanks!
+-- Kevin
 
