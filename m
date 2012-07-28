@@ -1,32 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab2G1XO0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 19:14:26 -0400
-Received: from out-62.smtp.ucla.edu ([169.232.46.172]:48942 "EHLO
-	out-62.smtp.ucla.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab2G1XOZ convert rfc822-to-8bit (ORCPT
+	id S1752781Ab2G1XmU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 19:42:20 -0400
+Received: from rimon.safe-mail.net ([213.8.192.68]:35094 "EHLO
+	rimon.safe-mail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab2G1XmT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 19:14:25 -0400
-Message-Id: <201207282251.q6SMp0Me020880@mail.ucla.edu>
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 28 Jul 2012 19:42:19 -0400
+X-Greylist: delayed 66393 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Jul 2012 19:42:18 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+	s=N1-0105; d=Safe-mail.net;
+	b=EjFBEU/AWSXWVEqhe/9Kz8PlHdK3pB6b8GFakpHbyLXbAoN6lMyjveD99dT+Q/98
+	vfnfSMBpTYNmuIslq4ScqcgW0Y3ZyebXKBbIjT0LtYpSOFm9UfQO7d9BbPJAoqH/
+	PrtLRK67016zJV1sxNds+8EO5wPnniZ5SlgKGzheTak=;
+Subject: How are you doing?
+Date: Sat, 28 Jul 2012 01:15:05 -0400
+From: "vivian suah" <zina_vsuah7@Safe-mail.net>
+To: viviansuah_29@yahoo.co.uk
+Reply-To: viviansuah_29@yahoo.co.uk
+X-SMType: Regular
+X-SMRef: N1R-2Ocr4aQ_u6
+Message-Id: <N1R-2Ocr4aQ_u6@Safe-mail.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: partner with me.!!! 28-07-2012
-To: Recipients <chen@mail.com>
-From: "Seng Bank Ltd, Hong Kong" <chen@mail.com>
-Date: Sun, 29 Jul 2012 00:47:40 +0200
-Reply-To: draymndch8@yahoo.co.jp
-X-Probable-Spam: no
-X-Spam-Hits: 3.527
-X-Spam-Score: ****
-X-Spam-Report: DCC_CHECK,SPF_FAIL,US_DOLLARS_3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-SMSignature: qyt+rU24rFvwSB4NtqgwR2vAt+PnGcBNmpKb3ts680qyYiCC3fwxhTp7CocJVwgG
+	79YWlBxx33WgI4UHJS1oqMyuNEV0xeWMsImNFSQPT4AQZzudELZFcQy4Wvzy1nV+
+	rk8XeIkntmSQ5SdblqhTuJxX3nGFo26EU61bi3HdTcs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An Iraqi Engineer named Mr. Thahi Hammud made a fixed deposit of $16,000.000.00 in my bank branch where I am a Deputy Chief Executive and he died with his entire family in the war leaving behind no next of kin. I Propose to present you as next of kin to claim the funds. Get back to me on this email ( draymndchien@yahoo.com.hk ) only if interested with your full name, and telephone number to reach you and most importantly, a confirmation of acceptance from you after which I shall furnish you with the full details of this transaction.
-
-Yours Truly, 
-Dr Raymond Chien Kuo Fung.
-draymndchien@yahoo.com.hk
+How are you doing?
+I am Miss Vivian, to be brief, i came across your contact
+while searching for a good relationship and business foreign
+partnership, i want to know more about you, you can write me
+back and i shall send you my pictures and to tell you more
+about my self.
+............................................................
+Como você está fazendo?
+Eu sou a senhorita Vivian, para ser breve, me deparei com o seu contato
+enquanto procura um bom relacionamento e negócios estrangeiros
+parceria, eu quero saber mais sobre você, você pode me escrever
+de volta e eu te enviar as minhas fotos e dizer-lhe mais
+sobre o meu eu.
