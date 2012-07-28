@@ -1,39 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab2G1AKO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 20:10:14 -0400
-Received: from ims-d13.mx.aol.com ([205.188.249.150]:51078 "EHLO
-	ims-d13.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab2G1AKM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 20:10:12 -0400
-To: jkgummo@atlanticbb.net
-Content-Transfer-Encoding: 8BIT
-Subject: Fw: Transfer ID:47V4b85HqI
-X-MB-Message-Source: WebUI
+	id S1752479Ab2G1A3W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 20:29:22 -0400
+Received: from linux-sh.org ([111.68.239.195]:37301 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197Ab2G1A3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 20:29:21 -0400
+Date: Sat, 28 Jul 2012 09:29:12 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Linux-sh list" <linux-sh@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH] sh: pfc: Fix build issues in pinctrl.c
+Message-ID: <20120728002911.GG30468@linux-sh.org>
+References: <201207280007.04480.rjw@sisk.pl>
 MIME-Version: 1.0
-From: Francisca Bills <francisca.bills@aol.com>
-X-MB-Message-Type: User
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Mailer: AOL Webmail 36779-STANDARD
-Message-Id: <8CF3A6C52581ED5-2B4C-114C4@webmail-d145.sysops.aol.com>
-X-Originating-IP: [190.183.53.246]
-Date: Fri, 27 Jul 2012 20:08:59 -0400 (EDT)
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-SCOLL-SCORE: 0:2:314032000:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d338b50132d9b0196
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207280007.04480.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The payment (#2n6186L1Lh), recently sent from your to our back-office 
-(by you or any
-other person), was declined by our compliance supervisor.
+On Sat, Jul 28, 2012 at 12:07:04AM +0200, Rafael J. Wysocki wrote:
+> 
+> First off, drivers/sh/pfc/pinctrl.c doesn't build after commit
+> 5d589b0 (pinctrl: remove pinctrl_remove_gpio_range), because
+> sh_pfc_pinctrl_remove() uses the function that has been removed by
+> that commit.  Fix this by removing the pinctrl_remove_gpio_range()
+> call, which is not necessary any more, from sh_pfc_pinctrl_remove().
+> 
+> Second, the compiler complains correctly that there's an unused
+> local variable in sh_pfc_pinconf_set().  Fix this by removing the
+> definition of that variable.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
->Transfer id: 2n6186L1Lh
->Rejection Code: 18
->Operation Status: Compliance hold
->See details: +http://оg.lsdjkfhnks.com?ǟç
+Already fixed in my tree, as pointed out when Iwamatsu-san sent the same
+patch. 
