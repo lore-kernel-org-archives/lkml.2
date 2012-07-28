@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab2G1Bxc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 21:53:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59493 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab2G1Bxb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 21:53:31 -0400
+	id S1752781Ab2G1B7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 21:59:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62634 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752514Ab2G1B7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 21:59:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="188155434"
+Date: Sat, 28 Jul 2012 09:59:44 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>
+Subject: [PATCH] xtensa: select generic atomic64_t support
+Message-ID: <20120728015944.GA7697@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20120728012632.GA1766@lizard>
-References: <20120726142514.GA32158@lizard>
-	<CAMbhsRSM3QwwVfUMBWq1bDJxHX+Ox2CQtbvJVmemuMWjxfmDoQ@mail.gmail.com>
-	<20120728012632.GA1766@lizard>
-Date: Fri, 27 Jul 2012 18:53:30 -0700
-Message-ID: <CAMbhsRQgFs0jQi_n_a89vbVgOjYXD-vd7tadHVtpuy026m39Vw@mail.gmail.com>
-Subject: Re: [PATCH 0/7] KDB: Kiosk (reduced capabilities) mode
-From: Colin Cross <ccross@google.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, arve@android.com,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 6:26 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-<snip long rant>
+This will fix build errors:
 
-> But if you say that it wasn't the case, and no one thought about the
-> reducing the debugger in the "evil" way, so be it, I trust you. But I
-> still don't trust the phone vendors. They showed their bad attitude
-> in many ways towards hackers, so I think we both have quite legitimate
-> reasons to be a little bit paranoid. :-)
+block/blk-cgroup.c:609:2: error: unknown type name 'atomic64_t'
+block/blk-cgroup.c:609:2: error: implicit declaration of function 'ATOMIC64_INIT' [-Werror=implicit-function-declaration]
 
-I've never seen a non-Nexus phone that used the FIQ debugger, and I
-believe every Nexus device has supported rooting.  We leave the FIQ
-debugger enabled on the devices we personally carry because it allows
-easy debugging without compromising our data, and we leave it enabled
-on production devices (and leave the serial console muxed out the
-headphone jack) because it's more useful to end users than a blank
-serial console.
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ arch/xtensa/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
->> An alternate option would be to allow userspace to write a password
->> hash to a sysfs file, and require the password to be entered over the
->> serial console to unlock KGDB or enable unsafe KGDB commands.
->
-> Yup, that's a very nice idea. This can be implemented by introducing
-> "unlock" KDB command. Although, that also requires tight integration
-> w/ user-space, i.e. on boot userland would need to supply hashing
-> method, salt and root's password hash. The same has to be done on every
-> password change. It is surely doable, but not sure if it is worth the
-> efforts. Maybe, some day.
->
-> Thanks,
->
-> --
-> Anton Vorontsov
-> Email: cbouatmailru@gmail.com
+--- linux.orig/arch/xtensa/Kconfig	2012-07-28 09:50:02.000000000 +0800
++++ linux/arch/xtensa/Kconfig	2012-07-28 09:54:16.454865449 +0800
+@@ -11,6 +11,7 @@ config XTENSA
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_CPU_DEVICES
+ 	select MODULES_USE_ELF_RELA
++	select GENERIC_ATOMIC64
+ 	help
+ 	  Xtensa processors are 32-bit RISC machines designed by Tensilica
+ 	  primarily for embedded systems.  These processors are both
