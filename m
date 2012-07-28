@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab2G1Ecw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 00:32:52 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45256 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab2G1Ecu (ORCPT
+	id S1751952Ab2G1EqA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 00:46:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41688 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab2G1Ep6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 00:32:50 -0400
-Subject: Re: more interrupts (lower performance) in bare-metal compared
- with running VM
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: sheng qiu <herbert1984106@gmail.com>
-Cc: kvm <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <CAB7xdi=DrE356=U1Jr1Z=ROo2X3XNM5uKcgiZJTKY+EdsTu7gw@mail.gmail.com>
-References: <CAB7xdi=DrE356=U1Jr1Z=ROo2X3XNM5uKcgiZJTKY+EdsTu7gw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 28 Jul 2012 06:32:45 +0200
-Message-ID: <1343449965.2626.13121.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 28 Jul 2012 00:45:58 -0400
+From: Grant Coady <gcoady.lk@gmail.com>
+To: Kevin Ross <kevin@familyross.net>
+Cc: Bill Davidsen <davidsen@tmr.com>, Linux RAID <linux-raid@vger.kernel.org>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: RAID extremely slow
+Date: Sat, 28 Jul 2012 14:45:31 +1000
+Organization: scattered
+Message-ID: <8oq618ldps0ijt76cr3k6vovkksm4b9vsb@4ax.com>
+References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net> <5010CEFF.5030606@familyross.net> <5012E717.9070808@tmr.com> <50130BEE.8080402@familyross.net>
+In-Reply-To: <50130BEE.8080402@familyross.net>
+User-Agent: ForteAgent/7.00.32.1200
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 22:09 -0500, sheng qiu wrote:
-> Hi all,
-> 
-> i am comparing network throughput performance under bare-metal case
-> with that running VM with assigned-device (assigned NIC). i have two
-> physical machines (each has a 10Gbit NIC), one is used as remote
-> server (run netserver) and the other is used as the target tested one
-> (run netperf with different send message size, TCP_STREAM test). the
-> remote NIC is connected directly with the tested NIC, both are 10Gbit.
-> fore bare-metal case, i enable 1 cpu core, for VM i also configure 1
-> vcpu (the memory is sufficient for both bare-metal and VM case).  i
-> run netperf for 120 seconds and got the following results:
-> 
->                        send message    interrupts   throughput (mbit/s)
-> bare-metal             256               10696290            1114.84
->                             512               10106786            1391.92
->                             1024              10071032           1508.09
->                             2048              4560857             3434.65
->                             4096              3292200             4762.26
->                             8192              3169801             4733.89
->                             16384            2780529              4892.6
-> 
+On Fri, 27 Jul 2012 14:45:18 -0700, you wrote:
 
-Are these interrupt counts taken on the receiver ?
+>On 07/27/2012 12:08 PM, Bill Davidsen wrote:
+>> Have you set the io scheduler to deadline on all members of the array? 
+>> That's kind of "job one" on older kernels.
+>>
+>
+>I have not, thanks for the tip, I'll look into that now.
 
-> VM(assigned NIC)   256               3817904              2249.35
->                              512               3599007              4342.81
->                             1024              3005601              4134.69
->                              2048             2952122              4484
->                              4096             2682874              4566.34
->                              8192             2786719              4734.39
->                              16384           2603835              4540.47
-> 
-> as shown, the interrupts for bare-metal case is much more than the VM
-> case for some message size. we also see the throughput for those
-> situations is lower than VM case. it's strange that the bare-metal has
-> lower performance than the VM case. Does anyone have comments on this?
-> i am very confused.
+Plus I disable the on-drive queuing (NCQ) during startup, right now 
+I don't have benchmarks to show the difference.  This on a six by 1TB 
+drive RAID6 array I built over a year ago on Slackware64-13.37:
 
-Well, I think you answered to your question. High interrupt rates
-are not good for throughput. They might be good for latencies.
+# cat /etc/rc.d/rc.local
+...
+# turn off NCQ on the RAID drives by adjusting queue depth to 1
+n=1
+echo "rc.local: Disable RAID drives' NCQ"
+for d in a b c d e f
+do
+        echo "  set NCQ depth to $n on sd${d}"
+        echo $n > /sys/block/sd${d}/device/queue_depth
+done
+...
 
-Using a VM adds delays and several frames might be delivered per
-interrupt.
+Maybe you could try that?  See if it makes a difference.  My drives 
+are Seagate.
 
-Using bare metal is faster and only one frame is delivered by NIC per
-interrupt.
-
-Try TCP_RR instead of TCP_STREAM for example.
-
-What NIC is it exactly ? It seems it has no coalescing or LRO strategy.
-
-ethtool -k eth0
-ethtool -c eth0
-
-What kernel version as used, because 4892 Mbits is not line rate.
-
-
+Grant.
