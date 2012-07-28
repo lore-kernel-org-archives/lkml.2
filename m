@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab2G1Cgn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 22:36:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5060 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705Ab2G1Cgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 22:36:42 -0400
-Message-ID: <501350B1.7080908@redhat.com>
-Date: Sat, 28 Jul 2012 10:38:41 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1752891Ab2G1Cj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 22:39:58 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:41746 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752705Ab2G1Cj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 22:39:56 -0400
+Date: Fri, 27 Jul 2012 22:39:38 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, w@1wt.edu, ewust@umich.edu,
+        zakir@umich.edu, greg@kroah.com, mpm@selenic.com, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
+        stable@vger.kernel.org, DJ Johnston <dj.johnston@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] random: mix in architectural randomness in extract_buf()
+Message-ID: <20120728023938.GA3766@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@kernel.org>, w@1wt.edu, ewust@umich.edu,
+	zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
+	nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
+	davem@davemloft.net, stable@vger.kernel.org,
+	DJ Johnston <dj.johnston@intel.com>,
+	"H. Peter Anvin" <hpa@linux.intel.com>
+References: <20120725151000.GA30996@thunk.org>
+ <1343237822-7789-1-git-send-email-hpa@zytor.com>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH V3 3/3] virtio-blk: Add bio-based IO path for virtio-blk
-References: <1342168731-11797-1-git-send-email-asias@redhat.com> <1342168731-11797-4-git-send-email-asias@redhat.com> <87d33initv.fsf@rustcorp.com.au>
-In-Reply-To: <87d33initv.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343237822-7789-1-git-send-email-hpa@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2012 08:33 AM, Rusty Russell wrote:
-> On Fri, 13 Jul 2012 16:38:51 +0800, Asias He <asias@redhat.com> wrote:
->> Add 'virtio_blk.use_bio=1' to kernel cmdline or 'modprobe virtio_blk
->> use_bio=1' to enable ->make_request_fn() based I/O path.
->
-> This patch conflicts with Paolo's Bonzini's 'virtio-blk: allow toggling
-> host cache between writeback and writethrough' which is also queued (see
-> linux-next).
+Ok, I'll add this patch to the random tree.  I've modified the commit
+message a bit since the speed advertisement of RDRAND is rather
+pointless --- processes aren't generating session keys or long term
+keys at a high rate, and programs can't count on /dev/random being
+super fast and having unlimited entropy, since for most platforms and
+even most x86 CPU's deployed in service today, this isn't true --- and
+making your userspace program depond upon /dev/random in such a way
+that it only works on Ivy Bridge CPU's might be good for Intel from a
+vendor lock-in perspective, but it's really bad, non-portable
+programming style.
 
-Rebased against Paolo's patch in V4.
+Also, in the future arch_get_random_long() will almost certainly be
+hooked up for other architectures, so putting an extended
+advertisement for RDRAND really isn't appropriate.
 
-> I'm not sure what the correct behavior for bio & cacheflush is, if any.
+					- Ted
 
-REQ_FLUSH is not supported in the bio path.
+commit d2e7c96af1e54b507ae2a6a7dd2baf588417a7e5
+Author: H. Peter Anvin <hpa@linux.intel.com>
+Date:   Fri Jul 27 22:26:08 2012 -0400
 
-> But as to the patch itself: it's a hack.
->
-> 1) Leaving the guest's admin to turn on the switch is a terrible choice.
-> 2) The block layer should stop merging and sorting when a device is
->     fast, not the driver.
-> 3) I pointed out that slow disks have low IOPS, so why is this
->     conditional?  Sure, more guest exits, but it's still a small number
->     for a slow device.
-> 4) The only case where we want merging is on a slow device when the host
->     isn't doing it.
->
-> Now, despite this, I'm prepared to commit it.  But in my mind it's a
-> hack: we should aim for use_bio to be based on a feature bit fed from
-> the host, and use the module parameter only if we want to override it.
-
-OK. A feature bit from host sound like a choice but a switch is also 
-needed on host side. And for other OS, e.g. Windows, the bio thing does 
-not apply at all.
-
-Anyway, I have to admit that adding a module parameter here is not the 
-best choice. Let's think more.
-
--- 
-Asias
+    random: mix in architectural randomness in extract_buf()
+    
+    Mix in any architectural randomness in extract_buf() instead of
+    xfer_secondary_buf().  This allows us to mix in more architectural
+    randomness, and it also makes xfer_secondary_buf() faster, moving a
+    tiny bit of additional CPU overhead to process which is extracting the
+    randomness.
+    
+    [ Commit description modified by tytso to remove an extended
+      advertisement for the RDRAND instruction. ]
+    
+    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+    Acked-by: Ingo Molnar <mingo@kernel.org>
+    Cc: DJ Johnston <dj.johnston@intel.com>
+    Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+    Cc: stable@vger.kernel.org
