@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab2G1Cbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 22:31:44 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33403 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab2G1Cbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 22:31:43 -0400
+	id S1752862Ab2G1Cgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 22:36:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5060 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752705Ab2G1Cgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 22:36:42 -0400
+Message-ID: <501350B1.7080908@redhat.com>
+Date: Sat, 28 Jul 2012 10:38:41 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CANN689Fn=DYR8eGKkBJPeQYMtOfP6tykzqLMBOdV0Yg8OdrVPQ@mail.gmail.com>
-References: <1342787467-5493-1-git-send-email-walken@google.com>
-	<1342787467-5493-6-git-send-email-walken@google.com>
-	<1343419375.32120.48.camel@twins>
-	<CANN689Fn=DYR8eGKkBJPeQYMtOfP6tykzqLMBOdV0Yg8OdrVPQ@mail.gmail.com>
-Date: Fri, 27 Jul 2012 19:31:42 -0700
-Message-ID: <CANN689Hh3djSxU8F7GK1An1jEZTDhG+Yo4VSFcE6UxvOHrhVag@mail.gmail.com>
-Subject: Re: [PATCH 5/6] rbtree: faster augmented erase
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH V3 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+References: <1342168731-11797-1-git-send-email-asias@redhat.com> <1342168731-11797-4-git-send-email-asias@redhat.com> <87d33initv.fsf@rustcorp.com.au>
+In-Reply-To: <87d33initv.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 5:44 PM, Michel Lespinasse <walken@google.com> wrote:
-> On Fri, Jul 27, 2012 at 1:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> As it stands rb_erase() isn't inlined and its rather big,
->> why would you want to inline it for augmented callers?
+On 07/27/2012 08:33 AM, Rusty Russell wrote:
+> On Fri, 13 Jul 2012 16:38:51 +0800, Asias He <asias@redhat.com> wrote:
+>> Add 'virtio_blk.use_bio=1' to kernel cmdline or 'modprobe virtio_blk
+>> use_bio=1' to enable ->make_request_fn() based I/O path.
 >
-> Just as the non-augmented rb_erase() is generated (as a non-inline
-> function) by merging together the rb_erase_augmented() inline function
-> and its dummy callbacks, I want each library that uses augmented
-> rbtrees to generate their own rb_erase() equivalent using their own
-> callbacks. The inline function in rbtree_internal.h is only to be used
-> as a template for generating one non-inline instance for each data
-> structure that uses augmented rbtrees.
+> This patch conflicts with Paolo's Bonzini's 'virtio-blk: allow toggling
+> host cache between writeback and writethrough' which is also queued (see
+> linux-next).
 
-One more thing while we're talking about compiled code size. As you
-noted, the non-augmented rb_erase() is pretty big. However, that size
-includes the inlined rebalancing code. For the augmented erase
-functions, my proposal is to the rebalancing part (rb_erase_color with
-the rotate callback) will not be inlined, so as to limit the size of
-the erase functions for each augmented rbtree data structure.
+Rebased against Paolo's patch in V4.
+
+> I'm not sure what the correct behavior for bio & cacheflush is, if any.
+
+REQ_FLUSH is not supported in the bio path.
+
+> But as to the patch itself: it's a hack.
+>
+> 1) Leaving the guest's admin to turn on the switch is a terrible choice.
+> 2) The block layer should stop merging and sorting when a device is
+>     fast, not the driver.
+> 3) I pointed out that slow disks have low IOPS, so why is this
+>     conditional?  Sure, more guest exits, but it's still a small number
+>     for a slow device.
+> 4) The only case where we want merging is on a slow device when the host
+>     isn't doing it.
+>
+> Now, despite this, I'm prepared to commit it.  But in my mind it's a
+> hack: we should aim for use_bio to be based on a feature bit fed from
+> the host, and use the module parameter only if we want to override it.
+
+OK. A feature bit from host sound like a choice but a switch is also 
+needed on host side. And for other OS, e.g. Windows, the bio thing does 
+not apply at all.
+
+Anyway, I have to admit that adding a module parameter here is not the 
+best choice. Let's think more.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Asias
