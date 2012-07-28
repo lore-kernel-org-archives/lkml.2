@@ -1,33 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab2G1F45 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 01:56:57 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:32001 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2G1F44 (ORCPT
+	id S1752281Ab2G1GJo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 02:09:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41401 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab2G1GJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 01:56:56 -0400
-Date: Sat, 28 Jul 2012 07:56:44 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Greg KH <greg@kroah.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] platform: Add support for automatic device IDs
-Message-ID: <20120728075644.2b47bba0@endymion.delvare>
-In-Reply-To: <20120727221459.144855ba@endymion.delvare>
-References: <20120727221459.144855ba@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 28 Jul 2012 02:09:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1207271550190.25434@router.home>
+References: <1343411703-2720-1-git-send-email-js1304@gmail.com>
+	<1343411703-2720-4-git-send-email-js1304@gmail.com>
+	<alpine.DEB.2.00.1207271550190.25434@router.home>
+Date: Sat, 28 Jul 2012 15:09:05 +0900
+Message-ID: <CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value of
+ move_pages() syscall
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Brice Goglin <brice@myri.com>,
+        Minchan Kim <minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jul 2012 22:14:59 +0200, Jean Delvare wrote:
-> Code not tested yet, my test machine is currently used for a different
-> task that cannot be interrupted.
+2012/7/28 Christoph Lameter <cl@linux.com>:
+> On Sat, 28 Jul 2012, Joonsoo Kim wrote:
+>
+>> move_pages() syscall may return success in case that
+>> do_move_page_to_node_array return positive value which means migration failed.
+>
+> Nope. It only means that the migration for some pages has failed. This may
+> still be considered successful for the app if it moves 10000 pages and one
+> failed.
+>
+> This patch would break the move_pages() syscall because an error code
+> return from do_move_pages_to_node_array() will cause the status byte for
+> each page move to not be updated anymore. Application will not be able to
+> tell anymore which pages were successfully moved and which are not.
 
-Tested now, works fine.
-
--- 
-Jean Delvare
+In case of returning non-zero, valid status is not required according
+to man page.
+So, this patch would not break the move_pages() syscall.
+But, I agree that returning positive value only means that the
+migration for some pages has failed.
+This is my mistake, so please drop this patch.
+Thanks for review.
