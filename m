@@ -1,72 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2G1Qsp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 12:48:45 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:56390 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab2G1Qso (ORCPT
+	id S1752958Ab2G1Qwj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 12:52:39 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:43492 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751889Ab2G1Qwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 12:48:44 -0400
-Message-ID: <1343494120.6570.1.camel@jlt3.sipsolutions.net>
-Subject: [PATCH] Documentation: fix DOCBOOKS=... building
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Rob Landley <rob@landley.net>
-Date: Sat, 28 Jul 2012 18:48:40 +0200
-In-Reply-To: <5013FFD4.80501@xenotime.net>
-References: <1339577020.4519.19.camel@jlt3.sipsolutions.net>
-		 <5013162C.9030606@xenotime.net>
-	 <1343474795.4980.4.camel@jlt3.sipsolutions.net>
-	 <5013FFD4.80501@xenotime.net>
+	Sat, 28 Jul 2012 12:52:37 -0400
+Subject: Re: [PATCH] cx25840: Declare MODULE_FIRMWARE usage
+From: Andy Walls <awalls@md.metrocast.net>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+Date: Sat, 28 Jul 2012 12:52:01 -0400
+In-Reply-To: <50128446.1010609@canonical.com>
+References: <1343321059-124171-1-git-send-email-tim.gardner@canonical.com>
+	 <1343339959.2575.3.camel@palomino.walls.org>
+	 <50128446.1010609@canonical.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1343494323.2476.11.camel@palomino.walls.org>
+Mime-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-28_05:2012-07-27,2012-07-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1203120001 definitions=main-1207280178
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+On Fri, 2012-07-27 at 06:06 -0600, Tim Gardner wrote:
+> On 07/26/2012 03:59 PM, Andy Walls wrote:
+> > On Thu, 2012-07-26 at 10:44 -0600, Tim Gardner wrote:
+> >> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> >> Cc: linux-media@vger.kernel.org
+> >> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> >> ---
+> >>   drivers/media/video/cx25840/cx25840-firmware.c |   15 ++++++++++++---
+> >>   1 file changed, 12 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/drivers/media/video/cx25840/cx25840-firmware.c b/drivers/media/video/cx25840/cx25840-firmware.c
+> >> index 8150200..b3169f9 100644
+> >> --- a/drivers/media/video/cx25840/cx25840-firmware.c
+> >> +++ b/drivers/media/video/cx25840/cx25840-firmware.c
+> >> @@ -61,6 +61,10 @@ static void end_fw_load(struct i2c_client *client)
+> >>   	cx25840_write(client, 0x803, 0x03);
+> >>   }
+> >>
+> >> +#define CX2388x_FIRMWARE "v4l-cx23885-avcore-01.fw"
+> >> +#define CX231xx_FIRMWARE "v4l-cx231xx-avcore-01.fw"
+> >> +#define CX25840_FIRMWARE "v4l-cx25840.fw"
+> >> +
+> >>   static const char *get_fw_name(struct i2c_client *client)
+> >>   {
+> >>   	struct cx25840_state *state = to_state(i2c_get_clientdata(client));
+> >> @@ -68,10 +72,10 @@ static const char *get_fw_name(struct i2c_client *client)
+> >>   	if (firmware[0])
+> >>   		return firmware;
+> >>   	if (is_cx2388x(state))
+> >> -		return "v4l-cx23885-avcore-01.fw";
+> >> +		return CX2388x_FIRMWARE;
+> >>   	if (is_cx231xx(state))
+> >> -		return "v4l-cx231xx-avcore-01.fw";
+> >> -	return "v4l-cx25840.fw";
+> >> +		return CX231xx_FIRMWARE;
+> >> +	return CX25840_FIRMWARE;
+> >>   }
+> >>
+> >>   static int check_fw_load(struct i2c_client *client, int size)
+> >> @@ -164,3 +168,8 @@ int cx25840_loadfw(struct i2c_client *client)
+> >>
+> >>   	return check_fw_load(client, size);
+> >>   }
+> >> +
+> >> +MODULE_FIRMWARE(CX2388x_FIRMWARE);
+> >> +MODULE_FIRMWARE(CX231xx_FIRMWARE);
+> >> +MODULE_FIRMWARE(CX25840_FIRMWARE);
+> >> +
+> >
+> > How will the firmware attribute in the .module_info section be used?
+> >
+> > For any one model of TV capture device, the cx25840 only needs one of
+> > the above firmware files.  The others need not exist.
+> >
+> > I would not want anything in user or kernel space to refuse to load the
+> > module just because all 3 firmware files are not present.
+> >
+> > Regards,
+> > Andy
+> >
+> 
+> The MODULE_FIRMWARE macro is purely informational. Declaring the 
+> firmware files that the driver _might_ use helps me pare down the 
+> external firmware package to just those files that I know it must have.
 
-Prior to 
-commit 4266129964b8238526936d723de65b419d8069c6
-Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-Date:   Tue May 31 16:27:44 2011 -0300
+Would it help if the MODULE_FIRMWARE text was more descriptive, e.g.:
 
-    [media] DocBook: Move all media docbook stuff into its own directory
+MODULE_FIRMWARE(CX25840_FIRMWARE " CX25840/1/2/3 chips only");
+MODULE_FIRMWARE(CX231xx_FIRMWARE " CX23100/1/2 chips only");
+MODULE_FIRMWARE(CX2388x_FIRMWARE " CX23885/7/8 chips only");
 
-it was possible to build only a single (or more)
-book(s) by calling, for example
-	make htmldocs DOCBOOKS=80211.xml
+Similarly for ivtv:
 
-This now fails:
-cp: target `.../Documentation/DocBook//media_api' is not a directory
+MODULE_FIRMWARE(CX2341X_FIRM_ENC_FILENAME);
+MODULE_FIRMWARE(CX2341X_FIRM_DEC_FILENAME " PVR-350 only");
+MODULE_FIRMWARE(IVTV_DECODE_INIT_MPEG_FILENAME " PVR-350 only");
 
-Ignore errors from that copy to make this possible again.
+and cx18:
 
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
----
-> I'm no longer the Documentation maintainer, but Rob Landley
-> could merge it.  You probably will need to resend it to him.
- 
+MODULE_FIRMWARE(FWFILE); /* v4l-cx23418-dig.fw */
+MODULE_FIRMWARE(CX18_CPU_FIRMWARE);
+MODULE_FIRMWARE(CX18_APU_FIRMWARE);
+MODULE_FIRMWARE(XC2028_DEFAULT_FIRMWARE " Non-HVR-1600 cards");
+MODULE_FIRMWARE(FWFILE " Yuan MPC-718 only");
 
- Documentation/DocBook/media/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+or would that confuse some userspace tools?
 
---- a/Documentation/DocBook/media/Makefile	2012-06-13 10:39:58.000000000 +0200
-+++ b/Documentation/DocBook/media/Makefile	2012-06-13 10:40:05.000000000 +0200
-@@ -195,7 +195,7 @@ DVB_DOCUMENTED = \
- #
- 
- install_media_images = \
--	$(Q)cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
-+	$(Q)-cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
- 
- $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%.b64
- 	$(Q)base64 -d $< >$@
+>  
+> This patch will have no runtime impact.
+
+OK.  For the original patch:
+
+Acked-by: Andy Walls <awalls@md.metrocast.net>
+
+Regards,
+Andy
+
+> Note that there are plenty of uses of the MODULE_FIRMWARE macro within 
+> the kernel.
+> 
+> rtg
 
 
