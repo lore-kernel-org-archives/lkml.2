@@ -1,405 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab2G1HzQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 03:55:16 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52961 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751941Ab2G1HzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 03:55:14 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Baron <jbaron@redhat.com>
-Cc: Jim Cromie <jim.cromie@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH v2] dynamic_debug: Restore dev_dbg functionality, optimize stack
-Date: Sat, 28 Jul 2012 00:55:07 -0700
-Message-Id: <333324dcdfdc891ba214d2de8f9a3d056dd7aea9.1343461712.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <1343334310.17538.32.camel@joe2Laptop>
-References: <1343334310.17538.32.camel@joe2Laptop>
+	id S1751952Ab2G1IMk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 04:12:40 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55142 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751398Ab2G1IMg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jul 2012 04:12:36 -0400
+Message-ID: <1343463151.3328.4.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] debug: Do not permit CONFIG_DEBUG_STACK_USAGE=y on IA64
+ or PARISC
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-ia64@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
+Date: Sat, 28 Jul 2012 09:12:31 +0100
+In-Reply-To: <4a613b26cc402fb3ed8130cd07a37e76f4c133ef.1342634029.git.tony.luck@intel.com>
+References: <4a613b26cc402fb3ed8130cd07a37e76f4c133ef.1342634029.git.tony.luck@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c4e00daaa9 ("driver-core: extend dev_printk() to pass structured data")
-changed __dev_printk and broke dynamic-debug's ability to control the
-dynamic prefix of dev_dbg(dev,..).
+On Wed, 2012-07-18 at 10:35 -0700, Tony Luck wrote:
+> The stack_not_used() function in <linux/sched.h> assumes that stacks
+> grow downwards. This is not true on IA64 or PARISC, so this function
+> would walk off in the wrong direction and into the weeds.
 
-dynamic_emit_prefix() adds "[tid] module:func:line:" to the output and
-those additions got lost.
+OK, so looking at all of this, that statement's not quite true ... at
+least for parisc, we begin the stack where end_of_stack() says the end
+should be and so the walker will likely find the next word after the
+canary skip occupied and terminate there, so we think the stack is
+larger than it really is.  It gets the wrong value, but it will never
+even walk out of the stack area.
 
-In addition, the current dynamic debug code uses up to 3 recursion
-levels via %pV.  This can consume quite a bit of stack.  Directly
-call printk_emit to reduce the recursion depth.
+> Found on IA64 because of a compilation failure with recursive dependencies
+> on IA64_TASKSIZE and IA64_THREAD_INFO_SIZE.
+> 
+> Fixing the code is possible, but should be combined with other
+> infrastructure additions to set up the "canary" at the end of the stack.
 
-These changes include:
+I agree with this.  Most of it looks easily fixable, but how would I
+enable the fix for ia64?  For PA it's simple: I'll just use
+CONFIG_STACK_GROWSUP, but that won't work for you.
 
-o Remove KERN_DEBUG from dynamic_emit_prefix
-o Create and use function create_syslog_header to format the syslog
-  header for printk_emit uses.
-o Call create_syslog_header and neaten __dev_printk
-o Call create_syslog_header and printk_emit from dynamic_dev_dbg
-o Call create_syslog_header and printk_emit from dynamic_netdev_dbg
-o Make __dev_printk and __netdev_printk static not global
-o Remove include header declarations of __dev_printk and __netdev_printk
-o Remove now unused EXPORT_SYMBOL()s of __dev_printk and __netdev_printk
-o Whitespace neatening
+James
 
-Changes in v2:
-
-o Fix dynamic_emit_prefix to always initialize output
-o Call create_syslog_header and emit_printk from__netdev_printk and
-  eliminate call to dev_printk to remove another recursion via %pV
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/base/core.c       |   57 +++++++++++++++++++++++----------------
- include/linux/device.h    |   11 +++-----
- include/linux/netdevice.h |    3 --
- lib/dynamic_debug.c       |   65 ++++++++++++++++++++++++++++++++++++---------
- net/core/dev.c            |   24 ++++++++++++-----
- 5 files changed, 106 insertions(+), 54 deletions(-)
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index f338037..d46b635 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1861,25 +1861,19 @@ void device_shutdown(void)
-  */
- 
- #ifdef CONFIG_PRINTK
--int __dev_printk(const char *level, const struct device *dev,
--		 struct va_format *vaf)
-+int create_syslog_header(const struct device *dev, char *hdr, size_t hdrlen)
- {
--	char dict[128];
--	size_t dictlen = 0;
- 	const char *subsys;
--
--	if (!dev)
--		return printk("%s(NULL device *): %pV", level, vaf);
-+	size_t pos = 0;
- 
- 	if (dev->class)
- 		subsys = dev->class->name;
- 	else if (dev->bus)
- 		subsys = dev->bus->name;
- 	else
--		goto skip;
-+		return 0;
- 
--	dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--			    "SUBSYSTEM=%s", subsys);
-+	pos += snprintf(hdr + pos, hdrlen - pos, "SUBSYSTEM=%s", subsys);
- 
- 	/*
- 	 * Add device identifier DEVICE=:
-@@ -1895,28 +1889,41 @@ int __dev_printk(const char *level, const struct device *dev,
- 			c = 'b';
- 		else
- 			c = 'c';
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				   "DEVICE=%c%u:%u",
--				   c, MAJOR(dev->devt), MINOR(dev->devt));
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=%c%u:%u",
-+				c, MAJOR(dev->devt), MINOR(dev->devt));
- 	} else if (strcmp(subsys, "net") == 0) {
- 		struct net_device *net = to_net_dev(dev);
- 
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				    "DEVICE=n%u", net->ifindex);
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=n%u", net->ifindex);
- 	} else {
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				    "DEVICE=+%s:%s", subsys, dev_name(dev));
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=+%s:%s", subsys, dev_name(dev));
- 	}
--skip:
--	return printk_emit(0, level[1] - '0',
--			   dictlen ? dict : NULL, dictlen,
-+
-+	return pos;
-+}
-+EXPORT_SYMBOL(create_syslog_header);
-+
-+static int __dev_printk(const char *level, const struct device *dev,
-+			struct va_format *vaf)
-+{
-+	char hdr[128];
-+	size_t hdrlen;
-+
-+	if (!dev)
-+		return printk("%s(NULL device *): %pV", level, vaf);
-+
-+	hdrlen = create_syslog_header(dev, hdr, sizeof(hdr));
-+
-+	return printk_emit(0, level[1] - '0', hdrlen ? hdr : NULL, hdrlen,
- 			   "%s %s: %pV",
- 			   dev_driver_string(dev), dev_name(dev), vaf);
- }
--EXPORT_SYMBOL(__dev_printk);
- 
- int dev_printk(const char *level, const struct device *dev,
- 	       const char *fmt, ...)
-@@ -1931,6 +1938,7 @@ int dev_printk(const char *level, const struct device *dev,
- 	vaf.va = &args;
- 
- 	r = __dev_printk(level, dev, &vaf);
-+
- 	va_end(args);
- 
- 	return r;
-@@ -1950,6 +1958,7 @@ int func(const struct device *dev, const char *fmt, ...)	\
- 	vaf.va = &args;						\
- 								\
- 	r = __dev_printk(kern_level, dev, &vaf);		\
-+								\
- 	va_end(args);						\
- 								\
- 	return r;						\
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 52a5f15..89b246c 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -891,12 +891,12 @@ extern const char *dev_driver_string(const struct device *dev);
- 
- #ifdef CONFIG_PRINTK
- 
--extern int __dev_printk(const char *level, const struct device *dev,
--			struct va_format *vaf);
-+extern int create_syslog_header(const struct device *dev,
-+				char *hdr, size_t hdrlen);
-+
- extern __printf(3, 4)
- int dev_printk(const char *level, const struct device *dev,
--	       const char *fmt, ...)
--	;
-+	       const char *fmt, ...);
- extern __printf(2, 3)
- int dev_emerg(const struct device *dev, const char *fmt, ...);
- extern __printf(2, 3)
-@@ -914,9 +914,6 @@ int _dev_info(const struct device *dev, const char *fmt, ...);
- 
- #else
- 
--static inline int __dev_printk(const char *level, const struct device *dev,
--			       struct va_format *vaf)
--{ return 0; }
- static inline __printf(3, 4)
- int dev_printk(const char *level, const struct device *dev,
- 	       const char *fmt, ...)
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index eb06e58..291e0ee 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2715,9 +2715,6 @@ static inline const char *netdev_name(const struct net_device *dev)
- 	return dev->name;
- }
- 
--extern int __netdev_printk(const char *level, const struct net_device *dev,
--			struct va_format *vaf);
--
- extern __printf(3, 4)
- int netdev_printk(const char *level, const struct net_device *dev,
- 		  const char *format, ...);
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 7ca29a0..6b3ebab 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -521,25 +521,25 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
- 	int pos_after_tid;
- 	int pos = 0;
- 
--	pos += snprintf(buf + pos, remaining(pos), "%s", KERN_DEBUG);
-+	*buf = '\0';
-+
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_TID) {
- 		if (in_interrupt())
--			pos += snprintf(buf + pos, remaining(pos), "%s ",
--						"<intr>");
-+			pos += snprintf(buf + pos, remaining(pos), "<intr> ");
- 		else
- 			pos += snprintf(buf + pos, remaining(pos), "[%d] ",
--						task_pid_vnr(current));
-+					task_pid_vnr(current));
- 	}
- 	pos_after_tid = pos;
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
- 		pos += snprintf(buf + pos, remaining(pos), "%s:",
--					desc->modname);
-+				desc->modname);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
- 		pos += snprintf(buf + pos, remaining(pos), "%s:",
--					desc->function);
-+				desc->function);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
- 		pos += snprintf(buf + pos, remaining(pos), "%d:",
--					desc->lineno);
-+				desc->lineno);
- 	if (pos - pos_after_tid)
- 		pos += snprintf(buf + pos, remaining(pos), " ");
- 	if (pos >= PREFIX_SIZE)
-@@ -559,9 +559,13 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 	BUG_ON(!fmt);
- 
- 	va_start(args, fmt);
-+
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	res = printk("%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
-+
-+	res = printk(KERN_DEBUG "%s%pV",
-+		     dynamic_emit_prefix(descriptor, buf), &vaf);
-+
- 	va_end(args);
- 
- 	return res;
-@@ -574,15 +578,30 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
- 	struct va_format vaf;
- 	va_list args;
- 	int res;
--	char buf[PREFIX_SIZE];
- 
- 	BUG_ON(!descriptor);
- 	BUG_ON(!fmt);
- 
- 	va_start(args, fmt);
-+
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	res = __dev_printk(dynamic_emit_prefix(descriptor, buf), dev, &vaf);
-+
-+	if (!dev) {
-+		res = printk(KERN_DEBUG "(NULL device *): %pV", &vaf);
-+	} else {
-+		char buf[PREFIX_SIZE];
-+		char dict[128];
-+		size_t dictlen;
-+
-+		dictlen = create_syslog_header(dev, dict, sizeof(dict));
-+
-+		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
-+				  "%s%s %s: %pV",
-+				  dynamic_emit_prefix(descriptor, buf),
-+				  dev_driver_string(dev), dev_name(dev), &vaf);
-+	}
-+
- 	va_end(args);
- 
- 	return res;
-@@ -592,20 +611,40 @@ EXPORT_SYMBOL(__dynamic_dev_dbg);
- #ifdef CONFIG_NET
- 
- int __dynamic_netdev_dbg(struct _ddebug *descriptor,
--		      const struct net_device *dev, const char *fmt, ...)
-+			 const struct net_device *dev, const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
- 	int res;
--	char buf[PREFIX_SIZE];
- 
- 	BUG_ON(!descriptor);
- 	BUG_ON(!fmt);
- 
- 	va_start(args, fmt);
-+
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	res = __netdev_printk(dynamic_emit_prefix(descriptor, buf), dev, &vaf);
-+
-+	if (dev && dev->dev.parent) {
-+		char buf[PREFIX_SIZE];
-+		char dict[128];
-+		size_t dictlen;
-+
-+		dictlen = create_syslog_header(dev->dev.parent,
-+					       dict, sizeof(dict));
-+
-+		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
-+				  "%s%s %s %s: %pV",
-+				  dynamic_emit_prefix(descriptor, buf),
-+				  dev_driver_string(dev->dev.parent),
-+				  dev_name(dev->dev.parent),
-+				  netdev_name(dev), &vaf);
-+	} else if (dev) {
-+		res = printk(KERN_DEBUG "%s: %pV", netdev_name(dev), &vaf);
-+	} else {
-+		res = printk(KERN_DEBUG "(NULL net_device): %pV", &vaf);
-+	}
-+
- 	va_end(args);
- 
- 	return res;
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 0ebaea1..c7bcea4 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6358,22 +6358,30 @@ const char *netdev_drivername(const struct net_device *dev)
- 	return empty;
- }
- 
--int __netdev_printk(const char *level, const struct net_device *dev,
-+static int __netdev_printk(const char *level, const struct net_device *dev,
- 			   struct va_format *vaf)
- {
- 	int r;
- 
--	if (dev && dev->dev.parent)
--		r = dev_printk(level, dev->dev.parent, "%s: %pV",
--			       netdev_name(dev), vaf);
--	else if (dev)
-+	if (dev && dev->dev.parent) {
-+		char dict[128];
-+		size_t dictlen = create_syslog_header(dev->dev.parent,
-+						      dict, sizeof(dict));
-+
-+		r = printk_emit(0, level[1] - '0',
-+				dictlen ? dict : NULL, dictlen,
-+				"%s %s %s: %pV",
-+				dev_driver_string(dev->dev.parent),
-+				dev_name(dev->dev.parent),
-+				netdev_name(dev), &vaf);
-+	} else if (dev) {
- 		r = printk("%s%s: %pV", level, netdev_name(dev), vaf);
--	else
-+	} else {
- 		r = printk("%s(NULL net_device): %pV", level, vaf);
-+	}
- 
- 	return r;
- }
--EXPORT_SYMBOL(__netdev_printk);
- 
- int netdev_printk(const char *level, const struct net_device *dev,
- 		  const char *format, ...)
-@@ -6388,6 +6396,7 @@ int netdev_printk(const char *level, const struct net_device *dev,
- 	vaf.va = &args;
- 
- 	r = __netdev_printk(level, dev, &vaf);
-+
- 	va_end(args);
- 
- 	return r;
-@@ -6407,6 +6416,7 @@ int func(const struct net_device *dev, const char *fmt, ...)	\
- 	vaf.va = &args;						\
- 								\
- 	r = __netdev_printk(level, dev, &vaf);			\
-+								\
- 	va_end(args);						\
- 								\
- 	return r;						\
--- 
-1.7.8.111.gad25c.dirty
 
