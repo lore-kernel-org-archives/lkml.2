@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab2G1AoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 20:44:18 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39957 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab2G1AoR (ORCPT
+	id S1752603Ab2G1Apr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 20:45:47 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61430 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2G1Apq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 20:44:17 -0400
+	Fri, 27 Jul 2012 20:45:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <1343419375.32120.48.camel@twins>
-References: <1342787467-5493-1-git-send-email-walken@google.com>
-	<1342787467-5493-6-git-send-email-walken@google.com>
-	<1343419375.32120.48.camel@twins>
-Date: Fri, 27 Jul 2012 17:44:15 -0700
-Message-ID: <CANN689Fn=DYR8eGKkBJPeQYMtOfP6tykzqLMBOdV0Yg8OdrVPQ@mail.gmail.com>
-Subject: Re: [PATCH 5/6] rbtree: faster augmented erase
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: riel@redhat.com, daniel.santos@pobox.com, aarcange@redhat.com,
-        dwmw2@infradead.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <5013118D.2030601@zytor.com>
+References: <20120727181436.GA6271@linux.vnet.ibm.com>
+	<5012DCF9.7010408@zytor.com>
+	<20120727203000.GA22684@linux.vnet.ibm.com>
+	<5013118D.2030601@zytor.com>
+Date: Fri, 27 Jul 2012 19:45:45 -0500
+Message-ID: <CAM0nabH2629Qx_inhzDuAGggy6rwZJ=rO68yrXie9TtEP6qKuQ@mail.gmail.com>
+Subject: Re: [GIT PULL] New TPM driver, hwrng driver and fixes
+From: Kent Yoder <shpedoikal@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kent Yoder <key@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net,
+        Peter Huewe <peter.huewe@infineon.com>,
+        Bryan Freed <bfreed@chromium.org>,
+        David Safford <safford@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 1:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->On Fri, 2012-07-20 at 05:31 -0700, Michel Lespinasse wrote:
->> --- a/lib/rbtree_test.c
->> +++ b/lib/rbtree_test.c
->> @@ -1,5 +1,6 @@
->>  #include <linux/module.h>
->>  #include <linux/rbtree.h>
->> +#include <linux/rbtree_internal.h>
->This confuses me.. either its internal to the rb-tree implementation and
->users don't need to see it, or its not in which case huh?
-
-So, I'm not 100% happy with this either.
-
-What's going on is that I think it's best for users not to know about
-these implementation details, and that's why I had moved these away
-from include/linux/rbtree.h. However, I haven't been successful in
-hiding these details from augmented rbtree users, so with my proposal,
-if you want to implement some new feature using augmented rbtrees, you
-do get exposed to some rbtree implementation details. This is
-unfortunate but at least this exposure doesn't leak to your users -
-you'd have to include linux/rbtree_internal.h only in your feature's C
-file, so your users will never have to know about rbtree
-implementation details.
-
->> +static inline void
->> +rb_erase_augmented(struct rb_node *node, struct rb_root *root,
->> +                  rb_augment_propagate *augment_propagate,
->> +                  rb_augment_rotate *augment_rotate)
+>> +                     /* err can be positive if it came from the TPM itself,
+>> +                      * so return a negative value here instead. */
+>> +                     err = -EFAULT;
 >
-> So why put all this in a static inline in a header? As it stands
-> rb_erase() isn't inlined and its rather big, why would you want to
-> inline it for augmented callers?
-
-Just as the non-augmented rb_erase() is generated (as a non-inline
-function) by merging together the rb_erase_augmented() inline function
-and its dummy callbacks, I want each library that uses augmented
-rbtrees to generate their own rb_erase() equivalent using their own
-callbacks. The inline function in rbtree_internal.h is only to be used
-as a template for generating one non-inline instance for each data
-structure that uses augmented rbtrees.
-
-> You could at least pull out the initial erase stuff into a separate
-> function, that way the rb_erase_augmented thing would shrink to
-> something like:
+> -EFAULT is definitely wrong (that means a bad pointer was passed), you
+> can use -EIO instead.
 >
-> rb_erase_augmented(node, root)
-> {
->         struct rb_node *parent, *child;
->         bool black;
+> However, I would suggest:
 >
->         __rb_erase(node, root, &parent, &child, &black);
->         augmented_propagate(parent);
->         if (black)
->                 __rb_erase_color(child, parent, root, augment_rotate);
-> }
+>         err = total ? total : -EIO;
 
-I see that you looked at the first version of patch 5, where
-augmented_propagate() still always updated all the way to the root. I
-have since sent an updated version of patch 5 that does more limited
-updates; however this makes it harder to do what you propose as the
-callbacks now need to happen in more places than just before
-__rb_erase_color().
+ This is fine w/ me...
+
+> ... so you report the number of bytes successfully received if we got
+> any.  However, since you *also* do that on the retry line,
+>
+>> +                     goto out_err;
+>> +             }
+>> +
+>> +             recd = be32_to_cpu(tpm_cmd.params.getrandom_out.rng_data_len);
+>> +             memcpy(dest, tpm_cmd.params.getrandom_out.rng_data, recd);
+>> +
+>> +             dest += recd;
+>> +             total += recd;
+>> +             num_bytes -= recd;
+>> +     } while (retries-- && total < max);
+>> +
+>> +     err = total;
+>
+> Should we return something other than 0 if we run out of retries here, too?
+
+  Ugh, I was hoping to avoid this kind of complexity.
+
+> Perhaps we should just do the same "err = total ? total : -EIO;" here
+> and the above statement can just turn into a break;.
+
+  Yeah, this seems like the right thing to do.
+
+>> -     ret = my_get_random(hash, SHA1_DIGEST_SIZE);
+>> +     ret = tpm_get_random(TPM_ANY_NUM, hash, SHA1_DIGEST_SIZE);
+>>       if (ret < 0)
+>>               return ret;
+>
+> You are still not checking the return values correctly!
+
+  Dave, can you weigh in on these individual cases?  In some cases
+like capping a pcr I think using uninitialized stack data could be
+better than failing...
+
+Kent
+
+> This needs to be something like:
+>
+>         ret = tpm_get_random(TPM_ANY_NUM, hash, SHA1_DIGEST_SIZE);
+>         if (ret != SHA1_DIGEST_SIZE)
+>                 return -EIO;    /* Or whatever is appropriate here */
+>
+>
+>         -hpa
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+IBM LTC Security
