@@ -1,191 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab2G1BnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 21:43:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60625 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab2G1Bm6 (ORCPT
+	id S1752772Ab2G1Btq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 21:49:46 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47655 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab2G1Btp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 21:42:58 -0400
-Date: Fri, 27 Jul 2012 18:42:52 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Yann Cantin <yann.cantin@laposte.net>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC ebeam PATCH 3/3] input: misc: New USB eBeam input driver.
-Message-ID: <20120728014252.GB19817@core.coreip.homeip.net>
-References: <1343433754-3887-1-git-send-email-yann.cantin@laposte.net>
- <1343433754-3887-4-git-send-email-yann.cantin@laposte.net>
+	Fri, 27 Jul 2012 21:49:45 -0400
+Message-ID: <50134531.5060007@linaro.org>
+Date: Fri, 27 Jul 2012 18:49:37 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343433754-3887-4-git-send-email-yann.cantin@laposte.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: Colin Cross <ccross@google.com>, Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, arve@android.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 0/7] KDB: Kiosk (reduced capabilities) mode
+References: <20120726142514.GA32158@lizard> <CAMbhsRSM3QwwVfUMBWq1bDJxHX+Ox2CQtbvJVmemuMWjxfmDoQ@mail.gmail.com> <20120728012632.GA1766@lizard>
+In-Reply-To: <20120728012632.GA1766@lizard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072801-6148-0000-0000-00000816D9F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yann,
+On 07/27/2012 06:26 PM, Anton Vorontsov wrote:
+> On Fri, Jul 27, 2012 at 12:30:49PM -0700, Colin Cross wrote:
+>>> The are two use-cases for the mode, one is evil, but another is quite
+>>> legitimate.
+>>>
+>>> The evil use case is used by some (ahem) phone manufaturers that want
+>>> to have a debuging facilities on a production device, but still don't
+>>> want you to use the debugger to gain root access. I don't like locked
+>>> phones, and I would not touch this/get my hands dirty by implementing
+>>> the feature just for this evil (IMHO) use case.
+>> The point of the reduced feature set in FIQ debugger is not to prevent
+>> you from accessing your own phone, it designed to prevent others from
+>> trivially rooting your phone and reading your data.  Both locked and
+>> unlocked phones run FIQ debugger.  Would you carry a phone with
+>> personal data on it and KGDB enabled on the serial console?
+> Short answer: yes, I would carry such a phone. :-)
+>
+> Long answer:
+>
+> If someone was so interested in cracking the phone/data and so
+> ended up with attaching serial console and attempted to use debugger
+> techniques to gain access to my data, then thief's next step would be
+> soldering a few wires to JTAG spots, and it will be all done in
+> minutes. Knowledge-wise, using JTAG is even more trivial than using the
+> debugger techniques to get to my data, you just need some HW skills.
 
-On Sat, Jul 28, 2012 at 02:02:34AM +0200, Yann Cantin wrote:
-> 
-> Signed-off-by: Yann Cantin <yann.cantin@laposte.net>
-> ---
->  drivers/input/misc/Kconfig  |   21 +
->  drivers/input/misc/Makefile |    1 +
->  drivers/input/misc/ebeam.c  |  895 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 917 insertions(+)
->  create mode 100644 drivers/input/misc/ebeam.c
-> 
-> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-> index 7faf4a7..0e798cb 100644
-> --- a/drivers/input/misc/Kconfig
-> +++ b/drivers/input/misc/Kconfig
-> @@ -73,6 +73,27 @@ config INPUT_BMA150
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called bma150.
->  
-> +config INPUT_EBEAM_USB
-> +	tristate "USB eBeam driver"
-> +	depends on USB_ARCH_HAS_HCD
-> +	select USB
-> +	help
-> +	  Say Y here if you have a USB eBeam pointing device and want to
-> +	  use it without any proprietary user space tools.
-> +
-> +	  Have a look at <http://sourceforge.net/projects/ebeam/> for
-> +	  a usage description and the required user-space tools.
-> +
-> +	  Currently, only the Classic Projection model is supported.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called ebeam.
-> +
-> +config INPUT_EBEAM_USB_CLASSIC
-> +	bool "eBeam Classic Projection support"
-> +	depends on INPUT_EBEAM_USB
-> +	default y
+The serial console on some of these phones are accessed via the 
+headphone jack.
 
-Will there be support for other eBean devices (are there any)? If there
-will how soon? How different are they? If not the we probably do not
-need this INPUT_EBEAM_USB_CLASSIC selector.
+Imagine an airline provides free noise cancelling headphones for 
+flights. Those headphones are of course "smart" and covertly try to 
+quickly capture data off of the phone's debugger interface, storing on 
+some headphone internal flash, all without the user noticing.
 
-> +
->  config INPUT_PCSPKR
->  	tristate "PC Speaker support"
->  	depends on PCSPKR_PLATFORM
-> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-> index f55cdf4..4b5e4a9 100644
-> --- a/drivers/input/misc/Makefile
-> +++ b/drivers/input/misc/Makefile
-> @@ -23,6 +23,7 @@ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
->  obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
->  obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
->  obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
-> +obj-$(CONFIG_INPUT_EBEAM_USB)		+= ebeam.o
->  obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
->  obj-$(CONFIG_INPUT_GPIO_TILT_POLLED)	+= gpio_tilt_polled.o
->  obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
-> diff --git a/drivers/input/misc/ebeam.c b/drivers/input/misc/ebeam.c
-> new file mode 100644
-> index 0000000..a18615a
-> --- /dev/null
-> +++ b/drivers/input/misc/ebeam.c
-> @@ -0,0 +1,895 @@
-> +/******************************************************************************
-> + *
-> + * eBeam driver
-> + *
-> + * Copyright (C) 2012 Yann Cantin (yann.cantin@laposte.net)
-> + *
-> + *	This program is free software; you can redistribute it and/or
-> + *	modify it under the terms of the GNU General Public License as
-> + *	published by the Free Software Foundation; either version 2 of the
-> + *	License, or (at your option) any later version.
-> + *
-> + *  based on
-> + *
-> + *	usbtouchscreen.c by Daniel Ritz <daniel.ritz@gmx.ch>
-> + *	aiptek.c (sysfs/settings) by Chris Atenasio <chris@crud.net>
-> + *				     Bryan W. Headley <bwheadley@earthlink.net>
-> + *
-> + *****************************************************************************/
-> +
-> +#define DEBUG
+So I think Colin's concerns (regardless of any paranoia about phone 
+OEM's intentions) is reasonable.
 
-I do not think leaving DEBUG on is good idea for production code.
+thanks
+-john
 
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/input.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/usb.h>
-> +#include <linux/usb/input.h>
-> +#include <linux/hid.h>
-> +
-> +#define DRIVER_VERSION		"v0.5"
-> +#define DRIVER_AUTHOR		"Yann Cantin <yann.cantin@laposte.net>"
-> +#define DRIVER_DESC		"USB eBeam Driver"
-> +
-> +#define USB_VENDOR_ID_EFI	   0x2650   /* Electronics For Imaging, Inc   */
-> +#define USB_DEVICE_ID_EFI_CLASSIC  0x1311   /* Classic projection "La banane" */
-> +
-> +#define EBEAM_BTN_TIP		0x1      /* tip    */
-> +#define EBEAM_BTN_LIT		0x2      /* little */
-> +#define EBEAM_BTN_BIG		0x4      /* big    */
-> +
-> +/* until KConfig */
-> +#define CONFIG_INPUT_EBEAM_USB_CLASSIC
-
-Huh?
-
-> +
-> +/* device specifc data/functions */
-> +struct ebeam_device;
-> +struct ebeam_device_info {
-> +	int min_X;
-> +	int max_X;
-> +	int min_Y;
-> +	int max_Y;
-> +
-> +	/*
-> +	 * TODO : Check if it's really necessary, waiting for other device info.
-> +	 * Always service the USB devices irq not just when the input device is
-> +	 * open. This is useful when devices have a watchdog which prevents us
-> +	 * from periodically polling the device. Leave this unset unless your
-> +	 * ebeam device requires it, as it does consume more of the USB
-> +	 * bandwidth.
-> +	 */
-> +	bool irq_always;
-
-Does you device need this?
-
-> +
-> +	int rept_size;
-> +
-> +	/* optional, generic exist */
-> +	void (*process_pkt)  (struct ebeam_device *ebeam,
-> +			      unsigned char *pkt,
-> +			      int len);
-> +
-> +	/* mandatory, model-specific */
-> +	int  (*read_data)    (struct ebeam_device *ebeam,
-> +			      unsigned char *pkt);
-> +	void (*setup_input)  (struct ebeam_device *ebeam,
-> +			      struct input_dev *input_dev);
-> +	void (*report_input) (struct ebeam_device *ebeam);
-> +
-> +	/* optional, model-specific */
-> +	int  (*alloc)	(struct ebeam_device *ebeam);
-> +	int  (*init)	(struct ebeam_device *ebeam);
-> +	void (*exit)	(struct ebeam_device *ebeam);
-
-Again, do you expect to see multitude of sufficiently different
-devices or are they going to follow roughly the same protocol?
-
-Thanks.
-
--- 
-Dmitry
