@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab2G1EqA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 00:46:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41688 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab2G1Ep6 (ORCPT
+	id S1752138Ab2G1EwN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 00:52:13 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34564 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab2G1EwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 00:45:58 -0400
-From: Grant Coady <gcoady.lk@gmail.com>
-To: Kevin Ross <kevin@familyross.net>
-Cc: Bill Davidsen <davidsen@tmr.com>, Linux RAID <linux-raid@vger.kernel.org>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RAID extremely slow
-Date: Sat, 28 Jul 2012 14:45:31 +1000
-Organization: scattered
-Message-ID: <8oq618ldps0ijt76cr3k6vovkksm4b9vsb@4ax.com>
-References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net> <5010CEFF.5030606@familyross.net> <5012E717.9070808@tmr.com> <50130BEE.8080402@familyross.net>
-In-Reply-To: <50130BEE.8080402@familyross.net>
-User-Agent: ForteAgent/7.00.32.1200
+	Sat, 28 Jul 2012 00:52:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120724162420.GG8570@fieldses.org>
+References: <1341717459-7297-1-git-send-email-linkinjeon@gmail.com>
+	<20120710145937.GA1947@fieldses.org>
+	<CAKYAXd97ir=tvxWTC4eVmrrXBEpK=XCX3-e8XUjCPy16eHoibQ@mail.gmail.com>
+	<20120711140944.GB11432@fieldses.org>
+	<CAKYAXd__BLFPOw=+tt=cqZgyM45y5mSOTamVaFTU26BNSNa=2A@mail.gmail.com>
+	<CAKYAXd9KLxDqXSqgk7Y1rNv9cw-r+PHPSenQCnkRh9_0_6HmAQ@mail.gmail.com>
+	<20120724162420.GG8570@fieldses.org>
+Date: Sat, 28 Jul 2012 13:52:10 +0900
+Message-ID: <CAKYAXd9yu7iC=acJJEO_rN905JRdmVMUqJyFAtbVWjh2o+u6vw@mail.gmail.com>
+Subject: Re: [PATCH] nfs-util: Add cache_flush in mountd UMNT procedure.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: SteveD@redhat.com, Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vivek Trivedi <vtrivedi018@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jul 2012 14:45:18 -0700, you wrote:
-
->On 07/27/2012 12:08 PM, Bill Davidsen wrote:
->> Have you set the io scheduler to deadline on all members of the array? 
->> That's kind of "job one" on older kernels.
->>
+>> Hi James.
+>> I have a question.
+>> If we found the method to notify nfs when unplugging device,
 >
->I have not, thanks for the tip, I'll look into that now.
+Hi James.
+> What's that?
+I need to check more...
 
-Plus I disable the on-drive queuing (NCQ) during startup, right now 
-I don't have benchmarks to show the difference.  This on a six by 1TB 
-drive RAID6 array I built over a year ago on Slackware64-13.37:
-
-# cat /etc/rc.d/rc.local
-...
-# turn off NCQ on the RAID drives by adjusting queue depth to 1
-n=1
-echo "rc.local: Disable RAID drives' NCQ"
-for d in a b c d e f
-do
-        echo "  set NCQ depth to $n on sd${d}"
-        echo $n > /sys/block/sd${d}/device/queue_depth
-done
-...
-
-Maybe you could try that?  See if it makes a difference.  My drives 
-are Seagate.
-
-Grant.
+>
+>> Can nfsd
+>> flush only entry of usb mount ?
+>
+> Hm, I don't think there's anything that does that now.  But I think if
+> you look it up and set the cache item's expiry_time to the current unix
+> time in seconds, that'd be at least a start.
+>
+> Come to think of it you should actually be able to do that from
+> userspace if you want: just write a negative cache entry for that
+> export.
+>
+> However you do this there may still be some brief delay while some
+> thread finishes processing an rpc using the entry; I don't know what to
+> do about that.  It's unlikely in your case (where clients have unmounted
+> first).
+Okay, I will look for more.
+Thanks for your reply.
+>
+> --b.
+>
