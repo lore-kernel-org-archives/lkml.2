@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2G1Apr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 20:45:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61430 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2G1Apq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 20:45:46 -0400
+	id S1752653Ab2G1AsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 20:48:18 -0400
+Received: from linux-sh.org ([111.68.239.195]:57774 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751962Ab2G1AsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 20:48:17 -0400
+Date: Sat, 28 Jul 2012 09:48:10 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Regression, post-3.5] System suspend broken on the Mackerel
+ board
+Message-ID: <20120728004809.GH30468@linux-sh.org>
+References: <201207280053.11701.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <5013118D.2030601@zytor.com>
-References: <20120727181436.GA6271@linux.vnet.ibm.com>
-	<5012DCF9.7010408@zytor.com>
-	<20120727203000.GA22684@linux.vnet.ibm.com>
-	<5013118D.2030601@zytor.com>
-Date: Fri, 27 Jul 2012 19:45:45 -0500
-Message-ID: <CAM0nabH2629Qx_inhzDuAGggy6rwZJ=rO68yrXie9TtEP6qKuQ@mail.gmail.com>
-Subject: Re: [GIT PULL] New TPM driver, hwrng driver and fixes
-From: Kent Yoder <shpedoikal@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kent Yoder <key@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Bryan Freed <bfreed@chromium.org>,
-        David Safford <safford@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207280053.11701.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +                     /* err can be positive if it came from the TPM itself,
->> +                      * so return a negative value here instead. */
->> +                     err = -EFAULT;
->
-> -EFAULT is definitely wrong (that means a bad pointer was passed), you
-> can use -EIO instead.
->
-> However, I would suggest:
->
->         err = total ? total : -EIO;
-
- This is fine w/ me...
-
-> ... so you report the number of bytes successfully received if we got
-> any.  However, since you *also* do that on the retry line,
->
->> +                     goto out_err;
->> +             }
->> +
->> +             recd = be32_to_cpu(tpm_cmd.params.getrandom_out.rng_data_len);
->> +             memcpy(dest, tpm_cmd.params.getrandom_out.rng_data, recd);
->> +
->> +             dest += recd;
->> +             total += recd;
->> +             num_bytes -= recd;
->> +     } while (retries-- && total < max);
->> +
->> +     err = total;
->
-> Should we return something other than 0 if we run out of retries here, too?
-
-  Ugh, I was hoping to avoid this kind of complexity.
-
-> Perhaps we should just do the same "err = total ? total : -EIO;" here
-> and the above statement can just turn into a break;.
-
-  Yeah, this seems like the right thing to do.
-
->> -     ret = my_get_random(hash, SHA1_DIGEST_SIZE);
->> +     ret = tpm_get_random(TPM_ANY_NUM, hash, SHA1_DIGEST_SIZE);
->>       if (ret < 0)
->>               return ret;
->
-> You are still not checking the return values correctly!
-
-  Dave, can you weigh in on these individual cases?  In some cases
-like capping a pcr I think using uninitialized stack data could be
-better than failing...
-
-Kent
-
-> This needs to be something like:
->
->         ret = tpm_get_random(TPM_ANY_NUM, hash, SHA1_DIGEST_SIZE);
->         if (ret != SHA1_DIGEST_SIZE)
->                 return -EIO;    /* Or whatever is appropriate here */
->
->
->         -hpa
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-IBM LTC Security
+On Sat, Jul 28, 2012 at 12:53:11AM +0200, Rafael J. Wysocki wrote:
+> Hi Paul,
+> 
+> Unfortunately, your commit
+> 
+> commit ca5481c68e9fbcea62bb3c78ae6cccf99ca8fb73
+> Author: Paul Mundt <lethal@linux-sh.org>
+> Date:   Tue Jul 10 12:08:14 2012 +0900
+> 
+>     sh: pfc: Rudimentary pinctrl-backed GPIO support.
+> 
+> breaks system suspend on the Mackerel board (.config attached).  The system
+> simply doesn't suspend and instead it hangs somewhere while suspending
+> devices (apparently before running the "late" callbacks).
+> 
+> If the above commit is reverted, system suspend works normally.
+> 
+Ok, I'll take a look at it on Monday, thanks for reporting.
