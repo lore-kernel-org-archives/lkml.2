@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab2G1OEI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 10:04:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45414 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab2G1OEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 10:04:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120727103241.GB14445@aftab.osrc.amd.com>
-References: <1343149213-10160-1-git-send-email-ming.lei@canonical.com>
-	<1343149213-10160-9-git-send-email-ming.lei@canonical.com>
-	<20120725160425.GK11152@aftab.osrc.amd.com>
-	<CACVXFVO5HHFraBXsV2S_a_KUrBg3ffyO0qqaGCjzq8Rksr9KaA@mail.gmail.com>
-	<20120726122016.GD30717@aftab.osrc.amd.com>
-	<CACVXFVMxUKezcR5BBv6jM0wZr8UivF7dJGe1gLNiFx=1h4U59g@mail.gmail.com>
-	<20120726174617.GA9161@aftab.osrc.amd.com>
-	<CACVXFVOrQg56VKv22i3ydm5Vw6o=UTzDJP6-_NUiyXbD46wNhQ@mail.gmail.com>
-	<20120727103241.GB14445@aftab.osrc.amd.com>
-Date: Sat, 28 Jul 2012 22:04:03 +0800
-Message-ID: <CACVXFVNxxbm5_Tzq-wn7AXnd6wi8Ywa91q-bgKKyy5-s_iPcRg@mail.gmail.com>
-Subject: Re: [RFC PATCH 08/13] driver core: firmware loader: fix device lifetime
-From: Ming Lei <ming.lei@canonical.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752736Ab2G1O0z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 10:26:55 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55409 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752387Ab2G1O0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jul 2012 10:26:35 -0400
+Message-ID: <1343485593.2009.8.camel@joe2Laptop>
+Subject: Re: [PATCH] net:appletalk:ddp:fixed some codystyle issues in
+From: Joe Perches <joe@perches.com>
+To: Jeffrin Jose <ahiliation@yahoo.co.in>
+Cc: acme@ghostprotocols.net, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 28 Jul 2012 07:26:33 -0700
+In-Reply-To: <1343472307-4697-1-git-send-email-ahiliation@yahoo.co.in>
+References: <1343472307-4697-1-git-send-email-ahiliation@yahoo.co.in>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 6:32 PM, Borislav Petkov <bp@amd64.org> wrote:
+On Sat, 2012-07-28 at 16:15 +0530, Jeffrin Jose wrote:
+> Fixed coding style issues relating to indentation found in
+> net/appletalkddp.c."git diff -w" is empty and the compiled objects
+> are the same too.
 
->
-> I still don't like too much the "not possible to sleep for long time"
-> expression.
->
-> Maybe change it to "should sleep for as small periods as possible since
-> it increases boot time of device drivers requesting firmware in their
-> ->probe() methods."
+Hello Jeffrin.
 
-Fairly enough, will add this kind of description in -v1, and I will introduce
-one extra patch to fix this comment since it is nothing related with the
-device lifetime fix and its comments.
+Your commit message is OK but your patch not.
 
+The switch/case that could use modification is at
+line 1790, not at line 685.
 
-Thanks,
---
-Ming Lei
+> diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+[]
+> @@ -337,7 +337,7 @@ static int atif_proxy_probe_device(struct atalk_iface *atif,
+>  
+>  	return -EADDRINUSE;	/* Network is full... */
+>  }
+> -
+> +   
+
+Adding whitespace
+ 
+>  struct atalk_addr *atalk_find_dev_addr(struct net_device *dev)
+>  {
+> @@ -685,26 +685,26 @@ static int atif_ioctl(int cmd, void __user *arg)
+>  
+>  	switch (cmd) {
+>  	case SIOCSIFADDR:
+> -		if (!capable(CAP_NET_ADMIN))
+> +			if (!capable(CAP_NET_ADMIN))
+
+There's nothing wrong here to fix and you are
+adding incorrect indentation.
+
+Please try again and make sure you verify your
+proposed patches by using scripts/checkpatch.pl
+before submitting them.
+
