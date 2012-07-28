@@ -1,131 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab2G1Dae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 23:30:34 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40911 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab2G1Dac (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 23:30:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMbhsRSGYmu=eyqik23cECsJPfpo6rUqZUa853nkY35XRo4Q_w@mail.gmail.com>
-References: <1343184588-20239-1-git-send-email-ccross@android.com>
-	<CACRpkdZv4p+QT3Y+=-xh5iJ=sr1_aahroxQ535QpzVD9e_ESJA@mail.gmail.com>
-	<20120727233829.GB14835@n2100.arm.linux.org.uk>
-	<CAMbhsRSGYmu=eyqik23cECsJPfpo6rUqZUa853nkY35XRo4Q_w@mail.gmail.com>
-Date: Fri, 27 Jul 2012 20:30:31 -0700
-X-Google-Sender-Auth: teu5iK13rZBM6cCbL8znSHig9Ck
-Message-ID: <CAMbhsRQg4pETrM7cx+aSBzGn3S1LV_x7vo8X3A300vCWTjkFng@mail.gmail.com>
-Subject: Re: [RFC v2] ARM: sched_clock: update epoch_cyc on resume
-From: Colin Cross <ccross@android.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Barry Song <21cnbao@gmail.com>,
-        Vaibhav Bedia <vaibhav.bedia@ti.com>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Nicolas Pitre <nico@linaro.org>, Marc Zyngier <marc.zyngier@arm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1753057Ab2G1DlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 23:41:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5074 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752945Ab2G1DlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 23:41:03 -0400
+Message-ID: <1343446862.8073.8.camel@ul30vt>
+Subject: Re: more interrupts (lower performance) in bare-metal compared with
+ running VM
+From: Alex Williamson <alex.williamson@redhat.com>
+To: sheng qiu <herbert1984106@gmail.com>
+Cc: kvm <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Date: Fri, 27 Jul 2012 21:41:02 -0600
+In-Reply-To: <CAB7xdi=DrE356=U1Jr1Z=ROo2X3XNM5uKcgiZJTKY+EdsTu7gw@mail.gmail.com>
+References: <CAB7xdi=DrE356=U1Jr1Z=ROo2X3XNM5uKcgiZJTKY+EdsTu7gw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 6:15 PM, Colin Cross <ccross@android.com> wrote:
-> On Fri, Jul 27, 2012 at 4:38 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Sat, Jul 28, 2012 at 01:32:50AM +0200, Linus Walleij wrote:
->>> On Wed, Jul 25, 2012 at 4:49 AM, Colin Cross <ccross@android.com> wrote:
->>>
->>> > Many clocks that are used to provide sched_clock will reset during
->>> > suspend.  If read_sched_clock returns 0 after suspend, sched_clock will
->>> > appear to jump forward.  This patch resets cd.epoch_cyc to the current
->>> > value of read_sched_clock during resume, which causes sched_clock() just
->>> > after suspend to return the same value as sched_clock() just before
->>> > suspend.
->>> >
->>> > In addition, during the window where epoch_ns has been updated before
->>> > suspend, but epoch_cyc has not been updated after suspend, it is unknown
->>> > whether the clock has reset or not, and sched_clock() could return a
->>> > bogus value.  Add a suspended flag, and return the pre-suspend epoch_ns
->>> > value during this period.
->>> >
->>> > The new behavior is triggered by calling setup_sched_clock_needs_suspend
->>> > instead of setup_sched_clock.
->>> >
->>> > Signed-off-by: Colin Cross <ccross@android.com>
->>>
->>> Sweet!
->>> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> Have any of you looked at the patch I originally posted for doing this?
->> It needs updating but shows the overall principle - which is to ensure
->> that the epoch is up to date before suspending.
->>
->> It doesn't deal with resume, because different timers behave differently,
->> and there's no real way to deal with that properly.  The important thing
->> that this patch does is to ensure sched_clock() doesn't ever go backwards.
->>
->>  arch/arm/kernel/sched_clock.c |   18 ++++++++++++++++++
->>  1 files changed, 18 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
->> index 9a46370..4be4019 100644
->> --- a/arch/arm/kernel/sched_clock.c
->> +++ b/arch/arm/kernel/sched_clock.c
->> @@ -10,6 +10,7 @@
->>  #include <linux/jiffies.h>
->>  #include <linux/kernel.h>
->>  #include <linux/sched.h>
->> +#include <linux/syscore_ops.h>
->>  #include <linux/timer.h>
->>
->>  #include <asm/sched_clock.h>
->> @@ -72,3 +73,20 @@ void __init sched_clock_postinit(void)
->>  {
->>         sched_clock_poll(sched_clock_timer.data);
->>  }
->> +
->> +static int sched_clock_suspend(void)
->> +{
->> +       sched_clock_poll(sched_clock_timer.data);
->> +       return 0;
->> +}
->> +
->> +static struct syscore_ops sched_clock_ops = {
->> +       .suspend        = sched_clock_suspend,
->> +};
->> +
->> +static int __init sched_clock_syscore_init(void)
->> +{
->> +       register_syscore_ops(&sched_clock_ops);
->> +       return 0;
->> +}
->> +device_initcall(sched_clock_syscore_init);
->>
->
-> That patch was merged in 3.4, and my patch is on top of it.  Your
-> patch updates epoch_cyc and epoch_ns in suspend, but if the first call
-> to cyc_to_sched_clock after resume gets cyc = 0, cyc - epoch_cyc can
-> be negative, although it will be cast back to a large positive number.
->
-> With my patch, epoch_cyc is updated in resume to whatever
-> read_sched_clock() returns, and epoch_ns is still set to the suspend
-> value, so it appears that sched_clock has not changed between
-> sched_clock_suspend and sched_clock_resume.  It will work with any
-> timer behavior (reset to 0, reset to random value, or continuing
-> counting).  The old setup_sched_clock function maintains the old
-> behavior to appease those who like their 32kHz sched clock to continue
-> ticking in suspend, although I think it is more correct for all sched
-> clocks to be faster than 32 kHz (when possible) and stop in suspend.
+On Fri, 2012-07-27 at 22:09 -0500, sheng qiu wrote:
+> Hi all,
+> 
+> i am comparing network throughput performance under bare-metal case
+> with that running VM with assigned-device (assigned NIC). i have two
+> physical machines (each has a 10Gbit NIC), one is used as remote
+> server (run netserver) and the other is used as the target tested one
+> (run netperf with different send message size, TCP_STREAM test). the
+> remote NIC is connected directly with the tested NIC, both are 10Gbit.
+> fore bare-metal case, i enable 1 cpu core, for VM i also configure 1
+> vcpu (the memory is sufficient for both bare-metal and VM case).  i
+> run netperf for 120 seconds and got the following results:
+> 
+>                        send message    interrupts   throughput (mbit/s)
+> bare-metal             256               10696290            1114.84
+>                             512               10106786            1391.92
+>                             1024              10071032           1508.09
+>                             2048              4560857             3434.65
+>                             4096              3292200             4762.26
+>                             8192              3169801             4733.89
+>                             16384            2780529              4892.6
+> 
+> VM(assigned NIC)   256               3817904              2249.35
+>                              512               3599007              4342.81
+>                             1024              3005601              4134.69
+>                              2048             2952122              4484
+>                              4096             2682874              4566.34
+>                              8192             2786719              4734.39
+>                              16384           2603835              4540.47
+> 
+> as shown, the interrupts for bare-metal case is much more than the VM
+> case for some message size. we also see the throughput for those
+> situations is lower than VM case. it's strange that the bare-metal has
+> lower performance than the VM case. Does anyone have comments on this?
+> i am very confused.
 
-I think the existing code can cause sched_clock to go backwards if the
-register read by the read function resets to 0 in suspend:
+Assigned devices have more latency in the interrupt path since the
+interrupt goes through both the host and the guest interrupt stack.  My
+guess is that you're approaching the interrupt rate we can handle due to
+that added latency.  That's the bad news.  The good news is that the
+device must be queuing up packets, so more are processed on each
+interrupt.  Once we switch to non-threaded interrupt handling in the
+host, that peak interrupt rate should get a significant increase.
+TCP_RR is probably a better way to get a feel for interrupt latency.
+That's my theory, any others?  Thanks
 
-In sched_clock_suspend epoch_cyc is updated to 0x00002000.
+Alex
 
-The first sched_clock call after resume gets cyc = 0, returning
-epoch_ns + cyc_to_ns(0xffffe000)
-
-Later, sched_clock gets cyc = 0x5000, returning epoch_ns +
-cyc_to_ns(0x3000), which will be much smaller than the previous
-sched_clock value.
