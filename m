@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab2G1CTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 22:19:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10897 "EHLO mx1.redhat.com"
+	id S1752927Ab2G1CUq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 22:20:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12822 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752333Ab2G1CT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 22:19:29 -0400
+	id S1752514Ab2G1CTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 22:19:42 -0400
 From: Asias He <asias@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, kvm@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Shaohua Li <shli@kernel.org>,
-        Tejun Heo <tj@kernel.org>, virtualization@lists.linux-foundation.org
-Subject: [PATCH V4 0/3] Improve virtio-blk performance
-Date: Sat, 28 Jul 2012 10:21:02 +0800
-Message-Id: <1343442065-15646-1-git-send-email-asias@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Shaohua Li <shli@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Hellwig <hch@lst.de>, Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH V4 2/3] block: Add blk_bio_map_sg() helper
+Date: Sat, 28 Jul 2012 10:21:04 +0800
+Message-Id: <1343442065-15646-3-git-send-email-asias@redhat.com>
+In-Reply-To: <1343442065-15646-1-git-send-email-asias@redhat.com>
+References: <1343442065-15646-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Jens & Rusty
+Add a helper to map a bio to a scatterlist, modelled after
+blk_rq_map_sg.
 
-This version is rebased against linux-next which resolves the conflict with
-Paolo Bonzini's 'virtio-blk: allow toggling host cache between writeback and
-writethrough' patch.
+This helper is useful for any driver that wants to create
+a scatterlist from its ->make_request_fn method.
 
-Patch 1/3 and 2/3 applies on linus's master as well. Since Rusty will pick up
-patch 3/3 so the changes to block core (adding blk_bio_map_sg()) will have a
-user.
+Changes in v2:
+ - Use __blk_segment_map_sg to avoid duplicated code
+ - Add cocbook style function comment
 
-Jens, could you please consider picking up the dependencies 1/3 and 2/3 in your
-tree. Thanks!
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Asias He <asias@redhat.com>
+---
+ block/blk-merge.c      |   37 +++++++++++++++++++++++++++++++++++++
+ include/linux/blkdev.h |    2 ++
+ 2 files changed, 39 insertions(+)
 
-This patchset implements bio-based IO path for virito-blk to improve
-performance.
-
-Fio test shows bio-based IO path gives the following performance improvement:
-
-1) Ramdisk device
-     With bio-based IO path, sequential read/write, random read/write
-     IOPS boost         : 28%, 24%, 21%, 16%
-     Latency improvement: 32%, 17%, 21%, 16%
-2) Fusion IO device
-     With bio-based IO path, sequential read/write, random read/write
-     IOPS boost         : 11%, 11%, 13%, 10%
-     Latency improvement: 10%, 10%, 12%, 10%
-
-Asias He (3):
-  block: Introduce __blk_segment_map_sg() helper
-  block: Add blk_bio_map_sg() helper
-  virtio-blk: Add bio-based IO path for virtio-blk
-
- block/blk-merge.c          |  117 +++++++++++++++++--------
- drivers/block/virtio_blk.c |  203 +++++++++++++++++++++++++++++++++++---------
- include/linux/blkdev.h     |    2 +
- 3 files changed, 247 insertions(+), 75 deletions(-)
-
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index 576b68e..e76279e 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -209,6 +209,43 @@ int blk_rq_map_sg(struct request_queue *q, struct request *rq,
+ }
+ EXPORT_SYMBOL(blk_rq_map_sg);
+ 
++/**
++ * blk_bio_map_sg - map a bio to a scatterlist
++ * @q: request_queue in question
++ * @bio: bio being mapped
++ * @sglist: scatterlist being mapped
++ *
++ * Note:
++ *    Caller must make sure sg can hold bio->bi_phys_segments entries
++ *
++ * Will return the number of sg entries setup
++ */
++int blk_bio_map_sg(struct request_queue *q, struct bio *bio,
++		   struct scatterlist *sglist)
++{
++	struct bio_vec *bvec, *bvprv;
++	struct scatterlist *sg;
++	int nsegs, cluster;
++	unsigned long i;
++
++	nsegs = 0;
++	cluster = blk_queue_cluster(q);
++
++	bvprv = NULL;
++	sg = NULL;
++	bio_for_each_segment(bvec, bio, i) {
++		__blk_segment_map_sg(q, bvec, sglist, &bvprv, &sg,
++				     &nsegs, &cluster);
++	} /* segments in bio */
++
++	if (sg)
++		sg_mark_end(sg);
++
++	BUG_ON(bio->bi_phys_segments && nsegs > bio->bi_phys_segments);
++	return nsegs;
++}
++EXPORT_SYMBOL(blk_bio_map_sg);
++
+ static inline int ll_new_hw_segment(struct request_queue *q,
+ 				    struct request *req,
+ 				    struct bio *bio)
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 2698866..e4a0cf4 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -883,6 +883,8 @@ extern void blk_queue_flush_queueable(struct request_queue *q, bool queueable);
+ extern struct backing_dev_info *blk_get_backing_dev_info(struct block_device *bdev);
+ 
+ extern int blk_rq_map_sg(struct request_queue *, struct request *, struct scatterlist *);
++extern int blk_bio_map_sg(struct request_queue *q, struct bio *bio,
++			  struct scatterlist *sglist);
+ extern void blk_dump_rq_flags(struct request *, char *);
+ extern long nr_blockdev_pages(void);
+ 
 -- 
 1.7.10.4
 
