@@ -1,64 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab2G1Ieo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 04:34:44 -0400
-Received: from mail-hostigation.familyross.net ([69.85.93.112]:56916 "EHLO
-	mail.familyross.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab2G1Iel (ORCPT
+	id S1752077Ab2G1Ii1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 04:38:27 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:55719 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab2G1IiZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 04:34:41 -0400
-Message-ID: <5013A41E.5070500@familyross.net>
-Date: Sat, 28 Jul 2012 01:34:38 -0700
-From: Kevin Ross <kevin@familyross.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: Grant Coady <gcoady.lk@gmail.com>
-CC: Bill Davidsen <davidsen@tmr.com>, Linux RAID <linux-raid@vger.kernel.org>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RAID extremely slow
-References: <501078B2.8070707@familyross.net> <501096C3.5060700@turmel.org> <5010A386.4080209@familyross.net> <5010CEFF.5030606@familyross.net> <5012E717.9070808@tmr.com> <50130BEE.8080402@familyross.net> <8oq618ldps0ijt76cr3k6vovkksm4b9vsb@4ax.com>
-In-Reply-To: <8oq618ldps0ijt76cr3k6vovkksm4b9vsb@4ax.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 28 Jul 2012 04:38:25 -0400
+Date: Sat, 28 Jul 2012 10:37:39 +0200
+From: matthieu castet <castet.matthieu@free.fr>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Stanislaw Gruszka <stf_xl@wp.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] ueagle-atm: Declare MODULE_FIRMWARE usage
+Message-ID: <20120728103739.5aae9bac@mat-laptop>
+In-Reply-To: <1343248370-57021-1-git-send-email-tim.gardner@canonical.com>
+References: <1343248370-57021-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2012 09:45 PM, Grant Coady wrote:
-> On Fri, 27 Jul 2012 14:45:18 -0700, you wrote:
->
->> On 07/27/2012 12:08 PM, Bill Davidsen wrote:
->>> Have you set the io scheduler to deadline on all members of the array?
->>> That's kind of "job one" on older kernels.
->>>
->> I have not, thanks for the tip, I'll look into that now.
-> Plus I disable the on-drive queuing (NCQ) during startup, right now
-> I don't have benchmarks to show the difference.  This on a six by 1TB
-> drive RAID6 array I built over a year ago on Slackware64-13.37:
->
-> # cat /etc/rc.d/rc.local
-> ...
-> # turn off NCQ on the RAID drives by adjusting queue depth to 1
-> n=1
-> echo "rc.local: Disable RAID drives' NCQ"
-> for d in a b c d e f
-> do
->          echo "  set NCQ depth to $n on sd${d}"
->          echo $n>  /sys/block/sd${d}/device/queue_depth
-> done
-> ...
->
-> Maybe you could try that?  See if it makes a difference.  My drives
-> are Seagate.
->
-> Grant.
->
+Ack-by: matthieu castet <castet.matthieu@free.fr>
 
-Does disabling NCQ improve performance?
+Le Wed, 25 Jul 2012 14:32:50 -0600,
+Tim Gardner <tim.gardner@canonical.com> a écrit :
 
-The suggestion to use kernel 3.4.6 has been working quite well so far, 
-hopefully that fixes the problem.  I'll know for sure in a few more days...
-
-Thanks!
--- Kevin
+> Cc: Matthieu CASTET <castet.matthieu@free.fr>
+> Cc: Stanislaw Gruszka <stf_xl@wp.pl>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-usb@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/usb/atm/ueagle-atm.c |   79
+> +++++++++++++++++++++++++++++++++++------- 1 file changed, 66
+> insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/usb/atm/ueagle-atm.c
+> b/drivers/usb/atm/ueagle-atm.c index d7e422d..e1f8b2c 100644
+> --- a/drivers/usb/atm/ueagle-atm.c
+> +++ b/drivers/usb/atm/ueagle-atm.c
+> @@ -307,6 +307,34 @@ enum {
+>  #define FW_GET_BYTE(p) (*((__u8 *) (p)))
+>  
+>  #define FW_DIR "ueagle-atm/"
+> +#define EAGLE_FIRMWARE FW_DIR "eagle.fw"
+> +#define ADI930_FIRMWARE FW_DIR "adi930.fw"
+> +#define EAGLE_I_FIRMWARE FW_DIR "eagleI.fw"
+> +#define EAGLE_II_FIRMWARE FW_DIR "eagleII.fw"
+> +#define EAGLE_III_FIRMWARE FW_DIR "eagleIII.fw"
+> +#define EAGLE_IV_FIRMWARE FW_DIR "eagleIV.fw"
+> +
+> +#define DSP4I_FIRMWARE FW_DIR "DSP4i.bin"
+> +#define DSP4P_FIRMWARE FW_DIR "DSP4p.bin"
+> +#define DSP9I_FIRMWARE FW_DIR "DSP9i.bin"
+> +#define DSP9P_FIRMWARE FW_DIR "DSP9p.bin"
+> +#define DSPEI_FIRMWARE FW_DIR "DSPei.bin"
+> +#define DSPEP_FIRMWARE FW_DIR "DSPep.bin"
+> +#define FPGA930_FIRMWARE FW_DIR "930-fpga.bin"
+> +
+> +#define CMV4P_FIRMWARE FW_DIR "CMV4p.bin"
+> +#define CMV4PV2_FIRMWARE FW_DIR "CMV4p.bin.v2"
+> +#define CMV4I_FIRMWARE FW_DIR "CMV4i.bin"
+> +#define CMV4IV2_FIRMWARE FW_DIR "CMV4i.bin.v2"
+> +#define CMV9P_FIRMWARE FW_DIR "CMV9p.bin"
+> +#define CMV9PV2_FIRMWARE FW_DIR "CMV9p.bin.v2"
+> +#define CMV9I_FIRMWARE FW_DIR "CMV9i.bin"
+> +#define CMV9IV2_FIRMWARE FW_DIR "CMV9i.bin.v2"
+> +#define CMVEP_FIRMWARE FW_DIR "CMVep.bin"
+> +#define CMVEPV2_FIRMWARE FW_DIR "CMVep.bin.v2"
+> +#define CMVEI_FIRMWARE FW_DIR "CMVei.bin"
+> +#define CMVEIV2_FIRMWARE FW_DIR "CMVei.bin.v2"
+> +
+>  #define UEA_FW_NAME_MAX 30
+>  #define NB_MODEM 4
+>  
+> @@ -694,26 +722,26 @@ err:
+>  static int uea_load_firmware(struct usb_device *usb, unsigned int
+> ver) {
+>  	int ret;
+> -	char *fw_name = FW_DIR "eagle.fw";
+> +	char *fw_name = EAGLE_FIRMWARE;
+>  
+>  	uea_enters(usb);
+>  	uea_info(usb, "pre-firmware device, uploading firmware\n");
+>  
+>  	switch (ver) {
+>  	case ADI930:
+> -		fw_name = FW_DIR "adi930.fw";
+> +		fw_name = ADI930_FIRMWARE;
+>  		break;
+>  	case EAGLE_I:
+> -		fw_name = FW_DIR "eagleI.fw";
+> +		fw_name = EAGLE_I_FIRMWARE;
+>  		break;
+>  	case EAGLE_II:
+> -		fw_name = FW_DIR "eagleII.fw";
+> +		fw_name = EAGLE_II_FIRMWARE;
+>  		break;
+>  	case EAGLE_III:
+> -		fw_name = FW_DIR "eagleIII.fw";
+> +		fw_name = EAGLE_III_FIRMWARE;
+>  		break;
+>  	case EAGLE_IV:
+> -		fw_name = FW_DIR "eagleIV.fw";
+> +		fw_name = EAGLE_IV_FIRMWARE;
+>  		break;
+>  	}
+>  
+> @@ -869,19 +897,19 @@ static int request_dsp(struct uea_softc *sc)
+>  
+>  	if (UEA_CHIP_VERSION(sc) == EAGLE_IV) {
+>  		if (IS_ISDN(sc))
+> -			dsp_name = FW_DIR "DSP4i.bin";
+> +			dsp_name = DSP4I_FIRMWARE;
+>  		else
+> -			dsp_name = FW_DIR "DSP4p.bin";
+> +			dsp_name = DSP4P_FIRMWARE;
+>  	} else if (UEA_CHIP_VERSION(sc) == ADI930) {
+>  		if (IS_ISDN(sc))
+> -			dsp_name = FW_DIR "DSP9i.bin";
+> +			dsp_name = DSP9I_FIRMWARE;
+>  		else
+> -			dsp_name = FW_DIR "DSP9p.bin";
+> +			dsp_name = DSP9P_FIRMWARE;
+>  	} else {
+>  		if (IS_ISDN(sc))
+> -			dsp_name = FW_DIR "DSPei.bin";
+> +			dsp_name = DSPEI_FIRMWARE;
+>  		else
+> -			dsp_name = FW_DIR "DSPep.bin";
+> +			dsp_name = DSPEP_FIRMWARE;
+>  	}
+>  
+>  	ret = request_firmware(&sc->dsp_firm, dsp_name,
+> &sc->usb_dev->dev); @@ -1925,7 +1953,7 @@ static int
+> load_XILINX_firmware(struct uea_softc *sc) int ret, size, u, ln;
+>  	const u8 *pfw;
+>  	u8 value;
+> -	char *fw_name = FW_DIR "930-fpga.bin";
+> +	char *fw_name = FPGA930_FIRMWARE;
+>  
+>  	uea_enters(INS_TO_USBDEV(sc));
+>  
+> @@ -2753,3 +2781,28 @@ module_usb_driver(uea_driver);
+>  MODULE_AUTHOR("Damien Bergamini/Matthieu Castet/Stanislaw W.
+> Gruszka"); MODULE_DESCRIPTION("ADI 930/Eagle USB ADSL Modem driver");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> +MODULE_FIRMWARE(EAGLE_FIRMWARE);
+> +MODULE_FIRMWARE(ADI930_FIRMWARE);
+> +MODULE_FIRMWARE(EAGLE_I_FIRMWARE);
+> +MODULE_FIRMWARE(EAGLE_II_FIRMWARE);
+> +MODULE_FIRMWARE(EAGLE_III_FIRMWARE);
+> +MODULE_FIRMWARE(EAGLE_IV_FIRMWARE);
+> +MODULE_FIRMWARE(DSP4I_FIRMWARE);
+> +MODULE_FIRMWARE(DSP4P_FIRMWARE);
+> +MODULE_FIRMWARE(DSP9I_FIRMWARE);
+> +MODULE_FIRMWARE(DSP9P_FIRMWARE);
+> +MODULE_FIRMWARE(DSPEI_FIRMWARE);
+> +MODULE_FIRMWARE(DSPEP_FIRMWARE);
+> +MODULE_FIRMWARE(FPGA930_FIRMWARE);
+> +MODULE_FIRMWARE(CMV4P_FIRMWARE);
+> +MODULE_FIRMWARE(CMV4PV2_FIRMWARE);
+> +MODULE_FIRMWARE(CMV4I_FIRMWARE);
+> +MODULE_FIRMWARE(CMV4IV2_FIRMWARE);
+> +MODULE_FIRMWARE(CMV9P_FIRMWARE);
+> +MODULE_FIRMWARE(CMV9PV2_FIRMWARE);
+> +MODULE_FIRMWARE(CMV9I_FIRMWARE);
+> +MODULE_FIRMWARE(CMV9IV2_FIRMWARE);
+> +MODULE_FIRMWARE(CMVEP_FIRMWARE);
+> +MODULE_FIRMWARE(CMVEPV2_FIRMWARE);
+> +MODULE_FIRMWARE(CMVEI_FIRMWARE);
+> +MODULE_FIRMWARE(CMVEIV2_FIRMWARE);
 
