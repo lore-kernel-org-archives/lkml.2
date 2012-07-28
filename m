@@ -1,111 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab2G1DMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 23:12:03 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:41752 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab2G1DMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 23:12:00 -0400
-Date: Fri, 27 Jul 2012 23:11:57 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 updates for 3.6
-Message-ID: <20120728031157.GA14094@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1752994Ab2G1Dae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 23:30:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40911 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab2G1Dac (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 23:30:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CAMbhsRSGYmu=eyqik23cECsJPfpo6rUqZUa853nkY35XRo4Q_w@mail.gmail.com>
+References: <1343184588-20239-1-git-send-email-ccross@android.com>
+	<CACRpkdZv4p+QT3Y+=-xh5iJ=sr1_aahroxQ535QpzVD9e_ESJA@mail.gmail.com>
+	<20120727233829.GB14835@n2100.arm.linux.org.uk>
+	<CAMbhsRSGYmu=eyqik23cECsJPfpo6rUqZUa853nkY35XRo4Q_w@mail.gmail.com>
+Date: Fri, 27 Jul 2012 20:30:31 -0700
+X-Google-Sender-Auth: teu5iK13rZBM6cCbL8znSHig9Ck
+Message-ID: <CAMbhsRQg4pETrM7cx+aSBzGn3S1LV_x7vo8X3A300vCWTjkFng@mail.gmail.com>
+Subject: Re: [RFC v2] ARM: sched_clock: update epoch_cyc on resume
+From: Colin Cross <ccross@android.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Barry Song <21cnbao@gmail.com>,
+        Vaibhav Bedia <vaibhav.bedia@ti.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Nicolas Pitre <nico@linaro.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+On Fri, Jul 27, 2012 at 6:15 PM, Colin Cross <ccross@android.com> wrote:
+> On Fri, Jul 27, 2012 at 4:38 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> On Sat, Jul 28, 2012 at 01:32:50AM +0200, Linus Walleij wrote:
+>>> On Wed, Jul 25, 2012 at 4:49 AM, Colin Cross <ccross@android.com> wrote:
+>>>
+>>> > Many clocks that are used to provide sched_clock will reset during
+>>> > suspend.  If read_sched_clock returns 0 after suspend, sched_clock will
+>>> > appear to jump forward.  This patch resets cd.epoch_cyc to the current
+>>> > value of read_sched_clock during resume, which causes sched_clock() just
+>>> > after suspend to return the same value as sched_clock() just before
+>>> > suspend.
+>>> >
+>>> > In addition, during the window where epoch_ns has been updated before
+>>> > suspend, but epoch_cyc has not been updated after suspend, it is unknown
+>>> > whether the clock has reset or not, and sched_clock() could return a
+>>> > bogus value.  Add a suspended flag, and return the pre-suspend epoch_ns
+>>> > value during this period.
+>>> >
+>>> > The new behavior is triggered by calling setup_sched_clock_needs_suspend
+>>> > instead of setup_sched_clock.
+>>> >
+>>> > Signed-off-by: Colin Cross <ccross@android.com>
+>>>
+>>> Sweet!
+>>> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> Have any of you looked at the patch I originally posted for doing this?
+>> It needs updating but shows the overall principle - which is to ensure
+>> that the epoch is up to date before suspending.
+>>
+>> It doesn't deal with resume, because different timers behave differently,
+>> and there's no real way to deal with that properly.  The important thing
+>> that this patch does is to ensure sched_clock() doesn't ever go backwards.
+>>
+>>  arch/arm/kernel/sched_clock.c |   18 ++++++++++++++++++
+>>  1 files changed, 18 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+>> index 9a46370..4be4019 100644
+>> --- a/arch/arm/kernel/sched_clock.c
+>> +++ b/arch/arm/kernel/sched_clock.c
+>> @@ -10,6 +10,7 @@
+>>  #include <linux/jiffies.h>
+>>  #include <linux/kernel.h>
+>>  #include <linux/sched.h>
+>> +#include <linux/syscore_ops.h>
+>>  #include <linux/timer.h>
+>>
+>>  #include <asm/sched_clock.h>
+>> @@ -72,3 +73,20 @@ void __init sched_clock_postinit(void)
+>>  {
+>>         sched_clock_poll(sched_clock_timer.data);
+>>  }
+>> +
+>> +static int sched_clock_suspend(void)
+>> +{
+>> +       sched_clock_poll(sched_clock_timer.data);
+>> +       return 0;
+>> +}
+>> +
+>> +static struct syscore_ops sched_clock_ops = {
+>> +       .suspend        = sched_clock_suspend,
+>> +};
+>> +
+>> +static int __init sched_clock_syscore_init(void)
+>> +{
+>> +       register_syscore_ops(&sched_clock_ops);
+>> +       return 0;
+>> +}
+>> +device_initcall(sched_clock_syscore_init);
+>>
+>
+> That patch was merged in 3.4, and my patch is on top of it.  Your
+> patch updates epoch_cyc and epoch_ns in suspend, but if the first call
+> to cyc_to_sched_clock after resume gets cyc = 0, cyc - epoch_cyc can
+> be negative, although it will be cast back to a large positive number.
+>
+> With my patch, epoch_cyc is updated in resume to whatever
+> read_sched_clock() returns, and epoch_ns is still set to the suspend
+> value, so it appears that sched_clock has not changed between
+> sched_clock_suspend and sched_clock_resume.  It will work with any
+> timer behavior (reset to 0, reset to random value, or continuing
+> counting).  The old setup_sched_clock function maintains the old
+> behavior to appease those who like their 32kHz sched clock to continue
+> ticking in suspend, although I think it is more correct for all sched
+> clocks to be faster than 32 kHz (when possible) and stop in suspend.
 
-  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+I think the existing code can cause sched_clock to go backwards if the
+register read by the read function resets to 0 in suspend:
 
-are available in the git repository at:
+In sched_clock_suspend epoch_cyc is updated to 0x00002000.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+The first sched_clock call after resume gets cyc = 0, returning
+epoch_ns + cyc_to_ns(0xffffe000)
 
-for you to fetch changes up to 03179fe92318e7934c180d96f12eff2cb36ef7b6:
-
-  ext4: undo ext4_calc_metadata_amount if we fail to claim space (2012-07-23 00:00:20 -0400)
-
-----------------------------------------------------------------
-The usual collection of bug fixes and optimizations.  Perhaps of
-greatest note is a speed up for parallel, non-allocating DIO writes,
-since we no longer take the i_mutex lock in that case.  For bug fixes,
-we fix an incorrect overhead calculation which caused slightly
-incorrect results for df(1) and statfs(2).  We also fixed bugs in the
-metadata checksum feature.
-
-----------------------------------------------------------------
-Aditya Kali (2):
-      ext4: avoid uneeded calls to ext4_mb_load_buddy() while reading mb_groups
-      ext4: make quota as first class supported feature
-
-Al Viro (1):
-      ext4: fix ext4 mismerge back in January
-
-Artem Bityutskiy (3):
-      ext4: remove unnecessary superblock dirtying
-      ext4: weed out ext4_write_super
-      ext4: remove unnecessary argument from __ext4_handle_dirty_metadata()
-
-Ashish Sangwan (1):
-      ext4: fix hole punch failure when depth is greater than 0
-
-Brian Foster (1):
-      ext4: don't let i_reserved_meta_blocks go negative
-
-Haibo Liu (1):
-      ext4: remove an unused statement in ext4_mb_get_buddy_page_lock()
-
-HaiboLiu (1):
-      ext4: fix out-of-date comments in extents.c
-
-Jan Kara (2):
-      ext4: remove useless marking of superblock dirty
-      ext4: convert last user of ext4_mark_super_dirty() to ext4_handle_dirty_super()
-
-Tao Ma (2):
-      ext4: use proper csum calculation in ext4_rename
-      ext4: use s_csum_seed instead of i_csum_seed for xattr block
-
-Theodore Ts'o (5):
-      ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
-      ext4: fix overhead calculation used by ext4_statfs()
-      ext4: remove unused variable in ext4_update_super()
-      ext4: remove dynamic array size in ext4_chksum()
-      ext4: undo ext4_calc_metadata_amount if we fail to claim space
-
-Zheng Liu (4):
-      ext4: honor O_(D)SYNC semantic in ext4_fallocate()
-      ext4: split ext4_file_write into buffered IO and direct IO
-      ext4: add a new nolock flag in ext4_map_blocks
-      ext4: don't take the i_mutex lock when doing DIO overwrites
-
- fs/ext4/balloc.c    |   3 +-
- fs/ext4/bitmap.c    |  12 +-
- fs/ext4/ext4.h      |  26 ++---
- fs/ext4/ext4_jbd2.c |   8 +-
- fs/ext4/ext4_jbd2.h |  25 ++--
- fs/ext4/extents.c   |  51 +++++----
- fs/ext4/file.c      | 121 ++++++++++++++++----
- fs/ext4/ialloc.c    |   5 +-
- fs/ext4/inode.c     | 126 ++++++++++++++++----
- fs/ext4/ioctl.c     |   1 -
- fs/ext4/mballoc.c   |  26 +++--
- fs/ext4/namei.c     |  15 ++-
- fs/ext4/resize.c    |   7 +-
- fs/ext4/super.c     | 323 +++++++++++++++++++++++++++++++++++++++++-----------
- fs/ext4/xattr.c     |  11 +-
- 15 files changed, 563 insertions(+), 197 deletions(-)
-
+Later, sched_clock gets cyc = 0x5000, returning epoch_ns +
+cyc_to_ns(0x3000), which will be much smaller than the previous
+sched_clock value.
