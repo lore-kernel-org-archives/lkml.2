@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab2G1GKy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 02:10:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60089 "EHLO bear.ext.ti.com"
+	id S1752198Ab2G1GNH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 02:13:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56877 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab2G1GKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 02:10:53 -0400
+	id S1751719Ab2G1GNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jul 2012 02:13:06 -0400
 From: Chandrabhanu Mahapatra <cmahapatra@ti.com>
 To: <linus.walleij@stericsson.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>
+        <rob.herring@calxeda.com>, <tony@atomide.com>
 CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <leed.aguilar@ti.com>, Chandrabhanu Mahapatra <cmahapatra@ti.com>
-Subject: [PATCH V1 2/3] gpio/pca953x: increase variables size to support 24 bit of data
-Date: Sat, 28 Jul 2012 11:37:55 +0530
-Message-ID: <d22b134ca3d86a37a0a54484ad473d7dfe151529.1343026861.git.cmahapatra@ti.com>
+Subject: [PATCH V1 3/3] OMAP: Define TCA6424 max number of possible IRQs
+Date: Sat, 28 Jul 2012 11:40:05 +0530
+Message-ID: <03736c1b42a7e28fc0b47aabd5c0f019edb1baf2.1343026861.git.cmahapatra@ti.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1343026861.git.cmahapatra@ti.com>
 References: <cover.1341925681.git.cmahapatra@ti.com> <cover.1343026861.git.cmahapatra@ti.com>
@@ -25,84 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Leed Aguilar <leed.aguilar@ti.com>
 
-Increase variable size from u16 to u32 to allocate 24 bit of data required for
-the TCA6424 I/O expander device type.
+TCA6424 being a 24 bit I2C and SMBus I/O expander has 24 available GPIO lines
+that can be used as IRQs lines. So, the support for 24 more IRQ lines has been
+added to the kernel.
 
 Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
 Signed-off-by: Chandrabhanu Mahapatra <cmahapatra@ti.com>
 ---
- drivers/gpio/gpio-pca953x.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ arch/arm/plat-omap/include/plat/irqs.h |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-index af7024f..c3ca7d8 100644
---- a/drivers/gpio/gpio-pca953x.c
-+++ b/drivers/gpio/gpio-pca953x.c
-@@ -78,10 +78,10 @@ struct pca953x_chip {
- 
- #ifdef CONFIG_GPIO_PCA953X_IRQ
- 	struct mutex irq_lock;
--	uint16_t irq_mask;
--	uint16_t irq_stat;
--	uint16_t irq_trig_raise;
--	uint16_t irq_trig_fall;
-+	u32 irq_mask;
-+	u32 irq_stat;
-+	u32 irq_trig_raise;
-+	u32 irq_trig_fall;
- 	int	 irq_base;
+diff --git a/arch/arm/plat-omap/include/plat/irqs.h b/arch/arm/plat-omap/include/plat/irqs.h
+index 37bbbbb..97c71ba 100644
+--- a/arch/arm/plat-omap/include/plat/irqs.h
++++ b/arch/arm/plat-omap/include/plat/irqs.h
+@@ -378,8 +378,17 @@
  #endif
+ #define OMAP_FPGA_IRQ_END	(OMAP_FPGA_IRQ_BASE + OMAP_FPGA_NR_IRQS)
  
-@@ -349,8 +349,8 @@ static void pca953x_irq_bus_lock(struct irq_data *d)
- static void pca953x_irq_bus_sync_unlock(struct irq_data *d)
- {
- 	struct pca953x_chip *chip = irq_data_get_irq_chip_data(d);
--	uint16_t new_irqs;
--	uint16_t level;
-+	u32 new_irqs;
-+	u32 level;
- 
- 	/* Look for any newly setup interrupt */
- 	new_irqs = chip->irq_trig_fall | chip->irq_trig_raise;
-@@ -368,8 +368,8 @@ static void pca953x_irq_bus_sync_unlock(struct irq_data *d)
- static int pca953x_irq_set_type(struct irq_data *d, unsigned int type)
- {
- 	struct pca953x_chip *chip = irq_data_get_irq_chip_data(d);
--	uint16_t level = d->irq - chip->irq_base;
--	uint16_t mask = 1 << level;
-+	u32 level = d->irq - chip->irq_base;
-+	u32 mask = 1 << level;
- 
- 	if (!(type & IRQ_TYPE_EDGE_BOTH)) {
- 		dev_err(&chip->client->dev, "irq %d: unsupported type %d\n",
-@@ -399,12 +399,12 @@ static struct irq_chip pca953x_irq_chip = {
- 	.irq_set_type		= pca953x_irq_set_type,
- };
- 
--static uint16_t pca953x_irq_pending(struct pca953x_chip *chip)
-+static u32 pca953x_irq_pending(struct pca953x_chip *chip)
- {
- 	u32 cur_stat;
--	uint16_t old_stat;
--	uint16_t pending;
--	uint16_t trigger;
-+	u32 old_stat;
-+	u32 pending;
-+	u32 trigger;
- 	int ret, offset = 0;
- 
- 	switch (chip->chip_type) {
-@@ -440,8 +440,8 @@ static uint16_t pca953x_irq_pending(struct pca953x_chip *chip)
- static irqreturn_t pca953x_irq_handler(int irq, void *devid)
- {
- 	struct pca953x_chip *chip = devid;
--	uint16_t pending;
--	uint16_t level;
-+	u32 pending;
-+	u32 level;
- 
- 	pending = pca953x_irq_pending(chip);
- 
++/* TCA6424A I2C and SMBus I/O expander */
++#define OMAP_TCA6424_IRQ_BASE	(OMAP_FPGA_IRQ_END)
++#ifdef CONFIG_GPIO_PCA953X
++#define OMAP_TCA6424_NR_IRQS	24
++#else
++#define OMAP_TCA6424_NR_IRQS	0
++#endif
++#define OMAP_TCA6424_IRQ_END	(OMAP_TCA6424_IRQ_BASE + OMAP_TCA6424_NR_IRQS)
++
+ /* External TWL4030 can handle interrupts on 2430 and 34xx boards */
+-#define	TWL4030_IRQ_BASE	(OMAP_FPGA_IRQ_END)
++#define	TWL4030_IRQ_BASE	(OMAP_TCA6424_IRQ_END)
+ #ifdef	CONFIG_TWL4030_CORE
+ #define	TWL4030_BASE_NR_IRQS	8
+ #define	TWL4030_PWR_NR_IRQS	8
 -- 
 1.7.10
 
