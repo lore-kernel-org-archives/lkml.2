@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab2G1D7K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jul 2012 23:59:10 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54875 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab2G1D6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jul 2012 23:58:10 -0400
+	id S1753196Ab2G1D7M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jul 2012 23:59:12 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57547 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab2G1D6h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jul 2012 23:58:37 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -23,58 +24,59 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Michel Lespinasse <walken@google.com>,
         Minchan Kim <minchan@kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 2/5] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE handlers
-Date: Fri, 27 Jul 2012 23:57:09 -0400
-Message-Id: <1343447832-7182-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 0/5][RFC] Fallocate Volatile Ranges v6
+Date: Fri, 27 Jul 2012 23:57:07 -0400
+Message-Id: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
-References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072803-9360-0000-0000-000008D962EC
+x-cbid: 12072803-7408-0000-0000-00000727FA23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
-functionality for tmpfs making use of the volatile range
-management code.
+So after not getting too much positive feedback on my last
+attempt at trying to use a non-shrinker method for managing
+& purging volatile ranges, I decided I'd go ahead and try
+to implement something along Minchan's ERECLAIM LRU list
+idea.
 
-Conceptually, FALLOC_FL_MARK_VOLATILE is like a delayed
-FALLOC_FL_PUNCH_HOLE.  This allows applications that have
-data caches that can be re-created to tell the kernel that
-some memory contains data that is useful in the future, but
-can be recreated if needed, so if the kernel needs, it can
-zap the memory without having to swap it out.
+Again this patchset has two parts:
 
-In use, applications use FALLOC_FL_MARK_VOLATILE to mark
-page ranges as volatile when they are not in use. Then later
-if they wants to reuse the data, they use
-FALLOC_FL_UNMARK_VOLATILE, which will return an error if the
-data has been purged.
+The first 3 patches add generic volatile range management code, as 
+well as tmpfs support for FALLOC_FL_MARK_VOLATILE, which uses a
+shrinker to purge ranges, and converts ashmem to use
+FALLOC_FL_MARK_VOLATILE, almost reducing the driver in half.
 
-This is very much influenced by the Android Ashmem interface by
-Robert Love so credits to him and the Android developers.
-In many cases the code & logic come directly from the ashmem patch.
-The intent of this patch is to allow for ashmem-like behavior, but
-embeds the idea a little deeper into the VM code.
 
-This is a reworked version of the fadvise volatile idea submitted
-earlier to the list. Thanks to Dave Chinner for suggesting to
-rework the idea in this fashion. Also thanks to Dmitry Adamushko
-for continued review and bug reporting, and Dave Hansen for
-help with the original design and mentoring me in the VM code.
+Since Kosaki-san objected to using the shrinker, as its not numa
+aware, and is only called after we shrink normal lru lists. The 
+second half of this patch set provides a different method that is
+not shrinker based.
 
-v3:
-* Fix off by one issue when truncating page ranges
-* Use Dave Hansesn's suggestion to use shmem_writepage to trigger
-  range purging instead of using a shrinker.
+The last two patches introduce a new lru list, LRU_VOLATILE.
+When pages are marked volatile, they are moved to this lru list,
+which we will shrink first when trying to free up memory.
 
-v4:
-* Revert the shrinker removal, since writepage won't get called
-  if we don't have swap.
+The reason why I'm keeping this in two parts is that I want
+to be able to easily do performance comparisons between
+the more lightweight, but numa-unaware, shrinker method vs the
+more correct, but slower (due to the page-by-page management)
+method of handling it deeper in the VM.
 
-v5:
-* Cleanups
+I know the way this is currently implemented is really bad for
+performance, since we add/remove pages to the LRU_VOLATILE list
+page by page instead of batching. So I know this needs more work,
+but I wanted to get just some initial reactions to this approach
+versus the earlier ones.
+
+Also, I know this isn't exactly the same as the ERECLAIM lru list
+that Minchan suggested, since that might also contain inactive
+clean file pages as well, but I wanted to stick to just volatile
+pages for now as I learn more about how the core vm works. I'll
+be fine to rename LRU_VOLATILE later if its appropriate.
+
+What's new in this iteration:
+* Dropped the writepage style purging instead for the LRU_VOLATILE
 
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
@@ -94,197 +96,35 @@ CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 CC: Michel Lespinasse <walken@google.com>
 CC: Minchan Kim <minchan@kernel.org>
 CC: linux-mm@kvack.org <linux-mm@kvack.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- fs/open.c              |    3 +-
- include/linux/falloc.h |    7 +--
- mm/shmem.c             |  113 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 119 insertions(+), 4 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 1e914b3..421a97c 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -223,7 +223,8 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 		return -EINVAL;
- 
- 	/* Return error if mode is not supported */
--	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-+	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
-+			FALLOC_FL_MARK_VOLATILE | FALLOC_FL_UNMARK_VOLATILE))
- 		return -EOPNOTSUPP;
- 
- 	/* Punch hole must have keep size set */
-diff --git a/include/linux/falloc.h b/include/linux/falloc.h
-index 73e0b62..3e47ad5 100644
---- a/include/linux/falloc.h
-+++ b/include/linux/falloc.h
-@@ -1,9 +1,10 @@
- #ifndef _FALLOC_H_
- #define _FALLOC_H_
- 
--#define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
--#define FALLOC_FL_PUNCH_HOLE	0x02 /* de-allocates range */
--
-+#define FALLOC_FL_KEEP_SIZE		0x01 /* default is extend size */
-+#define FALLOC_FL_PUNCH_HOLE		0x02 /* de-allocates range */
-+#define FALLOC_FL_MARK_VOLATILE		0x04 /* mark range volatile */
-+#define FALLOC_FL_UNMARK_VOLATILE	0x08 /* mark range non-volatile */
- #ifdef __KERNEL__
- 
- /*
-diff --git a/mm/shmem.c b/mm/shmem.c
-index c15b998..e5ce04c 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -64,6 +64,7 @@ static struct vfsmount *shm_mnt;
- #include <linux/highmem.h>
- #include <linux/seq_file.h>
- #include <linux/magic.h>
-+#include <linux/volatile.h>
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -633,6 +634,103 @@ static int shmem_setattr(struct dentry *dentry, struct iattr *attr)
- 	return error;
- }
- 
-+static DEFINE_VOLATILE_FS_HEAD(shmem_volatile_head);
-+
-+static int shmem_mark_volatile(struct inode *inode, loff_t offset, loff_t len)
-+{
-+	pgoff_t start, end;
-+	int ret;
-+
-+	start = offset >> PAGE_CACHE_SHIFT;
-+	end = (offset+len) >> PAGE_CACHE_SHIFT;
-+
-+	volatile_range_lock(&shmem_volatile_head);
-+	ret = volatile_range_add(&shmem_volatile_head, &inode->i_data,
-+								start, end);
-+	if (ret > 0) { /* immdiately purge */
-+		shmem_truncate_range(inode,
-+				((loff_t) start << PAGE_CACHE_SHIFT),
-+				((loff_t) end << PAGE_CACHE_SHIFT)-1);
-+		ret = 0;
-+	}
-+	volatile_range_unlock(&shmem_volatile_head);
-+
-+	return ret;
-+}
-+
-+static int shmem_unmark_volatile(struct inode *inode, loff_t offset, loff_t len)
-+{
-+	pgoff_t start, end;
-+	int ret;
-+
-+	start = offset >> PAGE_CACHE_SHIFT;
-+	end = (offset+len) >> PAGE_CACHE_SHIFT;
-+
-+	volatile_range_lock(&shmem_volatile_head);
-+	ret = volatile_range_remove(&shmem_volatile_head, &inode->i_data,
-+								start, end);
-+	volatile_range_unlock(&shmem_volatile_head);
-+
-+	return ret;
-+}
-+
-+static void shmem_clear_volatile(struct inode *inode)
-+{
-+	volatile_range_lock(&shmem_volatile_head);
-+	volatile_range_clear(&shmem_volatile_head, &inode->i_data);
-+	volatile_range_unlock(&shmem_volatile_head);
-+}
-+
-+static
-+int shmem_volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
-+{
-+	s64 nr_to_scan = sc->nr_to_scan;
-+	const gfp_t gfp_mask = sc->gfp_mask;
-+	struct address_space *mapping;
-+	pgoff_t start, end;
-+	int ret;
-+	s64 page_count;
-+
-+	if (nr_to_scan && !(gfp_mask & __GFP_FS))
-+		return -1;
-+
-+	volatile_range_lock(&shmem_volatile_head);
-+	page_count = volatile_range_lru_size(&shmem_volatile_head);
-+	if (!nr_to_scan)
-+		goto out;
-+
-+	do {
-+		ret = volatile_ranges_pluck_lru(&shmem_volatile_head,
-+							&mapping, &start, &end);
-+		if (ret) {
-+			shmem_truncate_range(mapping->host,
-+				((loff_t) start << PAGE_CACHE_SHIFT),
-+				((loff_t) end << PAGE_CACHE_SHIFT)-1);
-+
-+			nr_to_scan -= end-start;
-+			page_count -= end-start;
-+		};
-+	} while (ret && (nr_to_scan > 0));
-+
-+out:
-+	volatile_range_unlock(&shmem_volatile_head);
-+
-+	return page_count;
-+}
-+
-+static struct shrinker shmem_volatile_shrinker = {
-+	.shrink = shmem_volatile_shrink,
-+	.seeks = DEFAULT_SEEKS,
-+};
-+
-+static int __init shmem_shrinker_init(void)
-+{
-+	register_shrinker(&shmem_volatile_shrinker);
-+	return 0;
-+}
-+arch_initcall(shmem_shrinker_init);
-+
-+
- static void shmem_evict_inode(struct inode *inode)
- {
- 	struct shmem_inode_info *info = SHMEM_I(inode);
-@@ -1730,6 +1828,14 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 		/* No need to unmap again: hole-punching leaves COWed pages */
- 		error = 0;
- 		goto out;
-+	} else if (mode & FALLOC_FL_MARK_VOLATILE) {
-+		/* Mark pages volatile, sort of delayed hole punching */
-+		error = shmem_mark_volatile(inode, offset, len);
-+		goto out;
-+	} else if (mode & FALLOC_FL_UNMARK_VOLATILE) {
-+		/* Mark pages non-volatile, return error if pages were purged */
-+		error = shmem_unmark_volatile(inode, offset, len);
-+		goto out;
- 	}
- 
- 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
-@@ -1808,6 +1914,12 @@ out:
- 	return error;
- }
- 
-+static int shmem_release(struct inode *inode, struct file *file)
-+{
-+	shmem_clear_volatile(inode);
-+	return 0;
-+}
-+
- static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
- {
- 	struct shmem_sb_info *sbinfo = SHMEM_SB(dentry->d_sb);
-@@ -2719,6 +2831,7 @@ static const struct file_operations shmem_file_operations = {
- 	.splice_read	= shmem_file_splice_read,
- 	.splice_write	= generic_file_splice_write,
- 	.fallocate	= shmem_fallocate,
-+	.release	= shmem_release,
- #endif
- };
- 
+
+John Stultz (5):
+  [RFC] Add volatile range management code
+  [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE handlers
+  [RFC] ashmem: Convert ashmem to use volatile ranges
+  [RFC][HACK] Add LRU_VOLATILE support to the VM
+  [RFC][HACK] Switch volatile/shmem over to LRU_VOLATILE
+
+ drivers/staging/android/ashmem.c |  331 +--------------------------
+ fs/open.c                        |    3 +-
+ include/linux/falloc.h           |    7 +-
+ include/linux/fs.h               |    1 +
+ include/linux/mm_inline.h        |    2 +
+ include/linux/mmzone.h           |    1 +
+ include/linux/page-flags.h       |    3 +
+ include/linux/swap.h             |    3 +
+ include/linux/volatile.h         |   39 ++++
+ mm/Makefile                      |    2 +-
+ mm/memcontrol.c                  |    1 +
+ mm/page_alloc.c                  |    1 +
+ mm/shmem.c                       |  118 ++++++++++
+ mm/swap.c                        |   71 ++++++
+ mm/vmscan.c                      |   76 ++++++-
+ mm/volatile.c                    |  459 ++++++++++++++++++++++++++++++++++++++
+ 16 files changed, 788 insertions(+), 330 deletions(-)
+ create mode 100644 include/linux/volatile.h
+ create mode 100644 mm/volatile.c
+
 -- 
 1.7.9.5
 
