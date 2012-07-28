@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2G1QTS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 12:19:18 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:52712 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752507Ab2G1QTR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 12:19:17 -0400
-Date: Sat, 28 Jul 2012 12:19:16 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Daniel Mack <zonque@gmail.com>
-cc: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        Sarbojit Ganguly <unixman.linuxboy@gmail.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: Kernel Oops while disconnecting USB peripheral (always)
-In-Reply-To: <5013E074.20007@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1207281218190.23545-100000@netrider.rowland.org>
+	id S1752875Ab2G1QfF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 12:35:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752597Ab2G1QfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jul 2012 12:35:03 -0400
+Date: Sat, 28 Jul 2012 18:31:57 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Anton Arapov <anton@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        William Cohen <wcohen@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] uprobes: mmap_region() corrupts mm->mm_rb if uprobe_mmap()
+	fails
+Message-ID: <20120728163157.GA22719@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jul 2012, Daniel Mack wrote:
+https://bugzilla.redhat.com/show_bug.cgi?id=843640
 
-> Hmm, interesting. Thanks for sharing this. I personally never saw this
-> bug kicking in, but if I understand your findings correctly, we would
-> need something like the following patch for snd-usb and the storage driver?
-> 
-> Sarbojit, could you give this a test and see whether your kernel still
-> crashes in any of the two drivers?
+If mmap_region()->uprobe_mmap() fails, unmap_and_free_vma path
+does unmap_region() but does not remove the soon-to-be-freed vma
+from rb tree (actually there are more problems).
 
+Perhaps we could do do_munmap() + return in this case, but in fact
+it is simply wrong to abort if uprobe_mmap() fails. Until at least
+we move the !UPROBE_COPY_INSN code from install_breakpoint() to
+uprobe_register().
 
-> --- a/drivers/usb/storage/usb.c
-> +++ b/drivers/usb/storage/usb.c
-> @@ -1025,9 +1025,14 @@ void usb_stor_disconnect(struct usb_interface *intf)
->  {
->         struct us_data *us = usb_get_intfdata(intf);
-> 
-> +       if (!us)
-> +               return;
+For example, uprobe_mmap()->install_breakpoint() can fail if the
+probed insn is not supported (remember, uprobe_register() succeeds
+if nobody mmaps inode/offset), mmap() should not fail in this case.
 
-This can never happen.  The disconnect routine gets called only once, 
-so us will not be NULL.
+dup_mmap()->uprobe_mmap() is wrong too by the same reason, fork()
+can race with uprobe_register() and fail for no reason if it wins
+the race and does install_breakpoint() first.
 
-> +
->         US_DEBUGP("storage_disconnect() called\n");
->         quiesce_and_remove_host(us);
->         release_everything(us);
-> +
-> +       usb_set_intfdata(intf, NULL);
->  }
->  EXPORT_SYMBOL_GPL(usb_stor_disconnect);
+Change mmap_region() and dup_mmap() to ignore the error code from
+uprobe_mmap().
 
-Alan Stern
+Reported-by: William Cohen <wcohen@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: <stable@vger.kernel.org> # v3.5
+---
+ kernel/fork.c |    4 ++--
+ mm/mmap.c     |    5 ++---
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/fork.c b/kernel/fork.c
+index ab5211b..54bb88a 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -454,8 +454,8 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ 		if (retval)
+ 			goto out;
+ 
+-		if (file && uprobe_mmap(tmp))
+-			goto out;
++		if (file)
++			uprobe_mmap(tmp);
+ 	}
+ 	/* a new mm has just been created */
+ 	arch_dup_mmap(oldmm, mm);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 4fe2697..f25fd3f 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1355,9 +1355,8 @@ out:
+ 	} else if ((flags & MAP_POPULATE) && !(flags & MAP_NONBLOCK))
+ 		make_pages_present(addr, addr + len);
+ 
+-	if (file && uprobe_mmap(vma))
+-		/* matching probes but cannot insert */
+-		goto unmap_and_free_vma;
++	if (file)
++		uprobe_mmap(vma);
+ 
+ 	return addr;
+ 
+-- 
+1.5.5.1
+
 
