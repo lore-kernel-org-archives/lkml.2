@@ -1,37 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab2G1Gu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 02:50:58 -0400
-Received: from outrelay01.libero.it ([212.52.84.101]:38296 "EHLO
-	outrelay01.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab2G1Guy convert rfc822-to-8bit (ORCPT
+	id S1752205Ab2G1HxL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 03:53:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39915 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab2G1Hwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 02:50:54 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0B020C.50138B53.00C5,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1821
-Message-ID: <13543880.1355401343458131595.JavaMail.defaultUser@defaultHost>
-Date: Sat, 28 Jul 2012 08:48:51 +0200 (CEST)
-From: "gopl@libero.it" <gopl@libero.it>
-Reply-To: "gopl@libero.it" <gopl@libero.it>
-Subject: Summer Bonus!
-MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-SenderIP: 77.171.84.119
-X-libjamv: Jk2N/yGWNms=
-X-libjamsun: 4djvANBSOLH/NZZty1m6XQ==
-To: unlisted-recipients:; (no To-header on input)
+	Sat, 28 Jul 2012 03:52:43 -0400
+Date: Sat, 28 Jul 2012 00:52:41 -0700 (PDT)
+Message-Id: <20120728.005241.2226926028836664098.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are please to inform you that the summer promotion award program held 27th
-June  2012,have pronounce your email-address as the lucky winner of a total
-sum: of €50,000.
-CONTACT:
-The claim office/Email:Postinfo@luckymail.com , with your winning Serial-No:LE
-0031#44230.
--------------------------------------
-Postcodesloterij.nl
 
+Several bug fixes, some to new features appearing in this merge window,
+some that have been around for a while.
+
+I have a short list of known problems that need to be sorted out, but
+all of them can be solved easily during the run up to 3.6-final.
+
+I'll be offline until Sunday afternoon, but nothing need hold up
+3.6-rc1 and the close of the merge window, networking wise, at this
+point.
+
+1) Fix interface check in ipv4 TCP early demux, from Eric Dumazet.
+
+2) Fix a long standing bug in TCP DMA to userspace offload that can
+   hang applications using MSG_TRUNC, from Jiri Kosina.
+
+3) Don't allow TCP_USER_TIMEOUT to be negative, from Hangbin Liu.
+
+4) Don't use GFP_KERNEL under spinlock in kaweth driver, from Dan
+   Carpenter
+
+Please pull, thanks a lot.
+
+The following changes since commit b387e41e523c1aa347cff055455d0dd129357df4:
+
+  Merge branch 'merge' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2012-07-27 08:35:26 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 7b9b04fb728ec0b94464ed902f3395aa592c5bcf:
+
+  Merge branch 'for-davem' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless (2012-07-27 14:25:40 -0700)
+
+----------------------------------------------------------------
+
+Dan Carpenter (1):
+      USB: kaweth.c: use GFP_ATOMIC under spin_lock
+
+David S. Miller (1):
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+
+Eric Dumazet (1):
+      ipv4: fix TCP early demux
+
+Hangbin Liu (1):
+      tcp: Add TCP_USER_TIMEOUT negative value check
+
+Hauke Mehrtens (2):
+      bcma: fix regression in interrupt assignment on mips
+      bcma: add missing iounmap on error path
+
+Jesse Gross (1):
+      Revert "openvswitch: potential NULL deref in sample()"
+
+Jiri Benc (1):
+      net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI handling
+
+Jiri Kosina (1):
+      tcp: perform DMA to userspace only if there is a task waiting for it
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Thomas Huehn (1):
+      mac80211_hwsim: fix possible race condition in usage of info->control.sta & control.vif
+
+ drivers/bcma/driver_mips.c            |  6 +++---
+ drivers/bcma/scan.c                   | 15 ++++++++++-----
+ drivers/net/usb/kaweth.c              |  2 +-
+ drivers/net/wireless/mac80211_hwsim.c |  5 -----
+ net/core/rtnetlink.c                  |  8 +++++++-
+ net/ipv4/tcp.c                        |  5 ++++-
+ net/ipv4/tcp_input.c                  |  5 ++++-
+ net/ipv4/tcp_ipv4.c                   | 14 ++++++--------
+ net/ipv4/tcp_minisocks.c              |  1 +
+ net/openvswitch/actions.c             |  3 ---
+ 10 files changed, 36 insertions(+), 28 deletions(-)
