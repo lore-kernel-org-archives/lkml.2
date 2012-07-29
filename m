@@ -1,73 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab2G2N2T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 09:28:19 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54690 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab2G2N2S (ORCPT
+	id S1753178Ab2G2OGx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 10:06:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38440 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab2G2OGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 09:28:18 -0400
-MIME-Version: 1.0
-From: Vladimir Volovich <vladimir.volovich@gmail.com>
-Date: Sun, 29 Jul 2012 17:27:56 +0400
-Message-ID: <CAECQtKrF2FMfOBDChPC7CcCwwsBir6-MBVU_-5aieefPTaqJzQ@mail.gmail.com>
-Subject: [BUG] hard LOCKUP occurred multiple times on linux 3.4
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 29 Jul 2012 10:06:52 -0400
+From: Baodong Chen <chenbdchenbd@gmail.com>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz, davem@davemloft.net
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Baodong Chen <chenbdchenbd@gmail.com>
+Subject: [PATCH] staging:net:fixed to fit tty_driver's kref field
+Date: Sun, 29 Jul 2012 22:06:32 +0800
+Message-Id: <1343570792-10604-1-git-send-email-chenbdchenbd@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Fixed code to fix tty_driver's kref field
+Coding style issues
 
-I've got several hard lockups on a system running kernel
-3.4-trunk-amd64, from debian package linux-image-3.4-trunk-amd64
-version 3.4.1-1~experimental.1
+Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
+---
+ drivers/staging/net/pc300_tty.c |  123 ++++++++++++++++++++------------------
+ 1 files changed, 65 insertions(+), 58 deletions(-)
 
-Apparently the lockups happened when opening a gmail page in iceweasel
-(could possibly be related to google talk plugin, since I saw it
-mentioned on the stack traces page). When the lockup happens,
-keyboard, mouse, become non-functional (nothing could be typed,
-keyboard leds are not switchable, etc). Then system was running gnome,
-and for some time it was updating the current time on the gnome panel;
-after some time it switches to a text console full of stack traces.
+diff --git a/drivers/staging/net/pc300_tty.c b/drivers/staging/net/pc300_tty.c
+index 4709f42..8a7277c 100644
+--- a/drivers/staging/net/pc300_tty.c
++++ b/drivers/staging/net/pc300_tty.c
+@@ -46,6 +46,8 @@
+ #include <linux/slab.h>
+ #include <linux/if.h>
+ #include <linux/skbuff.h>
++#include <linux/kref.h>
++
+ /* TTY includes */
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+@@ -134,12 +136,26 @@ static void cpc_tty_signal_on(pc300dev_t *pc300dev, unsigned char);
+ static int pc300_tiocmset(struct tty_struct *, unsigned int, unsigned int);
+ static int pc300_tiocmget(struct tty_struct *);
+ 
++static void cpc_tty_do_unreg_driver(struct kref *ref);
++
+ /* functions called by PC300 driver */
+ void cpc_tty_init(pc300dev_t *dev);
+ void cpc_tty_unregister_service(pc300dev_t *pc300dev);
+ void cpc_tty_receive(pc300dev_t *pc300dev);
+ void cpc_tty_trigger_poll(pc300dev_t *pc300dev);
+ 
++static void cpc_tty_do_unreg_driver(struct kref *ref)
++{
++	struct tty_driver *drv = container_of(ref, struct tty_driver, kref);
++	int ret;
++
++	cpc_tty_unreg_flag = 0;
++
++	res = tty_unregister_driver(drv);
++	if (res)
++		CPC_TTY_DBG("unregister the tty driver error=%d\n", res);
++}
++
+ /*
+  * PC300 TTY clear "signal"
+  */
+@@ -239,6 +255,8 @@ void cpc_tty_init(pc300dev_t *pc300dev)
+ 		/* interface routines from the upper tty layer to the tty driver */
+ 		tty_set_operations(&serial_drv, &pc300_ops);
+ 
++		kref_init(&serial_drv.kref);
++
+ 		/* register the TTY driver */
+ 		if (tty_register_driver(&serial_drv)) { 
+ 			printk("%s-tty: Failed to register serial driver! ",
+@@ -363,37 +381,37 @@ static void cpc_tty_close(struct tty_struct *tty, struct file *flip)
+ 	unsigned long flags;
+ 	int res;
+ 
+-	if (!tty || !tty->driver_data ) {
++	if (!tty || !tty->driver_data) {
+ 		CPC_TTY_DBG("hdlx-tty: no TTY in close\n");
+ 		return;
+ 	}
+ 
+ 	cpc_tty = (st_cpc_tty_area *) tty->driver_data;
+ 
+-	if ((cpc_tty->tty != tty)|| (cpc_tty->state != CPC_TTY_ST_OPEN)) {
+-		CPC_TTY_DBG("%s: TTY is not opened\n",cpc_tty->name);
++	if ((cpc_tty->tty != tty) || (cpc_tty->state != CPC_TTY_ST_OPEN)) {
++		CPC_TTY_DBG("%s: TTY is not opened\n", cpc_tty->name);
+ 		return;
+ 	}
+-   	
++
+ 	if (!cpc_tty->num_open) {
+-		CPC_TTY_DBG("%s: TTY is closed\n",cpc_tty->name);
++		CPC_TTY_DBG("%s: TTY is closed\n", cpc_tty->name);
+ 		return;
+ 	}
+ 
+ 	if (--cpc_tty->num_open > 0) {
+-		CPC_TTY_DBG("%s: TTY closed\n",cpc_tty->name);
++		CPC_TTY_DBG("%s: TTY closed\n", cpc_tty->name);
+ 		return;
+ 	}
+ 
+ 	cpc_tty_signal_off(cpc_tty->pc300dev, CTL_DTR);
+ 
+-	CPC_TTY_LOCK(cpc_tty->pc300dev->chan->card, flags);  /* lock irq */ 
++	CPC_TTY_LOCK(cpc_tty->pc300dev->chan->card, flags);  /* lock irq */
+ 	cpc_tty->tty = NULL;
+ 	cpc_tty->state = CPC_TTY_ST_INIT;
+-	CPC_TTY_UNLOCK(cpc_tty->pc300dev->chan->card, flags); /* unlock irq */ 
+-	
++	CPC_TTY_UNLOCK(cpc_tty->pc300dev->chan->card, flags); /* unlock irq */
++
+ 	if (cpc_tty->buf_rx.first) {
+-		unsigned char * aux;
++		unsigned char *aux;
+ 		while (cpc_tty->buf_rx.first) {
+ 			aux = (unsigned char *)cpc_tty->buf_rx.first;
+ 			cpc_tty->buf_rx.first = cpc_tty->buf_rx.first->next;
+@@ -402,22 +420,18 @@ static void cpc_tty_close(struct tty_struct *tty, struct file *flip)
+ 		cpc_tty->buf_rx.first = NULL;
+ 		cpc_tty->buf_rx.last = NULL;
+ 	}
+-	
++
+ 	kfree(cpc_tty->buf_tx);
+ 	cpc_tty->buf_tx = NULL;
+ 
+-	CPC_TTY_DBG("%s: TTY closed\n",cpc_tty->name);
+-	
+-	if (!serial_drv.refcount && cpc_tty_unreg_flag) {
+-		cpc_tty_unreg_flag = 0;
+-		CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
+-		if ((res=tty_unregister_driver(&serial_drv))) { 
+-			CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
+-							cpc_tty->name,res);
+-		}
++	CPC_TTY_DBG("%s: TTY closed\n", cpc_tty->name);
++
++	if (cpc_tty_unreg_flag) {
++		CPC_TTY_DBG("%s: checking unregister the tty driver...\n", cpc_tty->name);
++		kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
+ 	}
+-	return; 
+-} 
++	return;
++}
+ 
+ /*
+  * PC300 TTY WRITE routine
+@@ -624,33 +638,29 @@ static void cpc_tty_flush_buffer(struct tty_struct *tty)
+ /*
+  * PC300 TTY Hangup routine
+  *
+- * This routine is called by the tty driver to hangup the interface 
++ * This routine is called by the tty driver to hangup the interface
+  * o clear DTR signal
+  */
+ 
+ static void cpc_tty_hangup(struct tty_struct *tty)
+-{ 
+-	st_cpc_tty_area    *cpc_tty; 
++{
++	st_cpc_tty_area    *cpc_tty;
+ 	int res;
+ 
+-	if (!tty || !tty->driver_data ) {
+-		CPC_TTY_DBG("hdlcX-tty: no TTY to hangup\n");	
+-		return ; 
++	if (!tty || !tty->driver_data) {
++		CPC_TTY_DBG("hdlcX-tty: no TTY to hangup\n");
++		return ;
+ 	}
+ 
+-	cpc_tty = (st_cpc_tty_area *) tty->driver_data; 
++	cpc_tty = (st_cpc_tty_area *) tty->driver_data;
+ 
+ 	if ((cpc_tty->tty != tty) || (cpc_tty->state != CPC_TTY_ST_OPEN)) {
+-		CPC_TTY_DBG("%s: TTY is not opened\n",cpc_tty->name);
++		CPC_TTY_DBG("%s: TTY is not opened\n", cpc_tty->name);
+ 		return ;
+ 	}
+-	if (!serial_drv.refcount && cpc_tty_unreg_flag) {
+-		cpc_tty_unreg_flag = 0;
+-		CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
+-		if ((res=tty_unregister_driver(&serial_drv))) { 
+-			CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
+-							cpc_tty->name,res);
+-		}
++	if (cpc_tty_unreg_flag) {
++		CPC_TTY_DBG("%s: checking unregister the tty driver...\n", cpc_tty->name);
++		kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
+ 	}
+ 	cpc_tty_signal_off(cpc_tty->pc300dev, CTL_DTR);
+ }
+@@ -1027,43 +1037,40 @@ static void cpc_tty_trace(pc300dev_t *dev, char* buf, int len, char rxtx)
+  */
+ void cpc_tty_unregister_service(pc300dev_t *pc300dev)
+ {
+-	st_cpc_tty_area *cpc_tty; 
++	st_cpc_tty_area *cpc_tty = (st_cpc_tty_area *) pc300dev->cpc_tty;
+ 	ulong flags;
+ 	int res;
+ 
+-	if ((cpc_tty= (st_cpc_tty_area *) pc300dev->cpc_tty) == NULL) {
++	if (cpc_tty == NULL) {
+ 		CPC_TTY_DBG("%s: interface is not TTY\n", pc300dev->dev->name);
+-		return; 
++		return;
+ 	}
+ 	CPC_TTY_DBG("%s: cpc_tty_unregister_service", cpc_tty->name);
+ 
+-	if (cpc_tty->pc300dev != pc300dev) { 
+-		CPC_TTY_DBG("%s: invalid tty ptr=%s\n", 
++	if (cpc_tty->pc300dev != pc300dev) {
++		CPC_TTY_DBG("%s: invalid tty ptr=%s\n",
+ 		pc300dev->dev->name, cpc_tty->name);
+-		return; 
++		return;
+ 	}
+ 
+-	if (--cpc_tty_cnt == 0) { 
+-		if (serial_drv.refcount) {
+-			CPC_TTY_DBG("%s: unregister is not possible, refcount=%d",
+-							cpc_tty->name, serial_drv.refcount);
++	if (--cpc_tty_cnt == 0) {
++		CPC_TTY_DBG("%s: checking unregister the tty driver...\n",
++				cpc_tty->name);
++		res = kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
++		if (0 == res) {
++			CPC_TTY_DBG("%s: unregister is not possible\n",
++					cpc_tty->name);
+ 			cpc_tty_cnt++;
+ 			cpc_tty_unreg_flag = 1;
+ 			return;
+-		} else { 
+-			CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
+-			if ((res=tty_unregister_driver(&serial_drv))) { 
+-				CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
+-								cpc_tty->name,res);
+-			}
+ 		}
+ 	}
+-	CPC_TTY_LOCK(pc300dev->chan->card,flags);
+-	cpc_tty->tty = NULL; 
++	CPC_TTY_LOCK(pc300dev->chan->card, flags);
++	cpc_tty->tty = NULL;
+ 	CPC_TTY_UNLOCK(pc300dev->chan->card, flags);
+-	cpc_tty->tty_minor = 0; 
+-	cpc_tty->state = CPC_TTY_ST_IDLE; 
+-} 
++	cpc_tty->tty_minor = 0;
++	cpc_tty->state = CPC_TTY_ST_IDLE;
++}
+ 
+ /*
+  * PC300 TTY trigger poll routine
+-- 
+1.7.0.4
 
-The system is built on ASUS motherboard P8Z77-V PRO, with Intel
-i5-2310 CPU and 16 GB memory.
-
-I've made some photos of the stacktraces, and you could see them at
-
-https://lh5.googleusercontent.com/-DTJfg105hBo/UBUzE9LZogI/AAAAAAAAAbc/r5ojQ3K7Wvg/s0/DSC07729.JPG
-https://lh5.googleusercontent.com/-YbNxHj4d0Z0/UBUzFE_LDqI/AAAAAAAAAbg/A3CpFQuBvvA/s0/DSC07732.JPG
-https://lh5.googleusercontent.com/-f54rk_z-XbU/UBUzFIouYfI/AAAAAAAAAbk/6R9tM1apBtI/s0/DSC07733.JPG
-https://lh5.googleusercontent.com/-ux5LjtCEIOM/UBUzFzwcZPI/AAAAAAAAAbw/ONYS-u5sDoI/s0/DSC07734.JPG
-https://lh5.googleusercontent.com/-YioVDyEC_Gs/UBUzFxzBYhI/AAAAAAAAAb0/emYMsda06dw/s0/DSC07735.JPG
-https://lh5.googleusercontent.com/-uA2tB5dXSWY/UBUzGMgytzI/AAAAAAAAAb8/dVYNo1mJI_A/s0/DSC07737.JPG
-https://lh5.googleusercontent.com/-eax9J10ji7U/UBUzHKwWNhI/AAAAAAAAAcI/eWjsVpkOxcI/s0/DSC07738.JPG
-https://lh5.googleusercontent.com/-yrCy-evNvPw/UBUzHNjMExI/AAAAAAAAAcE/KjopS-oEF1U/s0/DSC07740.JPG
-
-and I've typed the call trace from the photo, if that helps:
-
-Call Trace:
- <NMI>  [<ffffffff81039697>] ? warn_slowpath_common+0x78/0x8c
- [<ffffffff81039743>] ? warn_slowpath_fmt+0x45/0x4a
- [<ffffffff8105fb9a>] ? sched_clock_cpu+0xb/0xc3
- [<ffffffff810136ed>] ? paravirt_read_tsc+0x5/0x8
- [<ffffffff8109307d>] ? watchdog_overflow_callback+0x93/0x9e
- [<ffffffff81092fea>] ? touch_nmi_watchdog+0x62/0x62
- [<ffffffff810b3551>] ? __perf_event_overflow+0x12c/0x1ae
- [<ffffffff8101a7c1>] ? x86_perf_event_set_period+0x101/0x10c
- [<ffffffff8101e44a>] ? intel_pmu_handle_irq+0x227/0x28a
- [<ffffffff8135a6cf>] ? nmi_handle.isra.0+0x3e/0x61
- [<ffffffff8135a79b>] ? do_nmi+0xa9/0x2a9
- [<ffffffff81359f3c>] ? end_repeat_nmi+0x1a/0x1e
- <<EOE>>
-
-I hope that this could help finding and fixing a bug, if it is indeed
-a software bug rather than a hardware issue - which I hope it is not
-:).
-
-Please let me know (by email) if you need any further info.
-
-Best wishes,
-Vladimir
