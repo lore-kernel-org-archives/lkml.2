@@ -1,45 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab2G2Oy4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 10:54:56 -0400
-Received: from mail.harran.edu.tr ([193.140.254.2]:15264 "EHLO
-	mail.harran.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab2G2Oyy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 10:54:54 -0400
-X-Greylist: delayed 3920 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Jul 2012 10:54:54 EDT
-Date: Sun, 29 Jul 2012 17:05:17 +0300 (EEST)
-From: Administrador de Sistemas <hural@harran.edu.tr>
-Reply-To: "up.gradeunit@yahoo.com.cn" <up.gradeunit@yahoo.com.cn>
-Message-ID: <100140702.2713.1343570717711.JavaMail.root@mail.harran.edu.tr>
-Subject: =?utf-8?Q?ATEN=C3=87=C3=83O;?=
+	id S1753250Ab2G2PAt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 11:00:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12658 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753021Ab2G2PAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 11:00:48 -0400
+Date: Sun, 29 Jul 2012 18:01:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v7 1/2] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120729150128.GE14278@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+ <20120724204311.21081.95028.stgit@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [116.202.67.87]
-X-Mailer: Zimbra 6.0.9_GA_2689 (zclient/6.0.9_GA_2689)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724204311.21081.95028.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 24, 2012 at 02:43:14PM -0600, Alex Williamson wrote:
+> In order to inject a level interrupt from an external source using an
+> irqfd, we need to allocate a new irq_source_id.  This allows us to
+> assert and (later) de-assert an interrupt line independently from
+> users of KVM_IRQ_LINE and avoid lost interrupts.
+> 
+> We also add what may appear like a bit of excessive infrastructure
+> around an object for storing this irq_source_id.  However, notice
+> that we only provide a way to assert the interrupt here.  A follow-on
+> interface will make use of the same irq_source_id to allow de-assert.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 
+I think this tracking of source ids is the root of all the problems
+you see with this patchset.
 
+A source ID is required for an irqfd to be created.
+But if source ID exists after irqfd is destroyed then
+the next create will fail.
 
-ATENÇÃO;
+So the only sane thing to do is to make irqfd manage this resource,
+clean it up completely when irqfd is gone.
 
-Sua caixa de correio excedeu o limite de armazenamento que é de 10GB, conforme definido pelo seu
-administrador, que está atualmente em execução no 10.9GB, você pode não ser capaz
-para enviar ou receber novas mensagens até que você re-validar a sua caixa de correio.
-Para revalidar sua caixa postal, envie os seguintes dados abaixo:
+Not to mention, the patch will be smaller :)
 
-nome:
-Nome de usuário:
-senha:
-Confirme a Senha:
-E-mail:
-
-Se você não conseguir revalidar sua caixa de correio, o correio será desactivado!
-
-obrigado
-Administrador de Sistemas
+> ---
+> 
+>  Documentation/virtual/kvm/api.txt |   11 +++
+>  arch/x86/kvm/x86.c                |    1 
+>  include/linux/kvm.h               |    3 +
+>  include/linux/kvm_host.h          |    4 +
+>  virt/kvm/eventfd.c                |  128 +++++++++++++++++++++++++++++++++++--
+>  5 files changed, 139 insertions(+), 8 deletions(-)
+> 
+> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> index bf33aaa..3911e62 100644
+> --- a/Documentation/virtual/kvm/api.txt
+> +++ b/Documentation/virtual/kvm/api.txt
+> @@ -1936,7 +1936,7 @@ Capability: KVM_CAP_IRQFD
+>  Architectures: x86
+>  Type: vm ioctl
+>  Parameters: struct kvm_irqfd (in)
+> -Returns: 0 on success, -1 on error
+> +Returns: 0 (or >= 0) on success, -1 on error
+>  
+>  Allows setting an eventfd to directly trigger a guest interrupt.
+>  kvm_irqfd.fd specifies the file descriptor to use as the eventfd and
+> @@ -1946,6 +1946,15 @@ the guest using the specified gsi pin.  The irqfd is removed using
+>  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+>  and kvm_irqfd.gsi.
+>  
+> +The KVM_IRQFD_FLAG_LEVEL flag indicates the gsi input is for a level
+> +triggered interrupt.  In this case a new irqchip input is allocated
+> +which is logically OR'd with other inputs allowing multiple sources
+> +to independently assert level interrupts.  The KVM_IRQFD_FLAG_LEVEL
+> +is only necessary on setup, teardown is identical to that above.  The
+> +return value when called with this flag is a key (>= 0) which may be
+> +used to associate this irqfd with other ioctls.  KVM_IRQFD_FLAG_LEVEL
+> +support is indicated by KVM_CAP_IRQFD_LEVEL.
+> +
+>  4.76 KVM_PPC_ALLOCATE_HTAB
+>  
+>  Capability: KVM_CAP_PPC_ALLOC_HTAB
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 59b5950..9ded39d 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2170,6 +2170,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>  	case KVM_CAP_GET_TSC_KHZ:
+>  	case KVM_CAP_PCI_2_3:
+>  	case KVM_CAP_KVMCLOCK_CTRL:
+> +	case KVM_CAP_IRQFD_LEVEL:
+>  		r = 1;
+>  		break;
+>  	case KVM_CAP_COALESCED_MMIO:
+> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> index 2ce09aa..b2e6e4f 100644
+> --- a/include/linux/kvm.h
+> +++ b/include/linux/kvm.h
+> @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+>  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+>  #define KVM_CAP_S390_COW 79
+>  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> +#define KVM_CAP_IRQFD_LEVEL 81
+>  
+>  #ifdef KVM_CAP_IRQ_ROUTING
+>  
+> @@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
+>  #endif
+>  
+>  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
+> +/* Available with KVM_CAP_IRQFD_LEVEL */
+> +#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
+>  
+>  struct kvm_irqfd {
+>  	__u32 fd;
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index b70b48b..c73f071 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -285,6 +285,10 @@ struct kvm {
+>  		struct list_head  items;
+>  	} irqfds;
+>  	struct list_head ioeventfds;
+> +	struct {
+> +		struct mutex lock;
+> +		struct list_head items;
+> +	} irqsources;
+>  #endif
+>  	struct kvm_vm_stat stat;
+>  	struct kvm_arch arch;
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index 7d7e2aa..878cb52 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -36,6 +36,66 @@
+>  #include "iodev.h"
+>  
+>  /*
+> + * An irq_source_id can be created from KVM_IRQFD for level interrupt
+> + * injections and shared with other interfaces for EOI or de-assert.
+> + * Create an object with reference counting to make it easy to use.
+> + */
+> +struct _irq_source {
+> +	int id; /* the IRQ source ID */
+> +	int gsi;
+> +	struct kvm *kvm;
+> +	struct list_head list;
+> +	struct kref kref;
+> +};
+> +
+> +static void _irq_source_release(struct kref *kref)
+> +{
+> +	struct _irq_source *source =
+> +		container_of(kref, struct _irq_source, kref);
+> +
+> +	/* This also de-asserts */
+> +	kvm_free_irq_source_id(source->kvm, source->id);
+> +	list_del(&source->list);
+> +	kfree(source);
+> +}
+> +
+> +static void _irq_source_put(struct _irq_source *source)
+> +{
+> +	if (source) {
+> +		mutex_lock(&source->kvm->irqsources.lock);
+> +		kref_put(&source->kref, _irq_source_release);
+> +		mutex_unlock(&source->kvm->irqsources.lock);
+> +	}
+> +}
+> +
+> +static struct _irq_source *_irq_source_alloc(struct kvm *kvm, int gsi)
+> +{
+> +	struct _irq_source *source;
+> +	int id;
+> +
+> +	source = kzalloc(sizeof(*source), GFP_KERNEL);
+> +	if (!source)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	id = kvm_request_irq_source_id(kvm);
+> +	if (id < 0) {
+> +		kfree(source);
+> +		return ERR_PTR(id);
+> +	}
+> +
+> +	kref_init(&source->kref);
+> +	source->kvm = kvm;
+> +	source->id = id;
+> +	source->gsi = gsi;
+> +
+> +	mutex_lock(&kvm->irqsources.lock);
+> +	list_add_tail(&source->list, &kvm->irqsources.items);
+> +	mutex_unlock(&kvm->irqsources.lock);
+> +
+> +	return source;
+> +}
+> +
+> +/*
+>   * --------------------------------------------------------------------
+>   * irqfd: Allows an fd to be used to inject an interrupt to the guest
+>   *
+> @@ -52,6 +112,8 @@ struct _irqfd {
+>  	/* Used for level IRQ fast-path */
+>  	int gsi;
+>  	struct work_struct inject;
+> +	/* IRQ source ID for level triggered irqfds */
+> +	struct _irq_source *source;
+>  	/* Used for setup/shutdown */
+>  	struct eventfd_ctx *eventfd;
+>  	struct list_head list;
+> @@ -62,7 +124,7 @@ struct _irqfd {
+>  static struct workqueue_struct *irqfd_cleanup_wq;
+>  
+>  static void
+> -irqfd_inject(struct work_struct *work)
+> +irqfd_inject_edge(struct work_struct *work)
+>  {
+>  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+>  	struct kvm *kvm = irqfd->kvm;
+> @@ -71,6 +133,22 @@ irqfd_inject(struct work_struct *work)
+>  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+>  }
+>  
+> +static void
+> +irqfd_inject_level(struct work_struct *work)
+> +{
+> +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> +
+> +	/*
+> +	 * We can safely ignore the kvm_set_irq return value here.  If
+> +	 * masked, the irr bit is still set and will eventually be serviced.
+> +	 * This interface does not guarantee immediate injection.  If
+> +	 * coalesced, an eoi will be coming where we can de-assert and
+> +	 * re-inject if necessary.  NB, if you need to know if an interrupt
+> +	 * was coalesced, this interface is not for you.
+> +	 */
+> +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> +}
+> +
+>  /*
+>   * Race-free decouple logic (ordering is critical)
+>   */
+> @@ -96,6 +174,9 @@ irqfd_shutdown(struct work_struct *work)
+>  	 * It is now safe to release the object's resources
+>  	 */
+>  	eventfd_ctx_put(irqfd->eventfd);
+> +
+> +	_irq_source_put(irqfd->source);
+> +
+>  	kfree(irqfd);
+>  }
+>  
+> @@ -202,9 +283,10 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+>  {
+>  	struct kvm_irq_routing_table *irq_rt;
+>  	struct _irqfd *irqfd, *tmp;
+> +	struct _irq_source *source = NULL;
+>  	struct file *file = NULL;
+>  	struct eventfd_ctx *eventfd = NULL;
+> -	int ret;
+> +	int ret = 0;
+>  	unsigned int events;
+>  
+>  	irqfd = kzalloc(sizeof(*irqfd), GFP_KERNEL);
+> @@ -214,7 +296,35 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+>  	irqfd->kvm = kvm;
+>  	irqfd->gsi = args->gsi;
+>  	INIT_LIST_HEAD(&irqfd->list);
+> -	INIT_WORK(&irqfd->inject, irqfd_inject);
+> +
+> +	if (args->flags & KVM_IRQFD_FLAG_LEVEL) {
+> +		bool first = true;
+> +retry:
+> +		source = _irq_source_alloc(kvm, args->gsi);
+> +		if (IS_ERR(source)) {
+> +			/*
+> +			 * If the irqfd is released we queue the cleanup
+> +			 * wq but don't flush it.  This could mean there's
+> +			 * an irq source id waiting to be released.  flush
+> +			 * here and make another attempt.
+> +			 */
+> +			if (first) {
+> +				flush_workqueue(irqfd_cleanup_wq);
+> +				first = false;
+> +				goto retry;
+> +			}
+> +			ret = PTR_ERR(source);
+> +			goto fail;
+> +		}
+> +
+> +		irqfd->source = source;
+> +		INIT_WORK(&irqfd->inject, irqfd_inject_level);
+> +
+> +		/* On success, return the irq source ID as a "key" */
+> +		ret = source->id;
+> +	} else
+> +		INIT_WORK(&irqfd->inject, irqfd_inject_edge);
+> +
+>  	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
+>  
+>  	file = eventfd_fget(args->fd);
+> @@ -240,7 +350,6 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+>  
+>  	spin_lock_irq(&kvm->irqfds.lock);
+>  
+> -	ret = 0;
+>  	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
+>  		if (irqfd->eventfd != tmp->eventfd)
+>  			continue;
+> @@ -273,13 +382,16 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+>  	 */
+>  	fput(file);
+>  
+> -	return 0;
+> +	return ret;
+>  
+>  fail:
+> +	if (source && !IS_ERR(source))
+> +		_irq_source_put(source);
+> +
+>  	if (eventfd && !IS_ERR(eventfd))
+>  		eventfd_ctx_put(eventfd);
+>  
+> -	if (!IS_ERR(file))
+> +	if (file && !IS_ERR(file))
+>  		fput(file);
+>  
+>  	kfree(irqfd);
+> @@ -292,6 +404,8 @@ kvm_eventfd_init(struct kvm *kvm)
+>  	spin_lock_init(&kvm->irqfds.lock);
+>  	INIT_LIST_HEAD(&kvm->irqfds.items);
+>  	INIT_LIST_HEAD(&kvm->ioeventfds);
+> +	mutex_init(&kvm->irqsources.lock);
+> +	INIT_LIST_HEAD(&kvm->irqsources.items);
+>  }
+>  
+>  /*
+> @@ -340,7 +454,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+>  int
+>  kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
+>  {
+> -	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
+> +	if (args->flags & ~(KVM_IRQFD_FLAG_DEASSIGN | KVM_IRQFD_FLAG_LEVEL))
+>  		return -EINVAL;
+>  
+>  	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
