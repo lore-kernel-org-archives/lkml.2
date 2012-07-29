@@ -1,212 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab2G2Tkt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 15:40:49 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:40324 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359Ab2G2TkC (ORCPT
+	id S1753462Ab2G2Tjv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 15:39:51 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:26572 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab2G2Tju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 15:40:02 -0400
-Date: Sun, 29 Jul 2012 20:39:53 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Andreas Heider <andreas@meetr.de>,
-        Arun Raghavan <arun.raghavan@collabora.co.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
-Message-ID: <20120729193953.GA25132@srcf.ucam.org>
-References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
- <20120710160555.GA31562@srcf.ucam.org>
- <20120710163516.GE10194@thinkpad-t410>
- <4FFCC7FB.1090609@meetr.de>
- <1343522547.2488.12.camel@shinybook.infradead.org>
- <1343524730.1962.5.camel@shinybook.infradead.org>
+	Sun, 29 Jul 2012 15:39:50 -0400
+Date: Sun, 29 Jul 2012 21:39:48 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Baodong Chen <chenbdchenbd@gmail.com>
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, davem@davemloft.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:net:fixed to fit tty_driver's kref field
+Message-ID: <20120729193948.GA26497@merkur.ravnborg.org>
+References: <1343570792-10604-1-git-send-email-chenbdchenbd@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343524730.1962.5.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1343570792-10604-1-git-send-email-chenbdchenbd@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Working: Modeline 10:"1920x1200" 60 
-154000 1920 1968 2000 2080 1200 1203 1209 1235 0x48 0xa
-Broken: Modeline 20:"1280x800" 60 72500 1280 1328 1360 1423 800 803 809 
-846 0x8 0xa
+On Sun, Jul 29, 2012 at 10:06:32PM +0800, Baodong Chen wrote:
+> Fixed code to fix tty_driver's kref field
+> Coding style issues
+> 
+> Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
 
-And it looks like intel_lvds->edid is only set during intel_lvds_init(). 
-That seems less than ideal. How about something like this entirely 
-untested patch?
+Hi Baodong.
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 36822b9..adef587 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1250,6 +1250,7 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
- 		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
- 		/* i915 resume handler doesn't set to D0 */
- 		pci_set_power_state(dev->pdev, PCI_D0);
-+		intel_lvds_get_edid(dev);
- 		i915_resume(dev);
- 		dev->switch_power_state = DRM_SWITCH_POWER_ON;
- 	} else {
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index 3e09188..930542a 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -353,6 +353,7 @@ extern void intel_dvo_init(struct drm_device *dev);
- extern void intel_tv_init(struct drm_device *dev);
- extern void intel_mark_busy(struct drm_device *dev,
- 			    struct drm_i915_gem_object *obj);
-+extern bool intel_lvds_get_edid(struct drm_device *dev);
- extern bool intel_lvds_init(struct drm_device *dev);
- extern void intel_dp_init(struct drm_device *dev, int dp_reg);
- void
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 08eb04c..80832e5 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -894,6 +894,59 @@ static bool intel_lvds_supported(struct drm_device *dev)
- 	return IS_MOBILE(dev) && !IS_I830(dev);
- }
- 
-+bool intel_lvds_get_edid(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	struct drm_connector *connector = dev_priv->int_lvds_connector;
-+	struct intel_lvds *intel_lvds;
-+	struct drm_display_mode *scan; /* *modes, *bios_mode; */
-+	u8 pin;	
-+
-+	if (!connector)
-+		return false;
-+
-+	intel_lvds = intel_attached_lvds(connector);
-+
-+	pin = GMBUS_PORT_PANEL;
-+
-+	intel_lvds->edid = drm_get_edid(connector,
-+					intel_gmbus_get_adapter(dev_priv,
-+								pin));
-+	if (intel_lvds->edid) {
-+		if (drm_add_edid_modes(connector,
-+				       intel_lvds->edid)) {
-+			drm_mode_connector_update_edid_property(connector,
-+								intel_lvds->edid);
-+		} else {
-+			kfree(intel_lvds->edid);
-+			intel_lvds->edid = NULL;
-+		}
-+	}
-+
-+	if (!intel_lvds->edid) {
-+		/* Didn't get an EDID, so
-+		 * Set wide sync ranges so we get all modes
-+		 * handed to valid_mode for checking
-+		 */
-+		connector->display_info.min_vfreq = 0;
-+		connector->display_info.max_vfreq = 200;
-+		connector->display_info.min_hfreq = 0;
-+		connector->display_info.max_hfreq = 200;
-+	}
-+
-+	list_for_each_entry(scan, &connector->probed_modes, head) {
-+		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
-+			intel_lvds->fixed_mode =
-+				drm_mode_duplicate(dev, scan);
-+			intel_find_lvds_downclock(dev,
-+						  intel_lvds->fixed_mode,
-+						  connector);
-+			return true;
-+		}
-+	}
-+	return false;
-+}
-+
- /**
-  * intel_lvds_init - setup LVDS connectors on this device
-  * @dev: drm device
-@@ -909,7 +962,6 @@ bool intel_lvds_init(struct drm_device *dev)
- 	struct intel_connector *intel_connector;
- 	struct drm_connector *connector;
- 	struct drm_encoder *encoder;
--	struct drm_display_mode *scan; /* *modes, *bios_mode; */
- 	struct drm_crtc *crtc;
- 	u32 lvds;
- 	int pipe;
-@@ -976,6 +1028,8 @@ bool intel_lvds_init(struct drm_device *dev)
- 	connector->interlace_allowed = false;
- 	connector->doublescan_allowed = false;
- 
-+	dev_priv->int_lvds_connector = connector;
-+
- 	/* create the scaling mode property */
- 	drm_mode_create_scaling_mode_property(dev);
- 	/*
-@@ -1000,40 +1054,8 @@ bool intel_lvds_init(struct drm_device *dev)
- 	 * Attempt to get the fixed panel mode from DDC.  Assume that the
- 	 * preferred mode is the right one.
- 	 */
--	intel_lvds->edid = drm_get_edid(connector,
--					intel_gmbus_get_adapter(dev_priv,
--								pin));
--	if (intel_lvds->edid) {
--		if (drm_add_edid_modes(connector,
--				       intel_lvds->edid)) {
--			drm_mode_connector_update_edid_property(connector,
--								intel_lvds->edid);
--		} else {
--			kfree(intel_lvds->edid);
--			intel_lvds->edid = NULL;
--		}
--	}
--	if (!intel_lvds->edid) {
--		/* Didn't get an EDID, so
--		 * Set wide sync ranges so we get all modes
--		 * handed to valid_mode for checking
--		 */
--		connector->display_info.min_vfreq = 0;
--		connector->display_info.max_vfreq = 200;
--		connector->display_info.min_hfreq = 0;
--		connector->display_info.max_hfreq = 200;
--	}
--
--	list_for_each_entry(scan, &connector->probed_modes, head) {
--		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
--			intel_lvds->fixed_mode =
--				drm_mode_duplicate(dev, scan);
--			intel_find_lvds_downclock(dev,
--						  intel_lvds->fixed_mode,
--						  connector);
--			goto out;
--		}
--	}
-+	if (intel_lvds_get_edid(dev))
-+		goto out;
- 
- 	/* Failed to get EDID, what about VBT? */
- 	if (dev_priv->lfp_lvds_vbt_mode) {
-@@ -1112,7 +1134,6 @@ out:
- 		dev_priv->lid_notifier.notifier_call = NULL;
- 	}
- 	/* keep the LVDS connector */
--	dev_priv->int_lvds_connector = connector;
- 	drm_sysfs_connector_add(connector);
- 
- 	intel_panel_setup_backlight(dev);
-@@ -1121,6 +1142,7 @@ out:
- 
- failed:
- 	DRM_DEBUG_KMS("No LVDS modes found, disabling.\n");
-+	dev_priv->int_lvds_connector = NULL;
- 	drm_connector_cleanup(connector);
- 	drm_encoder_cleanup(encoder);
- 	kfree(intel_lvds);
+As already pointed out by Jiri please split this
+up in several patches.
 
+[PATCH 1/x] staging:net:pc300: fix white space usage
+[PATCH 2/x] staging:net:pc300: add proper kref support
+[PATCH 3/x] staging:net:pc300: use pr_dev
+[PATCH 4/x] staging:net:pc300: drop use of CPC_TTY_LOCK/CPC_TTY_UNLOCK macros
+etc...
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+The latter two is not impleted yet but proposals for further cleanups.
+
+	Sam
+
+> ---
+>  drivers/staging/net/pc300_tty.c |  123 ++++++++++++++++++++------------------
+>  1 files changed, 65 insertions(+), 58 deletions(-)
+> 
+> diff --git a/drivers/staging/net/pc300_tty.c b/drivers/staging/net/pc300_tty.c
+> index 4709f42..8a7277c 100644
+> --- a/drivers/staging/net/pc300_tty.c
+> +++ b/drivers/staging/net/pc300_tty.c
+
+>  
+> -	cpc_tty = (st_cpc_tty_area *) tty->driver_data; 
+> +	cpc_tty = (st_cpc_tty_area *) tty->driver_data;
+                                     ^drop space
+
