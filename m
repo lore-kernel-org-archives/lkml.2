@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab2G2TrW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 15:47:22 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:7066 "EHLO
+	id S1753603Ab2G2TrU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 15:47:20 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:44777 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753489Ab2G2Tq2 (ORCPT
+	by vger.kernel.org with ESMTP id S1753488Ab2G2Tq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 15:46:28 -0400
+	Sun, 29 Jul 2012 15:46:27 -0400
 X-IronPort-AV: E=Sophos;i="4.77,675,1336341600"; 
-   d="scan'208";a="168487767"
+   d="scan'208";a="168487766"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Alan Stern <stern@rowland.harvard.edu>
 Cc: kernel-janitors@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] drivers/usb/host/ehci-msm.c: use devm_ functions
-Date: Sun, 29 Jul 2012 21:46:11 +0200
-Message-Id: <1343591173-2819-8-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 6/9] drivers/usb/host/ehci-ls1x.c: use devm_ functions
+Date: Sun, 29 Jul 2012 21:46:10 +0200
+Message-Id: <1343591173-2819-7-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1343591173-2819-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1343591173-2819-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -31,67 +31,57 @@ detaches.  This patch uses these functions for data that is allocated in
 the probe function of a platform device and is only freed in the remove
 function.
 
-The original code was also missing a call to iounmap(hcd->regs); in the
-remove function, so this patch also implicitly fixes a bug.
-
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
 Not compiled.
 
- drivers/usb/host/ehci-msm.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ drivers/usb/host/ehci-ls1x.c |   18 +++---------------
+ 1 file changed, 3 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-msm.c b/drivers/usb/host/ehci-msm.c
-index 17dd9e9..4af4dc5 100644
---- a/drivers/usb/host/ehci-msm.c
-+++ b/drivers/usb/host/ehci-msm.c
-@@ -133,7 +133,7 @@ static int ehci_msm_probe(struct platform_device *pdev)
+diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
+index a283e59..aa0f328 100644
+--- a/drivers/usb/host/ehci-ls1x.c
++++ b/drivers/usb/host/ehci-ls1x.c
+@@ -106,29 +106,19 @@ static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
+ 	hcd->rsrc_start	= res->start;
+ 	hcd->rsrc_len	= resource_size(res);
  
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+-		dev_dbg(&pdev->dev, "controller already in use\n");
+-		ret = -EBUSY;
+-		goto err_put_hcd;
+-	}
+-
 -	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	hcd->regs = devm_ioremap(&pdev->dev, hcd->rsrc_start, hcd->rsrc_len);
- 	if (!hcd->regs) {
- 		dev_err(&pdev->dev, "ioremap failed\n");
- 		ret = -ENOMEM;
-@@ -145,17 +145,17 @@ static int ehci_msm_probe(struct platform_device *pdev)
- 	 * powering up VBUS, mapping of registers address space and power
- 	 * management.
- 	 */
--	phy = usb_get_phy(USB_PHY_TYPE_USB2);
-+	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
- 	if (IS_ERR_OR_NULL(phy)) {
- 		dev_err(&pdev->dev, "unable to find transceiver\n");
- 		ret = -ENODEV;
--		goto unmap;
-+		goto put_hcd;
++	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (hcd->regs == NULL) {
+ 		dev_dbg(&pdev->dev, "error mapping memory\n");
+ 		ret = -EFAULT;
+-		goto err_release_region;
++		goto err_put_hcd;
  	}
  
- 	ret = otg_set_host(phy->otg, &hcd->self);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "unable to register with transceiver\n");
--		goto put_transceiver;
-+		goto put_hcd;
- 	}
+ 	ret = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
+ 	if (ret)
+-		goto err_iounmap;
++		goto err_put_hcd;
  
- 	device_init_wakeup(&pdev->dev, 1);
-@@ -168,10 +168,6 @@ static int ehci_msm_probe(struct platform_device *pdev)
+ 	return ret;
+ 
+-err_iounmap:
+-	iounmap(hcd->regs);
+-err_release_region:
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ err_put_hcd:
+ 	usb_put_hcd(hcd);
+ 	return ret;
+@@ -139,8 +129,6 @@ static int ehci_hcd_ls1x_remove(struct platform_device *pdev)
+ 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+ 
+ 	usb_remove_hcd(hcd);
+-	iounmap(hcd->regs);
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ 	usb_put_hcd(hcd);
  
  	return 0;
- 
--put_transceiver:
--	usb_put_phy(phy);
--unmap:
--	iounmap(hcd->regs);
- put_hcd:
- 	usb_put_hcd(hcd);
- 
-@@ -187,7 +183,6 @@ static int __devexit ehci_msm_remove(struct platform_device *pdev)
- 	pm_runtime_set_suspended(&pdev->dev);
- 
- 	otg_set_host(phy->otg, NULL);
--	usb_put_phy(phy);
- 
- 	usb_put_hcd(hcd);
- 
