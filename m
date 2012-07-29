@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2G2P4w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 11:56:52 -0400
-Received: from fieldses.org ([174.143.236.118]:39020 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266Ab2G2P4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 11:56:49 -0400
-Date: Sun, 29 Jul 2012 11:56:42 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Filipe Brandenburger <filbranden@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] locks: prevent side-effects of locks_release_private
- before file_lock is initialized
-Message-ID: <20120729155642.GJ6388@fieldses.org>
-References: <20120707190451.GA17049@fieldses.org>
- <1343364172-1763-1-git-send-email-filbranden@gmail.com>
- <20120727204552.GA6388@fieldses.org>
+	id S1753301Ab2G2QWq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 12:22:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37139 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab2G2QWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 12:22:44 -0400
+Message-ID: <5015634E.5050007@gmail.com>
+Date: Mon, 30 Jul 2012 00:22:38 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120727204552.GA6388@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Don Dutile <ddutile@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [RFC PATCH v2 04/32] PCI: add PCIe capabilities access functions
+ to hide differences among PCIe specs
+References: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com> <1343147504-25891-5-git-send-email-jiang.liu@huawei.com> <500F0FBF.9080903@redhat.com>
+In-Reply-To: <500F0FBF.9080903@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 04:45:52PM -0400, J. Bruce Fields wrote:
-> On Fri, Jul 27, 2012 at 12:42:52AM -0400, Filipe Brandenburger wrote:
-> > When calling fcntl(fd, F_SETLEASE, lck) [with lck=F_WRLCK or F_RDLCK],
-> > the custom signal or owner (if any were previously set using F_SETSIG
-> > or F_SETOWN fcntls) would be reset when F_SETLEASE was called for the
-> > second time on the same file descriptor.
-> > 
-> > This bug is a regression of 2.6.37 and is described here:
-> > https://bugzilla.kernel.org/show_bug.cgi?id=43336
-> > 
-> > This patch reverts a commit from Oct 2004 (with subject "nfs4 lease:
-> > move the f_delown processing") which originally introduced the
-> > lm_release_private callback.
+On 07/25/2012 05:12 AM, Don Dutile wrote:
+> On 07/24/2012 12:31 PM, Jiang Liu wrote:
+>> +int pci_pcie_capability_read_word(struct pci_dev *dev, int pos, u16 *val)
+>> +{
+>> +    int ret = 0;
+>> +
+>> +    *val = 0;
+>> +    if (pos&  1)
+>> +        return -EINVAL;
+>> +
+>> +    if (pci_pcie_capability_reg_implemented(dev, pos)) {
+>> +        ret = pci_read_config_word(dev, pci_pcie_cap(dev) + pos, val);
+>> +        /*
+>> +         * Reset *val to 0 if pci_read_config_word() fails, it may
+>> +         * have been written as 0xFFFF if hardware error happens
+>> +         * during pci_read_config_word().
+>> +         */
+>> +        if (ret)
+>> +            *val = 0;
+>> +    } else if (pos == PCI_EXP_SLTSTA&&
+>> +         pci_pcie_type(dev) == PCI_EXP_TYPE_DOWNSTREAM) {
+>> +        *val = PCI_EXP_SLTSTA_PDS;
+>> +    }
+> Don't you want the above if check done 1st, and not the
+> pci_pcie_capability_reg_implemented(dev, pos) check ?
+> Isn't PCI_EXP_SLTCTL an implemented register, looking at this snippet?:
+>> +    switch (pos) {
+>         <snip>
+>> +    case PCI_EXP_SLTCAP:
+>> +    case PCI_EXP_SLTCTL:
+>> +    case PCI_EXP_SLTSTA:
+>> +        return pci_pcie_cap_has_sltctl(dev);
+>   and the above function is:
 > 
-> Looks fine, thanks.  I think can also do something like the following
-> (on top of your patch).
-
-(Committing this as well.)--b.
-
+>> +static inline bool pci_pcie_cap_has_sltctl(const struct pci_dev *dev)
+>> +{
+>> +    int type = pci_pcie_type(dev);
+>> +
+>> +    return pci_pcie_cap_version(dev)>  1 ||
+>> +           type == PCI_EXP_TYPE_ROOT_PORT ||
+>> +           (type == PCI_EXP_TYPE_DOWNSTREAM&&
+>> +        dev->pcie_flags_reg&  PCI_EXP_FLAGS_SLOT);
+>> +}
 > 
-> --b.
-> 
-> commit 96d6d59ceaeaacba4088862f3c57fcd011f52832
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Fri Jul 27 16:18:00 2012 -0400
-> 
->     locks: move lease-specific code out of locks_delete_lock
->     
->     No point putting something only used by one caller into common code.
->     
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 86668dd..541075a 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -570,12 +570,6 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
->  	fl->fl_next = NULL;
->  	list_del_init(&fl->fl_link);
->  
-> -	fasync_helper(0, fl->fl_file, 0, &fl->fl_fasync);
-> -	if (fl->fl_fasync != NULL) {
-> -		printk(KERN_ERR "locks_delete_lock: fasync == %p\n", fl->fl_fasync);
-> -		fl->fl_fasync = NULL;
-> -	}
-> -
->  	if (fl->fl_nspid) {
->  		put_pid(fl->fl_nspid);
->  		fl->fl_nspid = NULL;
-> @@ -1150,6 +1144,11 @@ int lease_modify(struct file_lock **before, int arg)
->  
->  		f_delown(filp);
->  		filp->f_owner.signum = 0;
-> +		fasync_helper(0, fl->fl_file, 0, &fl->fl_fasync);
-> +		if (fl->fl_fasync != NULL) {
-> +			printk(KERN_ERR "locks_delete_lock: fasync == %p\n", fl->fl_fasync);
-> +			fl->fl_fasync = NULL;
-> +		}
->  		locks_delete_lock(before);
->  	}
->  	return 0;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> or is PCI_EXP_FLAGS_SLOT not set when it should be, then the first condition
+> fails, and this function forces the val to 1b ?
+Hi Don,
+	Yes, that's the purpose. PCIe spec v2/v3 defines that hardware should return
+a value with bit PCI_EXP_SLTSTA_PDS set if PCI_EXP_SLTSTA register is not implemented.
+So for PCIe v1 hardwares, we try to behave in the same way as v2/v3.
+	Regards!
+	Gerry
