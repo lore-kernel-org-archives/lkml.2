@@ -1,161 +1,671 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab2G2Bxq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 21:53:46 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56888 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab2G2Bxp (ORCPT
+	id S1753026Ab2G2CMh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jul 2012 22:12:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43908 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab2G2CMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 21:53:45 -0400
-X-AuditID: 9c930197-b7b66ae000006a2c-a9-501497a72487
-Date: Sun, 29 Jul 2012 10:54:28 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH 0/4] promote zcache from staging
-Message-ID: <20120729015428.GA16643@bbox>
-References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <b95aec06-5a10-4f83-bdfd-e7f6adabd9df@default>
- <20120727205932.GA12650@localhost.localdomain>
- <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default>
+	Sat, 28 Jul 2012 22:12:35 -0400
+Message-ID: <50149C00.2070107@gmail.com>
+Date: Sun, 29 Jul 2012 10:12:16 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d4656ba5-d6d1-4c36-a6c8-f6ecd193b31d@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Don Dutile <ddutile@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [RFC PATCH v2 05/32] PCI/core: use PCIe capabilities access functions
+ to simplify implementation
+References: <1343147504-25891-1-git-send-email-jiang.liu@huawei.com> <1343147504-25891-6-git-send-email-jiang.liu@huawei.com> <5010612C.3090003@redhat.com>
+In-Reply-To: <5010612C.3090003@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 02:42:14PM -0700, Dan Magenheimer wrote:
-> > From: Konrad Rzeszutek Wilk [mailto:konrad@darnok.org]
-> > Sent: Friday, July 27, 2012 3:00 PM
-> > Subject: Re: [PATCH 0/4] promote zcache from staging
-> > 
-> > On Fri, Jul 27, 2012 at 12:21:50PM -0700, Dan Magenheimer wrote:
-> > > > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> > > > Subject: [PATCH 0/4] promote zcache from staging
-> > > >
-> > > > zcache is the remaining piece of code required to support in-kernel
-> > > > memory compression.  The other two features, cleancache and frontswap,
-> > > > have been promoted to mainline in 3.0 and 3.5.  This patchset
-> > > > promotes zcache from the staging tree to mainline.
-> > > >
-> > > > Based on the level of activity and contributions we're seeing from a
-> > > > diverse set of people and interests, I think zcache has matured to the
-> > > > point where it makes sense to promote this out of staging.
-> > >
-> > > Hi Seth --
-> > >
-> > > Per offline communication, I'd like to see this delayed for three
-> > > reasons:
-> > >
-> > > 1) I've completely rewritten zcache and will post the rewrite soon.
-> > >    The redesigned code fixes many of the weaknesses in zcache that
-> > >    makes it (IMHO) unsuitable for an enterprise distro.  (Some of
-> > >    these previously discussed in linux-mm [1].)
-> > > 2) zcache is truly mm (memory management) code and the fact that
-> > >    it is in drivers at all was purely for logistical reasons
-> > >    (e.g. the only in-tree "staging" is in the drivers directory).
-> > >    My rewrite promotes it to (a subdirectory of) mm where IMHO it
-> > >    belongs.
-> > > 3) Ramster heavily duplicates code from zcache.  My rewrite resolves
-> > >    this.  My soon-to-be-post also places the re-factored ramster
-> > >    in mm, though with some minor work zcache could go in mm and
-> > >    ramster could stay in staging.
-> > >
-> > > Let's have this discussion, but unless the community decides
-> > > otherwise, please consider this a NACK.
-> 
-> Hi Konrad --
->  
-> > Hold on, that is rather unfair. The zcache has been in staging
-> > for quite some time - your code has not been posted. Part of
-> > "unstaging" a driver is for folks to review the code - and you
-> > just said "No, mine is better" without showing your goods.
-> 
-> Sorry, I'm not trying to be unfair.  However, I don't see the point
-> of promoting zcache out of staging unless it is intended to be used
-> by real users in a real distro.  There's been a lot of discussion,
-> onlist and offlist, about what needs to be fixed in zcache and not
-> much visible progress on fixing it.  But fixing it is where I've spent
-> most of my time over the last couple of months.
-> 
-> If IBM or some other company or distro is eager to ship and support
-> zcache in its current form, I agree that "promote now, improve later"
-> is a fine approach.  But promoting zcache out of staging simply because
-> there is urgency to promote zsmalloc+zram out of staging doesn't
-> seem wise.  At a minimum, it distracts reviewers/effort from what IMHO
-> is required to turn zcache into an enterprise-ready kernel feature.
-> 
-> I can post my "goods" anytime.  In its current form it is better
-> than the zcache in staging (and, please remember, I wrote both so
-> I think I am in a good position to compare the two).
-> I have been waiting until I think the new zcache is feature complete
-> before asking for review, especially since the newest features
-> should demonstrate clearly why the rewrite is necessary and
-> beneficial.  But I can post* my current bits if people don't
-> believe they exist and/or don't mind reviewing non-final code.
-> (* Or I can put them in a publicly available git tree.)
-> 
-> > There is a third option - which is to continue the promotion
-> > of zcache from staging, get reviews, work on them ,etc, and
-> > alongside of that you can work on fixing up (or ripping out)
-> > zcache1 with zcache2 components as they make sense. Or even
-> > having two of them - an enterprise and an embedded version
-> > that will eventually get merged together. There is nothing
-> > wrong with modifying a driver once it has left staging.
-> 
-> Minchan and Seth can correct me if I am wrong, but I believe
-> zram+zsmalloc, not zcache, is the target solution for embedded.
+Hi Dan,
+	Sorry for slow response, was busy with a patch for a new PCI hotplug
+framework patch set last week.
+	Thanks for your comments, and seems I need to be more aggressive to
+reduce redundant pci_is_pcie() checks:) Will send out V3 to simplify code
+further.
+	Thanks!
+	Gerry
 
-NOT ture. Some embedded devices use zcache but it's not original
-zcache but modificated one.
-Anyway, although embedded people use modified zcache, I am biased to Dan.
-I admit I don't spend lots of time to look zcache but as looking the
-code, it wasn't good shape and even had a bug found during code review
-and I felt strongly we should clean up it for promoting it to mm/.
-So I would like to wait Dan's posting if you guys are not urgent.
-(And I am not sure akpm allow it with current shape of zcache code.)
-But the concern is about adding new feature. I guess there might be some
-debate for long time and it can prevent promoting again.
-I think It's not what Seth want.
-I hope Dan doesn't mix clean up series and new feature series and
-post clean up series as soon as possible so let's clean up first and
-try to promote it and later, adding new feature or changing algorithm
-is desirable.
+On 07/26/2012 05:12 AM, Don Dutile wrote:
+> sorry for delay... i thought i had sent it out yesterday,
+> but found it today when cleaning up/out the multiple of
+> windows/xterms on my desktop.
+> 
+> 
+> On 07/24/2012 12:31 PM, Jiang Liu wrote:
+>> From: Jiang Liu<jiang.liu@huawei.com>
+>>
+>> Use PCIe capabilities access functions to simplify PCI core implementation.
+>>
+>> Signed-off-by: Jiang Liu<liuj97@gmail.com>
+>> Signed-off-by: Yijing Wang<wangyijing@huawei.com>
+>> ---
+>>   drivers/pci/pci.c    |  260 +++++++++++---------------------------------------
+>>   drivers/pci/probe.c  |   18 +---
+>>   drivers/pci/quirks.c |    9 +-
+>>   3 files changed, 66 insertions(+), 221 deletions(-)
+>>
+>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>> index 28eb55b..fd83647 100644
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -254,38 +254,6 @@ int pci_bus_find_capability(struct pci_bus *bus, unsigned int devfn, int cap)
+>>   }
+>>
+>>   /**
+>> - * pci_pcie_cap2 - query for devices' PCI_CAP_ID_EXP v2 capability structure
+>> - * @dev: PCI device to check
+>> - *
+>> - * Like pci_pcie_cap() but also checks that the PCIe capability version is
+>> - *>= 2.  Note that v1 capability structures could be sparse in that not
+>> - * all register fields were required.  v2 requires the entire structure to
+>> - * be present size wise, while still allowing for non-implemented registers
+>> - * to exist but they must be hardwired to 0.
+>> - *
+>> - * Due to the differences in the versions of capability structures, one
+>> - * must be careful not to try and access non-existant registers that may
+>> - * exist in early versions - v1 - of Express devices.
+>> - *
+>> - * Returns the offset of the PCIe capability structure as long as the
+>> - * capability version is>= 2; otherwise 0 is returned.
+>> - */
+>> -static int pci_pcie_cap2(struct pci_dev *dev)
+>> -{
+>> -    u16 flags;
+>> -    int pos;
+>> -
+>> -    pos = pci_pcie_cap(dev);
+>> -    if (pos) {
+>> -        pci_read_config_word(dev, pos + PCI_EXP_FLAGS,&flags);
+>> -        if ((flags&  PCI_EXP_FLAGS_VERS)<  2)
+>> -            pos = 0;
+>> -    }
+>> -
+>> -    return pos;
+>> -}
+>> -
+>> -/**
+>>    * pci_find_ext_capability - Find an extended capability
+>>    * @dev: PCI device to query
+>>    * @cap: capability code
+>> @@ -854,21 +822,6 @@ EXPORT_SYMBOL(pci_choose_state);
+>>
+>>   #define PCI_EXP_SAVE_REGS    7
+>>
+>> -#define pcie_cap_has_devctl(type, flags)    1
+>> -#define pcie_cap_has_lnkctl(type, flags)        \
+>> -        ((flags&  PCI_EXP_FLAGS_VERS)>  1 ||    \
+>> -         (type == PCI_EXP_TYPE_ROOT_PORT ||    \
+>> -          type == PCI_EXP_TYPE_ENDPOINT ||    \
+>> -          type == PCI_EXP_TYPE_LEG_END))
+>> -#define pcie_cap_has_sltctl(type, flags)        \
+>> -        ((flags&  PCI_EXP_FLAGS_VERS)>  1 ||    \
+>> -         ((type == PCI_EXP_TYPE_ROOT_PORT) ||    \
+>> -          (type == PCI_EXP_TYPE_DOWNSTREAM&&    \
+>> -           (flags&  PCI_EXP_FLAGS_SLOT))))
+>> -#define pcie_cap_has_rtctl(type, flags)            \
+>> -        ((flags&  PCI_EXP_FLAGS_VERS)>  1 ||    \
+>> -         (type == PCI_EXP_TYPE_ROOT_PORT ||    \
+>> -          type == PCI_EXP_TYPE_RC_EC))
+>>
+>>   static struct pci_cap_saved_state *pci_find_saved_cap(
+>>       struct pci_dev *pci_dev, char cap)
+>> @@ -885,13 +838,11 @@ static struct pci_cap_saved_state *pci_find_saved_cap(
+>>
+>>   static int pci_save_pcie_state(struct pci_dev *dev)
+>>   {
+>> -    int type, pos, i = 0;
+>> +    int i = 0;
+>>       struct pci_cap_saved_state *save_state;
+>>       u16 *cap;
+>> -    u16 flags;
+>>
+>> -    pos = pci_pcie_cap(dev);
+>> -    if (!pos)
+>> +    if (!pci_is_pcie(dev))
+>>           return 0;
+>>
+> Why not put the above check in all the pci_pcie_capability_read_*() functions ?
+> Myron did some good cleanup to get rid of these pci_is_pcie() throughout
+> these functions, and put them in base functions, so it'd be good if that
+> effort could remain intact.
+> 
+>>       save_state = pci_find_saved_cap(dev, PCI_CAP_ID_EXP);
+>> @@ -901,60 +852,35 @@ static int pci_save_pcie_state(struct pci_dev *dev)
+>>       }
+>>       cap = (u16 *)&save_state->cap.data[0];
+>>
+>> -    pci_read_config_word(dev, pos + PCI_EXP_FLAGS,&flags);
+>> -
+>> -    type = pci_pcie_type(dev);
+>> -    if (pcie_cap_has_devctl(type, flags))
+>> -        pci_read_config_word(dev, pos + PCI_EXP_DEVCTL,&cap[i++]);
+>> -    if (pcie_cap_has_lnkctl(type, flags))
+>> -        pci_read_config_word(dev, pos + PCI_EXP_LNKCTL,&cap[i++]);
+>> -    if (pcie_cap_has_sltctl(type, flags))
+>> -        pci_read_config_word(dev, pos + PCI_EXP_SLTCTL,&cap[i++]);
+>> -    if (pcie_cap_has_rtctl(type, flags))
+>> -        pci_read_config_word(dev, pos + PCI_EXP_RTCTL,&cap[i++]);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL,&cap[i++]);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_LNKCTL,&cap[i++]);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_SLTCTL,&cap[i++]);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_RTCTL,&cap[i++]);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL2,&cap[i++]);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_LNKCTL2,&cap[i++]);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_SLTCTL2,&cap[i++]);
+>>
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return 0;
+>> -
+>> -    pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2,&cap[i++]);
+>> -    pci_read_config_word(dev, pos + PCI_EXP_LNKCTL2,&cap[i++]);
+>> -    pci_read_config_word(dev, pos + PCI_EXP_SLTCTL2,&cap[i++]);
+>>       return 0;
+>>   }
+>>
+>>   static void pci_restore_pcie_state(struct pci_dev *dev)
+>>   {
+>> -    int i = 0, pos, type;
+>> +    int i = 0;
+>>       struct pci_cap_saved_state *save_state;
+>>       u16 *cap;
+>> -    u16 flags;
+>>
+>>       save_state = pci_find_saved_cap(dev, PCI_CAP_ID_EXP);
+>> -    pos = pci_find_capability(dev, PCI_CAP_ID_EXP);
+>> -    if (!save_state || pos<= 0)
+>> +    if (!save_state || !pci_is_pcie(dev))
+> won't need pci_is_pcie() check if put in pci_pcie_capability_write_*() below...
+>>           return;
+>>       cap = (u16 *)&save_state->cap.data[0];
+>>
+>> -    pci_read_config_word(dev, pos + PCI_EXP_FLAGS,&flags);
+>> -
+>> -    type = pci_pcie_type(dev);
+>> -    if (pcie_cap_has_devctl(type, flags))
+>> -        pci_write_config_word(dev, pos + PCI_EXP_DEVCTL, cap[i++]);
+>> -    if (pcie_cap_has_lnkctl(type, flags))
+>> -        pci_write_config_word(dev, pos + PCI_EXP_LNKCTL, cap[i++]);
+>> -    if (pcie_cap_has_sltctl(type, flags))
+>> -        pci_write_config_word(dev, pos + PCI_EXP_SLTCTL, cap[i++]);
+>> -    if (pcie_cap_has_rtctl(type, flags))
+>> -        pci_write_config_word(dev, pos + PCI_EXP_RTCTL, cap[i++]);
+>> -
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return;
+>> -
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, cap[i++]);
+>> -    pci_write_config_word(dev, pos + PCI_EXP_LNKCTL2, cap[i++]);
+>> -    pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL, cap[i++]);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_LNKCTL, cap[i++]);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_SLTCTL, cap[i++]);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_RTCTL, cap[i++]);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL2, cap[i++]);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_LNKCTL2, cap[i++]);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_SLTCTL2, cap[i++]);
+>>   }
+>>
+>>
+>> @@ -2068,7 +1994,6 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
+>>    */
+>>   void pci_enable_ari(struct pci_dev *dev)
+>>   {
+>> -    int pos;
+>>       u32 cap;
+>>       u16 ctrl;
+>>       struct pci_dev *bridge;
+>> @@ -2076,26 +2001,20 @@ void pci_enable_ari(struct pci_dev *dev)
+>>       if (pcie_ari_disabled || !pci_is_pcie(dev) || dev->devfn)
+>>           return;
+>>
+>> -    pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI);
+>> -    if (!pos)
+>> +    if (!pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI))
+>>           return;
+>>
+>>       bridge = dev->bus->self;
+>>       if (!bridge)
+>>           return;
+>>
+>> -    /* ARI is a PCIe cap v2 feature */
+>> -    pos = pci_pcie_cap2(bridge);
+>> -    if (!pos)
+>> -        return;
+>> -
+>> -    pci_read_config_dword(bridge, pos + PCI_EXP_DEVCAP2,&cap);
+>> +    pci_pcie_capability_read_dword(bridge, PCI_EXP_DEVCAP2,&cap);
+>>       if (!(cap&  PCI_EXP_DEVCAP2_ARI))
+>>           return;
+>>
+>> -    pci_read_config_word(bridge, pos + PCI_EXP_DEVCTL2,&ctrl);
+>> +    pci_pcie_capability_read_word(bridge, PCI_EXP_DEVCTL2,&ctrl);
+>>       ctrl |= PCI_EXP_DEVCTL2_ARI;
+>> -    pci_write_config_word(bridge, pos + PCI_EXP_DEVCTL2, ctrl);
+>> +    pci_pcie_capability_write_word(bridge, PCI_EXP_DEVCTL2, ctrl);
+>>
+>>       bridge->ari_enabled = 1;
+>>   }
+>> @@ -2111,20 +2030,14 @@ void pci_enable_ari(struct pci_dev *dev)
+>>    */
+>>   void pci_enable_ido(struct pci_dev *dev, unsigned long type)
+>>   {
+>> -    int pos;
+>>       u16 ctrl;
+>>
+>> -    /* ID-based Ordering is a PCIe cap v2 feature */
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return;
+>> -
+>> -    pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2,&ctrl);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL2,&ctrl);
+>>       if (type&  PCI_EXP_IDO_REQUEST)
+>>           ctrl |= PCI_EXP_IDO_REQ_EN;
+>>       if (type&  PCI_EXP_IDO_COMPLETION)
+>>           ctrl |= PCI_EXP_IDO_CMP_EN;
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, ctrl);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL2, ctrl);
+>>   }
+>>   EXPORT_SYMBOL(pci_enable_ido);
+>>
+>> @@ -2135,20 +2048,14 @@ EXPORT_SYMBOL(pci_enable_ido);
+>>    */
+>>   void pci_disable_ido(struct pci_dev *dev, unsigned long type)
+>>   {
+>> -    int pos;
+>>       u16 ctrl;
+>>
+>> -    /* ID-based Ordering is a PCIe cap v2 feature */
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return;
+>> -
+>> -    pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2,&ctrl);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL2,&ctrl);
+>>       if (type&  PCI_EXP_IDO_REQUEST)
+>>           ctrl&= ~PCI_EXP_IDO_REQ_EN;
+>>       if (type&  PCI_EXP_IDO_COMPLETION)
+>>           ctrl&= ~PCI_EXP_IDO_CMP_EN;
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, ctrl);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL2, ctrl);
+>>   }
+>>   EXPORT_SYMBOL(pci_disable_ido);
+>>
+>> @@ -2173,17 +2080,11 @@ EXPORT_SYMBOL(pci_disable_ido);
+>>    */
+>>   int pci_enable_obff(struct pci_dev *dev, enum pci_obff_signal_type type)
+>>   {
+>> -    int pos;
+>>       u32 cap;
+>>       u16 ctrl;
+>>       int ret;
+>>
+>> -    /* OBFF is a PCIe cap v2 feature */
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return -ENOTSUPP;
+>> -
+>> -    pci_read_config_dword(dev, pos + PCI_EXP_DEVCAP2,&cap);
+>> +    pci_pcie_capability_read_dword(dev, PCI_EXP_DEVCAP2,&cap);
+>>       if (!(cap&  PCI_EXP_OBFF_MASK))
+>>           return -ENOTSUPP; /* no OBFF support at all */
+>>
+>> @@ -2194,7 +2095,7 @@ int pci_enable_obff(struct pci_dev *dev, enum pci_obff_signal_type type)
+>>               return ret;
+>>       }
+>>
+>> -    pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2,&ctrl);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL2,&ctrl);
+>>       if (cap&  PCI_EXP_OBFF_WAKE)
+>>           ctrl |= PCI_EXP_OBFF_WAKE_EN;
+>>       else {
+>> @@ -2212,7 +2113,7 @@ int pci_enable_obff(struct pci_dev *dev, enum pci_obff_signal_type type)
+>>               return -ENOTSUPP;
+>>           }
+>>       }
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, ctrl);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL2, ctrl);
+>>
+>>       return 0;
+>>   }
+>> @@ -2226,17 +2127,11 @@ EXPORT_SYMBOL(pci_enable_obff);
+>>    */
+>>   void pci_disable_obff(struct pci_dev *dev)
+>>   {
+>> -    int pos;
+>>       u16 ctrl;
+>>
+>> -    /* OBFF is a PCIe cap v2 feature */
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return;
+>> -
+>> -    pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2,&ctrl);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL2,&ctrl);
+>>       ctrl&= ~PCI_EXP_OBFF_WAKE_EN;
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, ctrl);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL2, ctrl);
+>>   }
+>>   EXPORT_SYMBOL(pci_disable_obff);
+>>
+>> @@ -2249,15 +2144,9 @@ EXPORT_SYMBOL(pci_disable_obff);
+>>    */
+>>   static bool pci_ltr_supported(struct pci_dev *dev)
+>>   {
+>> -    int pos;
+>>       u32 cap;
+>>
+>> -    /* LTR is a PCIe cap v2 feature */
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return false;
+>> -
+>> -    pci_read_config_dword(dev, pos + PCI_EXP_DEVCAP2,&cap);
+>> +    pci_pcie_capability_read_dword(dev, PCI_EXP_DEVCAP2,&cap);
+>>
+>>       return cap&  PCI_EXP_DEVCAP2_LTR;
+>>   }
+>> @@ -2274,22 +2163,16 @@ static bool pci_ltr_supported(struct pci_dev *dev)
+>>    */
+>>   int pci_enable_ltr(struct pci_dev *dev)
+>>   {
+>> -    int pos;
+>>       u16 ctrl;
+>>       int ret;
+>>
+>> -    if (!pci_ltr_supported(dev))
+>> -        return -ENOTSUPP;
+>> -
+>> -    /* LTR is a PCIe cap v2 feature */
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return -ENOTSUPP;
+>> -
+>>       /* Only primary function can enable/disable LTR */
+>>       if (PCI_FUNC(dev->devfn) != 0)
+>>           return -EINVAL;
+>>
+>> +    if (!pci_ltr_supported(dev))
+>> +        return -ENOTSUPP;
+>> +
+>>       /* Enable upstream ports first */
+>>       if (dev->bus->self) {
+>>           ret = pci_enable_ltr(dev->bus->self);
+>> @@ -2297,9 +2180,9 @@ int pci_enable_ltr(struct pci_dev *dev)
+>>               return ret;
+>>       }
+>>
+>> -    pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2,&ctrl);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL2,&ctrl);
+>>       ctrl |= PCI_EXP_LTR_EN;
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, ctrl);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL2, ctrl);
+>>
+>>       return 0;
+>>   }
+>> @@ -2311,24 +2194,18 @@ EXPORT_SYMBOL(pci_enable_ltr);
+>>    */
+>>   void pci_disable_ltr(struct pci_dev *dev)
+>>   {
+>> -    int pos;
+>>       u16 ctrl;
+>>
+>> -    if (!pci_ltr_supported(dev))
+>> -        return;
+>> -
+>> -    /* LTR is a PCIe cap v2 feature */
+>> -    pos = pci_pcie_cap2(dev);
+>> -    if (!pos)
+>> -        return;
+>> -
+>>       /* Only primary function can enable/disable LTR */
+>>       if (PCI_FUNC(dev->devfn) != 0)
+>>           return;
+>>
+>> -    pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2,&ctrl);
+>> +    if (!pci_ltr_supported(dev))
+>> +        return;
+>> +
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL2,&ctrl);
+>>       ctrl&= ~PCI_EXP_LTR_EN;
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, ctrl);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL2, ctrl);
+>>   }
+>>   EXPORT_SYMBOL(pci_disable_ltr);
+>>
+>> @@ -3178,15 +3055,10 @@ EXPORT_SYMBOL(pci_set_dma_seg_boundary);
+>>   static int pcie_flr(struct pci_dev *dev, int probe)
+>>   {
+>>       int i;
+>> -    int pos;
+>>       u32 cap;
+>>       u16 status, control;
+>>
+>> -    pos = pci_pcie_cap(dev);
+>> -    if (!pos)
+>> -        return -ENOTTY;
+>> -
+>> -    pci_read_config_dword(dev, pos + PCI_EXP_DEVCAP,&cap);
+>> +    pci_pcie_capability_read_dword(dev, PCI_EXP_DEVCAP,&cap);
+>>       if (!(cap&  PCI_EXP_DEVCAP_FLR))
+>>           return -ENOTTY;
+>>
+>> @@ -3198,7 +3070,7 @@ static int pcie_flr(struct pci_dev *dev, int probe)
+>>           if (i)
+>>               msleep((1<<  (i - 1)) * 100);
+>>
+>> -        pci_read_config_word(dev, pos + PCI_EXP_DEVSTA,&status);
+>> +        pci_pcie_capability_read_word(dev, PCI_EXP_DEVSTA,&status);
+>>           if (!(status&  PCI_EXP_DEVSTA_TRPND))
+>>               goto clear;
+>>       }
+>> @@ -3207,9 +3079,9 @@ static int pcie_flr(struct pci_dev *dev, int probe)
+>>               "proceeding with reset anyway\n");
+>>
+>>   clear:
+>> -    pci_read_config_word(dev, pos + PCI_EXP_DEVCTL,&control);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL,&control);
+>>       control |= PCI_EXP_DEVCTL_BCR_FLR;
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL, control);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL, control);
+>>
+>>       msleep(100);
+>>
+>> @@ -3577,18 +3449,11 @@ EXPORT_SYMBOL(pcix_set_mmrbc);
+>>    */
+>>   int pcie_get_readrq(struct pci_dev *dev)
+>>   {
+>> -    int ret, cap;
+>>       u16 ctl;
+>>
+>> -    cap = pci_pcie_cap(dev);
+>> -    if (!cap)
+>> -        return -EINVAL;
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL,&ctl);
+>>
+>> -    ret = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL,&ctl);
+>> -    if (!ret)
+>> -        ret = 128<<  ((ctl&  PCI_EXP_DEVCTL_READRQ)>>  12);
+>> -
+>> -    return ret;
+>> +    return 128<<  ((ctl&  PCI_EXP_DEVCTL_READRQ)>>  12);
+>>   }
+>>   EXPORT_SYMBOL(pcie_get_readrq);
+>>
+>> @@ -3602,17 +3467,16 @@ EXPORT_SYMBOL(pcie_get_readrq);
+>>    */
+>>   int pcie_set_readrq(struct pci_dev *dev, int rq)
+>>   {
+>> -    int cap, err = -EINVAL;
+>> +    int err = -EINVAL;
+>>       u16 ctl, v;
+>>
+>>       if (rq<  128 || rq>  4096 || !is_power_of_2(rq))
+>>           goto out;
+>>
+>> -    cap = pci_pcie_cap(dev);
+>> -    if (!cap)
+>> +    if (!pci_is_pcie(dev))
+> ditto ^^^
+> 
+>>           goto out;
+>>
+>> -    err = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL,&ctl);
+>> +    err = pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL,&ctl);
+>>       if (err)
+>>           goto out;
+>>       /*
+>> @@ -3635,7 +3499,7 @@ int pcie_set_readrq(struct pci_dev *dev, int rq)
+>>       if ((ctl&  PCI_EXP_DEVCTL_READRQ) != v) {
+>>           ctl&= ~PCI_EXP_DEVCTL_READRQ;
+>>           ctl |= v;
+>> -        err = pci_write_config_word(dev, cap + PCI_EXP_DEVCTL, ctl);
+>> +        err = pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL, ctl);
+>>       }
+>>
+>>   out:
+>> @@ -3652,18 +3516,11 @@ EXPORT_SYMBOL(pcie_set_readrq);
+>>    */
+>>   int pcie_get_mps(struct pci_dev *dev)
+>>   {
+>> -    int ret, cap;
+>>       u16 ctl;
+>>
+>> -    cap = pci_pcie_cap(dev);
+>> -    if (!cap)
+>> -        return -EINVAL;
+>> -
+>> -    ret = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL,&ctl);
+>> -    if (!ret)
+>> -        ret = 128<<  ((ctl&  PCI_EXP_DEVCTL_PAYLOAD)>>  5);
+>> +    pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL,&ctl);
+>>
+>> -    return ret;
+>> +    return 128<<  ((ctl&  PCI_EXP_DEVCTL_PAYLOAD)>>  5);
+>>   }
+>>
+>>   /**
+>> @@ -3676,7 +3533,7 @@ int pcie_get_mps(struct pci_dev *dev)
+>>    */
+>>   int pcie_set_mps(struct pci_dev *dev, int mps)
+>>   {
+>> -    int cap, err = -EINVAL;
+>> +    int err = -EINVAL;
+>>       u16 ctl, v;
+>>
+>>       if (mps<  128 || mps>  4096 || !is_power_of_2(mps))
+>> @@ -3687,18 +3544,17 @@ int pcie_set_mps(struct pci_dev *dev, int mps)
+>>           goto out;
+>>       v<<= 5;
+>>
+>> -    cap = pci_pcie_cap(dev);
+>> -    if (!cap)
+>> +    if (!pci_is_pcie(dev))
+> ditto ^^^^^^^^^^
+>>           goto out;
+>>
+>> -    err = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL,&ctl);
+>> +    err = pci_pcie_capability_read_word(dev, PCI_EXP_DEVCTL,&ctl);
+>>       if (err)
+>>           goto out;
+>>
+>>       if ((ctl&  PCI_EXP_DEVCTL_PAYLOAD) != v) {
+>>           ctl&= ~PCI_EXP_DEVCTL_PAYLOAD;
+>>           ctl |= v;
+>> -        err = pci_write_config_word(dev, cap + PCI_EXP_DEVCTL, ctl);
+>> +        err = pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL, ctl);
+>>       }
+>>   out:
+>>       return err;
+>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> index 8bcc985..6a2eac8 100644
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -603,10 +603,11 @@ static void pci_set_bus_speed(struct pci_bus *bus)
+>>           u32 linkcap;
+>>           u16 linksta;
+>>
+>> -        pci_read_config_dword(bridge, pos + PCI_EXP_LNKCAP,&linkcap);
+>> +        pci_pcie_capability_read_dword(bridge, PCI_EXP_LNKCAP,
+>> +                    &linkcap);
+>>           bus->max_bus_speed = pcie_link_speed[linkcap&  0xf];
+>>
+>> -        pci_read_config_word(bridge, pos + PCI_EXP_LNKSTA,&linksta);
+>> +        pci_pcie_capability_read_word(bridge, PCI_EXP_LNKSTA,&linksta);
+>>           pcie_update_link_speed(bus, linksta);
+>>       }
+>>   }
+>> @@ -936,17 +937,9 @@ void set_pcie_port_type(struct pci_dev *pdev)
+>>
+>>   void set_pcie_hotplug_bridge(struct pci_dev *pdev)
+>>   {
+>> -    int pos;
+>> -    u16 reg16;
+>>       u32 reg32;
+>>
+>> -    pos = pci_pcie_cap(pdev);
+>> -    if (!pos)
+>> -        return;
+>> -    pci_read_config_word(pdev, pos + PCI_EXP_FLAGS,&reg16);
+>> -    if (!(reg16&  PCI_EXP_FLAGS_SLOT))
+>> -        return;
+>> -    pci_read_config_dword(pdev, pos + PCI_EXP_SLTCAP,&reg32);
+>> +    pci_pcie_capability_read_dword(pdev, PCI_EXP_SLTCAP,&reg32);
+>>       if (reg32&  PCI_EXP_SLTCAP_HPC)
+>>           pdev->is_hotplug_bridge = 1;
+>>   }
+>> @@ -1160,8 +1153,7 @@ int pci_cfg_space_size(struct pci_dev *dev)
+>>       if (class == PCI_CLASS_BRIDGE_HOST)
+>>           return pci_cfg_space_size_ext(dev);
+>>
+>> -    pos = pci_pcie_cap(dev);
+>> -    if (!pos) {
+>> +    if (!pci_is_pcie(dev)) {
+>>           pos = pci_find_capability(dev, PCI_CAP_ID_PCIX);
+>>           if (!pos)
+>>               goto fail;
+>> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+>> index 003f356..484284e 100644
+>> --- a/drivers/pci/quirks.c
+>> +++ b/drivers/pci/quirks.c
+>> @@ -3081,17 +3081,14 @@ static int reset_intel_generic_dev(struct pci_dev *dev, int probe)
+>>
+>>   static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
+>>   {
+>> -    int pos;
+>> -
+>> -    pos = pci_find_capability(dev, PCI_CAP_ID_EXP);
+>> -    if (!pos)
+>> +    if (!pci_is_pcie(dev))
+> ditto if check in capability_write as well
+> 
+>>           return -ENOTTY;
+>>
+>>       if (probe)
+>>           return 0;
+>>
+>> -    pci_write_config_word(dev, pos + PCI_EXP_DEVCTL,
+>> -                PCI_EXP_DEVCTL_BCR_FLR);
+>> +    pci_pcie_capability_write_word(dev, PCI_EXP_DEVCTL,
+>> +                       PCI_EXP_DEVCTL_BCR_FLR);
+>>       msleep(100);
+>>
+>>       return 0;
+> 
 
-
-> The limitations of zsmalloc aren't an issue for zram but they are
-> for zcache, and this deficiency was one of the catalysts for the
-> rewrite.  The issues are explained in more detail in [1],
-> but if any point isn't clear, I'd be happy to explain further.
-> 
-> However, I have limited time for this right now and I'd prefer
-> to spend it finishing the code. :-}
-> 
-> So, as I said, I am still a NACK, but if there are good reasons
-> to duplicate effort and pursue the "third option", let's discuss
-> them.
-> 
-> Thanks,
-> Dan
-> 
-> [1] http://marc.info/?t=133886706700002&r=1&w=2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
