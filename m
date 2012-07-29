@@ -1,352 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab2G2PAt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 11:00:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753021Ab2G2PAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 11:00:48 -0400
-Date: Sun, 29 Jul 2012 18:01:28 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v7 1/2] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120729150128.GE14278@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
- <20120724204311.21081.95028.stgit@bling.home>
+	id S1753255Ab2G2P2j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 11:28:39 -0400
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:42804 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab2G2P2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 11:28:38 -0400
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Jul 2012 11:28:38 EDT
+Message-ID: <5015551F.3060209@hardwarefreak.com>
+Date: Sun, 29 Jul 2012 10:22:07 -0500
+From: Stan Hoeppner <stan@hardwarefreak.com>
+Reply-To: stan@hardwarefreak.com
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724204311.21081.95028.stgit@bling.home>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Jeff Garzik <jeff@garzik.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, lwn@lwn.net,
+        Wim Coekaerts <wim.coekaerts@oracle.com>,
+        "Lawrence E. Rosen" <lrosen@rosenlaw.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Ralf Bacchle <ralf@linux-mips.org>
+Subject: Re: An Andre To Remember
+References: <20120727175655.GA23784@havoc.gtf.org> <1343520662.22538.353.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1343520662.22538.353.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 02:43:14PM -0600, Alex Williamson wrote:
-> In order to inject a level interrupt from an external source using an
-> irqfd, we need to allocate a new irq_source_id.  This allows us to
-> assert and (later) de-assert an interrupt line independently from
-> users of KVM_IRQ_LINE and avoid lost interrupts.
+On 7/28/2012 7:11 PM, Nicholas A. Bellinger wrote:
+> On Fri, 2012-07-27 at 13:56 -0400, Jeff Garzik wrote:
+>> 	An Andre To Remember
+>> 	July 2012
+>>
+>> Linux lost a friend and advocate this month.  Though never a household
+>> name, Andre Hedrick had a positive impact on everyone today running
+>> Linux, or using a website, with any form of IDE (ATA) or SCSI storage
+>> -- that means millions upon millions of users today.
+>>
+>> For a time, Andre interacted with practically every relevant IDE
+>> drive and controller manufacturer, as well as the T13 standards
+>> committee through which IDE changes were made.  He helped ensure
+>> Linux had near-universal IDE support in a hardware era when Linux
+>> support was a second thought if at all.  As the Register article[1]
+>> noted, with CPRM and other efforts, Andre worked to keep storage a
+>> more open platform than it might otherwise have been.
+>>
+>> [1] http://www.theregister.co.uk/2012/07/26/andre_hedrick/
+>>
+>> Andre also played a role in IDE technology coalescing around the idea
+>> of a "taskfile", which is IDE-speak for an RPC command issued to a
+>> disk drive, and the RPC response returned from the drive.  It was
+>> very important to Andre that the kernel have a "taskfile ioctl",
+>> an API enabling full programmable access to the disk drive.  At the
+>> time, a more limited "cmd ioctl" API was the best option available,
+>> but Linux's cmd ioctl did not give users full and complete access to
+>> their own disk drive.
+>>
+>> Andre's taskfile concept was a central component of the current,
+>> rewritten-from-scratch Linux IDE driver "libata."  libata uses an
+>> "ata_taskfile" to communicate with all IDE drives, whether from a
+>> decade ago or built yesterday.  The taskfile concept modernized
+>> IDE software, by forcing the industry to move away from a slow,
+>> signals-originated register API to a modern, packetized RPC messaging
+>> API, similar to where SCSI storage had already been moving.
+>>
+>> I spent many hours on the phone with Andre, circa 2003, learning all
+>> there was to know about ATA storage, while writing libata.  Andre could
+>> be considered one of the grandfathers of libata, along with Alan Cox.
+>> I became friends with Andre during this time, and we talked a lot.
+>>
+>> Andre was unquestionably smart, driven and an advocate for Linux user
+>> freedom.
+>>
 > 
-> We also add what may appear like a bit of excessive infrastructure
-> around an object for storing this irq_source_id.  However, notice
-> that we only provide a way to assert the interrupt here.  A follow-on
-> interface will make use of the same irq_source_id to allow de-assert.
+> Hi Jeff,
 > 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-
-I think this tracking of source ids is the root of all the problems
-you see with this patchset.
-
-A source ID is required for an irqfd to be created.
-But if source ID exists after irqfd is destroyed then
-the next create will fail.
-
-So the only sane thing to do is to make irqfd manage this resource,
-clean it up completely when irqfd is gone.
-
-Not to mention, the patch will be smaller :)
-
-> ---
+> Thank you for sharing your thoughts + memories of Andre.
 > 
->  Documentation/virtual/kvm/api.txt |   11 +++
->  arch/x86/kvm/x86.c                |    1 
->  include/linux/kvm.h               |    3 +
->  include/linux/kvm_host.h          |    4 +
->  virt/kvm/eventfd.c                |  128 +++++++++++++++++++++++++++++++++++--
->  5 files changed, 139 insertions(+), 8 deletions(-)
+> As we grieve this extreme loss, I'd like to try to share some of my own
+> experiences with Andre that will hopefully help others to begin to
+> understand the kind + generous type of person that Andre really was, and
+> just some of his staggering technical feats + accomplishments that can
+> be talked about publicly today.
 > 
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index bf33aaa..3911e62 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -1936,7 +1936,7 @@ Capability: KVM_CAP_IRQFD
->  Architectures: x86
->  Type: vm ioctl
->  Parameters: struct kvm_irqfd (in)
-> -Returns: 0 on success, -1 on error
-> +Returns: 0 (or >= 0) on success, -1 on error
->  
->  Allows setting an eventfd to directly trigger a guest interrupt.
->  kvm_irqfd.fd specifies the file descriptor to use as the eventfd and
-> @@ -1946,6 +1946,15 @@ the guest using the specified gsi pin.  The irqfd is removed using
->  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
->  and kvm_irqfd.gsi.
->  
-> +The KVM_IRQFD_FLAG_LEVEL flag indicates the gsi input is for a level
-> +triggered interrupt.  In this case a new irqchip input is allocated
-> +which is logically OR'd with other inputs allowing multiple sources
-> +to independently assert level interrupts.  The KVM_IRQFD_FLAG_LEVEL
-> +is only necessary on setup, teardown is identical to that above.  The
-> +return value when called with this flag is a key (>= 0) which may be
-> +used to associate this irqfd with other ioctls.  KVM_IRQFD_FLAG_LEVEL
-> +support is indicated by KVM_CAP_IRQFD_LEVEL.
-> +
->  4.76 KVM_PPC_ALLOCATE_HTAB
->  
->  Capability: KVM_CAP_PPC_ALLOC_HTAB
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 59b5950..9ded39d 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2170,6 +2170,7 @@ int kvm_dev_ioctl_check_extension(long ext)
->  	case KVM_CAP_GET_TSC_KHZ:
->  	case KVM_CAP_PCI_2_3:
->  	case KVM_CAP_KVMCLOCK_CTRL:
-> +	case KVM_CAP_IRQFD_LEVEL:
->  		r = 1;
->  		break;
->  	case KVM_CAP_COALESCED_MMIO:
-> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> index 2ce09aa..b2e6e4f 100644
-> --- a/include/linux/kvm.h
-> +++ b/include/linux/kvm.h
-> @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
->  #define KVM_CAP_PPC_GET_SMMU_INFO 78
->  #define KVM_CAP_S390_COW 79
->  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> +#define KVM_CAP_IRQFD_LEVEL 81
->  
->  #ifdef KVM_CAP_IRQ_ROUTING
->  
-> @@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
->  #endif
->  
->  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-> +/* Available with KVM_CAP_IRQFD_LEVEL */
-> +#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
->  
->  struct kvm_irqfd {
->  	__u32 fd;
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index b70b48b..c73f071 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -285,6 +285,10 @@ struct kvm {
->  		struct list_head  items;
->  	} irqfds;
->  	struct list_head ioeventfds;
-> +	struct {
-> +		struct mutex lock;
-> +		struct list_head items;
-> +	} irqsources;
->  #endif
->  	struct kvm_vm_stat stat;
->  	struct kvm_arch arch;
-> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> index 7d7e2aa..878cb52 100644
-> --- a/virt/kvm/eventfd.c
-> +++ b/virt/kvm/eventfd.c
-> @@ -36,6 +36,66 @@
->  #include "iodev.h"
->  
->  /*
-> + * An irq_source_id can be created from KVM_IRQFD for level interrupt
-> + * injections and shared with other interfaces for EOI or de-assert.
-> + * Create an object with reference counting to make it easy to use.
-> + */
-> +struct _irq_source {
-> +	int id; /* the IRQ source ID */
-> +	int gsi;
-> +	struct kvm *kvm;
-> +	struct list_head list;
-> +	struct kref kref;
-> +};
-> +
-> +static void _irq_source_release(struct kref *kref)
-> +{
-> +	struct _irq_source *source =
-> +		container_of(kref, struct _irq_source, kref);
-> +
-> +	/* This also de-asserts */
-> +	kvm_free_irq_source_id(source->kvm, source->id);
-> +	list_del(&source->list);
-> +	kfree(source);
-> +}
-> +
-> +static void _irq_source_put(struct _irq_source *source)
-> +{
-> +	if (source) {
-> +		mutex_lock(&source->kvm->irqsources.lock);
-> +		kref_put(&source->kref, _irq_source_release);
-> +		mutex_unlock(&source->kvm->irqsources.lock);
-> +	}
-> +}
-> +
-> +static struct _irq_source *_irq_source_alloc(struct kvm *kvm, int gsi)
-> +{
-> +	struct _irq_source *source;
-> +	int id;
-> +
-> +	source = kzalloc(sizeof(*source), GFP_KERNEL);
-> +	if (!source)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	id = kvm_request_irq_source_id(kvm);
-> +	if (id < 0) {
-> +		kfree(source);
-> +		return ERR_PTR(id);
-> +	}
-> +
-> +	kref_init(&source->kref);
-> +	source->kvm = kvm;
-> +	source->id = id;
-> +	source->gsi = gsi;
-> +
-> +	mutex_lock(&kvm->irqsources.lock);
-> +	list_add_tail(&source->list, &kvm->irqsources.items);
-> +	mutex_unlock(&kvm->irqsources.lock);
-> +
-> +	return source;
-> +}
-> +
-> +/*
->   * --------------------------------------------------------------------
->   * irqfd: Allows an fd to be used to inject an interrupt to the guest
->   *
-> @@ -52,6 +112,8 @@ struct _irqfd {
->  	/* Used for level IRQ fast-path */
->  	int gsi;
->  	struct work_struct inject;
-> +	/* IRQ source ID for level triggered irqfds */
-> +	struct _irq_source *source;
->  	/* Used for setup/shutdown */
->  	struct eventfd_ctx *eventfd;
->  	struct list_head list;
-> @@ -62,7 +124,7 @@ struct _irqfd {
->  static struct workqueue_struct *irqfd_cleanup_wq;
->  
->  static void
-> -irqfd_inject(struct work_struct *work)
-> +irqfd_inject_edge(struct work_struct *work)
->  {
->  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
->  	struct kvm *kvm = irqfd->kvm;
-> @@ -71,6 +133,22 @@ irqfd_inject(struct work_struct *work)
->  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
->  }
->  
-> +static void
-> +irqfd_inject_level(struct work_struct *work)
-> +{
-> +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> +
-> +	/*
-> +	 * We can safely ignore the kvm_set_irq return value here.  If
-> +	 * masked, the irr bit is still set and will eventually be serviced.
-> +	 * This interface does not guarantee immediate injection.  If
-> +	 * coalesced, an eoi will be coming where we can de-assert and
-> +	 * re-inject if necessary.  NB, if you need to know if an interrupt
-> +	 * was coalesced, this interface is not for you.
-> +	 */
-> +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
-> +}
-> +
->  /*
->   * Race-free decouple logic (ordering is critical)
->   */
-> @@ -96,6 +174,9 @@ irqfd_shutdown(struct work_struct *work)
->  	 * It is now safe to release the object's resources
->  	 */
->  	eventfd_ctx_put(irqfd->eventfd);
-> +
-> +	_irq_source_put(irqfd->source);
-> +
->  	kfree(irqfd);
->  }
->  
-> @@ -202,9 +283,10 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
->  {
->  	struct kvm_irq_routing_table *irq_rt;
->  	struct _irqfd *irqfd, *tmp;
-> +	struct _irq_source *source = NULL;
->  	struct file *file = NULL;
->  	struct eventfd_ctx *eventfd = NULL;
-> -	int ret;
-> +	int ret = 0;
->  	unsigned int events;
->  
->  	irqfd = kzalloc(sizeof(*irqfd), GFP_KERNEL);
-> @@ -214,7 +296,35 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
->  	irqfd->kvm = kvm;
->  	irqfd->gsi = args->gsi;
->  	INIT_LIST_HEAD(&irqfd->list);
-> -	INIT_WORK(&irqfd->inject, irqfd_inject);
-> +
-> +	if (args->flags & KVM_IRQFD_FLAG_LEVEL) {
-> +		bool first = true;
-> +retry:
-> +		source = _irq_source_alloc(kvm, args->gsi);
-> +		if (IS_ERR(source)) {
-> +			/*
-> +			 * If the irqfd is released we queue the cleanup
-> +			 * wq but don't flush it.  This could mean there's
-> +			 * an irq source id waiting to be released.  flush
-> +			 * here and make another attempt.
-> +			 */
-> +			if (first) {
-> +				flush_workqueue(irqfd_cleanup_wq);
-> +				first = false;
-> +				goto retry;
-> +			}
-> +			ret = PTR_ERR(source);
-> +			goto fail;
-> +		}
-> +
-> +		irqfd->source = source;
-> +		INIT_WORK(&irqfd->inject, irqfd_inject_level);
-> +
-> +		/* On success, return the irq source ID as a "key" */
-> +		ret = source->id;
-> +	} else
-> +		INIT_WORK(&irqfd->inject, irqfd_inject_edge);
-> +
->  	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
->  
->  	file = eventfd_fget(args->fd);
-> @@ -240,7 +350,6 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
->  
->  	spin_lock_irq(&kvm->irqfds.lock);
->  
-> -	ret = 0;
->  	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
->  		if (irqfd->eventfd != tmp->eventfd)
->  			continue;
-> @@ -273,13 +382,16 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
->  	 */
->  	fput(file);
->  
-> -	return 0;
-> +	return ret;
->  
->  fail:
-> +	if (source && !IS_ERR(source))
-> +		_irq_source_put(source);
-> +
->  	if (eventfd && !IS_ERR(eventfd))
->  		eventfd_ctx_put(eventfd);
->  
-> -	if (!IS_ERR(file))
-> +	if (file && !IS_ERR(file))
->  		fput(file);
->  
->  	kfree(irqfd);
-> @@ -292,6 +404,8 @@ kvm_eventfd_init(struct kvm *kvm)
->  	spin_lock_init(&kvm->irqfds.lock);
->  	INIT_LIST_HEAD(&kvm->irqfds.items);
->  	INIT_LIST_HEAD(&kvm->ioeventfds);
-> +	mutex_init(&kvm->irqsources.lock);
-> +	INIT_LIST_HEAD(&kvm->irqsources.items);
->  }
->  
->  /*
-> @@ -340,7 +454,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
->  int
->  kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
->  {
-> -	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
-> +	if (args->flags & ~(KVM_IRQFD_FLAG_DEASSIGN | KVM_IRQFD_FLAG_LEVEL))
->  		return -EINVAL;
->  
->  	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
+> Along with Andre being involved in the history of libata and IDE/ATA
+> development, those of us in the Linux kernel storage development
+> community also know, he was also instrumental in creation of the
+> original out-of-tree PyX iSCSI target code that's now in mainline.
+> 
+> In summer 2002, I sitting next to Andre when he coined the term 'IBLOCK'
+> after drawing a rough sketch on a notebook after an idea in Walnut
+> Creek, California, and the name ending up sticking..   The interesting
+> development bits really started to unfold in the spring of 2004 when we
+> finally managed to get drivers/ide/ export working with iscsi-target on
+> x86 using 2.4.x code.  
+> 
+> That quickly unfolded into a Sony Playstation-2 (MIPS EE) port using IDE
+> disk DMA mode + network PIO on 2.2.x era kernel code capable of
+> streaming multiple DVD quality streams to hungry iSCSI clients..
+> 
+> Left to my own devices for hardware hacking, I managed to turn our first
+> disassembled PS2 into a broken parts machine (whoops) but Andre was
+> going to made sure that it was not going to happen again..  I bought
+> another PS2, and he was the person who soldered wires to the handful of
+> tiny via pin-outs to access the one-way serial output for EE boot
+> information last at night, while I worked on the necessary kernel bits
+> needed for bring-up of the PS2 specific IDE backend target driver.  (The
+> PS2 IDE driver required contiguous memory for IDE DMA ops to function
+> via a single struct buffer_head (TCQ=1) on the non-cache coherent MIPS
+> based platform.)
+> 
+> He carefully made physical space in the machine's cramped chassis, using
+> sticky pads where necessary to hold the small PCB containing a simple
+> ASIC doing the conversion of the signal into PC RS-232 serial output.
+> He made it look completely flush, like exactly how it was supposed to
+> come from the factory.  Or you know, from the magical place near the old
+> Bell Labs R&D center where new development kits for cutting edge tech
+> are born.
+> 
+> CBS Sunday Morning even did a story on Andre and his family in the
+> summer of 2004 while all of this was going on..  Not for the PS2
+> iscsi-target or any other code of course, but for the fact that he was
+> chosen by EBay to represent California small business as part of a group
+> that lobbied in Washington DC.  The reason that E-bay chose Andre is
+> because he built PyX using recycled server + storage hardware bought
+> from E-bay, including the family Mini-van often used to cart gear
+> between home, and even him driving the PyX team right up to the service
+> entrance of the Moscone Center show floor in downtown San Francisco.
+> 
+> So we managed to get iscsi_target_mod up + stable with three different
+> concurrent Linux x86, MSFT x86, and LinuxPPC laptops watching three
+> different DVD videos just in time LinuxWorld West that August.  All of
+> the hard work was leading up to a public demonstration in prime
+> real-estate of the Unbreakable Linux pavilion at the entrance to the
+> hall for PyX to have a hance to really show it's stuff.  The real-estate
+> at the expo was also comped by Oracle out of respect for Andre's work on
+> the Linux kernel.
+> 
+> I did not sleep for one second the night before the show, and was so
+> excited to be with Andre to show-off this particular demo to all of the
+> people at the expo.  I was part of a hard-earned demo that was going to
+> change the world with *the* Linux IDE guy!!
+> 
+> Andre was there that first day wearing a suit jacket + dockers + cowboy
+> boots (what he usually wore to conferences when doing serious buisness)
+> and it was one of the times during PyX that he really genuinely seemed
+> happy.  People where flocking to come and talk to *him*.   All of the
+> people walking by who stopped and saw the demo that summer who knew
+> Andre, understood that he pulled off something very special.  It was the
+> type of technology that even seemingly non-technical people are quickly
+> attracted to (especially younger people), and like a piece of technology
+> to those who don't understand it, or have had it explained in an
+> accessible manner, becomes indistinguishable from magic.  
+> 
+> But for Andre at the show that summer, I noticed it wasn’t so much about
+> the tech itself (and really did love the tech), or the social events, or
+> even about trying to work out some business angle for PyX, or anything
+> like that..
+> 
+> He was on the show-floor doing the thing that he really loved to do, and
+> people he had never met before where coming up in waves wanting to talk
+> to *him*.  Andre was always quick to greet new people at a technical
+> level that they could understand, and would also do his best when a
+> person came to him asking for help regardless of context.
+> 
+> Even if it was just a young programmer asking too many questions for a
+> trade-show about how the demo actually worked, while serious looking
+> business people waited impatiently behind..  Andre always took the time
+> to try to impart some of his own hard-earned knowledge and wisdom to
+> others with a hungry mind, also regardless of context.
+> 
+> I'm really going to to miss Andre very much, and my deepest thoughts go
+> out to his family + friends during this very difficult time.
+> 
+> --nab
+
+I'd never heard of Andre until reading this as I'm not a dev.  If he'd
+died in an auto accident I wouldn't be typing this.
+
+I think we dishonor Andre's memory and do a disservice to other
+technical folks by avoiding the subject of 'why'.  Or has this been
+discussed and I'm simply unaware?  He apparently made a decent living at
+Cisco, had a wife and 4 kids, a prototypical nice life.  So why did he
+end it?  Pressure/stress, bipolar disorder, depression?
+
+He's not the first super talented tech to take his own life, and won't
+be the last.  If we continue to shove "why" under the rug there's little
+chance of preventing another friend/colleague from doing the same in the
+future.
+
+If those who knew him well would talk about the 'why' that just might
+raise awareness and maybe help save a life down the road.  Then again
+maybe no devs actually got to really know the man.
+
+-- 
+Stan
+
