@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2G2Ptb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 11:49:31 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:61212 "EHLO
+	id S1753291Ab2G2PwW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 11:52:22 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56173 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab2G2Pta (ORCPT
+	with ESMTP id S1753232Ab2G2PwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 11:49:30 -0400
+	Sun, 29 Jul 2012 11:52:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <03736c1b42a7e28fc0b47aabd5c0f019edb1baf2.1343026861.git.cmahapatra@ti.com>
-References: <cover.1341925681.git.cmahapatra@ti.com>
-	<cover.1343026861.git.cmahapatra@ti.com>
-	<03736c1b42a7e28fc0b47aabd5c0f019edb1baf2.1343026861.git.cmahapatra@ti.com>
-Date: Sun, 29 Jul 2012 17:49:29 +0200
-Message-ID: <CACRpkdaV+ZSwydNdCh6i_psryXGRcv=8sOaynvACbMGdp03Tjg@mail.gmail.com>
-Subject: Re: [PATCH V1 3/3] OMAP: Define TCA6424 max number of possible IRQs
+In-Reply-To: <20120724125504.11014.60700.stgit@localhost.localdomain>
+References: <20120724125504.11014.60700.stgit@localhost.localdomain>
+Date: Sun, 29 Jul 2012 17:52:20 +0200
+Message-ID: <CACRpkdYqTNVpTF+NA34kCzKfuyD0aazv82GsyKFQt=mXeUR6vg@mail.gmail.com>
+Subject: Re: [PATCH] gpio-sch: Fix leak of resource
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Chandrabhanu Mahapatra <cmahapatra@ti.com>,
-        ext Tony Lindgren <tony@atomide.com>
-Cc: linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Kevin Hilman <khilman@ti.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Seth Heasley <seth.heasley@intel.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 28, 2012 at 8:10 AM, Chandrabhanu Mahapatra
-<cmahapatra@ti.com> wrote:
+On Tue, Jul 24, 2012 at 2:55 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-> From: Leed Aguilar <leed.aguilar@ti.com>
+> From: Alan Cox <alan@linux.intel.com>
 >
-> TCA6424 being a 24 bit I2C and SMBus I/O expander has 24 available GPIO lines
-> that can be used as IRQs lines. So, the support for 24 more IRQ lines has been
-> added to the kernel.
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
 >
-> Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
-> Signed-off-by: Chandrabhanu Mahapatra <cmahapatra@ti.com>
+>  drivers/gpio/gpio-sch.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+> index 424dce8..8707d45 100644
+> --- a/drivers/gpio/gpio-sch.c
+> +++ b/drivers/gpio/gpio-sch.c
+> @@ -241,7 +241,8 @@ static int __devinit sch_gpio_probe(struct platform_device *pdev)
+>                         break;
+>
+>                 default:
+> -                       return -ENODEV;
+> +                       err = -ENODEV;
+> +                       goto err_sch_gpio_core;
+>         }
+>
+>         sch_gpio_core.dev = &pdev->dev;
 
-Tony, this seems to touch only OMAP code, can you judge on it
-and take it into your tree of desired?
-
-Alternatively I can merge it to GPIO but then I need your ACK.
+Applied to my fixes branch, CCing the list if there are complaints.
 
 Yours,
 Linus Walleij
