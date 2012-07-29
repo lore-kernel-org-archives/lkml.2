@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab2G2U52 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 16:57:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57317 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab2G2U50 (ORCPT
+	id S1753677Ab2G2U7H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 16:59:07 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:52291 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629Ab2G2U7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 16:57:26 -0400
-Date: Sun, 29 Jul 2012 13:55:16 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, padovan@profusion.mobi, marcel@holtmann.org,
-        peterz@infradead.org, mingo@redhat.com, davem@davemloft.net,
-        dougthompson@xmission.com, ibm-acpi@hmh.eng.br, rui.zhang@intel.com,
-        Jens Axboe <axboe@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
-        David Airlie <airlied@linux.ie>, Roland Dreier <roland@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Len Brown <len.brown@intel.com>, David Howells <dhowells@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH 14/15] workqueue: use mod_delayed_work() instead of
- cancel + queue
-Message-ID: <20120729205516.GA14801@lizard>
-References: <1343433308-26614-1-git-send-email-tj@kernel.org>
- <1343433308-26614-15-git-send-email-tj@kernel.org>
+	Sun, 29 Jul 2012 16:59:05 -0400
+Date: Sun, 29 Jul 2012 21:59:00 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Andreas Heider <andreas@meetr.de>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        linux-kernel@vger.kernel.org, airlied@redhat.com
+Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
+Message-ID: <20120729205859.GA25819@srcf.ucam.org>
+References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
+ <20120710160555.GA31562@srcf.ucam.org>
+ <20120710163516.GE10194@thinkpad-t410>
+ <4FFCC7FB.1090609@meetr.de>
+ <1343522547.2488.12.camel@shinybook.infradead.org>
+ <1343524730.1962.5.camel@shinybook.infradead.org>
+ <20120729193953.GA25132@srcf.ucam.org>
+ <1343595171.2511.1.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343433308-26614-15-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1343595171.2511.1.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27, 2012 at 04:55:07PM -0700, Tejun Heo wrote:
-> Convert delayed_work users doing [__]cancel_delayed_work() +
-> queue_delayed_work() to mod_delayed_work().
+On Sun, Jul 29, 2012 at 09:52:51PM +0100, David Woodhouse wrote:
+> On Sun, 2012-07-29 at 20:39 +0100, Matthew Garrett wrote:
+> > And it looks like intel_lvds->edid is only set during intel_lvds_init(). 
+> > That seems less than ideal. How about something like this entirely 
+> > untested patch? 
 > 
-> Most conversions are straight-forward.  Ones worth mentioning are,
-> 
-> * drivers/edac/edac_mc.c: edac_mc_workq_setup() converted to always
->   use mod_delayed_work() and cancel loop in
->   edac_mc_reset_delay_period() is dropped.
-> 
-> * drivers/platform/x86/thinkpad_acpi.c: No need to remember whether
->   watchdog is active or not.  @fan_watchdog_active and related code
->   dropped.
-> 
-> * drivers/power/charger-manager.c: Seemingly a lot of
->   delayed_work_pending() abuse going on here.
->   [delayed_]work_pending() are unsynchronized and racy when used like
->   this.  I converted one instance in fullbatt_handler().  Please
->   conver the rest so that it invokes workqueue APIs for the intended
->   target state rather than trying to game work item pending state
->   transitions.  e.g. if timer should be modified - call
->   mod_delayed_work(), canceled - call cancel_delayed_work[_sync]().
-> 
-> * drivers/thermal/thermal_sys.c: thermal_zone_device_set_polling()
->   simplified.  Note that round_jiffies() calls in this function are
->   meaningless.  round_jiffies() work on absolute jiffies not delta
->   delay used by delayed_work.
-> 
-> * net/core/link_watch.c: linkwatch_schedule_work() was doing a quite
->   elaborate dancing around its delayed_work.  Collapse it such that
->   linkwatch_work is queued for immediate execution if LW_URGENT and
->   existing timer is kept otherwise.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Actually, it works if I write 'MIGD' first and then 'IGD'. Looks like we
+> aren't switching the DDC over to the new gfx card soon enough in the
+> process?
 
-drivers/power/ bits:
-
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
-
-Thanks!
+Yes, the call to the switcheroo code only comes after the card is 
+powered on. Cc:ing Dave Airlie - what are the expectations here? It 
+looks like i915 should have a reprobe function.
 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Matthew Garrett | mjg59@srcf.ucam.org
