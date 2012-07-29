@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab2G2MO7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 08:14:59 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:65502 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab2G2MO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 08:14:58 -0400
+	id S1752669Ab2G2MYY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 08:24:24 -0400
+Received: from hub.kern.lc ([141.0.20.193]:42233 "EHLO hub.kern.lc"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751941Ab2G2MYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 08:24:22 -0400
+Date: Sun, 29 Jul 2012 14:24:02 +0200
+From: Philipp Kern <pkern@debian.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        ak@linux.intel.com
+Subject: Re: [PATCH] net: move "IPv6: sending pkt_too_big to self" to NETDEBUG
+Message-ID: <20120729122402.GA23910@spike.0x539.de>
+References: <1343487997-9047-1-git-send-email-pkern@debian.org>
+ <1343496560.2009.15.camel@joe2Laptop>
 MIME-Version: 1.0
-In-Reply-To: <87sjcaiyze.fsf@devron.myhome.or.jp>
-References: <1343559005-7661-1-git-send-email-linkinjeon@gmail.com>
-	<87sjcaiyze.fsf@devron.myhome.or.jp>
-Date: Sun, 29 Jul 2012 08:14:57 -0400
-Message-ID: <CAKYAXd-EpVRf7D=YEvppGoURTZLiRZB6SZDp6A7i7AZEdLdasA@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: update mount option in filesystem/vfat.txt
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
+Content-Disposition: inline
+In-Reply-To: <1343496560.2009.15.camel@joe2Laptop>
+Organization: The Debian Project (http://www.debian.org)
+X-Debbugs-No-Ack: yes
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/29 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
-Hi OGAWA.
->
->> update two mount option(discard, nfs) in vfat.txt.
->
-> Good catch.
->
-> However, "--" doesn't seem to be aligned. Maybe, you are using the TAB
-> as 4 spaces, or such? Otherwise, looks good to me.
-Okay, I will resend after fixing it.
-Thanks.
->
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->> ---
->>  Documentation/filesystems/vfat.txt |   11 +++++++++++
->>  1 file changed, 11 insertions(+)
->>
->> diff --git a/Documentation/filesystems/vfat.txt b/Documentation/filesystems/vfat.txt
->> index ead764b..dd322a4 100644
->> --- a/Documentation/filesystems/vfat.txt
->> +++ b/Documentation/filesystems/vfat.txt
->> @@ -137,6 +137,17 @@ errors=panic|continue|remount-ro
->>                without doing anything or remount the partition in
->>                read-only mode (default behavior).
->>
->> +discard                -- If set, issues discard/TRIM commands to the block
->> +              device when blocks are freed. This is useful for SSD devices
->> +              and sparse/thinly-provisoned LUNs.
->> +
->> +nfs                    -- This option maintains an index (cache) of directory
->> +              inodes by i_logstart which is used by the nfs-related code to
->> +              improve look-ups.
->> +
->> +              Enable this only if you want to export the FAT filesystem
->> +              over NFS
->> +
->>  <bool>: 0,1,yes,no,true,false
->>
->>  TODO
->
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+
+--82I3+IH0IqGh5yIs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sat, Jul 28, 2012 at 10:29:20AM -0700, Joe Perches wrote:
+> On Sat, 2012-07-28 at 17:06 +0200, Philipp Kern wrote:
+> > ip6_xmit checks if the outgoing packet is larger than the path MTU and
+> > emits ICMPv6 packet too big locally if this is the case. Logging this,
+> > even at KERN_DEBUG, confuses users. It is also not actually helpful for
+> > debugging, given that there is no reference to the connection that
+> > triggered this event.
+> []
+> > diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+> []
+> > @@ -241,7 +241,7 @@ int ip6_xmit(struct sock *sk, struct sk_buff *skb, =
+struct flowi6 *fl6,
+> >  			       dst->dev, dst_output);
+> >  	}
+> > =20
+> > -	net_dbg_ratelimited("IPv6: sending pkt_too_big to self\n");
+> > +	LIMIT_NETDEBUG("IPv6: sending pkt_too_big to self\n");
+> LIMIT_NETDEBUG doesn't include a logging level.
+> Add a KERN_DEBUG prefix or another KERN_<LEVEL>.
+
+True, sorry, and thanks. That got lost with the change to net_dbg_ratelimit=
+ed.
+
+> Maybe it'd be better to add the context too.
+
+Right. What kind of context do you want to see? Would saddr, daddr and dst_=
+mtu
+be enough? What about skb->len / local_df / skb_is_gso (which are in the
+condition of the preceding if)?
+
+Kind regards
+Philipp Kern
+
+--82I3+IH0IqGh5yIs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEAREIAAYFAlAVK2IACgkQ7Ro5M7LPzdgwvwCeNnVVEZjjrpzqSF1QHt+OdwU8
+A4oAoLrnwa3nxb2RSdorii9KQdKoozJjiQEcBAEBCAAGBQJQFStiAAoJEERuJUU1
+0FbsXYoH/ixslK4agb9iopqzKQyUWZIyWE7E7SLJCqI38Q43JbMGGXiMQHpxgR3R
+GeqSv1zGzPsaepN6tGfpAiFuMdTt3Cw+ElkFZ/9DJiNEQANsjVoqTm24tM3iYvgC
+/0HwqZtewj+LgQGOosBa5xjgLoYX3ZNEW5TYW7oqWH9H4LMg3QAUSrKWQ2j/FNe4
+/8Am3qrv/2YJIvvqlV1TnByMRmrEmkyjHUzk8YM5skHX4chQyo4RHm4VB99oEFsL
+La7CCGNeVZa/xlGju5tqq3h27MQ6Pdwz8V2zScFZv5SkX9J+Cf8zilvbTb5CyVIP
+AqHCuE6Wr22DkihPccraYv5j05q9Iz0=
+=w8Is
+-----END PGP SIGNATURE-----
+
+--82I3+IH0IqGh5yIs--
