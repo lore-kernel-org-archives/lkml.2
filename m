@@ -1,131 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab2G2C4D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jul 2012 22:56:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57953 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165Ab2G2C4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jul 2012 22:56:00 -0400
-Message-ID: <1343530554.5373.3.camel@phoenix>
-Subject: [PATCH RFT 2/2] gpio: gpio-pch: Use spinlock for register access
- protection
-From: Axel Lin <axel.lin@gmail.com>
+	id S1751897Ab2G2Eyh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 00:54:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57583 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194Ab2G2Eyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 00:54:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="172729715"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
 To: linux-kernel@vger.kernel.org
-Cc: Feng Tang <feng.tang@intel.com>, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Sun, 29 Jul 2012 10:55:54 +0800
-In-Reply-To: <1343530482.5373.2.camel@phoenix>
-References: <1343530482.5373.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH] power_supply: Add new power supply VALID property
+Date: Sun, 29 Jul 2012 09:01:54 +0530
+Message-Id: <1343532714-28040-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpio_chip.can_sleep is 0, but current code uses mutex in pch_gpio_set
-pch_gpio_get and pch_gpio_direction_input functions.
-Thus those functions are not callable from interrupt context.
-This patch converts mutex into spinlock.
+It is possible that users can use non-standard chargers
+or use invalid batteries especially with mobile devices.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+This patch adds a new power supply property called 'VALID' to
+indicate this to the user(user space).
+
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
 ---
- drivers/gpio/gpio-pch.c |   22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+ Documentation/power/power_supply_class.txt |    2 ++
+ drivers/power/power_supply_sysfs.c         |    1 +
+ include/linux/power_supply.h               |    1 +
+ 3 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
-index 139ad3e..4ad0c4f 100644
---- a/drivers/gpio/gpio-pch.c
-+++ b/drivers/gpio/gpio-pch.c
-@@ -92,9 +92,7 @@ struct pch_gpio_reg_data {
-  * @lock:			Used for register access protection
-  * @irq_base:		Save base of IRQ number for interrupt
-  * @ioh:		IOH ID
-- * @spinlock:		Used for register access protection in
-- *				interrupt context pch_irq_mask,
-- *				pch_irq_unmask and pch_irq_type;
-+ * @spinlock:		Used for register access protection
-  */
- struct pch_gpio {
- 	void __iomem *base;
-@@ -102,7 +100,6 @@ struct pch_gpio {
- 	struct device *dev;
- 	struct gpio_chip gpio;
- 	struct pch_gpio_reg_data pch_gpio_reg;
--	struct mutex lock;
- 	int irq_base;
- 	enum pch_type_t ioh;
- 	spinlock_t spinlock;
-@@ -112,8 +109,9 @@ static void pch_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
- {
- 	u32 reg_val;
- 	struct pch_gpio *chip =	container_of(gpio, struct pch_gpio, gpio);
-+	unsigned long flags;
+diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
+index 2f0ddc1..272b122 100644
+--- a/Documentation/power/power_supply_class.txt
++++ b/Documentation/power/power_supply_class.txt
+@@ -81,6 +81,8 @@ This defines trickle and fast charges.  For batteries that
+ are already charged or discharging, 'n/a' can be displayed (or
+ 'unknown', if the status is not known).
  
--	mutex_lock(&chip->lock);
-+	spin_lock_irqsave(&chip->spinlock, flags);
- 	reg_val = ioread32(&chip->reg->po);
- 	if (val)
- 		reg_val |= (1 << nr);
-@@ -121,7 +119,7 @@ static void pch_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
- 		reg_val &= ~(1 << nr);
++VALID - indicates the power supply connected is valid(1) or invalid(0)
++
+ HEALTH - represents health of the battery, values corresponds to
+ POWER_SUPPLY_HEALTH_*, defined in battery.h.
  
- 	iowrite32(reg_val, &chip->reg->po);
--	mutex_unlock(&chip->lock);
-+	spin_unlock_irqrestore(&chip->spinlock, flags);
- }
- 
- static int pch_gpio_get(struct gpio_chip *gpio, unsigned nr)
-@@ -137,8 +135,9 @@ static int pch_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
- 	struct pch_gpio *chip =	container_of(gpio, struct pch_gpio, gpio);
- 	u32 pm;
- 	u32 reg_val;
-+	unsigned long flags;
- 
--	mutex_lock(&chip->lock);
-+	spin_lock_irqsave(&chip->spinlock, flags);
- 	pm = ioread32(&chip->reg->pm) & ((1 << gpio_pins[chip->ioh]) - 1);
- 	pm |= (1 << nr);
- 	iowrite32(pm, &chip->reg->pm);
-@@ -149,8 +148,7 @@ static int pch_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
- 	else
- 		reg_val &= ~(1 << nr);
- 	iowrite32(reg_val, &chip->reg->po);
--
--	mutex_unlock(&chip->lock);
-+	spin_unlock_irqrestore(&chip->spinlock, flags);
- 
- 	return 0;
- }
-@@ -159,12 +157,13 @@ static int pch_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
- {
- 	struct pch_gpio *chip =	container_of(gpio, struct pch_gpio, gpio);
- 	u32 pm;
-+	unsigned long flags;
- 
--	mutex_lock(&chip->lock);
-+	spin_lock_irqsave(&chip->spinlock, flags);
- 	pm = ioread32(&chip->reg->pm) & ((1 << gpio_pins[chip->ioh]) - 1);
- 	pm &= ~(1 << nr);
- 	iowrite32(pm, &chip->reg->pm);
--	mutex_unlock(&chip->lock);
-+	spin_unlock_irqrestore(&chip->spinlock, flags);
- 
- 	return 0;
- }
-@@ -387,7 +386,6 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
- 
- 	chip->reg = chip->base;
- 	pci_set_drvdata(pdev, chip);
--	mutex_init(&chip->lock);
- 	spin_lock_init(&chip->spinlock);
- 	pch_gpio_setup(chip);
- 	ret = gpiochip_add(&chip->gpio);
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 1d96614..797639e 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -138,6 +138,7 @@ static struct device_attribute power_supply_attrs[] = {
+ 	POWER_SUPPLY_ATTR(health),
+ 	POWER_SUPPLY_ATTR(present),
+ 	POWER_SUPPLY_ATTR(online),
++	POWER_SUPPLY_ATTR(valid),
+ 	POWER_SUPPLY_ATTR(technology),
+ 	POWER_SUPPLY_ATTR(cycle_count),
+ 	POWER_SUPPLY_ATTR(voltage_max),
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 3cfee0c..e7edcb3 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -88,6 +88,7 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_HEALTH,
+ 	POWER_SUPPLY_PROP_PRESENT,
+ 	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_VALID,
+ 	POWER_SUPPLY_PROP_TECHNOLOGY,
+ 	POWER_SUPPLY_PROP_CYCLE_COUNT,
+ 	POWER_SUPPLY_PROP_VOLTAGE_MAX,
 -- 
-1.7.9.5
-
-
+1.7.0.4
 
