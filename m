@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2G2Eyh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 00:54:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57583 "EHLO mga09.intel.com"
+	id S1752456Ab2G2FN4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 01:13:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44420 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194Ab2G2Eyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 00:54:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="172729715"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: [PATCH] power_supply: Add new power supply VALID property
-Date: Sun, 29 Jul 2012 09:01:54 +0530
-Message-Id: <1343532714-28040-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1751194Ab2G2FNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 01:13:54 -0400
+Date: Sun, 29 Jul 2012 01:13:34 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Jens Axboe <axboe@kernel.dk>, Andrea Arcangeli <aarcange@redhat.com>,
+        Jan Kara <jack@suse.cz>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
+        lwoodman@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>
+Subject: Re: [dm-devel] [PATCH 2/3] Introduce percpu rw semaphores
+In-Reply-To: <1343508252.2626.13184.camel@edumazet-glaptop>
+Message-ID: <Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
+ <20120628111541.GB17515@quack.suse.cz> <Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com>
+ <x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com>
+ <Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com>
+ <x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com>
+ <Pine.LNX.4.64.1207281236230.30415@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1207281240270.30415@file.rdu.redhat.com>
+ <1343508252.2626.13184.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible that users can use non-standard chargers
-or use invalid batteries especially with mobile devices.
 
-This patch adds a new power supply property called 'VALID' to
-indicate this to the user(user space).
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
----
- Documentation/power/power_supply_class.txt |    2 ++
- drivers/power/power_supply_sysfs.c         |    1 +
- include/linux/power_supply.h               |    1 +
- 3 files changed, 4 insertions(+), 0 deletions(-)
+On Sat, 28 Jul 2012, Eric Dumazet wrote:
 
-diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
-index 2f0ddc1..272b122 100644
---- a/Documentation/power/power_supply_class.txt
-+++ b/Documentation/power/power_supply_class.txt
-@@ -81,6 +81,8 @@ This defines trickle and fast charges.  For batteries that
- are already charged or discharging, 'n/a' can be displayed (or
- 'unknown', if the status is not known).
- 
-+VALID - indicates the power supply connected is valid(1) or invalid(0)
-+
- HEALTH - represents health of the battery, values corresponds to
- POWER_SUPPLY_HEALTH_*, defined in battery.h.
- 
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index 1d96614..797639e 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -138,6 +138,7 @@ static struct device_attribute power_supply_attrs[] = {
- 	POWER_SUPPLY_ATTR(health),
- 	POWER_SUPPLY_ATTR(present),
- 	POWER_SUPPLY_ATTR(online),
-+	POWER_SUPPLY_ATTR(valid),
- 	POWER_SUPPLY_ATTR(technology),
- 	POWER_SUPPLY_ATTR(cycle_count),
- 	POWER_SUPPLY_ATTR(voltage_max),
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index 3cfee0c..e7edcb3 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -88,6 +88,7 @@ enum power_supply_property {
- 	POWER_SUPPLY_PROP_HEALTH,
- 	POWER_SUPPLY_PROP_PRESENT,
- 	POWER_SUPPLY_PROP_ONLINE,
-+	POWER_SUPPLY_PROP_VALID,
- 	POWER_SUPPLY_PROP_TECHNOLOGY,
- 	POWER_SUPPLY_PROP_CYCLE_COUNT,
- 	POWER_SUPPLY_PROP_VOLTAGE_MAX,
--- 
-1.7.0.4
+> On Sat, 2012-07-28 at 12:41 -0400, Mikulas Patocka wrote:
+> > Introduce percpu rw semaphores
+> > 
+> > When many CPUs are locking a rw semaphore for read concurrently, cache
+> > line bouncing occurs. When a CPU acquires rw semaphore for read, the
+> > CPU writes to the cache line holding the semaphore. Consequently, the
+> > cache line is being moved between CPUs and this slows down semaphore
+> > acquisition.
+> > 
+> > This patch introduces new percpu rw semaphores. They are functionally
+> > identical to existing rw semaphores, but locking the percpu rw semaphore
+> > for read is faster and locking for write is slower.
+> > 
+> > The percpu rw semaphore is implemented as a percpu array of rw
+> > semaphores, each semaphore for one CPU. When some thread needs to lock
+> > the semaphore for read, only semaphore on the current CPU is locked for
+> > read. When some thread needs to lock the semaphore for write, semaphores
+> > for all CPUs are locked for write. This avoids cache line bouncing.
+> > 
+> > Note that the thread that is locking percpu rw semaphore may be
+> > rescheduled, it doesn't cause bug, but cache line bouncing occurs in
+> > this case.
+> > 
+> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> 
+> I am curious to see how this performs with 4096 cpus ?
 
+Each cpu should have its own rw semaphore in its cache, so I don't see a 
+problem there.
+
+When you change block size, all 4096 rw semaphores are locked for write, 
+but changing block size is not a performance sensitive operation.
+
+> Really you shouldnt use rwlock in a path if this might hurt performance.
+> 
+> RCU is probably a better answer.
+
+RCU is meaningless here. RCU allows lockless dereference of a pointer. 
+Here the problem is not pointer dereference, the problem is that integer 
+bd_block_size may change.
+
+> (bdev->bd_block_size should be read exactly once )
+
+Rewrite all direct and non-direct io code so that it reads block size just 
+once ...
+
+Mikulas
