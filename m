@@ -1,141 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab2G2TeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 15:34:21 -0400
-Received: from ks35366.kimsufi.com ([213.251.186.122]:36022 "EHLO meetr.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753359Ab2G2TeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 15:34:20 -0400
-Message-ID: <50159036.7010605@meetr.de>
-Date: Sun, 29 Jul 2012 21:34:14 +0200
-From: Andreas Heider <andreas@meetr.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
+	id S1753482Ab2G2Tkt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 15:40:49 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:40324 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab2G2TkC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 15:40:02 -0400
+Date: Sun, 29 Jul 2012 20:39:53 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
 To: David Woodhouse <dwmw2@infradead.org>
-CC: Dave Airlie <airlied@linux.ie>, Matthew Garrett <mjg59@srcf.ucam.org>,
+Cc: Andreas Heider <andreas@meetr.de>,
         Arun Raghavan <arun.raghavan@collabora.co.uk>,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
-References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>   <20120710160555.GA31562@srcf.ucam.org>   <20120710163516.GE10194@thinkpad-t410> <4FFCC7FB.1090609@meetr.de>   <1343522547.2488.12.camel@shinybook.infradead.org>  <1343524730.1962.5.camel@shinybook.infradead.org>  <5014EA3B.4010305@meetr.de> <1343588756.1962.22.camel@shinybook.infradead.org>
-In-Reply-To: <1343588756.1962.22.camel@shinybook.infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <20120729193953.GA25132@srcf.ucam.org>
+References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
+ <20120710160555.GA31562@srcf.ucam.org>
+ <20120710163516.GE10194@thinkpad-t410>
+ <4FFCC7FB.1090609@meetr.de>
+ <1343522547.2488.12.camel@shinybook.infradead.org>
+ <1343524730.1962.5.camel@shinybook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343524730.1962.5.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.07.12 21:05, schrieb David Woodhouse:
-> On Sun, 2012-07-29 at 09:46 +0200, Andreas Heider wrote:
->> Am 29.07.12 03:18, schrieb David Woodhouse:
->>> On Sun, 2012-07-29 at 01:42 +0100, David Woodhouse wrote:
->>>> If I don't hack it to switch the mux to IGD at boot time, I never manage
->>>> to get a sane picture out of the Intel device after switching to it.
->>>> It's late now, but I'll try to get a proper debug log of the working and
->>>> failing cases tomorrow.
->>>
->>>   From the hacked kernel (after fixing vga_switcheroo_enable() not to do:
->>> 		event.info = client->fb_info;
->>>    		fb_notifier_call_chain(FB_EVENT_REMAP_ALL_CONSOLE, &event);
->>> if client->fb_info is NULL)...
->>>
->>> http://david.woodhou.se/dmesg-boot-to-IGD (blank screen)
->>> http://david.woodhou.se/dmesg-boot-to-IGD-and-switch-to-DIS (works)
->>> http://david.woodhou.se/dmesg-boot-to-IGD-and-switch-to-DIS-and-back-to-IGD (works)
->>>
->>> Without switching to IGD at startup...
->>>
->>> http://david.woodhou.se/dmesg-boot-to-DIS (works)
->>> http://david.woodhou.se/dmesg-boot-to-DIS-then-switch-to-IGD (blank)
->>>
->>
->> The general problem, at least for the case of booting to DIS and then
->> switching to IGD, is that the mode for the internal display isn't
->> correct, so it stays black.
->>
->> It could get the right mode via DDC but this line is muxed as well.
->> 0x728 controls the DDC mux, writing 1 lets the IGD access it, 2 is the DIS.
->
-> So? We *switch* it before telling the IGD to enable its display (hotplug
-> the LVDS). So the DDC *should* be working, surely? Is it just that the
-> Intel driver is probing the LVDS once at boot when the panel isn't even
-> connected, and it should be made hotplug-capable?
+Working: Modeline 10:"1920x1200" 60 
+154000 1920 1968 2000 2080 1200 1203 1209 1235 0x48 0xa
+Broken: Modeline 20:"1280x800" 60 72500 1280 1328 1360 1423 800 803 809 
+846 0x8 0xa
 
-That would work and I like this solution the best, but I'm not familiar 
-enough with i915 to comment on how feasible it is or implement it. It 
-should even be possible to switch the DDC mux first, let i915 do the 
-detection and switch the display later to avoid long black screens.
+And it looks like intel_lvds->edid is only set during intel_lvds_init(). 
+That seems less than ideal. How about something like this entirely 
+untested patch?
 
->
-> The Radeon seems to cope... maybe. I note it doesn't actually come up in
-> 1920x1200 with fbcon, although ISTR X was getting the right resolution.
->
->> So what happens in dmesg-boot-to-DIS is that the intel card can't get
->> the mode via DDC and falls back to the garbage mode from VBT.
->> Interestingly, there is a intel VBT on your MBP8,3, but it doesn't
->> contain the right modes. On my MBP6,2 there isn't a VBT at all and it
->> disables LVDS altogether if 0x728 isn't switched at boot.
->>
->> Manually switching the mux is a bit messy, so I'm not too surprised that
->> it's blank in dmesg-boot-to-IGD.
->
-> That does actually work, if I disable the Radeon completely. With this
-> in early boot:
-> +       outb(1, 0x728);
-> +       outb(2, 0x710);
-> +       outb(2, 0x740);
-> +       outb(0, 0x750);
-> ... the Intel framebuffer then comes up just fine on the internal
-> display. It *can't* drive external displays in that case (via the
-> standard Apple DP-VGA or DP-DVI adapters; I haven't tried real DP), but
-> the LVDS is fine.
->
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 36822b9..adef587 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1250,6 +1250,7 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
+ 		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
+ 		/* i915 resume handler doesn't set to D0 */
+ 		pci_set_power_state(dev->pdev, PCI_D0);
++		intel_lvds_get_edid(dev);
+ 		i915_resume(dev);
+ 		dev->switch_power_state = DRM_SWITCH_POWER_ON;
+ 	} else {
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 3e09188..930542a 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -353,6 +353,7 @@ extern void intel_dvo_init(struct drm_device *dev);
+ extern void intel_tv_init(struct drm_device *dev);
+ extern void intel_mark_busy(struct drm_device *dev,
+ 			    struct drm_i915_gem_object *obj);
++extern bool intel_lvds_get_edid(struct drm_device *dev);
+ extern bool intel_lvds_init(struct drm_device *dev);
+ extern void intel_dp_init(struct drm_device *dev, int dp_reg);
+ void
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 08eb04c..80832e5 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -894,6 +894,59 @@ static bool intel_lvds_supported(struct drm_device *dev)
+ 	return IS_MOBILE(dev) && !IS_I830(dev);
+ }
+ 
++bool intel_lvds_get_edid(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct drm_connector *connector = dev_priv->int_lvds_connector;
++	struct intel_lvds *intel_lvds;
++	struct drm_display_mode *scan; /* *modes, *bios_mode; */
++	u8 pin;	
++
++	if (!connector)
++		return false;
++
++	intel_lvds = intel_attached_lvds(connector);
++
++	pin = GMBUS_PORT_PANEL;
++
++	intel_lvds->edid = drm_get_edid(connector,
++					intel_gmbus_get_adapter(dev_priv,
++								pin));
++	if (intel_lvds->edid) {
++		if (drm_add_edid_modes(connector,
++				       intel_lvds->edid)) {
++			drm_mode_connector_update_edid_property(connector,
++								intel_lvds->edid);
++		} else {
++			kfree(intel_lvds->edid);
++			intel_lvds->edid = NULL;
++		}
++	}
++
++	if (!intel_lvds->edid) {
++		/* Didn't get an EDID, so
++		 * Set wide sync ranges so we get all modes
++		 * handed to valid_mode for checking
++		 */
++		connector->display_info.min_vfreq = 0;
++		connector->display_info.max_vfreq = 200;
++		connector->display_info.min_hfreq = 0;
++		connector->display_info.max_hfreq = 200;
++	}
++
++	list_for_each_entry(scan, &connector->probed_modes, head) {
++		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
++			intel_lvds->fixed_mode =
++				drm_mode_duplicate(dev, scan);
++			intel_find_lvds_downclock(dev,
++						  intel_lvds->fixed_mode,
++						  connector);
++			return true;
++		}
++	}
++	return false;
++}
++
+ /**
+  * intel_lvds_init - setup LVDS connectors on this device
+  * @dev: drm device
+@@ -909,7 +962,6 @@ bool intel_lvds_init(struct drm_device *dev)
+ 	struct intel_connector *intel_connector;
+ 	struct drm_connector *connector;
+ 	struct drm_encoder *encoder;
+-	struct drm_display_mode *scan; /* *modes, *bios_mode; */
+ 	struct drm_crtc *crtc;
+ 	u32 lvds;
+ 	int pipe;
+@@ -976,6 +1028,8 @@ bool intel_lvds_init(struct drm_device *dev)
+ 	connector->interlace_allowed = false;
+ 	connector->doublescan_allowed = false;
+ 
++	dev_priv->int_lvds_connector = connector;
++
+ 	/* create the scaling mode property */
+ 	drm_mode_create_scaling_mode_property(dev);
+ 	/*
+@@ -1000,40 +1054,8 @@ bool intel_lvds_init(struct drm_device *dev)
+ 	 * Attempt to get the fixed panel mode from DDC.  Assume that the
+ 	 * preferred mode is the right one.
+ 	 */
+-	intel_lvds->edid = drm_get_edid(connector,
+-					intel_gmbus_get_adapter(dev_priv,
+-								pin));
+-	if (intel_lvds->edid) {
+-		if (drm_add_edid_modes(connector,
+-				       intel_lvds->edid)) {
+-			drm_mode_connector_update_edid_property(connector,
+-								intel_lvds->edid);
+-		} else {
+-			kfree(intel_lvds->edid);
+-			intel_lvds->edid = NULL;
+-		}
+-	}
+-	if (!intel_lvds->edid) {
+-		/* Didn't get an EDID, so
+-		 * Set wide sync ranges so we get all modes
+-		 * handed to valid_mode for checking
+-		 */
+-		connector->display_info.min_vfreq = 0;
+-		connector->display_info.max_vfreq = 200;
+-		connector->display_info.min_hfreq = 0;
+-		connector->display_info.max_hfreq = 200;
+-	}
+-
+-	list_for_each_entry(scan, &connector->probed_modes, head) {
+-		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
+-			intel_lvds->fixed_mode =
+-				drm_mode_duplicate(dev, scan);
+-			intel_find_lvds_downclock(dev,
+-						  intel_lvds->fixed_mode,
+-						  connector);
+-			goto out;
+-		}
+-	}
++	if (intel_lvds_get_edid(dev))
++		goto out;
+ 
+ 	/* Failed to get EDID, what about VBT? */
+ 	if (dev_priv->lfp_lvds_vbt_mode) {
+@@ -1112,7 +1134,6 @@ out:
+ 		dev_priv->lid_notifier.notifier_call = NULL;
+ 	}
+ 	/* keep the LVDS connector */
+-	dev_priv->int_lvds_connector = connector;
+ 	drm_sysfs_connector_add(connector);
+ 
+ 	intel_panel_setup_backlight(dev);
+@@ -1121,6 +1142,7 @@ out:
+ 
+ failed:
+ 	DRM_DEBUG_KMS("No LVDS modes found, disabling.\n");
++	dev_priv->int_lvds_connector = NULL;
+ 	drm_connector_cleanup(connector);
+ 	drm_encoder_cleanup(encoder);
+ 	kfree(intel_lvds);
 
-Not sure about it, but it might be because vga_default_device is wrong 
-if you switch the mux manually.
 
->> The gmux code you're using is a bit outdated, but if you use
->> git://kernel.ubuntu.com/sforshee/linux.git gmux-switcheroo and connect
->> an external display (I tested it with a DP one) you should be able to
->> boot to DIS and switch to the IGD and get output on the external display.
->>
->> This leaves the problem of how to get i915 the right mode. Generally,
->> there are two options:
->>
->> - Find a way so it gets the right mode when it initializes the LVDS.
->> This could be done by switching the DDC mux during lvds intialization.
->> See lock_ddc.patch for a crude prototype that works on my laptop if I'm
->> lucky and apple_gmux gets loaded before i915 and nouveau doesn't try to
->> use DDC at the same time.
->
-> Again, why is the LVDS initialisation happening when the LVDS isn't
-> connected anyway? Fix that, and your concerns become irrelevant. You
-> *can't* switch to IGD before apple_gmux is loaded, and the discrete card
-> shouldn't be poking it DDC when the panel has been hot-unplugged from it
-> either.
->
->> Another way would be to get the right EDID without mux switching by
->> querying either the DIS driver or EFI (if you boot into the rEFIt shell
->> you can verify it's there, see http://andreas.meetr.de/efi/log/edid.txt,
->> to get it search for EdidDiscovered/EdidActive and dump it with dmem).
->> But to use this, we need a way to know which display this corresponds to
->> and I'm not sure how to do that.
->>
->> - Make vga_switcheroo reprobe handle this. This would mean that we start
->> with a possibly broken mode and resize it once the mux get's switched
->> through vga_switcheroo. I'm not sure if thats a good idea.
->
-> "Possibly broken mode", in the case where there is no monitor attached
-> to the display. I think we can live with that. Surely it's the case for
-> an external monitor (which we also support) anyway?
->
-> In fact speaking of external monitors... it looks like it should be
-> possible to support using one graphics cards for the LVDS, and another
-> for the external DisplayPort. Perhaps they could be different seats of a
-> multi-seat system, with completely separate X servers, or maybe we'd do
-> it just to work around size/bandwidth limitations or for performance
-> reasons. Do we have any plan to allow that? We only switch both together
-> for now...
->
-
-Just as a sidenote, I tested running two X server and it does work as 
-expected.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
