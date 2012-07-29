@@ -1,227 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab2G2LjR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 07:39:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15038 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382Ab2G2LjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 07:39:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="189343746"
-Date: Sun, 29 Jul 2012 19:39:09 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Daniel Mack <zonque@gmail.com>, Krzysztof Helt <krzysztof.h1@wp.pl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rene Herman <rene.herman@gmail.com>, alsa-devel@alsa-project.org
-Subject: [PATCH] es1688 - freeup resources on init failure
-Message-ID: <20120729113909.GA14106@localhost>
-References: <20120728132046.GA14210@localhost>
- <501401B1.4070108@gmail.com>
- <s5hd33fknfg.wl%tiwai@suse.de>
+	id S1752668Ab2G2LxB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 07:53:01 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:44748
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751642Ab2G2LxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 07:53:00 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6TBqhCe011353
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: Milton Miller <miltonm@bga.com>
+Cc: Borislav Petkov <bp@alien8.de>, Cong Wang <xiyou.wangcong@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening port
+In-Reply-To: <kernel-nc-hints@mdm.bga.com> (Milton Miller's message of "Sun,
+	29 Jul 2012 03:40:04 -0500")
+References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Sun, 29 Jul 2012 13:52:41 +0200
+Message-ID: <gid33eg4xi.fsf_-_@mx10.gouders.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hd33fknfg.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Sun, 29 Jul 2012 13:52:44 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  	err = snd_es1688_init(chip, 1);
-> >  	if (err < 0)
-> > -		return err;
-> > +		goto exit_release_dma;
-> >  
-> >  	/* Register device */
-> >  	return snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
-> > +
-> > +exit_release_dma:
-> > +	free_dma(chip->dma8);
-> > +exit_release_irq:
-> > +	free_irq(chip->irq, chip);
-> > +exit_release_region:
-> > +	release_and_free_resource(chip->res_port);
-> > +exit:
-> > +	return err;
-> 
-> You can simply call snd_es1688_free(chip) instead of a bunch of
-> labels.  That is, all goto's can be "goto exit", and
-> 
->   exit:
-> 	snd_es1688_free(chip);
-> 	return err;
+Milton Miller <miltonm@bga.com> writes:
 
-snd_es1688_free() will call snd_es1688_init() which in turn use the
-uninitialized spin locks and other data. So I end up with the below
-patch. snd_device_new() could also return errors and will be handled
-in the same way.
+> [adding Rob as Doc maintanier]
+>
+> On Sat, 28 Jul 2012 about 11:08:16 -0000, Dirk Gouders wrote:
+>> Borislav Petkov <bp@alien8.de> writes:
+>> 
+>> > On Fri, Jul 27, 2012 at 11:24:53AM +0200, Dirk Gouders wrote:
+>> >> Cong Wang <xiyou.wangcong@gmail.com> writes:
+>> >> 
+>> >> > On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
+>> >> > <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
+>> >> >> Hi Jesse,
+>> >> >>
+>> >> >> I would like to ask you to check if the documentation of "nc" in
+>> >> >> netconsole.txt is still correct.  I tried two different netcat packages
+>> >> >> and both require "-p" to specify the listening port.  I am wondering if
+>> >> >> that changed after the use of "nc" has been documented.
+>> >> >
+>> >> > On Fedora 16, `nc -u -l <port number>` works fine.
+>> >> 
+>> >> Thanks for checking that.
+>> >> 
+>> >> If the information I found is correct, Fedora uses OpenBSD's nc
+>> >> codebase.  The two netcat packages I tested on a Gentoo system differ in
+>> >> requiring the -p switch for the port specification.
+>> >
+>> > So say exactly that in the doc: that the *BSD's version of nc doesn't
+>> > need the port number specified with '-p' and you're covered.
+>> OK, I tried that in the attached patch.
+>> I'm not sure if every exeption needs to/should be documented, though.
+>> 
+>> >From 3cdeac3e814471053129145c5fa8391acb365fd8 Mon Sep 17 00:00:00 2001
+>> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+>> Date: Sat, 28 Jul 2012 12:32:49 +0200
+>> Subject: [PATCH] netconsole.txt: non-BSD versions of nc(1) require '-p'
+>>  switch
+>> 
+>> Gentoo for example uses non-BSD versions of nc(1) which require
+>> the '-p' switch to specify the listening port.
+>> 
+>> ---
+>> Documentation/networking/netconsole.txt |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/Documentation/networking/netconsole.txt b/Documentation/networking/netconsole.txt
+>> index 8d02207..9a362f8 100644
+>> --- a/Documentation/networking/netconsole.txt
+>> +++ b/Documentation/networking/netconsole.txt
+>> @@ -52,7 +52,8 @@ initialized and attempts to bring up the supplied dev at the supplied
+>>  address.
+>>  
+>>  The remote host can run either 'netcat -u -l -p <port>',
+>
+> So the above line shows usage with -p
+>
+>> -'nc -l -u <port>' or syslogd.
+>> +'nc -l -u <port>' (BSD version of nc(1) e.g. Fedora),
+>
+> now you add a comment about BSD and say Fedora which is not obviously
+> BSD (this is Documentation; reading the git history for clarification
+> is not approprate).
 
-I don't have the hardware, however tests show it at least fixed the
-boot time irq mismatch warnings.
+Thanks for your comments.
+Perhaps I should have written "(BSD version of nc(1) which is used on
+Fedora, for example)"
 
-Daniel, thanks for your initial implementation and please kindly
-confirm the below 3rd version :)
+>> +'nc -l -u -p <port>' or syslogd.
+>
+> And now you add the original -p which you probably skipped over
+> since it was on the previous line?
 
-Thanks,
-Fengguang
----
-es1688 - freeup resources on init failure
+Well, this has been intentionally.
 
-This will fix the following oops:
+Probably this is because of the Gentoo system I use as a reference.
+It offers three netcat packages, one is "gnu-netcat" which provides
+/usr/bin/netcat, the other two are "netcat" and "netcat6", both of which
+provide /usr/bin/nc (those packages cannot be installed at the same
+time).  All of these netcat implementations require the '-p' switch.
 
-[    6.169981] genirq: Flags mismatch irq 5. 00000000 (ES1688) vs. 00000000 (ES1688)
-[    6.170851] Pid: 1, comm: swapper Not tainted 3.5.0-00004-gceee0e9 #14
-[    6.170851] Call Trace:
-[    6.170851]  [<c1062237>] ? __setup_irq+0x3c7/0x420
-[    6.170851]  [<c1062486>] ? request_threaded_irq+0x76/0x140
-[    6.170851]  [<c1290220>] ? snd_es1688_ioctl+0x10/0x10
-[    6.170851]  [<c10624c2>] ? request_threaded_irq+0xb2/0x140
-[    6.170851]  [<c1291196>] ? snd_es1688_create+0x96/0x330
-[    6.170851]  [<c138365d>] ? snd_gusextreme_probe+0x18d/0x5a2
-[    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-[    6.170851]  [<c10db22f>] ? sysfs_create_link+0xf/0x20
-[    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-[    6.170851]  [<c11d1502>] ? isa_bus_probe+0x12/0x20
-[    6.170851]  [<c11c9b95>] ? driver_probe_device+0x55/0x1c0
-[    6.170851]  [<c13ae04f>] ? _raw_spin_unlock+0xf/0x30
-[    6.170851]  [<c13705ea>] ? klist_next+0x6a/0xe0
-[    6.170851]  [<c11d15c1>] ? isa_bus_match+0x21/0x40
-[    6.170851]  [<c11c8a24>] ? bus_for_each_drv+0x34/0x70
-[    6.170851]  [<c11c9e4b>] ? device_attach+0x7b/0x90
-[    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-[    6.170851]  [<c11c8bff>] ? bus_probe_device+0x5f/0x80
-[    6.170851]  [<c11c7493>] ? device_add+0x573/0x620
-[    6.170851]  [<c1042820>] ? complete_all+0x40/0x60
-[    6.170851]  [<c13ae08a>] ? _raw_spin_unlock_irqrestore+0x1a/0x30
-[    6.170851]  [<c11d16c6>] ? isa_register_driver+0xb6/0x150
-[    6.170851]  [<c15c9002>] ? alsa_card_gusmax_init+0xf/0xf
-[    6.170851]  [<c15a99bc>] ? do_one_initcall+0x7f/0x12b
-[    6.170851]  [<c15a9b7a>] ? kernel_init+0x112/0x1a9
-[    6.170851]  [<c15a9423>] ? do_early_param+0x77/0x77
-[    6.170851]  [<c15a9a68>] ? do_one_initcall+0x12b/0x12b
-[    6.170851]  [<c13aefbe>] ? kernel_thread_helper+0x6/0xd
-[    6.190170] es1688: can't grab IRQ 5
-[    6.190613] genirq: Flags mismatch irq 5. 00000000 (ES1688) vs. 00000000 (ES1688)
-[    6.191566] Pid: 1, comm: swapper Not tainted 3.5.0-00004-gceee0e9 #14
-[    6.192394] Call Trace:
-[    6.192685]  [<c1062237>] ? __setup_irq+0x3c7/0x420
-[    6.193342]  [<c1062486>] ? request_threaded_irq+0x76/0x140
-[    6.194081]  [<c1290220>] ? snd_es1688_ioctl+0x10/0x10
-[    6.194607]  [<c10624c2>] ? request_threaded_irq+0xb2/0x140
-[    6.194607]  [<c1291196>] ? snd_es1688_create+0x96/0x330
-[    6.194607]  [<c138365d>] ? snd_gusextreme_probe+0x18d/0x5a2
-[    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-[    6.194607]  [<c10db22f>] ? sysfs_create_link+0xf/0x20
-[    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-[    6.194607]  [<c11d1502>] ? isa_bus_probe+0x12/0x20
-[    6.194607]  [<c11c9b95>] ? driver_probe_device+0x55/0x1c0
-[    6.194607]  [<c13ae04f>] ? _raw_spin_unlock+0xf/0x30
-[    6.194607]  [<c13705ea>] ? klist_next+0x6a/0xe0
-[    6.194607]  [<c11d15c1>] ? isa_bus_match+0x21/0x40
-[    6.194607]  [<c11c8a24>] ? bus_for_each_drv+0x34/0x70
-[    6.194607]  [<c11c9e4b>] ? device_attach+0x7b/0x90
-[    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-[    6.194607]  [<c11c8bff>] ? bus_probe_device+0x5f/0x80
-[    6.194607]  [<c11c7493>] ? device_add+0x573/0x620
-[    6.194607]  [<c1042820>] ? complete_all+0x40/0x60
-[    6.194607]  [<c13ae08a>] ? _raw_spin_unlock_irqrestore+0x1a/0x30
-[    6.194607]  [<c11d16c6>] ? isa_register_driver+0xb6/0x150
-[    6.194607]  [<c15c9002>] ? alsa_card_gusmax_init+0xf/0xf
-[    6.194607]  [<c15a99bc>] ? do_one_initcall+0x7f/0x12b
-[    6.194607]  [<c15a9b7a>] ? kernel_init+0x112/0x1a9
-[    6.194607]  [<c15a9423>] ? do_early_param+0x77/0x77
-[    6.194607]  [<c15a9a68>] ? do_one_initcall+0x12b/0x12b
-[    6.194607]  [<c13aefbe>] ? kernel_thread_helper+0x6/0xd
-[    6.210779] es1688: can't grab IRQ 5
-[    6.211305] gusextreme: probe of gusextreme.0 failed with error -16
+I will check other distributions to see what netcat implementations they
+provide; probably Gentoo is an exception in which case it might be
+overdone to change the documentation for that special case...
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- include/sound/es1688.h        |    1 
- sound/isa/es1688/es1688_lib.c |   34 +++++++++++++++++++++-----------
- 2 files changed, 24 insertions(+), 11 deletions(-)
+Dirk
 
---- linux.orig/sound/isa/es1688/es1688_lib.c	2012-07-29 18:59:09.820640797 +0800
-+++ linux/sound/isa/es1688/es1688_lib.c	2012-07-29 18:59:11.576640840 +0800
-@@ -612,10 +612,10 @@ static int snd_es1688_capture_close(stru
- 
- static int snd_es1688_free(struct snd_es1688 *chip)
- {
--	if (chip->res_port) {
-+	if (chip->hardware != ES1688_HW_UNDEF)
- 		snd_es1688_init(chip, 0);
-+	if (chip->res_port)
- 		release_and_free_resource(chip->res_port);
--	}
- 	if (chip->irq >= 0)
- 		free_irq(chip->irq, (void *) chip);
- 	if (chip->dma8 >= 0) {
-@@ -657,19 +657,27 @@ int snd_es1688_create(struct snd_card *c
- 		return -ENOMEM;
- 	chip->irq = -1;
- 	chip->dma8 = -1;
-+	chip->hardware = ES1688_HW_UNDEF;
- 	
--	if ((chip->res_port = request_region(port + 4, 12, "ES1688")) == NULL) {
-+	chip->res_port = request_region(port + 4, 12, "ES1688");
-+	if (chip->res_port == NULL) {
- 		snd_printk(KERN_ERR "es1688: can't grab port 0x%lx\n", port + 4);
--		return -EBUSY;
-+		err = -EBUSY;
-+		goto exit;
- 	}
--	if (request_irq(irq, snd_es1688_interrupt, 0, "ES1688", (void *) chip)) {
-+
-+	err = request_irq(irq, snd_es1688_interrupt, 0, "ES1688", (void *) chip);
-+	if (err < 0) {
- 		snd_printk(KERN_ERR "es1688: can't grab IRQ %d\n", irq);
--		return -EBUSY;
-+		goto exit;
- 	}
-+
- 	chip->irq = irq;
--	if (request_dma(dma8, "ES1688")) {
-+	err = request_dma(dma8, "ES1688");
-+
-+	if (err < 0) {
- 		snd_printk(KERN_ERR "es1688: can't grab DMA8 %d\n", dma8);
--		return -EBUSY;
-+		goto exit;
- 	}
- 	chip->dma8 = dma8;
- 
-@@ -685,14 +693,18 @@ int snd_es1688_create(struct snd_card *c
- 
- 	err = snd_es1688_probe(chip);
- 	if (err < 0)
--		return err;
-+		goto exit;
- 
- 	err = snd_es1688_init(chip, 1);
- 	if (err < 0)
--		return err;
-+		goto exit;
- 
- 	/* Register device */
--	return snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
-+	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
-+exit:
-+	if (err)
-+		snd_es1688_free(chip);
-+	return err;
- }
- 
- static struct snd_pcm_ops snd_es1688_playback_ops = {
---- linux.orig/include/sound/es1688.h	2012-07-29 18:59:09.820640797 +0800
-+++ linux/include/sound/es1688.h	2012-07-29 18:59:13.000640873 +0800
-@@ -29,6 +29,7 @@
- #define ES1688_HW_AUTO		0x0000
- #define ES1688_HW_688		0x0001
- #define ES1688_HW_1688		0x0002
-+#define ES1688_HW_UNDEF	0x0003
- 
- struct snd_es1688 {
- 	unsigned long port;		/* port of ESS chip */
+>
+>>  
+>>  Dynamic reconfiguration:
+>>  ========================
+>
+> milton
