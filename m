@@ -1,64 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab2G2Jtw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 05:49:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39646 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab2G2Jtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 05:49:51 -0400
-Date: Sun, 29 Jul 2012 12:50:21 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: mashirle@us.ibm.com, krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 4/5] virtio_net: multiqueue support
-Message-ID: <20120729095021.GC8977@redhat.com>
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com>
- <1341484194-8108-5-git-send-email-jasowang@redhat.com>
- <20120720134014.GD16550@redhat.com>
- <500CE5B3.3040404@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500CE5B3.3040404@redhat.com>
+	id S1752534Ab2G2KKj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 06:10:39 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60246 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286Ab2G2KKf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 06:10:35 -0400
+Subject: Re: [dm-devel] [PATCH 2/3] Introduce percpu rw semaphores
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Andrea Arcangeli <aarcange@redhat.com>,
+        Jan Kara <jack@suse.cz>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
+        lwoodman@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
+	 <20120628111541.GB17515@quack.suse.cz>
+	 <Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com>
+	 <x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com>
+	 <Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com>
+	 <x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com>
+	 <Pine.LNX.4.64.1207281236230.30415@file.rdu.redhat.com>
+	 <Pine.LNX.4.64.1207281240270.30415@file.rdu.redhat.com>
+	 <1343508252.2626.13184.camel@edumazet-glaptop>
+	 <Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 29 Jul 2012 12:10:30 +0200
+Message-ID: <1343556630.2626.13257.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 23, 2012 at 01:48:35PM +0800, Jason Wang wrote:
-> >>+	}
-> >>
-> >>-	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ)) {
-> >>+	ret = vi->vdev->config->find_vqs(vi->vdev, total_vqs, vqs, callbacks,
-> >>+					 (const char **)names);
-> >>+	if (ret)
-> >>+		goto err;
-> >>+
-> >>+	if (vi->has_cvq)
-> >>  		vi->cvq = vqs[2];
-> >>
-> >>-		if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
-> >>-			vi->dev->features |= NETIF_F_HW_VLAN_FILTER;
-> >>+	for (i = 0; i<  vi->num_queue_pairs * 2; i += 2) {
-> >>+		int j = i == 0 ? i : i + vi->has_cvq;
-> >>+		vi->rq[i / 2]->vq = vqs[j];
-> >>+		vi->sq[i / 2]->vq = vqs[j + 1];
-> >Same here.
+On Sun, 2012-07-29 at 01:13 -0400, Mikulas Patocka wrote:
+
+> Each cpu should have its own rw semaphore in its cache, so I don't see a 
+> problem there.
 > 
-> Consider the code is really simple, seem no need to use helpers.
+> When you change block size, all 4096 rw semaphores are locked for write, 
+> but changing block size is not a performance sensitive operation.
+> 
+> > Really you shouldnt use rwlock in a path if this might hurt performance.
+> > 
+> > RCU is probably a better answer.
+> 
+> RCU is meaningless here. RCU allows lockless dereference of a pointer. 
+> Here the problem is not pointer dereference, the problem is that integer 
+> bd_block_size may change.
 
-Well it was not simple to at least one reader :)
-The problem is not this logic is complex,
-it is that it is spread all over the code.
+So add a pointer if you need to. Thats the point.
 
-If we had e.g. vnet_tx_vqn_to_queuenum vnet_tx_queuenum_to_vqn
-and same for rx, then the logic would all be
-in one place, and have a tidy comment on top explaining
-the VQ numbering scheme.
+> 
+> > (bdev->bd_block_size should be read exactly once )
+> 
+> Rewrite all direct and non-direct io code so that it reads block size just 
+> once ...
 
--- 
-MST
+
+You introduced percpu rw semaphores, thats only incentive for people to
+use that infrastructure elsewhere.
+
+And its a big hammer :
+
+sizeof(struct rw_semaphore)=0x70 
+
+You can probably design something needing no more than 4 bytes per cpu,
+and this thing could use non locked operations as bonus.
+
+like the following ...
+
+struct percpu_rw_semaphore {
+	/* percpu_sem_down_read() use the following in fast path */
+	unsigned int __percpu *active_counters;
+
+	unsigned int __percpu *counters;
+	struct rw_semaphore	sem; /* used in slow path and by writers */
+};
+
+static inline int percpu_sem_init(struct percpu_rw_semaphore *p)
+{
+	p->counters = alloc_percpu(unsigned int);
+	if (!p->counters)
+		return -ENOMEM;
+	init_rwsem(&p->sem);
+	p->active_counters = p->counters;
+	return 0;
+}
+
+
+static inline bool percpu_sem_down_read(struct percpu_rw_semaphore *p)
+{
+	unsigned int __percpu *counters = ACCESS_ONCE(p->active_counters);
+
+	if (counters) {
+		this_cpu_inc(*counters);
+		return true;
+	}
+	down_read(&p->sem);
+	return false;
+}
+
+static inline void percpu_sem_up_read(struct percpu_rw_semaphore *p, bool fastpath)
+{
+	if (fastpath)
+		this_cpu_dec(*p->counters);
+	else
+		up_read(&p->sem);
+}
+
+static inline unsigned int percpu_count(unsigned int *counters)
+{
+	unsigned int total = 0;
+	int cpu;
+
+	for_each_possible_cpu(cpu)
+		total += *per_cpu_ptr(counters, cpu);
+
+	return total;
+}
+
+static inline void percpu_sem_down_write(struct percpu_rw_semaphore *p)
+{
+	down_write(&p->sem);
+	p->active_counters = NULL;
+
+	while (percpu_count(p->counters))
+		schedule();
+}
+
+static inline void percpu_sem_up_write(struct percpu_rw_semaphore *p)
+{
+	p->active_counters = p->counters;
+	up_write(&p->sem);
+}
+
+
+
+
