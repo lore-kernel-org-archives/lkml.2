@@ -1,370 +1,599 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab2G2Olz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 10:41:55 -0400
-Received: from nm7-vm1.access.bullet.mail.sp2.yahoo.com ([98.139.44.117]:37508
-	"HELO nm7-vm1.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753160Ab2G2Oly (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 10:41:54 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 867798.94806.bm@omp1010.access.mail.sp2.yahoo.com
-X-YMail-OSG: J4A1zL4VM1kKJi8ZdsqvhkHliNH0wFrlJb6v4Anm6nGL6DF
- YCB7nAnI0L4mxZI.VUOvXqoRcZAzXvFOiVGOMtERsrv2q_CvRtzwvGffoqye
- hvWXKY6sbvvRZIiRs.mUx0Ph0G66ei2_UMowarr4FDZ.7_wBVmXu349B88dX
- 5hFXQnYyXlaLT5BnfO7JcVWR.0wRfQEu0G1xGOUsS809zfhCkX_XlWXF1tav
- pbqA08GFraR147A5Wb5Ncegmei0ijCifXOIryl5eKpJDnH0h1r3FGXjtL_9k
- G2yin0UxG9HvzrJo1qoP1AyWDrUtZK_ZBymDNSXUwzfzTp7n_jlp4SlgQPxM
- 4IvJqQRyQsXFm_hThP3VJMm93AIOhS5b4zHdQedTI02e6QeUobhDm0XVHSlf
- DpKLMywvNxLRhDVNGgDRioBNlYFpcxAvqnVXv2JzspqcBUYs.eR1A9SgEQ5K
- BhiJRRTdEHIPtmdS.TdmR0oJGzc527YqbyYEm_5Tt
-X-RocketYMMF: webbxcdd
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.120.356233
-Message-ID: <1343572912.96149.YahooMailClassic@web5710.biz.mail.ne1.yahoo.com>
-Date: Sun, 29 Jul 2012 07:41:52 -0700 (PDT)
-From: From Mr William Boyd <mrwilliamboyd21@gmail.com>
-Reply-To: mrwilliam_boyd@aol.com
-Subject: Business Proposal Letter Attached.
-To: undisclosed recipients:;
+	id S1753220Ab2G2OyT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 10:54:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59681 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753160Ab2G2OyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 10:54:17 -0400
+Date: Sun, 29 Jul 2012 17:54:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120729145452.GD14278@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+ <20120724204320.21081.32333.stgit@bling.home>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="1348619509-2051744470-1343572912=:96149"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724204320.21081.32333.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1348619509-2051744470-1343572912=:96149
-Content-Type: text/plain; charset=us-ascii
+On Tue, Jul 24, 2012 at 02:43:22PM -0600, Alex Williamson wrote:
+> This new ioctl enables an eventfd to be triggered when an EOI is
+> written for a specified irqchip pin.  The first user of this will
+> be external device assignment through VFIO, using a level irqfd
+> for asserting a PCI INTx interrupt and this interface for de-assert
+> and notification once the interrupt is serviced.
+> 
+> Here we make use of the reference counting of the _irq_source
+> object allowing us to share it with an irqfd and cleanup regardless
+> of the release order.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+
+> ---
+> 
+>  Documentation/virtual/kvm/api.txt |   21 ++
+>  arch/x86/kvm/x86.c                |    2 
+>  include/linux/kvm.h               |   15 ++
+>  include/linux/kvm_host.h          |   13 +
+>  virt/kvm/eventfd.c                |  336 +++++++++++++++++++++++++++++++++++++
+>  virt/kvm/kvm_main.c               |   11 +
+>  6 files changed, 398 insertions(+)
+> 
+> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> index 3911e62..8cd6b36 100644
+> --- a/Documentation/virtual/kvm/api.txt
+> +++ b/Documentation/virtual/kvm/api.txt
+> @@ -1989,6 +1989,27 @@ return the hash table order in the parameter.  (If the guest is using
+>  the virtualized real-mode area (VRMA) facility, the kernel will
+>  re-create the VMRA HPTEs on the next KVM_RUN of any vcpu.)
+>  
+> +4.77 KVM_EOIFD
+> +
+> +Capability: KVM_CAP_EOIFD
+> +Architectures: x86
+> +Type: vm ioctl
+> +Parameters: struct kvm_eoifd (in)
+> +Returns: 0 on success, < 0 on error
+> +
+> +KVM_EOIFD allows userspace to receive interrupt EOI notification
+> +through an eventfd.
+
+I thought about it some more, and I think it should be renamed to an
+interrupt ack notification than eoi notification.
+For example, consider userspace that uses threaded interrupts.
+Currently what will happen is each interrupt will be injected
+twice, since on eoi device is still asserting it.
+One fix would be to delay event until interrupt is re-enabled.
+Now I am not asking you to fix this immediately,
+but I think we should make the interface generic by
+saying we report an ack to userspace and not specifically EOI.
 
 
---1348619509-2051744470-1343572912=:96149
-Content-Type: application/pdf; name=A
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="A MUTUAL BUSINESS PROPOSAL.pdf"
+>  kvm_eoifd.fd specifies the eventfd used for
+> +notification.  KVM_EOIFD_FLAG_DEASSIGN is used to de-assign an eoifd
+> +once assigned.  KVM_EOIFD also requires additional bits set in
+> +kvm_eoifd.flags to bind to the proper interrupt line.  The
+> +KVM_EOIFD_FLAG_LEVEL_IRQFD indicates that kvm_eoifd.key is provided
+> +and is a key from a level triggered interrupt (configured from
+> +KVM_IRQFD using KVM_IRQFD_FLAG_LEVEL).  The EOI notification is bound
+> +to the same GSI and irqchip input as the irqfd.  Both kvm_eoifd.key
+> +and KVM_EOIFD_FLAG_LEVEL_IRQFD must be specified on assignment and
+> +de-assignment of KVM_EOIFD.  A level irqfd may only be bound to a
+> +single eoifd.  KVM_CAP_EOIFD_LEVEL_IRQFD indicates support of
+> +KVM_EOIFD_FLAG_LEVEL_IRQFD.
+>  
 
-JVBERi0xLjQNJeLjz9MNCjcgMCBvYmoNPDwvTGluZWFyaXplZCAxL0wgMTQ2
-MTYvTyA5L0UgMTAwNDEvTiAxL1QgMTQzMjcvSCBbIDQ1OSAxNDZdPj4NZW5k
-b2JqDSAgICAgICAgICAgICAgICAgICAgDQoxOSAwIG9iag08PC9EZWNvZGVQ
-YXJtczw8L0NvbHVtbnMgNC9QcmVkaWN0b3IgMTI+Pi9GaWx0ZXIvRmxhdGVE
-ZWNvZGUvSURbPEVBNDY4NzMyREE1Mjg0NDg4OTkwQkE5Nzc2RUU1MUJEPjxF
-QTQ2ODczMkRBNTI4NDQ4ODk5MEJBOTc3NkVFNTFCRD5dL0luZGV4WzcgMjld
-L0luZm8gNiAwIFIvTGVuZ3RoIDY4L1ByZXYgMTQzMjgvUm9vdCA4IDAgUi9T
-aXplIDM2L1R5cGUvWFJlZi9XWzEgMiAxXT4+c3RyZWFtDQpo3mJiZBBgYGJg
-8gUSDElAgvEvkGDvABLME4EEyzwQsRJEMIHEDoNYLTCxO2kMTIwM00B6GRgp
-J/4zHvwEEGAAZCoLCA0KZW5kc3RyZWFtDWVuZG9iag1zdGFydHhyZWYNCjAN
-CiUlRU9GDQoKMzUgMCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0kgNzgv
-TGVuZ3RoIDY3L1MgMzg+PnN0cmVhbQ0KaN5iYGDgYmBg0mUAApUqBlTACMQs
-DBwNyGJcUMzA8JeBm0FM10tLNOJgmFF7aMcOsCgzA4OZNkQvozVAgAEA+88H
-qw0KZW5kc3RyZWFtDWVuZG9iag04IDAgb2JqDTw8L01ldGFkYXRhIDEgMCBS
-L1BhZ2VMYXlvdXQvT25lQ29sdW1uL1BhZ2VNb2RlL1VzZU5vbmUvUGFnZXMg
-NSAwIFIvVHlwZS9DYXRhbG9nPj4NZW5kb2JqDTkgMCBvYmoNPDwvQ29udGVu
-dHNbMTEgMCBSIDEyIDAgUiAxMyAwIFIgMTQgMCBSIDE1IDAgUiAxNiAwIFIg
-MTcgMCBSIDE4IDAgUl0vQ3JvcEJveFswIDAgNjEyIDc5Ml0vTWVkaWFCb3hb
-MCAwIDYxMiA3OTJdL1BhcmVudCA1IDAgUi9SZXNvdXJjZXM8PC9Gb250PDwv
-RjEgMjIgMCBSL0YyIDI1IDAgUi9GMyAyOCAwIFIvRjQgMzEgMCBSL0Y1IDM0
-IDAgUj4+L1Byb2NTZXRbL1BERi9UZXh0XT4+L1JvdGF0ZSAwL1R5cGUvUGFn
-ZT4+DWVuZG9iag0xMCAwIG9iag08PC9GaWx0ZXIvRmxhdGVEZWNvZGUvRmly
-c3QgMTE2L0xlbmd0aCAxNTc0L04gMTUvVHlwZS9PYmpTdG0+PnN0cmVhbQ0K
-aN7MmH1rHDcQh7+KvoBZvb9AMNhuQwttKLFpCiF/XJzDObDP4e5C22/f+c1K
-Ou1613a2pTHcIK2kkUaj0SPptBRSaCWUN0JroVRSQhuhjHFCW6GcjEJT1lkq
-9/RL1DwIHR21j8LEaIVOwkpSMlJYFbwwSjhNekYLZ6wWxghnkxXGCk8V4tWr
-7mx/vd4ehE+mu1h9+Wm9uflMX153P6z7mhOtfPf6dnWzp2661/fbw/n5/V/v
-T5yP4sRIskBKKZSU4QPXvlndrburzd16/2b959v7u9X2t8tfr7qfD6vbzfXZ
-9uZ2LWR3eVjf/S5i6K7+/rJmNQy323w53O+6P7IV1obT0/chRPE9RTtJfjPk
-2CgczRQS6Rt1KvZ1EK7ztrZHqsNR5ylBW25PfRSx1opEMREoILwPLJxXtLDO
-cx7CNsRU62LOQ0o76CKP+lKXqP+SRznbTTbwfH1iuzhP7ZBv0zrn1vacDxPz
-Lja2PmH7ch59WvKnRp5SxLlxWTf7tLRTctRxX0CzwwdmDw2ekTtql5mw9bln
-VkRFwlJCEUsLl7p+KOR1M/xgyRoLgsfUfQ2DUsYmo8xS32ib2zvjhXWmGsbl
-KrvFHcU2SzQWTJTDgibaSu0zy5w+u9/P9w+H1qWZEIw9VV7CoQ2LWbHpqa3x
-gTB1vtqvgYkJsvy4vb7/tNnedO8227PtflO/X292+8PF59WOgDNEDK0cwfZt
-98sqN9DOdZdfPx5Ao6vd1zVjqbKJev50+LwHnUnr9LTBZghPY1N7TTBu0emG
-6NR+Hp0n5/e3n2b4qbx7HKDuJQHUOVdXlbddbGhTt1eQiwla+wnyKFSejKwE
-rLTL26YYia3PW4/yqKtkxHdpl7dE2w9PpO20RaiLqhrmMqAYoTlty6tOzsec
-L/VVJzOq1I0Rauh41xTeSHHETyG0rsAsQnssgqGY0oihVWvM0D7zrRDVDURt
-YBCWSChlsxDFmWblEKLmIURds0hjqStYDtgiPJFGqtJEjMPYEiJjKYf1XNii
-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
-R73z/0vwjtKvQblc+TMSNGs5avtHugDYJPs0tLykYU92BTvvJnPvKc8etZGn
-eugIblfxLk7aVrkE8kE2eI7ZdDNiD77gE++1Joj3VNTxcUAuv0JDmlBK3N72
-qPsj7aBfsfvNJpl6B6cCxNrMCOVeHRblgwADAHAIgjYNCmVuZHN0cmVhbQ1l
-bmRvYmoNMSAwIG9iag08PC9MZW5ndGggMzc1NS9TdWJ0eXBlL1hNTC9UeXBl
-L01ldGFkYXRhPj5zdHJlYW0NCjw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0i
-VzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+Cjx4OnhtcG1ldGEgeG1sbnM6
-eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUu
-Mi1jMDAxIDYzLjEzOTQzOSwgMjAxMC8wOS8yNy0xMzozNzoyNiAgICAgICAg
-Ij4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8x
-OTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlw
-dGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6ZGM9Imh0dHA6
-Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIj4KICAgICAgICAgPGRjOmZv
-cm1hdD5hcHBsaWNhdGlvbi9wZGY8L2RjOmZvcm1hdD4KICAgICAgICAgPGRj
-OmNyZWF0b3I+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAg
-ICA8cmRmOmxpPkNpbmR5PC9yZGY6bGk+CiAgICAgICAgICAgIDwvcmRmOlNl
-cT4KICAgICAgICAgPC9kYzpjcmVhdG9yPgogICAgICAgICA8ZGM6dGl0bGU+
-CiAgICAgICAgICAgIDxyZGY6QWx0PgogICAgICAgICAgICAgICA8cmRmOmxp
-IHhtbDpsYW5nPSJ4LWRlZmF1bHQiPk1pY3Jvc29mdCBXb3JkIC0gQSBNVVRV
-QUwgQlVTSU5FU1MgIFBST1BPU0FMPC9yZGY6bGk+CiAgICAgICAgICAgIDwv
-cmRmOkFsdD4KICAgICAgICAgPC9kYzp0aXRsZT4KICAgICAgPC9yZGY6RGVz
-Y3JpcHRpb24+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIi
-CiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94
-YXAvMS4wLyI+CiAgICAgICAgIDx4bXA6Q3JlYXRlRGF0ZT4yMDEyLTA2LTE5
-VDA1OjI1OjIyKzAyOjAwPC94bXA6Q3JlYXRlRGF0ZT4KICAgICAgICAgPHht
-cDpDcmVhdG9yVG9vbD5NaWNyb3NvZnQgV29yZCAtIEEgTVVUVUFMIEJVU0lO
-RVNTICBQUk9QT1NBTDwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1w
-Ok1vZGlmeURhdGU+MjAxMi0wNi0xOVQwNzoyODoxOSswMjowMDwveG1wOk1v
-ZGlmeURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMTItMDYt
-MTlUMDc6Mjg6MTkrMDI6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgIDwv
-cmRmOkRlc2NyaXB0aW9uPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjph
-Ym91dD0iIgogICAgICAgICAgICB4bWxuczpwZGY9Imh0dHA6Ly9ucy5hZG9i
-ZS5jb20vcGRmLzEuMy8iPgogICAgICAgICA8cGRmOlByb2R1Y2VyPmRvUERG
-IFZlciA3LjEgQnVpbGQgMzI5IChXaW5kb3dzIDcgKFNlcnZpY2UgUGFjayAx
-KSAtIFZlcnNpb246IDYuMS43NjAxIChQbGF0Zm9ybTogeDY0KSk8L3BkZjpQ
-cm9kdWNlcj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgICAgIDxyZGY6
-RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnht
-cE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIj4KICAgICAg
-ICAgPHhtcE1NOkRvY3VtZW50SUQ+dXVpZDpkODBjMjgxMi03NmJkLTQyODgt
-Yjk5NS0xODQ1Zjk3Y2RiNDM8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAg
-IDx4bXBNTTpJbnN0YW5jZUlEPnV1aWQ6ODFkOWYxZDYtOTc3My00ZTg0LTk2
-MTctOGNkOTU0OGJiOTQxPC94bXBNTTpJbnN0YW5jZUlEPgogICAgICA8L3Jk
-ZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAg
-ICAgICAgICAgICAgICAgICAgIAo8P3hwYWNrZXQgZW5kPSJ3Ij8+DQplbmRz
-dHJlYW0NZW5kb2JqDTIgMCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0Zp
-cnN0IDQvTGVuZ3RoIDQ4L04gMS9UeXBlL09ialN0bT4+c3RyZWFtDQpo3jJV
-MFCwsdF3zi/NK1Ew1PfOTCmOtgSKBcXqh1QWpOoHJKanFtvZAQQYANZ3C4AN
-CmVuZHN0cmVhbQ1lbmRvYmoNMyAwIG9iag08PC9GaWx0ZXIvRmxhdGVEZWNv
-ZGUvRmlyc3QgNC9MZW5ndGggMjIyL04gMS9UeXBlL09ialN0bT4+c3RyZWFt
-DQpo3pSOPU/DMBRF/8rbGguR2IY6JKoqpQ1ISA21cEOXLFHsCovQJ704fPx7
-PCCGbmx3uPfco4DDapVVc3hFSrb+bL9ZtiXXB4/nug8uqUvJheRKFHwpl1Je
-cbngfPHbiqPGD4QTngIckSxcQwVNe2irHWxa8/h0bwyAft7rval2LGvQXmJz
-eSeKP6wmtPPgKLGo6wd4cQR5KmAz+9HCjSygS45REz8nyGM2jj784ED3wxuI
-jsX/OJmifQkqFWmuuIg1PfbhhPRewpe67VjHWHbwYXT/s1+vfwQYAAjoV9YN
-CmVuZHN0cmVhbQ1lbmRvYmoNNCAwIG9iag08PC9EZWNvZGVQYXJtczw8L0Nv
-bHVtbnMgMy9QcmVkaWN0b3IgMTI+Pi9GaWx0ZXIvRmxhdGVEZWNvZGUvSURb
-PEVBNDY4NzMyREE1Mjg0NDg4OTkwQkE5Nzc2RUU1MUJEPjxFQTQ2ODczMkRB
-NTI4NDQ4ODk5MEJBOTc3NkVFNTFCRD5dL0luZm8gNiAwIFIvTGVuZ3RoIDM3
-L1Jvb3QgOCAwIFIvU2l6ZSA3L1R5cGUvWFJlZi9XWzEgMiAwXT4+c3RyZWFt
-DQpo3mJiYGBgYlS3ZGLg/8HEwNDDxMBozcR4kgvIZgQIMAAoyQMUDQplbmRz
-dHJlYW0NZW5kb2JqDXN0YXJ0eHJlZg0KMTE2DQolJUVPRg0K
+Hmm returning the key means we'll need to keep refcounting for source
+IDs around forever. I liked passing the fd better: make implementation
+match interface and not the other way around.
 
---1348619509-2051744470-1343572912=:96149--
+>  5. The kvm_run structure
+>  ------------------------
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 9ded39d..8f3164e 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2171,6 +2171,8 @@ int kvm_dev_ioctl_check_extension(long ext)
+>  	case KVM_CAP_PCI_2_3:
+>  	case KVM_CAP_KVMCLOCK_CTRL:
+>  	case KVM_CAP_IRQFD_LEVEL:
+> +	case KVM_CAP_EOIFD:
+> +	case KVM_CAP_EOIFD_LEVEL_IRQFD:
+>  		r = 1;
+>  		break;
+>  	case KVM_CAP_COALESCED_MMIO:
+> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> index b2e6e4f..effb916 100644
+> --- a/include/linux/kvm.h
+> +++ b/include/linux/kvm.h
+> @@ -619,6 +619,8 @@ struct kvm_ppc_smmu_info {
+>  #define KVM_CAP_S390_COW 79
+>  #define KVM_CAP_PPC_ALLOC_HTAB 80
+>  #define KVM_CAP_IRQFD_LEVEL 81
+> +#define KVM_CAP_EOIFD 82
+> +#define KVM_CAP_EOIFD_LEVEL_IRQFD 83
+>  
+>  #ifdef KVM_CAP_IRQ_ROUTING
+>  
+> @@ -694,6 +696,17 @@ struct kvm_irqfd {
+>  	__u8  pad[20];
+>  };
+>  
+> +#define KVM_EOIFD_FLAG_DEASSIGN (1 << 0)
+> +/* Available with KVM_CAP_EOIFD_LEVEL_IRQFD */
+> +#define KVM_EOIFD_FLAG_LEVEL_IRQFD (1 << 1)
+> +
+> +struct kvm_eoifd {
+> +	__u32 fd;
+> +	__u32 flags;
+> +	__u32 key;
+> +	__u8 pad[20];
+> +};
+> +
+>  struct kvm_clock_data {
+>  	__u64 clock;
+>  	__u32 flags;
+> @@ -834,6 +847,8 @@ struct kvm_s390_ucas_mapping {
+>  #define KVM_PPC_GET_SMMU_INFO	  _IOR(KVMIO,  0xa6, struct kvm_ppc_smmu_info)
+>  /* Available with KVM_CAP_PPC_ALLOC_HTAB */
+>  #define KVM_PPC_ALLOCATE_HTAB	  _IOWR(KVMIO, 0xa7, __u32)
+> +/* Available with KVM_CAP_EOIFD */
+> +#define KVM_EOIFD                 _IOW(KVMIO,  0xa8, struct kvm_eoifd)
+>  
+>  /*
+>   * ioctls for vcpu fds
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index c73f071..01e72a6 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -289,6 +289,10 @@ struct kvm {
+>  		struct mutex lock;
+>  		struct list_head items;
+>  	} irqsources;
+> +	struct {
+> +		spinlock_t lock;
+> +		struct list_head items;
+> +	} eoifds;
+>  #endif
+>  	struct kvm_vm_stat stat;
+>  	struct kvm_arch arch;
+> @@ -832,6 +836,8 @@ int kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args);
+>  void kvm_irqfd_release(struct kvm *kvm);
+>  void kvm_irq_routing_update(struct kvm *, struct kvm_irq_routing_table *);
+>  int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
+> +int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args);
+> +void kvm_eoifd_release(struct kvm *kvm);
+>  
+>  #else
+>  
+> @@ -857,6 +863,13 @@ static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+>  	return -ENOSYS;
+>  }
+>  
+> +static inline int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+> +static inline void kvm_eoifd_release(struct kvm *kvm) {}
+> +
+>  #endif /* CONFIG_HAVE_KVM_EVENTFD */
+>  
+>  #ifdef CONFIG_KVM_APIC_ARCHITECTURE
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index 878cb52..3aa2d62 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -95,6 +95,25 @@ static struct _irq_source *_irq_source_alloc(struct kvm *kvm, int gsi)
+>  	return source;
+>  }
+>  
+> +static struct _irq_source *_irq_source_get_from_key(struct kvm *kvm, int key)
+> +{
+> +	struct _irq_source *tmp, *source = ERR_PTR(-ENOENT);
+> +
+> +	mutex_lock(&kvm->irqsources.lock);
+> +
+> +	list_for_each_entry(tmp, &kvm->irqsources.items, list) {
+> +		if (tmp->id == key) {
+> +			source = tmp;
+> +			kref_get(&source->kref);
+> +			break;
+> +		}
+> +	}
+> +
+> +	mutex_unlock(&kvm->irqsources.lock);
+> +
+> +	return source;
+> +}
+> +
+>  /*
+>   * --------------------------------------------------------------------
+>   * irqfd: Allows an fd to be used to inject an interrupt to the guest
+> @@ -406,6 +425,8 @@ kvm_eventfd_init(struct kvm *kvm)
+>  	INIT_LIST_HEAD(&kvm->ioeventfds);
+>  	mutex_init(&kvm->irqsources.lock);
+>  	INIT_LIST_HEAD(&kvm->irqsources.items);
+> +	spin_lock_init(&kvm->eoifds.lock);
+> +	INIT_LIST_HEAD(&kvm->eoifds.items);
+>  }
+>  
+>  /*
+> @@ -772,3 +793,318 @@ kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+>  
+>  	return kvm_assign_ioeventfd(kvm, args);
+>  }
+> +
+> +/*
+> + * --------------------------------------------------------------------
+> + *  eoifd: Translate KVM APIC/IOAPIC EOI into eventfd signal.
+> + *
+> + *  userspace can register with an eventfd for receiving
+> + *  notification when an EOI occurs.
+> + * --------------------------------------------------------------------
+> + */
+> +
+> +struct _eoifd {
+> +	/* eventfd triggered on EOI */
+> +	struct eventfd_ctx *eventfd;
+> +	/* irq source ID de-asserted on EOI */
+> +	struct _irq_source *source;
+> +	wait_queue_t wait;
+> +	/* EOI notification from KVM */
+> +	struct kvm_irq_ack_notifier notifier;
+> +	struct list_head list;
+> +	poll_table pt;
+> +	struct work_struct shutdown;
+> +};
+> +
+> +/* Called under eoifds.lock */
+> +static void eoifd_shutdown(struct work_struct *work)
+> +{
+> +	struct _eoifd *eoifd = container_of(work, struct _eoifd, shutdown);
+> +	struct kvm *kvm = eoifd->source->kvm;
+> +	u64 cnt;
+> +
+> +	/*
+> +	 * Stop EOI signaling
+> +	 */
+> +	kvm_unregister_irq_ack_notifier(kvm, &eoifd->notifier);
+> +
+> +	/*
+> +	 * Synchronize with the wait-queue and unhook ourselves to prevent
+> +	 * further events.
+> +	 */
+> +	eventfd_ctx_remove_wait_queue(eoifd->eventfd, &eoifd->wait, &cnt);
+> +
+> +	/*
+> +	 * Release resources
+> +	 */
+> +	eventfd_ctx_put(eoifd->eventfd);
+> +	_irq_source_put(eoifd->source);
+> +	kfree(eoifd);
+> +}
+> +
+> +/* assumes kvm->eoifds.lock is held */
+> +static bool eoifd_is_active(struct _eoifd *eoifd)
+> +{
+> +	return list_empty(&eoifd->list) ? false : true;
+> +}
+> +
+> +/*
+> + * Mark the eoifd as inactive and schedule it for removal
+> + *
+> + * assumes kvm->eoifds.lock is held
+> + */
+> +static void eoifd_deactivate(struct _eoifd *eoifd)
+> +{
+> +	BUG_ON(!eoifd_is_active(eoifd));
+> +
+> +	list_del_init(&eoifd->list);
+> +
+> +	queue_work(irqfd_cleanup_wq, &eoifd->shutdown);
+> +}
+> +
+> +/*
+> + * Called with wqh->lock held and interrupts disabled
+> + */
+> +static int eoifd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
+> +{
+> +	unsigned long flags = (unsigned long)key;
+> +
+> +	if (unlikely(flags & POLLHUP)) {
+> +		/* The eventfd is closing, detach from KVM */
+> +		struct _eoifd *eoifd = container_of(wait, struct _eoifd, wait);
+> +		struct kvm *kvm = eoifd->source->kvm;
+> +		unsigned long flags;
+> +
+> +		spin_lock_irqsave(&kvm->eoifds.lock, flags);
+> +
+> +		/*
+> +		 * We must check if someone deactivated the eoifd before
+> +		 * we could acquire the eoifds.lock since the item is
+> +		 * deactivated from the KVM side before it is unhooked from
+> +		 * the wait-queue.  If it is already deactivated, we can
+> +		 * simply return knowing the other side will cleanup for us.
+> +		 * We cannot race against the eoifd going away since the
+> +		 * other side is required to acquire wqh->lock, which we hold
+> +		 */
+> +		if (eoifd_is_active(eoifd))
+> +			eoifd_deactivate(eoifd);
+> +
+> +		spin_unlock_irqrestore(&kvm->eoifds.lock, flags);
+> +	}
+> +
+> +	return 0;
+> +}
+
+Looks like there is a bug here: if I close irqfd, then close eoifd,
+the key is not immediately released so an attempt to create
+an irqfd can fail to get the source id.
+
+Maybe we should simply document that userspace should deassign
+eoifd before closing it? This is what we do for ioeventfd.
+If we do this, the whole polling code can go away completely.
+
+
+
+> +
+> +static void eoifd_ptable_queue_proc(struct file *file, wait_queue_head_t *wqh,
+> +				    poll_table *pt)
+> +{
+> +	struct _eoifd *eoifd = container_of(pt, struct _eoifd, pt);
+> +	add_wait_queue(wqh, &eoifd->wait);
+> +}
+> +
+> +/*
+> + * This function is called as the kvm VM fd is being released. Shutdown all
+> + * eoifds that still remain open
+> + */
+> +void kvm_eoifd_release(struct kvm *kvm)
+> +{
+> +	struct _eoifd *tmp, *eoifd;
+> +
+> +	spin_lock_irq(&kvm->eoifds.lock);
+> +
+> +	list_for_each_entry_safe(eoifd, tmp, &kvm->eoifds.items, list)
+> +		eoifd_deactivate(eoifd);
+> +
+> +	spin_unlock_irq(&kvm->eoifds.lock);
+> +
+> +	flush_workqueue(irqfd_cleanup_wq);
+> +}
+> +
+> +static void eoifd_event(struct kvm_irq_ack_notifier *notifier)
+> +{
+> +	struct _eoifd *eoifd;
+> +
+> +	eoifd = container_of(notifier, struct _eoifd, notifier);
+> +
+> +	if (unlikely(!eoifd->source))
+> +		return;
+> +
+> +	/*
+> +	 * De-assert and send EOI, user needs to re-assert if
+> +	 * device still requires service.
+> +	 */
+
+I'm not sure why did you drop filtering by source id.
+This means userspace gets events even if it did not send an interrupt.
+So
+1. Should be documented that you can get spurious events 
+2. when an interrupt is shared with an emulated device,
+   and said device uses EOI, this will not
+   perform well as we will wake up userspace on each EOI.
+3. Just sharing interrupt with virtio means we are polling
+   assigned device on each virtio interrupt.
+
+
+> +	kvm_set_irq(eoifd->source->kvm,
+> +		    eoifd->source->id, eoifd->source->gsi, 0);
+> +	eventfd_signal(eoifd->eventfd, 1);
+> +}
+> +
+> +static int kvm_assign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
+> +{
+> +	struct file *file = NULL;
+> +	struct eventfd_ctx *eventfd = NULL;
+> +	struct _eoifd *eoifd = NULL, *tmp;
+> +	struct _irq_source *source = NULL;
+> +	int ret;
+> +	u64 cnt;
+> +
+> +	if (!(args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD))
+> +		return -EINVAL;
+> +
+> +	file = eventfd_fget(args->fd);
+> +	if (IS_ERR(file)) {
+> +		ret = PTR_ERR(file);
+> +		goto fail;
+> +	}
+> +
+> +	eventfd = eventfd_ctx_fileget(file);
+> +	if (IS_ERR(eventfd)) {
+> +		ret = PTR_ERR(eventfd);
+> +		goto fail;
+> +	}
+> +
+> +	eoifd = kzalloc(sizeof(*eoifd), GFP_KERNEL);
+> +	if (!eoifd) {
+> +		ret = -ENOMEM;
+> +		goto fail;
+> +	}
+> +
+> +	source = _irq_source_get_from_key(kvm, args->key);
+> +	if (IS_ERR(source)) {
+> +		ret = PTR_ERR(source);
+> +		goto fail;
+> +	}
+> +
+> +	INIT_LIST_HEAD(&eoifd->list);
+> +	INIT_WORK(&eoifd->shutdown, eoifd_shutdown);
+> +	eoifd->eventfd = eventfd;
+> +	eoifd->notifier.gsi = source->gsi;
+> +	eoifd->notifier.irq_acked = eoifd_event;
+> +
+> +	/*
+> +	 * Install our own custom wake-up handling so we are notified via
+> +	 * a callback whenever someone releases the underlying eventfd
+> +	 */
+> +	init_waitqueue_func_entry(&eoifd->wait, eoifd_wakeup);
+> +	init_poll_funcptr(&eoifd->pt, eoifd_ptable_queue_proc);
+> +
+> +	/*
+> +	 * Clear out any previously released eoifds that might conflict
+> +	 */
+> +	flush_workqueue(irqfd_cleanup_wq);
+> +
+> +	/*
+> +	 * This can sleep, so register before acquiring spinlock, notifier
+> +	 * becomes a nop until we finish.
+> +	 */
+> +	kvm_register_irq_ack_notifier(kvm, &eoifd->notifier);
+> +
+> +	/*
+> +	 * Install the wait queue function to allow cleanup when the
+> +	 * eventfd is closed by the user.  This grabs the wqh lock, so
+> +	 * we do it out of spinlock, holding the file reference ensures
+> +	 * we won't see a POLLHUP until setup is complete.
+> +	 */
+> +	file->f_op->poll(file, &eoifd->pt);
+> +
+> +	spin_lock_irq(&kvm->eoifds.lock);
+> +
+> +	/*
+> +	 * Enforce a one-to-one relationship between irq source and eoifd so
+> +	 * that this interface can't be used to consume all kernel memory.
+> +	 * NB. single eventfd can still be used by multiple eoifds.
+> +	 */
+> +	list_for_each_entry(tmp, &kvm->eoifds.items, list) {
+> +		if (tmp->source == source) {
+> +			spin_unlock_irq(&kvm->eoifds.lock);
+> +			ret = -EBUSY;
+> +			goto fail_unregister;
+> +		}
+> +	}
+> +
+> +	list_add_tail(&eoifd->list, &kvm->eoifds.items);
+> +	eoifd->source = source; /* Enable ack notifier */
+> +
+> +	spin_unlock_irq(&kvm->eoifds.lock);
+> +
+> +	fput(file); /* Enable POLLHUP */
+> +
+> +	return 0;
+> +
+> +fail_unregister:
+> +	eventfd_ctx_remove_wait_queue(eventfd, &eoifd->wait, &cnt);
+> +	kvm_unregister_irq_ack_notifier(kvm, &eoifd->notifier);
+> +fail:
+> +	if (source && !IS_ERR(source))
+> +		_irq_source_put(source);
+> +
+> +	if (eventfd && !IS_ERR(eventfd))
+> +		eventfd_ctx_put(eventfd);
+> +
+> +	if (file && !IS_ERR(file))
+> +		fput(file);
+> +
+> +	kfree(eoifd);
+> +	return ret;
+> +}
+> +
+> +static int kvm_deassign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
+> +{
+> +	struct eventfd_ctx *eventfd = NULL;
+> +	struct _irq_source *source = NULL;
+> +	struct _eoifd *eoifd;
+> +	int ret = -ENOENT;
+> +
+> +	if (!(args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD))
+> +		return -EINVAL;
+> +
+> +	eventfd = eventfd_ctx_fdget(args->fd);
+> +	if (IS_ERR(eventfd)) {
+> +		ret = PTR_ERR(eventfd);
+> +		goto fail;
+> +	}
+> +
+> +	source = _irq_source_get_from_key(kvm, args->key);
+> +	if (IS_ERR(source)) {
+> +		ret = PTR_ERR(source);
+> +		goto fail;
+> +	}
+> +
+> +	spin_lock_irq(&kvm->eoifds.lock);
+> +
+> +	list_for_each_entry(eoifd, &kvm->eoifds.items, list) {
+> +		if (eoifd->eventfd == eventfd && eoifd->source == source) {
+> +			eoifd_deactivate(eoifd);
+> +			ret = 0;
+> +			break;
+> +		}
+> +	}
+> +
+> +	spin_unlock_irq(&kvm->eoifds.lock);
+> +
+> +fail:
+> +	if (source && !IS_ERR(source))
+> +		_irq_source_put(source);
+> +	if (eventfd && !IS_ERR(eventfd))
+> +		eventfd_ctx_put(eventfd);
+> +
+> +	/*
+> +	 * Block until we know all outstanding shutdown jobs have completed
+> +	 * so that we guarantee there will not be any more EOIs signaled on
+> +	 * this eventfd once this deassign function returns.
+> +	 */
+> +	flush_workqueue(irqfd_cleanup_wq);
+> +
+> +	return ret;
+> +}
+> +
+> +int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
+> +{
+> +	if (args->flags & ~(KVM_EOIFD_FLAG_DEASSIGN |
+> +			    KVM_EOIFD_FLAG_LEVEL_IRQFD))
+> +		return -EINVAL;
+> +
+> +	if (args->flags & KVM_EOIFD_FLAG_DEASSIGN)
+> +		return kvm_deassign_eoifd(kvm, args);
+> +
+> +	return kvm_assign_eoifd(kvm, args);
+> +}
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 2468523..0b241bf 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -620,6 +620,8 @@ static int kvm_vm_release(struct inode *inode, struct file *filp)
+>  
+>  	kvm_irqfd_release(kvm);
+>  
+> +	kvm_eoifd_release(kvm);
+> +
+>  	kvm_put_kvm(kvm);
+>  	return 0;
+>  }
+> @@ -2093,6 +2095,15 @@ static long kvm_vm_ioctl(struct file *filp,
+>  		break;
+>  	}
+>  #endif
+> +	case KVM_EOIFD: {
+> +		struct kvm_eoifd data;
+> +
+> +		r = -EFAULT;
+> +		if (copy_from_user(&data, argp, sizeof data))
+> +			goto out;
+> +		r = kvm_eoifd(kvm, &data);
+> +		break;
+> +	}
+>  	default:
+>  		r = kvm_arch_vm_ioctl(filp, ioctl, arg);
+>  		if (r == -ENOTTY)
