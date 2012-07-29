@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab2G2VxL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 17:53:11 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43816 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab2G2VxK (ORCPT
+	id S1753732Ab2G2Vz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 17:55:26 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:39345 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684Ab2G2VzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 17:53:10 -0400
-Date: Sun, 29 Jul 2012 22:53:01 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: matt.fleming@intel.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH] Fix priority of non-BAR ROM data
-Message-ID: <20120729215301.GA27358@srcf.ucam.org>
-References: <1343407934-459-1-git-send-email-mjg@redhat.com>
- <1343407934-459-3-git-send-email-mjg@redhat.com>
- <1343598582.15288.4.camel@shinybook.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343598582.15288.4.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Sun, 29 Jul 2012 17:55:24 -0400
+From: Palmer Cox <p@lmercox.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Palmer Cox <p@lmercox.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: Remove brace expansion from clean target
+Date: Sun, 29 Jul 2012 17:54:43 -0400
+Message-Id: <1343598883-17907-1-git-send-email-p@lmercox.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 29, 2012 at 10:49:42PM +0100, David Woodhouse wrote:
-> +	 * Some devices may provide ROMs via a source other than the BAR
-> +	 */
-> +	if (pdev->rom && pdev->romlen) {
-> +		*size = pdev->romlen;
-> +		return phys_to_virt(pdev->rom);
+The clean target uses brace expansion to remove some generated
+files. However, the default shells on many systems do not
+support this feature resulting in some generated files not
+being removed by clean.
 
-Needs casting. My mistake.
+Signed-off-by: Palmer Cox <p@lmercox.com>
+---
+ tools/perf/Makefile |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 75d74e5..842cf67 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -979,7 +979,8 @@ clean:
+ 	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
+ 	$(MAKE) -C Documentation/ clean
+ 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
+-	$(RM) $(OUTPUT)util/*-{bison,flex}*
++	$(RM) $(OUTPUT)util/*-bison*
++	$(RM) $(OUTPUT)util/*-flex*
+ 	$(python-clean)
+ 
+ .PHONY: all install clean strip $(LIBTRACEEVENT)
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.9.5
+
