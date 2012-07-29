@@ -1,86 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab2G2W2H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 18:28:07 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60910 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087Ab2G2W2F (ORCPT
+	id S1753749Ab2G2Woz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 18:44:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53373 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab2G2Woy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 18:28:05 -0400
-Message-ID: <5015B913.5050309@gmail.com>
-Date: Mon, 30 Jul 2012 00:28:35 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
-MIME-Version: 1.0
-To: gregkh@linuxfoundation.org, arnd@arndb.de
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: /dev/kmem BUG on mmap
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 29 Jul 2012 18:44:54 -0400
+Message-ID: <1343601889.2487.3.camel@shinybook.infradead.org>
+Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
+From: David Woodhouse <dwmw2@infradead.org>
+To: Andreas Heider <andreas@meetr.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        linux-kernel@vger.kernel.org
+Date: Sun, 29 Jul 2012 23:44:49 +0100
+In-Reply-To: <5014EA3B.4010305@meetr.de>
+References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
+	  <20120710160555.GA31562@srcf.ucam.org>
+	  <20120710163516.GE10194@thinkpad-t410> <4FFCC7FB.1090609@meetr.de>
+	  <1343522547.2488.12.camel@shinybook.infradead.org>
+	 <1343524730.1962.5.camel@shinybook.infradead.org>
+	 <5014EA3B.4010305@meetr.de>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-72s2i5+mVSWh7SHKSPhV"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-I was poking around /dev/kmem related code, and noticed the following in mmap_kmem():
+--=-72s2i5+mVSWh7SHKSPhV
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-        /* Turn a kernel-virtual address into a physical page frame */
-        pfn = __pa((u64)vma->vm_pgoff << PAGE_SHIFT) >> PAGE_SHIFT;
+On Sun, 2012-07-29 at 09:46 +0200, Andreas Heider wrote:
+> The gmux code you're using is a bit outdated, but if you use=20
+> git://kernel.ubuntu.com/sforshee/linux.git gmux-switcheroo and connect=
+=20
+> an external display (I tested it with a DP one) you should be able to=20
+> boot to DIS and switch to the IGD and get output on the external display.=
+=20
 
-Which looked odd since vm_pgoff is the offset into the mapping, so I'd assume that PAGE_OFFSET should be added to it as well, otherwise we get an invalid address.
+Matthew's version has changes to the core vga_switcheroo code too, to
+add the ->client_active() method which lets it pick the right client at
+init time. I'll let you work out how to merge the two, but in the
+meantime here's what I needed to do to Matthew's one to make it work...
 
-I tested it by writing something like this:
+diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switche=
+roo.c
+index 321d17c..e2149e6 100644
+--- a/drivers/gpu/vga/vga_switcheroo.c
++++ b/drivers/gpu/vga/vga_switcheroo.c
+@@ -108,6 +108,7 @@ static void vga_switcheroo_enable(void)
+ 		ret =3D vgasr_priv.handler->get_client_id(client->pdev);
+ 		if (ret < 0)
+ 			return;
++		client->id =3D ret;
+=20
+ 		if (vgasr_priv.handler->client_active) {
+ 			active =3D vgasr_priv.handler->client_active(client->id);
+@@ -117,7 +118,7 @@ static void vga_switcheroo_enable(void)
+ 			 * but the client itself doesn't, update state
+ 			 */
+=20
+-			if (active && !client->active) {
++			if (active && !client->active && client->fb_info) {
+ 				struct fb_event event;
+ 				event.info =3D client->fb_info;
+ 				fb_notifier_call_chain(FB_EVENT_REMAP_ALL_CONSOLE, &event);
+@@ -125,8 +126,6 @@ static void vga_switcheroo_enable(void)
+=20
+ 			client->active =3D active;
+ 		}
+-
+-		client->id =3D ret;
+ 	}
+ 	vga_switcheroo_debugfs_init(&vgasr_priv);
+ 	vgasr_priv.active =3D true;
 
-	int main(void)
-	{
-	        int fd;
-	        void *addr;
-	
-	        fd = open("/dev/kmem", O_RDONLY);
-	        addr = mmap(NULL, 4096, PROT_READ, MAP_PRIVATE, fd, 4096);
-	
-	        return 0;
-	}
 
-Which indeed triggered a VM_BUG:
+--=20
+dwmw2
 
-[   32.285431] kernel BUG at arch/x86/mm/physaddr.c:18!
-[   32.285431] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   32.285431] CPU 0
-[   32.285431] Pid: 5643, comm: a.out Tainted: G        W    3.5.0-next-20120727-sasha #504
-[   32.285431] RIP: 0010:[<ffffffff810acd97>]  [<ffffffff810acd97>] __phys_addr+0x57/0xa0
-[   32.285431] RSP: 0018:ffff88000be67d68  EFLAGS: 00010213
-[   32.285431] RAX: ffff87ffffffffff RBX: ffff88000d67cb00 RCX: 00000000000080d0
-[   32.285431] RDX: 0000000000000071 RSI: ffff88000bfc8dc8 RDI: 0000000000001000
-[   32.285431] RBP: ffff88000be67d68 R08: 0000000000000001 R09: ffff88000bfc8dc8
-[   32.285431] R10: ffff88000bfc81f8 R11: 0000000000000002 R12: ffff88000bfc8dc8
-[   32.285431] R13: 00007f26f80e6000 R14: ffff88000bf81000 R15: ffff88000bfc8dc8
-[   32.285431] FS:  00007f26f80e8700(0000) GS:ffff88000d800000(0000) knlGS:0000000000000000
-[   32.285431] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   32.285431] CR2: 00007f26f7c07d50 CR3: 000000000bfb8000 CR4: 00000000000406f0
-[   32.285431] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   32.285431] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   32.285431] Process a.out (pid: 5643, threadinfo ffff88000be66000, task ffff88000bf2b000)
-[   32.285431] Stack:
-[   32.285431]  ffff88000be67d88 ffffffff81bb0737 ffff88000bfc95e0 ffff88000bfc95f0
-[   32.285431]  ffff88000be67e48 ffffffff812163ae ffff88000d67cb00 0000000000000001
-[   32.285431]  0000000000000000 0000000000000000 ffff88000be67dd8 ffff88000bfc81f8
-[   32.285431] Call Trace:
-[   32.285431]  [<ffffffff81bb0737>] mmap_kmem+0x27/0x90
-[   32.285431]  [<ffffffff812163ae>] mmap_region+0x35e/0x5f0
-[   32.285431]  [<ffffffff812168f9>] do_mmap_pgoff+0x2b9/0x350
-[   32.285431]  [<ffffffff8120120c>] ? vm_mmap_pgoff+0x6c/0xb0
-[   32.285431]  [<ffffffff81201224>] vm_mmap_pgoff+0x84/0xb0
-[   32.285431]  [<ffffffff8124f280>] ? fget_raw+0x260/0x260
-[   32.285431]  [<ffffffff81213d9e>] sys_mmap_pgoff+0x15e/0x190
-[   32.285431]  [<ffffffff8198ab2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   32.285431]  [<ffffffff8106e4ed>] sys_mmap+0x1d/0x20
-[   32.285431]  [<ffffffff8361f6f9>] system_call_fastpath+0x16/0x1b
-[   32.285431] Code: 00 00 00 00 eb fe 66 0f 1f 44 00 00 48 03 05 91 02 78 03 eb 57 0f 1f 80 00 00 00 00 48 b8 ff ff ff ff ff 87 ff ff 48 39 c7 77 11 <0f> 0b 0f 1f 80 00 00 00 00 eb fe 66 0f 1f 44 00 00 48 b8 00 00
-[   32.285431] RIP  [<ffffffff810acd97>] __phys_addr+0x57/0xa0
-[   32.285431]  RSP <ffff88000be67d68>
+--=-72s2i5+mVSWh7SHKSPhV
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
 
-I could send a patch to do what I think it's supposed to be doing, but I find it odd since apparently /dev/kmem has been broken for a while now - which doesn't make sense.
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
+AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
+4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
+wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
+xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
+MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
+w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
+c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
+dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
+BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
+aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
+bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
+oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
+MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
+dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
+MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
+DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
+ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
+NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
+mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
+AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
+MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
+A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
+Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
+7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
+KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
+wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
+V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
+vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
+CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
+ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
+ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
+U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
+ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
+BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
+aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
+bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
+dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
+QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
+ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
+AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
+t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
+gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
+H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
+kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwNzI5MjI0NDQ5WjAjBgkqhkiG9w0BCQQx
+FgQU3KzB3JrDvK2P+DuYyv9k1y17irEwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
+ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
+ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
+TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
+aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQAE+r/3CPad0FR30lTALY23sG2D
+v2CqBLg0NhjYbNMupJKt9ZpMa3xALyYVSY4JH0xPQm49NadKC/PHqEXxG1YmqOJ0V8XUF7aKjEBH
+Ouwyvd2CBeSvI6CAjlYBeuhdiKyV/ij9f7vuOhGEy9OsRk3lVGXtv3yvEgkM3Mo3GzpFZAkFbmKE
+FSOg78yk1yqfCLc1nc6iR6I1A+7VWJ84DD0aFoQLJFHd1XYC/UPMcWxGKUocJj9QxUgi04B2wXnq
+NH9W+a5Rqm3r21TlEJMIRRfiybJqPPv8Ehi5cN5DPie97ndJFBNhWsOr1/GA0MbQl18RQu1jrJig
+LET6X7J4IhydAAAAAAAA
 
-What am I missing?
+
+--=-72s2i5+mVSWh7SHKSPhV--
+
