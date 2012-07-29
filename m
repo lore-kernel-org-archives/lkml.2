@@ -1,117 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab2G2U3n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 16:29:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35360 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753466Ab2G2U3m (ORCPT
+	id S1753526Ab2G2UbK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 16:31:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40103 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753363Ab2G2UbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 16:29:42 -0400
-Message-ID: <1343593770.4642.11.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 13/40] vmscan: shrinker->nr updates race and go wrong
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>
-Date: Sun, 29 Jul 2012 21:29:30 +0100
-In-Reply-To: <20120726211412.284677137@linuxfoundation.org>
-References: <20120726211424.GA7709@kroah.com>
-	 <20120726211411.164006056@linuxfoundation.org>
-	 <20120726211412.284677137@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-vAU5fvcBIpDcI0zaNM4w"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 29 Jul 2012 16:31:09 -0400
+Date: Sun, 29 Jul 2012 21:31:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 01/18] Documentation: Describe the ux500 realated audio
+ related DT nodes
+Message-ID: <20120729203106.GD4384@opensource.wolfsonmicro.com>
+References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
+ <1343393162-11938-2-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343393162-11938-2-git-send-email-lee.jones@linaro.org>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 27, 2012 at 01:45:45PM +0100, Lee Jones wrote:
 
---=-vAU5fvcBIpDcI0zaNM4w
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> +++ b/Documentation/devicetree/bindings/sound/ux500.txt
+> @@ -0,0 +1,62 @@
+> +* ux500 Audio Driver and ab8500 Audio CODEC
+> +
+> +Required properties:
+> + - compatible:
+> +   - Machine Driver : "stericsson,snd-soc-mop500"
+> +   - CPU-side DAI   : "stericsson,ux500-msp-i2s"
+> +   - DMA (platform) : "stericsson,ux500-pcm"
+> +   - Audio CODEC    : "stericsson,ab8500-codec"
 
-On Thu, 2012-07-26 at 14:29 -0700, Greg Kroah-Hartman wrote:
-> From: Greg KH <gregkh@linuxfoundation.org>
->=20
-> 3.0-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Dave Chinner <dchinner@redhat.com>
->=20
-> commit acf92b485cccf028177f46918e045c0c4e80ee10 upstream.
->=20
-> Stable note: Not tracked in Bugzilla. This patch reduces excessive
-> 	reclaim of slab objects reducing the amount of information
-> 	that has to be brought back in from disk.
->=20
-> shrink_slab() allows shrinkers to be called in parallel so the
-> struct shrinker can be updated concurrently. It does not provide any
-> exclusio for such updates, so we can get the shrinker->nr value
-> increasing or decreasing incorrectly.
->=20
-> As a result, when a shrinker repeatedly returns a value of -1 (e.g.
-> a VFS shrinker called w/ GFP_NOFS), the shrinker->nr goes haywire,
-> sometimes updating with the scan count that wasn't used, sometimes
-> losing it altogether. Worse is when a shrinker does work and that
-> update is lost due to racy updates, which means the shrinker will do
-> the work again!
->=20
-> Fix this by making the total_scan calculations independent of
-> shrinker->nr, and making the shrinker->nr updates atomic w.r.t. to
-> other updates via cmpxchg loops.
-[...]
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -251,17 +251,29 @@ unsigned long shrink_slab(struct shrink_
->  		unsigned long total_scan;
-[...]
-> +		total_scan +=3D delta;
-> +		if (total_scan < 0) {
-[...]
+What is this a binding document for?  It looks like the binding for a
+machine driver...
 
-This condition is never true since total_scan is unsigned.
-I think 3.0.y needs this as well:
+> +Optional properties:
+> + - reg              : Physical base address and length of the device's registers.
+> + - interrupts       : The interrupt outputs from the device.
+> + - interrupt-parent : The parent interrupt controller.
+> + - <name>-supply    : Phandle to the regulator <name> supply
 
-commit 635697c663f38106063d5659f0cf2e45afcd4bb5
-Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date:   Thu Dec 8 14:33:51 2011 -0800
-
-    vmscan: fix initial shrinker size handling
-
-Ben.
-
---=20
-Ben Hutchings
-Man invented language to satisfy his deep need to complain. - Lily Tomlin
-
---=-vAU5fvcBIpDcI0zaNM4w
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUBWdKue/yOyVhhEJAQqtmBAAnYmfhm5u8QM0llEsvMllSc64Rx5KjhZ7
-FoZBjXK0JHsdyAHynTq0EdhMuGog3PFvtU9te0lGkXTduVExO+nWgm622WyEY42w
-45JfyxwCav7Vo+4EJjuoWeBUMhy+6GaS5V24aYnJMCaaN7Sur8hXelEiIeEyRhKQ
-sTQZ9VyroUyCpE340dZANsyZeMrIDbWT+xv9cIkAyggLGVQp5Ct9z47FIsjF8b7i
-vrNyZiImPmDcGPNIsWXeWfYibpaijj/ArQehf0WQeze1fqighKC20NGZkp/44r9O
-edpNT73ElGmUX5B+7Rl++/HnhWQRDEH2xE//KINtMgC6hjz2ZUpIS7JqQblNCZ0h
-IIWYlMGfYv9GoefpLCbFVGPC0VwEjgTrfQjG2O7kjy8GRrWJqA/ZLQadK8tDdPRE
-Da2kGKUBW/7vNJazUVibQeznADEyZJW0KEAp0B07W2mf1yjGoi4exYXBbRorQDpg
-0qxJ7eZSLrzdyWOv1weMcztcFfzImOHslACmNSuazJQm73f8gA8+HEQD8kVhYQbV
-MZO9TZTTSMt0zy4qmdHmBg3C+MQKKkYLVpLqVer81W9N5RczwgDollEC2aWXLeig
-IxLaj+vTVz8Ih7Ay8C/pQXxCd+5pUG14sNwVItHXdtXjz1EVoIA1R8limdHCtiS6
-qd44XiIgT7g=
-=srZv
------END PGP SIGNATURE-----
-
---=-vAU5fvcBIpDcI0zaNM4w--
+...but these don't look anything like machine driver properties.
