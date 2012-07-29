@@ -1,60 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab2G2LYB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 07:24:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55689 "EHLO
+	id S1752603Ab2G2LcK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 07:32:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53442 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab2G2LXw (ORCPT
+	with ESMTP id S1751937Ab2G2LcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 07:23:52 -0400
-From: Devendra Naga <develkernel412222@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <develkernel412222@gmail.com>
-Subject: [PATCH 2/2] pch_phub: use module_pci_driver
-Date: Sun, 29 Jul 2012 17:08:30 +0545
-Message-Id: <1343561010-15800-2-git-send-email-develkernel412222@gmail.com>
+	Sun, 29 Jul 2012 07:32:07 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: tytso@mit.edu, sandeen@redhat.com, lczerner@redhat.com,
+        linux-ext4@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH] ext4: add error handling when discard cmd is fail in FITRIM
+Date: Sun, 29 Jul 2012 07:31:54 -0400
+Message-Id: <1343561514-8380-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343561010-15800-1-git-send-email-develkernel412222@gmail.com>
-References: <1343561010-15800-1-git-send-email-develkernel412222@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this driver's pch_phub_pci_init, and pch_phub_pci_exit functions with
-the module_init and module_exit calls can be replaced with
-module_pci_driver
+Although free extents is proper not trimmed(mmc driver return error code
+while sending trim command), currently FITRIM ioctl return success.
+Add exception routine to inform user error code.
 
-Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
+#> ./fitrim_test
+end_request: I/O error, dev mmcblk0, sector 27232
+EXT4-fs warning (device mmcblk0): ext4_trim_all_free:4857:
+Discard command returned error -5
+#>
+
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- drivers/misc/pch_phub.c |   13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+ fs/ext4/mballoc.c |   25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-index e2c066e..c9f20da 100644
---- a/drivers/misc/pch_phub.c
-+++ b/drivers/misc/pch_phub.c
-@@ -893,18 +893,7 @@ static struct pci_driver pch_phub_driver = {
- 	.resume = pch_phub_resume
- };
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 8eae947..07569b6 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4852,10 +4852,11 @@ error_return:
+  * one will allocate those blocks, mark it as used in buddy bitmap. This must
+  * be called with under the group lock.
+  */
+-static void ext4_trim_extent(struct super_block *sb, int start, int count,
++static int ext4_trim_extent(struct super_block *sb, int start, int count,
+ 			     ext4_group_t group, struct ext4_buddy *e4b)
+ {
+ 	struct ext4_free_extent ex;
++	int err;
  
--static int __init pch_phub_pci_init(void)
--{
--	return pci_register_driver(&pch_phub_driver);
--}
--
--static void __exit pch_phub_pci_exit(void)
--{
--	pci_unregister_driver(&pch_phub_driver);
--}
--
--module_init(pch_phub_pci_init);
--module_exit(pch_phub_pci_exit);
-+module_pci_driver(pch_phub_driver);
+ 	trace_ext4_trim_extent(sb, group, start, count);
  
- MODULE_DESCRIPTION("Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7223) PHUB");
- MODULE_LICENSE("GPL");
+@@ -4871,9 +4872,10 @@ static void ext4_trim_extent(struct super_block *sb, int start, int count,
+ 	 */
+ 	mb_mark_used(e4b, &ex);
+ 	ext4_unlock_group(sb, group);
+-	ext4_issue_discard(sb, group, start, count);
++	err = ext4_issue_discard(sb, group, start, count);
+ 	ext4_lock_group(sb, group);
+ 	mb_free_blocks(NULL, e4b, start, ex.fe_len);
++	return err;
+ }
+ 
+ /**
+@@ -4902,7 +4904,7 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
+ 	void *bitmap;
+ 	ext4_grpblk_t next, count = 0, free_count = 0;
+ 	struct ext4_buddy e4b;
+-	int ret;
++	int ret = 0;
+ 
+ 	trace_ext4_trim_all_free(sb, group, start, max);
+ 
+@@ -4929,15 +4931,22 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
+ 		next = mb_find_next_bit(bitmap, max + 1, start);
+ 
+ 		if ((next - start) >= minblocks) {
+-			ext4_trim_extent(sb, start,
+-					 next - start, group, &e4b);
+-			count += next - start;
++			ret = ext4_trim_extent(sb, start,
++						next - start, group, &e4b);
++			if (ret < 0) {
++				if (ret != -EOPNOTSUPP)
++					ext4_warning(sb,
++						"Discard command returned error %d\n",
++						ret);
++					break;
++			} else
++				count += next - start;
+ 		}
+ 		free_count += next - start;
+ 		start = next + 1;
+ 
+ 		if (fatal_signal_pending(current)) {
+-			count = -ERESTARTSYS;
++			ret = -ERESTARTSYS;
+ 			break;
+ 		}
+ 
+@@ -4960,7 +4969,7 @@ out:
+ 	ext4_debug("trimmed %d blocks in the group %d\n",
+ 		count, group);
+ 
+-	return count;
++	return (ret < 0) ? ret : count;
+ }
+ 
+ /**
 -- 
 1.7.9.5
 
