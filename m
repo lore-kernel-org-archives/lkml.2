@@ -1,178 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2G2ONh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 10:13:37 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:33612 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169Ab2G2OMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 10:12:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH 2/6] PM / Domains: Add power off/on function for system core suspend stage
-Date: Sun, 29 Jul 2012 16:14:19 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <201207291612.43138.rjw@sisk.pl>
-In-Reply-To: <201207291612.43138.rjw@sisk.pl>
+	id S1753207Ab2G2OXP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 10:23:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49708 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab2G2OXO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 10:23:14 -0400
+Message-ID: <5015474C.9080103@gmail.com>
+Date: Sun, 29 Jul 2012 16:23:08 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Takashi Iwai <tiwai@suse.de>, Krzysztof Helt <krzysztof.h1@wp.pl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rene Herman <rene.herman@gmail.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] es1688 - freeup resources on init failure
+References: <20120728132046.GA14210@localhost> <501401B1.4070108@gmail.com> <s5hd33fknfg.wl%tiwai@suse.de> <20120729113909.GA14106@localhost>
+In-Reply-To: <20120729113909.GA14106@localhost>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207291614.19792.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 29.07.2012 13:39, Fengguang Wu wrote:
+>>>  	err = snd_es1688_init(chip, 1);
+>>>  	if (err < 0)
+>>> -		return err;
+>>> +		goto exit_release_dma;
+>>>  
+>>>  	/* Register device */
+>>>  	return snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
+>>> +
+>>> +exit_release_dma:
+>>> +	free_dma(chip->dma8);
+>>> +exit_release_irq:
+>>> +	free_irq(chip->irq, chip);
+>>> +exit_release_region:
+>>> +	release_and_free_resource(chip->res_port);
+>>> +exit:
+>>> +	return err;
+>>
+>> You can simply call snd_es1688_free(chip) instead of a bunch of
+>> labels.  That is, all goto's can be "goto exit", and
+>>
+>>   exit:
+>> 	snd_es1688_free(chip);
+>> 	return err;
+> 
+> snd_es1688_free() will call snd_es1688_init() which in turn use the
+> uninitialized spin locks and other data. So I end up with the below
+> patch. snd_device_new() could also return errors and will be handled
+> in the same way.
+> 
+> I don't have the hardware, however tests show it at least fixed the
+> boot time irq mismatch warnings.
+> 
+> Daniel, thanks for your initial implementation and please kindly
+> confirm the below 3rd version :)
 
-Introduce function pm_genpd_syscore_switch() and two wrappers around
-it, pm_genpd_syscore_poweroff() and pm_genpd_syscore_poweron(),
-allowing the callers to let the generic PM domains framework know
-that the given device is not necessary any more and its PM domain
-can be turned off (the former) or that the given device will be
-required immediately, so its PM domain has to be turned on (the
-latter) during the system core (syscore) stage of system suspend
-(or hibernation) and resume.
+Looks good to me, but I don't have the hardware either :)
 
-These functions will be used for handling devices registered as
-clock sources and clock event devices that belong to PM domains.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/base/power/domain.c |   60 +++++++++++++++++++++++++++++++++++++++-----
- include/linux/pm_domain.h   |   13 +++++++++
- 2 files changed, 67 insertions(+), 6 deletions(-)
+Daniel
 
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -63,6 +63,24 @@ struct generic_pm_domain *dev_to_genpd(s
- 	return pd_to_genpd(dev->pm_domain);
- }
- 
-+/**
-+ * pm_genpd_present - Check if the given PM domain has been initialized.
-+ * @genpd: PM domain to check.
-+ */
-+static bool pm_genpd_present(struct generic_pm_domain *genpd)
-+{
-+	struct generic_pm_domain *gpd;
-+
-+	if (IS_ERR_OR_NULL(genpd))
-+		return false;
-+
-+	list_for_each_entry(gpd, &gpd_list, gpd_list_node)
-+		if (gpd == genpd)
-+			return true;
-+
-+	return false;
-+}
-+
- static int genpd_stop_dev(struct generic_pm_domain *genpd, struct device *dev)
- {
- 	return GENPD_DEV_TIMED_CALLBACK(genpd, int, stop, dev,
-@@ -750,9 +768,10 @@ static int genpd_thaw_dev(struct generic
-  * Check if the given PM domain can be powered off (during system suspend or
-  * hibernation) and do that if so.  Also, in that case propagate to its masters.
-  *
-- * This function is only called in "noirq" stages of system power transitions,
-- * so it need not acquire locks (all of the "noirq" callbacks are executed
-- * sequentially, so it is guaranteed that it will never run twice in parallel).
-+ * This function is only called in "noirq" and "syscore" stages of system power
-+ * transitions, so it need not acquire locks (all of the "noirq" callbacks are
-+ * executed sequentially, so it is guaranteed that it will never run twice in
-+ * parallel).
-  */
- static void pm_genpd_sync_poweroff(struct generic_pm_domain *genpd)
- {
-@@ -780,9 +799,10 @@ static void pm_genpd_sync_poweroff(struc
-  * pm_genpd_sync_poweron - Synchronously power on a PM domain and its masters.
-  * @genpd: PM domain to power on.
-  *
-- * This function is only called in "noirq" stage of system power transitions, so
-- * it need not acquire locks (all of the "noirq" callbacks are executed
-- * sequentially, so it is guaranteed that it will never run twice in parallel).
-+ * This function is only called in "noirq" and "syscore" stages of system power
-+ * transitions, so it need not acquire locks (all of the "noirq" callbacks are
-+ * executed sequentially, so it is guaranteed that it will never run twice in
-+ * parallel).
-  */
- static void pm_genpd_sync_poweron(struct generic_pm_domain *genpd)
- {
-@@ -1272,6 +1292,34 @@ static void pm_genpd_complete(struct dev
- 	}
- }
- 
-+/**
-+ * pm_genpd_syscore_switch - Switch power during system core suspend or resume.
-+ * @dev: Device that normally is marked as "always on" to switch power for.
-+ *
-+ * This routine may only be called during the system core (syscore) suspend or
-+ * resume phase for devices whose "always on" flags are set.
-+ */
-+void pm_genpd_syscore_switch(struct device *dev, bool suspend)
-+{
-+	struct generic_pm_domain *genpd;
-+
-+	genpd = dev_to_genpd(dev);
-+	if (!pm_genpd_present(genpd))
-+		return;
-+
-+	if (!dev_gpd_data(dev)->always_on)
-+		return;
-+
-+	if (suspend) {
-+		genpd->suspended_count++;
-+		pm_genpd_sync_poweroff(genpd);
-+	} else {
-+		pm_genpd_sync_poweron(genpd);
-+		genpd->suspended_count--;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(pm_genpd_syscore_switch);
-+
- #else
- 
- #define pm_genpd_prepare		NULL
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -172,6 +172,8 @@ extern int pm_genpd_poweron(struct gener
- 
- extern bool default_stop_ok(struct device *dev);
- 
-+extern void pm_genpd_syscore_switch(struct device *dev, bool suspend);
-+
- extern struct dev_power_governor pm_domain_always_on_gov;
- #else
- 
-@@ -241,6 +243,7 @@ static inline bool default_stop_ok(struc
- {
- 	return false;
- }
-+static inline void pm_genpd_syscore_switch(struct device *dev, bool suspend) {}
- #define simple_qos_governor NULL
- #define pm_domain_always_on_gov NULL
- #endif
-@@ -250,6 +253,16 @@ static inline int pm_genpd_remove_callba
- 	return __pm_genpd_remove_callbacks(dev, true);
- }
- 
-+static inline void pm_genpd_syscore_poweroff(struct device *dev)
-+{
-+	pm_genpd_syscore_switch(dev, true);
-+}
-+
-+static inline void pm_genpd_syscore_poweron(struct device *dev)
-+{
-+	pm_genpd_syscore_switch(dev, false);
-+}
-+
- #ifdef CONFIG_PM_GENERIC_DOMAINS_RUNTIME
- extern void genpd_queue_power_off_work(struct generic_pm_domain *genpd);
- extern void pm_genpd_poweroff_unused(void);
+
+> ---
+> es1688 - freeup resources on init failure
+> 
+> This will fix the following oops:
+> 
+> [    6.169981] genirq: Flags mismatch irq 5. 00000000 (ES1688) vs. 00000000 (ES1688)
+> [    6.170851] Pid: 1, comm: swapper Not tainted 3.5.0-00004-gceee0e9 #14
+> [    6.170851] Call Trace:
+> [    6.170851]  [<c1062237>] ? __setup_irq+0x3c7/0x420
+> [    6.170851]  [<c1062486>] ? request_threaded_irq+0x76/0x140
+> [    6.170851]  [<c1290220>] ? snd_es1688_ioctl+0x10/0x10
+> [    6.170851]  [<c10624c2>] ? request_threaded_irq+0xb2/0x140
+> [    6.170851]  [<c1291196>] ? snd_es1688_create+0x96/0x330
+> [    6.170851]  [<c138365d>] ? snd_gusextreme_probe+0x18d/0x5a2
+> [    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+> [    6.170851]  [<c10db22f>] ? sysfs_create_link+0xf/0x20
+> [    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+> [    6.170851]  [<c11d1502>] ? isa_bus_probe+0x12/0x20
+> [    6.170851]  [<c11c9b95>] ? driver_probe_device+0x55/0x1c0
+> [    6.170851]  [<c13ae04f>] ? _raw_spin_unlock+0xf/0x30
+> [    6.170851]  [<c13705ea>] ? klist_next+0x6a/0xe0
+> [    6.170851]  [<c11d15c1>] ? isa_bus_match+0x21/0x40
+> [    6.170851]  [<c11c8a24>] ? bus_for_each_drv+0x34/0x70
+> [    6.170851]  [<c11c9e4b>] ? device_attach+0x7b/0x90
+> [    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+> [    6.170851]  [<c11c8bff>] ? bus_probe_device+0x5f/0x80
+> [    6.170851]  [<c11c7493>] ? device_add+0x573/0x620
+> [    6.170851]  [<c1042820>] ? complete_all+0x40/0x60
+> [    6.170851]  [<c13ae08a>] ? _raw_spin_unlock_irqrestore+0x1a/0x30
+> [    6.170851]  [<c11d16c6>] ? isa_register_driver+0xb6/0x150
+> [    6.170851]  [<c15c9002>] ? alsa_card_gusmax_init+0xf/0xf
+> [    6.170851]  [<c15a99bc>] ? do_one_initcall+0x7f/0x12b
+> [    6.170851]  [<c15a9b7a>] ? kernel_init+0x112/0x1a9
+> [    6.170851]  [<c15a9423>] ? do_early_param+0x77/0x77
+> [    6.170851]  [<c15a9a68>] ? do_one_initcall+0x12b/0x12b
+> [    6.170851]  [<c13aefbe>] ? kernel_thread_helper+0x6/0xd
+> [    6.190170] es1688: can't grab IRQ 5
+> [    6.190613] genirq: Flags mismatch irq 5. 00000000 (ES1688) vs. 00000000 (ES1688)
+> [    6.191566] Pid: 1, comm: swapper Not tainted 3.5.0-00004-gceee0e9 #14
+> [    6.192394] Call Trace:
+> [    6.192685]  [<c1062237>] ? __setup_irq+0x3c7/0x420
+> [    6.193342]  [<c1062486>] ? request_threaded_irq+0x76/0x140
+> [    6.194081]  [<c1290220>] ? snd_es1688_ioctl+0x10/0x10
+> [    6.194607]  [<c10624c2>] ? request_threaded_irq+0xb2/0x140
+> [    6.194607]  [<c1291196>] ? snd_es1688_create+0x96/0x330
+> [    6.194607]  [<c138365d>] ? snd_gusextreme_probe+0x18d/0x5a2
+> [    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+> [    6.194607]  [<c10db22f>] ? sysfs_create_link+0xf/0x20
+> [    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+> [    6.194607]  [<c11d1502>] ? isa_bus_probe+0x12/0x20
+> [    6.194607]  [<c11c9b95>] ? driver_probe_device+0x55/0x1c0
+> [    6.194607]  [<c13ae04f>] ? _raw_spin_unlock+0xf/0x30
+> [    6.194607]  [<c13705ea>] ? klist_next+0x6a/0xe0
+> [    6.194607]  [<c11d15c1>] ? isa_bus_match+0x21/0x40
+> [    6.194607]  [<c11c8a24>] ? bus_for_each_drv+0x34/0x70
+> [    6.194607]  [<c11c9e4b>] ? device_attach+0x7b/0x90
+> [    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+> [    6.194607]  [<c11c8bff>] ? bus_probe_device+0x5f/0x80
+> [    6.194607]  [<c11c7493>] ? device_add+0x573/0x620
+> [    6.194607]  [<c1042820>] ? complete_all+0x40/0x60
+> [    6.194607]  [<c13ae08a>] ? _raw_spin_unlock_irqrestore+0x1a/0x30
+> [    6.194607]  [<c11d16c6>] ? isa_register_driver+0xb6/0x150
+> [    6.194607]  [<c15c9002>] ? alsa_card_gusmax_init+0xf/0xf
+> [    6.194607]  [<c15a99bc>] ? do_one_initcall+0x7f/0x12b
+> [    6.194607]  [<c15a9b7a>] ? kernel_init+0x112/0x1a9
+> [    6.194607]  [<c15a9423>] ? do_early_param+0x77/0x77
+> [    6.194607]  [<c15a9a68>] ? do_one_initcall+0x12b/0x12b
+> [    6.194607]  [<c13aefbe>] ? kernel_thread_helper+0x6/0xd
+> [    6.210779] es1688: can't grab IRQ 5
+> [    6.211305] gusextreme: probe of gusextreme.0 failed with error -16
+> 
+> Signed-off-by: Daniel Mack <zonque@gmail.com>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> ---
+>  include/sound/es1688.h        |    1 
+>  sound/isa/es1688/es1688_lib.c |   34 +++++++++++++++++++++-----------
+>  2 files changed, 24 insertions(+), 11 deletions(-)
+> 
+> --- linux.orig/sound/isa/es1688/es1688_lib.c	2012-07-29 18:59:09.820640797 +0800
+> +++ linux/sound/isa/es1688/es1688_lib.c	2012-07-29 18:59:11.576640840 +0800
+> @@ -612,10 +612,10 @@ static int snd_es1688_capture_close(stru
+>  
+>  static int snd_es1688_free(struct snd_es1688 *chip)
+>  {
+> -	if (chip->res_port) {
+> +	if (chip->hardware != ES1688_HW_UNDEF)
+>  		snd_es1688_init(chip, 0);
+> +	if (chip->res_port)
+>  		release_and_free_resource(chip->res_port);
+> -	}
+>  	if (chip->irq >= 0)
+>  		free_irq(chip->irq, (void *) chip);
+>  	if (chip->dma8 >= 0) {
+> @@ -657,19 +657,27 @@ int snd_es1688_create(struct snd_card *c
+>  		return -ENOMEM;
+>  	chip->irq = -1;
+>  	chip->dma8 = -1;
+> +	chip->hardware = ES1688_HW_UNDEF;
+>  	
+> -	if ((chip->res_port = request_region(port + 4, 12, "ES1688")) == NULL) {
+> +	chip->res_port = request_region(port + 4, 12, "ES1688");
+> +	if (chip->res_port == NULL) {
+>  		snd_printk(KERN_ERR "es1688: can't grab port 0x%lx\n", port + 4);
+> -		return -EBUSY;
+> +		err = -EBUSY;
+> +		goto exit;
+>  	}
+> -	if (request_irq(irq, snd_es1688_interrupt, 0, "ES1688", (void *) chip)) {
+> +
+> +	err = request_irq(irq, snd_es1688_interrupt, 0, "ES1688", (void *) chip);
+> +	if (err < 0) {
+>  		snd_printk(KERN_ERR "es1688: can't grab IRQ %d\n", irq);
+> -		return -EBUSY;
+> +		goto exit;
+>  	}
+> +
+>  	chip->irq = irq;
+> -	if (request_dma(dma8, "ES1688")) {
+> +	err = request_dma(dma8, "ES1688");
+> +
+> +	if (err < 0) {
+>  		snd_printk(KERN_ERR "es1688: can't grab DMA8 %d\n", dma8);
+> -		return -EBUSY;
+> +		goto exit;
+>  	}
+>  	chip->dma8 = dma8;
+>  
+> @@ -685,14 +693,18 @@ int snd_es1688_create(struct snd_card *c
+>  
+>  	err = snd_es1688_probe(chip);
+>  	if (err < 0)
+> -		return err;
+> +		goto exit;
+>  
+>  	err = snd_es1688_init(chip, 1);
+>  	if (err < 0)
+> -		return err;
+> +		goto exit;
+>  
+>  	/* Register device */
+> -	return snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
+> +	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
+> +exit:
+> +	if (err)
+> +		snd_es1688_free(chip);
+> +	return err;
+>  }
+>  
+>  static struct snd_pcm_ops snd_es1688_playback_ops = {
+> --- linux.orig/include/sound/es1688.h	2012-07-29 18:59:09.820640797 +0800
+> +++ linux/include/sound/es1688.h	2012-07-29 18:59:13.000640873 +0800
+> @@ -29,6 +29,7 @@
+>  #define ES1688_HW_AUTO		0x0000
+>  #define ES1688_HW_688		0x0001
+>  #define ES1688_HW_1688		0x0002
+> +#define ES1688_HW_UNDEF	0x0003
+>  
+>  struct snd_es1688 {
+>  	unsigned long port;		/* port of ESS chip */
+> 
 
