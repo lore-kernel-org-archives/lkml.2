@@ -1,196 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2G2Ldy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 07:33:54 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:53474 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab2G2Ldw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 07:33:52 -0400
-Message-ID: <50151F97.807@linux.vnet.ibm.com>
-Date: Sun, 29 Jul 2012 19:33:43 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1752719Ab2G2LjR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 07:39:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15038 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382Ab2G2LjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 07:39:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="189343746"
+Date: Sun, 29 Jul 2012 19:39:09 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Daniel Mack <zonque@gmail.com>, Krzysztof Helt <krzysztof.h1@wp.pl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rene Herman <rene.herman@gmail.com>, alsa-devel@alsa-project.org
+Subject: [PATCH] es1688 - freeup resources on init failure
+Message-ID: <20120729113909.GA14106@localhost>
+References: <20120728132046.GA14210@localhost>
+ <501401B1.4070108@gmail.com>
+ <s5hd33fknfg.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 8/9] KVM: do not release the error pfn
-References: <5014F053.8020305@linux.vnet.ibm.com> <5014F1F2.3020202@linux.vnet.ibm.com>
-In-Reply-To: <5014F1F2.3020202@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072911-9264-0000-0000-000002044ADD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hd33fknfg.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvm_release_pfn_clean in kvm_handle_bad_page() also can be removed, please
-review this one instead.
+> >  	err = snd_es1688_init(chip, 1);
+> >  	if (err < 0)
+> > -		return err;
+> > +		goto exit_release_dma;
+> >  
+> >  	/* Register device */
+> >  	return snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
+> > +
+> > +exit_release_dma:
+> > +	free_dma(chip->dma8);
+> > +exit_release_irq:
+> > +	free_irq(chip->irq, chip);
+> > +exit_release_region:
+> > +	release_and_free_resource(chip->res_port);
+> > +exit:
+> > +	return err;
+> 
+> You can simply call snd_es1688_free(chip) instead of a bunch of
+> labels.  That is, all goto's can be "goto exit", and
+> 
+>   exit:
+> 	snd_es1688_free(chip);
+> 	return err;
 
-Changelog:
-   remove kvm_release_pfn_clean in kvm_handle_bad_page()
+snd_es1688_free() will call snd_es1688_init() which in turn use the
+uninitialized spin locks and other data. So I end up with the below
+patch. snd_device_new() could also return errors and will be handled
+in the same way.
 
+I don't have the hardware, however tests show it at least fixed the
+boot time irq mismatch warnings.
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 08/21] KVM: do not release the error pfn
+Daniel, thanks for your initial implementation and please kindly
+confirm the below 3rd version :)
 
-After commit a2766325cf9f9, the error pfn is replaced by the
-error code, it need not be released anymore
-
-[ The patch is compiling tested for powerpc ]
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Thanks,
+Fengguang
 ---
- arch/powerpc/kvm/e500_tlb.c |    1 -
- arch/x86/kvm/mmu.c          |    7 +++----
- arch/x86/kvm/mmu_audit.c    |    4 +---
- arch/x86/kvm/paging_tmpl.h  |    8 ++------
- virt/kvm/iommu.c            |    1 -
- virt/kvm/kvm_main.c         |   14 ++++++++------
- 6 files changed, 14 insertions(+), 21 deletions(-)
+es1688 - freeup resources on init failure
 
-diff --git a/arch/powerpc/kvm/e500_tlb.c b/arch/powerpc/kvm/e500_tlb.c
-index c8f6c58..09ce5ac 100644
---- a/arch/powerpc/kvm/e500_tlb.c
-+++ b/arch/powerpc/kvm/e500_tlb.c
-@@ -524,7 +524,6 @@ static inline void kvmppc_e500_shadow_map(struct kvmppc_vcpu_e500 *vcpu_e500,
- 		if (is_error_pfn(pfn)) {
- 			printk(KERN_ERR "Couldn't get real page for gfn %lx!\n",
- 					(long)gfn);
--			kvm_release_pfn_clean(pfn);
- 			return;
- 		}
+This will fix the following oops:
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 320a781..d9a73d8 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2498,7 +2498,9 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 				rmap_recycle(vcpu, sptep, gfn);
- 		}
+[    6.169981] genirq: Flags mismatch irq 5. 00000000 (ES1688) vs. 00000000 (ES1688)
+[    6.170851] Pid: 1, comm: swapper Not tainted 3.5.0-00004-gceee0e9 #14
+[    6.170851] Call Trace:
+[    6.170851]  [<c1062237>] ? __setup_irq+0x3c7/0x420
+[    6.170851]  [<c1062486>] ? request_threaded_irq+0x76/0x140
+[    6.170851]  [<c1290220>] ? snd_es1688_ioctl+0x10/0x10
+[    6.170851]  [<c10624c2>] ? request_threaded_irq+0xb2/0x140
+[    6.170851]  [<c1291196>] ? snd_es1688_create+0x96/0x330
+[    6.170851]  [<c138365d>] ? snd_gusextreme_probe+0x18d/0x5a2
+[    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+[    6.170851]  [<c10db22f>] ? sysfs_create_link+0xf/0x20
+[    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+[    6.170851]  [<c11d1502>] ? isa_bus_probe+0x12/0x20
+[    6.170851]  [<c11c9b95>] ? driver_probe_device+0x55/0x1c0
+[    6.170851]  [<c13ae04f>] ? _raw_spin_unlock+0xf/0x30
+[    6.170851]  [<c13705ea>] ? klist_next+0x6a/0xe0
+[    6.170851]  [<c11d15c1>] ? isa_bus_match+0x21/0x40
+[    6.170851]  [<c11c8a24>] ? bus_for_each_drv+0x34/0x70
+[    6.170851]  [<c11c9e4b>] ? device_attach+0x7b/0x90
+[    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+[    6.170851]  [<c11c8bff>] ? bus_probe_device+0x5f/0x80
+[    6.170851]  [<c11c7493>] ? device_add+0x573/0x620
+[    6.170851]  [<c1042820>] ? complete_all+0x40/0x60
+[    6.170851]  [<c13ae08a>] ? _raw_spin_unlock_irqrestore+0x1a/0x30
+[    6.170851]  [<c11d16c6>] ? isa_register_driver+0xb6/0x150
+[    6.170851]  [<c15c9002>] ? alsa_card_gusmax_init+0xf/0xf
+[    6.170851]  [<c15a99bc>] ? do_one_initcall+0x7f/0x12b
+[    6.170851]  [<c15a9b7a>] ? kernel_init+0x112/0x1a9
+[    6.170851]  [<c15a9423>] ? do_early_param+0x77/0x77
+[    6.170851]  [<c15a9a68>] ? do_one_initcall+0x12b/0x12b
+[    6.170851]  [<c13aefbe>] ? kernel_thread_helper+0x6/0xd
+[    6.190170] es1688: can't grab IRQ 5
+[    6.190613] genirq: Flags mismatch irq 5. 00000000 (ES1688) vs. 00000000 (ES1688)
+[    6.191566] Pid: 1, comm: swapper Not tainted 3.5.0-00004-gceee0e9 #14
+[    6.192394] Call Trace:
+[    6.192685]  [<c1062237>] ? __setup_irq+0x3c7/0x420
+[    6.193342]  [<c1062486>] ? request_threaded_irq+0x76/0x140
+[    6.194081]  [<c1290220>] ? snd_es1688_ioctl+0x10/0x10
+[    6.194607]  [<c10624c2>] ? request_threaded_irq+0xb2/0x140
+[    6.194607]  [<c1291196>] ? snd_es1688_create+0x96/0x330
+[    6.194607]  [<c138365d>] ? snd_gusextreme_probe+0x18d/0x5a2
+[    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+[    6.194607]  [<c10db22f>] ? sysfs_create_link+0xf/0x20
+[    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+[    6.194607]  [<c11d1502>] ? isa_bus_probe+0x12/0x20
+[    6.194607]  [<c11c9b95>] ? driver_probe_device+0x55/0x1c0
+[    6.194607]  [<c13ae04f>] ? _raw_spin_unlock+0xf/0x30
+[    6.194607]  [<c13705ea>] ? klist_next+0x6a/0xe0
+[    6.194607]  [<c11d15c1>] ? isa_bus_match+0x21/0x40
+[    6.194607]  [<c11c8a24>] ? bus_for_each_drv+0x34/0x70
+[    6.194607]  [<c11c9e4b>] ? device_attach+0x7b/0x90
+[    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
+[    6.194607]  [<c11c8bff>] ? bus_probe_device+0x5f/0x80
+[    6.194607]  [<c11c7493>] ? device_add+0x573/0x620
+[    6.194607]  [<c1042820>] ? complete_all+0x40/0x60
+[    6.194607]  [<c13ae08a>] ? _raw_spin_unlock_irqrestore+0x1a/0x30
+[    6.194607]  [<c11d16c6>] ? isa_register_driver+0xb6/0x150
+[    6.194607]  [<c15c9002>] ? alsa_card_gusmax_init+0xf/0xf
+[    6.194607]  [<c15a99bc>] ? do_one_initcall+0x7f/0x12b
+[    6.194607]  [<c15a9b7a>] ? kernel_init+0x112/0x1a9
+[    6.194607]  [<c15a9423>] ? do_early_param+0x77/0x77
+[    6.194607]  [<c15a9a68>] ? do_one_initcall+0x12b/0x12b
+[    6.194607]  [<c13aefbe>] ? kernel_thread_helper+0x6/0xd
+[    6.210779] es1688: can't grab IRQ 5
+[    6.211305] gusextreme: probe of gusextreme.0 failed with error -16
+
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ include/sound/es1688.h        |    1 
+ sound/isa/es1688/es1688_lib.c |   34 +++++++++++++++++++++-----------
+ 2 files changed, 24 insertions(+), 11 deletions(-)
+
+--- linux.orig/sound/isa/es1688/es1688_lib.c	2012-07-29 18:59:09.820640797 +0800
++++ linux/sound/isa/es1688/es1688_lib.c	2012-07-29 18:59:11.576640840 +0800
+@@ -612,10 +612,10 @@ static int snd_es1688_capture_close(stru
+ 
+ static int snd_es1688_free(struct snd_es1688 *chip)
+ {
+-	if (chip->res_port) {
++	if (chip->hardware != ES1688_HW_UNDEF)
+ 		snd_es1688_init(chip, 0);
++	if (chip->res_port)
+ 		release_and_free_resource(chip->res_port);
+-	}
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *) chip);
+ 	if (chip->dma8 >= 0) {
+@@ -657,19 +657,27 @@ int snd_es1688_create(struct snd_card *c
+ 		return -ENOMEM;
+ 	chip->irq = -1;
+ 	chip->dma8 = -1;
++	chip->hardware = ES1688_HW_UNDEF;
+ 	
+-	if ((chip->res_port = request_region(port + 4, 12, "ES1688")) == NULL) {
++	chip->res_port = request_region(port + 4, 12, "ES1688");
++	if (chip->res_port == NULL) {
+ 		snd_printk(KERN_ERR "es1688: can't grab port 0x%lx\n", port + 4);
+-		return -EBUSY;
++		err = -EBUSY;
++		goto exit;
  	}
--	kvm_release_pfn_clean(pfn);
+-	if (request_irq(irq, snd_es1688_interrupt, 0, "ES1688", (void *) chip)) {
 +
-+	if (!is_error_pfn(pfn))
-+		kvm_release_pfn_clean(pfn);
- }
-
- static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
-@@ -2650,7 +2652,6 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
-
- static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gfn_t gfn, pfn_t pfn)
- {
--	kvm_release_pfn_clean(pfn);
- 	if (pfn == kvm_hwpoison_pfn) {
- 		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
- 		return 0;
-@@ -3275,8 +3276,6 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
- 	if (!async)
- 		return false; /* *pfn has correct page already */
-
--	kvm_release_pfn_clean(*pfn);
--
- 	if (!prefault && can_do_async_pf(vcpu)) {
- 		trace_kvm_try_async_get_page(gva, gfn);
- 		if (kvm_find_async_pf_gfn(vcpu, gfn)) {
-diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
-index 7d7d0b9..bac5fa4 100644
---- a/arch/x86/kvm/mmu_audit.c
-+++ b/arch/x86/kvm/mmu_audit.c
-@@ -116,10 +116,8 @@ static void audit_mappings(struct kvm_vcpu *vcpu, u64 *sptep, int level)
- 	gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
- 	pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
-
--	if (is_error_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
-+	if (is_error_pfn(pfn))
- 		return;
--	}
-
- 	hpa =  pfn << PAGE_SHIFT;
- 	if ((*sptep & PT64_BASE_ADDR_MASK) != hpa)
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index bb7cf01..bf8c42b 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -370,10 +370,8 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
- 	pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte, true);
- 	pfn = gfn_to_pfn_atomic(vcpu->kvm, gpte_to_gfn(gpte));
--	if (mmu_invalid_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
-+	if (mmu_invalid_pfn(pfn))
- 		return;
--	}
-
- 	/*
- 	 * we call mmu_set_spte() with host_writable = true because that
-@@ -448,10 +446,8 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- 		gfn = gpte_to_gfn(gpte);
- 		pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
- 				      pte_access & ACC_WRITE_MASK);
--		if (mmu_invalid_pfn(pfn)) {
--			kvm_release_pfn_clean(pfn);
-+		if (mmu_invalid_pfn(pfn))
- 			break;
--		}
-
- 		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
- 			     NULL, PT_PAGE_TABLE_LEVEL, gfn,
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 6a67bea..037cb67 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -107,7 +107,6 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		 */
- 		pfn = kvm_pin_pages(slot, gfn, page_size);
- 		if (is_error_pfn(pfn)) {
--			kvm_release_pfn_clean(pfn);
- 			gfn += 1;
- 			continue;
- 		}
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index f09f48a..0c29714 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -102,9 +102,6 @@ static bool largepages_enabled = true;
-
- bool kvm_is_mmio_pfn(pfn_t pfn)
- {
--	if (is_error_pfn(pfn))
--		return false;
--
- 	if (pfn_valid(pfn)) {
- 		int reserved;
- 		struct page *tail = pfn_to_page(pfn);
-@@ -1174,10 +1171,13 @@ EXPORT_SYMBOL_GPL(gfn_to_page_many_atomic);
-
- static struct page *kvm_pfn_to_page(pfn_t pfn)
- {
--	WARN_ON(kvm_is_mmio_pfn(pfn));
-+	if (is_error_pfn(pfn))
-+		return kvm_bad_page;
-
--	if (is_error_pfn(pfn) || kvm_is_mmio_pfn(pfn))
-+	if (kvm_is_mmio_pfn(pfn)) {
-+		WARN_ON(1);
- 		return kvm_bad_page;
-+	}
-
- 	return pfn_to_page(pfn);
- }
-@@ -1202,7 +1202,9 @@ EXPORT_SYMBOL_GPL(kvm_release_page_clean);
-
- void kvm_release_pfn_clean(pfn_t pfn)
- {
--	if (!is_error_pfn(pfn) && !kvm_is_mmio_pfn(pfn))
-+	WARN_ON(is_error_pfn(pfn));
++	err = request_irq(irq, snd_es1688_interrupt, 0, "ES1688", (void *) chip);
++	if (err < 0) {
+ 		snd_printk(KERN_ERR "es1688: can't grab IRQ %d\n", irq);
+-		return -EBUSY;
++		goto exit;
+ 	}
 +
-+	if (!kvm_is_mmio_pfn(pfn))
- 		put_page(pfn_to_page(pfn));
+ 	chip->irq = irq;
+-	if (request_dma(dma8, "ES1688")) {
++	err = request_dma(dma8, "ES1688");
++
++	if (err < 0) {
+ 		snd_printk(KERN_ERR "es1688: can't grab DMA8 %d\n", dma8);
+-		return -EBUSY;
++		goto exit;
+ 	}
+ 	chip->dma8 = dma8;
+ 
+@@ -685,14 +693,18 @@ int snd_es1688_create(struct snd_card *c
+ 
+ 	err = snd_es1688_probe(chip);
+ 	if (err < 0)
+-		return err;
++		goto exit;
+ 
+ 	err = snd_es1688_init(chip, 1);
+ 	if (err < 0)
+-		return err;
++		goto exit;
+ 
+ 	/* Register device */
+-	return snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
++	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
++exit:
++	if (err)
++		snd_es1688_free(chip);
++	return err;
  }
- EXPORT_SYMBOL_GPL(kvm_release_pfn_clean);
--- 
-1.7.7.6
-
+ 
+ static struct snd_pcm_ops snd_es1688_playback_ops = {
+--- linux.orig/include/sound/es1688.h	2012-07-29 18:59:09.820640797 +0800
++++ linux/include/sound/es1688.h	2012-07-29 18:59:13.000640873 +0800
+@@ -29,6 +29,7 @@
+ #define ES1688_HW_AUTO		0x0000
+ #define ES1688_HW_688		0x0001
+ #define ES1688_HW_1688		0x0002
++#define ES1688_HW_UNDEF	0x0003
+ 
+ struct snd_es1688 {
+ 	unsigned long port;		/* port of ESS chip */
