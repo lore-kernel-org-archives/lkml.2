@@ -1,50 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab2G2IP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 04:15:56 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49112 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929Ab2G2IPy (ORCPT
+	id S1753049Ab2G2IQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 04:16:37 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:37287 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab2G2IQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 04:15:54 -0400
-Message-ID: <5014F134.1070207@linux.vnet.ibm.com>
-Date: Sun, 29 Jul 2012 16:15:48 +0800
+	Sun, 29 Jul 2012 04:16:35 -0400
+Message-ID: <5014F15C.60400@linux.vnet.ibm.com>
+Date: Sun, 29 Jul 2012 16:16:28 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 6/9] KVM: remove the unused declare
+Subject: [PATCH 7/9] KVM: define kvm_bad_page statically
 References: <5014F053.8020305@linux.vnet.ibm.com>
 In-Reply-To: <5014F053.8020305@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12072908-2000-0000-0000-00000886E36D
+x-cbid: 12072908-5564-0000-0000-000003CA4410
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove it since it is not used anymore
+It is used to eliminate the overload of function call and cleanup
+the code
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- include/linux/kvm_host.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ include/linux/kvm_host.h |    9 +++++++--
+ virt/kvm/async_pf.c      |    2 +-
+ virt/kvm/kvm_main.c      |   13 +------------
+ 3 files changed, 9 insertions(+), 15 deletions(-)
 
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 98255ce..387ecc5 100644
+index 387ecc5..08a9da9 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
-@@ -410,8 +410,6 @@ id_to_memslot(struct kvm_memslots *slots, int id)
+@@ -68,6 +68,13 @@ static inline int is_invalid_pfn(pfn_t pfn)
+ 	return !is_noslot_pfn(pfn) && is_error_pfn(pfn);
+ }
+
++#define kvm_bad_page	(ERR_PTR(-ENOENT))
++
++static inline int is_error_page(struct page *page)
++{
++	return IS_ERR(page);
++}
++
+ /*
+  * vcpu->requests bit members
+  */
+@@ -410,7 +417,6 @@ id_to_memslot(struct kvm_memslots *slots, int id)
  	return slot;
  }
 
--extern struct page *bad_page;
--
- int is_error_page(struct page *page);
+-int is_error_page(struct page *page);
  int kvm_is_error_hva(unsigned long addr);
  int kvm_set_memory_region(struct kvm *kvm,
+ 			  struct kvm_userspace_memory_region *mem,
+@@ -437,7 +443,6 @@ void kvm_arch_flush_shadow(struct kvm *kvm);
+ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
+ 			    int nr_pages);
+
+-struct page *get_bad_page(void);
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
+ void kvm_release_page_clean(struct page *page);
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index 7972278..aa38af6 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -203,7 +203,7 @@ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
+ 	if (!work)
+ 		return -ENOMEM;
+
+-	work->page = get_bad_page();
++	work->page = kvm_bad_page;
+ 	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
+
+ 	spin_lock(&vcpu->async_pf.lock);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 51aaba4..f09f48a 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -931,17 +931,6 @@ void kvm_disable_largepages(void)
+ }
+ EXPORT_SYMBOL_GPL(kvm_disable_largepages);
+
+-int is_error_page(struct page *page)
+-{
+-	return IS_ERR(page);
+-}
+-EXPORT_SYMBOL_GPL(is_error_page);
+-
+-struct page *get_bad_page(void)
+-{
+-	return ERR_PTR(-ENOENT);
+-}
+-
+ static inline unsigned long bad_hva(void)
+ {
+ 	return PAGE_OFFSET;
+@@ -1188,7 +1177,7 @@ static struct page *kvm_pfn_to_page(pfn_t pfn)
+ 	WARN_ON(kvm_is_mmio_pfn(pfn));
+
+ 	if (is_error_pfn(pfn) || kvm_is_mmio_pfn(pfn))
+-		return get_bad_page();
++		return kvm_bad_page;
+
+ 	return pfn_to_page(pfn);
+ }
 -- 
 1.7.7.6
 
