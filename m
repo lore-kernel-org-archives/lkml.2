@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab2G2SZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 14:25:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48134 "EHLO mx1.redhat.com"
+	id S1753487Ab2G2SZi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 14:25:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62979 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364Ab2G2SZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 14:25:26 -0400
-Date: Sun, 29 Jul 2012 20:22:20 +0200
+	id S1753475Ab2G2SZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 14:25:36 -0400
+Date: Sun, 29 Jul 2012 20:22:38 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <anton@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 04/14] uprobes: cleanup and document
-	write_opcode()->lock_page(old_page)
-Message-ID: <20120729182220.GA20322@redhat.com>
+Subject: [PATCH 09/14] uprobes: kill insert_vm_struct()->uprobe_mmap()
+Message-ID: <20120729182238.GA20349@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,95 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment above write_opcode()->lock_page(old_page) tells about
-the race with do_wp_page(). I don't really understand which exactly
-race it means, but afaics this lock_page() was not enough to close
-all races with do_wp_page().
+Kill insert_vm_struct()->uprobe_mmap(). It is not needed, nobody
+except arch/ia64/kernel/perfmon.c uses insert_vm_struct(vma) with
+vma->vm_file != NULL.
 
-Anyway, since 77fc4af1 this code is always called with ->mmap_sem
-hold for writing so we can forget about do_wp_page().
-
-However, we can't simply remove this lock_page(), and the only
-(afaics) reason is __replace_page()->try_to_free_swap().
-
-Nothing in write_opcode() needs it, move it into __replace_page()
-and fix the comment.
+And it is wrong. Again, get_user_pages() can not succeed before
+vma_link(vma) makes is visible to find_vma(). And even if this
+worked, we must not insert the new bp before this mapping is
+visible to vma_prio_tree_foreach() for uprobe_unregister().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
 ---
- kernel/events/uprobes.c |   27 ++++++++++++++-------------
- 1 files changed, 14 insertions(+), 13 deletions(-)
+ mm/mmap.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index dff8da2..67697db 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -139,10 +139,15 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
- 	struct mm_struct *mm = vma->vm_mm;
- 	spinlock_t *ptl;
- 	pte_t *ptep;
-+	int err;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index e5a4614..4fe2697 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2345,9 +2345,6 @@ int insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
+ 	     security_vm_enough_memory_mm(mm, vma_pages(vma)))
+ 		return -ENOMEM;
  
-+	/* freeze PageSwapCache() for try_to_free_swap() below */
-+	lock_page(page);
-+
-+	err = -EAGAIN;
- 	ptep = page_check_address(page, mm, addr, &ptl, 0);
- 	if (!ptep)
--		return -EAGAIN;
-+		goto unlock;
- 
- 	get_page(kpage);
- 	page_add_new_anon_rmap(kpage, vma, addr);
-@@ -162,7 +167,10 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
- 	put_page(page);
- 	pte_unmap_unlock(ptep, ptl);
- 
--	return 0;
-+	err = 0;
-+ unlock:
-+	unlock_page(page);
-+	return err;
- }
- 
- /**
-@@ -216,15 +224,10 @@ retry:
- 	ret = -ENOMEM;
- 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
- 	if (!new_page)
--		goto put_out;
-+		goto put_old;
- 
- 	__SetPageUptodate(new_page);
- 
--	/*
--	 * lock page will serialize against do_wp_page()'s
--	 * PageAnon() handling
--	 */
--	lock_page(old_page);
- 	/* copy the page now that we've got it stable */
- 	vaddr_old = kmap_atomic(old_page);
- 	vaddr_new = kmap_atomic(new_page);
-@@ -237,15 +240,13 @@ retry:
- 
- 	ret = anon_vma_prepare(vma);
- 	if (ret)
--		goto unlock_out;
-+		goto put_new;
- 
- 	ret = __replace_page(vma, vaddr, old_page, new_page);
- 
--unlock_out:
--	unlock_page(old_page);
-+put_new:
- 	page_cache_release(new_page);
+-	if (vma->vm_file && uprobe_mmap(vma))
+-		return -EINVAL;
 -
--put_out:
-+put_old:
- 	put_page(old_page);
- 
- 	if (unlikely(ret == -EAGAIN))
+ 	vma_link(mm, vma, prev, rb_link, rb_parent);
+ 	return 0;
+ }
 -- 
 1.5.5.1
 
