@@ -1,33 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab2G2HpZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 03:45:25 -0400
-Received: from out-67.smtp.ucla.edu ([169.232.46.173]:48008 "EHLO
-	out-67.smtp.ucla.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab2G2HpY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 03:45:24 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Jul 2012 03:45:24 EDT
-Message-Id: <201207290723.q6T65jm8004785@mail.ucla.edu>
-Content-Type: text/plain; charset=US-ASCII
+	id S1752402Ab2G2HqN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 03:46:13 -0400
+Received: from ks35366.kimsufi.com ([213.251.186.122]:54735 "EHLO meetr.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751859Ab2G2HqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 03:46:10 -0400
+Message-ID: <5014EA3B.4010305@meetr.de>
+Date: Sun, 29 Jul 2012 09:46:03 +0200
+From: Andreas Heider <andreas@meetr.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: partner with me.!!! 29-07-2012
-To: Recipients <chen@mail.com>
-From: "Seng Bank Ltd, Hong Kong" <chen@mail.com>
-Date: Sun, 29 Jul 2012 09:19:57 +0200
-Reply-To: draymndch8@yahoo.co.jp
-X-Probable-Spam: no
-X-Spam-Hits: 3.527
-X-Spam-Score: ****
-X-Spam-Report: DCC_CHECK,SPF_FAIL,US_DOLLARS_3
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
+References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>  <20120710160555.GA31562@srcf.ucam.org>  <20120710163516.GE10194@thinkpad-t410> <4FFCC7FB.1090609@meetr.de>  <1343522547.2488.12.camel@shinybook.infradead.org> <1343524730.1962.5.camel@shinybook.infradead.org>
+In-Reply-To: <1343524730.1962.5.camel@shinybook.infradead.org>
+Content-Type: multipart/mixed;
+ boundary="------------030505060907000306000109"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An Iraqi Engineer named Mr. Thahi Hammud made a fixed deposit of $16,000.000.00 in my bank branch where I am a Deputy Chief Executive and he died with his entire family in the war leaving behind no next of kin. I Propose to present you as next of kin to claim the funds. Get back to me on this email ( draymndch8@yahoo.co.jp) only if interested with your full name, and telephone number to reach you and most importantly, a confirmation of acceptance from you after which I shall furnish you with the full details of this transaction.
+This is a multi-part message in MIME format.
+--------------030505060907000306000109
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Yours Truly, 
-Dr Raymond Chien Kuo Fung.
-draymndch8@yahoo.co.jp
+Am 29.07.12 03:18, schrieb David Woodhouse:
+> On Sun, 2012-07-29 at 01:42 +0100, David Woodhouse wrote:
+>> If I don't hack it to switch the mux to IGD at boot time, I never manage
+>> to get a sane picture out of the Intel device after switching to it.
+>> It's late now, but I'll try to get a proper debug log of the working and
+>> failing cases tomorrow.
+>
+>  From the hacked kernel (after fixing vga_switcheroo_enable() not to do:
+> 		event.info = client->fb_info;
+>   		fb_notifier_call_chain(FB_EVENT_REMAP_ALL_CONSOLE, &event);
+> if client->fb_info is NULL)...
+>
+> http://david.woodhou.se/dmesg-boot-to-IGD (blank screen)
+> http://david.woodhou.se/dmesg-boot-to-IGD-and-switch-to-DIS (works)
+> http://david.woodhou.se/dmesg-boot-to-IGD-and-switch-to-DIS-and-back-to-IGD (works)
+>
+> Without switching to IGD at startup...
+>
+> http://david.woodhou.se/dmesg-boot-to-DIS (works)
+> http://david.woodhou.se/dmesg-boot-to-DIS-then-switch-to-IGD (blank)
+>
+
+The general problem, at least for the case of booting to DIS and then 
+switching to IGD, is that the mode for the internal display isn't 
+correct, so it stays black.
+
+It could get the right mode via DDC but this line is muxed as well. 
+0x728 controls the DDC mux, writing 1 lets the IGD access it, 2 is the DIS.
+
+So what happens in dmesg-boot-to-DIS is that the intel card can't get 
+the mode via DDC and falls back to the garbage mode from VBT.
+Interestingly, there is a intel VBT on your MBP8,3, but it doesn't 
+contain the right modes. On my MBP6,2 there isn't a VBT at all and it 
+disables LVDS altogether if 0x728 isn't switched at boot.
+
+Manually switching the mux is a bit messy, so I'm not too surprised that 
+it's blank in dmesg-boot-to-IGD.
+
+The gmux code you're using is a bit outdated, but if you use 
+git://kernel.ubuntu.com/sforshee/linux.git gmux-switcheroo and connect 
+an external display (I tested it with a DP one) you should be able to 
+boot to DIS and switch to the IGD and get output on the external display.
+
+This leaves the problem of how to get i915 the right mode. Generally, 
+there are two options:
+
+- Find a way so it gets the right mode when it initializes the LVDS. 
+This could be done by switching the DDC mux during lvds intialization. 
+See lock_ddc.patch for a crude prototype that works on my laptop if I'm 
+lucky and apple_gmux gets loaded before i915 and nouveau doesn't try to 
+use DDC at the same time.
+Another way would be to get the right EDID without mux switching by 
+querying either the DIS driver or EFI (if you boot into the rEFIt shell 
+you can verify it's there, see http://andreas.meetr.de/efi/log/edid.txt, 
+to get it search for EdidDiscovered/EdidActive and dump it with dmem). 
+But to use this, we need a way to know which display this corresponds to 
+and I'm not sure how to do that.
+
+- Make vga_switcheroo reprobe handle this. This would mean that we start 
+with a possibly broken mode and resize it once the mux get's switched 
+through vga_switcheroo. I'm not sure if thats a good idea.
+
+I'd love to get any input on this, this is the main problem that's 
+keeping apple_gmux switching from working really well.
+
+Andreas
+
+--------------030505060907000306000109
+Content-Type: text/plain; charset=UTF-8; x-mac-type="0"; x-mac-creator="0";
+ name="lock_ddc.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="lock_ddc.patch"
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2Rpc3BsYXkuYyBiL2Ry
+aXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2Rpc3BsYXkuYwppbmRleCBhODUzOGFjLi4yZjA0
+MjhkIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vaTkxNS9pbnRlbF9kaXNwbGF5LmMK
+KysrIGIvZHJpdmVycy9ncHUvZHJtL2k5MTUvaW50ZWxfZGlzcGxheS5jCkBAIC0zMSw2ICsz
+MSw3IEBACiAjaW5jbHVkZSA8bGludXgva2VybmVsLmg+CiAjaW5jbHVkZSA8bGludXgvc2xh
+Yi5oPgogI2luY2x1ZGUgPGxpbnV4L3ZnYWFyYi5oPgorI2luY2x1ZGUgPGxpbnV4L3ZnYV9z
+d2l0Y2hlcm9vLmg+CiAjaW5jbHVkZSA8ZHJtL2RybV9lZGlkLmg+CiAjaW5jbHVkZSAiZHJt
+UC5oIgogI2luY2x1ZGUgImludGVsX2Rydi5oIgpAQCAtNjUwNiw3ICs2NTA3LDExIEBAIHN0
+YXRpYyB2b2lkIGludGVsX3NldHVwX291dHB1dHMoc3RydWN0IGRybV9kZXZpY2UgKmRldikK
+IAlib29sIGRwZF9pc19lZHAgPSBmYWxzZTsKIAlib29sIGhhc19sdmRzOwogCisJLyogU3dp
+dGNoIG11eCBzbyBsdmRzIGlzIGRldGVjdGFibGUgKi8KKwl2Z2Ffc3dpdGNoZXJvb19sb2Nr
+X2RkYyhkZXYtPnBkZXYpOwogCWhhc19sdmRzID0gaW50ZWxfbHZkc19pbml0KGRldik7CisJ
+dmdhX3N3aXRjaGVyb29fdW5sb2NrX2RkYyhkZXYtPnBkZXYpOworCiAJaWYgKCFoYXNfbHZk
+cyAmJiAhSEFTX1BDSF9TUExJVChkZXYpKSB7CiAJCS8qIGRpc2FibGUgdGhlIHBhbmVsIGZp
+dHRlciBvbiBldmVyeXRoaW5nIGJ1dCBMVkRTICovCiAJCUk5MTVfV1JJVEUoUEZJVF9DT05U
+Uk9MLCAwKTsKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L3ZnYS92Z2Ffc3dpdGNoZXJvby5j
+IGIvZHJpdmVycy9ncHUvdmdhL3ZnYV9zd2l0Y2hlcm9vLmMKaW5kZXggNWIzYzdkMS4uZWUx
+MzdjMyAxMDA2NDQKLS0tIGEvZHJpdmVycy9ncHUvdmdhL3ZnYV9zd2l0Y2hlcm9vLmMKKysr
+IGIvZHJpdmVycy9ncHUvdmdhL3ZnYV9zd2l0Y2hlcm9vLmMKQEAgLTQxLDYgKzQxLDcgQEAg
+c3RydWN0IHZnYV9zd2l0Y2hlcm9vX2NsaWVudCB7CiB9OwogCiBzdGF0aWMgREVGSU5FX01V
+VEVYKHZnYXNyX211dGV4KTsKK3N0YXRpYyBERUZJTkVfTVVURVgodmdhc3JfZGRjX211dGV4
+KTsKIAogc3RydWN0IHZnYXNyX3ByaXYgewogCkBAIC01NTMsMyArNTU0LDQ1IEBAIGVycjoK
+IH0KIEVYUE9SVF9TWU1CT0wodmdhX3N3aXRjaGVyb29fcHJvY2Vzc19kZWxheWVkX3N3aXRj
+aCk7CiAKK2ludCB2Z2Ffc3dpdGNoZXJvb19sb2NrX2RkYyhzdHJ1Y3QgcGNpX2RldiAqcGRl
+dikKK3sKKworCXByaW50ayhLRVJOX0lORk8gInZnYV9zd2l0Y2hlcm9vOiBkZGMgbG9ja1xu
+Iik7CisKKwltdXRleF9sb2NrKCZ2Z2Fzcl9tdXRleCk7CisKKwlpZiAodmdhc3JfcHJpdi5o
+YW5kbGVyICYmIHZnYXNyX3ByaXYuaGFuZGxlci0+c3dpdGNoZGRjICYmIAorCQkJdmdhc3Jf
+cHJpdi5oYW5kbGVyLT5nZXRfY2xpZW50X2lkKSB7CisJCWludCBjbGllbnRfaWQgPSB2Z2Fz
+cl9wcml2LmhhbmRsZXItPmdldF9jbGllbnRfaWQocGRldik7CisJCXByaW50ayhLRVJOX0lO
+Rk8gInZnYV9zd2l0Y2hlcm9vOiBkZGMgbG9jayBnb3QgaGFuZGxlclxuIik7CisJCW11dGV4
+X3VubG9jaygmdmdhc3JfbXV0ZXgpOworCQltdXRleF9sb2NrKCZ2Z2Fzcl9kZGNfbXV0ZXgp
+OworCQlyZXR1cm4gdmdhc3JfcHJpdi5oYW5kbGVyLT5zd2l0Y2hkZGMoY2xpZW50X2lkKTsK
+Kwl9IGVsc2UgeworCQlwcmludGsoS0VSTl9JTkZPICJ2Z2Ffc3dpdGNoZXJvbzogZGRjIGxv
+Y2sgbm8gaGFuZGxlclxuIik7CisJfQorCisJbXV0ZXhfdW5sb2NrKCZ2Z2Fzcl9tdXRleCk7
+CisJcmV0dXJuIDA7Cit9CitFWFBPUlRfU1lNQk9MKHZnYV9zd2l0Y2hlcm9vX2xvY2tfZGRj
+KTsKKwordm9pZCB2Z2Ffc3dpdGNoZXJvb191bmxvY2tfZGRjKHN0cnVjdCBwY2lfZGV2ICpw
+ZGV2KQoreworCXN0YXRpYyBzdHJ1Y3QgdmdhX3N3aXRjaGVyb29fY2xpZW50ICphY3RpdmVf
+Y2xpZW50OworCisJcHJpbnRrKEtFUk5fSU5GTyAidmdhX3N3aXRjaGVyb286IGRkYyB1bmxv
+Y2tcbiIpOworCisJbXV0ZXhfbG9jaygmdmdhc3JfbXV0ZXgpOworCWFjdGl2ZV9jbGllbnQg
+PSBmaW5kX2FjdGl2ZV9jbGllbnQoJnZnYXNyX3ByaXYuY2xpZW50cyk7CisKKwlpZiAodmdh
+c3JfcHJpdi5oYW5kbGVyICYmIHZnYXNyX3ByaXYuaGFuZGxlci0+c3dpdGNoZGRjICYmCisJ
+CQlhY3RpdmVfY2xpZW50KQorCQl2Z2Fzcl9wcml2LmhhbmRsZXItPnN3aXRjaGRkYyhhY3Rp
+dmVfY2xpZW50LT5pZCk7CisJZWxzZSAKKwkJcHJpbnRrKEtFUk5fSU5GTyAidmdhX3N3aXRj
+aGVyb286IGRkYyB1bmxvY2sgbm8gaGFuZGxlclxuIik7CisKKwltdXRleF91bmxvY2soJnZn
+YXNyX211dGV4KTsKKwltdXRleF91bmxvY2soJnZnYXNyX2RkY19tdXRleCk7Cit9CitFWFBP
+UlRfU1lNQk9MKHZnYV9zd2l0Y2hlcm9vX3VubG9ja19kZGMpOwpkaWZmIC0tZ2l0IGEvaW5j
+bHVkZS9saW51eC92Z2Ffc3dpdGNoZXJvby5oIGIvaW5jbHVkZS9saW51eC92Z2Ffc3dpdGNo
+ZXJvby5oCmluZGV4IGRkYjQxOWMuLjQ1MzhkZjYgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGlu
+dXgvdmdhX3N3aXRjaGVyb28uaAorKysgYi9pbmNsdWRlL2xpbnV4L3ZnYV9zd2l0Y2hlcm9v
+LmgKQEAgLTMwLDYgKzMwLDcgQEAgZW51bSB2Z2Ffc3dpdGNoZXJvb19jbGllbnRfaWQgewog
+CiBzdHJ1Y3QgdmdhX3N3aXRjaGVyb29faGFuZGxlciB7CiAJaW50ICgqc3dpdGNodG8pKGVu
+dW0gdmdhX3N3aXRjaGVyb29fY2xpZW50X2lkIGlkKTsKKwlpbnQgKCpzd2l0Y2hkZGMpKGVu
+dW0gdmdhX3N3aXRjaGVyb29fY2xpZW50X2lkIGlkKTsKIAlpbnQgKCpwb3dlcl9zdGF0ZSko
+ZW51bSB2Z2Ffc3dpdGNoZXJvb19jbGllbnRfaWQgaWQsCiAJCQkgICBlbnVtIHZnYV9zd2l0
+Y2hlcm9vX3N0YXRlIHN0YXRlKTsKIAlpbnQgKCppbml0KSh2b2lkKTsKQEAgLTYwLDYgKzYx
+LDkgQEAgaW50IHZnYV9zd2l0Y2hlcm9vX3Byb2Nlc3NfZGVsYXllZF9zd2l0Y2godm9pZCk7
+CiAKIGludCB2Z2Ffc3dpdGNoZXJvb19nZXRfY2xpZW50X3N0YXRlKHN0cnVjdCBwY2lfZGV2
+ICpkZXYpOwogCitpbnQgdmdhX3N3aXRjaGVyb29fbG9ja19kZGMoc3RydWN0IHBjaV9kZXYg
+KmRldik7Cit2b2lkIHZnYV9zd2l0Y2hlcm9vX3VubG9ja19kZGMoc3RydWN0IHBjaV9kZXYg
+KmRldik7CisKICNlbHNlCiAKIHN0YXRpYyBpbmxpbmUgdm9pZCB2Z2Ffc3dpdGNoZXJvb191
+bnJlZ2lzdGVyX2NsaWVudChzdHJ1Y3QgcGNpX2RldiAqZGV2KSB7fQo=
+--------------030505060907000306000109--
