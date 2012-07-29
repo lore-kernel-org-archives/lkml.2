@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab2G2SZk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 14:25:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11139 "EHLO mx1.redhat.com"
+	id S1753539Ab2G2SZq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 14:25:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361Ab2G2SZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 14:25:34 -0400
-Date: Sun, 29 Jul 2012 20:22:36 +0200
+	id S1753523Ab2G2SZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 14:25:43 -0400
+Date: Sun, 29 Jul 2012 20:22:44 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <anton@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 08/14] uprobes: kill copy_vma()->uprobe_mmap()
-Message-ID: <20120729182236.GA20342@redhat.com>
+Subject: [PATCH 12/14] uprobes: fix register_for_each_vma()->vma_address()
+	check
+Message-ID: <20120729182244.GA20362@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,46 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kill copy_vma()->uprobe_mmap(new_vma), it is absolutely wrong.
+1. register_for_each_vma() checks that vma_address() == vaddr but
+   this is not enough. We should also ensure that vaddr >= vm_start,
+   find_vma() guarantees "vaddr < vm_end" only.
 
-This new_vma was just initialized to represent the new unmapped area,
-[vm_start, vm_end) was returned by get_unmapped_area() in the caller.
+2. After the prevous changes, register_for_each_vma() is the only
+   reason why vma_address() has to return loff_t, all other users
+   know that we have the valid mapping at this offset and thus the
+   overflow is not possible.
 
-This means that uprobe_mmap()->get_user_pages() will fail for sure,
-simply because find_vma() can never succeed. And I verified that
-sys_mremap()->mremap_to() indeed always fails with the wrong ENOMEM
-code if [addr, addr+old_len] is probed.
+   Change the code to use vaddr_to_offset() instead, imho this looks
+   more clean/understandable and now we can change vma_address().
 
-And why this uprobe_mmap() was added? I believe the intent was wrong.
-Note that the caller is going to do move_page_tables(), all registered
-uprobes are already faulted in, we only change the virtual addresses.
-
-NOTE: However, somehow we need to close the race with uprobe_register()
-which relies on map_info->vaddr. This needs another fix I'll try to do
-later. Probably we need uprobe_mmap() in move_vma() but we can not do
-this right now, this can confuse uprobes_state.counter (which I still
-hope we are going to kill).
+3. While at it, remove the unnecessary type-cast.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
 ---
- mm/mmap.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ kernel/events/uprobes.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 3edfcdf..e5a4614 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2418,9 +2418,6 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
- 			if (new_vma->vm_file) {
- 				get_file(new_vma->vm_file);
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 5c87042..734e199 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -823,12 +823,13 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 			goto free;
  
--				if (uprobe_mmap(new_vma))
--					goto out_free_mempol;
--
- 				if (vma->vm_flags & VM_EXECUTABLE)
- 					added_exe_file_vma(mm);
- 			}
+ 		down_write(&mm->mmap_sem);
+-		vma = find_vma(mm, (unsigned long)info->vaddr);
+-		if (!vma || !valid_vma(vma, is_register))
++		vma = find_vma(mm, info->vaddr);
++		if (!vma || !valid_vma(vma, is_register) ||
++		    vma->vm_file->f_mapping->host != uprobe->inode)
+ 			goto unlock;
+ 
+-		if (vma->vm_file->f_mapping->host != uprobe->inode ||
+-		    vma_address(vma, uprobe->offset) != info->vaddr)
++		if (vma->vm_start > info->vaddr ||
++		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
+ 			goto unlock;
+ 
+ 		if (is_register) {
 -- 
 1.5.5.1
 
