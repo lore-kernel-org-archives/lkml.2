@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab2G2OMO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 10:12:14 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:33617 "EHLO ogre.sisk.pl"
+	id S1753309Ab2G2OMX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 10:12:23 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:33628 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab2G2OMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 10:12:07 -0400
+	id S1753265Ab2G2OMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 10:12:18 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH 3/6] timekeeping: Add suspend and resume of clock event devices
-Date: Sun, 29 Jul 2012 16:15:10 +0200
+Subject: [RFC][PATCH 6/6] sh: MTU2: Introduce clock events suspend/resume routines
+Date: Sun, 29 Jul 2012 16:17:35 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: "Linux-sh list" <linux-sh@vger.kernel.org>,
         Linux PM list <linux-pm@vger.kernel.org>,
@@ -21,104 +21,66 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207291615.10354.rjw@sisk.pl>
+Message-Id: <201207291617.35447.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Some clock event devices, for example such that belong to PM domains,
-need to be handled in a spcial way during the timekeeping suspend
-and resume (which takes place in the system core, or "syscore",
-stages of system power transitions) in analogy with clock sources.
-
-Introduce .suspend() and .resume() callbacks for clock event devices
-that will be executed by timekeeping_suspend/_resume(), respectively,
-next the the clock sources' .suspend() and .resume() callbacks.
+Introduce suspend/resume routines for SH MTU2 clock event devices
+such that if those devices belong to a PM domain, the generic PM
+domains framework will be notified that the given domain may be
+turned off (during system suspend) or that it has to be turned on
+(during system resume).
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- include/linux/clockchips.h |    5 +++++
- kernel/time/clockevents.c  |   24 ++++++++++++++++++++++++
- kernel/time/timekeeping.c  |    2 ++
- 3 files changed, 31 insertions(+)
+ drivers/clocksource/sh_mtu2.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
-Index: linux/include/linux/clockchips.h
+Index: linux/drivers/clocksource/sh_mtu2.c
 ===================================================================
---- linux.orig/include/linux/clockchips.h
-+++ linux/include/linux/clockchips.h
-@@ -97,6 +97,8 @@ struct clock_event_device {
- 	void			(*broadcast)(const struct cpumask *mask);
- 	void			(*set_mode)(enum clock_event_mode mode,
- 					    struct clock_event_device *);
-+	void			(*suspend)(struct clock_event_device *);
-+	void			(*resume)(struct clock_event_device *);
- 	unsigned long		min_delta_ticks;
- 	unsigned long		max_delta_ticks;
- 
-@@ -156,6 +158,9 @@ clockevents_calc_mult_shift(struct clock
- 				      freq, minsec);
+--- linux.orig/drivers/clocksource/sh_mtu2.c
++++ linux/drivers/clocksource/sh_mtu2.c
+@@ -208,6 +208,16 @@ static void sh_mtu2_clock_event_mode(enu
+ 	}
  }
  
-+extern void clockevents_suspend(void);
-+extern void clockevents_resume(void);
-+
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- extern void clockevents_notify(unsigned long reason, void *arg);
- #else
-Index: linux/kernel/time/clockevents.c
-===================================================================
---- linux.orig/kernel/time/clockevents.c
-+++ linux/kernel/time/clockevents.c
-@@ -397,6 +397,30 @@ void clockevents_exchange_device(struct
- 	local_irq_restore(flags);
- }
- 
-+/**
-+ * clockevents_suspend - suspend clock devices
-+ */
-+void clockevents_suspend(void)
++static void sh_mtu2_clock_event_suspend(struct clock_event_device *ced)
 +{
-+	struct clock_event_device *dev;
-+
-+	list_for_each_entry_reverse(dev, &clockevent_devices, list)
-+		if (dev->suspend)
-+			dev->suspend(dev);
++	pm_genpd_syscore_poweroff(&ced_to_sh_mtu2(ced)->pdev->dev);
 +}
 +
-+/**
-+ * clockevents_resume - resume clock devices
-+ */
-+void clockevents_resume(void)
++static void sh_mtu2_clock_event_resume(struct clock_event_device *ced)
 +{
-+	struct clock_event_device *dev;
-+
-+	list_for_each_entry(dev, &clockevent_devices, list)
-+		if (dev->resume)
-+			dev->resume(dev);
++	pm_genpd_syscore_poweron(&ced_to_sh_mtu2(ced)->pdev->dev);
 +}
 +
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- /**
-  * clockevents_notify - notification about relevant events
-Index: linux/kernel/time/timekeeping.c
-===================================================================
---- linux.orig/kernel/time/timekeeping.c
-+++ linux/kernel/time/timekeeping.c
-@@ -733,6 +733,7 @@ static void timekeeping_resume(void)
+ static void sh_mtu2_register_clockevent(struct sh_mtu2_priv *p,
+ 				       char *name, unsigned long rating)
+ {
+@@ -221,6 +231,8 @@ static void sh_mtu2_register_clockevent(
+ 	ced->rating = rating;
+ 	ced->cpumask = cpumask_of(0);
+ 	ced->set_mode = sh_mtu2_clock_event_mode;
++	ced->suspend = sh_mtu2_clock_event_suspend;
++	ced->resume = sh_mtu2_clock_event_resume;
  
- 	read_persistent_clock(&ts);
+ 	dev_info(&p->pdev->dev, "used for clock events\n");
+ 	clockevents_register_device(ced);
+@@ -307,8 +319,12 @@ static int __devinit sh_mtu2_probe(struc
+ 	struct sh_mtu2_priv *p = platform_get_drvdata(pdev);
+ 	int ret;
  
-+	clockevents_resume();
- 	clocksource_resume();
+-	if (!is_early_platform_device(pdev))
+-		pm_genpd_dev_always_on(&pdev->dev, true);
++	if (!is_early_platform_device(pdev)) {
++		struct sh_timer_config *cfg = pdev->dev.platform_data;
++
++		if (cfg->clockevent_rating)
++			pm_genpd_dev_always_on(&pdev->dev, true);
++	}
  
- 	write_seqlock_irqsave(&timekeeper.lock, flags);
-@@ -791,6 +792,7 @@ static int timekeeping_suspend(void)
- 
- 	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
- 	clocksource_suspend();
-+	clockevents_suspend();
- 
- 	return 0;
- }
+ 	if (p) {
+ 		dev_info(&pdev->dev, "kept as earlytimer\n");
 
