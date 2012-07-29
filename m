@@ -1,80 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab2G2U1l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 16:27:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56564 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363Ab2G2U1j (ORCPT
+	id S1753535Ab2G2U1q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 16:27:46 -0400
+Received: from science.horizon.com ([71.41.210.146]:41854 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753363Ab2G2U1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 16:27:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
-Date: Sun, 29 Jul 2012 20:27:33 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de> <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
-In-Reply-To: <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207292027.34157.arnd@arndb.de>
-X-Provags-ID: V02:K0:sKVr8GDFRSOmQyO8KPJn68nrWx9UNIiwlgqmT9MWt22
- BGNHDGlqn2DRC3bwN8B33iLpDTEKhAyFfkLNvP8QQzYsift9rt
- 3W3B0HyxAYK6v2cY4OJeu64GdBkoF3asfk7zhRxpmPGrL8bxbv
- DtS82Y+FPom0ZSKustwR5vpD5mLg55iOP933K/Z9f5Y8+HDzDy
- dUIdJ1UOTlw5cOsuvDsXzrwru/OqkWuMBpZgUkXGE6lkgloocE
- w3Tw8xBeEhPhoEhR4nLRfeMj0FzkiYu3IhpNbNIZOMn9PtjhOc
- v1URfqT5LIMy7GwqfGlw5fZdpnyHnOoXJ6Yul7o5r3lCkqiOYL
- /SXNOM9SipXSINdTktcc=
+	Sun, 29 Jul 2012 16:27:44 -0400
+Date: 29 Jul 2012 16:27:42 -0400
+Message-ID: <20120729202742.26416.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, walken@google.com
+Subject: Re: [PATCH 1/6] rbtree: rb_erase updates and comments
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <CANN689EPE823oV_SFZXHG+18CiD3oknF34=X26sUiKUiMPTeVQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 29 July 2012, Linus Walleij wrote:
-> > +- #interrupt-cells: Should be 2. The first cell contains the GPIO number,
-> > +  whereas the second cell is used to specify flags:
-> > +    bits[3:0] trigger type and level flags
-> > +      1 = low-to-high edge triggered
-> > +      2 = high-to-low edge triggered
-> > +      4 = active high level-sensitive
-> > +      8 = active low level-sensitive
-> 
-> Why on earth would a bunch of flags be an "interrupt cell"?
-> 
-> Maybe there is something about DT bindings I don't get so
-> please educate me.
-> 
-> I can see that OMAP is doing this, but is it a good idea?
-> I really need Rob/Grant to comment on this.
+>> Then the end of case 3 of rb_erase becomes:
+>>         if (child)
+>>                 rb_set_parent_color(child, parent, RB_RED);
 
-It is in fact a good idea, and it's very common to have it. The point is that
-the interrupt controller requires this setting in order to configure that IRQ
-for use, so putting it into a property of the device that triggers the IRQ
-is the right place to have it.
+> Yes. it's actually even nicer, because we know since the child is red,
+> the node being erased is black, and we can thus handle recoloring 'for
+> free' by setting child to black here instead of going through
+> __rb_erase_color() later. And if we could do that for all 1-child
+> cases, it might even be possible to invoke __rb_erase_color() for the
+> no-childs case only, at which point we can drop one of that function's
+> arguments. Worth investigating, I think.
 
-> > +- interrupt-controller: Marks the device as an interrupt controller.
-> > +- nr-gpios: The number of pins supported by the controller.
-> 
-> These two last things look very generic, like something every GPIO
-> driver could want to expose.
-> 
-> I'd really like to have Grant's word on GPIO DT bindings and how these
-> should look, I had some discussion with Wolfram (the I2C maintainer)
-> about bindings turning out less generic than they ought to be, so we
-> need some discussion on this.
-> 
-> Arnd recently consolidated some MMC props, maybe we need to do
-> the same for GPIO drivers.
+I haven't wrapped my head around the recoloring functions yet.  I stopped
+when I realized that if the child is red, the parent must be black,
+but the child might be NULL, in which case the parent could be any color.
 
-The "interrupt-controller" property is standardized by IEEE. Not sure 
-about what specifies the "nr-gpios" one, but it seems to be a good idea
-to have everyone do the same thing here.
+But... oh!  I see!  It's not the node being erased, but the node being
+grafted.  If it has a red child, then it's part of a virtual 3-node, and
+that can be downgraded to a 2-node without requiring any tree rebalancing!
 
-	Arnd
+Here's an (untested!) attempt at writing the code.  Be aware that although
+I use the same variable names, there are significnt differences in what
+they're used for!  In particular, "node" is never chnaged, so there's
+no need for "old", and the successor is "child".
+
+The main simplifcation I did was rename "black" to "rebalance", initially
+set false, and only set "rebalance = rb_is_black(node)" when necessary.
+
+Given the new variable uses, you could merge the "rebalance" and "parent"
+variables, so rebalance = false is implied by parent = NULL.  I'm not
+sure the variable saving is worth the code complexity, though.
+
+void rb_erase(struct rb_node * const node, struct rb_root * const root)
+{
+	struct rb_node *parent;
+	struct rb_node *child = node->rb_right;
+	struct rb_node *tmp = node->rb_left;
+	bool rebalance = false;
+
+	if (!tmp) {
+		/* Case 1: node to erase has no more than 1 child (easy!) */
+		if (!child) {
+			/* Node might be black */
+			rebalance = rb_is_black(node);
+		} else {
+one_child:		/*
+			 * Node has a child: it must be black, and the child
+			 * must be red.  So promote the child to black, and
+			 * no rebalancing needed.
+			 */
+			child->__rb_parent_color = node->__rb_parent_color;
+		}
+		parent = tmp = rb_parent(node);	// Hope compiler can CSE
+	} else if (!child) {
+		/* Still case 1, but this time the child is node->rb_left */
+		child = tmp;
+		goto one_child;
+	} else {
+		/*
+		 * The node we want to erase has both left and right
+		 * children, which makes things difficult.  Let's find the
+		 * next node in the tree to have it fill old's position.
+		 */
+		tmp = child->rb_left;
+		if (!tmp) {
+			/*
+			 * Case 2: Successor is node's right child.
+			 *
+			 *    (n)          (c)
+			 *    / \          / \
+			 *  (x) (c)  ->  (x) (z)
+			 *        \
+			 *        (z)
+			 *
+			 * Node z may or may not exist.  If it exists, it must
+			 * be red, and can be promoted to black with no other
+			 * tree rebalancing.
+			 */
+			tmp = child->rb_right;
+			parent = child;
+		} else {
+			/*
+			 * Case 3: Successor is not direct child; it
+			 * is the left child of a chain (y) of other
+			 * nodes.
+			 *
+			 *    (n)          (c)
+			 *    / \          / \
+			 *  (x) (y)  ->  (x) (y)
+			 *      /            /
+			 *    (c)          (z)
+			 *      \
+			 *      (z)
+			 *
+			 * As above, z may or may not exist.
+			 */
+			do {
+				parent = child;
+				child = tmp;
+				tmp = child->rb_left;
+			} while (tmp);
+
+			child->rb_right = tmp = node->rb_right;
+			rb_set_parent(tmp, child);
+			parent->rb_left = tmp = child->rb_right;
+		}
+		// Variable usage:
+		// "parent" is the bottom of "(y)", which is the same as
+		//	"child" in case 2.
+		// "tmp" is "(z)"
+		// child->rb_right has been set correctly, as has
+		// the pointer to (z).
+		/*
+		 * Here there are two cases, just like in case 1.
+		 * If child had a right child, then child was black
+		 * and its child was red, and can be promoted with no
+		 * rebalancing.  If it did not, child might be either
+		 * color, and its parent rebalancing if it was black.
+		 */
+		if (tmp)
+			// tmp->__rb_parent_color = child->__rb_parent_color;
+			rb_set_parent_color(tmp, parent, RB_BLACK);
+		else
+			rebalance = rb_is_black(child);
+
+		child->rb_left = node->rb_left;
+		child->__rb_parent_color = node->__rb_parent_color;
+		tmp = rb_parent(node);	// Hope compiler can CSE
+	}
+	if (!tmp)
+		root->rb_node = child;
+	else if (tmp->rb_left == node)
+		tmp->rb_left = child;
+	else
+		tmp->rb_right = child;
+	if (rebalance)
+		__rb_erase_color(NULL, parent, root);
+}
+
+> Using a helper doesn't hurt, I think. I'm not sure about the unlikely
+> thing because near-empty trees could be common for some workloads,
+> which is why I've let it the way it currently is.
+
+I wasn't positive, either, but I figured it was easy enough to delete if
+you disagreed.
+
+I did think of one possible simplification: return a pointer to the parent's
+child pointer and update that:
+
+	*rb_pptr(old, parent, root) = new;
+
+where
+
+static inline struct rb_node **rb_pptr(struct rb_node *rb, struct rb_node *p,
+		struct rb_root *root)
+{
+	if (!p)
+		return &root->rb_node;
+	else if (parent->rb_left == node)
+		return &parent->rb_left;
+	else
+		return &parent->rb_right;
+}
+
+> Yeah, I've had a quick look at left-leaning RBtrees, but they didn't
+> seem like an obvious win to me. Plus, I feel like I've been thinking
+> about rbtrees too much already, so I kinda want to take a vacation
+> from them at this point :)
+
+Ah.  Then I'll stop muttering about ideas that imply major rewrites.
+
+> Thanks for your remarks, especially the one about one-child coloring
+> in rb_erase().
+
+You're the one who spotted the major simplification, but I'm glad
+to have been of some minor help.
