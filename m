@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab2G2SZs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 14:25:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58864 "EHLO mx1.redhat.com"
+	id S1753534Ab2G2S0q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 14:26:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32211 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541Ab2G2SZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 14:25:46 -0400
-Date: Sun, 29 Jul 2012 20:22:47 +0200
+	id S1753475Ab2G2SZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 14:25:39 -0400
+Date: Sun, 29 Jul 2012 20:22:40 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <anton@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 13/14] uprobes: rename vma_address() and make it return
-	"unsigned long"
-Message-ID: <20120729182247.GA20365@redhat.com>
+Subject: [PATCH 10/14] uprobes: teach build_probe_list() to consider the
+	range
+Message-ID: <20120729182240.GA20352@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,67 +24,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. vma_address() returns loff_t, this looks confusing and this is
-   unnecessary after the previous change. Make it return "ulong",
-   all callers truncate the result anyway.
+Currently build_probe_list() builds the list of all uprobes attached
+to the given inode, and the caller should filter out those who don't
+fall into the [start,end) range, this is sub-optimal.
 
-2. Its name conflicts with mm/rmap.c:vma_address(), rename it to
-   offset_to_vaddr(), this matches vaddr_to_offset().
+This patch turns find_least_offset_node() into find_node_in_range()
+which returns the first node inside the [min,max] range, and changes
+build_probe_list() to use this node as a starting point for rb_prev()
+and rb_next() to find all other nodes the caller needs. The resulting
+list is no longer sorted but we do not care.
+
+This can speed up both build_probe_list() and the callers, but there
+is another reason to introduce find_node_in_range(). It can be used
+to figure out whether the given vma has uprobes or not, this will be
+needed soon.
+
+While at it, shift INIT_LIST_HEAD(tmp_list) into build_probe_list().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
 ---
- kernel/events/uprobes.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ kernel/events/uprobes.c |  103 +++++++++++++++++++++++------------------------
+ 1 files changed, 50 insertions(+), 53 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 734e199..5c8ceaf 100644
+index 6194edb..c825404 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -112,14 +112,9 @@ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
- 	return false;
+@@ -939,59 +939,66 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+ 		put_uprobe(uprobe);
  }
  
--static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
-+static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
+-/*
+- * Of all the nodes that correspond to the given inode, return the node
+- * with the least offset.
+- */
+-static struct rb_node *find_least_offset_node(struct inode *inode)
++static struct rb_node *
++find_node_in_range(struct inode *inode, loff_t min, loff_t max)
  {
--	loff_t vaddr;
+-	struct uprobe u = { .inode = inode, .offset = 0};
+ 	struct rb_node *n = uprobes_tree.rb_node;
+-	struct rb_node *close_node = NULL;
+-	struct uprobe *uprobe;
+-	int match;
+ 
+ 	while (n) {
+-		uprobe = rb_entry(n, struct uprobe, rb_node);
+-		match = match_uprobe(&u, uprobe);
 -
--	vaddr = vma->vm_start + offset;
--	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+-		if (uprobe->inode == inode)
+-			close_node = n;
++		struct uprobe *u = rb_entry(n, struct uprobe, rb_node);
+ 
+-		if (!match)
+-			return close_node;
 -
--	return vaddr;
-+	return vma->vm_start + offset - ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+-		if (match < 0)
++		if (inode < u->inode) {
+ 			n = n->rb_left;
+-		else
++		} else if (inode > u->inode) {
+ 			n = n->rb_right;
++		} else {
++			if (max < u->offset)
++				n = n->rb_left;
++			else if (min > u->offset)
++				n = n->rb_right;
++			else
++				break;
++		}
+ 	}
+ 
+-	return close_node;
++	return n;
  }
  
- static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
-@@ -775,7 +770,7 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
- 		curr = info;
+ /*
+- * For a given inode, build a list of probes that need to be inserted.
++ * For a given range in vma, build a list of probes that need to be inserted.
+  */
+-static void build_probe_list(struct inode *inode, struct list_head *head)
++static void build_probe_list(struct inode *inode,
++				struct vm_area_struct *vma,
++				unsigned long start, unsigned long end,
++				struct list_head *head)
+ {
+-	struct uprobe *uprobe;
++	loff_t min, max;
+ 	unsigned long flags;
+-	struct rb_node *n;
+-
+-	spin_lock_irqsave(&uprobes_treelock, flags);
+-
+-	n = find_least_offset_node(inode);
++	struct rb_node *n, *t;
++	struct uprobe *u;
  
- 		info->mm = vma->vm_mm;
--		info->vaddr = vma_address(vma, offset);
-+		info->vaddr = offset_to_vaddr(vma, offset);
+-	for (; n; n = rb_next(n)) {
+-		uprobe = rb_entry(n, struct uprobe, rb_node);
+-		if (uprobe->inode != inode)
+-			break;
++	INIT_LIST_HEAD(head);
++	min = ((loff_t)vma->vm_pgoff << PAGE_SHIFT) + start - vma->vm_start;
++	max = min + (end - start) - 1;
+ 
+-		list_add(&uprobe->pending_list, head);
+-		atomic_inc(&uprobe->ref);
++	spin_lock_irqsave(&uprobes_treelock, flags);
++	n = find_node_in_range(inode, min, max);
++	if (n) {
++		for (t = n; t; t = rb_prev(t)) {
++			u = rb_entry(t, struct uprobe, rb_node);
++			if (u->inode != inode || u->offset < min)
++				break;
++			list_add(&u->pending_list, head);
++			atomic_inc(&u->ref);
++		}
++		for (t = n; (t = rb_next(t)); ) {
++			u = rb_entry(t, struct uprobe, rb_node);
++			if (u->inode != inode || u->offset > max)
++				break;
++			list_add(&u->pending_list, head);
++			atomic_inc(&u->ref);
++		}
  	}
- 	mutex_unlock(&mapping->i_mmap_mutex);
+-
+ 	spin_unlock_irqrestore(&uprobes_treelock, flags);
+ }
  
-@@ -1042,7 +1037,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+@@ -1021,9 +1028,8 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	if (!inode)
+ 		return 0;
  
- 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+-	INIT_LIST_HEAD(&tmp_list);
+ 	mutex_lock(uprobes_mmap_hash(inode));
+-	build_probe_list(inode, &tmp_list);
++	build_probe_list(inode, vma, vma->vm_start, vma->vm_end, &tmp_list);
+ 
+ 	ret = 0;
+ 	count = 0;
+@@ -1032,11 +1038,6 @@ int uprobe_mmap(struct vm_area_struct *vma)
  		if (!ret) {
--			loff_t vaddr = vma_address(vma, uprobe->offset);
-+			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+ 			loff_t vaddr = vma_address(vma, uprobe->offset);
  
+-			if (vaddr < vma->vm_start || vaddr >= vma->vm_end) {
+-				put_uprobe(uprobe);
+-				continue;
+-			}
+-
  			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
  			/*
-@@ -1103,7 +1098,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
- 	build_probe_list(inode, vma, start, end, &tmp_list);
+ 			 * We can race against uprobe_register(), see the
+@@ -1092,21 +1093,17 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+ 	if (!inode)
+ 		return;
+ 
+-	INIT_LIST_HEAD(&tmp_list);
+ 	mutex_lock(uprobes_mmap_hash(inode));
+-	build_probe_list(inode, &tmp_list);
++	build_probe_list(inode, vma, start, end, &tmp_list);
  
  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
--		loff_t vaddr = vma_address(vma, uprobe->offset);
-+		unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
- 		/*
- 		 * An unregister could have removed the probe before
- 		 * unmap. So check before we decrement the count.
+ 		loff_t vaddr = vma_address(vma, uprobe->offset);
+-
+-		if (vaddr >= start && vaddr < end) {
+-			/*
+-			 * An unregister could have removed the probe before
+-			 * unmap. So check before we decrement the count.
+-			 */
+-			if (is_swbp_at_addr(vma->vm_mm, vaddr) == 1)
+-				atomic_dec(&vma->vm_mm->uprobes_state.count);
+-		}
++		/*
++		 * An unregister could have removed the probe before
++		 * unmap. So check before we decrement the count.
++		 */
++		if (is_swbp_at_addr(vma->vm_mm, vaddr) == 1)
++			atomic_dec(&vma->vm_mm->uprobes_state.count);
+ 		put_uprobe(uprobe);
+ 	}
+ 	mutex_unlock(uprobes_mmap_hash(inode));
 -- 
 1.5.5.1
 
