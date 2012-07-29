@@ -1,231 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab2G2OXP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 10:23:15 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49708 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab2G2OXO (ORCPT
+	id S1753217Ab2G2Olz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 10:41:55 -0400
+Received: from nm7-vm1.access.bullet.mail.sp2.yahoo.com ([98.139.44.117]:37508
+	"HELO nm7-vm1.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753160Ab2G2Oly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 10:23:14 -0400
-Message-ID: <5015474C.9080103@gmail.com>
-Date: Sun, 29 Jul 2012 16:23:08 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Sun, 29 Jul 2012 10:41:54 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 867798.94806.bm@omp1010.access.mail.sp2.yahoo.com
+X-YMail-OSG: J4A1zL4VM1kKJi8ZdsqvhkHliNH0wFrlJb6v4Anm6nGL6DF
+ YCB7nAnI0L4mxZI.VUOvXqoRcZAzXvFOiVGOMtERsrv2q_CvRtzwvGffoqye
+ hvWXKY6sbvvRZIiRs.mUx0Ph0G66ei2_UMowarr4FDZ.7_wBVmXu349B88dX
+ 5hFXQnYyXlaLT5BnfO7JcVWR.0wRfQEu0G1xGOUsS809zfhCkX_XlWXF1tav
+ pbqA08GFraR147A5Wb5Ncegmei0ijCifXOIryl5eKpJDnH0h1r3FGXjtL_9k
+ G2yin0UxG9HvzrJo1qoP1AyWDrUtZK_ZBymDNSXUwzfzTp7n_jlp4SlgQPxM
+ 4IvJqQRyQsXFm_hThP3VJMm93AIOhS5b4zHdQedTI02e6QeUobhDm0XVHSlf
+ DpKLMywvNxLRhDVNGgDRioBNlYFpcxAvqnVXv2JzspqcBUYs.eR1A9SgEQ5K
+ BhiJRRTdEHIPtmdS.TdmR0oJGzc527YqbyYEm_5Tt
+X-RocketYMMF: webbxcdd
+X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.120.356233
+Message-ID: <1343572912.96149.YahooMailClassic@web5710.biz.mail.ne1.yahoo.com>
+Date: Sun, 29 Jul 2012 07:41:52 -0700 (PDT)
+From: From Mr William Boyd <mrwilliamboyd21@gmail.com>
+Reply-To: mrwilliam_boyd@aol.com
+Subject: Business Proposal Letter Attached.
+To: undisclosed recipients:;
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Takashi Iwai <tiwai@suse.de>, Krzysztof Helt <krzysztof.h1@wp.pl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rene Herman <rene.herman@gmail.com>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] es1688 - freeup resources on init failure
-References: <20120728132046.GA14210@localhost> <501401B1.4070108@gmail.com> <s5hd33fknfg.wl%tiwai@suse.de> <20120729113909.GA14106@localhost>
-In-Reply-To: <20120729113909.GA14106@localhost>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="1348619509-2051744470-1343572912=:96149"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.07.2012 13:39, Fengguang Wu wrote:
->>>  	err = snd_es1688_init(chip, 1);
->>>  	if (err < 0)
->>> -		return err;
->>> +		goto exit_release_dma;
->>>  
->>>  	/* Register device */
->>>  	return snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
->>> +
->>> +exit_release_dma:
->>> +	free_dma(chip->dma8);
->>> +exit_release_irq:
->>> +	free_irq(chip->irq, chip);
->>> +exit_release_region:
->>> +	release_and_free_resource(chip->res_port);
->>> +exit:
->>> +	return err;
->>
->> You can simply call snd_es1688_free(chip) instead of a bunch of
->> labels.  That is, all goto's can be "goto exit", and
->>
->>   exit:
->> 	snd_es1688_free(chip);
->> 	return err;
-> 
-> snd_es1688_free() will call snd_es1688_init() which in turn use the
-> uninitialized spin locks and other data. So I end up with the below
-> patch. snd_device_new() could also return errors and will be handled
-> in the same way.
-> 
-> I don't have the hardware, however tests show it at least fixed the
-> boot time irq mismatch warnings.
-> 
-> Daniel, thanks for your initial implementation and please kindly
-> confirm the below 3rd version :)
-
-Looks good to me, but I don't have the hardware either :)
+--1348619509-2051744470-1343572912=:96149
+Content-Type: text/plain; charset=us-ascii
 
 
-Daniel
+--1348619509-2051744470-1343572912=:96149
+Content-Type: application/pdf; name=A
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="A MUTUAL BUSINESS PROPOSAL.pdf"
 
+JVBERi0xLjQNJeLjz9MNCjcgMCBvYmoNPDwvTGluZWFyaXplZCAxL0wgMTQ2
+MTYvTyA5L0UgMTAwNDEvTiAxL1QgMTQzMjcvSCBbIDQ1OSAxNDZdPj4NZW5k
+b2JqDSAgICAgICAgICAgICAgICAgICAgDQoxOSAwIG9iag08PC9EZWNvZGVQ
+YXJtczw8L0NvbHVtbnMgNC9QcmVkaWN0b3IgMTI+Pi9GaWx0ZXIvRmxhdGVE
+ZWNvZGUvSURbPEVBNDY4NzMyREE1Mjg0NDg4OTkwQkE5Nzc2RUU1MUJEPjxF
+QTQ2ODczMkRBNTI4NDQ4ODk5MEJBOTc3NkVFNTFCRD5dL0luZGV4WzcgMjld
+L0luZm8gNiAwIFIvTGVuZ3RoIDY4L1ByZXYgMTQzMjgvUm9vdCA4IDAgUi9T
+aXplIDM2L1R5cGUvWFJlZi9XWzEgMiAxXT4+c3RyZWFtDQpo3mJiZBBgYGJg
+8gUSDElAgvEvkGDvABLME4EEyzwQsRJEMIHEDoNYLTCxO2kMTIwM00B6GRgp
+J/4zHvwEEGAAZCoLCA0KZW5kc3RyZWFtDWVuZG9iag1zdGFydHhyZWYNCjAN
+CiUlRU9GDQoKMzUgMCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0kgNzgv
+TGVuZ3RoIDY3L1MgMzg+PnN0cmVhbQ0KaN5iYGDgYmBg0mUAApUqBlTACMQs
+DBwNyGJcUMzA8JeBm0FM10tLNOJgmFF7aMcOsCgzA4OZNkQvozVAgAEA+88H
+qw0KZW5kc3RyZWFtDWVuZG9iag04IDAgb2JqDTw8L01ldGFkYXRhIDEgMCBS
+L1BhZ2VMYXlvdXQvT25lQ29sdW1uL1BhZ2VNb2RlL1VzZU5vbmUvUGFnZXMg
+NSAwIFIvVHlwZS9DYXRhbG9nPj4NZW5kb2JqDTkgMCBvYmoNPDwvQ29udGVu
+dHNbMTEgMCBSIDEyIDAgUiAxMyAwIFIgMTQgMCBSIDE1IDAgUiAxNiAwIFIg
+MTcgMCBSIDE4IDAgUl0vQ3JvcEJveFswIDAgNjEyIDc5Ml0vTWVkaWFCb3hb
+MCAwIDYxMiA3OTJdL1BhcmVudCA1IDAgUi9SZXNvdXJjZXM8PC9Gb250PDwv
+RjEgMjIgMCBSL0YyIDI1IDAgUi9GMyAyOCAwIFIvRjQgMzEgMCBSL0Y1IDM0
+IDAgUj4+L1Byb2NTZXRbL1BERi9UZXh0XT4+L1JvdGF0ZSAwL1R5cGUvUGFn
+ZT4+DWVuZG9iag0xMCAwIG9iag08PC9GaWx0ZXIvRmxhdGVEZWNvZGUvRmly
+c3QgMTE2L0xlbmd0aCAxNTc0L04gMTUvVHlwZS9PYmpTdG0+PnN0cmVhbQ0K
+aN7MmH1rHDcQh7+KvoBZvb9AMNhuQwttKLFpCiF/XJzDObDP4e5C22/f+c1K
+Ou1613a2pTHcIK2kkUaj0SPptBRSaCWUN0JroVRSQhuhjHFCW6GcjEJT1lkq
+9/RL1DwIHR21j8LEaIVOwkpSMlJYFbwwSjhNekYLZ6wWxghnkxXGCk8V4tWr
+7mx/vd4ehE+mu1h9+Wm9uflMX153P6z7mhOtfPf6dnWzp2661/fbw/n5/V/v
+T5yP4sRIskBKKZSU4QPXvlndrburzd16/2b959v7u9X2t8tfr7qfD6vbzfXZ
+9uZ2LWR3eVjf/S5i6K7+/rJmNQy323w53O+6P7IV1obT0/chRPE9RTtJfjPk
+2CgczRQS6Rt1KvZ1EK7ztrZHqsNR5ylBW25PfRSx1opEMREoILwPLJxXtLDO
+cx7CNsRU62LOQ0o76CKP+lKXqP+SRznbTTbwfH1iuzhP7ZBv0zrn1vacDxPz
+Lja2PmH7ch59WvKnRp5SxLlxWTf7tLRTctRxX0CzwwdmDw2ekTtql5mw9bln
+VkRFwlJCEUsLl7p+KOR1M/xgyRoLgsfUfQ2DUsYmo8xS32ib2zvjhXWmGsbl
+KrvFHcU2SzQWTJTDgibaSu0zy5w+u9/P9w+H1qWZEIw9VV7CoQ2LWbHpqa3x
+gTB1vtqvgYkJsvy4vb7/tNnedO8227PtflO/X292+8PF59WOgDNEDK0cwfZt
+98sqN9DOdZdfPx5Ao6vd1zVjqbKJev50+LwHnUnr9LTBZghPY1N7TTBu0emG
+6NR+Hp0n5/e3n2b4qbx7HKDuJQHUOVdXlbddbGhTt1eQiwla+wnyKFSejKwE
+rLTL26YYia3PW4/yqKtkxHdpl7dE2w9PpO20RaiLqhrmMqAYoTlty6tOzsec
+L/VVJzOq1I0Rauh41xTeSHHETyG0rsAsQnssgqGY0oihVWvM0D7zrRDVDURt
+YBCWSChlsxDFmWblEKLmIURds0hjqStYDtgiPJFGqtJEjMPYEiJjKYf1XNii
+zbMpOtdPoWiOlCpHnccoWiCzCKVmEUrtGKVBxwalgejZoFTOodRroJTO3YxS
+FRuUnu02q9t/A1CnEgDqhtH0f0u9kQVbF7bc8LQ58pMZFm1tXwNnHBQzUvc3
+9VEEwZuCexjULT9hRx6n3kDLtSPztLSrejmf8jWilA/xaatd5ebapigvV552
+roxPXI3G1yL4p9Fje1v/ZHrpfBXE+Mw46JSzKLertBwQsxwAR3w2V9Dxbah0
+PcRn6S81l1R0254PrcDYohMMDR+yXdHWMuf0EZ/NvdArPVh4Fu/6AKM3YpH2
+yfBsfI7x9Sg+ydgpfLaRMRe1Ma/qA8eMxh9HQytwzGT5MdoG+ByAZRE0/SJo
+hkXQHDzbPa3vicEfCfnZ7sfAXPZYfzmo5J3i3CBAEET4Q+W/QmVt36Cy38vK
+DV7qs6zM27rfastY2UY3v9YbVo6vju3kNGzI10akcQIr5abWMq+9avY3NnKg
+79MHrNR6iMZvZGU2sa7XNCvL2/25rPTLWenwtjfhWawco7DIy2DlxDXxwVXz
+sfDPrHzuVbMwZREm0xJMGvkAk062z3TTPtPdJCadNP0TXWl6XyRvG0peEBw/
+7jaL/tL0lijpJJ403080HT+GxEolbIpcFgCuiF1Hu1AaFtRB+OkmKUxob5jo
+nz+OjyylHxZvRMTbNFAo4i3M9xAnbKQ6R6FlaP9o04+lEr9hLUkkonuLxzeB
+RVGYB/yXbVjHRvq2mp+DMUmcRVxmaWysIWxGWudDJ4HF+HQMWhqL04S2lAbF
+35piTxvqx/X5kPr2jg7hPnXCgBF8qvTflmyGHy0u6/hvL1EbRa85QBJpHt9l
+W3q/UntF4Ce7Sz30lDS9QwwZEX02vnEm/zuC9zUps+TyhA5xHFLaG0f6TtaO
+4ZgaAI0xrnGQSYZhZiWcrbNz+oXHHwvok8uM70+BBNqT42MOEiw+LZbVvb6n
+dp4c6+klgQDgxZ+QgDo4D8HQCPpsxetjMIwFdnlvOSBawbwROFhALP6UBAoq
+BMQgYOFrBEMjJQD6YBgK+3LQpgSHKemAj4UmS/ho9CI+mp6P/wgwAIuUtfIN
+CmVuZHN0cmVhbQ1lbmRvYmoNMTEgMCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVj
+b2RlL0xlbmd0aCA4NDM+PnN0cmVhbQ0KSIm0Vk1P20AQvftX+LgrNdv9tL1H
+aEGiKm0p6anqgRASUEMcPkJFf31nZ9b2OgHRmlRIwbuz+2bmzZuxb7KbbH+c
+vT1UudL5eJbJHP6Ek8rnt/NMCu8rFbZylZc6L6UXHs5dZ99ZzkfKyR3+K186
+8iMff8gOxtnJPwStnBGV/b+BvzZGrZWQmzFuAelcwTHjfYv2BFAhZNUD2uMG
+g1PsmJfsG6zGfFThQzB95MoMdVZVwvad7RO0duwUXEp2xFXFPoGbg2CgvVMO
+sVBEX7jW7CuYP/NRQSt8ooMU3pDIrLRCFTvg08pKbKl+C8i8DAQghS+Ftc+C
+qL8DqazwBYG8C5zW19yUbMVHwN2Cjxy7Cj/XXDl2wSu25Fqy+7B1x0ckBKtZ
+HXZnvMA1HdAFu7zg5jkFvxSaKlzosjS891C+M8A37DG4e4MVjw6PhjnxVhR9
+JwOj9VVASIF+hhiX9a+g3T4rwUB5II/R+IgcriOheA2ZX9CParmdYGkitbiD
+lVjfhoHBVvTvKlzA/VC0aYDuBVEnO3QDAc8xrHAFfT+Ep+6eY5cdbtzG8MIx
+tBM4QhGqGESntVoYvYO6WFuIfn0PcRJgGhThXZgoTSF8FSuDMo+0DXLsZZib
+qecZukPiwTP0WGAN+wr3kFSMYwfCdlbugL0wHkotdJwxxMwKo8Wy1/PwiEr5
+HYVDojQgR8wHbct5FJsxT6nI2W66TNGyRoXjHEpu1R1Kw59pGukc7l5GO+Dh
+fGj7CS70uVcu4uzF5oTHY+whdLQ+A7Sm48A0SXNBp7hu4m/iu4Xxl4gHzV10
+9zRKAbRedonUcWY+ycwwwVuxUTbkkQKZL6lg4IMyRaKnmFOrOsz4fpjslNz0
+PiwNp/AbKwUiftr4E/abtbav0LnzwsUXMrb9Op2yRvckCEsalFTKWZy4cGDa
+f0ViZET9ol3TjHxsobYHDmzGMR5fxnE8tYeDoM67jkvlCGeSeb5qRgtwk7wI
+4FCjwia1VyvPqDIwmBKZtnWrNsxIRLGBd/zCuxjmsoTP36LncmDsoDPfB6Ju
+78qbzO0urQ0Kt17sYDnCBjfxE2mCBjqDhC/7OPEjoJlRRtM310Mre7o6WcT3
+bIUJ538EGAAso8jxDQplbmRzdHJlYW0NZW5kb2JqDTEyIDAgb2JqDTw8L0Zp
+bHRlci9GbGF0ZURlY29kZS9MZW5ndGggODU2Pj5zdHJlYW0NCkiJpFdLb9wg
+EL77V/gIBxMDfuBT1fShtlIPVVfqoeohiZNslGS9TbJN8+87D2zAm0ipV6td
+wQAD8803H+zqS/ZhlX3LfmfHq+zoo861VqXtunx1kZU5fu4us1J1ndPU03lr
+8qZqlMtXt9lPcSaduJOFrsU5tHr82UhTigdZmEZcSd2IExi24gab97Kw4kgW
+tdiy9U42OLXmmehsdxPWsGNalEtrxAXMZttwK23LRlq+Ppe25P53mG7EgIfY
+8Rg2c6lL8VZa7+NXvvrvwE1dqSqOfTrzyTJ/Tat0Ama+0E+n6sTPO1k4Dhtw
+tLUgsE4hI0YQTnNcCSwEhnqw2nSIsMaVlFleA07OKC/ni85p20aVLj6nWujH
+qa45HDfrtLKJn88EARBlxA5i/eOZBVZiN+b7CmlFvT5QcGCaQReANRXVA36v
+ycbOqIkehg1DjnkI3l6qHBhfFiLWqq2UNREvhkWeXKVmzoplfpyqm8QP4bad
+k5NDD9LAgOVg1eIRypiMDNU6jDxx2XOHcI2WJUJRWMvb/fU7c2Z3fkfMZ7R0
+4OLY9wKGntpcaKRdk3kRKctGVS4B6H6ZI5xRJY7OIlEl/E6Jwj5MAGQdJSCK
+cEcQbfpolAcQFUI8Nu4BRLts8OcibP3ApCZwg/rQ9CFUQZTabXwlBF7QPqRk
+y8SkNkaZFKblpWa0ag71UTrlDpI1UFmssMjPV6lbX1BPHtC68mKHrWfUDs0+
+BZFlS1I08h2mE/C7lDBtk2S09Vo2als93uDEux1zkkv10h8OltC9Q4cNYkrF
+xRR6A915FHwi/y7YA868pmJqNQeufe6t8BpftlSzbCqi8cKj2Val3n6ANwaW
+cnIzydbJrTStR/GY9P6pX8SjqjR0zR5MyAokzaanH29DzBtxiMizuZru0UlQ
+xgnEHF6GxPLkAs1iG7GrD+RmWkXEJqj4DUMUiZYlnOVtFxZv3YF4c4QroG3p
+w5oJ55SYcDoe68Np+KYOT7CgmVyV/LjggutcuKvaZqa/7fiKeJSmfmm3Wb0y
+eMO8Ynkx3pJk9M/HtMC5/176jO6Ltn9QukgPnj0D8ruKuXDtxcAmUW2iKD7B
+rnz/s2bsico6eshG+CTvBOjDHwh47E1/IFADkRH5PwEGACx1xlQNCmVuZHN0
+cmVhbQ1lbmRvYmoNMTMgMCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0xl
+bmd0aCA4Njc+PnN0cmVhbQ0KSImkVttu1DAQfc9XRDwgWyImtuNs8giiFUUC
+CSkCIcRD2+1uKtjN0nZB/AZfzHjG8SWtRDGq2jr2eDxz5syxhzfFyVC8L74X
+L4fi+akspRS17vty2BR1aX9utkUt+r6T+CXLlSpNp0XblcOu+MxecGXYhrfs
+hlfSsGteGXbJO3YOn5oJ/qUc/vkIWSvRt8kxZaYjI7omcfSWV5r94qoGl5WU
+Ls5rLlu243plZ7VmkzWwWZHRLa9Uw64grf0aM9xvg4e7vNB6I2QK5YhR3NoA
+yfMTDoheHHGGjrUh4GdkdSDkMeQD/sVFSuyb3YZ+5mArZ0qJ/sLxMQ9eraVI
+U9iEUCgqOtWdEk8drrhGI8AcgQ/J32YF09SNkClpELNpvyx2hN054EkjW+wo
+bgs0bt/u50B96MsyJZgSWzRN0nn7Na3lZGUAYp1mRcflubPNu6ptc6ErjBQj
+R5745sUM8RybEbbCA3WFj3uFha/zvH5oelE3i+ikY3tAPIbVHn2JQyyRP94v
+rueaeMOJugTaWbGorrTnjjCAowJn4B9MqzbUl2ZMsnPvu87SaEGYeWnacSSW
+C7VRbETwMJjtIgVtGJoTvujf1wN2JvoE32SL8uC1DaZJNPzmKVpylftNyg39
+FwcQNwMu+WbIp53pROMYTKBZotnfKaCQ5inZ9CPCchZhXcd9nHnDANtMGlR+
+Zo0Rq/Z/nWht6Y9OBki0JnJEIonDtA/n2WcIVsmlAw+3xiola0J6xyt3zTm8
+0Shc13deBeYOkI68Y1Ql1Iq1X79wzIHhaJkSL3u5jETYRWfpNHonrj333IsN
+Wqzxzl00el7JteltmWKgM2+9Vokm8RO/KUIuXlbxz8xbaOxtgDJAl14VMHGG
+3S3rBD9f4bDxFWzsyNGBnFC7oJ2TnC7pLNg0bZw85dJV1UIryv4jX8U3w1ev
+hfTCeGo5R8PX3MFyDKruX1KmYT/tW3LmLfT6GN4py3eLk+D2AQGuZpX1Eqx1
+BOLSEzmgMd44NOGFPLZyt0oOaKqXok1wywNf9Y1YFADzvnJqSrwKj5j1MtNU
+dhPFtQ/fvyvurDb+6TNGOKHF8eGX9L101SNeda1EoY7SBXnsgHSVZCd29A5I
+hVOfuHY8OuUAwZmN5APMnXCs7yNPL/8IMAA/AcGpDQplbmRzdHJlYW0NZW5k
+b2JqDTE0IDAgb2JqDTw8L0ZpbHRlci9GbGF0ZURlY29kZS9MZW5ndGggOTU2
+Pj5zdHJlYW0NCkiJrFZLT9wwEL7nV+TQgy01bmzneVxaEK220MLSHkoPwAKL
+CgnQ7q74952HnThbqq5ChRbZ4/HMNzPfjJOquq50nMKfjksT52mpqiye3UXf
+xEdZivcysWIqk4r/0fZQJoU4kCYXsdSp2JPG8MEXacUuqpF8H9VOQHQAv3fw
+O/LHuCGVmdSW9Q5ZGWweywROJsE9UvWGyNEMrezi5e6cr9HBBM04Ffh3LLUG
+ne/x7EO0O4s+Rw/Rzix6s2dirVVq6zqeXUUppeDxOkrDhNiiUHUxSAo6JLBT
+dD9lfxybcwQwTsUod5kplMkG7k7ILob2yuTSpELBRosca3Mq//Sit/BS1iod
+enkmO9sYqrQqqoGhNaZ+cSN1IS4AqBULxEw5IeFPrB5t29WltKl4HOU5z9L/
+gB/ontW50oaN3MgkF80KAbe05gguZSXmHEWiCyvOIIRc3ElbihbFS5kA/xtc
+/sJbTu1KFhBconPRki6KK2+z7dVZ54zEF+CKhC5NZIhSSrnqAWgn5iWbmG8C
+JUttILhiOCiBK4AJb1Ck102gth1Eb0Yj2jHZt0DDLBtUYFwZbZVt1BGI5gIa
+1fR1oTaowR146AcazRYaW66qOAFoDB75CfUWFhNpvYJJdeqW/bik1QSlI5Ei
+ysoo1wRfwRJjRBRTHrSGCakJEGL/NCrH2taqHngbVyudGZUXoZ01YFq03ZSg
+ecFUWznSg/Scegzpir+OrJr5vrxFQj51Nu75PjF73knbpltejMJuSqP0ADt0
+NtD/nsARBkJM7UHO24Y9o2OcB7Sj4wW3nvYzgk5WfewsJQUeMv3gxA789/wA
+TvFLEUtrkLDG5XZjDFMEbYNw+gR67zgZFsFggyNy3K57Xnl7JnvBFC6IXcEU
+7ivMkfGaQsej4azTQfhueP1tMOvBdMC9L4f1giO4VnMlOSz3TuHAXAV6O/j+
+s+PmR2+v5ULjkqcGY2E3Ts1a/kbp3wj3YlbudVHjBqGu8T0Oszm+JHmpXmwj
+y1RWsZF9aPMWex0r559+jPy1Yykm5fypT9Aq6A5K3tLnPs/Cjuq2S99JePue
+RERzshP2ZO+Dq+cfW8sMIv0V6d7ikk+GVAA/QbP2FCNTYUQcsU0D+1xhutO0
+ITk7QKj10DPYJ4Ie7M5UwNsAG59hZhz7510e+GjQXtY+k7rGBUYfOTrvOsGG
+yfYXiBnDTzOd49dlWPtByzF0U/AIHM8t69i5FVxHFdt93NAnmXsnmptudAf3
+FkHbB6ndzF/Y4xBL/FuAAQAw48f4DQplbmRzdHJlYW0NZW5kb2JqDTE1IDAg
+b2JqDTw8L0ZpbHRlci9GbGF0ZURlY29kZS9MZW5ndGggODkzPj5zdHJlYW0N
+CkiJpFdLj9MwEL7nV+QAki1RE78S5wgSSCBxQBRxYDlsd+lD221K2QL999gz
+TjxOd1kIWm2UjOf9+Dydvy1ezYv3xbfi5bx4/lqWUopKt205XxZVGf4Oq6IS
+beskfMlSSSuaujRalfPb4jO74zPL1lxVrPRvhr3gyrIlr9mBz6Rlm3B8xR27
+9J+aCf+UgVNr9sYz4dvPIIMM37l0kZo0f+W6Cvp0g69LUN2FI0JFqV7NTLMb
+lHXsOrrnjxd8phQ7JX9vuVd1SgxXIA+6t8EBeIB+r1lbtgonR9BCrHa7pAH8
+xuiP4AcQSogcvQNm4hRwQabgBF0gQW+4rFHLKTOjataV/Es5/+cqNqo0shXK
+YREhyA6CvkELWo2yLC1SL3moj9WRBl6CODiJ8S1S0kAmhYZO96HJSEWpO9QS
+PCHUbVALWsCTI3AtY2/1aYHzfXANtd4NBomp6D44mILqkqnrIXTQTBzugApt
+ugYBXzFlSISoIPR5+O9Sj/RKonns6SQHlUfOW+4rnQJdwnSc1VY9XlujtWjz
++n7kmn3wLlbsibI4g3ZS35hGCZepntZ/prEid/EdzoDP+xYfeTPEAsQx2Q58
+QF/EcXQTvQnTUNXC1gTSDrym0wqFWqaWx+YhMwDNM8Cbf37yz6FFAmEdO82D
+yA9CRiOr1JEhjhFqDfDi+bMWCoQ4pylt3ZCn3SrJQQTr1O2HNEOUDcnZRHqO
+LjHA93LAbkAkbHgaD47CgGP7SXXRzorandcGDaHRfrYDZU9Get8NZSNAIqZ1
+q2nhziN+TG403WrhzP8qcVLo6ImkTYdDDiX6Nb4w9qRx+9K4HqCmAI00UtSZ
+L9MASxoj2lzRBfMNVldP+cxYdsG5mjrasmlCuqnu0LvZrRaSgzf1ny7pkdhZ
+dtNK8ECKoXGn5Ec5I5w7z4+pguIhR/feF38zZbIRVj2eohMO3DOywuVY5Amw
+/V1FBBgWqfOrEEAtwNSOZIwuh3AdZGuZi1dv3CgHaInKCCINaDSqGtyvUyeu
+dqI245UXBq3vHL9MktVvfHckWCSo2sN6U5+pWpBFFs7SEp2Q/pTkCbLvVvT6
+aHI7pxFselMhRxvc2Bzq7WX9YVRJKBRlyY0InqZNFm0OzeLl1jALeeUwZ6q+
+P52LI9mMg3Syce7KQ4CfHAg/OMhalZXYemz39U1lLn8LMAC8g8P9DQplbmRz
+dHJlYW0NZW5kb2JqDTE2IDAgb2JqDTw8L0ZpbHRlci9GbGF0ZURlY29kZS9M
+ZW5ndGggODMwPj5zdHJlYW0NCkiJpFbLbtswELzrK3QpIAI1K5J6UMcGaID2
+ULSAb0kPdRw7QRLLcZMG/vvuLilxKatNwcCAYL6Gy5nZJS+KYy90WTznYlFX
+xU+xUKY4wLcuroUtcvEjX37JPi2z79ljdrbMPpyrXClZmq7Ll5uszPF32Gal
+7DqrqKXyVuemrmWn8+VDdlHcAnSxw12exEI3AGzKcQ/4+0sszDhkizXOzIUq
+2UJqPmHz5laoxi2hzjVBuLjvceg9/FVu7HNS9Ko1sm2iE6TRoNpGVhHOSxqO
+rWRpTym9dx84M502qPZIihJR0GlaRzNNIuL6BzFwnxNbgegNgZAl3NIHAR9H
+L/FPU/sgykY0fueepjrA0VSnKg7YsGLNnBAU7sep10l0VWUtVexADHITDHcF
+HNFWzFaBImq7oNy5KXYiDnGmMfeOtmYGDJkgqvsdynLEmRJwzBvyqjKyqtyp
+vsEGpXMBSwIKlNosE1bheP/U2htoPck5bDIP0MiL0PXUWGzixJxIORhk0YRN
+dlc0MUDsDyEgNkbI8NGVj307wzvi025ud5pIfgyVIl6wdxOPIRxfoAZZT8J7
+Ebx14HZyE63b9jdT3+cBswtlZVQMyQmRzrU2aF2u9Xy5TLeRKWXLkmOSwXAT
++MgHD4XLgWL3BsHe2PHQgXjPu/WYNK4X2aOzc2PgwJaWeuKxY3pd9GEvyqCY
+0hAYWoBsRuOwVEeauiB07aJw0De8NuGEc0opmjHIeMKwfp1hU7srhLF8WQAt
+9aVIUsw0cJPYCC9NetN00lYREArDavKdz7HAyTok9XEi6uoYpi2B0dI51Jck
+W2wDrgPYU4Ugfq/oeRFWHkQzU29H1w96p8iBhlctKhKkgE0tFOMUOEsXC0ck
+MNC2SUTsOtlEgOmJDZeftm8E0Z2WHuPr4A72dHOl7S83QzzEH2vjyJzSIYX9
+KwPWDa8M90IJQCkMq66S1vKTqbJE+HdJJGmtMSEZXBrZWtNbheE4n4fj3gUO
+QqEmGaI7Hr8fsboxstmjeKi3ozhMSH8T7lmaTWtCHAMb+U+9595Ss4rj6KA6
+PJN8vZ68dRF4xQ6wxufV2BprEvw/E4o2MlDR7l5TKP8jwAA5BsEDDQplbmRz
+dHJlYW0NZW5kb2JqDTE3IDAgb2JqDTw8L0ZpbHRlci9GbGF0ZURlY29kZS9M
+ZW5ndGggODY3Pj5zdHJlYW0NCkiJpFc9j9swDN39KzxaQ1RL/oi8Fm2BdiuQ
+pSg6NPElDprYubs4vfz7SqQ+KCcZzkUBN5Yoinx8fPTlaa7/veySnDeNEvAm
+0qVMpcp5rtLVMfmZndmiyronprKeyTxL2ULmy+z0whaiygazdNkbk/aJFX77
+ChujffvLimzPRG18yTrrnB/ZZEdWLNGLdqh/UifoEe7/rW8zPvTPg3H0qo2d
+GQZoXKAVvPubZUWOwcNuQUqwcLob9Njj/ZgoXEhCASxaAoiDqYhX8DQ5A47w
+faMDACPAZqDwPrhkBwHi5o1ncGWSgiDuIKQBh/2U/UpX35LPq+R78px8XCUf
+vohUCJ4XTZOutkn+kBb1khc10uJ1npOaF0IbUE+jwWEDeYTI4bFldTa6mgmB
+228+D3NutADqhwdQW0IlzfGUCYtMtyfEcYvvKI/ZBRM+K3NZ1lHW84ogS8WV
+ihz90M3liCtsAh0uHKAvJ6istYUsM8dt3XMXy1p9esQOPTLX24H3sG8wQZy3
+gJzrfOUpqE8DXoghFI+0/hWDEa5X+9YvrG1dXShYmsCIEAQeDTQZrXwIpH9w
++UAZ5rK/Kg32RBSNZ8qqRVXO7vplDTJ5p3DaaYSNMcUCUVyMGRVlQ34HvAtl
+fUCJKJzfbbDHo/a6IRSzC1GMJM21a0D0jFvE81foPfML6UaqECmxNnDCr7Jn
+SB6ijqeBztiKMw1zyoNQinNgIOBL1IVUaQjQA4/7C1IjKnwlcl6qqPg3nPQV
+uc4nVym58NJqWjgARjohZYW0wXqWQ0/F6GgjTBmXw3hAg+t8GRNaefIyCnde
+zqJueBk7+uT4Dwm4bjHPP/0Ak/zgRly7w0Gm7dzgnSWnleIT8Gfqci24iB0R
+Bjv6KaToydJGBz/gjPJpQGltm+nF0K+wffavpNDroKngvW/hv9CbYUL2u0Ca
+G8Lg4dD4ZEDcEH5CQlKFgr6/Rwbnd44EIgHmdz6bikJR3YEIBrKHeWzct+AI
+SttGcIHdVH/MWusHQFRs5XXBGIWRSZR4anTnU9eJpBNdY4bjDunU+eRUZHNH
+DmA9kCew6gTZdkPvpDGg1VMADUtx+c2uQEIjfL2T4US+lcnJeL6YVTAm8v0f
+uilq3tiOA6SPbFHjXxVYyv5hNwz0ay79J8AAr+7Qmg0KZW5kc3RyZWFtDWVu
+ZG9iag0xOCAwIG9iag08PC9GaWx0ZXIvRmxhdGVEZWNvZGUvTGVuZ3RoIDc0
+MT4+c3RyZWFtDQpIiaxW32/TMBB+z1+RR1sQY58dx3mDwZCGQGioCCHEw351
+nVjXMTbQ+Ot353Mbp62gyaaqSWyfP393953t/UlxWPws9ibFi7emNEZp27bl
+ZFrokn4354VWbRtMbKGBswpCCcar1peTefFNlPJ7OXlX7A8DaqAE7RS4R4KY
+1qgaGORAejHFfymrxov7hQQt7rhxJCtjxQ0+a3EmrU42F9J4cUV2t7ICz0No
+ZRv+/IWfq6EgTsmSZ15fyipBMTaagsuxs8XY+J5nj3EUANSasxcEOZeVx0dc
+B+lFd5hORzqtPWrZplE+9JYdyT8Ykk0OpJCmEZ8l1OIauYJYXHXRTbnjEHLX
+J1mFLCnXbN6PehtEnJjPO8EQcEguKTqXo/g73T5NIJyxhJADpfStdIOOjUJ2
+WoUnoeiccn2gW5LQLItyjP1dTNtcYrEcx89l9aA/MUfsz3lU6m+SYpbhVdHY
+R9R+E1Rghp06TiIwq2MaucSq4KKej1rKGFonW20cYwMmiqjD2cewaY4gxyOG
+aotEYZeduVHB5ejPN3FcD0eBh6bEV/CAL6vrsAlba9UP9Rbn7Ro9RXDbsOwa
+RdR+E1Mj/tBOltyPZVqlxFFgNBseS4P1TSG7l7h3nGLzJW9u2GK7WTThv6Kx
+k9i9av496rHvcV3R88qt/Mbhm7NiOijRFg+22j9eMLS+r5VJVTiJrkeRd4cP
+752zxdWyOjEUr6kYFstjrU7aoo0wNreQwYXgH9KqgzK+x+UZgkEzGAhDS3tU
+BjScTNA9gGo4gFO6T6IJYSgKaFhHGcwEtF+PawAzGAXcOspwJhDoKpZjgIFx
+R73z/0vwjtKvQblc+TMSNGs5avtHugDYJPs0tLykYU92BTvvJnPvKc8etZGn
+eugIblfxLk7aVrkE8kE2eI7ZdDNiD77gE++1Joj3VNTxcUAuv0JDmlBK3N72
+qPsj7aBfsfvNJpl6B6cCxNrMCOVeHRblgwADAHAIgjYNCmVuZHN0cmVhbQ1l
+bmRvYmoNMSAwIG9iag08PC9MZW5ndGggMzc1NS9TdWJ0eXBlL1hNTC9UeXBl
+L01ldGFkYXRhPj5zdHJlYW0NCjw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0i
+VzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+Cjx4OnhtcG1ldGEgeG1sbnM6
+eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUu
+Mi1jMDAxIDYzLjEzOTQzOSwgMjAxMC8wOS8yNy0xMzozNzoyNiAgICAgICAg
+Ij4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8x
+OTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlw
+dGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6ZGM9Imh0dHA6
+Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIj4KICAgICAgICAgPGRjOmZv
+cm1hdD5hcHBsaWNhdGlvbi9wZGY8L2RjOmZvcm1hdD4KICAgICAgICAgPGRj
+OmNyZWF0b3I+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAgICAgICAgICAg
+ICA8cmRmOmxpPkNpbmR5PC9yZGY6bGk+CiAgICAgICAgICAgIDwvcmRmOlNl
+cT4KICAgICAgICAgPC9kYzpjcmVhdG9yPgogICAgICAgICA8ZGM6dGl0bGU+
+CiAgICAgICAgICAgIDxyZGY6QWx0PgogICAgICAgICAgICAgICA8cmRmOmxp
+IHhtbDpsYW5nPSJ4LWRlZmF1bHQiPk1pY3Jvc29mdCBXb3JkIC0gQSBNVVRV
+QUwgQlVTSU5FU1MgIFBST1BPU0FMPC9yZGY6bGk+CiAgICAgICAgICAgIDwv
+cmRmOkFsdD4KICAgICAgICAgPC9kYzp0aXRsZT4KICAgICAgPC9yZGY6RGVz
+Y3JpcHRpb24+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIi
+CiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94
+YXAvMS4wLyI+CiAgICAgICAgIDx4bXA6Q3JlYXRlRGF0ZT4yMDEyLTA2LTE5
+VDA1OjI1OjIyKzAyOjAwPC94bXA6Q3JlYXRlRGF0ZT4KICAgICAgICAgPHht
+cDpDcmVhdG9yVG9vbD5NaWNyb3NvZnQgV29yZCAtIEEgTVVUVUFMIEJVU0lO
+RVNTICBQUk9QT1NBTDwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1w
+Ok1vZGlmeURhdGU+MjAxMi0wNi0xOVQwNzoyODoxOSswMjowMDwveG1wOk1v
+ZGlmeURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMTItMDYt
+MTlUMDc6Mjg6MTkrMDI6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgIDwv
+cmRmOkRlc2NyaXB0aW9uPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjph
+Ym91dD0iIgogICAgICAgICAgICB4bWxuczpwZGY9Imh0dHA6Ly9ucy5hZG9i
+ZS5jb20vcGRmLzEuMy8iPgogICAgICAgICA8cGRmOlByb2R1Y2VyPmRvUERG
+IFZlciA3LjEgQnVpbGQgMzI5IChXaW5kb3dzIDcgKFNlcnZpY2UgUGFjayAx
+KSAtIFZlcnNpb246IDYuMS43NjAxIChQbGF0Zm9ybTogeDY0KSk8L3BkZjpQ
+cm9kdWNlcj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgICAgIDxyZGY6
+RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnht
+cE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIj4KICAgICAg
+ICAgPHhtcE1NOkRvY3VtZW50SUQ+dXVpZDpkODBjMjgxMi03NmJkLTQyODgt
+Yjk5NS0xODQ1Zjk3Y2RiNDM8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAg
+IDx4bXBNTTpJbnN0YW5jZUlEPnV1aWQ6ODFkOWYxZDYtOTc3My00ZTg0LTk2
+MTctOGNkOTU0OGJiOTQxPC94bXBNTTpJbnN0YW5jZUlEPgogICAgICA8L3Jk
+ZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAg
+ICAgICAgICAgICAgICAgICAgIAo8P3hwYWNrZXQgZW5kPSJ3Ij8+DQplbmRz
+dHJlYW0NZW5kb2JqDTIgMCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0Zp
+cnN0IDQvTGVuZ3RoIDQ4L04gMS9UeXBlL09ialN0bT4+c3RyZWFtDQpo3jJV
+MFCwsdF3zi/NK1Ew1PfOTCmOtgSKBcXqh1QWpOoHJKanFtvZAQQYANZ3C4AN
+CmVuZHN0cmVhbQ1lbmRvYmoNMyAwIG9iag08PC9GaWx0ZXIvRmxhdGVEZWNv
+ZGUvRmlyc3QgNC9MZW5ndGggMjIyL04gMS9UeXBlL09ialN0bT4+c3RyZWFt
+DQpo3pSOPU/DMBRF/8rbGguR2IY6JKoqpQ1ISA21cEOXLFHsCovQJ704fPx7
+PCCGbmx3uPfco4DDapVVc3hFSrb+bL9ZtiXXB4/nug8uqUvJheRKFHwpl1Je
+cbngfPHbiqPGD4QTngIckSxcQwVNe2irHWxa8/h0bwyAft7rval2LGvQXmJz
+eSeKP6wmtPPgKLGo6wd4cQR5KmAz+9HCjSygS45REz8nyGM2jj784ED3wxuI
+jsX/OJmifQkqFWmuuIg1PfbhhPRewpe67VjHWHbwYXT/s1+vfwQYAAjoV9YN
+CmVuZHN0cmVhbQ1lbmRvYmoNNCAwIG9iag08PC9EZWNvZGVQYXJtczw8L0Nv
+bHVtbnMgMy9QcmVkaWN0b3IgMTI+Pi9GaWx0ZXIvRmxhdGVEZWNvZGUvSURb
+PEVBNDY4NzMyREE1Mjg0NDg4OTkwQkE5Nzc2RUU1MUJEPjxFQTQ2ODczMkRB
+NTI4NDQ4ODk5MEJBOTc3NkVFNTFCRD5dL0luZm8gNiAwIFIvTGVuZ3RoIDM3
+L1Jvb3QgOCAwIFIvU2l6ZSA3L1R5cGUvWFJlZi9XWzEgMiAwXT4+c3RyZWFt
+DQpo3mJiYGBgYlS3ZGLg/8HEwNDDxMBozcR4kgvIZgQIMAAoyQMUDQplbmRz
+dHJlYW0NZW5kb2JqDXN0YXJ0eHJlZg0KMTE2DQolJUVPRg0K
 
-> ---
-> es1688 - freeup resources on init failure
-> 
-> This will fix the following oops:
-> 
-> [    6.169981] genirq: Flags mismatch irq 5. 00000000 (ES1688) vs. 00000000 (ES1688)
-> [    6.170851] Pid: 1, comm: swapper Not tainted 3.5.0-00004-gceee0e9 #14
-> [    6.170851] Call Trace:
-> [    6.170851]  [<c1062237>] ? __setup_irq+0x3c7/0x420
-> [    6.170851]  [<c1062486>] ? request_threaded_irq+0x76/0x140
-> [    6.170851]  [<c1290220>] ? snd_es1688_ioctl+0x10/0x10
-> [    6.170851]  [<c10624c2>] ? request_threaded_irq+0xb2/0x140
-> [    6.170851]  [<c1291196>] ? snd_es1688_create+0x96/0x330
-> [    6.170851]  [<c138365d>] ? snd_gusextreme_probe+0x18d/0x5a2
-> [    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-> [    6.170851]  [<c10db22f>] ? sysfs_create_link+0xf/0x20
-> [    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-> [    6.170851]  [<c11d1502>] ? isa_bus_probe+0x12/0x20
-> [    6.170851]  [<c11c9b95>] ? driver_probe_device+0x55/0x1c0
-> [    6.170851]  [<c13ae04f>] ? _raw_spin_unlock+0xf/0x30
-> [    6.170851]  [<c13705ea>] ? klist_next+0x6a/0xe0
-> [    6.170851]  [<c11d15c1>] ? isa_bus_match+0x21/0x40
-> [    6.170851]  [<c11c8a24>] ? bus_for_each_drv+0x34/0x70
-> [    6.170851]  [<c11c9e4b>] ? device_attach+0x7b/0x90
-> [    6.170851]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-> [    6.170851]  [<c11c8bff>] ? bus_probe_device+0x5f/0x80
-> [    6.170851]  [<c11c7493>] ? device_add+0x573/0x620
-> [    6.170851]  [<c1042820>] ? complete_all+0x40/0x60
-> [    6.170851]  [<c13ae08a>] ? _raw_spin_unlock_irqrestore+0x1a/0x30
-> [    6.170851]  [<c11d16c6>] ? isa_register_driver+0xb6/0x150
-> [    6.170851]  [<c15c9002>] ? alsa_card_gusmax_init+0xf/0xf
-> [    6.170851]  [<c15a99bc>] ? do_one_initcall+0x7f/0x12b
-> [    6.170851]  [<c15a9b7a>] ? kernel_init+0x112/0x1a9
-> [    6.170851]  [<c15a9423>] ? do_early_param+0x77/0x77
-> [    6.170851]  [<c15a9a68>] ? do_one_initcall+0x12b/0x12b
-> [    6.170851]  [<c13aefbe>] ? kernel_thread_helper+0x6/0xd
-> [    6.190170] es1688: can't grab IRQ 5
-> [    6.190613] genirq: Flags mismatch irq 5. 00000000 (ES1688) vs. 00000000 (ES1688)
-> [    6.191566] Pid: 1, comm: swapper Not tainted 3.5.0-00004-gceee0e9 #14
-> [    6.192394] Call Trace:
-> [    6.192685]  [<c1062237>] ? __setup_irq+0x3c7/0x420
-> [    6.193342]  [<c1062486>] ? request_threaded_irq+0x76/0x140
-> [    6.194081]  [<c1290220>] ? snd_es1688_ioctl+0x10/0x10
-> [    6.194607]  [<c10624c2>] ? request_threaded_irq+0xb2/0x140
-> [    6.194607]  [<c1291196>] ? snd_es1688_create+0x96/0x330
-> [    6.194607]  [<c138365d>] ? snd_gusextreme_probe+0x18d/0x5a2
-> [    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-> [    6.194607]  [<c10db22f>] ? sysfs_create_link+0xf/0x20
-> [    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-> [    6.194607]  [<c11d1502>] ? isa_bus_probe+0x12/0x20
-> [    6.194607]  [<c11c9b95>] ? driver_probe_device+0x55/0x1c0
-> [    6.194607]  [<c13ae04f>] ? _raw_spin_unlock+0xf/0x30
-> [    6.194607]  [<c13705ea>] ? klist_next+0x6a/0xe0
-> [    6.194607]  [<c11d15c1>] ? isa_bus_match+0x21/0x40
-> [    6.194607]  [<c11c8a24>] ? bus_for_each_drv+0x34/0x70
-> [    6.194607]  [<c11c9e4b>] ? device_attach+0x7b/0x90
-> [    6.194607]  [<c11c9d80>] ? __driver_attach+0x80/0x80
-> [    6.194607]  [<c11c8bff>] ? bus_probe_device+0x5f/0x80
-> [    6.194607]  [<c11c7493>] ? device_add+0x573/0x620
-> [    6.194607]  [<c1042820>] ? complete_all+0x40/0x60
-> [    6.194607]  [<c13ae08a>] ? _raw_spin_unlock_irqrestore+0x1a/0x30
-> [    6.194607]  [<c11d16c6>] ? isa_register_driver+0xb6/0x150
-> [    6.194607]  [<c15c9002>] ? alsa_card_gusmax_init+0xf/0xf
-> [    6.194607]  [<c15a99bc>] ? do_one_initcall+0x7f/0x12b
-> [    6.194607]  [<c15a9b7a>] ? kernel_init+0x112/0x1a9
-> [    6.194607]  [<c15a9423>] ? do_early_param+0x77/0x77
-> [    6.194607]  [<c15a9a68>] ? do_one_initcall+0x12b/0x12b
-> [    6.194607]  [<c13aefbe>] ? kernel_thread_helper+0x6/0xd
-> [    6.210779] es1688: can't grab IRQ 5
-> [    6.211305] gusextreme: probe of gusextreme.0 failed with error -16
-> 
-> Signed-off-by: Daniel Mack <zonque@gmail.com>
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  include/sound/es1688.h        |    1 
->  sound/isa/es1688/es1688_lib.c |   34 +++++++++++++++++++++-----------
->  2 files changed, 24 insertions(+), 11 deletions(-)
-> 
-> --- linux.orig/sound/isa/es1688/es1688_lib.c	2012-07-29 18:59:09.820640797 +0800
-> +++ linux/sound/isa/es1688/es1688_lib.c	2012-07-29 18:59:11.576640840 +0800
-> @@ -612,10 +612,10 @@ static int snd_es1688_capture_close(stru
->  
->  static int snd_es1688_free(struct snd_es1688 *chip)
->  {
-> -	if (chip->res_port) {
-> +	if (chip->hardware != ES1688_HW_UNDEF)
->  		snd_es1688_init(chip, 0);
-> +	if (chip->res_port)
->  		release_and_free_resource(chip->res_port);
-> -	}
->  	if (chip->irq >= 0)
->  		free_irq(chip->irq, (void *) chip);
->  	if (chip->dma8 >= 0) {
-> @@ -657,19 +657,27 @@ int snd_es1688_create(struct snd_card *c
->  		return -ENOMEM;
->  	chip->irq = -1;
->  	chip->dma8 = -1;
-> +	chip->hardware = ES1688_HW_UNDEF;
->  	
-> -	if ((chip->res_port = request_region(port + 4, 12, "ES1688")) == NULL) {
-> +	chip->res_port = request_region(port + 4, 12, "ES1688");
-> +	if (chip->res_port == NULL) {
->  		snd_printk(KERN_ERR "es1688: can't grab port 0x%lx\n", port + 4);
-> -		return -EBUSY;
-> +		err = -EBUSY;
-> +		goto exit;
->  	}
-> -	if (request_irq(irq, snd_es1688_interrupt, 0, "ES1688", (void *) chip)) {
-> +
-> +	err = request_irq(irq, snd_es1688_interrupt, 0, "ES1688", (void *) chip);
-> +	if (err < 0) {
->  		snd_printk(KERN_ERR "es1688: can't grab IRQ %d\n", irq);
-> -		return -EBUSY;
-> +		goto exit;
->  	}
-> +
->  	chip->irq = irq;
-> -	if (request_dma(dma8, "ES1688")) {
-> +	err = request_dma(dma8, "ES1688");
-> +
-> +	if (err < 0) {
->  		snd_printk(KERN_ERR "es1688: can't grab DMA8 %d\n", dma8);
-> -		return -EBUSY;
-> +		goto exit;
->  	}
->  	chip->dma8 = dma8;
->  
-> @@ -685,14 +693,18 @@ int snd_es1688_create(struct snd_card *c
->  
->  	err = snd_es1688_probe(chip);
->  	if (err < 0)
-> -		return err;
-> +		goto exit;
->  
->  	err = snd_es1688_init(chip, 1);
->  	if (err < 0)
-> -		return err;
-> +		goto exit;
->  
->  	/* Register device */
-> -	return snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
-> +	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
-> +exit:
-> +	if (err)
-> +		snd_es1688_free(chip);
-> +	return err;
->  }
->  
->  static struct snd_pcm_ops snd_es1688_playback_ops = {
-> --- linux.orig/include/sound/es1688.h	2012-07-29 18:59:09.820640797 +0800
-> +++ linux/include/sound/es1688.h	2012-07-29 18:59:13.000640873 +0800
-> @@ -29,6 +29,7 @@
->  #define ES1688_HW_AUTO		0x0000
->  #define ES1688_HW_688		0x0001
->  #define ES1688_HW_1688		0x0002
-> +#define ES1688_HW_UNDEF	0x0003
->  
->  struct snd_es1688 {
->  	unsigned long port;		/* port of ESS chip */
-> 
-
+--1348619509-2051744470-1343572912=:96149--
