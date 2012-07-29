@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab2G2XZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 19:25:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39443 "EHLO
+	id S1753785Ab2G2X01 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 19:26:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43657 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790Ab2G2XZh (ORCPT
+	with ESMTP id S1753665Ab2G2X0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 19:25:37 -0400
+	Sun, 29 Jul 2012 19:26:25 -0400
 MIME-Version: 1.0
 X-Originating-IP: [2001:470:1f05:1640:cab:32f2:2e5d:2fb]
-Date: Sun, 29 Jul 2012 16:25:37 -0700
-Message-ID: <CAOesGMgVUuVxh8Ppp0ce=6-Ze8Qht5t15jWu57DzLrOrt0q9xw@mail.gmail.com>
-Subject: [GIT PULL 1/2] ARM: arm-soc soc updates, take 2
+Date: Sun, 29 Jul 2012 16:26:25 -0700
+Message-ID: <CAOesGMgCOwkFM0nZ9aHhrP=P5XhnjUVVccY4YS3-go0PmJbKWw@mail.gmail.com>
+Subject: [GIT PULL 2/2] ARM: arm-soc board updates, take 2
 From: Olof Johansson <olof@lixom.net>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -21,138 +21,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the second batch of SoC updates for the 3.6 merge window,
-containing parts that arrived close to the merge window opening and
-thus needed to sit in linux-next for a while.
+This branch contains board updates, mostly for shmobile, but also a
+couple for PXA.
 
-Most contents is updates of Renesas shmobile, with a couple of
-Samsung Exynos patches in the mix.
+The shmobile platforms are still in the early stages of DT enablement,
+so there's a bit more updates here than we'd ideally want to see:
+- regulator updates to provide some fixed regulators on several boards
+- gpio support updates for multiple boards
+- misc updates for recently-introduced boards armadillo800eva and kzm9g
+- defconfig updates
 
 ----------------------------------------------------------------
 
-The following changes since commit 6ee127b7dd63afe4d6d0a58293786bf4bf336850:
+The following changes since commit a737874bda296ea1b4876564970c3a0107834efc:
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc
+  Merge tag 'soc2' into HEAD
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/soc2
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/boards2
 
-for you to fetch changes up to 537cd80cea370c530d455bc8e00ef0673ba165cb:
+for you to fetch changes up to 43cb4a02d27ad9525ad23984d4fd06972810439f:
 
-  Merge branch 'samsung/devel-2' into late/soc
+  Merge branch 'board-specific' of git://github.com/hzhuang1/linux
+into late/board
 
 ----------------------------------------------------------------
 
 Arnd Bergmann (3):
-      Merge branch 'soc' of git://git.kernel.org/.../rafael/renesas
-into late/soc
-      Merge tag 'v3.5-rc7' into late/soc
-      Merge branch 'samsung/devel-2' into late/soc
+      Merge tag 'topic/fixed' of
+git://git.kernel.org/.../broonie/regulator into late/board
+      Merge branch 'board' of git://git.kernel.org/.../rafael/renesas
+into late/board
+      Merge branch 'board-specific' of git://github.com/hzhuang1/linux
+into late/board
 
-Jaecheol Lee (1):
-      [CPUFREQ] EXYNOS5250: Add support max 1.7GHz for EXYNOS5250
+Guennadi Liakhovetski (12):
+      ARM: mach-shmobile: add 3.3V and 1.8V fixed regulators to mackerel
+      ARM: mach-shmobile: add fixed voltage regulators to ag5evm
+      ARM: mach-shmobile: add fixed voltage regulators to ap4evb
+      ARM: mach-shmobile: add fixed voltage regulators to armadillo800eva
+      ARM: mach-shmobile: add fixed voltage regulators to bonito
+      ARM: mach-shmobile: add fixed voltage regulators to g4evm
+      ARM: mach-shmobile: add fixed voltage regulators to kota2
+      ARM: mach-shmobile: add fixed voltage regulators to kzm9d
+      ARM: mach-shmobile: add fixed voltage regulators to kzm9g
+      ARM: mach-shmobile: add fixed voltage regulators to marzen
+      ARM: mach-shmobile: add SDHI2 to the 2.8V fixed regulator
+consumers on kzm9g
+      ARM: mach-shmobile: select the fixed regulator driver on several boards
 
-Kuninori Morimoto (28):
-      ARM: shmobile: r8a7740: add HDMI interrupt support
-      ARM: shmobile: r8a7740: add HDMI clock support
-      ARM: shmobile: r8a7740: add HDMI GPIO support
-      ARM: shmobile: r8a7740: add MERAM work-around
-      ARM: shmobile: r8a7740: add CEU clock support
-      ARM: shmobile: r8a7740: add FSI parent clock support
-      ARM: shmobile: r8a7740: add FSI-B (for HDMI) GPIO support
-      ARM: shmobile: sh73a0: add FSI clock
-      ARM: shmobile: sh7372: remove unused sh7372_a3sp_init() on !CONFIG_PM
-      ARM: shmobile: add common extra gpio functions
-      ARM: shmobile: add common DMAEngine definitions
-      ARM: shmobile: r8a7740: add DMAEngine support for FSI
-      ARM: shmobile: r8a7740: add DMAEngine support for SDHI
-      ARM: shmobile: r8a7740: add DMAEngine support for USB
-      ARM: shmobile: use common DMAEngine definitions on r8a7740
-      ARM: shmobile: sh73a0: add USB clock support
-      ARM: shmobile: sh73a0: add DMAEngine support for MPDMAC
-      ARM: shmobile: use common DMAEngine definitions on sh73a0
-      ARM: shmobile: use common DMAEngine definitions on sh7372
-      ARM: shmobile: soc-core: add R-mobile PM domain common APIs
-      ARM: shmobile: r8a7740: fixup: MSEL1CR 7bit control
-      ARM: shmobile: r8a7740: add A4S pm domain support
-      ARM: shmobile: r8a7740: add A3SP pm domain support
-      ARM: shmobile: r8a7740: add A4LC pm domain support
-      ARM: shmobile: sh7372: add pm-rmobile domain support
-      ARM: shmobile: mackerel: switch to using pm-rmobile API
-      ARM: shmobile: ap4evb: switch to using pm-rmobile API
-      ARM: shmobile: sh7372: completely switch over to using pm-rmobile API
+Kuninori Morimoto (19):
+      ARM: shmobile: armadillo800eva: enable HDMI
+      ARM: shmobile: kzm9g: enable FSI-AK4648
+      ARM: shmobile: armadillo800eva: enable camera
+      ARM: shmobile: armadillo800eva: enable FSI-WM8978 sound
+      ARM: shmobile: armadillo800eva: enable FSI-HDMI sound
+      ARM: shmobile: armadillo800eva: enable DMAEngine on FSI
+      ARM: shmobile: armadillo800eva: enable DMAEngine on SDHI
+      ARM: shmobile: armadillo800eva: enable DMAEngine on USB
+      ARM: shmobile: use common extra gpio functions on armadillo800eva
+      ARM: shmobile: kzm9g: enable USB function
+      ARM: shmobile: kzm9g: enable MicroSD
+      ARM: shmobile: kzm9g: enable DMAEngine on FSI
+      ARM: shmobile: kzm9g: enable DMAEngine on MMCIF
+      ARM: shmobile: use common extra gpio functions on Mackerel
+      ARM: shmobile: use common extra gpio functions on ap4evb
+      ARM: shmobile: use common extra gpio functions on g4evm
+      ARM: shmobile: armadillo800eva: USB Func enables external IRQ mode
+      ARM: shmobile: armadillo800eva: A4LC domain includes LCDC
+      ARM: shmobile: armadillo800eva: A3SP domain includes USB
 
-Magnus Damm (5):
-      ARM: shmobile: Use INTCA with sh7372 A3SM power domain
-      ARM: shmobile: sh7372 A3SM CPUIdle support
-      ARM: mach-shmobile: r8a7740 generic board support via DT
-      ARM: mach-shmobile: sh7377 generic board support via DT
-      ARM: shmobile: Take cpuidle dependencies into account correctly
+Magnus Damm (1):
+      ARM: mach-shmobile: kzm9d: Add defconfig
 
-Nobuhiro Iwamatsu (1):
-      ARM: mach-shmobile: Convert sh_clk_mstp32_register to sh_clk_mstp_register
+Paul Bolle (1):
+      ARM: pxa: remove eseries.h
 
-Rafael J. Wysocki (13):
-      Merge branch 'renesas-sh73a0' into renesas-soc
-      Merge branch 'renesas-soc-core' into renesas-r8a7740
-      Merge branch 'renesas-soc-core' into renesas-sh73a0
-      Merge branch 'renesas-soc-core' into renesas-sh7372
-      Merge branch 'renesas-soc-core' into renesas-r8a7740
-      Merge branch 'renesas-soc-core' into renesas-sh7372
-      ARM: shmobile: Fix build problem in pm-sh7372.c for unusual .config
-      Merge branch 'renesas-fixes' into renesas-soc
-      Merge branch 'renesas-soc-core' into renesas-soc
-      Merge branch 'renesas-r8a7740' into renesas-soc
-      Merge branch 'renesas-sh73a0' into renesas-soc
-      Merge branch 'renesas-sh7372' into renesas-soc
-      Merge branch 'renesas-sh7377' into renesas-soc
+Paul Parsons (1):
+      ARM: pxa: hx4700: Use DEFINE_RES_* macros consistently
 
-Sachin Kamat (3):
-      ARM: EXYNOS: Move G2D clock entries to clock-exynos4210.c file
-      ARM: EXYNOS: Add G2D related clock entries for SMDK4X12
-      ARM: S3C64XX: Add header file protection macros in pm-core.h
+Rafael J. Wysocki (22):
+      Merge branch 'renesas-kzm9g' into renesas-board
+      Merge branch 'renesas-r8a7740' into renesas-armadillo
+      Merge branch 'renesas-sh73a0' into renesas-kzm9g
+      Merge tag 'topic/fixed' of
+git://git.kernel.org/.../broonie/regulator into renesas-board-common
+      Merge branch 'renesas-board-common' into renesas-mackerel
+      Merge branch 'renesas-board-common' into renesas-ap4evb
+      Merge branch 'renesas-board-common' into renesas-armadillo
+      Merge branch 'renesas-board-common' into renesas-g4evm
+      Merge branch 'renesas-board-common' into renesas-kzm9g
+      Merge branch 'renesas-r8a7740' into renesas-armadillo
+      Merge branch 'renesas-soc' into renesas-board
+      Merge branch 'renesas-board-common' into renesas-board
+      Merge branch 'renesas-armadillo' into renesas-board
+      Merge branch 'renesas-ag5evm' into renesas-board
+      Merge branch 'renesas-ap4evb' into renesas-board
+      Merge branch 'renesas-bonito' into renesas-board
+      Merge branch 'renesas-g4evm' into renesas-board
+      Merge branch 'renesas-kota2' into renesas-board
+      Merge branch 'renesas-kzm9d' into renesas-board
+      Merge branch 'renesas-kzm9g' into renesas-board
+      Merge branch 'renesas-mackerel' into renesas-board
+      Merge branch 'renesas-marzen' into renesas-board
+
+Simon Horman (2):
+      ARM: mach-shmobile: armadillo800eva: defconfig Allow use of
+armhf userspace
+      ARM: shmobile: kzm9g: defconfig enable INOTIFY_USER
+
+Tetsuyuki Kobayashi (1):
+      ARM: shmobile: kzm9g: Support Real Time Clock
 
 
- arch/arm/boot/dts/r8a7740.dtsi                  |  21 ++
- arch/arm/boot/dts/sh7377.dtsi                   |  21 ++
- arch/arm/mach-exynos/clock-exynos4.c            |  41 +--
- arch/arm/mach-exynos/clock-exynos4.h            |   3 +
- arch/arm/mach-exynos/clock-exynos4210.c         |  37 ++
- arch/arm/mach-exynos/clock-exynos4212.c         |  41 ++-
- arch/arm/mach-s3c64xx/include/mach/pm-core.h    |   4 +
- arch/arm/mach-shmobile/Kconfig                  |   1 +
- arch/arm/mach-shmobile/Makefile                 |   2 +
- arch/arm/mach-shmobile/board-ap4evb.c           |  16 +-
- arch/arm/mach-shmobile/board-armadillo800eva.c  |   1 +
- arch/arm/mach-shmobile/board-mackerel.c         |  24 +-
- arch/arm/mach-shmobile/clock-r8a7740.c          | 150 +++++++-
- arch/arm/mach-shmobile/clock-r8a7779.c          |   2 +-
- arch/arm/mach-shmobile/clock-sh7367.c           |   2 +-
- arch/arm/mach-shmobile/clock-sh7372.c           |   2 +-
- arch/arm/mach-shmobile/clock-sh7377.c           |   2 +-
- arch/arm/mach-shmobile/clock-sh73a0.c           |  12 +-
- arch/arm/mach-shmobile/include/mach/common.h    |   1 +
- .../mach-shmobile/include/mach/dma-register.h   |  84 +++++
- arch/arm/mach-shmobile/include/mach/gpio.h      |  32 ++
- .../arm/mach-shmobile/include/mach/pm-rmobile.h |  44 +++
- arch/arm/mach-shmobile/include/mach/r8a7740.h   |  33 +-
- arch/arm/mach-shmobile/include/mach/sh7372.h    |  45 +--
- arch/arm/mach-shmobile/include/mach/sh73a0.h    |   7 +
- arch/arm/mach-shmobile/intc-r8a7740.c           |  13 +-
- arch/arm/mach-shmobile/pfc-r8a7740.c            |  24 +-
- arch/arm/mach-shmobile/pm-r8a7740.c             |  54 +++
- arch/arm/mach-shmobile/pm-rmobile.c             | 167 +++++++++
- arch/arm/mach-shmobile/pm-sh7372.c              | 297 +++++----------
- arch/arm/mach-shmobile/setup-r8a7740.c          | 360 +++++++++++++++++++
- arch/arm/mach-shmobile/setup-sh7372.c           | 209 +++++------
- arch/arm/mach-shmobile/setup-sh7377.c           |  47 +++
- arch/arm/mach-shmobile/setup-sh73a0.c           | 152 ++++++--
- drivers/cpufreq/exynos5250-cpufreq.c            |  55 ++-
- 35 files changed, 1492 insertions(+), 514 deletions(-)
- create mode 100644 arch/arm/boot/dts/r8a7740.dtsi
- create mode 100644 arch/arm/boot/dts/sh7377.dtsi
- create mode 100644 arch/arm/mach-shmobile/include/mach/dma-register.h
- create mode 100644 arch/arm/mach-shmobile/include/mach/pm-rmobile.h
- create mode 100644 arch/arm/mach-shmobile/pm-r8a7740.c
- create mode 100644 arch/arm/mach-shmobile/pm-rmobile.c
+ arch/arm/configs/armadillo800eva_defconfig     |  25 +-
+ arch/arm/configs/kzm9d_defconfig               |  89 ++++
+ arch/arm/configs/kzm9g_defconfig               |   8 +-
+ arch/arm/mach-pxa/eseries.h                    |  14 -
+ arch/arm/mach-pxa/hx4700.c                     |  56 +--
+ arch/arm/mach-shmobile/Kconfig                 |  12 +
+ arch/arm/mach-shmobile/board-ag5evm.c          |  82 +++-
+ arch/arm/mach-shmobile/board-ap4evb.c          |  48 ++-
+ arch/arm/mach-shmobile/board-armadillo800eva.c | 454 +++++++++++++++++++-
+ arch/arm/mach-shmobile/board-bonito.c          |  10 +
+ arch/arm/mach-shmobile/board-g4evm.c           |  52 ++-
+ arch/arm/mach-shmobile/board-kota2.c           |  30 ++
+ arch/arm/mach-shmobile/board-kzm9d.c           |  10 +
+ arch/arm/mach-shmobile/board-kzm9g.c           | 320 ++++++++++++++
+ arch/arm/mach-shmobile/board-mackerel.c        |  59 +--
+ arch/arm/mach-shmobile/board-marzen.c          |  10 +
+ 16 files changed, 1126 insertions(+), 153 deletions(-)
+ create mode 100644 arch/arm/configs/kzm9d_defconfig
+ delete mode 100644 arch/arm/mach-pxa/eseries.h
