@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab2G2Sid (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 14:38:33 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:40752 "HELO
+	id S1753404Ab2G2Son (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 14:44:43 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53854 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753330Ab2G2Sic (ORCPT
+	with SMTP id S1753361Ab2G2Sol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 14:38:32 -0400
+	Sun, 29 Jul 2012 14:44:41 -0400
 X-Authenticated: #787645
-X-Provags-ID: V01U2FsdGVkX18XfC5IvckXHOdbIBR/88Kt3Yusigao1CiN8BLUz4
-	/jrtrVsWftE39+
-Message-ID: <50158321.4030007@gmx.net>
-Date: Sun, 29 Jul 2012 20:38:25 +0200
+X-Provags-ID: V01U2FsdGVkX1/SifpRV4fS0QCxKNV/mkwKvB4i0Vq1pTWLcHosbx
+	plwPcpwLIVqTxU
+Message-ID: <50158496.10502@gmx.net>
+Date: Sun, 29 Jul 2012 20:44:38 +0200
 From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
 To: bhelgaas@google.com, lenb@kernel.org
 CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
+Subject: [PATCH V3 1/3] PNP: Simplify setting of resources
+References: <50158321.4030007@gmx.net>
+In-Reply-To: <50158321.4030007@gmx.net>
 X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -26,70 +28,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everybody, 
+This patch factors out the setting of PNP resources into one function which is 
+then reused for all PNP resource types.  This makes the code more concise and 
+avoids duplication.  The parameters "type" and "flags" are not used at the
+moment but will be used by follow-up patches.  Placeholders for these patches 
+can be found in the comment lines that contain the "TBD" marker. 
 
-this simple patch series continues the work begun in commit 
-18fd470a48396c8795ba7256c5973e92ffa25cb3 where ACPI PNP resource templates 
-with empty/disabled resources are handled.  
+As the code does not make any changes to the ABI, no regressions are expected.
 
-The aim of this patch series is to allow to set resources as "disabled" using 
-the "/sys/bus/pnp/devices/*/resources" interface.  Such "disabled" resources 
-are needed by some vintage IBM ThinkPads like the 600E where some devices need 
-to have their IRQs disabled in order to support all the devices the 600E has. 
+NB: While at it, support for bus type resources is added. 
 
-To better understand the motivation, let's look at an excerpt from the 600E's 
-DSDT:
-
-    Name (PLPT, ResourceTemplate ()
-    {
-        StartDependentFnNoPri ()
-        {
-            IO (Decode16, 0x03BC, 0x03BC, 0x01, 0x04)
-            IRQNoFlags () {7}
-        }
-        /* Some entries deleted */
-        StartDependentFnNoPri ()
-        {
-            IO (Decode16, 0x03BC, 0x03BC, 0x01, 0x04)
-            IRQNoFlags () {}
-        }
-        EndDependentFn ()
-    })
-
-As one can see, the IRQ line for the last option is empty/disabled.  Also, both 
-options share the same priority, meaning they are equal alternatives.  In order 
-to be able to use the IRQ 7 for some other device, it is necessary to select 
-the second option, which can be done with the patch series applied.
-
-To this end, some preparatory work is done, simplifying the code, and fixing a
-potential issue when explicitely assigning resources. 
-
-Here is a brief description of these patches. 
-
-[1/3] - Factor out common some code
-[2/3] - Perform the actual setting
-[3/3] - Handle IORESOURCE_BITS in resource allocation
-
-The patches are applied against Linux 3.5.x. 
-
-Comments are, as always, welcome.  If the patches should be sent to someone
-else, please let me know. 
+The patch is applied against Linux 3.5.x.
 
 
---- Witold
+Signed-off-by: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
 
 
-Changes from previous versions:
-
-V3 -> V2: Added Bjorn Helgaas as "Reviewed by"
-          No changes in the code itself
-          Based on Linux 3.5.x
-
-V1 -> V2: Split [V1 2/3] into [V2 2/3] and [V2 3/3]
-          Removed [V1 3/3], will be submitted separately
-          Wrote more comments in response to the previous version
-          Sent to a broader audience
-          (https://lkml.org/lkml/2012/4/11/442)
-
-V1:       Initial version 
-          (https://lkml.org/lkml/2012/3/20/358)
+Index: linux/drivers/pnp/interface.c
+===================================================================
+--- linux.orig/drivers/pnp/interface.c
++++ linux/drivers/pnp/interface.c
+@@ -298,6 +298,39 @@ static ssize_t pnp_show_current_resource
+ 	return ret;
+ }
+ 
++static char *pnp_get_resource_value(char *buf,
++				    unsigned long type,
++				    resource_size_t *start,
++				    resource_size_t *end,
++				    unsigned long *flags)
++{
++	if (start)
++		*start = 0;
++	if (end)
++		*end = 0;
++	if (flags)
++		*flags = 0;
++
++	/* TBD: allow for disabled resources */
++
++	buf = skip_spaces(buf);
++	if (start) {
++		*start = simple_strtoull(buf, &buf, 0);
++		if (end) {
++			buf = skip_spaces(buf);
++			if (*buf == '-') {
++				buf = skip_spaces(buf + 1);
++				*end = simple_strtoull(buf, &buf, 0);
++			} else
++				*end = *start;
++		}
++	}
++
++	/* TBD: allow for additional flags, e.g., IORESOURCE_WINDOW */
++
++	return buf;
++}
++
+ static ssize_t pnp_set_current_resources(struct device *dmdev,
+ 					 struct device_attribute *attr,
+ 					 const char *ubuf, size_t count)
+@@ -305,7 +338,6 @@ static ssize_t pnp_set_current_resources
+ 	struct pnp_dev *dev = to_pnp_dev(dmdev);
+ 	char *buf = (void *)ubuf;
+ 	int retval = 0;
+-	resource_size_t start, end;
+ 
+ 	if (dev->status & PNP_ATTACHED) {
+ 		retval = -EBUSY;
+@@ -349,6 +381,10 @@ static ssize_t pnp_set_current_resources
+ 		goto done;
+ 	}
+ 	if (!strnicmp(buf, "set", 3)) {
++		resource_size_t start;
++		resource_size_t end;
++		unsigned long flags;
++
+ 		if (dev->active)
+ 			goto done;
+ 		buf += 3;
+@@ -357,42 +393,37 @@ static ssize_t pnp_set_current_resources
+ 		while (1) {
+ 			buf = skip_spaces(buf);
+ 			if (!strnicmp(buf, "io", 2)) {
+-				buf = skip_spaces(buf + 2);
+-				start = simple_strtoul(buf, &buf, 0);
+-				buf = skip_spaces(buf);
+-				if (*buf == '-') {
+-					buf = skip_spaces(buf + 1);
+-					end = simple_strtoul(buf, &buf, 0);
+-				} else
+-					end = start;
+-				pnp_add_io_resource(dev, start, end, 0);
+-				continue;
+-			}
+-			if (!strnicmp(buf, "mem", 3)) {
+-				buf = skip_spaces(buf + 3);
+-				start = simple_strtoul(buf, &buf, 0);
+-				buf = skip_spaces(buf);
+-				if (*buf == '-') {
+-					buf = skip_spaces(buf + 1);
+-					end = simple_strtoul(buf, &buf, 0);
+-				} else
+-					end = start;
+-				pnp_add_mem_resource(dev, start, end, 0);
+-				continue;
+-			}
+-			if (!strnicmp(buf, "irq", 3)) {
+-				buf = skip_spaces(buf + 3);
+-				start = simple_strtoul(buf, &buf, 0);
+-				pnp_add_irq_resource(dev, start, 0);
+-				continue;
+-			}
+-			if (!strnicmp(buf, "dma", 3)) {
+-				buf = skip_spaces(buf + 3);
+-				start = simple_strtoul(buf, &buf, 0);
+-				pnp_add_dma_resource(dev, start, 0);
+-				continue;
+-			}
+-			break;
++				buf = pnp_get_resource_value(buf + 2,
++							     IORESOURCE_IO,
++							     &start, &end,
++							     &flags);
++				pnp_add_io_resource(dev, start, end, flags);
++			} else if (!strnicmp(buf, "mem", 3)) {
++				buf = pnp_get_resource_value(buf + 3,
++							     IORESOURCE_MEM,
++							     &start, &end,
++							     &flags);
++				pnp_add_mem_resource(dev, start, end, flags);
++			} else if (!strnicmp(buf, "irq", 3)) {
++				buf = pnp_get_resource_value(buf + 3,
++							     IORESOURCE_IRQ,
++							     &start, NULL,
++							     &flags);
++				pnp_add_irq_resource(dev, start, flags);
++			} else if (!strnicmp(buf, "dma", 3)) {
++				buf = pnp_get_resource_value(buf + 3,
++							     IORESOURCE_DMA,
++							     &start, NULL,
++							     &flags);
++				pnp_add_dma_resource(dev, start, flags);
++			} else if (!strnicmp(buf, "bus", 3)) {
++				buf = pnp_get_resource_value(buf + 3,
++							     IORESOURCE_BUS,
++							     &start, &end,
++							     NULL);
++				pnp_add_bus_resource(dev, start, end);
++			} else
++				break;
+ 		}
+ 		mutex_unlock(&pnp_res_mutex);
+ 		goto done;
