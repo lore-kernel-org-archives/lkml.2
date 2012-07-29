@@ -1,116 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2G2LcK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 07:32:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53442 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab2G2LcH (ORCPT
+	id S1752755Ab2G2LdA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 07:33:00 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:50157 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab2G2Lc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 07:32:07 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: tytso@mit.edu, sandeen@redhat.com, lczerner@redhat.com,
-        linux-ext4@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH] ext4: add error handling when discard cmd is fail in FITRIM
-Date: Sun, 29 Jul 2012 07:31:54 -0400
-Message-Id: <1343561514-8380-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 29 Jul 2012 07:32:57 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: update mount option in filesystem/vfat.txt
+References: <1343559005-7661-1-git-send-email-linkinjeon@gmail.com>
+Date: Sun, 29 Jul 2012 20:32:53 +0900
+In-Reply-To: <1343559005-7661-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sun, 29 Jul 2012 06:50:05 -0400")
+Message-ID: <87sjcaiyze.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although free extents is proper not trimmed(mmc driver return error code
-while sending trim command), currently FITRIM ioctl return success.
-Add exception routine to inform user error code.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-#> ./fitrim_test
-end_request: I/O error, dev mmcblk0, sector 27232
-EXT4-fs warning (device mmcblk0): ext4_trim_all_free:4857:
-Discard command returned error -5
-#>
+> update two mount option(discard, nfs) in vfat.txt.
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/ext4/mballoc.c |   25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+Good catch.
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 8eae947..07569b6 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4852,10 +4852,11 @@ error_return:
-  * one will allocate those blocks, mark it as used in buddy bitmap. This must
-  * be called with under the group lock.
-  */
--static void ext4_trim_extent(struct super_block *sb, int start, int count,
-+static int ext4_trim_extent(struct super_block *sb, int start, int count,
- 			     ext4_group_t group, struct ext4_buddy *e4b)
- {
- 	struct ext4_free_extent ex;
-+	int err;
- 
- 	trace_ext4_trim_extent(sb, group, start, count);
- 
-@@ -4871,9 +4872,10 @@ static void ext4_trim_extent(struct super_block *sb, int start, int count,
- 	 */
- 	mb_mark_used(e4b, &ex);
- 	ext4_unlock_group(sb, group);
--	ext4_issue_discard(sb, group, start, count);
-+	err = ext4_issue_discard(sb, group, start, count);
- 	ext4_lock_group(sb, group);
- 	mb_free_blocks(NULL, e4b, start, ex.fe_len);
-+	return err;
- }
- 
- /**
-@@ -4902,7 +4904,7 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
- 	void *bitmap;
- 	ext4_grpblk_t next, count = 0, free_count = 0;
- 	struct ext4_buddy e4b;
--	int ret;
-+	int ret = 0;
- 
- 	trace_ext4_trim_all_free(sb, group, start, max);
- 
-@@ -4929,15 +4931,22 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
- 		next = mb_find_next_bit(bitmap, max + 1, start);
- 
- 		if ((next - start) >= minblocks) {
--			ext4_trim_extent(sb, start,
--					 next - start, group, &e4b);
--			count += next - start;
-+			ret = ext4_trim_extent(sb, start,
-+						next - start, group, &e4b);
-+			if (ret < 0) {
-+				if (ret != -EOPNOTSUPP)
-+					ext4_warning(sb,
-+						"Discard command returned error %d\n",
-+						ret);
-+					break;
-+			} else
-+				count += next - start;
- 		}
- 		free_count += next - start;
- 		start = next + 1;
- 
- 		if (fatal_signal_pending(current)) {
--			count = -ERESTARTSYS;
-+			ret = -ERESTARTSYS;
- 			break;
- 		}
- 
-@@ -4960,7 +4969,7 @@ out:
- 	ext4_debug("trimmed %d blocks in the group %d\n",
- 		count, group);
- 
--	return count;
-+	return (ret < 0) ? ret : count;
- }
- 
- /**
+However, "--" doesn't seem to be aligned. Maybe, you are using the TAB
+as 4 spaces, or such? Otherwise, looks good to me.
+
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+>  Documentation/filesystems/vfat.txt |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+>
+> diff --git a/Documentation/filesystems/vfat.txt b/Documentation/filesystems/vfat.txt
+> index ead764b..dd322a4 100644
+> --- a/Documentation/filesystems/vfat.txt
+> +++ b/Documentation/filesystems/vfat.txt
+> @@ -137,6 +137,17 @@ errors=panic|continue|remount-ro
+>  		 without doing anything or remount the partition in
+>  		 read-only mode (default behavior).
+>  
+> +discard		  -- If set, issues discard/TRIM commands to the block
+> +		 device when blocks are freed. This is useful for SSD devices
+> +		 and sparse/thinly-provisoned LUNs.
+> +
+> +nfs			  -- This option maintains an index (cache) of directory
+> +		 inodes by i_logstart which is used by the nfs-related code to
+> +		 improve look-ups.
+> +
+> +		 Enable this only if you want to export the FAT filesystem
+> +		 over NFS
+> +
+>  <bool>: 0,1,yes,no,true,false
+>  
+>  TODO
+
 -- 
-1.7.9.5
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
