@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab2G2SZn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 14:25:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16457 "EHLO mx1.redhat.com"
+	id S1753571Ab2G2SZu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 14:25:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44906 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361Ab2G2SZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 14:25:41 -0400
-Date: Sun, 29 Jul 2012 20:22:42 +0200
+	id S1753523Ab2G2SZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 14:25:46 -0400
+Date: Sun, 29 Jul 2012 20:22:49 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <anton@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 11/14] uprobes: introduce vaddr_to_offset(vma, vaddr)
-Message-ID: <20120729182242.GA20355@redhat.com>
+Subject: [PATCH 14/14] uprobes: __replace_page() needs munlock_vma_page()
+Message-ID: <20120729182249.GA20372@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,58 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new helper, vaddr_to_offset(vma, vaddr) which returns the
-offset in vma->vm_file this vaddr is mapped at.
+Like do_wp_page(), __replace_page() should do munlock_vma_page()
+for the case when the old page still has other !VM_LOCKED mappings.
+Unfortunately this needs mm/internal.h.
 
-Change build_probe_list() and find_active_uprobe() to use the new
-helper, the next patch adds another user.
+Also, move put_page() outside of ptl lock. This doesn't really
+matter but looks a bit better.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
 ---
- kernel/events/uprobes.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ kernel/events/uprobes.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index c825404..5c87042 100644
+index 5c8ceaf..940005d 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -122,6 +122,11 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
- 	return vaddr;
- }
+@@ -32,6 +32,7 @@
+ #include <linux/swap.h>		/* try_to_free_swap */
+ #include <linux/ptrace.h>	/* user_enable_single_step */
+ #include <linux/kdebug.h>	/* notifier mechanism */
++#include "../../mm/internal.h"	/* munlock_vma_page */
  
-+static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
-+{
-+	return ((loff_t)vma->vm_pgoff << PAGE_SHIFT) + (vaddr - vma->vm_start);
-+}
+ #include <linux/uprobes.h>
+ 
+@@ -141,7 +142,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	pte_t *ptep;
+ 	int err;
+ 
+-	/* freeze PageSwapCache() for try_to_free_swap() below */
++	/* For try_to_free_swap() and munlock_vma_page() below */
+ 	lock_page(page);
+ 
+ 	err = -EAGAIN;
+@@ -164,9 +165,12 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	page_remove_rmap(page);
+ 	if (!page_mapped(page))
+ 		try_to_free_swap(page);
+-	put_page(page);
+ 	pte_unmap_unlock(ptep, ptl);
+ 
++	if (vma->vm_flags & VM_LOCKED)
++		munlock_vma_page(page);
++	put_page(page);
 +
- /**
-  * __replace_page - replace page in vma by new page.
-  * based on replace_page in mm/ksm.c
-@@ -978,7 +983,7 @@ static void build_probe_list(struct inode *inode,
- 	struct uprobe *u;
- 
- 	INIT_LIST_HEAD(head);
--	min = ((loff_t)vma->vm_pgoff << PAGE_SHIFT) + start - vma->vm_start;
-+	min = vaddr_to_offset(vma, start);
- 	max = min + (end - start) - 1;
- 
- 	spin_lock_irqsave(&uprobes_treelock, flags);
-@@ -1442,12 +1447,9 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 	vma = find_vma(mm, bp_vaddr);
- 	if (vma && vma->vm_start <= bp_vaddr) {
- 		if (valid_vma(vma, false)) {
--			struct inode *inode;
--			loff_t offset;
-+			struct inode *inode = vma->vm_file->f_mapping->host;
-+			loff_t offset = vaddr_to_offset(vma, bp_vaddr);
- 
--			inode = vma->vm_file->f_mapping->host;
--			offset = bp_vaddr - vma->vm_start;
--			offset += (loff_t)vma->vm_pgoff << PAGE_SHIFT;
- 			uprobe = find_uprobe(inode, offset);
- 		}
- 
+ 	err = 0;
+  unlock:
+ 	unlock_page(page);
 -- 
 1.5.5.1
 
