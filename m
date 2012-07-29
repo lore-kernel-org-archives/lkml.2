@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab2G2SZu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 14:25:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44906 "EHLO mx1.redhat.com"
+	id S1753504Ab2G2SZk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 14:25:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11139 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab2G2SZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 14:25:46 -0400
-Date: Sun, 29 Jul 2012 20:22:49 +0200
+	id S1753361Ab2G2SZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 14:25:34 -0400
+Date: Sun, 29 Jul 2012 20:22:36 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <anton@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 14/14] uprobes: __replace_page() needs munlock_vma_page()
-Message-ID: <20120729182249.GA20372@redhat.com>
+Subject: [PATCH 08/14] uprobes: kill copy_vma()->uprobe_mmap()
+Message-ID: <20120729182236.GA20342@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,54 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like do_wp_page(), __replace_page() should do munlock_vma_page()
-for the case when the old page still has other !VM_LOCKED mappings.
-Unfortunately this needs mm/internal.h.
+Kill copy_vma()->uprobe_mmap(new_vma), it is absolutely wrong.
 
-Also, move put_page() outside of ptl lock. This doesn't really
-matter but looks a bit better.
+This new_vma was just initialized to represent the new unmapped area,
+[vm_start, vm_end) was returned by get_unmapped_area() in the caller.
+
+This means that uprobe_mmap()->get_user_pages() will fail for sure,
+simply because find_vma() can never succeed. And I verified that
+sys_mremap()->mremap_to() indeed always fails with the wrong ENOMEM
+code if [addr, addr+old_len] is probed.
+
+And why this uprobe_mmap() was added? I believe the intent was wrong.
+Note that the caller is going to do move_page_tables(), all registered
+uprobes are already faulted in, we only change the virtual addresses.
+
+NOTE: However, somehow we need to close the race with uprobe_register()
+which relies on map_info->vaddr. This needs another fix I'll try to do
+later. Probably we need uprobe_mmap() in move_vma() but we can not do
+this right now, this can confuse uprobes_state.counter (which I still
+hope we are going to kill).
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
 ---
- kernel/events/uprobes.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ mm/mmap.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 5c8ceaf..940005d 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -32,6 +32,7 @@
- #include <linux/swap.h>		/* try_to_free_swap */
- #include <linux/ptrace.h>	/* user_enable_single_step */
- #include <linux/kdebug.h>	/* notifier mechanism */
-+#include "../../mm/internal.h"	/* munlock_vma_page */
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3edfcdf..e5a4614 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2418,9 +2418,6 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 			if (new_vma->vm_file) {
+ 				get_file(new_vma->vm_file);
  
- #include <linux/uprobes.h>
- 
-@@ -141,7 +142,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
- 	pte_t *ptep;
- 	int err;
- 
--	/* freeze PageSwapCache() for try_to_free_swap() below */
-+	/* For try_to_free_swap() and munlock_vma_page() below */
- 	lock_page(page);
- 
- 	err = -EAGAIN;
-@@ -164,9 +165,12 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
- 	page_remove_rmap(page);
- 	if (!page_mapped(page))
- 		try_to_free_swap(page);
--	put_page(page);
- 	pte_unmap_unlock(ptep, ptl);
- 
-+	if (vma->vm_flags & VM_LOCKED)
-+		munlock_vma_page(page);
-+	put_page(page);
-+
- 	err = 0;
-  unlock:
- 	unlock_page(page);
+-				if (uprobe_mmap(new_vma))
+-					goto out_free_mempol;
+-
+ 				if (vma->vm_flags & VM_EXECUTABLE)
+ 					added_exe_file_vma(mm);
+ 			}
 -- 
 1.5.5.1
 
