@@ -1,122 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab2G2LxB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 07:53:01 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:44748
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751642Ab2G2LxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 07:53:00 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q6TBqhCe011353
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Milton Miller <miltonm@bga.com>
-Cc: Borislav Petkov <bp@alien8.de>, Cong Wang <xiyou.wangcong@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening port
-In-Reply-To: <kernel-nc-hints@mdm.bga.com> (Milton Miller's message of "Sun,
-	29 Jul 2012 03:40:04 -0500")
-References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Sun, 29 Jul 2012 13:52:41 +0200
-Message-ID: <gid33eg4xi.fsf_-_@mx10.gouders.net>
+	id S1752550Ab2G2MJx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 08:09:53 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:19086 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751631Ab2G2MJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 08:09:50 -0400
+Message-ID: <5015280A.6000105@bfs.de>
+Date: Sun, 29 Jul 2012 14:09:46 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Sun, 29 Jul 2012 13:52:44 +0200 (CEST)
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Pablo Neira Ayuso <pablo@netfilter.org>, netfilter-devel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] netfilter: PTR_RET can be used
+References: <20120729004550.GA7049@localhost>
+In-Reply-To: <20120729004550.GA7049@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milton Miller <miltonm@bga.com> writes:
 
-> [adding Rob as Doc maintanier]
->
-> On Sat, 28 Jul 2012 about 11:08:16 -0000, Dirk Gouders wrote:
->> Borislav Petkov <bp@alien8.de> writes:
->> 
->> > On Fri, Jul 27, 2012 at 11:24:53AM +0200, Dirk Gouders wrote:
->> >> Cong Wang <xiyou.wangcong@gmail.com> writes:
->> >> 
->> >> > On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
->> >> > <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
->> >> >> Hi Jesse,
->> >> >>
->> >> >> I would like to ask you to check if the documentation of "nc" in
->> >> >> netconsole.txt is still correct.  I tried two different netcat packages
->> >> >> and both require "-p" to specify the listening port.  I am wondering if
->> >> >> that changed after the use of "nc" has been documented.
->> >> >
->> >> > On Fedora 16, `nc -u -l <port number>` works fine.
->> >> 
->> >> Thanks for checking that.
->> >> 
->> >> If the information I found is correct, Fedora uses OpenBSD's nc
->> >> codebase.  The two netcat packages I tested on a Gentoo system differ in
->> >> requiring the -p switch for the port specification.
->> >
->> > So say exactly that in the doc: that the *BSD's version of nc doesn't
->> > need the port number specified with '-p' and you're covered.
->> OK, I tried that in the attached patch.
->> I'm not sure if every exeption needs to/should be documented, though.
->> 
->> >From 3cdeac3e814471053129145c5fa8391acb365fd8 Mon Sep 17 00:00:00 2001
->> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
->> Date: Sat, 28 Jul 2012 12:32:49 +0200
->> Subject: [PATCH] netconsole.txt: non-BSD versions of nc(1) require '-p'
->>  switch
->> 
->> Gentoo for example uses non-BSD versions of nc(1) which require
->> the '-p' switch to specify the listening port.
->> 
->> ---
->> Documentation/networking/netconsole.txt |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->> 
->> diff --git a/Documentation/networking/netconsole.txt b/Documentation/networking/netconsole.txt
->> index 8d02207..9a362f8 100644
->> --- a/Documentation/networking/netconsole.txt
->> +++ b/Documentation/networking/netconsole.txt
->> @@ -52,7 +52,8 @@ initialized and attempts to bring up the supplied dev at the supplied
->>  address.
->>  
->>  The remote host can run either 'netcat -u -l -p <port>',
->
-> So the above line shows usage with -p
->
->> -'nc -l -u <port>' or syslogd.
->> +'nc -l -u <port>' (BSD version of nc(1) e.g. Fedora),
->
-> now you add a comment about BSD and say Fedora which is not obviously
-> BSD (this is Documentation; reading the git history for clarification
-> is not approprate).
 
-Thanks for your comments.
-Perhaps I should have written "(BSD version of nc(1) which is used on
-Fedora, for example)"
+Am 29.07.2012 02:45, schrieb Fengguang Wu:
+> This quiets the coccinelle warnings:
+> 
+> net/bridge/netfilter/ebtable_filter.c:107:1-3: WARNING: PTR_RET can be used
+> net/bridge/netfilter/ebtable_nat.c:107:1-3: WARNING: PTR_RET can be used
+> net/ipv6/netfilter/ip6table_filter.c:65:1-3: WARNING: PTR_RET can be used
+> net/ipv6/netfilter/ip6table_mangle.c:100:1-3: WARNING: PTR_RET can be used
+> net/ipv6/netfilter/ip6table_raw.c:44:1-3: WARNING: PTR_RET can be used
+> net/ipv6/netfilter/ip6table_security.c:62:1-3: WARNING: PTR_RET can be used
+> net/ipv4/netfilter/iptable_filter.c:72:1-3: WARNING: PTR_RET can be used
+> net/ipv4/netfilter/iptable_mangle.c:107:1-3: WARNING: PTR_RET can be used
+> net/ipv4/netfilter/iptable_raw.c:51:1-3: WARNING: PTR_RET can be used
+> net/ipv4/netfilter/iptable_security.c:70:1-3: WARNING: PTR_RET can be used
+> 
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> ---
+>  net/bridge/netfilter/ebtable_filter.c  |    4 +---
+>  net/bridge/netfilter/ebtable_nat.c     |    4 +---
+>  net/ipv4/netfilter/iptable_filter.c    |    4 +---
+>  net/ipv4/netfilter/iptable_mangle.c    |    4 +---
+>  net/ipv4/netfilter/iptable_raw.c       |    4 +---
+>  net/ipv4/netfilter/iptable_security.c  |    5 +----
+>  net/ipv6/netfilter/ip6table_filter.c   |    4 +---
+>  net/ipv6/netfilter/ip6table_mangle.c   |    4 +---
+>  net/ipv6/netfilter/ip6table_raw.c      |    4 +---
+>  net/ipv6/netfilter/ip6table_security.c |    5 +----
+>  10 files changed, 10 insertions(+), 32 deletions(-)
+> 
+> --- linux.orig/net/bridge/netfilter/ebtable_filter.c	2012-07-29 08:41:09.703759534 +0800
+> +++ linux/net/bridge/netfilter/ebtable_filter.c	2012-07-29 08:41:14.255759643 +0800
+> @@ -100,9 +100,7 @@ static struct nf_hook_ops ebt_ops_filter
+>  static int __net_init frame_filter_net_init(struct net *net)
+>  {
+>  	net->xt.frame_filter = ebt_register_table(net, &frame_filter);
+> -	if (IS_ERR(net->xt.frame_filter))
+> -		return PTR_ERR(net->xt.frame_filter);
+> -	return 0;
+> +	return PTR_RET(net->xt.frame_filter);
+>  }
+>  
 
->> +'nc -l -u -p <port>' or syslogd.
->
-> And now you add the original -p which you probably skipped over
-> since it was on the previous line?
+i do not understand this,
+ebt_register_table() return (struct ebt_table *) on success
 
-Well, this has been intentionally.
+Does PTR_RET really return 0 if this is a propper pointer ?
 
-Probably this is because of the Gentoo system I use as a reference.
-It offers three netcat packages, one is "gnu-netcat" which provides
-/usr/bin/netcat, the other two are "netcat" and "netcat6", both of which
-provide /usr/bin/nc (those packages cannot be installed at the same
-time).  All of these netcat implementations require the '-p' switch.
+re,
+ wh
 
-I will check other distributions to see what netcat implementations they
-provide; probably Gentoo is an exception in which case it might be
-overdone to change the documentation for that special case...
 
-Dirk
-
->
->>  
->>  Dynamic reconfiguration:
->>  ========================
->
-> milton
+>  static void __net_exit frame_filter_net_exit(struct net *net)
+> --- linux.orig/net/bridge/netfilter/ebtable_nat.c	2012-07-29 08:41:09.671759534 +0800
+> +++ linux/net/bridge/netfilter/ebtable_nat.c	2012-07-29 08:41:14.255759643 +0800
+> @@ -100,9 +100,7 @@ static struct nf_hook_ops ebt_ops_nat[]
+>  static int __net_init frame_nat_net_init(struct net *net)
+>  {
+>  	net->xt.frame_nat = ebt_register_table(net, &frame_nat);
+> -	if (IS_ERR(net->xt.frame_nat))
+> -		return PTR_ERR(net->xt.frame_nat);
+> -	return 0;
+> +	return PTR_RET(net->xt.frame_nat);
+>  }
+>  
+>  static void __net_exit frame_nat_net_exit(struct net *net)
+> --- linux.orig/net/ipv4/netfilter/iptable_filter.c	2012-07-29 08:41:09.523759531 +0800
+> +++ linux/net/ipv4/netfilter/iptable_filter.c	2012-07-29 08:41:14.259759643 +0800
+> @@ -69,9 +69,7 @@ static int __net_init iptable_filter_net
+>  	net->ipv4.iptable_filter =
+>  		ipt_register_table(net, &packet_filter, repl);
+>  	kfree(repl);
+> -	if (IS_ERR(net->ipv4.iptable_filter))
+> -		return PTR_ERR(net->ipv4.iptable_filter);
+> -	return 0;
+> +	return PTR_RET(net->ipv4.iptable_filter);
+>  }
+>  
+>  static void __net_exit iptable_filter_net_exit(struct net *net)
+> --- linux.orig/net/ipv4/netfilter/iptable_mangle.c	2012-07-29 08:41:09.495759530 +0800
+> +++ linux/net/ipv4/netfilter/iptable_mangle.c	2012-07-29 08:41:14.259759643 +0800
+> @@ -104,9 +104,7 @@ static int __net_init iptable_mangle_net
+>  	net->ipv4.iptable_mangle =
+>  		ipt_register_table(net, &packet_mangler, repl);
+>  	kfree(repl);
+> -	if (IS_ERR(net->ipv4.iptable_mangle))
+> -		return PTR_ERR(net->ipv4.iptable_mangle);
+> -	return 0;
+> +	return PTR_RET(net->ipv4.iptable_mangle);
+>  }
+>  
+>  static void __net_exit iptable_mangle_net_exit(struct net *net)
+> --- linux.orig/net/ipv4/netfilter/iptable_raw.c	2012-07-29 08:41:09.467759529 +0800
+> +++ linux/net/ipv4/netfilter/iptable_raw.c	2012-07-29 08:41:14.259759643 +0800
+> @@ -48,9 +48,7 @@ static int __net_init iptable_raw_net_in
+>  	net->ipv4.iptable_raw =
+>  		ipt_register_table(net, &packet_raw, repl);
+>  	kfree(repl);
+> -	if (IS_ERR(net->ipv4.iptable_raw))
+> -		return PTR_ERR(net->ipv4.iptable_raw);
+> -	return 0;
+> +	return PTR_RET(net->ipv4.iptable_raw);
+>  }
+>  
+>  static void __net_exit iptable_raw_net_exit(struct net *net)
+> --- linux.orig/net/ipv4/netfilter/iptable_security.c	2012-07-29 08:41:09.439759529 +0800
+> +++ linux/net/ipv4/netfilter/iptable_security.c	2012-07-29 08:41:14.259759643 +0800
+> @@ -66,10 +66,7 @@ static int __net_init iptable_security_n
+>  	net->ipv4.iptable_security =
+>  		ipt_register_table(net, &security_table, repl);
+>  	kfree(repl);
+> -	if (IS_ERR(net->ipv4.iptable_security))
+> -		return PTR_ERR(net->ipv4.iptable_security);
+> -
+> -	return 0;
+> +	return PTR_RET(net->ipv4.iptable_security);
+>  }
+>  
+>  static void __net_exit iptable_security_net_exit(struct net *net)
+> --- linux.orig/net/ipv6/netfilter/ip6table_filter.c	2012-07-29 08:41:09.643759533 +0800
+> +++ linux/net/ipv6/netfilter/ip6table_filter.c	2012-07-29 08:41:14.259759643 +0800
+> @@ -61,9 +61,7 @@ static int __net_init ip6table_filter_ne
+>  	net->ipv6.ip6table_filter =
+>  		ip6t_register_table(net, &packet_filter, repl);
+>  	kfree(repl);
+> -	if (IS_ERR(net->ipv6.ip6table_filter))
+> -		return PTR_ERR(net->ipv6.ip6table_filter);
+> -	return 0;
+> +	return PTR_RET(net->ipv6.ip6table_filter);
+>  }
+>  
+>  static void __net_exit ip6table_filter_net_exit(struct net *net)
+> --- linux.orig/net/ipv6/netfilter/ip6table_mangle.c	2012-07-29 08:41:09.615759532 +0800
+> +++ linux/net/ipv6/netfilter/ip6table_mangle.c	2012-07-29 08:41:14.259759643 +0800
+> @@ -97,9 +97,7 @@ static int __net_init ip6table_mangle_ne
+>  	net->ipv6.ip6table_mangle =
+>  		ip6t_register_table(net, &packet_mangler, repl);
+>  	kfree(repl);
+> -	if (IS_ERR(net->ipv6.ip6table_mangle))
+> -		return PTR_ERR(net->ipv6.ip6table_mangle);
+> -	return 0;
+> +	return PTR_RET(net->ipv6.ip6table_mangle);
+>  }
+>  
+>  static void __net_exit ip6table_mangle_net_exit(struct net *net)
+> --- linux.orig/net/ipv6/netfilter/ip6table_raw.c	2012-07-29 08:41:09.583759532 +0800
+> +++ linux/net/ipv6/netfilter/ip6table_raw.c	2012-07-29 08:41:14.259759643 +0800
+> @@ -40,9 +40,7 @@ static int __net_init ip6table_raw_net_i
+>  	net->ipv6.ip6table_raw =
+>  		ip6t_register_table(net, &packet_raw, repl);
+>  	kfree(repl);
+> -	if (IS_ERR(net->ipv6.ip6table_raw))
+> -		return PTR_ERR(net->ipv6.ip6table_raw);
+> -	return 0;
+> +	return PTR_RET(net->ipv6.ip6table_raw);
+>  }
+>  
+>  static void __net_exit ip6table_raw_net_exit(struct net *net)
+> --- linux.orig/net/ipv6/netfilter/ip6table_security.c	2012-07-29 08:41:09.555759531 +0800
+> +++ linux/net/ipv6/netfilter/ip6table_security.c	2012-07-29 08:41:14.259759643 +0800
+> @@ -58,10 +58,7 @@ static int __net_init ip6table_security_
+>  	net->ipv6.ip6table_security =
+>  		ip6t_register_table(net, &security_table, repl);
+>  	kfree(repl);
+> -	if (IS_ERR(net->ipv6.ip6table_security))
+> -		return PTR_ERR(net->ipv6.ip6table_security);
+> -
+> -	return 0;
+> +	return PTR_RET(net->ipv6.ip6table_security);
+>  }
+>  
+>  static void __net_exit ip6table_security_net_exit(struct net *net)
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
