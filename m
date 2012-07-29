@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab2G2JNS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 05:13:18 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:55588 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab2G2JNR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 05:13:17 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 29 Jul 2012 11:13:03 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire updates post v3.5
-Message-ID: <20120729111303.1e4af44e@stein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752957Ab2G2Joa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 05:44:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200Ab2G2Jo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 05:44:28 -0400
+Date: Sun, 29 Jul 2012 12:44:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Jason Wang <jasowang@redhat.com>, mashirle@us.ibm.com, krkumar2@in.ibm.com,
+        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, edumazet@google.com,
+        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
+        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
+Subject: Re: [net-next RFC V5 4/5] virtio_net: multiqueue support
+Message-ID: <20120729094451.GB8977@redhat.com>
+References: <1341484194-8108-1-git-send-email-jasowang@redhat.com>
+ <1341484194-8108-5-git-send-email-jasowang@redhat.com>
+ <20120720134014.GD16550@redhat.com>
+ <500A9A72.20507@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500A9A72.20507@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sat, Jul 21, 2012 at 02:02:58PM +0200, Sasha Levin wrote:
+> On 07/20/2012 03:40 PM, Michael S. Tsirkin wrote:
+> >> -	err = init_vqs(vi);
+> >> > +	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+> >> > +		vi->has_cvq = true;
+> >> > +
+> > How about we disable multiqueue if there's no cvq?
+> > Will make logic a bit simpler, won't it?
+> 
+> multiqueues don't really depend on cvq. Does this added complexity really justifies adding an artificial limit?
 
-please pull from the tag "firewire-updates" at
+Well !cvq support is a legacy feature: the reason we support it
+in driver is to avoid breaking on old hosts. Adding more code to that
+path just doesn't make much sense since old hosts won't have mq.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-updates
-
-to receive the following IEEE 1394 (FireWire) subsystem changes:
-
- - Small fixes and optimizations.
-
- - A new sysfs attribute to tell local and remote nodes apart.
-   Useful to set special permissions/ ownership of local nodes'
-   /dev/fw*, to start daemons on them (for diagnostics, management,
-   AV targets, VersaPHY initiator or targets...), to pick up their
-   GUID to use it as GUID of an SBP2 target instance, and of course
-   for informational purposes.
-
-Clemens Ladisch (7):
-      firewire: core: make address handler length 64 bits
-      firewire: core: allocate the low memory region
-      firewire: ohci: lazy bus time initialization
-      firewire: ohci: sanity-check MMIO resource
-      firewire: core: fix multichannel IR with buffers larger than 2 GB
-      firewire: ohci: initialize multiChanMode bits after reset
-      firewire: core: add is_local sysfs device attribute
-
-Stefan Richter (1):
-      firewire: core: document is_local sysfs attribute
-
- Documentation/ABI/stable/sysfs-bus-firewire |   11 +++++++++++
- drivers/firewire/core-device.c              |    9 +++++++++
- drivers/firewire/core-iso.c                 |    2 +-
- drivers/firewire/core-transaction.c         |   23 +++++++++++++++++++++--
- drivers/firewire/ohci.c                     |   30 ++++++++++++++++++++++++------
- include/linux/firewire.h                    |    4 ++--
- 6 files changed, 68 insertions(+), 11 deletions(-)
-
-Thanks,
 -- 
-Stefan Richter
--=====-===-- -=== ===-=
-http://arcgraph.de/sr/
+MST
