@@ -1,64 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab2G2Tb5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 15:31:57 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:51312 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753365Ab2G2Tb4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 15:31:56 -0400
-X-Authenticated: #787645
-X-Provags-ID: V01U2FsdGVkX1/F0QonEZPFQRJyz2tpDrKAaHUyBUurMVxKtyjcMK
-	pG2GhDsxkVqZbh
-Message-ID: <50158FA9.7080700@gmx.net>
-Date: Sun, 29 Jul 2012 21:31:53 +0200
-From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1753457Ab2G2TeV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 15:34:21 -0400
+Received: from ks35366.kimsufi.com ([213.251.186.122]:36022 "EHLO meetr.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753359Ab2G2TeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 15:34:20 -0400
+Message-ID: <50159036.7010605@meetr.de>
+Date: Sun, 29 Jul 2012 21:34:14 +0200
+From: Andreas Heider <andreas@meetr.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: bhelgaas@google.com, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
-References: <50158321.4030007@gmx.net> <201207292122.28249.rjw@sisk.pl>
-In-Reply-To: <201207292122.28249.rjw@sisk.pl>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Dave Airlie <airlied@linux.ie>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
+References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>   <20120710160555.GA31562@srcf.ucam.org>   <20120710163516.GE10194@thinkpad-t410> <4FFCC7FB.1090609@meetr.de>   <1343522547.2488.12.camel@shinybook.infradead.org>  <1343524730.1962.5.camel@shinybook.infradead.org>  <5014EA3B.4010305@meetr.de> <1343588756.1962.22.camel@shinybook.infradead.org>
+In-Reply-To: <1343588756.1962.22.camel@shinybook.infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/07/12 21:22, Rafael J. Wysocki wrote:
+Am 29.07.12 21:05, schrieb David Woodhouse:
+> On Sun, 2012-07-29 at 09:46 +0200, Andreas Heider wrote:
+>> Am 29.07.12 03:18, schrieb David Woodhouse:
+>>> On Sun, 2012-07-29 at 01:42 +0100, David Woodhouse wrote:
+>>>> If I don't hack it to switch the mux to IGD at boot time, I never manage
+>>>> to get a sane picture out of the Intel device after switching to it.
+>>>> It's late now, but I'll try to get a proper debug log of the working and
+>>>> failing cases tomorrow.
+>>>
+>>>   From the hacked kernel (after fixing vga_switcheroo_enable() not to do:
+>>> 		event.info = client->fb_info;
+>>>    		fb_notifier_call_chain(FB_EVENT_REMAP_ALL_CONSOLE, &event);
+>>> if client->fb_info is NULL)...
+>>>
+>>> http://david.woodhou.se/dmesg-boot-to-IGD (blank screen)
+>>> http://david.woodhou.se/dmesg-boot-to-IGD-and-switch-to-DIS (works)
+>>> http://david.woodhou.se/dmesg-boot-to-IGD-and-switch-to-DIS-and-back-to-IGD (works)
+>>>
+>>> Without switching to IGD at startup...
+>>>
+>>> http://david.woodhou.se/dmesg-boot-to-DIS (works)
+>>> http://david.woodhou.se/dmesg-boot-to-DIS-then-switch-to-IGD (blank)
+>>>
+>>
+>> The general problem, at least for the case of booting to DIS and then
+>> switching to IGD, is that the mode for the internal display isn't
+>> correct, so it stays black.
+>>
+>> It could get the right mode via DDC but this line is muxed as well.
+>> 0x728 controls the DDC mux, writing 1 lets the IGD access it, 2 is the DIS.
+>
+> So? We *switch* it before telling the IGD to enable its display (hotplug
+> the LVDS). So the DDC *should* be working, surely? Is it just that the
+> Intel driver is probing the LVDS once at boot when the panel isn't even
+> connected, and it should be made hotplug-capable?
 
-> Hi,
-> 
+That would work and I like this solution the best, but I'm not familiar 
+enough with i915 to comment on how feasible it is or implement it. It 
+should even be possible to switch the DDC mux first, let i915 do the 
+detection and switch the display later to avoid long black screens.
 
-[... long snip ...]
+>
+> The Radeon seems to cope... maybe. I note it doesn't actually come up in
+> 1920x1200 with fbcon, although ISTR X was getting the right resolution.
+>
+>> So what happens in dmesg-boot-to-DIS is that the intel card can't get
+>> the mode via DDC and falls back to the garbage mode from VBT.
+>> Interestingly, there is a intel VBT on your MBP8,3, but it doesn't
+>> contain the right modes. On my MBP6,2 there isn't a VBT at all and it
+>> disables LVDS altogether if 0x728 isn't switched at boot.
+>>
+>> Manually switching the mux is a bit messy, so I'm not too surprised that
+>> it's blank in dmesg-boot-to-IGD.
+>
+> That does actually work, if I disable the Radeon completely. With this
+> in early boot:
+> +       outb(1, 0x728);
+> +       outb(2, 0x710);
+> +       outb(2, 0x740);
+> +       outb(0, 0x750);
+> ... the Intel framebuffer then comes up just fine on the internal
+> display. It *can't* drive external displays in that case (via the
+> standard Apple DP-VGA or DP-DVI adapters; I haven't tried real DP), but
+> the LVDS is fine.
+>
 
-> 
-> Do I understand correctly that you want to disable those things through
-> sysfs?
-> 
-> Rafael
-> 
+Not sure about it, but it might be because vga_default_device is wrong 
+if you switch the mux manually.
 
-Hi Rafael, 
+>> The gmux code you're using is a bit outdated, but if you use
+>> git://kernel.ubuntu.com/sforshee/linux.git gmux-switcheroo and connect
+>> an external display (I tested it with a DP one) you should be able to
+>> boot to DIS and switch to the IGD and get output on the external display.
+>>
+>> This leaves the problem of how to get i915 the right mode. Generally,
+>> there are two options:
+>>
+>> - Find a way so it gets the right mode when it initializes the LVDS.
+>> This could be done by switching the DDC mux during lvds intialization.
+>> See lock_ddc.patch for a crude prototype that works on my laptop if I'm
+>> lucky and apple_gmux gets loaded before i915 and nouveau doesn't try to
+>> use DDC at the same time.
+>
+> Again, why is the LVDS initialisation happening when the LVDS isn't
+> connected anyway? Fix that, and your concerns become irrelevant. You
+> *can't* switch to IGD before apple_gmux is loaded, and the discrete card
+> shouldn't be poking it DDC when the panel has been hot-unplugged from it
+> either.
+>
+>> Another way would be to get the right EDID without mux switching by
+>> querying either the DIS driver or EFI (if you boot into the rEFIt shell
+>> you can verify it's there, see http://andreas.meetr.de/efi/log/edid.txt,
+>> to get it search for EdidDiscovered/EdidActive and dump it with dmem).
+>> But to use this, we need a way to know which display this corresponds to
+>> and I'm not sure how to do that.
+>>
+>> - Make vga_switcheroo reprobe handle this. This would mean that we start
+>> with a possibly broken mode and resize it once the mux get's switched
+>> through vga_switcheroo. I'm not sure if thats a good idea.
+>
+> "Possibly broken mode", in the case where there is no monitor attached
+> to the display. I think we can live with that. Surely it's the case for
+> an external monitor (which we also support) anyway?
+>
+> In fact speaking of external monitors... it looks like it should be
+> possible to support using one graphics cards for the LVDS, and another
+> for the external DisplayPort. Perhaps they could be different seats of a
+> multi-seat system, with completely separate X servers, or maybe we'd do
+> it just to work around size/bandwidth limitations or for performance
+> reasons. Do we have any plan to allow that? We only switch both together
+> for now...
+>
 
-the aim is to select a PNP ACPI option where resources can be disabled
-(or are not needed).  E.g., the parallel port of the 600E can be used
-with and without IRQ lines.  The means to allow for this is to use the
-sysfs interface to select disabled resources (just like any other 
-resource value).  In https://lkml.org/lkml/2011/7/3/41, I used the 
-following example:
-
-  echo disable > /sys/bus/pnp/devices/$device/resources
-  echo clear > /sys/bus/pnp/devices/$device/resources
-  echo set irq disabled > /sys/bus/pnp/devices/$device/resources
-  echo fill > /sys/bus/pnp/devices/$device/resources
-  echo activate > /sys/bus/pnp/devices/$device/resources
-
-The third line is made possible by the patch series.  All other
-lines are already implemented. 
-
---- Witold
+Just as a sidenote, I tested running two X server and it does work as 
+expected.
