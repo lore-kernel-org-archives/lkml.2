@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab2G2SZq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 14:25:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64200 "EHLO mx1.redhat.com"
+	id S1753557Ab2G2SZs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 14:25:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58864 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab2G2SZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 14:25:43 -0400
-Date: Sun, 29 Jul 2012 20:22:44 +0200
+	id S1753541Ab2G2SZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 14:25:46 -0400
+Date: Sun, 29 Jul 2012 20:22:47 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <anton@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 12/14] uprobes: fix register_for_each_vma()->vma_address()
-	check
-Message-ID: <20120729182244.GA20362@redhat.com>
+Subject: [PATCH 13/14] uprobes: rename vma_address() and make it return
+	"unsigned long"
+Message-ID: <20120729182247.GA20365@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,48 +24,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. register_for_each_vma() checks that vma_address() == vaddr but
-   this is not enough. We should also ensure that vaddr >= vm_start,
-   find_vma() guarantees "vaddr < vm_end" only.
+1. vma_address() returns loff_t, this looks confusing and this is
+   unnecessary after the previous change. Make it return "ulong",
+   all callers truncate the result anyway.
 
-2. After the prevous changes, register_for_each_vma() is the only
-   reason why vma_address() has to return loff_t, all other users
-   know that we have the valid mapping at this offset and thus the
-   overflow is not possible.
-
-   Change the code to use vaddr_to_offset() instead, imho this looks
-   more clean/understandable and now we can change vma_address().
-
-3. While at it, remove the unnecessary type-cast.
+2. Its name conflicts with mm/rmap.c:vma_address(), rename it to
+   offset_to_vaddr(), this matches vaddr_to_offset().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
 ---
- kernel/events/uprobes.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ kernel/events/uprobes.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 5c87042..734e199 100644
+index 734e199..5c8ceaf 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -823,12 +823,13 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 			goto free;
+@@ -112,14 +112,9 @@ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
+ 	return false;
+ }
  
- 		down_write(&mm->mmap_sem);
--		vma = find_vma(mm, (unsigned long)info->vaddr);
--		if (!vma || !valid_vma(vma, is_register))
-+		vma = find_vma(mm, info->vaddr);
-+		if (!vma || !valid_vma(vma, is_register) ||
-+		    vma->vm_file->f_mapping->host != uprobe->inode)
- 			goto unlock;
+-static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
++static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
+ {
+-	loff_t vaddr;
+-
+-	vaddr = vma->vm_start + offset;
+-	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+-
+-	return vaddr;
++	return vma->vm_start + offset - ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+ }
  
--		if (vma->vm_file->f_mapping->host != uprobe->inode ||
--		    vma_address(vma, uprobe->offset) != info->vaddr)
-+		if (vma->vm_start > info->vaddr ||
-+		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
- 			goto unlock;
+ static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
+@@ -775,7 +770,7 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
+ 		curr = info;
  
- 		if (is_register) {
+ 		info->mm = vma->vm_mm;
+-		info->vaddr = vma_address(vma, offset);
++		info->vaddr = offset_to_vaddr(vma, offset);
+ 	}
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 
+@@ -1042,7 +1037,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 
+ 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+ 		if (!ret) {
+-			loff_t vaddr = vma_address(vma, uprobe->offset);
++			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+ 
+ 			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+ 			/*
+@@ -1103,7 +1098,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+ 	build_probe_list(inode, vma, start, end, &tmp_list);
+ 
+ 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+-		loff_t vaddr = vma_address(vma, uprobe->offset);
++		unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+ 		/*
+ 		 * An unregister could have removed the probe before
+ 		 * unmap. So check before we decrement the count.
 -- 
 1.5.5.1
 
