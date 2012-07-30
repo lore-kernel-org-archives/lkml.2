@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2G3Ai7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 20:38:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34732 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab2G3Ai5 (ORCPT
+	id S1753892Ab2G3AmE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 20:42:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44289 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2G3AmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 20:38:57 -0400
-Date: Mon, 30 Jul 2012 08:40:11 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: "Jeff Moyer" <jmoyer@redhat.com>
-Cc: viro <viro@ZenIV.linux.org.uk>, "Neil Brown" <neilb@suse.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: Re: [RFC PATCH] fs/direct-io.c: Set bi_rw when alloc bio.
-References: <201207271602081096921@gmail.com>, 
-	<x496299708p.fsf@segfault.boston.devel.redhat.com>
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
+	Sun, 29 Jul 2012 20:42:01 -0400
+Date: Mon, 30 Jul 2012 10:41:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: linux-next: manual merge of the vfs tree with Linus' tree
+Message-Id: <20120730104157.5ce37f60f4d5b39923c0adc2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Message-ID: <201207300840005466080@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__30_Jul_2012_10_41_57_+1000_bbxckRGm7UHImcc/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6U0d3Oq002230
 
-On 2012-07-27 22:21 Jeff Moyer <jmoyer@redhat.com> Wrote:
->majianpeng <majianpeng@gmail.com> writes:
->
->> When exec bio_alloc, the bi_rw is zero.But after calling bio_add_page,
->> it will use bi_rw.
->> Fox example, in functiion __bio_add_page,it will call merge_bvec_fn().
->> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
->>>> if ((bvm->bi_rw & 1) == WRITE)
->>>>		return biovec->bv_len; /* always allow writes to be mergeable */
->>
->> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
->
->Good catch.  How did you find this?  Did you experience data corruption
->as a result of this oversight, reduced performance due to missed merge
->opportunities, or did you just notice it in reviewing the code?
->
->Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
->
-Sorry for late to reply. When i analysed the performance of raid5, i found this bug.
+--Signature=_Mon__30_Jul_2012_10_41_57_+1000_bbxckRGm7UHImcc/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>
->> There are many place like this in kernel.If you think this patch ok, i will correct those.
->> ---
->>  fs/direct-io.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/direct-io.c b/fs/direct-io.c
->> index 1faf4cb..77f0bbf 100644
->> --- a/fs/direct-io.c
->> +++ b/fs/direct-io.c
->> @@ -349,6 +349,7 @@ dio_bio_alloc(struct dio *dio, struct dio_submit *sdio,
->>  
->>  	bio->bi_bdev = bdev;
->>  	bio->bi_sector = first_sector;
->> +	bio->bi_rw = dio->rw;
->>  	if (dio->is_async)
->>  		bio->bi_end_io = dio_bio_end_aio;
->>  	elseÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hi Al,
+
+Today's linux-next merge of the vfs tree got a conflict in
+drivers/usb/gadget/storage_common.c between commit d6e16a89578f ("usb:
+gadget: mass_storage: fail fsg_store_file() early if colud not open
+file") from Linus' tree and commit 20818a0caa84 ("gadgetfs: clean up")
+from the vfs tree.
+
+Context changes.  I fixed it up (I think - see below) and can carry the
+fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/usb/gadget/storage_common.c
+index ae8b188,f929432..0000000
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@@ -709,12 -706,6 +708,11 @@@ static int fsg_lun_open(struct fsg_lun=20
+  		goto out;
+  	}
+ =20
+ +	if (fsg_lun_is_open(curlun))
+ +		fsg_lun_close(curlun);
+ +
+- 	get_file(filp);
+ +	curlun->blksize =3D blksize;
+ +	curlun->blkbits =3D blkbits;
+  	curlun->ro =3D ro;
+  	curlun->filp =3D filp;
+  	curlun->file_length =3D size;
+
+--Signature=_Mon__30_Jul_2012_10_41_57_+1000_bbxckRGm7UHImcc/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQFdhVAAoJEECxmPOUX5FEPXwP/2hkDkmphPoedm1WMT6oKgv9
+upkXFqyHBZktxZj8tBVzX3NxLW3go0UVgBtpwdFmPOx0tmOt6ayZtQrHHup0Px0G
+Egr1H5gtxN2u1/NeglHI67zcZJwpuqj3TeaHOd7wBNB7zFysin1nWHjLG977UeK9
+3NO+6/WntnlYoC6bWLeZHpSPXasIpZH5mExTgVjhPWwgogCtUFy4WWe53z3d828d
+HWnS6CIc/jswDwrXbDnvZMZMMemyzUz+ZjKFx0i33edmqOiRWY00IcSCF6PXWY6/
+1Mmj8V2oj1B4l7SzM9gKI8qtkdS677SjF/GPdDjKkEeVJRZ3rZzNQdcWVirzkxut
+VEmPlmOT69oPoDbISwsXDMT/uBw6VkNFxFrEurfE9ULvu8HJnn2c7+nYC3JjwD0B
+BhYGUeMRtcIhuLg3rogPopANOtbRqLqdd8tiJsQeUMn7wtXbPNtwSs4BT03eZJM8
+emxJVik+m8O/32YB1e+Fl/XXeI3sAUX4JBEzsnG5CxS5Gk+m8m2Mi7kSbx3VTgnt
+kYbhG18bEMky7zYtAmRqA08Zlyundqasi/wfQjJaoL7Mi6ltQyokikd8Z3ZusZll
+jTjfo6SJ8/uag+TI5ZrrMUdACxTTtZm4DjECZPz40S3bvDcIyOHj1oCheT8W//OM
+NQL6gGf7ZB3agUdwfB8L
+=awRv
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__30_Jul_2012_10_41_57_+1000_bbxckRGm7UHImcc/--
