@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab2G3RgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:36:08 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:38307 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab2G3Rdj (ORCPT
+	id S1755204Ab2G3Rgq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:36:46 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60284 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067Ab2G3Rdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:33:39 -0400
+	Mon, 30 Jul 2012 13:33:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Minchan Kim <minchan@kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 34/41] mm/vmscan.c: consider swap space when deciding whether to continue reclaim
-Date: Mon, 30 Jul 2012 10:31:33 -0700
-Message-Id: <20120730172903.977290772@linuxfoundation.org>
+        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: [ 19/41] mm: compaction: make isolate_lru_page() filter-aware
+Date: Mon, 30 Jul 2012 10:31:18 -0700
+Message-Id: <20120730172902.813803843@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -33,25 +34,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Minchan Kim <minchan@kernel.org>
+From: Minchan Kim <minchan.kim@gmail.com>
 
-commit 86cfd3a45042ab242d47f3935a02811a402beab6 upstream.
+commit 39deaf8585152f1a35c1676d3d7dc6ae0fb65967 upstream.
 
-Stable note: Not tracked in Bugzilla. This patch reduces kswapd CPU
-	usage on swapless systems with high anonymous memory usage.
+Stable note: Not tracked in Bugzilla. THP and compaction disrupt the LRU
+	list leading to poor reclaim decisions which has a variable
+	performance impact.
 
-It's pointless to continue reclaiming when we have no swap space and lots
-of anon pages in the inactive list.
+In async mode, compaction doesn't migrate dirty or writeback pages.  So,
+it's meaningless to pick the page and re-add it to lru list.
 
-Without this patch, it is possible when swap is disabled to continue
-trying to reclaim when there are only anonymous pages in the system even
-though that will not make any progress.
+Of course, when we isolate the page in compaction, the page might be dirty
+or writeback but when we try to migrate the page, the page would be not
+dirty, writeback.  So it could be migrated.  But it's very unlikely as
+isolate and migration cycle is much faster than writeout.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+So, this patch helps cpu overhead and prevent unnecessary LRU churning.
+
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
@@ -59,22 +66,57 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/mmzone.h |    2 ++
+ mm/compaction.c        |    7 +++++--
+ mm/vmscan.c            |    3 +++
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -162,6 +162,8 @@ static inline int is_unevictable_lru(enu
+ #define ISOLATE_INACTIVE	((__force isolate_mode_t)0x1)
+ /* Isolate active pages */
+ #define ISOLATE_ACTIVE		((__force isolate_mode_t)0x2)
++/* Isolate clean file */
++#define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
+ 
+ /* LRU Isolation modes. */
+ typedef unsigned __bitwise__ isolate_mode_t;
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -261,6 +261,7 @@ static isolate_migrate_t isolate_migrate
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+ 	struct list_head *migratelist = &cc->migratepages;
++	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
+ 
+ 	/* Do not scan outside zone boundaries */
+ 	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+@@ -370,9 +371,11 @@ static isolate_migrate_t isolate_migrate
+ 			continue;
+ 		}
+ 
++		if (!cc->sync)
++			mode |= ISOLATE_CLEAN;
++
+ 		/* Try isolate the page */
+-		if (__isolate_lru_page(page,
+-				ISOLATE_ACTIVE|ISOLATE_INACTIVE, 0) != 0)
++		if (__isolate_lru_page(page, mode, 0) != 0)
+ 			continue;
+ 
+ 		VM_BUG_ON(PageTransCompound(page));
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2008,8 +2008,9 @@ static inline bool should_continue_recla
- 	 * inactive lists are large enough, continue reclaiming
- 	 */
- 	pages_for_compaction = (2UL << sc->order);
--	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON) +
--				zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+	if (nr_swap_pages > 0)
-+		inactive_lru_pages += zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
- 	if (sc->nr_reclaimed < pages_for_compaction &&
- 			inactive_lru_pages > pages_for_compaction)
- 		return true;
+@@ -1045,6 +1045,9 @@ int __isolate_lru_page(struct page *page
+ 
+ 	ret = -EBUSY;
+ 
++	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
++		return ret;
++
+ 	if (likely(get_page_unless_zero(page))) {
+ 		/*
+ 		 * Be careful not to clear PageLRU until after we're
 
 
