@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab2G3O6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:58:45 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:30377 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754401Ab2G3O6o (ORCPT
+	id S1754728Ab2G3PBd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 11:01:33 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39262 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754393Ab2G3PBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:58:44 -0400
-X-IronPort-AV: E=Sophos;i="4.77,679,1336348800"; 
-   d="scan'208";a="13764645"
-Date: Mon, 30 Jul 2012 15:58:02 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/swiotlb: If iommu=soft was not passed
- in on > 4GB, don't turn it on.
-In-Reply-To: <20120727175546.GH17427@andromeda.dapyr.net>
-Message-ID: <alpine.DEB.2.02.1207301551250.4645@kaball.uk.xensource.com>
-References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com> <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1207271204500.26163@kaball.uk.xensource.com> <20120727175546.GH17427@andromeda.dapyr.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 30 Jul 2012 11:01:32 -0400
+Date: Mon, 30 Jul 2012 16:01:30 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 05/18] ASoC: Ux500: Enable ux500 MSP driver for Device
+ Tree
+Message-ID: <20120730150129.GF4468@opensource.wolfsonmicro.com>
+References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
+ <1343393162-11938-6-git-send-email-lee.jones@linaro.org>
+ <20120729204218.GI4384@opensource.wolfsonmicro.com>
+ <50162F70.2050900@linaro.org>
+ <20120730133930.GB4468@opensource.wolfsonmicro.com>
+ <501692B8.6050102@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501692B8.6050102@linaro.org>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jul 27, 2012 at 12:06:27PM +0100, Stefano Stabellini wrote:
-> > On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> > > If we boot a 64-bit guest with more than 4GB memory, the SWIOTLB
-> > > gets turned on:
-> > > PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
-> > > software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at [ffff8800fb43d000-ffff8800ff43cfff]
-> > > 
-> > > which is OK if we had PCI devices, but not if we did not. In a PV
-> > > guest the SWIOTLB ends up asking the hypervisor for precious lowmem
-> > > memory - and 64MB of it per guest. On a 32GB machine, this limits the
-> > > amount of guests that are 4GB to start due to lowmem exhaustion.
-> > > 
-> > > What we do is detect whether the user supplied e820_hole=1
-> > > parameter, which is used to construct an E820 that is similar to
-> > > the machine  - so that the PCI regions do not overlap with RAM regions.
-> > > We check for that by looking at the E820 and seeing if it diverges
-> > > from the standard - and if so (and if iommu=soft was not turned on),
-> > > we disable the check pci_swiotlb_detect_4gb code.
-> > 
-> > What kind of paramter is it?
-> > Is it a Linux cmdline paramter? Or maybe a Xen toolstack parameter?
-> 
-> Its a guest config option.
+On Mon, Jul 30, 2012 at 02:57:12PM +0100, Lee Jones wrote:
+> On 30/07/12 14:39, Mark Brown wrote:
 
-Is this option turned on by default if the VM config file contains one
-or more PCI devices statically assigned to the VM?
+> >Why does the driver care - doesn't the pinctrl abstraction and/or
+> >bindings handle this sensibly?
 
-If this option is not specified, is it going to be impossible to
-dynamically passthrough a PCI devices after the VM is booted?
+> Not when I tested it. pinctrl_get() came back !IS_ERR() for MSP0,
+> MSP2 & MSP3, then when it went on to pinctrl_lookup_state(), only
+> then did it fail. Would it be more sane to retract the error
+> messages and just let it fail silently? It's either that or have
+> lots of "could not get MSP defstate" clogging up the log.
 
+This sounds to me like we should be ensuring that there's a single
+fixed state available for these MSPs (representing the fact that the
+pins are always in the right mode) in the pinctrl bindings.
 
-> > Surely there must be a better way to let Linux know if this paramter has
-> > been turned on than looking for ACPI entries in the E820.
-> 
-> I am all open for suggestions. The best way I can think of is to have
-> some early_init variant of XenBus-detect-this-backend-parameter. Can
-> one unhook an "old" XenBus and reset with the full-fledged XenBus
-> init later on?
-
-Assuming that the xen swiotlb is only useful for PCI passthrough devices
-in PV guests, we could write few wrappers for the current xen_swiotlb
-functions like this:
-
-xen_swiotlb_alloc_coherent_new(..)
-{
-    if (xen_initial_domain() || (xen_pv_domain() && a_pci_device_is_assigned()))
-        xen_swiotlb_alloc_coherent();
-    else
-        return __get_free_pages();
-}
-
-do you think it would work?
-This way it would be far more flexible.
+As with several of other changes for this platform it seems like we need
+to think carefully about the abstraction level we're working at.
