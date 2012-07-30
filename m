@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2G3H4O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:56:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44782 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab2G3H4N (ORCPT
+	id S1754117Ab2G3H4v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:56:51 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:48041 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753714Ab2G3H4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 03:56:13 -0400
-Date: Mon, 30 Jul 2012 08:56:11 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: [Bisected] commit 71574865 (vfs: do_last(): common slow lookup)
- breaks CUPS printing
-Message-ID: <20120730075611.GD6481@ZenIV.linux.org.uk>
-References: <20120728104316.GA248@x4>
- <20120730065046.GC6481@ZenIV.linux.org.uk>
- <20120730071023.GA273@x4>
+	Mon, 30 Jul 2012 03:56:49 -0400
+Date: Mon, 30 Jul 2012 15:56:28 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kent Yoder <key@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 0/4] powerpc/crypto: IBM Power7+ in-Nest compression
+ support
+Message-ID: <20120730075628.GE5515@gondor.apana.org.au>
+References: <1342708961-28587-1-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120730071023.GA273@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1342708961-28587-1-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 09:10:23AM +0200, Markus Trippelsdorf wrote:
+On Thu, Jul 19, 2012 at 09:42:37AM -0500, Seth Jennings wrote:
+> This is a continuation of support for the Power7+ in-Nest
+> hardware accelerator.
 > 
-> Looks like you're right. The first warning happens during startup. The last one
-> when I print a test page (which now succeeds).  
-> Thanks Al.
+> https://lkml.org/lkml/2012/4/12/223
+> 
+> This patchset adds the hardware driver and the cryptographic
+> driver for hardware accelerated compression, which uses a
+> hardware-optimized algorithm named 842.
+> 
+> The hardware driver has limits on generic compression and is
+> geared toward compressing units that are of PAGE_SIZE for
+> in-kernel memory compression.
+> 
+> Based on linux-next (20120717)
+> 
+> Seth Jennings (4):
 
-> WTF: open("/dev/input/mice", 34946)
-> WTF: open("/dev/usblp0", 32898)
-> WTF: open("/dev/usb/lp0", 32898)
-
-Ahhh...  OK, yes - it's the case we had missed (and where the manpage
-needs correction, BTW).  O_EXCL for *devices* has additional semantics;
-it's not "fail if exists", it's "fail if already opened by somebody".
-No need to pester CUPS folks (except that I really hope that this
-open of /dev/input/mice does *not* come from them)...
-
-All right, the proper fix is *not* removing O_EXCL from flags; we want
-it to reach ->f_flags, so that device open would work correctly.  I think
-we need this, but I wonder if that's all; ->atomic_open() instances
-might need to be corrected as well.  I've pushed this into for-next/for-linus
-for now:
-
-commit f8310c59201b183ebee2e3fe0c7242f5729be0af
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Mon Jul 30 11:50:30 2012 +0400
-
-    fix O_EXCL handling for devices
-    
-    O_EXCL without O_CREAT has different semantics; it's "fail if already opened",
-    not "fail if already exists".  commit 71574865 broke that...
-    
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 618d353..e133bf3 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2418,7 +2418,7 @@ static int atomic_open(struct nameidata *nd, struct dentry *dentry,
- 	if ((open_flag & O_CREAT) && !IS_POSIXACL(dir))
- 		mode &= ~current_umask();
- 
--	if (open_flag & O_EXCL) {
-+	if ((open_flag & (O_EXCL | O_CREAT)) == (O_EXCL | O_CREAT)) {
- 		open_flag &= ~O_TRUNC;
- 		*opened |= FILE_CREATED;
- 	}
-@@ -2742,7 +2742,7 @@ retry_lookup:
- 	}
- 
- 	error = -EEXIST;
--	if (open_flag & O_EXCL)
-+	if ((open_flag & (O_EXCL | O_CREAT)) == (O_EXCL | O_CREAT))
- 		goto exit_dput;
- 
- 	error = follow_managed(path, nd->flags);
-
+All applied.  Thanks Seth.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
