@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab2G3AhU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 20:37:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53534 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab2G3AhS (ORCPT
+	id S1753880Ab2G3Ai7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 20:38:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34732 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2G3Ai5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 20:37:18 -0400
-Date: Mon, 30 Jul 2012 10:37:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Devendra Naga <devendra.aaru@gmail.com>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the vfs tree with Linus' tree
-Message-Id: <20120730103705.cd816d7f4016eb8d93e3825f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Sun, 29 Jul 2012 20:38:57 -0400
+Date: Mon, 30 Jul 2012 08:40:11 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: "Jeff Moyer" <jmoyer@redhat.com>
+Cc: viro <viro@ZenIV.linux.org.uk>, "Neil Brown" <neilb@suse.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-raid <linux-raid@vger.kernel.org>
+Subject: Re: Re: [RFC PATCH] fs/direct-io.c: Set bi_rw when alloc bio.
+References: <201207271602081096921@gmail.com>, 
+	<x496299708p.fsf@segfault.boston.devel.redhat.com>
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__30_Jul_2012_10_37_05_+1000_cMP=eZ.IlIB/.b6h"
+Message-ID: <201207300840005466080@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6U0d3Oq002230
 
---Signature=_Mon__30_Jul_2012_10_37_05_+1000_cMP=eZ.IlIB/.b6h
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2012-07-27 22:21 Jeff Moyer <jmoyer@redhat.com> Wrote:
+>majianpeng <majianpeng@gmail.com> writes:
+>
+>> When exec bio_alloc, the bi_rw is zero.But after calling bio_add_page,
+>> it will use bi_rw.
+>> Fox example, in functiion __bio_add_page,it will call merge_bvec_fn().
+>> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
+>>>> if ((bvm->bi_rw & 1) == WRITE)
+>>>>		return biovec->bv_len; /* always allow writes to be mergeable */
+>>
+>> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+>
+>Good catch.  How did you find this?  Did you experience data corruption
+>as a result of this oversight, reduced performance due to missed merge
+>opportunities, or did you just notice it in reviewing the code?
+>
+>Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+>
+Sorry for late to reply. When i analysed the performance of raid5, i found this bug.
 
-Hi Al,
-
-Today's linux-next merge of the vfs tree got a conflict in
-drivers/staging/gdm72xx/usb_boot.c between commit d67030d215ac
-("staging/gdm72xx: return PTR_ERR rather -ENOENT") from Linus' tree and
-commit 09fada5b5f1f ("slightly reduce lossage in gdm72xx") from the vfs
-tree.
-
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/staging/gdm72xx/usb_boot.c
-index fef290c,b366a54..0000000
---- a/drivers/staging/gdm72xx/usb_boot.c
-+++ b/drivers/staging/gdm72xx/usb_boot.c
-@@@ -173,8 -174,7 +173,7 @@@ int usb_boot(struct usb_device *usbdev
-  	filp =3D filp_open(img_name, O_RDONLY | O_LARGEFILE, 0);
-  	if (IS_ERR(filp)) {
-  		printk(KERN_ERR "Can't find %s.\n", img_name);
-- 		set_fs(fs);
- -		ret =3D -ENOENT;
- +		ret =3D PTR_ERR(filp);
-  		goto restore_fs;
-  	}
- =20
-
---Signature=_Mon__30_Jul_2012_10_37_05_+1000_cMP=eZ.IlIB/.b6h
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQFdcxAAoJEECxmPOUX5FEpoYP/ib2m3G2IiYSHugMDXNCUX71
-dZum5TnVB0xyVKLYJ/EBhQRp9tX52hT3WdlV6/SMzpHWbkuiGSkfT2l1Ajx1UWDA
-BcxjBEmjrTwbtS5abeziUQOy1VAebDSQjAiLN8lUCDIAKH8OlmhKO9SDL/iyka5+
-T0S0wCM7gIqOqu3t5UbANm3JEJUajgaaberPLmskgyTuaQXTBP/aNCkxh6LrxZ/1
-xIkFFxTcQv769fF0VYjcxGwAXZstlADO28XpB11alhsykgrnIX4nDrnHgsODIUKV
-z5M4WtnGfGi5xIkiswCqFak/8U+zJX3t/8WVXlc9mS9VJBpb1/QiKlJ4x2Ct5jd6
-grZncGngdsEJ9XjPm0UYWqMOS69z+/IXbelwpabUl5a9j52jRh99qQswa4gdUBYC
-+T0eXhl6Kc7be8fnf91YqNLjhBZ5hCHoKLe6P/LEYhk+gV4c8xYQE3MEzudLCjcw
-y/n7AT0whBO8bvyOyCWMDj6g28d+wgf33WtVUeBGUz3++NmOTfaDzILo65pIoYBW
-CROst8sQ+BS1qxCOU49rh5KrsUDiwztR2T2/DweApDufZ+ZjlEkVB7OkbHSjSbp3
-9148z3RmnLa+77LBcmmc0GxKUKGwP9tWSi2cemIQYt4xvox/G+wVbyFRr6wx0H4c
-DCGRzs7ExUrnOc0EErfn
-=+rF4
------END PGP SIGNATURE-----
-
---Signature=_Mon__30_Jul_2012_10_37_05_+1000_cMP=eZ.IlIB/.b6h--
+>>
+>> There are many place like this in kernel.If you think this patch ok, i will correct those.
+>> ---
+>>  fs/direct-io.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/fs/direct-io.c b/fs/direct-io.c
+>> index 1faf4cb..77f0bbf 100644
+>> --- a/fs/direct-io.c
+>> +++ b/fs/direct-io.c
+>> @@ -349,6 +349,7 @@ dio_bio_alloc(struct dio *dio, struct dio_submit *sdio,
+>>  
+>>  	bio->bi_bdev = bdev;
+>>  	bio->bi_sector = first_sector;
+>> +	bio->bi_rw = dio->rw;
+>>  	if (dio->is_async)
+>>  		bio->bi_end_io = dio_bio_end_aio;
+>>  	elseÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
