@@ -1,162 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab2G3NQz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 09:16:55 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:56528 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754097Ab2G3NQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 09:16:53 -0400
+	id S1754178Ab2G3NSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 09:18:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58154 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754097Ab2G3NSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 09:18:45 -0400
+Message-ID: <50168981.3000001@redhat.com>
+Date: Mon, 30 Jul 2012 16:17:53 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1343613881-6803-1-git-send-email-kyungsik.lee@lge.com>
-References: <1343613881-6803-1-git-send-email-kyungsik.lee@lge.com>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Mon, 30 Jul 2012 18:46:31 +0530
-Message-ID: <CANfBPZ-pa++A=OSmhaEfVs-TDVtTbsBi4FacaPxuvfNJRe-Jxw@mail.gmail.com>
-Subject: Re: [PATCH RESEND v2] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: paulmck@linux.vnet.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
+References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com> <50127B16.5040401@gmail.com> <50153138.4020304@redhat.com> <5015A5A8.7030601@gmail.com> <50161D5E.4030009@redhat.com> <50165046.9020705@gmail.com> <501654D3.7020504@redhat.com> <50168162.4010508@gmail.com>
+In-Reply-To: <50168162.4010508@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 7:34 AM, Kyungsik Lee <kyungsik.lee@lge.com> wrote:
-> It is expected that Extended CSD register(the size of this register
-> is larger than CID/CSD) will be referenced more frequently as more
-> fields have been added to Extended CSD and it seems that it is not
-> a good option to double the memory used.
->
-> This patch is intended to avoid the use of bounce buffer for reading
-> Extended CSD register in mmc_send_cxd_data().
-Maybe I am reading this wrong, but mmc_send_cid and mmc_send_csd are always
-called with card->raw_cid and card->raw_csd, which are allocated from the heap,
-(from mmc_alloc_card).
-So the second half of your changes are not required, or a WARN_ON
-might suffice ?
+On 07/30/2012 03:43 PM, Sasha Levin wrote:
+>>>>>
+>>>>>> Then work backwards to see the last place it is
+>>>>>> programmed (APIC_TMICT/APIC_TDCR).
+>>>>>
+>>>>> This looks like what you're looking for:
+>>>>>
+>>>>> kvm_apic: apic_write APIC_TMICT = 0x3e
+>> 
+>> What about APIC_TMICT?  Might be configured just once on boot.
+> 
+> Did you mean APIC_TDCR?
 
->
-> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
-> ---
-> Changes in v2:
-> - Handling on-stack buffer if it's used in caller.
-> ---
->  drivers/mmc/core/mmc_ops.c |   56 ++++++++++++++++++++++++++++++++++---------
->  1 files changed, 44 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-> index 0ed2cc5..dae5492 100644
-> --- a/drivers/mmc/core/mmc_ops.c
-> +++ b/drivers/mmc/core/mmc_ops.c
-> @@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->         struct mmc_data data = {0};
->         struct scatterlist sg;
->         void *data_buf;
-> +       int is_on_stack;
->
-> -       /* dma onto stack is unsafe/nonportable, but callers to this
-> -        * routine normally provide temporary on-stack buffers ...
-> -        */
-> -       data_buf = kmalloc(len, GFP_KERNEL);
-> -       if (data_buf == NULL)
-> -               return -ENOMEM;
-> +       is_on_stack = object_is_on_stack(buf);
-> +       if (is_on_stack) {
-> +
-> +               /* dma onto stack is unsafe/nonportable, but callers to this
-> +                * routine normally provide temporary on-stack buffers ...
-> +                */
-> +               data_buf = kmalloc(len, GFP_KERNEL);
-> +               if (data_buf == NULL)
-> +                       return -ENOMEM;
-> +       } else
-> +               data_buf = buf;
->
->         mrq.cmd = &cmd;
->         mrq.data = &data;
-> @@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->
->         mmc_wait_for_req(host, &mrq);
->
-> -       memcpy(buf, data_buf, len);
-> -       kfree(data_buf);
-> +       if (is_on_stack) {
-> +               memcpy(buf, data_buf, len);
-> +               kfree(data_buf);
-> +       }
->
->         if (cmd.error)
->                 return cmd.error;
-> @@ -294,24 +302,37 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
->  int mmc_send_csd(struct mmc_card *card, u32 *csd)
->  {
->         int ret, i;
-> +       u32 *csd_tmp;
->
->         if (!mmc_host_is_spi(card->host))
->                 return mmc_send_cxd_native(card->host, card->rca << 16,
->                                 csd, MMC_SEND_CSD);
->
-> -       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
-> +       csd_tmp = kmalloc(16, GFP_KERNEL);
-> +       if (!csd_tmp)
-> +               return -ENOMEM;
-> +
-> +       ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
->         if (ret)
-> -               return ret;
-> +               goto err;
-> +
-> +       memcpy(csd, csd_tmp, 16);
->
->         for (i = 0;i < 4;i++)
->                 csd[i] = be32_to_cpu(csd[i]);
->
-> +       kfree(csd_tmp);
->         return 0;
-> +
-> +err:
-> +       kfree(csd_tmp);
-> +       return ret;
->  }
->
->  int mmc_send_cid(struct mmc_host *host, u32 *cid)
->  {
->         int ret, i;
-> +       u32 *cid_tmp;
->
->         if (!mmc_host_is_spi(host)) {
->                 if (!host->card)
-> @@ -320,14 +341,25 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
->                                 cid, MMC_SEND_CID);
->         }
->
-> -       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
-> +       cid_tmp = kmalloc(16, GFP_KERNEL);
-> +       if (!cid_tmp)
-> +               return -ENOMEM;
-> +
-> +       ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
->         if (ret)
-> -               return ret;
-> +               goto err;
-> +
-> +       memcpy(cid, cid_tmp, 16);
->
->         for (i = 0;i < 4;i++)
->                 cid[i] = be32_to_cpu(cid[i]);
->
-> +       kfree(cid_tmp);
->         return 0;
-> +
-> +err:
-> +       kfree(cid_tmp);
-> +       return ret;
->  }
->
->  int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
-> --
-> 1.7.0.4
->
+Yes, sorry.
+
+> 
+> I'm seeing both in the trace logs, but it's APIC_TMICT thats shown when the hang occurs.
+> 
+>               vm-19727 [002] ...1 66669.010699: kvm_apic: apic_read APIC_TDCR = 0x0
+>               vm-19727 [002] ...1 66669.010699: kvm_msr: msr_read 83e = 0x0
+>               vm-19727 [002] d..2 66669.010699: kvm_entry: vcpu 0
+>               vm-19727 [002] d..2 66669.010700: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
+>               vm-19727 [002] ...1 66669.010701: kvm_apic: apic_write APIC_TDCR = 0x3
+>               vm-19727 [002] ...1 66669.010701: kvm_msr: msr_write 83e = 0x3
+>               vm-19727 [002] d..2 66669.010701: kvm_entry: vcpu 0
+
+TDCR is needed to interpret TMICT.
+
+> 
+>>>>>
+>>>>>
+>>>>> Basically it's spinning on the following 4 lines of trace when it happens:
+>>>>>
+>>>>> 	16063.549189: kvm_apic: apic_write APIC_TMICT = 0x3e
+>>>>> 	16063.549190: kvm_msr: msr_write 838 = 0x3e
+>>>>> 	16063.549190: kvm_exit: reason EXTERNAL_INTERRUPT rip 0xffffffff8115de02 info 0 0
+>>>>> 	16063.549190: kvm_entry: vcpu 2
+>>>>>
+>>>>
+>>>> What, no kvm_inj_virq?
+>>>>
+>>>> Are you running with pveoi?  Try disabling it.
+>> 
+>> What's the answer to this question?
+> 
+> The host is running 3.5, so that shouldn't be enabled.
+
+Ok.
+
+>> Please add hrtimer_start and hrtimer_expire_entry to your traced events.
+>> 
+> 
+> A bigger log with those two enabled:
+> 
+>              vm-19730 [003] ...1 66730.739585: kvm_apic: apic_write APIC_TMICT = 0x3e
+>               vm-19716 [000] d..3 66730.739586: hrtimer_start: hrtimer=ffff880133cc3f78 function=posix_timer_fn expires=66882054763626 softexpires=66882054763626
+>               vm-19730 [003] d..2 66730.739586: hrtimer_start: hrtimer=ffff88011e00d3d0 function=kvm_timer_fn expires=66882053774813 softexpires=66882053774813
+
+vcpu 3 programs the timer, and kvm sets an hrtimer, but fat in the future?
+
+>               vm-19730 [003] ...1 66730.739586: kvm_msr: msr_write 838 = 0x3e
+>               vm-19730 [003] d..2 66730.739587: kvm_entry: vcpu 3
+>               vm-19730 [003] d..2 66730.739589: kvm_exit: reason PENDING_INTERRUPT rip 0xffffffff8115c684 info 0 0
+>               vm-19729 [001] d..2 66730.739590: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
+>               vm-19730 [003] d.h2 66730.739590: hrtimer_expire_entry: hrtimer=ffff88011e00d3d0 function=kvm_timer_fn now=66882053778032
+
+Nope, the ftrace time and hrtimer time aren't synchronized.
+
+>               vm-19729 [001] ...1 66730.739591: kvm_apic: apic_write APIC_TMICT = 0x3e
+
+vcpu 2 sets its timer.
+
+>               vm-19730 [003] ...1 66730.739591: kvm_apic_accept_irq: apicid 3 vec 239 (Fixed|edge) (coalesced)
+
+The original vcpu gets its interrupt delivered.
+
+>               vm-19729 [001] d..2 66730.739591: hrtimer_start: hrtimer=ffff88020d208490 function=kvm_timer_fn expires=66882053780380 softexpires=66882053780380
+
+vcpu 2 sets its hrtimer.
+
+>               vm-19730 [003] ...1 66730.739592: kvm_inj_virq: irq 239
+>               vm-19729 [001] ...1 66730.739592: kvm_msr: msr_write 838 = 0x3e
+>               vm-19730 [003] d..2 66730.739593: kvm_entry: vcpu 3
+>               vm-19729 [001] d..2 66730.739593: kvm_entry: vcpu 2
+>               vm-19730 [003] d..2 66730.739594: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
+>               vm-19729 [001] d..2 66730.739594: kvm_exit: reason EXTERNAL_INTERRUPT rip 0xffffffff83601f61 info 0 0
+
+vcpu 2 hrtimer fires, but it doesn't know it yet.
+
+>               vm-19730 [003] ...1 66730.739595: kvm_apic: apic_write APIC_EOI = 0x0
+>               vm-19730 [003] ...1 66730.739595: kvm_msr: msr_write 80b = 0x0
+>               vm-19729 [001] d.h2 66730.739596: hrtimer_expire_entry: hrtimer=ffff88020d208490 function=kvm_timer_fn now=66882053783462
+
+vcpu 2 hrtimer fires.
+
+>               vm-19730 [003] ...1 66730.739596: kvm_apic_accept_irq: apicid 3 vec 239 (Fixed|edge)
+>               vm-19729 [001] ...1 66730.739597: kvm_apic_accept_irq: apicid 2 vec 239 (Fixed|edge) (coalesced)
+
+and delivers a guest interrupt, but guest interrupts are still blocked.
+
+>               vm-19730 [003] d..2 66730.739597: kvm_entry: vcpu 3
+>               vm-19729 [001] d..2 66730.739597: kvm_entry: vcpu 2
+>               vm-19729 [001] d..2 66730.739598: kvm_exit: reason PENDING_INTERRUPT rip 0xffffffff8115c684 info 0 0
+>               vm-19729 [001] ...1 66730.739599: kvm_apic_accept_irq: apicid 2 vec 239 (Fixed|edge) (coalesced)
+>               vm-19729 [001] ...1 66730.739600: kvm_inj_virq: irq 239
+>               vm-19729 [001] d..2 66730.739600: kvm_entry: vcpu 2
+
+Interrupts unblocked, interrupt delivered.
+
+So: either the hrtimer is set for way too low a deadline, or perhaps it
+expires prematurely.
+
+TDCR=3 means divide by 16, together with TMICT=0x3e and a bus frequency
+of 1GHz this means 992 ns expiration, which is consistent with what we see.
+
+Possible causes:
+ - the APIC calibration in the guest failed, so it is programming too
+low values into the timer
+ - it actually needs 1 us wakeups and then can't keep up (esp. as kvm
+interrupt injection is slowing it down)
+
+You can try to find out by changing
+arch/x86/kvm/lapic.c:start_lapic_timer() to impose a minimum wakeup of
+(say) 20 microseconds which will let the guest live long enough for you
+to ftrace it and see what kind of timers it is programming.
+
+>               vm-19729 [001] d..2 66730.739601: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
+>               vm-19729 [001] ...1 66730.739602: kvm_apic: apic_write APIC_EOI = 0x0
+>               vm-19729 [001] ...1 66730.739602: kvm_msr: msr_write 80b = 0x0
+>               vm-19730 [003] d..2 66730.739603: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
+>               vm-19729 [001] ...1 66730.739603: kvm_apic_accept_irq: apicid 2 vec 239 (Fixed|edge)
+>               vm-19730 [003] ...1 66730.739604: kvm_apic: apic_write APIC_TMICT = 0x3e
+>               vm-19729 [001] d..2 66730.739604: kvm_entry: vcpu 2
+>               vm-19730 [003] d..2 66730.739604: hrtimer_start: hrtimer=ffff88011e00d3d0 function=kvm_timer_fn expires=66882053793430 softexpires=66882053793430
+>               vm-19730 [003] ...1 66730.739605: kvm_msr: msr_write 838 = 0x3e
+>               vm-19730 [003] d..2 66730.739606: kvm_entry: vcpu 3
+>               vm-19730 [003] d..2 66730.739607: kvm_exit: reason PENDING_INTERRUPT rip 0xffffffff8115c684 info 0 0
+>               vm-19729 [001] d..2 66730.739608: kvm_exit: reason EXTERNAL_INTERRUPT rip 0xffffffff8115f2a1 info 0 0
+>               vm-19730 [003] d.h2 66730.739608: hrtimer_expire_entry: hrtimer=ffff88011e00d3d0 function=kvm_timer_fn now=66882053796355
+>               vm-19729 [001] ...1 66730.739609: kvm_userspace_exit: reason restart (4)
+>               vm-19730 [003] ...1 66730.739610: kvm_apic_accept_irq: apicid 3 vec 239 (Fixed|edge) (coalesced)
+>               vm-19730 [003] ...1 66730.739611: kvm_userspace_exit: reason restart (4)
+>               vm-19716 [000] ...1 66730.739612: kvm_set_irq: gsi 4 level 1 source 0
+>               vm-19716 [000] ...2 66730.739614: kvm_pic_set_irq: chip 0 pin 4 (edge)
+> 
+
+
+-- 
+error compiling committee.c: too many arguments to function
+
+
