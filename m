@@ -1,131 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab2G3KEP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 06:04:15 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51465 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab2G3KEO convert rfc822-to-8bit (ORCPT
+	id S1753062Ab2G3KEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 06:04:35 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:33884 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752774Ab2G3KEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 06:04:14 -0400
-Message-ID: <50165C0D.1070200@parallels.com>
-Date: Mon, 30 Jul 2012 14:03:57 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 30 Jul 2012 06:04:32 -0400
+Message-ID: <50165C27.3010107@ti.com>
+Date: Mon, 30 Jul 2012 15:34:23 +0530
+From: Shubhrajyoti <shubhrajyoti@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2 00/15] Lockd: grace period containerization
-References: <20120725125258.24376.82525.stgit@localhost.localdomain> <20120727215431.GE6388@fieldses.org>
-In-Reply-To: <20120727215431.GE6388@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
+        rnayak@ti.com, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v6 01/11] drivers: usb: otg: add a new driver for omap
+ usb2 phy
+References: <1343639400-28725-1-git-send-email-kishon@ti.com> <1343639400-28725-2-git-send-email-kishon@ti.com> <501655F2.7070900@ti.com> <CAAe_U6LWEiAE8TVVEQ5LcKy0_+J7Er2vP71MrQVrg=ZteyAeCw@mail.gmail.com>
+In-Reply-To: <CAAe_U6LWEiAE8TVVEQ5LcKy0_+J7Er2vP71MrQVrg=ZteyAeCw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-28.07.2012 01:54, J. Bruce Fields пишет:
-> On Wed, Jul 25, 2012 at 04:55:45PM +0400, Stanislav Kinsbursky wrote:
->> Bruce, I feel this patch set is ready for inclusion.
->>
->> v2:
->> 1) Rebase on Bruce's "for-3.6" branch.
->>
->> This patch set makes grace period and hosts reclaiming network namespace
->> aware.
+On Monday 30 July 2012 03:16 PM, ABRAHAM, KISHON VIJAY wrote:
+> Hi,
 >
-> On a quick skim--yes, that looks reasonable to me.
->
-> It doesn't help with active/active cluster exports, because in that case
-> we need some additional coordination between nfsd's.
->
-> But it looks good enough to handle the case where each filesystem is
-> exported from at most one server at a time, which is more than we
-> currently handle.
->
-> It's a little late for 3.6.  Also I get the impression Al Viro has some
-> lockd rework in progress, which we may want to wait for.
->
-> So I'll likely look again into queueing this up for 3.7 once 3.6-rc1 is
-> out.
+> On Mon, Jul 30, 2012 at 3:07 PM, Shubhrajyoti <shubhrajyoti@ti.com> wrote:
+>> On Monday 30 July 2012 02:39 PM, Kishon Vijay Abraham I wrote:
+>>> +                     writel(~PHY_PD, phy->control_dev);
+>>> +                     /* XXX: add proper documentation for this delay */
+>>> +                     mdelay(200);
+>> Do you need this to be busy?
+> This might be called from interrupt context. This delay was initially
+> added in omap_phy_internal.c and I just inherited it.
+Thanks for the explanation.
 
+> Thanks
+> Kishon
 
-Ok.
-Will Al Viro's lockd rework be a part of 3.6 kernel?
-
-
->
-> --b.
->
->>
->> Main ideas:
->> 1)  moving of
->>
->> 	unsigned long next_gc;
->> 	unsigned long nrhosts;
->>
->> 	struct delayed_work grace_period_end;
->> 	struct lock_manager lockd_manager;
->> 	struct list_head grace_list;
->>
->> to per-net Lockd data.
->>
->> 2) moving of
->>
->> 	struct lock_manager nfsd4_manager;
->>
->> to per-net NFSd data.
->>
->> 3) shutdown + gc of NLM hosts done now network namespace aware.
->>
->> 4) restart_grace() now works only for init_net.
->>
->> The following series implements...
->>
->> ---
->>
->> Stanislav Kinsbursky (15):
->>        LockD: mark host per network namespace on garbage collect
->>        LockD: make garbage collector network namespace aware.
->>        LockD: manage garbage collection timeout per networks namespace
->>        LockD: manage used host count per networks namespace
->>        Lockd: host complaining function introduced
->>        Lockd: add more debug to host shutdown functions
->>        LockD: manage grace period per network namespace
->>        LockD: make lockd manager allocated per network namespace
->>        NFSd: make nfsd4_manager allocated per network namespace context.
->>        SUNRPC: service request network namespace helper introduced
->>        LockD: manage grace list per network namespace
->>        LockD: pass actual network namespace to grace period management functions
->>        Lockd: move grace period management from lockd() to per-net functions
->>        NFSd: make grace end flag per network namespace
->>        NFSd: make boot_time variable per network namespace
->>
->>
->>   fs/lockd/grace.c            |   16 +++++--
->>   fs/lockd/host.c             |   92 ++++++++++++++++++++++++++------------
->>   fs/lockd/netns.h            |    7 +++
->>   fs/lockd/svc.c              |   43 ++++++++++--------
->>   fs/lockd/svc4proc.c         |   13 +++--
->>   fs/lockd/svclock.c          |   16 +++----
->>   fs/lockd/svcproc.c          |   15 ++++--
->>   fs/lockd/svcsubs.c          |   19 +++++---
->>   fs/nfs/callback_xdr.c       |    4 +-
->>   fs/nfsd/export.c            |    4 +-
->>   fs/nfsd/netns.h             |    4 ++
->>   fs/nfsd/nfs4idmap.c         |    4 +-
->>   fs/nfsd/nfs4proc.c          |   18 ++++---
->>   fs/nfsd/nfs4state.c         |  104 ++++++++++++++++++++++++-------------------
->>   fs/nfsd/state.h             |    4 +-
->>   include/linux/fs.h          |    5 +-
->>   include/linux/lockd/lockd.h |    6 +-
->>   include/linux/sunrpc/svc.h  |    2 +
->>   18 files changed, 231 insertions(+), 145 deletions(-)
->>
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
