@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab2G3BTl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 21:19:41 -0400
-Received: from ozlabs.org ([203.10.76.45]:58988 "EHLO ozlabs.org"
+	id S1753931Ab2G3BgE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 21:36:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43462 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753377Ab2G3BTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 21:19:40 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@us.ibm.com>
-Subject: Re: [PATCH] x86: don't ever patch back to UP if we unplug cpus.
-In-Reply-To: <1343420909.3696.560.camel@sbsiddha-desk.sc.intel.com>
-References: <87y5m5mz6o.fsf@rustcorp.com.au> <1343420909.3696.560.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 30 Jul 2012 10:45:04 +0930
-Message-ID: <87d33em4mf.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753699Ab2G3BgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 21:36:03 -0400
+Date: Mon, 30 Jul 2012 11:35:47 +1000
+From: NeilBrown <neilb@suse.de>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] RTC: Avoid races between RTC alarm wakeup and suspend.
+Message-ID: <20120730113547.2c425ea9@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Jcu6Ko=r3ASkF2RE017CSiM"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jul 2012 13:28:29 -0700, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> On Fri, 2012-07-27 at 17:08 +0930, Rusty Russell wrote:
-> > Paul McKenney points out:
-> > 
-> >  mean offline overhead is 6251/48=130.2 milliseconds.
-> > 
-> >  If I remove the alternatives_smp_switch() from the offline
-> >  path [...] the mean offline overhead is 550/42=13.1 milliseconds
-> > 
-> > Basically, we're never going to get those 120ms back, and the code is
-> > pretty messy.
-> 
-> I am ok with this proposal. If I follow correctly, you are still
-> allowing the patching to UP happen on boot if there is only one online
-> cpu currently but a possiblity of multiple cpu's that can come online
-> later. Perhaps make this little more explicit in the changelog.
+--Sig_/Jcu6Ko=r3ASkF2RE017CSiM
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-That's right.  How's this:
 
-Subject: x86: don't ever patch back to UP if we unplug cpus.
+If an RTC alarm fires just as suspend is happening, it is possible for
+suspend to complete and the alarm to be missed.
 
-We still patch SMP instructions to UP variants if we boot with a
-single CPU, but not at any other time.  In particular, not if we
-unplug CPUs to return to a single cpu.
+To avoid the race, we must register the event with the PM core.
 
-Paul McKenney points out:
+As the event is made visible to userspace through a thread which is
+only scheduled by the interrupt, we need a pm_stay_awake/pm_relax
+pair preventing suspend from the interrupt until the thread completes
+its work.
 
- mean offline overhead is 6251/48=130.2 milliseconds.
+Signed-off-by: NeilBrown <neilb@suse.de>
 
- If I remove the alternatives_smp_switch() from the offline
- path [...] the mean offline overhead is 550/42=13.1 milliseconds
+--
+This makes the pm_wakeup_event() call in cmos_interrupt unnecessary as it
+provides suspend protection for all RTCs that use rtc_update_irq.
 
-Basically, we're never going to get those 120ms back, and the code is
-pretty messy.
+I think the pm_stay_awake//pm_relax is needed - just pm_wakup_event() is=20
+theoretically not sufficient.
 
-We get rid of:
-1) The "smp-alt-once" boot option.  It's actually "smp-alt-boot", the
-   documentation is wrong.  It's now the default.
-2) The skip_smp_alternatives flag used by suspend.
-3) arch_disable_nonboot_cpus_begin() and arch_disable_nonboot_cpus_end()
-   which were only used to set this one flag.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-
-> Also,
-> 
-> > +	/* Patch to UP if other cpus not imminent. */
-> > +	if (noreplace_smp || num_present_cpus() == 1 || setup_max_cpus <= 1) {
-> 
-> shouldn't this be
-> 
-> 	if (!noreplace_smp && (num_present_cpus() == 1 || setup_max_cpus <= 1))
-
-Yes, good point.
-
-> also, to be consistent with other checks, may be just use
-> "num_possible_cpus() == 1" check instead of "setup_max_cpus <= 1".
-
-I think that should work.  Will test variations...
+This is because there is no guarantee (that I know of) that the workqueue
+thread will actually get scheduled before 'suspend' takes over.
 
 Thanks,
-Rusty.
+NeilBrown
+
+
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index eb415bd..9592b93 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -582,6 +582,7 @@ enum hrtimer_restart rtc_pie_update_irq(struct hrtimer =
+*timer)
+ void rtc_update_irq(struct rtc_device *rtc,
+ 		unsigned long num, unsigned long events)
+ {
++	pm_stay_awake(rtc->dev.parent);
+ 	schedule_work(&rtc->irqwork);
+ }
+ EXPORT_SYMBOL_GPL(rtc_update_irq);
+@@ -844,6 +845,7 @@ void rtc_timer_do_work(struct work_struct *work)
+=20
+ 	mutex_lock(&rtc->ops_lock);
+ again:
++	pm_relax(rtc->dev.parent);
+ 	__rtc_read_time(rtc, &tm);
+ 	now =3D rtc_tm_to_ktime(tm);
+ 	while ((next =3D timerqueue_getnext(&rtc->timerqueue))) {
+
+--Sig_/Jcu6Ko=r3ASkF2RE017CSiM
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUBXk9Dnsnt1WYoG5AQKrjA//et5zuVgveV/UKUPXe21DomsaLpbUuAIg
+1HDBypawA1qrCDqm4RH3hkVwy2tFQuY4312m1CAimRtldV7VW2+uQ+tAwOjA8f4n
+zqGJQlAnqQOE3VemcAXcXzKhZHK+rQW04QIbim09ZK5nila+mOKXGY5J9LswpI1I
+U3cR/6ZPOyswmqSiygZDLz5ZnqpxQnIhuSXGdFKz5yeRnYwctYWsTtD4sf8xxSOD
+CeLasf0xYY9IiqDCCtU2kSShDX4JKB2W35NIvkReIj4hGIybDH3s7qv2BMljGjLq
+CAy9f3xFPR+JNDzgzM8nM76NLvHaL7zDmOVrwYYd/qVk7DcgICLLTYMAwBcglmIp
+WoiCTnDI6skf97BWqoiV/XBWLyoJNApOLmyoqtPz03sIghypEpdytHJMRu8kKE9W
+sy7s0+mwL0hfXTRuRPOnJRldb9ADedDdSlmu/G4+7E6hK+NVLkgNVIMY3Pov2vG0
+DaaGfkBk4dIhjCVOVHvopaTmtISTl9Znqhagf00d0jewJTrNbbSPHDMB1LNB8DON
+gyx7/RuQmabvp8kfg778OQrzGho8Gg2ysHZm6Xne3arb/jU+jiETphyBN8FqCGF1
+TfX/dlD6ByzPU068rwhINyBRCwc4ShcbX14Z6cHaIJYkUsx1we1vL/Z/alaDgODL
+dXeSTW/x04c=
+=/hcC
+-----END PGP SIGNATURE-----
+
+--Sig_/Jcu6Ko=r3ASkF2RE017CSiM--
