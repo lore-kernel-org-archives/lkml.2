@@ -1,68 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab2G3B7s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 21:59:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29885 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932Ab2G3B7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 21:59:47 -0400
-Message-ID: <1343613578.1642.6.camel@cr0>
-Subject: Re: [PATCH 4/7] bridge: call NETDEV_RELEASE notifier in br_del_if()
-From: Cong Wang <amwang@redhat.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Mon, 30 Jul 2012 09:59:38 +0800
-In-Reply-To: <20120727085021.1d4ef810@nehalam.linuxnetplumber.net>
-References: <1343403484-29347-1-git-send-email-amwang@redhat.com>
-	 <1343403484-29347-5-git-send-email-amwang@redhat.com>
-	 <20120727085021.1d4ef810@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753994Ab2G3CEr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 22:04:47 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60778 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753886Ab2G3CEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 22:04:46 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-98-5015ebbb441d
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Venkatraman S <svenkatr@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
+        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kyungsik Lee <kyungsik.lee@lge.com>
+Subject: [PATCH RESEND v2] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
+Date: Mon, 30 Jul 2012 11:04:41 +0900
+Message-Id: <1343613881-6803-1-git-send-email-kyungsik.lee@lge.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 08:50 -0700, Stephen Hemminger wrote:
-> On Fri, 27 Jul 2012 23:38:01 +0800
-> Cong Wang <amwang@redhat.com> wrote:
-> 
-> > When a bridge interface deletes its underlying ports, it should
-> > notify netconsole too, like what bonding interface does.
-> > 
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > Signed-off-by: Cong Wang <amwang@redhat.com>
-> > ---
-> >  net/bridge/br_if.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-> > index e1144e1..d243914 100644
-> > --- a/net/bridge/br_if.c
-> > +++ b/net/bridge/br_if.c
-> > @@ -427,6 +427,7 @@ int br_del_if(struct net_bridge *br, struct net_device *dev)
-> >  	if (!p || p->br != br)
-> >  		return -EINVAL;
-> >  
-> > +	call_netdevice_notifiers(NETDEV_RELEASE, br->dev);
-> >  	del_nbp(p);
-> >  
-> >  	spin_lock_bh(&br->lock);
-> 
-> Since you can have multiple ports attached to the bridge, this
-> doesn't seem correct. Don't you want the netconsole to keep going
-> on the other ports of the bridge?
-> 
-> What exactly is the problem with having netconsole persist?
+It is expected that Extended CSD register(the size of this register
+is larger than CID/CSD) will be referenced more frequently as more
+fields have been added to Extended CSD and it seems that it is not
+a good option to double the memory used.
 
-Hmm, I saw an incorrect log message when deleting the last port from the
-bridge when netconsole is setup on it. After rethinking it today, you
-are right we should not simply disable netconsole when one port is
-detached, as we have no way to know if that port is used to reach the
-netconsole server.
+This patch is intended to avoid the use of bounce buffer for reading
+Extended CSD register in mmc_send_cxd_data().
 
-So, please ignore this patch.
+Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+---
+Changes in v2:
+- Handling on-stack buffer if it's used in caller.
+---
+ drivers/mmc/core/mmc_ops.c |   56 ++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 44 insertions(+), 12 deletions(-)
 
-Thanks.
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index 0ed2cc5..dae5492 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ 	struct mmc_data data = {0};
+ 	struct scatterlist sg;
+ 	void *data_buf;
++	int is_on_stack;
+ 
+-	/* dma onto stack is unsafe/nonportable, but callers to this
+-	 * routine normally provide temporary on-stack buffers ...
+-	 */
+-	data_buf = kmalloc(len, GFP_KERNEL);
+-	if (data_buf == NULL)
+-		return -ENOMEM;
++	is_on_stack = object_is_on_stack(buf);
++	if (is_on_stack) {
++
++		/* dma onto stack is unsafe/nonportable, but callers to this
++		 * routine normally provide temporary on-stack buffers ...
++		 */
++		data_buf = kmalloc(len, GFP_KERNEL);
++		if (data_buf == NULL)
++			return -ENOMEM;
++	} else
++		data_buf = buf;
+ 
+ 	mrq.cmd = &cmd;
+ 	mrq.data = &data;
+@@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ 
+ 	mmc_wait_for_req(host, &mrq);
+ 
+-	memcpy(buf, data_buf, len);
+-	kfree(data_buf);
++	if (is_on_stack) {
++		memcpy(buf, data_buf, len);
++		kfree(data_buf);
++	}
+ 
+ 	if (cmd.error)
+ 		return cmd.error;
+@@ -294,24 +302,37 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
+ int mmc_send_csd(struct mmc_card *card, u32 *csd)
+ {
+ 	int ret, i;
++	u32 *csd_tmp;
+ 
+ 	if (!mmc_host_is_spi(card->host))
+ 		return mmc_send_cxd_native(card->host, card->rca << 16,
+ 				csd, MMC_SEND_CSD);
+ 
+-	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
++	csd_tmp = kmalloc(16, GFP_KERNEL);
++	if (!csd_tmp)
++		return -ENOMEM;
++
++	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
+ 	if (ret)
+-		return ret;
++		goto err;
++
++	memcpy(csd, csd_tmp, 16);
+ 
+ 	for (i = 0;i < 4;i++)
+ 		csd[i] = be32_to_cpu(csd[i]);
+ 
++	kfree(csd_tmp);
+ 	return 0;
++
++err:
++	kfree(csd_tmp);
++	return ret;
+ }
+ 
+ int mmc_send_cid(struct mmc_host *host, u32 *cid)
+ {
+ 	int ret, i;
++	u32 *cid_tmp;
+ 
+ 	if (!mmc_host_is_spi(host)) {
+ 		if (!host->card)
+@@ -320,14 +341,25 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
+ 				cid, MMC_SEND_CID);
+ 	}
+ 
+-	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
++	cid_tmp = kmalloc(16, GFP_KERNEL);
++	if (!cid_tmp)
++		return -ENOMEM;
++
++	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
+ 	if (ret)
+-		return ret;
++		goto err;
++
++	memcpy(cid, cid_tmp, 16);
+ 
+ 	for (i = 0;i < 4;i++)
+ 		cid[i] = be32_to_cpu(cid[i]);
+ 
++	kfree(cid_tmp);
+ 	return 0;
++
++err:
++	kfree(cid_tmp);
++	return ret;
+ }
+ 
+ int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
+-- 
+1.7.0.4
 
