@@ -1,101 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab2G3A7J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 20:59:09 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56189 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab2G3A7H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 20:59:07 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5015DC4B.2000802@jp.fujitsu.com>
-Date: Mon, 30 Jul 2012 09:58:51 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1753900Ab2G3BJm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 21:09:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43014 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753747Ab2G3BJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 21:09:40 -0400
+From: NeilBrown <neilb@suse.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Date: Mon, 30 Jul 2012 11:09:01 +1000
+Subject: [PATCH 0/2] Report wake_events for some button presses.
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Message-ID: <20120730010746.22579.52841.stgit@notabene.brown>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: <lenb@kernel.org>, <toshi.kani@hp.com>, <linux-acpi@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] create sun sysfs file
-Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if a device has _SUN method, there is no way to know the slot unique-ID.
-Thus the patch creates "sun" file in sysfs so that we can recognize it.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+To avoid racing with suspend, we need to report wakeup events to the
+pm subsystem when they happen.
+These two patches do this for gpio_keys and twl4030-pwrbutton.
 
 ---
- drivers/acpi/scan.c     |   25 +++++++++++++++++++++++++
- include/acpi/acpi_bus.h |    1 +
- 2 files changed, 26 insertions(+)
 
-Index: linux-3.5/include/acpi/acpi_bus.h
-===================================================================
---- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-27 10:20:22.722553439 +0900
-+++ linux-3.5/include/acpi/acpi_bus.h	2012-07-27 10:20:25.741555954 +0900
-@@ -209,6 +209,7 @@ struct acpi_device_pnp {
- 	struct list_head ids;		/* _HID and _CIDs */
- 	acpi_device_name device_name;	/* Driver-determined */
- 	acpi_device_class device_class;	/*        "          */
-+	unsigned long sun;		/* _SUN */
- };
- 
- #define acpi_device_bid(d)	((d)->pnp.bus_id)
-Index: linux-3.5/drivers/acpi/scan.c
-===================================================================
---- linux-3.5.orig/drivers/acpi/scan.c	2012-07-27 10:20:22.721522499 +0900
-+++ linux-3.5/drivers/acpi/scan.c	2012-07-30 09:52:32.581887304 +0900
-@@ -192,10 +192,21 @@ end:
- }
- static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
- 
-+static ssize_t
-+acpi_device_sun_show(struct device *dev, struct device_attribute *attr, char *buf) {
-+	struct acpi_device *acpi_dev = to_acpi_device(dev);
-+	int result;
-+
-+	result = sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
-+	return result;
-+}
-+static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
-+
- static int acpi_device_setup_files(struct acpi_device *dev)
- {
- 	acpi_status status;
- 	acpi_handle temp;
-+	unsigned long long sun;
- 	int result = 0;
- 
- 	/*
-@@ -217,6 +228,16 @@ static int acpi_device_setup_files(struc
- 			goto end;
- 	}
- 
-+	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
-+	if (ACPI_SUCCESS(status)) {
-+		dev->pnp.sun = (unsigned long)sun;
-+		result = device_create_file(&dev->dev, &dev_attr_sun);
-+		if (result)
-+			goto end;
-+	} else {
-+		dev->pnp.sun = (unsigned long)-1;
-+	}
-+
-         /*
-          * If device has _EJ0, 'eject' file is created that is used to trigger
-          * hot-removal function from userland.
-@@ -241,6 +262,10 @@ static void acpi_device_remove_files(str
- 	if (ACPI_SUCCESS(status))
- 		device_remove_file(&dev->dev, &dev_attr_eject);
- 
-+	status = acpi_get_handle(dev->handle, "_SUN", &temp);
-+	if (ACPI_SUCCESS(status))
-+		device_remove_file(&dev->dev, &dev_attr_sun);
-+
- 	device_remove_file(&dev->dev, &dev_attr_modalias);
- 	device_remove_file(&dev->dev, &dev_attr_hid);
- 	if (dev->handle)
+NeilBrown (2):
+      Input: twl4030-pwrbutton: report a wakeup_event on button press.
+      Input: gpio_keys: report a wakeup_event for a button press on a wake_up button.
+
+
+ drivers/input/keyboard/gpio_keys.c     |    7 +++++++
+ drivers/input/misc/twl4030-pwrbutton.c |    1 +
+ 2 files changed, 8 insertions(+)
+
+-- 
+Signature
 
