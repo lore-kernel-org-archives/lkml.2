@@ -1,97 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab2G3Fkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 01:40:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36839 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab2G3Fkv (ORCPT
+	id S1753170Ab2G3FrZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 01:47:25 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59820 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab2G3FrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 01:40:51 -0400
-Date: Sun, 29 Jul 2012 22:40:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.6-rc0 (2nd set)
-Message-ID: <20120730054047.GA18037@core.coreip.homeip.net>
+	Mon, 30 Jul 2012 01:47:23 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+=dFzh4dFatOy42FydbVvoXB8=5CvLu5AwPvUA16h+kymq0Lw@mail.gmail.com>
+References: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
+	<500CDE35.6000009@windriver.com>
+	<42fcd21f-68bd-4dc7-8460-0cb968eb512e@email.android.com>
+	<500E1057.3020509@windriver.com>
+	<75bdd73e-1c47-4fd6-bc29-5b86ee6da69a@email.android.com>
+	<CA+=dFzg=Bpsv5bMzECoAXYVcbD95eYy6xDAzL6fwiHrunfq-tg@mail.gmail.com>
+	<e7f8a685-9635-4aa9-bd67-1044e0720b29@email.android.com>
+	<CA+=dFzifKwbiXmw=pu0+rWmz72+4jsbv6bXOBHyL0LmxaL9byg@mail.gmail.com>
+	<CA+=dFzgXq3Sx-Ny+6oDZ3BEdsMQCgswNEVPVnhmhedHFvazzWw@mail.gmail.com>
+	<50100A29.8010705@gmail.com>
+	<CA+=dFzj11c9K0TS0T7D1aBVz+ppdFK91ZzBbevLV23FrWJNzmw@mail.gmail.com>
+	<CA+=dFziK09TVcK29x1SLg+JanOj6o__bJKf8yohw6dTYCUCF5A@mail.gmail.com>
+	<8ea83e51-81d1-407a-be06-98d2c99c876d@email.android.com>
+	<CA+=dFzguqjjnnqHO53Mx859VB6NU=4MaPWAUzGQB2qtZGfdAUg@mail.gmail.com>
+	<5013069F.3080306@gmail.com>
+	<CA+=dFzh4dFatOy42FydbVvoXB8=5CvLu5AwPvUA16h+kymq0Lw@mail.gmail.com>
+Date: Mon, 30 Jul 2012 13:47:22 +0800
+Message-ID: <CA+=dFzh1wQx2rBs_2RAwrXsz79WS3njnO8=2ntQZUbB5So69gg@mail.gmail.com>
+Subject: Re: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK
+ when bundling
+From: Xufeng Zhang <xufengzhang.main@gmail.com>
+To: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        xufeng zhang <xufeng.zhang@windriver.com>, sri@us.ibm.com,
+        davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 7/30/12, Xufeng Zhang <xufengzhang.main@gmail.com> wrote:
+> On 7/28/12, Vlad Yasevich <vyasevich@gmail.com> wrote:
+>> here is an untested prototype of what I was talking about.  This should
+>> handle multiple data chunks.
+>
+> Yes, it works if only the end of the DATA chunk in a packet has
+> invalid stream identifier
+> and I have verified this patch by my test case, but what happens if
+> there are multiple
+> DATA chunks which have invalid stream identifier in a packet?
+>
+> Consider the below example:
+> A packet has several chunks bundling together: "COOKIE_ECHO DATA DATA",
+> both
+> of the two DATA chunks have invalid stream identifier, then the
+> response will be
+> "COOKIE_ACK ERROR SACK ERROR", right?
 
---0F1p//8PRICkK4MW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I just wrote a test case for my above assumption and have verified
+that SACK always
+bundled before the end of the ERROR chunk if multiple error DATA
+chunks happened.
 
-Hi Linus,
-
-Please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive 2nd set of updates for the input subsystem for the 3.6 merge
-window. You will get a new driver for FT5x06 based EDT displays and a
-couple of other driver changes.
-
-Changelog:
----------
-
-Ping Cheng (1):
-      Input: wacom - add support to Cintiq 22HD
-
-Seth Forshee (1):
-      Input: synaptics - handle out of bounds values from the hardware
-
-Simon Budig (1):
-      Input: add driver for FT5x06 based EDT displays
+So this patch didn't handle all the situations and this is really what
+I suspected before.
 
 
-Diffstat:
---------
-
- Documentation/input/edt-ft5x06.txt     |   54 ++
- drivers/input/mouse/synaptics.c        |   22 +
- drivers/input/tablet/wacom_wac.c       |   21 +-
- drivers/input/tablet/wacom_wac.h       |    3 +-
- drivers/input/touchscreen/Kconfig      |   13 +
- drivers/input/touchscreen/Makefile     |    1 +
- drivers/input/touchscreen/edt-ft5x06.c |  898 ++++++++++++++++++++++++++++=
-++++
- include/linux/input/edt-ft5x06.h       |   24 +
- 8 files changed, 1033 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/input/edt-ft5x06.txt
- create mode 100644 drivers/input/touchscreen/edt-ft5x06.c
- create mode 100644 include/linux/input/edt-ft5x06.h
-
---=20
-Dmitry
-
-
---0F1p//8PRICkK4MW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQFh5fAAoJEH70+W8r6ZYqoNoP/jK1OIKujhNSgyHuxZ9AD9YB
-hLIVD8Y++FQ61SJPKppbholOrm+XSApse6kLAlfIDKWCfrMUYmTGlth8obNM1ZRB
-en2r5awlEBKhiVQPlFSOGJKL6b9qcmIFOkg56zkeRwIIoSVh0IMDK/PrfiAhukd3
-vFHlB4rAf4/dZB59L1luXVR+yfV9ocB6pkgDk0L41jZk4C3CdSLo1axSy+QbHzmy
-7oytYsLUtYOM6haUXbwftznh3gPOb4Gxcl+tXiDB5SjgQdw1VD7hNlFfTQm+fVCn
-HK9R5+4YWPNev2nsHQCl/v30tmSTUikqXUxd4kb2oOrXXFqHazDERFlYBH1HlzuM
-1b774jcE73i7NcmiKEWdt/kZ0w+yUNq4F92SK1BjQ4oCcT2XU0us6CqZ+exSdEJ9
-YAk5ef7GhSc17B4aIEhIH6CVOO846WmRmWa9vWvyfyhhkRjn3daBeKHWVlOIIvIx
-sMEhta9+twY2pmYS55Mc1zgRbd3Y6Cl4v6WPqdqGfkLTrnL7PsMWUWutuduNtPBr
-pJu3q1m35Yz0qbHZVp8rmFSvf/mJ3J83MVrgKvKhtgdvnMeTmg623lVdShA3WzMl
-koHaXHOzpLvM9fTefUzCOCYhVMpgQRaKb/WEz1CMYCnaIJq9j5TiCSJ4/+sCodP5
-u906nSMcc27ozmwHuNpb
-=wfjT
------END PGP SIGNATURE-----
-
---0F1p//8PRICkK4MW--
+Thanks,
+Xufeng Zhang
+>
+>
+>
+> Thanks,
+> Xufeng Zhang
+>
+>>
+>> -vlad
+>>
+>> ---
+>>   include/net/sctp/command.h |    1 +
+>>   net/sctp/sm_sideeffect.c   |   22 ++++++++++++++++++++++
+>>   net/sctp/sm_statefuns.c    |   18 ++++++++++--------
+>>   3 files changed, 33 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
+>> index 712b3be..4043445 100644
+>> --- a/include/net/sctp/command.h
+>> +++ b/include/net/sctp/command.h
+>> @@ -110,6 +110,7 @@ typedef enum {
+>>   	SCTP_CMD_SEND_NEXT_ASCONF, /* Send the next ASCONF after ACK */
+>>   	SCTP_CMD_PURGE_ASCONF_QUEUE, /* Purge all asconf queues.*/
+>>   	SCTP_CMD_SET_ASOC,	 /* Restore association context */
+>> +	SCTP_CMD_GEN_BAD_STREAM, /* Issue an Invalid Stream error */
+>>   	SCTP_CMD_LAST
+>>   } sctp_verb_t;
+>>
+>> diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
+>> index 1ff51c9..c5a1322 100644
+>> --- a/net/sctp/sm_sideeffect.c
+>> +++ b/net/sctp/sm_sideeffect.c
+>> @@ -1036,6 +1036,22 @@ static void sctp_cmd_send_asconf(struct
+>> sctp_association *asoc)
+>>   	}
+>>   }
+>>
+>> +static void sctp_cmd_make_inv_stream_err(sctp_cmd_seq_t *commands,
+>> +					 struct sctp_association *asoc,
+>> +					 struct sctp_chunk *chunk,
+>> +					 struct sctp_datahdr *data_hdr)
+>> +{
+>> +	struct sctp_chunk *err;
+>> +
+>> +	err = sctp_make_op_error(asoc, chunk, SCTP_ERROR_INV_STRM,
+>> +				 &data_hdr->stream,
+>> +				 sizeof(data_hdr->stream),
+>> +				 sizeof(u16));
+>> +	if (err)
+>> +		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+>> +					SCTP_CHUNK(err));
+>> +}
+>> +
+>>
+>>   /* These three macros allow us to pull the debugging code out of the
+>>    * main flow of sctp_do_sm() to keep attention focused on the real
+>> @@ -1700,6 +1716,12 @@ static int sctp_cmd_interpreter(sctp_event_t
+>> event_type,
+>>   			asoc = cmd->obj.asoc;
+>>   			break;
+>>
+>> +		case SCTP_CMD_GEN_BAD_STREAM:
+>> +			sctp_cmd_make_inv_stream_err(commands,
+>> +					 asoc, chunk,
+>> +					 (struct sctp_datahdr *)cmd->obj.ptr);
+>> +			break;
+>> +
+>>   		default:
+>>   			pr_warn("Impossible command: %u, %p\n",
+>>   				cmd->verb, cmd->obj.ptr);
+>> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+>> index 891f5db..57532e3 100644
+>> --- a/net/sctp/sm_statefuns.c
+>> +++ b/net/sctp/sm_statefuns.c
+>> @@ -2972,6 +2972,12 @@ discard_noforce:
+>>   	if (chunk->end_of_packet)
+>>   		sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, force);
+>>
+>> +	/* Queue the INVALID STREAM error after the SACK if one is needed. */
+>> +	if (SCTP_IERROR_BAD_STREAM == error) {
+>> +		sctp_add_cmd_sf(commands, SCTP_CMD_GEN_BAD_STREAM,
+>> +				SCTP_PTR(chunk->subh.data_hdr));
+>> +	}
+>> +
+>>   	return SCTP_DISPOSITION_DISCARD;
+>>   consume:
+>>   	return SCTP_DISPOSITION_CONSUME;
+>> @@ -3044,6 +3050,10 @@ sctp_disposition_t
+>> sctp_sf_eat_data_fast_4_4(const struct sctp_endpoint *ep,
+>>   		 */
+>>   		sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SHUTDOWN, SCTP_NULL());
+>>   		sctp_add_cmd_sf(commands, SCTP_CMD_GEN_SACK, SCTP_FORCE());
+>> +		if (SCTP_IERROR_BAD_STREAM == error) {
+>> +			sctp_add_cmd_sf(commands, SCTP_CMD_GEN_BAD_STREAM,
+>> +					SCTP_PTR(chunk->subh.data_hdr));
+>> +		}
+>>   		sctp_add_cmd_sf(commands, SCTP_CMD_TIMER_RESTART,
+>>   				SCTP_TO(SCTP_EVENT_TIMEOUT_T2_SHUTDOWN));
+>>   	}
+>> @@ -6140,14 +6150,6 @@ static int sctp_eat_data(const struct
+>> sctp_association *asoc,
+>>   	if (sid >= asoc->c.sinit_max_instreams) {
+>>   		/* Mark tsn as received even though we drop it */
+>>   		sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_TSN, SCTP_U32(tsn));
+>> -
+>> -		err = sctp_make_op_error(asoc, chunk, SCTP_ERROR_INV_STRM,
+>> -					 &data_hdr->stream,
+>> -					 sizeof(data_hdr->stream),
+>> -					 sizeof(u16));
+>> -		if (err)
+>> -			sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+>> -					SCTP_CHUNK(err));
+>>   		return SCTP_IERROR_BAD_STREAM;
+>>   	}
+>>
+>> -- 1.7.7.6
+>>
+>>
+>>
+>
