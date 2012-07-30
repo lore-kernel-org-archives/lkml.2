@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab2G3T1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:27:20 -0400
+	id S1754929Ab2G3T1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:27:36 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29027 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754844Ab2G3T1A (ORCPT
+	with ESMTP id S1754814Ab2G3T1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jul 2012 15:27:00 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=3Y74iyPq4QwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=usbJgE80zwQabxn4eEMA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=hYst2_qJTcDCv4vj9WAA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=_WBENPFcpm8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=lGtuOORj9DeGQxe-CrkA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=09ECwpbCZ-OoF0qQj28A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120730192658.341658022@goodmis.org>
+Message-Id: <20120730192658.038948846@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:23:24 -0400
+Date: Mon, 30 Jul 2012 15:23:23 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 10/10] ktest: Allow perl regex expressions in conditional statements
+Subject: [PATCH 09/10] ktest: Ignore errors it tests if IGNORE_ERRORS is set
 References: <20120730192314.144253843@goodmis.org>
-Content-Disposition: inline; filename=0010-ktest-Allow-perl-regex-expressions-in-conditional-st.patch
+Content-Disposition: inline; filename=0009-ktest-Ignore-errors-it-tests-if-IGNORE_ERRORS-is-set.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,42 +30,56 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Add '=3D~' and '!~' to the list of allowed conditionals for DEFAULT and
-TEST_START section if statements.
+The option IGNORE_ERRORS is used to allow a test to succeed even if a
+warning appears from the kernel. Sometimes kernels will produce warnings
+that are not associated with a test, and the user wants to test
+something else.
 
-ie.
-
- TEST_START IF TEST =3D~ .*test$
+The IGNORE_ERRORS works for boot up, but was not preventing test runs to
+succeed if the kernel produced a warning.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ tools/testing/ktest/ktest.pl |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index a022fb7..52b7959 100755
+index c444c4f..a022fb7 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -623,6 +623,10 @@ sub process_compare {
- 	return $lval eq $rval;
-     } elsif ($cmp eq "!=3D") {
- 	return $lval ne $rval;
-+    } elsif ($cmp eq "=3D~") {
-+	return $lval =3D~ m/$rval/;
-+    } elsif ($cmp eq "!~") {
-+	return $lval !~ m/$rval/;
-     }
+@@ -2074,6 +2074,7 @@ sub do_run_test {
+     my $line;
+     my $full_line;
+     my $bug =3D 0;
++    my $bug_ignored =3D 0;
 =20
-     my $statement =3D "$lval $cmp $rval";
-@@ -678,7 +682,7 @@ sub process_expression {
+     wait_for_monitor 1;
+=20
+@@ -2098,7 +2099,11 @@ sub do_run_test {
+ 	    doprint $line;
+=20
+ 	    if ($full_line =3D~ /call trace:/i) {
+-		$bug =3D 1;
++		if ($ignore_errors) {
++		    $bug_ignored =3D 1;
++		} else {
++		    $bug =3D 1;
++		}
+ 	    }
+=20
+ 	    if ($full_line =3D~ /Kernel panic -/) {
+@@ -2111,6 +2116,10 @@ sub do_run_test {
  	}
-     }
+     } while (!$child_done && !$bug);
 =20
--    if ($val =3D~ /(.*)(=3D=3D|\!=3D|>=3D|<=3D|>|<)(.*)/) {
-+    if ($val =3D~ /(.*)(=3D=3D|\!=3D|>=3D|<=3D|>|<|=3D~|\!~)(.*)/) {
- 	my $ret =3D process_compare($1, $2, $3);
- 	if ($ret < 0) {
- 	    die "$name: $.: Unable to process comparison\n";
++    if (!$bug && $bug_ignored) {
++	doprint "WARNING: Call Trace detected but ignored due to IGNORE_ERRORS=3D=
+1\n";
++    }
++
+     if ($bug) {
+ 	my $failure_start =3D time;
+ 	my $now;
 --=20
 1.7.10.4
 
@@ -78,19 +92,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQFuACAAoJEIy3vGnGbaoAi58P/R+QZz7gbRxvnAvqucIGwCRR
-+k+f4ltoILivZ/NAVhAY5FnEpi1Jr3Qf+3Fje0sCH9r608njhQDCmZ9PnN3iIfZt
-NEeB/x1WOiiadTt4f8KQ+xhmvdbXtSxQ2LilHRrhKjJwHHU/MO7vAxQBki+sNF8W
-OoH9TY9DoyinB2jfzEeSHFy/BN76jZ76WF/dGpTg0RCuMbmu9UJhQMeT9L39A9H1
-VH3FzadNQ/Pd2Ad5w4x790y8sYHE4UuIclRjXDbf6sdj8n1qt6oQNHddL0kEPP9e
-zp6WGpkSzBItA+yourS4dlErCXreHVFX1FTUczNqirWIbpsE/Eq88tgd3+sVh0XN
-5fxo8igJ9BqhPLOZeNcnQ8LybVjQrjMheQRB1jSLyNR/+qoBkJrJ7R4aXu4wgptU
-EtFJlGFQYCZp3oTao+K03zILhsqlywY+ERZCmLgwrCv3F1mfQdY5EFmxO48s5wOF
-Vy/H9AZDtECG6elc77cYnc9D4saO+ZqcdBROas6ryatKqKYVRW0FSmYZ8e3QiIUN
-/QVh/f5MQdvNWxxHs9WII66lVDPGa/zkX6JHHPE+nsh1UwL7OsNHT+NLSQa0QT9d
-DBYsAKcLDsXzMw0oVjTUX/pu0n9jycmFblK+JGvqLluk8Zb4wi6D2s95BTCdbw+q
-Ldltt72PiccoHM/4YJaY
-=cBFd
+iQIcBAABAgAGBQJQFuACAAoJEIy3vGnGbaoAfecP/3bDRV0WwdlavN9iqaGJma8H
+Lob0NsDqXCar7xTVrsDTV4P/Bmi/alup5yTMDZlP791fxzZUvSjD0zEDbf2eOgR3
+TAnDF6XXH5Wm7HHi49Tb/Tk8wSc8hBAtQFx+nVxYJmT6ia8StWYxi/QcUIZ3618+
+FvWBvRMR5OFjqrN7uezla09UcjNPVmyybTjRkeTFZ8B3H45+6o+SLZVDsKagbJmm
+9vmmlgIZ9xshEUjy4a4ZpxxrtLEQnjTRun1CXdvko8VZcSDe7rx61eAnEe+8d5Cj
+c0VcGR+wb29fzfDTGohWS0W0C/f+nNwUTlMDMyrmsGVxAtcnBmPFu2iHN7YO6cAL
+QAMmxeBaxpKh8R+M6HcFYux9uT0Uxd7v/MtOhb/t0FNzdlgFyJrDZAOKr1z2H077
+PdW8oMTIEw7yzaHEHJJplb97ZcRLNtmfU1OKYoaa+Q/2KkhimNxQrjPstyUN99Ar
+WzaiFwD2RNeq4CWGcVyE7TsfFGRbuepy2Ku0gxkqsg5BWdJlSwRj9ZSD0ihffexl
+ziW/6M3Xz1IGRBqybiTOcfwPYxhdbpTlB67boN6hwp+Og6EtAJ8V4bzkHBVWLmvD
+2Rvg022TJATKauSGQAIoKD3mz3/Tkm8tsIGjmB/v1LJeM/0hV+unfkKFk1fDSm0e
+3Q+7jRL/9exOSluEEI2K
+=6eR9
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
