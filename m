@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab2G3UWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 16:22:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42121 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754768Ab2G3UWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 16:22:21 -0400
-Date: Mon, 30 Jul 2012 16:22:12 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 0/6] menuconfig: jump to search results
-Message-ID: <20120730202212.GA31790@d2.synalogic.ca>
-References: <1343676130-29770-1-git-send-email-bpoirier@suse.de>
- <20120730195826.GA8242@liondog.tnic>
+	id S1755058Ab2G3Uao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 16:30:44 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:55238 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558Ab2G3Uam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 16:30:42 -0400
+Date: Mon, 30 Jul 2012 13:28:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] page-table walkers vs memory order
+Message-ID: <20120730202857.GL2391@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1343064870.26034.23.camel@twins>
+ <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
+ <20120725175628.GH2378@linux.vnet.ibm.com>
+ <alpine.LSU.2.00.1207251313180.1942@eggly.anvils>
+ <20120725211217.GR2378@linux.vnet.ibm.com>
+ <20120730192140.GU25459@jl-vm1.vm.bytemark.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120730195826.GA8242@liondog.tnic>
+In-Reply-To: <20120730192140.GU25459@jl-vm1.vm.bytemark.co.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12073020-2356-0000-0000-000000D7EBA8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/07/30 21:58, Borislav Petkov wrote:
-> On Mon, Jul 30, 2012 at 03:22:04PM -0400, Benjamin Poirier wrote:
-> > Hello,
+On Mon, Jul 30, 2012 at 08:21:40PM +0100, Jamie Lokier wrote:
+> Paul E. McKenney wrote:
+> > > Does some version of gcc, under the options which we insist upon,
+> > > make such optimizations on any of the architectures which we support?
 > > 
-> > This patch series adds "jump to" keys (similar to the cscope interface) to the
-> > search results of "make menuconfig" so that we can go directly to the menu
-> > entry for a config option after searching for it.
-> > 
-> > Patches 1-4 implement the basic functionnality.
-> > Patches 5-6 are an optionnal improvement.
+> > Pretty much any production-quality compiler will do double-fetch
+> > and old-value-reuse optimizations, the former especially on 32-bit
+> > x86.  I don't know of any production-quality compilers that do value
+> > speculation, which would make the compiler act like DEC Alpha hardware,
+> > and I would hope that if this does appear, (1) we would have warning
+> > and (2) it could be turned off.  But there has been a lot of work on
+> > this topic, so we would be foolish to rule it out.
 > 
-> Generally,
+> GCC documentation for IA-64:
 > 
-> a nice idea, I like it.
+>    -msched-ar-data-spec
+>    -mno-sched-ar-data-spec
+>      (En/Dis)able data speculative scheduling after reload. This results
+>      in generation of ld.a instructions and the corresponding check
+>      instructions (ld.c / chk.a). The default is 'enable'.
 > 
-> A couple of notes though:
-> 
-> * patches 2/6 and 3/6 don't have commit messages and it would be good if
-> they had, even though it is obvious what the changes in there do.
-> 
-> * this patchset must be against some kbuild tree because it doesn't
-> apply against 3.5:
+> I don't know if that results in value speculation of the relevant kind.
 
-It's against linux-next, which already contains some patches for
-menuconfig.
+If I remember correctly, the chk.a instruction will detect failed
+speculation via cache state and deal with the situation correctly,
+but I really need to defer to someone with more recent IA-64 experience.
+
+							Thanx, Paul
+
