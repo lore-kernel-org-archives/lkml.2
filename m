@@ -1,206 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab2G3NtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 09:49:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46728 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab2G3NtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 09:49:19 -0400
-Date: Mon, 30 Jul 2012 15:49:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, handai.szj@taobao.com, gthelen@google.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com,
-        rientjes@google.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: + memcg-oom-provide-more-info-while-memcg-oom-happening.patch
- added to -mm tree
-Message-ID: <20120730134914.GE12680@tiehlicka.suse.cz>
-References: <20120724203305.66D831E0049@wpzn4.hot.corp.google.com>
+	id S1754331Ab2G3NvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 09:51:16 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57826 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754245Ab2G3NvP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 09:51:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724203305.66D831E0049@wpzn4.hot.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.00.1207301323550.23560@localhost>
+References: <1343561514-8380-1-git-send-email-linkinjeon@gmail.com>
+	<alpine.LFD.2.00.1207301323550.23560@localhost>
+Date: Mon, 30 Jul 2012 19:21:13 +0530
+Message-ID: <CAOiN93=SYN9jywq62M=Xh4LOLJ=E-UfHygYJ5uW_ANJ+Fw6qtQ@mail.gmail.com>
+Subject: Re: [PATCH] ext4: add error handling when discard cmd is fail in FITRIM
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: =?ISO-8859-2?Q?Luk=E1=B9_Czerner?= <lczerner@redhat.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, tytso@mit.edu, sandeen@redhat.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi and sorry for the late reply.
+On Mon, Jul 30, 2012 at 5:01 PM, Lukáš Czerner <lczerner@redhat.com> wrote:
+> On Sun, 29 Jul 2012, Namjae Jeon wrote:
+>
+>> Date: Sun, 29 Jul 2012 07:31:54 -0400
+>> From: Namjae Jeon <linkinjeon@gmail.com>
+>> To: tytso@mit.edu, sandeen@redhat.com, lczerner@redhat.com,
+>>     linux-ext4@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+>>     Amit Sahrawat <amit.sahrawat83@gmail.com>
+>> Subject: [PATCH] ext4: add error handling when discard cmd is fail in FITRIM
+>>
+>> Although free extents is proper not trimmed(mmc driver return error code
+>> while sending trim command), currently FITRIM ioctl return success.
+>> Add exception routine to inform user error code.
+>>
+>> #> ./fitrim_test
+>> end_request: I/O error, dev mmcblk0, sector 27232
+>> EXT4-fs warning (device mmcblk0): ext4_trim_all_free:4857:
+>> Discard command returned error -5
+>> #>
+>
+> Well, by this change you're actually reverting commit
+>
+> d9f34504e6952e909a6932c5b2d1857716606380
+>          ext4: ignore errors when issuing discards
+>
+> which effectively reverts a30eec2a8.
+>
+> Now I think that the way it is now is actually better than your
+> proposal for the reasons mentioned in the commit
+> d9f34504e6952e909a6932c5b2d1857716606380. However I think that the
 
-On Tue 24-07-12 13:33:03, Andrew Morton wrote:
-> 
-> The patch titled
->      Subject: memcg, oom: provide more info while memcg oom happening
-> has been added to the -mm tree.  Its filename is
->      memcg-oom-provide-more-info-while-memcg-oom-happening.patch
-> 
-> Before you just go and hit "reply", please:
->    a) Consider who else should be cc'ed
->    b) Prefer to cc a suitable mailing list as well
->    c) Ideally: find the original patch on the mailing list and do a
->       reply-to-all to that, adding suitable additional cc's
-> 
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> 
-> The -mm tree is included into linux-next and is updated
-> there every 3-4 working days
-> 
-> ------------------------------------------------------
-> From: Sha Zhengju <handai.szj@taobao.com>
-> Subject: memcg, oom: provide more info while memcg oom happening
-> 
-> When an memcg oom is happening the current memcg related dump information
-> is limited for debugging.  Provide more detailed memcg page statistics
-> together with the total one while hierarchy is enabled.
+How about instead of propagating the error to user and breaking out of
+the discard, just print a warning message like:
+ext4_warning(sb, "error %d while trimming group block from %d to
+%d\n",ret, start, next);
 
-I do agree that we need to print something more useful for memcg-oom
-(who cares about the global state when the problem is per-memcg) but
-this doesn't seem to be the best way to address it because it just adds
-more to the OOM output and it doesn't prevent the global state being
-printed out.
-Please note that memcg oom can happen much more often than the global
-oom so we should print only the important information.
-Some more questions/notes below.
-
-In short, I think the patch should be dropped.
-
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Greg Thelen <gthelen@google.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  mm/memcontrol.c |   71 ++++++++++++++++++++++++++++++++++++++++------
->  1 file changed, 63 insertions(+), 8 deletions(-)
-> 
-> diff -puN mm/memcontrol.c~memcg-oom-provide-more-info-while-memcg-oom-happening mm/memcontrol.c
-> --- a/mm/memcontrol.c~memcg-oom-provide-more-info-while-memcg-oom-happening
-> +++ a/mm/memcontrol.c
-> @@ -113,6 +113,14 @@ static const char * const mem_cgroup_eve
->  	"pgmajfault",
->  };
->  
-> +static const char * const mem_cgroup_lru_names[] = {
-> +	"inactive_anon",
-> +	"active_anon",
-> +	"inactive_file",
-> +	"active_file",
-> +	"unevictable",
-> +};
-> +
->  /*
->   * Per memcg event counter is incremented at every pagein/pageout. With THP,
->   * it will be incremated by the number of pages. This counter is used for
-> @@ -1372,6 +1380,59 @@ static void move_unlock_mem_cgroup(struc
->  	spin_unlock_irqrestore(&memcg->move_lock, *flags);
->  }
->  
-> +#define K(x) ((x) << (PAGE_SHIFT-10))
-> +static void mem_cgroup_print_oom_stat(struct mem_cgroup *memcg)
-> +{
-> +	int i;
-> +	struct mem_cgroup *mi;
-
-We tend to call this iter in the context you are using it. The
-declaration can be moved to the appropriate for loop as well.
-
-> +
-> +	printk(KERN_INFO "Memory cgroup stat:\n");
-> +	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
-> +		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
-> +			continue;
-> +		printk(KERN_CONT "%s:%ldKB ", mem_cgroup_stat_names[i],
-> +			   K(mem_cgroup_read_stat(memcg, i)));
-> +	}
-> +
-> +	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++)
-> +		printk(KERN_CONT "%s:%lu ", mem_cgroup_events_names[i],
-> +			   mem_cgroup_read_events(memcg, i));
-> +
-> +	for (i = 0; i < NR_LRU_LISTS; i++)
-> +		printk(KERN_CONT "%s:%luKB ", mem_cgroup_lru_names[i],
-> +			   K(mem_cgroup_nr_lru_pages(memcg, BIT(i))));
-
-Does it really make sense to print this separately? Which additional
-information does this give to you?
-OOM acts on a hierarchy in general (with a single tree node if
-use_hierarchy==0) so showing the root statistics doesn't sound like very
-much useful to me.
-
-> +
-> +	/* Dump the total statistics if hierarchy is enabled. */
-> +	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
-> +		long long val = 0;
-> +
-> +		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
-> +			continue;
-> +		for_each_mem_cgroup_tree(mi, memcg)
-> +			val += mem_cgroup_read_stat(mi, i);
-> +		printk(KERN_CONT "total_%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
-> +	}
-> +
-> +	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++) {
-> +		unsigned long long val = 0;
-> +
-> +		for_each_mem_cgroup_tree(mi, memcg)
-> +			val += mem_cgroup_read_events(mi, i);
-> +		printk(KERN_CONT "total_%s:%llu ", mem_cgroup_events_names[i], val);
-> +	}
-> +
-> +	for (i = 0; i < NR_LRU_LISTS; i++) {
-> +		unsigned long long val = 0;
-> +
-> +		for_each_mem_cgroup_tree(mi, memcg)
-> +			val += mem_cgroup_nr_lru_pages(mi, BIT(i));
-> +		printk(KERN_CONT "total_%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
-> +	}
-> +
-> +	printk(KERN_CONT "\n");
-> +
-> +}
-> +
->  /**
->   * mem_cgroup_print_oom_info: Called from OOM with tasklist_lock held in read mode.
->   * @memcg: The memory cgroup that went over limit
-> @@ -1436,6 +1497,8 @@ done:
->  		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
->  		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
->  		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
-> +
-> +	mem_cgroup_print_oom_stat(memcg);
->  }
->  
->  /*
-> @@ -4129,14 +4192,6 @@ static int memcg_numa_stat_show(struct c
->  }
->  #endif /* CONFIG_NUMA */
->  
-> -static const char * const mem_cgroup_lru_names[] = {
-> -	"inactive_anon",
-> -	"active_anon",
-> -	"inactive_file",
-> -	"active_file",
-> -	"unevictable",
-> -};
-> -
->  static inline void mem_cgroup_lru_names_not_uptodate(void)
->  {
->  	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
-> _
-> Subject: Subject: memcg, oom: provide more info while memcg oom happening
-> 
-> Patches currently in -mm which might be from handai.szj@taobao.com are
-> 
-> mm-oom-introduce-helper-function-to-process-threads-during-scan.patch
-> mm-memcg-introduce-own-oom-handler-to-iterate-only-over-its-own-threads.patch
-> memcg-oom-provide-more-info-while-memcg-oom-happening.patch
-> memcg-oom-clarify-some-oom-dump-messages.patch
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+> discard errors should be logged nevertheless but not at the file
+> system level, but rather on block layer level if it is not done
+> already.
+>
+> Thanks!
+> -Lukas
+>
