@@ -1,64 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab2G3Q64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 12:58:56 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:54824 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071Ab2G3Q6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 12:58:54 -0400
-Date: Mon, 30 Jul 2012 09:58:49 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: James Morris <james.l.morris@oracle.com>,
-        Kees Cook <keescook@chromium.org>,
-        John Johansen <john.johansen@canonical.com>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH] Yama: access current->comm directly
-Message-ID: <20120730165848.GA28288@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+	id S1754263Ab2G3Q7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 12:59:42 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:46787 "EHLO
+	homiemail-a47.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754158Ab2G3Q7l convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 12:59:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=subject:from
+	:content-type:message-id:date:to:content-transfer-encoding:
+	mime-version; q=dns; s=shealevy.com; b=Ohzzd5lCn5cPpc0RHDb7tO9Cp
+	D/8dEZYjPGwPSRdx7cKDrxvJ2Q3fRYbahTQUVvfvZwWP2XNX5IJJ71LMAn8C9aug
+	Ssjlx3J9gQhkXwcCdCDqKewA27P4ZOYzguPCi3YrttnCkD5Jn9PR92MJwLDvONpV
+	YSHEOGo5vP6gZSyeDA=
+Subject: Alternative to vfork(2) with overcommit off
+From: Shea Levy <shea@shealevy.com>
+Content-Type: text/plain;
+	charset=us-ascii
+X-Mailer: iPad Mail (9B206)
+Message-Id: <EC19EF84-3DD4-4B5A-9469-2EC11EE089D6@shealevy.com>
+Date: Mon, 30 Jul 2012 12:59:42 -0400
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0 (1.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core ptrace access checking routine already holds the task lock,
-so there is no need to use get_task_comm() which just tries to take the
-lock again. Drop its use and access current->comm directly.
+Hello,
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- security/yama/yama_lsm.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+The vfork(2) manpage states "It is rather unfortunate that Linux revived this specter from the past", but on systems with overcommit turned off fork(2) can be needlessly prohibitive when the goal is to execve(2) right away. Is there a third alternative for the fork/execve case? If not, should the manpage really be so dismissive of vfork?
 
-diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-index 83554ee..20a68ca 100644
---- a/security/yama/yama_lsm.c
-+++ b/security/yama/yama_lsm.c
-@@ -279,12 +279,10 @@ static int yama_ptrace_access_check(struct task_struct *child,
- 	}
- 
- 	if (rc) {
--		char name[sizeof(current->comm)];
-+		/* task_lock is held by the caller, so use comm directly. */
- 		printk_ratelimited(KERN_NOTICE
- 			"ptrace of pid %d was attempted by: %s (pid %d)\n",
--			child->pid,
--			get_task_comm(name, current),
--			current->pid);
-+			child->pid, current->comm, current->pid);
- 	}
- 
- 	return rc;
--- 
-1.7.0.4
-
-
--- 
-Kees Cook
-Chrome OS Security
+Cheers,
+Shea Levy
