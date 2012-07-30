@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab2G3RcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:32:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526Ab2G3RcH (ORCPT
+	id S1754703Ab2G3RcX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:32:23 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:32930 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab2G3RcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:07 -0400
+	Mon, 30 Jul 2012 13:32:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 16/41] vmscan: abort reclaim/compaction if compaction can proceed
-Date: Mon, 30 Jul 2012 10:31:15 -0700
-Message-Id: <20120730172902.575124685@linuxfoundation.org>
+        David Daney <david.daney@cavium.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [ 04/41] MIPS: Properly align the .data..init_task section.
+Date: Mon, 30 Jul 2012 10:31:03 -0700
+Message-Id: <20120730172901.652451653@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -32,106 +30,66 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: David Daney <david.daney@cavium.com>
 
-commit e0c23279c9f800c403f37511484d9014ac83adec upstream.
+commit 7b1c0d26a8e272787f0f9fcc5f3e8531df3b3409 upstream.
 
-Stable note: Not tracked on Bugzilla. THP and compaction was found to
-	aggressively reclaim pages and stall systems under different
-	situations that was addressed piecemeal over time.
+Improper alignment can lead to unbootable systems and/or random
+crashes.
 
-If compaction can proceed, shrink_zones() stops doing any work but its
-callers still call shrink_slab() which raises the priority and potentially
-sleeps.  This is unnecessary and wasteful so this patch aborts direct
-reclaim/compaction entirely if compaction can proceed.
+[ralf@linux-mips.org: This is a lond standing bug since
+6eb10bc9e2deab06630261cd05c4cb1e9a60e980 (kernel.org) rsp.
+c422a10917f75fd19fa7fe070aaaa23e384dae6f (lmo) [MIPS: Clean up linker script
+using new linker script macros.] so dates back to 2.6.32.]
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Johannes Weiner <jweiner@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/3881/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |   32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+ arch/mips/include/asm/thread_info.h |    4 ++--
+ arch/mips/kernel/vmlinux.lds.S      |    3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2037,14 +2037,19 @@ restart:
-  *
-  * If a zone is deemed to be full of pinned pages then just give it a light
-  * scan then give up on it.
-+ *
-+ * This function returns true if a zone is being reclaimed for a costly
-+ * high-order allocation and compaction is either ready to begin or deferred.
-+ * This indicates to the caller that it should retry the allocation or fail.
-  */
--static void shrink_zones(int priority, struct zonelist *zonelist,
-+static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
- 	unsigned long nr_soft_reclaimed;
- 	unsigned long nr_soft_scanned;
-+	bool should_abort_reclaim = false;
+--- a/arch/mips/include/asm/thread_info.h
++++ b/arch/mips/include/asm/thread_info.h
+@@ -60,6 +60,8 @@ struct thread_info {
+ register struct thread_info *__current_thread_info __asm__("$28");
+ #define current_thread_info()  __current_thread_info
  
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -2061,19 +2066,20 @@ static void shrink_zones(int priority, s
- 				continue;	/* Let kswapd poll it */
- 			if (COMPACTION_BUILD) {
- 				/*
--				 * If we already have plenty of memory
--				 * free for compaction, don't free any
--				 * more.  Even though compaction is
--				 * invoked for any non-zero order,
--				 * only frequent costly order
--				 * reclamation is disruptive enough to
--				 * become a noticable problem, like
--				 * transparent huge page allocations.
-+				 * If we already have plenty of memory free for
-+				 * compaction in this zone, don't free any more.
-+				 * Even though compaction is invoked for any
-+				 * non-zero order, only frequent costly order
-+				 * reclamation is disruptive enough to become a
-+				 * noticable problem, like transparent huge page
-+				 * allocations.
- 				 */
- 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
- 					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone)))
-+					 compaction_deferred(zone))) {
-+					should_abort_reclaim = true;
- 					continue;
-+				}
- 			}
- 			/*
- 			 * This steals pages from memory cgroups over softlimit
-@@ -2092,6 +2098,8 @@ static void shrink_zones(int priority, s
- 
- 		shrink_zone(priority, zone, sc);
- 	}
++#endif /* !__ASSEMBLY__ */
 +
-+	return should_abort_reclaim;
- }
+ /* thread information allocation */
+ #if defined(CONFIG_PAGE_SIZE_4KB) && defined(CONFIG_32BIT)
+ #define THREAD_SIZE_ORDER (1)
+@@ -97,8 +99,6 @@ register struct thread_info *__current_t
  
- static bool zone_reclaimable(struct zone *zone)
-@@ -2156,7 +2164,9 @@ static unsigned long do_try_to_free_page
- 		sc->nr_scanned = 0;
- 		if (!priority)
- 			disable_swap_token(sc->mem_cgroup);
--		shrink_zones(priority, zonelist, sc);
-+		if (shrink_zones(priority, zonelist, sc))
-+			break;
-+
- 		/*
- 		 * Don't shrink slabs when reclaiming memory from
- 		 * over limit cgroups
+ #define free_thread_info(info) kfree(info)
+ 
+-#endif /* !__ASSEMBLY__ */
+-
+ #define PREEMPT_ACTIVE		0x10000000
+ 
+ /*
+--- a/arch/mips/kernel/vmlinux.lds.S
++++ b/arch/mips/kernel/vmlinux.lds.S
+@@ -1,5 +1,6 @@
+ #include <asm/asm-offsets.h>
+ #include <asm/page.h>
++#include <asm/thread_info.h>
+ #include <asm-generic/vmlinux.lds.h>
+ 
+ #undef mips
+@@ -73,7 +74,7 @@ SECTIONS
+ 	.data : {	/* Data */
+ 		. = . + DATAOFFSET;		/* for CONFIG_MAPPED_KERNEL */
+ 
+-		INIT_TASK_DATA(PAGE_SIZE)
++		INIT_TASK_DATA(THREAD_SIZE)
+ 		NOSAVE_DATA
+ 		CACHELINE_ALIGNED_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
+ 		READ_MOSTLY_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
 
 
