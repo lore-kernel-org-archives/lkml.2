@@ -1,69 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab2G3Hi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:38:59 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43474 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab2G3Hi5 (ORCPT
+	id S1753713Ab2G3Hnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:43:39 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:58766 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab2G3Hnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 03:38:57 -0400
-Message-ID: <50163A09.8060203@linaro.org>
-Date: Mon, 30 Jul 2012 08:38:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 01/18] Documentation: Describe the ux500 realated audio
- related DT nodes
-References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org> <1343393162-11938-2-git-send-email-lee.jones@linaro.org> <20120729203106.GD4384@opensource.wolfsonmicro.com>
-In-Reply-To: <20120729203106.GD4384@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 30 Jul 2012 03:43:37 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-1c-50163b27a3dd
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: "'Hideki EIRAKU'" <hdk@igel.co.jp>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Pawel Osciak'" <pawel@osciak.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        "'Jaroslav Kysela'" <perex@perex.cz>, "'Takashi Iwai'" <tiwai@suse.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        alsa-devel@alsa-project.org, "'Katsuya MATSUBARA'" <matsu@igel.co.jp>
+References: <1343301191-26001-1-git-send-email-hdk@igel.co.jp>
+ <1343301191-26001-4-git-send-email-hdk@igel.co.jp>
+In-reply-to: <1343301191-26001-4-git-send-email-hdk@igel.co.jp>
+Subject: RE: [PATCH v2 3/4] media: videobuf2-dma-contig: use dma_mmap_coherent
+ if available
+Date: Mon, 30 Jul 2012 09:43:16 +0200
+Organization: SPRC
+Message-id: <02b301cd6e27$000e9cf0$002bd6d0$%szyprowski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1rH7w+hkz7XPydQxy0Lpk/tP3HtwDBux/w
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9jQV11a7EAg4bzVhYn+j6wWlzeNYfN
+	omfDVlYHZo/Pm+QCGKO4bFJSczLLUov07RK4Mj7928Ra0CxYcXHtPbYGxj+8XYycHBICJhKv
+	fhxigbDFJC7cW88GYgsJTGeU+PnXoIuRC8j+yShxb81SZpAEm4ChRNfbLrAiEYErTBKHOktA
+	ipgFTjJKXH30mRGiu1hi+tz5YEWcAvYSL/ob2UFsYYFYiV/HZoBtYxFQlTi/7Q1TFyMHB7+A
+	kMTEWQogYV4BF4mZO14xQ9iCEj8m3wMrZxbQkli/8zgThC0vsXnNW2aQVgkBdYlHf3UhzjGS
+	mDl5HRtEiYjE3YbnrBMYhWchmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpe
+	cn7uJkZwyD+T3sG4qsHiEKMAB6MSD6/RZdEAIdbEsuLK3EOMEhzMSiK8k0TEAoR4UxIrq1KL
+	8uOLSnNSiw8xSnOwKInzmnh/9RcSSE8sSc1OTS1ILYLJMnFwSjUwFu723GDgbtN8KuTygpUf
+	RZb+zJYX11XN2H3ur5aU2WSpms1LJ/T/zv1+V/fHF+PalU1PXl4rnbZBOdbFiKE67p7w1d39
+	1l8bVrl/NtndOPf449P8Rp+39TpqR08TnnA3pLH+df0+Rg2VYEuNF8YvuNdflJQ3s5v3L/zk
+	PI2C+HPs3AtL0kwllViKMxINtZiLihMBd5FMgXUCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/07/12 21:31, Mark Brown wrote:
-> On Fri, Jul 27, 2012 at 01:45:45PM +0100, Lee Jones wrote:
->
->> +++ b/Documentation/devicetree/bindings/sound/ux500.txt
->> @@ -0,0 +1,62 @@
->> +* ux500 Audio Driver and ab8500 Audio CODEC
->> +
->> +Required properties:
->> + - compatible:
->> +   - Machine Driver : "stericsson,snd-soc-mop500"
->> +   - CPU-side DAI   : "stericsson,ux500-msp-i2s"
->> +   - DMA (platform) : "stericsson,ux500-pcm"
->> +   - Audio CODEC    : "stericsson,ab8500-codec"
->
-> What is this a binding document for?  It looks like the binding for a
-> machine driver...
+Hello,
 
-No, it's a binding document for all of the ux500 driver and CODEC 
-blocks. Do you really want me to split it all up? I think the only 
-component which could be sanely split-out is the ab8500-codec, which 
-could (should?) live in [1].
+On Thursday, July 26, 2012 1:13 PM Hideki EIRAKU wrote:
 
->> +Optional properties:
->> + - reg              : Physical base address and length of the device's registers.
->> + - interrupts       : The interrupt outputs from the device.
->> + - interrupt-parent : The parent interrupt controller.
->> + - <name>-supply    : Phandle to the regulator <name> supply
->
-> ...but these don't look anything like machine driver properties.
+> Previously the vb2_dma_contig_mmap() function was using a dma_addr_t as a
+> physical address.  The two addressses are not necessarily the same.
+> For example, when using the IOMMU funtion on certain platforms, dma_addr_t
+> addresses are not directly mappable physical address.
+> dma_mmap_coherent() maps the address correctly.
+> It is available on ARM platforms.
+> 
+> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
+> ---
+>  drivers/media/video/videobuf2-dma-contig.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/media/video/videobuf2-dma-contig.c b/drivers/media/video/videobuf2-dma-
+> contig.c
+> index 4b71326..4dc85ab 100644
+> --- a/drivers/media/video/videobuf2-dma-contig.c
+> +++ b/drivers/media/video/videobuf2-dma-contig.c
+> @@ -101,14 +101,32 @@ static unsigned int vb2_dma_contig_num_users(void *buf_priv)
+>  static int vb2_dma_contig_mmap(void *buf_priv, struct vm_area_struct *vma)
+>  {
+>  	struct vb2_dc_buf *buf = buf_priv;
+> +#ifdef ARCH_HAS_DMA_MMAP_COHERENT
+> +	int ret;
+> +#endif
+> 
+>  	if (!buf) {
+>  		printk(KERN_ERR "No buffer to map\n");
+>  		return -EINVAL;
+>  	}
+> 
+> +#ifdef ARCH_HAS_DMA_MMAP_COHERENT
+> +	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 
-These properties are relevant for some, but not all of the components 
-above, hence why the are listed at 'optional properties'.
+The above line is not needed. It is up to dma_mmap_coherent() / dma_mmap_attrs() to set page
+protection bits which match requested type of dma buffer mapping.
 
-[1] Documentation/devicetree/bindings/mfd/ab8500.
+> +	ret = dma_mmap_coherent(buf->conf->dev, vma, buf->vaddr, buf->dma_addr,
+> +				buf->size);
+> +	if (ret) {
+> +		pr_err("Remapping memory failed, error: %d\n", ret);
+> +		return ret;
+> +	}
+> +	vma->vm_flags |= VM_DONTEXPAND | VM_RESERVED;
+> +	vma->vm_private_data = &buf->handler;
+> +	vma->vm_ops = &vb2_common_vm_ops;
+> +	vma->vm_ops->open(vma);
+> +	return 0;
+> +#else
+>  	return vb2_mmap_pfn_range(vma, buf->dma_addr, buf->size,
+>  				  &vb2_common_vm_ops, &buf->handler);
+> +#endif
+>  }
+> 
+>  static void *vb2_dma_contig_get_userptr(void *alloc_ctx, unsigned long vaddr,
 
+Best regards
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
