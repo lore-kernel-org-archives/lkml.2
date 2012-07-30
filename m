@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab2G3Vm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 17:42:26 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:64300 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754599Ab2G3VmT (ORCPT
+	id S1754897Ab2G3VrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 17:47:22 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46261 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809Ab2G3VrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 17:42:19 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqMMABL/FlB5LJQK/2dsb2JhbABFuE4BAoEHgQiCIAEBBScTHCMQCAMYLhQlAyETiAy7FBSLPIEAFYEFhA9gA5VIiSyGYoJx
-Date: Tue, 31 Jul 2012 07:42:13 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: majianpeng <majianpeng@gmail.com>
-Cc: axboe <axboe@kernel.dk>, "konrad.wilk" <konrad.wilk@oracle.com>,
-        "chris.mason" <chris.mason@fusionio.com>,
-        viro <viro@ZenIV.linux.org.uk>, tytso <tytso@mit.edu>,
-        "adilger.kernel" <adilger.kernel@dilger.ca>,
-        shaggy <shaggy@kernel.org>, mfasheh <mfasheh@suse.com>,
-        jlbec <jlbec@evilplan.org>, bpm <bpm@sgi.com>,
-        elder <elder@kernel.org>,
-        jfs-discussion <jfs-discussion@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>, xfs <xfs@oss.sgi.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        ocfs2-devel <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH 0/8] Set bi_rw when alloc bio before call bio_add_page.
-Message-ID: <20120730214213.GF2877@dastard>
-References: <201207301514247032532@gmail.com>
+	Mon, 30 Jul 2012 17:47:17 -0400
+Date: Mon, 30 Jul 2012 14:47:13 -0700
+From: "'Greg KH'" <gregkh@linuxfoundation.org>
+To: Alexis Cortes <alexis.cortes@ti.com>
+Cc: "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Quach, Brian'" <brian.quach@ti.com>,
+        "'Llamas, Jorge'" <jorge.llamas@ti.com>
+Subject: Re: [PATCH] usb: host: xhci: Compliance Mode port recovery
+Message-ID: <20120730214713.GA12510@kroah.com>
+References: <004101cd4f33$755e8eb0$601bac10$@cortes@ti.com>
+ <20120621000734.GB32743@xanatos>
+ <003701cd4fde$fd969290$f8c3b7b0$@cortes@ti.com>
+ <20120622163214.GC629@xanatos>
+ <20120622164704.GA6896@kroah.com>
+ <4fe9f0c8.04c1b60a.11cc.3ca4SMTPIN_ADDED@mx.google.com>
+ <20120626175121.GA2831@kroah.com>
+ <4ffcad84.6710b60a.2b1a.0065SMTPIN_ADDED@mx.google.com>
+ <20120711150604.GB22382@kroah.com>
+ <5016ed18.0730b60a.1211.ffffe227SMTPIN_ADDED@mx.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201207301514247032532@gmail.com>
+In-Reply-To: <5016ed18.0730b60a.1211.ffffe227SMTPIN_ADDED@mx.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 03:14:28PM +0800, majianpeng wrote:
-> When exec bio_alloc, the bi_rw is zero.But after calling bio_add_page,
-> it will use bi_rw.
-> Fox example, in functiion __bio_add_page,it will call merge_bvec_fn().
-> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
-> >> if ((bvm->bi_rw & 1) == WRITE)
-> >> return biovec->bv_len; /* always allow writes to be mergeable */
+On Mon, Jul 30, 2012 at 03:22:52PM -0500, Alexis Cortes wrote:
+> Hi Greg,
+> 
+> I'm sorry for my late response on this. First of all thanks for your reply
+> and your feedback :) 
+> 
+> We have been discussing with one of our major customers the possibility of
+> identifying the platforms with the failing piece of hardware
+> (SN65LVPE502CP), and as you suggested they have provided some DMI strings we
+> can check in order to identify the platforms where those devices were
+> installed. 
+> 
+> I have modified the patch so it will be executed only on those platforms
+> reporting the specified DMI strings. I also applied some other suggestions
+> you made on your previous email.
+> 
+> I would really appreciate if you could take a look at the patch and give me
+> your feedback. Do you think that the patch is now suitable to be included in
+> future kernel releases? 
 
-So if bio_add_page() requires bi_rw to be set, then shouldn't it be
-set up for every caller? I noticed there are about 50 call sites for
-bio_add_page(), and you've only touched about 10 of them. Indeed, I
-notice that the RAID0/1 code uses bio_add_page, and as that can be
-stacked on top of RAID456, it also needs to set bi_rw correctly.
-As a result, your patch set is nowhere near complete, not does it
-document that bio_add_page requires that bi_rw be set before calling
-(which is the new API requirement, AFAICT).
+That's really up to Sarah, as she is the maintainer of this driver.
 
-So, my question is whether the RAID456 code is doing something
-valid.  That write optimisation is clearly not enabled for a
-significant amount of code and filesystems, so the first thing to do
-is quantify the benefit of the optimisation. I can't evalute the
-merit of this change without data telling me it is worthwhile, and
-it's a lot of code to churn for no benefit....
+How about resending it in a format that it can be applied in, and she
+will take it from there?
 
-Cheers,
+But, at first glance, yes, it's much nicer now that you are matching on
+DMI entries, thanks for taking the time to do that.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+thanks,
+
+greg k-h
