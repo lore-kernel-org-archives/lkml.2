@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab2G3HGY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:06:24 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45008 "EHLO
+	id S1753922Ab2G3HKI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:10:08 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:34914 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab2G3HGW convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 30 Jul 2012 03:06:22 -0400
-Message-Id: <50164E890200007800091328@nat28.tlf.novell.com>
+	with ESMTP id S1752487Ab2G3HKG convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Mon, 30 Jul 2012 03:10:06 -0400
+Message-Id: <50164F68020000780009132F@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 30 Jul 2012 08:06:17 +0100
+Date: Mon, 30 Jul 2012 08:10:00 +0100
 From: "Jan Beulich" <JBeulich@suse.com>
 To: "Konrad Rzeszutek Wilk" <konrad@darnok.org>
-Cc: "xen-devel" <xen-devel@lists.xen.org>,
+Cc: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>,
         "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/swiotlb: If iommu=soft was not
- passed in on > 4GB, don't turn it on.
-References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com>
- <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
- <50125F0B0200007800090DFB@nat28.tlf.novell.com>
- <20120727175408.GG17427@andromeda.dapyr.net>
-In-Reply-To: <20120727175408.GG17427@andromeda.dapyr.net>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 5/7] xen/p2m: Add logic to revector a
+ P2M tree to use __va leafs.
+References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
+ <1343335652-5659-6-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1207271215540.26163@kaball.uk.xensource.com>
+ <50129C030200007800090F9B@nat28.tlf.novell.com>
+ <20120727173459.GB17427@andromeda.dapyr.net>
+In-Reply-To: <20120727173459.GB17427@andromeda.dapyr.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -30,69 +32,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.07.12 at 19:54, Konrad Rzeszutek Wilk <konrad@darnok.org> wrote:
-> On Fri, Jul 27, 2012 at 08:27:39AM +0100, Jan Beulich wrote:
->> >>> On 26.07.12 at 22:43, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> > +	/* Check if the user supplied the e820_hole parameter
->> > +	 * which would create a machine looking E820 region. */
->> > +	for (i = 0; i < e820.nr_map; i++) {
->> > +		if ((e820.map[i].type == E820_ACPI) ||
->> > +		    (e820.map[i].type == E820_NVS))
->> > +			return true;
+>>> On 27.07.12 at 19:34, Konrad Rzeszutek Wilk <konrad@darnok.org> wrote:
+> On Fri, Jul 27, 2012 at 12:47:47PM +0100, Jan Beulich wrote:
+>> >>> On 27.07.12 at 13:18, Stefano Stabellini <stefano.stabellini@eu.citrix.com> 
+> wrote:
+>> > On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
+>> >>  1) All P2M lookups instead of using the __ka address would
+>> >>     use the __va address. This means we can safely erase from
+>> >>     __ka space the PMD pointers that point to the PFNs for
+>> >>     P2M array and be OK.
+>> >>  2). Allocate a new array, copy the existing P2M into it,
+>> >>     revector the P2M tree to use that, and return the old
+>> >>     P2M to the memory allocate. This has the advantage that
+>> >>     it sets the stage for using XEN_ELF_NOTE_INIT_P2M
+>> >>     feature. That feature allows us to set the exact virtual
+>> >>     address space we want for the P2M - and allows us to
+>> >>     boot as initial domain on large machines.
+>> >> 
+>> >> So we pick option 2).
+>> > 
+>> > 1) looks like a decent option that requires less code.
+>> > Is the problem with 1) that we might want to access the P2M before we
+>> > have __va addresses ready?
 >> 
->> Tying this decision to the presence of ACPI regions in E820 is
->> problematic for two reasons imo: For one, it precludes cleaning
->> up this (bogus!) construct where it gets produced (PV DomU-s
->> really shouldn't ever see such E820 entries, they should get
->> converted to simple reserved entries, to wipe any notion of
->> ACPI presence). And second it ties you to running on systems
->> that actually have ACPI, whereas it is my rudimentary
->> understanding that systems with e.g. SFI would not have any
->> ACPI).
+>> AIUI 1) has no easy way of subsequently accommodating support
+>> for XEN_ELF_NOTE_INIT_P2M (where you almost definitely will
+>> want/need to reclaim the originally used VA space - if nothing else,
+>> then for forward compatibility with the rest of the kernel).
 > 
-> Right. The other idea was to check the XenBus for the existence
-> of vpci backend. But at this stage it is not up yet.
-> 
-> Perhaps what I should check for is the existence of two E820_RSV
-> and two E820_RAM regions - and that would be a normal PV guest.
-> Anything that is outside of that scope would be considered
-> a PCI PV guest?
+> <nods> That was my thinking - this way we can boot dom0 (since
+> the hypervisor is the only one that implements the
+> XEN_ELF_NOTE_INIT_P2M) with large amount of memory. Granted booting
+> with more than 500GB would require adding another layer to the P2M
+> tree. But somehow I thought that we are limited in the hypervisor
+> to 500GB?
 
-I'd limit this to two RAM and at least one reserved regions (after
-all it could happen that all the reserved ones can be folded into
-one). But beyond this minor detail that's the approach I'd prefer.
-All the ones below look more or less fragile.
+The only limitation is that kexec (with the current specification)
+would not work beyond 512Gb, but that's a non-issue for
+upstream since kexec doesn't work there yet anyway. Our
+kernels come up fine even on 5Tb now (which is the current
+limit in the hypervisor).
 
 Jan
-
-> The other thought I had was to skip this check altogether and
-> either do:
-> 1). initialize SWIOTLB when xen-pcifront start up and detects
->     that it has devices (so later on initialization - similar to
->     how IA64 does it) - but I am not sure how the PCI-DMA works
->     with these late bloomers (especially as one could just make
->     xen-pcifront be a module).
-> 2). If xen-pcifront starts and does not detect any backends
->     it calls swiotlb_free. But that also requires the PCI-DMA
->     to swap in the dma_ops, and I am not entirely sure how
->     that would work out.
-> 3). Have an "early_init" xen-pcifront components that does a
->     a quick XenBus init (similar to how hvmloader checks for
->     DMI overwrites) and if it finds vpci then declare its
->     time to turn SWIOTLB on.
-> 4). The other thing is to wrap this code with something like
->     this:
-> 
-> #ifdef CONFIG_SWIOTLB
-> #ifdef CONFIG_XEN_PCI_FRONTEND
-> 	if (.. blah balh) do the check as outlined in 3).
-> #else // PCI_FRONTEND is not present, so we won't need SWIOTLB
-> 	swiotlb = 0;
-> 	iommu = 1;
-> #endif
-> #endif
-> 
-> That would take care of the built-in issues.
-
-
 
