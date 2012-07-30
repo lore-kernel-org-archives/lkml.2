@@ -1,220 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab2G3Aas (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 20:30:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42378 "EHLO mx2.suse.de"
+	id S1753856Ab2G3AdD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 20:33:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28627 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685Ab2G3Aaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 20:30:46 -0400
-Date: Mon, 30 Jul 2012 10:30:26 +1000
-From: NeilBrown <neilb@suse.de>
-To: linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Govindraj.R" <govindraj.raja@ti.com>, Kevin Hilman <khilman@ti.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] OMAP/serial:  Add support for driving a GPIO as DTR.
-Message-ID: <20120730103026.6b17f9e2@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/4EK4HFChfRZVgbd33GY3fo7"; protocol="application/pgp-signature"
+	id S1753747Ab2G3AdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 20:33:00 -0400
+Message-ID: <5015D636.2050701@redhat.com>
+Date: Sun, 29 Jul 2012 21:32:54 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: [GIT PULL for v3.5] EDAC updates
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/4EK4HFChfRZVgbd33GY3fo7
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
 
-Hi all,
- this is my current patch which answers my question from May:
-     Question:  How to power-manage UART-attached devices.
+for the EDAC patches for 3.5. This series includes:
+	- the second part of the EDAC rework:
+		- Add the sysfs nodes that exports the real memory layout,
+		  instead of the fake one (needed to properly represent
+		  Intel memory controllers since 2002);
+		- convert EDAC MC to use "struct device" instead of creating
+		  the sysfs nodes via the kobj API;
+		- adds a tracepoint to represent memory errors;
+	- some cleanup patches;
+	- some fixes at i5000, i5400 and EDAC core;
+	- a new EDAC driver for Caldera.
 
- It teaches omap2/serial about the possibility of a GPIO which is to be
- driven as a DTR line.=20
- This allows me to power on/off devices that are accessed via a serial port
- (GPS, Bluetooth) when the port is opened/closed.  I simply write a driver
- which exports a GPIO line and does the required magic when it is driven
- high or low.
+Thanks!
+Mauro
 
- - because '0' is a valid GPIO number, I added an extra port_info field
-   call 'DTR_present' so existing code wouldn't accidentally request to
-   use GPIO-0 as a DTR - is there a better way to handle this?
- - I added a DTR_inverted field so you could choose the polarity of the
-   GPIO line ... I'm not really sure this is needed so I'll probably drop it
-   unless encouraged otherwise.
+-
 
- - If the gpio 'can_sleep', then I need a work-queue to effect the change, =
-and
-   I currently use the 'qos_work' rather than adding another work handler.
-   As both the qos_work and the gpio work tasks are idempotent and rare, th=
-is
-   seems reasonable.  Is it OK?  should I make another work_struct? or
-   something else?
+Latest commit at the branch: 
+c2078e4c9120e7b38b1a02cd9fc6dd4f792110bf Merge branch 'devel'
+The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
 
-Thanks,
-NeilBrown
+  Linux 3.5 (2012-07-21 13:58:29 -0700)
 
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
 
+for you to fetch changes up to c2078e4c9120e7b38b1a02cd9fc6dd4f792110bf:
 
----------------------
-OMAP hardware doesn't provide a phyisical DTR line, but
-some configurations may need a DTR line which tracks whether
-the device is open or not.
+  Merge branch 'devel' (2012-07-29 21:11:05 -0300)
 
-So allow a gpio to be configured as the DTR line.
+----------------------------------------------------------------
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+Dan Carpenter (2):
+      edac_mc: check for allocation failure in edac_mc_alloc()
+      edac i5000, i5400: fix pointer math in i5000_get_mc_regs()
 
-diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
-index c1b93c7..25d53b2 100644
---- a/arch/arm/mach-omap2/serial.c
-+++ b/arch/arm/mach-omap2/serial.c
-@@ -304,6 +304,9 @@ void __init omap_serial_init_port(struct omap_board_dat=
-a *bdata,
- 	omap_up.dma_rx_timeout =3D info->dma_rx_timeout;
- 	omap_up.dma_rx_poll_rate =3D info->dma_rx_poll_rate;
- 	omap_up.autosuspend_timeout =3D info->autosuspend_timeout;
-+	omap_up.DTR_gpio =3D info->DTR_gpio;
-+	omap_up.DTR_inverted =3D info->DTR_inverted;
-+	omap_up.DTR_present =3D info->DTR_present;
-=20
- 	pdata =3D &omap_up;
- 	pdata_size =3D sizeof(struct omap_uart_port_info);
-diff --git a/arch/arm/plat-omap/include/plat/omap-serial.h b/arch/arm/plat-=
-omap/include/plat/omap-serial.h
-index 1a52725..52d3de4 100644
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -69,6 +69,9 @@ struct omap_uart_port_info {
- 	unsigned int		dma_rx_timeout;
- 	unsigned int		autosuspend_timeout;
- 	unsigned int		dma_rx_poll_rate;
-+	int			DTR_gpio;
-+	int			DTR_inverted;
-+	int			DTR_present;
-=20
- 	int (*get_context_loss_count)(struct device *);
- 	void (*set_forceidle)(struct platform_device *);
-@@ -131,6 +134,10 @@ struct uart_omap_port {
- 	u32			errata;
- 	u8			wakeups_enabled;
-=20
-+	int			DTR_gpio;
-+	int			DTR_inverted;
-+	int			DTR_active;
-+
- 	struct pm_qos_request	pm_qos_request;
- 	u32			latency;
- 	u32			calc_latency;
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-ser=
-ial.c
-index d3cda0c..aa603f2 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -39,6 +39,7 @@
- #include <linux/irq.h>
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
-+#include <linux/gpio.h>
-=20
- #include <plat/dma.h>
- #include <plat/dmtimer.h>
-@@ -507,6 +508,16 @@ static void serial_omap_set_mctrl(struct uart_port *po=
-rt, unsigned int mctrl)
- 	up->mcr |=3D mcr;
- 	serial_out(up, UART_MCR, up->mcr);
- 	pm_runtime_put(&up->pdev->dev);
-+
-+	if (gpio_is_valid(up->DTR_gpio) &&
-+	    !!(mctrl & TIOCM_DTR) !=3D up->DTR_active) {
-+		up->DTR_active =3D !up->DTR_active;
-+		if (gpio_cansleep(up->DTR_gpio))
-+			schedule_work(&up->qos_work);
-+		else
-+			gpio_set_value(up->DTR_gpio,
-+				       up->DTR_active !=3D up->DTR_inverted);
-+	}
- }
-=20
- static void serial_omap_break_ctl(struct uart_port *port, int break_state)
-@@ -715,6 +726,9 @@ static void serial_omap_uart_qos_work(struct work_struc=
-t *work)
- 						qos_work);
-=20
- 	pm_qos_update_request(&up->pm_qos_request, up->latency);
-+	if (gpio_is_valid(up->DTR_gpio))
-+		gpio_set_value_cansleep(up->DTR_gpio,
-+					up->DTR_active !=3D up->DTR_inverted);
- }
-=20
- static void
-@@ -1435,7 +1449,7 @@ static int serial_omap_probe(struct platform_device *=
-pdev)
- 	struct uart_omap_port	*up;
- 	struct resource		*mem, *irq, *dma_tx, *dma_rx;
- 	struct omap_uart_port_info *omap_up_info =3D pdev->dev.platform_data;
--	int ret =3D -ENOSPC;
-+	int ret;
-=20
- 	if (pdev->dev.of_node)
- 		omap_up_info =3D of_get_uart_port_info(&pdev->dev);
-@@ -1466,10 +1480,29 @@ static int serial_omap_probe(struct platform_device=
- *pdev)
- 	if (!dma_tx)
- 		return -ENXIO;
-=20
-+	if (gpio_is_valid(omap_up_info->DTR_gpio) &&
-+	    omap_up_info->DTR_present) {
-+		ret =3D gpio_request(omap_up_info->DTR_gpio, "omap-serial");
-+		if (ret < 0)
-+			return ret;
-+		ret =3D gpio_direction_output(omap_up_info->DTR_gpio,
-+					    omap_up_info->DTR_inverted);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
- 	up =3D devm_kzalloc(&pdev->dev, sizeof(*up), GFP_KERNEL);
- 	if (!up)
- 		return -ENOMEM;
-=20
-+	if (gpio_is_valid(omap_up_info->DTR_gpio) &&
-+	    omap_up_info->DTR_present) {
-+		up->DTR_gpio =3D omap_up_info->DTR_gpio;
-+		up->DTR_inverted =3D omap_up_info->DTR_inverted;
-+	} else
-+		up->DTR_gpio =3D -EINVAL;
-+	up->DTR_active =3D 0;
-+
- 	up->pdev =3D pdev;
- 	up->port.dev =3D &pdev->dev;
- 	up->port.type =3D PORT_OMAP;
+Joe Perches (2):
+      edac: Use more normal debugging macro style
+      edac: Convert debugfX to edac_dbg(X,
 
---Sig_/4EK4HFChfRZVgbd33GY3fo7
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Mauro Carvalho Chehab (28):
+      RAS: Add a tracepoint for reporting memory controller events
+      edac: Rename the parent dev to pdev
+      edac: use Documentation-nano format for some data structs
+      edac: rewrite the sysfs code to use struct device
+      mpc85xx_edac: convert sysfs logic to use struct device
+      amd64_edac: convert sysfs logic to use struct device
+      i7core_edac: convert it to use struct device
+      edac: Get rid of the old kobj's from the edac mc code
+      edac: add a new per-dimm API and make the old per-virtual-rank API obsolete
+      edac: add a sysfs node to report the maximum location for the system
+      edac: Add debufs nodes to allow doing fake error inject
+      edac: Move grain/dtype/edac_type calculus to be out of channel loop
+      edac: Only expose csrows/channels on legacy API if they're populated
+      edac: change the mem allocation scheme to make Documentation/kobject.txt happy
+      i7core_edac: change the mem allocation scheme to make Documentation/kobject.txt happy
+      edac: move documentation ABI to ABI/testing/sysfs-devices-edac
+      Edac: Add ABI Documentation for the new device nodes
+      edac: Don't add __func__ or __FILE__ for debugf[0-9] msgs
+      edac_mc: Cleanup per-dimm_info debug messages
+      edac: Increase version to 3.0.0
+      amd64_edac: Don't pass driver name as an error parameter
+      edac: remove arch-specific parameter for the error handler
+      edac: edac_mc_handle_error(): add an error_count parameter
+      i7core_edac: properly handle error count
+      sb_edac: properly handle error count
+      edac: allow specifying the error count with fake_inject
+      Merge tag 'v3.5'
+      Merge branch 'devel'
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Rob Herring (3):
+      edac: create top-level debugfs directory
+      edac: add support for Calxeda highbank memory controller
+      edac: add support for Calxeda highbank L2 cache ecc
 
-iQIVAwUBUBXVojnsnt1WYoG5AQLxvg/9HNtWUhfWentLvETuJUWestrweilhpOgQ
-uwCZ9TzMLLkL19o0FRyVSQzGIZsLYMJ5qakFEXicCBxspEuE27wVEEyEyX+giXCD
-KNzSxLcq2mow56bUkrMKac2lC4M9Zpn4wLrUfi0gLqb1e7tq+SNwAULYRd92rOov
-0OmXkSJ8FTP8m4Vr9+67xuLIKZPdFozvwb1g4hnQnjv//JOEEWsCmfJ8poWxdpX/
-8atB+fxDRa7bjthKu4pqaWGkWtF0mZ+4QjLwhoIrgOWaVJNtZAT5U1A60Yuv/U7f
-Ng1mJC74uZQEguRyQDmy5tMlpS40dwJZ8qL60wt5/JMKt5KwCkN0GuCVrf64dU8E
-H01jDGaLrlWjn63AQjJdyEdrN2/SEF6+SrCY41aq4LCHQeP89hbbUGZpZz2Fc2tt
-xFNXkH0gXkOh04OnE86qlTP8ImOdOyqsn63ogz84lqVeaKGzDOieE+YtH04IbP3U
-Fpy+E0A/byGGmFuPgKoivMcLZnF6KnNX8lBDV6ugFgz5SIbENW7ATZh3e/63C2P6
-g1Bls9E9L5gP5GITD9Vt7m3MuljkKx7snWWumyBTYNfXknBJpP3+f/oAiqKNMdO1
-T6BJFFn9ha8PbVlXNDZ+OvjBvD2s/rAUUYatmqbkIq8NdKfkqQhLMrCJcut87NlS
-oYNaqpDB450=
-=w208
------END PGP SIGNATURE-----
+ Documentation/ABI/testing/sysfs-devices-edac       |  140 ++
+ .../devicetree/bindings/arm/calxeda/l2ecc.txt      |   15 +
+ .../devicetree/bindings/arm/calxeda/mem-ctrlr.txt  |   14 +
+ Documentation/edac.txt                             |  112 +-
+ arch/arm/boot/dts/highbank.dts                     |   12 +
+ drivers/edac/Kconfig                               |   24 +-
+ drivers/edac/Makefile                              |    3 +
+ drivers/edac/amd64_edac.c                          |  376 +++---
+ drivers/edac/amd64_edac.h                          |   29 +-
+ drivers/edac/amd64_edac_dbg.c                      |   89 +-
+ drivers/edac/amd64_edac_inj.c                      |  134 +-
+ drivers/edac/amd76x_edac.c                         |   34 +-
+ drivers/edac/cell_edac.c                           |   28 +-
+ drivers/edac/cpc925_edac.c                         |   96 +-
+ drivers/edac/e752x_edac.c                          |   92 +-
+ drivers/edac/e7xxx_edac.c                          |   89 +-
+ drivers/edac/edac_core.h                           |   39 +-
+ drivers/edac/edac_device.c                         |   47 +-
+ drivers/edac/edac_device_sysfs.c                   |   71 +-
+ drivers/edac/edac_mc.c                             |  395 +++---
+ drivers/edac/edac_mc_sysfs.c                       | 1355 ++++++++++----------
+ drivers/edac/edac_module.c                         |   20 +-
+ drivers/edac/edac_module.h                         |   26 +-
+ drivers/edac/edac_pci.c                            |   26 +-
+ drivers/edac/edac_pci_sysfs.c                      |   49 +-
+ drivers/edac/highbank_l2_edac.c                    |  149 +++
+ drivers/edac/highbank_mc_edac.c                    |  264 ++++
+ drivers/edac/i3000_edac.c                          |   47 +-
+ drivers/edac/i3200_edac.c                          |   48 +-
+ drivers/edac/i5000_edac.c                          |  207 ++-
+ drivers/edac/i5100_edac.c                          |   14 +-
+ drivers/edac/i5400_edac.c                          |  201 ++-
+ drivers/edac/i7300_edac.c                          |  173 ++-
+ drivers/edac/i7core_edac.c                         |  520 ++++----
+ drivers/edac/i82443bxgx_edac.c                     |   51 +-
+ drivers/edac/i82860_edac.c                         |   45 +-
+ drivers/edac/i82875p_edac.c                        |   53 +-
+ drivers/edac/i82975x_edac.c                        |   55 +-
+ drivers/edac/mpc85xx_edac.c                        |  131 +-
+ drivers/edac/mv64x60_edac.c                        |   40 +-
+ drivers/edac/pasemi_edac.c                         |   22 +-
+ drivers/edac/ppc4xx_edac.c                         |   16 +-
+ drivers/edac/r82600_edac.c                         |   48 +-
+ drivers/edac/sb_edac.c                             |  257 ++--
+ drivers/edac/tile_edac.c                           |   12 +-
+ drivers/edac/x38_edac.c                            |   48 +-
+ include/linux/edac.h                               |  208 +--
+ include/ras/ras_event.h                            |  102 ++
+ 48 files changed, 3471 insertions(+), 2555 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-edac
+ create mode 100644 Documentation/devicetree/bindings/arm/calxeda/l2ecc.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
+ create mode 100644 drivers/edac/highbank_l2_edac.c
+ create mode 100644 drivers/edac/highbank_mc_edac.c
+ create mode 100644 include/ras/ras_event.h
 
---Sig_/4EK4HFChfRZVgbd33GY3fo7--
