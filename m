@@ -1,72 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab2G3Sj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 14:39:57 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:50106 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab2G3Sj4 (ORCPT
+	id S1754697Ab2G3Ske (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 14:40:34 -0400
+Received: from extranet.aprogsys.com ([91.121.73.63]:36769 "EHLO
+	extranet.aprogsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976Ab2G3Skd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 14:39:56 -0400
-Date: Mon, 30 Jul 2012 11:39:51 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [wq:review-wq-mod_delayed]  WARNING: at __queue_work()
-Message-ID: <20120730183951.GD20067@google.com>
-References: <20120729052159.GA12776@localhost>
+	Mon, 30 Jul 2012 14:40:33 -0400
+X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 14:40:32 EDT
+Message-ID: <5016D2C0.6090708@vetienne.net>
+Date: Mon, 30 Jul 2012 20:30:24 +0200
+From: Vincent ETIENNE <ve@vetienne.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120729052159.GA12776@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vincent ETIENNE <vetienne@aprogsys.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: kernel BUG at fs/buffer.c:2886! Linux 3.5.0
+References: <501313B6.70801@aprogsys.com> <20120730063000.GA4025@dhcp-172-17-9-228.mtv.corp.google.com> <50163B8A.7060509@aprogsys.com> <20120730075333.GC4025@dhcp-172-17-9-228.mtv.corp.google.com>
+In-Reply-To: <20120730075333.GC4025@dhcp-172-17-9-228.mtv.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 29, 2012 at 01:21:59PM +0800, Fengguang Wu wrote:
-> Hi Tejun,
-> 
-> I got the below warning on
-> 
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-wq-mod_delayed
-> head:   6f510bfa84f26319b1021b9e706ebb814809c4a3
-> commit: 54eaaeaa4d2b871c835ff826af5dab3b96f90da0 [4/15] workqueue: disable preemption while manipulating PENDING
-> 
-> [    0.624901] NET: Registered protocol family 1
-> [    0.626536] ------------[ cut here ]------------
-> [    0.627849] WARNING: at /c/kernel-tests/src/tip/kernel/workqueue.c:995 __queue_work+0x33/0x1ab()
-> [    0.630262] Pid: 1, comm: swapper Not tainted 3.5.0-07346-g54eaaea #1043
-> [    0.632100] Call Trace:
-> [    0.632803]  [<8102546a>] warn_slowpath_common+0x54/0x69
-> [    0.634246]  [<81034e5d>] ? __queue_work+0x33/0x1ab
-> [    0.635578]  [<81034e5d>] ? __queue_work+0x33/0x1ab
-> [    0.636944]  [<8102551d>] warn_slowpath_null+0x1d/0x20
-> [    0.638344]  [<81034e5d>] __queue_work+0x33/0x1ab
-> [    0.639632]  [<8103506c>] queue_work_on+0x13/0x1c
-> [    0.640945]  [<81035083>] queue_work+0xe/0x10
-> [    0.642137]  [<81035136>] queue_delayed_work+0xf/0x22
-> [    0.643525]  [<81035642>] schedule_delayed_work+0x11/0x13
-> [    0.645038]  [<815a3750>] sunrpc_init_cache_detail+0x7f/0x82
-> [    0.646579]  [<815a3db6>] cache_register_net+0x8/0xc
-> [    0.647941]  [<815a0520>] ip_map_cache_create+0x34/0x56
-> [    0.649399]  [<81ac0ffe>] sunrpc_init_net+0x73/0xce
-> [    0.650743]  [<81ac0f8b>] ? init_sunrpc+0x5f/0x5f
-> [    0.652049]  [<814f3bba>] ops_init.constprop.5+0xc5/0xeb
-> [    0.653510]  [<814f3c34>] register_pernet_operations.isra.2+0x54/0x7d
-> [    0.655325]  [<81ac0f2c>] ? rpc_init_generic_auth+0xf/0xf
-> [    0.656821]  [<814f3dbb>] register_pernet_subsys+0x19/0x2a
-> [    0.658316]  [<81ac0f55>] init_sunrpc+0x29/0x5f
-> [    0.659555]  [<81a879cb>] do_one_initcall+0x7e/0x129
-> [    0.660936]  [<81a87b59>] kernel_init+0xe3/0x17a
-> [    0.662205]  [<81a87435>] ? do_early_param+0x7a/0x7a
-> [    0.663574]  [<81a87a76>] ? do_one_initcall+0x129/0x129
-> [    0.665038]  [<81652f36>] kernel_thread_helper+0x6/0xd
 
-The WARN_ON should have been on preemptible() instead of directly on
-preempt_count(); otherwise, with !CONFIG_PREEMPT_COUNT, the condition
-triggers spuriously.  Will fix.
 
-Thanks a lot for the report.
 
--- 
-tejun
+On 30/07/2012 09:53, Joel Becker wrote:
+> On Mon, Jul 30, 2012 at 09:45:14AM +0200, Vincent ETIENNE wrote:
+>> Le 30/07/2012 08:30, Joel Becker a écrit :
+>>> On Sat, Jul 28, 2012 at 12:18:30AM +0200, Vincent ETIENNE wrote:
+>>>> Hello
+>>>>
+>>>> Get this on first write made ( by deliver sending mail to inform of the
+>>>> restart of services  )
+>>>> Home partition (the one receiving the mail) is based on ocfs2 created
+>>>> from drbd block device in primary/primary mode
+>>>> These drbd devices are based on lvm.
+>>>>
+>>>> system is running linux-3.5.0, identical symptom with linux 3.3 and 3.2
+>>>> but working with linux 3.0 kernel
+>>>>
+>>>> reproduced on two machines ( so different hardware involved on this one
+>>>> software md raid on SATA, on second one areca hardware raid card )
+>>>> but the 2 machines are the one sharing this partition ( so share the
+>>>> same data )
+>>> 	Hmm.  Any chance you can bisect this further?
+>> Will try to. Will take a few days as the server is in production ( but
+>> used as backup so...)
+>>
+>>>> Jul 27 23:41:41 jupiter2 kernel: [  351.169213] ------------[ cut here
+>>>> ]------------
+>>>> Jul 27 23:41:41 jupiter2 kernel: [  351.169261] kernel BUG at
+>>>> fs/buffer.c:2886!
+>>> 	This is:
+>>>
+>>> 	BUG_ON(!buffer_mapped(bh));
+>>>
+>>> in submit_bh().
+>>>
+>>> system_call_fastpath+0x16/0x1b
+>>> 	This stack trace is from 3.5, because of the location of the
+>>> BUG.  The call path in the trace suggests the code added by Al's ea022d,
+>>> but you say it breaks in 3.2 and 3.3 as well.  Can you give me a trace
+>>> from 3.2?
+>> For a 3.2 kernel i get this stack trace. Different trace form 3.5 but
+>> exactly at the same moment. and for the same reasons.
+>> Seems to be less immmediate than with 3.5 but more a subjective
+>> imrpession than something based on fact. ( it takes a few seconds after
+>> deliver is started to have the bug )
+> Totally different stack trace.  Not in symlink code, but instead in
+> fallocate.  Weird.  I wonder if you are hitting two things.  Bisection
+> will definitely help.
+
+Yes could be, that would explain the 2 stack trace ( and the different
+timing observed )
+Bisection is in progress. The fallocate bug is certainly already
+corrected ( info sent by
+sunil.mushran@gmail.com but unavailable on the list for the moment  ?)
+
+------
+
+The fallocate() oops is probably the same that is fixed by this patch.
+https://oss.oracle.com/git/?p=smushran/linux-2.6.git;a=commit;h=a2118b301104a24381b414bc93371d666fe8d43a
+
+
+Is in the list of patches that are ready to be pushed.
+https://oss.oracle.com/git/?p=smushran/linux-2.6.git;a=shortlog;h=mw-3.4-mar15
+
+----
+
+But not sure it will correct all i observed. So i will continue to
+bisect to confirm/infirm.
+( But i seems to have lost network on my server after a reboot and so no
+more access before tomorrow , I have certainly forget to do make
+modules_install before installing new kernel ... Being stupid is not
+very helpful... ) . I hope to finish the bisection tomorrow or wednesday.
+ 
+Thanks a lot for the support.
+> Joel
+>
+>
+
