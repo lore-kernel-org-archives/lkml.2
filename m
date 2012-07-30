@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab2G3Ga2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 02:30:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:14076 "EHLO mga14.intel.com"
+	id S1753341Ab2G3Ggy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 02:36:54 -0400
+Received: from tundra.namei.org ([65.99.196.166]:43270 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab2G3GaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 02:30:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="174715483"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: [PATCH] power_supply: Add new power supply properties CHARGE_CURRENT/VOLTAGE_MAX
-Date: Mon, 30 Jul 2012 10:38:02 +0530
-Message-Id: <1343624882-1063-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1751355Ab2G3Ggw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 02:36:52 -0400
+Date: Mon, 30 Jul 2012 16:36:51 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] security subsystem bugfixes
+Message-ID: <alpine.LRH.2.02.1207301635540.16928@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are different types of chargers avalibale like AC, Solar, USB, etc..
-Even in USB we have different types SDP/DCP/CDP/ACA and all these
-chargers have different o/p ratings. For example SDP supports only 500mA of
-charge current whereas AC charger can support upto 8A or more.
+Please pull these fixes for your curren tree.
 
-Similarly batteries also come with charge current and voltage ratings and
-these ratings vary depending on its capacity and the technology used.
+The following changes since commit f7da9cdf45cbbad5029d4858dcbc0134e06084ed:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../davem/net
 
-This patch adds two new power supply properties CONSTANT_CHARGE_CURRENT_MAX and
-CONSTANT_CHARGE_CURRENT_MAX.
+are available in the git repository at:
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
----
- Documentation/power/power_supply_class.txt |    4 ++++
- drivers/power/power_supply_sysfs.c         |    2 ++
- include/linux/power_supply.h               |    2 ++
- 3 files changed, 8 insertions(+), 0 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
 
-diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
-index 272b122..db11122 100644
---- a/Documentation/power/power_supply_class.txt
-+++ b/Documentation/power/power_supply_class.txt
-@@ -115,8 +115,12 @@ be negative; there is no empty or full value.  It is only useful for
- relative, time-based measurements.
- 
- CONSTANT_CHARGE_CURRENT - constant charge current programmed by charger.
-+CONSTANT_CHARGE_CURRENT_MAX - maximum charge current supported by the
-+power supply object.
- 
- CONSTANT_CHARGE_VOLTAGE - constant charge voltage programmed by charger.
-+CONSTANT_CHARGE_VOLTAGE_MAX - maximum charge voltage supported by the
-+power supply object.
- 
- ENERGY_FULL, ENERGY_EMPTY - same as above but for energy.
- 
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index 797639e..f10a402 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -161,7 +161,9 @@ static struct device_attribute power_supply_attrs[] = {
- 	POWER_SUPPLY_ATTR(charge_avg),
- 	POWER_SUPPLY_ATTR(charge_counter),
- 	POWER_SUPPLY_ATTR(constant_charge_current),
-+	POWER_SUPPLY_ATTR(constant_charge_current_max),
- 	POWER_SUPPLY_ATTR(constant_charge_voltage),
-+	POWER_SUPPLY_ATTR(constant_charge_voltage_max),
- 	POWER_SUPPLY_ATTR(energy_full_design),
- 	POWER_SUPPLY_ATTR(energy_empty_design),
- 	POWER_SUPPLY_ATTR(energy_full),
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index e7edcb3..0c40c62 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -111,7 +111,9 @@ enum power_supply_property {
- 	POWER_SUPPLY_PROP_CHARGE_AVG,
- 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
- 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
-+	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
- 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
-+	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX,
- 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
- 	POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN,
- 	POWER_SUPPLY_PROP_ENERGY_FULL,
--- 
-1.7.0.4
+Al Viro (1):
+      selinux: fix selinux_inode_setxattr oops
 
+Alan Cox (1):
+      smack: off by one error
+
+David Howells (1):
+      KEYS: linux/key-type.h needs linux/errno.h
+
+ include/linux/key-type.h |    1 +
+ security/selinux/hooks.c |   15 ++++++++++-----
+ security/smack/smackfs.c |    8 ++++----
+ 3 files changed, 15 insertions(+), 9 deletions(-)
