@@ -1,112 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab2G3OLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:11:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45545 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab2G3OLT (ORCPT
+	id S1754524Ab2G3OLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:11:32 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:54901 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754393Ab2G3OLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:11:19 -0400
-Date: Mon, 30 Jul 2012 07:10:33 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-c517ee744b96e441d9c731e245f83c6d08dc0a19@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
-        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120729182216.GA20311@redhat.com>
-References: <20120729182216.GA20311@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: __replace_page()
-  should not use page_address_in_vma()
-Git-Commit-ID: c517ee744b96e441d9c731e245f83c6d08dc0a19
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 30 Jul 2012 10:11:20 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:10:38 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <20502.38341.619003.356462@quad.stoffel.home>
+Date: Mon, 30 Jul 2012 10:10:13 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Singh Sandeep-B37400 <B37400@freescale.com>
+Cc: John Stoffel <john@stoffel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: RE: [2/3][PATCH][v2] TDM Framework
+In-Reply-To: <3F1D9DCAAB49B94D88DBE05911FA4E6E511095@039-SN1MPN1-006.039d.mgd.msft.net>
+References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+	<20498.41365.853741.261834@quad.stoffel.home>
+	<3F1D9DCAAB49B94D88DBE05911FA4E6E511095@039-SN1MPN1-006.039d.mgd.msft.net>
+X-Mailer: VM 8.1.2 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c517ee744b96e441d9c731e245f83c6d08dc0a19
-Gitweb:     http://git.kernel.org/tip/c517ee744b96e441d9c731e245f83c6d08dc0a19
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Sun, 29 Jul 2012 20:22:16 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 30 Jul 2012 11:27:19 +0200
+>>>>> "Singh" == Singh Sandeep-B37400 <B37400@freescale.com> writes:
 
-uprobes: __replace_page() should not use page_address_in_vma()
+Singh> -----Original Message-----
+Singh> From: John Stoffel [mailto:john@stoffel.org] 
+Singh> Sent: 27 July 2012 19:42
+Singh> To: Singh Sandeep-B37400
+Singh> Cc: linuxppc-dev@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; galak@kernel.crashing.org; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
+Singh> Subject: Re: [2/3][PATCH][v2] TDM Framework
 
-page_address_in_vma(old_page) in __replace_page() is ugly and
-wrong. The caller already knows the correct virtual address,
-this page was found by get_user_pages(vaddr).
 
-However, page_address_in_vma() can actually fail if
-page->mapping was cleared by __delete_from_page_cache() after
-get_user_pages() returns. But this means the race with page
-reclaim, write_opcode() should not fail, it should retry and
-read this page again. Probably the race with remove_mapping() is
-not possible due to page_freeze_refs() logic, but afaics at
-least shmem_writepage()->shmem_delete_from_page_cache() can
-clear ->mapping.
+>> From: Sandeep Singh <Sandeep@freescale.com> TDM Framework is an 
+>> attempt to provide a platform independent layer which can offer a 
+>> standard interface  for TDM access to different client modules.
 
-We could change __replace_page() to return -EAGAIN in this case,
-but it would be better to simply use the caller's vaddr and rely
-on page_check_address().
+Singh> Please don't use TLAs (Three Letter Acronyms) like TDM without explaining the clearly and up front.  It makes it hard for anyone else who doens't know your code to look it over without having to spend lots of time poking around to figure it out from either context or somewhere else.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120729182216.GA20311@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/events/uprobes.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+Singh> [Sandeep] Patch for documentation for TDM is present in this
+Singh> patch set, which explains TDM in detail. Should we do this in
+Singh> commit message too??  Link too documentation patch:
+Singh> http://patchwork.ozlabs.org/patch/173680/
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index a2b32a5..6fda799 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -127,22 +127,19 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
-  * based on replace_page in mm/ksm.c
-  *
-  * @vma:      vma that holds the pte pointing to page
-+ * @addr:     address the old @page is mapped at
-  * @page:     the cowed page we are replacing by kpage
-  * @kpage:    the modified page we replace page by
-  *
-  * Returns 0 on success, -EFAULT on failure.
-  */
--static int __replace_page(struct vm_area_struct *vma, struct page *page, struct page *kpage)
-+static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
-+				struct page *page, struct page *kpage)
- {
- 	struct mm_struct *mm = vma->vm_mm;
--	unsigned long addr;
- 	spinlock_t *ptl;
- 	pte_t *ptep;
- 
--	addr = page_address_in_vma(page, vma);
--	if (addr == -EFAULT)
--		return -EFAULT;
--
- 	ptep = page_check_address(page, mm, addr, &ptl, 0);
- 	if (!ptep)
- 		return -EAGAIN;
-@@ -243,7 +240,7 @@ retry:
- 		goto unlock_out;
- 
- 	lock_page(new_page);
--	ret = __replace_page(vma, old_page, new_page);
-+	ret = __replace_page(vma, vaddr, old_page, new_page);
- 	unlock_page(new_page);
- 
- unlock_out:
+You should put the expansion of TDM into the initial commit message,
+and also into the Kconfig text, so that someone configuring the kernel
+has a clue what you're talking about.  
+
+Try to approach this as a brandnew user who doesn't have your
+knowledge of the software.  Write for the un-initiated if at all
+possible.
+
+John
+
+
