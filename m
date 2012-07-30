@@ -1,59 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab2G3ToX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:44:23 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:51591 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195Ab2G3ToV (ORCPT
+	id S1755057Ab2G3TpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:45:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19735 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668Ab2G3TpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:44:21 -0400
-X-Greylist: delayed 1351 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 15:44:20 EDT
-Date: Mon, 30 Jul 2012 20:21:40 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] page-table walkers vs memory order
-Message-ID: <20120730192140.GU25459@jl-vm1.vm.bytemark.co.uk>
-References: <1343064870.26034.23.camel@twins>
- <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
- <20120725175628.GH2378@linux.vnet.ibm.com>
- <alpine.LSU.2.00.1207251313180.1942@eggly.anvils>
- <20120725211217.GR2378@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120725211217.GR2378@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 30 Jul 2012 15:45:03 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=m-5qM9h8XkYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=qrFA_WvyAAAA:8 a=jeQFJ1gBC8V7uS6IoycA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=bdmcM0_chmsA:10 a=jeBq3FmKZ4MA:10 a=sj3YrqJxReND9kvCNq0A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120730194501.990401960@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 30 Jul 2012 15:43:18 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 2/4] localmodconfig: Read in orig config file to avoid extra processing
+References: <20120730194316.768288008@goodmis.org>
+Content-Disposition: inline; filename=0002-localmodconfig-Read-in-orig-config-file-to-avoid-ext.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney wrote:
-> > Does some version of gcc, under the options which we insist upon,
-> > make such optimizations on any of the architectures which we support?
-> 
-> Pretty much any production-quality compiler will do double-fetch
-> and old-value-reuse optimizations, the former especially on 32-bit
-> x86.  I don't know of any production-quality compilers that do value
-> speculation, which would make the compiler act like DEC Alpha hardware,
-> and I would hope that if this does appear, (1) we would have warning
-> and (2) it could be turned off.  But there has been a lot of work on
-> this topic, so we would be foolish to rule it out.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-GCC documentation for IA-64:
+From: Steven Rostedt <srostedt@redhat.com>
 
-   -msched-ar-data-spec
-   -mno-sched-ar-data-spec
-     (En/Dis)able data speculative scheduling after reload. This results
-     in generation of ld.a instructions and the corresponding check
-     instructions (ld.c / chk.a). The default is 'enable'.
+Read in the entire config file. If there's a config that we depend on
+that happens to be in the core set (not a module) then we do not need
+to process it as a module.
 
-I don't know if that results in value speculation of the relevant kind.
+Currently, we follow the entire depend and selects even if they
+are enabled as core and not modules. By checking to make sure that we
+only look at modules we can drop the count a little.
 
--- Jamie
+>From one of my tests, localmodconfig went from taking 3095 set modules
+down to 356 before this patch, and down to 290 modules after the change.
+
+Tested-by: John David Yost <johnyost@ptd.net> # AlleyTrotter
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/kconfig/streamline_config.pl |   26 ++++++++++++++++++++++++--
+ 1 file changed, 24 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
+ine_config.pl
+index 5c1ce87..ab4985f 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -113,6 +113,10 @@ sub find_config {
+=20
+ find_config;
+=20
++# Read in the entire config file into config_file
++my @config_file =3D <CIN>;
++close CIN;
++
+ # Parse options
+ my $localmodconfig =3D 0;
+ my $localyesconfig =3D 0;
+@@ -392,7 +396,20 @@ foreach my $module (keys(%modules)) {
+     }
+ }
+=20
++# Read the current config, and see what is enabled. We want to
++# ignore configs that we would not enable anyway.
++
++my %orig_configs;
+ my $valid =3D "A-Za-z_0-9";
++
++foreach my $line (@config_file) {
++    $_ =3D $line;
++
++    if (/(CONFIG_[$valid]*)=3D(m|y)/) {
++	$orig_configs{$1} =3D $2;
++    }
++}
++
+ my $repeat =3D 1;
+=20
+ #
+@@ -414,6 +431,11 @@ sub parse_config_dep_select
+=20
+ 	    $p =3D~ s/^[^$valid]*[$valid]+//;
+=20
++	    # We only need to process if the depend config is a module
++	    if (!defined($orig_configs{$conf}) || !$orig_configs{conf} eq "m") {
++		next;
++	    }
++
+ 	    if (!defined($configs{$conf})) {
+ 		# We must make sure that this config has its
+ 		# dependencies met.
+@@ -450,7 +472,8 @@ my %setconfigs;
+=20
+ # Finally, read the .config file and turn off any module enabled that
+ # we could not find a reason to keep enabled.
+-while(<CIN>) {
++foreach my $line (@config_file) {
++    $_ =3D $line;
+=20
+     if (/CONFIG_IKCONFIG/) {
+ 	if (/# CONFIG_IKCONFIG is not set/) {
+@@ -478,7 +501,6 @@ while(<CIN>) {
+     }
+     print;
+ }
+-close(CIN);
+=20
+ # Integrity check, make sure all modules that we want enabled do
+ # indeed have their configs set.
+--=20
+1.7.10.4
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQFuQ+AAoJEIy3vGnGbaoAxnkP/00C5+mfLZf7S631XoIzVDP9
+mh9YRBL8l3gBZGXFGfayTMfFkHt/E/JVy5m5I9h8xzYt4LTjw7o0TgnaUxz5nc8J
+CdUJESQ0mEGi+XNA2ML+YGNtfQJSvi8Gs1JNrSmk6Y8ek3fASx0JXNfHefgxPIwA
+Lqku1OHNvJtDwztO0+qVVK1nfyS2Pfp7E0nnUzHfCaEb0VY6kFtQg24wUfA878O8
+mxoQ1BH2Oau+eQWrM3agosSbeY1nLvL6UZQdzkV4SA/ltdgQPDZ4jO5p944ArngO
+P7xbEAZOnjK5AJtQ+Qcy5NXqAiA5Hl2NLGsRiPvkxIixeeJD1kx5F7hP+Qe8obyp
+5XQJIRyL+ATLQO2+pAE2OXQhnb3lMzGZzAw7qSZe5SMbJSYzW+NTneAviJOXL9DE
+c8VZbbzgO+xYnAB7Snpw5McQLirblGXfKyHvwLEfFA4ubFnu2e/VmFhRRk3XQ219
+C3HayzUgxvlpAbAwKLBwEqv/Jt/jm5On8gLsp+e6L3vGiieB34MZuvGQ+0jkOuGa
+PH1VrwIOhWPh+qIYak96WPWjWVdkgpSCpZQWjoxKYn25awun+/QQwTmNvfnxCyjm
+BEH4QzndqYbABDy9eU6G6jZ1uTRjGXI3hC26JNdL1uovNm1DCTzxFBDoF0nIYWZ7
+EUOzqLr2dr4yrhb1940N
+=3wF3
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
