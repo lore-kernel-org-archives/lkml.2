@@ -1,118 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab2G3CyF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 22:54:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42408 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab2G3Cx4 (ORCPT
+	id S1754049Ab2G3CyA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 22:54:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35787 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947Ab2G3Cx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 22:53:56 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] perf tool: save cmdline from user in file header vs what is passed to record
-Date: Sun, 29 Jul 2012 20:53:51 -0600
-Message-Id: <1343616831-6408-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Sun, 29 Jul 2012 22:53:26 -0400
+Date: Mon, 30 Jul 2012 12:53:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Axel Lin <axel.lin@gmail.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: linux-next: manual merge of the arm-soc tree with Linus' tree
+Message-Id: <20120730125314.8bad3b71a8e727b892a47590@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__30_Jul_2012_12_53_14_+1000_2yKL_jiORpLOAt32"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A number of builtin commands process some user args and then pass the rest to
-cmd_record. cmd_record then saves argc/argv that it receives into the header of
-the perf data file. But this loses the arguments handled by the first command
--- ie., the real command line from the user. This patch saves the command line
-as typed by the user rather than what was passed to cmd_record.
+--Signature=_Mon__30_Jul_2012_12_53_14_+1000_2yKL_jiORpLOAt32
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-As an example consider the command:
-$ perf kvm --guest --host --guestmount=/tmp/guest-mount record
-    -fo /tmp/perf.data -ag -- sleep 10
+Hi all,
 
-Currently the command saved to the header is:
-    cmdline : /tmp/p3.5/perf record -o perf.data.kvm -fo /tmp/perf.data -ag -- sleep 1
+Today's linux-next merge of the arm-soc tree got a conflict in
+drivers/watchdog/orion_wdt.c between commit 0dd6e4847ed8 ("watchdog:
+orion_wdt: Convert driver to watchdog core") from Linus' tree and commit
+1e7bad0f5b91 ("ARM: Orion: DTify the watchdog timer") from the arm-soc
+tree.
 
-(ignore the duplicated -o -- the first would be yet another bug with perf-kvm).
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-With this patch the command line saved to the header is:
-cmdline : /tmp/p3.5/perf kvm --guest --host --guestmount=/tmp/guest-mount
-    record -fo /tmp/perf.data -ag -- sleep 1
+diff --cc drivers/watchdog/orion_wdt.c
+index a73bea4,1531e02..0000000
+--- a/drivers/watchdog/orion_wdt.c
++++ b/drivers/watchdog/orion_wdt.c
+@@@ -23,7 -24,8 +23,8 @@@
+  #include <linux/io.h>
+  #include <linux/spinlock.h>
+  #include <linux/clk.h>
+ +#include <linux/err.h>
++ #include <linux/of.h>
+  #include <mach/bridge-regs.h>
+ =20
+  /*
+@@@ -189,9 -292,16 +190,15 @@@ static int __devexit orion_wdt_remove(s
+ =20
+  static void orion_wdt_shutdown(struct platform_device *pdev)
+  {
+ -	if (test_bit(WDT_IN_USE, &wdt_status))
+ -		orion_wdt_disable();
+ +	orion_wdt_stop(&orion_wdt);
+  }
+ =20
++ static const struct of_device_id orion_wdt_of_match_table[] __devinitdata=
+ =3D {
++ 	{ .compatible =3D "marvell,orion-wdt", },
++ 	{},
++ };
++ MODULE_DEVICE_TABLE(of, orion_wdt_of_match_table);
++=20
+  static struct platform_driver orion_wdt_driver =3D {
+  	.probe		=3D orion_wdt_probe,
+  	.remove		=3D __devexit_p(orion_wdt_remove),
 
-v2: simplified to saving the command in parse_options per Stephane's suggestion
+--Signature=_Mon__30_Jul_2012_12_53_14_+1000_2yKL_jiORpLOAt32
+Content-Type: application/pgp-signature
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- tools/perf/builtin-record.c     |    2 --
- tools/perf/util/header.c        |    9 +++++++++
- tools/perf/util/parse-options.c |    3 +++
- 3 files changed, 12 insertions(+), 2 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f5a6452..77adcd8 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -844,8 +844,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	struct perf_record *rec = &record;
- 	char errbuf[BUFSIZ];
- 
--	perf_header__set_cmdline(argc, argv);
--
- 	evsel_list = perf_evlist__new(NULL, NULL);
- 	if (evsel_list == NULL)
- 		return -ENOMEM;
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 3a6d204..74ea3c2 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -174,6 +174,15 @@ perf_header__set_cmdline(int argc, const char **argv)
- {
- 	int i;
- 
-+	/*
-+	 * If header_argv has already been set, do not override it.
-+	 * This allows a command to set the cmdline, parse args and
-+	 * then call another builtin function that implements a
-+	 * command -- e.g, cmd_kvm calling cmd_record.
-+	 */
-+	if (header_argv)
-+		return 0;
-+
- 	header_argc = (u32)argc;
- 
- 	/* do not include NULL termination */
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index 99d02aa..594f8fa 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -1,6 +1,7 @@
- #include "util.h"
- #include "parse-options.h"
- #include "cache.h"
-+#include "header.h"
- 
- #define OPT_SHORT 1
- #define OPT_UNSET 2
-@@ -413,6 +414,8 @@ int parse_options(int argc, const char **argv, const struct option *options,
- {
- 	struct parse_opt_ctx_t ctx;
- 
-+	perf_header__set_cmdline(argc, argv);
-+
- 	parse_options_start(&ctx, argc, argv, flags);
- 	switch (parse_options_step(&ctx, options, usagestr)) {
- 	case PARSE_OPT_HELP:
--- 
-1.7.10.1
+iQIcBAEBCAAGBQJQFfcaAAoJEECxmPOUX5FEBbAP/iU+Vc94cybknwRUIoIBcLLP
+NQvqVRyKBAick0W88qmC3D34Sc9Qqz2oj12aVZtiJ4lEdS6ydZiWYqzmWQ25SDOr
+12LJnnX43O5ZjGncRCLIQ061/rAomDfHKzPnbmmTe47HeHZVCqlDhAl7xK3gi0te
+EjknNtsBeJIYK2gGA0Eb0NXbZYEfLZnCmzytapZ1QVTDBZXCJrif048Tvjppzu+y
+vg7N4SloAtwZlFOGeY9hTph52i331IU1HgSobrk9TR5F7fZVqE85nVX8jft8uqaM
+7KBT5tSORX5ycpKqdJ9329y2hGa/1bxnUqLWIvrGijn6Kf19d+xwmy88DvO4ujZc
+mpDs/Kf6UM97c+R0wlfCGLL756WuNAelo+6Sa0ul1QnwFARKDnLKzRXnDUwGXhUP
+i1vD8nxfJ1NZctz3n2bLbjQUZuQnGdlcyzvNnGvQiib8UXmYGfL0R/FC/po5Zd/N
+Znp9OXpdP6i7YMgiwMflqDDWlD1l7PVV5a2OINBzuRaJj4aQ6JEzF6SSyX5AC2c1
+VT84BzFprsgAMsHANSMM+EWoRtaphXUagVMJ+35tDPsAylslhxMJPg0l2QZRGy84
+eti1C96saN/VkXlc8HBqitKWq867nhNU3m/PKe8aO1DScYtgeQpGGLJmg7RqoY67
+24qKvzzlaRbJW+uy7/WC
+=rNrj
+-----END PGP SIGNATURE-----
 
+--Signature=_Mon__30_Jul_2012_12_53_14_+1000_2yKL_jiORpLOAt32--
