@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab2G3OJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:09:37 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:42859 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754445Ab2G3OJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:09:35 -0400
-Message-ID: <50169593.5020506@parallels.com>
-Date: Mon, 30 Jul 2012 18:09:23 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754511Ab2G3OKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:10:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45522 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab2G3OKB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 10:10:01 -0400
+Date: Mon, 30 Jul 2012 07:09:40 -0700
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-f403072c6108e15f319a4a5036b650c77760522c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
+        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20120729182212.GA20304@redhat.com>
+References: <20120729182212.GA20304@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] uprobes: Don't recheck vma/
+ f_mapping in write_opcode()
+Git-Commit-ID: f403072c6108e15f319a4a5036b650c77760522c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
-        <cgroups@vger.kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 04/10] memcg: skip memcg kmem allocations in specified
- code regions
-References: <1343227101-14217-1-git-send-email-glommer@parallels.com> <1343227101-14217-5-git-send-email-glommer@parallels.com> <20120730125004.GA27293@shutemov.name>
-In-Reply-To: <20120730125004.GA27293@shutemov.name>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:09:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 04:50 PM, Kirill A. Shutemov wrote:
-> On Wed, Jul 25, 2012 at 06:38:15PM +0400, Glauber Costa wrote:
->> This patch creates a mechanism that skip memcg allocations during
->> certain pieces of our core code. It basically works in the same way
->> as preempt_disable()/preempt_enable(): By marking a region under
->> which all allocations will be accounted to the root memcg.
->>
->> We need this to prevent races in early cache creation, when we
->> allocate data using caches that are not necessarily created already.
-> 
-> Why not a GFP_* flag?
-> 
+Commit-ID:  f403072c6108e15f319a4a5036b650c77760522c
+Gitweb:     http://git.kernel.org/tip/f403072c6108e15f319a4a5036b650c77760522c
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Sun, 29 Jul 2012 20:22:12 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 30 Jul 2012 11:27:18 +0200
 
-The main reason for this is to prevent nested calls of
-kmem_cache_create(), since they could create (and in my tests, do
-create) funny circular dependencies with each other. So the cache
-creation itself would proceed without involving memcg.
+uprobes: Don't recheck vma/f_mapping in write_opcode()
 
-At first, it is a bit weird to have cache creation itself depending on a
-allocation flag test.
+write_opcode() rechecks valid_vma() and ->f_mapping, this is
+pointless. The caller, register_for_each_vma() or uprobe_mmap(),
+has already done these checks under mmap_sem.
+
+To clarify, uprobe_mmap() checks valid_vma() only, but we can
+rely on build_probe_list(vm_file->f_mapping->host).
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120729182212.GA20304@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/events/uprobes.c |   19 +------------------
+ 1 files changed, 1 insertions(+), 18 deletions(-)
+
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index f935327..a2b32a5 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -206,33 +206,16 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 			unsigned long vaddr, uprobe_opcode_t opcode)
+ {
+ 	struct page *old_page, *new_page;
+-	struct address_space *mapping;
+ 	void *vaddr_old, *vaddr_new;
+ 	struct vm_area_struct *vma;
+-	struct uprobe *uprobe;
+ 	int ret;
++
+ retry:
+ 	/* Read the page with vaddr into memory */
+ 	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &old_page, &vma);
+ 	if (ret <= 0)
+ 		return ret;
+ 
+-	ret = -EINVAL;
+-
+-	/*
+-	 * We are interested in text pages only. Our pages of interest
+-	 * should be mapped for read and execute only. We desist from
+-	 * adding probes in write mapped pages since the breakpoints
+-	 * might end up in the file copy.
+-	 */
+-	if (!valid_vma(vma, is_swbp_insn(&opcode)))
+-		goto put_out;
+-
+-	uprobe = container_of(auprobe, struct uprobe, arch);
+-	mapping = uprobe->inode->i_mapping;
+-	if (mapping != vma->vm_file->f_mapping)
+-		goto put_out;
+-
+ 	ret = -ENOMEM;
+ 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
+ 	if (!new_page)
