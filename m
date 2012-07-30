@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2G3B6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 21:58:39 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:8411 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932Ab2G3B6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 21:58:37 -0400
-X-IronPort-AV: E=Sophos;i="4.77,676,1336320000"; 
-   d="scan'208";a="5504839"
-Message-ID: <5015EB6F.40901@cn.fujitsu.com>
-Date: Mon, 30 Jul 2012 10:03:27 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v5 19/19] memory-hotplug: remove sysfs file of node
-References: <50126B83.3050201@cn.fujitsu.com> <50126F21.803@cn.fujitsu.com> <5012712E.9000005@jp.fujitsu.com>
-In-Reply-To: <5012712E.9000005@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/30 09:59:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/30 09:59:11,
-	Serialize complete at 2012/07/30 09:59:11
+	id S1753999Ab2G3B7s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 21:59:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29885 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753932Ab2G3B7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 21:59:47 -0400
+Message-ID: <1343613578.1642.6.camel@cr0>
+Subject: Re: [PATCH 4/7] bridge: call NETDEV_RELEASE notifier in br_del_if()
+From: Cong Wang <amwang@redhat.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Mon, 30 Jul 2012 09:59:38 +0800
+In-Reply-To: <20120727085021.1d4ef810@nehalam.linuxnetplumber.net>
+References: <1343403484-29347-1-git-send-email-amwang@redhat.com>
+	 <1343403484-29347-5-git-send-email-amwang@redhat.com>
+	 <20120727085021.1d4ef810@nehalam.linuxnetplumber.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/27/2012 06:45 PM, Yasuaki Ishimatsu Wrote:
-> Hi Wen,
+On Fri, 2012-07-27 at 08:50 -0700, Stephen Hemminger wrote:
+> On Fri, 27 Jul 2012 23:38:01 +0800
+> Cong Wang <amwang@redhat.com> wrote:
 > 
-> 2012/07/27 19:36, Wen Congyang wrote:
->> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> The patch adds node_set_offline() and unregister_one_node() to
->> remove_memory()
->> for removing sysfs file of node.
->>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Wen Congyang <wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> ---
->>   mm/memory_hotplug.c |    5 +++++
->>   1 files changed, 5 insertions(+), 0 deletions(-)
->>
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index 5ac035f..5681968 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -1267,6 +1267,11 @@ int __ref remove_memory(int nid, u64 start, u64
->> size)
->>       /* remove memmap entry */
->>       firmware_map_remove(start, start + size, "System RAM");
->>
->> +    if (!node_present_pages(nid)) {
+> > When a bridge interface deletes its underlying ports, it should
+> > notify netconsole too, like what bonding interface does.
+> > 
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Signed-off-by: Cong Wang <amwang@redhat.com>
+> > ---
+> >  net/bridge/br_if.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+> > index e1144e1..d243914 100644
+> > --- a/net/bridge/br_if.c
+> > +++ b/net/bridge/br_if.c
+> > @@ -427,6 +427,7 @@ int br_del_if(struct net_bridge *br, struct net_device *dev)
+> >  	if (!p || p->br != br)
+> >  		return -EINVAL;
+> >  
+> > +	call_netdevice_notifiers(NETDEV_RELEASE, br->dev);
+> >  	del_nbp(p);
+> >  
+> >  	spin_lock_bh(&br->lock);
 > 
-> Applying [PATCH v5 17/19], pgdat->node_spanned_pages can become 0 when
-> all memory of the pgdat is removed. When pgdat->node_spanned_pages is 0,
-> it means the pgdat has no memory. So I think node_spanned_pages() is
-> better.
+> Since you can have multiple ports attached to the bridge, this
+> doesn't seem correct. Don't you want the netconsole to keep going
+> on the other ports of the bridge?
+> 
+> What exactly is the problem with having netconsole persist?
 
-node_spanned_pages = present_pages + hole_pages
+Hmm, I saw an incorrect log message when deleting the last port from the
+bridge when netconsole is setup on it. After rethinking it today, you
+are right we should not simply disable netconsole when one port is
+detached, as we have no way to know if that port is used to reach the
+netconsole server.
 
-So present_pages is always less or equal than spanned_pages, and I think
-checking present pages is better.
+So, please ignore this patch.
 
-Thanks
-Wen Congyang
-
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->> +        node_set_offline(nid);
->> +        unregister_one_node(nid);
->> +    }
->> +
->>       arch_remove_memory(start, size);
->>   out:
->>       unlock_memory_hotplug();
->>
-> 
-> 
-> 
+Thanks.
 
