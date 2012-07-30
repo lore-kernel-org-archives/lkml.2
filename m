@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2G3JRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 05:17:24 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7605 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab2G3JRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 05:17:22 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6787"; a="215812303"
-Message-ID: <5016510B.9010202@codeaurora.org>
-Date: Mon, 30 Jul 2012 02:16:59 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1752546Ab2G3J3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 05:29:21 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:57245
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751462Ab2G3J3U convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 05:29:20 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz542Mzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
+From: Singh Sandeep-B37400 <B37400@freescale.com>
+To: John Stoffel <john@stoffel.org>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: RE: [2/3][PATCH][v2] TDM Framework
+Thread-Topic: [2/3][PATCH][v2] TDM Framework
+Thread-Index: AQHNbADsHRsnZfKnik2om4CTBsszqJc9f0OAgAQPaJA=
+Date: Mon, 30 Jul 2012 09:29:15 +0000
+Message-ID: <3F1D9DCAAB49B94D88DBE05911FA4E6E511095@039-SN1MPN1-006.039d.mgd.msft.net>
+References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+ <20498.41365.853741.261834@quad.stoffel.home>
+In-Reply-To: <20498.41365.853741.261834@quad.stoffel.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.97]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: a.zummo@towertech.it, sameo@linux.intel.com,
-        broonie@opensource.wolfsonmicro.com, ldewangan@nvidia.com,
-        kyle.manna@fuel7.com, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-References: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/25/2012 11:35 PM, Venu Byravarasu wrote:
-> +
-> +static struct rtc_class_ops tps65910_rtc_ops = {
+-----Original Message-----
+From: John Stoffel [mailto:john@stoffel.org] 
+Sent: 27 July 2012 19:42
+To: Singh Sandeep-B37400
+Cc: linuxppc-dev@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; galak@kernel.crashing.org; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
+Subject: Re: [2/3][PATCH][v2] TDM Framework
 
-const?
 
-> +	.read_time	= tps65910_rtc_read_time,
-> +	.set_time	= tps65910_rtc_set_time,
-> +	.read_alarm	= tps65910_rtc_read_alarm,
-> +	.set_alarm	= tps65910_rtc_set_alarm,
-> +	.alarm_irq_enable = tps65910_rtc_alarm_irq_enable,
-> +};
-> +
-> +static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
-> +{
-> +	struct tps65910 *tps65910 = NULL;
-> +	struct tps65910_rtc *tps_rtc = NULL;
-> +	struct tps65910_board *pmic_plat_data;
-> +	int ret = -EINVAL;
-> +	int irq = 0;
-> +	u32 rtc_reg;
+> From: Sandeep Singh <Sandeep@freescale.com> TDM Framework is an 
+> attempt to provide a platform independent layer which can offer a 
+> standard interface  for TDM access to different client modules.
 
-It seems like all the above assignments are useless as they're
-overwritten later in this function. Can you remove the assignments?
+Please don't use TLAs (Three Letter Acronyms) like TDM without explaining the clearly and up front.  It makes it hard for anyone else who doens't know your code to look it over without having to spend lots of time poking around to figure it out from either context or somewhere else.
+[Sandeep] Patch for documentation for TDM is present in this patch set, which explains TDM in detail. Should we do this in commit message too??
+Link too documentation patch: http://patchwork.ozlabs.org/patch/173680/
 
-> +
-> +	tps65910 = dev_get_drvdata(pdev->dev.parent);
-> +
-> +	tps_rtc = devm_kzalloc(&pdev->dev, sizeof(struct tps65910_rtc),
-> +			GFP_KERNEL);
-> +	if (!tps_rtc)
-> +		return -ENOMEM;
-> +
-> +	/* Clear pending interrupts */
-> +	ret = regmap_read(tps65910->regmap, TPS65910_RTC_STATUS, &rtc_reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = regmap_write(tps65910->regmap, TPS65910_RTC_STATUS, rtc_reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	dev_dbg(&pdev->dev, "Enabling tps65910-RTC.\n");
+John
 
-Hmph, looks more like stopping the RTC.
-
-> +	rtc_reg = TPS65910_RTC_CTRL_STOP_RTC;
-> +	ret = regmap_write(tps65910->regmap, TPS65910_RTC_CTRL, rtc_reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	pmic_plat_data = dev_get_platdata(tps65910->dev);
-> +	irq = pmic_plat_data->irq_base;
-> +	if (irq <= 0) {
-> +		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n",
-> +			irq);
-> +		return ret;
-> +	}
-> +
-> +	irq += TPS65910_IRQ_RTC_ALARM;
-> +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-> +		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
-> +		dev_name(&tps_rtc->rtc->dev), &pdev->dev);
-
-How does this work? It doesn't look like tps_rtc->rtc is assigned until
-down there at the rtc_device_register() call.
-
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "IRQ is not free.\n");
-> +		return ret;
-> +	}
-> +	device_init_wakeup(&pdev->dev, 1);
-> +
-> +	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-> +		&tps65910_rtc_ops, THIS_MODULE);
-> +	if (IS_ERR(tps_rtc->rtc)) {
-> +		ret = PTR_ERR(tps_rtc->rtc);
-> +		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
-> +		return ret;
-> +	}
-> +
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
