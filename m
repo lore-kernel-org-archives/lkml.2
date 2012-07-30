@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab2G3QGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 12:06:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753073Ab2G3QGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 12:06:33 -0400
-Message-ID: <1343664390.8073.93.camel@ul30vt>
-Subject: Re: [PATCH v7 1/2] kvm: Extend irqfd to support level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Mon, 30 Jul 2012 10:06:30 -0600
-In-Reply-To: <20120729150128.GE14278@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
-	 <20120724204311.21081.95028.stgit@bling.home>
-	 <20120729150128.GE14278@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1754207Ab2G3QHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 12:07:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10242 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab2G3QHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 12:07:04 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=rLFqv8mQjsYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=rzyDks9vhFNdzAiSlhUA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1343664422.27983.12.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 30 Jul 2012 12:07:02 -0400
+In-Reply-To: <20120730155059.GB17078@somewhere.redhat.com>
+References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
+	 <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
+	 <1343660892.20897.3.camel@twins>
+	 <20120730155059.GB17078@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-29 at 18:01 +0300, Michael S. Tsirkin wrote:
-> On Tue, Jul 24, 2012 at 02:43:14PM -0600, Alex Williamson wrote:
-> > In order to inject a level interrupt from an external source using an
-> > irqfd, we need to allocate a new irq_source_id.  This allows us to
-> > assert and (later) de-assert an interrupt line independently from
-> > users of KVM_IRQ_LINE and avoid lost interrupts.
+On Mon, 2012-07-30 at 17:51 +0200, Frederic Weisbecker wrote:
+> On Mon, Jul 30, 2012 at 05:08:12PM +0200, Peter Zijlstra wrote:
+> > On Fri, 2012-07-27 at 17:40 +0200, Frederic Weisbecker wrote:
+> > > +++ b/kernel/user_hooks.c
+> > > @@ -0,0 +1,56 @@
+> > > +#include <linux/user_hooks.h>
+> > > +#include <linux/rcupdate.h>
+> > > +#include <linux/sched.h>
+> > > +#include <linux/percpu.h>
+> > > +
+> > > +struct user_hooks {
+> > > +       bool hooking;
+> > > +       bool in_user;
+> > > +};
 > > 
-> > We also add what may appear like a bit of excessive infrastructure
-> > around an object for storing this irq_source_id.  However, notice
-> > that we only provide a way to assert the interrupt here.  A follow-on
-> > interface will make use of the same irq_source_id to allow de-assert.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > I really detest using bool in structures.. but that's just me. Also this
+> > really wants a comment as to wtf 'hooking' means. in_user I can just
+> > about guess.
 > 
-> I think this tracking of source ids is the root of all the problems
-> you see with this patchset.
+> I really don't mind changing that to int. I just like them as bool because
+> they better describe the purpose of the field.
+
+Not only does bool describe it better, it should also allow gcc to
+optimize it better as well. Unless Peter has a legitimate rational why
+using bool in struct is bad, I would keep it as is.
+ 
 > 
-> A source ID is required for an irqfd to be created.
-> But if source ID exists after irqfd is destroyed then
-> the next create will fail.
-
-Only if there are no available source IDs.
-
-> So the only sane thing to do is to make irqfd manage this resource,
-> clean it up completely when irqfd is gone.
+> hooking means that the hooks are set (the TIF flag is set on the current task
+> and we also handle the exception hooks).
 > 
-> Not to mention, the patch will be smaller :)
+> I can call that is_hooking instead? And/or add a comment to explain the
+> purpose of this.
 
-The only sane way to do that is to pull the eoifd into KVM_IRQFD and set
-them up together.  That's actually what v1 of this endeavor did.  My
-intention with splitting eoifd from irqfd is that I think EOI
-notification is potentially useful outside of this usage with irqfds and
-I wanted an interface that could be used independently.  Someday, an
-irqfd may not be the only way to generate a key.  Userspace may also
-wish to register to receive notification-only for the existing user
-source ID.
+Would 'is_hooked' be better? 'is_hooking' sounds more like what women in
+high heels, really short skirts and lots of makeup are doing late night
+on a corner of a Paris street ;-)
 
-I do not think it's sane to have an eoifd configured using KVM_EOIFD and
-destroyed using KVM_IRQFD.  As for smaller patch, I'm not convinced.  We
-still have to watch for POLLHUP, which pulls in the bulk of the code.
-And using the above approach of pulling eoifd setup into irqfd we have
-to address what happens to the combined set when either eventfd is
-closed.  By your argument closing the irqfd closes the eoifd, but does
-closing the eoifd necessarily close the irqfd.  If not then we end up
-with the question of how can an eoifd be added to an existing irqfd.
+A comment to explain the purpose should be added regardless.
+
+-- Steve
 
 
