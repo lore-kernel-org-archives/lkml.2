@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2G3G0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 02:26:36 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:48511 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab2G3G0e (ORCPT
+	id S1754089Ab2G3G2C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 02:28:02 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44332 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab2G3G2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 02:26:34 -0400
-From: Wang Sen <senwang@linux.vnet.ibm.com>
-To: JBottomley@parallels.com, pbonzini@redhat.com, bharrosh@panasas.com,
-        stefanha@linux.vnet.ibm.com
-Cc: mc@linux.vnet.ibm.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zwanp@cn.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com,
-        Wang Sen <senwang@linux.vnet.ibm.com>
-Subject: [PATCH v3] scsi: virtio-scsi: Fix address translation failure of HighMem pages used by sg list
-Date: Mon, 30 Jul 2012 14:25:06 +0800
-Message-Id: <1343629506-29627-1-git-send-email-senwang@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-x-cbid: 12073006-3864-0000-0000-000003F759A1
+	Mon, 30 Jul 2012 02:28:00 -0400
+Message-ID: <5016296A.5070809@redhat.com>
+Date: Mon, 30 Jul 2012 08:27:54 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        netdev@vger.kernel.org, mashirle@us.ibm.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, edumazet@google.com,
+        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
+        sri@us.ibm.com
+Subject: Re: [net-next RFC V5 3/5] virtio: intorduce an API to set affinity
+ for a virtqueue
+References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-4-git-send-email-jasowang@redhat.com> <5012A7D3.4040800@redhat.com> <20120729204030.GB13802@redhat.com>
+In-Reply-To: <20120729204030.GB13802@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the commands below to write some data to a virtio-scsi LUN of the
-QEMU guest(32-bit) with 1G physical memory(qemu -m 1024), the qemu will crash.
+Il 29/07/2012 22:40, Michael S. Tsirkin ha scritto:
+>> > Did you set the affinity manually in your experiments, or perhaps there
+>> > is a difference between scsi and networking... (interrupt mitigation?)
+> 
+> You need to run irqbalancer in guest to make it actually work. Do you?
 
-        # sudo mkfs.ext4 /dev/sdb  (/dev/sdb is the virtio-scsi LUN.)
-        # sudo mount /dev/sdb /mnt
-        # dd if=/dev/zero of=/mnt/file bs=1M count=1024
+Yes, of course, now on to debugging that one.  I just wanted to ask
+before the weekend if I was missing something as obvious as that.
 
-In current implementation, sg_set_buf is called to add buffers to sg list which
-is put into the virtqueue eventually. But if there are some HighMem pages in
-table->sgl you can not get virtual address by sg_virt. So, sg_virt(sg_elem) may
-return NULL value. This will cause QEMU exit when virtqueue_map_sg is called
-in QEMU because an invalid GPA is passed by virtqueue.
-
-Two solutions are discussed here:
-http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/00675.html
-
-Finally, value assignment approach was adopted because:
-
-Value assignment creates a well-formed scatterlist, because the termination 
-marker in source sg_list has been set in blk_rq_map_sg(). The last entry of the
-source sg_list is just copied to the the last entry in destination list.  Note 
-that, for now, virtio_ring does not care about the form of the scatterlist and 
-simply processes the first out_num + in_num consecutive elements of the sg[] 
-array.
-
-I have tested the patch on my workstation. QEMU would not crash any more.
-
-Cc: <stable@vger.kernel.org> # 3.4: 4fe74b1: [SCSI] virtio-scsi: SCSI driver
-Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
----
- drivers/scsi/virtio_scsi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 1b38431..6661610 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -198,7 +198,7 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
- 	int i;
- 
- 	for_each_sg(table->sgl, sg_elem, table->nents, i)
--		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
-+		sg[idx++] = *sg_elem;
- 
- 	*p_idx = idx;
- }
--- 
-1.7.9.5
-
+Paolo
