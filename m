@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab2G3OYt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:24:49 -0400
-Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:36442 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab2G3OYr (ORCPT
+	id S1754661Ab2G3O1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:27:05 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64503 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab2G3O1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:24:47 -0400
-Message-ID: <5016993C.9010906@laposte.net>
-Date: Mon, 30 Jul 2012 16:25:00 +0200
-From: Yann Cantin <yann.cantin@laposte.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120717 Thunderbird/10.0.6
+	Mon, 30 Jul 2012 10:27:03 -0400
+Message-ID: <501699B2.7030002@linaro.org>
+Date: Mon, 30 Jul 2012 15:26:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC ebeam PATCH 3/3] input: misc: New USB eBeam input driver.
-References: <1343433754-3887-1-git-send-email-yann.cantin@laposte.net> <1343433754-3887-4-git-send-email-yann.cantin@laposte.net> <20120728014252.GB19817@core.coreip.homeip.net> <5013AA95.7090006@laposte.net> <20120730055623.GD5830@core.coreip.homeip.net>
-In-Reply-To: <20120730055623.GD5830@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 13/18] ARM: ux500: Add ux500 PCM to DB8500 Device Tree
+References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org> <1343393162-11938-14-git-send-email-lee.jones@linaro.org> <20120729205001.GK4384@opensource.wolfsonmicro.com> <5016389B.4020003@linaro.org> <20120730134054.GC4468@opensource.wolfsonmicro.com>
+In-Reply-To: <20120730134054.GC4468@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 30/07/12 14:40, Mark Brown wrote:
+> On Mon, Jul 30, 2012 at 08:32:43AM +0100, Lee Jones wrote:
+>> On 29/07/12 21:50, Mark Brown wrote:
+>>> On Fri, Jul 27, 2012 at 01:45:57PM +0100, Lee Jones wrote:
+>
+>>>> +		pcm: ux500-pcm {
+>>>> +			compatible = "stericsson,ux500-pcm";
+>>>> +		};
+>>>> +
+>
+>>> One of two things is wrong here.  Either you've not provided any
+>>> information about the hardware so the driver won't be able to work out
+>>> what to talk to or you've not provided any data so you're registering a
+>>> purely virtual Linux-internal device via the device tree.
+>
+>>> Once more, the idea here is to describe the hardware not to dump Linux's
+>>> internal data structures into the device tree.
+>
+>> We use it register the driver for probe()ing. In the same way we do
+>> for the PMU and Regulators. All three of which actually belong to a
+>> different hardware block. Do you know of a better way to register
+>> those devices?
+>
+> You've not identified which of the two cases above we're in...  assuming
+> it's a virtal device look at how the DT bindings for the other platforms
+> are doing things.
 
->> The code structure (device selector + functions indirection) also seems overkill
->> to me for now, but permit to anticipate device's variations. If it appears that they
->> all works in the same way, it'll be easy (and more comfortable to me) to step down,
->> the opposite seems more difficult.
-> 
-> Actually I am hesitant to add infrastructure if it is unclear if we need
-> it at all.
+I thought it would have been obvious by my response. The PMU seems to be 
+a virtual device with no registers or IRQs.
 
-Understand.
+I've found a DT which seems to do it in the same way as I do 
+'arch/powerpc/boot/dts/p1022ds.dts', but some others call PCM 
+registration from the CPU-side DAI probe(). Would that be your preference?
 
-I've thrown some hook to see if i can get my hands on other devices.
-
-In the meantime, i'll bet on uniform support and strip down the driver. Wish me luck.
-
-Thanks.
 -- 
-Yann Cantin
-A4FEB47F
---
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
