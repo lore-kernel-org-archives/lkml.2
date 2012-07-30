@@ -1,45 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab2G3Gyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 02:54:32 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47911 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2G3Gya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 02:54:30 -0400
-Message-ID: <50162FA2.4010009@linaro.org>
-Date: Mon, 30 Jul 2012 07:54:26 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 10/18] ARM: ux500: Enable HIGHMEM on all mop500 platforms
-References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org> <1343393162-11938-11-git-send-email-lee.jones@linaro.org> <20120729204516.GJ4384@opensource.wolfsonmicro.com>
-In-Reply-To: <20120729204516.GJ4384@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753789Ab2G3G5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 02:57:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49777 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751508Ab2G3G5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 02:57:48 -0400
+Date: Mon, 30 Jul 2012 16:57:33 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [GIT PULL] GPIO changes for v3.6
+Message-ID: <20120730165733.33e3ddfb@notabene.brown>
+In-Reply-To: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
+References: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_//FC5P.W0pNwD.DVm2Wyt3k/"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/07/12 21:45, Mark Brown wrote:
-> On Fri, Jul 27, 2012 at 01:45:54PM +0100, Lee Jones wrote:
->> The current kernel commandline for ux500 based devices includes
->> hard-coded allocations for things like mali and hwmem, which
->> actually run over lowmem. Here we enable highmem in order to
->> avoid memory corruption errors.
->
-> This appears to be at best tangentially related to the rest of the
-> series, are you sure it shouldn't be being sent separately as a bugfix?
+--Sig_//FC5P.W0pNwD.DVm2Wyt3k/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, it should. I'll shift it.
+On Thu, 26 Jul 2012 00:48:57 +0200 Linus Walleij <linus.walleij@linaro.org>
+wrote:
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> Hi Linus,
+>=20
+> in Grants absence, these are my queued and -next-tested changes
+> for v3.6, please pull them in. Grants "merge" branch prior to his
+> absence was merged in as a base for this patch series.
+>=20
+> The following is the same information as found in the tag:
+>=20
+> GPIO changes for v3.6:
+> - New driver for AMD-8111 southbridge GPIOs
+> - New driver for Wolfson Micro Arizona devices
+> - Propagate device tree parse errors
+> - Probe deferral finalizations - all expected calls to
+>   GPIO will now hopefully request deferral where apropriate
+> - Misc updates to TCA6424, WM8994, LPC32xx, PCF857x, Samsung
+>   MXC, OMAP and PCA953X drivers.
+>=20
+..
+> Mark Brown (5):
+>       gpiolib: Defer failed gpio requests by default
+
+Hi,
+ this doesn't look quite right to me.
+
+it means that if !gpio_is_valid(gpio), the error returned is EPROBE_DEFER=20
+which isn't right (an invalid gpio number will never become valid).
+If a driver happened to use gpio_request to check the validity of the gpio
+rather than doing it itself, it would defer the probe, rather than assume
+that the GPIO doesn't exist.
+
+I would suggest the following.  Reasonable?
+
+NeilBrown
+
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index de0213c..259233b 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1186,13 +1186,14 @@ int gpio_request(unsigned gpio, const char *label)
+ {
+ 	struct gpio_desc	*desc;
+ 	struct gpio_chip	*chip;
+-	int			status =3D -EPROBE_DEFER;
++	int			status =3D -EINVAL;
+ 	unsigned long		flags;
+=20
+ 	spin_lock_irqsave(&gpio_lock, flags);
+=20
+ 	if (!gpio_is_valid(gpio))
+ 		goto done;
++	status =3D -EPROBE_DEFER;
+ 	desc =3D &gpio_desc[gpio];
+ 	chip =3D desc->chip;
+ 	if (chip =3D=3D NULL)
+
+--Sig_//FC5P.W0pNwD.DVm2Wyt3k/
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUBYwXTnsnt1WYoG5AQL5ZRAAp69jD5dAcboNOrI61Ir1viayhZc7ZJcS
+nLaLrpVicKGwQqPMkN7ixGeAfesvccRffyRj7uE8oo3vr1/Y/ZIM+wDNv88s9CT1
+JQY7JKJ9rvK0aJN0ywNkNOLVrrsOTZPaR8RqJDObJjxBIHPUy14ebSpTJ55KE9bF
+EblLrFyCMhfaPujylngYXixqKg2xtsET/qUg5/q886bWMVAuCk29o7eYtL2bhAOW
+RcrtAuAX1mREsDOIjA9iy/w2DMvi/AQB9q414hQbJZLxuyyI8SsfwiI2MRp+7d5i
+ozOSXZXwljMArNbvnMHs9b4gO7/8Q/BcBij7Gjw3o1FGiQk8ZYmJJrMD5yJz0aGy
+xnFc8D1+XdopCkLYlhBa33wxNQYncSVe2+TeBa6rWVKCWaNCOKHiOIDPtA97Gt4S
+L/8lm+0QM5MWecjOEPjFGLZ4927vGMFbfnuGWB0UyOvCtfRrx4KY7Mwuth2jppsq
+rzE7qz/Kh4/rsgCz9ePfZEO9+6wmQT5DqUM6hYFGIA5b/tuUa4OMq1ZmXNue0OM/
+pHekivp4CyH6f/EA22AUdFfXMxbJa8N5SNrmtvsecGM3pUOfCBOf5FufnNiUrhxR
+ve/uNhp4JosQ492aFmenoyobZdvgAX9z334L/G3ttkpNXGaea2slDYOcS4EsMmhE
+MPiDlfT7Ywo=
+=UMs+
+-----END PGP SIGNATURE-----
+
+--Sig_//FC5P.W0pNwD.DVm2Wyt3k/--
