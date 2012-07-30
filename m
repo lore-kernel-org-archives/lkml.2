@@ -1,101 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab2G3CyA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 22:54:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35787 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab2G3Cx0 (ORCPT
+	id S1754059Ab2G3Cyc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 22:54:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26111 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753985Ab2G3Cy3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 22:53:26 -0400
-Date: Mon, 30 Jul 2012 12:53:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Axel Lin <axel.lin@gmail.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: linux-next: manual merge of the arm-soc tree with Linus' tree
-Message-Id: <20120730125314.8bad3b71a8e727b892a47590@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__30_Jul_2012_12_53_14_+1000_2yKL_jiORpLOAt32"
+	Sun, 29 Jul 2012 22:54:29 -0400
+X-IronPort-AV: E=Sophos;i="4.77,676,1336320000"; 
+   d="scan'208";a="5505322"
+Message-ID: <5015F737.7090508@cn.fujitsu.com>
+Date: Mon, 30 Jul 2012 10:53:43 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v5 0/3] Export offsets of VMCS fields as note information
+ for kdump
+References: <4FFE9EDE.8080107@cn.fujitsu.com>
+In-Reply-To: <4FFE9EDE.8080107@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/30 10:54:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/30 10:55:03
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__30_Jul_2012_12_53_14_+1000_2yKL_jiORpLOAt32
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Avi,
 
-Hi all,
+Do you have any comments about this version of the patch set?
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/watchdog/orion_wdt.c between commit 0dd6e4847ed8 ("watchdog:
-orion_wdt: Convert driver to watchdog core") from Linus' tree and commit
-1e7bad0f5b91 ("ARM: Orion: DTify the watchdog timer") from the arm-soc
-tree.
+于 2012年07月12日 17:54, Zhang Yanfei 写道:
+> This patch set exports offsets of VMCS fields as note information for
+> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+> runtime state of guest machine image, such as registers, in host
+> machine's crash dump as VMCS format. The problem is that VMCS internal
+> is hidden by Intel in its specification. So, we slove this problem
+> by reverse engineering implemented in this patch set. The VMCSINFO
+> is exported via sysfs (/sys/devices/system/cpu/vmcs/) to kexec-tools.
+> 
+> Here are two usercases for two features that we want.
+> 
+> 1) Create guest machine's crash dumpfile from host machine's crash dumpfile
+> 
+> In general, we want to use this feature on failure analysis for the system
+> where the processing depends on the communication between host and guest
+> machines to look into the system from both machines's viewpoints.
+> 
+> As a concrete situation, consider where there's heartbeat monitoring
+> feature on the guest machine's side, where we need to determine in
+> which machine side the cause of heartbeat stop lies. In our actual
+> experiments, we encountered such situation and we found the cause of
+> the bug was in host's process schedular so guest machine's vcpu stopped
+> for a long time and then led to heartbeat stop.
+> 
+> The module that judges heartbeat stop is on guest machine, so we need
+> to debug guest machine's data. But if the cause lies in host machine
+> side, we need to look into host machine's crash dump.
+> 
+> Without this feature, we first create guest machine's dump and then
+> create host mahine's, but there's only a short time between two
+> processings, during which it's unlikely that buggy situation remains.
+> 
+> So, we think the feature is useful to debug both guest machine's and
+> host machine's sides at the same time, and expect we can make failure
+> analysis efficiently.
+> 
+> Of course, we believe this feature is commonly useful on the situation
+> where guest machine doesn't work well due to something of host machine's.
+> 
+> 2) Get offsets of VMCS information on the CPU running on the host machine
+> 
+> If kdump doesn't work well, then it means we cannot use kvm API to get
+> register values of guest machine and they are still left on its vmcs
+> region. In the case, we use crash dump mechanism running outside of
+> linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
+> information is then necessary.
+> 
+> TODO:
+>   1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
+>      into vmcore.
+>   2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
+>      core file. To do this, we will modify kernel core dumper, gdb gcore
+>      and crash gcore.
+>   3. Dump guest image from the qemu-process core file into a vmcore.
+> 
+> Changelog from v4 to v5:
+> 1. The VMCSINFO is stored in a two-dimensional array filled with each
+>    field's encoding and corresponding offset. So the size of VMCSINFO
+>    is much smaller.
+> 2. vmcs sysfs file /sys/devices/system/cpu/vmcs_id is moved to
+>    /sys/devices/system/cpu/vmcs/id.
+> 3. Rewrite the ABI entry for vmcs interface and remove the KernelVersion
+>    line.
+> 
+> Changelog from v3 to v4:
+> 1. All the variables and functions are moved to vmcsinfo-intel module.
+> 2. Add a new sysfs interface /sys/devices/system/cpu/vmcs_id to export
+>    vmcs revision identifier. And origial sysfs interface is changed
+>    from /sys/devices/cpu/vmcs to /sys/devices/system/cpu/vmcs. Thanks
+>    Greg KH for his helpful comments about sysfs.
+> 
+> Changelog from v2 to v3:
+> 1. New VMCSINFO format.
+>    Now the VMCSINFO is mainly made up of an array that contains all vmcs
+>    fields' offsets. The offsets aren't encoded because we decode them in
+>    the module itself. If some field doesn't exist or its offset cannot be
+>    decoded correctly, the offset in the array is just set to zero.
+> 2. New sysfs interface and Documentation/ABI entry. 
+>    We expose the actual fields in /sys/devices/cpu/vmcs instead of just
+>    exporting the address of VMCSINFO in /sys/kernel/vmcsinfo.
+>    For example, /sys/devices/cpu/vmcs/0800 contains the offset of
+>    GUEST_DS_SELECTOR. 0800 is the encoding of GUEST_DS_SELECTOR.
+>    Accordingly, ABI entry in Documentation is changed from sysfs-kernel-vmcsinfo
+>    to sysfs-devices-cpu-vmcs.
+> 
+> Changelog from v1 to v2:
+> 1. The VMCSINFO now has a simple binary <field><encoded offset> format,
+>    as below:
+>      +-------------+--------------------------+
+>      | Byte offset | Contents                 |
+>      +-------------+--------------------------+
+>      | 0           | VMCS revision identifier |
+>      +-------------+--------------------------+
+>      | 4           | <field><encoded offset>  |
+>      +-------------+--------------------------+
+>      | 16          | <field><encoded offset>  |
+>      +-------------+--------------------------+
+>      ......
+>   
+>    The first 32 bits of VMCSINFO contains the VMCS revision identifier.
+>    The remainder of VMCSINFO is used for <field><encoded offset> sets.
+>    Each set takes 12 bytes: field occupys 4 bytes and its corresponding
+>    encoded offset occupys 8 bytes.
+> 
+>    Encoded offsets are raw values read by vmcs_read{16, 64, 32, l}, and
+>    they are all unsigned extended to 8 bytes for each <field><encoded offset>
+>    set will have the same size. 
+>    We do not decode offsets here. The decoding work is delayed in userspace
+>    tools for more flexible handling.
+>    
+>    And here are two examples of the new VMCSINFO:
+>    Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
+>    VMCSINFO contains:
+>      <0000000d>                   --> VMCS revision id = 0xd
+>      <00004000><0000000001840180> --> OFFSET(PIN_BASED_VM_EXEC_CONTROL) = 0x01840180
+>      <00004002><0000000001940190> --> OFFSET(CPU_BASED_VM_EXEC_CONTROL) = 0x01940190
+>      <0000401e><000000000fe40fe0> --> OFFSET(SECONDARY_VM_EXEC_CONTROL) = 0x0fe40fe0
+>      <0000400c><0000000001e401e0> --> OFFSET(VM_EXIT_CONTROLS) = 0x01e401e0
+>      ......
+> 
+>    Processor: Intel(R) Xeon(R) CPU           E7540  @ 2.00GHz (24 cores)
+>    VMCSINFO contains:
+>      <0000000e>                   --> VMCS revision id = 0xe 
+>      <00004000><0000000005540550> --> OFFSET(PIN_BASED_VM_EXEC_CONTROL) = 0x05540550
+>      <00004002><0000000005440540> --> OFFSET(CPU_BASED_VM_EXEC_CONTROL) = 0x05440540
+>      <0000401e><00000000054c0548> --> OFFSET(SECONDARY_VM_EXEC_CONTROL) = 0x054c0548
+>      <0000400c><00000000057c0578> --> OFFSET(VM_EXIT_CONTROLS) = 0x057c0578
+>      ......
+> 
+> 2. Add a new kernel module *vmcsinfo-intel* for filling VMCSINFO instead
+>    of putting it in module kvm-intel. The new module is auto-loaded
+>    when the vmx cpufeature is detected and it depends on module kvm-intel.
+>    *Loading and unloading this module will have no side effect on the
+>    running guests.*
+> 3. The sysfs file vmcsinfo is splitted into 2 files:
+>    /sys/kernel/vmcsinfo: shows physical address of VMCSINFO note information.
+>    /sys/kernel/vmcsinfo_maxsize: shows max size of VMCSINFO.
+> 4. A new Documentation/ABI entry is added for vmcsinfo and vmcsinfo_maxsize.
+> 5. Do not update VMCSINFO note when the kernel is panicked.
+> 
+> zhangyanfei (3):
+>   KVM: Export symbols for module vmcsinfo-intel
+>   KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
+>   Documentation: Add ABI entry for vmcs sysfs interface.
+> 
+>  Documentation/ABI/testing/sysfs-devices-system-cpu |   20 +
+>  arch/x86/include/asm/vmx.h                         |   73 ++
+>  arch/x86/kvm/Kconfig                               |   11 +
+>  arch/x86/kvm/Makefile                              |    3 +
+>  arch/x86/kvm/vmcsinfo.c                            |  714 ++++++++++++++++++++
+>  arch/x86/kvm/vmx.c                                 |   81 +--
+>  include/linux/kvm_host.h                           |    3 +
+>  virt/kvm/kvm_main.c                                |    8 +-
+>  8 files changed, 841 insertions(+), 72 deletions(-)
+>  create mode 100644 arch/x86/kvm/vmcsinfo.c
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/watchdog/orion_wdt.c
-index a73bea4,1531e02..0000000
---- a/drivers/watchdog/orion_wdt.c
-+++ b/drivers/watchdog/orion_wdt.c
-@@@ -23,7 -24,8 +23,8 @@@
-  #include <linux/io.h>
-  #include <linux/spinlock.h>
-  #include <linux/clk.h>
- +#include <linux/err.h>
-+ #include <linux/of.h>
-  #include <mach/bridge-regs.h>
- =20
-  /*
-@@@ -189,9 -292,16 +190,15 @@@ static int __devexit orion_wdt_remove(s
- =20
-  static void orion_wdt_shutdown(struct platform_device *pdev)
-  {
- -	if (test_bit(WDT_IN_USE, &wdt_status))
- -		orion_wdt_disable();
- +	orion_wdt_stop(&orion_wdt);
-  }
- =20
-+ static const struct of_device_id orion_wdt_of_match_table[] __devinitdata=
- =3D {
-+ 	{ .compatible =3D "marvell,orion-wdt", },
-+ 	{},
-+ };
-+ MODULE_DEVICE_TABLE(of, orion_wdt_of_match_table);
-+=20
-  static struct platform_driver orion_wdt_driver =3D {
-  	.probe		=3D orion_wdt_probe,
-  	.remove		=3D __devexit_p(orion_wdt_remove),
-
---Signature=_Mon__30_Jul_2012_12_53_14_+1000_2yKL_jiORpLOAt32
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQFfcaAAoJEECxmPOUX5FEBbAP/iU+Vc94cybknwRUIoIBcLLP
-NQvqVRyKBAick0W88qmC3D34Sc9Qqz2oj12aVZtiJ4lEdS6ydZiWYqzmWQ25SDOr
-12LJnnX43O5ZjGncRCLIQ061/rAomDfHKzPnbmmTe47HeHZVCqlDhAl7xK3gi0te
-EjknNtsBeJIYK2gGA0Eb0NXbZYEfLZnCmzytapZ1QVTDBZXCJrif048Tvjppzu+y
-vg7N4SloAtwZlFOGeY9hTph52i331IU1HgSobrk9TR5F7fZVqE85nVX8jft8uqaM
-7KBT5tSORX5ycpKqdJ9329y2hGa/1bxnUqLWIvrGijn6Kf19d+xwmy88DvO4ujZc
-mpDs/Kf6UM97c+R0wlfCGLL756WuNAelo+6Sa0ul1QnwFARKDnLKzRXnDUwGXhUP
-i1vD8nxfJ1NZctz3n2bLbjQUZuQnGdlcyzvNnGvQiib8UXmYGfL0R/FC/po5Zd/N
-Znp9OXpdP6i7YMgiwMflqDDWlD1l7PVV5a2OINBzuRaJj4aQ6JEzF6SSyX5AC2c1
-VT84BzFprsgAMsHANSMM+EWoRtaphXUagVMJ+35tDPsAylslhxMJPg0l2QZRGy84
-eti1C96saN/VkXlc8HBqitKWq867nhNU3m/PKe8aO1DScYtgeQpGGLJmg7RqoY67
-24qKvzzlaRbJW+uy7/WC
-=rNrj
------END PGP SIGNATURE-----
-
---Signature=_Mon__30_Jul_2012_12_53_14_+1000_2yKL_jiORpLOAt32--
