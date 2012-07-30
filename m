@@ -1,216 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab2G3LAg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 07:00:36 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34363 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab2G3LAd (ORCPT
+	id S1753500Ab2G3LAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 07:00:45 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44750 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab2G3LAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 07:00:33 -0400
+	Mon, 30 Jul 2012 07:00:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
-	<1343390750-3642-2-git-send-email-acourbot@nvidia.com>
-Date: Mon, 30 Jul 2012 12:00:32 +0100
-X-Google-Sender-Auth: CLBU7QDUkQO-oMFIA4wCeUmW6BM
-Message-ID: <CAPnjgZ0H2xrJcL-ytMaX11iYrrhCg7LEM00u_NgEaveM4gHMPw@mail.gmail.com>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-From: Simon Glass <sjg@chromium.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <1340959739.2936.28.camel@lappy>
+References: <1340959739.2936.28.camel@lappy>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 30 Jul 2012 13:00:22 +0200
+Message-ID: <CA+1xoqcCtVCqe2yPRXHwndY3dyB0thdRW_9_tdnX142Sdw6Qug@mail.gmail.com>
+Subject: Re: mtd: kernel BUG at arch/x86/mm/pat.c:279!
+To: Andrew Morton <akpm@linux-foundation.org>, dwmw2@infradead.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, linux-mm <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Ping?
 
-On Fri, Jul 27, 2012 at 1:05 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Some device drivers (panel backlights especially) need to follow precise
-> sequences for powering on and off, involving gpios, regulators, PWMs
-> with a precise powering order and delays to respect between each steps.
-> These sequences are board-specific, and do not belong to a particular
-> driver - therefore they have been performed by board-specific hook
-> functions to far.
+On Fri, Jun 29, 2012 at 10:48 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> Hi all,
 >
-> With the advent of the device tree and of ARM kernels that are not
-> board-tied, we cannot rely on these board-specific hooks anymore but
-> need a way to implement these sequences in a portable manner. This patch
-> introduces a simple interpreter that can execute such power sequences
-> encoded either as platform data or within the device tree.
-
-This all looks very reasonable to me, just a few comments.
-
+> I've stumbled on the following while fuzzing with trinity in a KVM tools guest using latest linux-next:
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  Documentation/power/power_seq.txt | 120 +++++++++++++++
->  drivers/base/Kconfig              |   4 +
->  drivers/base/Makefile             |   1 +
->  drivers/base/power_seq.c          | 300 ++++++++++++++++++++++++++++++++++++++
->  include/linux/power_seq.h         | 139 ++++++++++++++++++
->  5 files changed, 564 insertions(+)
->  create mode 100644 Documentation/power/power_seq.txt
->  create mode 100644 drivers/base/power_seq.c
->  create mode 100644 include/linux/power_seq.h
+> [ 3299.675163] ------------[ cut here ]------------
+> [ 3299.676027] kernel BUG at arch/x86/mm/pat.c:279!
+> [ 3299.676027] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 3299.678596] CPU 2
+> [ 3299.678596] Pid: 21541, comm: trinity-child6 Tainted: G        W    3.5.0-rc4-next-20120628-sasha-00005-g9f23eb7 #479
+> [ 3299.678596] RIP: 0010:[<ffffffff810a8b62>]  [<ffffffff810a8b62>] reserve_memtype+0x22/0x3d0
+> [ 3299.678596] RSP: 0018:ffff88000ad61bc8  EFLAGS: 00010286
+> [ 3299.678596] RAX: 0000000000000000 RBX: fffffffffffff000 RCX: ffff88000ad61c50
+> [ 3299.678596] RDX: 0000000000000010 RSI: 0000000000000000 RDI: fffffffffffff000
+> [ 3299.696632] RBP: ffff88000ad61c08 R08: 0000000000000010 R09: ffff88002617d5a8
+> [ 3299.696632] R10: ffff88003111edc8 R11: 0000000000000001 R12: ffff88000ad61c50
+> [ 3299.696632] R13: fffffffffffff000 R14: 0000000000000000 R15: ffff88000ad61d18
+> [ 3299.696632] FS:  00007f3ffc3aa700(0000) GS:ffff880029800000(0000) knlGS:0000000000000000
+> [ 3299.696632] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [ 3299.696632] CR2: 0000000000f73ffc CR3: 000000000ad6e000 CR4: 00000000000406e0
+> [ 3299.696632] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 3299.696632] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 3299.696632] Process trinity-child6 (pid: 21541, threadinfo ffff88000ad60000, task ffff88000a390000)
+> [ 3299.696632] Stack:
+> [ 3299.696632]  ffff88000ad61c18 ffffffff81161bc6 ffff88000ad61c18 fffffffffffff000
+> [ 3299.696632]  0000000000000010 0000000000000000 0000000000001000 ffff88000ad61d18
+> [ 3299.696632]  ffff88000ad61c88 ffffffff810a8fe2 ffff88000ad61c38 0000000000000086
+> [ 3299.696632] Call Trace:
+> [ 3299.696632]  [<ffffffff81161bc6>] ? mark_held_locks+0xf6/0x120
+> [ 3299.696632]  [<ffffffff810a8fe2>] reserve_pfn_range+0xd2/0x1e0
+> [ 3299.696632]  [<ffffffff810a912d>] track_pfn_vma_new+0x3d/0x80
+> [ 3299.696632]  [<ffffffff8120c4bc>] remap_pfn_range+0xac/0x380
+> [ 3299.696632]  [<ffffffff8220e016>] mtdchar_mmap+0xe6/0x100
+> [ 3299.696632]  [<ffffffff812145ae>] mmap_region+0x35e/0x5f0
+> [ 3299.696632]  [<ffffffff81214af9>] do_mmap_pgoff+0x2b9/0x350
+> [ 3299.696632]  [<ffffffff811ff46c>] ? vm_mmap_pgoff+0x6c/0xb0
+> [ 3299.696632]  [<ffffffff811ff484>] vm_mmap_pgoff+0x84/0xb0
+> [ 3299.696632]  [<ffffffff8124fd80>] ? fget_raw+0x260/0x260
+> [ 3299.696632]  [<ffffffff81211fde>] sys_mmap_pgoff+0x15e/0x190
+> [ 3299.696632]  [<ffffffff81985ede>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [ 3299.696632]  [<ffffffff8106d4dd>] sys_mmap+0x1d/0x20
+> [ 3299.696632]  [<ffffffff8372a539>] system_call_fastpath+0x16/0x1b
+> [ 3299.696632] Code: 28 5b c9 c3 0f 1f 44 00 00 55 49 89 d0 48 89 e5 41 57 41 56 49 89 f6 41 55 49 89 fd 41 54 49 89 cc 53 48 83 ec 18 48 39 f7 72 0e <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 8b 3d 1a 5b e3 03 85
+> [ 3299.696632] RIP  [<ffffffff810a8b62>] reserve_memtype+0x22/0x3d0
+> [ 3299.696632]  RSP <ffff88000ad61bc8>
 >
-> diff --git a/Documentation/power/power_seq.txt b/Documentation/power/power_seq.txt
-> new file mode 100644
-> index 0000000..aa2ceb5
-> --- /dev/null
-> +++ b/Documentation/power/power_seq.txt
-> @@ -0,0 +1,120 @@
-> +Runtime Interpreted Power Sequences
-> +-----------------------------------
-> +
-> +Problem
-> +-------
-> +One very common board-dependent code is the out-of-driver code that is used to
-> +turn a device on or off. For instance, SoC boards very commonly use a GPIO
-> +(abstracted to a regulator or not) to control the power supply of a backlight,
-> +disabling it when the backlight is not used in order to save power. The GPIO
-> +that should be used, however, as well as the exact power sequence that may
-> +involve different resources, is board-dependent and thus unknown of the driver.
-> +
-> +This has been addressed so far by using hooks in the device's platform data that
-> +are called whenever the state of the device might reflect a power change. This
-> +approach, however, introduces board-dependant code into the kernel and is not
-> +compatible with the device tree.
-> +
-> +The Runtime Interpreted Power Sequences (or power sequences for short) aim at
-> +turning this code into platform data or device tree nodes. Power sequences are
-> +described using a simple format and run by a simple interpreter whenever needed.
-> +This allows to remove the callback mechanism and makes the kernel less
-> +board-dependant.
-> +
-> +Sequences Format
-> +----------------
-> +Power sequences are a series of sequential steps during which an action is
-> +performed on a resource. The supported resources so far are:
-> +- GPIOs
-> +- Regulators
-> +- PWMs
-> +
-> +Each step designates a resource and the following parameters:
-> +- Whether the step should enable or disable the resource,
-> +- Delay to wait before performing the action,
-> +- Delay to wait after performing the action.
-> +
-> +Both new resources and parameters can be introduced, but the goal is of course
-> +to keep things as simple and compact as possible.
-> +
-> +The platform data is a simple array of platform_power_seq_step instances, each
-> +instance describing a step. The type as well as one of id or gpio members
-> +(depending on the type) must be specified. The last step must be of type
-> +POWER_SEQ_STOP. Regulator and PWM resources are identified by name. GPIO are
-> +identified by number. For example, the following sequence will turn on the
-> +"power" regulator of the device, wait 10ms, and set GPIO number 110 to 1:
-
-For the delay, I think milliseconds is reasonable. I suppose there is
-no reasonable need for microseconds?
-
-> +
-> +struct platform_power_seq_step power_on_seq[] = {
-> +       {
-> +               .type = POWER_SEQ_REGULATOR,
-> +               .id = "power",
-> +               .params = {
-> +                       .enable = 1,
-> +                       .post_delay = 10,
-> +               },
-> +       },
-> +       {
-> +               .type = POWER_SEQ_GPIO,
-> +               .gpio = 110,
-> +               .params = {
-> +                       .enable = 1,
-> +               },
-> +       },
-> +       {
-> +               .type = POWER_SEQ_STOP,
-> +       },
-> +};
-> +
-> +Usage by Drivers and Resources Management
-> +-----------------------------------------
-> +Power sequences make use of resources that must be properly allocated and
-> +managed. The power_seq_build() function takes care of resolving the resources as
-> +they are met in the sequence and to allocate them if needed:
-> +
-> +power_seq *power_seq_build(struct device *dev, power_seq_resources *ress,
-> +                          platform_power_seq *pseq);
-> +
-> +You will need an instance of power_seq_resources to keep track of the resources
-> +that are already allocated. On success, the function returns a devm allocated
-> +resolved sequence that is ready to be passed to power_seq_run(). In case of
-> +failure, and error code is returned.
-> +
-> +A resolved power sequence returned by power_seq_build can be run by
-> +power_run_run():
-> +
-> +int power_seq_run(struct device *dev, power_seq *seq);
-> +
-> +It returns 0 if the sequence has successfully been run, or an error code if a
-> +problem occured.
-> +
-> +Finally, some resources that cannot be allocated through devm need to be freed
-> +manually. Therefore, be sure to call power_seq_free_resources() in your device
-> +remove function:
-> +
-> +void power_seq_free_resources(power_seq_resources *ress);
-> +
-> +Device tree
-> +-----------
-> +All the same, power sequences can be encoded as device tree nodes. The following
-> +properties and nodes are equivalent to the platform data defined previously:
-> +
-> +               power-supply = <&mydevice_reg>;
-> +               enable-gpio = <&gpio 6 0>;
-> +
-> +               power-on-sequence {
-> +                       regulator@0 {
-> +                               id = "power";
-
-Is there a reason not to put the phandle here, like:
-
-                                   id = <&mydevice_reg>;
-
-(or maybe 'device' instead of id?)
-
-> +                               enable;
-> +                               post-delay = <10>;
-> +                       };
-> +                       gpio@1 {
-> +                               id = "enable-gpio";
-> +                               enable;
-> +                       };
-> +               };
-> +
-> +Note that first, the phandles of the regulator and gpio used in the sequences
-> +are defined as properties. Then the sequence references them through the id
-> +property of every step. The name of sub-properties defines the type of the step.
-> +Valid names are "regulator", "gpio" and "pwm". Steps must be numbered
-> +sequentially.
-
-For the regulator and gpio types I think you only have an enable. For
-the pwm, what is the intended binding? Is that documented elsewhere?
-
-Also it might be worth mentioning how you get a struct power_seq from
-an fdt node, and perhaps given an example of a device which has an
-attached node, so we can see how it is referenced from the device
-(of_parse_power_seq I think). Do put the sequence inside the device
-node or reference it with a phandle?
-
-Finally, should you use typedefs?
-
-Regards,
-Simon
