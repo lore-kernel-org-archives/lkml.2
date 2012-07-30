@@ -1,39 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab2G3QFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 12:05:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56828 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab2G3QFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 12:05:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120730082849.GF4025@dhcp-172-17-9-228.mtv.corp.google.com>
-References: <CALjC5hYxtPymauFddf4Qci3S-KsZHHck0LKQPZY5ocHcLw-XrQ@mail.gmail.com>
-	<20120730082849.GF4025@dhcp-172-17-9-228.mtv.corp.google.com>
-Date: Mon, 30 Jul 2012 09:05:40 -0700
-Message-ID: <CALjC5hbLoco9D=iyj5Fi3Q2UowtMv+Ams_t5u4uX=vEyAiSbeQ@mail.gmail.com>
-Subject: Re: crash in ocfs2_fast_symlink_readpage in kernel 3.5.0
-From: Bret Towe <magnade@gmail.com>
-To: Bret Towe <magnade@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754167Ab2G3QGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 12:06:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15314 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753073Ab2G3QGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 12:06:33 -0400
+Message-ID: <1343664390.8073.93.camel@ul30vt>
+Subject: Re: [PATCH v7 1/2] kvm: Extend irqfd to support level interrupts
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Mon, 30 Jul 2012 10:06:30 -0600
+In-Reply-To: <20120729150128.GE14278@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+	 <20120724204311.21081.95028.stgit@bling.home>
+	 <20120729150128.GE14278@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 1:28 AM, Joel Becker <jlbec@evilplan.org> wrote:
-> On Sun, Jul 22, 2012 at 01:16:21PM -0700, Bret Towe wrote:
->> just booted a fresh 3.5 kernel and got the following on login via gdm
->> on the client computer
->> didn't see any crashes yet on any other computer but didn't give it
->> long to try after seeing this
->> let me know if you need more info
->> this client is running debian wheezy 64bit
->
-> This is a different stack trace than another recent report.  Quick
-> question: have you run 3.4 on this system?
+On Sun, 2012-07-29 at 18:01 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jul 24, 2012 at 02:43:14PM -0600, Alex Williamson wrote:
+> > In order to inject a level interrupt from an external source using an
+> > irqfd, we need to allocate a new irq_source_id.  This allows us to
+> > assert and (later) de-assert an interrupt line independently from
+> > users of KVM_IRQ_LINE and avoid lost interrupts.
+> > 
+> > We also add what may appear like a bit of excessive infrastructure
+> > around an object for storing this irq_source_id.  However, notice
+> > that we only provide a way to assert the interrupt here.  A follow-on
+> > interface will make use of the same irq_source_id to allow de-assert.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> 
+> I think this tracking of source ids is the root of all the problems
+> you see with this patchset.
+> 
+> A source ID is required for an irqfd to be created.
+> But if source ID exists after irqfd is destroyed then
+> the next create will fail.
 
-been running it for a while now currently got 3.4.7 and 3.4.6
-on the 2 systems that would likely see that bug (since its a gnome app
-triggering it)
-and they are both stable and show no issues
+Only if there are no available source IDs.
+
+> So the only sane thing to do is to make irqfd manage this resource,
+> clean it up completely when irqfd is gone.
+> 
+> Not to mention, the patch will be smaller :)
+
+The only sane way to do that is to pull the eoifd into KVM_IRQFD and set
+them up together.  That's actually what v1 of this endeavor did.  My
+intention with splitting eoifd from irqfd is that I think EOI
+notification is potentially useful outside of this usage with irqfds and
+I wanted an interface that could be used independently.  Someday, an
+irqfd may not be the only way to generate a key.  Userspace may also
+wish to register to receive notification-only for the existing user
+source ID.
+
+I do not think it's sane to have an eoifd configured using KVM_EOIFD and
+destroyed using KVM_IRQFD.  As for smaller patch, I'm not convinced.  We
+still have to watch for POLLHUP, which pulls in the bulk of the code.
+And using the above approach of pulling eoifd setup into irqfd we have
+to address what happens to the combined set when either eventfd is
+closed.  By your argument closing the irqfd closes the eoifd, but does
+closing the eoifd necessarily close the irqfd.  If not then we end up
+with the question of how can an eoifd be added to an existing irqfd.
+
+
