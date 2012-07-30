@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab2G3RyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:54:18 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:50669 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754902Ab2G3RyP (ORCPT
+	id S1754526Ab2G3SDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 14:03:31 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:43284 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab2G3SD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:54:15 -0400
-Message-ID: <5016CA28.8020402@us.ibm.com>
-Date: Mon, 30 Jul 2012 10:53:44 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 30 Jul 2012 14:03:29 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFIiy0PE5gu
+X-RZG-CLASS-ID: mo00
+Date: Mon, 30 Jul 2012 20:03:26 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com,
+        netdev@vger.kernel.org, ben@decadent.org.uk
+Subject: Re: [PATCH 13/17] Tools: hv: Implement the KVP verb -
+ KVP_OP_SET_IP_INFO
+Message-ID: <20120730180326.GB533@aepfle.de>
+References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
+ <1343145701-3691-1-git-send-email-kys@microsoft.com>
+ <1343145701-3691-13-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: CAI Qian <caiqian@redhat.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
-Subject: Re: boot panic regression introduced in 3.5-rc7
-References: <1971950954.1278169.1343620316300.JavaMail.root@redhat.com>
-In-Reply-To: <1971950954.1278169.1343620316300.JavaMail.root@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073017-1780-0000-0000-000007E427BE
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000288; HX=3.00000193; KW=3.00000007;
- PH=3.00000001; SC=3.00000006; SDB=6.00161046; UDB=6.00036391; UTC=2012-07-30
- 17:54:13
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1343145701-3691-13-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2012 08:51 PM, CAI Qian wrote:
-> The bisecting pointed out this patch caused one of dell servers boot panic.
->
->    5baefd6d84163443215f4a99f6a20f054ef11236
->    hrtimer: Update hrtimer base offsets each hrtimer_interrupt
->
-> [    2.971092] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x10a/0x120()
+On Tue, Jul 24, K. Y. Srinivasan wrote:
 
-Thanks for the report! Just to confirm, you're seeing this with the 
-final 3.5?
+> +	/*
+> +	 * Set the configuration for the specified interface with
+> +	 * the information provided. Since there is no standard
+> +	 * way to configure an interface, we will have an external
+> +	 * script that does the job of configuring the interface and
+> +	 * flushing the configuration.
+> +	 *
+> +	 * The parameters passed to this external script are:
+> +	 * 1. A configuration file that has the specified configuration.
 
-I'll let you know as soon as I've got something to test.
+Maybe this should be written as 'A info file that has the requested
+network configuration' or something like that.
 
-thanks
--john
+> +	 *
+> +	 * We will embed the name of the interface in the configuration
+> +	 * file: ifcfg-ethx (where ethx is the interface name).
 
+I think the intention here is to use the generated file as is. Depending
+on the distro in the guest the file may need some processing. So I think
+the actual interface name should also be part of the file.
+
+> +	 *
+> +	 * Here is the format of the ip configuration file:
+> +	 *
+> +	 * HWADDR=macaddr
+> +	 * BOOTPROTO=dhcp (dhcp enabled for the interface)
+
+While BOOTPROTO= is used in current network config files, its meaning
+there is unrelated to what its meant here. Here it means DHCP=yes/no, so
+I think the file should contain just that. And as the code is written
+now BOOTPROTO= is optional, which is not mentioned in the comment.
+
+> +	 * NM_CONTROLLED=no (this interface will not be controlled by NM)
+
+I think this is not up to kvp_deamon to decide what controls the
+interface. Maybe one day NM is sufficiently advanced technology that it
+can cope with such requests?
+The helper script should decide if the NM flag should be written to the
+final config file.
+
+> +	 * PEERDNS=yes
+> +	 * IPADDR_x=ipaddr
+> +	 * NETMASK_x=netmask
+> +	 * GATEWAY_x=gateway
+
+This should mention that its either IPADDR=ipaddr1 or 'IPADDR=ipaddr1;
+IPADDR_1=ipaddr2'
+
+> +	 * DNSx=dns
+
+This should mention that its either DNS=ipaddr1 or 'DNS=ipaddr1;
+DNS1=ipaddr2'
+
+Olaf
