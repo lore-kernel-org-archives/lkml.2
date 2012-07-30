@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab2G3Rjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:39:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab2G3RdB (ORCPT
+	id S1754879Ab2G3Rkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:40:42 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36077 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab2G3Rcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:33:01 -0400
+	Mon, 30 Jul 2012 13:32:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 20/41] mm: zone_reclaim: make isolate_lru_page() filter-aware
-Date: Mon, 30 Jul 2012 10:31:19 -0700
-Message-Id: <20120730172902.893502791@linuxfoundation.org>
+        Shaohua Li <shaohua.li@intel.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [ 11/41] vmscan: clear ZONE_CONGESTED for zone with good watermark
+Date: Mon, 30 Jul 2012 10:31:10 -0700
+Message-Id: <20120730172902.195869164@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -34,104 +30,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Minchan Kim <minchan.kim@gmail.com>
+From: Shaohua Li <shaohua.li@intel.com>
 
-commit f80c0673610e36ae29d63e3297175e22f70dde5f upstream.
+commit 439423f6894aa0dec22187526827456f5004baed upstream.
 
-Stable note: Not tracked in Bugzilla. THP and compaction disrupt the LRU list
-	leading to poor reclaim decisions which has a variable
-	performance impact.
+Stable note: Not tracked in Bugzilla. kswapd is responsible for clearing
+	ZONE_CONGESTED after it balances a zone and this patch fixes a bug
+	where that was failing to happen. Without this patch, processes
+	can stall in wait_iff_congested unnecessarily. For users, this can
+	look like an interactivity stall but some workloads would see it
+	as sudden drop in throughput.
 
-In __zone_reclaim case, we don't want to shrink mapped page.  Nonetheless,
-we have isolated mapped page and re-add it into LRU's head.  It's
-unnecessary CPU overhead and makes LRU churning.
+ZONE_CONGESTED is only cleared in kswapd, but pages can be freed in any
+task.  It's possible ZONE_CONGESTED isn't cleared in some cases:
 
-Of course, when we isolate the page, the page might be mapped but when we
-try to migrate the page, the page would be not mapped.  So it could be
-migrated.  But race is rare and although it happens, it's no big deal.
+ 1. the zone is already balanced just entering balance_pgdat() for
+    order-0 because concurrent tasks free memory.  In this case, later
+    check will skip the zone as it's balanced so the flag isn't cleared.
 
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
+ 2. high order balance fallbacks to order-0.  quote from Mel: At the
+    end of balance_pgdat(), kswapd uses the following logic;
+
+	If reclaiming at high order {
+		for each zone {
+			if all_unreclaimable
+				skip
+			if watermark is not met
+				order = 0
+				loop again
+
+			/* watermark is met */
+			clear congested
+		}
+	}
+
+    i.e. it clears ZONE_CONGESTED if it the zone is balanced.  if not,
+    it restarts balancing at order-0.  However, if the higher zones are
+    balanced for order-0, kswapd will miss clearing ZONE_CONGESTED as
+    that only happens after a zone is shrunk.  This can mean that
+    wait_iff_congested() stalls unnecessarily.
+
+This patch makes kswapd clear ZONE_CONGESTED during its initial
+highmem->dma scan for zones that are already balanced.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h |    2 ++
- mm/vmscan.c            |   20 ++++++++++++++++++--
- 2 files changed, 20 insertions(+), 2 deletions(-)
+ mm/vmscan.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -164,6 +164,8 @@ static inline int is_unevictable_lru(enu
- #define ISOLATE_ACTIVE		((__force isolate_mode_t)0x2)
- /* Isolate clean file */
- #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
-+/* Isolate unmapped file */
-+#define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
- 
- /* LRU Isolation modes. */
- typedef unsigned __bitwise__ isolate_mode_t;
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1048,6 +1048,9 @@ int __isolate_lru_page(struct page *page
- 	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
- 		return ret;
- 
-+	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
-+		return ret;
-+
- 	if (likely(get_page_unless_zero(page))) {
- 		/*
- 		 * Be careful not to clear PageLRU until after we're
-@@ -1471,6 +1474,12 @@ shrink_inactive_list(unsigned long nr_to
- 		reclaim_mode |= ISOLATE_ACTIVE;
- 
- 	lru_add_drain();
-+
-+	if (!sc->may_unmap)
-+		reclaim_mode |= ISOLATE_UNMAPPED;
-+	if (!sc->may_writepage)
-+		reclaim_mode |= ISOLATE_CLEAN;
-+
- 	spin_lock_irq(&zone->lru_lock);
- 
- 	if (scanning_global_lru(sc)) {
-@@ -1588,19 +1597,26 @@ static void shrink_active_list(unsigned
- 	struct page *page;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
- 	unsigned long nr_rotated = 0;
-+	isolate_mode_t reclaim_mode = ISOLATE_ACTIVE;
- 
- 	lru_add_drain();
-+
-+	if (!sc->may_unmap)
-+		reclaim_mode |= ISOLATE_UNMAPPED;
-+	if (!sc->may_writepage)
-+		reclaim_mode |= ISOLATE_CLEAN;
-+
- 	spin_lock_irq(&zone->lru_lock);
- 	if (scanning_global_lru(sc)) {
- 		nr_taken = isolate_pages_global(nr_pages, &l_hold,
- 						&pgscanned, sc->order,
--						ISOLATE_ACTIVE, zone,
-+						reclaim_mode, zone,
- 						1, file);
- 		zone->pages_scanned += pgscanned;
- 	} else {
- 		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
- 						&pgscanned, sc->order,
--						ISOLATE_ACTIVE, zone,
-+						reclaim_mode, zone,
- 						sc->mem_cgroup, 1, file);
- 		/*
- 		 * mem_cgroup_isolate_pages() keeps track of
+@@ -2456,6 +2456,9 @@ loop_again:
+ 					high_wmark_pages(zone), 0, 0)) {
+ 				end_zone = i;
+ 				break;
++			} else {
++				/* If balanced, clear the congested flag */
++				zone_clear_flag(zone, ZONE_CONGESTED);
+ 			}
+ 		}
+ 		if (i < 0)
 
 
