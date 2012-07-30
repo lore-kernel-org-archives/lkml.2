@@ -1,113 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2G3PXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 11:23:00 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:46246 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab2G3PW6 (ORCPT
+	id S1754844Ab2G3PXW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 11:23:22 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40202 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592Ab2G3PXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 11:22:58 -0400
-Message-ID: <1343661483.3010.584.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3] create sun sysfs file
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 30 Jul 2012 09:18:03 -0600
-In-Reply-To: <5015DC4B.2000802@jp.fujitsu.com>
-References: <5015DC4B.2000802@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 30 Jul 2012 11:23:20 -0400
+Date: Mon, 30 Jul 2012 18:22:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, vjaquez@igalia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH NEXT v2]staging: tidspbridge: Fix typos.
+Message-ID: <20120730152229.GH4352@mwanda>
+References: <1343101251-5449-1-git-send-email-justinmattock@gmail.com>
+ <501699CA.1050808@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501699CA.1050808@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-30 at 09:58 +0900, Yasuaki Ishimatsu wrote:
-> Even if a device has _SUN method, there is no way to know the slot unique-ID.
-> Thus the patch creates "sun" file in sysfs so that we can recognize it.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
-Hi Yasuaki,
-
-Thanks for the quick update.  Looks good.
-
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-
--Toshi
-
-> ---
->  drivers/acpi/scan.c     |   25 +++++++++++++++++++++++++
->  include/acpi/acpi_bus.h |    1 +
->  2 files changed, 26 insertions(+)
-> 
-> Index: linux-3.5/include/acpi/acpi_bus.h
-> ===================================================================
-> --- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-27 10:20:22.722553439 +0900
-> +++ linux-3.5/include/acpi/acpi_bus.h	2012-07-27 10:20:25.741555954 +0900
-> @@ -209,6 +209,7 @@ struct acpi_device_pnp {
->  	struct list_head ids;		/* _HID and _CIDs */
->  	acpi_device_name device_name;	/* Driver-determined */
->  	acpi_device_class device_class;	/*        "          */
-> +	unsigned long sun;		/* _SUN */
->  };
->  
->  #define acpi_device_bid(d)	((d)->pnp.bus_id)
-> Index: linux-3.5/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-3.5.orig/drivers/acpi/scan.c	2012-07-27 10:20:22.721522499 +0900
-> +++ linux-3.5/drivers/acpi/scan.c	2012-07-30 09:52:32.581887304 +0900
-> @@ -192,10 +192,21 @@ end:
->  }
->  static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
->  
-> +static ssize_t
-> +acpi_device_sun_show(struct device *dev, struct device_attribute *attr, char *buf) {
-> +	struct acpi_device *acpi_dev = to_acpi_device(dev);
-> +	int result;
-> +
-> +	result = sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
-> +	return result;
-> +}
-> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
-> +
->  static int acpi_device_setup_files(struct acpi_device *dev)
->  {
->  	acpi_status status;
->  	acpi_handle temp;
-> +	unsigned long long sun;
->  	int result = 0;
->  
->  	/*
-> @@ -217,6 +228,16 @@ static int acpi_device_setup_files(struc
->  			goto end;
->  	}
->  
-> +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
-> +	if (ACPI_SUCCESS(status)) {
-> +		dev->pnp.sun = (unsigned long)sun;
-> +		result = device_create_file(&dev->dev, &dev_attr_sun);
-> +		if (result)
-> +			goto end;
-> +	} else {
-> +		dev->pnp.sun = (unsigned long)-1;
-> +	}
-> +
->          /*
->           * If device has _EJ0, 'eject' file is created that is used to trigger
->           * hot-removal function from userland.
-> @@ -241,6 +262,10 @@ static void acpi_device_remove_files(str
->  	if (ACPI_SUCCESS(status))
->  		device_remove_file(&dev->dev, &dev_attr_eject);
->  
-> +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
-> +	if (ACPI_SUCCESS(status))
-> +		device_remove_file(&dev->dev, &dev_attr_sun);
-> +
->  	device_remove_file(&dev->dev, &dev_attr_modalias);
->  	device_remove_file(&dev->dev, &dev_attr_hid);
->  	if (dev->handle)
+On Mon, Jul 30, 2012 at 07:27:22AM -0700, Justin P. Mattock wrote:
+> greg!
+> I know how things can get lost in the sands of time, so when you get
+> a chance is this patch good? or do I need to resend?
 > 
 
+The merge window is still open.  No one is looking at patches until
+-rc1 is released.
+
+regards,
+dan carpenter
 
