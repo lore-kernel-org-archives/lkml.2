@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab2G3TpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:45:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14463 "EHLO
+	id S1755159Ab2G3Tpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:45:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19735 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab2G3TpC (ORCPT
+	with ESMTP id S1754656Ab2G3TpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:45:02 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=NnE6ERdwzy0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=GkLp1jxkfH7gfOIKq68A:9 a=QEXdDO2ut3YA:10 a=czBgX_4N2yXhkeUQxsgA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Mon, 30 Jul 2012 15:45:04 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=pGYlzOKfiEwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=qrFA_WvyAAAA:8 a=qJgER5RU2pfj1r0b-p4A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=bdmcM0_chmsA:10 a=jeBq3FmKZ4MA:10 a=V-Ktq1bX_zgNhkX_:21 a=fQ5rLMVGHjH3bZ7d:21 a=IRZufY1EXczceZzun44A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120730194316.768288008@goodmis.org>
+Message-Id: <20120730194502.828052323@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:43:16 -0400
+Date: Mon, 30 Jul 2012 15:43:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 0/4] [GIT PULL] localmodconfig: Improve module config removal
+Subject: [PATCH 3/4] localmodconfig: Check if configs are already set for selects
+References: <20120730194316.768288008@goodmis.org>
+Content-Disposition: inline; filename=0003-localmodconfig-Check-if-configs-are-already-set-for-.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +28,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-Linus,
+There are some cases that a required module does not have a prompt
+and needs to have another module enabled that selects it to be set.
+As localmodconfig is conservative and tries to make the minimum config
+without breaking the user's kernel, or keeping the user from using
+devices that were loaded when the lsmod was done, all modules that
+select this module will also be enabled.
 
-These changes drastically improve the amount of module configs removed
-from a config file. It also adds some debug that I can have users
-easily enable if things do not work for them.
+If you needed module A, but module A did not have a prompt but needed
+module B to be selected, localmodconfig would make sure B was still
+enabled. If not only B selected A, but C, D, E, F, and G also
+selected A, then all of those would also be included, as well as the
+modules they depend on. This ballooned the number of configs that
+localmodconfig would keep.
 
-Please pull the latest localmodconfig-v3.6 tree, which can be found at:
+The fix here is to process the depends first, and then record those
+configs that did not have a prompt and needed to be selected.
+After the depends are done, check what configs are needed to select
+the configs in the list, and if a config that selects it is already
+set, then we don't need to do anything else.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-kconfig.git
-localmodconfig-v3.6
+If no config that selects the config is set, then just pick one and
+try again.
 
-Head SHA1: d217733ba4a4b30e27a88753f9eeabd4464ddf19
+This change brought down the number of selected modules from 290
+to 67! Both before and after were run against a config that had 3095
+modules enabled.
 
-
-Steven Rostedt (4):
-      localmodconfig: Comments and cleanup for streamline_config.pl
-      localmodconfig: Read in orig config file to avoid extra processing
-      localmodconfig: Check if configs are already set for selects
-      localmodconfig: Add debug environment variable LOCALMODCONFIG_DEBUG
-
+Tested-by: John David Yost <johnyost@ptd.net> # AlleyTrotter
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/kconfig/streamline_config.pl |  115 ++++++++++++++++++++++++++++++=
 ----
- scripts/kconfig/streamline_config.pl |  175 ++++++++++++++++++++++++++++++=
-----
- 1 file changed, 158 insertions(+), 17 deletions(-)
+ 1 file changed, 104 insertions(+), 11 deletions(-)
+
+diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
+ine_config.pl
+index ab4985f..fcfcb30 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -420,7 +420,7 @@ my $repeat =3D 1;
+ # to keep on. If A was on in the original config, B would not have been
+ # and B would not be turned on by this script.
+ #
+-sub parse_config_dep_select
++sub parse_config_depends
+ {
+     my ($p) =3D @_;
+=20
+@@ -448,26 +448,119 @@ sub parse_config_dep_select
+     }
+ }
+=20
+-while ($repeat) {
+-    $repeat =3D 0;
++# Select is treated a bit differently than depends. We call this
++# when a config has no prompt and requires another config to be
++# selected. We use to just select all configs that selected this
++# config, but found that that can balloon into enabling hundreds
++# of configs that we do not care about.
++#
++# The idea is we look at all the configs that select it. If one
++# is already in our list of configs to enable, then there's nothing
++# else to do. If there isn't, we pick the first config that was
++# enabled in the orignal config and use that.
++sub parse_config_selects
++{
++    my ($config, $p) =3D @_;
+=20
+-    foreach my $config (keys %configs) {
+-	$config =3D~ s/^CONFIG_//;
++    my $next_config;
++
++    while ($p =3D~ /[$valid]/) {
++
++	if ($p =3D~ /^[^$valid]*([$valid]+)/) {
++	    my $conf =3D "CONFIG_" . $1;
++
++	    $p =3D~ s/^[^$valid]*[$valid]+//;
+=20
+-	if (defined($depends{$config})) {
+-	    # This config has dependencies. Make sure they are also included
+-	    parse_config_dep_select $depends{$config};
++	    # Make sure that this config exists in the current .config file
++	    if (!defined($orig_configs{$conf})) {
++		next;
++	    }
++
++	    # Check if something other than a module selects this config
++	    if (defined($orig_configs{$conf}) && $orig_configs{$conf} ne "m") {
++		# we are good with this
++		return;
++	    }
++	    if (defined($configs{$conf})) {
++		# A set config selects this config, we are good
++		return;
++	    }
++	    # Set this config to be selected
++	    if (!defined($next_config)) {
++		$next_config =3D $conf;
++	    }
++	} else {
++	    die "this should never happen";
+ 	}
++    }
+=20
+-	if (defined($prompts{$config}) || !defined($selects{$config})) {
+-	    next;
++    # If no possible config selected this, then something happened.
++    if (!defined($next_config)) {
++	print STDERR "WARNING: $config is required, but nothing in the\n";
++	print STDERR "  current config selects it.\n";
++	return;
++    }
++
++    # If we are here, then we found no config that is set and
++    # selects this config. Repeat.
++    $repeat =3D 1;
++    # Make this config need to be selected
++    $configs{$next_config} =3D 1;
++}
++
++my %process_selects;
++
++# loop through all configs, select their dependencies.
++sub loop_depend {
++    $repeat =3D 1;
++
++    while ($repeat) {
++	$repeat =3D 0;
++
++      forloop:
++	foreach my $config (keys %configs) {
++
++	    # If this config is not a module, we do not need to process it
++	    if (defined($orig_configs{$config}) && $orig_configs{$config} ne "m")=
+ {
++		next forloop;
++	    }
++
++	    $config =3D~ s/^CONFIG_//;
++
++	    if (defined($depends{$config})) {
++		# This config has dependencies. Make sure they are also included
++		parse_config_depends $depends{$config};
++	    }
++
++	    # If the config has no prompt, then we need to check if a config
++	    # that is enabled selected it. Or if we need to enable one.
++	    if (!defined($prompts{$config}) && defined($selects{$config})) {
++		$process_selects{$config} =3D 1;
++	    }
+ 	}
++    }
++}
++
++sub loop_select {
++
++    foreach my $config (keys %process_selects) {
++	$config =3D~ s/^CONFIG_//;
+=20
+ 	# config has no prompt and must be selected.
+-	parse_config_dep_select $selects{$config};
++	parse_config_selects $config, $selects{$config};
+     }
+ }
+=20
++while ($repeat) {
++    # Get the first set of configs and their dependencies.
++    loop_depend;
++
++    $repeat =3D 0;
++
++    # Now we need to see if we have to check selects;
++    loop_select;
++}=09=20=20=20=20
++
+ my %setconfigs;
+=20
+ # Finally, read the .config file and turn off any module enabled that
+--=20
+1.7.10.4
+
+
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -59,19 +221,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQFuQ6AAoJEIy3vGnGbaoAiq8P/iKtIWWgk/cVlOOSzZMG6XpV
-uNi0zuBU5QBWqJkHhdy2+XJFj+D8LEwmrcYEfE3lv5LTsd9nBuMMQHchA2JDoBHC
-UhkuAXNQGDhd2XB0Vk08jn8ooGXg2JEOAKEtfYsjJZI+DHLhfseJSAHA/gntYYiF
-0YsoAa386BZ89qoHM6ZC5vWpYGUzXL1YVI/3Qqdppdvg4JYYH8SEn/uJ6GT92WuI
-FfLJ3J0GBk1VyuZQJp5UPSzPRRXf/oChHCHCEV/U8kDENq2RNhHsLTVFOAI8Y0VJ
-IncgWT/uk+zEcDR1Jq+41uLcMOMMcc1nroYNYOgHyHXKBPFPZzJr7qYahU6Eqr93
-0tQs4JCx2TNVeLglO1tGvM2gFYLUkDqAWtQtC6mteJ0pNibWSctz4dHu6F0x/c8h
-OeTqUm2h0H/r9syi7KnhkXRyJYisutJYMMBgsrrgQGncr2mQ1+0+7VFNrYTLp0YB
-wYUvnWp5YZFrpDRGkKC0nR4WAkAkrWPV3j+OiLn2H2PL9Cvw/M8w/Bq+/M3sXWJb
-S8rDHTwZBg7l7A70QWvQ8U+u7b5Mv7yWnDMPST1UtBAwReyYFZTrz8SV/6PNLpHv
-q56OjWp0CJAbsf1/S0gxdFLKie+cpmGLvB37iXxnh6Lbd82FwC4stFcvR5cjhS7v
-yaworKBzSUMQRsrf8P5T
-=dHX+
+iQIcBAABAgAGBQJQFuQ+AAoJEIy3vGnGbaoAdW8QALakAiQPPwhUeClbBCNwVa2P
+rpWpuz0BXPAHa4TxpQYIOp0wvimN9Mr8cG4FLEY6Kd+QES/xgn5aPsHCqYsiII3o
+DBDf8oEkDQBahOLrKfaFUu0KaNXBdGE23pj167bFlgw6Dniu0C8rRUmJoIFRqTOU
+7U/Xx1Pl5avKdeJlso0P4pNjbKD1mKu7Gfl0kYdSm1+9sG3oKekSdwHEJ2Db+Af+
+lJU7EXitf2S2Hc2nQn4LbBaz01lum2Aa/KSFwEsjC1TsJ/nbhCp2ffCQM3op8a6U
+qoMnwyD7URvjmn2LsbxZTYwe1OkGKAVqDV1gLI+k0lxlETDkY46/3bBvP/HdkwPj
+SwbRO0kvAMtDiCXfWLzd5Gd5e6tEXsPlkXjwEF/cOuMTXnAn3ULuw/Tv/6UJo0qz
+O2MCGMjKGPinVty50adzuq6dK36bDzAE5v7KHdRHs+tUddKQY6YCS0ZU95WS8MFg
+ilUl0FXOm3tTMfBzjXOfSpLxXSaQsXtu58Ew7COmbhap21MTyNUCjcbpMdCje7ft
+po8Ue+lf/6vB/8SP/Bwi9GoYtIj4WUbJc5JSCdoZG/OFrt3e0cdns2C1ue1pRfz4
+G80Vz87VyWCNNxC4JfzippEVqDnCmib4f/cxSx+oE7AUy43WtIqzM6XzT5j4uH8R
+frJwcBa1rWwHMyCNs1Ox
+=htMl
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
