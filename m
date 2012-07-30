@@ -1,97 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab2G3Rwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:52:54 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:43533 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754325Ab2G3Rwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:52:53 -0400
-X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 13:52:53 EDT
-Date: Mon, 30 Jul 2012 19:44:09 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: linux-kernel@vger.kernel.org
-Subject: Hardware locality (hwloc) v1.5 released
-Message-ID: <20120730174409.GC4707@type.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	linux-kernel@vger.kernel.org
+	id S1755294Ab2G3RyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:54:18 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:50669 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754902Ab2G3RyP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 13:54:15 -0400
+Message-ID: <5016CA28.8020402@us.ibm.com>
+Date: Mon, 30 Jul 2012 10:53:44 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+To: CAI Qian <caiqian@redhat.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
+Subject: Re: boot panic regression introduced in 3.5-rc7
+References: <1971950954.1278169.1343620316300.JavaMail.root@redhat.com>
+In-Reply-To: <1971950954.1278169.1343620316300.JavaMail.root@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12073017-1780-0000-0000-000007E427BE
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000288; HX=3.00000193; KW=3.00000007;
+ PH=3.00000001; SC=3.00000006; SDB=6.00161046; UDB=6.00036391; UTC=2012-07-30
+ 17:54:13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hardware Locality (hwloc) team is pleased to announce the release
-of v1.5:
+On 07/29/2012 08:51 PM, CAI Qian wrote:
+> The bisecting pointed out this patch caused one of dell servers boot panic.
+>
+>    5baefd6d84163443215f4a99f6a20f054ef11236
+>    hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+>
+> [    2.971092] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x10a/0x120()
 
-   http://www.open-mpi.org/projects/hwloc/
+Thanks for the report! Just to confirm, you're seeing this with the 
+final 3.5?
 
-v1.5 is a major new release series.  It includes many new features and
-changes over the v1.4.x series. The most noticeable changes are the
-addition of the lstopo-no-graphics program (which does require any
-heavy external library such as Cairo) and the discovery of instruction
-caches. There are also many small improvements to all backends, and
-some deprecated features have been removed.
+I'll let you know as soon as I've got something to test.
 
+thanks
+-john
 
-Version 1.5.0
--------------
-* Backends
-  + Do not limit the number of processors to 1024 on Solaris anymore.
-  + Gather total machine memory on FreeBSD.
-  + XML topology files do not depend on the locale anymore. Float numbers
-    such as NUMA distances or PCI link speeds now always use a dot as a
-    decimal separator.
-  + Add instruction caches detection on Linux, AIX, Windows and Darwin.
-  + Add get_last_cpu_location() support for the current thread on AIX.
-  + Support binding on AIX when threads or processes were bound with
-    bindprocessor(). Thanks to Hendryk Bockelmann for reporting the issue
-    and testing patches, and to Farid Parpia for explaining the binding
-    interfaces.
-  + Improve AMD topology detection in the x86 backend (for FreeBSD) using
-    the topoext feature.
-* API
-  + Increase HWLOC_API_VERSION to 0x00010500 so that API changes may be
-    detected at build-time.
-  + Add a cache type attribute describind Data, Instruction and Unified
-    caches. Caches with different types but same depth (for instance L1d
-    and L1i) are placed on different levels.
-  + Add hwloc_get_cache_type_depth() to retrieve the hwloc level depth of
-    of the given cache depth and type, for instance L1i or L2.
-    It helps  disambiguating the case where hwloc_get_type_depth() returns
-    HWLOC_TYPE_DEPTH_MULTIPLE.
-  + Instruction caches are ignored unless HWLOC_TOPOLOGY_FLAG_ICACHES is
-    passed to hwloc_topology_set_flags() before load.
-  + Add hwloc_ibv_get_device_osdev_by_name() OpenFabrics helper in
-    openfabrics-verbs.h to find the hwloc OS device object corresponding to
-    an OpenFabrics device.
-* Tools
-  + Add lstopo-no-graphics, a lstopo built without graphical support to
-    avoid dependencies on external libraries such as Cairo and X11. When
-    supported, graphical outputs are only available in the original lstopo
-    program.
-    - Packagers splitting lstopo and lstopo-no-graphics into different
-      packages are advised to use the alternatives system so that lstopo
-      points to the best available binary.
-  + Instruction caches are enabled in lstopo by default. User --no-icaches
-    to disable them.
-  + Add -t/--threads to show threads in hwloc-ps.
-* Removal of obsolete components
-  + Remove the old cpuset interface (hwloc/cpuset.h) which is deprecated and
-    superseded by the bitmap API (hwloc/bitmap.h) since v1.1.
-    hwloc_cpuset and nodeset types are still defined, but all hwloc_cpuset_*
-    compatibility wrappers are now gone.
-  + Remove Linux libnuma conversion helpers for the deprecated and
-    broken nodemask_t interface.
-  + Remove support for "Proc" type name, it was superseded by "PU" in v1.0.
-  + Remove hwloc-mask symlinks, it was replaced by hwloc-calc in v1.0.
-* Misc
-  + Fix PCIe 3.0 link speed computation.
-  + Non-printable characters are dropped from strings during XML export.
-  + Fix importing of escaped characters with the minimalistic XML backend.
-  + Assert hwloc_is_thissystem() in several I/O related helpers.
-  + Fix some memory leaks in the x86 backend for FreeBSD.
-  + Minor fixes to ease native builds on Windows.
-  + Limit the number of retries when operating on all threads within a
-    process on Linux if the list of threads is heavily getting modified.
