@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab2G3OQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:16:58 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:36968 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753725Ab2G3OQ5 (ORCPT
+	id S1754640Ab2G3ORD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:17:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45648 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725Ab2G3ORA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:16:57 -0400
-Message-ID: <50169786.9000109@ti.com>
-Date: Mon, 30 Jul 2012 17:17:42 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120723 Thunderbird/14.0
+	Mon, 30 Jul 2012 10:17:00 -0400
+Date: Mon, 30 Jul 2012 07:16:44 -0700
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-89133786f9408d53361874a8c784fff150fc7f7c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
+        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20120729182238.GA20349@redhat.com>
+References: <20120729182238.GA20349@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] uprobes: Remove insert_vm_struct()->uprobe_mmap()
+Git-Commit-ID: 89133786f9408d53361874a8c784fff150fc7f7c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: twl6040: Fix GPO mask
-References: <1342603220-13287-1-git-send-email-peter.ujfalusi@ti.com> <1342603220-13287-2-git-send-email-peter.ujfalusi@ti.com> <CACRpkdaOmCe05NF2d5-1xqx7UmY80LTZXJG_Lj6rnFqyk_OvHg@mail.gmail.com>
-In-Reply-To: <CACRpkdaOmCe05NF2d5-1xqx7UmY80LTZXJG_Lj6rnFqyk_OvHg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:16:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+Commit-ID:  89133786f9408d53361874a8c784fff150fc7f7c
+Gitweb:     http://git.kernel.org/tip/89133786f9408d53361874a8c784fff150fc7f7c
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Sun, 29 Jul 2012 20:22:38 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 30 Jul 2012 11:27:22 +0200
 
-On 07/28/2012 01:45 AM, Linus Walleij wrote:
-> On Wed, Jul 18, 2012 at 11:20 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> 
->>  #define TWL6040_GPO1                   0x01
->>  #define TWL6040_GPO2                   0x02
->> -#define TWL6040_GPO3                   0x03
->> +#define TWL6040_GPO3                   0x04
-> 
-> Maybe a stupid question but does these register defines really belong in that
-> header file? Can't you do a separate patch moving them into the driver per
-> se?
+uprobes: Remove insert_vm_struct()->uprobe_mmap()
 
-I thought about that but in this way the header file can be used as
-documentation for the register bits of twl6040.
-The GPIO driver do not use these defines, it is using shift to address the
-correct bits in the GPO register.
+Remove insert_vm_struct()->uprobe_mmap(). It is not needed, nobody
+except arch/ia64/kernel/perfmon.c uses insert_vm_struct(vma)
+with vma->vm_file != NULL.
 
-Regards,
-Péter
+And it is wrong. Again, get_user_pages() can not succeed before
+vma_link(vma) makes is visible to find_vma(). And even if this
+worked, we must not insert the new bp before this mapping is
+visible to vma_prio_tree_foreach() for uprobe_unregister().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120729182238.GA20349@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/mmap.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index e5a4614..4fe2697 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2345,9 +2345,6 @@ int insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
+ 	     security_vm_enough_memory_mm(mm, vma_pages(vma)))
+ 		return -ENOMEM;
+ 
+-	if (vma->vm_file && uprobe_mmap(vma))
+-		return -EINVAL;
+-
+ 	vma_link(mm, vma, prev, rb_link, rb_parent);
+ 	return 0;
+ }
