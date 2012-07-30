@@ -1,176 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2G3NSq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 09:18:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58154 "EHLO mx1.redhat.com"
+	id S1754162Ab2G3NWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 09:22:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44740 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754097Ab2G3NSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 09:18:45 -0400
-Message-ID: <50168981.3000001@redhat.com>
-Date: Mon, 30 Jul 2012 16:17:53 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753479Ab2G3NWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 09:22:24 -0400
+Message-ID: <50168A80.10805@redhat.com>
+Date: Mon, 30 Jul 2012 09:22:08 -0400
+From: William Cohen <wcohen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120714 Thunderbird/10.0.6
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: paulmck@linux.vnet.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
-References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com> <50127B16.5040401@gmail.com> <50153138.4020304@redhat.com> <5015A5A8.7030601@gmail.com> <50161D5E.4030009@redhat.com> <50165046.9020705@gmail.com> <501654D3.7020504@redhat.com> <50168162.4010508@gmail.com>
-In-Reply-To: <50168162.4010508@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: mmap_region() corrupts mm->mm_rb if uprobe_mmap()
+ fails
+References: <20120728163157.GA22719@redhat.com>
+In-Reply-To: <20120728163157.GA22719@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 03:43 PM, Sasha Levin wrote:
->>>>>
->>>>>> Then work backwards to see the last place it is
->>>>>> programmed (APIC_TMICT/APIC_TDCR).
->>>>>
->>>>> This looks like what you're looking for:
->>>>>
->>>>> kvm_apic: apic_write APIC_TMICT = 0x3e
->> 
->> What about APIC_TMICT?  Might be configured just once on boot.
-> 
-> Did you mean APIC_TDCR?
+On 07/28/2012 12:31 PM, Oleg Nesterov wrote:
+> https://bugzilla.redhat.com/show_bug.cgi?id=843640
 
-Yes, sorry.
+Hi Oleg,
+
+I checked the following patch and it does fix the problem on the 3.5.0+ kernel.
+
+-Will
 
 > 
-> I'm seeing both in the trace logs, but it's APIC_TMICT thats shown when the hang occurs.
+> If mmap_region()->uprobe_mmap() fails, unmap_and_free_vma path
+> does unmap_region() but does not remove the soon-to-be-freed vma
+> from rb tree (actually there are more problems).
 > 
->               vm-19727 [002] ...1 66669.010699: kvm_apic: apic_read APIC_TDCR = 0x0
->               vm-19727 [002] ...1 66669.010699: kvm_msr: msr_read 83e = 0x0
->               vm-19727 [002] d..2 66669.010699: kvm_entry: vcpu 0
->               vm-19727 [002] d..2 66669.010700: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
->               vm-19727 [002] ...1 66669.010701: kvm_apic: apic_write APIC_TDCR = 0x3
->               vm-19727 [002] ...1 66669.010701: kvm_msr: msr_write 83e = 0x3
->               vm-19727 [002] d..2 66669.010701: kvm_entry: vcpu 0
-
-TDCR is needed to interpret TMICT.
-
+> Perhaps we could do do_munmap() + return in this case, but in fact
+> it is simply wrong to abort if uprobe_mmap() fails. Until at least
+> we move the !UPROBE_COPY_INSN code from install_breakpoint() to
+> uprobe_register().
 > 
->>>>>
->>>>>
->>>>> Basically it's spinning on the following 4 lines of trace when it happens:
->>>>>
->>>>> 	16063.549189: kvm_apic: apic_write APIC_TMICT = 0x3e
->>>>> 	16063.549190: kvm_msr: msr_write 838 = 0x3e
->>>>> 	16063.549190: kvm_exit: reason EXTERNAL_INTERRUPT rip 0xffffffff8115de02 info 0 0
->>>>> 	16063.549190: kvm_entry: vcpu 2
->>>>>
->>>>
->>>> What, no kvm_inj_virq?
->>>>
->>>> Are you running with pveoi?  Try disabling it.
->> 
->> What's the answer to this question?
+> For example, uprobe_mmap()->install_breakpoint() can fail if the
+> probed insn is not supported (remember, uprobe_register() succeeds
+> if nobody mmaps inode/offset), mmap() should not fail in this case.
 > 
-> The host is running 3.5, so that shouldn't be enabled.
-
-Ok.
-
->> Please add hrtimer_start and hrtimer_expire_entry to your traced events.
->> 
+> dup_mmap()->uprobe_mmap() is wrong too by the same reason, fork()
+> can race with uprobe_register() and fail for no reason if it wins
+> the race and does install_breakpoint() first.
 > 
-> A bigger log with those two enabled:
+> Change mmap_region() and dup_mmap() to ignore the error code from
+> uprobe_mmap().
 > 
->              vm-19730 [003] ...1 66730.739585: kvm_apic: apic_write APIC_TMICT = 0x3e
->               vm-19716 [000] d..3 66730.739586: hrtimer_start: hrtimer=ffff880133cc3f78 function=posix_timer_fn expires=66882054763626 softexpires=66882054763626
->               vm-19730 [003] d..2 66730.739586: hrtimer_start: hrtimer=ffff88011e00d3d0 function=kvm_timer_fn expires=66882053774813 softexpires=66882053774813
-
-vcpu 3 programs the timer, and kvm sets an hrtimer, but fat in the future?
-
->               vm-19730 [003] ...1 66730.739586: kvm_msr: msr_write 838 = 0x3e
->               vm-19730 [003] d..2 66730.739587: kvm_entry: vcpu 3
->               vm-19730 [003] d..2 66730.739589: kvm_exit: reason PENDING_INTERRUPT rip 0xffffffff8115c684 info 0 0
->               vm-19729 [001] d..2 66730.739590: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
->               vm-19730 [003] d.h2 66730.739590: hrtimer_expire_entry: hrtimer=ffff88011e00d3d0 function=kvm_timer_fn now=66882053778032
-
-Nope, the ftrace time and hrtimer time aren't synchronized.
-
->               vm-19729 [001] ...1 66730.739591: kvm_apic: apic_write APIC_TMICT = 0x3e
-
-vcpu 2 sets its timer.
-
->               vm-19730 [003] ...1 66730.739591: kvm_apic_accept_irq: apicid 3 vec 239 (Fixed|edge) (coalesced)
-
-The original vcpu gets its interrupt delivered.
-
->               vm-19729 [001] d..2 66730.739591: hrtimer_start: hrtimer=ffff88020d208490 function=kvm_timer_fn expires=66882053780380 softexpires=66882053780380
-
-vcpu 2 sets its hrtimer.
-
->               vm-19730 [003] ...1 66730.739592: kvm_inj_virq: irq 239
->               vm-19729 [001] ...1 66730.739592: kvm_msr: msr_write 838 = 0x3e
->               vm-19730 [003] d..2 66730.739593: kvm_entry: vcpu 3
->               vm-19729 [001] d..2 66730.739593: kvm_entry: vcpu 2
->               vm-19730 [003] d..2 66730.739594: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
->               vm-19729 [001] d..2 66730.739594: kvm_exit: reason EXTERNAL_INTERRUPT rip 0xffffffff83601f61 info 0 0
-
-vcpu 2 hrtimer fires, but it doesn't know it yet.
-
->               vm-19730 [003] ...1 66730.739595: kvm_apic: apic_write APIC_EOI = 0x0
->               vm-19730 [003] ...1 66730.739595: kvm_msr: msr_write 80b = 0x0
->               vm-19729 [001] d.h2 66730.739596: hrtimer_expire_entry: hrtimer=ffff88020d208490 function=kvm_timer_fn now=66882053783462
-
-vcpu 2 hrtimer fires.
-
->               vm-19730 [003] ...1 66730.739596: kvm_apic_accept_irq: apicid 3 vec 239 (Fixed|edge)
->               vm-19729 [001] ...1 66730.739597: kvm_apic_accept_irq: apicid 2 vec 239 (Fixed|edge) (coalesced)
-
-and delivers a guest interrupt, but guest interrupts are still blocked.
-
->               vm-19730 [003] d..2 66730.739597: kvm_entry: vcpu 3
->               vm-19729 [001] d..2 66730.739597: kvm_entry: vcpu 2
->               vm-19729 [001] d..2 66730.739598: kvm_exit: reason PENDING_INTERRUPT rip 0xffffffff8115c684 info 0 0
->               vm-19729 [001] ...1 66730.739599: kvm_apic_accept_irq: apicid 2 vec 239 (Fixed|edge) (coalesced)
->               vm-19729 [001] ...1 66730.739600: kvm_inj_virq: irq 239
->               vm-19729 [001] d..2 66730.739600: kvm_entry: vcpu 2
-
-Interrupts unblocked, interrupt delivered.
-
-So: either the hrtimer is set for way too low a deadline, or perhaps it
-expires prematurely.
-
-TDCR=3 means divide by 16, together with TMICT=0x3e and a bus frequency
-of 1GHz this means 992 ns expiration, which is consistent with what we see.
-
-Possible causes:
- - the APIC calibration in the guest failed, so it is programming too
-low values into the timer
- - it actually needs 1 us wakeups and then can't keep up (esp. as kvm
-interrupt injection is slowing it down)
-
-You can try to find out by changing
-arch/x86/kvm/lapic.c:start_lapic_timer() to impose a minimum wakeup of
-(say) 20 microseconds which will let the guest live long enough for you
-to ftrace it and see what kind of timers it is programming.
-
->               vm-19729 [001] d..2 66730.739601: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
->               vm-19729 [001] ...1 66730.739602: kvm_apic: apic_write APIC_EOI = 0x0
->               vm-19729 [001] ...1 66730.739602: kvm_msr: msr_write 80b = 0x0
->               vm-19730 [003] d..2 66730.739603: kvm_exit: reason MSR_WRITE rip 0xffffffff810a06a8 info 0 0
->               vm-19729 [001] ...1 66730.739603: kvm_apic_accept_irq: apicid 2 vec 239 (Fixed|edge)
->               vm-19730 [003] ...1 66730.739604: kvm_apic: apic_write APIC_TMICT = 0x3e
->               vm-19729 [001] d..2 66730.739604: kvm_entry: vcpu 2
->               vm-19730 [003] d..2 66730.739604: hrtimer_start: hrtimer=ffff88011e00d3d0 function=kvm_timer_fn expires=66882053793430 softexpires=66882053793430
->               vm-19730 [003] ...1 66730.739605: kvm_msr: msr_write 838 = 0x3e
->               vm-19730 [003] d..2 66730.739606: kvm_entry: vcpu 3
->               vm-19730 [003] d..2 66730.739607: kvm_exit: reason PENDING_INTERRUPT rip 0xffffffff8115c684 info 0 0
->               vm-19729 [001] d..2 66730.739608: kvm_exit: reason EXTERNAL_INTERRUPT rip 0xffffffff8115f2a1 info 0 0
->               vm-19730 [003] d.h2 66730.739608: hrtimer_expire_entry: hrtimer=ffff88011e00d3d0 function=kvm_timer_fn now=66882053796355
->               vm-19729 [001] ...1 66730.739609: kvm_userspace_exit: reason restart (4)
->               vm-19730 [003] ...1 66730.739610: kvm_apic_accept_irq: apicid 3 vec 239 (Fixed|edge) (coalesced)
->               vm-19730 [003] ...1 66730.739611: kvm_userspace_exit: reason restart (4)
->               vm-19716 [000] ...1 66730.739612: kvm_set_irq: gsi 4 level 1 source 0
->               vm-19716 [000] ...2 66730.739614: kvm_pic_set_irq: chip 0 pin 4 (edge)
+> Reported-by: William Cohen <wcohen@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: <stable@vger.kernel.org> # v3.5
+> ---
+>  kernel/fork.c |    4 ++--
+>  mm/mmap.c     |    5 ++---
+>  2 files changed, 4 insertions(+), 5 deletions(-)
 > 
-
-
--- 
-error compiling committee.c: too many arguments to function
-
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index ab5211b..54bb88a 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -454,8 +454,8 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+>  		if (retval)
+>  			goto out;
+>  
+> -		if (file && uprobe_mmap(tmp))
+> -			goto out;
+> +		if (file)
+> +			uprobe_mmap(tmp);
+>  	}
+>  	/* a new mm has just been created */
+>  	arch_dup_mmap(oldmm, mm);
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 4fe2697..f25fd3f 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1355,9 +1355,8 @@ out:
+>  	} else if ((flags & MAP_POPULATE) && !(flags & MAP_NONBLOCK))
+>  		make_pages_present(addr, addr + len);
+>  
+> -	if (file && uprobe_mmap(vma))
+> -		/* matching probes but cannot insert */
+> -		goto unmap_and_free_vma;
+> +	if (file)
+> +		uprobe_mmap(vma);
+>  
+>  	return addr;
+>  
 
