@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2G3TXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:23:11 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60143 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab2G3TXG (ORCPT
+	id S1754868Ab2G3TXZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:23:25 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62821 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754673Ab2G3TXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:23:06 -0400
+	Mon, 30 Jul 2012 15:23:09 -0400
 From: Benjamin Poirier <bpoirier@suse.de>
 To: Michal Marek <mmarek@suse.cz>
 Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
         Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH 4/6] menuconfig: Add jump keys to search results
-Date: Mon, 30 Jul 2012 15:22:08 -0400
-Message-Id: <1343676130-29770-5-git-send-email-bpoirier@suse.de>
+Subject: [PATCH 6/6] menuconfig: Assign jump keys per-page instead of globally
+Date: Mon, 30 Jul 2012 15:22:10 -0400
+Message-Id: <1343676130-29770-7-git-send-email-bpoirier@suse.de>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1343676130-29770-1-git-send-email-bpoirier@suse.de>
 References: <1343676130-29770-1-git-send-email-bpoirier@suse.de>
@@ -22,324 +22,504 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-makes it possible to jump directly to the menu for a configuration entry after
-having searched for it with '/'. If this menu is not currently accessible we
-jump to the nearest accessible parent instead. After exiting this menu, the
-user is returned to the search results where he may jump further in or
-elsewhere.
+At the moment, keys 1-9 are assigned to the first 9 search results. This patch
+makes them assigned to the first 9 results per-page instead. We are much less
+likely to run out of keys that way.
 
 Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 ---
- scripts/kconfig/expr.h      |    2 +
- scripts/kconfig/lkc_proto.h |    6 +++-
- scripts/kconfig/mconf.c     |   64 +++++++++++++++++++++++++++++--------------
- scripts/kconfig/menu.c      |   55 +++++++++++++++++++++++++++++-------
- scripts/kconfig/nconf.c     |    2 +-
- 5 files changed, 94 insertions(+), 35 deletions(-)
+ scripts/kconfig/expr.h             |    9 ++++
+ scripts/kconfig/lkc_proto.h        |    8 ++--
+ scripts/kconfig/lxdialog/dialog.h  |    9 +++-
+ scripts/kconfig/lxdialog/textbox.c |   65 ++++++++++++++++++++------------
+ scripts/kconfig/mconf.c            |   73 ++++++++++++++++++++++++++++-------
+ scripts/kconfig/menu.c             |   54 ++++++++++++++-------------
+ 6 files changed, 147 insertions(+), 71 deletions(-)
 
 diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
-index d4ecce8..52f4246 100644
+index 52f4246..bd2e098 100644
 --- a/scripts/kconfig/expr.h
 +++ b/scripts/kconfig/expr.h
-@@ -173,6 +173,8 @@ struct menu {
+@@ -12,6 +12,7 @@ extern "C" {
+ 
+ #include <assert.h>
+ #include <stdio.h>
++#include <sys/queue.h>
+ #ifndef __cplusplus
+ #include <stdbool.h>
+ #endif
+@@ -173,6 +174,14 @@ struct menu {
  #define MENU_CHANGED		0x0001
  #define MENU_ROOT		0x0002
  
-+#define JUMP_NB			9
++struct jump_key {
++	CIRCLEQ_ENTRY(jump_key) entries;
++	size_t offset;
++	struct menu *target;
++	int index;
++};
++CIRCLEQ_HEAD(jk_head, jump_key);
 +
+ #define JUMP_NB			9
+ 
  extern struct file *file_list;
- extern struct file *current_file;
- struct file *lookup_file(const char *name);
 diff --git a/scripts/kconfig/lkc_proto.h b/scripts/kconfig/lkc_proto.h
-index 47fe9c3..946c2cb3 100644
+index 946c2cb3..1d1c085 100644
 --- a/scripts/kconfig/lkc_proto.h
 +++ b/scripts/kconfig/lkc_proto.h
-@@ -21,8 +21,10 @@ P(menu_get_root_menu,struct menu *,(struct menu *menu));
+@@ -21,10 +21,10 @@ P(menu_get_root_menu,struct menu *,(struct menu *menu));
  P(menu_get_parent_menu,struct menu *,(struct menu *menu));
  P(menu_has_help,bool,(struct menu *menu));
  P(menu_get_help,const char *,(struct menu *menu));
--P(get_symbol_str, void, (struct gstr *r, struct symbol *sym));
--P(get_relations_str, struct gstr, (struct symbol **sym_arr));
-+P(get_symbol_str, int, (struct gstr *r, struct symbol *sym, struct menu
-+			**jumps, int jump_nb));
-+P(get_relations_str, struct gstr, (struct symbol **sym_arr, struct menu
-+				   **jumps));
+-P(get_symbol_str, int, (struct gstr *r, struct symbol *sym, struct menu
+-			**jumps, int jump_nb));
+-P(get_relations_str, struct gstr, (struct symbol **sym_arr, struct menu
+-				   **jumps));
++P(get_symbol_str, void, (struct gstr *r, struct symbol *sym, struct jk_head
++			 *head));
++P(get_relations_str, struct gstr, (struct symbol **sym_arr, struct jk_head
++				   *head));
  P(menu_get_ext_help,void,(struct menu *menu, struct gstr *help));
  
  /* symbol.c */
+diff --git a/scripts/kconfig/lxdialog/dialog.h b/scripts/kconfig/lxdialog/dialog.h
+index 8e7f43b..28e8877 100644
+--- a/scripts/kconfig/lxdialog/dialog.h
++++ b/scripts/kconfig/lxdialog/dialog.h
+@@ -209,8 +209,13 @@ int first_alpha(const char *string, const char *exempt);
+ int dialog_yesno(const char *title, const char *prompt, int height, int width);
+ int dialog_msgbox(const char *title, const char *prompt, int height,
+ 		  int width, int pause);
+-int dialog_textbox(const char *title, const char *file, int height, int width,
+-		   int *keys, int *_vscroll, int *_hscroll);
++
++
++typedef void (*update_text_fn)(char* buf, size_t start, size_t end, void
++			       *_data);
++int dialog_textbox(const char *title, char *tbuf, int initial_height,
++		   int initial_width, int *keys, int *_vscroll, int *_hscroll,
++		   update_text_fn update_text, void *data);
+ int dialog_menu(const char *title, const char *prompt,
+ 		const void *selected, int *s_scroll);
+ int dialog_checklist(const char *title, const char *prompt, int height,
+diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
+index 3b3c5c4..fcca719e 100644
+--- a/scripts/kconfig/lxdialog/textbox.c
++++ b/scripts/kconfig/lxdialog/textbox.c
+@@ -22,23 +22,25 @@
+ #include "dialog.h"
+ 
+ static void back_lines(int n);
+-static void print_page(WINDOW * win, int height, int width);
++static void print_page(WINDOW * win, int height, int width, update_text_fn
++		       update_text, void *data);
+ static void print_line(WINDOW * win, int row, int width);
+ static char *get_line(void);
+ static void print_position(WINDOW * win);
+ 
+ static int hscroll;
+ static int begin_reached, end_reached, page_length;
+-static const char *buf;
+-static const char *page;
++static char *buf;
++static char *page;
+ 
+ /*
+  * refresh window content
+  */
+ static void refresh_text_box(WINDOW *dialog, WINDOW *box, int boxh, int boxw,
+-							  int cur_y, int cur_x)
++			     int cur_y, int cur_x, update_text_fn update_text,
++			     void *data)
+ {
+-	print_page(box, boxh, boxw);
++	print_page(box, boxh, boxw, update_text, data);
+ 	print_position(dialog);
+ 	wmove(dialog, cur_y, cur_x);	/* Restore cursor position */
+ 	wrefresh(dialog);
+@@ -49,9 +51,11 @@ static void refresh_text_box(WINDOW *dialog, WINDOW *box, int boxh, int boxw,
+  * Display text from a file in a dialog box.
+  *
+  * keys is a null-terminated array
++ * update_text() may not add or remove any '\n' or '\0' in tbuf
+  */
+-int dialog_textbox(const char *title, const char *tbuf, int initial_height,
+-		   int initial_width, int *keys, int *_vscroll, int *_hscroll)
++int dialog_textbox(const char *title, char *tbuf, int initial_height,
++		   int initial_width, int *keys, int *_vscroll, int *_hscroll,
++		   update_text_fn update_text, void *data)
+ {
+ 	int i, x, y, cur_x, cur_y, key = 0;
+ 	int height, width, boxh, boxw;
+@@ -131,7 +135,8 @@ do_resize:
+ 
+ 	/* Print first page of text */
+ 	attr_clear(box, boxh, boxw, dlg.dialog.atr);
+-	refresh_text_box(dialog, box, boxh, boxw, cur_y, cur_x);
++	refresh_text_box(dialog, box, boxh, boxw, cur_y, cur_x, update_text,
++			 data);
+ 
+ 	while (!done) {
+ 		key = wgetch(dialog);
+@@ -150,7 +155,8 @@ do_resize:
+ 				begin_reached = 1;
+ 				page = buf;
+ 				refresh_text_box(dialog, box, boxh, boxw,
+-						 cur_y, cur_x);
++						 cur_y, cur_x, update_text,
++						 data);
+ 			}
+ 			break;
+ 		case 'G':	/* Last page */
+@@ -160,8 +166,8 @@ do_resize:
+ 			/* point to last char in buf */
+ 			page = buf + strlen(buf);
+ 			back_lines(boxh);
+-			refresh_text_box(dialog, box, boxh, boxw,
+-					 cur_y, cur_x);
++			refresh_text_box(dialog, box, boxh, boxw, cur_y,
++					 cur_x, update_text, data);
+ 			break;
+ 		case 'K':	/* Previous line */
+ 		case 'k':
+@@ -171,7 +177,7 @@ do_resize:
+ 
+ 			back_lines(page_length + 1);
+ 			refresh_text_box(dialog, box, boxh, boxw, cur_y,
+-					 cur_x);
++					 cur_x, update_text, data);
+ 			break;
+ 		case 'B':	/* Previous page */
+ 		case 'b':
+@@ -180,8 +186,8 @@ do_resize:
+ 			if (begin_reached)
+ 				break;
+ 			back_lines(page_length + boxh);
+-			refresh_text_box(dialog, box, boxh, boxw,
+-					 cur_y, cur_x);
++			refresh_text_box(dialog, box, boxh, boxw, cur_y,
++					 cur_x, update_text, data);
+ 			break;
+ 		case 'J':	/* Next line */
+ 		case 'j':
+@@ -191,7 +197,7 @@ do_resize:
+ 
+ 			back_lines(page_length - 1);
+ 			refresh_text_box(dialog, box, boxh, boxw, cur_y,
+-					 cur_x);
++					 cur_x, update_text, data);
+ 			break;
+ 		case KEY_NPAGE:	/* Next page */
+ 		case ' ':
+@@ -200,8 +206,8 @@ do_resize:
+ 				break;
+ 
+ 			begin_reached = 0;
+-			refresh_text_box(dialog, box, boxh, boxw,
+-					 cur_y, cur_x);
++			refresh_text_box(dialog, box, boxh, boxw, cur_y,
++					 cur_x, update_text, data);
+ 			break;
+ 		case '0':	/* Beginning of line */
+ 		case 'H':	/* Scroll left */
+@@ -216,8 +222,8 @@ do_resize:
+ 				hscroll--;
+ 			/* Reprint current page to scroll horizontally */
+ 			back_lines(page_length);
+-			refresh_text_box(dialog, box, boxh, boxw,
+-					 cur_y, cur_x);
++			refresh_text_box(dialog, box, boxh, boxw, cur_y,
++					 cur_x, update_text, data);
+ 			break;
+ 		case 'L':	/* Scroll right */
+ 		case 'l':
+@@ -227,8 +233,8 @@ do_resize:
+ 			hscroll++;
+ 			/* Reprint current page to scroll horizontally */
+ 			back_lines(page_length);
+-			refresh_text_box(dialog, box, boxh, boxw,
+-					 cur_y, cur_x);
++			refresh_text_box(dialog, box, boxh, boxw, cur_y,
++					 cur_x, update_text, data);
+ 			break;
+ 		case KEY_ESC:
+ 			if (on_key_esc(dialog) == KEY_ESC)
+@@ -301,12 +307,23 @@ static void back_lines(int n)
+ }
+ 
+ /*
+- * Print a new page of text. Called by dialog_textbox().
++ * Print a new page of text.
+  */
+-static void print_page(WINDOW * win, int height, int width)
++static void print_page(WINDOW * win, int height, int width, update_text_fn
++		       update_text, void *data)
+ {
+ 	int i, passed_end = 0;
+ 
++	if (update_text) {
++		char *end;
++
++		for (i = 0; i < height; i++)
++			get_line();
++		end = page;
++		back_lines(height);
++		update_text(buf, page - buf, end - buf, data);
++	}
++
+ 	page_length = 0;
+ 	for (i = 0; i < height; i++) {
+ 		print_line(win, i, width);
+@@ -319,7 +336,7 @@ static void print_page(WINDOW * win, int height, int width)
+ }
+ 
+ /*
+- * Print a new line of text. Called by dialog_textbox() and print_page().
++ * Print a new line of text.
+  */
+ static void print_line(WINDOW * win, int row, int width)
+ {
 diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index c57cc6a..bf75753 100644
+index bf75753..8246e2d 100644
 --- a/scripts/kconfig/mconf.c
 +++ b/scripts/kconfig/mconf.c
-@@ -236,16 +236,19 @@ search_help[] = N_(
- 	"Result:\n"
- 	"-----------------------------------------------------------------\n"
- 	"Symbol: FOO [=m]\n"
-+	"Type  : tristate\n"
- 	"Prompt: Foo bus is used to drive the bar HW\n"
--	"Defined at drivers/pci/Kconfig:47\n"
--	"Depends on: X86_LOCAL_APIC && X86_IO_APIC || IA64\n"
--	"Location:\n"
--	"  -> Bus options (PCI, PCMCIA, EISA, ISA)\n"
--	"    -> PCI support (PCI [=y])\n"
--	"      -> PCI access mode (<choice> [=y])\n"
--	"Selects: LIBCRC32\n"
--	"Selected by: BAR\n"
-+	"  Defined at drivers/pci/Kconfig:47\n"
-+	"  Depends on: X86_LOCAL_APIC && X86_IO_APIC || IA64\n"
-+	"  Location:\n"
-+	"    -> Bus options (PCI, PCMCIA, EISA, ISA)\n"
-+	"      -> PCI support (PCI [=y])\n"
-+	"(1)     -> PCI access mode (<choice> [=y])\n"
-+	"  Selects: LIBCRC32\n"
-+	"  Selected by: BAR\n"
- 	"-----------------------------------------------------------------\n"
-+	"o The line 'Type:' shows the type of the configuration option for\n"
-+	"  this symbol (boolean, tristate, string, ...)\n"
- 	"o The line 'Prompt:' shows the text used in the menu structure for\n"
- 	"  this symbol\n"
- 	"o The 'Defined at' line tell at what file / line number the symbol\n"
-@@ -254,8 +257,12 @@ search_help[] = N_(
- 	"  this symbol to be visible in the menu (selectable)\n"
- 	"o The 'Location:' lines tell where in the menu structure this symbol\n"
- 	"  is located\n"
--	"    A location followed by a [=y] indicate that this is a selectable\n"
--	"    menu item - and current value is displayed inside brackets.\n"
-+	"    A location followed by a [=y] indicates that this is a\n"
-+	"    selectable menu item - and the current value is displayed inside\n"
-+	"    brackets.\n"
-+	"    Press the key in the (#) prefix to jump directly to that\n"
-+	"    location. You will be returned to the current search results\n"
-+	"    after exiting this new menu\n"
- 	"o The 'Selects:' line tell what symbol will be automatically\n"
- 	"  selected if this symbol is selected (y or m)\n"
- 	"o The 'Selected by' line tell what symbol has selected this symbol\n"
-@@ -275,7 +282,7 @@ static int single_menu_mode;
- static int show_all_options;
- static int saved_x, saved_y;
- 
--static void conf(struct menu *menu);
-+static void conf(struct menu *menu, struct menu *active_menu);
- static void conf_choice(struct menu *menu);
+@@ -287,8 +287,9 @@ static void conf_choice(struct menu *menu);
  static void conf_string(struct menu *menu);
  static void conf_load(void);
-@@ -309,7 +316,9 @@ static void search_conf(void)
- 	struct symbol **sym_arr;
- 	struct gstr res;
- 	char *dialog_input;
--	int dres;
-+	int dres, vscroll = 0, hscroll = 0;
-+	bool again;
+ static void conf_save(void);
+-static int show_textbox_ext(const char *title, const char *text, int r, int c,
+-			    int *keys, int *vscroll, int *hscroll);
++static int show_textbox_ext(const char *title, char *text, int r, int c,
++			    int *keys, int *vscroll, int *hscroll,
++			    update_text_fn update_text, void *data);
+ static void show_textbox(const char *title, const char *text, int r, int c);
+ static void show_helptext(const char *title, const char *text);
+ static void show_help(struct menu *menu);
+@@ -311,6 +312,39 @@ static void set_config_filename(const char *config_filename)
+ }
+ 
+ 
++struct search_data {
++	struct jk_head *head;
++	struct menu **targets;
++	int *keys;
++};
 +
- again:
- 	dialog_clear();
- 	dres = dialog_inputbox(_("Search Configuration Parameter"),
-@@ -332,10 +341,24 @@ again:
- 		dialog_input += strlen(CONFIG_);
++static void update_text(char* buf, size_t start, size_t end, void *_data)
++{
++	struct search_data *data = _data;
++	struct jump_key *pos;
++	int k = 0;
++
++	CIRCLEQ_FOREACH(pos, data->head, entries) {
++		if (pos->offset >= start && pos->offset < end) {
++			char header[4];
++
++			if (k < JUMP_NB) {
++				int key = '0' + (pos->index % JUMP_NB) + 1;
++
++				sprintf(header, "(%c)", key);
++				data->keys[k] = key;
++				data->targets[k] = pos->target;
++				k++;
++			} else {
++				sprintf(header, "   ");
++			}
++
++			memcpy(buf + pos->offset, header, sizeof(header) - 1);
++		}
++	}
++	data->keys[k] = 0;
++}
++
+ static void search_conf(void)
+ {
+ 	struct symbol **sym_arr;
+@@ -342,18 +376,24 @@ again:
  
  	sym_arr = sym_re_search(dialog_input);
--	res = get_relations_str(sym_arr);
-+	do {
-+		struct menu *jumps[JUMP_NB] = {0};
-+		int keys[JUMP_NB + 1] = {0}, i;
-+
-+		res = get_relations_str(sym_arr, jumps);
-+		for (i = 0; i < JUMP_NB && jumps[i]; i++)
-+			keys[i] = '1' + i;
-+		dres = show_textbox_ext(_("Search Results"), str_get(&res), 0,
-+					0, keys, &vscroll, &hscroll);
-+		again = false;
-+		for (i = 0; i < JUMP_NB && jumps[i]; i++)
-+			if (dres == keys[i]) {
-+				conf(jumps[i]->parent, jumps[i]);
-+				again = true;
-+			}
-+		str_free(&res);
-+	} while (again);
- 	free(sym_arr);
--	show_textbox(_("Search Results"), str_get(&res), 0, 0);
--	str_free(&res);
- }
- 
- static void build_conf(struct menu *menu)
-@@ -516,12 +539,11 @@ conf_childs:
- 	indent -= doint;
- }
- 
--static void conf(struct menu *menu)
-+static void conf(struct menu *menu, struct menu *active_menu)
- {
- 	struct menu *submenu;
- 	const char *prompt = menu_get_prompt(menu);
- 	struct symbol *sym;
--	struct menu *active_menu = NULL;
- 	int res;
- 	int s_scroll = 0;
- 
-@@ -564,13 +586,13 @@ static void conf(struct menu *menu)
- 				if (single_menu_mode)
- 					submenu->data = (void *) (long) !submenu->data;
- 				else
--					conf(submenu);
-+					conf(submenu, NULL);
- 				break;
- 			case 't':
- 				if (sym_is_choice(sym) && sym_get_tristate_value(sym) == yes)
- 					conf_choice(submenu);
- 				else if (submenu->prompt->type == P_MENU)
--					conf(submenu);
-+					conf(submenu, NULL);
- 				break;
- 			case 's':
- 				conf_string(submenu);
-@@ -609,7 +631,7 @@ static void conf(struct menu *menu)
- 			if (item_is_tag('t'))
- 				sym_toggle_tristate_value(sym);
- 			else if (item_is_tag('m'))
--				conf(submenu);
-+				conf(submenu, NULL);
- 			break;
- 		case 7:
- 			search_conf();
-@@ -881,7 +903,7 @@ int main(int ac, char **av)
- 
- 	set_config_filename(conf_get_configname());
  	do {
--		conf(&rootmenu);
-+		conf(&rootmenu, NULL);
- 		res = handle_exit();
- 	} while (res == KEY_ESC);
+-		struct menu *jumps[JUMP_NB] = {0};
+-		int keys[JUMP_NB + 1] = {0}, i;
++		struct jk_head head = CIRCLEQ_HEAD_INITIALIZER(head);
++		struct menu *targets[JUMP_NB];
++		int keys[JUMP_NB + 1], i;
++		struct search_data data = {
++			.head = &head,
++			.targets = targets,
++			.keys = keys,
++		};
  
+-		res = get_relations_str(sym_arr, jumps);
+-		for (i = 0; i < JUMP_NB && jumps[i]; i++)
+-			keys[i] = '1' + i;
+-		dres = show_textbox_ext(_("Search Results"), str_get(&res), 0,
+-					0, keys, &vscroll, &hscroll);
++		res = get_relations_str(sym_arr, &head);
++		dres = show_textbox_ext(_("Search Results"), (char *)
++					str_get(&res), 0, 0, keys, &vscroll,
++					&hscroll, &update_text, (void *)
++					&data);
+ 		again = false;
+-		for (i = 0; i < JUMP_NB && jumps[i]; i++)
++		for (i = 0; i < JUMP_NB && keys[i]; i++)
+ 			if (dres == keys[i]) {
+-				conf(jumps[i]->parent, jumps[i]);
++				conf(targets[i]->parent, targets[i]);
+ 				again = true;
+ 			}
+ 		str_free(&res);
+@@ -643,16 +683,19 @@ static void conf(struct menu *menu, struct menu *active_menu)
+ 	}
+ }
+ 
+-static int show_textbox_ext(const char *title, const char *text, int r, int c,
+-			    int *keys, int *vscroll, int *hscroll)
++static int show_textbox_ext(const char *title, char *text, int r, int c, int
++			    *keys, int *vscroll, int *hscroll, update_text_fn
++			    update_text, void *data)
+ {
+ 	dialog_clear();
+-	return dialog_textbox(title, text, r, c, keys, vscroll, hscroll);
++	return dialog_textbox(title, text, r, c, keys, vscroll, hscroll,
++			      update_text, data);
+ }
+ 
+ static void show_textbox(const char *title, const char *text, int r, int c)
+ {
+-	show_textbox_ext(title, text, r, c, (int []) {0}, NULL, NULL);
++	show_textbox_ext(title, (char *) text, r, c, (int []) {0}, NULL, NULL,
++			 NULL, NULL);
+ }
+ 
+ static void show_helptext(const char *title, const char *text)
 diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-index 8c2a97e..a524185 100644
+index a524185..0dcf202 100644
 --- a/scripts/kconfig/menu.c
 +++ b/scripts/kconfig/menu.c
-@@ -507,10 +507,12 @@ const char *menu_get_help(struct menu *menu)
+@@ -507,12 +507,12 @@ const char *menu_get_help(struct menu *menu)
  		return "";
  }
  
--static void get_prompt_str(struct gstr *r, struct property *prop)
-+static int get_prompt_str(struct gstr *r, struct property *prop, struct menu
-+			  **jumps, int jump_nb)
+-static int get_prompt_str(struct gstr *r, struct property *prop, struct menu
+-			  **jumps, int jump_nb)
++static void get_prompt_str(struct gstr *r, struct property *prop, struct
++			   jk_head *head)
  {
  	int i, j;
--	struct menu *submenu[8], *menu;
-+	char header[4];
-+	struct menu *submenu[8], *menu, *location = NULL;
+-	char header[4];
+ 	struct menu *submenu[8], *menu, *location = NULL;
++	struct jump_key *jump;
  
  	str_printf(r, _("Prompt: %s\n"), _(prop->text));
  	str_printf(r, _("  Defined at %s:%d\n"), prop->menu->file->name,
-@@ -521,13 +523,34 @@ static void get_prompt_str(struct gstr *r, struct property *prop)
- 		str_append(r, "\n");
+@@ -530,7 +530,9 @@ static int get_prompt_str(struct gstr *r, struct property *prop, struct menu
+ 		if (location == NULL && accessible)
+ 			location = menu;
  	}
- 	menu = prop->menu->parent;
--	for (i = 0; menu != &rootmenu && i < 8; menu = menu->parent)
-+	for (i = 0; menu != &rootmenu && i < 8; menu = menu->parent) {
-+		bool accessible = menu_is_visible(menu);
+-	if (jumps && jump_nb < JUMP_NB && location) {
++	if (head && location) {
++		jump = malloc(sizeof(struct jump_key));
 +
- 		submenu[i++] = menu;
-+		if (location == NULL && accessible)
-+			location = menu;
+ 		if (menu_is_visible(prop->menu)) {
+ 			/*
+ 			 * There is not enough room to put the hint at the
+@@ -538,19 +540,26 @@ static int get_prompt_str(struct gstr *r, struct property *prop, struct menu
+ 			 * last "Location" line even when it would belong on
+ 			 * the former.
+ 			 */
+-			jumps[jump_nb] = prop->menu;
++			jump->target = prop->menu;
+ 		} else
+-			jumps[jump_nb] = location;
+-		snprintf(header, 4, "(%d)", jump_nb + 1);
+-	} else
+-		location = NULL;
++			jump->target = location;
++
++		if (CIRCLEQ_EMPTY(head))
++			jump->index = 0;
++		else
++			jump->index = CIRCLEQ_LAST(head)->index + 1;
++
++		CIRCLEQ_INSERT_TAIL(head, jump, entries);
 +	}
-+	if (jumps && jump_nb < JUMP_NB && location) {
-+		if (menu_is_visible(prop->menu)) {
-+			/*
-+			 * There is not enough room to put the hint at the
-+			 * beginning of the "Prompt" line. Put the hint on the
-+			 * last "Location" line even when it would belong on
-+			 * the former.
-+			 */
-+			jumps[jump_nb] = prop->menu;
-+		} else
-+			jumps[jump_nb] = location;
-+		snprintf(header, 4, "(%d)", jump_nb + 1);
-+	} else
-+		location = NULL;
-+
+ 
  	if (i > 0) {
  		str_printf(r, _("  Location:\n"));
--		for (j = 4; --i >= 0; j += 2) {
-+		for (j = 1; --i >= 0; j += 2) {
+-		for (j = 1; --i >= 0; j += 2) {
++		for (j = 4; --i >= 0; j += 2) {
  			menu = submenu[i];
--			str_printf(r, "%*c-> %s", j, ' ', _(menu_get_prompt(menu)));
-+			str_printf(r, "%s%*c-> %s", menu == location ? header
-+				   : "   ", j, ' ', _(menu_get_prompt(menu)));
+-			str_printf(r, "%s%*c-> %s", menu == location ? header
+-				   : "   ", j, ' ', _(menu_get_prompt(menu)));
++			if (head && location && menu == location)
++				jump->offset = r->len - 1;
++			str_printf(r, "%*c-> %s", j, ' ',
++				   _(menu_get_prompt(menu)));
  			if (menu->sym) {
  				str_printf(r, " (%s [=%s])", menu->sym->name ?
  					menu->sym->name : _("<choice>"),
-@@ -536,12 +559,20 @@ static void get_prompt_str(struct gstr *r, struct property *prop)
+@@ -559,20 +568,15 @@ static int get_prompt_str(struct gstr *r, struct property *prop, struct menu
  			str_append(r, "\n");
  		}
  	}
-+
-+	return location ? 1 : 0;
+-
+-	return location ? 1 : 0;
  }
  
--void get_symbol_str(struct gstr *r, struct symbol *sym)
-+/*
-+ * jumps is optional and may be NULL
-+ * returns the number of jumps inserted
-+ */
-+int get_symbol_str(struct gstr *r, struct symbol *sym, struct menu **jumps,
-+		   int jump_nb)
+ /*
+- * jumps is optional and may be NULL
+- * returns the number of jumps inserted
++ * head is optional and may be NULL
+  */
+-int get_symbol_str(struct gstr *r, struct symbol *sym, struct menu **jumps,
+-		   int jump_nb)
++void get_symbol_str(struct gstr *r, struct symbol *sym, struct jk_head *head)
  {
  	bool hit;
  	struct property *prop;
-+	int i = 0;
+-	int i = 0;
  
  	if (sym && sym->name) {
  		str_printf(r, "Symbol: %s [=%s]\n", sym->name,
-@@ -557,7 +588,7 @@ void get_symbol_str(struct gstr *r, struct symbol *sym)
+@@ -588,7 +592,7 @@ int get_symbol_str(struct gstr *r, struct symbol *sym, struct menu **jumps,
  		}
  	}
  	for_all_prompts(sym, prop)
--		get_prompt_str(r, prop);
-+		i += get_prompt_str(r, prop, jumps, jump_nb + i);
+-		i += get_prompt_str(r, prop, jumps, jump_nb + i);
++		get_prompt_str(r, prop, head);
  	hit = false;
  	for_all_properties(sym, prop, P_SELECT) {
  		if (!hit) {
-@@ -575,16 +606,18 @@ void get_symbol_str(struct gstr *r, struct symbol *sym)
+@@ -606,18 +610,16 @@ int get_symbol_str(struct gstr *r, struct symbol *sym, struct menu **jumps,
  		str_append(r, "\n");
  	}
  	str_append(r, "\n\n");
-+
-+	return i;
+-
+-	return i;
  }
  
--struct gstr get_relations_str(struct symbol **sym_arr)
-+struct gstr get_relations_str(struct symbol **sym_arr, struct menu **jumps)
+-struct gstr get_relations_str(struct symbol **sym_arr, struct menu **jumps)
++struct gstr get_relations_str(struct symbol **sym_arr, struct jk_head *head)
  {
  	struct symbol *sym;
  	struct gstr res = str_new();
--	int i;
-+	int i, jump_nb = 0;
+-	int i, jump_nb = 0;
++	int i;
  
  	for (i = 0; sym_arr && (sym = sym_arr[i]); i++)
--		get_symbol_str(&res, sym);
-+		jump_nb += get_symbol_str(&res, sym, jumps, jump_nb);
+-		jump_nb += get_symbol_str(&res, sym, jumps, jump_nb);
++		get_symbol_str(&res, sym, head);
  	if (!i)
  		str_append(&res, _("No matches found.\n"));
  	return res;
-@@ -603,5 +636,5 @@ void menu_get_ext_help(struct menu *menu, struct gstr *help)
+@@ -636,5 +638,5 @@ void menu_get_ext_help(struct menu *menu, struct gstr *help)
  	}
  	str_printf(help, "%s\n", _(help_text));
  	if (sym)
--		get_symbol_str(help, sym);
-+		get_symbol_str(help, sym, NULL, 0);
+-		get_symbol_str(help, sym, NULL, 0);
++		get_symbol_str(help, sym, NULL);
  }
-diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
-index 1704a85..87d4b15 100644
---- a/scripts/kconfig/nconf.c
-+++ b/scripts/kconfig/nconf.c
-@@ -721,7 +721,7 @@ again:
- 		dialog_input += strlen(CONFIG_);
- 
- 	sym_arr = sym_re_search(dialog_input);
--	res = get_relations_str(sym_arr);
-+	res = get_relations_str(sym_arr, NULL);
- 	free(sym_arr);
- 	show_scroll_win(main_window,
- 			_("Search Results"), str_get(&res));
 -- 
 1.7.7
 
