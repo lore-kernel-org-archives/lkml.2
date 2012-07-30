@@ -1,58 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab2G3UJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 16:09:17 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36426 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab2G3UJK (ORCPT
+	id S1754963Ab2G3UK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 16:10:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56810 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab2G3UKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 16:09:10 -0400
-Date: Mon, 30 Jul 2012 22:09:05 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [RFC v2 2/2] net: Add support for NTB virtual ethernet device
-Message-ID: <20120730200905.GA1673@minipsycho.orion>
-References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
- <1343607994-32415-3-git-send-email-jon.mason@intel.com>
- <20120730140216.GA1550@minipsycho.orion>
- <20120730181910.GB987@jonmason-lab>
+	Mon, 30 Jul 2012 16:10:53 -0400
+Date: Mon, 30 Jul 2012 13:10:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        padovan@profusion.mobi, marcel@holtmann.org, peterz@infradead.org,
+        mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
+        ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH v2 04/15] workqueue: disable preemption while manipulating
+ PENDING
+Message-ID: <20120730201048.GF20067@google.com>
+References: <1343433308-26614-1-git-send-email-tj@kernel.org>
+ <1343433308-26614-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120730181910.GB987@jonmason-lab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1343433308-26614-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mon, Jul 30, 2012 at 08:19:11PM CEST, jon.mason@intel.com wrote:
->On Mon, Jul 30, 2012 at 04:02:16PM +0200, Jiri Pirko wrote:
->> Mon, Jul 30, 2012 at 02:26:34AM CEST, jon.mason@intel.com wrote:
->> >+static int __devinit ntb_netdev_probe(struct pci_dev *pdev)
->> >+{
->> >+	struct net_device *ndev;
->> >+	struct ntb_netdev *dev;
->> >+	int rc;
->> >+
->> >+	ndev = alloc_etherdev(sizeof(struct ntb_netdev));
->> >+	if (!ndev)
->> >+		return -ENOMEM;
->> >+
->> >+	dev = netdev_priv(ndev);
->> >+	dev->ndev = ndev;
->> >+	dev->pdev = pdev;
->> >+	BUG_ON(!dev->pdev);
->> >+	ndev->features = NETIF_F_HIGHDMA;
->> >+
->> >+	//ndev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
->> 	^^ I guess you forgot to un-comment this.
->
->Oops.  An easy fix.  Anything else?
+>From bdbc04720254d1a84504074a6b25189961030803 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Mon, 30 Jul 2012 13:03:57 -0700
 
-The rest looks good to me.
+Queueing operations use WORK_STRUCT_PENDING_BIT to synchronize access
+to the target work item.  They first try to claim the bit and proceed
+with queueing only after that succeeds and there's a window between
+PENDING being set and the actual queueing where the task can be
+preempted.
 
->
->Thanks,
->Jon
+There's also a similar window in process_one_work() when clearing
+PENDING.  A work item is dequeued, gcwq->lock is released and then
+PENDING is cleared and the worker might get preempted between
+releasing gcwq->lock and clearing PENDING.
+
+cancel[_delayed]_work_sync() tries to claim or steal PENDING.  The
+function assumes that a work item with PENDING is either queued, or in
+the process of being queued.  In the latter case, it busy-loops until
+either the work item loses PENDING or is queued.  If canceling
+coincides with the above described preemptions, the canceling task
+will busy-loop while the queueing or executing task is preempted.
+
+This patch keeps preemption disabled across claiming PENDING and
+actual queueing and moves PENDING clearing in process_one_work()
+inside gcwq->lock so that busy looping from PENDING && !queued doesn't
+wait for preempted tasks.  Note that, in process_one_work(), setting
+last CPU and clearing PENDING got merged into single operation.
+
+v2: __queue_work() was testing preempt_count() to ensure that the
+    caller has disabled preemption.  This triggers spuriously if
+    !CONFIG_PREEMPT_COUNT.  Use preemptible() instead.  Reported by
+    Fengguang Wu.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+---
+git branch updated accordingly.
+
+ kernel/workqueue.c |   55 +++++++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 44 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 5c26d36..f6eaf34 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -537,9 +537,10 @@ static int work_next_color(int color)
+  * work is on queue.  Once execution starts, WORK_STRUCT_CWQ is
+  * cleared and the work data contains the cpu number it was last on.
+  *
+- * set_work_{cwq|cpu}() and clear_work_data() can be used to set the
+- * cwq, cpu or clear work->data.  These functions should only be
+- * called while the work is owned - ie. while the PENDING bit is set.
++ * set_work_cwq(), set_work_cpu_and_clear_pending() and clear_work_data()
++ * can be used to set the cwq, cpu or clear work->data.  These functions
++ * should only be called while the work is owned - ie. while the PENDING
++ * bit is set.
+  *
+  * get_work_[g]cwq() can be used to obtain the gcwq or cwq
+  * corresponding to a work.  gcwq is available once the work has been
+@@ -561,9 +562,10 @@ static void set_work_cwq(struct work_struct *work,
+ 		      WORK_STRUCT_PENDING | WORK_STRUCT_CWQ | extra_flags);
+ }
+ 
+-static void set_work_cpu(struct work_struct *work, unsigned int cpu)
++static void set_work_cpu_and_clear_pending(struct work_struct *work,
++					   unsigned int cpu)
+ {
+-	set_work_data(work, cpu << WORK_STRUCT_FLAG_BITS, WORK_STRUCT_PENDING);
++	set_work_data(work, cpu << WORK_STRUCT_FLAG_BITS, 0);
+ }
+ 
+ static void clear_work_data(struct work_struct *work)
+@@ -983,6 +985,15 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+ 	unsigned int work_flags;
+ 	unsigned long flags;
+ 
++	/*
++	 * While a work item is PENDING && off queue, a task trying to
++	 * steal the PENDING will busy-loop waiting for it to either get
++	 * queued or lose PENDING, so a task shouldn't be preempted between
++	 * grabbing PENDING and queueing @work.  Make sure the caller has
++	 * preemption disabled.
++	 */
++	WARN_ON_ONCE(preemptible());
++
+ 	debug_work_activate(work);
+ 
+ 	/* if dying, only works from the same workqueue are allowed */
+@@ -1068,10 +1079,14 @@ bool queue_work_on(int cpu, struct workqueue_struct *wq,
+ {
+ 	bool ret = false;
+ 
++	preempt_disable();
++
+ 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
+ 		__queue_work(cpu, wq, work);
+ 		ret = true;
+ 	}
++
++	preempt_enable();
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(queue_work_on);
+@@ -1121,6 +1136,12 @@ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+ 	struct work_struct *work = &dwork->work;
+ 	bool ret = false;
+ 
++	/*
++	 * We shouldn't get preempted between claiming PENDING and adding
++	 * timer.  Read the comment in __queue_work() for details.
++	 */
++	preempt_disable();
++
+ 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
+ 		unsigned int lcpu;
+ 
+@@ -1156,6 +1177,8 @@ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+ 			add_timer(timer);
+ 		ret = true;
+ 	}
++
++	preempt_enable();
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(queue_delayed_work_on);
+@@ -1970,15 +1993,13 @@ __acquires(&gcwq->lock)
+ 		return;
+ 	}
+ 
+-	/* claim and process */
++	/* claim and dequeue */
+ 	debug_work_deactivate(work);
+ 	hlist_add_head(&worker->hentry, bwh);
+ 	worker->current_work = work;
+ 	worker->current_cwq = cwq;
+ 	work_color = get_work_color(work);
+ 
+-	/* record the current cpu number in the work data and dequeue */
+-	set_work_cpu(work, gcwq->cpu);
+ 	list_del_init(&work->entry);
+ 
+ 	/*
+@@ -1995,10 +2016,18 @@ __acquires(&gcwq->lock)
+ 	if ((worker->flags & WORKER_UNBOUND) && need_more_worker(pool))
+ 		wake_up_worker(pool);
+ 
+-	spin_unlock_irq(&gcwq->lock);
++	/*
++	 * Record the last CPU and clear PENDING.  The following wmb is
++	 * paired with the implied mb in test_and_set_bit(PENDING) and
++	 * ensures all updates to @work made here are visible to and
++	 * precede any updates by the next PENDING owner.  Also, clearing
++	 * PENDING is inside @gcwq->lock so that we don't get preempted
++	 * with PENDING set and @work off queue.
++	 */
++	smp_wmb();
++	set_work_cpu_and_clear_pending(work, gcwq->cpu);
+ 
+-	smp_wmb();	/* paired with test_and_set_bit(PENDING) */
+-	work_clear_pending(work);
++	spin_unlock_irq(&gcwq->lock);
+ 
+ 	lock_map_acquire_read(&cwq->wq->lockdep_map);
+ 	lock_map_acquire(&lockdep_map);
+@@ -2836,9 +2865,11 @@ EXPORT_SYMBOL_GPL(cancel_work_sync);
+  */
+ bool flush_delayed_work(struct delayed_work *dwork)
+ {
++	preempt_disable();
+ 	if (del_timer_sync(&dwork->timer))
+ 		__queue_work(raw_smp_processor_id(),
+ 			     get_work_cwq(&dwork->work)->wq, &dwork->work);
++	preempt_enable();
+ 	return flush_work(&dwork->work);
+ }
+ EXPORT_SYMBOL(flush_delayed_work);
+@@ -2857,9 +2888,11 @@ EXPORT_SYMBOL(flush_delayed_work);
+  */
+ bool flush_delayed_work_sync(struct delayed_work *dwork)
+ {
++	preempt_disable();
+ 	if (del_timer_sync(&dwork->timer))
+ 		__queue_work(raw_smp_processor_id(),
+ 			     get_work_cwq(&dwork->work)->wq, &dwork->work);
++	preempt_enable();
+ 	return flush_work_sync(&dwork->work);
+ }
+ EXPORT_SYMBOL(flush_delayed_work_sync);
+-- 
+1.7.7.3
+
