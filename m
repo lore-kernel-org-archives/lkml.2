@@ -1,218 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab2G3ONA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:13:00 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:36336 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754401Ab2G3OM6 (ORCPT
+	id S1754579Ab2G3ONQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:13:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45574 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab2G3ONO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:12:58 -0400
-From: y@vger.kernel.org
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: <tglx@linutronix.de>, <will.deacon@arm.com>,
-        <srinidhi.kasagar@stericsson.com>, Chris Smith <chris.smith@st.com>
-Subject: [PATCH 2/2] arm: pmu: add support for per-cpu PMU interrupts.
-Date: Mon, 30 Jul 2012 15:12:02 +0100
-Message-ID: <1343657522-28145-2-git-send-email-y>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1343657522-28145-1-git-send-email-y>
-References: <1343657522-28145-1-git-send-email-y>
+	Mon, 30 Jul 2012 10:13:14 -0400
+Date: Mon, 30 Jul 2012 07:12:18 -0700
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-9f92448ceeea5326db7d114005a7e7ac03904edf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
+        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20120729182220.GA20322@redhat.com>
+References: <20120729182220.GA20322@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] uprobes: Clean up and document write_opcode()->
+ lock_page(old_page)
+Git-Commit-ID: 9f92448ceeea5326db7d114005a7e7ac03904edf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:12:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Smith <chris.smith@st.com>
+Commit-ID:  9f92448ceeea5326db7d114005a7e7ac03904edf
+Gitweb:     http://git.kernel.org/tip/9f92448ceeea5326db7d114005a7e7ac03904edf
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Sun, 29 Jul 2012 20:22:20 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 30 Jul 2012 11:27:20 +0200
 
-We have systems where the PMU interrupts are PPIs, and so per-cpu. This
-patch adds support for per-cpu PMU interrupts to the perf event code.
+uprobes: Clean up and document write_opcode()->lock_page(old_page)
 
-Note that because the dev_id passed to request_percpu_irq has to be
-percpu data, we now pass cpu_hw_events as the dev_id rather than armpmu.
-This only place the dev_id was used was in armpmu_platform_irq, which is
-fixed up accordingly.
+The comment above write_opcode()->lock_page(old_page) tells
+about the race with do_wp_page(). I don't really understand
+which exactly race it means, but afaics this lock_page() was not
+enough to close all races with do_wp_page().
 
-Signed-off-by: Chris Smith <chris.smith@st.com>
+Anyway, since:
+
+   77fc4af1b59d uprobes: Change register_for_each_vma() to take mm->mmap_sem for writing
+
+this code is always called with ->mmap_sem held for writing,
+so we can forget about do_wp_page().
+
+However, we can't simply remove this lock_page(), and the only
+(afaics) reason is __replace_page()->try_to_free_swap().
+
+Nothing in write_opcode() needs it, move it into
+__replace_page() and fix the comment.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120729182220.GA20322@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/arm/kernel/perf_event.c    |   91 +++++++++++++++++++++++++++++---------
- arch/arm/kernel/perf_event_v6.c |    3 +-
- arch/arm/kernel/perf_event_v7.c |    3 +-
- 3 files changed, 71 insertions(+), 26 deletions(-)
+ kernel/events/uprobes.c |   27 ++++++++++++++-------------
+ 1 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index b2abfa1..add9064 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -14,6 +14,7 @@
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 23c562b7..5db150b 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -139,10 +139,15 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	spinlock_t *ptl;
+ 	pte_t *ptep;
++	int err;
  
- #include <linux/bitmap.h>
- #include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <linux/kernel.h>
- #include <linux/export.h>
- #include <linux/perf_event.h>
-@@ -355,13 +356,27 @@ validate_group(struct perf_event *event)
- 
- static irqreturn_t armpmu_platform_irq(int irq, void *dev)
- {
--	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
-+	struct pmu_hw_events *cpuc  = (struct pmu_hw_events *)dev;
-+	struct arm_pmu *armpmu = to_arm_pmu((*(cpuc->events))->pmu);
++	/* freeze PageSwapCache() for try_to_free_swap() below */
++	lock_page(page);
 +
- 	struct platform_device *plat_device = armpmu->plat_device;
- 	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
++	err = -EAGAIN;
+ 	ptep = page_check_address(page, mm, addr, &ptl, 0);
+ 	if (!ptep)
+-		return -EAGAIN;
++		goto unlock;
  
- 	return plat->handle_irq(irq, dev, armpmu->handle_irq);
+ 	get_page(kpage);
+ 	page_add_new_anon_rmap(kpage, vma, addr);
+@@ -162,7 +167,10 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	put_page(page);
+ 	pte_unmap_unlock(ptep, ptl);
+ 
+-	return 0;
++	err = 0;
++ unlock:
++	unlock_page(page);
++	return err;
  }
  
-+/* Wrap enable_percpu_irq up as a smp_call_func_t */
-+static void armpmu_enable_percpu_irq(void *irq)
-+{
-+	enable_percpu_irq((int)irq, IRQ_TYPE_NONE);
-+}
-+
-+/* Wrap disable_percpu_irq up as a smp_call_func_t */
-+static void armpmu_disable_percpu_irq(void *irq)
-+{
-+	disable_percpu_irq((int)irq);
-+}
-+
- static void
- armpmu_release_hardware(struct arm_pmu *armpmu)
- {
-@@ -379,7 +394,14 @@ armpmu_release_hardware(struct arm_pmu *armpmu)
- 		if (irq >= 0) {
- 			if (plat && plat->disable_irq)
- 				plat->disable_irq(irq);
--			free_irq(irq, armpmu);
-+			else if (irq_is_per_cpu(irq))
-+				on_each_cpu(armpmu_disable_percpu_irq,
-+						(void *)irq, 1);
-+
-+			if (irq_is_per_cpu(irq))
-+				free_percpu_irq(irq, &cpu_hw_events);
-+			else
-+				free_irq(irq, &per_cpu(cpu_hw_events, i));
- 		}
- 	}
+ /**
+@@ -216,15 +224,10 @@ retry:
+ 	ret = -ENOMEM;
+ 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
+ 	if (!new_page)
+-		goto put_out;
++		goto put_old;
  
-@@ -421,28 +443,53 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
- 		if (irq < 0)
- 			continue;
+ 	__SetPageUptodate(new_page);
  
--		/*
--		 * If we have a single PMU interrupt that we can't shift,
--		 * assume that we're running on a uniprocessor machine and
--		 * continue. Otherwise, continue without this interrupt.
--		 */
--		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
--			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
--				    irq, i);
--			continue;
-+		if (irq_is_per_cpu(irq)) {
-+			/*
-+			 * We assume that if the PMU IRQ is per-cpu, then
-+			 * there is only one.
-+			 */
-+			WARN_ON(irqs > 1);
-+
-+			err = request_percpu_irq(irq, handle_irq,
-+					"arm-pmu", &cpu_hw_events);
-+			if (err) {
-+				pr_err("unable to request IRQ%d for ARM PMU counters\n",
-+					irq);
-+				armpmu_release_hardware(armpmu);
-+				return err;
-+			} else if (plat && plat->enable_irq) {
-+				plat->enable_irq(irq);
-+			} else {
-+				on_each_cpu(armpmu_enable_percpu_irq,
-+						(void *)irq, 1);
-+			}
-+
-+		} else {
-+			/*
-+			 * If we have a single PMU interrupt that we can't
-+			 * shift, assume that we're running on a uniprocessor
-+			 * machine and continue. Otherwise, continue without
-+			 * this interrupt.
-+			 */
-+			if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
-+				pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
-+					    irq, i);
-+				continue;
-+			}
-+
-+			err = request_irq(irq, handle_irq,
-+					IRQF_DISABLED | IRQF_NOBALANCING,
-+					"arm-pmu", &per_cpu(cpu_hw_events, i));
-+
-+			if (err) {
-+				pr_err("unable to request IRQ%d for ARM PMU counters\n",
-+					irq);
-+				armpmu_release_hardware(armpmu);
-+				return err;
-+			} else if (plat && plat->enable_irq)
-+				plat->enable_irq(irq);
- 		}
+-	/*
+-	 * lock page will serialize against do_wp_page()'s
+-	 * PageAnon() handling
+-	 */
+-	lock_page(old_page);
+ 	/* copy the page now that we've got it stable */
+ 	vaddr_old = kmap_atomic(old_page);
+ 	vaddr_new = kmap_atomic(new_page);
+@@ -237,15 +240,13 @@ retry:
  
--		err = request_irq(irq, handle_irq,
--				  IRQF_DISABLED | IRQF_NOBALANCING,
--				  "arm-pmu", armpmu);
--		if (err) {
--			pr_err("unable to request IRQ%d for ARM PMU counters\n",
--				irq);
--			armpmu_release_hardware(armpmu);
--			return err;
--		} else if (plat && plat->enable_irq)
--			plat->enable_irq(irq);
+ 	ret = anon_vma_prepare(vma);
+ 	if (ret)
+-		goto unlock_out;
++		goto put_new;
+ 
+ 	ret = __replace_page(vma, vaddr, old_page, new_page);
+ 
+-unlock_out:
+-	unlock_page(old_page);
++put_new:
+ 	page_cache_release(new_page);
 -
- 		cpumask_set_cpu(i, &armpmu->active_irqs);
- 	}
+-put_out:
++put_old:
+ 	put_page(old_page);
  
-diff --git a/arch/arm/kernel/perf_event_v6.c b/arch/arm/kernel/perf_event_v6.c
-index b78af0c..6b348f5 100644
---- a/arch/arm/kernel/perf_event_v6.c
-+++ b/arch/arm/kernel/perf_event_v6.c
-@@ -473,7 +473,7 @@ armv6pmu_handle_irq(int irq_num,
- {
- 	unsigned long pmcr = armv6_pmcr_read();
- 	struct perf_sample_data data;
--	struct pmu_hw_events *cpuc;
-+	struct pmu_hw_events *cpuc = (struct pmu_hw_events *)dev;
- 	struct pt_regs *regs;
- 	int idx;
- 
-@@ -491,7 +491,6 @@ armv6pmu_handle_irq(int irq_num,
- 
- 	perf_sample_data_init(&data, 0);
- 
--	cpuc = &__get_cpu_var(cpu_hw_events);
- 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
- 		struct perf_event *event = cpuc->events[idx];
- 		struct hw_perf_event *hwc;
-diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
-index 4d7095a..56ddad7 100644
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -933,7 +933,7 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
- {
- 	u32 pmnc;
- 	struct perf_sample_data data;
--	struct pmu_hw_events *cpuc;
-+	struct pmu_hw_events *cpuc  = (struct pmu_hw_events *)dev;
- 	struct pt_regs *regs;
- 	int idx;
- 
-@@ -955,7 +955,6 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
- 
- 	perf_sample_data_init(&data, 0);
- 
--	cpuc = &__get_cpu_var(cpu_hw_events);
- 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
- 		struct perf_event *event = cpuc->events[idx];
- 		struct hw_perf_event *hwc;
--- 
-1.7.6.5
-
+ 	if (unlikely(ret == -EAGAIN))
