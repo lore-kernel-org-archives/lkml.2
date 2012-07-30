@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab2G3FMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 01:12:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5467 "EHLO mx1.redhat.com"
+	id S1754068Ab2G3FT5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 01:19:57 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:48089 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab2G3FMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 01:12:40 -0400
-Message-ID: <50161854.6050705@redhat.com>
-Date: Mon, 30 Jul 2012 13:15:00 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1751972Ab2G3FT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 01:19:56 -0400
+Date: Mon, 30 Jul 2012 06:19:54 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm exynos pull for -rc1
+Message-ID: <alpine.DEB.2.00.1207300618260.5584@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: mashirle@us.ibm.com, krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 4/5] virtio_net: multiqueue support
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-5-git-send-email-jasowang@redhat.com> <20120720134014.GD16550@redhat.com> <500CE5B3.3040404@redhat.com> <20120729095021.GC8977@redhat.com>
-In-Reply-To: <20120729095021.GC8977@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2012 05:50 PM, Michael S. Tsirkin wrote:
-> On Mon, Jul 23, 2012 at 01:48:35PM +0800, Jason Wang wrote:
->>>> +	}
->>>>
->>>> -	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ)) {
->>>> +	ret = vi->vdev->config->find_vqs(vi->vdev, total_vqs, vqs, callbacks,
->>>> +					 (const char **)names);
->>>> +	if (ret)
->>>> +		goto err;
->>>> +
->>>> +	if (vi->has_cvq)
->>>>   		vi->cvq = vqs[2];
->>>>
->>>> -		if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
->>>> -			vi->dev->features |= NETIF_F_HW_VLAN_FILTER;
->>>> +	for (i = 0; i<   vi->num_queue_pairs * 2; i += 2) {
->>>> +		int j = i == 0 ? i : i + vi->has_cvq;
->>>> +		vi->rq[i / 2]->vq = vqs[j];
->>>> +		vi->sq[i / 2]->vq = vqs[j + 1];
->>> Same here.
->> Consider the code is really simple, seem no need to use helpers.
-> Well it was not simple to at least one reader :)
-> The problem is not this logic is complex,
-> it is that it is spread all over the code.
->
-> If we had e.g. vnet_tx_vqn_to_queuenum vnet_tx_queuenum_to_vqn
-> and same for rx, then the logic would all be
-> in one place, and have a tidy comment on top explaining
-> the VQ numbering scheme.
->
 
-Looks reasonable, thanks.
+Hi Linus,
+
+So I totally missed Inki's pull request for -next, its fully exynos self 
+contained.
+
+Regards,
+Dave.
+
+The following changes since commit 98c7b42375011ec37251e6fc85a0471cfe499eea:
+
+  Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-next (2012-07-26 10:40:31 +1000)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux.git drm-next
+
+for you to fetch changes up to e2f895fac1e9fb5f59444e07391bfb3da719716f:
+
+  Merge branch 'exynos-drm-next' of git://git.infradead.org/users/kmpark/linux-samsung into drm-next (2012-07-30 15:16:52 +1000)
+
+----------------------------------------------------------------
+
+Cooper Yuan (1):
+      drm/exynos: fix buffer pitch calculation
+
+Dave Airlie (1):
+      Merge branch 'exynos-drm-next' of git://git.infradead.org/users/kmpark/linux-samsung into drm-next
+
+Inki Dae (14):
+      Merge branch 'drm-next' of ../main_line/linux-drm into dave-drm-next
+      Merge branch 'drm-next' of ../main_line/linux-drm into dave-drm-next
+      drm/exynos: removed unnecessary declaration.
+      drm/exynos: set edid fake data only for test.
+      drm/exynos: check if raw edid data is fake or not for test
+      drm/exynos: fixed edid data setting at vidi connection request
+      drm/exynos: fixed build warning.
+      drm/exynos: use alloc_page() to allocate pages.
+      drm/exynos: set buffer type from exporter.
+      drm/exynos: do not release memory region from exporter.
+      drm/exynos: removed unnecessary variable
+      drm/exynos: fixed a comment to gem size.
+      drm/exynos: use __free_page() to deallocate memory
+      drm/exynos: fixed exception to page allocation failure
+
+Joonyoung Shim (11):
+      drm/exynos: fix point to call overlay_ops->mode_set
+      drm/exynos: fix to set pipe of crtc
+      drm/exynos: define to_exynos_plane macro
+      drm/exynos: use private plane for crtc
+      drm/exynos: update overlay via plane from crtc
+      drm/exynos: add property for plane zpos
+      drm/exynos: fix dpms operation for mode set
+      drm/exynos: remove unnecessary connector dpms control
+      drm/exynos: add plane enable/disable
+      drm/exynos: add crtc disable function
+      drm/exynos: add property for crtc mode
+
+Sachin Kamat (4):
+      drm/exynos: Add missing static storage class specifier
+      drm/exynos: Use devm_* functions in exynos_drm_fimd.c
+      drm/exynos: Use devm_* functions in exynos_hdmi.c
+      drm/exynos: Use devm_* functions in exynos_mixer.c
+
+Subash Patel (2):
+      drm/exynos: return NULL if exynos_pages_to_sg fails
+      drm/exynos: check for null in return value of dma_buf_map_attachment()
+
+ drivers/gpu/drm/exynos/exynos_drm_connector.c |    3 +-
+ drivers/gpu/drm/exynos/exynos_drm_core.c      |    5 -
+ drivers/gpu/drm/exynos/exynos_drm_crtc.c      |  294 +++++++++++--------------
+ drivers/gpu/drm/exynos/exynos_drm_crtc.h      |   31 ---
+ drivers/gpu/drm/exynos/exynos_drm_dmabuf.c    |   33 ++-
+ drivers/gpu/drm/exynos/exynos_drm_drv.c       |    9 +-
+ drivers/gpu/drm/exynos/exynos_drm_drv.h       |    4 +
+ drivers/gpu/drm/exynos/exynos_drm_encoder.c   |  123 +++++------
+ drivers/gpu/drm/exynos/exynos_drm_encoder.h   |   12 +-
+ drivers/gpu/drm/exynos/exynos_drm_fimd.c      |   40 +---
+ drivers/gpu/drm/exynos/exynos_drm_gem.c       |   49 ++---
+ drivers/gpu/drm/exynos/exynos_drm_gem.h       |    3 +-
+ drivers/gpu/drm/exynos/exynos_drm_plane.c     |  246 ++++++++++++++-------
+ drivers/gpu/drm/exynos/exynos_drm_plane.h     |   12 +-
+ drivers/gpu/drm/exynos/exynos_drm_vidi.c      |   53 ++++-
+ drivers/gpu/drm/exynos/exynos_hdmi.c          |   36 +--
+ drivers/gpu/drm/exynos/exynos_mixer.c         |   48 ++--
+ include/drm/exynos_drm.h                      |    9 -
+ 18 files changed, 493 insertions(+), 517 deletions(-)
+
