@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab2G3RQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:16:22 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47797 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab2G3RQV (ORCPT
+	id S1754516Ab2G3RQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:16:46 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:46891 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab2G3RQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:16:21 -0400
-Date: Mon, 30 Jul 2012 19:16:29 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Ortwin =?utf-8?B?R2zDvGNr?= <odi@odi.ch>
-Cc: linux-kernel@vger.kernel.org, bskeggs@redhat.com,
-        dri-devel@lists.freedesktop.org, airlied@redhat.com
-Subject: Re: drm/nouveau: crash regression in 3.5
-Message-ID: <20120730171629.GA3271@joi.lan>
-References: <500D916A.60703@odi.ch>
- <20120724170002.GA3129@joi.lan>
- <500ED9EC.5040309@odi.ch>
- <20120724205746.GA8707@joi.lan>
- <500FB279.1020904@odi.ch>
- <20120725184205.GA3119@joi.lan>
- <50113E76.9090706@odi.ch>
- <20120729201532.GA3566@joi.lan>
- <50166D15.7090305@odi.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50166D15.7090305@odi.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 30 Jul 2012 13:16:44 -0400
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=gzFkd+xMOAUnmss1Sm8kEw1h+2P7R1tD4oyxv1PftgkFZH+ut6klMhjM4Tju
+	ls6oP6S6shnw5zaLojkULnTxvW/tQOkD778jhHu559u64eRmSvERpx9U1
+	Yw7WWbEjG7CzKzUD8LHbQjqchSFgwL9OeoVm1s+rs8CLIpZDdIRccE=;
+X-Spam-Processed: mail.digidescorp.com, Mon, 30 Jul 2012 12:16:42 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1558eb3138=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <1343668599.2153.12.camel@iscandar.digidescorp.com>
+Subject: Re: Alternative to vfork(2) with overcommit off
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: Shea Levy <shea@shealevy.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 30 Jul 2012 12:16:39 -0500
+In-Reply-To: <EC19EF84-3DD4-4B5A-9469-2EC11EE089D6@shealevy.com>
+References: <EC19EF84-3DD4-4B5A-9469-2EC11EE089D6@shealevy.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 01:16:37PM +0200, Ortwin Glück wrote:
-> On 29.07.2012 22:15, Marcin Slusarz wrote:
-> > No, the real problem is: with "noaccel" we don't register "software engine",
-> > but vblank ISR relies on its existance and happily derefences NULL pointer.
-> >
-> > Now, this patch should fix it for real...
+On Mon, 2012-07-30 at 12:59 -0400, Shea Levy wrote: 
+> Hello,
 > 
-> Unfortunately I am still seeing the crash. Without "noaccel" it works though 
-> (until X crashes the machine, but that is a different thing).
+> The vfork(2) manpage states "It is rather unfortunate that Linux revived this specter from the past", but on systems with overcommit turned off fork(2) can be needlessly prohibitive when the goal is to execve(2) right away. Is there a third alternative for the fork/execve case? If not, should the manpage really be so dismissive of vfork?
 
-Are you sure you boot the correct kernel? I'm asking because your panic says its
-version is "3.5.0 #3" - exactly the same as in previous crash log.
+On noMMU (embedded) systems, fork() is not implementable and vfork() is
+the only option.
+Not everyone can afford a Lexus.
 
-Marcin
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
+
+#include <standard.disclaimer>
+
+
+
