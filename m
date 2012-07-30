@@ -1,226 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab2G3UMB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 16:12:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40063 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195Ab2G3UMA (ORCPT
+	id S1755039Ab2G3UVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 16:21:44 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51470 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab2G3UVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 16:12:00 -0400
-Date: Mon, 30 Jul 2012 13:11:55 -0700
-From: Tejun Heo <tj@kernel.org>
+	Mon, 30 Jul 2012 16:21:42 -0400
+Date: Mon, 30 Jul 2012 22:24:01 +0200
+From: karl.beldan@gmail.com
 To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        padovan@profusion.mobi, marcel@holtmann.org, peterz@infradead.org,
-        mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
-        ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com
-Subject: [PATCH v2 12/15] workqueue: mark a work item being canceled as such
-Message-ID: <20120730201155.GG20067@google.com>
-References: <1343433308-26614-1-git-send-email-tj@kernel.org>
- <1343433308-26614-13-git-send-email-tj@kernel.org>
+Cc: karl.beldan@gmail.com
+Subject: About dma_sync_single_for_{cpu,device}
+Message-ID: <20120730202401.GA4947@gobelin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1343433308-26614-13-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Location: France
+User-Agent: Mutt (Linux 3.5.0-07078-gf7da9cd-dirty x86_64 GNU/Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 7199d2757a11ab19bf28713490b898a5a7b24d65 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Mon, 30 Jul 2012 13:03:59 -0700
+Hi,
 
-There can be two reasons try_to_grab_pending() can fail with -EAGAIN.
-One is when someone else is queueing or deqeueing the work item.  With
-the previous patches, it is guaranteed that PENDING and queued state
-will soon agree making it safe to busy-retry in this case.
 
-The other is if multiple __cancel_work_timer() invocations are racing
-one another.  __cancel_work_timer() grabs PENDING and then waits for
-running instances of the target work item on all CPUs while holding
-PENDING and !queued.  try_to_grab_pending() invoked from another task
-will keep returning -EAGAIN while the current owner is waiting.
+On our board we've got an MV78200 and a network device between which we
+xfer memory chunks via the ddram with an external dma controller.
+To handle these xfers we're using the dma API.
 
-Not distinguishing the two cases is okay because __cancel_work_timer()
-is the only user of try_to_grab_pending() and it invokes
-wait_on_work() whenever grabbing fails.  For the first case, busy
-looping should be fine but wait_on_work() doesn't cause any critical
-problem.  For the latter case, the new contender usually waits for the
-same condition as the current owner, so no unnecessarily extended
-busy-looping happens.  Combined, these make __cancel_work_timer()
-technically correct even without preemption protection while grabbing
-PENDING or distinguishing the two different cases.
+To tx a chunk of data from the SoC => network device, we :
+- prepare a buffer with a leading header embedding a pattern, 
+- trigger the xfer and wait for an irq
+// The device updates the pattern and then triggers an irq
+- upon irq we check the pattern for the xfer completion
 
-While the current code is technically correct, not distinguishing the
-two cases makes it difficult to use try_to_grab_pending() for other
-purposes than canceling because it's impossible to tell whether it's
-safe to busy-retry grabbing.
 
-This patch adds a mechanism to mark a work item being canceled.
-try_to_grab_pending() now requires the caller to have preemption
-disabled and returns -EAGAIN to indicate that grabbing failed but
-PENDING and queued states are gonna agree soon and it's safe to
-busy-loop.  It returns -ENOENT if the work item is being canceled and
-it may stay PENDING && !queued for arbitrary amount of time.
+I was expecting the following to work:
+	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
+	dev_send(buffer);
+	// wait for irq (don't peek in the buffer) ... got irq
+	dma_sync_single_single_for_cpu(dev, buffer, pattern_size, DMA_FROM_DEVICE);
+	if (!xfer_done(buffer)) // not RAM value
+		dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
+	[...]
 
-__cancel_work_timer() is modified to mark the work canceling with
-WORK_OFFQ_CANCELING after grabbing PENDING, thus making
-try_to_grab_pending() fail with -ENOENT instead of -EAGAIN.  Also, it
-invokes wait_on_work() iff grabbing failed with -ENOENT.  This isn't
-necessary for correctness but makes it consistent with other future
-users of try_to_grab_pending().
+But this does not work (the buffer pattern does not reflect the ddram
+value).
+On the other hand, the following works:
+	[...]
+	// wait for irq (don't peek in the buffer) ... got irq
+	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
+	if (!xfer_done(buffer)) // RAM value
+	[...]
 
-v2: try_to_grab_pending() was testing preempt_count() to ensure that
-    the caller has disabled preemption.  This triggers spuriously if
-    !CONFIG_PREEMPT_COUNT.  Use preemptible() instead.  Reported by
-    Fengguang Wu.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
----
-Spurious WARN bug fixed.  git branch updated accordingly.
+Looking at 
+	dma-mapping.c:__dma_page_cpu_to_{dev,cpu}() and
+	proc-feroceon.S: feroceon_dma_{,un}map_area
+this behavior is not surprising.
+The sync_for_cpu calls the unmap which just invalidates the outer cache
+while the sync_for_device invalidates both inner and outer.
 
-Thanks.
+It seems that:
+- we need to invalidate after the RAM has been updated
+- we need to invalidate with sync_single_for_device rather than
+  sync_single_for_cpu to check the value
 
- include/linux/workqueue.h |    5 +++-
- kernel/workqueue.c        |   67 ++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 61 insertions(+), 11 deletions(-)
+Is it correct ?
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index f562674..5f4aeaa 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -70,7 +70,10 @@ enum {
+
+
+
+
+
+Maybe the following comment in dma-mapping.c explains the situation :
+/*
+ * The DMA API is built upon the notion of "buffer ownership".  A buffer
+ * is either exclusively owned by the CPU (and therefore may be accessed
+ * by it) or exclusively owned by the DMA device.  These helper functions
+ * represent the transitions between these two ownership states.
+ *
+ * Note, however, that on later ARMs, this notion does not work due to
+ * speculative prefetches.  We model our approach on the assumption that
+ * the CPU does do speculative prefetches, which means we clean caches
+ * before transfers and delay cache invalidation until transfer completion.
+ *
+ */
+
+Thanks for your input,
  
- 	/* data contains off-queue information when !WORK_STRUCT_CWQ */
- 	WORK_OFFQ_FLAG_BASE	= WORK_STRUCT_FLAG_BITS,
--	WORK_OFFQ_FLAG_BITS	= 0,
-+
-+	WORK_OFFQ_CANCELING	= (1 << WORK_OFFQ_FLAG_BASE),
-+
-+	WORK_OFFQ_FLAG_BITS	= 1,
- 	WORK_OFFQ_CPU_SHIFT	= WORK_OFFQ_FLAG_BASE + WORK_OFFQ_FLAG_BITS,
+Regards,
  
- 	/* convenience constants */
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 95260c4..9f9ab20 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -537,15 +537,20 @@ static int work_next_color(int color)
-  * contain the pointer to the queued cwq.  Once execution starts, the flag
-  * is cleared and the high bits contain OFFQ flags and CPU number.
-  *
-- * set_work_cwq(), set_work_cpu_and_clear_pending() and clear_work_data()
-- * can be used to set the cwq, cpu or clear work->data.  These functions
-- * should only be called while the work is owned - ie. while the PENDING
-- * bit is set.
-+ * set_work_cwq(), set_work_cpu_and_clear_pending(), mark_work_canceling()
-+ * and clear_work_data() can be used to set the cwq, cpu or clear
-+ * work->data.  These functions should only be called while the work is
-+ * owned - ie. while the PENDING bit is set.
-  *
-- * get_work_[g]cwq() can be used to obtain the gcwq or cwq
-- * corresponding to a work.  gcwq is available once the work has been
-- * queued anywhere after initialization.  cwq is available only from
-- * queueing until execution starts.
-+ * get_work_[g]cwq() can be used to obtain the gcwq or cwq corresponding to
-+ * a work.  gcwq is available once the work has been queued anywhere after
-+ * initialization until it is sync canceled.  cwq is available only while
-+ * the work item is queued.
-+ *
-+ * %WORK_OFFQ_CANCELING is used to mark a work item which is being
-+ * canceled.  While being canceled, a work item may have its PENDING set
-+ * but stay off timer and worklist for arbitrarily long and nobody should
-+ * try to steal the PENDING bit.
-  */
- static inline void set_work_data(struct work_struct *work, unsigned long data,
- 				 unsigned long flags)
-@@ -600,6 +605,22 @@ static struct global_cwq *get_work_gcwq(struct work_struct *work)
- 	return get_gcwq(cpu);
- }
- 
-+static void mark_work_canceling(struct work_struct *work)
-+{
-+	struct global_cwq *gcwq = get_work_gcwq(work);
-+	unsigned long cpu = gcwq ? gcwq->cpu : WORK_CPU_NONE;
-+
-+	set_work_data(work, (cpu << WORK_OFFQ_CPU_SHIFT) | WORK_OFFQ_CANCELING,
-+		      WORK_STRUCT_PENDING);
-+}
-+
-+static bool work_is_canceling(struct work_struct *work)
-+{
-+	unsigned long data = atomic_long_read(&work->data);
-+
-+	return !(data & WORK_STRUCT_CWQ) && (data & WORK_OFFQ_CANCELING);
-+}
-+
- /*
-  * Policy functions.  These define the policies on how the global worker
-  * pools are managed.  Unless noted otherwise, these functions assume that
-@@ -1014,14 +1035,21 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color,
-  *  1		if @work was pending and we successfully stole PENDING
-  *  0		if @work was idle and we claimed PENDING
-  *  -EAGAIN	if PENDING couldn't be grabbed at the moment, safe to busy-retry
-+ *  -ENOENT	if someone else is canceling @work, this state may persist
-+ *		for arbitrarily long
-  *
-- * On >= 0 return, the caller owns @work's PENDING bit.
-+ * On >= 0 return, the caller owns @work's PENDING bit.  To avoid getting
-+ * preempted while holding PENDING and @work off queue, preemption must be
-+ * disabled on entry.  This ensures that we don't return -EAGAIN while
-+ * another task is preempted in this function.
-  */
- static int try_to_grab_pending(struct work_struct *work,
- 			       struct timer_list *timer)
- {
- 	struct global_cwq *gcwq;
- 
-+	WARN_ON_ONCE(preemptible());
-+
- 	/* try to steal the timer if it exists */
- 	if (timer && likely(del_timer(timer)))
- 		return 1;
-@@ -1059,6 +1087,10 @@ static int try_to_grab_pending(struct work_struct *work,
- 	}
- 	spin_unlock_irq(&gcwq->lock);
- 
-+	if (unlikely(work_is_canceling(work)))
-+		return -ENOENT;
-+
-+	cpu_relax();
- 	return -EAGAIN;
- }
- 
-@@ -2838,11 +2870,26 @@ static bool __cancel_work_timer(struct work_struct *work,
- {
- 	int ret;
- 
-+	preempt_disable();
-+
- 	do {
- 		ret = try_to_grab_pending(work, timer);
--		wait_on_work(work);
-+		/*
-+		 * If someone else is canceling, wait for the same event it
-+		 * would be waiting for before retrying.
-+		 */
-+		if (unlikely(ret == -ENOENT)) {
-+			preempt_enable();
-+			wait_on_work(work);
-+			preempt_disable();
-+		}
- 	} while (unlikely(ret < 0));
- 
-+	/* tell other tasks trying to grab @work to back off */
-+	mark_work_canceling(work);
-+	preempt_enable();
-+
-+	wait_on_work(work);
- 	clear_work_data(work);
- 	return ret;
- }
--- 
-1.7.7.3
-
+Karl
