@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab2G3RcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:32:21 -0400
+	id S1754866Ab2G3Rcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:32:48 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754534Ab2G3RcR (ORCPT
+	with ESMTP id S1754748Ab2G3Rcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:17 -0400
+	Mon, 30 Jul 2012 13:32:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Aaditya Kumar <aaditya.kumar@ap.sony.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: [ 03/41] mm: fix lost kswapd wakeup in kswapd_stop()
-Date: Mon, 30 Jul 2012 10:31:02 -0700
-Message-Id: <20120730172901.577904115@linuxfoundation.org>
+        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 02/41] ntp: Fix STA_INS/DEL clearing bug
+Date: Mon, 30 Jul 2012 10:31:01 -0700
+Message-Id: <20120730172901.505806389@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -31,82 +33,57 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+From: John Stultz <johnstul@us.ibm.com>
 
-commit 1c7e7f6c0703d03af6bcd5ccc11fc15d23e5ecbe upstream.
+commit 6b1859dba01c7d512b72d77e3fd7da8354235189 upstream.
 
-Offlining memory may block forever, waiting for kswapd() to wake up
-because kswapd() does not check the event kthread->should_stop before
-sleeping.
+In commit 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d, I
+introduced a bug that kept the STA_INS or STA_DEL bit
+from being cleared from time_status via adjtimex()
+without forcing STA_PLL first.
 
-The proper pattern, from Documentation/memory-barriers.txt, is:
+Usually once the STA_INS is set, it isn't cleared
+until the leap second is applied, so its unlikely this
+affected anyone. However during testing I noticed it
+took some effort to cancel a leap second once STA_INS
+was set.
 
-   ---  waker  ---
-   event_indicated = 1;
-   wake_up_process(event_daemon);
-
-   ---  sleeper  ---
-   for (;;) {
-      set_current_state(TASK_UNINTERRUPTIBLE);
-      if (event_indicated)
-         break;
-      schedule();
-   }
-
-   set_current_state() may be wrapped by:
-      prepare_to_wait();
-
-In the kswapd() case, event_indicated is kthread->should_stop.
-
-  === offlining memory (waker) ===
-   kswapd_stop()
-      kthread_stop()
-         kthread->should_stop = 1
-         wake_up_process()
-         wait_for_completion()
-
-  ===  kswapd_try_to_sleep (sleeper) ===
-   kswapd_try_to_sleep()
-      prepare_to_wait()
-           .
-           .
-      schedule()
-           .
-           .
-      finish_wait()
-
-The schedule() needs to be protected by a test of kthread->should_stop,
-which is wrapped by kthread_should_stop().
-
-Reproducer:
-   Do heavy file I/O in background.
-   Do a memory offline/online in a tight loop
-
-Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1342156917-25092-2-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/time/ntp.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2695,7 +2695,10 @@ static void kswapd_try_to_sleep(pg_data_
- 		 * them before going back to sleep.
- 		 */
- 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
--		schedule();
-+
-+		if (!kthread_should_stop())
-+			schedule();
-+
- 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
- 	} else {
- 		if (remaining)
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -375,7 +375,9 @@ int second_overflow(unsigned long secs)
+ 			time_state = TIME_DEL;
+ 		break;
+ 	case TIME_INS:
+-		if (secs % 86400 == 0) {
++		if (!(time_status & STA_INS))
++			time_state = TIME_OK;
++		else if (secs % 86400 == 0) {
+ 			leap = -1;
+ 			time_state = TIME_OOP;
+ 			time_tai++;
+@@ -384,7 +386,9 @@ int second_overflow(unsigned long secs)
+ 		}
+ 		break;
+ 	case TIME_DEL:
+-		if ((secs + 1) % 86400 == 0) {
++		if (!(time_status & STA_DEL))
++			time_state = TIME_OK;
++		else if ((secs + 1) % 86400 == 0) {
+ 			leap = 1;
+ 			time_tai--;
+ 			time_state = TIME_WAIT;
 
 
