@@ -1,51 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab2G3QeF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 12:34:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41942 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab2G3QeD convert rfc822-to-8bit (ORCPT
+	id S1754220Ab2G3Qfu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 12:35:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64310 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab2G3Qfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 12:34:03 -0400
-Message-ID: <1343665962.20897.8.camel@twins>
-Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 30 Jul 2012 18:32:42 +0200
-In-Reply-To: <1343664422.27983.12.camel@gandalf.stny.rr.com>
-References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
-	 <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
-	 <1343660892.20897.3.camel@twins>
-	 <20120730155059.GB17078@somewhere.redhat.com>
-	 <1343664422.27983.12.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 30 Jul 2012 12:35:47 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        David Brown <davidb@codeaurora.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [PATCH 1/1] ARM: dove: DT support for sdhci-dove
+Date: Mon, 30 Jul 2012 18:35:34 +0200
+Message-Id: <1343666134-21205-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-30 at 12:07 -0400, Steven Rostedt wrote:
-> 
-> Not only does bool describe it better, it should also allow gcc to
-> optimize it better as well. Unless Peter has a legitimate rational why
-> using bool in struct is bad, I would keep it as is. 
+This patch adds device tree support and binding documentiation for
+sdhci-dove.
 
-I don't mind too much, but like said, I hate using types without
-specified storage, you never really know what the compiler will end up
-doing.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Manuel Lauss <manuel.lauss@googlemail.com>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org
+
+---
+ Documentation/devicetree/bindings/mmc/sdhci-dove.txt |   12 ++++++++++++
+ drivers/mmc/host/sdhci-dove.c                        |    8 ++++++++
+ 2 files changed, 20 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-dove.txt
+
+diff --git a/Documentation/devicetree/bindings/mmc/sdhci-dove.txt b/Documentation/devicetree/bindings/mmc/sdhci-dove.txt
+new file mode 100644
+index 0000000..3dd42552
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mmc/sdhci-dove.txt
+@@ -0,0 +1,12 @@
++* Marvell sdhci-dove controller
++
++Required properties:
++- compatible: Should be "marvell,dove-sdhci".
++
++Example:
++
++sdio0: sdio@92000 {
++	compatible = "marvell,dove-sdhci";
++	reg = <0x92000 0x100>;
++	interrupts = <35>, <37>;
++};
+diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
+index a6e53a1..90140eb 100644
+--- a/drivers/mmc/host/sdhci-dove.c
++++ b/drivers/mmc/host/sdhci-dove.c
+@@ -24,6 +24,7 @@
+ #include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/mmc/host.h>
++#include <linux/of.h>
+ 
+ #include "sdhci-pltfm.h"
+ 
+@@ -126,11 +127,18 @@ static int __devexit sdhci_dove_remove(struct platform_device *pdev)
+ 	return sdhci_pltfm_unregister(pdev);
+ }
+ 
++static const struct of_device_id sdhci_dove_of_match_table[] __devinitdata = {
++	{ .compatible = "marvell,dove-sdhci", },
++	{}
++};
++MODULE_DEVICE_TABLE(of, sdhci_dove_of_match_table);
++
+ static struct platform_driver sdhci_dove_driver = {
+ 	.driver		= {
+ 		.name	= "sdhci-dove",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= SDHCI_PLTFM_PMOPS,
++		.of_match_table = of_match_ptr(sdhci_dove_of_match_table),
+ 	},
+ 	.probe		= sdhci_dove_probe,
+ 	.remove		= __devexit_p(sdhci_dove_remove),
+-- 
+1.7.10.4
+
