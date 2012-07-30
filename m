@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab2G3Nbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 09:31:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753761Ab2G3Nbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 09:31:43 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: majianpeng <majianpeng@gmail.com>
-Cc: viro <viro@ZenIV.linux.org.uk>, "Neil Brown" <neilb@suse.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: [RFC PATCH] fs/direct-io.c: Set bi_rw when alloc bio.
-References: <201207271602081096921@gmail.com>
-	<x496299708p.fsf@segfault.boston.devel.redhat.com>
-	<201207300840005466080@gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 30 Jul 2012 09:31:37 -0400
-In-Reply-To: <201207300840005466080@gmail.com> (majianpeng@gmail.com's message
-	of "Mon, 30 Jul 2012 08:40:11 +0800")
-Message-ID: <x49k3xl8jeu.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754121Ab2G3NgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 09:36:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60910 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752456Ab2G3NgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 09:36:17 -0400
+Date: Mon, 30 Jul 2012 14:36:15 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [GIT PULL] GPIO changes for v3.6
+Message-ID: <20120730133614.GA4468@opensource.wolfsonmicro.com>
+References: <CACRpkdZnRiZpKuQ6krJFa8TAfmvYYLB-n79ztzaUOV32p6ZY1Q@mail.gmail.com>
+ <20120730165733.33e3ddfb@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120730165733.33e3ddfb@notabene.brown>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-majianpeng <majianpeng@gmail.com> writes:
+On Mon, Jul 30, 2012 at 04:57:33PM +1000, NeilBrown wrote:
 
-> On 2012-07-27 22:21 Jeff Moyer <jmoyer@redhat.com> Wrote:
->>majianpeng <majianpeng@gmail.com> writes:
->>
->>> When exec bio_alloc, the bi_rw is zero.But after calling bio_add_page,
->>> it will use bi_rw.
->>> Fox example, in functiion __bio_add_page,it will call merge_bvec_fn().
->>> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
->>>>> if ((bvm->bi_rw & 1) == WRITE)
->>>>>		return biovec->bv_len; /* always allow writes to be mergeable */
->>>
->>> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
->>
->>Good catch.  How did you find this?  Did you experience data corruption
->>as a result of this oversight, reduced performance due to missed merge
->>opportunities, or did you just notice it in reviewing the code?
->>
->>Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
->>
-> Sorry for late to reply. When i analysed the performance of raid5, i found this bug.
+> it means that if !gpio_is_valid(gpio), the error returned is EPROBE_DEFER 
+> which isn't right (an invalid gpio number will never become valid).
+> If a driver happened to use gpio_request to check the validity of the gpio
+> rather than doing it itself, it would defer the probe, rather than assume
+> that the GPIO doesn't exist.
 
-OK, thanks.  In the future, it would be good to include that information
-in the patch description.
+Is anything actually doing this?  For positive numbers that just seems
+like it's asking for things to explode, for negative numbers I guess you
+can get away with it at the minute though it's obviously not awesome
+error handling.
 
-Cheers,
-Jeff
+> I would suggest the following.  Reasonable?
+
+TBH I'd actually expect that gpio_is_valid() were checking that there's
+a gpio_chip behind the GPIO number, now I look at the implementation
+it's very surprising to me that it's just checking the GPIO array bounds
+(and also that we remove the need for the fixed size GPIO array which is
+just an endless source of annoyance).
