@@ -1,159 +1,503 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab2G3TLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:11:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47220 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753922Ab2G3TLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:11:39 -0400
-Message-ID: <5016DC5F.7030604@redhat.com>
-Date: Mon, 30 Jul 2012 15:11:27 -0400
-From: Larry Woodman <lwoodman@redhat.com>
-Reply-To: lwoodman@redhat.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
+	id S1754532Ab2G3TMj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:12:39 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:22521 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753922Ab2G3TMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 15:12:37 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzzz2fh2a8h683h839h93fhd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>
+Subject: RE: [PATCH 13/17] Tools: hv: Implement the KVP verb -
+ KVP_OP_SET_IP_INFO
+Thread-Topic: [PATCH 13/17] Tools: hv: Implement the KVP verb -
+ KVP_OP_SET_IP_INFO
+Thread-Index: AQHNabffApGkoXQ/oEyNNUVPYtB2bpdCH2aAgAAVt1A=
+Date: Mon, 30 Jul 2012 19:12:22 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9236AA80F@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
+ <1343145701-3691-1-git-send-email-kys@microsoft.com>
+ <1343145701-3691-13-git-send-email-kys@microsoft.com>
+ <20120730173323.GA533@aepfle.de>
+In-Reply-To: <20120730173323.GA533@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.56.91]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
- of hugetlbfs shared page tables V2 (resend)
-References: <20120720134937.GG9222@suse.de> <20120720141108.GH9222@suse.de> <20120720143635.GE12434@tiehlicka.suse.cz> <20120720145121.GJ9222@suse.de> <alpine.LSU.2.00.1207222033030.6810@eggly.anvils> <50118E7F.8000609@redhat.com> <50120FA8.20409@redhat.com> <20120727102356.GD612@suse.de>
-In-Reply-To: <20120727102356.GD612@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OrganizationHeadersPreserved: SN2PRD0310HT001.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC106.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC106.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On 07/27/2012 06:23 AM, Mel Gorman wrote:
-> On Thu, Jul 26, 2012 at 11:48:56PM -0400, Larry Woodman wrote:
->> On 07/26/2012 02:37 PM, Rik van Riel wrote:
->>> On 07/23/2012 12:04 AM, Hugh Dickins wrote:
->>>
->>>> I spent hours trying to dream up a better patch, trying various
->>>> approaches.  I think I have a nice one now, what do you think?  And
->>>> more importantly, does it work?  I have not tried to test it at all,
->>>> that I'm hoping to leave to you, I'm sure you'll attack it with gusto!
->>>>
->>>> If you like it, please take it over and add your comments and signoff
->>>> and send it in.  The second part won't come up in your testing,
->>>> and could
->>>> be made a separate patch if you prefer: it's a related point that struck
->>>> me while I was playing with a different approach.
->>>>
->>>> I'm sorely tempted to leave a dangerous pair of eyes off the Cc,
->>>> but that too would be unfair.
->>>>
->>>> Subject-to-your-testing-
->>>> Signed-off-by: Hugh Dickins<hughd@google.com>
->>> This patch looks good to me.
->>>
->>> Larry, does Hugh's patch survive your testing?
->>>
->>>
->> Like I said earlier, no.
-> That is a surprise. Can you try your test case on 3.4 and tell us if the
-> patch fixes the problem there? I would like to rule out the possibility
-> that the locking rules are slightly different in RHEL. If it hits on 3.4
-> then it's also possible you are seeing a different bug, more on this later.
->
-
-Sorry for the delay Mel, here is the BUG() traceback from the 3.4 kernel 
-with your
-patches:
-
---------------------------------------------------------------------------------------------------------------------------------------------
-[ 1106.156569] ------------[ cut here ]------------
-[ 1106.161731] kernel BUG at mm/filemap.c:135!
-[ 1106.166395] invalid opcode: 0000 [#1] SMP
-[ 1106.170975] CPU 22
-[ 1106.173115] Modules linked in: bridge stp llc sunrpc binfmt_misc 
-dcdbas microcode pcspkr acpi_pad acpi]
-[ 1106.201770]
-[ 1106.203426] Pid: 18001, comm: mpitest Tainted: G        W    3.3.0+ 
-#4 Dell Inc. PowerEdge R620/07NDJ2
-[ 1106.213822] RIP: 0010:[<ffffffff8112cfed>]  [<ffffffff8112cfed>] 
-__delete_from_page_cache+0x15d/0x170
-[ 1106.224117] RSP: 0018:ffff880428973b88  EFLAGS: 00010002
-[ 1106.230032] RAX: 0000000000000001 RBX: ffffea0006b80000 RCX: 
-00000000ffffffb0
-[ 1106.237979] RDX: 0000000000016df1 RSI: 0000000000000009 RDI: 
-ffff88043ffd9e00
-[ 1106.245927] RBP: ffff880428973b98 R08: 0000000000000050 R09: 
-0000000000000003
-[ 1106.253876] R10: 000000000000000d R11: 0000000000000000 R12: 
-ffff880428708150
-[ 1106.261826] R13: ffff880428708150 R14: 0000000000000000 R15: 
-ffffea0006b80000
-[ 1106.269780] FS:  0000000000000000(0000) GS:ffff88042fd60000(0000) 
-knlGS:0000000000000000
-[ 1106.278794] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1106.285193] CR2: 0000003a1d38c4a8 CR3: 000000000187d000 CR4: 
-00000000000406e0
-[ 1106.293149] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
-0000000000000000
-[ 1106.301097] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
-0000000000000400
-[ 1106.309046] Process mpitest (pid: 18001, threadinfo ffff880428972000, 
-task ffff880428b5cc20)
-[ 1106.318447] Stack:
-[ 1106.320690]  ffffea0006b80000 0000000000000000 ffff880428973bc8 
-ffffffff8112d040
-[ 1106.328958]  ffff880428973bc8 00000000000002ab 00000000000002a0 
-ffff880428973c18
-[ 1106.337234]  ffff880428973cc8 ffffffff8125b405 ffff880400000001 
-0000000000000000
-[ 1106.345513] Call Trace:
-[ 1106.348235]  [<ffffffff8112d040>] delete_from_page_cache+0x40/0x80
-[ 1106.355128]  [<ffffffff8125b405>] truncate_hugepages+0x115/0x1f0
-[ 1106.361826]  [<ffffffff8125b4f8>] hugetlbfs_evict_inode+0x18/0x30
-[ 1106.368615]  [<ffffffff811ab1af>] evict+0x9f/0x1b0
-[ 1106.373951]  [<ffffffff811ab3a3>] iput_final+0xe3/0x1e0
-[ 1106.379773]  [<ffffffff811ab4de>] iput+0x3e/0x50
-[ 1106.384922]  [<ffffffff811a8e18>] d_kill+0xf8/0x110
-[ 1106.390356]  [<ffffffff811a8f12>] dput+0xe2/0x1b0
-[ 1106.395595]  [<ffffffff81193612>] __fput+0x162/0x240
-[ 1106.401124]  [<ffffffff81193715>] fput+0x25/0x30
-[ 1106.406265]  [<ffffffff8118f6c3>] filp_close+0x63/0x90
-[ 1106.411997]  [<ffffffff8106058f>] put_files_struct+0x7f/0xf0
-[ 1106.418302]  [<ffffffff8106064c>] exit_files+0x4c/0x60
-[ 1106.424025]  [<ffffffff810629d7>] do_exit+0x1a7/0x470
-[ 1106.429652]  [<ffffffff81062cf5>] do_group_exit+0x55/0xd0
-[ 1106.435665]  [<ffffffff81062d87>] sys_exit_group+0x17/0x20
-[ 1106.441777]  [<ffffffff815d0229>] system_call_fastpath+0x16/0x1b
-[ 1106.448474] Code: 66 0f 1f 44 00 00 48 8b 47 08 48 8b 00 48 8b 40 28 
-44 8b 80 38 03 00 00 45 85 c0 0f
-[ 1106.470022] RIP  [<ffffffff8112cfed>] 
-__delete_from_page_cache+0x15d/0x170
-[ 1106.477693]  RSP <ffff880428973b88>
---------------------------------------------------------------------------------------------------------------------------------------
-
-I'll see if I can distribute the program that causes the panic, I dont 
-have source, only binary.
-
-Larry
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6UJChX8006376
 
 
-BTW, the only way Ilve been able to get the panic to stop is:
 
---------------------------------------------------------------------------------------------------------------------------------------
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index c36febb..cc023b8 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2151,7 +2151,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, 
-struct mm_struct *src,
-                         goto nomem;
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Monday, July 30, 2012 1:33 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com; netdev@vger.kernel.org;
+> ben@decadent.org.uk
+> Subject: Re: [PATCH 13/17] Tools: hv: Implement the KVP verb -
+> KVP_OP_SET_IP_INFO
+> 
+> On Tue, Jul 24, K. Y. Srinivasan wrote:
+> 
+> > +static char *kvp_get_if_name(char *guid)
+> > +{
+> > +	DIR *dir;
+> > +	struct dirent *entry;
+> > +	FILE    *file;
+> > +	char    *p, *q, *x;
+> > +	char    *if_name = NULL;
+> > +	char    buf[256];
+> > +	char *kvp_net_dir = "/sys/class/net/";
+> > +	char dev_id[100];
+> 
+> Perhaps this can be written as char dev_id[100] = "short string";?
 
-                 /* If the pagetables are shared don't copy or take 
-references */
--               if (dst_pte == src_pte)
-+               if (*(unsigned long *)dst_pte == *(unsigned long *)src_pte)
-                         continue;
-                 spin_lock(&dst->page_table_lock);
----------------------------------------------------------------------------------------------------------------------------------------
+Why?
+
+> 
+> > +
+> > +	dir = opendir(kvp_net_dir);
+> > +	if (dir == NULL)
+> > +		return NULL;
+> > +
+> > +	memset(dev_id, 0, sizeof(dev_id));
+> > +	strcat(dev_id, kvp_net_dir);
+> > +	q = dev_id + strlen(kvp_net_dir);
+> > +
+> > +	while ((entry = readdir(dir)) != NULL) {
+> > +		/*
+> > +		 * Set the state for the next pass.
+> > +		 */
+> > +		*q = '\0';
+> > +		strcat(dev_id, entry->d_name);
+> > +		strcat(dev_id, "/device/device_id");
+> 
+> Maybe this (and other) strcat should be changed to snprintf?
+
+Already done.
+
+> 
 
 
+> > +
+> > +		file = fopen(dev_id, "r");
+> > +		if (file == NULL)
+> > +			continue;
+> > +
+> > +		p = fgets(buf, sizeof(buf), file);
+> > +		if (p) {
+> > +			x = strchr(p, '\n');
+> > +			if (x)
+> > +				*x = '\0';
+> > +
+> > +			if (!strcmp(p, guid)) {
+> > +				/*
+> > +				 * Found the guid match; return the interface
+> > +				 * name. The caller will free the memory.
+> > +				 */
+> > +				if_name = strdup(entry->d_name);
+> > +				break;
+> 
+> This will leave 'file' open.
+> I have seen it in some other place as well.
+
+I will audit all instances and fix it.
+
+> 
+> > +			}
+> > +		}
+> > +		fclose(file);
+> > +	}
+> > +
+> > +	closedir(dir);
+> > +	return if_name;
+> > +}
+> > +
+> > +/*
+> > + * Retrieve the MAC address given the interface name.
+> > + */
+> > +
+> > +static char *kvp_if_name_to_mac(char *if_name)
+> > +{
+> > +	FILE    *file;
+> > +	char    *p, *x;
+> > +	char    buf[256];
+> > +	char addr_file[100];
+> > +	int i;
+> > +	char *mac_addr = NULL;
+> > +
+> > +	memset(addr_file, 0, sizeof(addr_file));
+> > +	strcat(addr_file, "/sys/class/net/");
+> > +	strcat(addr_file, if_name);
+> > +	strcat(addr_file, "/address");
+> 
+> snprintf?
+
+Already fixed.
+
+> 
+> > +
+> > +	file = fopen(addr_file, "r");
+> > +	if (file == NULL)
+> > +		return NULL;
+> > +
+> > +	p = fgets(buf, sizeof(buf), file);
+> > +	if (p) {
+> > +		x = strchr(p, '\n');
+> > +		if (x)
+> > +			*x = '\0';
+> > +		for (i = 0; i < strlen(p); i++)
+> > +			p[i] = toupper(p[i]);
+> > +		mac_addr = strdup(p);
+> > +	}
+> > +
+> > +	fclose(file);
+> > +	return mac_addr;
+> > +}
+> > +
+> > +
+> >  static void kvp_process_ipconfig_file(char *cmd,
+> >  					char *config_buf, int len,
+> >  					int element_size, int offset)
+> > @@ -800,6 +910,314 @@ getaddr_done:
+> >  }
+> >
+> >
+> > +static int expand_ipv6(char *addr, int type)
+> > +{
+> > +	int ret;
+> > +	struct in6_addr v6_addr;
+> > +
+> > +	ret = inet_pton(AF_INET6, addr, &v6_addr);
+> > +
+> > +	if (ret != 1) {
+> > +		if (type == NETMASK)
+> > +			return 1;
+> > +		return 0;
+> > +	}
+> > +
+> > +	sprintf(addr, "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
+> > +		"%02x%02x:%02x%02x:%02x%02x",
+> > +		(int)v6_addr.s6_addr[0], (int)v6_addr.s6_addr[1],
+> > +		(int)v6_addr.s6_addr[2], (int)v6_addr.s6_addr[3],
+> > +		(int)v6_addr.s6_addr[4], (int)v6_addr.s6_addr[5],
+> > +		(int)v6_addr.s6_addr[6], (int)v6_addr.s6_addr[7],
+> > +		(int)v6_addr.s6_addr[8], (int)v6_addr.s6_addr[9],
+> > +		(int)v6_addr.s6_addr[10], (int)v6_addr.s6_addr[11],
+> > +		(int)v6_addr.s6_addr[12], (int)v6_addr.s6_addr[13],
+> > +		(int)v6_addr.s6_addr[14], (int)v6_addr.s6_addr[15]);
+> > +
+> > +	return 1;
+> > +
+> > +}
+> > +
+> > +static int is_ipv4(char *addr)
+> > +{
+> > +	int ret;
+> > +	struct in_addr ipv4_addr;
+> > +
+> > +	ret = inet_pton(AF_INET, addr, &ipv4_addr);
+> > +
+> > +	if (ret == 1)
+> > +		return 1;
+> > +	return 0;
+> > +}
+> > +
+> > +static int parse_ip_val_buffer(char *in_buf, int *offset,
+> > +				char *out_buf, int out_len)
+> > +{
+> > +	char *x;
+> > +	char *start;
+> > +
+> > +	/*
+> > +	 * in_buf has sequence of characters that are seperated by
+> > +	 * the character ';'. The last sequence does not have the
+> > +	 * terminating ";" character.
+> > +	 */
+> > +	start = in_buf + *offset;
+> > +
+> > +	x = strchr(start, ';');
+> > +	if (x)
+> > +		*x = 0;
+> > +	else
+> > +		x = start + strlen(start);
+> > +
+> > +	if (strlen(start) != 0) {
+> > +		int i = 0;
+> > +		/*
+> > +		 * Get rid of leading spaces.
+> > +		 */
+> > +		while (start[i] == ' ')
+> > +			i++;
+> > +
+> > +		if ((x - start) <= out_len) {
+> > +			strcpy(out_buf, (start + i));
+> > +			*offset += (x - start) + 1;
+> > +			return 1;
+> > +		}
+> > +	}
+> > +	return 0;
+> > +}
+> > +
+> > +static int kvp_write_file(FILE *f, char *s1, char *s2, char *s3)
+> > +{
+> > +	char str[256];
+> > +	int error;
+> > +
+> > +	memset(str, 0, sizeof(str));
+> > +	strcat(str, s1);
+> > +	if (s2 != NULL)
+> > +		strcat(str, s2);
+> > +	strcat(str, "=");
+> > +	strcat(str, s3);
+> > +	strcat(str, "\n");
+> > +
+> > +	error = fputs(str, f);
+> > +	if (error == EOF)
+> > +		return HV_E_FAIL;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +
+> > +static int process_ip_string(FILE *f, char *ip_string, int type)
+> > +{
+> > +	int error = 0;
+> > +	char addr[INET6_ADDRSTRLEN];
+> > +	int i = 0;
+> > +	int j = 0;
+> > +	char str[256];
+> > +	char sub_str[10];
+> > +	int offset = 0;
+> > +
+> > +	memset(addr, 0, sizeof(addr));
+> > +
+> > +	while (parse_ip_val_buffer(ip_string, &offset, addr,
+> > +					(MAX_IP_ADDR_SIZE * 2))) {
+> > +		memset(sub_str, 0, sizeof(sub_str));
+> > +		memset(str, 0, sizeof(str));
+> > +
+> > +		if (is_ipv4(addr)) {
+> > +			switch (type) {
+> > +			case IPADDR:
+> > +				strcat(str, "IPADDR");
+> > +				break;
+> > +			case NETMASK:
+> > +				strcat(str, "NETMASK");
+> > +				break;
+> > +			case GATEWAY:
+> > +				strcat(str, "GATEWAY");
+> > +				break;
+> > +			case DNS:
+> > +				strcat(str, "DNS");
+> > +				break;
+> > +			}
+> > +			if (i != 0) {
+> > +				if (type != DNS)
+> > +					sprintf(sub_str, "_%d", i++);
+> > +				else
+> > +					sprintf(sub_str, "%d", ++i);
+> > +			} else if (type == DNS) {
+> > +				sprintf(sub_str, "%d", ++i);
+> > +			}
+> > +
+> > +
+> > +		} else if (expand_ipv6(addr, type)) {
+> > +			switch (type) {
+> > +			case IPADDR:
+> > +				strcat(str, "IPV6ADDR");
+> > +				break;
+> > +			case NETMASK:
+> > +				strcat(str, "IPV6NETMASK");
+> > +				break;
+> > +			case GATEWAY:
+> > +				strcat(str, "IPV6_DEFAULTGW");
+> > +				break;
+> > +			case DNS:
+> > +				strcat(str, "DNS");
+> > +				break;
+> > +			}
+> > +			if ((j != 0) || (type == DNS)) {
+> > +				if (type != DNS)
+> > +					sprintf(sub_str, "_%d", j++);
+> > +				else
+> > +					sprintf(sub_str, "%d", ++i);
+> > +			} else if (type == DNS) {
+> > +				sprintf(sub_str, "%d", ++i);
+> > +			}
+> > +		} else {
+> > +			return  HV_INVALIDARG;
+> > +		}
+> > +
+> > +		error = kvp_write_file(f, str, sub_str, addr);
+> > +		if (error)
+> > +			return error;
+> > +		memset(addr, 0, sizeof(addr));
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value
+> *new_val)
+> > +{
+> > +	int error = 0;
+> > +	char if_file[50];
+> > +	FILE *file;
+> > +	char cmd[512];
+> > +	char *mac_addr;
+> > +
+> > +	/*
+> > +	 * Set the configuration for the specified interface with
+> > +	 * the information provided. Since there is no standard
+> > +	 * way to configure an interface, we will have an external
+> > +	 * script that does the job of configuring the interface and
+> > +	 * flushing the configuration.
+> > +	 *
+> > +	 * The parameters passed to this external script are:
+> > +	 * 1. A configuration file that has the specified configuration.
+> > +	 *
+> > +	 * We will embed the name of the interface in the configuration
+> > +	 * file: ifcfg-ethx (where ethx is the interface name).
+> > +	 *
+> > +	 * Here is the format of the ip configuration file:
+> > +	 *
+> > +	 * HWADDR=macaddr
+> > +	 * BOOTPROTO=dhcp (dhcp enabled for the interface)
+> > +	 * NM_CONTROLLED=no (this interface will not be controlled by NM)
+> > +	 * PEERDNS=yes
+> > +	 * IPADDR_x=ipaddr
+> > +	 * NETMASK_x=netmask
+> > +	 * GATEWAY_x=gateway
+> > +	 * DNSx=dns
+> > +	 *
+> > +	 * IPV6 addresses will be tagged as IPV6ADDR, IPV6 gateway will be
+> > +	 * tagged as IPV6_DEFAULTGW and IPV6 NETMASK will be tagged as
+> > +	 * IPV6NETMASK.
+> > +	 */
+> > +
+> > +	memset(if_file, 0, sizeof(if_file));
+> > +	strcat(if_file, "/var/opt/hyperv/ifcfg-");
+> > +	strcat(if_file, if_name);
+> > +
+> > +	file = fopen(if_file, "w");
+> > +
+> > +	if (file == NULL) {
+> > +		syslog(LOG_ERR, "Failed to open config file");
+> > +		return HV_E_FAIL;
+> > +	}
+> > +
+> > +	/*
+> > +	 * First write out the MAC address.
+> > +	 */
+> > +
+> > +	mac_addr = kvp_if_name_to_mac(if_name);
+> > +	if (mac_addr == NULL) {
+> > +		error = HV_E_FAIL;
+> > +		goto setval_error;
+> > +	}
+> > +
+> > +	error = kvp_write_file(file, "HWADDR", NULL, mac_addr);
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +	error = kvp_write_file(file, "ONBOOT", NULL, "yes");
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +	error = kvp_write_file(file, "IPV6INIT", NULL, "yes");
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +	error = kvp_write_file(file, "NM_CONTROLLED", NULL, "no");
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +	error = kvp_write_file(file, "PEERDNS", NULL, "yes");
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +	if (new_val->dhcp_enabled) {
+> > +		error = kvp_write_file(file, "BOOTPROTO", NULL, "dhcp");
+> > +		if (error)
+> > +			goto setval_error;
+> > +
+> > +		/*
+> > +		 * We are done!.
+> > +		 */
+> > +		goto setval_done;
+> > +	}
+> > +
+> > +	/*
+> > +	 * Write the configuration for ipaddress, netmask, gateway and
+> > +	 * name servers.
+> > +	 */
+> > +
+> > +	error = process_ip_string(file, (char *)new_val->ip_addr, IPADDR);
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +	error = process_ip_string(file, (char *)new_val->sub_net, NETMASK);
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +	error = process_ip_string(file, (char *)new_val->gate_way, GATEWAY);
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +	error = process_ip_string(file, (char *)new_val->dns_addr, DNS);
+> > +	if (error)
+> > +		goto setval_error;
+> > +
+> > +setval_done:
+> > +	free(mac_addr);
+> > +	fclose(file);
+> > +
+> > +	/*
+> > +	 * Now that we have populated the configuration file,
+> > +	 * invoke the external script to do its magic.
+> > +	 */
+> > +
+> > +	memset(cmd, 0, sizeof(cmd));
+> > +	strcat(cmd, "/sbin/hv_set_ifconfig ");
+> > +	strcat(cmd, if_file);
+> 
+> The new patch should use "%s %s", not "%s%s" as format string.
+> 
+> 
+> 
+
+Thanks Olaf,
+
+K. Y
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
