@@ -1,106 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab2G3Ske (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 14:40:34 -0400
-Received: from extranet.aprogsys.com ([91.121.73.63]:36769 "EHLO
-	extranet.aprogsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976Ab2G3Skd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 14:40:33 -0400
-X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 14:40:32 EDT
-Message-ID: <5016D2C0.6090708@vetienne.net>
-Date: Mon, 30 Jul 2012 20:30:24 +0200
-From: Vincent ETIENNE <ve@vetienne.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Vincent ETIENNE <vetienne@aprogsys.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: kernel BUG at fs/buffer.c:2886! Linux 3.5.0
-References: <501313B6.70801@aprogsys.com> <20120730063000.GA4025@dhcp-172-17-9-228.mtv.corp.google.com> <50163B8A.7060509@aprogsys.com> <20120730075333.GC4025@dhcp-172-17-9-228.mtv.corp.google.com>
-In-Reply-To: <20120730075333.GC4025@dhcp-172-17-9-228.mtv.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1750895Ab2G3SuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 14:50:16 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:41397 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750886Ab2G3SuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 14:50:14 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.6-rc1
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20120730185009.AF6AB4266DC@whiskey.americas.sgi.com>
+Date: Mon, 30 Jul 2012 13:50:09 -0500 (CDT)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
+Please pull these XFS updates for 3.6-rc1.  There are numerous cleanups and
+several bugfixes.  Here are the highlights:
 
+	* Discontiguous directory buffer support
+	* Inode allocator refactoring
+	* Removal of the IO lock in inode reclaim
+	* Implementation of .update_time
+	* Fix for handling of EOF in xfs_vm_writepage
+	* Fix for races in xfsaild, and idle mode is re-enabled
+	* Fix for a crash in xfs_buf completion handlers on unmount.
 
-On 30/07/2012 09:53, Joel Becker wrote:
-> On Mon, Jul 30, 2012 at 09:45:14AM +0200, Vincent ETIENNE wrote:
->> Le 30/07/2012 08:30, Joel Becker a écrit :
->>> On Sat, Jul 28, 2012 at 12:18:30AM +0200, Vincent ETIENNE wrote:
->>>> Hello
->>>>
->>>> Get this on first write made ( by deliver sending mail to inform of the
->>>> restart of services  )
->>>> Home partition (the one receiving the mail) is based on ocfs2 created
->>>> from drbd block device in primary/primary mode
->>>> These drbd devices are based on lvm.
->>>>
->>>> system is running linux-3.5.0, identical symptom with linux 3.3 and 3.2
->>>> but working with linux 3.0 kernel
->>>>
->>>> reproduced on two machines ( so different hardware involved on this one
->>>> software md raid on SATA, on second one areca hardware raid card )
->>>> but the 2 machines are the one sharing this partition ( so share the
->>>> same data )
->>> 	Hmm.  Any chance you can bisect this further?
->> Will try to. Will take a few days as the server is in production ( but
->> used as backup so...)
->>
->>>> Jul 27 23:41:41 jupiter2 kernel: [  351.169213] ------------[ cut here
->>>> ]------------
->>>> Jul 27 23:41:41 jupiter2 kernel: [  351.169261] kernel BUG at
->>>> fs/buffer.c:2886!
->>> 	This is:
->>>
->>> 	BUG_ON(!buffer_mapped(bh));
->>>
->>> in submit_bh().
->>>
->>> system_call_fastpath+0x16/0x1b
->>> 	This stack trace is from 3.5, because of the location of the
->>> BUG.  The call path in the trace suggests the code added by Al's ea022d,
->>> but you say it breaks in 3.2 and 3.3 as well.  Can you give me a trace
->>> from 3.2?
->> For a 3.2 kernel i get this stack trace. Different trace form 3.5 but
->> exactly at the same moment. and for the same reasons.
->> Seems to be less immmediate than with 3.5 but more a subjective
->> imrpession than something based on fact. ( it takes a few seconds after
->> deliver is started to have the bug )
-> Totally different stack trace.  Not in symlink code, but instead in
-> fallocate.  Weird.  I wonder if you are hitting two things.  Bisection
-> will definitely help.
+Thanks,
+	Ben
 
-Yes could be, that would explain the 2 stack trace ( and the different
-timing observed )
-Bisection is in progress. The fallocate bug is certainly already
-corrected ( info sent by
-sunil.mushran@gmail.com but unavailable on the list for the moment  ?)
+The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
 
-------
+  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
 
-The fallocate() oops is probably the same that is fixed by this patch.
-https://oss.oracle.com/git/?p=smushran/linux-2.6.git;a=commit;h=a2118b301104a24381b414bc93371d666fe8d43a
+are available in the git repository at:
 
+  git://oss.sgi.com/xfs/xfs tags/for-linus-v3.6-rc1
 
-Is in the list of patches that are ready to be pushed.
-https://oss.oracle.com/git/?p=smushran/linux-2.6.git;a=shortlog;h=mw-3.4-mar15
+for you to fetch changes up to 9a57fa8ee7c29e11c2a29ce058573ba99157eda7:
 
-----
+  xfs: wait for the write the superblock on unmount (2012-07-29 16:34:19 -0500)
 
-But not sure it will correct all i observed. So i will continue to
-bisect to confirm/infirm.
-( But i seems to have lost network on my server after a reboot and so no
-more access before tomorrow , I have certainly forget to do make
-modules_install before installing new kernel ... Being stupid is not
-very helpful... ) . I hope to finish the bisection tomorrow or wednesday.
- 
-Thanks a lot for the support.
-> Joel
->
->
+----------------------------------------------------------------
+xfs: update for 3.6-rc1
 
+Numerous cleanups and several bug fixes.  Here are some highlights:
+
+* Discontiguous directory buffer support
+* Inode allocator refactoring
+* Removal of the IO lock in inode reclaim
+* Implementation of .update_time
+* Fix for handling of EOF in xfs_vm_writepage
+* Fix for races in xfsaild, and idle mode is re-enabled
+* Fix for a crash in xfs_buf completion handlers on unmount.
+
+----------------------------------------------------------------
+Alain Renaud (2):
+      xfs: xfs_vm_writepage clear iomap_valid when !buffer_uptodate (REV2)
+      Prefix IO_XX flags with XFS_IO_XX to avoid namespace colision.
+
+Ben Myers (1):
+      xfs: shutdown xfs_sync_worker before the log
+
+Brian Foster (2):
+      xfs: check for stale inode before acquiring iflock on push
+      xfs: re-enable xfsaild idle mode and fix associated races
+
+Chen Baozi (2):
+      xfs: fix typo in comment of xfs_dinode_t.
+      xfs: fix comment typo of struct xfs_da_blkinfo.
+
+Christoph Hellwig (17):
+      xfs: prevent recursion in xfs_buf_iorequest
+      xfs: do not call xfs_bdstrat_cb in xfs_buf_iodone_callbacks
+      xfs: implement ->update_time
+      xfs: handle EOF correctly in xfs_vm_writepage
+      xfs: merge xfs_itobp into xfs_imap_to_bp
+      xfs: remove xfs_inotobp
+      xfs: remove xfs_ialloc_find_free
+      xfs: split xfs_dialloc
+      xfs: remove the alloc_done argument to xfs_dialloc
+      xfs: add a short cut to xfs_dialloc for the non-NULL agbp case
+      xfs: refactor xfs_ialloc_ag_select
+      xfs: do not read the AGI buffer in xfs_dialloc until nessecary
+      xfs: clean up xfs_inactive
+      xfs: remove xfs_inactive_attrs
+      xfs: do not take the iolock in xfs_inactive
+      xfs: avoid the iolock in xfs_free_eofblocks for evicted inodes
+      xfs: remove iolock lock classes
+
+Dave Chinner (15):
+      xfs: m_maxioffset is redundant
+      xfs: make largest supported offset less shouty
+      xfs: kill copy and paste segment checks in xfs_file_aio_read
+      xfs: fix allocbt cursor leak in xfs_alloc_ag_vextent_near
+      xfs: struct xfs_buf_log_format isn't variable sized.
+      xfs: separate buffer indexing from block map
+      xfs: convert internal buffer functions to pass maps
+      xfs: add discontiguous buffer map interface
+      xfs: add discontiguous buffer support to transactions
+      xfs: support discontiguous buffers in the xfs_buf_log_item
+      xfs: use discontiguous xfs_buf support in dabuf wrappers
+      xfs: remove struct xfs_dabuf and infrastructure
+      xfs: factor buffer reading from xfs_dir2_leaf_getdents
+      xfs: really fix the cursor leak in xfs_alloc_ag_vextent_near
+      xfs: don't defer metadata allocation to the workqueue
+
+Jan Kara (1):
+      xfs: Fix overallocation in xfs_buf_allocate_memory()
+
+Jeff Liu (1):
+      xfs: fix debug_object WARN at xfs_alloc_vextent()
+
+Mark Tinguely (3):
+      xfs: rename log structure to xlog
+      xfs: remove xlog_t typedef
+      xfs: wait for the write the superblock on unmount
+
+ fs/xfs/xfs_alloc.c       |  20 +-
+ fs/xfs/xfs_alloc_btree.h |  14 -
+ fs/xfs/xfs_aops.c        |  90 ++++--
+ fs/xfs/xfs_aops.h        |  14 +-
+ fs/xfs/xfs_attr.c        |  78 +++--
+ fs/xfs/xfs_attr_leaf.c   | 255 ++++++++-------
+ fs/xfs/xfs_attr_leaf.h   |  21 +-
+ fs/xfs/xfs_bmap.c        |   2 +-
+ fs/xfs/xfs_buf.c         | 303 +++++++++++------
+ fs/xfs/xfs_buf.h         | 117 +++++--
+ fs/xfs/xfs_buf_item.c    | 347 ++++++++++++++------
+ fs/xfs/xfs_buf_item.h    |  38 +--
+ fs/xfs/xfs_da_btree.c    | 823 +++++++++++++++++++----------------------------
+ fs/xfs/xfs_da_btree.h    |  38 +--
+ fs/xfs/xfs_dinode.h      |   2 +-
+ fs/xfs/xfs_dir2.c        |   4 +-
+ fs/xfs/xfs_dir2_block.c  | 118 +++----
+ fs/xfs/xfs_dir2_data.c   |  50 +--
+ fs/xfs/xfs_dir2_leaf.c   | 621 ++++++++++++++++++-----------------
+ fs/xfs/xfs_dir2_node.c   | 236 ++++++--------
+ fs/xfs/xfs_dir2_priv.h   |  46 +--
+ fs/xfs/xfs_dir2_sf.c     |   4 +-
+ fs/xfs/xfs_file.c        |  19 +-
+ fs/xfs/xfs_ialloc.c      | 446 +++++++++++++------------
+ fs/xfs/xfs_ialloc.h      |   2 -
+ fs/xfs/xfs_iget.c        |  15 -
+ fs/xfs/xfs_inode.c       | 208 ++++--------
+ fs/xfs/xfs_inode.h       |  13 +-
+ fs/xfs/xfs_inode_item.c  |  17 +-
+ fs/xfs/xfs_iomap.c       |   6 +-
+ fs/xfs/xfs_iops.c        |  45 +++
+ fs/xfs/xfs_itable.c      |   2 +-
+ fs/xfs/xfs_log.c         | 296 ++++++++++-------
+ fs/xfs/xfs_log_cil.c     |  22 +-
+ fs/xfs/xfs_log_priv.h    |  62 ++--
+ fs/xfs/xfs_log_recover.c | 180 ++++++-----
+ fs/xfs/xfs_mount.c       |  11 +-
+ fs/xfs/xfs_mount.h       |   7 +-
+ fs/xfs/xfs_qm.c          |   2 +-
+ fs/xfs/xfs_super.c       |  88 +----
+ fs/xfs/xfs_sync.c        |  45 +--
+ fs/xfs/xfs_trace.h       |  20 +-
+ fs/xfs/xfs_trans.h       |  50 ++-
+ fs/xfs/xfs_trans_ail.c   |  35 +-
+ fs/xfs/xfs_trans_buf.c   |  68 ++--
+ fs/xfs/xfs_trans_priv.h  |   1 +
+ fs/xfs/xfs_types.h       |  14 +
+ fs/xfs/xfs_utils.c       |  17 +-
+ fs/xfs/xfs_vnodeops.c    | 285 +++++-----------
+ 49 files changed, 2641 insertions(+), 2576 deletions(-)
