@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab2G3RdE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:33:04 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41652 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754931Ab2G3Rc7 (ORCPT
+	id S1754836Ab2G3RdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:33:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab2G3RdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:59 -0400
+	Mon, 30 Jul 2012 13:33:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Shaohua Li <shaohua.li@intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>
-Subject: [ 32/41] vmscan: promote shared file mapped pages
-Date: Mon, 30 Jul 2012 10:31:31 -0700
-Message-Id: <20120730172903.813144039@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Nai Xia <nai.xia@gmail.com>, Johannes Weiner <jweiner@redhat.com>
+Subject: [ 23/41] mm: compaction: determine if dirty pages can be migrated without blocking within ->migratepage
+Date: Mon, 30 Jul 2012 10:31:22 -0700
+Message-Id: <20120730172903.128921796@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -35,80 +33,362 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 34dbc67a644f11ab3475d822d72e25409911e760 upstream.
+commit b969c4ab9f182a6e1b2a0848be349f99714947b0 upstream.
 
-Stable note: Not tracked in Bugzilla. There were reports of shared
-	mapped pages being unfairly reclaimed in comparison to older kernels.
-	This is being addressed over time. The specific workload being
-	addressed here in described in paragraph four and while paragraph
-	five says it did not help performance as such, it made a difference
-	to major page faults. I'm aware of at least one bug for a large
-	vendor that was due to increased major faults.
+Stable note: Not tracked in Bugzilla. A fix aimed at preserving page
+	aging information by reducing LRU list churning had the side-effect
+	of reducing THP allocation success rates. This was part of a series
+	to restore the success rates while preserving the reclaim fix.
 
-Commit 645747462435 ("vmscan: detect mapped file pages used only once")
-greatly decreases lifetime of single-used mapped file pages.
-Unfortunately it also decreases life time of all shared mapped file
-pages.  Because after commit bf3f3bc5e7347 ("mm: don't mark_page_accessed
-in fault path") page-fault handler does not mark page active or even
-referenced.
+Asynchronous compaction is used when allocating transparent hugepages to
+avoid blocking for long periods of time.  Due to reports of stalling,
+there was a debate on disabling synchronous compaction but this severely
+impacted allocation success rates.  Part of the reason was that many dirty
+pages are skipped in asynchronous compaction by the following check;
 
-Thus page_check_references() activates file page only if it was used twice
-while it stays in inactive list, meanwhile it activates anon pages after
-first access.  Inactive list can be small enough, this way reclaimer can
-accidentally throw away any widely used page if it wasn't used twice in
-short period.
+	if (PageDirty(page) && !sync &&
+		mapping->a_ops->migratepage != migrate_page)
+			rc = -EBUSY;
 
-After this patch page_check_references() also activate file mapped page at
-first inactive list scan if this page is already used multiple times via
-several ptes.
+This skips over all mapping aops using buffer_migrate_page() even though
+it is possible to migrate some of these pages without blocking.  This
+patch updates the ->migratepage callback with a "sync" parameter.  It is
+the responsibility of the callback to fail gracefully if migration would
+block.
 
-I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5
-(~2.6.18).  There a complete mess with >100 web/mail/spam/ftp containers,
-they share all their files but there a lot of anonymous pages: ~500mb
-shared file mapped memory and 15-20Gb non-shared anonymous memory.  In
-this situation major-pagefaults are very costly, because all containers
-share the same page.  In my load kernel created a disproportionate
-pressure on the file memory, compared with the anonymous, they equaled
-only if I raise swappiness up to 150 =)
-
-These patches actually wasn't helped a lot in my problem, but I saw
-noticable (10-20 times) reduce in count and average time of
-major-pagefault in file-mapped areas.
-
-Actually both patches are fixes for commit v2.6.33-5448-g6457474, because
-it was aimed at one scenario (singly used pages), but it breaks the logic
-in other scenarios (shared and/or executable pages)
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Acked-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Shaohua Li <shaohua.li@intel.com>
-Cc: Rik van Riel <riel@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Cc: Nai Xia <nai.xia@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/disk-io.c      |    4 -
+ fs/hugetlbfs/inode.c    |    3 -
+ fs/nfs/internal.h       |    2 
+ fs/nfs/write.c          |    4 -
+ include/linux/fs.h      |    9 ++-
+ include/linux/migrate.h |    2 
+ mm/migrate.c            |  129 ++++++++++++++++++++++++++++++++++--------------
+ 7 files changed, 106 insertions(+), 47 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -723,7 +723,7 @@ static enum page_references page_check_r
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -801,7 +801,7 @@ static int btree_submit_bio_hook(struct
+ 
+ #ifdef CONFIG_MIGRATION
+ static int btree_migratepage(struct address_space *mapping,
+-			struct page *newpage, struct page *page)
++			struct page *newpage, struct page *page, bool sync)
+ {
+ 	/*
+ 	 * we can't safely write a btree page from here,
+@@ -816,7 +816,7 @@ static int btree_migratepage(struct addr
+ 	if (page_has_private(page) &&
+ 	    !try_to_release_page(page, GFP_KERNEL))
+ 		return -EAGAIN;
+-	return migrate_page(mapping, newpage, page);
++	return migrate_page(mapping, newpage, page, sync);
+ }
+ #endif
+ 
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -568,7 +568,8 @@ static int hugetlbfs_set_page_dirty(stru
+ }
+ 
+ static int hugetlbfs_migrate_page(struct address_space *mapping,
+-				struct page *newpage, struct page *page)
++				struct page *newpage, struct page *page,
++				bool sync)
+ {
+ 	int rc;
+ 
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -315,7 +315,7 @@ void nfs_commit_release_pages(struct nfs
+ 
+ #ifdef CONFIG_MIGRATION
+ extern int nfs_migrate_page(struct address_space *,
+-		struct page *, struct page *);
++		struct page *, struct page *, bool);
+ #else
+ #define nfs_migrate_page NULL
+ #endif
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1662,7 +1662,7 @@ out_error:
+ 
+ #ifdef CONFIG_MIGRATION
+ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
+-		struct page *page)
++		struct page *page, bool sync)
+ {
+ 	/*
+ 	 * If PagePrivate is set, then the page is currently associated with
+@@ -1677,7 +1677,7 @@ int nfs_migrate_page(struct address_spac
+ 
+ 	nfs_fscache_release_page(page, GFP_KERNEL);
+ 
+-	return migrate_page(mapping, newpage, page);
++	return migrate_page(mapping, newpage, page, sync);
+ }
+ #endif
+ 
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -607,9 +607,12 @@ struct address_space_operations {
+ 			loff_t offset, unsigned long nr_segs);
+ 	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+ 						void **, unsigned long *);
+-	/* migrate the contents of a page to the specified target */
++	/*
++	 * migrate the contents of a page to the specified target. If sync
++	 * is false, it must not block.
++	 */
+ 	int (*migratepage) (struct address_space *,
+-			struct page *, struct page *);
++			struct page *, struct page *, bool);
+ 	int (*launder_page) (struct page *);
+ 	int (*is_partially_uptodate) (struct page *, read_descriptor_t *,
+ 					unsigned long);
+@@ -2478,7 +2481,7 @@ extern int generic_check_addressable(uns
+ 
+ #ifdef CONFIG_MIGRATION
+ extern int buffer_migrate_page(struct address_space *,
+-				struct page *, struct page *);
++				struct page *, struct page *, bool);
+ #else
+ #define buffer_migrate_page NULL
+ #endif
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -11,7 +11,7 @@ typedef struct page *new_page_t(struct p
+ 
+ extern void putback_lru_pages(struct list_head *l);
+ extern int migrate_page(struct address_space *,
+-			struct page *, struct page *);
++			struct page *, struct page *, bool);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 			unsigned long private, bool offlining,
+ 			bool sync);
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -220,6 +220,55 @@ out:
+ 	pte_unmap_unlock(ptep, ptl);
+ }
+ 
++#ifdef CONFIG_BLOCK
++/* Returns true if all buffers are successfully locked */
++static bool buffer_migrate_lock_buffers(struct buffer_head *head, bool sync)
++{
++	struct buffer_head *bh = head;
++
++	/* Simple case, sync compaction */
++	if (sync) {
++		do {
++			get_bh(bh);
++			lock_buffer(bh);
++			bh = bh->b_this_page;
++
++		} while (bh != head);
++
++		return true;
++	}
++
++	/* async case, we cannot block on lock_buffer so use trylock_buffer */
++	do {
++		get_bh(bh);
++		if (!trylock_buffer(bh)) {
++			/*
++			 * We failed to lock the buffer and cannot stall in
++			 * async migration. Release the taken locks
++			 */
++			struct buffer_head *failed_bh = bh;
++			put_bh(failed_bh);
++			bh = head;
++			while (bh != failed_bh) {
++				unlock_buffer(bh);
++				put_bh(bh);
++				bh = bh->b_this_page;
++			}
++			return false;
++		}
++
++		bh = bh->b_this_page;
++	} while (bh != head);
++	return true;
++}
++#else
++static inline bool buffer_migrate_lock_buffers(struct buffer_head *head,
++								bool sync)
++{
++	return true;
++}
++#endif /* CONFIG_BLOCK */
++
+ /*
+  * Replace the page in the mapping.
+  *
+@@ -229,7 +278,8 @@ out:
+  * 3 for pages with a mapping and PagePrivate/PagePrivate2 set.
+  */
+ static int migrate_page_move_mapping(struct address_space *mapping,
+-		struct page *newpage, struct page *page)
++		struct page *newpage, struct page *page,
++		struct buffer_head *head, bool sync)
+ {
+ 	int expected_count;
+ 	void **pslot;
+@@ -259,6 +309,19 @@ static int migrate_page_move_mapping(str
+ 	}
+ 
+ 	/*
++	 * In the async migration case of moving a page with buffers, lock the
++	 * buffers using trylock before the mapping is moved. If the mapping
++	 * was moved, we later failed to lock the buffers and could not move
++	 * the mapping back due to an elevated page count, we would have to
++	 * block waiting on other references to be dropped.
++	 */
++	if (!sync && head && !buffer_migrate_lock_buffers(head, sync)) {
++		page_unfreeze_refs(page, expected_count);
++		spin_unlock_irq(&mapping->tree_lock);
++		return -EAGAIN;
++	}
++
++	/*
+ 	 * Now we know that no one else is looking at the page.
+ 	 */
+ 	get_page(newpage);	/* add cache reference */
+@@ -415,13 +478,13 @@ EXPORT_SYMBOL(fail_migrate_page);
+  * Pages are locked upon entry and exit.
+  */
+ int migrate_page(struct address_space *mapping,
+-		struct page *newpage, struct page *page)
++		struct page *newpage, struct page *page, bool sync)
+ {
+ 	int rc;
+ 
+ 	BUG_ON(PageWriteback(page));	/* Writeback must be complete */
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page);
++	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, sync);
+ 
+ 	if (rc)
+ 		return rc;
+@@ -438,28 +501,28 @@ EXPORT_SYMBOL(migrate_page);
+  * exist.
+  */
+ int buffer_migrate_page(struct address_space *mapping,
+-		struct page *newpage, struct page *page)
++		struct page *newpage, struct page *page, bool sync)
+ {
+ 	struct buffer_head *bh, *head;
+ 	int rc;
+ 
+ 	if (!page_has_buffers(page))
+-		return migrate_page(mapping, newpage, page);
++		return migrate_page(mapping, newpage, page, sync);
+ 
+ 	head = page_buffers(page);
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page);
++	rc = migrate_page_move_mapping(mapping, newpage, page, head, sync);
+ 
+ 	if (rc)
+ 		return rc;
+ 
+-	bh = head;
+-	do {
+-		get_bh(bh);
+-		lock_buffer(bh);
+-		bh = bh->b_this_page;
+-
+-	} while (bh != head);
++	/*
++	 * In the async case, migrate_page_move_mapping locked the buffers
++	 * with an IRQ-safe spinlock held. In the sync case, the buffers
++	 * need to be locked now
++	 */
++	if (sync)
++		BUG_ON(!buffer_migrate_lock_buffers(head, sync));
+ 
+ 	ClearPagePrivate(page);
+ 	set_page_private(newpage, page_private(page));
+@@ -536,10 +599,13 @@ static int writeout(struct address_space
+  * Default handling if a filesystem does not provide a migration function.
+  */
+ static int fallback_migrate_page(struct address_space *mapping,
+-	struct page *newpage, struct page *page)
++	struct page *newpage, struct page *page, bool sync)
+ {
+-	if (PageDirty(page))
++	if (PageDirty(page)) {
++		if (!sync)
++			return -EBUSY;
+ 		return writeout(mapping, page);
++	}
+ 
+ 	/*
+ 	 * Buffers may be managed in a filesystem specific way.
+@@ -549,7 +615,7 @@ static int fallback_migrate_page(struct
+ 	    !try_to_release_page(page, GFP_KERNEL))
+ 		return -EAGAIN;
+ 
+-	return migrate_page(mapping, newpage, page);
++	return migrate_page(mapping, newpage, page, sync);
+ }
+ 
+ /*
+@@ -585,29 +651,18 @@ static int move_to_new_page(struct page
+ 
+ 	mapping = page_mapping(page);
+ 	if (!mapping)
+-		rc = migrate_page(mapping, newpage, page);
+-	else {
++		rc = migrate_page(mapping, newpage, page, sync);
++	else if (mapping->a_ops->migratepage)
+ 		/*
+-		 * Do not writeback pages if !sync and migratepage is
+-		 * not pointing to migrate_page() which is nonblocking
+-		 * (swapcache/tmpfs uses migratepage = migrate_page).
++		 * Most pages have a mapping and most filesystems provide a
++		 * migratepage callback. Anonymous pages are part of swap
++		 * space which also has its own migratepage callback. This
++		 * is the most common path for page migration.
  		 */
- 		SetPageReferenced(page);
+-		if (PageDirty(page) && !sync &&
+-		    mapping->a_ops->migratepage != migrate_page)
+-			rc = -EBUSY;
+-		else if (mapping->a_ops->migratepage)
+-			/*
+-			 * Most pages have a mapping and most filesystems
+-			 * should provide a migration function. Anonymous
+-			 * pages are part of swap space which also has its
+-			 * own migration function. This is the most common
+-			 * path for page migration.
+-			 */
+-			rc = mapping->a_ops->migratepage(mapping,
+-							newpage, page);
+-		else
+-			rc = fallback_migrate_page(mapping, newpage, page);
+-	}
++		rc = mapping->a_ops->migratepage(mapping,
++						newpage, page, sync);
++	else
++		rc = fallback_migrate_page(mapping, newpage, page, sync);
  
--		if (referenced_page)
-+		if (referenced_page || referenced_ptes > 1)
- 			return PAGEREF_ACTIVATE;
- 
- 		return PAGEREF_KEEP;
+ 	if (rc) {
+ 		newpage->mapping = NULL;
 
 
