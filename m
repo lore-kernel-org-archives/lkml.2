@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab2G3T3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:29:09 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:43191 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080Ab2G3T3E (ORCPT
+	id S1755105Ab2G3T3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:29:21 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:33054 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754992Ab2G3T3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:29:04 -0400
-Message-ID: <5016E06E.3060609@ahsoftware.de>
-Date: Mon, 30 Jul 2012 21:28:46 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Mon, 30 Jul 2012 15:29:09 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vhVEctwVM1mGPtHy2Eehos5WHERnBFoHy3WkpZrBmRkNE7Y
+ djmmAaTzFA1PDXe09CkOM4GF9Lq6Hj0KEvyN6_D8zcU4Idf4.7y8EliBhgou
+ GsKCH2TWcviahsuZb6ieaqYSIYwkRVGtnuJFqzZQ7pnVzX.nT4zKnbmHtxoS
+ vc.2.9DFCUdgEMmWRIU9LQtISqzIQ0A5Kaf1dNMrvqssl6ndkGTf9Ao226S8
+ .aClMxYUOZtLCUpGPZ8oPBSugPTZ8BY_D4wrOKxjRkLwXhSUX6cCNWFC77Mq
+ FpL8Mlmv_qkVgk8l.vnpFiZTmDTqxWOJ6kSbDdkU_xi9OVRIMzVuufbTtlPi
+ bEJ.YFpuRx61oZzKBG0RrDWE4JpoeYcKarWsSD8YBae67PgGjpxnXTWjQbZV
+ lP.rf.80rWvk2vcz5wYUjIRbGPBrg9HoGvFPdevCb.RqNjMWzPaQ-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 30 Jul 2012 14:29:05 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: JoonSoo Kim <js1304@gmail.com>
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Brice Goglin <brice@myri.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [RESEND PATCH 4/4 v3] mm: fix possible incorrect return value
+ of move_pages() syscall
+In-Reply-To: <CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1207301425410.28838@router.home>
+References: <1343411703-2720-1-git-send-email-js1304@gmail.com> <1343411703-2720-4-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1207271550190.25434@router.home> <CAAmzW4MdiJOaZW_b+fz1uYyj0asTCveN=24st4xKymKEvkzdgQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] video/smscufx: fix line counting in fb_write
-References: <1334959867-3719-1-git-send-email-holler@ahsoftware.de> <4F92995B.6030805@ahsoftware.de> <4FAFAD7B.6090207@gmx.de> <4FF211BD.8060203@ahsoftware.de> <50117DD9.6070200@gmx.de>
-In-Reply-To: <50117DD9.6070200@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sat, 28 Jul 2012, JoonSoo Kim wrote:
 
-Am 26.07.2012 19:26, schrieb Florian Tobias Schandinat:
+> 2012/7/28 Christoph Lameter <cl@linux.com>:
+> > On Sat, 28 Jul 2012, Joonsoo Kim wrote:
+> >
+> >> move_pages() syscall may return success in case that
+> >> do_move_page_to_node_array return positive value which means migration failed.
+> >
+> > Nope. It only means that the migration for some pages has failed. This may
+> > still be considered successful for the app if it moves 10000 pages and one
+> > failed.
+> >
+> > This patch would break the move_pages() syscall because an error code
+> > return from do_move_pages_to_node_array() will cause the status byte for
+> > each page move to not be updated anymore. Application will not be able to
+> > tell anymore which pages were successfully moved and which are not.
+>
+> In case of returning non-zero, valid status is not required according
+> to man page.
 
-> Well, as this patch fixes a bug I applied it as is.
+Cannot find a statement like that in the man page. The return code
+description is incorrect. It should that that is returns the number of
+pages not moved otherwise an error code (Michael please fix the manpage).
 
-Thanks a lot, actually I was more interested to get that one-line-patch 
-for udlfb, because I've discovered that bug using one of those Mimo-LCDs. ;)
+> So, this patch would not break the move_pages() syscall.
 
-Are you responsible for that too?
+It changes the way the system call is behaving right now.
 
-Regards,
-
-Alexander
