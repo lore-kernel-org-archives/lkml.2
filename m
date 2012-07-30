@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab2G3HKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:10:30 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:50805 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981Ab2G3HK1 (ORCPT
+	id S1754014Ab2G3HMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:12:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39284 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753197Ab2G3HMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 03:10:27 -0400
-Date: Mon, 30 Jul 2012 09:10:23 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: [Bisected] commit 71574865 (vfs: do_last(): common slow lookup)
- breaks CUPS printing
-Message-ID: <20120730071023.GA273@x4>
-References: <20120728104316.GA248@x4>
- <20120730065046.GC6481@ZenIV.linux.org.uk>
+	Mon, 30 Jul 2012 03:12:53 -0400
+Message-ID: <501633EA.603@redhat.com>
+Date: Mon, 30 Jul 2012 09:12:42 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120730065046.GC6481@ZenIV.linux.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Boaz Harrosh <bharrosh@panasas.com>, Wang Sen <senwang@linux.vnet.ibm.com>,
+        linux-scsi@vger.kernel.org, JBottomley@parallels.com,
+        stefanha@linux.vnet.ibm.com, mc@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com> <5010F07E.7050506@redhat.com> <5010F831.9030300@panasas.com> <5010F896.8090409@redhat.com> <501140A3.9090908@redhat.com> <874notoh02.fsf@rustcorp.com.au> <50124D2E.7050407@redhat.com> <87obmym8jv.fsf@rustcorp.com.au>
+In-Reply-To: <87obmym8jv.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.07.30 at 07:50 +0100, Al Viro wrote:
-> On Sat, Jul 28, 2012 at 12:43:16PM +0200, Markus Trippelsdorf wrote:
-> > Printing with CUPS is broken on the current git tree. Whenever I print a page
-> > the job just sits in the CUPS queue showing "processing". But it never reaches
-> > the printer.  (My CUPS version is 1.5.2. Filesystem is xfs.)
-> > 
-> > I've bisected this issue to:
-> > 
-> > commit 7157486541bffc0dfec912e21ae639b029dae3d3
-> > Author: Miklos Szeredi <mszeredi@suse.cz>
-> > Date:   Tue Jun 5 15:10:14 2012 +0200
-> > 
-> >     vfs: do_last(): common slow lookup
-> >     
-> >     Make the slow lookup part of O_CREAT and non-O_CREAT opens common.
-> >     
-> >     This allows atomic_open to be hooked into the slow lookup part.
-> >     
-> >     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> >     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Il 30/07/2012 01:50, Rusty Russell ha scritto:
+>> Also, being the first user of chained scatterlist doesn't exactly give
+>> me warm fuzzies.
 > 
-> Hmm...  Looking at that commit, we seem to have one change introduced by it.  Namely,
-> behaviour of open(path, O_EXCL) (note that O_EXCL without O_CREAT is an undefined
-> by POSIX and makes no damn sense anyway).
-> 
-> Could you try the patch below, just to make sure that I'm not misreading the
-> situation?  If that's really happening that way, it should spew a warning,
-> restore the old behaviour by removing that stray O_EXCL and, if it comes
-> from open(2)/openat(2), print the syscall arguments.
-> 
-> We'll need to restore the original behaviour anyway, undefined or no undefined,
-> but if we really catch CUPS doing that, we ought to report that as a bug to
-> whatever bugtracking system CUPS uses; at the very least, it's a portability
-> headache waiting to happen.
+> We're far from the first user: they've been in the kernel for well over
+> 7 years.  They were introduced for the block layer, but they tended to
+> ignore private uses of scatterlists like this one.
 
-Looks like you're right. The first warning happens during startup. The last one
-when I print a test page (which now succeeds).  
-Thanks Al.
+Yeah, but sg_chain has no users in drivers, only a private one in
+lib/scatterlist.c.  The internal API could be changed to something else
+and leave virtio-scsi screwed...
 
-------------[ cut here ]------------
-WARNING: at fs/open.c:899 do_sys_open+0x1e5/0x220()
-Hardware name: System Product Name
-Pid: 207, comm: X Not tainted 3.5.0-07078-gf7da9cd-dirty #199
-Call Trace:
- [<ffffffff810555a4>] ? warn_slowpath_common+0x74/0xb0
- [<ffffffff810dd405>] ? do_sys_open+0x1e5/0x220
- [<ffffffff814a64a2>] ? system_call_fastpath+0x16/0x1b
----[ end trace 9a333bfb6a9cbe80 ]---
-------------[ cut here ]------------
-WARNING: at fs/open.c:899 do_sys_open+0x1e5/0x220()
-Hardware name: System Product Name
-Pid: 384, comm: usb Tainted: G        W    3.5.0-07078-gf7da9cd-dirty #199
-Call Trace:
-WTF: open("/dev/input/mice", 34946)
- [<ffffffff810555a4>] ? warn_slowpath_common+0x74/0xb0
- [<ffffffff810dd405>] ? do_sys_open+0x1e5/0x220
- [<ffffffff814a64a2>] ? system_call_fastpath+0x16/0x1b
----[ end trace 9a333bfb6a9cbe81 ]---
-WTF: open("/dev/usblp0", 32898)
-------------[ cut here ]------------
-WARNING: at fs/open.c:899 do_sys_open+0x1e5/0x220()
-Hardware name: System Product Name
-Pid: 384, comm: usb Tainted: G        W    3.5.0-07078-gf7da9cd-dirty #199
-Call Trace:
- [<ffffffff810555a4>] ? warn_slowpath_common+0x74/0xb0
- [<ffffffff810dd405>] ? do_sys_open+0x1e5/0x220
- [<ffffffff814a64a2>] ? system_call_fastpath+0x16/0x1b
----[ end trace 9a333bfb6a9cbe82 ]---
-------------[ cut here ]------------
-WARNING: at fs/open.c:899 do_sys_open+0x1e5/0x220()
-Hardware name: System Product Name
-Pid: 87, comm: cupsd Tainted: G        W    3.5.0-07078-gf7da9cd-dirty #199
-Call Trace:
-WTF: open("/dev/usb/lp0", 32898)
- [<ffffffff810555a4>] ? warn_slowpath_common+0x74/0xb0
- [<ffffffff810dd405>] ? do_sys_open+0x1e5/0x220
- [<ffffffff814a64a2>] ? system_call_fastpath+0x16/0x1b
----[ end trace 9a333bfb6a9cbe83 ]---
+> Yes, we should do this.  But note that this means an iteration, so we
+> might as well combine the loops :)
 
+I'm really bad at posting pseudo-code, but you can count the number of
+physically-contiguous entries at the beginning of the list only.  So if
+everything is contiguous, you use a single non-indirect buffer and save
+a kmalloc.  If you use indirect buffers, I suspect it's much less
+effective to collapse physically-contiguous entries.  More elaborate
+heuristics do need a loop, though.
 
--- 
-Markus
+Paolo
