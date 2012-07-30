@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab2G3ONc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:13:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45585 "EHLO
+	id S1754543Ab2G3OOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:14:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45595 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2G3ONa (ORCPT
+	with ESMTP id S1754446Ab2G3OOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:13:30 -0400
-Date: Mon, 30 Jul 2012 07:13:11 -0700
+	Mon, 30 Jul 2012 10:14:21 -0400
+Date: Mon, 30 Jul 2012 07:14:04 -0700
 From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-665605a2a207dbe1fa429b474f932d6ea138ba92@git.kernel.org>
+Message-ID: <tip-2fd611a991391a6050cbd139201a2e12fc306540@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
         mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
         linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
         tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120729182229.GA20329@redhat.com>
-References: <20120729182229.GA20329@redhat.com>
+In-Reply-To: <20120729182231.GA20336@redhat.com>
+References: <20120729182231.GA20336@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Uprobe_mmap/
- munmap needs list_for_each_entry_safe()
-Git-Commit-ID: 665605a2a207dbe1fa429b474f932d6ea138ba92
+Subject: [tip:perf/core] uprobes: Suppress uprobe_munmap() from mmput()
+Git-Commit-ID: 2fd611a991391a6050cbd139201a2e12fc306540
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,74 +29,51 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:13:17 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:14:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  665605a2a207dbe1fa429b474f932d6ea138ba92
-Gitweb:     http://git.kernel.org/tip/665605a2a207dbe1fa429b474f932d6ea138ba92
+Commit-ID:  2fd611a991391a6050cbd139201a2e12fc306540
+Gitweb:     http://git.kernel.org/tip/2fd611a991391a6050cbd139201a2e12fc306540
 Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Sun, 29 Jul 2012 20:22:29 +0200
+AuthorDate: Sun, 29 Jul 2012 20:22:31 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 30 Jul 2012 11:27:20 +0200
+CommitDate: Mon, 30 Jul 2012 11:27:21 +0200
 
-uprobes: Uprobe_mmap/munmap needs list_for_each_entry_safe()
+uprobes: Suppress uprobe_munmap() from mmput()
 
-The bug was introduced by me in 449d0d7c ("uprobes: Simplify the
-usage of uprobe->pending_list").
+uprobe_munmap() does get_user_pages() and it is also called from
+the final mmput()->exit_mmap() path. This slows down
+exit/mmput() for no reason, and I think  it is simply
+dangerous/wrong to try to fault-in a page into the dying mm. If
+nothing else, this happens after the last sync_mm_rss(), afaics
+handle_mm_fault() can change the task->rss_stat and make the
+subsequent check_mm() unhappy.
 
-Yes, we do not care about uprobe->pending_list after return and
-nobody can remove the current list entry, but put_uprobe(uprobe)
-can actually free it and thus we need list_for_each_safe().
+Change uprobe_munmap() to check mm->mm_users != 0.
 
-Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
 Cc: Anton Arapov <anton@redhat.com>
-Link: http://lkml.kernel.org/r/20120729182229.GA20329@redhat.com
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120729182231.GA20336@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/uprobes.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/events/uprobes.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 5db150b..bed2161 100644
+index bed2161..9db9cdf 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1010,7 +1010,7 @@ static void build_probe_list(struct inode *inode, struct list_head *head)
- int uprobe_mmap(struct vm_area_struct *vma)
- {
- 	struct list_head tmp_list;
--	struct uprobe *uprobe;
-+	struct uprobe *uprobe, *u;
- 	struct inode *inode;
- 	int ret, count;
- 
-@@ -1028,7 +1028,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 	ret = 0;
- 	count = 0;
- 
--	list_for_each_entry(uprobe, &tmp_list, pending_list) {
-+	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
- 		if (!ret) {
- 			loff_t vaddr = vma_address(vma, uprobe->offset);
- 
-@@ -1076,7 +1076,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
- void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
- {
- 	struct list_head tmp_list;
--	struct uprobe *uprobe;
-+	struct uprobe *uprobe, *u;
- 	struct inode *inode;
- 
+@@ -1082,6 +1082,9 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
  	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
-@@ -1093,7 +1093,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
- 	mutex_lock(uprobes_mmap_hash(inode));
- 	build_probe_list(inode, &tmp_list);
+ 		return;
  
--	list_for_each_entry(uprobe, &tmp_list, pending_list) {
-+	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
- 		loff_t vaddr = vma_address(vma, uprobe->offset);
++	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
++		return;
++
+ 	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
+ 		return;
  
- 		if (vaddr >= start && vaddr < end) {
