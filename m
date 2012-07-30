@@ -1,92 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab2G3OTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:19:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45772 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab2G3OTk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:19:40 -0400
-Date: Mon, 30 Jul 2012 07:19:24 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-f4d6dfe55115efe981b4b5f37183ddccaaa792f0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
-        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120729182244.GA20362@redhat.com>
-References: <20120729182244.GA20362@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Fix register_for_each_vma()->vma_address(
- ) check
-Git-Commit-ID: f4d6dfe55115efe981b4b5f37183ddccaaa792f0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754623Ab2G3OTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:19:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754567Ab2G3OTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 10:19:52 -0400
+Date: Mon, 30 Jul 2012 16:16:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [PATCH] uprobes: don't enable/disable signle step if the user
+	did it
+Message-ID: <20120730141638.GA5306@redhat.com>
+References: <1343316043-13475-1-git-send-email-bigeasy@linutronix.de> <20120730110658.GC11147@in.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:19:29 -0700 (PDT)
+In-Reply-To: <20120730110658.GC11147@in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f4d6dfe55115efe981b4b5f37183ddccaaa792f0
-Gitweb:     http://git.kernel.org/tip/f4d6dfe55115efe981b4b5f37183ddccaaa792f0
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Sun, 29 Jul 2012 20:22:44 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 30 Jul 2012 11:27:24 +0200
+On 07/30, Ananth N Mavinakayanahalli wrote:
+>
+> On Thu, Jul 26, 2012 at 05:20:43PM +0200, Sebastian Andrzej Siewior wrote:
+> > If someone is using single stepping over uprobe brackpoint then after
+> > we pass the uprobe single step, single stepping is disabled and the user
+> > who enebaled them in the first place does not know anything about this.
+> >
+> > This patch avoids enabling / disabling the single step mode if it is
+> > already enabled.
+>
+> This could happen any time 2 different entities call the
+> user_(en/dis)able_single_step() helpers on the same thread.
 
-uprobes: Fix register_for_each_vma()->vma_address() check
+Yes. But nobody except ptrace should do use these helpers, I think.
 
-1. register_for_each_vma() checks that vma_address() == vaddr,
-   but this is not enough. We should also ensure that
-   vaddr >= vm_start, find_vma() guarantees "vaddr < vm_end" only.
+> Wouldn't the right way to fix it be to teach these helpers
+> to honor what the TIF_SINGLESTEP
 
-2. After the prevous changes, register_for_each_vma() is the
-   only reason why vma_address() has to return loff_t, all other
-   users know that we have the valid mapping at this offset and
-   thus the overflow is not possible.
+Well, I think uprobes should not use TIF_SINGLESTEP at all. This
+bit is (mostly) needed to handle the stepping over syscall. But
+I guess you didn't actually mean TIF_SINGLESTEP...
 
-   Change the code to use vaddr_to_offset() instead, imho this looks
-   more clean/understandable and now we can change vma_address().
+> flag setting was in the first place?
 
-3. While at it, remove the unnecessary type-cast.
+Perhaps, but I don't think so. If nothing else, we do not want
+to add the new counter/whatever in task_struct, while uprobes
+already has uprobe_task which can "remember" the state of _TF
+bit and more.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120729182244.GA20362@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/events/uprobes.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+And this can't solve other problems. Suppose that gdb does
+PTRACE_SINGLESTEP but the original "popf" insn was already replaced
+by "int3", this will obviously confuse is_setting_trap_flag().
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index b03256c..cdc3c95 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -823,12 +823,13 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 			goto free;
- 
- 		down_write(&mm->mmap_sem);
--		vma = find_vma(mm, (unsigned long)info->vaddr);
--		if (!vma || !valid_vma(vma, is_register))
-+		vma = find_vma(mm, info->vaddr);
-+		if (!vma || !valid_vma(vma, is_register) ||
-+		    vma->vm_file->f_mapping->host != uprobe->inode)
- 			goto unlock;
- 
--		if (vma->vm_file->f_mapping->host != uprobe->inode ||
--		    vma_address(vma, uprobe->offset) != info->vaddr)
-+		if (vma->vm_start > info->vaddr ||
-+		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
- 			goto unlock;
- 
- 		if (is_register) {
+And we need the additional SIGTRAP from handle_singlestep().
+And we have more problems with DEBUGCTLMSR_BTF. And we do
+not want access_process_vm() from uprobes code.
+
+So I think we need arch_uprobe_*able_step(struct uprobe_task *utask).
+Ignoring all problems except the one this patch tries to fix, x86
+can simply do:
+
+	arch_uprobe_enble_step(utask, struct arch_uprobe *auprobe)
+	{
+		utask->clear_tf =
+			!(regs->flags & X86_EFLAGS_TF) &&
+			(auprobe->insn != "popf");
+		regs->flags |= X86_EFLAGS_TF;
+	}
+
+	arch_uprobe_disable_step(utask)
+	{
+		if (utask->clear_tf)
+			regs->flags &= ~X86_EFLAGS_TF;
+	}
+
+Fortunately, we can never race with gdb/enable_step(), and we do
+not care why X86_EFLAGS_TF was set, and we do not care about
+TIF_SINGLESTEP/TIF_FORCED_TF.
+
+
+
+
+However. This all needs more discussion (and help from Roland I guess).
+
+Sebastian, I think your patch is simple and certainly makes the things
+better, just it is not correct (you already realized you can't use
+uprobe->flags) and it is not arch-friendly.
+
+I'd suggest you to make 2 patches:
+
+	- 1/2 creates arch_uprobe_*_step(...) __weak helpers in
+	      kernel/events/uprobes.c which simply call
+	      user_*_single_step() and updates the callers
+
+	      Not strictly necessary, but imho makes sense...
+
+	- 2/2 adds the x86 implementation in arch/x86/kernel/uprobes.c
+	      which still uses user_*_single_step() but checks
+	      TIF_SINGLESTEP. As your patch does, but you should use
+	      utask, not uprobe.
+
+IOW, I simply suggest to make your patch x86-specific. Then we
+will try to do more fixes/improvements.
+
+
+Sebastian, Ananth, what do you think?
+
+Oleg.
+
