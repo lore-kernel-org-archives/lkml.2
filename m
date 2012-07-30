@@ -1,83 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab2G3KDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 06:03:00 -0400
-Received: from nat.scz.novell.com ([213.151.88.252]:1557 "EHLO linux.site"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752177Ab2G3KC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 06:02:59 -0400
-Date: Mon, 30 Jul 2012 12:02:57 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: bpoirier@suse.de, cody@linux.vnet.ibm.com, mmarek@suse.cz,
-        pebolle@tiscali.nl, rostedt@goodmis.org, yann.morin.1998@free.fr,
-        yselkowitz@users.sourceforge.net, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kconfig changes for 3.6-rc1
-Message-ID: <20120730100257.GA65112@noe.suse.cz>
+	id S1753091Ab2G3KEP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 06:04:15 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51465 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab2G3KEO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 06:04:14 -0400
+Message-ID: <50165C0D.1070200@parallels.com>
+Date: Mon, 30 Jul 2012 14:03:57 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v2 00/15] Lockd: grace period containerization
+References: <20120725125258.24376.82525.stgit@localhost.localdomain> <20120727215431.GE6388@fieldses.org>
+In-Reply-To: <20120727215431.GE6388@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+28.07.2012 01:54, J. Bruce Fields пишет:
+> On Wed, Jul 25, 2012 at 04:55:45PM +0400, Stanislav Kinsbursky wrote:
+>> Bruce, I feel this patch set is ready for inclusion.
+>>
+>> v2:
+>> 1) Rebase on Bruce's "for-3.6" branch.
+>>
+>> This patch set makes grace period and hosts reclaiming network namespace
+>> aware.
+>
+> On a quick skim--yes, that looks reasonable to me.
+>
+> It doesn't help with active/active cluster exports, because in that case
+> we need some additional coordination between nfsd's.
+>
+> But it looks good enough to handle the case where each filesystem is
+> exported from at most one server at a time, which is more than we
+> currently handle.
+>
+> It's a little late for 3.6.  Also I get the impression Al Viro has some
+> lockd rework in progress, which we may want to wait for.
+>
+> So I'll likely look again into queueing this up for 3.7 once 3.6-rc1 is
+> out.
 
-Please pull following kconfig changes for v3.6-rc1:
-* kconfig Makefile portability fixes
-* menuconfig/nconfig help pager usability fix
-* .gitignore cleanup
-* quoting fix in scripts/config
-* Makefile prints errors to stderr
-* support for arbitrarily log lines in .config
-* fix oldnoconfig description in 'make help'
 
-Thanks,
-Michal
+Ok.
+Will Al Viro's lockd rework be a part of 3.6 kernel?
 
-The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
 
-  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
+>
+> --b.
+>
+>>
+>> Main ideas:
+>> 1)  moving of
+>>
+>> 	unsigned long next_gc;
+>> 	unsigned long nrhosts;
+>>
+>> 	struct delayed_work grace_period_end;
+>> 	struct lock_manager lockd_manager;
+>> 	struct list_head grace_list;
+>>
+>> to per-net Lockd data.
+>>
+>> 2) moving of
+>>
+>> 	struct lock_manager nfsd4_manager;
+>>
+>> to per-net NFSd data.
+>>
+>> 3) shutdown + gc of NLM hosts done now network namespace aware.
+>>
+>> 4) restart_grace() now works only for init_net.
+>>
+>> The following series implements...
+>>
+>> ---
+>>
+>> Stanislav Kinsbursky (15):
+>>        LockD: mark host per network namespace on garbage collect
+>>        LockD: make garbage collector network namespace aware.
+>>        LockD: manage garbage collection timeout per networks namespace
+>>        LockD: manage used host count per networks namespace
+>>        Lockd: host complaining function introduced
+>>        Lockd: add more debug to host shutdown functions
+>>        LockD: manage grace period per network namespace
+>>        LockD: make lockd manager allocated per network namespace
+>>        NFSd: make nfsd4_manager allocated per network namespace context.
+>>        SUNRPC: service request network namespace helper introduced
+>>        LockD: manage grace list per network namespace
+>>        LockD: pass actual network namespace to grace period management functions
+>>        Lockd: move grace period management from lockd() to per-net functions
+>>        NFSd: make grace end flag per network namespace
+>>        NFSd: make boot_time variable per network namespace
+>>
+>>
+>>   fs/lockd/grace.c            |   16 +++++--
+>>   fs/lockd/host.c             |   92 ++++++++++++++++++++++++++------------
+>>   fs/lockd/netns.h            |    7 +++
+>>   fs/lockd/svc.c              |   43 ++++++++++--------
+>>   fs/lockd/svc4proc.c         |   13 +++--
+>>   fs/lockd/svclock.c          |   16 +++----
+>>   fs/lockd/svcproc.c          |   15 ++++--
+>>   fs/lockd/svcsubs.c          |   19 +++++---
+>>   fs/nfs/callback_xdr.c       |    4 +-
+>>   fs/nfsd/export.c            |    4 +-
+>>   fs/nfsd/netns.h             |    4 ++
+>>   fs/nfsd/nfs4idmap.c         |    4 +-
+>>   fs/nfsd/nfs4proc.c          |   18 ++++---
+>>   fs/nfsd/nfs4state.c         |  104 ++++++++++++++++++++++++-------------------
+>>   fs/nfsd/state.h             |    4 +-
+>>   include/linux/fs.h          |    5 +-
+>>   include/linux/lockd/lockd.h |    6 +-
+>>   include/linux/sunrpc/svc.h  |    2 +
+>>   18 files changed, 231 insertions(+), 145 deletions(-)
+>>
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kconfig
 
-Benjamin Poirier (2):
-      menuconfig: add u, d, q command keys in text boxes
-      nconf: add u, d command keys in scroll windows
-
-Cody Schafer (1):
-      kconfig: allow long lines in config file
-
-Michal Marek (1):
-      kconfig: Print errors to stderr in the Makefile
-
-Paul Bolle (1):
-      kconfig: remove lkc_defs.h from .gitignore and dontdiff
-
-Steven Rostedt (1):
-      kconfig: Document oldnoconfig to what it really does
-
-Yaakov Selkowitz (5):
-      kconfig/nconf: fix compile with ncurses reentrant API
-      kconfig: check ncursesw headers first in check-lxdialog
-      kconfig: fix check-lxdialog for DLL platforms
-      xconfig: use pkgconfig to find moc
-      xconfig: add quiet rule for moc
-
-Yann E. MORIN (1):
-      scripts/config: fix double-quotes un-escaping
-
- Documentation/dontdiff                     |    1 -
- scripts/config                             |    2 +-
- scripts/kconfig/.gitignore                 |    1 -
- scripts/kconfig/Makefile                   |   41 ++++++++++---------
- scripts/kconfig/confdata.c                 |   61 +++++++++++++++++++++++++++-
- scripts/kconfig/lxdialog/check-lxdialog.sh |    8 ++--
- scripts/kconfig/lxdialog/textbox.c         |    3 +
- scripts/kconfig/mconf.c                    |    6 +-
- scripts/kconfig/nconf.c                    |   10 +++-
- scripts/kconfig/nconf.gui.c                |    8 ++-
- 10 files changed, 104 insertions(+), 37 deletions(-)
+-- 
+Best regards,
+Stanislav Kinsbursky
