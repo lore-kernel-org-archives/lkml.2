@@ -1,154 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab2G3CEr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 22:04:47 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60778 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab2G3CEq (ORCPT
+	id S1754006Ab2G3CKo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 22:10:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44774 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab2G3CKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 22:04:46 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-98-5015ebbb441d
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Venkatraman S <svenkatr@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        raphael.andy.lee@gmail.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [PATCH RESEND v2] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-Date: Mon, 30 Jul 2012 11:04:41 +0900
-Message-Id: <1343613881-6803-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 29 Jul 2012 22:10:43 -0400
+Date: Mon, 30 Jul 2012 10:19:27 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Ashish Sangwan <ashishsangwan2@gmail.com>
+Cc: Ted Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, lczerner@redhat.com, a.sangwan@samsung.com,
+        namjae.jeon@samsung.com, Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: Re: [PATCH RESEND] Ext4: No need to add inode to orphan list during
+ hole punch
+Message-ID: <20120730021927.GC21674@gmail.com>
+Mail-Followup-To: Ashish Sangwan <ashishsangwan2@gmail.com>,
+	Ted Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, lczerner@redhat.com,
+	a.sangwan@samsung.com, namjae.jeon@samsung.com,
+	Ashish Sangwan <ashish.sangwan2@gmail.com>,
+	Namjae Jeon <linkinjeon@gmail.com>
+References: <1343226214-2068-1-git-send-email-ashish.sangwan2@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343226214-2068-1-git-send-email-ashish.sangwan2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that Extended CSD register(the size of this register
-is larger than CID/CSD) will be referenced more frequently as more
-fields have been added to Extended CSD and it seems that it is not
-a good option to double the memory used.
+On Wed, Jul 25, 2012 at 07:53:34PM +0530, Ashish Sangwan wrote:
+> While performing punch hole for an inode, i_disksize is not changed.
+> So, there is no need to add the inode to orphan list.
+> 
+> Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 
-This patch is intended to avoid the use of bounce buffer for reading
-Extended CSD register in mmc_send_cxd_data().
+Acked-by: Zheng Liu <wenqing.lz@taobao.com>
 
-Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
----
-Changes in v2:
-- Handling on-stack buffer if it's used in caller.
----
- drivers/mmc/core/mmc_ops.c |   56 ++++++++++++++++++++++++++++++++++---------
- 1 files changed, 44 insertions(+), 12 deletions(-)
+Regards,
+Zheng
 
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index 0ed2cc5..dae5492 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -239,13 +239,19 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 	struct mmc_data data = {0};
- 	struct scatterlist sg;
- 	void *data_buf;
-+	int is_on_stack;
- 
--	/* dma onto stack is unsafe/nonportable, but callers to this
--	 * routine normally provide temporary on-stack buffers ...
--	 */
--	data_buf = kmalloc(len, GFP_KERNEL);
--	if (data_buf == NULL)
--		return -ENOMEM;
-+	is_on_stack = object_is_on_stack(buf);
-+	if (is_on_stack) {
-+
-+		/* dma onto stack is unsafe/nonportable, but callers to this
-+		 * routine normally provide temporary on-stack buffers ...
-+		 */
-+		data_buf = kmalloc(len, GFP_KERNEL);
-+		if (data_buf == NULL)
-+			return -ENOMEM;
-+	} else
-+		data_buf = buf;
- 
- 	mrq.cmd = &cmd;
- 	mrq.data = &data;
-@@ -280,8 +286,10 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- 
- 	mmc_wait_for_req(host, &mrq);
- 
--	memcpy(buf, data_buf, len);
--	kfree(data_buf);
-+	if (is_on_stack) {
-+		memcpy(buf, data_buf, len);
-+		kfree(data_buf);
-+	}
- 
- 	if (cmd.error)
- 		return cmd.error;
-@@ -294,24 +302,37 @@ mmc_send_cxd_data(struct mmc_card *card, struct mmc_host *host,
- int mmc_send_csd(struct mmc_card *card, u32 *csd)
- {
- 	int ret, i;
-+	u32 *csd_tmp;
- 
- 	if (!mmc_host_is_spi(card->host))
- 		return mmc_send_cxd_native(card->host, card->rca << 16,
- 				csd, MMC_SEND_CSD);
- 
--	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd, 16);
-+	csd_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!csd_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(card, card->host, MMC_SEND_CSD, csd_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
-+
-+	memcpy(csd, csd_tmp, 16);
- 
- 	for (i = 0;i < 4;i++)
- 		csd[i] = be32_to_cpu(csd[i]);
- 
-+	kfree(csd_tmp);
- 	return 0;
-+
-+err:
-+	kfree(csd_tmp);
-+	return ret;
- }
- 
- int mmc_send_cid(struct mmc_host *host, u32 *cid)
- {
- 	int ret, i;
-+	u32 *cid_tmp;
- 
- 	if (!mmc_host_is_spi(host)) {
- 		if (!host->card)
-@@ -320,14 +341,25 @@ int mmc_send_cid(struct mmc_host *host, u32 *cid)
- 				cid, MMC_SEND_CID);
- 	}
- 
--	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid, 16);
-+	cid_tmp = kmalloc(16, GFP_KERNEL);
-+	if (!cid_tmp)
-+		return -ENOMEM;
-+
-+	ret = mmc_send_cxd_data(NULL, host, MMC_SEND_CID, cid_tmp, 16);
- 	if (ret)
--		return ret;
-+		goto err;
-+
-+	memcpy(cid, cid_tmp, 16);
- 
- 	for (i = 0;i < 4;i++)
- 		cid[i] = be32_to_cpu(cid[i]);
- 
-+	kfree(cid_tmp);
- 	return 0;
-+
-+err:
-+	kfree(cid_tmp);
-+	return ret;
- }
- 
- int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
--- 
-1.7.0.4
-
+> ---
+>  fs/ext4/extents.c |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index 91341ec..3e902f9 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -4801,9 +4801,6 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
+>  	if (IS_ERR(handle))
+>  		return PTR_ERR(handle);
+>  
+> -	err = ext4_orphan_add(handle, inode);
+> -	if (err)
+> -		goto out;
+>  
+>  	/*
+>  	 * Now we need to zero out the non-page-aligned data in the
+> @@ -4889,7 +4886,6 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
+>  	up_write(&EXT4_I(inode)->i_data_sem);
+>  
+>  out:
+> -	ext4_orphan_del(handle, inode);
+>  	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
+>  	ext4_mark_inode_dirty(handle, inode);
+>  	ext4_journal_stop(handle);
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
