@@ -1,216 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab2G3Ta0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:30:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29027 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab2G3T05 (ORCPT
+	id S1755128Ab2G3Tak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:30:40 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:36869 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754553Ab2G3Tai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:26:57 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=0OASTi9CddwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=DC-evEmTfsg53OtuExcA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=qW-UcacD8LxAOg2L:21 a=pxru_vK1F2AO-qjt:21 a=I7R7SJIyhwI14fVqEgMA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120730192655.913232430@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:23:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 02/10] ktest: Add PRE/POST_KTEST and TEST options
-References: <20120730192314.144253843@goodmis.org>
-Content-Disposition: inline; filename=0002-ktest-Add-PRE-POST_KTEST-and-TEST-options.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 30 Jul 2012 15:30:38 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ah9AV4kVM1ng04lJlR7ZqXpPd0OH70vdAVMeIZJnIhrxylf
+ nfECj_wFdcEd5rH5wKv9igiJFfRWOmEf_Bq2zNYfPfMP9UUJ8YXSPjx0wbdg
+ yYfaCIlZ1duaDgmWn4q1WGtCxq8VlBjKSUw_dhzf.WIZnXLvr8Cd5IFjl_o_
+ ffE1Dedz9xCtxw2DzkCSR8B9Gu.baaGdk3Pt0WSrSCsqqMimtif5ZvArwG4k
+ NF0ZAFpjj5CrqsFEvQeIZdvsj1g7iBeRI8w6Y2SR2KCTQnHUk3S.hDna1rsA
+ zTGWFAFhoi2Pjl2n50Wig_fhfBzlCpFvCngGoePutg8iE6Vfu0Q2hoe.7QcH
+ 0C_WORsWUPiCHxCmq2Lz9Ck_KUBh41gdPKvynoemM4bMYMxOd7zAVQDXMp9H
+ dRLbFo89hoMaB0NtCB8Xii74I2AbS7SrqYsidbM7ORFU07I68UV8-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 30 Jul 2012 14:30:35 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: JoonSoo Kim <js1304@gmail.com>
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Sasha Levin <levinsasha928@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [RESEND PATCH 2/4 v3] mm: fix possible incorrect return value
+ of migrate_pages() syscall
+In-Reply-To: <CAAmzW4O04LZim-DZQ5JYEEpBL89Tts_OjRqbRKB2AAdE17O7HQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1207301429500.28838@router.home>
+References: <1343411703-2720-1-git-send-email-js1304@gmail.com> <1343411703-2720-2-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1207271554480.25434@router.home> <CAAmzW4O04LZim-DZQ5JYEEpBL89Tts_OjRqbRKB2AAdE17O7HQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Sat, 28 Jul 2012, JoonSoo Kim wrote:
 
-From: Steven Rostedt <srostedt@redhat.com>
+> 2012/7/28 Christoph Lameter <cl@linux.com>:
+> > On Sat, 28 Jul 2012, Joonsoo Kim wrote:
+> >
+> >> do_migrate_pages() can return the number of pages not migrated.
+> >> Because migrate_pages() syscall return this value directly,
+> >> migrate_pages() syscall may return the number of pages not migrated.
+> >> In fail case in migrate_pages() syscall, we should return error value.
+> >> So change err to -EBUSY
+> >
+> > Lets leave this alone. This would change the migrate_pages semantics
+> > because a successful move of N out of M pages would be marked as a
+> > total failure although pages were in fact moved.
+> >
+>
+> Okay.
+> Then, do we need to fix man-page of migrate_pages() syscall?
+> According to man-page, only returning 0 or -1 is valid.
+> Without this patch, it can return positive value.
 
-In order to let the user add commands before and after ktest runs, the
-PRE_KTEST and POST_KTEST options are defined. They hold shell commands
-that will execute befor ktest runs its first test, as well as when it
-completed its last test.
+Yes the manpage needs updating to say that it can return the number of
+pages not migrated.
 
-The PRE_TEST and POST_TEST will be run befor and after (respectively)
-for a given test. They can either be global (done for all tests) or
-defined by a single test.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/testing/ktest/ktest.pl    |   37 +++++++++++++++++++++++++++++++++++=
-++
- tools/testing/ktest/sample.conf |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 67 insertions(+)
-
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index a40af07..31b9416 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -77,6 +77,11 @@ my $output_config;
- my $test_type;
- my $build_type;
- my $build_options;
-+my $final_post_ktest;
-+my $pre_ktest;
-+my $post_ktest;
-+my $pre_test;
-+my $post_test;
- my $pre_build;
- my $post_build;
- my $pre_build_die;
-@@ -197,6 +202,10 @@ my %option_map =3D (
-     "OUTPUT_DIR"		=3D> \$outputdir,
-     "BUILD_DIR"			=3D> \$builddir,
-     "TEST_TYPE"			=3D> \$test_type,
-+    "PRE_KTEST"			=3D> \$pre_ktest,
-+    "POST_KTEST"		=3D> \$post_ktest,
-+    "PRE_TEST"			=3D> \$pre_test,
-+    "POST_TEST"			=3D> \$post_test,
-     "BUILD_TYPE"		=3D> \$build_type,
-     "BUILD_OPTIONS"		=3D> \$build_options,
-     "PRE_BUILD"			=3D> \$pre_build,
-@@ -1273,6 +1282,10 @@ sub save_logs {
-=20
- sub fail {
-=20
-+	if (defined($post_test)) {
-+		run_command $post_test;
-+	}
-+
- 	if ($die_on_failure) {
- 		dodie @_;
- 	}
-@@ -1937,6 +1950,10 @@ sub halt {
- sub success {
-     my ($i) =3D @_;
-=20
-+    if (defined($post_test)) {
-+	run_command $post_test;
-+    }
-+
-     $successes++;
-=20
-     my $name =3D "";
-@@ -3518,6 +3535,18 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
-=20
-     $start_minconfig_defined =3D 1;
-=20
-+    # The first test may override the PRE_KTEST option
-+    if (defined($pre_ktest) && $i =3D=3D 1) {
-+	doprint "\n";
-+	run_command $pre_ktest;
-+    }
-+
-+    # Any test can override the POST_KTEST option
-+    # The last test takes precedence.
-+    if (defined($post_ktest)) {
-+	$final_post_ktest =3D $post_ktest;
-+    }
-+
-     if (!defined($start_minconfig)) {
- 	$start_minconfig_defined =3D 0;
- 	$start_minconfig =3D $minconfig;
-@@ -3572,6 +3601,10 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
-     doprint "\n\n";
-     doprint "RUNNING TEST $i of $opt{NUM_TESTS} with option $test_type $ru=
-n_type$installme\n\n";
-=20
-+    if (defined($pre_test)) {
-+	run_command $pre_test;
-+    }
-+
-     unlink $dmesg;
-     unlink $buildlog;
-     unlink $testlog;
-@@ -3637,6 +3670,10 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
-     success $i;
- }
-=20
-+if (defined($final_post_ktest)) {
-+    run_command $final_post_ktest;
-+}
-+
- if ($opt{"POWEROFF_ON_SUCCESS"}) {
-     halt;
- } elsif ($opt{"REBOOT_ON_SUCCESS"} && !do_not_reboot && $reboot_success) {
-diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
-onf
-index cf362b3..4472452 100644
---- a/tools/testing/ktest/sample.conf
-+++ b/tools/testing/ktest/sample.conf
-@@ -376,6 +376,24 @@
- # DEFAULTS
- # DEFAULTS SKIP
-=20
-+# If you want to execute some command before the first test runs
-+# you can set this option. Note, it can be set as a default option
-+# or an option in the first test case. All other test cases will
-+# ignore it. If both the default and first test have this option
-+# set, then the first test will take precedence.
-+#
-+# default (undefined)
-+#PRE_KTEST =3D ${SSH} ~/set_up_test
-+
-+# If you want to execute some command after all the tests have
-+# completed, you can set this option. Note, it can be set as a
-+# default or any test case can override it. If multiple test cases
-+# set this option, then the last test case that set it will take
-+# precedence
-+#
-+# default (undefined)
-+#POST_KTEST =3D ${SSH} ~/dismantle_test
-+
- # The default test type (default test)
- # The test types may be:
- #   build   - only build the kernel, do nothing else
-@@ -426,6 +444,18 @@
- # (default 0)
- #NO_INSTALL =3D 1
-=20
-+# If there is a command that you want to run before the individual test
-+# case executes, then you can set this option
-+#
-+# default (undefined)
-+#PRE_TEST =3D ${SSH} reboot_to_special_kernel
-+
-+# If there is a command you want to run after the individual test case
-+# completes, then you can set this option.
-+#
-+# default (undefined)
-+#POST_TEST =3D cd ${BUILD_DIR}; git reset --hard
-+
- # If there is a script that you require to run before the build is done
- # you can specify it with PRE_BUILD.
- #
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQFuAAAAoJEIy3vGnGbaoAo3YQAIUdvYRO4tvyTc6ZGfo9ERHx
-XBx92/3of2bU0tt0Uuf+kR9/tq+Hz+8eR0wEPrOb0VpNiaFPkshwR1Iqnew5q/qM
-BlGSQlUNH+hTKsgWCpKGSF1NTlfVlz0+bVgwTBVVDpOZYXONdyqfDtabLwIYqg2V
-RLnJWuikjYFYGbbVR0dTbcxds7Ncm7WduhoGyJOTQWF6tTn3g4YECjU9nrsR9w8V
-sQgJr/UPf1NYi4/qhjIoqgRWVDBjufLOuGvEPAas3u2VZv3y24FRbmK0bpkHRD9I
-LXDgguAcSivHRTWfOnqQX0nTQ2XExGJmmlMyVx6BarExoJ+rIXC5G/U/o4tlX5R1
-Cux59AM17rQvn1bjKK3tJHvB3pr7GiLf+X2K52cLEec+2eCQ5wKAje03RYdcuHsq
-d92oTNU6U1MR9ER20Adu//3I6ZV8wBuNno1d57ax31hqxYTspZxU/dH8rOQLwVNn
-c1VkgVq56j9kpcJUMbPcfo10Vnq/lAMFRxf+JmUTQrST+YZ1b4fwpVMqwNPbzE7s
-XdQUBHNUQ3trY6e0TWGyhCK0T3+jYzQOZTYsfy/qiamKo6oL7KFftTct5oXoLuPS
-i5BpFrExSRZARRM8QdGWEPCHLrza+/c53vUtKhBQ3vjYVRiIk/nIoFW6lksexqzM
-6pQAWPvh2cA9ccUTuV5Y
-=5omF
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
