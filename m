@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab2G3Tkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:40:42 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:53159 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120Ab2G3Tkk convert rfc822-to-8bit (ORCPT
+	id S1754814Ab2G3ToX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:44:23 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:51591 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab2G3ToV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:40:40 -0400
-Date: Mon, 30 Jul 2012 21:38:59 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: Jaya Kumar <jayalk@intworks.biz>, linux-fbdev@vger.kernel.org
-Subject: [PATCH 6/7] HID: picoLCD: disable version check during probe
-Message-ID: <20120730213859.063173c1@neptune.home>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-References: <20120730213656.0a9f6d30@neptune.home>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Jul 2012 15:44:21 -0400
+X-Greylist: delayed 1351 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 15:44:20 EDT
+Date: Mon, 30 Jul 2012 20:21:40 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] page-table walkers vs memory order
+Message-ID: <20120730192140.GU25459@jl-vm1.vm.bytemark.co.uk>
+References: <1343064870.26034.23.camel@twins>
+ <alpine.LSU.2.00.1207241356350.2094@eggly.anvils>
+ <20120725175628.GH2378@linux.vnet.ibm.com>
+ <alpine.LSU.2.00.1207251313180.1942@eggly.anvils>
+ <20120725211217.GR2378@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120725211217.GR2378@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4ea5454203d991ec85264f64f89ca8855fce69b0
-[HID: Fix race condition between driver core and ll-driver] introduced
-new locking around proce/remove functions that prevent any report/reply
-from hardware to reach driver until it returned from probe.
+Paul E. McKenney wrote:
+> > Does some version of gcc, under the options which we insist upon,
+> > make such optimizations on any of the architectures which we support?
+> 
+> Pretty much any production-quality compiler will do double-fetch
+> and old-value-reuse optimizations, the former especially on 32-bit
+> x86.  I don't know of any production-quality compilers that do value
+> speculation, which would make the compiler act like DEC Alpha hardware,
+> and I would hope that if this does appear, (1) we would have warning
+> and (2) it could be turned off.  But there has been a lot of work on
+> this topic, so we would be foolish to rule it out.
 
-As such, the ask-reply way to checking picoLCD firmware version during
-probe is bound to timeout and let probe fail.
+GCC documentation for IA-64:
 
-Disabling the check lets driver sucessfully probe again.
+   -msched-ar-data-spec
+   -mno-sched-ar-data-spec
+     (En/Dis)able data speculative scheduling after reload. This results
+     in generation of ld.a instructions and the corresponding check
+     instructions (ld.c / chk.a). The default is 'enable'.
 
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
----
- drivers/hid/hid-picolcd_core.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I don't know if that results in value speculation of the relevant kind.
 
-diff --git a/drivers/hid/hid-picolcd_core.c b/drivers/hid/hid-picolcd_core.c
-index 2d7ef68..42d0791 100644
---- a/drivers/hid/hid-picolcd_core.c
-+++ b/drivers/hid/hid-picolcd_core.c
-@@ -478,13 +478,13 @@ static int picolcd_probe_lcd(struct hid_device *hdev, struct picolcd_data *data)
- {
- 	int error;
- 
--	error = picolcd_check_version(hdev);
-+/*	error = picolcd_check_version(hdev);
- 	if (error)
- 		return error;
- 
- 	if (data->version[0] != 0 && data->version[1] != 3)
- 		hid_info(hdev, "Device with untested firmware revision, please submit /sys/kernel/debug/hid/%s/rdesc for this device.\n",
--			 dev_name(&hdev->dev));
-+			 dev_name(&hdev->dev)); */
- 
- 	/* Setup keypad input device */
- 	error = picolcd_init_keys(data, picolcd_in_report(REPORT_KEY_STATE, hdev));
-@@ -534,7 +534,7 @@ err:
- 
- static int picolcd_probe_bootloader(struct hid_device *hdev, struct picolcd_data *data)
- {
--	int error;
-+/*	int error;
- 
- 	error = picolcd_check_version(hdev);
- 	if (error)
-@@ -542,7 +542,7 @@ static int picolcd_probe_bootloader(struct hid_device *hdev, struct picolcd_data
- 
- 	if (data->version[0] != 1 && data->version[1] != 0)
- 		hid_info(hdev, "Device with untested bootloader revision, please submit /sys/kernel/debug/hid/%s/rdesc for this device.\n",
--			 dev_name(&hdev->dev));
-+			 dev_name(&hdev->dev)); */
- 
- 	picolcd_init_devfs(data, NULL, NULL,
- 			picolcd_out_report(REPORT_BL_READ_MEMORY, hdev),
--- 
-1.7.8.6
-
+-- Jamie
