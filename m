@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab2G3KlH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 06:41:07 -0400
-Received: from nat.scz.novell.com ([213.151.88.252]:47053 "EHLO linux.site"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752668Ab2G3KlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 06:41:05 -0400
-Date: Mon, 30 Jul 2012 12:41:02 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Julia.Lawall@lip6.fr, lars@metafoo.de, max@stro.at, namhyung.kim@lge.com,
-        yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild misc changes for v3.6-rc1
-Message-ID: <20120730104102.GA1465@noe.suse.cz>
+	id S1753301Ab2G3Km4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 06:42:56 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59689 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911Ab2G3Kmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 06:42:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <500D1116.7070301@parallels.com>
+References: <500D09C9.7060903@parallels.com>
+	<500D1116.7070301@parallels.com>
+Date: Mon, 30 Jul 2012 12:42:54 +0200
+Message-ID: <CAFLxGvwUhEPNdQvUnue2QFu_EipmBKD3nf0MfMWkqwLTf7jd5Q@mail.gmail.com>
+Subject: Re: [Announce] Checkpoint-restore tool v0.1
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lwn@lwn.net,
+        "criu@openvz.org" <criu@openvz.org>, users@openvz.org,
+        Containers <containers@lists.linux-foundation.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Jul 23, 2012 at 10:53 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
+> This project is an attempt to implement the checkpoint-restore functionality
+> for processes and containers without driving too much code into the kernel tree,
+> but putting there "various oddball helper code" instead.
 
-this is the non-critical part of kbuild for v3.6-rc1:
+Is CRIU able to checkpoint a process tree where one or more processes
+are traced using ptrace()?
+crtools seem to use ptrace() to execute parasite system calls.
+AFAIK this will only work if the target process is currently not
+ptraced() by another process.
 
-* Two new coccinelle semantic patches
-* New scripts/tags.sh regexp
-* scripts/config improvements that I mistakenly applied here instead of
-  in the kconfig branch (but there are no conflicts)
-* Debian packaging fixes
-
+-- 
 Thanks,
-Michal
-
-
-The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
-
-  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
-
-Julia Lawall (1):
-      scripts/coccinelle: list iterator variable semantic patch
-
-Lars-Peter Clausen (1):
-      scripts/coccinelle: Find threaded IRQs requests which are missing IRQF_ONESHOT
-
-Namhyung Kim (1):
-      scripts/tags.sh: Teach [ce]tags about libtraceeevent error codes
-
-Yann E. MORIN (3):
-      scripts/config: add option to not upper-case symbols
-      scripts/config: allow alternate prefix to config option symbol
-      scripts/config: add option to undef a symbol
-
-maximilian attems (2):
-      deb-pkg: Install linux-firmware-image in versioned dir
-      deb-pkg: Add all Makefiles to header package
-
- scripts/coccinelle/iterators/use_after_iter.cocci |  147 +++++++++++++++++++++
- scripts/coccinelle/misc/irqf_oneshot.cocci        |   65 +++++++++
- scripts/config                                    |   60 ++++++---
- scripts/package/builddeb                          |    7 +-
- scripts/tags.sh                                   |    6 +-
- 5 files changed, 264 insertions(+), 21 deletions(-)
- create mode 100644 scripts/coccinelle/iterators/use_after_iter.cocci
- create mode 100644 scripts/coccinelle/misc/irqf_oneshot.cocci
+//richard
