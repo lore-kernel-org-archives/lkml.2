@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab2G3TsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:48:09 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:44933 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754789Ab2G3TsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:48:08 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, trivial@kernel.org
-Subject: [PATCH][TRIVIAL] mm/frontswap: fix uninit'ed variable warning
-Date: Mon, 30 Jul 2012 14:47:44 -0500
-Message-Id: <1343677664-26665-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12073019-9360-0000-0000-000008EB6FE5
+	id S1755162Ab2G3TsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:48:17 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:4421
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755089Ab2G3TsO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 15:48:14 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VS-9(zz98dI9371I542M1432I4015Izz1202hzz8275dhz2fh2a8h668h839h93fhd25hf0ah107ah)
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH net,1/1] hyperv: Add support for setting MAC from within
+ guests
+Thread-Topic: [PATCH net,1/1] hyperv: Add support for setting MAC from
+ within guests
+Thread-Index: AQHNXr4xkC9nKE+X/0yPruu1JeSp7JdB4zqAgAB10dA=
+Date: Mon, 30 Jul 2012 19:48:06 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DDF7B24@TK5EX14MBXC223.redmond.corp.microsoft.com>
+References: <1341940762-18307-1-git-send-email-haiyangz@microsoft.com>
+ <20120730123927.GA29459@aepfle.de>
+In-Reply-To: <20120730123927.GA29459@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6UJmQjS006662
 
-Fixes uninitialized variable warning on 'type' in frontswap_shrink().
-type is set before use by __frontswap_unuse_pages() called by
-__frontswap_shrink() called by frontswap_shrink() before use by
-try_to_unuse().
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
-Based on next-20120730
 
- mm/frontswap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Monday, July 30, 2012 8:39 AM
+> To: Haiyang Zhang
+> Cc: davem@davemloft.net; netdev@vger.kernel.org; KY Srinivasan; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH net,1/1] hyperv: Add support for setting MAC from
+> within guests
+> 
+> On Tue, Jul 10, Haiyang Zhang wrote:
+> 
+> > diff --git a/drivers/net/hyperv/rndis_filter.c
+> > b/drivers/net/hyperv/rndis_filter.c
+> > index 981ebb1..fbf5394 100644
+> > --- a/drivers/net/hyperv/rndis_filter.c
+> > +++ b/drivers/net/hyperv/rndis_filter.c
+> > @@ -47,6 +48,7 @@ struct rndis_request {
+> >  	struct hv_page_buffer buf;
+> >  	/* FIXME: We assumed a fixed size request here. */
+> >  	struct rndis_message request_msg;
+> > +	u8 ext[100];
+> 
+> This array is not referenced in the patch.
+> Please add a comment to the code what the purpose of this array is, and why
+> its size is 100 bytes.
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 6b3e71a..89dc399 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -292,7 +292,7 @@ static int __frontswap_shrink(unsigned long target_pages,
- void frontswap_shrink(unsigned long target_pages)
- {
- 	unsigned long pages_to_unuse = 0;
--	int type, ret;
-+	int uninitialized_var(type), ret;
- 
- 	/*
- 	 * we don't want to hold swap_lock while doing a very
--- 
-1.7.9.5
+It's a buffer for the extended info after the RNDIS message. It's referenced based
+on the data offset in the RNDIS message. 100 byte size is enough for current needs, 
+and should be sufficient for the near future.
 
+I will add a comment to the code.
+
+Thanks,
+- Haiyang
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
