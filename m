@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab2G3TX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:23:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62821 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab2G3TXE (ORCPT
+	id S1754838Ab2G3T1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:27:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27328 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab2G3T05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:23:04 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH 3/6] menuconfig: Extend dialog_textbox so that it can return to a scrolled position
-Date: Mon, 30 Jul 2012 15:22:07 -0400
-Message-Id: <1343676130-29770-4-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1343676130-29770-1-git-send-email-bpoirier@suse.de>
-References: <1343676130-29770-1-git-send-email-bpoirier@suse.de>
+	Mon, 30 Jul 2012 15:26:57 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=fkZsc03rGQ4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=4cyUyEd3mB8MIem1ErQA:9 a=QEXdDO2ut3YA:10 a=4OmSZb3QM2sOMBr5lawA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120730192314.144253843@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 30 Jul 2012 15:23:14 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 00/10] [GIT PULL] ktest: changes for v3.6
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
----
- scripts/kconfig/lxdialog/dialog.h  |    2 +-
- scripts/kconfig/lxdialog/textbox.c |   24 +++++++++++++++++++++++-
- scripts/kconfig/mconf.c            |    8 ++++----
- 3 files changed, 28 insertions(+), 6 deletions(-)
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/scripts/kconfig/lxdialog/dialog.h b/scripts/kconfig/lxdialog/dialog.h
-index 014c029..8e7f43b 100644
---- a/scripts/kconfig/lxdialog/dialog.h
-+++ b/scripts/kconfig/lxdialog/dialog.h
-@@ -210,7 +210,7 @@ int dialog_yesno(const char *title, const char *prompt, int height, int width);
- int dialog_msgbox(const char *title, const char *prompt, int height,
- 		  int width, int pause);
- int dialog_textbox(const char *title, const char *file, int height, int width,
--		   int *keys);
-+		   int *keys, int *_vscroll, int *_hscroll);
- int dialog_menu(const char *title, const char *prompt,
- 		const void *selected, int *s_scroll);
- int dialog_checklist(const char *title, const char *prompt, int height,
-diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
-index eb4ee92..506a095 100644
---- a/scripts/kconfig/lxdialog/textbox.c
-+++ b/scripts/kconfig/lxdialog/textbox.c
-@@ -51,7 +51,7 @@ static void refresh_text_box(WINDOW *dialog, WINDOW *box, int boxh, int boxw,
-  * keys is a null-terminated array
-  */
- int dialog_textbox(const char *title, const char *tbuf, int initial_height,
--		   int initial_width, int *keys)
-+		   int initial_width, int *keys, int *_vscroll, int *_hscroll)
- {
- 	int i, x, y, cur_x, cur_y, key = 0;
- 	int height, width, boxh, boxw;
-@@ -65,6 +65,15 @@ int dialog_textbox(const char *title, const char *tbuf, int initial_height,
- 	buf = tbuf;
- 	page = buf;	/* page is pointer to start of page to be displayed */
- 
-+	if (_vscroll && *_vscroll) {
-+		begin_reached = 0;
-+
-+		for (i = 0; i < *_vscroll; i++)
-+			get_line();
-+	}
-+	if (_hscroll)
-+		hscroll = *_hscroll;
-+
- do_resize:
- 	getmaxyx(stdscr, height, width);
- 	if (height < 8 || width < 8)
-@@ -275,6 +284,19 @@ do_resize:
- 	}
- 	delwin(box);
- 	delwin(dialog);
-+	if (_vscroll) {
-+		const char *s;
-+
-+		s = buf;
-+		*_vscroll = 0;
-+		back_lines(page_length);
-+		while (s < page && (s = strchr(s, '\n'))) {
-+			(*_vscroll)++;
-+			s++;
-+		}
-+	}
-+	if (_hscroll)
-+		*_hscroll = hscroll;
- 	return key;
- }
- 
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index 116e5da..c57cc6a 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -281,7 +281,7 @@ static void conf_string(struct menu *menu);
- static void conf_load(void);
- static void conf_save(void);
- static int show_textbox_ext(const char *title, const char *text, int r, int c,
--			    int *keys);
-+			    int *keys, int *vscroll, int *hscroll);
- static void show_textbox(const char *title, const char *text, int r, int c);
- static void show_helptext(const char *title, const char *text);
- static void show_help(struct menu *menu);
-@@ -622,15 +622,15 @@ static void conf(struct menu *menu)
- }
- 
- static int show_textbox_ext(const char *title, const char *text, int r, int c,
--			    int *keys)
-+			    int *keys, int *vscroll, int *hscroll)
- {
- 	dialog_clear();
--	return dialog_textbox(title, text, r, c, keys);
-+	return dialog_textbox(title, text, r, c, keys, vscroll, hscroll);
- }
- 
- static void show_textbox(const char *title, const char *text, int r, int c)
- {
--	show_textbox_ext(title, text, r, c, (int []) {0});
-+	show_textbox_ext(title, text, r, c, (int []) {0}, NULL, NULL);
- }
- 
- static void show_helptext(const char *title, const char *text)
--- 
-1.7.7
 
+Linus,
+
+Seems that you opened the merge window the day I left for the beach.
+I just got back (yes us Americans only take a week vacation), and just
+got the last of my ktest quilt queue into git.
+
+Please pull the latest ktest-v3.6 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+ktest-v3.6
+
+Head SHA1: 25758cdd91fef784cd5e13aa0580592250a0a5ab
+
+
+Steven Rostedt (10):
+      ktest: Remove commented exit
+      ktest: Add PRE/POST_KTEST and TEST options
+      ktest: Add PRE_INSTALL option
+      ktest: Add CONFIG_BISECT_CHECK option
+      ktest: Fix config bisect with how make oldnoconfig works
+      ktest: Add MAX_MONITOR_WAIT option
+      ktest: Add check for bug or panic during reboot
+      ktest: Reset saved min (force) configs for each test
+      ktest: Ignore errors it tests if IGNORE_ERRORS is set
+      ktest: Allow perl regex expressions in conditional statements
+
+----
+ tools/testing/ktest/ktest.pl    |  167 +++++++++++++++++++++++++++++++++++=
++++-
+ tools/testing/ktest/sample.conf |   52 ++++++++++++
+ 2 files changed, 215 insertions(+), 4 deletions(-)
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQFt/8AAoJEIy3vGnGbaoAKe4P/iCPoajkd5zJDhIKVOFp+qdT
+YeqE0e6pz60dds6lHocwyjq7PFEiBygdkNW65zaUxyCUxNtiEIHToRTZelTZh8l+
+f0QXy/YK+eh6IuA8M6nWwFkW67QLIzKLzZrIPsefKC5bD5X6cClx57ylqpuMvUfs
+76lW0GDT1MRe1HIJrxV1gGLVIZd7CIRKl9Z3mOzVL8DuRRe9hAbYbKaVNRkz3vqo
+pLB3awc4cx4GObFucni+E7doaq8SjNAzL25vapbD8kZ7akpWpHhlXcDs6YTWJhfw
+4fjWzuynhvBDGV4YtsCaMNYG/lGeTfUh/tLPaRn2u/PC13oByuJqtSjJxJ+3uU7z
+m72uAe3xEw+z+NTtm7B8/vKCAbW4tWikzcOC8kK1Z88p+U/v5xQ54gy/tLQ+Bzn+
+yOBHSnMVQkS+T0+FQiDwebJiFjBmJJpt0CN+ZYrHxFlvaM58Zb88wqxC54+zSEn4
+LZVSRRNvOAKctbVPGTzr4N72VL9dbrEDKvVh/Lbt8UCFGZlSFAxXGbjjngg3OIOZ
+9kncWlHYuEMHF8V2preWq4bgAO7WpTlaKt7XEenmULQNKYQo7ABQO1GfDUErqqCb
+xAZ/r+QhVBoyiijJl18y5TkLLuiwwRkDLolBG0QTbVciQgjCbk53IkiCRt+0AwwS
++HUbSGfOdKnz1/gwckg4
+=E3cG
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
