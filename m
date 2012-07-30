@@ -1,342 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab2G3O46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:56:58 -0400
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:63689 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab2G3O44 (ORCPT
+	id S1754719Ab2G3O6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:58:45 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:30377 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754401Ab2G3O6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:56:56 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, fengguang.wu@intel.com,
-        akpm@linux-foundation.org, yinghan@google.com, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V2 4/6] memcg: add per cgroup dirty pages accounting
-References: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
-	<1343384908-20166-1-git-send-email-handai.szj@taobao.com>
-Date: Mon, 30 Jul 2012 07:56:53 -0700
-In-Reply-To: <1343384908-20166-1-git-send-email-handai.szj@taobao.com> (Sha
-	Zhengju's message of "Fri, 27 Jul 2012 18:28:28 +0800")
-Message-ID: <xr93pq7d9u16.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 30 Jul 2012 10:58:44 -0400
+X-IronPort-AV: E=Sophos;i="4.77,679,1336348800"; 
+   d="scan'208";a="13764645"
+Date: Mon, 30 Jul 2012 15:58:02 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/swiotlb: If iommu=soft was not passed
+ in on > 4GB, don't turn it on.
+In-Reply-To: <20120727175546.GH17427@andromeda.dapyr.net>
+Message-ID: <alpine.DEB.2.02.1207301551250.4645@kaball.uk.xensource.com>
+References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com> <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1207271204500.26163@kaball.uk.xensource.com> <20120727175546.GH17427@andromeda.dapyr.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27 2012, Sha Zhengju wrote:
+On Fri, 27 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jul 27, 2012 at 12:06:27PM +0100, Stefano Stabellini wrote:
+> > On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> > > If we boot a 64-bit guest with more than 4GB memory, the SWIOTLB
+> > > gets turned on:
+> > > PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+> > > software IO TLB [mem 0xfb43d000-0xff43cfff] (64MB) mapped at [ffff8800fb43d000-ffff8800ff43cfff]
+> > > 
+> > > which is OK if we had PCI devices, but not if we did not. In a PV
+> > > guest the SWIOTLB ends up asking the hypervisor for precious lowmem
+> > > memory - and 64MB of it per guest. On a 32GB machine, this limits the
+> > > amount of guests that are 4GB to start due to lowmem exhaustion.
+> > > 
+> > > What we do is detect whether the user supplied e820_hole=1
+> > > parameter, which is used to construct an E820 that is similar to
+> > > the machine  - so that the PCI regions do not overlap with RAM regions.
+> > > We check for that by looking at the E820 and seeing if it diverges
+> > > from the standard - and if so (and if iommu=soft was not turned on),
+> > > we disable the check pci_swiotlb_detect_4gb code.
+> > 
+> > What kind of paramter is it?
+> > Is it a Linux cmdline paramter? Or maybe a Xen toolstack parameter?
+> 
+> Its a guest config option.
 
-> From: Sha Zhengju <handai.szj@taobao.com>
->
-> This patch adds memcg routines to count dirty pages, which allows memory controller
-> to maintain an accurate view of the amount of its dirty memory and can provide some
-> info for users while group's direct reclaim is working.
->
-> After Kame's commit 89c06bd5(memcg: use new logic for page stat accounting), we can
-> use 'struct page' flag to test page state instead of per page_cgroup flag. But memcg
-> has a feature to move a page from a cgroup to another one and may have race between
-> "move" and "page stat accounting". So in order to avoid the race we have designed a
-> bigger lock:
->
->          mem_cgroup_begin_update_page_stat()
->          modify page information        -->(a)
->          mem_cgroup_update_page_stat()  -->(b)
->          mem_cgroup_end_update_page_stat()
->
-> It requires (a) and (b)(dirty pages accounting) can stay close enough.
->
-> In the previous two prepare patches, we have reworked the vfs set page dirty routines
-> and now the interfaces are more explicit:
->         incrementing (2):
->                 __set_page_dirty
->                 __set_page_dirty_nobuffers
->         decrementing (2):
->                 clear_page_dirty_for_io
->                 cancel_dirty_page
->
->
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
-> Acked-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  fs/buffer.c                |   16 +++++++++++++---
->  include/linux/memcontrol.h |    1 +
->  mm/filemap.c               |    9 +++++++++
->  mm/memcontrol.c            |   28 +++++++++++++++++++++-------
->  mm/page-writeback.c        |   31 ++++++++++++++++++++++++++-----
->  mm/truncate.c              |    6 ++++++
->  6 files changed, 76 insertions(+), 15 deletions(-)
->
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index ffcfb87..e7b5766 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -613,11 +613,19 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
->  int __set_page_dirty(struct page *page,
->  		struct address_space *mapping, int warn)
->  {
-> +	bool locked;
-> +	unsigned long flags;
-> +	int ret = 1;
-> +
->  	if (unlikely(!mapping))
->  		return !TestSetPageDirty(page);
->  
-> -	if (TestSetPageDirty(page))
-> -		return 0;
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
-> +
-> +	if (TestSetPageDirty(page)) {
-> +		ret = 0;
-> +		goto out;
-> +	}
->  
->  	spin_lock_irq(&mapping->tree_lock);
+Is this option turned on by default if the VM config file contains one
+or more PCI devices statically assigned to the VM?
 
-There are two problems here:
-1. Here we grab mem_cgroup_begin_update_page_stat() lock(s) and then
-   tree_lock (this can cause AB/BA deadlock - more below)
-2. Here we grab the tree_lock with spin_lock_irq(), which assumes that
-   interrupts are not already disabled by spin_lock_irq[save]()..  But
-   mem_cgroup_begin_update_page_stat() may disable interrupts.  One
-   solution would be to convert this spin_lock_irq to spin_lock_irqsave
-   with a second flags local variable.
+If this option is not specified, is it going to be impossible to
+dynamically passthrough a PCI devices after the VM is booted?
 
->  	if (page->mapping) {	/* Race with truncate? */
-> @@ -629,7 +637,9 @@ int __set_page_dirty(struct page *page,
->  	spin_unlock_irq(&mapping->tree_lock);
->  	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
->  
-> -	return 1;
-> +out:
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
-> +	return ret;
->  }
->  EXPORT_SYMBOL(__set_page_dirty);
->  
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index c1e2617..8c6b8ca 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -41,6 +41,7 @@ enum mem_cgroup_stat_index {
->  	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
->  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
-> +	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
->  	MEM_CGROUP_STAT_NSTATS,
->  };
->  
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index a4a5260..7f53fb0 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -62,6 +62,10 @@
->   *      ->swap_lock		(exclusive_swap_page, others)
->   *        ->mapping->tree_lock
->   *
-> + *    ->private_lock		(__set_page_dirty_buffers)
-> + *      ->memcg->move_lock	(mem_cgroup_begin_update_page_stat->move_lock_mem_cgroup)
-> + *        ->mapping->tree_lock
-> + *
->   *  ->i_mutex
->   *    ->i_mmap_mutex		(truncate->unmap_mapping_range)
->   *
-> @@ -112,6 +116,8 @@
->  void __delete_from_page_cache(struct page *page)
->  {
->  	struct address_space *mapping = page->mapping;
-> +	bool locked;
-> +	unsigned long flags;
->  
->  	/*
->  	 * if we're uptodate, flush out into the cleancache, otherwise
-> @@ -139,10 +145,13 @@ void __delete_from_page_cache(struct page *page)
->  	 * Fix it up by doing a final dirty accounting check after
->  	 * having removed the page entirely.
->  	 */
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
 
-Here caller of __delete_from_page_cache() already holds tree_lock and we
-grab mem_cgroup_begin_update_page_stat() lock(s).
+> > Surely there must be a better way to let Linux know if this paramter has
+> > been turned on than looking for ACPI entries in the E820.
+> 
+> I am all open for suggestions. The best way I can think of is to have
+> some early_init variant of XenBus-detect-this-backend-parameter. Can
+> one unhook an "old" XenBus and reset with the full-fledged XenBus
+> init later on?
 
-This can cause an AB/BA deadlock.  We need to be consistent with lock
-ordering.  The filemap.c lock ordering comment indicates that tree_lock
-should be grabbed after the mem_cgroup_begin_update_page_stat() lock(s).
+Assuming that the xen swiotlb is only useful for PCI passthrough devices
+in PV guests, we could write few wrappers for the current xen_swiotlb
+functions like this:
 
->  	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
-> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
->  		dec_zone_page_state(page, NR_FILE_DIRTY);
->  		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
->  	}
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  }
->  
->  /**
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index aef9fb0..cdcd547 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -85,6 +85,7 @@ static const char * const mem_cgroup_stat_names[] = {
->  	"rss",
->  	"mapped_file",
->  	"swap",
-> +	"dirty",
->  };
->  
->  enum mem_cgroup_events_index {
-> @@ -2541,6 +2542,18 @@ void mem_cgroup_split_huge_fixup(struct page *head)
->  }
->  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
->  
-> +static inline
-> +void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
-> +					struct mem_cgroup *to,
-> +					enum mem_cgroup_stat_index idx)
-> +{
-> +	/* Update stat data for mem_cgroup */
-> +	preempt_disable();
-> +	__this_cpu_dec(from->stat->count[idx]);
-> +	__this_cpu_inc(to->stat->count[idx]);
-> +	preempt_enable();
-> +}
-> +
->  /**
->   * mem_cgroup_move_account - move account of the page
->   * @page: the page
-> @@ -2586,13 +2599,14 @@ static int mem_cgroup_move_account(struct page *page,
->  
->  	move_lock_mem_cgroup(from, &flags);
->  
-> -	if (!anon && page_mapped(page)) {
-> -		/* Update mapped_file data for mem_cgroup */
-> -		preempt_disable();
-> -		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -		preempt_enable();
-> -	}
-> +	if (!anon && page_mapped(page))
-> +		mem_cgroup_move_account_page_stat(from, to,
-> +				MEM_CGROUP_STAT_FILE_MAPPED);
-> +
-> +	if (PageDirty(page))
-> +		mem_cgroup_move_account_page_stat(from, to,
-> +				MEM_CGROUP_STAT_FILE_DIRTY);
-> +
->  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
->  
->  	/* caller should have done css_get */
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 93d8d2f..233e7ac 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1932,11 +1932,17 @@ int __set_page_dirty_no_writeback(struct page *page)
->  
->  /*
->   * Helper function for set_page_dirty family.
-> + *
-> + * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
-> + * while modifying struct page state and accounting dirty pages.
-> + * See __set_page_dirty for example.
-> + *
->   * NOTE: This relies on being atomic wrt interrupts.
->   */
->  void account_page_dirtied(struct page *page, struct address_space *mapping)
->  {
->  	if (mapping_cap_account_dirty(mapping)) {
-> +		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
->  		__inc_zone_page_state(page, NR_FILE_DIRTY);
->  		__inc_zone_page_state(page, NR_DIRTIED);
->  		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-> @@ -1976,12 +1982,19 @@ EXPORT_SYMBOL(account_page_writeback);
->   */
->  int __set_page_dirty_nobuffers(struct page *page)
->  {
-> +	bool locked;
-> +	unsigned long flags;
-> +	int ret = 0;
-> +
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
-> +
->  	if (!TestSetPageDirty(page)) {
->  		struct address_space *mapping = page_mapping(page);
->  		struct address_space *mapping2;
->  
-> +		ret = 1;
->  		if (!mapping)
-> -			return 1;
-> +			goto out;
->  
->  		spin_lock_irq(&mapping->tree_lock);
->  		mapping2 = page_mapping(page);
-> @@ -1997,9 +2010,11 @@ int __set_page_dirty_nobuffers(struct page *page)
->  			/* !PageAnon && !swapper_space */
->  			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
->  		}
-> -		return 1;
->  	}
-> -	return 0;
-> +
-> +out:
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
-> +	return ret;
->  }
->  EXPORT_SYMBOL(__set_page_dirty_nobuffers);
->  
-> @@ -2114,6 +2129,9 @@ EXPORT_SYMBOL(set_page_dirty_lock);
->  int clear_page_dirty_for_io(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
-> +	bool locked;
-> +	unsigned long flags;
-> +	int ret = 0;
->  
->  	BUG_ON(!PageLocked(page));
->  
-> @@ -2155,13 +2173,16 @@ int clear_page_dirty_for_io(struct page *page)
->  		 * the desired exclusion. See mm/memory.c:do_wp_page()
->  		 * for more comments.
->  		 */
-> +		mem_cgroup_begin_update_page_stat(page, &locked, &flags);
->  		if (TestClearPageDirty(page)) {
-> +			mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
->  			dec_zone_page_state(page, NR_FILE_DIRTY);
->  			dec_bdi_stat(mapping->backing_dev_info,
->  					BDI_RECLAIMABLE);
-> -			return 1;
-> +			ret = 1;
->  		}
-> -		return 0;
-> +		mem_cgroup_end_update_page_stat(page, &locked, &flags);
-> +		return ret;
->  	}
->  	return TestClearPageDirty(page);
->  }
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index 75801ac..052016a 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -73,9 +73,14 @@ static inline void truncate_partial_page(struct page *page, unsigned partial)
->   */
->  void cancel_dirty_page(struct page *page, unsigned int account_size)
->  {
-> +	bool locked;
-> +	unsigned long flags;
-> +
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
->  	if (TestClearPageDirty(page)) {
->  		struct address_space *mapping = page->mapping;
->  		if (mapping && mapping_cap_account_dirty(mapping)) {
-> +			mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
->  			dec_zone_page_state(page, NR_FILE_DIRTY);
->  			dec_bdi_stat(mapping->backing_dev_info,
->  					BDI_RECLAIMABLE);
-> @@ -83,6 +88,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
->  				task_io_account_cancelled_write(account_size);
->  		}
->  	}
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  }
->  EXPORT_SYMBOL(cancel_dirty_page);
+xen_swiotlb_alloc_coherent_new(..)
+{
+    if (xen_initial_domain() || (xen_pv_domain() && a_pci_device_is_assigned()))
+        xen_swiotlb_alloc_coherent();
+    else
+        return __get_free_pages();
+}
+
+do you think it would work?
+This way it would be far more flexible.
