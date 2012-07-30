@@ -1,125 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab2G3PQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 11:16:36 -0400
-Received: from relay.parallels.com ([195.214.232.42]:32954 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab2G3PQe (ORCPT
+	id S1754669Ab2G3PSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 11:18:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65002 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab2G3PSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 11:16:34 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: "David S. Miller" <davem@davemloft.net>
-CC: Vladimir Davydov <vdavydov@parallels.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] net: batch nf_conntrack_net_exit
-Date: Mon, 30 Jul 2012 19:16:15 +0400
-Message-ID: <1343661375-23442-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 30 Jul 2012 11:18:41 -0400
+Date: Mon, 30 Jul 2012 08:18:37 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 3.4.7
+Message-ID: <20120730151837.GA18353@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch introduces nf_conntrack_cleanup_list(), which cleanups
-nf_conntracks for a list of netns and calls synchronize_net() only
-once for them all.
----
- include/net/netfilter/nf_conntrack_core.h |   10 +++++++++-
- net/netfilter/nf_conntrack_core.c         |   21 +++++++++++++--------
- net/netfilter/nf_conntrack_standalone.c   |   14 +++++++++-----
- 3 files changed, 31 insertions(+), 14 deletions(-)
 
-diff --git a/include/net/netfilter/nf_conntrack_core.h b/include/net/netfilter/nf_conntrack_core.h
-index d8f5b9f..f53b855 100644
---- a/include/net/netfilter/nf_conntrack_core.h
-+++ b/include/net/netfilter/nf_conntrack_core.h
-@@ -26,7 +26,15 @@ extern unsigned int nf_conntrack_in(struct net *net,
- 				    struct sk_buff *skb);
- 
- extern int nf_conntrack_init(struct net *net);
--extern void nf_conntrack_cleanup(struct net *net);
-+extern void nf_conntrack_cleanup_list(struct list_head *net_exit_list);
-+
-+static inline void nf_conntrack_cleanup(struct net *net)
-+{
-+	LIST_HEAD(single);
-+
-+	list_add(&net->exit_list, &single);
-+	nf_conntrack_cleanup_list(&single);
-+}
- 
- extern int nf_conntrack_proto_init(struct net *net);
- extern void nf_conntrack_proto_fini(struct net *net);
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index cf48755..afa62f7 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -1363,21 +1363,26 @@ static void nf_conntrack_cleanup_net(struct net *net)
- 
- /* Mishearing the voices in his head, our hero wonders how he's
-    supposed to kill the mall. */
--void nf_conntrack_cleanup(struct net *net)
-+void nf_conntrack_cleanup_list(struct list_head *net_exit_list)
- {
--	if (net_eq(net, &init_net))
--		RCU_INIT_POINTER(ip_ct_attach, NULL);
-+	struct net *net;
-+
-+	list_for_each_entry(net, net_exit_list, exit_list)
-+		if (net_eq(net, &init_net))
-+			RCU_INIT_POINTER(ip_ct_attach, NULL);
- 
- 	/* This makes sure all current packets have passed through
- 	   netfilter framework.  Roll on, two-stage module
- 	   delete... */
- 	synchronize_net();
--	nf_conntrack_proto_fini(net);
--	nf_conntrack_cleanup_net(net);
- 
--	if (net_eq(net, &init_net)) {
--		RCU_INIT_POINTER(nf_ct_destroy, NULL);
--		nf_conntrack_cleanup_init_net();
-+	list_for_each_entry(net, net_exit_list, exit_list) {
-+		nf_conntrack_proto_fini(net);
-+		nf_conntrack_cleanup_net(net);
-+		if (net_eq(net, &init_net)) {
-+			RCU_INIT_POINTER(nf_ct_destroy, NULL);
-+			nf_conntrack_cleanup_init_net();
-+		}
- 	}
- }
- 
-diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-index 9b39432..8f60708 100644
---- a/net/netfilter/nf_conntrack_standalone.c
-+++ b/net/netfilter/nf_conntrack_standalone.c
-@@ -551,16 +551,20 @@ out_init:
- 	return ret;
- }
- 
--static void nf_conntrack_net_exit(struct net *net)
-+static void nf_conntrack_net_exit(struct list_head *net_exit_list)
- {
--	nf_conntrack_standalone_fini_sysctl(net);
--	nf_conntrack_standalone_fini_proc(net);
--	nf_conntrack_cleanup(net);
-+	struct net *net;
-+
-+	list_for_each_entry(net, net_exit_list, exit_list) {
-+		nf_conntrack_standalone_fini_sysctl(net);
-+		nf_conntrack_standalone_fini_proc(net);
-+	}
-+	nf_conntrack_cleanup_list(net_exit_list);
- }
- 
- static struct pernet_operations nf_conntrack_net_ops = {
- 	.init = nf_conntrack_net_init,
--	.exit = nf_conntrack_net_exit,
-+	.exit_batch = nf_conntrack_net_exit,
- };
- 
- static int __init nf_conntrack_standalone_init(void)
--- 
-1.7.1
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+I'm announcing the release of the 3.4.7 kernel.
+
+All users of the 3.4 kernel series must upgrade.
+
+The updated 3.4.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                            |    2 -
+ arch/arm/plat-s5p/clock.c           |    1=20
+ arch/mips/include/asm/thread_info.h |    4 +-
+ arch/mips/kernel/vmlinux.lds.S      |    3 +
+ drivers/hid/hid-core.c              |    1=20
+ drivers/hid/hid-ids.h               |    6 +++
+ drivers/hid/hid-input.c             |    3 +
+ drivers/hid/hid-multitouch.c        |    4 ++
+ drivers/hid/usbhid/hid-quirks.c     |    1=20
+ drivers/md/dm-raid1.c               |    3 +
+ drivers/md/dm-region-hash.c         |    5 ++
+ drivers/md/dm-thin.c                |    6 ++-
+ drivers/md/md.c                     |   36 ++++++++++++-------
+ drivers/md/raid1.c                  |   10 ++++-
+ drivers/target/target_core_cdb.c    |    2 -
+ drivers/target/target_core_pr.c     |    7 ++-
+ drivers/target/tcm_fc/tfc_cmd.c     |    2 +
+ fs/cifs/cifssmb.c                   |   30 ++++++++++++++++
+ fs/cifs/connect.c                   |   18 +++++++++
+ fs/cifs/readdir.c                   |    7 ++-
+ fs/exofs/ore.c                      |    8 ----
+ fs/exofs/ore_raid.c                 |   67 +++++++++++++++++++------------=
+-----
+ fs/ext4/ioctl.c                     |    1=20
+ fs/nfs/objlayout/objio_osd.c        |    9 +++-
+ fs/ubifs/sb.c                       |    8 +++-
+ kernel/time/ntp.c                   |    8 +++-
+ mm/vmscan.c                         |    5 ++
+ 27 files changed, 183 insertions(+), 74 deletions(-)
+
+Aaditya Kumar (1):
+      mm: fix lost kswapd wakeup in kswapd_stop()
+
+Al Viro (1):
+      ext4: fix duplicated mnt_drop_write call in EXT4_IOC_MOVE_EXT
+
+Artem Bityutskiy (1):
+      UBIFS: fix a bug in empty space fix-up
+
+Boaz Harrosh (3):
+      ore: Fix NFS crash by supporting any unaligned RAID IO
+      ore: Remove support of partial IO request (NFS crash)
+      pnfs-obj: don't leak objio_state if ore_write/read fails
+
+Daniel Nicoletti (1):
+      HID: add battery quirk for Apple Wireless ANSI
+
+David Daney (1):
+      MIPS: Properly align the .data..init_task section.
+
+Frank Kunz (1):
+      HID: add Sennheiser BTD500USB device support
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.7
+
+Jeff Layton (3):
+      cifs: always update the inode cache with the results from a FIND_*
+      cifs: on CONFIG_HIGHMEM machines, limit the rsize/wsize to the kmap s=
+pace
+      cifs: when CONFIG_HIGHMEM is set, serialize the read/write kmaps
+
+Jiri Kosina (1):
+      HID: multitouch: Add support for Baanto touchscreen
+
+John Stultz (1):
+      ntp: Fix STA_INS/DEL clearing bug
+
+Mark Rustad (1):
+      tcm_fc: Fix crash seen with aborts and large reads
+
+Mikulas Patocka (3):
+      dm thin: do not send discards to shared blocks
+      dm raid1: fix crash with mirror recovery and discard
+      dm raid1: set discard_zeroes_data_unsupported
+
+NeilBrown (2):
+      md: avoid crash when stopping md array races with closing other open =
+fds.
+      md/raid1: close some possible races on write errors during resync
+
+Roland Dreier (2):
+      target: Clean up returning errors in PR handling code
+      target: Fix range calculation in WRITE SAME emulation when num blocks=
+ =3D=3D 0
+
+Tushar Behera (1):
+      ARM: SAMSUNG: Update default rate for xusbxti clock
+
+
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQFqXNAAoJEDjbvchgkmk+OO8P/3toDA/wCY0QsR+/wG6VBMbK
+NwtEaJY/OGPvjMr3ZJZblk4VyAU6YRDqdsk81KZ6xfpB/5e8frONQk5mVlhh/GUN
+J16hIVfAn0V1Ne+g63TZZF4MqHTDKMqa+1pM1a8SdTXpBOMdCRGZ5eqi8znbFq+j
+X6F2QdrL4KWx9jl0DYRuIcHhoSnWCw3hTrOaItmbSvm+psYVzIMpmP0KVblEc46d
+zqKSiDMy3lpmTMnWQxPethZmFAS2VAC+K6b45vtppZY2JBvqMstw/Ga8JV0gckVE
+7E/xRnQzQQev6MmltqvaQhLBCK0gaFjnLCD91hoU7ozhHPKx/uJxMU4wJAHJ1hzc
+l7jAzHx5ELE/RnxcGZscBYJQu7eiQSpxTDL9kcRHMOdWM0JknfpRvY/vMidLOaeT
+dwWzp5p3YgZ4qGpxqDHtdT8dOVEytjHTOxAq8J24WX9ouCggm/Uio3oigQJYd+3e
+qYKsHmJKWkXgpCvmMCnFSfiSpJGiBkxZQ4x5jNpDNmv8AYTfhHsFvVUnxWyQHKMV
+Axqd0yjDFdvi7SljqpW2ZW0nd8Iboiv+RmDzerpaA1R4JhsK/pTfhfk7tsGX41YK
+IzjU7lM3h6B02UEUurZV0CQFBSe4ENsfWiLaJ4YkwRG7X+UuCVZNFyH7/yCZHxyl
+RAkLFWTgiOkvR43gnsrv
+=WUJ2
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
