@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab2G3RAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:00:05 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:40075 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab2G3RAB (ORCPT
+	id S1754178Ab2G3RAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:00:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56764 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab2G3RAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:00:01 -0400
+	Mon, 30 Jul 2012 13:00:07 -0400
+Message-ID: <5016BD94.4080302@wwwdotorg.org>
+Date: Mon, 30 Jul 2012 11:00:04 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120726154144.GA20964@redhat.com>
-References: <20120726134748.GA20605@localhost>
-	<20120726154144.GA20964@redhat.com>
-Date: Mon, 30 Jul 2012 10:00:00 -0700
-X-Google-Sender-Auth: fNvJrYCq5_bVXbKDiezjCi2cEIQ
-Message-ID: <CAGXu5jKEtJ-ySq-PgU7hvzVgnQrJ91pxSALCoMpqJigeNmRzLg@mail.gmail.com>
-Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 3/3] regmap: enhance regmap-irq to handle 1 IRQ feeding
+ n chips
+References: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org> <1343415716-27134-3-git-send-email-swarren@wwwdotorg.org> <20120729203636.GE4384@opensource.wolfsonmicro.com>
+In-Reply-To: <20120729203636.GE4384@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 26, 2012 at 8:41 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 07/26, Fengguang Wu wrote:
+On 07/29/2012 02:36 PM, Mark Brown wrote:
+> On Fri, Jul 27, 2012 at 01:01:56PM -0600, Stephen Warren wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
 >>
->> Here is a recursive lock possibility:
->>
->>         ptrace_may_access()
->> =>        task_lock(task);
->>             yama_ptrace_access_check()
->>               get_task_comm()
->> =>              task_lock(task);
->
-> I think yama_ptrace_access_check() can simply use ->comm
->
-> Oleg.
->
-> --- x/security/yama/yama_lsm.c
-> +++ x/security/yama/yama_lsm.c
-> @@ -279,12 +279,9 @@ static int yama_ptrace_access_check(stru
->         }
->
->         if (rc) {
-> -               char name[sizeof(current->comm)];
->                 printk_ratelimited(KERN_NOTICE
->                         "ptrace of pid %d was attempted by: %s (pid %d)\n",
-> -                       child->pid,
-> -                       get_task_comm(name, current),
-> -                       current->pid);
-> +                       child->pid, current->comm, current->pid);
->         }
->
->         return rc;
->
+>> Some devices contain a single interrupt output, and multiple separate
+>> interrupt controllers that all trigger that interrupt output, yet provide
+>> no top-level interrupt controller/registers to allow determination of
+>> which child interrupt controller caused the interrupt.
+> 
+> This isn't really anything to do with regmap, it's about implementing
+> shared IRQ support for threaded interrupts.  This is generally useful
+> and shouldn't be tied to regmap, it's common enough for hardware
+> designers to want to use wired or interrupts and it's a limitation of
+> Linux that it can't cope currently.
+> 
+> If are were going to implement it in regmap we shouldn't be faffing
+> around setting up the virtual interrupts, we should just do the right
+> thing and call round all the chips without bouncing it through the IRQ
+> core.
 
-Great catch, thanks! I've sent Oleg's suggestion (with an added
-comment) separately.
+OK, so more like how the max8907.c patch I posted did it than the
+pre-existing arizona.c that I converted did it.
 
--Kees
+I had implemented this in regmap since you'd specifically mentioned
+doing that. If I convert the code not to use separate IRQ domains for
+this, would that be acceptable?
 
--- 
-Kees Cook
-Chrome OS Security
+>> +static irqreturn_t regmaps_irq_thread(int irq, void *data)
+>> +{
+>> +	struct regmap_irq_chips_data *d = data;
+>> +	int ret, i;
+>> +
+>> +	ret = pm_runtime_get_sync(d->dev);
+>> +	if (ret < 0) {
+> 
+> This is conditional in the core regmap runtime PM support, it may be
+> actively harmful if the device doesn't need it.
+
+Hmmm. I actually don't see any pm_*() usage in regmap right now. I
+assume this /is/ needed to convert arizona.c, since it's making these
+calls today. I don't need it for max8907.c. Should I add another flag to
+regmap_add_irq_chips() indicating whether this is needed, or ...?
