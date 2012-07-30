@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab2G3Ooj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:44:39 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:21080
+	id S1754878Ab2G3Ooy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:44:54 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:39366
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754810Ab2G3Onz (ORCPT
+	by vger.kernel.org with ESMTP id S1754607Ab2G3Onz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jul 2012 10:43:55 -0400
 X-IronPort-AV: E=Sophos;i="4.77,679,1336341600"; 
-   d="scan'208";a="152028604"
+   d="scan'208";a="152028603"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Alan Stern <stern@rowland.harvard.edu>
 Cc: kernel-janitors@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] drivers/usb/host/ehci-s5p.c: use devm_ functions
-Date: Mon, 30 Jul 2012 16:43:44 +0200
-Message-Id: <1343659425-24563-6-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 3/7] drivers/usb/host/ehci-sead3.c: use devm_ functions
+Date: Mon, 30 Jul 2012 16:43:43 +0200
+Message-Id: <1343659425-24563-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,46 +34,50 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not compiled
 
- drivers/usb/host/ehci-s5p.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/usb/host/ehci-sead3.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-index 9d8f1dd..d055503 100644
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -128,7 +128,7 @@ static int __devinit s5p_ehci_probe(struct platform_device *pdev)
+diff --git a/drivers/usb/host/ehci-sead3.c b/drivers/usb/host/ehci-sead3.c
+index 58c96bd..802dad8 100644
+--- a/drivers/usb/host/ehci-sead3.c
++++ b/drivers/usb/host/ehci-sead3.c
+@@ -112,17 +112,11 @@ static int ehci_hcd_sead3_drv_probe(struct platform_device *pdev)
+ 	hcd->rsrc_start = res->start;
+ 	hcd->rsrc_len = resource_size(res);
+ 
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+-		pr_debug("request_mem_region failed");
+-		ret = -EBUSY;
+-		goto err1;
+-	}
+-
+-	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
++	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (!hcd->regs) {
+ 		pr_debug("ioremap failed");
+ 		ret = -ENOMEM;
+-		goto err2;
++		goto err1;
  	}
  
- 	s5p_ehci->hcd = hcd;
--	s5p_ehci->clk = clk_get(&pdev->dev, "usbhost");
-+	s5p_ehci->clk = devm_clk_get(&pdev->dev, "usbhost");
+ 	/* Root hub has integrated TT. */
+@@ -135,9 +129,6 @@ static int ehci_hcd_sead3_drv_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
  
- 	if (IS_ERR(s5p_ehci->clk)) {
- 		dev_err(&pdev->dev, "Failed to get usbhost clock\n");
-@@ -138,7 +138,7 @@ static int __devinit s5p_ehci_probe(struct platform_device *pdev)
- 
- 	err = clk_enable(s5p_ehci->clk);
- 	if (err)
--		goto fail_clken;
-+		goto fail_clk;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
-@@ -184,8 +184,6 @@ static int __devinit s5p_ehci_probe(struct platform_device *pdev)
- 
- fail_io:
- 	clk_disable(s5p_ehci->clk);
--fail_clken:
--	clk_put(s5p_ehci->clk);
- fail_clk:
+-	iounmap(hcd->regs);
+-err2:
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ err1:
  	usb_put_hcd(hcd);
- 	return err;
-@@ -203,7 +201,6 @@ static int __devexit s5p_ehci_remove(struct platform_device *pdev)
- 		pdata->phy_exit(pdev, S5P_USB_PHY_HOST);
+ 	return ret;
+@@ -148,8 +139,6 @@ static int ehci_hcd_sead3_drv_remove(struct platform_device *pdev)
+ 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
  
- 	clk_disable(s5p_ehci->clk);
--	clk_put(s5p_ehci->clk);
- 
+ 	usb_remove_hcd(hcd);
+-	iounmap(hcd->regs);
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
  	usb_put_hcd(hcd);
+ 	platform_set_drvdata(pdev, NULL);
  
 
