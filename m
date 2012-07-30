@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab2G3T2e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:28:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61061 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab2G3T2b (ORCPT
+	id S1754936Ab2G3T2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:28:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60290 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754862Ab2G3T2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:28:31 -0400
-Date: Mon, 30 Jul 2012 21:28:18 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-sh@vger.kernel.org
-cc: "Koul, Vinod" <vinod.koul@intel.com>, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] serial: sh-sci: fix compilation breakage (3.6)
-Message-ID: <Pine.LNX.4.64.1207302114440.28003@axis700.grange>
+	Mon, 30 Jul 2012 15:28:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:du7lg3x3B6vqoipXGoEwYo0ACLm1LoorMv3EnEaOgjv
- jyzL8doDRWeXyvh8+XTbOaGeOWBHH8uHGDbQ/IUyex7ig4uxmm
- WsQ8Vo3evHQpgTtyvpMHuqq5rTN93QRQcI6bXDyCEFPkNOHo/x
- ulzrNtyLCSLTIYmUrVLoufK0Awn5SQ4YC2GrAs7k39M0lP0spd
- 2ET6wYX1utYmk1IqCOQNb/MK6tgDfk3nCSbYU/LgMVAPe5Rntv
- PuDqRi7vNiOUp4ObL1izj7XqCuYX3ju7Psy28oul6oOsfPKo09
- uJY3npIsaMs106yDswL09eH35/NYEgWe5IUnJ3ZCRFHCKZjxUv
- rJXhR+fNi8K+FJEDtTSB1yfEZk60mrYyZDls/ITnizVyfagkF1
- WQFfW/TDD8k0A==
+In-Reply-To: <20120730055009.GB5830@core.coreip.homeip.net>
+References: <1343283113-16952-1-git-send-email-bleung@chromium.org>
+	<20120730055009.GB5830@core.coreip.homeip.net>
+Date: Mon, 30 Jul 2012 12:28:34 -0700
+X-Google-Sender-Auth: qC7Ce_xqoX7lfXiOm_4sKCACR9A
+Message-ID: <CANLzEktXNikod3Cj=a4hM85z2X29KZVptWWLVh7SMtjROxCx4w@mail.gmail.com>
+Subject: Re: [PATCH] Input: gpio_keys - Report wakeup events if device may wakeup
+From: Benson Leung <bleung@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
+Hi Dmitry,
 
-as has been reported in this
+Yes I see Neil's changes. Thank you for letting me know.
 
-http://thread.gmane.org/gmane.linux.kernel/1294256/focus=16001
+By the way, looking at Neil's changes, would it make sense to check
+for device_may_wakeup(dev) like in my patch so that the wakeup
+behavior can be turned off by setting power/wakeup to disabled?
 
-thread, currently sh-sci doesn't comiple in the mainline and in -next if 
-CONFIG_SERIAL_SH_SCI_DMA is enabled. This patch series fixes this 
-breakage.
+Benson
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+On Sun, Jul 29, 2012 at 10:50 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Benson,
+>
+> On Wed, Jul 25, 2012 at 11:11:53PM -0700, Benson Leung wrote:
+>> If a button is configured to wake the system, report a pm wakeup event.
+>>
+>
+> Thank you for your patch, however I applied more complete patch sent by
+> NeilBrown.
+>
+>> Signed-off-by: Benson Leung <bleung@chromium.org>
+>> ---
+>>  drivers/input/keyboard/gpio_keys.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+>> index cbb1add..15a80e2 100644
+>> --- a/drivers/input/keyboard/gpio_keys.c
+>> +++ b/drivers/input/keyboard/gpio_keys.c
+>> @@ -328,9 +328,13 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
+>>  {
+>>       const struct gpio_keys_button *button = bdata->button;
+>>       struct input_dev *input = bdata->input;
+>> +     struct device *dev = input->dev.parent;
+>>       unsigned int type = button->type ?: EV_KEY;
+>>       int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
+>>
+>> +     if (button->wakeup && device_may_wakeup(dev))
+>> +             pm_wakeup_event(dev, 0);
+>> +
+>>       if (type == EV_ABS) {
+>>               if (state)
+>>                       input_event(input, type, button->code, button->value);
+>> --
+>> 1.7.7.3
+>>
+>
+> --
+> Dmitry
+
+
+
+-- 
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
