@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab2G3XSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 19:18:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9850 "EHLO mx1.redhat.com"
+	id S1755185Ab2G3XXU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 19:23:20 -0400
+Received: from fieldses.org ([174.143.236.118]:34344 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755042Ab2G3XSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 19:18:54 -0400
-Message-ID: <1343690279.8073.215.camel@ul30vt>
-Subject: Re: [GIT PULL (PATCH 0/4)] VFIO driver for v3.6
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Paul Mackerras <paulus@samba.org>
-Cc: torvalds@linux-foundation.org, benh@kernel.crashing.org, aik@ozlabs.ru,
-        david@gibson.dropbear.id.au, gregkh@linuxfoundation.org,
-        joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
-        agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
-        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
-        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com, ddutile@redhat.com
-Date: Mon, 30 Jul 2012 17:17:59 -0600
-In-Reply-To: <20120727053206.GC11870@drongo>
-References: <20120725142254.12800.61860.stgit@bling.home>
-	 <20120727053206.GC11870@drongo>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754826Ab2G3XXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 19:23:19 -0400
+Date: Mon, 30 Jul 2012 19:23:16 -0400
+From: "bfields@fieldses.org" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] SUNRPC: return negative value in case rpcbind client
+ creation error
+Message-ID: <20120730232316.GC21730@fieldses.org>
+References: <20120720114849.23572.91010.stgit@localhost.localdomain>
+ <1343689924.8362.4.camel@lade.trondhjem.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343689924.8362.4.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-27 at 15:32 +1000, Paul Mackerras wrote:
-> On Wed, Jul 25, 2012 at 08:53:06AM -0600, Alex Williamson wrote:
-> > Hi Linus,
+On Mon, Jul 30, 2012 at 11:12:05PM +0000, Myklebust, Trond wrote:
+> On Fri, 2012-07-20 at 15:57 +0400, Stanislav Kinsbursky wrote:
+> > Without this patch kernel will panic on LockD start, because lockd_up() checks
+> > lockd_up_net() result for negative value.
+> > >From my pow it's better to return negative value from rpcbind routines instead
+> > of replacing all such checks like in lockd_up().
 > > 
-> > This series includes the VFIO userspace driver interface for the
-> > 3.6 kernel merge window.  This driver is intended to provide a
-> > secure interface for device access using IOMMU protection for
-> > applications like assignment of physical devices to virtual
-> > machines.  Qemu will be the first user of this interface, enabling
-> > assignment of PCI devices to Qemu guests.  This interface is
-> > intended to eventually replace the x86-specific assignment mechanism
-> > currently available in KVM.  This interface has the advantage of
-> > being more secure, by working with IOMMU groups to ensure device
-> > isolation and providing it's own filtered resource access mechanism,
-> > and also more flexible, in not being x86 or KVM specific (extensions
-> > to enable POWER are already working).
+> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> > ---
+> >  net/sunrpc/rpcb_clnt.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
 > > 
-> > As a new driver, I'm including both the individual patches in email,
-> > as well as a branch to pull from:
-> > 
-> > git://github.com/awilliam/linux-vfio.git for-linus
-> > 
-> > This driver is originally the work of Tom Lyon, but has since been
-> > handed over to me and gone through a complete overhaul thanks to the
-> > input from David Gibson, Ben Herrenschmidt, Chris Wright, Joerg
-> > Roedel, and others.  This driver has been available in linux-next for
-> > the last month.  Thanks,
+> > diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> > index 92509ff..a70acae 100644
+> > --- a/net/sunrpc/rpcb_clnt.c
+> > +++ b/net/sunrpc/rpcb_clnt.c
+> > @@ -251,7 +251,7 @@ static int rpcb_create_local_unix(struct net *net)
+> >  	if (IS_ERR(clnt)) {
+> >  		dprintk("RPC:       failed to create AF_LOCAL rpcbind "
+> >  				"client (errno %ld).\n", PTR_ERR(clnt));
+> > -		result = -PTR_ERR(clnt);
+> > +		result = PTR_ERR(clnt);
+> >  		goto out;
+> >  	}
+> >  
+> > @@ -298,7 +298,7 @@ static int rpcb_create_local_net(struct net *net)
+> >  	if (IS_ERR(clnt)) {
+> >  		dprintk("RPC:       failed to create local rpcbind "
+> >  				"client (errno %ld).\n", PTR_ERR(clnt));
+> > -		result = -PTR_ERR(clnt);
+> > +		result = PTR_ERR(clnt);
+> >  		goto out;
+> >  	}
 > 
-> Linus,
-> 
-> Are you thinking of pulling this driver in for 3.6?  I would be glad
-> to see it go in since we want to use it with KVM on PowerPC.  If
-> possible we'd like the PowerPC bits for it to go in as well.
+> Who is supposed to carry this patch? Is it Bruce or is it me?
 
-I'm pretty anxious to find out as well.  Linus, ping, any thoughts on
-including this in 3.6?  Thanks,
+Works either way.  Either way--it looks like the bug was introduced with
 
-Alex
+c526611dd631b2802b6b0221ffb306c5fa25c86c "SUNRPC: Use a cached RPC
+client and transport for rpcbind upcalls" and
+7402ab19cdd5943c7dd4f3399afe3abda8077ef5 "SUNRPC: Use AF_LOCAL for
+rpcbind upcalls"
 
+and should go to stable as well.
+
+(Looks like I said that before but accidentally dropped everyone off the
+cc.)
+
+--b.
