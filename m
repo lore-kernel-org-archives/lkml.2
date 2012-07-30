@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab2G3RQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:16:46 -0400
-Received: from mail.digidescorp.com ([50.73.98.161]:46891 "EHLO
-	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab2G3RQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:16:44 -0400
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
-	c=simple; q=dns; h=message-id:from;
-	b=gzFkd+xMOAUnmss1Sm8kEw1h+2P7R1tD4oyxv1PftgkFZH+ut6klMhjM4Tju
-	ls6oP6S6shnw5zaLojkULnTxvW/tQOkD778jhHu559u64eRmSvERpx9U1
-	Yw7WWbEjG7CzKzUD8LHbQjqchSFgwL9OeoVm1s+rs8CLIpZDdIRccE=;
-X-Spam-Processed: mail.digidescorp.com, Mon, 30 Jul 2012 12:16:42 -0500
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=1558eb3138=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Message-ID: <1343668599.2153.12.camel@iscandar.digidescorp.com>
-Subject: Re: Alternative to vfork(2) with overcommit off
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: Shea Levy <shea@shealevy.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Jul 2012 12:16:39 -0500
-In-Reply-To: <EC19EF84-3DD4-4B5A-9469-2EC11EE089D6@shealevy.com>
-References: <EC19EF84-3DD4-4B5A-9469-2EC11EE089D6@shealevy.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754453Ab2G3RYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:24:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753487Ab2G3RY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 13:24:29 -0400
+Date: Mon, 30 Jul 2012 14:23:59 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 1/7] perf: Unified API to record selective sets of arch
+ registers
+Message-ID: <20120730172358.GA1004@infradead.org>
+References: <1343391834-10851-1-git-send-email-jolsa@redhat.com>
+ <1343391834-10851-2-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1343391834-10851-2-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-30 at 12:59 -0400, Shea Levy wrote: 
-> Hello,
-> 
-> The vfork(2) manpage states "It is rather unfortunate that Linux revived this specter from the past", but on systems with overcommit turned off fork(2) can be needlessly prohibitive when the goal is to execve(2) right away. Is there a third alternative for the fork/execve case? If not, should the manpage really be so dismissive of vfork?
+Em Fri, Jul 27, 2012 at 02:23:42PM +0200, Jiri Olsa escreveu:
+> This brings a new API to help the selective dump of registers on
+> event sampling, and its implementation for x86 arch.
 
-On noMMU (embedded) systems, fork() is not implementable and vfork() is
-the only option.
-Not everyone can afford a Lexus.
+  CC      arch/x86/kernel/perf_regs.o
+/home/git/linux/arch/x86/kernel/perf_regs.c: In function
+‘perf_reg_validate’:
+/home/git/linux/arch/x86/kernel/perf_regs.c:83: error: ‘EINVAL’
+undeclared (first use in this function)
+/home/git/linux/arch/x86/kernel/perf_regs.c:83: error: (Each undeclared
+identifier is reported only once
+/home/git/linux/arch/x86/kernel/perf_regs.c:83: error: for each function
+it appears in.)
 
-------------------------------------------------------------------------
-Steven J. Magnani               "I claim this network for MARS!
-www.digidescorp.com              Earthling, return my space modulator!"
-
-#include <standard.disclaimer>
-
-
-
+- Arnaldo
