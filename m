@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab2G3Roy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:44:54 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60284 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709Ab2G3Rc0 (ORCPT
+	id S1754721Ab2G3Rpp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:45:45 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36077 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab2G3RcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:26 -0400
+	Mon, 30 Jul 2012 13:32:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 06/41] dm raid1: fix crash with mirror recovery and discard
-Date: Mon, 30 Jul 2012 10:31:05 -0700
-Message-Id: <20120730172901.807917859@linuxfoundation.org>
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: [ 18/41] mm: change isolate mode from #define to bitwise type
+Date: Mon, 30 Jul 2012 10:31:17 -0700
+Message-Id: <20120730172902.734152027@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -30,110 +34,278 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Minchan Kim <minchan.kim@gmail.com>
 
-commit 751f188dd5ab95b3f2b5f2f467c38aae5a2877eb upstream.
+commit 4356f21d09283dc6d39a6f7287a65ddab61e2808 upstream.
 
-This patch fixes a crash when a discard request is sent during mirror
-recovery.
+Stable note: Not tracked in Bugzilla. This patch makes later patches
+	easier to apply but has no other impact.
 
-Firstly, some background.  Generally, the following sequence happens during
-mirror synchronization:
-- function do_recovery is called
-- do_recovery calls dm_rh_recovery_prepare
-- dm_rh_recovery_prepare uses a semaphore to limit the number
-  simultaneously recovered regions (by default the semaphore value is 1,
-  so only one region at a time is recovered)
-- dm_rh_recovery_prepare calls __rh_recovery_prepare,
-  __rh_recovery_prepare asks the log driver for the next region to
-  recover. Then, it sets the region state to DM_RH_RECOVERING. If there
-  are no pending I/Os on this region, the region is added to
-  quiesced_regions list. If there are pending I/Os, the region is not
-  added to any list. It is added to the quiesced_regions list later (by
-  dm_rh_dec function) when all I/Os finish.
-- when the region is on quiesced_regions list, there are no I/Os in
-  flight on this region. The region is popped from the list in
-  dm_rh_recovery_start function. Then, a kcopyd job is started in the
-  recover function.
-- when the kcopyd job finishes, recovery_complete is called. It calls
-  dm_rh_recovery_end. dm_rh_recovery_end adds the region to
-  recovered_regions or failed_recovered_regions list (depending on
-  whether the copy operation was successful or not).
+Change ISOLATE_XXX macro with bitwise isolate_mode_t type.  Normally,
+macro isn't recommended as it's type-unsafe and making debugging harder as
+symbol cannot be passed throught to the debugger.
 
-The above mechanism assumes that if the region is in DM_RH_RECOVERING
-state, no new I/Os are started on this region. When I/O is started,
-dm_rh_inc_pending is called, which increases reg->pending count. When
-I/O is finished, dm_rh_dec is called. It decreases reg->pending count.
-If the count is zero and the region was in DM_RH_RECOVERING state,
-dm_rh_dec adds it to the quiesced_regions list.
+Quote from Johannes
+" Hmm, it would probably be cleaner to fully convert the isolation mode
+into independent flags.  INACTIVE, ACTIVE, BOTH is currently a
+tri-state among flags, which is a bit ugly."
 
-Consequently, if we call dm_rh_inc_pending/dm_rh_dec while the region is
-in DM_RH_RECOVERING state, it could be added to quiesced_regions list
-multiple times or it could be added to this list when kcopyd is copying
-data (it is assumed that the region is not on any list while kcopyd does
-its jobs). This results in memory corruption and crash.
+This patch moves isolate mode from swap.h to mmzone.h by memcontrol.h
 
-There already exist bypasses for REQ_FLUSH requests: REQ_FLUSH requests
-do not belong to any region, so they are always added to the sync list
-in do_writes. dm_rh_inc_pending does not increase count for REQ_FLUSH
-requests. In mirror_end_io, dm_rh_dec is never called for REQ_FLUSH
-requests. These bypasses avoid the crash possibility described above.
-
-These bypasses were improperly implemented for REQ_DISCARD when
-the mirror target gained discard support in commit
-5fc2ffeabb9ee0fc0e71ff16b49f34f0ed3d05b4 (dm raid1: support discard).
-
-In do_writes, REQ_DISCARD requests is always added to the sync queue and
-immediately dispatched (even if the region is in DM_RH_RECOVERING).  However,
-dm_rh_inc and dm_rh_dec is called for REQ_DISCARD resusts.  So it violates the
-rule that no I/Os are started on DM_RH_RECOVERING regions, and causes the list
-corruption described above.
-
-This patch changes it so that REQ_DISCARD requests follow the same path
-as REQ_FLUSH. This avoids the crash.
-
-Reference: https://bugzilla.redhat.com/837607
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/md/dm-raid1.c       |    2 +-
- drivers/md/dm-region-hash.c |    5 ++++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-raid1.c
-+++ b/drivers/md/dm-raid1.c
-@@ -1210,7 +1210,7 @@ static int mirror_end_io(struct dm_targe
- 	 * We need to dec pending if this was a write.
- 	 */
- 	if (rw == WRITE) {
--		if (!(bio->bi_rw & REQ_FLUSH))
-+		if (!(bio->bi_rw & (REQ_FLUSH | REQ_DISCARD)))
- 			dm_rh_dec(ms->rh, map_context->ll);
- 		return error;
- 	}
---- a/drivers/md/dm-region-hash.c
-+++ b/drivers/md/dm-region-hash.c
-@@ -404,6 +404,9 @@ void dm_rh_mark_nosync(struct dm_region_
- 		return;
- 	}
+---
+ Documentation/trace/postprocess/trace-vmscan-postprocess.pl |    8 +-
+ include/linux/memcontrol.h                                  |    3 
+ include/linux/mmzone.h                                      |    8 ++
+ include/linux/swap.h                                        |    7 --
+ include/trace/events/vmscan.h                               |    8 +-
+ mm/compaction.c                                             |    3 
+ mm/memcontrol.c                                             |    3 
+ mm/vmscan.c                                                 |   37 ++++++------
+ 8 files changed, 43 insertions(+), 34 deletions(-)
+
+--- a/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
++++ b/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
+@@ -379,10 +379,10 @@ EVENT_PROCESS:
  
-+	if (bio->bi_rw & REQ_DISCARD)
-+		return;
+ 			# To closer match vmstat scanning statistics, only count isolate_both
+ 			# and isolate_inactive as scanning. isolate_active is rotation
+-			# isolate_inactive == 0
+-			# isolate_active   == 1
+-			# isolate_both     == 2
+-			if ($isolate_mode != 1) {
++			# isolate_inactive == 1
++			# isolate_active   == 2
++			# isolate_both     == 3
++			if ($isolate_mode != 2) {
+ 				$perprocesspid{$process_pid}->{HIGH_NR_SCANNED} += $nr_scanned;
+ 			}
+ 			$perprocesspid{$process_pid}->{HIGH_NR_CONTIG_DIRTY} += $nr_contig_dirty;
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -35,7 +35,8 @@ enum mem_cgroup_page_stat_item {
+ extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+ 					struct list_head *dst,
+ 					unsigned long *scanned, int order,
+-					int mode, struct zone *z,
++					isolate_mode_t mode,
++					struct zone *z,
+ 					struct mem_cgroup *mem_cont,
+ 					int active, int file);
+ 
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -158,6 +158,14 @@ static inline int is_unevictable_lru(enu
+ 	return (l == LRU_UNEVICTABLE);
+ }
+ 
++/* Isolate inactive pages */
++#define ISOLATE_INACTIVE	((__force isolate_mode_t)0x1)
++/* Isolate active pages */
++#define ISOLATE_ACTIVE		((__force isolate_mode_t)0x2)
 +
- 	/* We must inform the log that the sync count has changed. */
- 	log->type->set_region_sync(log, region, 0);
++/* LRU Isolation modes. */
++typedef unsigned __bitwise__ isolate_mode_t;
++
+ enum zone_watermarks {
+ 	WMARK_MIN,
+ 	WMARK_LOW,
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -243,11 +243,6 @@ static inline void lru_cache_add_file(st
+ 	__lru_cache_add(page, LRU_INACTIVE_FILE);
+ }
  
-@@ -524,7 +527,7 @@ void dm_rh_inc_pending(struct dm_region_
- 	struct bio *bio;
+-/* LRU Isolation modes. */
+-#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+-#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+-#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
+-
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+@@ -259,7 +254,7 @@ extern unsigned long mem_cgroup_shrink_n
+ 						unsigned int swappiness,
+ 						struct zone *zone,
+ 						unsigned long *nr_scanned);
+-extern int __isolate_lru_page(struct page *page, int mode, int file);
++extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
+ extern unsigned long shrink_all_memory(unsigned long nr_pages);
+ extern int vm_swappiness;
+ extern int remove_mapping(struct address_space *mapping, struct page *page);
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -266,7 +266,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolat
+ 		unsigned long nr_lumpy_taken,
+ 		unsigned long nr_lumpy_dirty,
+ 		unsigned long nr_lumpy_failed,
+-		int isolate_mode),
++		isolate_mode_t isolate_mode),
  
- 	for (bio = bios->head; bio; bio = bio->bi_next) {
--		if (bio->bi_rw & REQ_FLUSH)
-+		if (bio->bi_rw & (REQ_FLUSH | REQ_DISCARD))
+ 	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
+ 
+@@ -278,7 +278,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolat
+ 		__field(unsigned long, nr_lumpy_taken)
+ 		__field(unsigned long, nr_lumpy_dirty)
+ 		__field(unsigned long, nr_lumpy_failed)
+-		__field(int, isolate_mode)
++		__field(isolate_mode_t, isolate_mode)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -312,7 +312,7 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_templ
+ 		unsigned long nr_lumpy_taken,
+ 		unsigned long nr_lumpy_dirty,
+ 		unsigned long nr_lumpy_failed,
+-		int isolate_mode),
++		isolate_mode_t isolate_mode),
+ 
+ 	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
+ 
+@@ -327,7 +327,7 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_templ
+ 		unsigned long nr_lumpy_taken,
+ 		unsigned long nr_lumpy_dirty,
+ 		unsigned long nr_lumpy_failed,
+-		int isolate_mode),
++		isolate_mode_t isolate_mode),
+ 
+ 	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
+ 
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -371,7 +371,8 @@ static isolate_migrate_t isolate_migrate
+ 		}
+ 
+ 		/* Try isolate the page */
+-		if (__isolate_lru_page(page, ISOLATE_BOTH, 0) != 0)
++		if (__isolate_lru_page(page,
++				ISOLATE_ACTIVE|ISOLATE_INACTIVE, 0) != 0)
  			continue;
- 		rh_inc(rh, dm_rh_bio_to_region(rh, bio));
+ 
+ 		VM_BUG_ON(PageTransCompound(page));
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1251,7 +1251,8 @@ mem_cgroup_get_reclaim_stat_from_page(st
+ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+ 					struct list_head *dst,
+ 					unsigned long *scanned, int order,
+-					int mode, struct zone *z,
++					isolate_mode_t mode,
++					struct zone *z,
+ 					struct mem_cgroup *mem_cont,
+ 					int active, int file)
+ {
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1012,23 +1012,27 @@ keep_lumpy:
+  *
+  * returns 0 on success, -ve errno on failure.
+  */
+-int __isolate_lru_page(struct page *page, int mode, int file)
++int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+ {
++	bool all_lru_mode;
+ 	int ret = -EINVAL;
+ 
+ 	/* Only take pages on the LRU. */
+ 	if (!PageLRU(page))
+ 		return ret;
+ 
++	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
++		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
++
+ 	/*
+ 	 * When checking the active state, we need to be sure we are
+ 	 * dealing with comparible boolean values.  Take the logical not
+ 	 * of each.
+ 	 */
+-	if (mode != ISOLATE_BOTH && (!PageActive(page) != !mode))
++	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
+ 		return ret;
+ 
+-	if (mode != ISOLATE_BOTH && page_is_file_cache(page) != file)
++	if (!all_lru_mode && !!page_is_file_cache(page) != file)
+ 		return ret;
+ 
+ 	/*
+@@ -1076,7 +1080,8 @@ int __isolate_lru_page(struct page *page
+  */
+ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 		struct list_head *src, struct list_head *dst,
+-		unsigned long *scanned, int order, int mode, int file)
++		unsigned long *scanned, int order, isolate_mode_t mode,
++		int file)
+ {
+ 	unsigned long nr_taken = 0;
+ 	unsigned long nr_lumpy_taken = 0;
+@@ -1201,8 +1206,8 @@ static unsigned long isolate_lru_pages(u
+ static unsigned long isolate_pages_global(unsigned long nr,
+ 					struct list_head *dst,
+ 					unsigned long *scanned, int order,
+-					int mode, struct zone *z,
+-					int active, int file)
++					isolate_mode_t mode,
++					struct zone *z,	int active, int file)
+ {
+ 	int lru = LRU_BASE;
+ 	if (active)
+@@ -1448,6 +1453,7 @@ shrink_inactive_list(unsigned long nr_to
+ 	unsigned long nr_taken;
+ 	unsigned long nr_anon;
+ 	unsigned long nr_file;
++	isolate_mode_t reclaim_mode = ISOLATE_INACTIVE;
+ 
+ 	while (unlikely(too_many_isolated(zone, file, sc))) {
+ 		congestion_wait(BLK_RW_ASYNC, HZ/10);
+@@ -1458,15 +1464,15 @@ shrink_inactive_list(unsigned long nr_to
  	}
+ 
+ 	set_reclaim_mode(priority, sc, false);
++	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
++		reclaim_mode |= ISOLATE_ACTIVE;
++
+ 	lru_add_drain();
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+ 	if (scanning_global_lru(sc)) {
+-		nr_taken = isolate_pages_global(nr_to_scan,
+-			&page_list, &nr_scanned, sc->order,
+-			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+-					ISOLATE_BOTH : ISOLATE_INACTIVE,
+-			zone, 0, file);
++		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
++			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
+ 		zone->pages_scanned += nr_scanned;
+ 		if (current_is_kswapd())
+ 			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
+@@ -1475,12 +1481,9 @@ shrink_inactive_list(unsigned long nr_to
+ 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
+ 					       nr_scanned);
+ 	} else {
+-		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
+-			&page_list, &nr_scanned, sc->order,
+-			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+-					ISOLATE_BOTH : ISOLATE_INACTIVE,
+-			zone, sc->mem_cgroup,
+-			0, file);
++		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
++			&nr_scanned, sc->order, reclaim_mode, zone,
++			sc->mem_cgroup, 0, file);
+ 		/*
+ 		 * mem_cgroup_isolate_pages() keeps track of
+ 		 * scanned pages on its own.
 
 
