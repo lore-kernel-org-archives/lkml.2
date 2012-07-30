@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2G3T1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:27:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29027 "EHLO
+	id S1754784Ab2G3T07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:26:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4399 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab2G3T1A (ORCPT
+	with ESMTP id S1753976Ab2G3T05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:27:00 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=_WBENPFcpm8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=lGtuOORj9DeGQxe-CrkA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=09ECwpbCZ-OoF0qQj28A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Mon, 30 Jul 2012 15:26:57 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=ALvfkmUM7zsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=i_dtWveHLpIFDBgpqtUA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=8K36kPUZkLHvUTY_-hUA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120730192658.038948846@goodmis.org>
+Message-Id: <20120730192655.588363291@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:23:23 -0400
+Date: Mon, 30 Jul 2012 15:23:15 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 09/10] ktest: Ignore errors it tests if IGNORE_ERRORS is set
+Subject: [PATCH 01/10] ktest: Remove commented exit
 References: <20120730192314.144253843@goodmis.org>
-Content-Disposition: inline; filename=0009-ktest-Ignore-errors-it-tests-if-IGNORE_ERRORS-is-set.patch
+Content-Disposition: inline; filename=0001-ktest-Remove-commented-exit.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,56 +30,25 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The option IGNORE_ERRORS is used to allow a test to succeed even if a
-warning appears from the kernel. Sometimes kernels will produce warnings
-that are not associated with a test, and the user wants to test
-something else.
-
-The IGNORE_ERRORS works for boot up, but was not preventing test runs to
-succeed if the kernel produced a warning.
+A debug 'exit' was left in ktest.pl. Remove it.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ tools/testing/ktest/ktest.pl |    1 -
+ 1 file changed, 1 deletion(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index c444c4f..a022fb7 100755
+index 292b13a..a40af07 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -2074,6 +2074,7 @@ sub do_run_test {
-     my $line;
-     my $full_line;
-     my $bug =3D 0;
-+    my $bug_ignored =3D 0;
+@@ -2448,7 +2448,6 @@ sub create_config {
+     }
+     close(OUT);
 =20
-     wait_for_monitor 1;
+-#    exit;
+     make_oldconfig;
+ }
 =20
-@@ -2098,7 +2099,11 @@ sub do_run_test {
- 	    doprint $line;
-=20
- 	    if ($full_line =3D~ /call trace:/i) {
--		$bug =3D 1;
-+		if ($ignore_errors) {
-+		    $bug_ignored =3D 1;
-+		} else {
-+		    $bug =3D 1;
-+		}
- 	    }
-=20
- 	    if ($full_line =3D~ /Kernel panic -/) {
-@@ -2111,6 +2116,10 @@ sub do_run_test {
- 	}
-     } while (!$child_done && !$bug);
-=20
-+    if (!$bug && $bug_ignored) {
-+	doprint "WARNING: Call Trace detected but ignored due to IGNORE_ERRORS=3D=
-1\n";
-+    }
-+
-     if ($bug) {
- 	my $failure_start =3D time;
- 	my $now;
 --=20
 1.7.10.4
 
@@ -92,19 +61,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQFuACAAoJEIy3vGnGbaoAfecP/3bDRV0WwdlavN9iqaGJma8H
-Lob0NsDqXCar7xTVrsDTV4P/Bmi/alup5yTMDZlP791fxzZUvSjD0zEDbf2eOgR3
-TAnDF6XXH5Wm7HHi49Tb/Tk8wSc8hBAtQFx+nVxYJmT6ia8StWYxi/QcUIZ3618+
-FvWBvRMR5OFjqrN7uezla09UcjNPVmyybTjRkeTFZ8B3H45+6o+SLZVDsKagbJmm
-9vmmlgIZ9xshEUjy4a4ZpxxrtLEQnjTRun1CXdvko8VZcSDe7rx61eAnEe+8d5Cj
-c0VcGR+wb29fzfDTGohWS0W0C/f+nNwUTlMDMyrmsGVxAtcnBmPFu2iHN7YO6cAL
-QAMmxeBaxpKh8R+M6HcFYux9uT0Uxd7v/MtOhb/t0FNzdlgFyJrDZAOKr1z2H077
-PdW8oMTIEw7yzaHEHJJplb97ZcRLNtmfU1OKYoaa+Q/2KkhimNxQrjPstyUN99Ar
-WzaiFwD2RNeq4CWGcVyE7TsfFGRbuepy2Ku0gxkqsg5BWdJlSwRj9ZSD0ihffexl
-ziW/6M3Xz1IGRBqybiTOcfwPYxhdbpTlB67boN6hwp+Og6EtAJ8V4bzkHBVWLmvD
-2Rvg022TJATKauSGQAIoKD3mz3/Tkm8tsIGjmB/v1LJeM/0hV+unfkKFk1fDSm0e
-3Q+7jRL/9exOSluEEI2K
-=6eR9
+iQIcBAABAgAGBQJQFt//AAoJEIy3vGnGbaoA5J0QAIt5hQheEm0QE2HLy+uIbk8U
+7/0gJjAYefKdxlGtv4cX8kbHkAhJtuVlsDMsSX2cOfn5BrBRoh15DhUoG6gM6Lda
+b9SmFUVhzYZ/0PwGcxw1pjvj0nhfO6SXjePo0XnnfhT3g6mIqqYLlEpXEe0C0cpk
+hORbU4jZBD/zuAs3+fFEH2jQQKLdGIKgu7LCqUGHg/BPMXF/RA2BFaFhL4lzz8zK
+tdcDjWgEfDUMjelDo4Uw0gd49u1Wje2zqx1vUVUurZicnqsGWH3PytK5nAB39N7h
+xrMNLgO+60pm/yS77QSo9z8gCwJCZrW63/FCGG2+tRkH9FZ2hhMsFLBszfPZ7eYW
+dlDevsTnWAPz375EQWsW3obBqEf63wqu4brchPPqbwvWQshk76LNNrUAgAXK/qeA
+1CEmlkcL0FC6ZQqt/0TL/0UjvZXKMrFz/zfRtMLFUG2peZsOeAyZCJpXlGbw9o5r
+wm3IgzQ3c211g/lP3WJerpsDriD51OG+V+mLanTijHr0ckmpGcuwTJM1qMTvz+Pf
+IPMhPo74tqSkfJl83Us5FWTDX8w1rUns8QhYVViUANWib8JOehqdmJXCZ4AS5JNp
+RGIudlKV07ARA7cQTsRjGKcQy1lNmjZctrgW7w68DWj7Vjr21pxOpMYGGoideEDn
+uk68hfK1JD/g4OR+Mm6E
+=IoZJ
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
