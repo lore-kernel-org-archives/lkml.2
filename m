@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab2G3TpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:45:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19735 "EHLO
+	id S1754923Ab2G3TpF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:45:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14463 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab2G3TpD (ORCPT
+	with ESMTP id S1754475Ab2G3TpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:45:03 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=htdQP7KTs1wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=5abIMfYh5AcOCafACo8A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=8YtL82kW95GMLmQlbVgA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Mon, 30 Jul 2012 15:45:02 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=NnE6ERdwzy0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=GkLp1jxkfH7gfOIKq68A:9 a=QEXdDO2ut3YA:10 a=czBgX_4N2yXhkeUQxsgA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120730194501.681442369@goodmis.org>
+Message-Id: <20120730194316.768288008@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:43:17 -0400
+Date: Mon, 30 Jul 2012 15:43:16 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 1/4] localmodconfig: Comments and cleanup for streamline_config.pl
-References: <20120730194316.768288008@goodmis.org>
-Content-Disposition: inline; filename=0001-localmodconfig-Comments-and-cleanup-for-streamline_c.patch
+Subject: [PATCH 0/4] [GIT PULL] localmodconfig: Improve module config removal
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,76 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
 
-Added some more comments and cleaned up part of the the code to use
-a named variable instead of one of the special $1 perl variables.
+Linus,
 
-No functional changes.
+These changes drastically improve the amount of module configs removed
+from a config file. It also adds some debug that I can have users
+easily enable if things do not work for them.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/kconfig/streamline_config.pl |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+Please pull the latest localmodconfig-v3.6 tree, which can be found at:
 
-diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
-ine_config.pl
-index bccf07dd..5c1ce87 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -186,6 +186,7 @@ sub read_kconfig {
- 	    $state =3D "NEW";
- 	    $config =3D $2;
-=20
-+	    # Add depends for 'if' nesting
- 	    for (my $i =3D 0; $i < $iflevel; $i++) {
- 		if ($i) {
- 		    $depends{$config} .=3D " " . $ifdeps[$i];
-@@ -204,10 +205,11 @@ sub read_kconfig {
-=20
- 	# Get the configs that select this config
- 	} elsif ($state ne "NONE" && /^\s*select\s+(\S+)/) {
--	    if (defined($selects{$1})) {
--		$selects{$1} .=3D " " . $config;
-+	    my $conf =3D $1;
-+	    if (defined($selects{$conf})) {
-+		$selects{$conf} .=3D " " . $config;
- 	    } else {
--		$selects{$1} =3D $config;
-+		$selects{$conf} =3D $config;
- 	    }
-=20
- 	# configs without prompts must be selected
-@@ -250,6 +252,7 @@ if ($kconfig) {
-     read_kconfig($kconfig);
- }
-=20
-+# Makefiles can use variables to define their dependencies
- sub convert_vars {
-     my ($line, %vars) =3D @_;
-=20
-@@ -293,6 +296,7 @@ foreach my $makefile (@makefiles) {
-=20
- 	my $objs;
-=20
-+	# Convert variables in a line (could define configs)
- 	$_ =3D convert_vars($_, %make_vars);
-=20
- 	# collect objects after obj-$(CONFIG_FOO_BAR)
-@@ -373,7 +377,8 @@ while (<LIN>) {
- close (LIN);
-=20
- # add to the configs hash all configs that are needed to enable
--# a loaded module.
-+# a loaded module. This is a direct obj-${CONFIG_FOO} +=3D bar.o
-+# where we know we need bar.o so we add FOO to the list.
- my %configs;
- foreach my $module (keys(%modules)) {
-     if (defined($objects{$module})) {
---=20
-1.7.10.4
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-kconfig.git
+localmodconfig-v3.6
+
+Head SHA1: d217733ba4a4b30e27a88753f9eeabd4464ddf19
 
 
+Steven Rostedt (4):
+      localmodconfig: Comments and cleanup for streamline_config.pl
+      localmodconfig: Read in orig config file to avoid extra processing
+      localmodconfig: Check if configs are already set for selects
+      localmodconfig: Add debug environment variable LOCALMODCONFIG_DEBUG
+
+----
+ scripts/kconfig/streamline_config.pl |  175 ++++++++++++++++++++++++++++++=
+----
+ 1 file changed, 158 insertions(+), 17 deletions(-)
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -106,19 +59,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQFuQ9AAoJEIy3vGnGbaoAj+cQAI5gIK7hmMdY8NGcCTRKcf3f
-4azOMgsgg5HE7D0FbhxFsvfderNDADXw9Gd4Vl21SLFZtTiNuc2u3ib335FdGKjy
-joGLtbHtMy80/xanxNTnfrk+dvlS7FfB2NgwW9JQIvjggNWlmrd4baN2wTT9NUGi
-pbN2E5Qe6lKzTNOKNAnOshOkOWz67sdRebjGqDQWRAFO4+JHzclsuRhgvqVY6PJt
-td1t07E9HosqnJQIIGYGPbi/1AssSXiwrhivYVMHOuJ8xiCmUTOiPjhr/ua/Uqun
-AQ5qQfKGNsjMRGjq5Laojzf3oYZqlaOyj+i5NIOlTJ88Nq20go01FXiWcenL9czo
-RkYFYNmpuuOP7GxnBoEWXmVGr2k193E9QgBmdY6YvcB/wak8yaacDnT+9Ex/8Wu2
-zg9Q89kIvNUDhNcrDNqFrtI2X2+xWF1l4KU1miPlTSihfuhG+o2NLSe5z0e8Ter3
-rJsAzhcWmTmuUqMnSQeZSCyI7G04DfaPvxP0nVnKu+J00mGj3ztg65W7y/TDAIxb
-GZsS/PX1DQhc320rTLfJuQn47Onag0BNxRcg5ZZJpW9Z4SrxtdchzGfARVnW07kI
-hNVLYFQQLKF4CFnB6lDYQNknIUtwInO00sdZX6bAcD21vOB8B+teptDJ35tl6KCE
-g76kcmXm47PFHmFaSZGv
-=FAmv
+iQIcBAABAgAGBQJQFuQ6AAoJEIy3vGnGbaoAiq8P/iKtIWWgk/cVlOOSzZMG6XpV
+uNi0zuBU5QBWqJkHhdy2+XJFj+D8LEwmrcYEfE3lv5LTsd9nBuMMQHchA2JDoBHC
+UhkuAXNQGDhd2XB0Vk08jn8ooGXg2JEOAKEtfYsjJZI+DHLhfseJSAHA/gntYYiF
+0YsoAa386BZ89qoHM6ZC5vWpYGUzXL1YVI/3Qqdppdvg4JYYH8SEn/uJ6GT92WuI
+FfLJ3J0GBk1VyuZQJp5UPSzPRRXf/oChHCHCEV/U8kDENq2RNhHsLTVFOAI8Y0VJ
+IncgWT/uk+zEcDR1Jq+41uLcMOMMcc1nroYNYOgHyHXKBPFPZzJr7qYahU6Eqr93
+0tQs4JCx2TNVeLglO1tGvM2gFYLUkDqAWtQtC6mteJ0pNibWSctz4dHu6F0x/c8h
+OeTqUm2h0H/r9syi7KnhkXRyJYisutJYMMBgsrrgQGncr2mQ1+0+7VFNrYTLp0YB
+wYUvnWp5YZFrpDRGkKC0nR4WAkAkrWPV3j+OiLn2H2PL9Cvw/M8w/Bq+/M3sXWJb
+S8rDHTwZBg7l7A70QWvQ8U+u7b5Mv7yWnDMPST1UtBAwReyYFZTrz8SV/6PNLpHv
+q56OjWp0CJAbsf1/S0gxdFLKie+cpmGLvB37iXxnh6Lbd82FwC4stFcvR5cjhS7v
+yaworKBzSUMQRsrf8P5T
+=dHX+
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
