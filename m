@@ -1,304 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab2G3HgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:36:24 -0400
-Received: from svenfoo.org ([82.94.215.22]:60444 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108Ab2G3HgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 03:36:23 -0400
-From: Daniel Mack <zonque@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: eric.piel@tremplin-utc.net, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
-        Daniel Mack <zonque@gmail.com>
-Subject: [PATCH v3 1/2] lis3: add generic DT matching code
-Date: Mon, 30 Jul 2012 09:36:14 +0200
-Message-Id: <1343633775-6268-1-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.7.11.2
+	id S1752627Ab2G3Hi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:38:59 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43474 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab2G3Hi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 03:38:57 -0400
+Message-ID: <50163A09.8060203@linaro.org>
+Date: Mon, 30 Jul 2012 08:38:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 01/18] Documentation: Describe the ux500 realated audio
+ related DT nodes
+References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org> <1343393162-11938-2-git-send-email-lee.jones@linaro.org> <20120729203106.GD4384@opensource.wolfsonmicro.com>
+In-Reply-To: <20120729203106.GD4384@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds logic to parse lis3 properties from a device tree node
-and store them in a freshly allocated lis3lv02d_platform_data.
+On 29/07/12 21:31, Mark Brown wrote:
+> On Fri, Jul 27, 2012 at 01:45:45PM +0100, Lee Jones wrote:
+>
+>> +++ b/Documentation/devicetree/bindings/sound/ux500.txt
+>> @@ -0,0 +1,62 @@
+>> +* ux500 Audio Driver and ab8500 Audio CODEC
+>> +
+>> +Required properties:
+>> + - compatible:
+>> +   - Machine Driver : "stericsson,snd-soc-mop500"
+>> +   - CPU-side DAI   : "stericsson,ux500-msp-i2s"
+>> +   - DMA (platform) : "stericsson,ux500-pcm"
+>> +   - Audio CODEC    : "stericsson,ab8500-codec"
+>
+> What is this a binding document for?  It looks like the binding for a
+> machine driver...
 
-Note that the actual match tables are left out here. This part should
-happen in the drivers that bind to the individual busses (SPI/I2C/PCI).
+No, it's a binding document for all of the ux500 driver and CODEC 
+blocks. Do you really want me to split it all up? I think the only 
+component which could be sanely split-out is the ab8500-codec, which 
+could (should?) live in [1].
 
-Also adds some DT bindinds documentation.
+>> +Optional properties:
+>> + - reg              : Physical base address and length of the device's registers.
+>> + - interrupts       : The interrupt outputs from the device.
+>> + - interrupt-parent : The parent interrupt controller.
+>> + - <name>-supply    : Phandle to the regulator <name> supply
+>
+> ...but these don't look anything like machine driver properties.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
----
-Changes from v2:
- - kzalloc braino
+These properties are relevant for some, but not all of the components 
+above, hence why the are listed at 'optional properties'.
 
-Changes from v1:
- - some typos in properties fixed
+[1] Documentation/devicetree/bindings/mfd/ab8500.
 
-
- Documentation/devicetree/bindings/misc/lis302.txt |  74 ++++++++++++
- drivers/misc/lis3lv02d/lis3lv02d.c                | 137 ++++++++++++++++++++++
- drivers/misc/lis3lv02d/lis3lv02d.h                |   4 +
- 3 files changed, 215 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/lis302.txt
-
-diff --git a/Documentation/devicetree/bindings/misc/lis302.txt b/Documentation/devicetree/bindings/misc/lis302.txt
-new file mode 100644
-index 0000000..66230fd
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/lis302.txt
-@@ -0,0 +1,74 @@
-+LIS302 accelerometer devicetree bindings
-+
-+This device is matched via its bus drivers, and has a number of properties
-+that apply in on the generic device (independent from the bus).
-+
-+
-+Required properties for the SPI bindings:
-+ - compatible: 		should be set to "st,lis3lv02d_spi"
-+ - reg:			the chipselect index
-+ - spi-max-frequency:	maximal bus speed, should be set to 1000000 unless
-+			constrained by external circuitry
-+ - interrupts:		the interrupt generated by the device
-+
-+
-+Optional properties for all bus drivers:
-+
-+ - st,click-single-{x,y,z}:	if present, tells the device to issue an
-+				interrupt on single click events on the
-+				x/y/z axis.
-+ - st,click-double-{x,y,z}:	if present, tells the device to issue an
-+				interrupt on double click events on the
-+				x/y/z axis.
-+ - st,click-thresh-{x,y,z}:	set the x/y/z axis threshold
-+ - st,click-click-time-limit:	click time limit, from 0 to 127.5msec
-+				with step of 0.5 msec
-+ - st,click-latency:		click latency, from 0 to 255 msec with
-+				step of 1 msec.
-+ - st,click-window:		click window, from 0 to 255 msec with
-+				step of 1 msec.
-+ - st,irq{1,2}-disable:		disable IRQ 1/2
-+ - st,irq{1,2}-ff-wu-1:		raise IRQ 1/2 on FF_WU_1 condition
-+ - st,irq{1,2}-ff-wu-2:		raise IRQ 1/2 on FF_WU_2 condition
-+ - st,irq{1,2}-data-ready:	raise IRQ 1/2 on data ready contition
-+ - st,irq{1,2}-click:		raise IRQ 1/2 on click condition
-+ - st,irq-open-drain:		consider IRQ lines open-drain
-+ - st,irq-active-low:		make IRQ lines active low
-+ - st,wu-duration-1:		duration register for Free-Fall/Wake-Up
-+				interrupt 1
-+ - st,wu-duration-2:		duration register for Free-Fall/Wake-Up
-+				interrupt 2
-+ - st,wakeup-{x,y,z}-{lo,hi}:	set wakeup condition on x/y/z axis for
-+				upper/lower limit
-+ - st,highpass-cutoff-hz=:	1, 2, 4 or 8 for 1Hz, 2Hz, 4Hz or 8Hz of
-+				highpass cut-off frequency
-+ - st,hipass{1,2}-disable:	disable highpass 1/2.
-+ - st,default-rate=:		set the default rate
-+ - st,axis-{x,y,z}=:		set the axis to map to the three coordinates
-+
-+
-+Example for a SPI device node:
-+
-+	lis302@0 {
-+		compatible = "st,lis302dl-spi";
-+		reg = <0>;
-+		spi-max-frequency = <1000000>;
-+		interrupt-parent = <&gpio>;
-+		interrupts = <104 0>;
-+
-+		st,click-single-x;
-+		st,click-single-y;
-+		st,click-single-z;
-+		st,click-thresh-x = <10>;
-+		st,click-thresh-y = <10>;
-+		st,click-thresh-z = <10>;
-+		st,irq1-click;
-+		st,irq2-click;
-+		st,wakeup-x-lo;
-+		st,wakeup-x-hi;
-+		st,wakeup-y-lo;
-+		st,wakeup-y-hi;
-+		st,wakeup-z-lo;
-+		st,wakeup-z-hi;
-+	};
-+
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
-index a981e2a..1411fdc 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.c
-@@ -39,6 +39,7 @@
- #include <linux/miscdevice.h>
- #include <linux/pm_runtime.h>
- #include <linux/atomic.h>
-+#include <linux/of_device.h>
- #include "lis3lv02d.h"
- 
- #define DRIVER_NAME     "lis3lv02d"
-@@ -912,6 +913,138 @@ static void lis3lv02d_8b_configure(struct lis3lv02d *lis3,
- 	}
- }
- 
-+#ifdef CONFIG_OF
-+static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
-+{
-+	struct lis3lv02d_platform_data *pdata;
-+	struct device_node *np = lis3->of_node;
-+	u32 tmp;
-+
-+	if (!lis3->of_node)
-+		return 0;
-+
-+	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return -ENOMEM;
-+
-+	if (of_get_property(np, "st,click-single-x", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_X;
-+	if (of_get_property(np, "st,click-double-x", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_X;
-+
-+	if (of_get_property(np, "st,click-single-y", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_Y;
-+	if (of_get_property(np, "st,click-double-y", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_Y;
-+
-+	if (of_get_property(np, "st,click-single-z", NULL))
-+		pdata->click_flags |= LIS3_CLICK_SINGLE_Z;
-+	if (of_get_property(np, "st,click-double-z", NULL))
-+		pdata->click_flags |= LIS3_CLICK_DOUBLE_Z;
-+
-+	if (!of_property_read_u32(np, "st,click-threshold-x", &tmp))
-+		pdata->click_thresh_x = tmp;
-+	if (!of_property_read_u32(np, "st,click-threshold-y", &tmp))
-+		pdata->click_thresh_y = tmp;
-+	if (!of_property_read_u32(np, "st,click-threshold-z", &tmp))
-+		pdata->click_thresh_z = tmp;
-+
-+	if (!of_property_read_u32(np, "st,click-time-limit", &tmp))
-+		pdata->click_time_limit = tmp;
-+	if (!of_property_read_u32(np, "st,click-latency", &tmp))
-+		pdata->click_latency = tmp;
-+	if (!of_property_read_u32(np, "st,click-window", &tmp))
-+		pdata->click_window = tmp;
-+
-+	if (of_get_property(np, "st,irq1-disable", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_DISABLE;
-+	if (of_get_property(np, "st,irq1-ff-wu-1", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_1;
-+	if (of_get_property(np, "st,irq1-ff-wu-2", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_FF_WU_2;
-+	if (of_get_property(np, "st,irq1-data-ready", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_DATA_READY;
-+	if (of_get_property(np, "st,irq1-click", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ1_CLICK;
-+
-+	if (of_get_property(np, "st,irq2-disable", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_DISABLE;
-+	if (of_get_property(np, "st,irq2-ff-wu-1", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_1;
-+	if (of_get_property(np, "st,irq2-ff-wu-2", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_FF_WU_2;
-+	if (of_get_property(np, "st,irq2-data-ready", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_DATA_READY;
-+	if (of_get_property(np, "st,irq2-click", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ2_CLICK;
-+
-+	if (of_get_property(np, "st,irq-open-drain", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ_OPEN_DRAIN;
-+	if (of_get_property(np, "st,irq-active-low", NULL))
-+		pdata->irq_cfg |= LIS3_IRQ_ACTIVE_LOW;
-+
-+	if (!of_property_read_u32(np, "st,wu-duration-1", &tmp))
-+		pdata->duration1 = tmp;
-+	if (!of_property_read_u32(np, "st,wu-duration-2", &tmp))
-+		pdata->duration2 = tmp;
-+
-+	if (of_get_property(np, "st,wakeup-x-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_X_LO;
-+	if (of_get_property(np, "st,wakeup-x-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_X_HI;
-+	if (of_get_property(np, "st,wakeup-y-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Y_LO;
-+	if (of_get_property(np, "st,wakeup-y-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Y_HI;
-+	if (of_get_property(np, "st,wakeup-z-lo", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Z_LO;
-+	if (of_get_property(np, "st,wakeup-z-hi", NULL))
-+		pdata->wakeup_flags |= LIS3_WAKEUP_Z_HI;
-+
-+	if (!of_property_read_u32(np, "st,highpass-cutoff-hz", &tmp)) {
-+		switch (tmp) {
-+		case 1:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_1HZ;
-+			break;
-+		case 2:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_2HZ;
-+			break;
-+		case 4:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_4HZ;
-+			break;
-+		case 8:
-+			pdata->hipass_ctrl = LIS3_HIPASS_CUTFF_8HZ;
-+			break;
-+		}
-+	}
-+
-+	if (of_get_property(np, "st,hipass1-disable", NULL))
-+		pdata->hipass_ctrl |= LIS3_HIPASS1_DISABLE;
-+	if (of_get_property(np, "st,hipass2-disable", NULL))
-+		pdata->hipass_ctrl |= LIS3_HIPASS2_DISABLE;
-+
-+	if (of_get_property(np, "st,axis-x", NULL))
-+		pdata->axis_x = tmp;
-+	if (of_get_property(np, "st,axis-y", NULL))
-+		pdata->axis_y = tmp;
-+	if (of_get_property(np, "st,axis-z", NULL))
-+		pdata->axis_z = tmp;
-+
-+	if (of_get_property(np, "st,default-rate", NULL))
-+		pdata->default_rate = tmp;
-+
-+	lis3->pdata = pdata;
-+
-+	return 0;
-+}
-+
-+#else
-+static int lis3lv02d_init_dt(struct lis3lv02d *lis3)
-+{
-+	return 0;
-+}
-+#endif
-+
- /*
-  * Initialise the accelerometer and the various subsystems.
-  * Should be rather independent of the bus system.
-@@ -922,6 +1055,10 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
- 	irq_handler_t thread_fn;
- 	int irq_flags = 0;
- 
-+	err = lis3lv02d_init_dt(lis3);
-+	if (err < 0)
-+		return err;
-+
- 	lis3->whoami = lis3lv02d_read_8(lis3, WHO_AM_I);
- 
- 	switch (lis3->whoami) {
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.h b/drivers/misc/lis3lv02d/lis3lv02d.h
-index 2b1482a..a296f1d 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.h
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.h
-@@ -282,6 +282,10 @@ struct lis3lv02d {
- 
- 	struct lis3lv02d_platform_data *pdata;	/* for passing board config */
- 	struct mutex		mutex;     /* Serialize poll and selftest */
-+
-+#ifdef CONFIG_OF
-+	struct device_node	*of_node;
-+#endif
- };
- 
- int lis3lv02d_init_device(struct lis3lv02d *lis3);
 -- 
-1.7.11.2
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
