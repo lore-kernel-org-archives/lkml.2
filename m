@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab2G3Jl6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 05:41:58 -0400
-Received: from nbd.name ([46.4.11.11]:50300 "EHLO nbd.name"
+	id S1752875Ab2G3JnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 05:43:13 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54995 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab2G3Jl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 05:41:57 -0400
-Message-ID: <501656C0.9030609@openwrt.org>
-Date: Mon, 30 Jul 2012 11:41:20 +0200
-From: John Crispin <blogic@openwrt.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1752454Ab2G3JnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 05:43:12 -0400
+Date: Mon, 30 Jul 2012 11:43:08 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: gregkh@linuxfoundation.org, arnd@arndb.de, Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: /dev/kmem BUG on mmap
+Message-ID: <20120730094308.GA7913@cmpxchg.org>
+References: <5015B913.5050309@gmail.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Langer <thomas.langer@lantiq.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] OF: pinctrl: MIPS: lantiq: adds support for FALCON
- SoC
-References: <1343112660-12245-1-git-send-email-blogic@openwrt.org>	<1343112660-12245-3-git-send-email-blogic@openwrt.org> <CACRpkdYP8PdcnS2h_-+n9ZdBmMuBPUv9so9WsUyS-X5rMz1qsQ@mail.gmail.com>
-In-Reply-To: <CACRpkdYP8PdcnS2h_-+n9ZdBmMuBPUv9so9WsUyS-X5rMz1qsQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5015B913.5050309@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/07/12 01:23, Linus Walleij wrote:
-> On Tue, Jul 24, 2012 at 8:50 AM, John Crispin <blogic@openwrt.org> wrote:
->
->> Implement support for pinctrl on lantiq/falcon socs. The FALCON has 5 banks
->> of up to 32 pins.
->>
->> Signed-off-by: John Crispin <blogic@openwrt.org>
->> Signed-off-by: Thomas Langer <thomas.langer@lantiq.com>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: devicetree-discuss@lists.ozlabs.org
->> Cc: linux-kernel@vger.kernel.org
-> No big issues and looking really sweet so:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
->> --- a/arch/mips/lantiq/Kconfig
->> +++ b/arch/mips/lantiq/Kconfig
->> @@ -20,6 +20,7 @@ config SOC_XWAY
->>
->>  config SOC_FALCON
->>         bool "FALCON"
->> +       select PINCTRL_FALCON
-> I think you need to add "select PINCTRL" above "select PINCTRL_FALCON"
-> for this to work.
->
-> Atleast I had to do that in the past to get things working.
+On Mon, Jul 30, 2012 at 12:28:35AM +0200, Sasha Levin wrote:
+> Hi all,
+> 
+> I was poking around /dev/kmem related code, and noticed the following in mmap_kmem():
+> 
+>         /* Turn a kernel-virtual address into a physical page frame */
+>         pfn = __pa((u64)vma->vm_pgoff << PAGE_SHIFT) >> PAGE_SHIFT;
+> 
+> Which looked odd since vm_pgoff is the offset into the mapping, so
+> I'd assume that PAGE_OFFSET should be added to it as well, otherwise
+> we get an invalid address.
 
-Hi Linus,
+It's supposed to be used with kernel offsets in the first place,
+i.e. vma->vm_pgoff << PAGE_SHIFT should actually be a kernel virtual
+address.  See 6d3154c Revert "[PATCH] Fix up mmap_kmem".
 
-config LANTIQ selects PINCTRL  globally for all Lantiq SoC so an
-explicit select can be avoided here
+> I tested it by writing something like this:
+> 
+> 	int main(void)
+> 	{
+> 	        int fd;
+> 	        void *addr;
+> 	
+> 	        fd = open("/dev/kmem", O_RDONLY);
+> 	        addr = mmap(NULL, 4096, PROT_READ, MAP_PRIVATE, fd, 4096);
+> 	
+> 	        return 0;
+> 	}
+> 
+> Which indeed triggered a VM_BUG:
+> 
+> [   32.285431] kernel BUG at arch/x86/mm/physaddr.c:18!
 
-Thanks for the review,
-John
+x86's debug-version of __pa() triggers that bug.  I'm reluctant to add
+a whole lot of error checking to this interface, given that you should
+already know what you are doing.  OTOH, crashing like this is not very
+nice, either.
+
+Is there a portable way to check if an address is a kernel virtual
+one?  It looks like comparing to PAGE_OFFSET would work on most archs,
+but not necessarily on powerpc for example.
+
+Johannes
+
+> [   32.285431] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [   32.285431] CPU 0
+> [   32.285431] Pid: 5643, comm: a.out Tainted: G        W    3.5.0-next-20120727-sasha #504
+> [   32.285431] RIP: 0010:[<ffffffff810acd97>]  [<ffffffff810acd97>] __phys_addr+0x57/0xa0
+> [   32.285431] RSP: 0018:ffff88000be67d68  EFLAGS: 00010213
+> [   32.285431] RAX: ffff87ffffffffff RBX: ffff88000d67cb00 RCX: 00000000000080d0
+> [   32.285431] RDX: 0000000000000071 RSI: ffff88000bfc8dc8 RDI: 0000000000001000
+> [   32.285431] RBP: ffff88000be67d68 R08: 0000000000000001 R09: ffff88000bfc8dc8
+> [   32.285431] R10: ffff88000bfc81f8 R11: 0000000000000002 R12: ffff88000bfc8dc8
+> [   32.285431] R13: 00007f26f80e6000 R14: ffff88000bf81000 R15: ffff88000bfc8dc8
+> [   32.285431] FS:  00007f26f80e8700(0000) GS:ffff88000d800000(0000) knlGS:0000000000000000
+> [   32.285431] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [   32.285431] CR2: 00007f26f7c07d50 CR3: 000000000bfb8000 CR4: 00000000000406f0
+> [   32.285431] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   32.285431] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   32.285431] Process a.out (pid: 5643, threadinfo ffff88000be66000, task ffff88000bf2b000)
+> [   32.285431] Stack:
+> [   32.285431]  ffff88000be67d88 ffffffff81bb0737 ffff88000bfc95e0 ffff88000bfc95f0
+> [   32.285431]  ffff88000be67e48 ffffffff812163ae ffff88000d67cb00 0000000000000001
+> [   32.285431]  0000000000000000 0000000000000000 ffff88000be67dd8 ffff88000bfc81f8
+> [   32.285431] Call Trace:
+> [   32.285431]  [<ffffffff81bb0737>] mmap_kmem+0x27/0x90
+> [   32.285431]  [<ffffffff812163ae>] mmap_region+0x35e/0x5f0
+> [   32.285431]  [<ffffffff812168f9>] do_mmap_pgoff+0x2b9/0x350
+> [   32.285431]  [<ffffffff8120120c>] ? vm_mmap_pgoff+0x6c/0xb0
+> [   32.285431]  [<ffffffff81201224>] vm_mmap_pgoff+0x84/0xb0
+> [   32.285431]  [<ffffffff8124f280>] ? fget_raw+0x260/0x260
+> [   32.285431]  [<ffffffff81213d9e>] sys_mmap_pgoff+0x15e/0x190
+> [   32.285431]  [<ffffffff8198ab2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [   32.285431]  [<ffffffff8106e4ed>] sys_mmap+0x1d/0x20
+> [   32.285431]  [<ffffffff8361f6f9>] system_call_fastpath+0x16/0x1b
+> [   32.285431] Code: 00 00 00 00 eb fe 66 0f 1f 44 00 00 48 03 05 91 02 78 03 eb 57 0f 1f 80 00 00 00 00 48 b8 ff ff ff ff ff 87 ff ff 48 39 c7 77 11 <0f> 0b 0f 1f 80 00 00 00 00 eb fe 66 0f 1f 44 00 00 48 b8 00 00
+> [   32.285431] RIP  [<ffffffff810acd97>] __phys_addr+0x57/0xa0
+> [   32.285431]  RSP <ffff88000be67d68>
+> 
+> I could send a patch to do what I think it's supposed to be doing, but I find it odd since apparently /dev/kmem has been broken for a while now - which doesn't make sense.
+> 
+> What am I missing?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
