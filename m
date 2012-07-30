@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab2G3BuD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 21:50:03 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2665 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab2G3Bt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 21:49:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 29 Jul 2012 18:49:49 -0700
-Message-ID: <5015E8AE.8060404@nvidia.com>
-Date: Mon, 30 Jul 2012 10:51:42 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753976Ab2G3Bws (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 21:52:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65153 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753861Ab2G3Bwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 21:52:45 -0400
+X-IronPort-AV: E=Sophos;i="4.77,676,1336320000"; 
+   d="scan'208";a="5504765"
+Message-ID: <5015EA0D.9050501@cn.fujitsu.com>
+Date: Mon, 30 Jul 2012 09:57:33 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <1343390750-3642-2-git-send-email-acourbot@nvidia.com> <20120727181923.GB23564@kroah.com>
-In-Reply-To: <20120727181923.GB23564@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Tony Luck <tony.luck@intel.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [RFC PATCH v5 05/19] memory-hotplug: check whether memory is
+ present or not
+References: <50126B83.3050201@cn.fujitsu.com>	<50126D44.7070608@cn.fujitsu.com> <CA+8MBbL+G=xqkWU4xGF3_Ra7KoeoHuzL6QYcRiKqtVZoOBfLdQ@mail.gmail.com>
+In-Reply-To: <CA+8MBbL+G=xqkWU4xGF3_Ra7KoeoHuzL6QYcRiKqtVZoOBfLdQ@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/30 09:53:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/30 09:53:19,
+	Serialize complete at 2012/07/30 09:53:19
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2012 03:19 AM, Greg Kroah-Hartman wrote:
-> On Fri, Jul 27, 2012 at 09:05:48PM +0900, Alexandre Courbot wrote:
->> Some device drivers (panel backlights especially) need to follow precise
->> sequences for powering on and off, involving gpios, regulators, PWMs
->> with a precise powering order and delays to respect between each steps.
->> These sequences are board-specific, and do not belong to a particular
->> driver - therefore they have been performed by board-specific hook
->> functions to far.
->>
->> With the advent of the device tree and of ARM kernels that are not
->> board-tied, we cannot rely on these board-specific hooks anymore but
->> need a way to implement these sequences in a portable manner. This patch
->> introduces a simple interpreter that can execute such power sequences
->> encoded either as platform data or within the device tree.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>   Documentation/power/power_seq.txt | 120 +++++++++++++++
->>   drivers/base/Kconfig              |   4 +
->>   drivers/base/Makefile             |   1 +
->>   drivers/base/power_seq.c          | 300 ++++++++++++++++++++++++++++++++++++++
->>   include/linux/power_seq.h         | 139 ++++++++++++++++++
->
-> What's wrong with drivers/power/?  I sure don't want to maintain this
-> code, and it seems to not be part of the "driver core" infrastructure.
+At 07/28/2012 04:17 AM, Tony Luck Wrote:
+> On Fri, Jul 27, 2012 at 3:28 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
+>> +static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
+>> +{
+>> +       int i;
+>> +       for (i = 0; i < nr_pages; i++) {
+>> +               if (pfn_present(pfn + 1))
+> 
+> Typo? I think you meant "pfn + i"
 
-I thought about drivers/power/ initially, but quickly realized it was 
-only about the power supply class and its drivers - so I felt like it 
-would be out of place there, as the power sequences have nothing to do 
-with power supply but instead control gpios, regulators and pwms.
+Typo error.
 
-On the other hand I have just noticed that the apparently unrelated 
-Adaptive Voltage Scaling driver just appeared in drivers/power/avs. So 
-if Anton and David are ok with this, maybe I could put the power 
-sequences code in its own subdirectory within drivers/power.
+Thanks for pointing it out.
+Wen Congyang
 
-Thanks,
-Alex.
+> 
+>> +                       continue;
+>> +               else
+>> +                       return -EINVAL;
+>> +       }
+>> +       return 0;
+>> +}
+> 
+> -Tony
+> 
 
