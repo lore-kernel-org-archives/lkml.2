@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab2G3M2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 08:28:39 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:33773 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753422Ab2G3M2h (ORCPT
+	id S1753856Ab2G3M2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 08:28:45 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:47563 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753606Ab2G3M2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 08:28:37 -0400
+	Mon, 30 Jul 2012 08:28:40 -0400
 From: Arun Murthy <arun.murthy@stericsson.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <sjur.brandeland@stericsson.com>, <arun.murthy@stericsson.com>
-Subject: [PATCH 1/4] modem_shm: Add Modem Access Framework
-Date: Mon, 30 Jul 2012 17:58:18 +0530
-Message-ID: <1343651301-5526-2-git-send-email-arun.murthy@stericsson.com>
+Subject: [PATCH 2/4] modem_shm: Register u8500 client for MAF
+Date: Mon, 30 Jul 2012 17:58:19 +0530
+Message-ID: <1343651301-5526-3-git-send-email-arun.murthy@stericsson.com>
 X-Mailer: git-send-email 1.7.4.3
 In-Reply-To: <1343651301-5526-1-git-send-email-arun.murthy@stericsson.com>
 References: <1343651301-5526-1-git-send-email-arun.murthy@stericsson.com>
@@ -22,76 +22,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds Modem Access Framework, which allows for registering platform specific
-modem access mechanisms. The framework also exposes APIs for client drivers
-for getting and releasing access to modem, regardless of the underlying
-platform specific access mechanism.
+Register with Modem Access Framework(MAF) for u8500 platform. This will provide
+interface to enable and disable modem access and also provide the status.
 
 Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/Kconfig                        |    2 +
- drivers/Makefile                       |    1 +
- drivers/modem_shm/Kconfig              |    9 +
- drivers/modem_shm/Makefile             |    1 +
- drivers/modem_shm/modem_access.c       |  419 ++++++++++++++++++++++++++++++++
- include/linux/modem_shm/modem.h        |   64 +++++
- include/linux/modem_shm/modem_client.h |   55 +++++
- 7 files changed, 551 insertions(+), 0 deletions(-)
- create mode 100644 drivers/modem_shm/Kconfig
- create mode 100644 drivers/modem_shm/Makefile
- create mode 100644 drivers/modem_shm/modem_access.c
- create mode 100644 include/linux/modem_shm/modem.h
- create mode 100644 include/linux/modem_shm/modem_client.h
+ drivers/modem_shm/Kconfig       |   11 +++++
+ drivers/modem_shm/Makefile      |    1 +
+ drivers/modem_shm/modem_u8500.c |   96 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 108 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/modem_shm/modem_u8500.c
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index ece958d..dc7c14a 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -152,4 +152,6 @@ source "drivers/vme/Kconfig"
- 
- source "drivers/pwm/Kconfig"
- 
-+source "drivers/modem_shm/Kconfig"
-+
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 5b42184..902dfec 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -139,3 +139,4 @@ obj-$(CONFIG_EXTCON)		+= extcon/
- obj-$(CONFIG_MEMORY)		+= memory/
- obj-$(CONFIG_IIO)		+= iio/
- obj-$(CONFIG_VME_BUS)		+= vme/
-+obj-$(CONFIG_MODEM_SHM)		+= modem_shm/
 diff --git a/drivers/modem_shm/Kconfig b/drivers/modem_shm/Kconfig
-new file mode 100644
-index 0000000..0e5fc7a
---- /dev/null
+index 0e5fc7a..f2b36a9 100644
+--- a/drivers/modem_shm/Kconfig
 +++ b/drivers/modem_shm/Kconfig
-@@ -0,0 +1,9 @@
-+config MODEM_SHM
-+        bool "Modem Access Framework"
-+        default y
-+        help
-+         Add support for Modem Access Framework. It allows different
-+	 platform specific drivers to register modem access mechanisms
-+	 and allows transparent access to modem to the client drivers.
+@@ -7,3 +7,14 @@ config MODEM_SHM
+ 	 and allows transparent access to modem to the client drivers.
+ 
+ 	 If unsure, say N.
++
++config MODEM_U8500
++	bool "Modem Access driver for STE U8500 platform"
++	depends on MODEM_SHM
++	default n
++	help
++	 Add support for Modem Access driver on STE U8500 platform which
++	 uses Shared Memroy as IPC mechanism between Modem processor and
++	 Application processor.
 +
 +	 If unsure, say N.
 diff --git a/drivers/modem_shm/Makefile b/drivers/modem_shm/Makefile
-new file mode 100644
-index 0000000..b77bcc0
---- /dev/null
+index b77bcc0..a9aac0f 100644
+--- a/drivers/modem_shm/Makefile
 +++ b/drivers/modem_shm/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_MODEM_SHM)		:= modem_access.o
-diff --git a/drivers/modem_shm/modem_access.c b/drivers/modem_shm/modem_access.c
+@@ -1 +1,2 @@
+ obj-$(CONFIG_MODEM_SHM)		:= modem_access.o
++obj-$(CONFIG_MODEM_U8500)	+= modem_u8500.o
+diff --git a/drivers/modem_shm/modem_u8500.c b/drivers/modem_shm/modem_u8500.c
 new file mode 100644
-index 0000000..ebb110c
+index 0000000..86966fc
 --- /dev/null
-+++ b/drivers/modem_shm/modem_access.c
-@@ -0,0 +1,419 @@
++++ b/drivers/modem_shm/modem_u8500.c
+@@ -0,0 +1,96 @@
 +/*
 + * Copyright (C) ST-Ericsson SA 2011
 + *
@@ -99,549 +73,95 @@ index 0000000..ebb110c
 + * Author: Kumar Sanghvi
 + *	Arun Murthy <arun.murthy@stericsson.com>
 + *
-+ * Heavily adapted from Regulator framework.
-+ * Provides mechanisms for registering platform specific access
-+ * mechanisms for modem.
-+ * Also, exposes APIs for gettng/releasing the access and even
-+ * query the access status, and the modem usage status.
++ * Platform driver implementing access mechanisms to modem
++ * on U8500 which uses Shared Memroy as IPC between Application
++ * Processor and Modem processor.
 + */
 +#include <linux/module.h>
-+#include <linux/modem_shm/modem.h>
-+#include <linux/modem_shm/modem_client.h>
-+#include <linux/slab.h>
 +#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/modem_shm/modem.h>
++#include <linux/mfd/dbx500-prcmu.h>
 +
-+static DEFINE_MUTEX(modem_list_mutex);
-+static LIST_HEAD(modem_list);
++static int u8500_modem_request(struct modem_dev *mdev)
++{
++	return prcmu_ac_wake_req();
++}
 +
-+struct modem {
-+	struct device *dev;
-+	struct list_head list;
-+	char *modem_name;
-+	struct device_attribute dev_attr;
-+	struct modem_dev *mdev;
-+	atomic_t use;
++static void u8500_modem_release(struct modem_dev *mdev)
++{
++	prcmu_ac_sleep_req();
++}
++
++static int u8500_modem_is_requested(struct modem_dev *mdev)
++{
++	return prcmu_is_ac_wake_requested();
++}
++
++static struct modem_ops u8500_modem_ops = {
++	.request = u8500_modem_request,
++	.release = u8500_modem_release,
++	.is_requested = u8500_modem_is_requested,
 +};
 +
-+static const char *mdev_get_name(struct modem_dev *mdev)
-+{
-+	if (mdev->desc->name)
-+		return mdev->desc->name;
-+	else
-+		return "";
-+}
-+
-+static int _modem_is_requested(struct modem_dev *mdev)
-+{
-+	/* If we don't know then assume that the modem is always on */
-+	if (!mdev->desc->ops->is_requested)
-+		return 0;
-+
-+	return mdev->desc->ops->is_requested(mdev);
-+}
-+
-+/**
-+ * modem_is_requested - check if modem access is requested
-+ * @modem: modem device
-+ *
-+ * Checks whether modem is accessed or not by querying
-+ * the underlying platform specific modem access
-+ * implementation.
-+ */
-+int modem_is_requested(struct modem *modem)
-+{
-+	int ret;
-+
-+	mutex_lock(&modem->mdev->mutex);
-+	ret = _modem_is_requested(modem->mdev);
-+	mutex_unlock(&modem->mdev->mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(modem_is_requested);
-+
-+static int _modem_request(struct modem_dev *mdev)
-+{
-+	int ret;
-+
-+	if (++mdev->use_count == 1) {
-+		ret = _modem_is_requested(mdev);
-+		if (ret == 0)
-+			mdev->desc->ops->request(mdev);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * modem_request - Request access the modem
-+ * @modem: modem device
-+ *
-+ * API to access the modem. It keeps a client
-+ * specific check on whether the particular modem
-+ * requested is accessed or not.
-+ */
-+int modem_request(struct modem *modem)
-+{
-+	struct modem_dev *mdev = modem->mdev;
-+	int ret = 0;
++static struct modem_desc u8500_modem_desc = {
++	.name   = "u8500-shrm-modem",
++	.id     = 0,
++	.ops    = &u8500_modem_ops,
++	.owner  = THIS_MODULE,
++};
 +
 +
-+	mutex_lock(&mdev->mutex);
-+	if (atomic_read(&modem->use) == 1) {
-+		mutex_unlock(&mdev->mutex);
-+		return ret;
-+	}
-+	ret = _modem_request(mdev);
-+	if (ret == 0)
-+		atomic_set(&modem->use, 1);
-+	mutex_unlock(&mdev->mutex);
-+	return ret;
-+}
-+EXPORT_SYMBOL(modem_request);
-+
-+static int _modem_release(struct modem_dev *mdev)
-+{
-+	if (WARN(mdev->use_count <= 0,
-+				"unbalanced releases for %s\n",
-+				mdev_get_name(mdev)))
-+		return -EIO;
-+
-+	if (--mdev->use_count == 0)
-+		mdev->desc->ops->release(mdev);
-+
-+	return 0;
-+}
-+
-+/**
-+ * modem_release - Release access to modem
-+ * @modem: modem device
-+ *
-+ * Releases accesss to the modem. It keeps a client
-+ * specific check on whether a particular modem
-+ * is released or not.
-+ */
-+void modem_release(struct modem *modem)
-+{
-+	struct modem_dev *mdev = modem->mdev;
-+	int ret = 0;
-+
-+	mutex_lock(&mdev->mutex);
-+	if (atomic_read(&modem->use) == 0) {
-+		mutex_unlock(&mdev->mutex);
-+		return;
-+	}
-+	ret = _modem_release(mdev);
-+	if (ret == 0)
-+		atomic_set(&modem->use, 0);
-+	mutex_unlock(&mdev->mutex);
-+}
-+EXPORT_SYMBOL(modem_release);
-+
-+/**
-+ * modem_get_usage - Check if particular client is using modem
-+ * @modem: modem device
-+ *
-+ * Checks whether the particular client is using access to modem.
-+ * This API could be used by client drivers in making their
-+ * suspend decisions.
-+ */
-+int modem_get_usage(struct modem *modem)
-+{
-+	return atomic_read(&modem->use);
-+}
-+EXPORT_SYMBOL(modem_get_usage);
-+
-+static struct modem *create_modem(struct modem_dev *mdev,
-+		struct device *dev,
-+		const char *id)
-+{
-+	struct modem *modem;
-+
-+	modem = kzalloc(sizeof(*modem), GFP_KERNEL);
-+	if (modem == NULL)
-+		return NULL;
-+
-+	mutex_lock(&mdev->mutex);
-+	modem->mdev = mdev;
-+	modem->dev = dev;
-+	list_add(&modem->list, &mdev->client_list);
-+
-+	mutex_unlock(&mdev->mutex);
-+	return modem;
-+
-+}
-+
-+static struct modem *_modem_get(struct device *dev, const char *id,
-+		int exclusive)
-+{
-+	struct modem_dev *mdev_ptr;
-+	struct modem *modem = ERR_PTR(-ENODEV);
-+	int ret;
-+
-+	if (id == NULL) {
-+		pr_err("modem_get with no identifier\n");
-+		return modem;
-+	}
-+
-+	mutex_lock(&modem_list_mutex);
-+	list_for_each_entry(mdev_ptr, &modem_list, modem_list) {
-+		if (strcmp(mdev_get_name(mdev_ptr), id) == 0)
-+			goto found;
-+	}
-+
-+	goto out;
-+
-+found:
-+	if (!try_module_get(mdev_ptr->owner))
-+		goto out;
-+
-+	modem = create_modem(mdev_ptr, dev, id);
-+	if (modem == NULL) {
-+		modem = ERR_PTR(-ENOMEM);
-+		module_put(mdev_ptr->owner);
-+	}
-+
-+	mdev_ptr->open_count++;
-+	ret = _modem_is_requested(mdev_ptr);
-+	if (ret)
-+		mdev_ptr->use_count = 1;
-+	else
-+		mdev_ptr->use_count = 0;
-+
-+out:
-+	mutex_unlock(&modem_list_mutex);
-+	return modem;
-+
-+}
-+
-+/**
-+ * modem_get - Get reference to a particular platform specific modem
-+ * @dev: device
-+ * @id: modem device name
-+ *
-+ * Get reference to a particular modem device.
-+ */
-+struct modem *modem_get(struct device *dev, const char *id)
-+{
-+	return _modem_get(dev, id, 0);
-+}
-+EXPORT_SYMBOL(modem_get);
-+
-+/**
-+ * modem_put - Release reference to a modem device
-+ * @modem: modem device
-+ *
-+ * Release reference to a modem device.
-+ */
-+void modem_put(struct modem *modem)
++static int __devinit u8500_modem_probe(struct platform_device *pdev)
 +{
 +	struct modem_dev *mdev;
++	int err;
 +
-+	if (modem == NULL || IS_ERR(modem))
-+		return;
-+
-+	mutex_lock(&modem_list_mutex);
-+	mdev = modem->mdev;
-+
-+	list_del(&modem->list);
-+	kfree(modem);
-+
-+	mdev->open_count--;
-+
-+	module_put(mdev->owner);
-+	mutex_unlock(&modem_list_mutex);
-+}
-+EXPORT_SYMBOL(modem_put);
-+
-+static ssize_t modem_print_state(char *buf, int state)
-+{
-+	if (state > 0)
-+		return sprintf(buf, "accessed\n");
-+	else if (state == 0)
-+		return sprintf(buf, "released\n");
-+	else
-+		return sprintf(buf, "unknown\n");
-+}
-+
-+static ssize_t modem_state_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct modem_dev *mdev = dev_get_drvdata(dev);
-+	ssize_t ret;
-+
-+	mutex_lock(&mdev->mutex);
-+	ret = modem_print_state(buf, _modem_is_requested(mdev));
-+	mutex_unlock(&mdev->mutex);
-+
-+	return ret;
-+}
-+static DEVICE_ATTR(state, 0444, modem_state_show, NULL);
-+
-+static ssize_t modem_use_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct modem_dev *mdev = dev_get_drvdata(dev);
-+	struct modem *mod;
-+	size_t size = 0;
-+
-+	list_for_each_entry(mod, &mdev->client_list, list) {
-+		if (mod->dev != NULL)
-+			size += sprintf((buf + size), "%s (%d)\n",
-+				dev_name(mod->dev), atomic_read(&mod->use));
-+		else
-+			size += sprintf((buf + size), "unknown (%d)\n",
-+				atomic_read(&mod->use));
-+	}
-+	size += sprintf((buf + size), "\n");
-+
-+	return size;
-+}
-+static DEVICE_ATTR(use, 0444, modem_use_show, NULL);
-+
-+static ssize_t modem_name_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct modem_dev *mdev = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%s\n", mdev_get_name(mdev));
-+}
-+static DEVICE_ATTR(name, 0444, modem_name_show, NULL);
-+
-+static ssize_t modem_num_active_users_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct modem_dev *mdev = dev_get_drvdata(dev);
-+	return sprintf(buf, "%d\n", mdev->use_count);
-+}
-+static DEVICE_ATTR(num_active_users, 0444, modem_num_active_users_show, NULL);
-+
-+static int add_modem_attributes(struct modem_dev *mdev)
-+{
-+	struct device      *dev = &mdev->dev;
-+	struct modem_ops   *ops = mdev->desc->ops;
-+	int                status = 0;
-+
-+	status = device_create_file(dev, &dev_attr_use);
-+	if (status < 0)
-+		return status;
-+
-+	status = device_create_file(dev, &dev_attr_name);
-+	if (status < 0)
-+		return status;
-+
-+	status = device_create_file(dev, &dev_attr_num_active_users);
-+	if (status < 0)
-+		return status;
-+
-+	if (ops->is_requested) {
-+		status = device_create_file(dev, &dev_attr_state);
-+		if (status < 0)
-+			return status;
++	mdev = modem_register(&u8500_modem_desc, &pdev->dev,
++			NULL);
++	if (IS_ERR(mdev)) {
++		err = PTR_ERR(mdev);
++		pr_err("failed to register %s: err %i\n",
++				u8500_modem_desc.name, err);
 +	}
 +
 +	return 0;
 +}
 +
-+/**
-+ * modem_register - register a modem
-+ * @modem_desc: - description for modem
-+ * @dev:        - device
-+ * @driver_data:- driver specific data
-+ *
-+ * Register a modem with the modem access framework, so that
-+ * it could be used by client drivers for accessing the
-+ * modem.
-+ */
-+struct modem_dev *modem_register(struct modem_desc *modem_desc,
-+		struct device *dev,
-+		void *driver_data)
++static int __devexit u8500_modem_remove(struct platform_device *pdev)
 +{
-+	static atomic_t modem_no = ATOMIC_INIT(0);
-+	struct modem_dev *mdev;
++
++	return 0;
++}
++
++static struct platform_driver u8500_modem_driver = {
++	.driver = {
++		.name = "u8500-modem",
++		.owner = THIS_MODULE,
++	},
++	.probe = u8500_modem_probe,
++	.remove = __devexit_p(u8500_modem_remove),
++};
++
++static int __init u8500_modem_init(void)
++{
 +	int ret;
 +
-+	if (modem_desc == NULL)
-+		return ERR_PTR(-EINVAL);
++	ret = platform_driver_register(&u8500_modem_driver);
++	if (ret < 0) {
++		printk(KERN_ERR "u8500_modem: platform driver reg failed\n");
++		return -ENODEV;
++	}
 +
-+	if (modem_desc->name == NULL || modem_desc->ops == NULL)
-+		return ERR_PTR(-EINVAL);
-+
-+	mdev = kzalloc(sizeof(struct modem_dev), GFP_KERNEL);
-+	if (mdev == NULL)
-+		return ERR_PTR(-ENOMEM);
-+
-+	mutex_lock(&modem_list_mutex);
-+
-+	mutex_init(&mdev->mutex);
-+	mdev->modem_data = driver_data;
-+	mdev->owner = modem_desc->owner;
-+	mdev->desc = modem_desc;
-+	INIT_LIST_HEAD(&mdev->client_list);
-+	INIT_LIST_HEAD(&mdev->modem_list);
-+	BLOCKING_INIT_NOTIFIER_HEAD(&mdev->notifier);
-+
-+	/* mdev->dev.class = &modem_class;*/
-+	mdev->dev.parent = dev;
-+	dev_set_name(&mdev->dev, "modem.%d", atomic_inc_return(&modem_no) - 1);
-+	ret = device_register(&mdev->dev);
-+	if (ret != 0)
-+		goto clean;
-+
-+	dev_set_drvdata(&mdev->dev, mdev);
-+
-+	ret = add_modem_attributes(mdev);
-+	if (ret < 0)
-+		goto backoff;
-+
-+	list_add(&mdev->modem_list, &modem_list);
-+
-+out:
-+	mutex_unlock(&modem_list_mutex);
-+	return mdev;
-+
-+backoff:
-+	device_unregister(&mdev->dev);
-+	mdev = ERR_PTR(ret);
-+	goto out;
-+
-+clean:
-+	kfree(mdev);
-+	mdev = ERR_PTR(ret);
-+	goto out;
-+}
-+EXPORT_SYMBOL(modem_register);
-diff --git a/include/linux/modem_shm/modem.h b/include/linux/modem_shm/modem.h
-new file mode 100644
-index 0000000..aab636a
---- /dev/null
-+++ b/include/linux/modem_shm/modem.h
-@@ -0,0 +1,64 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2011
-+ *
-+ * License Terms: GNU General Public License v2
-+ * Author: Kumar Sanghvi
-+ *	Arun Murthy <arun.murthy@stericsson.com>
-+ *
-+ * Heavily adapted from Regulator framework
-+ */
-+#ifndef __MODEM_H__
-+#define __MODEM_H__
-+
-+#include <linux/device.h>
-+
-+struct modem_dev;
-+
-+struct modem_ops {
-+	int (*request)(struct modem_dev *);
-+	void (*release)(struct modem_dev *);
-+	int (*is_requested)(struct modem_dev *);
-+};
-+
-+struct modem_desc {
-+	const char *name;
-+	int id;
-+	struct modem_ops *ops;
-+	struct module *owner;
-+};
-+
-+struct modem_dev {
-+	struct modem_desc *desc;
-+	int use_count;
-+	int open_count;
-+	int exclusive;
-+
-+	struct list_head modem_list;
-+
-+	struct list_head client_list;
-+
-+	struct blocking_notifier_head notifier;
-+	struct mutex mutex;
-+	struct module *owner;
-+	struct device dev;
-+	void *modem_data;
-+};
-+
-+#ifdef CONFIG_MODEM_SHM
-+struct modem_dev *modem_register(struct modem_desc *modem_desc,
-+		struct device *dev,
-+		void *driver_data);
-+void modem_unregister(struct modem_dev *mdev);
-+
-+#else
-+static inline struct modem_dev *modem_register(struct modem_desc *modem_desc,
-+		struct device *dev, void *driver_data)
-+{
-+	return NULL;
-+}
-+
-+static inline void modem_unregister(struct modem_dev *mdev)
-+{
-+}
-+#endif
-+#endif /* __MODEM_H__ */
-diff --git a/include/linux/modem_shm/modem_client.h b/include/linux/modem_shm/modem_client.h
-new file mode 100644
-index 0000000..ad7406a
---- /dev/null
-+++ b/include/linux/modem_shm/modem_client.h
-@@ -0,0 +1,55 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2011
-+ *
-+ * License Terms: GNU General Public License v2
-+ * Author: Kumar Sanghvi
-+ *	Arun Murthy <arun.murthy@stericsson.com>
-+ *
-+ * Heavily adapted from Regulator framework
-+ */
-+#ifndef __MODEM_CLIENT_H__
-+#define __MODEM_CLIENT_H__
-+
-+#include <linux/device.h>
-+
-+struct modem;
-+
-+#ifdef CONFIG_MODEM_SHM
-+struct modem *modem_get(struct device *dev, const char *id);
-+void modem_put(struct modem *modem);
-+int modem_request(struct modem *modem);
-+void modem_release(struct modem *modem);
-+int modem_is_requested(struct modem *modem);
-+int modem_get_usage(struct modem *modem);
-+
-+#else
-+
-+static inline struct modem *modem_get(struct device *dev, const char *id)
-+{
-+	return NULL;
-+}
-+
-+static inline void modem_put(struct modem *modem)
-+{
-+}
-+
-+static inline int modem_request(struct modem *modem)
-+{
 +	return 0;
 +}
 +
-+static inline void modem_release(struct modem *modem)
++static void __exit u8500_modem_exit(void)
 +{
++	platform_driver_unregister(&u8500_modem_driver);
 +}
 +
-+static inline int modem_is_requested(struct modem *modem)
-+{
-+	return 0;
-+}
-+
-+static inline int modem_get_usage(struct modem *modem)
-+{
-+	return 0;
-+}
-+#endif
-+#endif /* __MODEM_CLIENT_H__ */
++arch_initcall(u8500_modem_init);
 -- 
 1.7.4.3
 
