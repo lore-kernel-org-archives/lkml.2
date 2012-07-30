@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab2G3Ux4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 16:53:56 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35294 "EHLO ogre.sisk.pl"
+	id S1754629Ab2G3U4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 16:56:20 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35312 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754470Ab2G3Uxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 16:53:52 -0400
+	id S1754267Ab2G3U4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 16:56:18 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: Gethering power management/policy hw drivers under drivers/power/? (Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences)
-Date: Mon, 30 Jul 2012 22:59:39 +0200
+To: NeilBrown <neilb@suse.de>
+Subject: Re: [PATCH] RTC: Avoid races between RTC alarm wakeup and suspend.
+Date: Mon, 30 Jul 2012 23:01:49 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Alex Courbot <acourbot@nvidia.com>, Jean Pihet <j-pihet@ti.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Liam Girdwood <lrg@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        linux-pm@vger.kernel.org
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com> <5015E8AE.8060404@nvidia.com> <20120730024049.GA10442@lizard>
-In-Reply-To: <20120730024049.GA10442@lizard>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120730113547.2c425ea9@notabene.brown>
+In-Reply-To: <20120730113547.2c425ea9@notabene.brown>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207302259.39396.rjw@sisk.pl>
+Message-Id: <201207302301.49972.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 30, 2012, Anton Vorontsov wrote:
-> On Mon, Jul 30, 2012 at 10:51:42AM +0900, Alex Courbot wrote:
-> [...]
-> > On the other hand I have just noticed that the apparently unrelated
-> > Adaptive Voltage Scaling driver just appeared in drivers/power/avs.
-> > So if Anton and David are ok with this, maybe I could put the power
-> > sequences code in its own subdirectory within drivers/power.
+On Monday, July 30, 2012, NeilBrown wrote:
 > 
-> Well, currently drivers/power/ is indeed just for power supply class
-> subsystem and drivers. But if the trend is to gather power management
-> ("policy") stuff under one directory, i.e.
+> If an RTC alarm fires just as suspend is happening, it is possible for
+> suspend to complete and the alarm to be missed.
 > 
-> drivers/
->   power/
->     supplies/    <- former "power supply class and drivers"
->     regulators/
->     idle/
->     cpuidle/
->     cpufreq/
->     devfreq/
->     avs/
->     ...
+> To avoid the race, we must register the event with the PM core.
 > 
-> That would probably make sense, we could easily see the big picture.
-> But if we're not going to do this long-term,
+> As the event is made visible to userspace through a thread which is
+> only scheduled by the interrupt, we need a pm_stay_awake/pm_relax
+> pair preventing suspend from the interrupt until the thread completes
+> its work.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> 
+> --
+> This makes the pm_wakeup_event() call in cmos_interrupt unnecessary as it
+> provides suspend protection for all RTCs that use rtc_update_irq.
 
-Yes, we may do this eventually, but surely not right now.
+Care to remove the call in cmos_interrupt(), then?
+
+> I think the pm_stay_awake//pm_relax is needed - just pm_wakup_event() is 
+> theoretically not sufficient.
+> 
+> This is because there is no guarantee (that I know of) that the workqueue
+> thread will actually get scheduled before 'suspend' takes over.
+
+I think you are right.
 
 Thanks,
 Rafael
+
+
+> diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+> index eb415bd..9592b93 100644
+> --- a/drivers/rtc/interface.c
+> +++ b/drivers/rtc/interface.c
+> @@ -582,6 +582,7 @@ enum hrtimer_restart rtc_pie_update_irq(struct hrtimer *timer)
+>  void rtc_update_irq(struct rtc_device *rtc,
+>  		unsigned long num, unsigned long events)
+>  {
+> +	pm_stay_awake(rtc->dev.parent);
+>  	schedule_work(&rtc->irqwork);
+>  }
+>  EXPORT_SYMBOL_GPL(rtc_update_irq);
+> @@ -844,6 +845,7 @@ void rtc_timer_do_work(struct work_struct *work)
+>  
+>  	mutex_lock(&rtc->ops_lock);
+>  again:
+> +	pm_relax(rtc->dev.parent);
+>  	__rtc_read_time(rtc, &tm);
+>  	now = rtc_tm_to_ktime(tm);
+>  	while ((next = timerqueue_getnext(&rtc->timerqueue))) {
+> 
+
