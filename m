@@ -1,91 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab2G3OQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:16:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45635 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab2G3OQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:16:07 -0400
-Date: Mon, 30 Jul 2012 07:15:52 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-6dab3cc078e3da0d26534410bc9e018a17031d95@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
-        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120729182236.GA20342@redhat.com>
-References: <20120729182236.GA20342@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Remove copy_vma()->uprobe_mmap()
-Git-Commit-ID: 6dab3cc078e3da0d26534410bc9e018a17031d95
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:15:57 -0700 (PDT)
+	id S1754615Ab2G3OQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:16:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753909Ab2G3OQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 10:16:30 -0400
+From: Peter Jones <pjones@redhat.com>
+To: <linux-efi@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg@redhat.com>, Peter Jones <pjones@redhat.com>
+Subject: [PATCH] Support UEFI variable append and deleting authenticated variables.
+Date: Mon, 30 Jul 2012 10:16:19 -0400
+Message-Id: <1343657779-31319-1-git-send-email-pjones@redhat.com>
+In-Reply-To: <1343645107.13958.7.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1343645107.13958.7.camel@mfleming-mobl1.ger.corp.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6dab3cc078e3da0d26534410bc9e018a17031d95
-Gitweb:     http://git.kernel.org/tip/6dab3cc078e3da0d26534410bc9e018a17031d95
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Sun, 29 Jul 2012 20:22:36 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 30 Jul 2012 11:27:22 +0200
+This adds support for appending to all UEFI variables, and also for
+deleting authentication variables.
 
-uprobes: Remove copy_vma()->uprobe_mmap()
+(Updated to address mfleming's concerns on 7/30/2012)
 
-Remove copy_vma()->uprobe_mmap(new_vma), it is absolutely wrong.
-
-This new_vma was just initialized to represent the new unmapped
-area, [vm_start, vm_end) was returned by get_unmapped_area() in
-the caller.
-
-This means that uprobe_mmap()->get_user_pages() will fail for
-sure, simply because find_vma() can never succeed. And I
-verified that sys_mremap()->mremap_to() indeed always fails with
-the wrong ENOMEM code if [addr, addr+old_len] is probed.
-
-And why this uprobe_mmap() was added? I believe the intent was
-wrong. Note that the caller is going to do move_page_tables(),
-all registered uprobes are already faulted in, we only change
-the virtual addresses.
-
-NOTE: However, somehow we need to close the race with
-uprobe_register() which relies on map_info->vaddr. This needs
-another fix I'll try to do later. Probably we need uprobe_mmap()
-in move_vma() but we can not do this right now, this can confuse
-uprobes_state.counter (which I still hope we are going to kill).
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120729182236.GA20342@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Peter Jones <pjones@redhat.com>
 ---
- mm/mmap.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/firmware/efivars.c |   99 ++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 91 insertions(+), 8 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 3edfcdf..e5a4614 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2418,9 +2418,6 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
- 			if (new_vma->vm_file) {
- 				get_file(new_vma->vm_file);
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 47408e8..ff8b524 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -108,6 +108,27 @@ struct efi_variable {
+ 	__u32         Attributes;
+ } __attribute__((packed));
  
--				if (uprobe_mmap(new_vma))
--					goto out_free_mempol;
--
- 				if (vma->vm_flags & VM_EXECUTABLE)
- 					added_exe_file_vma(mm);
- 			}
++struct win_certificate {
++	__u32	dwLength;
++	__u16	wRevision;
++	__u16	wCertificateType;
++	__u8	wCertificate[];
++};
++
++struct win_certificate_uefi_guid {
++	struct win_certificate	Hdr;
++	efi_guid_t		CertType;
++};
++
++struct efi_variable_authentication {
++	__u64					MonotonicCount;
++	struct win_certificate_uefi_guid	AuthInfo;
++};
++
++struct efi_variable_authentication_2 {
++	efi_time_t				TimeStamp;
++	struct win_certificate_uefi_guid	AuthInfo;
++};
+ 
+ struct efivar_entry {
+ 	struct efivars *efivars;
+@@ -812,6 +833,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 	unsigned long strsize1, strsize2;
+ 	efi_status_t status = EFI_NOT_FOUND;
+ 	int found = 0;
++	int is_append = 0;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+@@ -839,7 +861,13 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 			break;
+ 		}
+ 	}
+-	if (found) {
++	if (new_var->Attributes & EFI_VARIABLE_APPEND_WRITE) {
++		if (!found) {
++			spin_unlock(&efivars->lock);
++			return -EINVAL;
++		}
++		is_append = 1;
++	} else if (found) {
+ 		spin_unlock(&efivars->lock);
+ 		return -EINVAL;
+ 	}
+@@ -857,20 +885,73 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 		spin_unlock(&efivars->lock);
+ 		return -EIO;
+ 	}
+-	spin_unlock(&efivars->lock);
+ 
+ 	/* Create the entry in sysfs.  Locking is not required here */
+-	status = efivar_create_sysfs_entry(efivars,
++	if (is_append) {
++		spin_unlock(&efivars->lock);
++	} else {
++		spin_unlock(&efivars->lock);
++		status = efivar_create_sysfs_entry(efivars,
+ 					   utf16_strsize(new_var->VariableName,
+ 							 1024),
+ 					   new_var->VariableName,
+ 					   &new_var->VendorGuid);
+-	if (status) {
+-		printk(KERN_WARNING "efivars: variable created, but sysfs entry wasn't.\n");
++		if (status)
++			pr_warn("efivars: variable created, but sysfs entry wasn't.\n");
+ 	}
+ 	return count;
+ }
+ 
++static int is_authenticated_delete(struct efi_variable *new_var)
++{
++	/*
++	 * If we get a set_variable() call that's got an authenticated
++	 * variable attribute set, and its DataSize is the same size as
++	 * the AuthInfo descriptor, then it's really a delete.
++	 */
++	if (new_var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS) {
++		struct efi_variable_authentication *eva;
++		__u32 size;
++
++		if (new_var->DataSize < sizeof(*eva))
++			return 0;
++
++		eva = (struct efi_variable_authentication *)new_var->Data;
++
++		/*
++		 * 27.2.4 says:
++		 * dwLength: The length of the entire certificate, including
++		 *           the length of the header, in bytes.
++		 */
++		size = sizeof(eva->AuthInfo.CertType) +
++		       eva->AuthInfo.Hdr.dwLength;
++
++		if (size == new_var->DataSize)
++			return 1;
++	} else if (new_var->Attributes
++			& EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS) {
++		struct efi_variable_authentication_2 *eva;
++		__u32 size;
++
++		if (new_var->DataSize < sizeof(*eva))
++			return 0;
++
++		eva = (struct efi_variable_authentication_2 *)new_var->Data;
++
++		/*
++		 * 27.2.4 says:
++		 * dwLength: The length of the entire certificate, including
++		 *           the length of the header, in bytes.
++		 */
++		size = sizeof(eva->AuthInfo.CertType) +
++		       eva->AuthInfo.Hdr.dwLength;
++
++		if (size == new_var->DataSize)
++			return 1;
++	}
++	return 0;
++}
++
+ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
+ 			     struct bin_attribute *bin_attr,
+ 			     char *buf, loff_t pos, size_t count)
+@@ -906,9 +987,11 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
+ 		spin_unlock(&efivars->lock);
+ 		return -EINVAL;
+ 	}
+-	/* force the Attributes/DataSize to 0 to ensure deletion */
+-	del_var->Attributes = 0;
+-	del_var->DataSize = 0;
++	if (!is_authenticated_delete(del_var)) {
++		/* force the Attributes/DataSize to 0 to ensure deletion */
++		del_var->DataSize = 0;
++		del_var->Attributes = 0;
++	}
+ 
+ 	status = efivars->ops->set_variable(del_var->VariableName,
+ 					    &del_var->VendorGuid,
+-- 
+1.7.10.4
+
