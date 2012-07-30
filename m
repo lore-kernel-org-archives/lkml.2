@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab2G3UVo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 16:21:44 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51470 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195Ab2G3UVm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 16:21:42 -0400
-Date: Mon, 30 Jul 2012 22:24:01 +0200
-From: karl.beldan@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: karl.beldan@gmail.com
-Subject: About dma_sync_single_for_{cpu,device}
-Message-ID: <20120730202401.GA4947@gobelin>
+	id S1755137Ab2G3UWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 16:22:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42121 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754768Ab2G3UWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 16:22:21 -0400
+Date: Mon, 30 Jul 2012 16:22:12 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 0/6] menuconfig: jump to search results
+Message-ID: <20120730202212.GA31790@d2.synalogic.ca>
+References: <1343676130-29770-1-git-send-email-bpoirier@suse.de>
+ <20120730195826.GA8242@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Location: France
-User-Agent: Mutt (Linux 3.5.0-07078-gf7da9cd-dirty x86_64 GNU/Linux)
+In-Reply-To: <20120730195826.GA8242@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2012/07/30 21:58, Borislav Petkov wrote:
+> On Mon, Jul 30, 2012 at 03:22:04PM -0400, Benjamin Poirier wrote:
+> > Hello,
+> > 
+> > This patch series adds "jump to" keys (similar to the cscope interface) to the
+> > search results of "make menuconfig" so that we can go directly to the menu
+> > entry for a config option after searching for it.
+> > 
+> > Patches 1-4 implement the basic functionnality.
+> > Patches 5-6 are an optionnal improvement.
+> 
+> Generally,
+> 
+> a nice idea, I like it.
+> 
+> A couple of notes though:
+> 
+> * patches 2/6 and 3/6 don't have commit messages and it would be good if
+> they had, even though it is obvious what the changes in there do.
+> 
+> * this patchset must be against some kbuild tree because it doesn't
+> apply against 3.5:
 
-
-On our board we've got an MV78200 and a network device between which we
-xfer memory chunks via the ddram with an external dma controller.
-To handle these xfers we're using the dma API.
-
-To tx a chunk of data from the SoC => network device, we :
-- prepare a buffer with a leading header embedding a pattern, 
-- trigger the xfer and wait for an irq
-// The device updates the pattern and then triggers an irq
-- upon irq we check the pattern for the xfer completion
-
-
-I was expecting the following to work:
-	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
-	dev_send(buffer);
-	// wait for irq (don't peek in the buffer) ... got irq
-	dma_sync_single_single_for_cpu(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-	if (!xfer_done(buffer)) // not RAM value
-		dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-	[...]
-
-But this does not work (the buffer pattern does not reflect the ddram
-value).
-On the other hand, the following works:
-	[...]
-	// wait for irq (don't peek in the buffer) ... got irq
-	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-	if (!xfer_done(buffer)) // RAM value
-	[...]
-
-
-Looking at 
-	dma-mapping.c:__dma_page_cpu_to_{dev,cpu}() and
-	proc-feroceon.S: feroceon_dma_{,un}map_area
-this behavior is not surprising.
-The sync_for_cpu calls the unmap which just invalidates the outer cache
-while the sync_for_device invalidates both inner and outer.
-
-It seems that:
-- we need to invalidate after the RAM has been updated
-- we need to invalidate with sync_single_for_device rather than
-  sync_single_for_cpu to check the value
-
-Is it correct ?
-
-
-
-
-
-
-Maybe the following comment in dma-mapping.c explains the situation :
-/*
- * The DMA API is built upon the notion of "buffer ownership".  A buffer
- * is either exclusively owned by the CPU (and therefore may be accessed
- * by it) or exclusively owned by the DMA device.  These helper functions
- * represent the transitions between these two ownership states.
- *
- * Note, however, that on later ARMs, this notion does not work due to
- * speculative prefetches.  We model our approach on the assumption that
- * the CPU does do speculative prefetches, which means we clean caches
- * before transfers and delay cache invalidation until transfer completion.
- *
- */
-
-Thanks for your input,
- 
-Regards,
- 
-Karl
+It's against linux-next, which already contains some patches for
+menuconfig.
