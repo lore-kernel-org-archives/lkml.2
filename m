@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab2G3TpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:45:08 -0400
+	id S1754983Ab2G3TpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:45:07 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19735 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab2G3TpD (ORCPT
+	with ESMTP id S1754558Ab2G3TpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jul 2012 15:45:03 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=m-5qM9h8XkYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=qrFA_WvyAAAA:8 a=jeQFJ1gBC8V7uS6IoycA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=bdmcM0_chmsA:10 a=jeBq3FmKZ4MA:10 a=sj3YrqJxReND9kvCNq0A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=htdQP7KTs1wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=5abIMfYh5AcOCafACo8A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=8YtL82kW95GMLmQlbVgA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120730194501.990401960@goodmis.org>
+Message-Id: <20120730194501.681442369@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:43:18 -0400
+Date: Mon, 30 Jul 2012 15:43:17 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 2/4] localmodconfig: Read in orig config file to avoid extra processing
+Subject: [PATCH 1/4] localmodconfig: Comments and cleanup for streamline_config.pl
 References: <20120730194316.768288008@goodmis.org>
-Content-Disposition: inline; filename=0002-localmodconfig-Read-in-orig-config-file-to-avoid-ext.patch
+Content-Disposition: inline; filename=0001-localmodconfig-Comments-and-cleanup-for-streamline_c.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,90 +30,70 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Read in the entire config file. If there's a config that we depend on
-that happens to be in the core set (not a module) then we do not need
-to process it as a module.
+Added some more comments and cleaned up part of the the code to use
+a named variable instead of one of the special $1 perl variables.
 
-Currently, we follow the entire depend and selects even if they
-are enabled as core and not modules. By checking to make sure that we
-only look at modules we can drop the count a little.
+No functional changes.
 
->From one of my tests, localmodconfig went from taking 3095 set modules
-down to 356 before this patch, and down to 290 modules after the change.
-
-Tested-by: John David Yost <johnyost@ptd.net> # AlleyTrotter
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- scripts/kconfig/streamline_config.pl |   26 ++++++++++++++++++++++++--
- 1 file changed, 24 insertions(+), 2 deletions(-)
+ scripts/kconfig/streamline_config.pl |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
 ine_config.pl
-index 5c1ce87..ab4985f 100644
+index bccf07dd..5c1ce87 100644
 --- a/scripts/kconfig/streamline_config.pl
 +++ b/scripts/kconfig/streamline_config.pl
-@@ -113,6 +113,10 @@ sub find_config {
+@@ -186,6 +186,7 @@ sub read_kconfig {
+ 	    $state =3D "NEW";
+ 	    $config =3D $2;
 =20
- find_config;
++	    # Add depends for 'if' nesting
+ 	    for (my $i =3D 0; $i < $iflevel; $i++) {
+ 		if ($i) {
+ 		    $depends{$config} .=3D " " . $ifdeps[$i];
+@@ -204,10 +205,11 @@ sub read_kconfig {
 =20
-+# Read in the entire config file into config_file
-+my @config_file =3D <CIN>;
-+close CIN;
-+
- # Parse options
- my $localmodconfig =3D 0;
- my $localyesconfig =3D 0;
-@@ -392,7 +396,20 @@ foreach my $module (keys(%modules)) {
-     }
+ 	# Get the configs that select this config
+ 	} elsif ($state ne "NONE" && /^\s*select\s+(\S+)/) {
+-	    if (defined($selects{$1})) {
+-		$selects{$1} .=3D " " . $config;
++	    my $conf =3D $1;
++	    if (defined($selects{$conf})) {
++		$selects{$conf} .=3D " " . $config;
+ 	    } else {
+-		$selects{$1} =3D $config;
++		$selects{$conf} =3D $config;
+ 	    }
+=20
+ 	# configs without prompts must be selected
+@@ -250,6 +252,7 @@ if ($kconfig) {
+     read_kconfig($kconfig);
  }
 =20
-+# Read the current config, and see what is enabled. We want to
-+# ignore configs that we would not enable anyway.
-+
-+my %orig_configs;
- my $valid =3D "A-Za-z_0-9";
-+
-+foreach my $line (@config_file) {
-+    $_ =3D $line;
-+
-+    if (/(CONFIG_[$valid]*)=3D(m|y)/) {
-+	$orig_configs{$1} =3D $2;
-+    }
-+}
-+
- my $repeat =3D 1;
++# Makefiles can use variables to define their dependencies
+ sub convert_vars {
+     my ($line, %vars) =3D @_;
 =20
- #
-@@ -414,6 +431,11 @@ sub parse_config_dep_select
+@@ -293,6 +296,7 @@ foreach my $makefile (@makefiles) {
 =20
- 	    $p =3D~ s/^[^$valid]*[$valid]+//;
+ 	my $objs;
 =20
-+	    # We only need to process if the depend config is a module
-+	    if (!defined($orig_configs{$conf}) || !$orig_configs{conf} eq "m") {
-+		next;
-+	    }
-+
- 	    if (!defined($configs{$conf})) {
- 		# We must make sure that this config has its
- 		# dependencies met.
-@@ -450,7 +472,8 @@ my %setconfigs;
++	# Convert variables in a line (could define configs)
+ 	$_ =3D convert_vars($_, %make_vars);
 =20
- # Finally, read the .config file and turn off any module enabled that
- # we could not find a reason to keep enabled.
--while(<CIN>) {
-+foreach my $line (@config_file) {
-+    $_ =3D $line;
+ 	# collect objects after obj-$(CONFIG_FOO_BAR)
+@@ -373,7 +377,8 @@ while (<LIN>) {
+ close (LIN);
 =20
-     if (/CONFIG_IKCONFIG/) {
- 	if (/# CONFIG_IKCONFIG is not set/) {
-@@ -478,7 +501,6 @@ while(<CIN>) {
-     }
-     print;
- }
--close(CIN);
-=20
- # Integrity check, make sure all modules that we want enabled do
- # indeed have their configs set.
+ # add to the configs hash all configs that are needed to enable
+-# a loaded module.
++# a loaded module. This is a direct obj-${CONFIG_FOO} +=3D bar.o
++# where we know we need bar.o so we add FOO to the list.
+ my %configs;
+ foreach my $module (keys(%modules)) {
+     if (defined($objects{$module})) {
 --=20
 1.7.10.4
 
@@ -126,19 +106,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQFuQ+AAoJEIy3vGnGbaoAxnkP/00C5+mfLZf7S631XoIzVDP9
-mh9YRBL8l3gBZGXFGfayTMfFkHt/E/JVy5m5I9h8xzYt4LTjw7o0TgnaUxz5nc8J
-CdUJESQ0mEGi+XNA2ML+YGNtfQJSvi8Gs1JNrSmk6Y8ek3fASx0JXNfHefgxPIwA
-Lqku1OHNvJtDwztO0+qVVK1nfyS2Pfp7E0nnUzHfCaEb0VY6kFtQg24wUfA878O8
-mxoQ1BH2Oau+eQWrM3agosSbeY1nLvL6UZQdzkV4SA/ltdgQPDZ4jO5p944ArngO
-P7xbEAZOnjK5AJtQ+Qcy5NXqAiA5Hl2NLGsRiPvkxIixeeJD1kx5F7hP+Qe8obyp
-5XQJIRyL+ATLQO2+pAE2OXQhnb3lMzGZzAw7qSZe5SMbJSYzW+NTneAviJOXL9DE
-c8VZbbzgO+xYnAB7Snpw5McQLirblGXfKyHvwLEfFA4ubFnu2e/VmFhRRk3XQ219
-C3HayzUgxvlpAbAwKLBwEqv/Jt/jm5On8gLsp+e6L3vGiieB34MZuvGQ+0jkOuGa
-PH1VrwIOhWPh+qIYak96WPWjWVdkgpSCpZQWjoxKYn25awun+/QQwTmNvfnxCyjm
-BEH4QzndqYbABDy9eU6G6jZ1uTRjGXI3hC26JNdL1uovNm1DCTzxFBDoF0nIYWZ7
-EUOzqLr2dr4yrhb1940N
-=3wF3
+iQIcBAABAgAGBQJQFuQ9AAoJEIy3vGnGbaoAj+cQAI5gIK7hmMdY8NGcCTRKcf3f
+4azOMgsgg5HE7D0FbhxFsvfderNDADXw9Gd4Vl21SLFZtTiNuc2u3ib335FdGKjy
+joGLtbHtMy80/xanxNTnfrk+dvlS7FfB2NgwW9JQIvjggNWlmrd4baN2wTT9NUGi
+pbN2E5Qe6lKzTNOKNAnOshOkOWz67sdRebjGqDQWRAFO4+JHzclsuRhgvqVY6PJt
+td1t07E9HosqnJQIIGYGPbi/1AssSXiwrhivYVMHOuJ8xiCmUTOiPjhr/ua/Uqun
+AQ5qQfKGNsjMRGjq5Laojzf3oYZqlaOyj+i5NIOlTJ88Nq20go01FXiWcenL9czo
+RkYFYNmpuuOP7GxnBoEWXmVGr2k193E9QgBmdY6YvcB/wak8yaacDnT+9Ex/8Wu2
+zg9Q89kIvNUDhNcrDNqFrtI2X2+xWF1l4KU1miPlTSihfuhG+o2NLSe5z0e8Ter3
+rJsAzhcWmTmuUqMnSQeZSCyI7G04DfaPvxP0nVnKu+J00mGj3ztg65W7y/TDAIxb
+GZsS/PX1DQhc320rTLfJuQn47Onag0BNxRcg5ZZJpW9Z4SrxtdchzGfARVnW07kI
+hNVLYFQQLKF4CFnB6lDYQNknIUtwInO00sdZX6bAcD21vOB8B+teptDJ35tl6KCE
+g76kcmXm47PFHmFaSZGv
+=FAmv
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
