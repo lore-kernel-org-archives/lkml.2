@@ -1,45 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab2G3VH3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 17:07:29 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58954 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab2G3VH2 (ORCPT
+	id S1754864Ab2G3VHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 17:07:41 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:52782 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754599Ab2G3VHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 17:07:28 -0400
+	Mon, 30 Jul 2012 17:07:31 -0400
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 1/2] staging: ft1000: Fix ft1000_control function timeout argument usage.
-Date: Mon, 30 Jul 2012 23:07:16 +0200
-Message-Id: <1343682437-10015-1-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 2/2] staging: ft1000: Replace timeout values with USB_CTRL_G(S)ET_TIMEOUT.
+Date: Mon, 30 Jul 2012 23:07:17 +0200
+Message-Id: <1343682437-10015-2-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343682437-10015-1-git-send-email-marek.belisko@open-nandra.com>
+References: <1343682437-10015-1-git-send-email-marek.belisko@open-nandra.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function ft1000_control have input argument timeout which was not passed
-to usb_control_msg instead hardcoded to LARGE_TIMEOUT.
-
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c  |   12 ++++++------
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |    2 --
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 31929ef..21c5ed6 100644
+index 21c5ed6..809fa48 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -73,7 +73,7 @@ static int ft1000_control(struct ft1000_device *ft1000dev, unsigned int pipe,
- 	}
+@@ -110,7 +110,7 @@ int ft1000_read_register(struct ft1000_device *ft1000dev, u16* Data,
+ 			     nRegIndx,
+ 			     Data,
+ 			     2,
+-			     LARGE_TIMEOUT);
++			     USB_CTRL_GET_TIMEOUT);
  
- 	ret = usb_control_msg(ft1000dev->dev, pipe, request, requesttype,
--			      value, index, data, size, LARGE_TIMEOUT);
-+			      value, index, data, size, timeout);
+ 	return ret;
+ }
+@@ -143,7 +143,7 @@ int ft1000_write_register(struct ft1000_device *ft1000dev, u16 value,
+ 			     nRegIndx,
+ 			     NULL,
+ 			     0,
+-			     LARGE_TIMEOUT);
++			     USB_CTRL_SET_TIMEOUT);
  
- 	if (ret > 0)
- 		ret = 0;
+ 	return ret;
+ }
+@@ -178,7 +178,7 @@ int ft1000_read_dpram32(struct ft1000_device *ft1000dev, u16 indx, u8 *buffer,
+ 			     indx,
+ 			     buffer,
+ 			     cnt,
+-			     LARGE_TIMEOUT);
++			     USB_CTRL_GET_TIMEOUT);
+ 
+ 	return ret;
+ }
+@@ -215,7 +215,7 @@ int ft1000_write_dpram32(struct ft1000_device *ft1000dev, u16 indx, u8 *buffer,
+ 			     indx,
+ 			     buffer,
+ 			     cnt,
+-			     LARGE_TIMEOUT);
++			     USB_CTRL_SET_TIMEOUT);
+ 
+ 	return ret;
+ }
+@@ -255,7 +255,7 @@ int ft1000_read_dpram16(struct ft1000_device *ft1000dev, u16 indx, u8 *buffer,
+ 			     indx,
+ 			     buffer,
+ 			     2,
+-			     LARGE_TIMEOUT);
++			     USB_CTRL_GET_TIMEOUT);
+ 
+ 	return ret;
+ }
+@@ -294,7 +294,7 @@ int ft1000_write_dpram16(struct ft1000_device *ft1000dev, u16 indx, u16 value, u
+ 			     indx,
+ 			     NULL,
+ 			     0,
+-			     LARGE_TIMEOUT);
++			     USB_CTRL_SET_TIMEOUT);
+ 
+ 	return ret;
+ }
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
+index 642bb89..2aa6a1c 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
+@@ -36,8 +36,6 @@ struct app_info_block {
+ 
+ #define FT1000_STATUS_CLOSING  0x01
+ 
+-#define LARGE_TIMEOUT   5000
+-
+ #define DSPBCMSGID              0x10
+ 
+ /* Electrabuzz specific DPRAM mapping */
 -- 
 1.7.9.5
 
