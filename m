@@ -1,127 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab2G3T3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:29:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60380 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab2G3T2d (ORCPT
+	id S1755113Ab2G3Ta0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:30:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29027 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238Ab2G3T05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:28:33 -0400
-Date: Mon, 30 Jul 2012 21:28:27 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-sh@vger.kernel.org
-cc: "Koul, Vinod" <vinod.koul@intel.com>, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] dmaengine: shdma: restore partial transfer calculation
-In-Reply-To: <Pine.LNX.4.64.1207302114440.28003@axis700.grange>
-Message-ID: <Pine.LNX.4.64.1207302119320.28003@axis700.grange>
-References: <Pine.LNX.4.64.1207302114440.28003@axis700.grange>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:c0WIoJ0n7I1ECtzfvkG/1L0/wa0nzMCO0A+P7f5p7Kr
- +g++qNPMqQ2iJ+mCiEvP6yxfnTO7AzAVEbcMqXeItUGUK411ng
- MUschkaPlpfBDuxSa1zjXSSzpdQKVyxVw6bE8kuJgcrF6rAX4j
- 6S3XZu4VuMWJQflgGrwOKCsD75D78/C1x8SXoAZFoj5NVSMc6f
- pceJZtPFOrq3JrizkILh24u/kk3qnAVjiRQiJ46MQpS1HJGjEq
- J/jZVg1OFFWA+AA6b7ZE/ZRMvvK9T3UpNEcEAC0ynJxMrvjpfi
- bZWXcmtSVBNpezWgn3BXglX5oXXNu3Jqjtax4NIQ2QlqUvtR6z
- 5GErnONDxGbFR5TzHEEHLXXzq+YiCTjPxG+0pfJdhxC/wfGtKj
- 48TagLq1YqDPg==
+	Mon, 30 Jul 2012 15:26:57 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=0OASTi9CddwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=DC-evEmTfsg53OtuExcA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=qW-UcacD8LxAOg2L:21 a=pxru_vK1F2AO-qjt:21 a=I7R7SJIyhwI14fVqEgMA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120730192655.913232430@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 30 Jul 2012 15:23:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 02/10] ktest: Add PRE/POST_KTEST and TEST options
+References: <20120730192314.144253843@goodmis.org>
+Content-Disposition: inline; filename=0002-ktest-Add-PRE-POST_KTEST-and-TEST-options.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent shdma driver split has mistakenly removed support for partial
-DMA transfer size calculation on forced termination. This patch restores
-it.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Steven Rostedt <srostedt@redhat.com>
+
+In order to let the user add commands before and after ktest runs, the
+PRE_KTEST and POST_KTEST options are defined. They hold shell commands
+that will execute befor ktest runs its first test, as well as when it
+completed its last test.
+
+The PRE_TEST and POST_TEST will be run befor and after (respectively)
+for a given test. They can either be global (done for all tests) or
+defined by a single test.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/dma/sh/shdma-base.c |    9 +++++++++
- drivers/dma/sh/shdma.c      |   12 ++++++++++++
- include/linux/shdma-base.h  |    2 ++
- 3 files changed, 23 insertions(+), 0 deletions(-)
+ tools/testing/ktest/ktest.pl    |   37 +++++++++++++++++++++++++++++++++++=
+++
+ tools/testing/ktest/sample.conf |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 67 insertions(+)
 
-diff --git a/drivers/dma/sh/shdma-base.c b/drivers/dma/sh/shdma-base.c
-index 27f5c78..f4cd946 100644
---- a/drivers/dma/sh/shdma-base.c
-+++ b/drivers/dma/sh/shdma-base.c
-@@ -483,6 +483,7 @@ static struct shdma_desc *shdma_add_desc(struct shdma_chan *schan,
- 	new->mark = DESC_PREPARED;
- 	new->async_tx.flags = flags;
- 	new->direction = direction;
-+	new->partial = 0;
- 
- 	*len -= copy_size;
- 	if (direction == DMA_MEM_TO_MEM || direction == DMA_MEM_TO_DEV)
-@@ -644,6 +645,14 @@ static int shdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	case DMA_TERMINATE_ALL:
- 		spin_lock_irqsave(&schan->chan_lock, flags);
- 		ops->halt_channel(schan);
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index a40af07..31b9416 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -77,6 +77,11 @@ my $output_config;
+ my $test_type;
+ my $build_type;
+ my $build_options;
++my $final_post_ktest;
++my $pre_ktest;
++my $post_ktest;
++my $pre_test;
++my $post_test;
+ my $pre_build;
+ my $post_build;
+ my $pre_build_die;
+@@ -197,6 +202,10 @@ my %option_map =3D (
+     "OUTPUT_DIR"		=3D> \$outputdir,
+     "BUILD_DIR"			=3D> \$builddir,
+     "TEST_TYPE"			=3D> \$test_type,
++    "PRE_KTEST"			=3D> \$pre_ktest,
++    "POST_KTEST"		=3D> \$post_ktest,
++    "PRE_TEST"			=3D> \$pre_test,
++    "POST_TEST"			=3D> \$post_test,
+     "BUILD_TYPE"		=3D> \$build_type,
+     "BUILD_OPTIONS"		=3D> \$build_options,
+     "PRE_BUILD"			=3D> \$pre_build,
+@@ -1273,6 +1282,10 @@ sub save_logs {
+=20
+ sub fail {
+=20
++	if (defined($post_test)) {
++		run_command $post_test;
++	}
 +
-+		if (ops->get_partial && !list_empty(&schan->ld_queue)) {
-+			/* Record partial transfer */
-+			struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
-+						struct shdma_desc, node);
-+			desc->partial = ops->get_partial(schan, desc);
-+		}
+ 	if ($die_on_failure) {
+ 		dodie @_;
+ 	}
+@@ -1937,6 +1950,10 @@ sub halt {
+ sub success {
+     my ($i) =3D @_;
+=20
++    if (defined($post_test)) {
++	run_command $post_test;
++    }
 +
- 		spin_unlock_irqrestore(&schan->chan_lock, flags);
- 
- 		shdma_chan_ld_cleanup(schan, true);
-diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
-index 027c9be..f41bcc5 100644
---- a/drivers/dma/sh/shdma.c
-+++ b/drivers/dma/sh/shdma.c
-@@ -381,6 +381,17 @@ static bool sh_dmae_chan_irq(struct shdma_chan *schan, int irq)
- 	return true;
+     $successes++;
+=20
+     my $name =3D "";
+@@ -3518,6 +3535,18 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+=20
+     $start_minconfig_defined =3D 1;
+=20
++    # The first test may override the PRE_KTEST option
++    if (defined($pre_ktest) && $i =3D=3D 1) {
++	doprint "\n";
++	run_command $pre_ktest;
++    }
++
++    # Any test can override the POST_KTEST option
++    # The last test takes precedence.
++    if (defined($post_ktest)) {
++	$final_post_ktest =3D $post_ktest;
++    }
++
+     if (!defined($start_minconfig)) {
+ 	$start_minconfig_defined =3D 0;
+ 	$start_minconfig =3D $minconfig;
+@@ -3572,6 +3601,10 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+     doprint "\n\n";
+     doprint "RUNNING TEST $i of $opt{NUM_TESTS} with option $test_type $ru=
+n_type$installme\n\n";
+=20
++    if (defined($pre_test)) {
++	run_command $pre_test;
++    }
++
+     unlink $dmesg;
+     unlink $buildlog;
+     unlink $testlog;
+@@ -3637,6 +3670,10 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+     success $i;
  }
- 
-+static size_t sh_dmae_get_partial(struct shdma_chan *schan,
-+				  struct shdma_desc *sdesc)
-+{
-+	struct sh_dmae_chan *sh_chan = container_of(schan, struct sh_dmae_chan,
-+						    shdma_chan);
-+	struct sh_dmae_desc *sh_desc = container_of(sdesc,
-+					struct sh_dmae_desc, shdma_desc);
-+	return (sh_desc->hw.tcr - sh_dmae_readl(sh_chan, TCR)) <<
-+		sh_chan->xmit_shift;
+=20
++if (defined($final_post_ktest)) {
++    run_command $final_post_ktest;
 +}
 +
- /* Called from error IRQ or NMI */
- static bool sh_dmae_reset(struct sh_dmae_device *shdev)
- {
-@@ -632,6 +643,7 @@ static const struct shdma_ops sh_dmae_shdma_ops = {
- 	.start_xfer = sh_dmae_start_xfer,
- 	.embedded_desc = sh_dmae_embedded_desc,
- 	.chan_irq = sh_dmae_chan_irq,
-+	.get_partial = sh_dmae_get_partial,
- };
- 
- static int __devinit sh_dmae_probe(struct platform_device *pdev)
-diff --git a/include/linux/shdma-base.h b/include/linux/shdma-base.h
-index 93f9821..a3728bf 100644
---- a/include/linux/shdma-base.h
-+++ b/include/linux/shdma-base.h
-@@ -50,6 +50,7 @@ struct shdma_desc {
- 	struct list_head node;
- 	struct dma_async_tx_descriptor async_tx;
- 	enum dma_transfer_direction direction;
-+	size_t partial;
- 	dma_cookie_t cookie;
- 	int chunks;
- 	int mark;
-@@ -98,6 +99,7 @@ struct shdma_ops {
- 	void (*start_xfer)(struct shdma_chan *, struct shdma_desc *);
- 	struct shdma_desc *(*embedded_desc)(void *, int);
- 	bool (*chan_irq)(struct shdma_chan *, int);
-+	size_t (*get_partial)(struct shdma_chan *, struct shdma_desc *);
- };
- 
- struct shdma_dev {
--- 
-1.7.2.5
+ if ($opt{"POWEROFF_ON_SUCCESS"}) {
+     halt;
+ } elsif ($opt{"REBOOT_ON_SUCCESS"} && !do_not_reboot && $reboot_success) {
+diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
+onf
+index cf362b3..4472452 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -376,6 +376,24 @@
+ # DEFAULTS
+ # DEFAULTS SKIP
+=20
++# If you want to execute some command before the first test runs
++# you can set this option. Note, it can be set as a default option
++# or an option in the first test case. All other test cases will
++# ignore it. If both the default and first test have this option
++# set, then the first test will take precedence.
++#
++# default (undefined)
++#PRE_KTEST =3D ${SSH} ~/set_up_test
++
++# If you want to execute some command after all the tests have
++# completed, you can set this option. Note, it can be set as a
++# default or any test case can override it. If multiple test cases
++# set this option, then the last test case that set it will take
++# precedence
++#
++# default (undefined)
++#POST_KTEST =3D ${SSH} ~/dismantle_test
++
+ # The default test type (default test)
+ # The test types may be:
+ #   build   - only build the kernel, do nothing else
+@@ -426,6 +444,18 @@
+ # (default 0)
+ #NO_INSTALL =3D 1
+=20
++# If there is a command that you want to run before the individual test
++# case executes, then you can set this option
++#
++# default (undefined)
++#PRE_TEST =3D ${SSH} reboot_to_special_kernel
++
++# If there is a command you want to run after the individual test case
++# completes, then you can set this option.
++#
++# default (undefined)
++#POST_TEST =3D cd ${BUILD_DIR}; git reset --hard
++
+ # If there is a script that you require to run before the build is done
+ # you can specify it with PRE_BUILD.
+ #
+--=20
+1.7.10.4
 
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQFuAAAAoJEIy3vGnGbaoAo3YQAIUdvYRO4tvyTc6ZGfo9ERHx
+XBx92/3of2bU0tt0Uuf+kR9/tq+Hz+8eR0wEPrOb0VpNiaFPkshwR1Iqnew5q/qM
+BlGSQlUNH+hTKsgWCpKGSF1NTlfVlz0+bVgwTBVVDpOZYXONdyqfDtabLwIYqg2V
+RLnJWuikjYFYGbbVR0dTbcxds7Ncm7WduhoGyJOTQWF6tTn3g4YECjU9nrsR9w8V
+sQgJr/UPf1NYi4/qhjIoqgRWVDBjufLOuGvEPAas3u2VZv3y24FRbmK0bpkHRD9I
+LXDgguAcSivHRTWfOnqQX0nTQ2XExGJmmlMyVx6BarExoJ+rIXC5G/U/o4tlX5R1
+Cux59AM17rQvn1bjKK3tJHvB3pr7GiLf+X2K52cLEec+2eCQ5wKAje03RYdcuHsq
+d92oTNU6U1MR9ER20Adu//3I6ZV8wBuNno1d57ax31hqxYTspZxU/dH8rOQLwVNn
+c1VkgVq56j9kpcJUMbPcfo10Vnq/lAMFRxf+JmUTQrST+YZ1b4fwpVMqwNPbzE7s
+XdQUBHNUQ3trY6e0TWGyhCK0T3+jYzQOZTYsfy/qiamKo6oL7KFftTct5oXoLuPS
+i5BpFrExSRZARRM8QdGWEPCHLrza+/c53vUtKhBQ3vjYVRiIk/nIoFW6lksexqzM
+6pQAWPvh2cA9ccUTuV5Y
+=5omF
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
