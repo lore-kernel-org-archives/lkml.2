@@ -1,157 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab2G3T21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:28:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29027 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab2G3T06 (ORCPT
+	id S1755006Ab2G3T2e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:28:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61061 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab2G3T2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:26:58 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=QLpancjjR7MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=1CQoRCSYJ8mjRWti0sYA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=4y7tex115hwl2e-jHTAA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120730192657.122927906@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:23:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 06/10] ktest: Add MAX_MONITOR_WAIT option
-References: <20120730192314.144253843@goodmis.org>
-Content-Disposition: inline; filename=0006-ktest-Add-MAX_MONITOR_WAIT-option.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 30 Jul 2012 15:28:31 -0400
+Date: Mon, 30 Jul 2012 21:28:18 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-sh@vger.kernel.org
+cc: "Koul, Vinod" <vinod.koul@intel.com>, Paul Mundt <lethal@linux-sh.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] serial: sh-sci: fix compilation breakage (3.6)
+Message-ID: <Pine.LNX.4.64.1207302114440.28003@axis700.grange>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:du7lg3x3B6vqoipXGoEwYo0ACLm1LoorMv3EnEaOgjv
+ jyzL8doDRWeXyvh8+XTbOaGeOWBHH8uHGDbQ/IUyex7ig4uxmm
+ WsQ8Vo3evHQpgTtyvpMHuqq5rTN93QRQcI6bXDyCEFPkNOHo/x
+ ulzrNtyLCSLTIYmUrVLoufK0Awn5SQ4YC2GrAs7k39M0lP0spd
+ 2ET6wYX1utYmk1IqCOQNb/MK6tgDfk3nCSbYU/LgMVAPe5Rntv
+ PuDqRi7vNiOUp4ObL1izj7XqCuYX3ju7Psy28oul6oOsfPKo09
+ uJY3npIsaMs106yDswL09eH35/NYEgWe5IUnJ3ZCRFHCKZjxUv
+ rJXhR+fNi8K+FJEDtTSB1yfEZk60mrYyZDls/ITnizVyfagkF1
+ WQFfW/TDD8k0A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hi all
 
-From: Steven Rostedt <srostedt@redhat.com>
+as has been reported in this
 
-If the console is constantly outputting content, this can cause ktest
-to get stuck waiting on the monitor to settle down.
+http://thread.gmane.org/gmane.linux.kernel/1294256/focus=16001
 
-The option MAX_MONITOR_WAIT is the maximum time (in seconds) for ktest
-to wait for the console to flush.
+thread, currently sh-sci doesn't comiple in the mainline and in -next if 
+CONFIG_SERIAL_SH_SCI_DMA is enabled. This patch series fixes this 
+breakage.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Thanks
+Guennadi
 ---
- tools/testing/ktest/ktest.pl    |   16 +++++++++++++++-
- tools/testing/ktest/sample.conf |    8 ++++++++
- 2 files changed, 23 insertions(+), 1 deletion(-)
-
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 5ad891a..d10fff1 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -52,6 +52,7 @@ my %default =3D (
-     "STOP_AFTER_SUCCESS"	=3D> 10,
-     "STOP_AFTER_FAILURE"	=3D> 60,
-     "STOP_TEST_AFTER"		=3D> 600,
-+    "MAX_MONITOR_WAIT"		=3D> 1800,
-=20
- # required, and we will ask users if they don't have them but we keep the =
-default
- # value something that is common.
-@@ -98,6 +99,7 @@ my $reboot_on_success;
- my $die_on_failure;
- my $powercycle_after_reboot;
- my $poweroff_after_halt;
-+my $max_monitor_wait;
- my $ssh_exec;
- my $scp_to_target;
- my $scp_to_target_install;
-@@ -243,6 +245,7 @@ my %option_map =3D (
-     "POWER_OFF"			=3D> \$power_off,
-     "POWERCYCLE_AFTER_REBOOT"	=3D> \$powercycle_after_reboot,
-     "POWEROFF_AFTER_HALT"	=3D> \$poweroff_after_halt,
-+    "MAX_MONITOR_WAIT"		=3D> \$max_monitor_wait,
-     "SLEEP_TIME"		=3D> \$sleep_time,
-     "BISECT_SLEEP_TIME"		=3D> \$bisect_sleep_time,
-     "PATCHCHECK_SLEEP_TIME"	=3D> \$patchcheck_sleep_time,
-@@ -1133,7 +1136,10 @@ sub reboot {
-     }
-=20
-     if (defined($time)) {
--	wait_for_monitor($time, $reboot_success_line);
-+	if (wait_for_monitor($time, $reboot_success_line)) {
-+	    # reboot got stuck?
-+	    run_command "$power_cycle";
-+	}
- 	end_monitor;
-     }
- }
-@@ -1228,6 +1234,8 @@ sub wait_for_monitor {
-     my $full_line =3D "";
-     my $line;
-     my $booted =3D 0;
-+    my $start_time =3D time;
-+    my $now;
-=20
-     doprint "** Wait for monitor to settle down **\n";
-=20
-@@ -1246,8 +1254,14 @@ sub wait_for_monitor {
- 	if ($line =3D~ /\n/) {
- 	    $full_line =3D "";
- 	}
-+	$now =3D time;
-+	if ($now - $start_time >=3D $max_monitor_wait) {
-+	    doprint "Exiting monitor flush due to hitting MAX_MONITOR_WAIT\n";
-+	    return 1;
-+	}
-     }
-     print "** Monitor flushed **\n";
-+    return 0;
- }
-=20
- sub save_logs {
-diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
-onf
-index e4a12da..de28a0a 100644
---- a/tools/testing/ktest/sample.conf
-+++ b/tools/testing/ktest/sample.conf
-@@ -695,6 +695,14 @@
- # (default 60)
- #BISECT_SLEEP_TIME =3D 60
-=20
-+# The max wait time (in seconds) for waiting for the console to finish.
-+# If for some reason, the console is outputting content without
-+# ever finishing, this will cause ktest to get stuck. This
-+# option is the max time ktest will wait for the monitor (console)
-+# to settle down before continuing.
-+# (default 1800)
-+#MAX_MONITOR_WAIT
-+
- # The time in between patch checks to sleep (in seconds)
- # (default 60)
- #PATCHCHECK_SLEEP_TIME =3D 60
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQFuABAAoJEIy3vGnGbaoAJugP/2zcbZ7tEXKj9vGmlBKG6XOm
-Y2Or7FkTOO6t/7xC7/geNWXUNeHeQT4s1I+z0EQknHq/+SHhZiNAonN6FImiItLG
-a+jNWy4gSdUhH5LKF9K+tATZFl0NDngohh82mpWSp8bCLvPOgX6j2YGMIyTxNhK0
-Gn1tgIMmadNo6DQANuFCRMYU4DZTEQBMdmP+YJ4QLsPPuc1AJC81ygra0Hu+rUgk
-PjrZy7mC2lXS1dXueW+xWDGCbNmuDJNNEiOs/m1fs17L2FrZ+ZPnjlBIFravYsho
-wk26JsB85Kh+doVu4S1VJu09h8o988uprtGO9c7d/QDvvoRdRXuskHEkfNKdYvbt
-5fUB8dDz3t81+6LQSxKQ9xWNG7I4OyisnTIrXbblOoI8qH7H72BFk3FAu5ps5bzm
-opkpuRel4V5+Ma3vhaIUbPt8X48vaM70XPOYMRyNcO1IBARuTg+mjhjogkcN/eKx
-oH36eH5lW4aFPuph2B6K2rKkfJt1+Xk6zD2v0oZfDeTDRhGZzr2Ge76d+p0Ate0h
-hPBrQ5dLRdvlCRzuP9QZ29P7a/DjrXECHczzEB6mXEFtW9kdiul2kwgf+a0zoqeP
-sxHs6k6M0r/JWq1r+0AOG8fvkTuL2EAuZ53rIznXz0jxmKJlPAzbgl8xu+OruXkk
-8x/j6dOB+943iGYfhQI8
-=pXY+
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
