@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab2G3BRX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 21:17:23 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62115 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab2G3BRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 21:17:22 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 29 Jul 2012 18:17:46 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.6-rc1
-Message-ID: <20120730011746.GA20149@roeck-us.net>
+	id S1753901Ab2G3BTl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 21:19:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:58988 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753377Ab2G3BTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 21:19:40 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@us.ibm.com>
+Subject: Re: [PATCH] x86: don't ever patch back to UP if we unplug cpus.
+In-Reply-To: <1343420909.3696.560.camel@sbsiddha-desk.sc.intel.com>
+References: <87y5m5mz6o.fsf@rustcorp.com.au> <1343420909.3696.560.camel@sbsiddha-desk.sc.intel.com>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 30 Jul 2012 10:45:04 +0930
+Message-ID: <87d33em4mf.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 27 Jul 2012 13:28:29 -0700, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> On Fri, 2012-07-27 at 17:08 +0930, Rusty Russell wrote:
+> > Paul McKenney points out:
+> > 
+> >  mean offline overhead is 6251/48=130.2 milliseconds.
+> > 
+> >  If I remove the alternatives_smp_switch() from the offline
+> >  path [...] the mean offline overhead is 550/42=13.1 milliseconds
+> > 
+> > Basically, we're never going to get those 120ms back, and the code is
+> > pretty messy.
+> 
+> I am ok with this proposal. If I follow correctly, you are still
+> allowing the patching to UP happen on boot if there is only one online
+> cpu currently but a possiblity of multiple cpu's that can come online
+> later. Perhaps make this little more explicit in the changelog.
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That's right.  How's this:
 
-Hi Linus,
+Subject: x86: don't ever patch back to UP if we unplug cpus.
 
-Please pull hwmon fixes for Linux 3.6-rc1 from signed tag:
+We still patch SMP instructions to UP variants if we boot with a
+single CPU, but not at any other time.  In particular, not if we
+unplug CPUs to return to a single cpu.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+Paul McKenney points out:
 
-The branch is based on an arbitrary commit in your tree. This was necessary
-because one of the patches fixes a newly introduced build warning.
+ mean offline overhead is 6251/48=130.2 milliseconds.
+
+ If I remove the alternatives_smp_switch() from the offline
+ path [...] the mean offline overhead is 550/42=13.1 milliseconds
+
+Basically, we're never going to get those 120ms back, and the code is
+pretty messy.
+
+We get rid of:
+1) The "smp-alt-once" boot option.  It's actually "smp-alt-boot", the
+   documentation is wrong.  It's now the default.
+2) The skip_smp_alternatives flag used by suspend.
+3) arch_disable_nonboot_cpus_begin() and arch_disable_nonboot_cpus_end()
+   which were only used to set this one flag.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+> Also,
+> 
+> > +	/* Patch to UP if other cpus not imminent. */
+> > +	if (noreplace_smp || num_present_cpus() == 1 || setup_max_cpus <= 1) {
+> 
+> shouldn't this be
+> 
+> 	if (!noreplace_smp && (num_present_cpus() == 1 || setup_max_cpus <= 1))
+
+Yes, good point.
+
+> also, to be consistent with other checks, may be just use
+> "num_possible_cpus() == 1" check instead of "setup_max_cpus <= 1".
+
+I think that should work.  Will test variations...
 
 Thanks,
-Guenter
-------
-
-The following changes since commit 25918f9811eae1d657db2bccdfcb077038d9454c:
-
-  Merge tag 'fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2012-07-26 20:29:52 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 829917cd7246204d6c5f066c40b66d2b62d0930d:
-
-  hwmon: (applesmc) Decode and act on read/write status codes (2012-07-27 14:00:12 -0700)
-
-----------------------------------------------------------------
-Fix timing problems in applesmc driver
-Improve device removal in jc42 driver
-Fix build warning in acpi_power_meter driver
-
-----------------------------------------------------------------
-Guenter Roeck (1):
-      hwmon: (acpi_power_meter) Fix build warning
-
-Henrik Rydberg (1):
-      hwmon: (applesmc) Decode and act on read/write status codes
-
-Jean Delvare (2):
-      hwmon: (jc42) Simplify hysteresis mask
-      hwmon: (jc42) Don't reset hysteresis on device removal
-
- drivers/hwmon/acpi_power_meter.c |    4 +++
- drivers/hwmon/applesmc.c         |   70 +++++++++++++++++++++++++-------------
- drivers/hwmon/jc42.c             |   26 ++++++++------
- 3 files changed, 66 insertions(+), 34 deletions(-)
-
---mP3DRpeJDSE+ciuQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQFeC6AAoJEMsfJm/On5mBY4gQAKHxfS67P18K4zq50la15bqt
-QUyqPA+FBWK8+GX8q+cDzTNdAroejpbW65qqjp5qK0rmbNVJJ2+UscgIUhBqpoXp
-zBvCQeK+JHNjU3CgLgl9IEj9Gxsa+KRGKwZ7QhfHu5pHVp3VBchvDIdrFIsE33dX
-L19Gdt/k2zxtHhHK8SWuuJk0KY9tTBf+6sLEQYHb55zAgTFoQ6nLaTQX0bN0KApz
-EUdSbrJZPqffXWfG18yNmBaVKoxZ9n5yYtiGE7rIG+fNasHl3N7215cYbwPK88xP
-lpj/51YHmtm2pYW1NiTPPCQu31iwjkPbFWKb9ai88x7iNuL6ki4yPqVeEV1LmwMd
-fJX5TNTdlN3sVq6QMisyyFizRHRvQvg7MtPfqXO71eo/5vN/1QLgnXT7Gc7NSUHO
-Jh5hYZ22nWpPXnk/1wZks3hzKc8a8nUcoDirEdtHTLCur1nSJqitJTDB9BlyQemn
-6xR5qJLq1vAh5H7WvlxJBZpqmwqOFu0ZmmQMDK/Gzue0Zt576h5U1R217xERlrUZ
-4w0yPi3LPE+AoEHty49VJxQp2BUaYOSDffu1Sr8KafKr8rdYy3b8FBQrWvytpe+N
-fXQfTwJMKt00T1wheHqDuRQPzSBa9QpkIdbkZtddxBhgFixDSS/EC4h/iEH7cThZ
-G4aU0NBUyNUgs9ktkr3c
-=jJzw
------END PGP SIGNATURE-----
-
---mP3DRpeJDSE+ciuQ--
+Rusty.
