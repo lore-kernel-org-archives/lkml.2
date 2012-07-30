@@ -1,119 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab2G3Rqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:46:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab2G3RcA (ORCPT
+	id S1754539Ab2G3RsX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:48:23 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:60672 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab2G3RsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [ 14/41] vmscan: reduce wind up shrinker->nr when shrinker cant do work
-Date: Mon, 30 Jul 2012 10:31:13 -0700
-Message-Id: <20120730172902.427259814@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
-References: <20120730172901.306897424@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
+	Mon, 30 Jul 2012 13:48:21 -0400
+Date: Mon, 30 Jul 2012 10:42:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mail List <linux-kernel@vger.kernel.org>
+Subject: Re: [Regression 3.4] tick_broadcast_mask is not restored after a CPU
+ has been offline/onlined
+Message-ID: <20120730174218.GA30772@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120730151559.772d4055@feng-i7>
+ <20120730133913.GK2556@linux.vnet.ibm.com>
+ <20120730230747.7637112a@feng-i7>
+ <20120730170847.GE2391@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120730170847.GE2391@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12073017-7282-0000-0000-00000B7CD057
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Mon, Jul 30, 2012 at 10:08:47AM -0700, Paul E. McKenney wrote:
+> On Mon, Jul 30, 2012 at 11:07:47PM +0800, Feng Tang wrote:
+> > Hi Paul,
+> > 
+> > On Mon, 30 Jul 2012 06:39:13 -0700
+> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > On Mon, Jul 30, 2012 at 03:15:59PM +0800, Feng Tang wrote:
+> > > > Hi All,
+> > > > 
+> > > > When I debugged a suspend/resume bug, I found that tick_broadcast_mask is
+> > > > not restored for a CPU after it is offline/onlined since kernel 3.4, while
+> > > > it's fine for 3.3.
+> > > 
+> > > Could you please try 3.5?
+> > 
+> > Yes, it's the same for 3.5
+> 
+> Thank you for checking, Feng.
+> 
+> Len, the comment above the change says:
+> 
+> 	/*
+> 	 * FIXME:  Design the ACPI notification to make it once per
+> 	 * system instead of once per-cpu.  This condition is a hack
+> 	 * to make the code that updates C-States be called once.
+> 	 */
+> 
+> Is it time for this design-level change?  Or is there something obvious
+> that I missed when fixing the smp_processor_id() splat?
+> 
+> I could revert back, but use raw_smp_processor_id() rather than
+> smp_processor_id(), but that feels like papering over a problem rather
+> than fixing it.
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+But should papering be appropriate, here is the patch.
 
-------------------
+							Thanx, Paul
 
-From: Dave Chinner <dchinner@redhat.com>
+------------------------------------------------------------------------
 
-commit 3567b59aa80ac4417002bf58e35dce5c777d4164 upstream.
+ACPI: Repair fix to unprotected smp_processor_id()
 
-Stable note: Not tracked in Bugzilla. This patch reduces excessive
-	reclaim of slab objects reducing the amount of information that
-	has to be brought back in from disk. The third and fourth paragram
-	in the series describes the impact.
+Commit 9505626d (ACPI: Fix unprotected smp_processor_id() in
+acpi_processor_cst_has_changed()) introduced a suspend/resume bug.
+This commit therefore introduces a bug-for-bug compatible fix for the
+original problem.
 
-When a shrinker returns -1 to shrink_slab() to indicate it cannot do
-any work given the current memory reclaim requirements, it adds the
-entire total_scan count to shrinker->nr. The idea ehind this is that
-whenteh shrinker is next called and can do work, it will do the work
-of the previously aborted shrinker call as well.
+Reported-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 
-However, if a filesystem is doing lots of allocation with GFP_NOFS
-set, then we get many, many more aborts from the shrinkers than we
-do successful calls. The result is that shrinker->nr winds up to
-it's maximum permissible value (twice the current cache size) and
-then when the next shrinker call that can do work is issued, it
-has enough scan count built up to free the entire cache twice over.
-
-This manifests itself in the cache going from full to empty in a
-matter of seconds, even when only a small part of the cache is
-needed to be emptied to free sufficient memory.
-
-Under metadata intensive workloads on ext4 and XFS, I'm seeing the
-VFS caches increase memory consumption up to 75% of memory (no page
-cache pressure) over a period of 30-60s, and then the shrinker
-empties them down to zero in the space of 2-3s. This cycle repeats
-over and over again, with the shrinker completely trashing the inode
-and dentry caches every minute or so the workload continues.
-
-This behaviour was made obvious by the shrink_slab tracepoints added
-earlier in the series, and made worse by the patch that corrected
-the concurrent accounting of shrinker->nr.
-
-To avoid this problem, stop repeated small increments of the total
-scan value from winding shrinker->nr up to a value that can cause
-the entire cache to be freed. We still need to allow it to wind up,
-so use the delta as the "large scan" threshold check - if the delta
-is more than a quarter of the entire cache size, then it is a large
-scan and allowed to cause lots of windup because we are clearly
-needing to free lots of memory.
-
-If it isn't a large scan then limit the total scan to half the size
-of the cache so that windup never increases to consume the whole
-cache. Reducing the total scan limit further does not allow enough
-wind-up to maintain the current levels of performance, whilst a
-higher threshold does not prevent the windup from freeing the entire
-cache under sustained workloads.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/vmscan.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -277,6 +277,21 @@ unsigned long shrink_slab(struct shrink_
- 		}
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index 47a8caa..19c151a 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -1218,7 +1218,8 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
+ 	 * to make the code that updates C-States be called once.
+ 	 */
  
- 		/*
-+		 * We need to avoid excessive windup on filesystem shrinkers
-+		 * due to large numbers of GFP_NOFS allocations causing the
-+		 * shrinkers to return -1 all the time. This results in a large
-+		 * nr being built up so when a shrink that can do some work
-+		 * comes along it empties the entire cache due to nr >>>
-+		 * max_pass.  This is bad for sustaining a working set in
-+		 * memory.
-+		 *
-+		 * Hence only allow the shrinker to scan the entire cache when
-+		 * a large delta change is calculated directly.
-+		 */
-+		if (delta < max_pass / 4)
-+			total_scan = min(total_scan, max_pass / 2);
-+
-+		/*
- 		 * Avoid risking looping forever due to too large nr value:
- 		 * never try to free more than twice the estimate number of
- 		 * freeable entries.
-
+-	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
++	if (raw_smp_processor_id() == 0 &&
++	    cpuidle_get_driver() == &acpi_idle_driver) {
+ 
+ 		cpuidle_pause_and_lock();
+ 		/* Protect against cpu-hotplug */
 
