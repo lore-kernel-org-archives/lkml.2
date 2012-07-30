@@ -1,61 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab2G3PPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 11:15:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35652 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab2G3PPm (ORCPT
+	id S1754624Ab2G3PQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 11:16:36 -0400
+Received: from relay.parallels.com ([195.214.232.42]:32954 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753532Ab2G3PQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 11:15:42 -0400
-Message-ID: <5016A517.8000702@linutronix.de>
-Date: Mon, 30 Jul 2012 17:15:35 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Mon, 30 Jul 2012 11:16:34 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: "David S. Miller" <davem@davemloft.net>
+CC: Vladimir Davydov <vdavydov@parallels.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] net: batch nf_conntrack_net_exit
+Date: Mon, 30 Jul 2012 19:16:15 +0400
+Message-ID: <1343661375-23442-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [PATCH] uprobes: don't enable/disable signle step if the user
- did it
-References: <1343316043-13475-1-git-send-email-bigeasy@linutronix.de> <20120730110658.GC11147@in.ibm.com> <20120730141638.GA5306@redhat.com>
-In-Reply-To: <20120730141638.GA5306@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 04:16 PM, Oleg Nesterov wrote:
+The patch introduces nf_conntrack_cleanup_list(), which cleanups
+nf_conntracks for a list of netns and calls synchronize_net() only
+once for them all.
+---
+ include/net/netfilter/nf_conntrack_core.h |   10 +++++++++-
+ net/netfilter/nf_conntrack_core.c         |   21 +++++++++++++--------
+ net/netfilter/nf_conntrack_standalone.c   |   14 +++++++++-----
+ 3 files changed, 31 insertions(+), 14 deletions(-)
 
-> I'd suggest you to make 2 patches:
->
-> 	- 1/2 creates arch_uprobe_*_step(...) __weak helpers in
-> 	      kernel/events/uprobes.c which simply call
-> 	      user_*_single_step() and updates the callers
->
-> 	      Not strictly necessary, but imho makes sense...
->
-> 	- 2/2 adds the x86 implementation in arch/x86/kernel/uprobes.c
-> 	      which still uses user_*_single_step() but checks
-> 	      TIF_SINGLESTEP. As your patch does, but you should use
-> 	      utask, not uprobe.
->
-> IOW, I simply suggest to make your patch x86-specific. Then we
-> will try to do more fixes/improvements.
->
->
-> Sebastian, Ananth, what do you think?
+diff --git a/include/net/netfilter/nf_conntrack_core.h b/include/net/netfilter/nf_conntrack_core.h
+index d8f5b9f..f53b855 100644
+--- a/include/net/netfilter/nf_conntrack_core.h
++++ b/include/net/netfilter/nf_conntrack_core.h
+@@ -26,7 +26,15 @@ extern unsigned int nf_conntrack_in(struct net *net,
+ 				    struct sk_buff *skb);
+ 
+ extern int nf_conntrack_init(struct net *net);
+-extern void nf_conntrack_cleanup(struct net *net);
++extern void nf_conntrack_cleanup_list(struct list_head *net_exit_list);
++
++static inline void nf_conntrack_cleanup(struct net *net)
++{
++	LIST_HEAD(single);
++
++	list_add(&net->exit_list, &single);
++	nf_conntrack_cleanup_list(&single);
++}
+ 
+ extern int nf_conntrack_proto_init(struct net *net);
+ extern void nf_conntrack_proto_fini(struct net *net);
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index cf48755..afa62f7 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -1363,21 +1363,26 @@ static void nf_conntrack_cleanup_net(struct net *net)
+ 
+ /* Mishearing the voices in his head, our hero wonders how he's
+    supposed to kill the mall. */
+-void nf_conntrack_cleanup(struct net *net)
++void nf_conntrack_cleanup_list(struct list_head *net_exit_list)
+ {
+-	if (net_eq(net, &init_net))
+-		RCU_INIT_POINTER(ip_ct_attach, NULL);
++	struct net *net;
++
++	list_for_each_entry(net, net_exit_list, exit_list)
++		if (net_eq(net, &init_net))
++			RCU_INIT_POINTER(ip_ct_attach, NULL);
+ 
+ 	/* This makes sure all current packets have passed through
+ 	   netfilter framework.  Roll on, two-stage module
+ 	   delete... */
+ 	synchronize_net();
+-	nf_conntrack_proto_fini(net);
+-	nf_conntrack_cleanup_net(net);
+ 
+-	if (net_eq(net, &init_net)) {
+-		RCU_INIT_POINTER(nf_ct_destroy, NULL);
+-		nf_conntrack_cleanup_init_net();
++	list_for_each_entry(net, net_exit_list, exit_list) {
++		nf_conntrack_proto_fini(net);
++		nf_conntrack_cleanup_net(net);
++		if (net_eq(net, &init_net)) {
++			RCU_INIT_POINTER(nf_ct_destroy, NULL);
++			nf_conntrack_cleanup_init_net();
++		}
+ 	}
+ }
+ 
+diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+index 9b39432..8f60708 100644
+--- a/net/netfilter/nf_conntrack_standalone.c
++++ b/net/netfilter/nf_conntrack_standalone.c
+@@ -551,16 +551,20 @@ out_init:
+ 	return ret;
+ }
+ 
+-static void nf_conntrack_net_exit(struct net *net)
++static void nf_conntrack_net_exit(struct list_head *net_exit_list)
+ {
+-	nf_conntrack_standalone_fini_sysctl(net);
+-	nf_conntrack_standalone_fini_proc(net);
+-	nf_conntrack_cleanup(net);
++	struct net *net;
++
++	list_for_each_entry(net, net_exit_list, exit_list) {
++		nf_conntrack_standalone_fini_sysctl(net);
++		nf_conntrack_standalone_fini_proc(net);
++	}
++	nf_conntrack_cleanup_list(net_exit_list);
+ }
+ 
+ static struct pernet_operations nf_conntrack_net_ops = {
+ 	.init = nf_conntrack_net_init,
+-	.exit = nf_conntrack_net_exit,
++	.exit_batch = nf_conntrack_net_exit,
+ };
+ 
+ static int __init nf_conntrack_standalone_init(void)
+-- 
+1.7.1
 
-Yup, let me try…
-
->
-> Oleg.
->
-
-Sebastian
