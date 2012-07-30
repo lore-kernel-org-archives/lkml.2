@@ -1,85 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab2G3AmE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 20:42:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44289 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab2G3AmB (ORCPT
+	id S1753873Ab2G3Avj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 20:51:39 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39462 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2G3Avh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 20:42:01 -0400
-Date: Mon, 30 Jul 2012 10:41:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: linux-next: manual merge of the vfs tree with Linus' tree
-Message-Id: <20120730104157.5ce37f60f4d5b39923c0adc2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__30_Jul_2012_10_41_57_+1000_bbxckRGm7UHImcc/"
+	Sun, 29 Jul 2012 20:51:37 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5015DA86.2020306@jp.fujitsu.com>
+Date: Mon, 30 Jul 2012 09:51:18 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <lenb@kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] create sun sysfs file
+References: <5012051A.4050706@jp.fujitsu.com> <1343427931.3010.582.camel@misato.fc.hp.com>
+In-Reply-To: <1343427931.3010.582.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__30_Jul_2012_10_41_57_+1000_bbxckRGm7UHImcc/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Toshi,
 
-Hi Al,
+2012/07/28 7:25, Toshi Kani wrote:
+> On Fri, 2012-07-27 at 12:03 +0900, Yasuaki Ishimatsu wrote:
+>> Even if a device has _SUN method, there is no way to know the slot unique-ID.
+>> Thus the patch creates "sun" file in sysfs so that we can recognize it.
+>
+> Hi Yasuaki,
+>
+> Thanks for the update.  This version looks good to me.
+> Did you forget to add your Signed-off?
+>
+>
+>> Index: linux-3.5/include/acpi/acpi_bus.h
+>> ===================================================================
+>> --- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-22 05:58:29.000000000 +0900
+>> +++ linux-3.5/include/acpi/acpi_bus.h	2012-07-27 10:05:13.860598455 +0900
+>> @@ -209,6 +209,7 @@ struct acpi_device_pnp {
+>>   	struct list_head ids;		/* _HID and _CIDs */
+>>   	acpi_device_name device_name;	/* Driver-determined */
+>>   	acpi_device_class device_class;	/*        "          */
+>> +	unsigned long sun;		/* _SUN */
+>>   };
+>>
+>>   #define acpi_device_bid(d)	((d)->pnp.bus_id)
+>> Index: linux-3.5/drivers/acpi/scan.c
+>> ===================================================================
+>> --- linux-3.5.orig/drivers/acpi/scan.c	2012-07-22 05:58:29.000000000 +0900
+>> +++ linux-3.5/drivers/acpi/scan.c	2012-07-27 10:17:55.670550879 +0900
+>> @@ -192,10 +192,21 @@ end:
+>>   }
+>>   static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
+>>
+>> +static ssize_t
+>> +acpi_device_sun_show(struct device *dev, struct device_attribute *attr, char *buf) {
+>> +	struct acpi_device *acpi_dev = to_acpi_device(dev);
+>> +	int result;
+>> +
+>> +	result = sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
+>> +	return result;
+>> +}
+>> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
+>> +
+>>   static int acpi_device_setup_files(struct acpi_device *dev)
+>>   {
+>>   	acpi_status status;
+>>   	acpi_handle temp;
+>> +	unsigned long long sun;
+>>   	int result = 0;
+>>
+>>   	/*
+>> @@ -217,6 +228,14 @@ static int acpi_device_setup_files(struc
+>>   			goto end;
+>>   	}
+>>
+>> +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
+>> +	if (ACPI_SUCCESS(status)) {
+>> +		dev->pnp.sun = (unsigned long)sun;
+>> +		result = device_create_file(&dev->dev, &dev_attr_sun);
+>> +		if (result)
+>> +			goto end;
+>> +	}
+>> +
+>
 
-Today's linux-next merge of the vfs tree got a conflict in
-drivers/usb/gadget/storage_common.c between commit d6e16a89578f ("usb:
-gadget: mass_storage: fail fsg_store_file() early if colud not open
-file") from Linus' tree and commit 20818a0caa84 ("gadgetfs: clean up")
-from the vfs tree.
+> I'd suggest we add the else condition below to invalidate the field when
+> _SUN does not exist.
+>
+> 	else {
+> 		dev->pnp.sun = (unsigned long)-1;
+> 	}
+>
 
-Context changes.  I fixed it up (I think - see below) and can carry the
-fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'll update it soon.
 
-diff --cc drivers/usb/gadget/storage_common.c
-index ae8b188,f929432..0000000
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@@ -709,12 -706,6 +708,11 @@@ static int fsg_lun_open(struct fsg_lun=20
-  		goto out;
-  	}
- =20
- +	if (fsg_lun_is_open(curlun))
- +		fsg_lun_close(curlun);
- +
-- 	get_file(filp);
- +	curlun->blksize =3D blksize;
- +	curlun->blkbits =3D blkbits;
-  	curlun->ro =3D ro;
-  	curlun->filp =3D filp;
-  	curlun->file_length =3D size;
+Thanks,
+Yasuaki Ishimatsu
+  
+>
+> Thanks,
+> -Toshi
+>
+>>           /*
+>>            * If device has _EJ0, 'eject' file is created that is used to trigger
+>>            * hot-removal function from userland.
+>> @@ -241,6 +260,10 @@ static void acpi_device_remove_files(str
+>>   	if (ACPI_SUCCESS(status))
+>>   		device_remove_file(&dev->dev, &dev_attr_eject);
+>>
+>> +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
+>> +	if (ACPI_SUCCESS(status))
+>> +		device_remove_file(&dev->dev, &dev_attr_sun);
+>> +
+>>   	device_remove_file(&dev->dev, &dev_attr_modalias);
+>>   	device_remove_file(&dev->dev, &dev_attr_hid);
+>>   	if (dev->handle)
+>>
+>
+>
 
---Signature=_Mon__30_Jul_2012_10_41_57_+1000_bbxckRGm7UHImcc/
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQFdhVAAoJEECxmPOUX5FEPXwP/2hkDkmphPoedm1WMT6oKgv9
-upkXFqyHBZktxZj8tBVzX3NxLW3go0UVgBtpwdFmPOx0tmOt6ayZtQrHHup0Px0G
-Egr1H5gtxN2u1/NeglHI67zcZJwpuqj3TeaHOd7wBNB7zFysin1nWHjLG977UeK9
-3NO+6/WntnlYoC6bWLeZHpSPXasIpZH5mExTgVjhPWwgogCtUFy4WWe53z3d828d
-HWnS6CIc/jswDwrXbDnvZMZMMemyzUz+ZjKFx0i33edmqOiRWY00IcSCF6PXWY6/
-1Mmj8V2oj1B4l7SzM9gKI8qtkdS677SjF/GPdDjKkEeVJRZ3rZzNQdcWVirzkxut
-VEmPlmOT69oPoDbISwsXDMT/uBw6VkNFxFrEurfE9ULvu8HJnn2c7+nYC3JjwD0B
-BhYGUeMRtcIhuLg3rogPopANOtbRqLqdd8tiJsQeUMn7wtXbPNtwSs4BT03eZJM8
-emxJVik+m8O/32YB1e+Fl/XXeI3sAUX4JBEzsnG5CxS5Gk+m8m2Mi7kSbx3VTgnt
-kYbhG18bEMky7zYtAmRqA08Zlyundqasi/wfQjJaoL7Mi6ltQyokikd8Z3ZusZll
-jTjfo6SJ8/uag+TI5ZrrMUdACxTTtZm4DjECZPz40S3bvDcIyOHj1oCheT8W//OM
-NQL6gGf7ZB3agUdwfB8L
-=awRv
------END PGP SIGNATURE-----
-
---Signature=_Mon__30_Jul_2012_10_41_57_+1000_bbxckRGm7UHImcc/--
