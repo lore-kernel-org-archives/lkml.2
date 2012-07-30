@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab2G3RcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:32:23 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:32930 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab2G3RcV (ORCPT
+	id S1754793Ab2G3Rce (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:32:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754748Ab2G3Rc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:21 -0400
+	Mon, 30 Jul 2012 13:32:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Daney <david.daney@cavium.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [ 04/41] MIPS: Properly align the .data..init_task section.
-Date: Mon, 30 Jul 2012 10:31:03 -0700
-Message-Id: <20120730172901.652451653@linuxfoundation.org>
+        Dimitri Sivanich <sivanich@sgi.com>, Christoph Lameter <cl@gentwo.org>,
+        Mel Gorman <mel@csn.ul.ie>, Mel Gorman <mgorman@suse.de>
+Subject: [ 07/41] mm/vmstat.c: cache align vm_stat
+Date: Mon, 30 Jul 2012 10:31:06 -0700
+Message-Id: <20120730172901.882088274@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -30,66 +30,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: David Daney <david.daney@cavium.com>
+From: Dimitri Sivanich <sivanich@sgi.com>
 
-commit 7b1c0d26a8e272787f0f9fcc5f3e8531df3b3409 upstream.
+commit a1cb2c60ddc98ff4e5246f410558805401ceee67 upstream.
 
-Improper alignment can lead to unbootable systems and/or random
-crashes.
+Stable note: Not tracked on Bugzilla. This patch is known to make a big
+        difference to tmpfs performance on larger machines.
 
-[ralf@linux-mips.org: This is a lond standing bug since
-6eb10bc9e2deab06630261cd05c4cb1e9a60e980 (kernel.org) rsp.
-c422a10917f75fd19fa7fe070aaaa23e384dae6f (lmo) [MIPS: Clean up linker script
-using new linker script macros.] so dates back to 2.6.32.]
+This was found to adversely affect tmpfs I/O performance.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/3881/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Tests run on a 640 cpu UV system.
+
+With 120 threads doing parallel writes, each to different tmpfs mounts:
+No patch:		~300 MB/sec
+With vm_stat alignment:	~430 MB/sec
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Acked-by: Christoph Lameter <cl@gentwo.org>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 
 ---
- arch/mips/include/asm/thread_info.h |    4 ++--
- arch/mips/kernel/vmlinux.lds.S      |    3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ mm/vmstat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/mips/include/asm/thread_info.h
-+++ b/arch/mips/include/asm/thread_info.h
-@@ -60,6 +60,8 @@ struct thread_info {
- register struct thread_info *__current_thread_info __asm__("$28");
- #define current_thread_info()  __current_thread_info
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -78,7 +78,7 @@ void vm_events_fold_cpu(int cpu)
+  *
+  * vm_stat contains the global counters
+  */
+-atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
++atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS] __cacheline_aligned_in_smp;
+ EXPORT_SYMBOL(vm_stat);
  
-+#endif /* !__ASSEMBLY__ */
-+
- /* thread information allocation */
- #if defined(CONFIG_PAGE_SIZE_4KB) && defined(CONFIG_32BIT)
- #define THREAD_SIZE_ORDER (1)
-@@ -97,8 +99,6 @@ register struct thread_info *__current_t
- 
- #define free_thread_info(info) kfree(info)
- 
--#endif /* !__ASSEMBLY__ */
--
- #define PREEMPT_ACTIVE		0x10000000
- 
- /*
---- a/arch/mips/kernel/vmlinux.lds.S
-+++ b/arch/mips/kernel/vmlinux.lds.S
-@@ -1,5 +1,6 @@
- #include <asm/asm-offsets.h>
- #include <asm/page.h>
-+#include <asm/thread_info.h>
- #include <asm-generic/vmlinux.lds.h>
- 
- #undef mips
-@@ -73,7 +74,7 @@ SECTIONS
- 	.data : {	/* Data */
- 		. = . + DATAOFFSET;		/* for CONFIG_MAPPED_KERNEL */
- 
--		INIT_TASK_DATA(PAGE_SIZE)
-+		INIT_TASK_DATA(THREAD_SIZE)
- 		NOSAVE_DATA
- 		CACHELINE_ALIGNED_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
- 		READ_MOSTLY_DATA(1 << CONFIG_MIPS_L1_CACHE_SHIFT)
+ #ifdef CONFIG_SMP
 
 
