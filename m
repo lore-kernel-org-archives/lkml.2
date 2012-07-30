@@ -1,239 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2G3Tpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:45:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19735 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab2G3TpE (ORCPT
+	id S1755175Ab2G3Tp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:45:58 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:41359 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754656Ab2G3Tpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:45:04 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=pGYlzOKfiEwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=qrFA_WvyAAAA:8 a=qJgER5RU2pfj1r0b-p4A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=bdmcM0_chmsA:10 a=jeBq3FmKZ4MA:10 a=V-Ktq1bX_zgNhkX_:21 a=fQ5rLMVGHjH3bZ7d:21 a=IRZufY1EXczceZzun44A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120730194502.828052323@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:43:19 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3/4] localmodconfig: Check if configs are already set for selects
-References: <20120730194316.768288008@goodmis.org>
-Content-Disposition: inline; filename=0003-localmodconfig-Check-if-configs-are-already-set-for-.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 30 Jul 2012 15:45:55 -0400
+Message-ID: <5016C708.3090509@xenotime.net>
+Date: Mon, 30 Jul 2012 10:40:24 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Miles Lane <miles.lane@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: 3.4.0+ - Linus GIT -- drivers/built-in.o: In function `nouveau_acpi_edid':
+ (.text+0x112337): undefined reference to `acpi_video_get_edid'
+References: <CAHFgRy_gc0sbgp2O6r4jHiDpMu0nX-ZefgEtkma1et3HAKG5+A@mail.gmail.com>
+In-Reply-To: <CAHFgRy_gc0sbgp2O6r4jHiDpMu0nX-ZefgEtkma1et3HAKG5+A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 05/31/2012 12:10 AM, Miles Lane wrote:
 
-From: Steven Rostedt <srostedt@redhat.com>
-
-There are some cases that a required module does not have a prompt
-and needs to have another module enabled that selects it to be set.
-As localmodconfig is conservative and tries to make the minimum config
-without breaking the user's kernel, or keeping the user from using
-devices that were loaded when the lsmod was done, all modules that
-select this module will also be enabled.
-
-If you needed module A, but module A did not have a prompt but needed
-module B to be selected, localmodconfig would make sure B was still
-enabled. If not only B selected A, but C, D, E, F, and G also
-selected A, then all of those would also be included, as well as the
-modules they depend on. This ballooned the number of configs that
-localmodconfig would keep.
-
-The fix here is to process the depends first, and then record those
-configs that did not have a prompt and needed to be selected.
-After the depends are done, check what configs are needed to select
-the configs in the list, and if a config that selects it is already
-set, then we don't need to do anything else.
-
-If no config that selects the config is set, then just pick one and
-try again.
-
-This change brought down the number of selected modules from 290
-to 67! Both before and after were run against a config that had 3095
-modules enabled.
-
-Tested-by: John David Yost <johnyost@ptd.net> # AlleyTrotter
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/kconfig/streamline_config.pl |  115 ++++++++++++++++++++++++++++++=
-----
- 1 file changed, 104 insertions(+), 11 deletions(-)
-
-diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
-ine_config.pl
-index ab4985f..fcfcb30 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -420,7 +420,7 @@ my $repeat =3D 1;
- # to keep on. If A was on in the original config, B would not have been
- # and B would not be turned on by this script.
- #
--sub parse_config_dep_select
-+sub parse_config_depends
- {
-     my ($p) =3D @_;
-=20
-@@ -448,26 +448,119 @@ sub parse_config_dep_select
-     }
- }
-=20
--while ($repeat) {
--    $repeat =3D 0;
-+# Select is treated a bit differently than depends. We call this
-+# when a config has no prompt and requires another config to be
-+# selected. We use to just select all configs that selected this
-+# config, but found that that can balloon into enabling hundreds
-+# of configs that we do not care about.
-+#
-+# The idea is we look at all the configs that select it. If one
-+# is already in our list of configs to enable, then there's nothing
-+# else to do. If there isn't, we pick the first config that was
-+# enabled in the orignal config and use that.
-+sub parse_config_selects
-+{
-+    my ($config, $p) =3D @_;
-=20
--    foreach my $config (keys %configs) {
--	$config =3D~ s/^CONFIG_//;
-+    my $next_config;
-+
-+    while ($p =3D~ /[$valid]/) {
-+
-+	if ($p =3D~ /^[^$valid]*([$valid]+)/) {
-+	    my $conf =3D "CONFIG_" . $1;
-+
-+	    $p =3D~ s/^[^$valid]*[$valid]+//;
-=20
--	if (defined($depends{$config})) {
--	    # This config has dependencies. Make sure they are also included
--	    parse_config_dep_select $depends{$config};
-+	    # Make sure that this config exists in the current .config file
-+	    if (!defined($orig_configs{$conf})) {
-+		next;
-+	    }
-+
-+	    # Check if something other than a module selects this config
-+	    if (defined($orig_configs{$conf}) && $orig_configs{$conf} ne "m") {
-+		# we are good with this
-+		return;
-+	    }
-+	    if (defined($configs{$conf})) {
-+		# A set config selects this config, we are good
-+		return;
-+	    }
-+	    # Set this config to be selected
-+	    if (!defined($next_config)) {
-+		$next_config =3D $conf;
-+	    }
-+	} else {
-+	    die "this should never happen";
- 	}
-+    }
-=20
--	if (defined($prompts{$config}) || !defined($selects{$config})) {
--	    next;
-+    # If no possible config selected this, then something happened.
-+    if (!defined($next_config)) {
-+	print STDERR "WARNING: $config is required, but nothing in the\n";
-+	print STDERR "  current config selects it.\n";
-+	return;
-+    }
-+
-+    # If we are here, then we found no config that is set and
-+    # selects this config. Repeat.
-+    $repeat =3D 1;
-+    # Make this config need to be selected
-+    $configs{$next_config} =3D 1;
-+}
-+
-+my %process_selects;
-+
-+# loop through all configs, select their dependencies.
-+sub loop_depend {
-+    $repeat =3D 1;
-+
-+    while ($repeat) {
-+	$repeat =3D 0;
-+
-+      forloop:
-+	foreach my $config (keys %configs) {
-+
-+	    # If this config is not a module, we do not need to process it
-+	    if (defined($orig_configs{$config}) && $orig_configs{$config} ne "m")=
- {
-+		next forloop;
-+	    }
-+
-+	    $config =3D~ s/^CONFIG_//;
-+
-+	    if (defined($depends{$config})) {
-+		# This config has dependencies. Make sure they are also included
-+		parse_config_depends $depends{$config};
-+	    }
-+
-+	    # If the config has no prompt, then we need to check if a config
-+	    # that is enabled selected it. Or if we need to enable one.
-+	    if (!defined($prompts{$config}) && defined($selects{$config})) {
-+		$process_selects{$config} =3D 1;
-+	    }
- 	}
-+    }
-+}
-+
-+sub loop_select {
-+
-+    foreach my $config (keys %process_selects) {
-+	$config =3D~ s/^CONFIG_//;
-=20
- 	# config has no prompt and must be selected.
--	parse_config_dep_select $selects{$config};
-+	parse_config_selects $config, $selects{$config};
-     }
- }
-=20
-+while ($repeat) {
-+    # Get the first set of configs and their dependencies.
-+    loop_depend;
-+
-+    $repeat =3D 0;
-+
-+    # Now we need to see if we have to check selects;
-+    loop_select;
-+}=09=20=20=20=20
-+
- my %setconfigs;
-=20
- # Finally, read the .config file and turn off any module enabled that
---=20
-1.7.10.4
+> I suspect this is due to a dependency not enforced in the Kconfig logic?
+> 
+>   LD      init/built-in.o
+> drivers/built-in.o: In function `nouveau_acpi_edid':
+> (.text+0x112337): undefined reference to `acpi_video_get_edid'
 
 
 
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+This build error still happens in Linux 3.5.
+It is attempting to call a symbol in a loadable module from
+a builtin driver.
 
-iQIcBAABAgAGBQJQFuQ+AAoJEIy3vGnGbaoAdW8QALakAiQPPwhUeClbBCNwVa2P
-rpWpuz0BXPAHa4TxpQYIOp0wvimN9Mr8cG4FLEY6Kd+QES/xgn5aPsHCqYsiII3o
-DBDf8oEkDQBahOLrKfaFUu0KaNXBdGE23pj167bFlgw6Dniu0C8rRUmJoIFRqTOU
-7U/Xx1Pl5avKdeJlso0P4pNjbKD1mKu7Gfl0kYdSm1+9sG3oKekSdwHEJ2Db+Af+
-lJU7EXitf2S2Hc2nQn4LbBaz01lum2Aa/KSFwEsjC1TsJ/nbhCp2ffCQM3op8a6U
-qoMnwyD7URvjmn2LsbxZTYwe1OkGKAVqDV1gLI+k0lxlETDkY46/3bBvP/HdkwPj
-SwbRO0kvAMtDiCXfWLzd5Gd5e6tEXsPlkXjwEF/cOuMTXnAn3ULuw/Tv/6UJo0qz
-O2MCGMjKGPinVty50adzuq6dK36bDzAE5v7KHdRHs+tUddKQY6YCS0ZU95WS8MFg
-ilUl0FXOm3tTMfBzjXOfSpLxXSaQsXtu58Ew7COmbhap21MTyNUCjcbpMdCje7ft
-po8Ue+lf/6vB/8SP/Bwi9GoYtIj4WUbJc5JSCdoZG/OFrt3e0cdns2C1ue1pRfz4
-G80Vz87VyWCNNxC4JfzippEVqDnCmib4f/cxSx+oE7AUy43WtIqzM6XzT5j4uH8R
-frJwcBa1rWwHMyCNs1Ox
-=htMl
------END PGP SIGNATURE-----
 
---00GvhwF7k39YY--
+CONFIG_ACPI_VIDEO=m
+CONFIG_VIDEO_OUTPUT_CONTROL=m
+
+If I use change CONFIG_VIDEO_OUTPUT_CONTROL to y,
+CONFIG_ACPI_VIDEO also changes to y, so the relevant
+functions are all builtin, and there is no build problem.
+
+
+I guess that this line in drivers/gpu/drm/nouveau/Kconfig:
+
+	select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
+
+sets ACPI_VIDEO=m since VIDEO_OUTPUT_CONTROL=m, even though all of the
+other symbols are =y.
+
+xconfig tells me:
+
+Selects: FW_LOADER [=y] && DRM_KMS_HELPER [=y] && DRM_TTM [=y] && FB_CFB_FILLRECT [=y] && FB_CFB_COPYAREA [=y] && FB_CFB_IMAGEBLIT [=y] && FB [=y] && FRAMEBUFFER_CONSOLE [=y] && FB_BACKLIGHT [=y] && ACPI_VIDEO [=m] && ACPI_WMI [=y] && MXM_WMI [=y] && POWER_SUPPLY [=y]
+
+
+
+
+-- 
+~Randy
