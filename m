@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab2G3Rft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:35:49 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:57358 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754955Ab2G3Rfs (ORCPT
+	id S1755113Ab2G3Rdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:33:39 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38307 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab2G3Rdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:35:48 -0400
-Message-ID: <5016C5EF.7060707@gmail.com>
-Date: Mon, 30 Jul 2012 19:35:43 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 30 Jul 2012 13:33:35 -0400
 MIME-Version: 1.0
-To: Evgeniy Polyakov <zbr@ioremap.net>
-CC: linux-kernel@vger.kernel.org, Ville Syrjala <syrjala@sci.fi>,
-        GregKH <greh@kroah.com>
-Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in platform
- data
-References: <1343249670-14985-1-git-send-email-zonque@gmail.com> <20120730173232.GA20809@ioremap.net>
-In-Reply-To: <20120730173232.GA20809@ioremap.net>
-X-Enigmail-Version: 1.4.3
+In-Reply-To: <1343649500-18491-3-git-send-email-anton.vorontsov@linaro.org>
+References: <20120730115719.GA5742@lizard>
+	<1343649500-18491-3-git-send-email-anton.vorontsov@linaro.org>
+Date: Mon, 30 Jul 2012 10:33:34 -0700
+X-Google-Sender-Auth: 83bo_JEkHeBlq8cBhGZkfsMVecQ
+Message-ID: <CAMbhsRS1cOf1T8k7K6CFmRA7M52AGPZ2TqmEnpZqDGYnbyetbw@mail.gmail.com>
+Subject: Re: [PATCH 03/11] kdb: Implement disable_nmi command
+From: Colin Cross <ccross@android.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.07.2012 19:32, Evgeniy Polyakov wrote:
-> Hi
-> 
-> Sorry for long delay
-> 
-> On Wed, Jul 25, 2012 at 10:54:29PM +0200, Daniel Mack (zonque@gmail.com) wrote:
->> In the process of porting boards to devicetree implemenation, we should
->> keep information about external circuitry where they belong - the
->> individual drivers.
->>
->> This patch adds a way to specify a GPIO to drive the (optional) external
->> pull-up logic, rather than using a function pointer for that.
-> 
-> I do not object against this patch, but I have rather limited knowledge
-> about gpio driver.
+On Mon, Jul 30, 2012 at 4:58 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> This command disables NMI-entry. If NMI source was previously shared with
+> a serial console ("debug port"), this effectively releases the port from
+> KDB exclusive use, and makes the console available for normal use.
+>
+> Of course, NMI can be reenabled, enable_nmi modparam is used for that:
+>
+>         echo 1 > /sys/module/kdb/parameters/enable_nmi
 
-The first patch just offers a new way to drive an optional external
-pull-up and as nobody uses that feature currently, there can't be any
-breakage.
-
-And the second patch doesn't change any functional behaviour of the
-driver, it simply offers a new way to instanciate it.
-
-> Patch looks good, feel free to add my
-> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-
-Thanks!
-
-> 
-> Greg, please pull it into your tree, if Ville does not object.
-> Thank you.
-> 
-
+This is very different behavior from the FIQ debugger "console"
+command you are trying to replace.  In the FIQ debugger, everything
+goes through the FIQ/NMI, even when in console mode.  That means that
+the user can always get back to FIQ debugger/KDB mode using a special
+sequence (we use a break character).  With your implementation, if you
+switch from KDB to console to see if the console is working, and find
+that it is not working, you can never get back into KDB.
