@@ -1,129 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2G3JNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 05:13:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36908 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab2G3JK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 05:10:29 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
-        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v6 07/11] drivers: usb: twl4030: Add device tree support for twl4030 usb
-Date: Mon, 30 Jul 2012 14:39:56 +0530
-Message-ID: <1343639400-28725-8-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343639400-28725-1-git-send-email-kishon@ti.com>
-References: <1343639400-28725-1-git-send-email-kishon@ti.com>
+	id S1753521Ab2G3JNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 05:13:14 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:29831
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751929Ab2G3JNI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 05:13:08 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I148cI542M1432Izz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
+From: Aggrwal Poonam-B10812 <B10812@freescale.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Singh Sandeep-B37400 <B37400@freescale.com>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [2/3][PATCH][v2] TDM Framework
+Thread-Topic: [2/3][PATCH][v2] TDM Framework
+Thread-Index: AQHNbAEGk9oFge1sME+iu8BW01Zyh5c9wnoAgAPMNDA=
+Date: Mon, 30 Jul 2012 09:13:02 +0000
+Message-ID: <ACB6D0C0104CFF42A45A5D82A0DD4F3D079C0BEC@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
+ <20120727181208.GC23105@kroah.com>
+In-Reply-To: <20120727181208.GC23105@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.133.39]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support for twl4030 usb driver.
-Update the Documentation with device tree binding information.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- .../devicetree/bindings/usb/twlxxxx-usb.txt        |   19 ++++++++++++++
- drivers/usb/otg/twl4030-usb.c                      |   26 +++++++++++++++-----
- 2 files changed, 39 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-index 930f9ff..36b9aed 100644
---- a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-@@ -19,3 +19,22 @@ Board specific device node entry
- &twl6030-usb {
- 	usb-supply = <&vusb>;
- };
-+
-+TWL4030 USB PHY AND COMPARATOR
-+ - compatible : Should be "ti,twl4030-usb"
-+ - interrupts : The interrupt numbers to the cpu should be specified. First
-+   interrupt number is the otg interrupt number that raises ID interrupts
-+   and VBUS interrupts. The second interrupt number is optional.
-+ - <supply-name>-supply : phandle to the regulator device tree node.
-+   <supply-name> should be vusb1v5, vusb1v8 and vusb3v1
-+ - usb_mode : The mode used by the phy to connect to the controller. "1"
-+   specifies "ULPI" mode and "2" specifies "CEA2011_3PIN" mode.
-+
-+twl4030-usb {
-+	compatible = "ti,twl4030-usb";
-+	interrupts = < 10 4 >;
-+	usb1v5-supply = <&vusb1v5>;
-+	usb1v8-supply = <&vusb1v8>;
-+	usb3v1-supply = <&vusb3v1>;
-+	usb_mode = <1>;
-+};
-diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-index 523cad5..f0d2e75 100644
---- a/drivers/usb/otg/twl4030-usb.c
-+++ b/drivers/usb/otg/twl4030-usb.c
-@@ -585,23 +585,28 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
- 	struct twl4030_usb	*twl;
- 	int			status, err;
- 	struct usb_otg		*otg;
--
--	if (!pdata) {
--		dev_dbg(&pdev->dev, "platform_data not available\n");
--		return -EINVAL;
--	}
-+	struct device_node	*np = pdev->dev.of_node;
- 
- 	twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
- 	if (!twl)
- 		return -ENOMEM;
- 
-+	if (np)
-+		of_property_read_u32(np, "usb_mode",
-+				(enum twl4030_usb_mode *)&twl->usb_mode);
-+	else if (pdata)
-+		twl->usb_mode = pdata->usb_mode;
-+	else {
-+		dev_err(&pdev->dev, "twl4030 initialized without pdata\n");
-+		return -EINVAL;
-+	}
-+
- 	otg = devm_kzalloc(&pdev->dev, sizeof *otg, GFP_KERNEL);
- 	if (!otg)
- 		return -ENOMEM;
- 
- 	twl->dev		= &pdev->dev;
- 	twl->irq		= platform_get_irq(pdev, 0);
--	twl->usb_mode		= pdata->usb_mode;
- 	twl->vbus_supplied	= false;
- 	twl->asleep		= 1;
- 	twl->linkstat		= OMAP_MUSB_UNKNOWN;
-@@ -690,12 +695,21 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id twl4030_usb_id_table[] = {
-+	{ .compatible = "ti,twl4030-usb" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, twl4030_usb_id_table);
-+#endif
-+
- static struct platform_driver twl4030_usb_driver = {
- 	.probe		= twl4030_usb_probe,
- 	.remove		= __exit_p(twl4030_usb_remove),
- 	.driver		= {
- 		.name	= "twl4030_usb",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(twl4030_usb_id_table),
- 	},
- };
- 
--- 
-1.7.9.5
+> -----Original Message-----
+> From: Linuxppc-dev [mailto:linuxppc-dev-
+> bounces+poonam.aggrwal=freescale.com@lists.ozlabs.org] On Behalf Of Greg
+> KH
+> Sent: Friday, July 27, 2012 11:42 PM
+> To: Singh Sandeep-B37400
+> Cc: devel@driverdev.osuosl.org; linuxppc-dev@lists.ozlabs.org; linux-arm-
+> kernel@lists.infradead.org; linux-kernel@vger.kernel.org
+> Subject: Re: [2/3][PATCH][v2] TDM Framework
+> 
+> On Fri, Jul 27, 2012 at 07:35:38PM +0530, sandeep@freescale.com wrote:
+> > +static struct kobj_type tdm_type = {
+> > +	.sysfs_ops = &tdm_ops,
+> > +	.default_attrs = tdm_attr,
+> > +};
+> 
+> Ah, also, as per the documentation in the kernel (go look, it's there), I
+> now get to publicly mock you for ignoring the error messages that the
+> kernel is giving you when you try to shut down your code path.
+> 
+> Well, to be fair, you are leaking memory like a sieve, so I doubt you
+> ever saw those error messages because you never cleaned up after
+> yourself, so perhaps I can forgive you, but your users can't, sorry.
+> They like to rely on the fact that Linux is a reliable operating system,
+> don't cause them to doubt that.
+> 
+> Please fix this code, it's horribly broken.  Read
+> Documentation/kobject.txt for why.  That file was written for a reason,
+> and not just because we like writing documentation (hint, we hate to...)
+To be honest we are not sysfs experts. Thanks for pointing to the documentation.
+We will rework the stuff.
+
+Regards
+Poonam
+> 
+> Ugh,
+> 
+> greg k-h
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+
 
