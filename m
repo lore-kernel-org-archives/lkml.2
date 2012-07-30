@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab2G3HMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:12:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39284 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab2G3HMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 03:12:53 -0400
-Message-ID: <501633EA.603@redhat.com>
-Date: Mon, 30 Jul 2012 09:12:42 +0200
+	id S1752142Ab2G3Hba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:31:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59001 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108Ab2G3Hb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 03:31:28 -0400
+Message-ID: <5016383A.5090008@redhat.com>
+Date: Mon, 30 Jul 2012 09:31:06 +0200
 From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Boaz Harrosh <bharrosh@panasas.com>, Wang Sen <senwang@linux.vnet.ibm.com>,
-        linux-scsi@vger.kernel.org, JBottomley@parallels.com,
-        stefanha@linux.vnet.ibm.com, mc@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
- Fix address translation failure of HighMem pages used by sg list)
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com> <5010F07E.7050506@redhat.com> <5010F831.9030300@panasas.com> <5010F896.8090409@redhat.com> <501140A3.9090908@redhat.com> <874notoh02.fsf@rustcorp.com.au> <50124D2E.7050407@redhat.com> <87obmym8jv.fsf@rustcorp.com.au>
-In-Reply-To: <87obmym8jv.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Asias He <asias@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH V3 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+References: <971756309.4742543.1343457753475.JavaMail.root@redhat.com> <501610E0.8000504@redhat.com>
+In-Reply-To: <501610E0.8000504@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 30/07/2012 01:50, Rusty Russell ha scritto:
->> Also, being the first user of chained scatterlist doesn't exactly give
->> me warm fuzzies.
+Il 30/07/2012 06:43, Asias He ha scritto:
+>>
 > 
-> We're far from the first user: they've been in the kernel for well over
-> 7 years.  They were introduced for the block layer, but they tended to
-> ignore private uses of scatterlists like this one.
+> Yes. Something like this:
+> 
+>   qemu -drive file=foo.img,cache=writeback/unsafe
+> 
+> is not safe against power losses also?
 
-Yeah, but sg_chain has no users in drivers, only a private one in
-lib/scatterlist.c.  The internal API could be changed to something else
-and leave virtio-scsi screwed...
+cache=writeback and cache=none are safe, cache=unsafe isn't.
 
-> Yes, we should do this.  But note that this means an iteration, so we
-> might as well combine the loops :)
+> I think we can add REQ_FLUSH & REQ_FUA support to bio path and that
+> deserves another patch.
 
-I'm really bad at posting pseudo-code, but you can count the number of
-physically-contiguous entries at the beginning of the list only.  So if
-everything is contiguous, you use a single non-indirect buffer and save
-a kmalloc.  If you use indirect buffers, I suspect it's much less
-effective to collapse physically-contiguous entries.  More elaborate
-heuristics do need a loop, though.
+You only need to add REQ_FLUSH support.  The virtio-blk protocol does
+not support REQ_FUA, because there's no easy way to do it in userspace.
 
 Paolo
