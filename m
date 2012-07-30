@@ -1,111 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab2G3GYc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 02:24:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48932 "EHLO mx2.suse.de"
+	id S1754069Ab2G3GY7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 02:24:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10612 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab2G3GYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 02:24:31 -0400
-Date: Mon, 30 Jul 2012 16:24:14 +1000
-From: NeilBrown <neilb@suse.de>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: Chris Ball <cjb@laptop.org>, Venkatraman S <svenkatr@ti.com>,
-        Balaji T K <balajitk@ti.com>, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MMC/omap_hsmmc: handle failure of regulator_get better.
-Message-ID: <20120730162414.3818bded@notabene.brown>
-In-Reply-To: <501619A4.50906@ti.com>
-References: <20120730101245.7dbe72b0@notabene.brown>
-	<501619A4.50906@ti.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/_hiEnjXhKGm/vR5S54ZzZvF"; protocol="application/pgp-signature"
+	id S1753694Ab2G3GY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 02:24:58 -0400
+Message-ID: <50162934.2060704@redhat.com>
+Date: Mon, 30 Jul 2012 14:27:00 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH V4 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+References: <1343442065-15646-1-git-send-email-asias@redhat.com> <1343442065-15646-4-git-send-email-asias@redhat.com> <50138834.5090907@gmail.com>
+In-Reply-To: <50138834.5090907@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/_hiEnjXhKGm/vR5S54ZzZvF
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello Sasha,
 
-On Mon, 30 Jul 2012 10:50:36 +0530 Rajendra Nayak <rnayak@ti.com> wrote:
+On 07/28/2012 02:35 PM, Sasha Levin wrote:
+> On 07/28/2012 04:21 AM, Asias He wrote:
+>> This patch introduces bio-based IO path for virtio-blk.
+>>
+>> Compared to request-based IO path, bio-based IO path uses driver
+>> provided ->make_request_fn() method to bypasses the IO scheduler. It
+>> handles the bio to device directly without allocating a request in block
+>> layer. This reduces the IO path in guest kernel to achieve high IOPS
+>> and lower latency. The downside is that guest can not use the IO
+>> scheduler to merge and sort requests. However, this is not a big problem
+>> if the backend disk in host side uses faster disk device.
+>>
+>> When the bio-based IO path is not enabled, virtio-blk still uses the
+>> original request-based IO path, no performance difference is observed.
+>>
+>> Performance evaluation:
+>> -----------------------------
+>> 1) Fio test is performed in a 8 vcpu guest with ramdisk based guest using
+>> kvm tool.
+>>
+>> Short version:
+>>   With bio-based IO path, sequential read/write, random read/write
+>>   IOPS boost         : 28%, 24%, 21%, 16%
+>>   Latency improvement: 32%, 17%, 21%, 16%
+>>
+>> Long version:
+>>   With bio-based IO path:
+>>    seq-read  : io=2048.0MB, bw=116996KB/s, iops=233991 , runt= 17925msec
+>>    seq-write : io=2048.0MB, bw=100829KB/s, iops=201658 , runt= 20799msec
+>>    rand-read : io=3095.7MB, bw=112134KB/s, iops=224268 , runt= 28269msec
+>>    rand-write: io=3095.7MB, bw=96198KB/s,  iops=192396 , runt= 32952msec
+>>      clat (usec): min=0 , max=2631.6K, avg=58716.99, stdev=191377.30
+>>      clat (usec): min=0 , max=1753.2K, avg=66423.25, stdev=81774.35
+>>      clat (usec): min=0 , max=2915.5K, avg=61685.70, stdev=120598.39
+>>      clat (usec): min=0 , max=1933.4K, avg=76935.12, stdev=96603.45
+>>    cpu : usr=74.08%, sys=703.84%, ctx=29661403, majf=21354, minf=22460954
+>>    cpu : usr=70.92%, sys=702.81%, ctx=77219828, majf=13980, minf=27713137
+>>    cpu : usr=72.23%, sys=695.37%, ctx=88081059, majf=18475, minf=28177648
+>>    cpu : usr=69.69%, sys=654.13%, ctx=145476035, majf=15867, minf=26176375
+>>   With request-based IO path:
+>>    seq-read  : io=2048.0MB, bw=91074KB/s, iops=182147 , runt= 23027msec
+>>    seq-write : io=2048.0MB, bw=80725KB/s, iops=161449 , runt= 25979msec
+>>    rand-read : io=3095.7MB, bw=92106KB/s, iops=184211 , runt= 34416msec
+>>    rand-write: io=3095.7MB, bw=82815KB/s, iops=165630 , runt= 38277msec
+>>      clat (usec): min=0 , max=1932.4K, avg=77824.17, stdev=170339.49
+>>      clat (usec): min=0 , max=2510.2K, avg=78023.96, stdev=146949.15
+>>      clat (usec): min=0 , max=3037.2K, avg=74746.53, stdev=128498.27
+>>      clat (usec): min=0 , max=1363.4K, avg=89830.75, stdev=114279.68
+>>    cpu : usr=53.28%, sys=724.19%, ctx=37988895, majf=17531, minf=23577622
+>>    cpu : usr=49.03%, sys=633.20%, ctx=205935380, majf=18197, minf=27288959
+>>    cpu : usr=55.78%, sys=722.40%, ctx=101525058, majf=19273, minf=28067082
+>>    cpu : usr=56.55%, sys=690.83%, ctx=228205022, majf=18039, minf=26551985
+>>
+>> 2) Fio test is performed in a 8 vcpu guest with Fusion-IO based guest using
+>> kvm tool.
+>>
+>> Short version:
+>>   With bio-based IO path, sequential read/write, random read/write
+>>   IOPS boost         : 11%, 11%, 13%, 10%
+>>   Latency improvement: 10%, 10%, 12%, 10%
+>> Long Version:
+>>   With bio-based IO path:
+>>    read : io=2048.0MB, bw=58920KB/s, iops=117840 , runt= 35593msec
+>>    write: io=2048.0MB, bw=64308KB/s, iops=128616 , runt= 32611msec
+>>    read : io=3095.7MB, bw=59633KB/s, iops=119266 , runt= 53157msec
+>>    write: io=3095.7MB, bw=62993KB/s, iops=125985 , runt= 50322msec
+>>      clat (usec): min=0 , max=1284.3K, avg=128109.01, stdev=71513.29
+>>      clat (usec): min=94 , max=962339 , avg=116832.95, stdev=65836.80
+>>      clat (usec): min=0 , max=1846.6K, avg=128509.99, stdev=89575.07
+>>      clat (usec): min=0 , max=2256.4K, avg=121361.84, stdev=82747.25
+>>    cpu : usr=56.79%, sys=421.70%, ctx=147335118, majf=21080, minf=19852517
+>>    cpu : usr=61.81%, sys=455.53%, ctx=143269950, majf=16027, minf=24800604
+>>    cpu : usr=63.10%, sys=455.38%, ctx=178373538, majf=16958, minf=24822612
+>>    cpu : usr=62.04%, sys=453.58%, ctx=226902362, majf=16089, minf=23278105
+>>   With request-based IO path:
+>>    read : io=2048.0MB, bw=52896KB/s, iops=105791 , runt= 39647msec
+>>    write: io=2048.0MB, bw=57856KB/s, iops=115711 , runt= 36248msec
+>>    read : io=3095.7MB, bw=52387KB/s, iops=104773 , runt= 60510msec
+>>    write: io=3095.7MB, bw=57310KB/s, iops=114619 , runt= 55312msec
+>>      clat (usec): min=0 , max=1532.6K, avg=142085.62, stdev=109196.84
+>>      clat (usec): min=0 , max=1487.4K, avg=129110.71, stdev=114973.64
+>>      clat (usec): min=0 , max=1388.6K, avg=145049.22, stdev=107232.55
+>>      clat (usec): min=0 , max=1465.9K, avg=133585.67, stdev=110322.95
+>>    cpu : usr=44.08%, sys=590.71%, ctx=451812322, majf=14841, minf=17648641
+>>    cpu : usr=48.73%, sys=610.78%, ctx=418953997, majf=22164, minf=26850689
+>>    cpu : usr=45.58%, sys=581.16%, ctx=714079216, majf=21497, minf=22558223
+>>    cpu : usr=48.40%, sys=599.65%, ctx=656089423, majf=16393, minf=23824409
+>
+> What are the cases where we'll see a performance degradation with using the bio path? Could we measure performance for those as well?
+>
+>> How to use:
+>> -----------------------------
+>> Add 'virtio_blk.use_bio=1' to kernel cmdline or 'modprobe virtio_blk
+>> use_bio=1' to enable ->make_request_fn() based I/O path.
+>
+> If there are, in fact, no cases where performance is degraded, can use_bio=1 be the default?
 
-> On Monday 30 July 2012 05:42 AM, NeilBrown wrote:
-> >
-> > 1/ if regulator_get fails, return an error.  This is important
-> >     if it failed with EPROBE_DEFER, as the probe needs to be
-> >     deferred.
-> >
-> > 2/ Don't set .set_power until the regulator has been found, or
-> >     the deferred probe will not bother calling omap_hsmmc_reg_get().
->=20
-> I am not very sure, but aren't the data structures re-allocated on a
-> re-probe (after it was deferred) causing .set_power to be lost anyway?
->=20
+Here are some results on a SATA based image file. In this case, the bio 
+path is slower than req path doing sequential read/write.
 
-Apparently not - as I needed to make that change before the re-probe would
-work.
-
-Looking at the code to remind myself:
-
-#define mmc_slot(host)		(host->pdata->slots[host->slot_id])
-
-so the slot is inside the platform data which is allocated in
-omap_hsmmc_init_one, called from omap_hsmmc_init.
-This is all prior to the probing of the device.
-
-So no: once set_power is set, it stays set.
-
-Thanks,
-NeilBrown
-
-> >
-> > Signed-off-by: NeilBrown<neilb@suse.de>
-> >
-> > diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmm=
-c.c
-> > index 389a3ee..f052c29 100644
-> > --- a/drivers/mmc/host/omap_hsmmc.c
-> > +++ b/drivers/mmc/host/omap_hsmmc.c
-> > @@ -299,12 +299,12 @@ static int omap_hsmmc_reg_get(struct omap_hsmmc_h=
-ost *host)
-> >   	struct regulator *reg;
-> >   	int ocr_value =3D 0;
-> >
-> > -	mmc_slot(host).set_power =3D omap_hsmmc_set_power;
-> > -
-> >   	reg =3D regulator_get(host->dev, "vmmc");
-> >   	if (IS_ERR(reg)) {
-> >   		dev_dbg(host->dev, "vmmc regulator missing\n");
-> > +		return PTR_ERR(reg);
-> >   	} else {
-> > +		mmc_slot(host).set_power =3D omap_hsmmc_set_power;
-> >   		host->vcc =3D reg;
-> >   		ocr_value =3D mmc_regulator_get_ocrmask(reg);
-> >   		if (!mmc_slot(host).ocr_mask) {
+qemu use_bio=0 (req-based)
+-------------------------------------
+   read : io=120964KB, bw=26098KB/s, iops=6470 , runt=  4635msec
+   write: io=190236KB, bw=35505KB/s, iops=8829 , runt=  5358msec
+   read : io=257400KB, bw=1963.7KB/s, iops=488 , runt=131081msec
+   write: io=258944KB, bw=1302.7KB/s, iops=324 , runt=198872msec
+     clat (msec): min=1 , max=1527 , avg=30.73, stdev=144.73
+     clat (usec): min=811 , max=247072 , avg=28451.71, stdev=16107.22
+     clat (msec): min=6 , max=2519 , avg=513.91, stdev=231.07
+     clat (msec): min=33 , max=2621 , avg=772.33, stdev=348.39
+   cpu          : usr=4.05%, sys=14.56%, ctx=38199, majf=0, minf=4
+   cpu          : usr=4.02%, sys=15.48%, ctx=53724, majf=0, minf=0
+   cpu          : usr=0.15%, sys=0.30%, ctx=20535, majf=0, minf=16
+   cpu          : usr=0.32%, sys=0.96%, ctx=101465, majf=0, minf=0
 
 
---Sig_/_hiEnjXhKGm/vR5S54ZzZvF
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+qemu use_bio=1 (bio-based)
+-------------------------------------
+   read : io=202736KB, bw=25569KB/s, iops=6360 , runt=  7929msec
+   write: io=217844KB, bw=20335KB/s, iops=5060 , runt= 10713msec
+   read : io=256980KB, bw=1958.2KB/s, iops=487 , runt=131235msec
+   write: io=258288KB, bw=1423.9KB/s, iops=354 , runt=181405msec
+     clat (usec): min=922 , max=1578.2K, avg=38702.18, stdev=99248.33
+     clat (usec): min=460 , max=241314 , avg=49326.52, stdev=18705.68
+     clat (msec): min=19 , max=2370 , avg=515.30, stdev=200.84
+     clat (msec): min=11 , max=3751 , avg=702.60, stdev=286.93
+   cpu          : usr=2.54%, sys=8.75%, ctx=68522, majf=0, minf=6
+   cpu          : usr=1.96%, sys=7.70%, ctx=70003, majf=0, minf=0
+   cpu          : usr=0.39%, sys=1.46%, ctx=259459, majf=0, minf=16
+   cpu          : usr=0.28%, sys=1.21%, ctx=265148, majf=0, minf=0
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIVAwUBUBYojjnsnt1WYoG5AQLblA//SAJ9viMGjt7K9T160nUwpHBxjDREjlOT
-V46y8Hn12hAme6vgxpdLRpXwXdaYTLeL7dxw6bciyXy4iPLQbg/leywbBDJuqRVL
-N3y4/hS48ERb6FIhI8Lfp0Aw0Mq7Tu9jLVC5KWhiffSoYKk3CTleFzlXSqV66nTu
-xx5/zmcVRjecqyhatVVpVGrLxu2u+5T7US/Sid2T8rkfw/mi7fY7Y1wh0Iq1JpE9
-WS+nQePAc1ZlRpiM0gyAa4zvFTNtR5tq3RdktaaP28Vs/EKvd1v7PVjz8VFCXUPk
-g3Ko/FgERzUb9c54U8e+hP52ZylQ7tksn0YkuxDh3k4DMrbs/wZ9XTUvF4mC3S/4
-ePrSfY+hqRFNhDHVh2tKDWupf3f/yS9mM6rszxR6ffVUiWR40rt/h7mz/kf3a28h
-yYqQ4iPZPQQCNcgETy6FqzxU4ZOhezHL2YtEReShY/DNaYLUeclF+5o/bC991vzB
-HsnqjjUnCF6v5b9Aqu6n+DIJdUmFfolHWDCNShFQOMjJuKCegcSZuB7H95azSawL
-DVkgZljZBxhotyOUjb7ZdIPCYI2DPVarznJ5DaP3BigzVaiNXkjaUmyBnJgd1z2B
-DsYmEla6OxS457lq6ihephtb/xhvYkhRekTYo1wLjbi4btD4KHiXXApaYk7ceVvs
-xlDeNhXQvnY=
-=xRB9
------END PGP SIGNATURE-----
+lkvm use_bio=0 (req-based)
+-------------------------------------
+   read : io=150120KB, bw=40420KB/s, iops=10037 , runt=  3714msec
+   write: io=194932KB, bw=27029KB/s, iops=6722 , runt=  7212msec
+   read : io=257136KB, bw=2001.1KB/s, iops=498 , runt=128443msec
+   write: io=258276KB, bw=1537.2KB/s, iops=382 , runt=168028msec
+     clat (msec): min=1 , max=1542 , avg=24.84, stdev=32.45
+     clat (msec): min=3 , max=628 , avg=35.62, stdev=39.71
+     clat (msec): min=8 , max=2540 , avg=503.28, stdev=236.97
+     clat (msec): min=41 , max=4398 , avg=653.88, stdev=302.61
+   cpu          : usr=3.91%, sys=15.75%, ctx=26968, majf=0, minf=23
+   cpu          : usr=2.50%, sys=10.56%, ctx=19090, majf=0, minf=0
+   cpu          : usr=0.16%, sys=0.43%, ctx=20159, majf=0, minf=16
+   cpu          : usr=0.18%, sys=0.53%, ctx=81364, majf=0, minf=0
 
---Sig_/_hiEnjXhKGm/vR5S54ZzZvF--
+
+lkvm use_bio=1 (bio-based)
+-------------------------------------
+   read : io=124812KB, bw=36537KB/s, iops=9060 , runt=  3416msec
+   write: io=169180KB, bw=24406KB/s, iops=6065 , runt=  6932msec
+   read : io=256200KB, bw=2089.3KB/s, iops=520 , runt=122630msec
+   write: io=257988KB, bw=1545.7KB/s, iops=384 , runt=166910msec
+     clat (msec): min=1 , max=1527 , avg=28.06, stdev=89.54
+     clat (msec): min=2 , max=344 , avg=41.12, stdev=38.70
+     clat (msec): min=8 , max=1984 , avg=490.63, stdev=207.28
+     clat (msec): min=33 , max=4131 , avg=659.19, stdev=304.71
+   cpu          : usr=4.85%, sys=17.15%, ctx=31593, majf=0, minf=7
+   cpu          : usr=3.04%, sys=11.45%, ctx=39377, majf=0, minf=0
+   cpu          : usr=0.47%, sys=1.59%, ctx=262986, majf=0, minf=16
+   cpu          : usr=0.47%, sys=1.46%, ctx=337410, majf=0, minf=0
+
+-- 
+Asias
