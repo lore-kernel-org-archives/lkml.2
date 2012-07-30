@@ -1,154 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab2G3PHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 11:07:30 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:36936 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab2G3PH2 (ORCPT
+	id S1754438Ab2G3PH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 11:07:57 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33974 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754144Ab2G3PH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 11:07:28 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, fengguang.wu@intel.com,
-        akpm@linux-foundation.org, yinghan@google.com, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V2 5/6] memcg: add per cgroup writeback pages accounting
-References: <1343384432-19903-1-git-send-email-handai.szj@taobao.com>
-	<1343384931-20202-1-git-send-email-handai.szj@taobao.com>
-Date: Mon, 30 Jul 2012 08:02:21 -0700
-In-Reply-To: <1343384931-20202-1-git-send-email-handai.szj@taobao.com> (Sha
-	Zhengju's message of "Fri, 27 Jul 2012 18:28:51 +0800")
-Message-ID: <xr93k3xl9ts2.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 30 Jul 2012 11:07:56 -0400
+Date: Mon, 30 Jul 2012 16:07:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 01/18] Documentation: Describe the ux500 realated audio
+ related DT nodes
+Message-ID: <20120730150753.GH4468@opensource.wolfsonmicro.com>
+References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
+ <1343393162-11938-2-git-send-email-lee.jones@linaro.org>
+ <20120729203106.GD4384@opensource.wolfsonmicro.com>
+ <50163A09.8060203@linaro.org>
+ <20120730134804.GE4468@opensource.wolfsonmicro.com>
+ <50169AE8.4020601@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50169AE8.4020601@linaro.org>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 27 2012, Sha Zhengju wrote:
+On Mon, Jul 30, 2012 at 03:32:08PM +0100, Lee Jones wrote:
+> On 30/07/12 14:48, Mark Brown wrote:
 
-> From: Sha Zhengju <handai.szj@taobao.com>
->
-> Similar to dirty page, we add per cgroup writeback pages accounting. The lock
-> rule still is:
->         mem_cgroup_begin_update_page_stat()
->         modify page WRITEBACK stat
->         mem_cgroup_update_page_stat()
->         mem_cgroup_end_update_page_stat()
->
-> There're two writeback interface to modify: test_clear/set_page_writeback.
->
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> ---
->  include/linux/memcontrol.h |    1 +
->  mm/memcontrol.c            |    5 +++++
->  mm/page-writeback.c        |   17 +++++++++++++++++
->  3 files changed, 23 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 8c6b8ca..0c8a699 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -42,6 +42,7 @@ enum mem_cgroup_stat_index {
->  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
->  	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
-> +	MEM_CGROUP_STAT_WRITEBACK,  /* # of pages under writeback */
->  	MEM_CGROUP_STAT_NSTATS,
->  };
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index cdcd547..de91d3d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -86,6 +86,7 @@ static const char * const mem_cgroup_stat_names[] = {
->  	"mapped_file",
->  	"swap",
->  	"dirty",
-> +	"writeback",
->  };
->  
->  enum mem_cgroup_events_index {
-> @@ -2607,6 +2608,10 @@ static int mem_cgroup_move_account(struct page *page,
->  		mem_cgroup_move_account_page_stat(from, to,
->  				MEM_CGROUP_STAT_FILE_DIRTY);
->  
-> +	if (PageWriteback(page))
-> +		mem_cgroup_move_account_page_stat(from, to,
-> +				MEM_CGROUP_STAT_WRITEBACK);
-> +
->  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
->  
->  	/* caller should have done css_get */
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 233e7ac..6b06d5e 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1956,11 +1956,17 @@ EXPORT_SYMBOL(account_page_dirtied);
->  
->  /*
->   * Helper function for set_page_writeback family.
-> + *
-> + * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
-> + * while modifying struct page state and accounting writeback pages.
-> + * See test_set_page_writeback for example.
-> + *
->   * NOTE: Unlike account_page_dirtied this does not rely on being atomic
->   * wrt interrupts.
->   */
->  void account_page_writeback(struct page *page)
->  {
-> +	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
->  	inc_zone_page_state(page, NR_WRITEBACK);
->  }
->  EXPORT_SYMBOL(account_page_writeback);
-> @@ -2192,7 +2198,10 @@ int test_clear_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
->  	int ret;
-> +	bool locked;
-> +	unsigned long flags;
->  
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+> >Which is part of the problem here, it makes it much harder to tell what
+> >you need to do for the individual devices.
 
-Reusing a variable name (flags) in the same function can cause
-confusion.  Please use a different name.  Maybe memcg_flags.
+> Once again, I'll split them out, but I think there are people
+> talking about documentation consolidation, as it's going to become
+> very messy, very quickly if we keep adding new files for each
+> device. Soon the Documentation directory will be as large as the
+> driver base. :)
 
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2213,9 +2222,12 @@ int test_clear_page_writeback(struct page *page)
->  		ret = TestClearPageWriteback(page);
->  	}
->  	if (ret) {
-> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
->  		dec_zone_page_state(page, NR_WRITEBACK);
->  		inc_zone_page_state(page, NR_WRITTEN);
->  	}
-> +
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  	return ret;
->  }
->  
-> @@ -2223,7 +2235,10 @@ int test_set_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
->  	int ret;
-> +	bool locked;
-> +	unsigned long flags;
->  
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2250,6 +2265,8 @@ int test_set_page_writeback(struct page *page)
->  	}
->  	if (!ret)
->  		account_page_writeback(page);
-> +
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  	return ret;
->  
->  }
+Well, that's device tree for you.  You can probably get away with a
+single document if there's no differences but as soon as you get into
+anything where you've got custom properties and no overlap you need to
+start splitting things out.
