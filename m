@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab2G3TMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:12:47 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:42029 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754553Ab2G3TMo (ORCPT
+	id S1754656Ab2G3TR0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:17:26 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:50548 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754393Ab2G3TRY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:12:44 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: XsMFGqUVM1k3EJkkAFAfaormIfM6SHPGEOnjGPTziw0wWTe
- Npy4Inwoe7amEra2h13SDFnsueiDhH6WlskNq52MYnML7GlAyoq2eonqyKsU
- C2FpGJ2vn4ZzDHJVYfXzvoIz0r0Je5eRGs9FlnHLoN2rgNuzDrllU.Qvm6sJ
- yXZMt0UV4VFEakDydBKtq8Vu1B.HnZhgKoCPAHOoWTa9W5D4dmJ7dCN5oLhQ
- QmLrcONS8AXrgChYllpY4_hVoLD2_BC.zaMfqNk7.gdb1B9tPD3mAv7jqdLT
- tu_ntv5dv_ypBUGIj8eK9u_RrEMaJXqv5_OPUktyFCCdSUadxAdy6fCZsmHd
- WS97z182j7tPKYHkj6pSN2EMx2bHo26.OU2_yFWecsDM5hYo4FJl0gGeEcn_
- JmKiOJaz_wne3qPp8pGI_FqQLm1VEsDoL5zvbrQndBgHr01Q.WPk-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 30 Jul 2012 14:12:39 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: JoonSoo Kim <js1304@gmail.com>
-cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] slub: remove one code path and reduce lock contention
- in __slab_free()
-In-Reply-To: <CAAmzW4N5HxN+Ha_kwwKSf9na-g6bnro1UumQ+ZiQEmgS4kacrA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1207301411140.27584@router.home>
-References: <1343420271-3825-1-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1207271538250.25434@router.home> <CAAmzW4N5HxN+Ha_kwwKSf9na-g6bnro1UumQ+ZiQEmgS4kacrA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 30 Jul 2012 15:17:24 -0400
+X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 15:17:24 EDT
+Date: Mon, 30 Jul 2012 21:09:49 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] fbcon: Fix bit_putcs() call to kmalloc(s, GFP_KERNEL)
+Message-ID: <20120730210949.5ccc5164@neptune.home>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jul 2012, JoonSoo Kim wrote:
+Switch to kmalloc(,GFP_ATOMIC) in bit_putcs to fix below trace:
 
-> 2012/7/28 Christoph Lameter <cl@linux.com>:
-> > On Sat, 28 Jul 2012, Joonsoo Kim wrote:
-> >
-> >> Subject and commit log are changed from v1.
-> >
-> > That looks a bit better. But the changelog could use more cleanup and
-> > clearer expression.
-> >
-> >> @@ -2490,25 +2492,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-> >>                  return;
-> >>          }
-> >>
-> >> +     if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
-> >> +             goto slab_empty;
-> >> +
-> >
-> > So we can never encounter a empty slab that was frozen before? Really?
->
-> In my suggestion,  'was_frozen = 1' is "always" handled without taking a lock.
+[    9.771812] BUG: sleeping function called from invalid context at /usr/src/linux-git/mm/slub.c:943
+[    9.771814] in_atomic(): 1, irqs_disabled(): 1, pid: 1063, name: mount
+[    9.771818] Pid: 1063, comm: mount Not tainted 3.5.0-jupiter-00003-g8d858b1-dirty #2
+[    9.771819] Call Trace:
+[    9.771838]  [<c104f79b>] __might_sleep+0xcb/0xe0
+[    9.771844]  [<c10c00d4>] __kmalloc+0xb4/0x1c0
+[    9.771851]  [<c1041d4a>] ? queue_work+0x1a/0x30
+[    9.771854]  [<c1041dcf>] ? queue_delayed_work+0xf/0x30
+[    9.771862]  [<c1205832>] ? bit_putcs+0xf2/0x3e0
+[    9.771865]  [<c1041e01>] ? schedule_delayed_work+0x11/0x20
+[    9.771868]  [<c1205832>] bit_putcs+0xf2/0x3e0
+[    9.771875]  [<c12002b8>] ? get_color.clone.14+0x28/0x100
+[    9.771878]  [<c1200d2f>] fbcon_putcs+0x11f/0x130
+[    9.771882]  [<c1205740>] ? bit_clear+0xe0/0xe0
+[    9.771885]  [<c1200f6d>] fbcon_redraw.clone.21+0x11d/0x160
+[    9.771889]  [<c120383d>] fbcon_scroll+0x79d/0xe10
+[    9.771892]  [<c12002b8>] ? get_color.clone.14+0x28/0x100
+[    9.771897]  [<c124c0b4>] scrup+0x64/0xd0
+[    9.771900]  [<c124c22b>] lf+0x2b/0x60
+[    9.771903]  [<c124cc95>] vt_console_print+0x1d5/0x2f0
+[    9.771907]  [<c124cac0>] ? register_vt_notifier+0x20/0x20
+[    9.771913]  [<c102b335>] call_console_drivers.clone.5+0xa5/0xc0
+[    9.771916]  [<c102c58e>] console_unlock+0x2fe/0x3c0
+[    9.771920]  [<c102ca16>] vprintk_emit+0x2e6/0x300
+[    9.771924]  [<c13f01ae>] printk+0x38/0x3a
+[    9.771931]  [<c112e8fe>] reiserfs_remount+0x2ae/0x3e0
+[    9.771934]  [<c112e650>] ? reiserfs_fill_super+0xb00/0xb00
+[    9.771939]  [<c10ca0ab>] do_remount_sb+0xab/0x150
+[    9.771943]  [<c1034476>] ? ns_capable+0x46/0x70
+[    9.771948]  [<c10e059c>] do_mount+0x20c/0x6b0
+[    9.771955]  [<c10a7044>] ? strndup_user+0x34/0x50
+[    9.771958]  [<c10e0acc>] sys_mount+0x6c/0xa0
+[    9.771964]  [<c13f2557>] sysenter_do_call+0x12/0x26
 
-Yepo that is true with this patch.
+According to comment in bit_putcs() that kammloc() call only happens
+when fbcon is drawing to a monochrome framebuffer (which is my case with
+hid-picolcd).
 
-> Then, never hit following code.
-> +     if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
-> +             goto slab_empty;
-> +
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+---
+ drivers/video/console/bitblit.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-Correct.
-
-> Instead, hit following code.
->         if (likely(!n)) {
->
->                 /*
->                  * If we just froze the page then put it onto the
->                  * per cpu partial list.
->                  */
->                 if (new.frozen && !was_frozen) {
->                         put_cpu_partial(s, page, 1);
->                         stat(s, CPU_PARTIAL_FREE);
->                 }
->                 /*
->                  * The list lock was not taken therefore no list
->                  * activity can be necessary.
->                  */
->                 if (was_frozen)
->                         stat(s, FREE_FROZEN);
->                 return;
->         }
->
-> So, even if we encounter a empty slab that was frozen before, we just
-> do "stat(s, FREE_FROZEN)".
-> Please let me know my answer is sufficient.
-
-Yes.
-
-Acked-by: Christoph Lameter <cl@linux.com>
+diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
+index 28b1a83..61b182b 100644
+--- a/drivers/video/console/bitblit.c
++++ b/drivers/video/console/bitblit.c
+@@ -162,7 +162,7 @@ static void bit_putcs(struct vc_data *vc, struct fb_info *info,
+ 	image.depth = 1;
+ 
+ 	if (attribute) {
+-		buf = kmalloc(cellsize, GFP_KERNEL);
++		buf = kmalloc(cellsize, GFP_ATOMIC);
+ 		if (!buf)
+ 			return;
+ 	}
+-- 
+1.7.8.6
 
