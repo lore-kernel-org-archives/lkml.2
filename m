@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab2G3Rdp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:33:45 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:60428 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab2G3Rdm (ORCPT
+	id S1755185Ab2G3Rft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:35:49 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57358 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab2G3Rfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:33:42 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [ 35/41] mm: test PageSwapBacked in lumpy reclaim
-Date: Mon, 30 Jul 2012 10:31:34 -0700
-Message-Id: <20120730172904.049886840@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
-References: <20120730172901.306897424@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
+	Mon, 30 Jul 2012 13:35:48 -0400
+Message-ID: <5016C5EF.7060707@gmail.com>
+Date: Mon, 30 Jul 2012 19:35:43 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Evgeniy Polyakov <zbr@ioremap.net>
+CC: linux-kernel@vger.kernel.org, Ville Syrjala <syrjala@sci.fi>,
+        GregKH <greh@kroah.com>
+Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in platform
+ data
+References: <1343249670-14985-1-git-send-email-zonque@gmail.com> <20120730173232.GA20809@ioremap.net>
+In-Reply-To: <20120730173232.GA20809@ioremap.net>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On 30.07.2012 19:32, Evgeniy Polyakov wrote:
+> Hi
+> 
+> Sorry for long delay
+> 
+> On Wed, Jul 25, 2012 at 10:54:29PM +0200, Daniel Mack (zonque@gmail.com) wrote:
+>> In the process of porting boards to devicetree implemenation, we should
+>> keep information about external circuitry where they belong - the
+>> individual drivers.
+>>
+>> This patch adds a way to specify a GPIO to drive the (optional) external
+>> pull-up logic, rather than using a function pointer for that.
+> 
+> I do not object against this patch, but I have rather limited knowledge
+> about gpio driver.
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+The first patch just offers a new way to drive an optional external
+pull-up and as nobody uses that feature currently, there can't be any
+breakage.
 
-------------------
+And the second patch doesn't change any functional behaviour of the
+driver, it simply offers a new way to instanciate it.
 
-From: Hugh Dickins <hughd@google.com>
+> Patch looks good, feel free to add my
+> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 
-commit 043bcbe5ec51e0478ef2b44acef17193e01d7f70 upstream.
+Thanks!
 
-Stable note: Not tracked in Bugzilla. There were reports of shared
-	mapped pages being unfairly reclaimed in comparison to older kernels.
-	This is being addressed over time. Even though the subject
-	refers to lumpy reclaim, it impacts compaction as well.
-
-Lumpy reclaim does well to stop at a PageAnon when there's no swap, but
-better is to stop at any PageSwapBacked, which includes shmem/tmpfs too.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-
----
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1199,7 +1199,7 @@ static unsigned long isolate_lru_pages(u
- 			 * anon page which don't already have a swap slot is
- 			 * pointless.
- 			 */
--			if (nr_swap_pages <= 0 && PageAnon(cursor_page) &&
-+			if (nr_swap_pages <= 0 && PageSwapBacked(cursor_page) &&
- 			    !PageSwapCache(cursor_page))
- 				break;
- 
-
+> 
+> Greg, please pull it into your tree, if Ville does not object.
+> Thank you.
+> 
 
