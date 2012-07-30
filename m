@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab2G3OLc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:11:32 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:54901 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab2G3OLU (ORCPT
+	id S1754539Ab2G3OLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:11:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45556 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754401Ab2G3OLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:11:20 -0400
+	Mon, 30 Jul 2012 10:11:40 -0400
+Date: Mon, 30 Jul 2012 07:11:25 -0700
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-089ba999dc881a7549d97c55ac9e0052d061867d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
+        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20120729182218.GA20315@redhat.com>
+References: <20120729182218.GA20315@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] uprobes: Kill write_opcode()->lock_page(new_page)
+Git-Commit-ID: 089ba999dc881a7549d97c55ac9e0052d061867d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20502.38341.619003.356462@quad.stoffel.home>
-Date: Mon, 30 Jul 2012 10:10:13 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Singh Sandeep-B37400 <B37400@freescale.com>
-Cc: John Stoffel <john@stoffel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: RE: [2/3][PATCH][v2] TDM Framework
-In-Reply-To: <3F1D9DCAAB49B94D88DBE05911FA4E6E511095@039-SN1MPN1-006.039d.mgd.msft.net>
-References: <1343397940-12975-1-git-send-email-sandeep@freescale.com>
-	<20498.41365.853741.261834@quad.stoffel.home>
-	<3F1D9DCAAB49B94D88DBE05911FA4E6E511095@039-SN1MPN1-006.039d.mgd.msft.net>
-X-Mailer: VM 8.1.2 under 23.2.1 (x86_64-pc-linux-gnu)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:11:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Singh" == Singh Sandeep-B37400 <B37400@freescale.com> writes:
+Commit-ID:  089ba999dc881a7549d97c55ac9e0052d061867d
+Gitweb:     http://git.kernel.org/tip/089ba999dc881a7549d97c55ac9e0052d061867d
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Sun, 29 Jul 2012 20:22:18 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 30 Jul 2012 11:27:19 +0200
 
-Singh> -----Original Message-----
-Singh> From: John Stoffel [mailto:john@stoffel.org] 
-Singh> Sent: 27 July 2012 19:42
-Singh> To: Singh Sandeep-B37400
-Singh> Cc: linuxppc-dev@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; galak@kernel.crashing.org; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
-Singh> Subject: Re: [2/3][PATCH][v2] TDM Framework
+uprobes: Kill write_opcode()->lock_page(new_page)
 
+write_opcode() does lock_page(new_page) for no reason. Nobody
+can see this page until __replace_page() exposes it under ptl
+lock, and we do nothing with this page after pte_unmap_unlock().
 
->> From: Sandeep Singh <Sandeep@freescale.com> TDM Framework is an 
->> attempt to provide a platform independent layer which can offer a 
->> standard interface  for TDM access to different client modules.
+If nothing else, the similar code in do_wp_page() doesn't lock
+the new page for page_add_new_anon_rmap/set_pte_at_notify.
 
-Singh> Please don't use TLAs (Three Letter Acronyms) like TDM without explaining the clearly and up front.  It makes it hard for anyone else who doens't know your code to look it over without having to spend lots of time poking around to figure it out from either context or somewhere else.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120729182218.GA20315@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/events/uprobes.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Singh> [Sandeep] Patch for documentation for TDM is present in this
-Singh> patch set, which explains TDM in detail. Should we do this in
-Singh> commit message too??  Link too documentation patch:
-Singh> http://patchwork.ozlabs.org/patch/173680/
-
-You should put the expansion of TDM into the initial commit message,
-and also into the Kconfig text, so that someone configuring the kernel
-has a clue what you're talking about.  
-
-Try to approach this as a brandnew user who doesn't have your
-knowledge of the software.  Write for the un-initiated if at all
-possible.
-
-John
-
-
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 6fda799..23c562b7 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -239,9 +239,7 @@ retry:
+ 	if (ret)
+ 		goto unlock_out;
+ 
+-	lock_page(new_page);
+ 	ret = __replace_page(vma, vaddr, old_page, new_page);
+-	unlock_page(new_page);
+ 
+ unlock_out:
+ 	unlock_page(old_page);
