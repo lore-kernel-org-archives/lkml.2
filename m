@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab2G3Ucq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 16:32:46 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55000 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890Ab2G3Uco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 16:32:44 -0400
-Date: Mon, 30 Jul 2012 22:34:32 +0200
-From: karl.beldan@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: karl.beldan@gmail.com
-Subject: Re: About dma_sync_single_for_{cpu,device}
-Message-ID: <20120730203412.GA5311@gobelin>
-References: <20120730202401.GA4947@gobelin>
+	id S1755175Ab2G3Uez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 16:34:55 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35260 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754726Ab2G3Uex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 16:34:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH] ACPI / PCI: Do not try to acquire _OSC control if that is hopeless
+Date: Mon, 30 Jul 2012 22:40:32 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Matthew Garrett <mjg@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120730202401.GA4947@gobelin>
-X-Location: France
-User-Agent: Mutt (Linux 3.5.0-07078-gf7da9cd-dirty x86_64 GNU/Linux)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207302240.32480.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 10:24:01PM +0200, karl.beldan@gmail.com wrote:
-> I was expecting the following to work:
-> 	addr = dma_map_single(dev, buffer, size, DMA_TO_DEVICE);
 
-Sorry, I forgot this (invalidate):
- 	dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
+If acpi_pci_osc_support() fails for the given flags, it doesn't make
+sense to call acpi_pci_osc_control_set() down the road for the same
+flags, because it will certainly fail too.  Moreover, problem
+diagnostics is then harder, because it is not too easy to identify
+the reason of the _OSC failure in those cases.
 
-> 	dev_send(buffer);
-> 	// wait for irq (don't peek in the buffer) ... got irq
-> 	dma_sync_single_single_for_cpu(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-> 	if (!xfer_done(buffer)) // not RAM value
-> 		dma_sync_single_for_device(dev, buffer, pattern_size, DMA_FROM_DEVICE);
-> 	[...]
+For this reason, check the status returned by acpi_pci_osc_support()
+for PCIe support flags and do not attempt to execute
+acpi_pci_osc_control_set() for those flags and print a message if
+it's "failure".  For compatibility with the existing code, disable
+ASPM in that case too.
 
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/pci_root.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+Index: linux/drivers/acpi/pci_root.c
+===================================================================
+--- linux.orig/drivers/acpi/pci_root.c
++++ linux/drivers/acpi/pci_root.c
+@@ -573,8 +573,15 @@ static int __devinit acpi_pci_root_add(s
+ 			OSC_CLOCK_PWR_CAPABILITY_SUPPORT;
+ 	if (pci_msi_enabled())
+ 		flags |= OSC_MSI_SUPPORT;
+-	if (flags != base_flags)
+-		acpi_pci_osc_support(root, flags);
++	if (flags != base_flags) {
++		status = acpi_pci_osc_support(root, flags);
++		if (ACPI_FAILURE(status)) {
++			dev_info(root->bus->bridge, "ACPI _OSC support "
++				"notification failed, disabling PCIe ASPM\n");
++			pcie_no_aspm();
++			flags = base_flags;
++		}
++	}
  
-Karl
+ 	if (!pcie_ports_disabled
+ 	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
