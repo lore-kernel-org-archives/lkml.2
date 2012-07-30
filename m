@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab2G3SPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 14:15:45 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34645 "EHLO mga01.intel.com"
+	id S1754695Ab2G3STN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 14:19:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:52599 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841Ab2G3SPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 14:15:43 -0400
+	id S1754563Ab2G3STL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 14:19:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="190417242"
-Date: Mon, 30 Jul 2012 11:15:42 -0700
+   d="scan'208";a="128525675"
+Date: Mon, 30 Jul 2012 11:19:11 -0700
 From: Jon Mason <jon.mason@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
+To: Jiri Pirko <jiri@resnulli.us>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [RFC v2 1/2] PCI-Express Non-Transparent Bridge Support
-Message-ID: <20120730181542.GA987@jonmason-lab>
+Subject: Re: [RFC v2 2/2] net: Add support for NTB virtual ethernet device
+Message-ID: <20120730181910.GB987@jonmason-lab>
 References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
- <1343607994-32415-2-git-send-email-jon.mason@intel.com>
- <CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
+ <1343607994-32415-3-git-send-email-jon.mason@intel.com>
+ <20120730140216.GA1550@minipsycho.orion>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo4p_hxvCeVGqiTXVq3itXepheQZerpqRHwLvG6A7R2Lcg@mail.gmail.com>
+In-Reply-To: <20120730140216.GA1550@minipsycho.orion>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 10:50:13AM -0600, Bjorn Helgaas wrote:
-> On Sun, Jul 29, 2012 at 6:26 PM, Jon Mason <jon.mason@intel.com> wrote:
-> > A PCI-Express non-transparent bridge (NTB) is a point-to-point PCIe bus
-> > connecting 2 systems, providing electrical isolation between the two subsystems.
-> > A non-transparent bridge is functionally similar to a transparent bridge except
-> > that both sides of the bridge have their own independent address domains.  The
-> > host on one side of the bridge will not have the visibility of the complete
-> > memory or I/O space on the other side of the bridge.  To communicate across the
-> > non-transparent bridge, each NTB endpoint has one (or more) apertures exposed to
-> > the local system.  Writes to these apertures are mirrored to memory on the
-> > remote system.  Communications can also occur through the use of doorbell
-> > registers that initiate interrupts to the alternate domain, and scratch-pad
-> > registers accessible from both sides.
-> >
-> > The NTB device driver is needed to configure these memory windows, doorbell, and
-> > scratch-pad registers as well as use them in such a way as they can be turned
-> > into a viable communication channel to the remote system.  ntb_hw.[ch]
-> > determines the usage model (NTB to NTB or NTB to Root Port) and abstracts away
-> > the underlying hardware to provide access and a common interface to the doorbell
-> > registers, scratch pads, and memory windows.  These hardware interfaces are
-> > exported so that other, non-mainlined kernel drivers can access these.
-> > ntb_transport.[ch] also uses the exported interfaces in ntb_hw.[ch] to setup a
-> > communication channel(s) and provide a reliable way of transferring data from
-> > one side to the other, which it then exports so that "client" drivers can access
-> > them.  These client drivers are used to provide a standard kernel interface
-> > (i.e., Ethernet device) to NTB, such that Linux can transfer data from one
-> > system to the other in a standard way.
-> >
-> > Signed-off-by: Jon Mason <jon.mason@intel.com>
-> > ---
-> >  MAINTAINERS                 |    6 +
-> >  drivers/Kconfig             |    2 +
-> >  drivers/Makefile            |    1 +
-> >  drivers/ntb/Kconfig         |   13 +
-> >  drivers/ntb/Makefile        |    3 +
-> >  drivers/ntb/ntb_hw.c        | 1178 ++++++++++++++++++++++++++++++++++++
-> >  drivers/ntb/ntb_hw.h        |  206 +++++++
-> >  drivers/ntb/ntb_regs.h      |  150 +++++
-> >  drivers/ntb/ntb_transport.c | 1387 +++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/ntb.h         |   92 +++
-> 
-> Where will drivers for non-Intel NTBs fit in this hierarchy?  It seems
-> a bit presumptuous to claim the generic "ntb" names just for Intel
-> devices.
+On Mon, Jul 30, 2012 at 04:02:16PM +0200, Jiri Pirko wrote:
+> Mon, Jul 30, 2012 at 02:26:34AM CEST, jon.mason@intel.com wrote:
+> >+static int __devinit ntb_netdev_probe(struct pci_dev *pdev)
+> >+{
+> >+	struct net_device *ndev;
+> >+	struct ntb_netdev *dev;
+> >+	int rc;
+> >+
+> >+	ndev = alloc_etherdev(sizeof(struct ntb_netdev));
+> >+	if (!ndev)
+> >+		return -ENOMEM;
+> >+
+> >+	dev = netdev_priv(ndev);
+> >+	dev->ndev = ndev;
+> >+	dev->pdev = pdev;
+> >+	BUG_ON(!dev->pdev);
+> >+	ndev->features = NETIF_F_HIGHDMA;
+> >+
+> >+	//ndev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
+> 	^^ I guess you forgot to un-comment this.
 
-I've tried to make it all generic enough that non-Intel NTBs should plug in with
-minimal changes to ntb_hw.c.  If their design is too divergent, then a slight
-redesign of ntb_hw.c might be necessary.  But from what I've seen of other
-designs on the internet, they appear to be extremely similar.  The transport and
-client drivers were written with the hardware abstracted away as much as
-possible to prevent the need to modify it for different hardware.  If there is
-anything which is Intel hardware specific, I'd be happy to change it to make it
-more generic.
+Oops.  An easy fix.  Anything else?
 
 Thanks,
 Jon
