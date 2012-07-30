@@ -1,883 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab2G3Ldn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 07:33:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62586 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab2G3Ldk (ORCPT
+	id S1753472Ab2G3L7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 07:59:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48385 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab2G3L7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 07:33:40 -0400
-Date: Mon, 30 Jul 2012 13:33:23 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
+	Mon, 30 Jul 2012 07:59:30 -0400
+Date: Mon, 30 Jul 2012 04:57:19 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC][PATCH v3 1/3] runtime interpreted power sequences
-Message-ID: <20120730113323.GA7303@avionic-0098.adnet.avionic-design.de>
-References: <1343390750-3642-1-git-send-email-acourbot@nvidia.com>
- <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
+        Alan Cox <alan@linux.intel.com>
+Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH v3 0/11] KGDB/KDB FIQ (NMI) debugger
+Message-ID: <20120730115719.GA5742@lizard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1343390750-3642-2-git-send-email-acourbot@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:noZGrfmnTbYu54VvGi2TGeCmCSwSBp2L1X9uLFc/aNq
- ntlNElYAO+rXahdTfzoQB5FmHzg5SPp5ZgnYyytq7//WWhrxRy
- ZyypwiwCPOhwsA7FUJiBE74yRLe3CjEd5Sl8KFwMfxmCNcPe/F
- 7Nsf+Zjh5L6I85pJZ85mNLzG764sE0EbLRPeunZG5WP/M9n3T0
- Z7qx8Mn3VMaFnjJlEmp8BmlKtyEYDlLDpicVb4rXelj/Y5Uyz9
- ozaWxpr5aXCQ1bixkYdIvKE4m92YFh8d8AYQdXuAVfsxqwLshl
- 2SQk9neBzcBYx8l8zFVPgG3yNDdCk2oxRPoa9bJ1fsHVf5Jk57
- uioO3k3JtnaA5GsJ8W29oo36u0vpEhJVtyTGFUg3vQlF+T/odP
- 6eEHuKn4ej8pH9fc1GI6QGC7eiolwgtFq8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I do realize that we're in the middle of the merge window. But maybe
+some of you will be bored enough to look into this; and no problem if
+you don't feel like it -- I promise to send a brand new shiny v4 after
+the merge window, so you won't miss a bit of this new cool stuff. :-)
 
-On Fri, Jul 27, 2012 at 09:05:48PM +0900, Alexandre Courbot wrote:
-> Some device drivers (panel backlights especially) need to follow precise
-> sequences for powering on and off, involving gpios, regulators, PWMs
-> with a precise powering order and delays to respect between each steps.
-> These sequences are board-specific, and do not belong to a particular
-> driver - therefore they have been performed by board-specific hook
-> functions to far.
->=20
-> With the advent of the device tree and of ARM kernels that are not
-> board-tied, we cannot rely on these board-specific hooks anymore but
-> need a way to implement these sequences in a portable manner. This patch
-> introduces a simple interpreter that can execute such power sequences
-> encoded either as platform data or within the device tree.
->=20
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  Documentation/power/power_seq.txt | 120 +++++++++++++++
->  drivers/base/Kconfig              |   4 +
->  drivers/base/Makefile             |   1 +
->  drivers/base/power_seq.c          | 300 ++++++++++++++++++++++++++++++++=
-++++++
->  include/linux/power_seq.h         | 139 ++++++++++++++++++
->  5 files changed, 564 insertions(+)
->  create mode 100644 Documentation/power/power_seq.txt
->  create mode 100644 drivers/base/power_seq.c
->  create mode 100644 include/linux/power_seq.h
->=20
-> diff --git a/Documentation/power/power_seq.txt b/Documentation/power/powe=
-r_seq.txt
-> new file mode 100644
-> index 0000000..aa2ceb5
-> --- /dev/null
-> +++ b/Documentation/power/power_seq.txt
-> @@ -0,0 +1,120 @@
-> +Runtime Interpreted Power Sequences
-> +-----------------------------------
-> +
-> +Problem
-> +-------
-> +One very common board-dependent code is the out-of-driver code that is u=
-sed to
-> +turn a device on or off. For instance, SoC boards very commonly use a GP=
-IO
-> +(abstracted to a regulator or not) to control the power supply of a back=
-light,
-> +disabling it when the backlight is not used in order to save power. The =
-GPIO
-> +that should be used, however, as well as the exact power sequence that m=
-ay
-> +involve different resources, is board-dependent and thus unknown of the =
-driver.
-> +
-> +This has been addressed so far by using hooks in the device's platform d=
-ata that
-> +are called whenever the state of the device might reflect a power change=
-=2E This
-> +approach, however, introduces board-dependant code into the kernel and i=
-s not
-> +compatible with the device tree.
-> +
-> +The Runtime Interpreted Power Sequences (or power sequences for short) a=
-im at
-> +turning this code into platform data or device tree nodes. Power sequenc=
-es are
-> +described using a simple format and run by a simple interpreter whenever=
- needed.
-> +This allows to remove the callback mechanism and makes the kernel less
-> +board-dependant.
-> +
-> +Sequences Format
-> +----------------
-> +Power sequences are a series of sequential steps during which an action =
-is
-> +performed on a resource. The supported resources so far are:
-> +- GPIOs
-> +- Regulators
-> +- PWMs
-> +
-> +Each step designates a resource and the following parameters:
-> +- Whether the step should enable or disable the resource,
-> +- Delay to wait before performing the action,
-> +- Delay to wait after performing the action.
-> +
-> +Both new resources and parameters can be introduced, but the goal is of =
-course
-> +to keep things as simple and compact as possible.
-> +
-> +The platform data is a simple array of platform_power_seq_step instances=
-, each
-> +instance describing a step. The type as well as one of id or gpio members
-> +(depending on the type) must be specified. The last step must be of type
-> +POWER_SEQ_STOP. Regulator and PWM resources are identified by name. GPIO=
- are
-> +identified by number. For example, the following sequence will turn on t=
-he
-> +"power" regulator of the device, wait 10ms, and set GPIO number 110 to 1:
-> +
-> +struct platform_power_seq_step power_on_seq[] =3D {
-> +	{
-> +		.type =3D POWER_SEQ_REGULATOR,
-> +		.id =3D "power",
-> +		.params =3D {
-> +			.enable =3D 1,
-> +			.post_delay =3D 10,
-> +		},
-> +	},
-> +	{
-> +		.type =3D POWER_SEQ_GPIO,
-> +		.gpio =3D 110,
-> +		.params =3D {
-> +			.enable =3D 1,
-> +		},
-> +	},
-> +	{
-> +		.type =3D POWER_SEQ_STOP,
-> +	},
-> +};
-> +
-> +Usage by Drivers and Resources Management
-> +-----------------------------------------
-> +Power sequences make use of resources that must be properly allocated and
-> +managed. The power_seq_build() function takes care of resolving the reso=
-urces as
-> +they are met in the sequence and to allocate them if needed:
-> +
-> +power_seq *power_seq_build(struct device *dev, power_seq_resources *ress,
-> +			   platform_power_seq *pseq);
-> +
-> +You will need an instance of power_seq_resources to keep track of the re=
-sources
-> +that are already allocated. On success, the function returns a devm allo=
-cated
-> +resolved sequence that is ready to be passed to power_seq_run(). In case=
- of
-> +failure, and error code is returned.
+In v3:
 
-I don't quite understand why the struct power_seq_resources is needed.
-Can this not be stored within power_seq?
+- Per Colin Cross suggestion, added a way to release a debug console for
+  normal use.  This is done via 'disable_nmi' command (in the original
+  FIQ debugger it was 'console' command). For this I added a new callback
+  in the tty ops, and serial drivers have to provide a way to clear its
+  interrupts. The patch 'tty/serial/kgdboc: Add and wire up clear_irqs
+  callback' explains the concept in details.
+- Made the debug entry prompt more shell-like;
+- A new knocking mode '-1'. It disables the feature altogether, and thus
+  makes it possible to hook KDB entry to a dedicated button.
+- The code was rebased on 'v3.5 + kdb kiosk'[1] patches; and for
+  convenience it is now available in the following repo:
 
-> +
-> +A resolved power sequence returned by power_seq_build can be run by
-> +power_run_run():
-> +
-> +int power_seq_run(struct device *dev, power_seq *seq);
+  	git://git.infradead.org/users/cbou/linux-nmi-kdb.git master
 
-Why is the struct device required here? It already is passed during the
-call to pwm_seq_build(), so perhaps you should keep a reference to it
-within struct power_seq?
+Rationale for this patch set:
 
-> +
-> +It returns 0 if the sequence has successfully been run, or an error code=
- if a
-> +problem occured.
-> +
-> +Finally, some resources that cannot be allocated through devm need to be=
- freed
-> +manually. Therefore, be sure to call power_seq_free_resources() in your =
-device
-> +remove function:
-> +
-> +void power_seq_free_resources(power_seq_resources *ress);
+These patches introduce KGDB FIQ debugger support. The idea (and some
+code, of course) comes from Google's FIQ debugger[2]. There are some
+differences (mostly implementation details, feature-wise they're almost
+equivalent, or can be made equivalent, if desired).
 
-Could this not also be handled by a managed version? If a power_seq is
-always managed, then I would assume that it also takes care of freeing
-the resources, even if the resources have no managed equivalents.
+The FIQ debugger is a facility that can be used to debug situations
+when the kernel stuck in uninterruptable sections, e.g. the kernel
+infinitely loops or deadlocked in an interrupt or with interrupts
+disabled. On some development boards there is even a special NMI
+button, which is very useful for debugging weird kernel hangs.
 
-Perhaps it would also make sense to provide non-managed version of these
-functions. I think that would make the managed versions easier and more
-canonical to implement.
+And FIQ is basically an NMI, it has a higher priority than IRQs, and
+upon IRQ exception FIQs are not disabled. It is still possible to
+disable FIQs (as well as some "NMIs" on other architectures), but via
+special means.
 
-> +
-> +Device tree
-> +-----------
-> +All the same, power sequences can be encoded as device tree nodes. The f=
-ollowing
-> +properties and nodes are equivalent to the platform data defined previou=
-sly:
-> +
-> +		power-supply =3D <&mydevice_reg>;
-> +		enable-gpio =3D <&gpio 6 0>;
-> +
-> +		power-on-sequence {
-> +			regulator@0 {
-> +				id =3D "power";
-> +				enable;
-> +				post-delay =3D <10>;
-> +			};
-> +			gpio@1 {
-> +				id =3D "enable-gpio";
-> +				enable;
-> +			};
-> +		};
-> +
-> +Note that first, the phandles of the regulator and gpio used in the sequ=
-ences
-> +are defined as properties. Then the sequence references them through the=
- id
-> +property of every step. The name of sub-properties defines the type of t=
-he step.
-> +Valid names are "regulator", "gpio" and "pwm". Steps must be numbered
-> +sequentially.
+So, here FIQs and NMIs are synonyms, but in the code I use NMI term
+for arch-independent code, and FIQs for ARM code.
 
-I think there has been quite some discussion regarding the naming of
-subnodes and the conclusion seems to have been to name them uniformly
-after what they represent. As such the power-on-sequence subnodes should
-be called step@0, step@1, etc. However, that will require the addition
-of a property to define the type of resource.
+A few years ago KDB wasn't yet ready for production, or even not
+well-known, so originally Google implemented its own FIQ debugger
+that included its own shell, ring-buffer, commands, dumping,
+backtracing logic and whatnot. This is very much like PowerPC's xmon
+(arch/powerpc/xmon), except that xmon was there for a decade, so it
+even predates KDB.
 
-Also, is there some way we can make the id property for GPIOs not
-require the -gpio suffix? If the resource type is already GPIO, then it
-seems redundant to add -gpio to the ID.
+Anyway, nowadays KGDB/KDB is the cross-platform debugger, and the
+only feature that was missing is NMI handling. This is now fixed for
+ARM.
 
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 08b4c52..65bebfe 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -282,4 +282,8 @@ config CMA_AREAS
-> =20
->  endif
-> =20
-> +config POWER_SEQ
-> +	bool
-> +	default n
-> +
+There are a few differences comparing to the original (Google's) FIQ
+debugger:
 
-"default n" is already the default, so you can drop that line.
+- Doing stuff in FIQ context is dangerous, as there we are not allowed
+  to cause aborts or faults. In the original FIQ debugger there was a
+  "signal" software-induced interrupt, upon exit from FIQ it would fire,
+  and we would continue to execute "dangerous" commands from there.
 
->  endmenu
-> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-> index 5aa2d70..4c498c1 100644
-> --- a/drivers/base/Makefile
-> +++ b/drivers/base/Makefile
-> @@ -18,6 +18,7 @@ obj-$(CONFIG_MEMORY_HOTPLUG_SPARSE) +=3D memory.o
->  ifeq ($(CONFIG_SYSFS),y)
->  obj-$(CONFIG_MODULES)	+=3D module.o
->  endif
-> +obj-$(CONFIG_POWER_SEQ)	+=3D power_seq.o
->  obj-$(CONFIG_SYS_HYPERVISOR) +=3D hypervisor.o
->  obj-$(CONFIG_REGMAP)	+=3D regmap/
->  obj-$(CONFIG_SOC_BUS) +=3D soc.o
-> diff --git a/drivers/base/power_seq.c b/drivers/base/power_seq.c
-> new file mode 100644
-> index 0000000..6ccefa1
-> --- /dev/null
-> +++ b/drivers/base/power_seq.c
-> @@ -0,0 +1,300 @@
-> +/*
-> + * power_seq.c - A simple power sequence interpreter for platform devices
-> + *               and device tree.
-> + *
-> + * Author: Alexandre Courbot <acourbot@nvidia.com>
-> + *
-> + * Copyright (c) 2012 NVIDIA Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but W=
-ITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License=
- for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License alo=
-ng
-> + * with this program; if not, write to the Free Software Foundation, Inc=
-=2E,
-> + * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-> + *
-> + */
-> +
-> +#include <linux/power_seq.h>
-> +#include <linux/module.h>
-> +#include <linux/err.h>
-> +#include <linux/device.h>
-> +#include <linux/slab.h>
-> +#include <linux/delay.h>
-> +#include <linux/pwm.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/gpio.h>
-> +
-> +#ifdef CONFIG_OF
-> +#include <linux/of.h>
-> +#include <linux/of_gpio.h>
-> +#endif
+  In KGDB/KDB we don't use signal interrupts. We can do easier:
+  set up a breakpoint, continue, and you'll trap into KGDB again
+  in a safe context.
 
-I think you don't need the CONFIG_OF guard around these. Both of.h and
-of_gpio.h can be included unconditionally and actually contain dummy
-definitions for the public functions in the !OF case.
+  It works for most cases, but I can imagine cases when you can't
+  set up a breakpoint. For these cases we'd better introduce a
+  KDB command "exit_nmi", that will rise the SW IRQ, after which
+  we're allowed to do anything.
 
-> +
-> +static int power_seq_step_run(struct power_seq_step *step)
-> +{
-> +	int err =3D 0;
-> +
-> +	if (step->params.pre_delay)
-> +		mdelay(step->params.pre_delay);
-> +
-> +	switch (step->resource->type) {
-> +#ifdef CONFIG_REGULATOR
-> +	case POWER_SEQ_REGULATOR:
-> +		if (step->params.enable)
-> +			err =3D regulator_enable(step->resource->regulator);
-> +		else
-> +			err =3D regulator_disable(step->resource->regulator);
-> +		break;
-> +#endif
-> +#ifdef CONFIG_PWM
-> +	case POWER_SEQ_PWM:
-> +		if (step->params.enable)
-> +			err =3D pwm_enable(step->resource->pwm);
-> +		else
-> +			pwm_disable(step->resource->pwm);
-> +		break;
-> +#endif
-> +#ifdef CONFIG_GPIOLIB
-> +	case POWER_SEQ_GPIO:
-> +		gpio_set_value_cansleep(step->resource->gpio,
-> +					step->params.enable);
-> +		break;
-> +#endif
+- KGDB/KDB FIQ debugger shell is synchronous. In Google's version
+  you could have a dedicated shell always running in the FIQ context,
+  so when you type something on a serial line, you won't actually cause
+  any debugging actions, FIQ would save the characters in its own
+  buffer and continue execution normally. But when you hit return key
+  after the command, then the command is executed.
 
-This kind of #ifdef'ery is quite ugly. I don't know if adding separate
-*_run() functions for each type of resource would be any better, though.
-Alternatively, maybe POWER_SEQ should depend on the REGULATOR, PWM and
-GPIOLIB symbols to side-step the issue completely?
+  In KGDB/KDB FIQ debugger it is different. Once you enter KGDB, the
+  kernel will stop until you instruct it to continue.
 
-> +	/*
-> +	 * should never happen unless the sequence includes a step which
-> +	 * type does not have support compiled in
-> +	 */
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (err < 0)
-> +		return err;
-> +
-> +	if (step->params.post_delay)
-> +		mdelay(step->params.post_delay);
-> +
-> +	return 0;
-> +}
-> +
-> +int power_seq_run(struct device *dev, power_seq *seq)
-> +{
-> +	int err;
-> +
-> +	if (!seq) return 0;
+  This might look as a drastic change, but it is not. There is actually
+  no difference whether you have sync or async shell, or at least I
+  couldn't find any use-case where this would matter at all. Anyways,
+  it is still possible to do async shell in KDB, just don't see any
+  need for this.
 
-I don't think this is acceptable according to the coding style. Also,
-perhaps returning -EINVAL would be more meaningful?
+- Original FIQ debugger used a custom FIQ vector handling code, w/
+  a lot of logic in it. In this approach I'm using the fact that
+  FIQs are basically IRQs, except that we there are a bit more
+  registers banked, and we can actually trap from the IRQ context.
 
-> +
-> +	while (seq->resource) {
+  But this all does not prevent us from using a simple jump-table
+  based approach as used in the generic ARM entry code. So, here
+  I just reuse the generic approach.
 
-Perhaps this should check for POWER_SEQ_STOP instead?
+Note that I test the code on a modelled ARM machine (QEMU Versatile), so
+there might be some issues on a real HW, but it works in QEMU tho. :-)
 
-> +		if ((err =3D power_seq_step_run(seq++))) {
-> +			dev_err(dev, "error %d while running power sequence!\n",
-> +				err);
+Assuming you have QEMU >= 1.1.0, you can easily play with the code
+using ARM/versatile defconfig and command like this:
 
-For this kind of diagnostics it could be useful to have a name
-associated with the power sequence. But I'm not sure that making the
-power sequence code output an error here is the best solution. I find it
-to be annoying when core code starts outputting too many error codes. In
-this case it's particularily easy to catch the errors in the caller.
+  qemu-system-arm -nographic -machine versatilepb \
+  	-kernel linux/arch/arm/boot/zImage  \
+  	-append "console=ttyAMA0 kgdboc=ttyAMA0 kgdb_fiq.enable=1"
 
-> +			return err;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(power_seq_run);
-> +
-> +#ifdef CONFIG_OF
-> +static int of_parse_power_seq_step(struct device *dev, struct device_nod=
-e *node,
-> +				   struct platform_power_seq_step *step)
-> +{
-> +	if (of_property_read_string(node, "id", &step->id)) {
-> +		dev_err(dev, "missing id property!\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!strcmp(node->name, "regulator")) {
-> +		step->type =3D POWER_SEQ_REGULATOR;
-> +#ifdef CONFIG_OF_GPIO
-> +	} else if (!strcmp(node->name, "gpio")) {
-> +		int gpio;
-> +
-> +		step->type =3D POWER_SEQ_GPIO;
-> +		gpio =3D of_get_named_gpio(dev->of_node, step->id, 0);
-> +		if (gpio < 0) {
-> +			dev_err(dev, "cannot resolve gpio \"%s\"\n", step->id);
-> +			return gpio;
-> +		}
-> +		step->gpio =3D gpio;
-> +#endif /* CONFIG_OF_GPIO */
-> +	} else if (!strcmp(node->name, "pwm")) {
-> +		step->type =3D POWER_SEQ_PWM;
-> +	} else {
-> +		dev_err(dev, "invalid power seq step type!\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (of_find_property(node, "enable", NULL)) {
-> +		step->params.enable =3D 1;
-> +	} else if (!of_find_property(node, "disable", NULL)) {
-> +		dev_err(dev, "missing enable or disable property!\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	of_property_read_u32(node, "pre-delay", &step->params.pre_delay);
-> +	of_property_read_u32(node, "post-delay", &step->params.post_delay);
-> +
-> +	return 0;
-> +}
-> +
-> +platform_power_seq *of_parse_power_seq(struct device *dev,
-> +				       struct device_node *node)
-> +{
-> +	struct device_node *child =3D NULL;
-> +	platform_power_seq *ret;
-> +	int cpt =3D 0;
-> +	int err;
-> +
-> +	if (!node) return NULL;
+Thanks,
 
-Again, this should probably be split across two lines.
+--
+ arch/arm/Kconfig                            |   19 +++
+ arch/arm/common/vic.c                       |   28 +++++
+ arch/arm/include/asm/hardware/vic.h         |    2 +
+ arch/arm/include/asm/kgdb.h                 |    8 ++
+ arch/arm/kernel/Makefile                    |    1 +
+ arch/arm/kernel/entry-armv.S                |  169 +------------------------
+ arch/arm/kernel/entry-header.S              |  176 ++++++++++++++++++++++++++-
+ arch/arm/kernel/kgdb_fiq.c                  |  159 ++++++++++++++++++++++++
+ arch/arm/kernel/kgdb_fiq_entry.S            |   76 ++++++++++++
+ arch/arm/mach-versatile/Makefile            |    1 +
+ arch/arm/mach-versatile/include/mach/irqs.h |    1 +
+ arch/arm/mach-versatile/kgdb_fiq.c          |   31 +++++
+ drivers/tty/serial/amba-pl011.c             |   13 ++
+ drivers/tty/serial/kgdboc.c                 |    9 ++
+ drivers/tty/serial/serial_core.c            |   15 +++
+ include/linux/kgdb.h                        |   14 +++
+ include/linux/serial_core.h                 |    1 +
+ include/linux/tty_driver.h                  |    1 +
+ kernel/debug/debug_core.c                   |   13 +-
+ kernel/debug/kdb/kdb_debugger.c             |    4 +
+ kernel/debug/kdb/kdb_main.c                 |   20 +++
+ 21 files changed, 591 insertions(+), 170 deletions(-)
 
-> +
-> +	while ((child =3D of_get_next_child(node, child)))
-> +		cpt++;
+In v2:
 
-for_each_child_of_node()?
+- Per Colin Cross' suggestion, we should not enter the debugger on any
+  received byte (this might be a problem when there's a noise on the
+  serial line). So there is now an additional patch that implements
+  "knocking" to the KDB (either via $3#33 command or return key, this
+  is configurable);
+- Reworked {enable,select}_fiq/is_fiq callbacks, now multi-mach kernels
+  should not be a problem;
+- For versatile machines there are run-time checks for proper UART port
+  (kernel will scream aloud if out of range port is specified);
+- Added some __init annotations;
+- Since not every architecture defines FIQ_START, we can't just blindly
+  select CONFIG_FIQ symbol. So ARCH_MIGHT_HAVE_FIQ introduced;
+- Add !THUMB2_KERNEL dependency for KGDB_FIQ, we don't support Thumb2
+  kernels;
+- New patch that is used to get rid of LCcralign label in alignment_trap
+  macro.
 
-> +
-> +	/* allocate one more step to signal end of sequence */
-> +	ret =3D devm_kzalloc(dev, sizeof(*ret) * (cpt + 1), GFP_KERNEL);
-> +	if (!ret)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	cpt =3D 0;
-> +	while ((child =3D of_get_next_child(node, child))) {
+[1] https://lkml.org/lkml/2012/7/26/260
+[2] Original Google's FIQ debugger, fiq_* files:
+http://android.git.linaro.org/gitweb?p=kernel/common.git;a=tree;f=arch/arm/common;hb=refs/heads/android-3.4
+And board support as an example of using it:
+http://nv-tegra.nvidia.com/gitweb/?p=linux-2.6.git;a=commitdiff;h=461cb80c16e4e266ab6207a00767b59212148086
 
-Here as well.
-
-> +		if ((err =3D of_parse_power_seq_step(dev, child, &ret[cpt++])))
-> +			return ERR_PTR(err);
-> +	}
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(of_parse_power_seq);
-> +#endif /* CONFIG_OF */
-> +
-> +static
-> +struct power_seq_resource * power_seq_find_resource(power_seq_resources =
-*ress,
-> +					struct platform_power_seq_step *res)
-> +{
-> +	struct power_seq_resource *step;
-> +
-> +	list_for_each_entry(step, ress, list) {
-> +		if (step->type !=3D res->type) continue;
-> +		switch (res->type) {
-> +		case POWER_SEQ_GPIO:
-> +			if (step->gpio =3D=3D res->gpio)
-> +				return step;
-> +			break;
-> +		default:
-> +			if (!strcmp(step->id, res->id))
-> +				return step;
-> +			break;
-> +		}
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +static int power_seq_allocate_resource(struct device *dev,
-> +				       struct power_seq_resource *res)
-> +{
-> +	int err;
-> +
-> +	switch (res->type) {
-> +#ifdef CONFIG_REGULATOR
-> +	case POWER_SEQ_REGULATOR:
-> +		res->regulator =3D devm_regulator_get(dev, res->id);
-> +		if (IS_ERR(res->regulator)) {
-> +			dev_err(dev, "cannot get regulator \"%s\"\n", res->id);
-> +			return PTR_ERR(res->regulator);
-> +		}
-> +		break;
-> +#endif
-> +#ifdef CONFIG_PWM
-> +	case POWER_SEQ_PWM:
-> +		res->pwm =3D pwm_get(dev, res->id);
-> +		if (IS_ERR(res->pwm)) {
-> +			dev_err(dev, "cannot get pwm \"%s\"\n", res->id);
-> +			return PTR_ERR(res->pwm);
-> +		}
-> +		break;
-> +#endif
-> +#ifdef CONFIG_GPIOLIB
-> +	case POWER_SEQ_GPIO:
-> +		err =3D devm_gpio_request_one(dev, res->gpio, GPIOF_OUT_INIT_HIGH,
-> +					    "backlight_gpio");
-> +		if (err) {
-> +			dev_err(dev, "cannot get gpio %d\n", res->gpio);
-> +			return err;
-> +		}
-> +		break;
-> +#endif
-> +	default:
-> +		dev_err(dev, "invalid resource type %d\n", res->type);
-> +		return -EINVAL;
-> +		break;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +power_seq *power_seq_build(struct device *dev, power_seq_resources *ress,
-> +			   platform_power_seq *pseq)
-> +{
-> +	struct power_seq_step *seq =3D NULL, *ret;
-> +	struct power_seq_resource *res;
-> +	int cpt, err;
-> +
-> +	/* first pass to count the number of steps to allocate */
-> +	for (cpt =3D 0; pseq[cpt].type !=3D POWER_SEQ_STOP; cpt++);
-
-Wouldn't it be easier to pass around the number of steps in the sequence
-instead of having to count in various places? This would be more along
-the lines of how struct platform_device defines associated resources.
-
-> +
-> +	if (!cpt)
-> +		return seq;
-
-Perhaps this should return an error-code as well? I find it nice to not
-have to handle NULL specially when using ERR_PTR et al.
-
-> +
-> +	/* 1 more for the STOP step */
-> +	ret =3D seq =3D devm_kzalloc(dev, sizeof(*seq) * (cpt + 1), GFP_KERNEL);
-> +	if (!seq)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	for (; pseq->type !=3D POWER_SEQ_STOP; pseq++, seq++) {
-> +		/* create resource node if not referenced already */
-> +		if (!(res =3D power_seq_find_resource(ress, pseq))) {
-> +			res =3D devm_kzalloc(dev, sizeof(*res), GFP_KERNEL);
-> +			if (!res)
-> +				return ERR_PTR(-ENOMEM);
-> +			res->type =3D pseq->type;
-> +
-> +			if (res->type =3D=3D POWER_SEQ_GPIO)
-> +				res->gpio =3D pseq->gpio;
-> +			else
-> +				res->id =3D pseq->id;
-> +
-> +			if ((err =3D power_seq_allocate_resource(dev, res)) < 0)
-> +				return ERR_PTR(err);
-> +
-> +			list_add(&res->list, ress);
-> +		}
-> +		seq->resource =3D res;
-> +		memcpy(&seq->params, &pseq->params, sizeof(seq->params));
-> +	}
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(power_seq_build);
-> +
-> +void power_seq_free_resources(power_seq_resources *ress) {
-
-The brace needs to go on a line by itself.
-
-> +	struct power_seq_resource *res;
-> +
-> +#ifdef CONFIG_PWM
-> +	list_for_each_entry(res, ress, list) {
-> +		if (res->type =3D=3D POWER_SEQ_PWM)
-> +			pwm_put(res->pwm);
-> +	}
-> +#endif
-> +}
-> +EXPORT_SYMBOL_GPL(power_seq_free_resources);
-> +
-> +MODULE_AUTHOR("Alexandre Courbot <acourbot@nvidia.com>");
-> +MODULE_DESCRIPTION("Runtime Interpreted Power Sequences");
-> +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/power_seq.h b/include/linux/power_seq.h
-> new file mode 100644
-> index 0000000..da0593a
-> --- /dev/null
-> +++ b/include/linux/power_seq.h
-> @@ -0,0 +1,139 @@
-> +/*
-> + * power_seq.h
-> + *
-> + * Simple interpreter for defining power sequences as platform data or d=
-evice
-> + * tree properties. Initially designed for use with backlight drivers.
-> + *
-> + * Power sequences are designed to replace the callbacks typically used =
-in
-> + * board-specific files that implement board-specific power sequences of=
- devices
-> + * such as backlights. A power sequence is an array of resources (which =
-can a
-> + * regulator, a GPIO, a PWM, ...) with an action to perform on it (enabl=
-e or
-> + * disable) and optional pre and post step delays. By having them interp=
-reted
-> + * instead of arbitrarily executed, it is possible to describe these in =
-the
-> + * device tree and thus remove board-specific code from the kernel.
-> + *
-> + * Author: Alexandre Courbot <acourbot@nvidia.com>
-> + *
-> + * Copyright (c) 2012 NVIDIA Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but W=
-ITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License=
- for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License alo=
-ng
-> + * with this program; if not, write to the Free Software Foundation, Inc=
-=2E,
-> + * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-> + *
-> + */
-> +
-> +#ifndef __LINUX_POWER_SEQ_H
-> +#define __LINUX_POWER_SEQ_H
-> +
-> +#include <linux/types.h>
-> +
-> +struct device;
-> +struct regulator;
-> +struct pwm_device;
-> +struct device_node;
-> +
-> +/**
-> + * The different kinds of resources that can be controlled during the se=
-quences.
-> + */
-> +typedef enum {
-> +	POWER_SEQ_STOP =3D 0,
-> +	POWER_SEQ_REGULATOR,
-> +	POWER_SEQ_PWM,
-> +	POWER_SEQ_GPIO,
-> +	POWER_SEQ_MAX,
-> +} power_res_type;
-
-Maybe the prefix power_seq should be used here as well, so:
-power_seq_res_type.
-
-> +
-> +struct power_seq_resource {
-> +	power_res_type type;
-> +	/* name to resolve for resources with a name (regulator, pwm) */
-> +	const char *id;
-> +	/* resolved resource */
-> +	union {
-> +		struct regulator *regulator;
-> +		struct pwm_device *pwm;
-> +		int gpio;
-> +	};
-> +	/* used to maintain the list of resources used by the driver */
-> +	struct list_head list;
-> +};
-> +typedef struct list_head power_seq_resources;
-
-No type definitions like this, please. Also, why define this particular
-type globally?
-
-> +
-> +struct power_step_params {
-> +	/* enable the resource if 1, disable if 0 */
-> +	bool enable;
-> +	/* delay (in ms) to wait before executing the step */
-> +	int  pre_delay;
-> +	/* delay (in ms) to wait after executing the step */
-> +	int post_delay;
-
-unsigned int for the delays?
-
-> +};
-> +
-> +/**
-> + * Platform definition of power sequences. A sequence is an array of the=
-se,
-> + * terminated by a STOP instance.
-> + */
-> +struct platform_power_seq_step {
-> +	power_res_type type;
-> +	union {
-> +		/* Used by REGULATOR and PWM types to name the resource */
-> +		const char *id;
-> +		/* Used by GPIO */
-> +		int gpio;
-> +	};
-> +	struct power_step_params params;
-> +};
-> +typedef struct platform_power_seq_step platform_power_seq;
-
-Why are the parameters kept in a separate structure? What are the
-disadvantages of keeping the in the sequence step structure directly?
-
-> +
-> +/**
-> + * Power sequence steps resolved against their resource. Built by
-> + * power_seq_build and used to run the sequence.
-> + */
-> +struct power_seq_step {
-> +	struct power_seq_resource *resource;
-> +	struct power_step_params params;
-> +};
-> +typedef struct power_seq_step power_seq;
-
-Would it make sense to make the struct power_seq opaque? I don't see why
-anyone but the power_seq code should access the internals. For resource
-managing it might also be easier to separate struct power_seq_step and
-struct power_seq, making the power_seq basically something like:
-
-	struct power_seq {
-		struct power_seq_step *steps;
-		unsigned int num_steps;
-	};
-
-Perhaps a name field can be included for diagnostic purposes.
-
-> +
-> +#ifdef CONFIG_OF
-> +/**
-> + * Build a platform data sequence from a device tree node. Memory for the
-> + * sequence is allocated using devm_kzalloc on dev.
-> + */
-> +platform_power_seq *of_parse_power_seq(struct device *dev,
-> +				       struct device_node *node);
-> +#else
-> +platform_power_seq *of_parse_power_seq(struct device *dev,
-> +				       struct device_node *node)
-> +{
-> +	return NULL;
-> +}
-> +#endif
-> +
-> +/**
-> + * Build a runnable power sequence from platform data, and add the resou=
-rces
-> + * it uses into ress. Memory for the sequence is allocated using devm_kz=
-alloc
-> + * on dev.
-> + */
-> +power_seq *power_seq_build(struct device *dev, power_seq_resources *ress,
-> +			   platform_power_seq *pseq);
-
-I already mentioned this above: I fail to see why the ress parameter is
-needed here. It is an internal implementation detail of the power
-sequence code. Maybe a better place would be to include it within the
-struct power_seq.
-
-> +/**
-> + * Free all the resources previously allocated by power_seq_allocate_res=
-ources.
-> + */
-> +void power_seq_free_resources(power_seq_resources *ress);
-> +
-> +/**
-> + * Run the given power sequence. Returns 0 on success, error code in cas=
-e of
-> + * failure.
-> + */
-> +int power_seq_run(struct device *dev, power_seq *seq);
-
-I think the API is too fine grained here. From a user's point of view,
-I'd expect a sequence like this:
-
-	seq =3D power_seq_build(dev, sequence);
-	...
-	power_seq_run(seq);
-	...
-	power_seq_free(seq);
-
-Perhaps with managed variants where the power_seq_free() is executed
-automatically:
-
-	seq =3D devm_power_seq_build(dev, sequence);
-	...
-	power_seq_run(seq);
-
-Generally I really like where this is going.
-
-Thierry
-
---T4sUOijqQbZv57TR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQFnEDAAoJEN0jrNd/PrOhOuYQAIqH8TNj8oWQ+/hj6sO27PQV
-N+WQCbkbYll+mLYpf3WU2fOvnfBdk2trHOb1qbM1IynlxGZsfuPRHmvSZlBurf2F
-Yh+6tnuHk6NP0KvOHRpzWvj+DctNe+m5s8q6y25SLb5lPST2oFmGOea6E1LtIlg+
-5zXlcxyqqKunYncvdB8krt+NW8M9k2552u/iXRcanK/MMiGfQh+6qMPTJg9Rek+u
-MZlCE1gwx9yMIPEIaRJP7JrdvjWJNvQJDWdYQp/fhLH+8aTWDx8cXY3k205uJCqI
-pMuEKJKqpLRiGRPHDpqQzvTybLoQ3lD51n7Dd16qW/GNrrfUxINLemLyYtfl+Gc4
-5UIgCTIO6FdvGr2VKsRulNnLUtNS0MsQZYacBbcIsoR3beachuJTNkr8DlFyF/c8
-UHtUNhpPq25YD4pgo9XrF3pFu3w3VRMvRXoZLnFpDfScuxuzcRx+kiK8QheCx967
-yXOfMV1GBvG3q/q2holzre2Okh/4cvrsQvYM8q1EIP7bCEmBCs+gjFHXYyx+H+UO
-5rDrMWc/4GhgAZZ9Y2wyWOaEGVncTv2j47Gj1SDnyjanZTHbcxMBJR2roVRTjuLl
-M5ABp3pClkRWidSVoVIQPPc9BJzaVJFm208VNAiW1QxdnLrlTqTrTzqHrHR8A4rd
-BvjXhKsNpBA78j96BA1V
-=9Ycn
------END PGP SIGNATURE-----
-
---T4sUOijqQbZv57TR--
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
