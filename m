@@ -1,155 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab2G3Sdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 14:33:39 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:24008
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751206Ab2G3Sdg (ORCPT
+	id S1754543Ab2G3Sj5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 14:39:57 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:50106 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab2G3Sj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 14:33:36 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzzz2fh2a8h683h839h93fhd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>
-Subject: RE: [PATCH 13/17] Tools: hv: Implement the KVP verb -
- KVP_OP_SET_IP_INFO
-Thread-Topic: [PATCH 13/17] Tools: hv: Implement the KVP verb -
- KVP_OP_SET_IP_INFO
-Thread-Index: AQHNabffApGkoXQ/oEyNNUVPYtB2bpdCJ8sAgAADC6A=
-Date: Mon, 30 Jul 2012 18:32:15 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236AA7DB@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
- <1343145701-3691-1-git-send-email-kys@microsoft.com>
- <1343145701-3691-13-git-send-email-kys@microsoft.com>
- <20120730180326.GB533@aepfle.de>
-In-Reply-To: <20120730180326.GB533@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.56.91]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 30 Jul 2012 14:39:56 -0400
+Date: Mon, 30 Jul 2012 11:39:51 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [wq:review-wq-mod_delayed]  WARNING: at __queue_work()
+Message-ID: <20120730183951.GD20067@google.com>
+References: <20120729052159.GA12776@localhost>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120729052159.GA12776@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6UIXgw3006278
 
+On Sun, Jul 29, 2012 at 01:21:59PM +0800, Fengguang Wu wrote:
+> Hi Tejun,
+> 
+> I got the below warning on
+> 
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-wq-mod_delayed
+> head:   6f510bfa84f26319b1021b9e706ebb814809c4a3
+> commit: 54eaaeaa4d2b871c835ff826af5dab3b96f90da0 [4/15] workqueue: disable preemption while manipulating PENDING
+> 
+> [    0.624901] NET: Registered protocol family 1
+> [    0.626536] ------------[ cut here ]------------
+> [    0.627849] WARNING: at /c/kernel-tests/src/tip/kernel/workqueue.c:995 __queue_work+0x33/0x1ab()
+> [    0.630262] Pid: 1, comm: swapper Not tainted 3.5.0-07346-g54eaaea #1043
+> [    0.632100] Call Trace:
+> [    0.632803]  [<8102546a>] warn_slowpath_common+0x54/0x69
+> [    0.634246]  [<81034e5d>] ? __queue_work+0x33/0x1ab
+> [    0.635578]  [<81034e5d>] ? __queue_work+0x33/0x1ab
+> [    0.636944]  [<8102551d>] warn_slowpath_null+0x1d/0x20
+> [    0.638344]  [<81034e5d>] __queue_work+0x33/0x1ab
+> [    0.639632]  [<8103506c>] queue_work_on+0x13/0x1c
+> [    0.640945]  [<81035083>] queue_work+0xe/0x10
+> [    0.642137]  [<81035136>] queue_delayed_work+0xf/0x22
+> [    0.643525]  [<81035642>] schedule_delayed_work+0x11/0x13
+> [    0.645038]  [<815a3750>] sunrpc_init_cache_detail+0x7f/0x82
+> [    0.646579]  [<815a3db6>] cache_register_net+0x8/0xc
+> [    0.647941]  [<815a0520>] ip_map_cache_create+0x34/0x56
+> [    0.649399]  [<81ac0ffe>] sunrpc_init_net+0x73/0xce
+> [    0.650743]  [<81ac0f8b>] ? init_sunrpc+0x5f/0x5f
+> [    0.652049]  [<814f3bba>] ops_init.constprop.5+0xc5/0xeb
+> [    0.653510]  [<814f3c34>] register_pernet_operations.isra.2+0x54/0x7d
+> [    0.655325]  [<81ac0f2c>] ? rpc_init_generic_auth+0xf/0xf
+> [    0.656821]  [<814f3dbb>] register_pernet_subsys+0x19/0x2a
+> [    0.658316]  [<81ac0f55>] init_sunrpc+0x29/0x5f
+> [    0.659555]  [<81a879cb>] do_one_initcall+0x7e/0x129
+> [    0.660936]  [<81a87b59>] kernel_init+0xe3/0x17a
+> [    0.662205]  [<81a87435>] ? do_early_param+0x7a/0x7a
+> [    0.663574]  [<81a87a76>] ? do_one_initcall+0x129/0x129
+> [    0.665038]  [<81652f36>] kernel_thread_helper+0x6/0xd
 
+The WARN_ON should have been on preemptible() instead of directly on
+preempt_count(); otherwise, with !CONFIG_PREEMPT_COUNT, the condition
+triggers spuriously.  Will fix.
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Monday, July 30, 2012 2:03 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; apw@canonical.com; netdev@vger.kernel.org;
-> ben@decadent.org.uk
-> Subject: Re: [PATCH 13/17] Tools: hv: Implement the KVP verb -
-> KVP_OP_SET_IP_INFO
-> 
-> On Tue, Jul 24, K. Y. Srinivasan wrote:
-> 
-> > +	/*
-> > +	 * Set the configuration for the specified interface with
-> > +	 * the information provided. Since there is no standard
-> > +	 * way to configure an interface, we will have an external
-> > +	 * script that does the job of configuring the interface and
-> > +	 * flushing the configuration.
-> > +	 *
-> > +	 * The parameters passed to this external script are:
-> > +	 * 1. A configuration file that has the specified configuration.
-> 
-> Maybe this should be written as 'A info file that has the requested
-> network configuration' or something like that.
+Thanks a lot for the report.
 
-That is the idea. This configuration file simply reflects all the information we have
-perhaps with some additional constant information. The script is free to ignore what
-it does not need. 
-
-> 
-> > +	 *
-> > +	 * We will embed the name of the interface in the configuration
-> > +	 * file: ifcfg-ethx (where ethx is the interface name).
-> 
-> I think the intention here is to use the generated file as is. Depending
-> on the distro in the guest the file may need some processing. So I think
-> the actual interface name should also be part of the file.
-
-That is not the intention although on some distros, the format of this file
-may be closer to the distro specific configuration file than others. I will 
-however include the name of the interface in the file as well.
- 
-
-> 
-> > +	 *
-> > +	 * Here is the format of the ip configuration file:
-> > +	 *
-> > +	 * HWADDR=macaddr
-> > +	 * BOOTPROTO=dhcp (dhcp enabled for the interface)
-> 
-> While BOOTPROTO= is used in current network config files, its meaning
-> there is unrelated to what its meant here. Here it means DHCP=yes/no, so
-> I think the file should contain just that. And as the code is written
-> now BOOTPROTO= is optional, which is not mentioned in the comment.
-
-I will fix this.
-
-> 
-> > +	 * NM_CONTROLLED=no (this interface will not be controlled by NM)
-> 
-> I think this is not up to kvp_deamon to decide what controls the
-> interface. Maybe one day NM is sufficiently advanced technology that it
-> can cope with such requests?
-> The helper script should decide if the NM flag should be written to the
-> final config file.
-
-As I noted earlier, the external script can choose to interpret the contents of this
-file in a way that it makes sense for the distribution. Maybe, I will get rid of all the 
-constant information.
-
-> 
-> > +	 * PEERDNS=yes
-> > +	 * IPADDR_x=ipaddr
-> > +	 * NETMASK_x=netmask
-> > +	 * GATEWAY_x=gateway
-> 
-> This should mention that its either IPADDR=ipaddr1 or 'IPADDR=ipaddr1;
-> IPADDR_1=ipaddr2'
-> 
-> > +	 * DNSx=dns
-> 
-> This should mention that its either DNS=ipaddr1 or 'DNS=ipaddr1;
-> DNS1=ipaddr2'
-
-I take it that you want the comments to be more explicit on the format.
-
-> 
-> Olaf
-> 
-> 
-
-Thank you Olaf,
-
-K. Y
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+tejun
