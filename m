@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab2G3VaM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 17:30:12 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:47444 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526Ab2G3VaG (ORCPT
+	id S1754876Ab2G3Vm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 17:42:26 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:64300 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754599Ab2G3VmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 17:30:06 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6788"; a="213757031"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH] ARM: Sort exception table at compile time
-Date: Mon, 30 Jul 2012 14:30:03 -0700
-Message-Id: <1343683803-15507-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.12.rc0.56.g425b8a2
+	Mon, 30 Jul 2012 17:42:19 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqMMABL/FlB5LJQK/2dsb2JhbABFuE4BAoEHgQiCIAEBBScTHCMQCAMYLhQlAyETiAy7FBSLPIEAFYEFhA9gA5VIiSyGYoJx
+Date: Tue, 31 Jul 2012 07:42:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: majianpeng <majianpeng@gmail.com>
+Cc: axboe <axboe@kernel.dk>, "konrad.wilk" <konrad.wilk@oracle.com>,
+        "chris.mason" <chris.mason@fusionio.com>,
+        viro <viro@ZenIV.linux.org.uk>, tytso <tytso@mit.edu>,
+        "adilger.kernel" <adilger.kernel@dilger.ca>,
+        shaggy <shaggy@kernel.org>, mfasheh <mfasheh@suse.com>,
+        jlbec <jlbec@evilplan.org>, bpm <bpm@sgi.com>,
+        elder <elder@kernel.org>,
+        jfs-discussion <jfs-discussion@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>, xfs <xfs@oss.sgi.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        ocfs2-devel <ocfs2-devel@oss.oracle.com>
+Subject: Re: [PATCH 0/8] Set bi_rw when alloc bio before call bio_add_page.
+Message-ID: <20120730214213.GF2877@dastard>
+References: <201207301514247032532@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207301514247032532@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the ARM machine identifier to sortextable and select the
-config option so that we can sort the exception table at compile
-time. sortextable relies on a section named __ex_table existing
-in the vmlinux, but ARM's linker script places the exception
-table in the data section. Give the exception table its own
-section so that sortextable can find it.
+On Mon, Jul 30, 2012 at 03:14:28PM +0800, majianpeng wrote:
+> When exec bio_alloc, the bi_rw is zero.But after calling bio_add_page,
+> it will use bi_rw.
+> Fox example, in functiion __bio_add_page,it will call merge_bvec_fn().
+> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
+> >> if ((bvm->bi_rw & 1) == WRITE)
+> >> return biovec->bv_len; /* always allow writes to be mergeable */
 
-This allows us to skip the runtime sorting step during boot.
+So if bio_add_page() requires bi_rw to be set, then shouldn't it be
+set up for every caller? I noticed there are about 50 call sites for
+bio_add_page(), and you've only touched about 10 of them. Indeed, I
+notice that the RAID0/1 code uses bio_add_page, and as that can be
+stacked on top of RAID456, it also needs to set bi_rw correctly.
+As a result, your patch set is nowhere near complete, not does it
+document that bio_add_page requires that bi_rw be set before calling
+(which is the new API requirement, AFAICT).
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: David Daney <david.daney@cavium.com>
----
+So, my question is whether the RAID456 code is doing something
+valid.  That write optimisation is clearly not enabled for a
+significant amount of code and filesystems, so the first thing to do
+is quantify the benefit of the optimisation. I can't evalute the
+merit of this change without data telling me it is worthwhile, and
+it's a lot of code to churn for no benefit....
 
-I can't find any information on why the exception table lives in the data
-section. If there's a good reason for that, I'll look into changing
-sortextable to look for the __start___ex_table symbol.
+Cheers,
 
- arch/arm/Kconfig              |  1 +
- arch/arm/kernel/vmlinux.lds.S | 19 +++++++++----------
- scripts/sortextable.c         |  1 +
- 3 files changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index b25c9d3..2af95e6 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1,6 +1,7 @@
- config ARM
- 	bool
- 	default y
-+	select BUILDTIME_EXTABLE_SORT if MMU
- 	select ARCH_HAVE_CUSTOM_GPIO_H
- 	select HAVE_AOUT
- 	select HAVE_DMA_API_DEBUG
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index 36ff15b..0e3e8b4 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -220,16 +220,6 @@ SECTIONS
- 		READ_MOSTLY_DATA(L1_CACHE_BYTES)
- 
- 		/*
--		 * The exception fixup table (might need resorting at runtime)
--		 */
--		. = ALIGN(4);
--		__start___ex_table = .;
--#ifdef CONFIG_MMU
--		*(__ex_table)
--#endif
--		__stop___ex_table = .;
--
--		/*
- 		 * and the usual data section
- 		 */
- 		DATA_DATA
-@@ -239,6 +229,15 @@ SECTIONS
- 	}
- 	_edata_loc = __data_loc + SIZEOF(.data);
- 
-+	. = ALIGN(4);
-+	__ex_table : AT(ADDR(__ex_table) - LOAD_OFFSET) {
-+		__start___ex_table = .;
-+#ifdef CONFIG_MMU
-+		*(__ex_table)
-+#endif
-+		__stop___ex_table = .;
-+	}
-+
- #ifdef CONFIG_HAVE_TCM
-         /*
- 	 * We align everything to a page boundary so we can
-diff --git a/scripts/sortextable.c b/scripts/sortextable.c
-index 1ca9ceb..591acb3 100644
---- a/scripts/sortextable.c
-+++ b/scripts/sortextable.c
-@@ -248,6 +248,7 @@ do_file(char const *const fname)
- 		custom_sort = sort_x86_table;
- 		break;
- 	case EM_MIPS:
-+	case EM_ARM:
- 		break;
- 	}  /* end switch */
- 
+Dave.
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Dave Chinner
+david@fromorbit.com
