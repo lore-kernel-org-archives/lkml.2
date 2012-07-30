@@ -1,101 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab2G3Rkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:40:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36077 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab2G3Rcm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:42 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shaohua Li <shaohua.li@intel.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [ 11/41] vmscan: clear ZONE_CONGESTED for zone with good watermark
-Date: Mon, 30 Jul 2012 10:31:10 -0700
-Message-Id: <20120730172902.195869164@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
-References: <20120730172901.306897424@linuxfoundation.org>
-User-Agent: quilt/0.60-20.4
+	id S1755521Ab2G3Rlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:41:46 -0400
+Received: from host-176-100-244-43.masterbit.su ([176.100.244.43]:48515 "EHLO
+	tservice.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754821Ab2G3RlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 13:41:21 -0400
+X-Greylist: delayed 526 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 13:41:20 EDT
+Date: Mon, 30 Jul 2012 21:32:32 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Daniel Mack <zonque@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ville Syrjala <syrjala@sci.fi>,
+        GregKH <greh@kroah.com>
+Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in
+ platform data
+Message-ID: <20120730173232.GA20809@ioremap.net>
+References: <1343249670-14985-1-git-send-email-zonque@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343249670-14985-1-git-send-email-zonque@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Hi
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Sorry for long delay
 
-------------------
+On Wed, Jul 25, 2012 at 10:54:29PM +0200, Daniel Mack (zonque@gmail.com) wrote:
+> In the process of porting boards to devicetree implemenation, we should
+> keep information about external circuitry where they belong - the
+> individual drivers.
+> 
+> This patch adds a way to specify a GPIO to drive the (optional) external
+> pull-up logic, rather than using a function pointer for that.
 
-From: Shaohua Li <shaohua.li@intel.com>
+I do not object against this patch, but I have rather limited knowledge
+about gpio driver. Patch looks good, feel free to add my
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 
-commit 439423f6894aa0dec22187526827456f5004baed upstream.
+Greg, please pull it into your tree, if Ville does not object.
+Thank you.
 
-Stable note: Not tracked in Bugzilla. kswapd is responsible for clearing
-	ZONE_CONGESTED after it balances a zone and this patch fixes a bug
-	where that was failing to happen. Without this patch, processes
-	can stall in wait_iff_congested unnecessarily. For users, this can
-	look like an interactivity stall but some workloads would see it
-	as sudden drop in throughput.
-
-ZONE_CONGESTED is only cleared in kswapd, but pages can be freed in any
-task.  It's possible ZONE_CONGESTED isn't cleared in some cases:
-
- 1. the zone is already balanced just entering balance_pgdat() for
-    order-0 because concurrent tasks free memory.  In this case, later
-    check will skip the zone as it's balanced so the flag isn't cleared.
-
- 2. high order balance fallbacks to order-0.  quote from Mel: At the
-    end of balance_pgdat(), kswapd uses the following logic;
-
-	If reclaiming at high order {
-		for each zone {
-			if all_unreclaimable
-				skip
-			if watermark is not met
-				order = 0
-				loop again
-
-			/* watermark is met */
-			clear congested
-		}
-	}
-
-    i.e. it clears ZONE_CONGESTED if it the zone is balanced.  if not,
-    it restarts balancing at order-0.  However, if the higher zones are
-    balanced for order-0, kswapd will miss clearing ZONE_CONGESTED as
-    that only happens after a zone is shrunk.  This can mean that
-    wait_iff_congested() stalls unnecessarily.
-
-This patch makes kswapd clear ZONE_CONGESTED during its initial
-highmem->dma scan for zones that are already balanced.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/vmscan.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2456,6 +2456,9 @@ loop_again:
- 					high_wmark_pages(zone), 0, 0)) {
- 				end_zone = i;
- 				break;
-+			} else {
-+				/* If balanced, clear the congested flag */
-+				zone_clear_flag(zone, ZONE_CONGESTED);
- 			}
- 		}
- 		if (i < 0)
-
-
+-- 
+	Evgeniy Polyakov
