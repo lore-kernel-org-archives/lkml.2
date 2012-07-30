@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab2G3SDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 14:03:31 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:43284 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab2G3SD3 (ORCPT
+	id S1754638Ab2G3SD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 14:03:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44801 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754563Ab2G3SDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 14:03:29 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFIiy0PE5gu
-X-RZG-CLASS-ID: mo00
-Date: Mon, 30 Jul 2012 20:03:26 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, apw@canonical.com,
-        netdev@vger.kernel.org, ben@decadent.org.uk
-Subject: Re: [PATCH 13/17] Tools: hv: Implement the KVP verb -
- KVP_OP_SET_IP_INFO
-Message-ID: <20120730180326.GB533@aepfle.de>
-References: <1343145672-3641-1-git-send-email-kys@microsoft.com>
- <1343145701-3691-1-git-send-email-kys@microsoft.com>
- <1343145701-3691-13-git-send-email-kys@microsoft.com>
+	Mon, 30 Jul 2012 14:03:55 -0400
+Date: Mon, 30 Jul 2012 19:03:52 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] mfd: arizona: convert to regmap_add_irq_chips
+Message-ID: <20120730180352.GR4468@opensource.wolfsonmicro.com>
+References: <1343415776-27176-1-git-send-email-swarren@wwwdotorg.org>
+ <20120729203854.GF4384@opensource.wolfsonmicro.com>
+ <5016BEC4.5000600@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343145701-3691-13-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
+In-Reply-To: <5016BEC4.5000600@wwwdotorg.org>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, K. Y. Srinivasan wrote:
+On Mon, Jul 30, 2012 at 11:05:08AM -0600, Stephen Warren wrote:
+> On 07/29/2012 02:38 PM, Mark Brown wrote:
+> > On Fri, Jul 27, 2012 at 01:02:56PM -0600, Stephen Warren wrote:
 
-> +	/*
-> +	 * Set the configuration for the specified interface with
-> +	 * the information provided. Since there is no standard
-> +	 * way to configure an interface, we will have an external
-> +	 * script that does the job of configuring the interface and
-> +	 * flushing the configuration.
-> +	 *
-> +	 * The parameters passed to this external script are:
-> +	 * 1. A configuration file that has the specified configuration.
+> >> 1) regmap_add_irq_chips() calls regmap_add_irq_chip() with irq==0 rather
+> >>    than -1, so in turn irq_domain_add_linear() is called rather than
+> >>    irq_domain_add_legacy(). This change could be avoided by providing an
+> >>    irq_bases array to regmap_add_irq_chips().
 
-Maybe this should be written as 'A info file that has the requested
-network configuration' or something like that.
+> > This is a problem.
 
-> +	 *
-> +	 * We will embed the name of the interface in the configuration
-> +	 * file: ifcfg-ethx (where ethx is the interface name).
+> OK, can you explain why? Is the problem the difference between the two
+> types of IRQ domain? I would have assumed this was an internal detail of
+> the driver hence not an issue. I assume there's no issue with
+> known/static IRQ numbers, since both 0 and -1 end up dynamically
+> allocating the IRQ bases IIRC.
 
-I think the intention here is to use the generated file as is. Depending
-on the distro in the guest the file may need some processing. So I think
-the actual interface name should also be part of the file.
+We have GPIOs we might want to do interrupts on, if the API doesn't
+support providing a base we've got an issue.
 
-> +	 *
-> +	 * Here is the format of the ip configuration file:
-> +	 *
-> +	 * HWADDR=macaddr
-> +	 * BOOTPROTO=dhcp (dhcp enabled for the interface)
+> >> 2) regmap_add_irq_chips() requests the top-level interrupt itself, so this
+> >>    happens before the Arizona driver hooks the child BOOT_DONE and
+> >>    CTRLIF_ERR interrupts. In the original, all the IRQ chips were created
+> >>    first, and then the top-level IRQ was requested. This may cause a
+> >>    functional difference if those interrupts are pending at probe() time.
 
-While BOOTPROTO= is used in current network config files, its meaning
-there is unrelated to what its meant here. Here it means DHCP=yes/no, so
-I think the file should contain just that. And as the code is written
-now BOOTPROTO= is optional, which is not mentioned in the comment.
+> > Boot done is very likely to be asserted.
 
-> +	 * NM_CONTROLLED=no (this interface will not be controlled by NM)
+> Hmmm. Perhaps that means regmap_add_irq_chips() should be split into two
+> parts; one to create all the IRQ chips and hook everything together, and
+> the second to actually enable the interrupt.
 
-I think this is not up to kvp_deamon to decide what controls the
-interface. Maybe one day NM is sufficiently advanced technology that it
-can cope with such requests?
-The helper script should decide if the NM flag should be written to the
-final config file.
-
-> +	 * PEERDNS=yes
-> +	 * IPADDR_x=ipaddr
-> +	 * NETMASK_x=netmask
-> +	 * GATEWAY_x=gateway
-
-This should mention that its either IPADDR=ipaddr1 or 'IPADDR=ipaddr1;
-IPADDR_1=ipaddr2'
-
-> +	 * DNSx=dns
-
-This should mention that its either DNS=ipaddr1 or 'DNS=ipaddr1;
-DNS1=ipaddr2'
-
-Olaf
+That's what the existing arizona code does, it only requests the primary
+IRQ line once it's completed setup.
