@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab2G3HKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:10:08 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:34914 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab2G3HKG convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Mon, 30 Jul 2012 03:10:06 -0400
-Message-Id: <50164F68020000780009132F@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 30 Jul 2012 08:10:00 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad@darnok.org>
-Cc: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        "xen-devel" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 5/7] xen/p2m: Add logic to revector a
- P2M tree to use __va leafs.
-References: <1343335652-5659-1-git-send-email-konrad.wilk@oracle.com>
- <1343335652-5659-6-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1207271215540.26163@kaball.uk.xensource.com>
- <50129C030200007800090F9B@nat28.tlf.novell.com>
- <20120727173459.GB17427@andromeda.dapyr.net>
-In-Reply-To: <20120727173459.GB17427@andromeda.dapyr.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754086Ab2G3HKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:10:30 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:50805 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981Ab2G3HK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 03:10:27 -0400
+Date: Mon, 30 Jul 2012 09:10:23 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [Bisected] commit 71574865 (vfs: do_last(): common slow lookup)
+ breaks CUPS printing
+Message-ID: <20120730071023.GA273@x4>
+References: <20120728104316.GA248@x4>
+ <20120730065046.GC6481@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120730065046.GC6481@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.07.12 at 19:34, Konrad Rzeszutek Wilk <konrad@darnok.org> wrote:
-> On Fri, Jul 27, 2012 at 12:47:47PM +0100, Jan Beulich wrote:
->> >>> On 27.07.12 at 13:18, Stefano Stabellini <stefano.stabellini@eu.citrix.com> 
-> wrote:
->> > On Thu, 26 Jul 2012, Konrad Rzeszutek Wilk wrote:
->> >>  1) All P2M lookups instead of using the __ka address would
->> >>     use the __va address. This means we can safely erase from
->> >>     __ka space the PMD pointers that point to the PFNs for
->> >>     P2M array and be OK.
->> >>  2). Allocate a new array, copy the existing P2M into it,
->> >>     revector the P2M tree to use that, and return the old
->> >>     P2M to the memory allocate. This has the advantage that
->> >>     it sets the stage for using XEN_ELF_NOTE_INIT_P2M
->> >>     feature. That feature allows us to set the exact virtual
->> >>     address space we want for the P2M - and allows us to
->> >>     boot as initial domain on large machines.
->> >> 
->> >> So we pick option 2).
->> > 
->> > 1) looks like a decent option that requires less code.
->> > Is the problem with 1) that we might want to access the P2M before we
->> > have __va addresses ready?
->> 
->> AIUI 1) has no easy way of subsequently accommodating support
->> for XEN_ELF_NOTE_INIT_P2M (where you almost definitely will
->> want/need to reclaim the originally used VA space - if nothing else,
->> then for forward compatibility with the rest of the kernel).
+On 2012.07.30 at 07:50 +0100, Al Viro wrote:
+> On Sat, Jul 28, 2012 at 12:43:16PM +0200, Markus Trippelsdorf wrote:
+> > Printing with CUPS is broken on the current git tree. Whenever I print a page
+> > the job just sits in the CUPS queue showing "processing". But it never reaches
+> > the printer.  (My CUPS version is 1.5.2. Filesystem is xfs.)
+> > 
+> > I've bisected this issue to:
+> > 
+> > commit 7157486541bffc0dfec912e21ae639b029dae3d3
+> > Author: Miklos Szeredi <mszeredi@suse.cz>
+> > Date:   Tue Jun 5 15:10:14 2012 +0200
+> > 
+> >     vfs: do_last(): common slow lookup
+> >     
+> >     Make the slow lookup part of O_CREAT and non-O_CREAT opens common.
+> >     
+> >     This allows atomic_open to be hooked into the slow lookup part.
+> >     
+> >     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> >     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 > 
-> <nods> That was my thinking - this way we can boot dom0 (since
-> the hypervisor is the only one that implements the
-> XEN_ELF_NOTE_INIT_P2M) with large amount of memory. Granted booting
-> with more than 500GB would require adding another layer to the P2M
-> tree. But somehow I thought that we are limited in the hypervisor
-> to 500GB?
+> Hmm...  Looking at that commit, we seem to have one change introduced by it.  Namely,
+> behaviour of open(path, O_EXCL) (note that O_EXCL without O_CREAT is an undefined
+> by POSIX and makes no damn sense anyway).
+> 
+> Could you try the patch below, just to make sure that I'm not misreading the
+> situation?  If that's really happening that way, it should spew a warning,
+> restore the old behaviour by removing that stray O_EXCL and, if it comes
+> from open(2)/openat(2), print the syscall arguments.
+> 
+> We'll need to restore the original behaviour anyway, undefined or no undefined,
+> but if we really catch CUPS doing that, we ought to report that as a bug to
+> whatever bugtracking system CUPS uses; at the very least, it's a portability
+> headache waiting to happen.
 
-The only limitation is that kexec (with the current specification)
-would not work beyond 512Gb, but that's a non-issue for
-upstream since kexec doesn't work there yet anyway. Our
-kernels come up fine even on 5Tb now (which is the current
-limit in the hypervisor).
+Looks like you're right. The first warning happens during startup. The last one
+when I print a test page (which now succeeds).  
+Thanks Al.
 
-Jan
+------------[ cut here ]------------
+WARNING: at fs/open.c:899 do_sys_open+0x1e5/0x220()
+Hardware name: System Product Name
+Pid: 207, comm: X Not tainted 3.5.0-07078-gf7da9cd-dirty #199
+Call Trace:
+ [<ffffffff810555a4>] ? warn_slowpath_common+0x74/0xb0
+ [<ffffffff810dd405>] ? do_sys_open+0x1e5/0x220
+ [<ffffffff814a64a2>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 9a333bfb6a9cbe80 ]---
+------------[ cut here ]------------
+WARNING: at fs/open.c:899 do_sys_open+0x1e5/0x220()
+Hardware name: System Product Name
+Pid: 384, comm: usb Tainted: G        W    3.5.0-07078-gf7da9cd-dirty #199
+Call Trace:
+WTF: open("/dev/input/mice", 34946)
+ [<ffffffff810555a4>] ? warn_slowpath_common+0x74/0xb0
+ [<ffffffff810dd405>] ? do_sys_open+0x1e5/0x220
+ [<ffffffff814a64a2>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 9a333bfb6a9cbe81 ]---
+WTF: open("/dev/usblp0", 32898)
+------------[ cut here ]------------
+WARNING: at fs/open.c:899 do_sys_open+0x1e5/0x220()
+Hardware name: System Product Name
+Pid: 384, comm: usb Tainted: G        W    3.5.0-07078-gf7da9cd-dirty #199
+Call Trace:
+ [<ffffffff810555a4>] ? warn_slowpath_common+0x74/0xb0
+ [<ffffffff810dd405>] ? do_sys_open+0x1e5/0x220
+ [<ffffffff814a64a2>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 9a333bfb6a9cbe82 ]---
+------------[ cut here ]------------
+WARNING: at fs/open.c:899 do_sys_open+0x1e5/0x220()
+Hardware name: System Product Name
+Pid: 87, comm: cupsd Tainted: G        W    3.5.0-07078-gf7da9cd-dirty #199
+Call Trace:
+WTF: open("/dev/usb/lp0", 32898)
+ [<ffffffff810555a4>] ? warn_slowpath_common+0x74/0xb0
+ [<ffffffff810dd405>] ? do_sys_open+0x1e5/0x220
+ [<ffffffff814a64a2>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 9a333bfb6a9cbe83 ]---
 
+
+-- 
+Markus
