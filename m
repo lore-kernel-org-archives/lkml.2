@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab2G3VVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 17:21:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52793 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537Ab2G3VVi (ORCPT
+	id S1754826Ab2G3VaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 17:30:12 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:47444 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526Ab2G3VaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 17:21:38 -0400
-Message-ID: <5016FADD.1030503@canonical.com>
-Date: Mon, 30 Jul 2012 14:21:33 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120724 Thunderbird/15.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Yama: access current->comm directly
-References: <20120730165848.GA28288@www.outflux.net>
-In-Reply-To: <20120730165848.GA28288@www.outflux.net>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jul 2012 17:30:06 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6788"; a="213757031"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH] ARM: Sort exception table at compile time
+Date: Mon, 30 Jul 2012 14:30:03 -0700
+Message-Id: <1343683803-15507-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.12.rc0.56.g425b8a2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 09:58 AM, Kees Cook wrote:
-> The core ptrace access checking routine already holds the task lock,
-> so there is no need to use get_task_comm() which just tries to take the
-> lock again. Drop its use and access current->comm directly.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Suggested-by: Oleg Nesterov <oleg@redhat.com>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-yep, looks good
+Add the ARM machine identifier to sortextable and select the
+config option so that we can sort the exception table at compile
+time. sortextable relies on a section named __ex_table existing
+in the vmlinux, but ARM's linker script places the exception
+table in the data section. Give the exception table its own
+section so that sortextable can find it.
 
-Acked-by: John Johansen <john.johansen@canonical.com>
+This allows us to skip the runtime sorting step during boot.
 
-> ---
->  security/yama/yama_lsm.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-> index 83554ee..20a68ca 100644
-> --- a/security/yama/yama_lsm.c
-> +++ b/security/yama/yama_lsm.c
-> @@ -279,12 +279,10 @@ static int yama_ptrace_access_check(struct task_struct *child,
->  	}
->  
->  	if (rc) {
-> -		char name[sizeof(current->comm)];
-> +		/* task_lock is held by the caller, so use comm directly. */
->  		printk_ratelimited(KERN_NOTICE
->  			"ptrace of pid %d was attempted by: %s (pid %d)\n",
-> -			child->pid,
-> -			get_task_comm(name, current),
-> -			current->pid);
-> +			child->pid, current->comm, current->pid);
->  	}
->  
->  	return rc;
-> 
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Daney <david.daney@cavium.com>
+---
+
+I can't find any information on why the exception table lives in the data
+section. If there's a good reason for that, I'll look into changing
+sortextable to look for the __start___ex_table symbol.
+
+ arch/arm/Kconfig              |  1 +
+ arch/arm/kernel/vmlinux.lds.S | 19 +++++++++----------
+ scripts/sortextable.c         |  1 +
+ 3 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index b25c9d3..2af95e6 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1,6 +1,7 @@
+ config ARM
+ 	bool
+ 	default y
++	select BUILDTIME_EXTABLE_SORT if MMU
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+ 	select HAVE_AOUT
+ 	select HAVE_DMA_API_DEBUG
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index 36ff15b..0e3e8b4 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -220,16 +220,6 @@ SECTIONS
+ 		READ_MOSTLY_DATA(L1_CACHE_BYTES)
+ 
+ 		/*
+-		 * The exception fixup table (might need resorting at runtime)
+-		 */
+-		. = ALIGN(4);
+-		__start___ex_table = .;
+-#ifdef CONFIG_MMU
+-		*(__ex_table)
+-#endif
+-		__stop___ex_table = .;
+-
+-		/*
+ 		 * and the usual data section
+ 		 */
+ 		DATA_DATA
+@@ -239,6 +229,15 @@ SECTIONS
+ 	}
+ 	_edata_loc = __data_loc + SIZEOF(.data);
+ 
++	. = ALIGN(4);
++	__ex_table : AT(ADDR(__ex_table) - LOAD_OFFSET) {
++		__start___ex_table = .;
++#ifdef CONFIG_MMU
++		*(__ex_table)
++#endif
++		__stop___ex_table = .;
++	}
++
+ #ifdef CONFIG_HAVE_TCM
+         /*
+ 	 * We align everything to a page boundary so we can
+diff --git a/scripts/sortextable.c b/scripts/sortextable.c
+index 1ca9ceb..591acb3 100644
+--- a/scripts/sortextable.c
++++ b/scripts/sortextable.c
+@@ -248,6 +248,7 @@ do_file(char const *const fname)
+ 		custom_sort = sort_x86_table;
+ 		break;
+ 	case EM_MIPS:
++	case EM_ARM:
+ 		break;
+ 	}  /* end switch */
+ 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
