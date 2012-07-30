@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab2G3JGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 05:06:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56603 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233Ab2G3JGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 05:06:50 -0400
-Date: Mon, 30 Jul 2012 10:06:45 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [ 13/40] vmscan: shrinker->nr updates race and go wrong
-Message-ID: <20120730090645.GI612@suse.de>
-References: <20120726211424.GA7709@kroah.com>
- <20120726211411.164006056@linuxfoundation.org>
- <20120726211412.284677137@linuxfoundation.org>
- <1343593770.4642.11.camel@deadeye.wl.decadent.org.uk>
+	id S1752440Ab2G3JKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 05:10:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36898 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab2G3JK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 05:10:27 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: [PATCH v6 04/11] arm: omap: hwmod: add a new addr space in otg for writing to control module
+Date: Mon, 30 Jul 2012 14:39:53 +0530
+Message-ID: <1343639400-28725-5-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1343639400-28725-1-git-send-email-kishon@ti.com>
+References: <1343639400-28725-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1343593770.4642.11.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 29, 2012 at 09:29:30PM +0100, Ben Hutchings wrote:
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -251,17 +251,29 @@ unsigned long shrink_slab(struct shrink_
-> >  		unsigned long total_scan;
-> [...]
-> > +		total_scan += delta;
-> > +		if (total_scan < 0) {
-> [...]
-> 
-> This condition is never true since total_scan is unsigned.
-> I think 3.0.y needs this as well:
-> 
-> commit 635697c663f38106063d5659f0cf2e45afcd4bb5
-> Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Date:   Thu Dec 8 14:33:51 2011 -0800
-> 
->     vmscan: fix initial shrinker size handling
-> 
+The mailbox register for usb otg in omap is present in control module.
+On detection of any events VBUS or ID, this register should be written
+to send the notification to musb core.
 
-You're right, thanks for pointing it out as I missed it. Greg, this commit
-is already in 3.2 but can you pick it up for 3.0-stable please?
+Till we have a separate control module driver to write to control module,
+omap2430 will handle the register writes to control module by itself. So
+a new address space to represent this control module register is added
+to usb_otg_hs.
 
----8<---
-vmscan: fix initial shrinker size handling
-
-commit 635697c663f38106063d5659f0cf2e45afcd4bb5 upstream.
-
-Stable note: The commit [acf92b48: vmscan: shrinker->nr updates race and
-	go wrong] aimed to reduce excessive reclaim of slab objects but
-	had bug in how it treated shrinker functions that returned -1.
-
-A shrinker function can return -1, means that it cannot do anything
-without a risk of deadlock.  For example prune_super() does this if it
-cannot grab a superblock refrence, even if nr_to_scan=0.  Currently we
-interpret this -1 as a ULONG_MAX size shrinker and evaluate `total_scan'
-according to this.  So the next time around this shrinker can cause
-really big pressure.  Let's skip such shrinkers instead.
-
-Also make total_scan signed, otherwise the check (total_scan < 0) below
-never works.
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- mm/vmscan.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index e0afff3..bd8a540 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -248,12 +248,16 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index 249ff76..775e185 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -5934,6 +5934,11 @@ static struct omap_hwmod_addr_space omap44xx_wd_timer2_addrs[] = {
+ 		.pa_end		= 0x4a31407f,
+ 		.flags		= ADDR_TYPE_RT
+ 	},
++	{
++		.pa_start	= 0x4a00233c,
++		.pa_end		= 0x4a00233f,
++		.flags		= ADDR_TYPE_RT
++	},
+ 	{ }
+ };
  
- 	list_for_each_entry(shrinker, &shrinker_list, list) {
- 		unsigned long long delta;
--		unsigned long total_scan;
--		unsigned long max_pass;
-+		long total_scan;
-+		long max_pass;
- 		int shrink_ret = 0;
- 		long nr;
- 		long new_nr;
- 
-+		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
-+		if (max_pass <= 0)
-+			continue;
-+
- 		/*
- 		 * copy the current shrinker scan count into a local variable
- 		 * and zero it so that other concurrent shrinker invocations
-@@ -264,7 +268,6 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
- 
- 		total_scan = nr;
--		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
- 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
- 		delta *= max_pass;
- 		do_div(delta, lru_pages + 1);
+-- 
+1.7.9.5
+
