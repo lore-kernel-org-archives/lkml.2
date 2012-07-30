@@ -1,111 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab2G3R0h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:26:37 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38092 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab2G3R0f (ORCPT
+	id S1754303Ab2G3Rbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:31:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36077 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab2G3Rbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:26:35 -0400
-Message-ID: <5016C3C7.7090207@gmail.com>
-Date: Mon, 30 Jul 2012 19:26:31 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Daniel Mack <zonque@gmail.com>
-CC: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>,
-        Ville Syrjala <syrjala@sci.fi>
-Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in platform
- data
-References: <1343249670-14985-1-git-send-email-zonque@gmail.com>
-In-Reply-To: <1343249670-14985-1-git-send-email-zonque@gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jul 2012 13:31:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [ 00/41] 3.0.39-rc2 stable review
+Date: Mon, 30 Jul 2012 10:30:59 -0700
+Message-Id: <20120730172901.306897424@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+User-Agent: quilt/0.60-20.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-On 25.07.2012 22:54, Daniel Mack wrote:
-> In the process of porting boards to devicetree implemenation, we should
-> keep information about external circuitry where they belong - the
-> individual drivers.
-> 
-> This patch adds a way to specify a GPIO to drive the (optional) external
-> pull-up logic, rather than using a function pointer for that.
-> 
-> Signed-off-by: Daniel Mack <zonque@gmail.com>
-> Cc: Evgeniy Polyakov <zbr@ioremap.net>
-> Cc: Ville Syrjala <syrjala@sci.fi>
-> ---
->  drivers/w1/masters/w1-gpio.c |   18 +++++++++++++++++-
->  include/linux/w1-gpio.h      |    1 +
->  2 files changed, 18 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-> index df600d1..dac88ff 100644
-> --- a/drivers/w1/masters/w1-gpio.c
-> +++ b/drivers/w1/masters/w1-gpio.c
-> @@ -59,6 +59,13 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
->  	if (err)
->  		goto free_master;
->  
-> +	if (gpio_is_valid(pdata->ext_pullup_enable_pin)) {
-> +		err = gpio_request_one(pdata->ext_pullup_enable_pin,
-> +				       GPIOF_INIT_LOW, "w1 pullup");
-> +		if (err < 0)
-> +			goto free_gpio;
-> +	}
-> +
->  	master->data = pdata;
->  	master->read_bit = w1_gpio_read_bit;
->  
-> @@ -72,15 +79,21 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
->  
->  	err = w1_add_master_device(master);
->  	if (err)
-> -		goto free_gpio;
-> +		goto free_gpio_ext_pu;
->  
->  	if (pdata->enable_external_pullup)
->  		pdata->enable_external_pullup(1);
->  
-> +	if (gpio_is_valid(pdata->ext_pullup_enable_pin))
-> +		gpio_set_value(pdata->ext_pullup_enable_pin, 1);
-> +
->  	platform_set_drvdata(pdev, master);
->  
->  	return 0;
->  
-> + free_gpio_ext_pu:
-> +	if (gpio_is_valid(pdata->ext_pullup_enable_pin))
-> +		gpio_free(pdata->ext_pullup_enable_pin);
->   free_gpio:
->  	gpio_free(pdata->pin);
->   free_master:
-> @@ -97,6 +110,9 @@ static int __exit w1_gpio_remove(struct platform_device *pdev)
->  	if (pdata->enable_external_pullup)
->  		pdata->enable_external_pullup(0);
->  
-> +	if (gpio_is_valid(pdata->ext_pullup_enable_pin))
-> +		gpio_set_value(pdata->ext_pullup_enable_pin, 0);
-> +
->  	w1_remove_master_device(master);
->  	gpio_free(pdata->pin);
->  	kfree(master);
-> diff --git a/include/linux/w1-gpio.h b/include/linux/w1-gpio.h
-> index 3adeff8..065e3ae 100644
-> --- a/include/linux/w1-gpio.h
-> +++ b/include/linux/w1-gpio.h
-> @@ -19,6 +19,7 @@ struct w1_gpio_platform_data {
->  	unsigned int pin;
->  	unsigned int is_open_drain:1;
->  	void (*enable_external_pullup)(int enable);
-> +	unsigned int ext_pullup_enable_pin;
->  };
->  
->  #endif /* _LINUX_W1_GPIO_H */
-> 
+3.0.39-rc1 had a few problems, so I figured we should do a -rc2 just to
+ensure that it's all working properly.  Here it is, please test.
+
+There are 41 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
+
+Responses should be made by Wed Aug  1 17:29:00 UTC 2012.
+Anything received after that time might be too late.
+
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.39-rc2.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+ .../trace/postprocess/trace-vmscan-postprocess.pl  |    8 +-
+ Makefile                                           |    4 +-
+ arch/mips/include/asm/thread_info.h                |    4 +-
+ arch/mips/kernel/vmlinux.lds.S                     |    3 +-
+ drivers/base/memory.c                              |   58 ++--
+ drivers/md/dm-raid1.c                              |    2 +-
+ drivers/md/dm-region-hash.c                        |    5 +-
+ fs/btrfs/disk-io.c                                 |    5 +-
+ fs/cifs/readdir.c                                  |    7 +-
+ fs/hugetlbfs/inode.c                               |    3 +-
+ fs/nfs/internal.h                                  |    2 +-
+ fs/nfs/write.c                                     |    4 +-
+ fs/ubifs/sb.c                                      |    8 +-
+ include/linux/cpuset.h                             |   47 ++--
+ include/linux/fs.h                                 |   11 +-
+ include/linux/init_task.h                          |    8 +
+ include/linux/memcontrol.h                         |    3 +-
+ include/linux/migrate.h                            |   23 +-
+ include/linux/mmzone.h                             |   14 +
+ include/linux/sched.h                              |    2 +-
+ include/linux/swap.h                               |    7 +-
+ include/trace/events/vmscan.h                      |   85 +++++-
+ kernel/cpuset.c                                    |   63 ++---
+ kernel/fork.c                                      |    3 +
+ kernel/time/ntp.c                                  |    8 +-
+ mm/compaction.c                                    |   26 +-
+ mm/filemap.c                                       |   11 +-
+ mm/hugetlb.c                                       |   13 +-
+ mm/memcontrol.c                                    |    3 +-
+ mm/memory-failure.c                                |    2 +-
+ mm/memory_hotplug.c                                |    2 +-
+ mm/mempolicy.c                                     |   30 +-
+ mm/migrate.c                                       |  240 ++++++++++------
+ mm/page_alloc.c                                    |  118 +++++---
+ mm/slab.c                                          |   13 +-
+ mm/slub.c                                          |   40 ++-
+ mm/vmscan.c                                        |  296 ++++++++++++++++----
+ mm/vmstat.c                                        |    2 +-
+ 38 files changed, 827 insertions(+), 356 deletions(-)
+
 
