@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2G3Bws (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 21:52:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65153 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861Ab2G3Bwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 21:52:45 -0400
-X-IronPort-AV: E=Sophos;i="4.77,676,1336320000"; 
-   d="scan'208";a="5504765"
-Message-ID: <5015EA0D.9050501@cn.fujitsu.com>
-Date: Mon, 30 Jul 2012 09:57:33 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [RFC PATCH v5 05/19] memory-hotplug: check whether memory is
- present or not
-References: <50126B83.3050201@cn.fujitsu.com>	<50126D44.7070608@cn.fujitsu.com> <CA+8MBbL+G=xqkWU4xGF3_Ra7KoeoHuzL6QYcRiKqtVZoOBfLdQ@mail.gmail.com>
-In-Reply-To: <CA+8MBbL+G=xqkWU4xGF3_Ra7KoeoHuzL6QYcRiKqtVZoOBfLdQ@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/30 09:53:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/30 09:53:19,
-	Serialize complete at 2012/07/30 09:53:19
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753983Ab2G3B4u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 21:56:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37561 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753932Ab2G3B4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 21:56:48 -0400
+Message-ID: <1343613397.4642.63.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH for stable] cx25821: Remove bad strcpy to read-only char*
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: gregkh <gregkh@linuxfoundation.org>, stable <stable@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 30 Jul 2012 02:56:37 +0100
+In-Reply-To: <CALF0-+Unvjo_SZom-x2b7X0kLg90GHeiQhXpQPh58fA=Dj5gpQ@mail.gmail.com>
+References: <CALF0-+UJamw8fiB-rcX0WdYRAFnAdYxPoPQtMzG=5E2T8wz2yw@mail.gmail.com>
+	 <CALF0-+Uk-5hKMnwi4FO5CBSgH6+QNsz1n8faN5rQxXvgSWVGNg@mail.gmail.com>
+	 <CALF0-+Unvjo_SZom-x2b7X0kLg90GHeiQhXpQPh58fA=Dj5gpQ@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ayX3cGZkrNfmXkqZb/WA"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/28/2012 04:17 AM, Tony Luck Wrote:
-> On Fri, Jul 27, 2012 at 3:28 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
->> +static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
->> +{
->> +       int i;
->> +       for (i = 0; i < nr_pages; i++) {
->> +               if (pfn_present(pfn + 1))
-> 
-> Typo? I think you meant "pfn + i"
 
-Typo error.
+--=-ayX3cGZkrNfmXkqZb/WA
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for pointing it out.
-Wen Congyang
+On Tue, 2012-07-24 at 13:59 -0300, Ezequiel Garcia wrote:
+> Hi Greg,
+>=20
+> This patch is already in Linus' tree and I really think it should go into=
+ stable
+> as well. You will find this bug in every kernel from the moment cx25821 w=
+ent
+> out of staging.
+>=20
+> I just read Documentation/stable_kernel_rules.txt, so I guess it was enou=
+gh
+> to add a tag "Cc: stable@vger.kernel.org" in the patch (right?).
+> Now I know it :-)
+>=20
+> If I'm doing anything wrong, just yell at me.
+[...]
 
-> 
->> +                       continue;
->> +               else
->> +                       return -EINVAL;
->> +       }
->> +       return 0;
->> +}
-> 
-> -Tony
-> 
+An upstream commit hash would have helped, but I found it anyway.
+Queued up for 3.2.y.
 
+Ben.
+
+--=20
+Ben Hutchings
+It is impossible to make anything foolproof because fools are so ingenious.
+
+--=-ayX3cGZkrNfmXkqZb/WA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUBXp1ee/yOyVhhEJAQqj6Q/9Gqje+4j7+SWS3dMqeIpSoADIQ5zI2ZM9
+saJcXeytSu+GyX66zDKesmT6Td6IHFukYCfFX5Q6EKoTEArnIlppy9iRuqF5w0oi
+2Uh4OWmi9U9yJjlA5CJbO6lTSMxte8fusaYR+RO4L2JcUG4s+9gttHD6jqg45sG7
+vAZoYQmGH03kw6ojn64B8QxgAsQFXtObnzSBRsRPztzjXw46euEHPXodDcDQ7v6t
+qgk5yZRvxWfqNk229yIIrisxdNt7tZSr29Ayc3WCUtPc3oDOUuphzHkVxvdPsxmz
+VKAe7CLRHCcCJmgKf6cloWDOQ06+XjD1ljmwklqWqnsmg86xzMlUgVs2E4KqLatS
+sQIWxxaTNb7G6ETgZ5tFYCzQ1wvb6i5Y4SZ5g0ObA1j3sK48uwA6RtmJSlgI1z1W
+rrUA5W/D+Dtqwg29DHJU2TevRiYlAKQCYEqJOGZomuTnmp9I6+g8R9m7kM4lUiuX
+oZhOVYqsL7d2MJ9kSXWZWR4dbJNQRBhPtVSgwrK974z15YFDQ7qWNQXluELMyCAx
+qWugXD/cUQppqG40dAteiURsymHXXPPdfvOWstyNMAEFhXry7OB0PaGRkIhQaWl7
+5heO/6haAnW+vN92A/0oEF/lRp0OUA9mrXBnMaIhnvaNRS/hR2TQUJXFtpbEmhxy
+INEMUtJ7scc=
+=oJmJ
+-----END PGP SIGNATURE-----
+
+--=-ayX3cGZkrNfmXkqZb/WA--
