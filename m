@@ -1,85 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab2G3TR0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:17:26 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:50548 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab2G3TRY convert rfc822-to-8bit (ORCPT
+	id S1754666Ab2G3TTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:19:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34522 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238Ab2G3TTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:17:24 -0400
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 15:17:24 EDT
-Date: Mon, 30 Jul 2012 21:09:49 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] fbcon: Fix bit_putcs() call to kmalloc(s, GFP_KERNEL)
-Message-ID: <20120730210949.5ccc5164@neptune.home>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Jul 2012 15:19:07 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: linux-can@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH can-next v3 1/2] can: add tx/rx LED trigger support
+Date: Mon, 30 Jul 2012 21:20:40 +0200
+Message-Id: <1343676041-29572-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.10.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to kmalloc(,GFP_ATOMIC) in bit_putcs to fix below trace:
+This patch implements the functions to add two LED triggers, named
+<ifname>-tx and <ifname>-rx, to a canbus device driver.
 
-[    9.771812] BUG: sleeping function called from invalid context at /usr/src/linux-git/mm/slub.c:943
-[    9.771814] in_atomic(): 1, irqs_disabled(): 1, pid: 1063, name: mount
-[    9.771818] Pid: 1063, comm: mount Not tainted 3.5.0-jupiter-00003-g8d858b1-dirty #2
-[    9.771819] Call Trace:
-[    9.771838]  [<c104f79b>] __might_sleep+0xcb/0xe0
-[    9.771844]  [<c10c00d4>] __kmalloc+0xb4/0x1c0
-[    9.771851]  [<c1041d4a>] ? queue_work+0x1a/0x30
-[    9.771854]  [<c1041dcf>] ? queue_delayed_work+0xf/0x30
-[    9.771862]  [<c1205832>] ? bit_putcs+0xf2/0x3e0
-[    9.771865]  [<c1041e01>] ? schedule_delayed_work+0x11/0x20
-[    9.771868]  [<c1205832>] bit_putcs+0xf2/0x3e0
-[    9.771875]  [<c12002b8>] ? get_color.clone.14+0x28/0x100
-[    9.771878]  [<c1200d2f>] fbcon_putcs+0x11f/0x130
-[    9.771882]  [<c1205740>] ? bit_clear+0xe0/0xe0
-[    9.771885]  [<c1200f6d>] fbcon_redraw.clone.21+0x11d/0x160
-[    9.771889]  [<c120383d>] fbcon_scroll+0x79d/0xe10
-[    9.771892]  [<c12002b8>] ? get_color.clone.14+0x28/0x100
-[    9.771897]  [<c124c0b4>] scrup+0x64/0xd0
-[    9.771900]  [<c124c22b>] lf+0x2b/0x60
-[    9.771903]  [<c124cc95>] vt_console_print+0x1d5/0x2f0
-[    9.771907]  [<c124cac0>] ? register_vt_notifier+0x20/0x20
-[    9.771913]  [<c102b335>] call_console_drivers.clone.5+0xa5/0xc0
-[    9.771916]  [<c102c58e>] console_unlock+0x2fe/0x3c0
-[    9.771920]  [<c102ca16>] vprintk_emit+0x2e6/0x300
-[    9.771924]  [<c13f01ae>] printk+0x38/0x3a
-[    9.771931]  [<c112e8fe>] reiserfs_remount+0x2ae/0x3e0
-[    9.771934]  [<c112e650>] ? reiserfs_fill_super+0xb00/0xb00
-[    9.771939]  [<c10ca0ab>] do_remount_sb+0xab/0x150
-[    9.771943]  [<c1034476>] ? ns_capable+0x46/0x70
-[    9.771948]  [<c10e059c>] do_mount+0x20c/0x6b0
-[    9.771955]  [<c10a7044>] ? strndup_user+0x34/0x50
-[    9.771958]  [<c10e0acc>] sys_mount+0x6c/0xa0
-[    9.771964]  [<c13f2557>] sysenter_do_call+0x12/0x26
+Triggers are called from specific handlers by each CAN device driver and
+can be disabled altogether with a Kconfig option.
 
-According to comment in bit_putcs() that kammloc() call only happens
-when fbcon is drawing to a monochrome framebuffer (which is my case with
-hid-picolcd).
+The implementation keeps the LED on when the interface is UP and blinks
+the LED on network activity at a configurable rate.
 
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+This only supports can-dev based drivers, as it uses some support field
+in the can_priv structure.
+
+Supported drivers should call can_led_init(), can_led_exit() and
+can_led_event() as needed.
+
+Supported events are:
+- CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
+- CAN_LED_EVENT_STOP: turn off tx/rx LEDs
+- CAN_LED_EVENT_TX: trigger tx LED blink
+- CAN_LED_EVENT_RX: trigger tx LED blink
+
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
 ---
- drivers/video/console/bitblit.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
-index 28b1a83..61b182b 100644
---- a/drivers/video/console/bitblit.c
-+++ b/drivers/video/console/bitblit.c
-@@ -162,7 +162,7 @@ static void bit_putcs(struct vc_data *vc, struct fb_info *info,
- 	image.depth = 1;
+Hi all!
+
+This is the v3 of my CAN LED trigger patch.  It's a major refactoring of the v2
+that was discussed about three months ago concluding with the idea that
+implementing the oneshot triggering code in the LED framework would be a better
+solution.
+
+This is the old thread for reference:
+http://marc.info/?l=linux-can&m=133521499002898&w=2
+
+So, generic oneshot trigger code is now merged in mainline (see 5bb629c), and
+these are the changes in the v3:
+
+- use the new led_trigger_blink_oneshot() function for LED triggering
+- use kasprintf() and led_trigger_{un}register_simple for LED allocation
+- add some usage note in the comments
+
+The resulting code is quite simple now and - I think - a bit less intrusive.
+Still, I hope on some feedback from the community as I don't have that much
+hardware to test it - this version has been tested mainly on an x86 with a
+custom usb-can interface.
+
+In 2/2 there is a sample implementation for the flexcan driver, which is
+basically unchanged from the old version.
+
+Any comments?
+Fabio
+
+ drivers/net/can/Kconfig  | 12 ++++++
+ drivers/net/can/Makefile |  2 +
+ drivers/net/can/led.c    | 99 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/can/dev.h  |  8 ++++
+ include/linux/can/led.h  | 38 +++++++++++++++++++
+ 5 files changed, 159 insertions(+)
+ create mode 100644 drivers/net/can/led.c
+ create mode 100644 include/linux/can/led.h
+
+diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+index bb709fd..19dec19 100644
+--- a/drivers/net/can/Kconfig
++++ b/drivers/net/can/Kconfig
+@@ -54,6 +54,18 @@ config CAN_CALC_BITTIMING
+ 	  arguments "tq", "prop_seg", "phase_seg1", "phase_seg2" and "sjw".
+ 	  If unsure, say Y.
  
- 	if (attribute) {
--		buf = kmalloc(cellsize, GFP_KERNEL);
-+		buf = kmalloc(cellsize, GFP_ATOMIC);
- 		if (!buf)
- 			return;
- 	}
++config CAN_LEDS
++	bool "Enable LED triggers for Netlink based drivers"
++	depends on CAN_DEV
++	depends on LEDS_CLASS
++	select LEDS_TRIGGERS
++	---help---
++	  This option adds two LED triggers for packet receive and transmit
++	  events on each supported CAN device.
++
++	  Say Y here if you are working on a system with led-class supported
++	  LEDs and you want to use them as canbus activity indicators.
++
+ config CAN_AT91
+ 	tristate "Atmel AT91 onchip CAN controller"
+ 	depends on CAN_DEV && (ARCH_AT91SAM9263 || ARCH_AT91SAM9X5)
+diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
+index 938be37..24ee98b 100644
+--- a/drivers/net/can/Makefile
++++ b/drivers/net/can/Makefile
+@@ -8,6 +8,8 @@ obj-$(CONFIG_CAN_SLCAN)		+= slcan.o
+ obj-$(CONFIG_CAN_DEV)		+= can-dev.o
+ can-dev-y			:= dev.o
+ 
++can-dev-$(CONFIG_CAN_LEDS)	+= led.o
++
+ obj-y				+= usb/
+ obj-y				+= softing/
+ 
+diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
+new file mode 100644
+index 0000000..68c4f30
+--- /dev/null
++++ b/drivers/net/can/led.c
+@@ -0,0 +1,99 @@
++/*
++ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/netdevice.h>
++#include <linux/can/dev.h>
++
++#include <linux/can/led.h>
++
++static unsigned long led_delay = 50;
++module_param(led_delay, ulong, 0644);
++MODULE_PARM_DESC(led_delay,
++		"blink delay time for activity leds (msecs, default: 50).");
++
++/*
++ * Trigger a LED event in response to a CAN device event
++ */
++void can_led_event(struct net_device *netdev, enum can_led_event event)
++{
++	struct can_priv *priv = netdev_priv(netdev);
++
++	switch (event) {
++	case CAN_LED_EVENT_OPEN:
++		led_trigger_event(priv->tx_led_trig, LED_FULL);
++		led_trigger_event(priv->rx_led_trig, LED_FULL);
++		break;
++	case CAN_LED_EVENT_STOP:
++		led_trigger_event(priv->tx_led_trig, LED_OFF);
++		led_trigger_event(priv->rx_led_trig, LED_OFF);
++		break;
++	case CAN_LED_EVENT_TX:
++		if (led_delay)
++			led_trigger_blink_oneshot(priv->tx_led_trig,
++						  &led_delay, &led_delay, 1);
++		break;
++	case CAN_LED_EVENT_RX:
++		if (led_delay)
++			led_trigger_blink_oneshot(priv->rx_led_trig,
++						  &led_delay, &led_delay, 1);
++		break;
++	}
++}
++EXPORT_SYMBOL_GPL(can_led_event);
++
++/*
++ * Register CAN LED triggers for a CAN device
++ *
++ * This is normally called from a driver's probe function
++ */
++void can_led_init(struct net_device *netdev)
++{
++	struct can_priv *priv = netdev_priv(netdev);
++
++	priv->tx_led_trig_name = kasprintf(GFP_KERNEL, "%s-tx", netdev->name);
++	if (!priv->tx_led_trig_name)
++		goto tx_led_failed;
++
++	priv->rx_led_trig_name = kasprintf(GFP_KERNEL, "%s-rx", netdev->name);
++	if (!priv->rx_led_trig_name)
++		goto rx_led_failed;
++
++	led_trigger_register_simple(priv->tx_led_trig_name,
++				    &priv->tx_led_trig);
++	led_trigger_register_simple(priv->rx_led_trig_name,
++				    &priv->rx_led_trig);
++
++	return;
++
++rx_led_failed:
++	kfree(priv->tx_led_trig_name);
++	priv->tx_led_trig_name = NULL;
++tx_led_failed:
++	return;
++}
++EXPORT_SYMBOL_GPL(can_led_init);
++
++/*
++ * Unregister CAN LED triggers for a CAN device
++ *
++ * This is normally called from a driver's remove function
++ */
++void can_led_exit(struct net_device *netdev)
++{
++	struct can_priv *priv = netdev_priv(netdev);
++
++	led_trigger_unregister_simple(priv->tx_led_trig);
++	led_trigger_unregister_simple(priv->rx_led_trig);
++
++	kfree(priv->tx_led_trig_name);
++	kfree(priv->rx_led_trig_name);
++}
++EXPORT_SYMBOL_GPL(can_led_exit);
+diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+index 2b2fc34..167b04a 100644
+--- a/include/linux/can/dev.h
++++ b/include/linux/can/dev.h
+@@ -16,6 +16,7 @@
+ #include <linux/can.h>
+ #include <linux/can/netlink.h>
+ #include <linux/can/error.h>
++#include <linux/can/led.h>
+ 
+ /*
+  * CAN mode
+@@ -52,6 +53,13 @@ struct can_priv {
+ 
+ 	unsigned int echo_skb_max;
+ 	struct sk_buff **echo_skb;
++
++#ifdef CONFIG_CAN_LEDS
++	struct led_trigger *tx_led_trig;
++	char *tx_led_trig_name;
++	struct led_trigger *rx_led_trig;
++	char *rx_led_trig_name;
++#endif
+ };
+ 
+ /*
+diff --git a/include/linux/can/led.h b/include/linux/can/led.h
+new file mode 100644
+index 0000000..274c7fd
+--- /dev/null
++++ b/include/linux/can/led.h
+@@ -0,0 +1,38 @@
++/*
++ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef CAN_LED_H
++#define CAN_LED_H
++
++#include <linux/leds.h>
++
++enum can_led_event {
++	CAN_LED_EVENT_OPEN,
++	CAN_LED_EVENT_STOP,
++	CAN_LED_EVENT_TX,
++	CAN_LED_EVENT_RX,
++};
++
++#ifdef CONFIG_CAN_LEDS
++void can_led_event(struct net_device *netdev, enum can_led_event event);
++void can_led_init(struct net_device *netdev);
++void can_led_exit(struct net_device *netdev);
++#else
++static inline void can_led_event(struct net_device *netdev,
++				 enum can_led_event event)
++{
++}
++static inline void can_led_init(struct net_device *netdev)
++{
++}
++static inline void can_led_exit(struct net_device *netdev)
++{
++}
++#endif
++
++#endif
 -- 
-1.7.8.6
+1.7.11.rc1.9.gf623ca1.dirty
 
