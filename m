@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab2G3T15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:27:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4399 "EHLO
+	id S1754950Ab2G3T1z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:27:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29027 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747Ab2G3T07 (ORCPT
+	with ESMTP id S1753976Ab2G3T07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jul 2012 15:26:59 -0400
-X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=gd_MD5GRgqsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=rBh6FFy8A829BRAkTzIA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=zaT1LpOFqbnKaxiXnDQA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=4Q4lzaYKvL0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=lHnMgbS3arOmqo24c3QA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=pz6oROQOoV1ohSg0HxwA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120730192656.821059256@goodmis.org>
+Message-Id: <20120730192657.468497891@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 30 Jul 2012 15:23:19 -0400
+Date: Mon, 30 Jul 2012 15:23:21 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 05/10] ktest: Fix config bisect with how make oldnoconfig works
+Subject: [PATCH 07/10] ktest: Add check for bug or panic during reboot
 References: <20120730192314.144253843@goodmis.org>
-Content-Disposition: inline; filename=0005-ktest-Fix-config-bisect-with-how-make-oldnoconfig-wo.patch
+Content-Disposition: inline; filename=0007-ktest-Add-check-for-bug-or-panic-during-reboot.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,139 +30,81 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-With a name like 'oldnoconfig' one may think that the config generated
-would disable all configs that were not defined (selecting "no" for all
-options). But this is not the case. It selects the default. If a config
-has a 'default y', then it is added if not specified.
+Usually the target is booted into a dependable kernel when a test
+starts. The test will install the test kernel and reboot the box. But
+there may be a time that the kernel is running an unreliable kernel and
+the reboot may crash.
 
-This broke the config bisect, because options not specified by a config
-will just use the default, where it expected to turn off. This caused an
-option to be enabled that disabled an option that would break the build.
-The end result was that we never found the bad config at the end of the
-test.
+Have ktest detect crashes on a reboot and force a power-cycle instead.
 
-Instead of using 'make oldnoconfig', ktest now builds the options it
-expects enabled and disabled. When it turns off an option, it will no
-longer remove it, but actually set it to:
-
- # CONFIG_FOO is not set.
+This can usually happen if a test kernel was installed to run manual
+tests, but the user forgot to reboot to the known good kernel.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl |   46 ++++++++++++++++++++++++++++++++++++++=
-++++
- 1 file changed, 46 insertions(+)
+ tools/testing/ktest/ktest.pl |   28 +++++++++++++++++++++++++++-
+ 1 file changed, 27 insertions(+), 1 deletion(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 8ce58d7..5ad891a 100755
+index d10fff1..c8a42d5 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -189,6 +189,9 @@ my $newconfig =3D 0;
- my %entered_configs;
- my %config_help;
- my %variable;
-+
-+# force_config is the list of configs that we force enabled (or disabled)
-+# in a .config file. The MIN_CONFIG and ADD_CONFIG configs.
- my %force_config;
-=20
- # do not force reboots on config problems
-@@ -1837,6 +1840,7 @@ sub make_oldconfig {
- sub load_force_config {
-     my ($config) =3D @_;
-=20
-+    doprint "Loading force configs from $config\n";
-     open(IN, $config) or
- 	dodie "failed to read $config";
-     while (<IN>) {
-@@ -2389,9 +2393,24 @@ sub bisect {
-     success $i;
- }
-=20
-+# config_ignore holds the configs that were set (or unset) for
-+# a good config and we will ignore these configs for the rest
-+# of a config bisect. These configs stay as they were.
- my %config_ignore;
-+
-+# config_set holds what all configs were set as.
- my %config_set;
-=20
-+# config_off holds the set of configs that the bad config had disabled.
-+# We need to record them and set them in the .config when running
-+# oldnoconfig, because oldnoconfig does not turn off new symbols, but
-+# instead just keeps the defaults.
-+my %config_off;
-+
-+# config_off_tmp holds a set of configs to turn off for now
-+my @config_off_tmp;
-+
-+# config_list is the set of configs that are being tested
- my %config_list;
- my %null_config;
-=20
-@@ -2470,6 +2489,16 @@ sub create_config {
+@@ -1138,6 +1138,7 @@ sub reboot {
+     if (defined($time)) {
+ 	if (wait_for_monitor($time, $reboot_success_line)) {
+ 	    # reboot got stuck?
++	    doprint "Reboot did not finish. Forcing power cycle\n";
+ 	    run_command "$power_cycle";
  	}
-     }
+ 	end_monitor;
+@@ -1235,6 +1236,9 @@ sub wait_for_monitor {
+     my $line;
+     my $booted =3D 0;
+     my $start_time =3D time;
++    my $skip_call_trace =3D 0;
++    my $bug =3D 0;
++    my $bug_ignored =3D 0;
+     my $now;
 =20
-+    # turn off configs to keep off
-+    foreach my $config (keys %config_off) {
-+	print OUT "# $config is not set\n";
-+    }
-+
-+    # turn off configs that should be off for now
-+    foreach my $config (@config_off_tmp) {
-+	print OUT "# $config is not set\n";
-+    }
-+
-     foreach my $config (keys %config_ignore) {
- 	print OUT "$config_ignore{$config}\n";
-     }
-@@ -2551,6 +2580,13 @@ sub run_config_bisect {
-     do {
- 	my @tophalf =3D @start_list[0 .. $half];
+     doprint "** Wait for monitor to settle down **\n";
+@@ -1251,6 +1255,28 @@ sub wait_for_monitor {
+ 	    $booted =3D 1;
+ 	}
 =20
-+	# keep the bottom half off
-+	if ($half < $#start_list) {
-+	    @config_off_tmp =3D @start_list[$half + 1 .. $#start_list];
-+	} else {
-+	    @config_off_tmp =3D ();
++	if ($full_line =3D~ /\[ backtrace testing \]/) {
++	    $skip_call_trace =3D 1;
 +	}
 +
- 	create_config @tophalf;
- 	read_current_config \%current_config;
-=20
-@@ -2567,7 +2603,11 @@ sub run_config_bisect {
- 	if (!$found) {
- 	    # try the other half
- 	    doprint "Top half produced no set configs, trying bottom half\n";
++	if ($full_line =3D~ /call trace:/i) {
++	    if (!$bug && !$skip_call_trace) {
++		if ($ignore_errors) {
++		    $bug_ignored =3D 1;
++		} else {
++		    $bug =3D 1;
++		}
++	    }
++	}
 +
-+	    # keep the top half off
-+	    @config_off_tmp =3D @tophalf;
- 	    @tophalf =3D @start_list[$half + 1 .. $#start_list];
++	if ($full_line =3D~ /\[ end of backtrace testing \]/) {
++	    $skip_call_trace =3D 0;
++	}
 +
- 	    create_config @tophalf;
- 	    read_current_config \%current_config;
- 	    foreach my $config (@tophalf) {
-@@ -2705,6 +2745,10 @@ sub config_bisect {
- 		$added_configs{$2} =3D $1;
- 		$config_list{$2} =3D $1;
- 	    }
-+	} elsif (/^# ((CONFIG\S*).*)/) {
-+	    # Keep these configs disabled
-+	    $config_set{$2} =3D $1;
-+	    $config_off{$2} =3D $1;
++	if ($full_line =3D~ /Kernel panic -/) {
++	    $bug =3D 1;
++	}
++
+ 	if ($line =3D~ /\n/) {
+ 	    $full_line =3D "";
+ 	}
+@@ -1261,7 +1287,7 @@ sub wait_for_monitor {
  	}
      }
-     close(IN);
-@@ -2727,6 +2771,8 @@ sub config_bisect {
-     my %config_test;
-     my $once =3D 0;
+     print "** Monitor flushed **\n";
+-    return 0;
++    return $bug;
+ }
 =20
-+    @config_off_tmp =3D ();
-+
-     # Sometimes kconfig does weird things. We must make sure
-     # that the config we autocreate has everything we need
-     # to test, otherwise we may miss testing configs, or
+ sub save_logs {
 --=20
 1.7.10.4
 
@@ -175,19 +117,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQFuAAAAoJEIy3vGnGbaoAeisP/1rovXjHkXc6Oz2KYr14aCn9
-Yi5Rg837YFMNLnKPZ6xkPITd+umXYeMqWMFHTUkr2FKV8evuWBmIA4iX4P4L5Sbl
-N/eSh0ta/UffbzugtESlJHAjJVUeRZUi9BpBaLMaoAWbc7CRse2njUW7y+3bFJNL
-77lbcyyVTer8oVEyfxCsGpUBEBLLv0HXtcYCRWKuEX/6/rFIpRvbL96d8JMtNYrg
-74pVRYLT5e8xNCphw0LovatazfljUVaSTnfGelsTGZa/5kj6IEv6YQFBqfnLtpxq
-4o/dCwsVsgvkIcUZmXVKBtMEe3OUXbvoW7hCytiaAHjQb+7aBXcQX5zghZG2Rz1Z
-zAGLk7mRgRxs09ywhVFL5dOYC/MSG0JxknfUVvL+aEoaHQl0vmfBjydwh3zCbZpv
-JPwE7y/fREYyxPm7a79cr3kjllmn+mmMIiAnvYFh6BYXQ4Ilw/wJjM3y2/Y6czAh
-ClRIZbSU4QPDE0ry+wFjHSkPXRjg/dMFW4cB9b1/5B8g79EDaMwNfD6r5ntLJf/t
-S2f9+k5MNqXNBWkgUZWkkYYid8xlsB3WGsx8pEbIS/CGLXg0qkYD5y7+de8X3xsX
-NDUkk5LY2tOX6JIQ9ZO+L/nJMQAf0mOl8jQWYu6R5rN6QktL3zXu0RMBEl4R1Kdk
-TWbDG1tTSbWg0K8cSj3p
-=ec6U
+iQIcBAABAgAGBQJQFuABAAoJEIy3vGnGbaoAxzQP/1hAkBOdzGrwuyE1dTrfSNIv
+mIo6vmJ2ekPQTdnbNRD5degwpJFda+QTG74BF+QRo9huXG/UtmpaNNOc0T7R6ZKk
+26mCfcljJTq7EZqaqUaSo1PHC/xFxVds9tpY6Sp/Yblh4TUd93wP92ZaHpXU8m0F
+it0caNhB6JwskfT6w7sFJkyFZHBtcQVNCBzerBXqFW304m29HQDh9MKXet/4FQM6
+0oqPBiyU/7tM81S63qPZKHS5RcmPwoQfUIpGpFI5t0lDoddBaswMR70T/dTGnDg2
+4bkhf7YNU4MD2JLANL0llcQg/ehvEteLXQzMPyvj1EORzJZzTc40t8nn+NgxuCmE
+R8W+c34jSBAFKz6nsWQdDwcW4rqBdrmjm323E4zIHV/FTR+eF5rFAhJKVI6VTR5d
+xZDQk1ybezMCBAoTg4pi/UgxqLug3CJaoe5wKfZb0EDFVcfNZtYLJ76JwyyraDd3
+AdwxrZkV+RwJKufVOetdXXRTEsGWUEeerRPk4P6ZFj15tFAe3lnA+frgm38uTMWO
+CylE9rwEpCKsru2uxe9r6TtsC2S9LqQsq39kWMXbYYRVoXVZhKo2SBlIJ6H0u0Q7
+txNsFv8r+3d/d1htydO4/OgNGov5aytzmZjQEUWrm5kxp+etE9iInWjk1Z/VkABW
+39OFaXH3pK+ggptvt4y3
+=cHLZ
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
