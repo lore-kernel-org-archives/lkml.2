@@ -1,105 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab2G3IhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 04:37:20 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62797 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab2G3IhS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 04:37:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <000001cd6e29$fcb4bc30$f61e3490$@samsung.com>
-References: <1342817939-7118-1-git-send-email-seanpaul@chromium.org>
-	<CAD=FV=W8oqytNM0xSHbceTEy6gAdr_Lmm7zWqogcwAPJR6jKSg@mail.gmail.com>
-	<000001cd6e29$fcb4bc30$f61e3490$@samsung.com>
-Date: Mon, 30 Jul 2012 14:07:17 +0530
-Message-ID: <CAJuYYwQ+SRAPvkdbPu_UzZmxPon9d+La2rNy0FVy79t_CBGApQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: samsung: Fix off-by-one bug in gpio addresses
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: =?UTF-8?B?67CV7IOB7IiY?= <sangsu4u.park@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>, Sean Paul <seanpaul@chromium.org>,
-        grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, olofj@chromium.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754148Ab2G3Ilr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 04:41:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49454 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752712Ab2G3Ilq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 04:41:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="174754423"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH v2] power_supply: Add new power supply properties CHARGE_CURRENT/VOLTAGE_MAX
+Date: Mon, 30 Jul 2012 12:49:21 +0530
+Message-Id: <1343632761-3418-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 July 2012 13:34, 박상수 <sangsu4u.park@samsung.com> wrote:
->
->
->> -----Original Message-----
->> From: dianders@google.com [mailto:dianders@google.com] On Behalf Of Doug Anderson
->> Sent: Saturday, July 21, 2012 6:07 AM
->> To: Sean Paul
->> Cc: grant.likely@secretlab.ca; linus.walleij@stericsson.com; linux-kernel@vger.kernel.org;
->> olofj@chromium.org; Sangsu Park; Thomas Abraham; Kukjin Kim
->> Subject: Re: [PATCH] gpio: samsung: Fix off-by-one bug in gpio addresses
->>
->> Acked-by: Doug Anderson <dianders@chromium.org>
->>
->> ---
->>
->> On Fri, Jul 20, 2012 at 1:58 PM, Sean Paul <seanpaul@chromium.org> wrote:
->> >
->> > Move gpc4 to the end of the automatically processed gpio controllers
->> > so we don't taint the automatic offset calculation.
->> >
->> > This bug caused all controllers coming after gpc4 to map to the
->> > incorrect address. The result is <&gpd1 0 0 0 0> would actually map to
->> > GPIO 0 in gpd0.
->> >
->> > Signed-off-by: Sean Paul <seanpaul@chromium.org>
->> > ---
->> >  drivers/gpio/gpio-samsung.c |   14 +++++++-------
->> >  1 files changed, 7 insertions(+), 7 deletions(-)
->> >
->> > diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
->> > index b6453d0..e4599b4 100644
->> > --- a/drivers/gpio/gpio-samsung.c
->> > +++ b/drivers/gpio/gpio-samsung.c
->> > @@ -2454,12 +2454,6 @@ static struct samsung_gpio_chip exynos5_gpios_1[] = {
->> >                 },
->> >         }, {
->> >                 .chip   = {
->> > -                       .base   = EXYNOS5_GPC4(0),
->> > -                       .ngpio  = EXYNOS5_GPIO_C4_NR,
->> > -                       .label  = "GPC4",
->> > -               },
->> > -       }, {
->> > -               .chip   = {
->> >                         .base   = EXYNOS5_GPD0(0),
->> >                         .ngpio  = EXYNOS5_GPIO_D0_NR,
->> >                         .label  = "GPD0", @@ -2513,6 +2507,12 @@
->> > static struct samsung_gpio_chip exynos5_gpios_1[] = {
->> >                         .label  = "GPY6",
->> >                 },
->> >         }, {
->> > +               .chip   = {
->> > +                       .base   = EXYNOS5_GPC4(0),
->> > +                       .ngpio  = EXYNOS5_GPIO_C4_NR,
->> > +                       .label  = "GPC4",
->> > +               },
->> > +       }, {
->> >                 .config = &samsung_gpio_cfgs[9],
->> >                 .irq_base = IRQ_EINT(0),
->> >                 .chip   = {
->> > @@ -2833,7 +2833,7 @@ static __init void exynos5_gpiolib_init(void)
->> >         }
->> >
->> >         /* need to set base address for gpc4 */
->> > -       exynos5_gpios_1[11].base = gpio_base1 + 0x2E0;
->> > +       exynos5_gpios_1[20].base = gpio_base1 + 0x2E0;
->> >
->> >         /* need to set base address for gpx */
->> >         chip = &exynos5_gpios_1[21];
->> > --
->> > 1.7.7.3
->> >
->
-> I think that this modification is right.
-> Thanks.
+There are different types of chargers avalibale like AC, Solar, USB, etc..
+Even in USB we have different types SDP/DCP/CDP/ACA and all these
+chargers have different o/p ratings. For example SDP supports only 500mA of
+charge current whereas AC charger can support upto 8A or more.
 
-Reviewed-by: Thomas Abraham <thomas.abraham@linaro.org>
+Similarly batteries also come with charge current and voltage ratings and
+these ratings vary depending on its capacity and the technology used.
+
+This patch adds two new power supply properties CONSTANT_CHARGE_CURRENT_MAX and
+CONSTANT_CHARGE_CURRENT_MAX.
+
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ Documentation/power/power_supply_class.txt |    4 ++++
+ drivers/power/power_supply_sysfs.c         |    2 ++
+ include/linux/power_supply.h               |    4 ++++
+ 3 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
+index 272b122..db11122 100644
+--- a/Documentation/power/power_supply_class.txt
++++ b/Documentation/power/power_supply_class.txt
+@@ -115,8 +115,12 @@ be negative; there is no empty or full value.  It is only useful for
+ relative, time-based measurements.
+ 
+ CONSTANT_CHARGE_CURRENT - constant charge current programmed by charger.
++CONSTANT_CHARGE_CURRENT_MAX - maximum charge current supported by the
++power supply object.
+ 
+ CONSTANT_CHARGE_VOLTAGE - constant charge voltage programmed by charger.
++CONSTANT_CHARGE_VOLTAGE_MAX - maximum charge voltage supported by the
++power supply object.
+ 
+ ENERGY_FULL, ENERGY_EMPTY - same as above but for energy.
+ 
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 797639e..f10a402 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -161,7 +161,9 @@ static struct device_attribute power_supply_attrs[] = {
+ 	POWER_SUPPLY_ATTR(charge_avg),
+ 	POWER_SUPPLY_ATTR(charge_counter),
+ 	POWER_SUPPLY_ATTR(constant_charge_current),
++	POWER_SUPPLY_ATTR(constant_charge_current_max),
+ 	POWER_SUPPLY_ATTR(constant_charge_voltage),
++	POWER_SUPPLY_ATTR(constant_charge_voltage_max),
+ 	POWER_SUPPLY_ATTR(energy_full_design),
+ 	POWER_SUPPLY_ATTR(energy_empty_design),
+ 	POWER_SUPPLY_ATTR(energy_full),
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index e7edcb3..e77a4df 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -111,7 +111,9 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_CHARGE_AVG,
+ 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
+ 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
+ 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
+ 	POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL,
+@@ -252,6 +254,7 @@ static inline bool power_supply_is_amp_property(enum power_supply_property psp)
+ 	case POWER_SUPPLY_PROP_CHARGE_AVG:
+ 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+ 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
+ 	case POWER_SUPPLY_PROP_CURRENT_MAX:
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+ 	case POWER_SUPPLY_PROP_CURRENT_AVG:
+@@ -280,6 +283,7 @@ static inline bool power_supply_is_watt_property(enum power_supply_property psp)
+ 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
+ 	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
+ 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX:
+ 	case POWER_SUPPLY_PROP_POWER_NOW:
+ 		return 1;
+ 	default:
+-- 
+1.7.0.4
+
