@@ -1,162 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab2G3AdD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 20:33:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753747Ab2G3AdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 20:33:00 -0400
-Message-ID: <5015D636.2050701@redhat.com>
-Date: Sun, 29 Jul 2012 21:32:54 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: [GIT PULL for v3.5] EDAC updates
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753867Ab2G3AhU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 20:37:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53534 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2G3AhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 20:37:18 -0400
+Date: Mon, 30 Jul 2012 10:37:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Devendra Naga <devendra.aaru@gmail.com>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the vfs tree with Linus' tree
+Message-Id: <20120730103705.cd816d7f4016eb8d93e3825f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__30_Jul_2012_10_37_05_+1000_cMP=eZ.IlIB/.b6h"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Mon__30_Jul_2012_10_37_05_+1000_cMP=eZ.IlIB/.b6h
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
+Hi Al,
 
-for the EDAC patches for 3.5. This series includes:
-	- the second part of the EDAC rework:
-		- Add the sysfs nodes that exports the real memory layout,
-		  instead of the fake one (needed to properly represent
-		  Intel memory controllers since 2002);
-		- convert EDAC MC to use "struct device" instead of creating
-		  the sysfs nodes via the kobj API;
-		- adds a tracepoint to represent memory errors;
-	- some cleanup patches;
-	- some fixes at i5000, i5400 and EDAC core;
-	- a new EDAC driver for Caldera.
+Today's linux-next merge of the vfs tree got a conflict in
+drivers/staging/gdm72xx/usb_boot.c between commit d67030d215ac
+("staging/gdm72xx: return PTR_ERR rather -ENOENT") from Linus' tree and
+commit 09fada5b5f1f ("slightly reduce lossage in gdm72xx") from the vfs
+tree.
 
-Thanks!
-Mauro
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--
+diff --cc drivers/staging/gdm72xx/usb_boot.c
+index fef290c,b366a54..0000000
+--- a/drivers/staging/gdm72xx/usb_boot.c
++++ b/drivers/staging/gdm72xx/usb_boot.c
+@@@ -173,8 -174,7 +173,7 @@@ int usb_boot(struct usb_device *usbdev
+  	filp =3D filp_open(img_name, O_RDONLY | O_LARGEFILE, 0);
+  	if (IS_ERR(filp)) {
+  		printk(KERN_ERR "Can't find %s.\n", img_name);
+- 		set_fs(fs);
+ -		ret =3D -ENOENT;
+ +		ret =3D PTR_ERR(filp);
+  		goto restore_fs;
+  	}
+ =20
 
-Latest commit at the branch: 
-c2078e4c9120e7b38b1a02cd9fc6dd4f792110bf Merge branch 'devel'
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+--Signature=_Mon__30_Jul_2012_10_37_05_+1000_cMP=eZ.IlIB/.b6h
+Content-Type: application/pgp-signature
 
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-are available in the git repository at:
+iQIcBAEBCAAGBQJQFdcxAAoJEECxmPOUX5FEpoYP/ib2m3G2IiYSHugMDXNCUX71
+dZum5TnVB0xyVKLYJ/EBhQRp9tX52hT3WdlV6/SMzpHWbkuiGSkfT2l1Ajx1UWDA
+BcxjBEmjrTwbtS5abeziUQOy1VAebDSQjAiLN8lUCDIAKH8OlmhKO9SDL/iyka5+
+T0S0wCM7gIqOqu3t5UbANm3JEJUajgaaberPLmskgyTuaQXTBP/aNCkxh6LrxZ/1
+xIkFFxTcQv769fF0VYjcxGwAXZstlADO28XpB11alhsykgrnIX4nDrnHgsODIUKV
+z5M4WtnGfGi5xIkiswCqFak/8U+zJX3t/8WVXlc9mS9VJBpb1/QiKlJ4x2Ct5jd6
+grZncGngdsEJ9XjPm0UYWqMOS69z+/IXbelwpabUl5a9j52jRh99qQswa4gdUBYC
++T0eXhl6Kc7be8fnf91YqNLjhBZ5hCHoKLe6P/LEYhk+gV4c8xYQE3MEzudLCjcw
+y/n7AT0whBO8bvyOyCWMDj6g28d+wgf33WtVUeBGUz3++NmOTfaDzILo65pIoYBW
+CROst8sQ+BS1qxCOU49rh5KrsUDiwztR2T2/DweApDufZ+ZjlEkVB7OkbHSjSbp3
+9148z3RmnLa+77LBcmmc0GxKUKGwP9tWSi2cemIQYt4xvox/G+wVbyFRr6wx0H4c
+DCGRzs7ExUrnOc0EErfn
+=+rF4
+-----END PGP SIGNATURE-----
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
-
-for you to fetch changes up to c2078e4c9120e7b38b1a02cd9fc6dd4f792110bf:
-
-  Merge branch 'devel' (2012-07-29 21:11:05 -0300)
-
-----------------------------------------------------------------
-
-Dan Carpenter (2):
-      edac_mc: check for allocation failure in edac_mc_alloc()
-      edac i5000, i5400: fix pointer math in i5000_get_mc_regs()
-
-Joe Perches (2):
-      edac: Use more normal debugging macro style
-      edac: Convert debugfX to edac_dbg(X,
-
-Mauro Carvalho Chehab (28):
-      RAS: Add a tracepoint for reporting memory controller events
-      edac: Rename the parent dev to pdev
-      edac: use Documentation-nano format for some data structs
-      edac: rewrite the sysfs code to use struct device
-      mpc85xx_edac: convert sysfs logic to use struct device
-      amd64_edac: convert sysfs logic to use struct device
-      i7core_edac: convert it to use struct device
-      edac: Get rid of the old kobj's from the edac mc code
-      edac: add a new per-dimm API and make the old per-virtual-rank API obsolete
-      edac: add a sysfs node to report the maximum location for the system
-      edac: Add debufs nodes to allow doing fake error inject
-      edac: Move grain/dtype/edac_type calculus to be out of channel loop
-      edac: Only expose csrows/channels on legacy API if they're populated
-      edac: change the mem allocation scheme to make Documentation/kobject.txt happy
-      i7core_edac: change the mem allocation scheme to make Documentation/kobject.txt happy
-      edac: move documentation ABI to ABI/testing/sysfs-devices-edac
-      Edac: Add ABI Documentation for the new device nodes
-      edac: Don't add __func__ or __FILE__ for debugf[0-9] msgs
-      edac_mc: Cleanup per-dimm_info debug messages
-      edac: Increase version to 3.0.0
-      amd64_edac: Don't pass driver name as an error parameter
-      edac: remove arch-specific parameter for the error handler
-      edac: edac_mc_handle_error(): add an error_count parameter
-      i7core_edac: properly handle error count
-      sb_edac: properly handle error count
-      edac: allow specifying the error count with fake_inject
-      Merge tag 'v3.5'
-      Merge branch 'devel'
-
-Rob Herring (3):
-      edac: create top-level debugfs directory
-      edac: add support for Calxeda highbank memory controller
-      edac: add support for Calxeda highbank L2 cache ecc
-
- Documentation/ABI/testing/sysfs-devices-edac       |  140 ++
- .../devicetree/bindings/arm/calxeda/l2ecc.txt      |   15 +
- .../devicetree/bindings/arm/calxeda/mem-ctrlr.txt  |   14 +
- Documentation/edac.txt                             |  112 +-
- arch/arm/boot/dts/highbank.dts                     |   12 +
- drivers/edac/Kconfig                               |   24 +-
- drivers/edac/Makefile                              |    3 +
- drivers/edac/amd64_edac.c                          |  376 +++---
- drivers/edac/amd64_edac.h                          |   29 +-
- drivers/edac/amd64_edac_dbg.c                      |   89 +-
- drivers/edac/amd64_edac_inj.c                      |  134 +-
- drivers/edac/amd76x_edac.c                         |   34 +-
- drivers/edac/cell_edac.c                           |   28 +-
- drivers/edac/cpc925_edac.c                         |   96 +-
- drivers/edac/e752x_edac.c                          |   92 +-
- drivers/edac/e7xxx_edac.c                          |   89 +-
- drivers/edac/edac_core.h                           |   39 +-
- drivers/edac/edac_device.c                         |   47 +-
- drivers/edac/edac_device_sysfs.c                   |   71 +-
- drivers/edac/edac_mc.c                             |  395 +++---
- drivers/edac/edac_mc_sysfs.c                       | 1355 ++++++++++----------
- drivers/edac/edac_module.c                         |   20 +-
- drivers/edac/edac_module.h                         |   26 +-
- drivers/edac/edac_pci.c                            |   26 +-
- drivers/edac/edac_pci_sysfs.c                      |   49 +-
- drivers/edac/highbank_l2_edac.c                    |  149 +++
- drivers/edac/highbank_mc_edac.c                    |  264 ++++
- drivers/edac/i3000_edac.c                          |   47 +-
- drivers/edac/i3200_edac.c                          |   48 +-
- drivers/edac/i5000_edac.c                          |  207 ++-
- drivers/edac/i5100_edac.c                          |   14 +-
- drivers/edac/i5400_edac.c                          |  201 ++-
- drivers/edac/i7300_edac.c                          |  173 ++-
- drivers/edac/i7core_edac.c                         |  520 ++++----
- drivers/edac/i82443bxgx_edac.c                     |   51 +-
- drivers/edac/i82860_edac.c                         |   45 +-
- drivers/edac/i82875p_edac.c                        |   53 +-
- drivers/edac/i82975x_edac.c                        |   55 +-
- drivers/edac/mpc85xx_edac.c                        |  131 +-
- drivers/edac/mv64x60_edac.c                        |   40 +-
- drivers/edac/pasemi_edac.c                         |   22 +-
- drivers/edac/ppc4xx_edac.c                         |   16 +-
- drivers/edac/r82600_edac.c                         |   48 +-
- drivers/edac/sb_edac.c                             |  257 ++--
- drivers/edac/tile_edac.c                           |   12 +-
- drivers/edac/x38_edac.c                            |   48 +-
- include/linux/edac.h                               |  208 +--
- include/ras/ras_event.h                            |  102 ++
- 48 files changed, 3471 insertions(+), 2555 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-edac
- create mode 100644 Documentation/devicetree/bindings/arm/calxeda/l2ecc.txt
- create mode 100644 Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
- create mode 100644 drivers/edac/highbank_l2_edac.c
- create mode 100644 drivers/edac/highbank_mc_edac.c
- create mode 100644 include/ras/ras_event.h
-
+--Signature=_Mon__30_Jul_2012_10_37_05_+1000_cMP=eZ.IlIB/.b6h--
