@@ -1,51 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab2G3PH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 11:07:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33974 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754144Ab2G3PH4 (ORCPT
+	id S1754421Ab2G3PIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 11:08:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35255 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab2G3PIg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 11:07:56 -0400
-Date: Mon, 30 Jul 2012 16:07:54 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 01/18] Documentation: Describe the ux500 realated audio
- related DT nodes
-Message-ID: <20120730150753.GH4468@opensource.wolfsonmicro.com>
-References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org>
- <1343393162-11938-2-git-send-email-lee.jones@linaro.org>
- <20120729203106.GD4384@opensource.wolfsonmicro.com>
- <50163A09.8060203@linaro.org>
- <20120730134804.GE4468@opensource.wolfsonmicro.com>
- <50169AE8.4020601@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50169AE8.4020601@linaro.org>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 30 Jul 2012 11:08:36 -0400
+Message-ID: <1343660892.20897.3.camel@twins>
+Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 30 Jul 2012 17:08:12 +0200
+In-Reply-To: <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
+References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
+	 <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 03:32:08PM +0100, Lee Jones wrote:
-> On 30/07/12 14:48, Mark Brown wrote:
+On Fri, 2012-07-27 at 17:40 +0200, Frederic Weisbecker wrote:
+> +++ b/kernel/user_hooks.c
+> @@ -0,0 +1,56 @@
+> +#include <linux/user_hooks.h>
+> +#include <linux/rcupdate.h>
+> +#include <linux/sched.h>
+> +#include <linux/percpu.h>
+> +
+> +struct user_hooks {
+> +       bool hooking;
+> +       bool in_user;
+> +};
 
-> >Which is part of the problem here, it makes it much harder to tell what
-> >you need to do for the individual devices.
+I really detest using bool in structures.. but that's just me. Also this
+really wants a comment as to wtf 'hooking' means. in_user I can just
+about guess.
 
-> Once again, I'll split them out, but I think there are people
-> talking about documentation consolidation, as it's going to become
-> very messy, very quickly if we keep adding new files for each
-> device. Soon the Documentation directory will be as large as the
-> driver base. :)
+> +DEFINE_PER_CPU(struct user_hooks, user_hooks) = {
+> +#ifdef CONFIG_USER_HOOKS_FORCE
+> +       .hooking = true,
+> +#endif
+> +};
+> +
+> +void user_enter(void)
+> +{
+> +       unsigned long flags;
+> +       struct user_hooks *uh;
+> +
+> +       WARN_ON_ONCE(!current->mm);
+> +       local_irq_save(flags);
+> +       uh = &__get_cpu_var(user_hooks);
+> +       if (uh->hooking && !uh->in_user) {
+> +               uh->in_user = true;
+> +               rcu_user_enter();
+> +       }
 
-Well, that's device tree for you.  You can probably get away with a
-single document if there's no differences but as soon as you get into
-anything where you've got custom properties and no overlap you need to
-start splitting things out.
+By not using __get_cpu_var() but __this_cpu_*() you generate much better
+code (esp. on x86).
+
+IOW. something like:
+
+  if (__this_cpu_read(uh.hooking) && !__this_cpu_read(uh.in_user)) {
+	__this_cpu_write(uh.in_user, true);
+	rcu_user_enter();
+  }
+
+> +       local_irq_restore(flags);
+> +}
+> +
+> +void user_exit(void)
+> +{
+> +       unsigned long flags;
+> +       struct user_hooks *uh;
+> +
+> +       local_irq_save(flags);
+> +       uh = &__get_cpu_var(user_hooks);
+> +       if (uh->in_user) {
+> +               uh->in_user = false;
+> +               rcu_user_exit();
+> +       }
+> +       local_irq_restore(flags);
+> +}
+> +
+> +void user_hooks_switch(struct task_struct *prev,
+> +                      struct task_struct *next)
+> +{
+> +       struct user_hooks *uh;
+> +
+> +       uh = &__get_cpu_var(user_hooks);
+> +       if (uh->hooking) {
+> +               clear_tsk_thread_flag(prev, TIF_NOHZ);
+> +               set_tsk_thread_flag(next, TIF_NOHZ);
+> +       }
+
+This seems pointless to me.. why are we flipping that flag on context
+switch instead of keeping it enabled at all times? This are two atomic
+ops in the context switch path, why?
+
+> +} 
