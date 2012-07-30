@@ -1,69 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab2G3GBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 02:01:13 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13945 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab2G3GBL convert rfc822-to-8bit (ORCPT
+	id S1753617Ab2G3GMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 02:12:13 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:54371 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab2G3GML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 02:01:11 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 29 Jul 2012 23:01:11 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Axel Lin <axel.lin@gmail.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Jul 2012 11:31:04 +0530
-Subject: RE: drivers/mfd/tps65090.c: duplicated TPS65090_INT_STS tests
-Thread-Topic: drivers/mfd/tps65090.c: duplicated TPS65090_INT_STS tests
-Thread-Index: Ac1svWP/0tyxqSc7S1qqlWIWJAS7qgBW0MnA
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDCAC418E@BGMAIL02.nvidia.com>
-References: <20120728123441.GB11202@localhost>
-In-Reply-To: <20120728123441.GB11202@localhost>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Mon, 30 Jul 2012 02:12:11 -0400
+Date: Sun, 29 Jul 2012 23:11:14 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [REPOST #3 PATCH v2] Input: atkbd - make repeat period more
+ accurate.
+Message-ID: <20120730061114.GE5830@core.coreip.homeip.net>
+References: <20120725073940.GB15997@core.coreip.homeip.net>
+ <20120726151524.17390.qmail@science.horizon.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120726151524.17390.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for catching typo.
-Plz push a patch with fix.
+On Thu, Jul 26, 2012 at 11:15:24AM -0400, George Spelvin wrote:
+> Thanks for the response!  I'd been checking mailing list archive sites
+> to see if my submissions were making it out to the list.
+> 
+> >> In addition to a slightly inaccurate lookup table, the
+> >> old code would round up to the next repeat period.
+> >> E.g. to get a period of 9/60 = 0.15 seconds, you had to
+> >> ask for no more than 149 ms; if you asked for 150, it
+> >> would round up to 167.
+> 
+> > This works as intended - it was designed to never have faster than
+> > requested.
+> 
+> The old code didn't do *that* correctly, either.  If you asked for 370
+> or 470 ms, it would give you 366.66 or 466.66 ms, respectively.
+> 
+> I can amend the code to do the same, but this leads to some questions:
+> 
+> Should the reported values be rounded down so that setting the repeat
+> period to the reported value is always safe?  Or should it allow rounding
+> down by <= 0.5 ms, so that asking for 117 ms will give you 166.66
+> without complaint?
+> 
+> And what do you do if the requested delay or period is longer than can
+> be supported (1000 and 500 ms, respectively)?
+> 
+> Finally, is this rounding documented clearly anywhere?  I thought rounding
+> to nearest gave the least surprising results for someone using various
+> slightly-inaccurate lists of the repeatable keyboard rates.  Including,
+> particularly, the previous code's values.
 
-Thanks,
-Venu
+I do not believe rounding is documented anywhere; the rates are
+mentioned in kbdrate manpage.
 
+Frankly at this time I'd just leave this all as is since there were no
+complaints from users about repeat rates on keyboards and most clients
+(X) implement their own, software-based, rate control.
 
-> -----Original Message-----
-> From: Fengguang Wu [mailto:fengguang.wu@intel.com]
-> Sent: Saturday, July 28, 2012 6:05 PM
-> To: Venu Byravarasu
-> Cc: Samuel Ortiz; Axel Lin; kernel-janitors@vger.kernel.org; LKML
-> Subject: drivers/mfd/tps65090.c: duplicated TPS65090_INT_STS tests
 > 
-> Hi Venu,
+> >> Signed-off-by: George Spelvin <linux@horizon.com>
 > 
-> Is this coccinelle warning a trivial one, or indicates some copy&paste
-> error? It's introduced by commit 3c33be06 ("mfd: Add support for
-> TPS65090").
+> > I am sorry but I have to ask - is this your real name?
 > 
-> drivers/mfd/tps65090.c:239:5-30: duplicated argument to && or ||
+> Well, it's meant to be an obvious pen name,
+
+I do not think it is that obvious to anyone who is not living in the US.
+The only reason I paid attention to the name is I recognized your e-mail
+from LKML as one never signing your name.
+
+> but since I use it
+> consistently and live in a common-law country, it's a "real"
+> as any other.
+
+I am not sure whether common law countries allow anyone pick any name of
+their choosing and use it as their legal name; I know that we had to
+refuse submission from another developer wishing to use a pen name
+(HDAPS driver).
+
 > 
-> vim +239 drivers/mfd/tps65090.c
->    236
->    237	static bool is_volatile_reg(struct device *dev, unsigned int reg)
->    238	{
->  > 239		if ((reg == TPS65090_INT_STS) || (reg == TPS65090_INT_STS))
->    240			return true;
->    241		else
->    242			return false;
+> >> One possible bug I observed in the code that calls this:
+> >> 
+> >> Users of the KDKBDREP ioctl seem to assume that it returns the actual
+> >> values set, but I'm not sure it really works that way; I don't think
+> >> the command to change the parameters makes its way through the event
+> >> queue and atkbd's schedule_delayed_work() to actually set dev->rep[]
+> >> to the rounded values before kbd_rate_helper returns them to userspace.
+> >> 
+> >> If desired, the fix that's most obvious to me would be to split this
+> >> function in two: perform the conversion to a command byte synchronously,
+> >> and only defer the actual ps2_command().
 > 
-> ---
-> 0-DAY kernel build testing backend         Open Source Technology Centre
-> Fengguang Wu <wfg@linux.intel.com>                     Intel Corporation
+> > Yes, I agree, this is a problem.
+> 
+> I was trying to start simple, since this is a separate issue,
+> but I could make an attempt at this fix, too.
+> 
+> The *big* problsm is what if there's a peripheral that actually requires
+> a USB transaction to set the rate before being able to determine what
+> the rounded rate to report is, it'll require a major overhaul of the
+> in-kernel interfaces.
+
+Luckily we are using software based repeat on USB (and most other input
+devices).
+
+> 
+> 
+> Another thing that would be possible is supporting an arbitrary repeat
+> rate, as long as it's slower than the maximum autorepeat rate.  Just set
+> the hardware repeat slightly faster than the software repeat rate and
+> buffer the autorepeat reports until the correct software-repeat time.
+> 
+> I don't know if it's worth bothering, though.
+
+No, I do not think it's worth it as we have software-based repeat
+implementation that allows arbitrary rates.
+
+Thanks.
+
+-- 
+Dmitry
