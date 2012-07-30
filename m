@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2G3RdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:33:23 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:49202 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab2G3RdT (ORCPT
+	id S1755148Ab2G3RiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:38:04 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38307 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab2G3RdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:33:19 -0400
+	Mon, 30 Jul 2012 13:33:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Nai Xia <nai.xia@gmail.com>, Johannes Weiner <jweiner@redhat.com>
-Subject: [ 25/41] mm: compaction: make isolate_lru_page() filter-aware again
-Date: Mon, 30 Jul 2012 10:31:24 -0700
-Message-Id: <20120730172903.282607750@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>, Nai Xia <nai.xia@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: [ 24/41] mm: page allocator: do not call direct reclaim for THP allocations while compaction is deferred
+Date: Mon, 30 Jul 2012 10:31:23 -0700
+Message-Id: <20120730172903.204521009@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -35,27 +35,28 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit c82449352854ff09e43062246af86bdeb628f0c3 upstream.
+commit 66199712e9eef5aede09dbcd9dfff87798a66917 upstream.
 
-Stable note: Not tracked in Bugzilla. A fix aimed at preserving page aging
-	information by reducing LRU list churning had the side-effect of
-	reducing THP allocation success rates. This was part of a series
-	to restore the success rates while preserving the reclaim fix.
+Stable note: Not tracked in Buzilla. This was part of a series that
+	reduced interactivity stalls experienced when THP was enabled.
 
-Commit 39deaf85 ("mm: compaction: make isolate_lru_page() filter-aware")
-noted that compaction does not migrate dirty or writeback pages and that
-is was meaningless to pick the page and re-add it to the LRU list.  This
-had to be partially reverted because some dirty pages can be migrated by
-compaction without blocking.
+If compaction is deferred, direct reclaim is used to try to free enough
+pages for the allocation to succeed.  For small high-orders, this has a
+reasonable chance of success.  However, if the caller has specified
+__GFP_NO_KSWAPD to limit the disruption to the system, it makes more sense
+to fail the allocation rather than stall the caller in direct reclaim.
+This patch skips direct reclaim if compaction is deferred and the caller
+specifies __GFP_NO_KSWAPD.
 
-This patch updates "mm: compaction: make isolate_lru_page" by skipping
-over pages that migration has no possibility of migrating to minimise LRU
-disruption.
+Async compaction only considers a subset of pages so it is possible for
+compaction to be deferred prematurely and not enter direct reclaim even in
+cases where it should.  To compensate for this, this patch also defers
+compaction only if sync compaction failed.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Minchan Kim <minchan.kim@gmail.com>
 Reviewed-by: Rik van Riel<riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
 Cc: Dave Jones <davej@redhat.com>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Andy Isaacson <adi@hexapodia.org>
@@ -66,77 +67,106 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h |    2 ++
- mm/compaction.c        |    3 +++
- mm/vmscan.c            |   35 +++++++++++++++++++++++++++++++++--
- 3 files changed, 38 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |   45 +++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 35 insertions(+), 10 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -166,6 +166,8 @@ static inline int is_unevictable_lru(enu
- #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
- /* Isolate unmapped file */
- #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
-+/* Isolate for asynchronous migration */
-+#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1897,14 +1897,20 @@ static struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, unsigned long *did_some_progress,
+-	bool sync_migration)
++	int migratetype, bool sync_migration,
++	bool *deferred_compaction,
++	unsigned long *did_some_progress)
+ {
+ 	struct page *page;
  
- /* LRU Isolation modes. */
- typedef unsigned __bitwise__ isolate_mode_t;
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -371,6 +371,9 @@ static isolate_migrate_t isolate_migrate
- 			continue;
- 		}
+-	if (!order || compaction_deferred(preferred_zone))
++	if (!order)
+ 		return NULL;
  
-+		if (!cc->sync)
-+			mode |= ISOLATE_ASYNC_MIGRATE;
-+
- 		/* Try isolate the page */
- 		if (__isolate_lru_page(page, mode, 0) != 0)
- 			continue;
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1045,8 +1045,39 @@ int __isolate_lru_page(struct page *page
- 
- 	ret = -EBUSY;
- 
--	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
--		return ret;
-+	/*
-+	 * To minimise LRU disruption, the caller can indicate that it only
-+	 * wants to isolate pages it will be able to operate on without
-+	 * blocking - clean pages for the most part.
-+	 *
-+	 * ISOLATE_CLEAN means that only clean pages should be isolated. This
-+	 * is used by reclaim when it is cannot write to backing storage
-+	 *
-+	 * ISOLATE_ASYNC_MIGRATE is used to indicate that it only wants to pages
-+	 * that it is possible to migrate without blocking
-+	 */
-+	if (mode & (ISOLATE_CLEAN|ISOLATE_ASYNC_MIGRATE)) {
-+		/* All the caller can do on PageWriteback is block */
-+		if (PageWriteback(page))
-+			return ret;
-+
-+		if (PageDirty(page)) {
-+			struct address_space *mapping;
-+
-+			/* ISOLATE_CLEAN means only clean pages */
-+			if (mode & ISOLATE_CLEAN)
-+				return ret;
-+
-+			/*
-+			 * Only pages without mappings or that have a
-+			 * ->migratepage callback are possible to migrate
-+			 * without blocking
-+			 */
-+			mapping = page_mapping(page);
-+			if (mapping && !mapping->a_ops->migratepage)
-+				return ret;
-+		}
++	if (compaction_deferred(preferred_zone)) {
++		*deferred_compaction = true;
++		return NULL;
 +	}
++
+ 	current->flags |= PF_MEMALLOC;
+ 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+ 						nodemask, sync_migration);
+@@ -1932,7 +1938,13 @@ __alloc_pages_direct_compact(gfp_t gfp_m
+ 		 * but not enough to satisfy watermarks.
+ 		 */
+ 		count_vm_event(COMPACTFAIL);
+-		defer_compaction(preferred_zone);
++
++		/*
++		 * As async compaction considers a subset of pageblocks, only
++		 * defer if the failure was a sync compaction failure.
++		 */
++		if (sync_migration)
++			defer_compaction(preferred_zone);
  
- 	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
- 		return ret;
+ 		cond_resched();
+ 	}
+@@ -1944,8 +1956,9 @@ static inline struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, unsigned long *did_some_progress,
+-	bool sync_migration)
++	int migratetype, bool sync_migration,
++	bool *deferred_compaction,
++	unsigned long *did_some_progress)
+ {
+ 	return NULL;
+ }
+@@ -2095,6 +2108,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
+ 	unsigned long pages_reclaimed = 0;
+ 	unsigned long did_some_progress;
+ 	bool sync_migration = false;
++	bool deferred_compaction = false;
+ 
+ 	/*
+ 	 * In the slowpath, we sanity check order to avoid ever trying to
+@@ -2175,12 +2189,22 @@ rebalance:
+ 					zonelist, high_zoneidx,
+ 					nodemask,
+ 					alloc_flags, preferred_zone,
+-					migratetype, &did_some_progress,
+-					sync_migration);
++					migratetype, sync_migration,
++					&deferred_compaction,
++					&did_some_progress);
+ 	if (page)
+ 		goto got_pg;
+ 	sync_migration = true;
+ 
++	/*
++	 * If compaction is deferred for high-order allocations, it is because
++	 * sync compaction recently failed. In this is the case and the caller
++	 * has requested the system not be heavily disrupted, fail the
++	 * allocation now instead of entering direct reclaim
++	 */
++	if (deferred_compaction && (gfp_mask & __GFP_NO_KSWAPD))
++		goto nopage;
++
+ 	/* Try direct reclaim and then allocating */
+ 	page = __alloc_pages_direct_reclaim(gfp_mask, order,
+ 					zonelist, high_zoneidx,
+@@ -2243,8 +2267,9 @@ rebalance:
+ 					zonelist, high_zoneidx,
+ 					nodemask,
+ 					alloc_flags, preferred_zone,
+-					migratetype, &did_some_progress,
+-					sync_migration);
++					migratetype, sync_migration,
++					&deferred_compaction,
++					&did_some_progress);
+ 		if (page)
+ 			goto got_pg;
+ 	}
 
 
