@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab2G3H4v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:56:51 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:48041 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753714Ab2G3H4t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 03:56:49 -0400
-Date: Mon, 30 Jul 2012 15:56:28 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
+	id S1754109Ab2G3IBD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 04:01:03 -0400
+Received: from ozlabs.org ([203.10.76.45]:53065 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024Ab2G3IBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 04:01:01 -0400
+Message-ID: <1343635259.10666.1.camel@concordia>
+Subject: Re: [PATCH 3/4] powerpc/crypto: add 842 hardware compression driver
+From: Michael Ellerman <michael@ellerman.id.au>
 To: Seth Jennings <sjenning@linux.vnet.ibm.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Kent Yoder <key@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 0/4] powerpc/crypto: IBM Power7+ in-Nest compression
- support
-Message-ID: <20120730075628.GE5515@gondor.apana.org.au>
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
+        linux-crypto@vger.kernel.org
+Date: Mon, 30 Jul 2012 18:00:59 +1000
+In-Reply-To: <500964A7.1020702@linux.vnet.ibm.com>
 References: <1342708961-28587-1-git-send-email-sjenning@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342708961-28587-1-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	 <1342708961-28587-4-git-send-email-sjenning@linux.vnet.ibm.com>
+	 <1342762410.15356.7.camel@concordia> <500964A7.1020702@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 09:42:37AM -0500, Seth Jennings wrote:
-> This is a continuation of support for the Power7+ in-Nest
-> hardware accelerator.
+On Fri, 2012-07-20 at 09:01 -0500, Seth Jennings wrote:
+> On 07/20/2012 12:33 AM, Michael Ellerman wrote:
+> > On Thu, 2012-07-19 at 09:42 -0500, Seth Jennings wrote:
+> >> This patch adds the driver for interacting with the 842
+> >> compression accelerator on IBM Power7+ systems.
+> > 
+> > ...
+> > 
+> >> +struct nx842_slentry {
+> >> +	unsigned long ptr; /* Absolute address (use virt_to_abs()) */
+> >> /+	unsigned long len;
+> >> +};
+> > 
+> > These days virt_to_abs() is just __pa() - ie. convert to a real address.
 > 
-> https://lkml.org/lkml/2012/4/12/223
+> Thanks, I'll make that change.
 > 
-> This patchset adds the hardware driver and the cryptographic
-> driver for hardware accelerated compression, which uses a
-> hardware-optimized algorithm named 842.
-> 
-> The hardware driver has limits on generic compression and is
-> geared toward compressing units that are of PAGE_SIZE for
-> in-kernel memory compression.
-> 
-> Based on linux-next (20120717)
-> 
-> Seth Jennings (4):
+> Is it a blocker to the code being pulled in though? I'm
+> hoping to get this in ASAP for the 3.6 merge window.  As
+> this isn't a functional defect (I assume __pa() and
+> virt_to_abs() still achieve the same result), can I get an
+> OK from you that this isn't a blocker to the code being
+> accepted?
 
-All applied.  Thanks Seth.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Sorry I missed your reply. No it's not a blocker, just ugly.
+
+I have sent a series to Ben which removes virt_to_abs() entirely, so
+we'll want to make sure we fixup the nx driver before that goes in.
+
+cheers
+
