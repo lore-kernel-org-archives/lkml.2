@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab2G3Rce (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:32:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748Ab2G3Rc3 (ORCPT
+	id S1754842Ab2G3Rcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:32:43 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38800 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754748Ab2G3Rcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:29 -0400
+	Mon, 30 Jul 2012 13:32:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dimitri Sivanich <sivanich@sgi.com>, Christoph Lameter <cl@gentwo.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
         Mel Gorman <mel@csn.ul.ie>, Mel Gorman <mgorman@suse.de>
-Subject: [ 07/41] mm/vmstat.c: cache align vm_stat
-Date: Mon, 30 Jul 2012 10:31:06 -0700
-Message-Id: <20120730172901.882088274@linuxfoundation.org>
+Subject: [ 10/41] mm: vmscan: fix force-scanning small targets without swap
+Date: Mon, 30 Jul 2012 10:31:09 -0700
+Message-Id: <20120730172902.122939996@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -30,42 +35,86 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dimitri Sivanich <sivanich@sgi.com>
+From: Johannes Weiner <jweiner@redhat.com>
 
-commit a1cb2c60ddc98ff4e5246f410558805401ceee67 upstream.
+commit a4d3e9e76337059406fcf3ead288c0df22a790e9 upstream.
 
-Stable note: Not tracked on Bugzilla. This patch is known to make a big
-        difference to tmpfs performance on larger machines.
+Stable note: Not tracked in Bugzilla. This patch augments an earlier commit
+        that avoids scanning priority being artificially raised. The older
+	fix was particularly important for small memcgs to avoid calling
+	wait_iff_congested() unnecessarily.
 
-This was found to adversely affect tmpfs I/O performance.
+Without swap, anonymous pages are not scanned.  As such, they should not
+count when considering force-scanning a small target if there is no swap.
 
-Tests run on a 640 cpu UV system.
+Otherwise, targets are not force-scanned even when their effective scan
+number is zero and the other conditions--kswapd/memcg--apply.
 
-With 120 threads doing parallel writes, each to different tmpfs mounts:
-No patch:		~300 MB/sec
-With vm_stat alignment:	~430 MB/sec
+This fixes 246e87a93934 ("memcg: fix get_scan_count() for small
+targets").
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-Acked-by: Christoph Lameter <cl@gentwo.org>
+[akpm@linux-foundation.org: fix comment]
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Ying Han <yinghan@google.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 Acked-by: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmstat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/vmscan.c |   27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -78,7 +78,7 @@ void vm_events_fold_cpu(int cpu)
-  *
-  * vm_stat contains the global counters
-  */
--atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
-+atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS] __cacheline_aligned_in_smp;
- EXPORT_SYMBOL(vm_stat);
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1747,23 +1747,15 @@ static void get_scan_count(struct zone *
+ 	u64 fraction[2], denominator;
+ 	enum lru_list l;
+ 	int noswap = 0;
+-	int force_scan = 0;
++	bool force_scan = false;
+ 	unsigned long nr_force_scan[2];
  
- #ifdef CONFIG_SMP
+-
+-	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
+-		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
+-	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
+-		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
+-
+-	if (((anon + file) >> priority) < SWAP_CLUSTER_MAX) {
+-		/* kswapd does zone balancing and need to scan this zone */
+-		if (scanning_global_lru(sc) && current_is_kswapd())
+-			force_scan = 1;
+-		/* memcg may have small limit and need to avoid priority drop */
+-		if (!scanning_global_lru(sc))
+-			force_scan = 1;
+-	}
++	/* kswapd does zone balancing and needs to scan this zone */
++	if (scanning_global_lru(sc) && current_is_kswapd())
++		force_scan = true;
++	/* memcg may have small limit and need to avoid priority drop */
++	if (!scanning_global_lru(sc))
++		force_scan = true;
+ 
+ 	/* If we have no swap space, do not bother scanning anon pages. */
+ 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
+@@ -1776,6 +1768,11 @@ static void get_scan_count(struct zone *
+ 		goto out;
+ 	}
+ 
++	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
++		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
++	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
++		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
++
+ 	if (scanning_global_lru(sc)) {
+ 		free  = zone_page_state(zone, NR_FREE_PAGES);
+ 		/* If we have very few page cache pages,
 
 
