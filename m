@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab2G3RcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:32:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47764 "EHLO
+	id S1754618Ab2G3RcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:32:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623Ab2G3RcL (ORCPT
+	with ESMTP id S1754526Ab2G3RcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:32:11 -0400
+	Mon, 30 Jul 2012 13:32:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 17/41] mm: compaction: trivial clean up in acct_isolated()
-Date: Mon, 30 Jul 2012 10:31:16 -0700
-Message-Id: <20120730172902.654702674@linuxfoundation.org>
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [ 16/41] vmscan: abort reclaim/compaction if compaction can proceed
+Date: Mon, 30 Jul 2012 10:31:15 -0700
+Message-Id: <20120730172902.575124685@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -34,28 +32,24 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Minchan Kim <minchan.kim@gmail.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit b9e84ac1536d35aee03b2601f19694949f0bd506 upstream.
+commit e0c23279c9f800c403f37511484d9014ac83adec upstream.
 
-Stable note: Not tracked in Bugzilla. This patch makes later patches
-	easier to apply but has no other impact.
+Stable note: Not tracked on Bugzilla. THP and compaction was found to
+	aggressively reclaim pages and stall systems under different
+	situations that was addressed piecemeal over time.
 
-acct_isolated of compaction uses page_lru_base_type which returns only
-base type of LRU list so it never returns LRU_ACTIVE_ANON or
-LRU_ACTIVE_FILE.  In addtion, cc->nr_[anon|file] is used in only
-acct_isolated so it doesn't have fields in conpact_control.
+If compaction can proceed, shrink_zones() stops doing any work but its
+callers still call shrink_slab() which raises the priority and potentially
+sleeps.  This is unnecessary and wasteful so this patch aborts direct
+reclaim/compaction entirely if compaction can proceed.
 
-This patch removes fields from compact_control and makes clear function of
-acct_issolated which counts the number of anon|file pages isolated.
-
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <jweiner@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
@@ -63,44 +57,81 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/compaction.c |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ mm/vmscan.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -35,10 +35,6 @@ struct compact_control {
- 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
- 	bool sync;			/* Synchronous migration */
- 
--	/* Account for isolated anon and file pages */
--	unsigned long nr_anon;
--	unsigned long nr_file;
--
- 	unsigned int order;		/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
-@@ -223,17 +219,13 @@ static void isolate_freepages(struct zon
- static void acct_isolated(struct zone *zone, struct compact_control *cc)
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2037,14 +2037,19 @@ restart:
+  *
+  * If a zone is deemed to be full of pinned pages then just give it a light
+  * scan then give up on it.
++ *
++ * This function returns true if a zone is being reclaimed for a costly
++ * high-order allocation and compaction is either ready to begin or deferred.
++ * This indicates to the caller that it should retry the allocation or fail.
+  */
+-static void shrink_zones(int priority, struct zonelist *zonelist,
++static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
  {
- 	struct page *page;
--	unsigned int count[NR_LRU_LISTS] = { 0, };
-+	unsigned int count[2] = { 0, };
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
++	bool should_abort_reclaim = false;
  
--	list_for_each_entry(page, &cc->migratepages, lru) {
--		int lru = page_lru_base_type(page);
--		count[lru]++;
--	}
-+	list_for_each_entry(page, &cc->migratepages, lru)
-+		count[!!page_is_file_cache(page)]++;
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2061,19 +2066,20 @@ static void shrink_zones(int priority, s
+ 				continue;	/* Let kswapd poll it */
+ 			if (COMPACTION_BUILD) {
+ 				/*
+-				 * If we already have plenty of memory
+-				 * free for compaction, don't free any
+-				 * more.  Even though compaction is
+-				 * invoked for any non-zero order,
+-				 * only frequent costly order
+-				 * reclamation is disruptive enough to
+-				 * become a noticable problem, like
+-				 * transparent huge page allocations.
++				 * If we already have plenty of memory free for
++				 * compaction in this zone, don't free any more.
++				 * Even though compaction is invoked for any
++				 * non-zero order, only frequent costly order
++				 * reclamation is disruptive enough to become a
++				 * noticable problem, like transparent huge page
++				 * allocations.
+ 				 */
+ 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+ 					(compaction_suitable(zone, sc->order) ||
+-					 compaction_deferred(zone)))
++					 compaction_deferred(zone))) {
++					should_abort_reclaim = true;
+ 					continue;
++				}
+ 			}
+ 			/*
+ 			 * This steals pages from memory cgroups over softlimit
+@@ -2092,6 +2098,8 @@ static void shrink_zones(int priority, s
  
--	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
--	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
--	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
--	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+ 		shrink_zone(priority, zone, sc);
+ 	}
++
++	return should_abort_reclaim;
  }
  
- /* Similar to reclaim, but different enough that they don't share logic */
+ static bool zone_reclaimable(struct zone *zone)
+@@ -2156,7 +2164,9 @@ static unsigned long do_try_to_free_page
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		shrink_zones(priority, zonelist, sc);
++		if (shrink_zones(priority, zonelist, sc))
++			break;
++
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from
+ 		 * over limit cgroups
 
 
