@@ -1,166 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab2G3JOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 05:14:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36906 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab2G3JK2 (ORCPT
+	id S1752445Ab2G3JRY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 05:17:24 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:7605 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab2G3JRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 05:10:28 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
-        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v6 05/11] drivers: usb: twl6030: Add dt support for twl6030 usb
-Date: Mon, 30 Jul 2012 14:39:54 +0530
-Message-ID: <1343639400-28725-6-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1343639400-28725-1-git-send-email-kishon@ti.com>
-References: <1343639400-28725-1-git-send-email-kishon@ti.com>
+	Mon, 30 Jul 2012 05:17:22 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6787"; a="215812303"
+Message-ID: <5016510B.9010202@codeaurora.org>
+Date: Mon, 30 Jul 2012 02:16:59 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: a.zummo@towertech.it, sameo@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com, ldewangan@nvidia.com,
+        kyle.manna@fuel7.com, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+References: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support for twl6030 usb driver.
-Update the Documentation with device tree binding information.
+On 7/25/2012 11:35 PM, Venu Byravarasu wrote:
+> +
+> +static struct rtc_class_ops tps65910_rtc_ops = {
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- .../devicetree/bindings/usb/twlxxxx-usb.txt        |   21 +++++++++++
- drivers/usb/otg/twl6030-usb.c                      |   39 +++++++++++++-------
- 2 files changed, 47 insertions(+), 13 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
+const?
 
-diff --git a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-new file mode 100644
-index 0000000..930f9ff
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-@@ -0,0 +1,21 @@
-+USB COMPARATOR OF TWL CHIPS
-+
-+TWL6030 USB COMPARATOR
-+ - compatible : Should be "ti,twl6030-usb"
-+ - interrupts : Two interrupt numbers to the cpu should be specified. First
-+   interrupt number is the otg interrupt number that raises ID interrupts when
-+   the controller has to act as host and the second interrupt number is the
-+   usb interrupt number that raises VBUS interrupts when the controller has to
-+   act as device
-+ - usb-supply : phandle to the regulator device tree node. It should be vusb
-+   if it is twl6030 or ldousb if it is twl6025 subclass.
-+
-+twl6030-usb {
-+	compatible = "ti,twl6030-usb";
-+	interrupts = < 4 10 >;
-+};
-+
-+Board specific device node entry
-+&twl6030-usb {
-+	usb-supply = <&vusb>;
-+};
-diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
-index 6a361d2..f29c9ef 100644
---- a/drivers/usb/otg/twl6030-usb.c
-+++ b/drivers/usb/otg/twl6030-usb.c
-@@ -105,7 +105,7 @@ struct twl6030_usb {
- 	u8			asleep;
- 	bool			irq_enabled;
- 	bool			vbus_enable;
--	unsigned long		features;
-+	const char		*regulator;
- };
- 
- #define	comparator_to_twl(x) container_of((x), struct twl6030_usb, comparator)
-@@ -153,13 +153,6 @@ static int twl6030_start_srp(struct phy_companion *comparator)
- 
- static int twl6030_usb_ldo_init(struct twl6030_usb *twl)
- {
--	char *regulator_name;
--
--	if (twl->features & TWL6025_SUBCLASS)
--		regulator_name = "ldousb";
--	else
--		regulator_name = "vusb";
--
- 	/* Set to OTG_REV 1.3 and turn on the ID_WAKEUP_COMP */
- 	twl6030_writeb(twl, TWL6030_MODULE_ID0 , 0x1, TWL6030_BACKUP_REG);
- 
-@@ -169,7 +162,7 @@ static int twl6030_usb_ldo_init(struct twl6030_usb *twl)
- 	/* Program MISC2 register and set bit VUSB_IN_VBAT */
- 	twl6030_writeb(twl, TWL6030_MODULE_ID0 , 0x10, TWL6030_MISC2);
- 
--	twl->usb3v3 = regulator_get(twl->dev, regulator_name);
-+	twl->usb3v3 = regulator_get(twl->dev, twl->regulator);
- 	if (IS_ERR(twl->usb3v3))
- 		return -ENODEV;
- 
-@@ -324,9 +317,9 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- {
- 	struct twl6030_usb	*twl;
- 	int			status, err;
--	struct twl4030_usb_data *pdata;
--	struct device *dev = &pdev->dev;
--	pdata = dev->platform_data;
-+	struct device_node	*np = pdev->dev.of_node;
-+	struct device		*dev = &pdev->dev;
-+	struct twl4030_usb_data	*pdata = dev->platform_data;
- 
- 	twl = devm_kzalloc(dev, sizeof *twl, GFP_KERNEL);
- 	if (!twl)
-@@ -335,13 +328,24 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	twl->dev		= &pdev->dev;
- 	twl->irq1		= platform_get_irq(pdev, 0);
- 	twl->irq2		= platform_get_irq(pdev, 1);
--	twl->features		= pdata->features;
- 	twl->linkstat		= OMAP_MUSB_UNKNOWN;
- 
- 	twl->comparator.set_vbus	= twl6030_set_vbus;
- 	twl->comparator.start_srp	= twl6030_start_srp;
- 	omap_usb2_set_comparator(&twl->comparator);
- 
-+	if (np) {
-+		twl->regulator = "usb";
-+	} else if (pdata) {
-+		if (pdata->features & TWL6025_SUBCLASS)
-+			twl->regulator = "ldousb";
-+		else
-+			twl->regulator = "vusb";
-+	} else {
-+		dev_err(&pdev->dev, "twl6030 initialized without pdata\n");
-+		return -EINVAL;
-+	}
-+
- 	/* init spinlock for workqueue */
- 	spin_lock_init(&twl->lock);
- 
-@@ -403,12 +407,21 @@ static int __exit twl6030_usb_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id twl6030_usb_id_table[] = {
-+	{ .compatible = "ti,twl6030-usb" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, twl6030_usb_id_table);
-+#endif
-+
- static struct platform_driver twl6030_usb_driver = {
- 	.probe		= twl6030_usb_probe,
- 	.remove		= __exit_p(twl6030_usb_remove),
- 	.driver		= {
- 		.name	= "twl6030_usb",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(twl6030_usb_id_table),
- 	},
- };
- 
+> +	.read_time	= tps65910_rtc_read_time,
+> +	.set_time	= tps65910_rtc_set_time,
+> +	.read_alarm	= tps65910_rtc_read_alarm,
+> +	.set_alarm	= tps65910_rtc_set_alarm,
+> +	.alarm_irq_enable = tps65910_rtc_alarm_irq_enable,
+> +};
+> +
+> +static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
+> +{
+> +	struct tps65910 *tps65910 = NULL;
+> +	struct tps65910_rtc *tps_rtc = NULL;
+> +	struct tps65910_board *pmic_plat_data;
+> +	int ret = -EINVAL;
+> +	int irq = 0;
+> +	u32 rtc_reg;
+
+It seems like all the above assignments are useless as they're
+overwritten later in this function. Can you remove the assignments?
+
+> +
+> +	tps65910 = dev_get_drvdata(pdev->dev.parent);
+> +
+> +	tps_rtc = devm_kzalloc(&pdev->dev, sizeof(struct tps65910_rtc),
+> +			GFP_KERNEL);
+> +	if (!tps_rtc)
+> +		return -ENOMEM;
+> +
+> +	/* Clear pending interrupts */
+> +	ret = regmap_read(tps65910->regmap, TPS65910_RTC_STATUS, &rtc_reg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = regmap_write(tps65910->regmap, TPS65910_RTC_STATUS, rtc_reg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	dev_dbg(&pdev->dev, "Enabling tps65910-RTC.\n");
+
+Hmph, looks more like stopping the RTC.
+
+> +	rtc_reg = TPS65910_RTC_CTRL_STOP_RTC;
+> +	ret = regmap_write(tps65910->regmap, TPS65910_RTC_CTRL, rtc_reg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	pmic_plat_data = dev_get_platdata(tps65910->dev);
+> +	irq = pmic_plat_data->irq_base;
+> +	if (irq <= 0) {
+> +		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n",
+> +			irq);
+> +		return ret;
+> +	}
+> +
+> +	irq += TPS65910_IRQ_RTC_ALARM;
+> +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+> +		tps65910_rtc_interrupt, IRQF_TRIGGER_LOW,
+> +		dev_name(&tps_rtc->rtc->dev), &pdev->dev);
+
+How does this work? It doesn't look like tps_rtc->rtc is assigned until
+down there at the rtc_device_register() call.
+
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "IRQ is not free.\n");
+> +		return ret;
+> +	}
+> +	device_init_wakeup(&pdev->dev, 1);
+> +
+> +	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+> +		&tps65910_rtc_ops, THIS_MODULE);
+> +	if (IS_ERR(tps_rtc->rtc)) {
+> +		ret = PTR_ERR(tps_rtc->rtc);
+> +		dev_err(&pdev->dev, "RTC device register: err %d\n", ret);
+> +		return ret;
+> +	}
+> +
+
 -- 
-1.7.9.5
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
