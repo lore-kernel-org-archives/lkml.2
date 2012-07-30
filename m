@@ -1,109 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab2G3MPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 08:15:35 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:34111 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422Ab2G3MPe (ORCPT
+	id S1753701Ab2G3MUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 08:20:10 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42923 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583Ab2G3MUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 08:15:34 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-77-50167ae52c75
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+	Mon, 30 Jul 2012 08:20:08 -0400
+Date: Mon, 30 Jul 2012 15:20:02 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, linaro-mm-sig@lists.linaro.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [GIT PULL] DMA-mapping updates for v3.6
-Date: Mon, 30 Jul 2012 14:15:16 +0200
-Message-id: <1343650516-15726-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t9jQd2nVWIBBq/ecFhc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mjll9jAW/JCo2zjvE2sB4Q6iLkZNDQsBEYtO350wQtpjEhXvr
-	2boYuTiEBKYzSjRdXsoGkhASWM0ksXpuIIjNJmAo0fW2CywuImAk8fnFFVaQBmaB7UwSr1/+
-	BkpwcAgLGEh8WysCUsMioCrxasMaRhCbV8BD4sijnYwQy+Qlnt7vY5vAyL2AkWEVo2hqQXJB
-	cVJ6rqFecWJucWleul5yfu4mRrAHn0ntYFzZYHGIUYCDUYmH1/CyaIAQa2JZcWXuIUYJDmYl
-	Ed5JImIBQrwpiZVVqUX58UWlOanFhxilOViUxHmNvb/6CwmkJ5akZqemFqQWwWSZODilGhjX
-	x04+vdL0Zpt37jfhrGcKZkvFj0b2now5dWnLM1b2LNszp3ZtM1mpeSmE7em/jeK3lDMNvLLc
-	7DSmnNY5Iztx8ots2S8tzvpznuZdsdun0vly9dZqnaSnSw1PNFnuuBmSIvfjy93fL7sj68UM
-	r/965C61Yg570fmfYjdvJFgsiuHJlBBJqJZTYinOSDTUYi4qTgQAeATW69wBAAA=
-X-TM-AS-MML: No
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>,
+        Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] SLAB changes for v3.6-rc0
+Message-ID: <alpine.LFD.2.02.1207301518250.29770@tux.localdomain>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-I would like to ask for pulling another set of DMA-mapping framework
-updates for v3.6.
+Please pull the latest SLAB tree from:
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/next
 
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
+Most of the changes included are from Christoph Lameter's "common slab"
+patch series that unifies common parts of SLUB, SLAB, and SLOB
+allocators. The unification is needed for Glauber Costa's "kmem memcg"
+work that will hopefully appear for v3.7.
 
-with the top-most commit 97ef952a20853fad72087a53fa556fbec45edd8f
+Rest of the changes are fixes and speedups by various people.
 
-  ARM: dma-mapping: add support for DMA_ATTR_SKIP_CPU_SYNC attribute
+			Pekka
+
+------------------>
+The following changes since commit f7da9cdf45cbbad5029d4858dcbc0134e06084ed:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-07-28 06:00:39 -0700)
 
 are available in the git repository at:
 
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-linus-for-3.6-rc1
+  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/next
 
-Those patches are continuation of my earlier works merged in commits
-58bca4a8fa90 and d484864dd96e1. They contains extensions to DMA-mapping
-framework to remove limitation of the current ARM implementation (like
-limited total size of DMA coherent/write combine buffers), improve
-performance of buffer sharing between devices (attributes to skip cpu
-cache operations or creation of additional kernel mapping for some
-specific use cases) as well as some unification of the common code for
-dma_mmap_attrs()/dma_mmap_coherent() functions. All extensions have been
-implemented and tested for ARM architecture.
+Andi Kleen (1):
+      slab/mempolicy: always use local policy from interrupt context
 
-Thanks!
+Christoph Lameter (21):
+      slub: Use freelist instead of "object" in __slab_alloc
+      slub: Add frozen check in __slab_alloc
+      slub: Acquire_slab() avoid loop
+      slub: Simplify control flow in __slab_alloc()
+      slub: new_slab_objects() can also get objects from partial list
+      slub: Get rid of the node field
+      slub: Separate out kmem_cache_cpu processing from deactivate_slab
+      slub: Use page variable instead of c->page.
+      slub: pass page to node_match() instead of kmem_cache_cpu structure
+      slob: Define page struct fields used in mm_types.h
+      slob: No need to zero mapping since it is no longer in use
+      slob: Remove various small accessors
+      slab: Use page struct fields instead of casting
+      slab: Remove some accessors
+      mm, sl[aou]b: Extract common fields from struct kmem_cache
+      slab: Get rid of obj_size macro
+      mm, sl[aou]b: Extract common code for kmem_cache_create()
+      mm, sl[aou]b: Common definition for boot state of the slab allocators
+      mm, sl[aou]b: Use a common mutex definition
+      mm, sl[aou]b: Move kmem_cache_create mutex handling to common code
+      slob: Fix early boot kernel crash
 
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
+David Rientjes (1):
+      mm, slub: ensure irqs are enabled for kmemcheck
 
+Feng Tang (1):
+      slab: Fix a typo in commit 8c138b "slab: Get rid of obj_size macro"
 
-Patch summary:
+Glauber Costa (2):
+      slab: rename gfpflags to allocflags
+      slab: move FULL state transition to an initcall
 
-Marek Szyprowski (11):
-      mm: vmalloc: use const void * for caller argument
-      ARM: dma-mapping: remove custom consistent dma region
-      ARM: dma-mapping: add more sanity checks in arm_dma_mmap()
-      ARM: dma-mapping: fix error path for memory allocation failure
-      common: dma-mapping: add support for generic dma_mmap_* calls
-      common: DMA-mapping: add DMA_ATTR_NO_KERNEL_MAPPING attribute
-      ARM: dma-mapping: add support for DMA_ATTR_NO_KERNEL_MAPPING attribute
-      common: dma-mapping: introduce dma_get_sgtable() function
-      ARM: dma-mapping: add support for dma_get_sgtable()
-      common: DMA-mapping: add DMA_ATTR_SKIP_CPU_SYNC attribute
-      ARM: dma-mapping: add support for DMA_ATTR_SKIP_CPU_SYNC attribute
+Joonsoo Kim (2):
+      slub: use __cmpxchg_double_slab() at interrupt disabled place
+      slub: refactoring unfreeze_partials()
 
-Tomasz Stanislawski (1):
-      scatterlist: add sg_alloc_table_from_pages function
+Julia Lawall (1):
+      slub: remove invalid reference to list iterator variable
 
- Documentation/DMA-attributes.txt         |   42 +++
- Documentation/kernel-parameters.txt      |    2 +-
- arch/arm/common/dmabounce.c              |    1 +
- arch/arm/include/asm/dma-mapping.h       |   24 +-
- arch/arm/mm/dma-mapping.c                |  561 ++++++++++++------------------
- arch/arm/mm/mm.h                         |    3 +
- arch/powerpc/include/asm/dma-mapping.h   |    8 +-
- arch/powerpc/kernel/dma-iommu.c          |    1 +
- arch/powerpc/kernel/dma-swiotlb.c        |    1 +
- arch/powerpc/kernel/dma.c                |   36 +-
- arch/powerpc/kernel/vio.c                |    1 +
- drivers/base/dma-mapping.c               |   49 +++
- include/asm-generic/dma-coherent.h       |    1 +
- include/asm-generic/dma-mapping-common.h |   55 +++
- include/linux/dma-attrs.h                |    2 +
- include/linux/dma-mapping.h              |    3 +
- include/linux/scatterlist.h              |    4 +
- include/linux/vmalloc.h                  |    9 +-
- lib/scatterlist.c                        |   64 ++++
- mm/vmalloc.c                             |   28 +-
- 20 files changed, 505 insertions(+), 390 deletions(-)
+Pekka Enberg (1):
+      Merge branch 'slub/cleanups' into slab/next
+
+Shuah Khan (1):
+      mm: Fix build warning in kmem_cache_create()
+
+Thierry Reding (1):
+      mm, slab: Build fix for recent kmem_cache changes
+
+majianpeng (1):
+      mm: Fix signal SIGFPE in slabinfo.c.
+
+ include/linux/mempolicy.h |    2 +-
+ include/linux/mm_types.h  |   11 +-
+ include/linux/slab.h      |   24 +++
+ include/linux/slab_def.h  |   12 +-
+ include/linux/slub_def.h  |    3 +-
+ mm/Makefile               |    3 +-
+ mm/mempolicy.c            |    8 +-
+ mm/slab.c                 |  406 ++++++++++++++++--------------------------
+ mm/slab.h                 |   33 ++++
+ mm/slab_common.c          |  120 +++++++++++++
+ mm/slob.c                 |  152 +++++-----------
+ mm/slub.c                 |  436 +++++++++++++++++++++------------------------
+ tools/vm/slabinfo.c       |   14 +-
+ 13 files changed, 608 insertions(+), 616 deletions(-)
+ create mode 100644 mm/slab.h
+ create mode 100644 mm/slab_common.c
