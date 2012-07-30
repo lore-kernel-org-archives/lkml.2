@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab2G3Iwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 04:52:49 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62728 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab2G3Iwr (ORCPT
+	id S1754177Ab2G3I5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 04:57:16 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:55601 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab2G3I5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 04:52:47 -0400
+	Mon, 30 Jul 2012 04:57:14 -0400
+Message-ID: <50164C4F.7030905@panasas.com>
+Date: Mon, 30 Jul 2012 11:56:47 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-X-Originating-IP: [115.42.131.38]
-In-Reply-To: <20120727171011.GF11608@xanatos>
-References: <1343361824-11417-1-git-send-email-daniel@quora.org>
-	<20120727061430.GC11608@xanatos>
-	<CAMVG2sv1vDe-jmS+U-6QCLX67S57zxkAk-jYiFX59jcOEEGfPA@mail.gmail.com>
-	<20120727171011.GF11608@xanatos>
-Date: Mon, 30 Jul 2012 16:52:46 +0800
-Message-ID: <CAMVG2suG2Bde72EzWBE59fWC=VdkZjdXDftbbC_fRmbxJoujYg@mail.gmail.com>
-Subject: Re: [PATCH] Add Etron XHCI quirk to avoid warning spam
-From: Daniel J Blueman <daniel@quora.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
+        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
+        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
+ Fix address translation failure of HighMem pages used by sg list)
+References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com> <5010F07E.7050506@redhat.com> <5010F831.9030300@panasas.com> <5010F896.8090409@redhat.com> <501140A3.9090908@redhat.com> <874notoh02.fsf@rustcorp.com.au> <50124D2E.7050407@redhat.com> <87obmym8jv.fsf@rustcorp.com.au> <501633EA.603@redhat.com>
+In-Reply-To: <501633EA.603@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 July 2012 01:10, Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
-> On Fri, Jul 27, 2012 at 02:40:56PM +0800, Daniel J Blueman wrote:
->> On 27 July 2012 14:14, Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
->> > On Fri, Jul 27, 2012 at 12:03:44PM +0800, Daniel J Blueman wrote:
->> >> When various USB3 devices with Etron XHCI controllers, we see a bunch of
->> >> warnings:
->> >> xhci_hcd 0000:02:00.0: WARN Successful completion on short TX: needs
->> >> XHCI_TRUST_TX_LENGTH quirk?
->> >>
->> >> Acknowledge the issue by adding the quirk.
->> >>
->> >> Signed-off-by: Daniel J Blueman <daniel@quora.org>
->> []
->> > I already have a patch in my queue for this.  However, it keys off the
->> > PCI_DEVICE_ID_ASROCK_P67 PCI device ID.  Do you have another Etron
->> > device with a different device ID that needs this quirk?
+On 07/30/2012 10:12 AM, Paolo Bonzini wrote:
+
+> Il 30/07/2012 01:50, Rusty Russell ha scritto:
+>>> Also, being the first user of chained scatterlist doesn't exactly give
+>>> me warm fuzzies.
 >>
->> Yes, the subsystem ID is different [1] (but Zotac program it the same
->> as the vendor and device IDs here), however what you say suggests the
->> problem is general to this Etron XHCI controller (1b6f:7023), as we'd
->> suspect anyway.
->>
->> Thus the more general patch I posted makes better sense perhaps?
->
-> I'd really like to keep this quirk specific to the particular PCI vendor
-> and device ID.  It's possible that their next chip version will have the
-> opposite issue (short TX completion code and bad untransferred length).
->
-> Your patch turned it on for all Etron hosts, so I would rather keep my
-> version:
->
-> http://git.kernel.org/?p=linux/kernel/git/sarah/xhci.git;a=commit;h=12751f75720391bb2b607acdb2537f02e313251e
-[]
+>> We're far from the first user: they've been in the kernel for well over
+>> 7 years.  They were introduced for the block layer, but they tended to
+>> ignore private uses of scatterlists like this one.
+> 
+> Yeah, but sg_chain has no users in drivers, only a private one in
+> lib/scatterlist.c.  The internal API could be changed to something else
+> and leave virtio-scsi screwed...
+> 
+>> Yes, we should do this.  But note that this means an iteration, so we
+>> might as well combine the loops :)
+> 
+> I'm really bad at posting pseudo-code, but you can count the number of
+> physically-contiguous entries at the beginning of the list only.  So if
+> everything is contiguous, you use a single non-indirect buffer and save
+> a kmalloc.  If you use indirect buffers, I suspect it's much less
+> effective to collapse physically-contiguous entries.  More elaborate
+> heuristics do need a loop, though.
+> 
 
-Ok, the patch is correct since PCI_DEVICE_ID_ASROCK_P67 evaluates to
-0x7023, which is the Etron EJ168 device ID.
 
-Board-specific IDs (as the definition name suggests) are used for the
-subsystem IDs, so this name is misleading (and misled me at least).
+[All the below with a grain of salt, from my senile memory]
 
-Can you fix this up with a patch to change PCI_DEVICE_ID_ASROCK_P67 to
-PCI_DEVICE_ID_ETRON_EJ168, else I can cook and test a patch?
+You must not forget some facts about the scatterlist received here at the LLD.
+It has already been DMA mapped and locked by the generic layer.
+Which means that the DMA engine has already collapsed physically-contiguous
+entries. Those you get here are already unique physically.
+(There were bugs in the past, where this was not true, please complain
+ if you find them again)
 
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
+A scatterlist is two different lists taking the same space, but with two
+different length.
+- One list is the PAGE pointers plus offset && length, which is bigger or
+  equal to the 2nd list. The end marker corresponds to this list.
+
+  This list is the input into the DMA engine.
+
+- Second list is the physical DMA addresses list. With their physical-lengths.
+  Offset is not needed because it is incorporated in the DMA address.
+
+  This list is the output from the DMA engine.
+
+  The reason 2nd list is shorter is because the DMA engine tries to minimize
+  the physical scatter-list entries which is usually a limited HW resource.
+
+  This list might follow chains but it's end is determined by the received
+  sg_count from the DMA engine, not by the end marker.
+
+At the time my opinion, and I think Rusty agreed, was that the scatterlist
+should be split in two. The input page-ptr list is just the BIO, and the
+output of the DMA-engine should just be the physical part of the sg_list,
+as a separate parameter. But all this was berried under too much APIs and
+the noise was two strong, for any single brave sole.
+
+So I'd just trust blindly the returned sg_count from the DMA engine, it is
+already optimized. I THINK
+
+> Paolo
+
+
+Boaz
