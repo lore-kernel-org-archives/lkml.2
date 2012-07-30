@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab2G3JKa (ORCPT <rfc822;w@1wt.eu>);
+	id S1752707Ab2G3JKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 05:10:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44181 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433Ab2G3JKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jul 2012 05:10:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36898 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab2G3JK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 05:10:27 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <rob@landley.net>, <linux@arm.linux.org.uk>,
@@ -15,9 +14,9 @@ To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v6 04/11] arm: omap: hwmod: add a new addr space in otg for writing to control module
-Date: Mon, 30 Jul 2012 14:39:53 +0530
-Message-ID: <1343639400-28725-5-git-send-email-kishon@ti.com>
+Subject: [PATCH v6 11/11] arm: omap: phy: remove unused functions from omap-phy-internal.c
+Date: Mon, 30 Jul 2012 14:40:00 +0530
+Message-ID: <1343639400-28725-12-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1343639400-28725-1-git-send-email-kishon@ti.com>
 References: <1343639400-28725-1-git-send-email-kishon@ti.com>
@@ -27,36 +26,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mailbox register for usb otg in omap is present in control module.
-On detection of any events VBUS or ID, this register should be written
-to send the notification to musb core.
+All the unnessary functions in omap-phy-internal is removed.
+These functionality are now handled by omap-usb2 phy driver.
 
-Till we have a separate control module driver to write to control module,
-omap2430 will handle the register writes to control module by itself. So
-a new address space to represent this control module register is added
-to usb_otg_hs.
-
+Cc: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/mach-omap2/omap_phy_internal.c |  138 -------------------------------
+ arch/arm/mach-omap2/twl-common.c        |    5 --
+ arch/arm/mach-omap2/usb-musb.c          |    3 -
+ 3 files changed, 146 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index 249ff76..775e185 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -5934,6 +5934,11 @@ static struct omap_hwmod_addr_space omap44xx_wd_timer2_addrs[] = {
- 		.pa_end		= 0x4a31407f,
- 		.flags		= ADDR_TYPE_RT
- 	},
-+	{
-+		.pa_start	= 0x4a00233c,
-+		.pa_end		= 0x4a00233f,
-+		.flags		= ADDR_TYPE_RT
-+	},
- 	{ }
+diff --git a/arch/arm/mach-omap2/omap_phy_internal.c b/arch/arm/mach-omap2/omap_phy_internal.c
+index 4c90477..0c610b4 100644
+--- a/arch/arm/mach-omap2/omap_phy_internal.c
++++ b/arch/arm/mach-omap2/omap_phy_internal.c
+@@ -31,144 +31,6 @@
+ #include <plat/usb.h>
+ #include "control.h"
+ 
+-/* OMAP control module register for UTMI PHY */
+-#define CONTROL_DEV_CONF		0x300
+-#define PHY_PD				0x1
+-
+-#define USBOTGHS_CONTROL		0x33c
+-#define	AVALID				BIT(0)
+-#define	BVALID				BIT(1)
+-#define	VBUSVALID			BIT(2)
+-#define	SESSEND				BIT(3)
+-#define	IDDIG				BIT(4)
+-
+-static struct clk *phyclk, *clk48m, *clk32k;
+-static void __iomem *ctrl_base;
+-static int usbotghs_control;
+-
+-int omap4430_phy_init(struct device *dev)
+-{
+-	ctrl_base = ioremap(OMAP443X_SCM_BASE, SZ_1K);
+-	if (!ctrl_base) {
+-		pr_err("control module ioremap failed\n");
+-		return -ENOMEM;
+-	}
+-	/* Power down the phy */
+-	__raw_writel(PHY_PD, ctrl_base + CONTROL_DEV_CONF);
+-
+-	if (!dev) {
+-		iounmap(ctrl_base);
+-		return 0;
+-	}
+-
+-	phyclk = clk_get(dev, "ocp2scp_usb_phy_ick");
+-	if (IS_ERR(phyclk)) {
+-		dev_err(dev, "cannot clk_get ocp2scp_usb_phy_ick\n");
+-		iounmap(ctrl_base);
+-		return PTR_ERR(phyclk);
+-	}
+-
+-	clk48m = clk_get(dev, "ocp2scp_usb_phy_phy_48m");
+-	if (IS_ERR(clk48m)) {
+-		dev_err(dev, "cannot clk_get ocp2scp_usb_phy_phy_48m\n");
+-		clk_put(phyclk);
+-		iounmap(ctrl_base);
+-		return PTR_ERR(clk48m);
+-	}
+-
+-	clk32k = clk_get(dev, "usb_phy_cm_clk32k");
+-	if (IS_ERR(clk32k)) {
+-		dev_err(dev, "cannot clk_get usb_phy_cm_clk32k\n");
+-		clk_put(phyclk);
+-		clk_put(clk48m);
+-		iounmap(ctrl_base);
+-		return PTR_ERR(clk32k);
+-	}
+-	return 0;
+-}
+-
+-int omap4430_phy_set_clk(struct device *dev, int on)
+-{
+-	static int state;
+-
+-	if (on && !state) {
+-		/* Enable the phy clocks */
+-		clk_enable(phyclk);
+-		clk_enable(clk48m);
+-		clk_enable(clk32k);
+-		state = 1;
+-	} else if (state) {
+-		/* Disable the phy clocks */
+-		clk_disable(phyclk);
+-		clk_disable(clk48m);
+-		clk_disable(clk32k);
+-		state = 0;
+-	}
+-	return 0;
+-}
+-
+-int omap4430_phy_power(struct device *dev, int ID, int on)
+-{
+-	if (on) {
+-		if (ID)
+-			/* enable VBUS valid, IDDIG groung */
+-			__raw_writel(AVALID | VBUSVALID, ctrl_base +
+-							USBOTGHS_CONTROL);
+-		else
+-			/*
+-			 * Enable VBUS Valid, AValid and IDDIG
+-			 * high impedance
+-			 */
+-			__raw_writel(IDDIG | AVALID | VBUSVALID,
+-						ctrl_base + USBOTGHS_CONTROL);
+-	} else {
+-		/* Enable session END and IDIG to high impedance. */
+-		__raw_writel(SESSEND | IDDIG, ctrl_base +
+-					USBOTGHS_CONTROL);
+-	}
+-	return 0;
+-}
+-
+-int omap4430_phy_suspend(struct device *dev, int suspend)
+-{
+-	if (suspend) {
+-		/* Disable the clocks */
+-		omap4430_phy_set_clk(dev, 0);
+-		/* Power down the phy */
+-		__raw_writel(PHY_PD, ctrl_base + CONTROL_DEV_CONF);
+-
+-		/* save the context */
+-		usbotghs_control = __raw_readl(ctrl_base + USBOTGHS_CONTROL);
+-	} else {
+-		/* Enable the internel phy clcoks */
+-		omap4430_phy_set_clk(dev, 1);
+-		/* power on the phy */
+-		if (__raw_readl(ctrl_base + CONTROL_DEV_CONF) & PHY_PD) {
+-			__raw_writel(~PHY_PD, ctrl_base + CONTROL_DEV_CONF);
+-			mdelay(200);
+-		}
+-
+-		/* restore the context */
+-		__raw_writel(usbotghs_control, ctrl_base + USBOTGHS_CONTROL);
+-	}
+-
+-	return 0;
+-}
+-
+-int omap4430_phy_exit(struct device *dev)
+-{
+-	if (ctrl_base)
+-		iounmap(ctrl_base);
+-	if (phyclk)
+-		clk_put(phyclk);
+-	if (clk48m)
+-		clk_put(clk48m);
+-	if (clk32k)
+-		clk_put(clk32k);
+-
+-	return 0;
+-}
+-
+ void am35x_musb_reset(void)
+ {
+ 	u32	regval;
+diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
+index 119d5a9..396d189 100644
+--- a/arch/arm/mach-omap2/twl-common.c
++++ b/arch/arm/mach-omap2/twl-common.c
+@@ -250,11 +250,6 @@ void __init omap3_pmic_get_config(struct twl4030_platform_data *pmic_data,
+ 
+ #if defined(CONFIG_ARCH_OMAP4)
+ static struct twl4030_usb_data omap4_usb_pdata = {
+-	.phy_init	= omap4430_phy_init,
+-	.phy_exit	= omap4430_phy_exit,
+-	.phy_power	= omap4430_phy_power,
+-	.phy_set_clock	= omap4430_phy_set_clk,
+-	.phy_suspend	= omap4430_phy_suspend,
  };
  
+ static struct regulator_init_data omap4_vdac_idata = {
+diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+index b19d1b4..e87ae49 100644
+--- a/arch/arm/mach-omap2/usb-musb.c
++++ b/arch/arm/mach-omap2/usb-musb.c
+@@ -119,7 +119,4 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
+ 	dev->dma_mask = &musb_dmamask;
+ 	dev->coherent_dma_mask = musb_dmamask;
+ 	put_device(dev);
+-
+-	if (cpu_is_omap44xx())
+-		omap4430_phy_init(dev);
+ }
 -- 
 1.7.9.5
 
