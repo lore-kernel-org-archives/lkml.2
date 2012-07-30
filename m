@@ -1,51 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab2G3LbP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 07:31:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:32896 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab2G3LbO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 07:31:14 -0400
+	id S1753565Ab2G3Lbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 07:31:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753178Ab2G3Lbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 07:31:48 -0400
+Date: Mon, 30 Jul 2012 13:31:39 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@localhost
+To: Namjae Jeon <linkinjeon@gmail.com>
+cc: tytso@mit.edu, sandeen@redhat.com, lczerner@redhat.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH] ext4: add error handling when discard cmd is fail in
+ FITRIM
+In-Reply-To: <1343561514-8380-1-git-send-email-linkinjeon@gmail.com>
+Message-ID: <alpine.LFD.2.00.1207301323550.23560@localhost>
+References: <1343561514-8380-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAOMZO5DCEgjw1cyCV5nP-aoksboF2HFQ_emzSUXRCgGAGNuqUg@mail.gmail.com>
-References: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
-	<1343359050.1726.9033.camel@vkoul-udesk3>
-	<CAOMZO5DCEgjw1cyCV5nP-aoksboF2HFQ_emzSUXRCgGAGNuqUg@mail.gmail.com>
-Date: Mon, 30 Jul 2012 13:31:13 +0200
-Message-ID: <CACKLOr1dLkVwy4YPMfCGL-GzLZT8BfdFmujeqUPO=xwJ73Xt1A@mail.gmail.com>
-Subject: Re: [PATCH] dma: imx-dma: Fix kernel crash due to missing clock conversion
-From: javier Martin <javier.martin@vista-silicon.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org, dan.j.williams@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 29 Jul 2012, Namjae Jeon wrote:
 
-On 27 July 2012 13:37, Fabio Estevam <festevam@gmail.com> wrote:
-> On Fri, Jul 27, 2012 at 12:17 AM, Vinod Koul <vinod.koul@linux.intel.com> wrote:
->
->>> Reported-by: Javier Martin <javier.martin@vista-silicon.com>
->>> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
->> Applied thanks (to fixes-for 3.7)
->
-> You mentioned that you would also copy stable. Would it be applied
-> into stable soon too?
+> Date: Sun, 29 Jul 2012 07:31:54 -0400
+> From: Namjae Jeon <linkinjeon@gmail.com>
+> To: tytso@mit.edu, sandeen@redhat.com, lczerner@redhat.com,
+>     linux-ext4@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+>     Amit Sahrawat <amit.sahrawat83@gmail.com>
+> Subject: [PATCH] ext4: add error handling when discard cmd is fail in FITRIM
+> 
+> Although free extents is proper not trimmed(mmc driver return error code
+> while sending trim command), currently FITRIM ioctl return success.
+> Add exception routine to inform user error code.
+> 
+> #> ./fitrim_test
+> end_request: I/O error, dev mmcblk0, sector 27232
+> EXT4-fs warning (device mmcblk0): ext4_trim_all_free:4857:
+> Discard command returned error -5
+> #>
 
-I agree with Fabio, this patch should also be applied to stable.
+Well, by this change you're actually reverting commit
 
-Regards.
+d9f34504e6952e909a6932c5b2d1857716606380
+	 ext4: ignore errors when issuing discards
 
--- 
-Javier Martin
-Vista Silicon S.L.
-CDTUC - FASE C - Oficina S-345
-Avda de los Castros s/n
-39005- Santander. Cantabria. Spain
-+34 942 25 32 60
-www.vista-silicon.com
+which effectively reverts a30eec2a8.
+
+Now I think that the way it is now is actually better than your
+proposal for the reasons mentioned in the commit
+d9f34504e6952e909a6932c5b2d1857716606380. However I think that the
+discard errors should be logged nevertheless but not at the file
+system level, but rather on block layer level if it is not done
+already.
+
+Thanks!
+-Lukas
+
+> 
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+> Reviewed-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/ext4/mballoc.c |   25 +++++++++++++++++--------
+>  1 file changed, 17 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+> index 8eae947..07569b6 100644
+> --- a/fs/ext4/mballoc.c
+> +++ b/fs/ext4/mballoc.c
+> @@ -4852,10 +4852,11 @@ error_return:
+>   * one will allocate those blocks, mark it as used in buddy bitmap. This must
+>   * be called with under the group lock.
+>   */
+> -static void ext4_trim_extent(struct super_block *sb, int start, int count,
+> +static int ext4_trim_extent(struct super_block *sb, int start, int count,
+>  			     ext4_group_t group, struct ext4_buddy *e4b)
+>  {
+>  	struct ext4_free_extent ex;
+> +	int err;
+>  
+>  	trace_ext4_trim_extent(sb, group, start, count);
+>  
+> @@ -4871,9 +4872,10 @@ static void ext4_trim_extent(struct super_block *sb, int start, int count,
+>  	 */
+>  	mb_mark_used(e4b, &ex);
+>  	ext4_unlock_group(sb, group);
+> -	ext4_issue_discard(sb, group, start, count);
+> +	err = ext4_issue_discard(sb, group, start, count);
+>  	ext4_lock_group(sb, group);
+>  	mb_free_blocks(NULL, e4b, start, ex.fe_len);
+> +	return err;
+>  }
+>  
+>  /**
+> @@ -4902,7 +4904,7 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
+>  	void *bitmap;
+>  	ext4_grpblk_t next, count = 0, free_count = 0;
+>  	struct ext4_buddy e4b;
+> -	int ret;
+> +	int ret = 0;
+>  
+>  	trace_ext4_trim_all_free(sb, group, start, max);
+>  
+> @@ -4929,15 +4931,22 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
+>  		next = mb_find_next_bit(bitmap, max + 1, start);
+>  
+>  		if ((next - start) >= minblocks) {
+> -			ext4_trim_extent(sb, start,
+> -					 next - start, group, &e4b);
+> -			count += next - start;
+> +			ret = ext4_trim_extent(sb, start,
+> +						next - start, group, &e4b);
+> +			if (ret < 0) {
+> +				if (ret != -EOPNOTSUPP)
+> +					ext4_warning(sb,
+> +						"Discard command returned error %d\n",
+> +						ret);
+> +					break;
+> +			} else
+> +				count += next - start;
+>  		}
+>  		free_count += next - start;
+>  		start = next + 1;
+>  
+>  		if (fatal_signal_pending(current)) {
+> -			count = -ERESTARTSYS;
+> +			ret = -ERESTARTSYS;
+>  			break;
+>  		}
+>  
+> @@ -4960,7 +4969,7 @@ out:
+>  	ext4_debug("trimmed %d blocks in the group %d\n",
+>  		count, group);
+>  
+> -	return count;
+> +	return (ret < 0) ? ret : count;
+>  }
+>  
+>  /**
+> 
