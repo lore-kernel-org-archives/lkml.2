@@ -1,100 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2G3DnX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 23:43:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:3889 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753903Ab2G3DnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 23:43:20 -0400
-X-IronPort-AV: E=Sophos;i="4.77,676,1336320000"; 
-   d="scan'208";a="5505802"
-Message-ID: <501603E7.1060200@cn.fujitsu.com>
-Date: Mon, 30 Jul 2012 11:47:51 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1754033Ab2G3DwM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 23:52:12 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:35978 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947Ab2G3DwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 23:52:10 -0400
+Date: Sun, 29 Jul 2012 23:51:56 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: "linux-kernel " <linux-kernel@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>
+Message-ID: <1971950954.1278169.1343620316300.JavaMail.root@redhat.com>
+In-Reply-To: <1107100725.1273654.1343619920692.JavaMail.root@redhat.com>
+Subject: boot panic regression introduced in 3.5-rc7
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v5 19/19] memory-hotplug: remove sysfs file of node
-References: <50126B83.3050201@cn.fujitsu.com> <50126F21.803@cn.fujitsu.com> <5012712E.9000005@jp.fujitsu.com>
-In-Reply-To: <5012712E.9000005@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/30 11:43:25,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/30 11:43:40,
-	Serialize complete at 2012/07/30 11:43:40
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [10.66.13.236]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/27/2012 06:45 PM, Yasuaki Ishimatsu Wrote:
-> Hi Wen,
-> 
-> 2012/07/27 19:36, Wen Congyang wrote:
->> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> The patch adds node_set_offline() and unregister_one_node() to
->> remove_memory()
->> for removing sysfs file of node.
->>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Wen Congyang <wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> ---
->>   mm/memory_hotplug.c |    5 +++++
->>   1 files changed, 5 insertions(+), 0 deletions(-)
->>
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index 5ac035f..5681968 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -1267,6 +1267,11 @@ int __ref remove_memory(int nid, u64 start, u64
->> size)
->>       /* remove memmap entry */
->>       firmware_map_remove(start, start + size, "System RAM");
->>
->> +    if (!node_present_pages(nid)) {
-> 
-> Applying [PATCH v5 17/19], pgdat->node_spanned_pages can become 0 when
-> all memory of the pgdat is removed. When pgdat->node_spanned_pages is 0,
-> it means the pgdat has no memory. So I think node_spanned_pages() is
-> better.
+The bisecting pointed out this patch caused one of dell servers boot panic.
 
-Hmm, if the node contains cpu, and the cpu is onlined, can we offline
-this node?
+  5baefd6d84163443215f4a99f6a20f054ef11236
+  hrtimer: Update hrtimer base offsets each hrtimer_interrupt
 
-Thanks
-Wen Congyang
+[    2.971092] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x10a/0x120()
+[    2.971092] Hardware name: PowerEdge M605
+[    2.971092] Modules linked in:
+[    2.971092] Pid: 1, comm: swapper/0 Not tainted 3.5.0-rc6+ #8
+[    2.971092] Call Trace:
+[    2.971092]  <IRQ>  [<ffffffff81065a6f>] warn_slowpath_common+0x7f/0xc0
+[    2.971092]  [<ffffffff81065aca>] warn_slowpath_null+0x1a/0x20
+[    2.971092]  [<ffffffff810cb03a>] clockevents_program_event+0x10a/0x120
+[    2.971092]  [<ffffffff810cc554>] tick_program_event+0x24/0x30
+[    2.971092]  [<ffffffff8109671d>] hrtimer_interrupt+0x1ad/0x230
+[    2.971092]  [<ffffffff816884e9>] smp_apic_timer_interrupt+0x69/0x99
+[    2.971092]  [<ffffffff8168716f>] apic_timer_interrupt+0x6f/0x80
+[    2.971092]  <EOI>  [<ffffffff8167dc30>] ? retint_restore_args+0x13/0x13
+[    2.971092]  [<ffffffff81348563>] ? inflate_fast+0x2c3/0x5f0
+[    2.971092]  [<ffffffff81349cec>] zlib_inflate+0x123c/0x1970
+[    2.971092]  [<ffffffff811c1f0b>] ? vfs_write+0x10b/0x190
+[    2.971092]  [<ffffffff81c86144>] ? bunzip2+0x472/0x472
+[    2.971092]  [<ffffffff811c21ed>] ? sys_write+0x4d/0x90
+[    2.971092]  [<ffffffff81c5aebb>] ? do_copy+0x87/0x8e
+[    2.971092]  [<ffffffff81c5ac5c>] ? write_buffer+0x22/0x32
+[    2.971092]  [<ffffffff81c5ac6c>] ? write_buffer+0x32/0x32
+[    2.971092]  [<ffffffff81c86144>] ? bunzip2+0x472/0x472
+[    2.971092]  [<ffffffff81c863c8>] gunzip+0x27b/0x349
+[    2.971092]  [<ffffffff81c5b18e>] unpack_to_rootfs+0x159/0x267
+[    2.971092]  [<ffffffff81c5abc0>] ? md_run_setup+0x9c/0x9c
+[    2.971092]  [<ffffffff81c5b3f2>] ? maybe_link.part.2+0x111/0x111
+[    2.971092]  [<ffffffff81c5b44a>] populate_rootfs+0x58/0x109
+[    2.971092]  [<ffffffff8100212a>] do_one_initcall+0x12a/0x180
+[    2.971092]  [<ffffffff81c59dd1>] kernel_init+0x15d/0x1e1
+[    2.971092]  [<ffffffff81c59614>] ? do_early_param+0x8c/0x8c
+[    2.971092]  [<ffffffff81687a74>] kernel_thread_helper+0x4/0x10
+[    2.971092]  [<ffffffff8167dc30>] ? retint_restore_args+0x13/0x13
+[    2.971092]  [<ffffffff81c59c74>] ? start_kernel+0x401/0x401
+[    2.971092]  [<ffffffff81687a70>] ? gs_change+0x13/0x13
+[    2.971092] ---[ end trace 319c95c486d7d9cd ]---
+[    2.971092] Freeing initrd memory: 23412k freed
+[    2.971092] DMA-API: preallocated 32768 debug entries
+[    2.971092] DMA-API: debugging enabled by kernel config
+[    6.034660] work_for_cpu (34) used greatest stack depth: 6520 bytes left
+[    6.042463] work_for_cpu (35) used greatest stack depth: 6248 bytes left
+[    6.098917] PCI-DMA: Disabling AGP.
+[    6.098917] PCI-DMA: aperture base @ f4000000 size 65536 KB
+[    6.098917] init_memory_mapping: [mem 0xf4000000-0xf7ffffff]
+[    6.098917] PCI-DMA: using GART IOMMU.
+[    6.098917] PCI-DMA: Reserving 64MB of IOMMU area in the AGP aperture
+[    6.593402] cryptomgr_test (59) used greatest stack depth: 6200 bytes left
+[    6.601692] audit: initializing netlink socket (disabled)
+[    6.601692] type=2000 audit(196996417573.616:1): initialized
+[    7.176075] HugeTLB registered 2 MB page size, pre-allocated 0 pages
+[    7.559238] VFS: Disk quotas dquot_6.5.2
+[    7.559238] Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    7.663975] msgmni has been set to 7965
+[    7.702014] cryptomgr_test (68) used greatest stack depth: 5576 bytes left
+[    7.710867] cryptomgr_test (70) used greatest stack depth: 5416 bytes left
+[    7.720367] alg: No test for stdrng (krng)
+[    7.724763] NET: Registered protocol family 38
+[    7.725463] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)
+[    7.743107] io scheduler noop registered
+[    7.743559] io scheduler deadline registered (default)
+[    7.743559] io scheduler cfq registered
+[    7.743559] start plist test
+[    7.743559] end plist test
+[    7.896741] work_for_cpu (77) used greatest stack depth: 5288 bytes left
+[    7.917588] work_for_cpu (79) used greatest stack depth: 5112 bytes left
+[    7.943340] pcieport 0000:00:0a.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pcieport 0000:00:0b.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pci 0000:02:00.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pcieport 0000:00:0c.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pci 0000:03:00.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pci 0000:04:00.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pcieport 0000:00:0d.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pci 0000:05:00.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pci 0000:06:00.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pcieport 0000:00:0f.0: Signaling PME through PCIe PME interrupt
+[    7.943340] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
+[    7.943340] pciehp: PCI Express Hot Plug Controller Driver version: 0.4
+[    7.943340] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    7.943340] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    7.943340] ACPI: Power Button [PWRF]
+[    9.001224] ERST: Failed to get Error Log Address Range.
+[   19.807939] Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 0
+[   19.808927] Pid: 0, comm: swapper/0 Tainted: G        W    3.5.0-rc6+ #8
+[   19.808927] Call Trace:
+[   19.808927]  <NMI>  [<ffffffff8166dd25>] panic+0xba/0x1ce
+[   19.808927]  [<ffffffff81110a30>] ? touch_nmi_watchdog+0x90/0x90
+[   19.808927]  [<ffffffff81110ae5>] watchdog_overflow_callback+0xb5/0xc0
+[   19.808927]  [<ffffffff8114ed9d>] __perf_event_overflow+0x9d/0x320
+[   19.808927]  [<ffffffff8114aecd>] ? perf_event_update_userpage+0x16d/0x2c0
+[   19.808927]  [<ffffffff8114ad60>] ? perf_event_task_disable+0x90/0x90
+[   19.808927]  [<ffffffff8114fff4>] perf_event_overflow+0x14/0x20
+[   19.808927]  [<ffffffff8102b833>] x86_pmu_handle_irq+0xe3/0x130
+[   19.808927]  [<ffffffff8167f81d>] perf_event_nmi_handler+0x1d/0x20
+[   19.808927]  [<ffffffff8167ed4e>] nmi_handle.isra.2+0xbe/0x210
+[   19.808927]  [<ffffffff8167ec90>] ? __die+0xf0/0xf0
+[   19.808927]  [<ffffffff8167efa8>] do_nmi+0x108/0x380
+[   19.808927]  [<ffffffff8167e2cc>] end_repeat_nmi+0x1a/0x1e
+[   19.808927]  [<ffffffff81096743>] ? hrtimer_interrupt+0x1d3/0x230
+[   19.808927]  [<ffffffff81096743>] ? hrtimer_interrupt+0x1d3/0x230
+[   19.808927]  [<ffffffff81096743>] ? hrtimer_interrupt+0x1d3/0x230
+[   19.808927]  <<EOE>>  <IRQ>  [<ffffffff810cceae>] ? tick_nohz_stop_idle+0x3e/0x50
+[   19.808927]  [<ffffffff816884e9>] smp_apic_timer_interrupt+0x69/0x99
+[   19.808927]  [<ffffffff8168716f>] apic_timer_interrupt+0x6f/0x80
+[   19.808927]  <EOI>  [<ffffffff8167dc30>] ? retint_restore_args+0x13/0x13
+[   19.808927]  [<ffffffff810cd0cb>] ? tick_nohz_idle_enter+0x4b/0x80
+[   19.808927]  [<ffffffff810cd0c7>] ? tick_nohz_idle_enter+0x47/0x80
+[   19.808927]  [<ffffffff81023462>] cpu_idle+0x72/0x140
+[   19.808927]  [<ffffffff816515e5>] rest_init+0x149/0x154
+[   19.808927]  [<ffffffff8165149c>] ? csum_partial_copy_generic+0x16c/0x16c
+[   19.808927]  [<ffffffff81c59c67>] start_kernel+0x3f4/0x401
+[   19.808927]  [<ffffffff81c59672>] ? repair_env_string+0x5e/0x5e
+[   19.808927]  [<ffffffff81c59356>] x86_64_start_reservations+0x131/0x135
+[   19.808927]  [<ffffffff81c5945a>] x86_64_start_kernel+0x100/0x10f
 
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->> +        node_set_offline(nid);
->> +        unregister_one_node(nid);
->> +    }
->> +
->>       arch_remove_memory(start, size);
->>   out:
->>       unlock_memory_hotplug();
->>
-> 
-> 
-> 
+Kernel config and full dmesg are here.
+http://people.redhat.com/qcai/config
+http://people.redhat.com/qcai/dmesg
 
+CAI Qian
