@@ -1,92 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2G3PtQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 11:49:16 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39401 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062Ab2G3PtO (ORCPT
+	id S1753909Ab2G3PvL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 11:51:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37320 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab2G3PvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 11:49:14 -0400
-Date: Mon, 30 Jul 2012 11:39:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: majianpeng <majianpeng@gmail.com>
-Cc: axboe <axboe@kernel.dk>, "chris.mason" <chris.mason@fusionio.com>,
-        viro <viro@ZenIV.linux.org.uk>, tytso <tytso@mit.edu>,
-        "adilger.kernel" <adilger.kernel@dilger.ca>,
-        shaggy <shaggy@kernel.org>, mfasheh <mfasheh@suse.com>,
-        jlbec <jlbec@evilplan.org>, bpm <bpm@sgi.com>,
-        elder <elder@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        jfs-discussion <jfs-discussion@lists.sourceforge.net>,
-        ocfs2-devel <ocfs2-devel@oss.oracle.com>, xfs <xfs@oss.sgi.com>
-Subject: Re: [PATCH 0/8] Set bi_rw when alloc bio before call bio_add_page.
-Message-ID: <20120730153935.GE4547@phenom.dumpdata.com>
-References: <201207301514247032532@gmail.com>
+	Mon, 30 Jul 2012 11:51:10 -0400
+Date: Mon, 30 Jul 2012 17:51:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
+Message-ID: <20120730155059.GB17078@somewhere.redhat.com>
+References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
+ <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
+ <1343660892.20897.3.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201207301514247032532@gmail.com>
+In-Reply-To: <1343660892.20897.3.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 03:14:28PM +0800, majianpeng wrote:
-> When exec bio_alloc, the bi_rw is zero.But after calling bio_add_page,
+On Mon, Jul 30, 2012 at 05:08:12PM +0200, Peter Zijlstra wrote:
+> On Fri, 2012-07-27 at 17:40 +0200, Frederic Weisbecker wrote:
+> > +++ b/kernel/user_hooks.c
+> > @@ -0,0 +1,56 @@
+> > +#include <linux/user_hooks.h>
+> > +#include <linux/rcupdate.h>
+> > +#include <linux/sched.h>
+> > +#include <linux/percpu.h>
+> > +
+> > +struct user_hooks {
+> > +       bool hooking;
+> > +       bool in_user;
+> > +};
+> 
+> I really detest using bool in structures.. but that's just me. Also this
+> really wants a comment as to wtf 'hooking' means. in_user I can just
+> about guess.
 
-What about submit_bio? That sets the bi_rw as well?
-> it will use bi_rw.
-> Fox example, in functiion __bio_add_page,it will call merge_bvec_fn().
+I really don't mind changing that to int. I just like them as bool because
+they better describe the purpose of the field.
 
-function.
-> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
-> >> if ((bvm->bi_rw & 1) == WRITE)
-> >> return biovec->bv_len; /* always allow writes to be mergeable */
+hooking means that the hooks are set (the TIF flag is set on the current task
+and we also handle the exception hooks).
 
-So what does that mean? Without this patch what happens?
+I can call that is_hooking instead? And/or add a comment to explain the
+purpose of this.
 
 > 
+> > +DEFINE_PER_CPU(struct user_hooks, user_hooks) = {
+> > +#ifdef CONFIG_USER_HOOKS_FORCE
+> > +       .hooking = true,
+> > +#endif
+> > +};
+> > +
+> > +void user_enter(void)
+> > +{
+> > +       unsigned long flags;
+> > +       struct user_hooks *uh;
+> > +
+> > +       WARN_ON_ONCE(!current->mm);
+> > +       local_irq_save(flags);
+> > +       uh = &__get_cpu_var(user_hooks);
+> > +       if (uh->hooking && !uh->in_user) {
+> > +               uh->in_user = true;
+> > +               rcu_user_enter();
+> > +       }
 > 
-> Jianpeng Ma (8):
-
-Can you collapse all of this in just one patch?
-
->   Evalue bio->bi_rw after calling bio_alloc() and before calling
-
-It is 'evaluate'
->     bio_add_page().
->   Evalue bio->bi_rw after calling bio_alloc() and before calling    
->     bio_add_page().
->   Evalue bio->bi_rw after calling bio_alloc() and before calling    
->     bio_add_page().
->   Evalue bio->bi_rw after calling bio_alloc() and before calling    
->     bio_add_page().
->   Evalue bio->bi_rw after calling bio_alloc() and before calling    
->     bio_add_page().
->   Evalue bio->bi_rw after calling bio_alloc() and before calling    
->     bio_add_page().
->   Evalue bio->bi_rw after calling bio_alloc() and before calling    
->     bio_add_page().
->   Evalue bio->bi_rw after calling bio_alloc() and before calling    
->     bio_add_page().
+> By not using __get_cpu_var() but __this_cpu_*() you generate much better
+> code (esp. on x86).
 > 
->  block/blk-lib.c                     |    1 +
->  drivers/block/xen-blkback/blkback.c |    1 +
-
-I am not really sure if that is correct. Does 'submit_bio' not do the
-job properly?
-
->  fs/btrfs/check-integrity.c          |    1 +
->  fs/direct-io.c                      |    1 +
->  fs/ext4/page-io.c                   |    1 +
->  fs/jfs/jfs_metapage.c               |    1 +
->  fs/ocfs2/cluster/heartbeat.c        |    8 +++++---
->  fs/xfs/xfs_aops.c                   |    2 ++
->  fs/xfs/xfs_buf.c                    |    1 +
->  9 files changed, 14 insertions(+), 3 deletions(-)
+> IOW. something like:
 > 
-> -- 
-> 1.7.9.5
+>   if (__this_cpu_read(uh.hooking) && !__this_cpu_read(uh.in_user)) {
+> 	__this_cpu_write(uh.in_user, true);
+> 	rcu_user_enter();
+>   }
+
+Ok, I'll replace.
+
+> 
+> > +       local_irq_restore(flags);
+> > +}
+> > +
+> > +void user_exit(void)
+> > +{
+> > +       unsigned long flags;
+> > +       struct user_hooks *uh;
+> > +
+> > +       local_irq_save(flags);
+> > +       uh = &__get_cpu_var(user_hooks);
+> > +       if (uh->in_user) {
+> > +               uh->in_user = false;
+> > +               rcu_user_exit();
+> > +       }
+> > +       local_irq_restore(flags);
+> > +}
+> > +
+> > +void user_hooks_switch(struct task_struct *prev,
+> > +                      struct task_struct *next)
+> > +{
+> > +       struct user_hooks *uh;
+> > +
+> > +       uh = &__get_cpu_var(user_hooks);
+> > +       if (uh->hooking) {
+> > +               clear_tsk_thread_flag(prev, TIF_NOHZ);
+> > +               set_tsk_thread_flag(next, TIF_NOHZ);
+> > +       }
+> 
+> This seems pointless to me.. why are we flipping that flag on context
+> switch instead of keeping it enabled at all times? This are two atomic
+> ops in the context switch path, why?
+
+Because the hooks are per cpu. If we activate the hooks on CPU 1 but not
+on CPU 2 and prev was running on CPU 1 and migrates on CPU 2, it's going
+to keep the hook on that CPU 2 if we don't clear the flag.
