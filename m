@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab2G3K0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 06:26:04 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49721 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab2G3K0B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 06:26:01 -0400
-From: Devendra Naga <develkernel412222@gmail.com>
-To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        ramakrishna.pallala@intel.com, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <develkernel412222@gmail.com>
-Subject: [PATCH V2 2/2] lp8727_charger: unregister power supply at error path of lp8727_register_psy
-Date: Mon, 30 Jul 2012 16:10:46 +0545
-Message-Id: <1343643946-12815-1-git-send-email-develkernel412222@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753178Ab2G3Kam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 06:30:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64347 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752514Ab2G3Kak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 06:30:40 -0400
+X-IronPort-AV: E=Sophos;i="4.77,679,1336320000"; 
+   d="scan'208";a="5510371"
+Message-ID: <50166379.4090305@cn.fujitsu.com>
+Date: Mon, 30 Jul 2012 18:35:37 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [RFC PATCH v5 12/19] memory-hotplug: introduce new function arch_remove_memory()
+References: <50126B83.3050201@cn.fujitsu.com> <50126E2F.8010301@cn.fujitsu.com> <20120730102305.GB3631@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20120730102305.GB3631@osiris.boeblingen.de.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/30 18:31:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/30 18:31:14,
+	Serialize complete at 2012/07/30 18:31:14
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if usb power supply registration fails,
-        we wont unregister the ac power supply
-if battery power supply registration fails,
-        we wont unregister the usb, and ac supply,
+At 07/30/2012 06:23 PM, Heiko Carstens Wrote:
+> On Fri, Jul 27, 2012 at 06:32:15PM +0800, Wen Congyang wrote:
+>> We don't call __add_pages() directly in the function add_memory()
+>> because some other architecture related things need to be done
+>> before or after calling __add_pages(). So we should introduce
+>> a new function arch_remove_memory() to revert the things
+>> done in arch_add_memory().
+>>
+>> Note: the function for s390 is not implemented(I don't know how to
+>> implement it for s390).
+> 
+> There is no hardware or firmware interface which could trigger a
+> hot memory remove on s390. So there is nothing that needs to be
+> implemented.
 
-take care of those things and also no need of goto -err_mem: at the fail case of
-kzalloc simply can have return -ENOMEM
+Thanks for providing this information.
 
-Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
----
-Changes since V2:
- * fix the comments from the Ramakrishna (ramakrishna.pallala@intel.com)
-quoting his comments:
+According to this, arch_remove_memory() for s390 can just return -EBUSY.
 
->       if (power_supply_register(pchg->dev, &psy->usb))
-> -             goto err_psy;
-> +             goto err_psy_ac;
+Thanks
+Wen Congyang
 
-"err_psy_ac" label name is confusing. Why can't you use err_psy_usb
-
->       if (power_supply_register(pchg->dev, &psy->batt))
-> -             goto err_psy;
-> +             goto err_psy_usb;
-
-Same here, why don't you use err_psy_batt
-
- drivers/power/lp8727_charger.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
-index 6c0e0f9..8fb1c0f 100644
---- a/drivers/power/lp8727_charger.c
-+++ b/drivers/power/lp8727_charger.c
-@@ -362,7 +362,7 @@ static int lp8727_register_psy(struct lp8727_chg *pchg)
- 
- 	psy = kzalloc(sizeof(*psy), GFP_KERNEL);
- 	if (!psy)
--		goto err_mem;
-+		return -ENOMEM;
- 
- 	pchg->psy = psy;
- 
-@@ -386,7 +386,7 @@ static int lp8727_register_psy(struct lp8727_chg *pchg)
- 	psy->usb.num_supplicants = ARRAY_SIZE(battery_supplied_to);
- 
- 	if (power_supply_register(pchg->dev, &psy->usb))
--		goto err_psy;
-+		goto err_psy_usb;
- 
- 	psy->batt.name = "main_batt";
- 	psy->batt.type = POWER_SUPPLY_TYPE_BATTERY;
-@@ -396,12 +396,14 @@ static int lp8727_register_psy(struct lp8727_chg *pchg)
- 	psy->batt.external_power_changed = lp8727_charger_changed;
- 
- 	if (power_supply_register(pchg->dev, &psy->batt))
--		goto err_psy;
-+		goto err_psy_batt;
- 
- 	return 0;
- 
--err_mem:
--	return -ENOMEM;
-+err_psy_batt:
-+	power_supply_unregister(&psy->usb);
-+err_psy_usb:
-+	power_supply_unregister(&psy->ac);
- err_psy:
- 	kfree(psy);
- 	return -EPERM;
--- 
-1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
