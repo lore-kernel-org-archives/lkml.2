@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab2G2XrW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jul 2012 19:47:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58394 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab2G2XrV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jul 2012 19:47:21 -0400
-Message-ID: <1343605633.11323.1.camel@phoenix>
-Subject: [PATCH] regulator: core: Add intermediate cast to uintptr_t before
- casting to pointer
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Date: Mon, 30 Jul 2012 07:47:13 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1753795Ab2G3ANH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jul 2012 20:13:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42130 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753699Ab2G3ANF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jul 2012 20:13:05 -0400
+Date: Mon, 30 Jul 2012 10:12:45 +1000
+From: NeilBrown <neilb@suse.de>
+To: Chris Ball <cjb@laptop.org>, Venkatraman S <svenkatr@ti.com>,
+        Balaji T K <balajitk@ti.com>, Rajendra Nayak <rnayak@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] MMC/omap_hsmmc: handle failure of regulator_get better.
+Message-ID: <20120730101245.7dbe72b0@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/b9gLLBPGtKQhFTl1thaI0dZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to address the following warning during compilation time:
-
-  CC      drivers/regulator/core.o
-drivers/regulator/core.c: In function '_regulator_do_set_voltage':
-drivers/regulator/core.c:2183:10: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index f092588..41cbd74 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2180,7 +2180,7 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
- 
- 	if (ret == 0 && best_val >= 0)
- 		_notifier_call_chain(rdev, REGULATOR_EVENT_VOLTAGE_CHANGE,
--				     (void *)best_val);
-+				     (void *)(uintptr_t)best_val);
- 
- 	trace_regulator_set_voltage_complete(rdev_get_name(rdev), best_val);
- 
--- 
-1.7.9.5
+--Sig_/b9gLLBPGtKQhFTl1thaI0dZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
 
+1/ if regulator_get fails, return an error.  This is important
+   if it failed with EPROBE_DEFER, as the probe needs to be
+   deferred.
 
+2/ Don't set .set_power until the regulator has been found, or
+   the deferred probe will not bother calling omap_hsmmc_reg_get().
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 389a3ee..f052c29 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -299,12 +299,12 @@ static int omap_hsmmc_reg_get(struct omap_hsmmc_host =
+*host)
+ 	struct regulator *reg;
+ 	int ocr_value =3D 0;
+=20
+-	mmc_slot(host).set_power =3D omap_hsmmc_set_power;
+-
+ 	reg =3D regulator_get(host->dev, "vmmc");
+ 	if (IS_ERR(reg)) {
+ 		dev_dbg(host->dev, "vmmc regulator missing\n");
++		return PTR_ERR(reg);
+ 	} else {
++		mmc_slot(host).set_power =3D omap_hsmmc_set_power;
+ 		host->vcc =3D reg;
+ 		ocr_value =3D mmc_regulator_get_ocrmask(reg);
+ 		if (!mmc_slot(host).ocr_mask) {
+
+--Sig_/b9gLLBPGtKQhFTl1thaI0dZ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUBXRfTnsnt1WYoG5AQKRoRAAlGo3H3AeUZ/dXZOdgW5my7xflVOmtWtP
+dBe1w+SWHO77jFq3dtdhmVr/hvVlFRYMiC8WRxIOLgbJfDnqf0hh6rP7+5o76nXF
+n2Lr5MOT1yQPIUBUOCZnCCyWZ4/BbdHeoe5f/qBmE1hSVtYwt3wNmpIpM1ueySZL
+xpRMqpaKLrU+2S9DX9fQkID3NcfDd+A1MMx1GvnqHg057gSRHXURfxpVzK3g0dw3
+QjG9EiiecIDuiHIRuDWoE0aOACsVv5WLbLCXh/mQr2ioxyrCJorBi77LfPBiR3Vj
+3JO0PnzoLge6H3BjXFR6d3EtySSb/F/sUYJH5bP50AkG47l3NfmUqm0YTlnJT47Q
+llCl2nq9c114jeel+ZeZaiuu9ZHtjtLAd233Yv9JYkQG6CJJraYl0Tei2xZElY2u
+bso8mJvofh0iZ32TDBcbwuk1UOJB+NjbEaFcFY3dBQa3/s7vuTH7PD9t3uZh0Gk4
+0dvHFxa9pxoJXhGL0qhVDY6JNa7hCtC5lsRnjyed5bGBL6SsD8h3MtoCWwoa3+WJ
+WRzwcOr3+LTOrrgxzc8LOTYJFcCt7zYP6nGecAw+0ZRP13oFXUHQFOj1LpK/fayk
+zQL5SJljyit9jkOjnOxwhbA2mLb3rGTWCF9A9xhybNiPfEiPoZ/xdLTc6yXyi92U
+xcolJ3Pf42Y=
+=FKek
+-----END PGP SIGNATURE-----
+
+--Sig_/b9gLLBPGtKQhFTl1thaI0dZ--
