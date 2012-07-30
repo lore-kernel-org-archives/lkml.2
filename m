@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab2G3I5Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 04:57:16 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:55601 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab2G3I5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 04:57:14 -0400
-Message-ID: <50164C4F.7030905@panasas.com>
-Date: Mon, 30 Jul 2012 11:56:47 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	id S1754157Ab2G3JGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 05:06:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56603 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233Ab2G3JGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 05:06:50 -0400
+Date: Mon, 30 Jul 2012 10:06:45 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Dave Chinner <dchinner@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [ 13/40] vmscan: shrinker->nr updates race and go wrong
+Message-ID: <20120730090645.GI612@suse.de>
+References: <20120726211424.GA7709@kroah.com>
+ <20120726211411.164006056@linuxfoundation.org>
+ <20120726211412.284677137@linuxfoundation.org>
+ <1343593770.4642.11.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Wang Sen <senwang@linux.vnet.ibm.com>, <linux-scsi@vger.kernel.org>,
-        <JBottomley@parallels.com>, <stefanha@linux.vnet.ibm.com>,
-        <mc@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: virtio(-scsi) vs. chained sg_lists (was Re: [PATCH] scsi: virtio-scsi:
- Fix address translation failure of HighMem pages used by sg list)
-References: <1343204966-23560-1-git-send-email-senwang@linux.vnet.ibm.com> <500FB1DE.1000100@redhat.com> <500FBAE8.2050107@panasas.com> <500FBF37.50603@redhat.com> <500FE7D2.7070101@panasas.com> <500FEB63.3000709@redhat.com> <500FF412.3090600@panasas.com> <50100014.2010109@redhat.com> <50101091.5090909@panasas.com> <50103043.5050508@redhat.com> <50104614.3080002@panasas.com> <501051DF.5040907@redhat.com> <50105F60.8050707@panasas.com> <5010F07E.7050506@redhat.com> <5010F831.9030300@panasas.com> <5010F896.8090409@redhat.com> <501140A3.9090908@redhat.com> <874notoh02.fsf@rustcorp.com.au> <50124D2E.7050407@redhat.com> <87obmym8jv.fsf@rustcorp.com.au> <501633EA.603@redhat.com>
-In-Reply-To: <501633EA.603@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1343593770.4642.11.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2012 10:12 AM, Paolo Bonzini wrote:
-
-> Il 30/07/2012 01:50, Rusty Russell ha scritto:
->>> Also, being the first user of chained scatterlist doesn't exactly give
->>> me warm fuzzies.
->>
->> We're far from the first user: they've been in the kernel for well over
->> 7 years.  They were introduced for the block layer, but they tended to
->> ignore private uses of scatterlists like this one.
+On Sun, Jul 29, 2012 at 09:29:30PM +0100, Ben Hutchings wrote:
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -251,17 +251,29 @@ unsigned long shrink_slab(struct shrink_
+> >  		unsigned long total_scan;
+> [...]
+> > +		total_scan += delta;
+> > +		if (total_scan < 0) {
+> [...]
 > 
-> Yeah, but sg_chain has no users in drivers, only a private one in
-> lib/scatterlist.c.  The internal API could be changed to something else
-> and leave virtio-scsi screwed...
+> This condition is never true since total_scan is unsigned.
+> I think 3.0.y needs this as well:
 > 
->> Yes, we should do this.  But note that this means an iteration, so we
->> might as well combine the loops :)
+> commit 635697c663f38106063d5659f0cf2e45afcd4bb5
+> Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Date:   Thu Dec 8 14:33:51 2011 -0800
 > 
-> I'm really bad at posting pseudo-code, but you can count the number of
-> physically-contiguous entries at the beginning of the list only.  So if
-> everything is contiguous, you use a single non-indirect buffer and save
-> a kmalloc.  If you use indirect buffers, I suspect it's much less
-> effective to collapse physically-contiguous entries.  More elaborate
-> heuristics do need a loop, though.
+>     vmscan: fix initial shrinker size handling
 > 
 
+You're right, thanks for pointing it out as I missed it. Greg, this commit
+is already in 3.2 but can you pick it up for 3.0-stable please?
 
-[All the below with a grain of salt, from my senile memory]
+---8<---
+vmscan: fix initial shrinker size handling
 
-You must not forget some facts about the scatterlist received here at the LLD.
-It has already been DMA mapped and locked by the generic layer.
-Which means that the DMA engine has already collapsed physically-contiguous
-entries. Those you get here are already unique physically.
-(There were bugs in the past, where this was not true, please complain
- if you find them again)
+commit 635697c663f38106063d5659f0cf2e45afcd4bb5 upstream.
 
-A scatterlist is two different lists taking the same space, but with two
-different length.
-- One list is the PAGE pointers plus offset && length, which is bigger or
-  equal to the 2nd list. The end marker corresponds to this list.
+Stable note: The commit [acf92b48: vmscan: shrinker->nr updates race and
+	go wrong] aimed to reduce excessive reclaim of slab objects but
+	had bug in how it treated shrinker functions that returned -1.
 
-  This list is the input into the DMA engine.
+A shrinker function can return -1, means that it cannot do anything
+without a risk of deadlock.  For example prune_super() does this if it
+cannot grab a superblock refrence, even if nr_to_scan=0.  Currently we
+interpret this -1 as a ULONG_MAX size shrinker and evaluate `total_scan'
+according to this.  So the next time around this shrinker can cause
+really big pressure.  Let's skip such shrinkers instead.
 
-- Second list is the physical DMA addresses list. With their physical-lengths.
-  Offset is not needed because it is incorporated in the DMA address.
+Also make total_scan signed, otherwise the check (total_scan < 0) below
+never works.
 
-  This list is the output from the DMA engine.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-  The reason 2nd list is shorter is because the DMA engine tries to minimize
-  the physical scatter-list entries which is usually a limited HW resource.
-
-  This list might follow chains but it's end is determined by the received
-  sg_count from the DMA engine, not by the end marker.
-
-At the time my opinion, and I think Rusty agreed, was that the scatterlist
-should be split in two. The input page-ptr list is just the BIO, and the
-output of the DMA-engine should just be the physical part of the sg_list,
-as a separate parameter. But all this was berried under too much APIs and
-the noise was two strong, for any single brave sole.
-
-So I'd just trust blindly the returned sg_count from the DMA engine, it is
-already optimized. I THINK
-
-> Paolo
-
-
-Boaz
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index e0afff3..bd8a540 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -248,12 +248,16 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+ 		unsigned long long delta;
+-		unsigned long total_scan;
+-		unsigned long max_pass;
++		long total_scan;
++		long max_pass;
+ 		int shrink_ret = 0;
+ 		long nr;
+ 		long new_nr;
+ 
++		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
++		if (max_pass <= 0)
++			continue;
++
+ 		/*
+ 		 * copy the current shrinker scan count into a local variable
+ 		 * and zero it so that other concurrent shrinker invocations
+@@ -264,7 +268,6 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
+ 
+ 		total_scan = nr;
+-		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+ 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
+ 		delta *= max_pass;
+ 		do_div(delta, lru_pages + 1);
