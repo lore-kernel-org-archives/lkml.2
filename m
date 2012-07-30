@@ -1,171 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab2G3NHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 09:07:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28068 "EHLO mx1.redhat.com"
+	id S1754120Ab2G3NLW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 09:11:22 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48082 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab2G3NHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 09:07:08 -0400
-Date: Mon, 30 Jul 2012 14:06:57 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>, Joe Thornber <ejt@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Babu Moger <babu.moger@netapp.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        majianpeng <majianpeng@gmail.com>, stable@vger.kernel.org
-Subject: [git pull] device-mapper updates for 3.6
-Message-ID: <20120730130657.GF20415@agk-dp.fab.redhat.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-	Hannes Reinecke <hare@suse.de>, Joe Thornber <ejt@redhat.com>,
-	Mike Snitzer <snitzer@redhat.com>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	Babu Moger <babu.moger@netapp.com>,
-	Jonathan Brassow <jbrassow@redhat.com>,
-	majianpeng <majianpeng@gmail.com>, stable@vger.kernel.org
+	id S1753765Ab2G3NLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 09:11:21 -0400
+Message-ID: <501687EA.5050401@parallels.com>
+Date: Mon, 30 Jul 2012 17:11:06 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <devel@openvz.org>,
+        <cgroups@vger.kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 06/10] sl[au]b: Allocate objects from memcg cache
+References: <1343227101-14217-1-git-send-email-glommer@parallels.com> <1343227101-14217-7-git-send-email-glommer@parallels.com> <20120730125851.GB27293@shutemov.name>
+In-Reply-To: <20120730125851.GB27293@shutemov.name>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
- 
-  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.6-changes
- 
-to get the following device-mapper updates for 3.6.
- 
-Thanks,
-Alasdair
+On 07/30/2012 04:58 PM, Kirill A. Shutemov wrote:
+> On Wed, Jul 25, 2012 at 06:38:17PM +0400, Glauber Costa wrote:
+>> We are able to match a cache allocation to a particular memcg.  If the
+>> task doesn't change groups during the allocation itself - a rare event,
+>> this will give us a good picture about who is the first group to touch a
+>> cache page.
+>>
+>> This patch uses the now available infrastructure by calling
+>> memcg_kmem_get_cache() before all the cache allocations.
+>>
+>> Signed-off-by: Glauber Costa <glommer@parallels.com>
+>> CC: Christoph Lameter <cl@linux.com>
+>> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+>> CC: Michal Hocko <mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner <hannes@cmpxchg.org>
+>> CC: Suleiman Souhlal <suleiman@google.com>
+>> ---
+>>  include/linux/slub_def.h |   18 +++++++++++++-----
+>>  mm/memcontrol.c          |    2 ++
+>>  mm/slab.c                |    4 ++++
+>>  mm/slub.c                |    1 +
+>>  4 files changed, 20 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+>> index 8bb8ad2..148000a 100644
+>> --- a/include/linux/slub_def.h
+>> +++ b/include/linux/slub_def.h
+>> @@ -13,6 +13,8 @@
+>>  #include <linux/kobject.h>
+>>  
+>>  #include <linux/kmemleak.h>
+>> +#include <linux/memcontrol.h>
+>> +#include <linux/mm.h>
+>>  
+>>  enum stat_item {
+>>  	ALLOC_FASTPATH,		/* Allocation from cpu slab */
+>> @@ -209,14 +211,14 @@ static __always_inline int kmalloc_index(size_t size)
+>>   * This ought to end up with a global pointer to the right cache
+>>   * in kmalloc_caches.
+>>   */
+>> -static __always_inline struct kmem_cache *kmalloc_slab(size_t size)
+>> +static __always_inline struct kmem_cache *kmalloc_slab(gfp_t flags, size_t size)
+>>  {
+>>  	int index = kmalloc_index(size);
+>>  
+>>  	if (index == 0)
+>>  		return NULL;
+>>  
+>> -	return kmalloc_caches[index];
+>> +	return memcg_kmem_get_cache(kmalloc_caches[index], flags);
+>>  }
+>>  
+>>  void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
+>> @@ -225,7 +227,13 @@ void *__kmalloc(size_t size, gfp_t flags);
+>>  static __always_inline void *
+>>  kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+>>  {
+>> -	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
+>> +	void *ret;
+>> +
+>> +	flags = __GFP_COMP;
+>> +#ifdef CONFIG_MEMCG_KMEM
+>> +	flags |= __GFP_KMEMCG;
+>> +#endif
+> 
+> Em.. I don't see where __GFP_KMEMCG is defined.
+> It should be 0 for !CONFIG_MEMCG_KMEM.
+> 
+It is not, sorry.
 
-----------------------------------------------------------------
-Device-mapper updates for 3.6:
-- Flip the thin target into new read-only or failed modes if errors
-  are detected;
-- Handle chunk sizes that are not powers of two in the snapshot and
-  thin targets;
-- Provide a way for userspace to avoid replacing an already-loaded
-  multipath hardware handler while booting;
-- Reduce dm_thin_endio_hook slab size to avoid allocation failures;
-- Numerous small changes and cleanups to the code.
+As I said, this is dependent on another patch series.
+My main goal while sending this was to get the slab part - that will
+eventually come ontop of that - discussed. Because they are both quite
+complex, I believe they benefit from being discussed separately.
 
-----------------------------------------------------------------
-Alasdair G Kergon (5):
-      dm thin: reduce endio_hook pool size
-      dm snapshot: remove redundant assignment in merge fn
-      dm crypt: store crypt_config instead of dm_target struct
-      dm: use bool bitfields in struct dm_target
-      dm thin: commit before gathering status
+You can find the latest version of that here:
 
-Joe Thornber (38):
-      dm: remove unused flush target method
-      dm persistent data: remove debug space map checker
-      dm thin metadata: remove pointless label from __commit_transaction
-      dm thin metadata: introduce THIN_MAX_CONCURRENT_LOCKS
-      dm thin: fix memory leak in process_prepared_mapping error paths
-      dm thin: avoid unnecessarily breaking sharing for flushes
-      dm persistent data: always unlock superblock in dm_bm_flush_and_unlock
-      dm persistent data: only commit space map if index changed
-      dm: allow targets to request flushes regardless of underlying device support
-      dm thin: set flush_supported
-      dm thin metadata: factor __setup_btree_details out of init_pmd
-      dm persistent data: create new dm_block_manager struct
-      dm thin metadata: stop tracking need for commit
-      dm persistent data: tidy transaction manager creation fns
-      dm persistent data: stop using dm_bm_unlock_move when shadowing blocks in tm
-      dm thin metadata: wrap superblock locking
-      dm thin metadata: rename init_pmd to __create_persistent_data_objects
-      dm thin metadata: move bm creation code into create_persistent_data_objects
-      dm thin metadata: factor __destroy_persistent_data out of dm_pool_metadata_close
-      dm thin metadata: lift some initialisation out of __open_or_format_metadata
-      dm thin metadata: factor out __write_initial_superblock
-      dm thin metadata: move dm_commit_pool_metadata into __write_initial_superblock
-      dm thin metadata: lift __begin_transaction out of __write_initial_superblock
-      dm thin metadata: zero unused superblock uuid
-      dm thin metadata: use struct dm_pool_metadata members in __open_or_format_metadata
-      dm thin metadata: split __open or format metadata
-      dm thin metadata: remove nr_blocks arg from __create_persistent_data_objects
-      dm thin metadata: move __superblock_all_zeroes to __open_or_format_metadata
-      dm thin metadata: remove create parameter from __create_persistent_data_objects
-      dm thin metadata: remove duplicate pmd initialisation
-      dm thin metadata: tidy up open and format error paths
-      dm thin metadata: add format option to dm_pool_metadata_open
-      dm thin metadata: add dm_thin_changed_this_transaction
-      dm thin: reduce number of metadata commits
-      dm persistent data: introduce dm_bm_set_read_only
-      dm thin metadata: introduce dm_pool_metadata_set_read_only
-      dm thin metadata: introduce dm_pool_abort_metadata
-      dm thin: add read only and fail io modes
-
-Jonathan E Brassow (2):
-      dm raid: restructure parse_raid_params
-      dm raid: move sectors_per_dev calculation
-
-Mike Snitzer (7):
-      dm thin: clean up compiler warning
-      dm thin: provide specific errors for two table load failure cases
-      dm: support non power of two target max_io_len
-      dm stripe: support for non power of 2 chunksize
-      dm thin: support for non power of 2 pool blocksize
-      dm mpath: add retain_attached_hw_handler feature
-      dm thin metadata: only check incompat features on open
-
-Mikulas Patocka (10):
-      dm stripe: fix size test
-      dm stripe: remove stripes_mask
-      dm stripe: remove minimum stripe size
-      dm stripe: optimize chunk_size calculations
-      dm: introduce split_discard_requests
-      dm thin: split discards on block boundary
-      dm thin: optimize power of two block size
-      dm crypt: rename pending field
-      dm crypt: move cipher data out of per_cpu struct
-      dm crypt: rename struct convert_context sector field
-
-majianpeng (1):
-      dm: replace simple_strtoul
-
- Documentation/device-mapper/striped.txt            |    7 +-
- Documentation/device-mapper/thin-provisioning.txt  |   24 +-
- drivers/md/Kconfig                                 |    9 -
- drivers/md/dm-crypt.c                              |  219 +++---
- drivers/md/dm-delay.c                              |    2 +-
- drivers/md/dm-exception-store.c                    |   13 +-
- drivers/md/dm-flakey.c                             |    2 +-
- drivers/md/dm-ioctl.c                              |    5 +-
- drivers/md/dm-linear.c                             |    2 +-
- drivers/md/dm-mpath.c                              |   49 +-
- drivers/md/dm-raid.c                               |   56 +-
- drivers/md/dm-raid1.c                              |   10 +-
- drivers/md/dm-snap.c                               |   34 +-
- drivers/md/dm-stripe.c                             |   87 ++-
- drivers/md/dm-table.c                              |    3 +
- drivers/md/dm-thin-metadata.c                      |  769 ++++++++++++--------
- drivers/md/dm-thin-metadata.h                      |   25 +-
- drivers/md/dm-thin.c                               |  542 ++++++++++----
- drivers/md/dm-verity.c                             |    2 +-
- drivers/md/dm.c                                    |   40 +-
- drivers/md/dm.h                                    |    5 +
- drivers/md/persistent-data/Makefile                |    1 -
- drivers/md/persistent-data/dm-block-manager.c      |  105 +--
- drivers/md/persistent-data/dm-block-manager.h      |   21 +-
- drivers/md/persistent-data/dm-space-map-checker.c  |  446 ------------
- drivers/md/persistent-data/dm-space-map-checker.h  |   26 -
- drivers/md/persistent-data/dm-space-map-common.c   |   12 +-
- drivers/md/persistent-data/dm-space-map-common.h   |    1 +
- drivers/md/persistent-data/dm-space-map-disk.c     |   34 +-
- .../md/persistent-data/dm-transaction-manager.c    |   91 +--
- .../md/persistent-data/dm-transaction-manager.h    |   11 +-
- include/linux/device-mapper.h                      |   29 +-
- include/linux/dm-ioctl.h                           |    6 +-
- 33 files changed, 1373 insertions(+), 1315 deletions(-)
- delete mode 100644 drivers/md/persistent-data/dm-space-map-checker.c
- delete mode 100644 drivers/md/persistent-data/dm-space-map-checker.h
+https://lkml.org/lkml/2012/6/25/251
