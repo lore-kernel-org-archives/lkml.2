@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2G3HE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:04:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49440 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab2G3HEZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 03:04:25 -0400
-Message-ID: <501631D3.7080309@kernel.dk>
-Date: Mon, 30 Jul 2012 09:03:47 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Philipp Reisner <philipp.reisner@linbit.com>
-CC: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: Re: drbd-8.3 fixes
-References: <6356994.vJFLSmzzfE@fat-tyre>
-In-Reply-To: <6356994.vJFLSmzzfE@fat-tyre>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754040Ab2G3HGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:06:24 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45008 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab2G3HGW convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 30 Jul 2012 03:06:22 -0400
+Message-Id: <50164E890200007800091328@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 30 Jul 2012 08:06:17 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad@darnok.org>
+Cc: "xen-devel" <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/swiotlb: If iommu=soft was not
+ passed in on > 4GB, don't turn it on.
+References: <1343335407-5465-1-git-send-email-konrad.wilk@oracle.com>
+ <1343335407-5465-2-git-send-email-konrad.wilk@oracle.com>
+ <50125F0B0200007800090DFB@nat28.tlf.novell.com>
+ <20120727175408.GG17427@andromeda.dapyr.net>
+In-Reply-To: <20120727175408.GG17427@andromeda.dapyr.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 04:24 PM, Philipp Reisner wrote:
-> Hi Jens,
+>>> On 27.07.12 at 19:54, Konrad Rzeszutek Wilk <konrad@darnok.org> wrote:
+> On Fri, Jul 27, 2012 at 08:27:39AM +0100, Jan Beulich wrote:
+>> >>> On 26.07.12 at 22:43, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> > +	/* Check if the user supplied the e820_hole parameter
+>> > +	 * which would create a machine looking E820 region. */
+>> > +	for (i = 0; i < e820.nr_map; i++) {
+>> > +		if ((e820.map[i].type == E820_ACPI) ||
+>> > +		    (e820.map[i].type == E820_NVS))
+>> > +			return true;
+>> 
+>> Tying this decision to the presence of ACPI regions in E820 is
+>> problematic for two reasons imo: For one, it precludes cleaning
+>> up this (bogus!) construct where it gets produced (PV DomU-s
+>> really shouldn't ever see such E820 entries, they should get
+>> converted to simple reserved entries, to wipe any notion of
+>> ACPI presence). And second it ties you to running on systems
+>> that actually have ACPI, whereas it is my rudimentary
+>> understanding that systems with e.g. SFI would not have any
+>> ACPI).
 > 
-> Please consider to pull these changes for the 3.6 merge window.
-> I did not found a for-3.6/drivers branch, so I based the patches
-> on the 3.5 release.
+> Right. The other idea was to check the XenBus for the existence
+> of vpci backend. But at this stage it is not up yet.
 > 
-> Best,
->  Phil
-> 
-> 
-> The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
-> 
->   Linux 3.5 (2012-07-21 13:58:29 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.drbd.org/linux-drbd.git for-jens
-> 
-> for you to fetch changes up to a73ff3231df59a4b92ccd0dd4e73897c5822489b:
-> 
->   drbd: announce FLUSH/FUA capability to upper layers (2012-07-24 15:14:28 +0200)
-> 
-> ----------------------------------------------------------------
-> Lars Ellenberg (10):
->       drbd: cleanup, remove two unused global flags
->       drbd: differentiate between normal and forced detach
->       drbd: report congestion if we are waiting for some userland callback
->       drbd: reset congestion information before reporting it in /proc/drbd
->       drbd: do not reset rs_pending_cnt too early
->       drbd: call local-io-error handler early
->       drbd: fix potential access after free
->       drbd: flush drbd work queue before invalidate/invalidate remote                                 
->       drbd: fix max_bio_size to be unsigned                                                           
->       drbd: announce FLUSH/FUA capability to upper layers
-> 
->  drivers/block/drbd/drbd_actlog.c   |    8 +++--
->  drivers/block/drbd/drbd_bitmap.c   |    4 +--
->  drivers/block/drbd/drbd_int.h      |   44 ++++++++++++++++--------
->  drivers/block/drbd/drbd_main.c     |   65 +++++++++++++++++++++++++++---------
->  drivers/block/drbd/drbd_nl.c       |   36 +++++++++++++++-----
->  drivers/block/drbd/drbd_proc.c     |    3 ++
->  drivers/block/drbd/drbd_receiver.c |   38 +++++++++++++++------
->  drivers/block/drbd/drbd_req.c      |    9 +++--
->  drivers/block/drbd/drbd_worker.c   |   12 ++-----
->  9 files changed, 153 insertions(+), 66 deletions(-)
+> Perhaps what I should check for is the existence of two E820_RSV
+> and two E820_RAM regions - and that would be a normal PV guest.
+> Anything that is outside of that scope would be considered
+> a PCI PV guest?
 
-Pulled, thanks.
+I'd limit this to two RAM and at least one reserved regions (after
+all it could happen that all the reserved ones can be folded into
+one). But beyond this minor detail that's the approach I'd prefer.
+All the ones below look more or less fragile.
 
--- 
-Jens Axboe
+Jan
+
+> The other thought I had was to skip this check altogether and
+> either do:
+> 1). initialize SWIOTLB when xen-pcifront start up and detects
+>     that it has devices (so later on initialization - similar to
+>     how IA64 does it) - but I am not sure how the PCI-DMA works
+>     with these late bloomers (especially as one could just make
+>     xen-pcifront be a module).
+> 2). If xen-pcifront starts and does not detect any backends
+>     it calls swiotlb_free. But that also requires the PCI-DMA
+>     to swap in the dma_ops, and I am not entirely sure how
+>     that would work out.
+> 3). Have an "early_init" xen-pcifront components that does a
+>     a quick XenBus init (similar to how hvmloader checks for
+>     DMI overwrites) and if it finds vpci then declare its
+>     time to turn SWIOTLB on.
+> 4). The other thing is to wrap this code with something like
+>     this:
+> 
+> #ifdef CONFIG_SWIOTLB
+> #ifdef CONFIG_XEN_PCI_FRONTEND
+> 	if (.. blah balh) do the check as outlined in 3).
+> #else // PCI_FRONTEND is not present, so we won't need SWIOTLB
+> 	swiotlb = 0;
+> 	iommu = 1;
+> #endif
+> #endif
+> 
+> That would take care of the built-in issues.
+
+
 
