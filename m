@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab2G3OcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:32:14 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36289 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab2G3OcM (ORCPT
+	id S1754697Ab2G3Og3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:36:29 -0400
+Received: from aaar.vm.bytemark.co.uk ([80.68.92.230]:54218 "EHLO
+	aaar.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516Ab2G3Og1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:32:12 -0400
-Message-ID: <50169AE8.4020601@linaro.org>
-Date: Mon, 30 Jul 2012 15:32:08 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 01/18] Documentation: Describe the ux500 realated audio
- related DT nodes
-References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org> <1343393162-11938-2-git-send-email-lee.jones@linaro.org> <20120729203106.GD4384@opensource.wolfsonmicro.com> <50163A09.8060203@linaro.org> <20120730134804.GE4468@opensource.wolfsonmicro.com>
-In-Reply-To: <20120730134804.GE4468@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 30 Jul 2012 10:36:27 -0400
+X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 10:36:27 EDT
+Message-ID: <1343658373.15432.18.camel@zakaz.uk.xensource.com>
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Len Brown <lenb@kernel.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        Pavel Vasilyev <pavel@pavlinux.ru>, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Date: Mon, 30 Jul 2012 15:26:13 +0100
+In-Reply-To: <5011F15A.3060007@kernel.org>
+References: <Pine.LNX.4.44L0.1206301023540.29029-100000@netrider.rowland.org>
+	 <5011F15A.3060007@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [PATCH] ACPI: replace strlen("string") with sizeof("string") -1
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/07/12 14:48, Mark Brown wrote:
-> On Mon, Jul 30, 2012 at 08:38:49AM +0100, Lee Jones wrote:
->> On 29/07/12 21:31, Mark Brown wrote:
->>> On Fri, Jul 27, 2012 at 01:45:45PM +0100, Lee Jones wrote:
->
->>>> +   - Machine Driver : "stericsson,snd-soc-mop500"
->>>> +   - CPU-side DAI   : "stericsson,ux500-msp-i2s"
->>>> +   - DMA (platform) : "stericsson,ux500-pcm"
->>>> +   - Audio CODEC    : "stericsson,ab8500-codec"
->
->>> What is this a binding document for?  It looks like the binding for a
->>> machine driver...
->
->> No, it's a binding document for all of the ux500 driver and CODEC
->> blocks. Do you really want me to split it all up? I think the only
->> component which could be sanely split-out is the ab8500-codec, which
->> could (should?) live in [1].
->
-> Yes, of course!  Each device will have a separate binding with different
-> requirements.
->
->> These properties are relevant for some, but not all of the
->> components above, hence why the are listed at 'optional properties'.
->
-> Which is part of the problem here, it makes it much harder to tell what
-> you need to do for the individual devices.
+On Thu, 2012-07-26 at 21:39 -0400, Len Brown wrote:
+> ...both give the number of chars in the string
+> without the '\0', as strncmp() wants,
+> but sizeof() is compile-time.
 
-Once again, I'll split them out, but I think there are people talking 
-about documentation consolidation, as it's going to become very messy, 
-very quickly if we keep adding new files for each device. Soon the 
-Documentation directory will be as large as the driver base. :)
+I thought gcc optimised strlen("string literal") into a compile time
+constant too. It does in a little userspace test I just wrote, but I
+didn't look at its behaviour with the kernel's strlen.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Ian.
+
