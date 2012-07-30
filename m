@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab2G3TsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 15:48:17 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:4421
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755089Ab2G3TsO (ORCPT
+	id S1755106Ab2G3Tum (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 15:50:42 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:53910 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab2G3Tuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 15:48:14 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I542M1432I4015Izz1202hzz8275dhz2fh2a8h668h839h93fhd25hf0ah107ah)
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH net,1/1] hyperv: Add support for setting MAC from within
- guests
-Thread-Topic: [PATCH net,1/1] hyperv: Add support for setting MAC from
- within guests
-Thread-Index: AQHNXr4xkC9nKE+X/0yPruu1JeSp7JdB4zqAgAB10dA=
-Date: Mon, 30 Jul 2012 19:48:06 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DDF7B24@TK5EX14MBXC223.redmond.corp.microsoft.com>
-References: <1341940762-18307-1-git-send-email-haiyangz@microsoft.com>
- <20120730123927.GA29459@aepfle.de>
-In-Reply-To: <20120730123927.GA29459@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.33]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 30 Jul 2012 15:50:40 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <CANLzEktXNikod3Cj=a4hM85z2X29KZVptWWLVh7SMtjROxCx4w@mail.gmail.com>
+References: <1343283113-16952-1-git-send-email-bleung@chromium.org>
+	<20120730055009.GB5830@core.coreip.homeip.net>
+	<CANLzEktXNikod3Cj=a4hM85z2X29KZVptWWLVh7SMtjROxCx4w@mail.gmail.com>
+Date: Mon, 30 Jul 2012 12:50:39 -0700
+X-Google-Sender-Auth: MQty0tWJ6lsDvhQxeu8D_Oj0-p0
+Message-ID: <CANLzEkvN2SG+qrRyNYqKgNQUbK29LumxKkBsvzB015xd=pi85w@mail.gmail.com>
+Subject: Re: [PATCH] Input: gpio_keys - Report wakeup events if device may wakeup
+From: Benson Leung <bleung@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q6UJmQjS006662
+
+Actually, I take it back. It doesn't look like it's necessary.
+
+Benson
+
+On Mon, Jul 30, 2012 at 12:28 PM, Benson Leung <bleung@chromium.org> wrote:
+> Hi Dmitry,
+>
+> Yes I see Neil's changes. Thank you for letting me know.
+>
+> By the way, looking at Neil's changes, would it make sense to check
+> for device_may_wakeup(dev) like in my patch so that the wakeup
+> behavior can be turned off by setting power/wakeup to disabled?
+>
+> Benson
+>
+> On Sun, Jul 29, 2012 at 10:50 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+>> Hi Benson,
+>>
+>> On Wed, Jul 25, 2012 at 11:11:53PM -0700, Benson Leung wrote:
+>>> If a button is configured to wake the system, report a pm wakeup event.
+>>>
+>>
+>> Thank you for your patch, however I applied more complete patch sent by
+>> NeilBrown.
+>>
+>>> Signed-off-by: Benson Leung <bleung@chromium.org>
+>>> ---
+>>>  drivers/input/keyboard/gpio_keys.c |    4 ++++
+>>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+>>> index cbb1add..15a80e2 100644
+>>> --- a/drivers/input/keyboard/gpio_keys.c
+>>> +++ b/drivers/input/keyboard/gpio_keys.c
+>>> @@ -328,9 +328,13 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
+>>>  {
+>>>       const struct gpio_keys_button *button = bdata->button;
+>>>       struct input_dev *input = bdata->input;
+>>> +     struct device *dev = input->dev.parent;
+>>>       unsigned int type = button->type ?: EV_KEY;
+>>>       int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
+>>>
+>>> +     if (button->wakeup && device_may_wakeup(dev))
+>>> +             pm_wakeup_event(dev, 0);
+>>> +
+>>>       if (type == EV_ABS) {
+>>>               if (state)
+>>>                       input_event(input, type, button->code, button->value);
+>>> --
+>>> 1.7.7.3
+>>>
+>>
+>> --
+>> Dmitry
+>
+>
+>
+> --
+> Benson Leung
+> Software Engineer, Chrom* OS
+> bleung@chromium.org
 
 
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Monday, July 30, 2012 8:39 AM
-> To: Haiyang Zhang
-> Cc: davem@davemloft.net; netdev@vger.kernel.org; KY Srinivasan; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org
-> Subject: Re: [PATCH net,1/1] hyperv: Add support for setting MAC from
-> within guests
-> 
-> On Tue, Jul 10, Haiyang Zhang wrote:
-> 
-> > diff --git a/drivers/net/hyperv/rndis_filter.c
-> > b/drivers/net/hyperv/rndis_filter.c
-> > index 981ebb1..fbf5394 100644
-> > --- a/drivers/net/hyperv/rndis_filter.c
-> > +++ b/drivers/net/hyperv/rndis_filter.c
-> > @@ -47,6 +48,7 @@ struct rndis_request {
-> >  	struct hv_page_buffer buf;
-> >  	/* FIXME: We assumed a fixed size request here. */
-> >  	struct rndis_message request_msg;
-> > +	u8 ext[100];
-> 
-> This array is not referenced in the patch.
-> Please add a comment to the code what the purpose of this array is, and why
-> its size is 100 bytes.
-
-It's a buffer for the extended info after the RNDIS message. It's referenced based
-on the data offset in the RNDIS message. 100 byte size is enough for current needs, 
-and should be sufficient for the near future.
-
-I will add a comment to the code.
-
-Thanks,
-- Haiyang
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
