@@ -1,79 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab2G3OMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:12:34 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:50967 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754446Ab2G3OMc (ORCPT
+	id S1754562Ab2G3ONA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:13:00 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:36336 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754401Ab2G3OM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:12:32 -0400
-Message-ID: <5016967D.2020104@ti.com>
-Date: Mon, 30 Jul 2012 17:13:17 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120723 Thunderbird/14.0
+	Mon, 30 Jul 2012 10:12:58 -0400
+From: y@vger.kernel.org
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: <tglx@linutronix.de>, <will.deacon@arm.com>,
+        <srinidhi.kasagar@stericsson.com>, Chris Smith <chris.smith@st.com>
+Subject: [PATCH 2/2] arm: pmu: add support for per-cpu PMU interrupts.
+Date: Mon, 30 Jul 2012 15:12:02 +0100
+Message-ID: <1343657522-28145-2-git-send-email-y>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1343657522-28145-1-git-send-email-y>
+References: <1343657522-28145-1-git-send-email-y>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: devicetree-discuss@lists.ozlabs.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, Sergio Aguirre <saaguirre@ti.com>
-Subject: Re: [PATCH 2/3] mfd: twl6040: Add twl6040-gpio child
-References: <1342603220-13287-1-git-send-email-peter.ujfalusi@ti.com> <1342603220-13287-3-git-send-email-peter.ujfalusi@ti.com> <CACRpkdZJcy5HOZkjMCVJW5beExoCHOBb=BiB4GOGR7sM+5Xsww@mail.gmail.com>
-In-Reply-To: <CACRpkdZJcy5HOZkjMCVJW5beExoCHOBb=BiB4GOGR7sM+5Xsww@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+From: Chris Smith <chris.smith@st.com>
 
-On 07/28/2012 01:50 AM, Linus Walleij wrote:
-> On Wed, Jul 18, 2012 at 11:20 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> 
-> I think you need to CC DT bindings to devicetree-discuss.
-> 
->> diff --git a/Documentation/devicetree/bindings/mfd/twl6040.txt b/Documentation/devicetree/bindings/mfd/twl6040.txt
->> index c855240..2a3d55c 100644
->> --- a/Documentation/devicetree/bindings/mfd/twl6040.txt
->> +++ b/Documentation/devicetree/bindings/mfd/twl6040.txt
->> @@ -10,6 +10,8 @@ Required properties:
->>  - reg: must be 0x4b for i2c address
->>  - interrupts: twl6040 has one interrupt line connecteded to the main SoC
->>  - interrupt-parent: The parent interrupt controller
->> +- gpio-controller:
->> +- #gpio-cells = <1>: twl6040 provides GPO lines.
->>  - twl6040,audpwron-gpio: Power on GPIO line for the twl6040
->>
->>  - vio-supply: Regulator for the twl6040 VIO supply
->> @@ -29,6 +31,8 @@ Required properties:
->>  - ti,viblmotor-res: Resistance parameter for left motor
->>  - ti,viblmotor-res: Resistance parameter for right motor
->>
->> +- ti,use-gpo: Set it to <1> if the GPO functionality is in use
->> +
-> 
-> It's not like I'm sort of expert on bindings, but I've seen the
-> pattern status = "okay" used for this kind of boolean stuff,
-> and if that node is not there it's implicitly not OK.
+We have systems where the PMU interrupts are PPIs, and so per-cpu. This
+patch adds support for per-cpu PMU interrupts to the perf event code.
 
-Yes I have also seen status = "okay" in dts files, but usually they were
-associated with sections with compatible flag.
-Here I'm not sure how to use it to indicate that the core driver should create
-the mfd child for the GPIO driver.
-I do not have parameters for the GPIO driver.
+Note that because the dev_id passed to request_percpu_irq has to be
+percpu data, we now pass cpu_hw_events as the dev_id rather than armpmu.
+This only place the dev_id was used was in armpmu_platform_irq, which is
+fixed up accordingly.
 
-I could, if this is working do this:
+Signed-off-by: Chris Smith <chris.smith@st.com>
+---
+ arch/arm/kernel/perf_event.c    |   91 +++++++++++++++++++++++++++++---------
+ arch/arm/kernel/perf_event_v6.c |    3 +-
+ arch/arm/kernel/perf_event_v7.c |    3 +-
+ 3 files changed, 71 insertions(+), 26 deletions(-)
 
-ti,twl6040-gpo {
-	status = "okay";
-};
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index b2abfa1..add9064 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/bitmap.h>
+ #include <linux/interrupt.h>
++#include <linux/irq.h>
+ #include <linux/kernel.h>
+ #include <linux/export.h>
+ #include <linux/perf_event.h>
+@@ -355,13 +356,27 @@ validate_group(struct perf_event *event)
+ 
+ static irqreturn_t armpmu_platform_irq(int irq, void *dev)
+ {
+-	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
++	struct pmu_hw_events *cpuc  = (struct pmu_hw_events *)dev;
++	struct arm_pmu *armpmu = to_arm_pmu((*(cpuc->events))->pmu);
++
+ 	struct platform_device *plat_device = armpmu->plat_device;
+ 	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
+ 
+ 	return plat->handle_irq(irq, dev, armpmu->handle_irq);
+ }
+ 
++/* Wrap enable_percpu_irq up as a smp_call_func_t */
++static void armpmu_enable_percpu_irq(void *irq)
++{
++	enable_percpu_irq((int)irq, IRQ_TYPE_NONE);
++}
++
++/* Wrap disable_percpu_irq up as a smp_call_func_t */
++static void armpmu_disable_percpu_irq(void *irq)
++{
++	disable_percpu_irq((int)irq);
++}
++
+ static void
+ armpmu_release_hardware(struct arm_pmu *armpmu)
+ {
+@@ -379,7 +394,14 @@ armpmu_release_hardware(struct arm_pmu *armpmu)
+ 		if (irq >= 0) {
+ 			if (plat && plat->disable_irq)
+ 				plat->disable_irq(irq);
+-			free_irq(irq, armpmu);
++			else if (irq_is_per_cpu(irq))
++				on_each_cpu(armpmu_disable_percpu_irq,
++						(void *)irq, 1);
++
++			if (irq_is_per_cpu(irq))
++				free_percpu_irq(irq, &cpu_hw_events);
++			else
++				free_irq(irq, &per_cpu(cpu_hw_events, i));
+ 		}
+ 	}
+ 
+@@ -421,28 +443,53 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
+ 		if (irq < 0)
+ 			continue;
+ 
+-		/*
+-		 * If we have a single PMU interrupt that we can't shift,
+-		 * assume that we're running on a uniprocessor machine and
+-		 * continue. Otherwise, continue without this interrupt.
+-		 */
+-		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
+-			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
+-				    irq, i);
+-			continue;
++		if (irq_is_per_cpu(irq)) {
++			/*
++			 * We assume that if the PMU IRQ is per-cpu, then
++			 * there is only one.
++			 */
++			WARN_ON(irqs > 1);
++
++			err = request_percpu_irq(irq, handle_irq,
++					"arm-pmu", &cpu_hw_events);
++			if (err) {
++				pr_err("unable to request IRQ%d for ARM PMU counters\n",
++					irq);
++				armpmu_release_hardware(armpmu);
++				return err;
++			} else if (plat && plat->enable_irq) {
++				plat->enable_irq(irq);
++			} else {
++				on_each_cpu(armpmu_enable_percpu_irq,
++						(void *)irq, 1);
++			}
++
++		} else {
++			/*
++			 * If we have a single PMU interrupt that we can't
++			 * shift, assume that we're running on a uniprocessor
++			 * machine and continue. Otherwise, continue without
++			 * this interrupt.
++			 */
++			if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
++				pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
++					    irq, i);
++				continue;
++			}
++
++			err = request_irq(irq, handle_irq,
++					IRQF_DISABLED | IRQF_NOBALANCING,
++					"arm-pmu", &per_cpu(cpu_hw_events, i));
++
++			if (err) {
++				pr_err("unable to request IRQ%d for ARM PMU counters\n",
++					irq);
++				armpmu_release_hardware(armpmu);
++				return err;
++			} else if (plat && plat->enable_irq)
++				plat->enable_irq(irq);
+ 		}
+ 
+-		err = request_irq(irq, handle_irq,
+-				  IRQF_DISABLED | IRQF_NOBALANCING,
+-				  "arm-pmu", armpmu);
+-		if (err) {
+-			pr_err("unable to request IRQ%d for ARM PMU counters\n",
+-				irq);
+-			armpmu_release_hardware(armpmu);
+-			return err;
+-		} else if (plat && plat->enable_irq)
+-			plat->enable_irq(irq);
+-
+ 		cpumask_set_cpu(i, &armpmu->active_irqs);
+ 	}
+ 
+diff --git a/arch/arm/kernel/perf_event_v6.c b/arch/arm/kernel/perf_event_v6.c
+index b78af0c..6b348f5 100644
+--- a/arch/arm/kernel/perf_event_v6.c
++++ b/arch/arm/kernel/perf_event_v6.c
+@@ -473,7 +473,7 @@ armv6pmu_handle_irq(int irq_num,
+ {
+ 	unsigned long pmcr = armv6_pmcr_read();
+ 	struct perf_sample_data data;
+-	struct pmu_hw_events *cpuc;
++	struct pmu_hw_events *cpuc = (struct pmu_hw_events *)dev;
+ 	struct pt_regs *regs;
+ 	int idx;
+ 
+@@ -491,7 +491,6 @@ armv6pmu_handle_irq(int irq_num,
+ 
+ 	perf_sample_data_init(&data, 0);
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
+ 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
+ 		struct perf_event *event = cpuc->events[idx];
+ 		struct hw_perf_event *hwc;
+diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
+index 4d7095a..56ddad7 100644
+--- a/arch/arm/kernel/perf_event_v7.c
++++ b/arch/arm/kernel/perf_event_v7.c
+@@ -933,7 +933,7 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
+ {
+ 	u32 pmnc;
+ 	struct perf_sample_data data;
+-	struct pmu_hw_events *cpuc;
++	struct pmu_hw_events *cpuc  = (struct pmu_hw_events *)dev;
+ 	struct pt_regs *regs;
+ 	int idx;
+ 
+@@ -955,7 +955,6 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
+ 
+ 	perf_sample_data_init(&data, 0);
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
+ 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
+ 		struct perf_event *event = cpuc->events[idx];
+ 		struct hw_perf_event *hwc;
+-- 
+1.7.6.5
 
-If the board needs the gpo driver, but in the driver(s) I need to check for
-the existence of the "ti,twl6040-gpo" node and check if the status is "okay".
-I think it is easier to just get the value of "ti,use-gpo", if it exist and it
-is 1 I enable the GPIO driver otherwise I don't.
-
-
-Regards,
-Péter
