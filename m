@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab2G3OLn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:11:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45556 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754401Ab2G3OLk (ORCPT
+	id S1754521Ab2G3OMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:12:32 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:33734 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754446Ab2G3OMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:11:40 -0400
-Date: Mon, 30 Jul 2012 07:11:25 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-089ba999dc881a7549d97c55ac9e0052d061867d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
-        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120729182218.GA20315@redhat.com>
-References: <20120729182218.GA20315@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Kill write_opcode()->lock_page(new_page)
-Git-Commit-ID: 089ba999dc881a7549d97c55ac9e0052d061867d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 30 Jul 2012 10:12:31 -0400
+From: y@vger.kernel.org
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: <tglx@linutronix.de>, <will.deacon@arm.com>,
+        <srinidhi.kasagar@stericsson.com>, Chris Smith <chris.smith@st.com>
+Subject: [PATCH 1/2] genirq: Provide an accessor for IRQ_PER_CPU flag.
+Date: Mon, 30 Jul 2012 15:12:01 +0100
+Message-ID: <1343657522-28145-1-git-send-email-y>
+X-Mailer: git-send-email 1.7.6.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:11:31 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  089ba999dc881a7549d97c55ac9e0052d061867d
-Gitweb:     http://git.kernel.org/tip/089ba999dc881a7549d97c55ac9e0052d061867d
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Sun, 29 Jul 2012 20:22:18 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 30 Jul 2012 11:27:19 +0200
+From: Chris Smith <chris.smith@st.com>
 
-uprobes: Kill write_opcode()->lock_page(new_page)
+Adds an accessor function, irq_is_per_cpu(), for the flag IRQ_PER_CPU.
 
-write_opcode() does lock_page(new_page) for no reason. Nobody
-can see this page until __replace_page() exposes it under ptl
-lock, and we do nothing with this page after pte_unmap_unlock().
+This is useful if you have an IRQ that is per-cpu in some hardware
+implementations, and not in others (example: ARM PMU Interrupts), and
+you want to handle both cases.
 
-If nothing else, the similar code in do_wp_page() doesn't lock
-the new page for page_add_new_anon_rmap/set_pte_at_notify.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120729182218.GA20315@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Chris Smith <chris.smith@st.com>
 ---
- kernel/events/uprobes.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ include/linux/irqdesc.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 6fda799..23c562b7 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -239,9 +239,7 @@ retry:
- 	if (ret)
- 		goto unlock_out;
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index f1e2527..771cb35 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -154,6 +154,14 @@ static inline int irq_balancing_disabled(unsigned int irq)
+ 	return desc->status_use_accessors & IRQ_NO_BALANCING_MASK;
+ }
  
--	lock_page(new_page);
- 	ret = __replace_page(vma, vaddr, old_page, new_page);
--	unlock_page(new_page);
- 
- unlock_out:
- 	unlock_page(old_page);
++static inline int irq_is_per_cpu(unsigned int irq)
++{
++	struct irq_desc *desc;
++
++	desc = irq_to_desc(irq);
++	return desc->status_use_accessors & IRQ_PER_CPU;
++}
++
+ static inline void
+ irq_set_lockdep_class(unsigned int irq, struct lock_class_key *class)
+ {
+-- 
+1.7.6.5
+
