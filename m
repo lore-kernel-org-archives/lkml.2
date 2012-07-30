@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab2G3Rep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:34:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38517 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab2G3Rdy (ORCPT
+	id S1755149Ab2G3Rdp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:33:45 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60428 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755132Ab2G3Rdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:33:54 -0400
+	Mon, 30 Jul 2012 13:33:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>
-Subject: [ 40/41] mm/hugetlb: fix warning in alloc_huge_page/dequeue_huge_page_vma
-Date: Mon, 30 Jul 2012 10:31:39 -0700
-Message-Id: <20120730172904.435098765@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [ 35/41] mm: test PageSwapBacked in lumpy reclaim
+Date: Mon, 30 Jul 2012 10:31:34 -0700
+Message-Id: <20120730172904.049886840@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120730172901.306897424@linuxfoundation.org>
 References: <20120730172901.306897424@linuxfoundation.org>
@@ -30,47 +31,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: Hugh Dickins <hughd@google.com>
 
-commit b1c12cbcd0a02527c180a862e8971e249d3b347d upstream.
+commit 043bcbe5ec51e0478ef2b44acef17193e01d7f70 upstream.
 
-Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
-	expensive and severely impacted page allocator performance. This
-	is part of a series of patches that reduce page allocator overhead.
+Stable note: Not tracked in Bugzilla. There were reports of shared
+	mapped pages being unfairly reclaimed in comparison to older kernels.
+	This is being addressed over time. Even though the subject
+	refers to lumpy reclaim, it impacts compaction as well.
 
-Fix a gcc warning (and bug?) introduced in cc9a6c877 ("cpuset: mm: reduce
-large amounts of memory barrier related damage v3")
+Lumpy reclaim does well to stop at a PageAnon when there's no swap, but
+better is to stop at any PageSwapBacked, which includes shmem/tmpfs too.
 
-Local variable "page" can be uninitialized if the nodemask from vma policy
-does not intersects with nodemask from cpuset.  Even if it doesn't happens
-it is better to initialize this variable explicitly than to introduce
-a kernel oops in a weird corner case.
-
-mm/hugetlb.c: In function `alloc_huge_page':
-mm/hugetlb.c:1135:5: warning: `page' may be used uninitialized in this function
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |    2 +-
+ mm/vmscan.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -454,7 +454,7 @@ static struct page *dequeue_huge_page_vm
- 				struct vm_area_struct *vma,
- 				unsigned long address, int avoid_reserve)
- {
--	struct page *page;
-+	struct page *page = NULL;
- 	struct mempolicy *mpol;
- 	nodemask_t *nodemask;
- 	struct zonelist *zonelist;
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1199,7 +1199,7 @@ static unsigned long isolate_lru_pages(u
+ 			 * anon page which don't already have a swap slot is
+ 			 * pointless.
+ 			 */
+-			if (nr_swap_pages <= 0 && PageAnon(cursor_page) &&
++			if (nr_swap_pages <= 0 && PageSwapBacked(cursor_page) &&
+ 			    !PageSwapCache(cursor_page))
+ 				break;
+ 
 
 
