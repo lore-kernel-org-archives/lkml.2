@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab2G3Hba (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 03:31:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108Ab2G3Hb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 03:31:28 -0400
-Message-ID: <5016383A.5090008@redhat.com>
-Date: Mon, 30 Jul 2012 09:31:06 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752321Ab2G3Hcr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 03:32:47 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51611 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab2G3Hcq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 03:32:46 -0400
+Message-ID: <5016389B.4020003@linaro.org>
+Date: Mon, 30 Jul 2012 08:32:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Asias He <asias@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH V3 3/3] virtio-blk: Add bio-based IO path for virtio-blk
-References: <971756309.4742543.1343457753475.JavaMail.root@redhat.com> <501610E0.8000504@redhat.com>
-In-Reply-To: <501610E0.8000504@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
+        alsa-devel@alsa-project.org, lrg@ti.com
+Subject: Re: [PATCH 13/18] ARM: ux500: Add ux500 PCM to DB8500 Device Tree
+References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org> <1343393162-11938-14-git-send-email-lee.jones@linaro.org> <20120729205001.GK4384@opensource.wolfsonmicro.com>
+In-Reply-To: <20120729205001.GK4384@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 30/07/2012 06:43, Asias He ha scritto:
->>
-> 
-> Yes. Something like this:
-> 
->   qemu -drive file=foo.img,cache=writeback/unsafe
-> 
-> is not safe against power losses also?
+On 29/07/12 21:50, Mark Brown wrote:
+> On Fri, Jul 27, 2012 at 01:45:57PM +0100, Lee Jones wrote:
+>> Nothing special here. We're only providing a compatible string
+>> to ensure the driver is probed using a Device Tree boot.
+>
+>> +		pcm: ux500-pcm {
+>> +			compatible = "stericsson,ux500-pcm";
+>> +		};
+>> +
+>
+> One of two things is wrong here.  Either you've not provided any
+> information about the hardware so the driver won't be able to work out
+> what to talk to or you've not provided any data so you're registering a
+> purely virtual Linux-internal device via the device tree.
+>
+> Once more, the idea here is to describe the hardware not to dump Linux's
+> internal data structures into the device tree.
 
-cache=writeback and cache=none are safe, cache=unsafe isn't.
+We use it register the driver for probe()ing. In the same way we do for 
+the PMU and Regulators. All three of which actually belong to a 
+different hardware block. Do you know of a better way to register those 
+devices?
 
-> I think we can add REQ_FLUSH & REQ_FUA support to bio path and that
-> deserves another patch.
-
-You only need to add REQ_FLUSH support.  The virtio-blk protocol does
-not support REQ_FUA, because there's no easy way to do it in userspace.
-
-Paolo
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
