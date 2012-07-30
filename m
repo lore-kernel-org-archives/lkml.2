@@ -1,35 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab2G3Q7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 12:59:42 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:46787 "EHLO
-	homiemail-a47.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754158Ab2G3Q7l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 12:59:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=subject:from
-	:content-type:message-id:date:to:content-transfer-encoding:
-	mime-version; q=dns; s=shealevy.com; b=Ohzzd5lCn5cPpc0RHDb7tO9Cp
-	D/8dEZYjPGwPSRdx7cKDrxvJ2Q3fRYbahTQUVvfvZwWP2XNX5IJJ71LMAn8C9aug
-	Ssjlx3J9gQhkXwcCdCDqKewA27P4ZOYzguPCi3YrttnCkD5Jn9PR92MJwLDvONpV
-	YSHEOGo5vP6gZSyeDA=
-Subject: Alternative to vfork(2) with overcommit off
-From: Shea Levy <shea@shealevy.com>
-Content-Type: text/plain;
-	charset=us-ascii
-X-Mailer: iPad Mail (9B206)
-Message-Id: <EC19EF84-3DD4-4B5A-9469-2EC11EE089D6@shealevy.com>
-Date: Mon, 30 Jul 2012 12:59:42 -0400
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0 (1.0)
+	id S1754319Ab2G3RAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:00:05 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40075 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab2G3RAB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 13:00:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120726154144.GA20964@redhat.com>
+References: <20120726134748.GA20605@localhost>
+	<20120726154144.GA20964@redhat.com>
+Date: Mon, 30 Jul 2012 10:00:00 -0700
+X-Google-Sender-Auth: fNvJrYCq5_bVXbKDiezjCi2cEIQ
+Message-ID: <CAGXu5jKEtJ-ySq-PgU7hvzVgnQrJ91pxSALCoMpqJigeNmRzLg@mail.gmail.com>
+Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jul 26, 2012 at 8:41 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 07/26, Fengguang Wu wrote:
+>>
+>> Here is a recursive lock possibility:
+>>
+>>         ptrace_may_access()
+>> =>        task_lock(task);
+>>             yama_ptrace_access_check()
+>>               get_task_comm()
+>> =>              task_lock(task);
+>
+> I think yama_ptrace_access_check() can simply use ->comm
+>
+> Oleg.
+>
+> --- x/security/yama/yama_lsm.c
+> +++ x/security/yama/yama_lsm.c
+> @@ -279,12 +279,9 @@ static int yama_ptrace_access_check(stru
+>         }
+>
+>         if (rc) {
+> -               char name[sizeof(current->comm)];
+>                 printk_ratelimited(KERN_NOTICE
+>                         "ptrace of pid %d was attempted by: %s (pid %d)\n",
+> -                       child->pid,
+> -                       get_task_comm(name, current),
+> -                       current->pid);
+> +                       child->pid, current->comm, current->pid);
+>         }
+>
+>         return rc;
+>
 
-The vfork(2) manpage states "It is rather unfortunate that Linux revived this specter from the past", but on systems with overcommit turned off fork(2) can be needlessly prohibitive when the goal is to execve(2) right away. Is there a third alternative for the fork/execve case? If not, should the manpage really be so dismissive of vfork?
+Great catch, thanks! I've sent Oleg's suggestion (with an added
+comment) separately.
 
-Cheers,
-Shea Levy
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
