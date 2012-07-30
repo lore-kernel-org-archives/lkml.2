@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab2G3OPO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 10:15:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45622 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2G3OPN (ORCPT
+	id S1754590Ab2G3OPc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:15:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62568 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab2G3OPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 10:15:13 -0400
-Date: Mon, 30 Jul 2012 07:14:57 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-aefd8933d445abf7ff0d4027c624737898827bcd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, anton@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, anton@redhat.com,
-        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120729182233.GA20339@redhat.com>
-References: <20120729182233.GA20339@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Fix overflow in vma_address()/
- find_active_uprobe()
-Git-Commit-ID: aefd8933d445abf7ff0d4027c624737898827bcd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jul 2012 07:15:03 -0700 (PDT)
+	Mon, 30 Jul 2012 10:15:31 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, spi-devel-general@lists.sourceforge.net
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] spi: Fix typo in spi
+Date: Mon, 30 Jul 2012 23:16:14 +0900
+Message-Id: <1343657774-26045-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aefd8933d445abf7ff0d4027c624737898827bcd
-Gitweb:     http://git.kernel.org/tip/aefd8933d445abf7ff0d4027c624737898827bcd
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Sun, 29 Jul 2012 20:22:33 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 30 Jul 2012 11:27:21 +0200
+Correct spelling typo in drivers/spi
 
-uprobes: Fix overflow in vma_address()/find_active_uprobe()
-
-vma->vm_pgoff is "unsigned long", it should be promoted to
-loff_t before the multiplication to avoid the overflow.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120729182233.GA20339@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- kernel/events/uprobes.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/spi/spi-au1550.c       | 2 +-
+ drivers/spi/spi-bfin-sport.c   | 2 +-
+ drivers/spi/spi-oc-tiny.c      | 2 +-
+ drivers/spi/spi-ppc4xx.c       | 4 ++--
+ drivers/spi/spi-topcliff-pch.c | 2 +-
+ 5 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 9db9cdf..fb961d5 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -117,7 +117,7 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
- 	loff_t vaddr;
+diff --git a/drivers/spi/spi-au1550.c b/drivers/spi/spi-au1550.c
+index 5784c87..4de66d1 100644
+--- a/drivers/spi/spi-au1550.c
++++ b/drivers/spi/spi-au1550.c
+@@ -475,7 +475,7 @@ static irqreturn_t au1550_spi_dma_irq_callback(struct au1550_spi *hw)
+ 		/*
+ 		 * due to an spi error we consider transfer as done,
+ 		 * so mask all events until before next transfer start
+-		 * and stop the possibly running dma immediatelly
++		 * and stop the possibly running dma immediately
+ 		 */
+ 		au1550_spi_mask_ack_all(hw);
+ 		au1xxx_dbdma_stop(hw->dma_rx_ch);
+diff --git a/drivers/spi/spi-bfin-sport.c b/drivers/spi/spi-bfin-sport.c
+index 1fe5119..6555ecd 100644
+--- a/drivers/spi/spi-bfin-sport.c
++++ b/drivers/spi/spi-bfin-sport.c
+@@ -467,7 +467,7 @@ bfin_sport_spi_pump_transfers(unsigned long data)
+ 		dev_dbg(drv_data->dev, "IO write error!\n");
+ 		drv_data->state = ERROR_STATE;
+ 	} else {
+-		/* Update total byte transfered */
++		/* Update total byte transferred */
+ 		message->actual_length += transfer->len;
+ 		/* Move to next transfer of this msg */
+ 		drv_data->state = bfin_sport_spi_next_transfer(drv_data);
+diff --git a/drivers/spi/spi-oc-tiny.c b/drivers/spi/spi-oc-tiny.c
+index 698018f..9d9071b 100644
+--- a/drivers/spi/spi-oc-tiny.c
++++ b/drivers/spi/spi-oc-tiny.c
+@@ -129,7 +129,7 @@ static int tiny_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
+ 	unsigned int i;
  
- 	vaddr = vma->vm_start + offset;
--	vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-+	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+ 	if (hw->irq >= 0) {
+-		/* use intrrupt driven data transfer */
++		/* use interrupt driven data transfer */
+ 		hw->len = t->len;
+ 		hw->txp = t->tx_buf;
+ 		hw->rxp = t->rx_buf;
+diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
+index 75ac9d4..7a85f22 100644
+--- a/drivers/spi/spi-ppc4xx.c
++++ b/drivers/spi/spi-ppc4xx.c
+@@ -101,7 +101,7 @@ struct spi_ppc4xx_regs {
+ 	u8 dummy;
+ 	/*
+ 	 * Clock divisor modulus register
+-	 * This uses the follwing formula:
++	 * This uses the following formula:
+ 	 *    SCPClkOut = OPBCLK/(4(CDM + 1))
+ 	 * or
+ 	 *    CDM = (OPBCLK/4*SCPClkOut) - 1
+@@ -201,7 +201,7 @@ static int spi_ppc4xx_setupxfer(struct spi_device *spi, struct spi_transfer *t)
+ 		return -EINVAL;
+ 	}
  
- 	return vaddr;
- }
-@@ -1450,7 +1450,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+-	/* Write new configration */
++	/* Write new configuration */
+ 	out_8(&hw->regs->mode, cs->mode);
  
- 			inode = vma->vm_file->f_mapping->host;
- 			offset = bp_vaddr - vma->vm_start;
--			offset += (vma->vm_pgoff << PAGE_SHIFT);
-+			offset += (loff_t)vma->vm_pgoff << PAGE_SHIFT;
- 			uprobe = find_uprobe(inode, offset);
- 		}
+ 	/* Set the clock */
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index cd56dcf..1284c9b 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -505,7 +505,7 @@ static int pch_spi_transfer(struct spi_device *pspi, struct spi_message *pmsg)
+ 	}
  
+ 	if (unlikely(pspi->max_speed_hz == 0)) {
+-		dev_err(&pspi->dev, "%s pch_spi_tranfer maxspeed=%d\n",
++		dev_err(&pspi->dev, "%s pch_spi_transfer maxspeed=%d\n",
+ 			__func__, pspi->max_speed_hz);
+ 		retval = -EINVAL;
+ 		goto err_out;
+-- 
+1.7.12.rc0.22.gcdd159b
+
