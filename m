@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab2G3STN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 14:19:13 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52599 "EHLO mga14.intel.com"
+	id S1754557Ab2G3S3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 14:29:06 -0400
+Received: from tiltas.lt ([77.90.75.138]:45968 "EHLO tiltas.lt"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754563Ab2G3STL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 14:19:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="128525675"
-Date: Mon, 30 Jul 2012 11:19:11 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Jiri Pirko <jiri@resnulli.us>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [RFC v2 2/2] net: Add support for NTB virtual ethernet device
-Message-ID: <20120730181910.GB987@jonmason-lab>
-References: <1343607994-32415-1-git-send-email-jon.mason@intel.com>
- <1343607994-32415-3-git-send-email-jon.mason@intel.com>
- <20120730140216.GA1550@minipsycho.orion>
+	id S1754145Ab2G3S3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 14:29:04 -0400
+X-Greylist: delayed 1001 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jul 2012 14:29:04 EDT
+To: undisclosed-recipients:;
+Subject: Buy good spamming tools
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120730140216.GA1550@minipsycho.orion>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Mon, 30 Jul 2012 11:11:37 -0700
+From: hacker selling <lifangui@yahoo.com>
+Reply-To: <lifangui@yahoo.com>
+Mail-Reply-To: <lifangui@yahoo.com>
+Message-ID: <d2bb55f4c8fdf26fce3de07e7000eec0@tiltas.lt>
+User-Agent: Roundcube Webmail/0.5
+X-Tiltas-MailScanner-Information: Please contact the ISP for more information
+X-Tiltas-MailScanner-ID: 25B9D2A1A0B.AC4F1
+X-Tiltas-MailScanner: Found to be clean
+X-Tiltas-MailScanner-From: lifangui@yahoo.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 30, 2012 at 04:02:16PM +0200, Jiri Pirko wrote:
-> Mon, Jul 30, 2012 at 02:26:34AM CEST, jon.mason@intel.com wrote:
-> >+static int __devinit ntb_netdev_probe(struct pci_dev *pdev)
-> >+{
-> >+	struct net_device *ndev;
-> >+	struct ntb_netdev *dev;
-> >+	int rc;
-> >+
-> >+	ndev = alloc_etherdev(sizeof(struct ntb_netdev));
-> >+	if (!ndev)
-> >+		return -ENOMEM;
-> >+
-> >+	dev = netdev_priv(ndev);
-> >+	dev->ndev = ndev;
-> >+	dev->pdev = pdev;
-> >+	BUG_ON(!dev->pdev);
-> >+	ndev->features = NETIF_F_HIGHDMA;
-> >+
-> >+	//ndev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
-> 	^^ I guess you forgot to un-comment this.
 
-Oops.  An easy fix.  Anything else?
 
-Thanks,
-Jon
+-- 
+ Add mE and chat with me on YAHOO ID  ( cxiaoli74  )
+
+ CHATTING ONLY WITH ME ON YAHOO
+
+ i sell good spamming tools,  rdp, emails, smtp, mailer, bank logins, 
+ etc
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
+
