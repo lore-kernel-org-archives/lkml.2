@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab2G3MBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 08:01:14 -0400
-Received: from mail.digidescorp.com ([50.73.98.161]:5401 "EHLO
-	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab2G3MBN (ORCPT
+	id S1753592Ab2G3MBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 08:01:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38974 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab2G3MBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 08:01:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
-	c=simple; q=dns; h=message-id:from;
-	b=6EiD1NdcSfOyZy46iz51sWuwP7QBAuIM9gW4V5dN1HzdLK7/+T/zeFAx1qZy
-	850YrS0w4m/RTVBymmYkPFSdOwedvZgm64kOEjL6cZfY+9stzzKUX9aAs
-	vHEs3CySW20yq7nZeHBKWwhPnli6J27gGthEq6OSoG6vh43xSK4fKU=;
-X-Spam-Processed: mail.digidescorp.com, Mon, 30 Jul 2012 07:01:02 -0500
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=1558eb3138=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Message-ID: <1343649657.2153.2.camel@iscandar.digidescorp.com>
-Subject: Re: [PATCH] Documentation: update mount option in
- filesystem/vfat.txt
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 30 Jul 2012 07:00:57 -0500
-In-Reply-To: <1343559005-7661-1-git-send-email-linkinjeon@gmail.com>
-References: <1343559005-7661-1-git-send-email-linkinjeon@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jul 2012 08:01:41 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 01/11] kernel/debug: Make use of KGDB_REASON_NMI
+Date: Mon, 30 Jul 2012 04:58:10 -0700
+Message-Id: <1343649500-18491-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20120730115719.GA5742@lizard>
+References: <20120730115719.GA5742@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-29 at 06:50 -0400, Namjae Jeon wrote: 
-> update two mount option(discard, nfs) in vfat.txt.
-> 
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
+Currently kernel never set KGDB_REASON_NMI. We do now, when we enter
+KGDB/KDB from an NMI.
 
-Thanks. I knew there must be somewhere to document mount options but I
-thought it would be in the userspace tools (util-linux).
+This is not to be confused with kgdb_nmicallback(), NMI callback is
+an entry for the slave CPUs during CPUs roundup, but REASON_NMI is the
+entry for the master CPU.
 
-Reviewed-by: Steven J. Magnani <steve@digidescorp.com>
-------------------------------------------------------------------------
-Steven J. Magnani               "I claim this network for MARS!
-www.digidescorp.com              Earthling, return my space modulator!"
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ kernel/debug/kdb/kdb_debugger.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-#include <standard.disclaimer>
-
-
-
+diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
+index 8b68ce7..be7b33b 100644
+--- a/kernel/debug/kdb/kdb_debugger.c
++++ b/kernel/debug/kdb/kdb_debugger.c
+@@ -12,6 +12,7 @@
+ #include <linux/kdb.h>
+ #include <linux/kdebug.h>
+ #include <linux/export.h>
++#include <linux/hardirq.h>
+ #include "kdb_private.h"
+ #include "../debug_core.h"
+ 
+@@ -52,6 +53,9 @@ int kdb_stub(struct kgdb_state *ks)
+ 	if (atomic_read(&kgdb_setting_breakpoint))
+ 		reason = KDB_REASON_KEYBOARD;
+ 
++	if (in_nmi())
++		reason = KDB_REASON_NMI;
++
+ 	for (i = 0, bp = kdb_breakpoints; i < KDB_MAXBPT; i++, bp++) {
+ 		if ((bp->bp_enabled) && (bp->bp_addr == addr)) {
+ 			reason = KDB_REASON_BREAK;
+-- 
+1.7.10.4
 
