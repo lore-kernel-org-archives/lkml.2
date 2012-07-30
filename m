@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab2G3RiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 13:38:22 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:65379 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab2G3RiS (ORCPT
+	id S1755136Ab2G3Ri3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 13:38:29 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60241 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754704Ab2G3RiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 13:38:18 -0400
+	Mon, 30 Jul 2012 13:38:25 -0400
+Date: Mon, 30 Jul 2012 18:38:23 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 2/3] regmap: implement irq chip suspend/resume operations
+Message-ID: <20120730173822.GN4468@opensource.wolfsonmicro.com>
+References: <1343415716-27134-1-git-send-email-swarren@wwwdotorg.org>
+ <1343415716-27134-2-git-send-email-swarren@wwwdotorg.org>
+ <20120729210410.GM4384@opensource.wolfsonmicro.com>
+ <5016C006.80008@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <1342725552-14407-1-git-send-email-lance.ortiz@hp.com>
-References: <1342725552-14407-1-git-send-email-lance.ortiz@hp.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 30 Jul 2012 11:37:56 -0600
-Message-ID: <CAErSpo6Qc2mw_UpGo0SX=85VOaizpZM_Qx6pDzN1=Vz04bpS3g@mail.gmail.com>
-Subject: Re: [PATCH] aerdrv: Enable AER completion notice
-To: Lance Ortiz <lance.ortiz@hp.com>
-Cc: ying.huang@intel.com, jbarnes@virtuousgeek.org, rusty@rustcorp.com.au,
-        mchehab@redhat.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5016C006.80008@wwwdotorg.org>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 1:19 PM, Lance Ortiz <lance.ortiz@hp.com> wrote:
-> When an AER event occurs not all of the print notifications are at the
-> same log level.  This can cause an incomplete AER log from the users
-> point of view when monitoring the console output.
->
-> The completion message in do_recovery() is currently set to KERN_DEBUG
-> (log level 7) while the starting message in aer_port_info() uses
-> KERN_INFO(log level 6). The completion message should be set to
-> KERN_INFO so it is consistent with the starting message in the log.
->
-> The message has also been re-worded to make it more clear.  This patch
-> will enable the AER log on the console output to be book-ended by a
-> clear and consistent starting and completion message.
->
-> Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
-> ---
->  drivers/pci/pcie/aer/aerdrv_core.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-> index 0ca0535..164bab5 100644
-> --- a/drivers/pci/pcie/aer/aerdrv_core.c
-> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
-> @@ -540,14 +540,14 @@ static void do_recovery(struct pci_dev *dev, int severity)
->                                 "resume",
->                                 report_resume);
->
-> -       dev_printk(KERN_DEBUG, &dev->dev,
-> -               "AER driver successfully recovered\n");
-> +       dev_printk(KERN_INFO, &dev->dev,
-> +               "AER: Device recovery successful\n");
->         return;
->
->  failed:
->         /* TODO: Should kernel panic here? */
-> -       dev_printk(KERN_DEBUG, &dev->dev,
-> -               "AER driver didn't recover\n");
-> +       dev_printk(KERN_INFO, &dev->dev,
-> +               "AER: Device recovery failed\n");
->  }
->
->  /**
+On Mon, Jul 30, 2012 at 11:10:30AM -0600, Stephen Warren wrote:
 
-I applied this with minor tweaks (using dev_info() rather than
-dev_printk(KERN_INFO)).
+> hence exit sleep. If we are to port that code into the regmap-irq core,
+> it seems to make sense to have enable_base==wake_base, since the same
+> register truly is being used for both enable/wakeup-enable, just
+> time-multiplexed.
 
-It won't appear in my "next" branch until I rebuild it after the merge
-window closes.
+This would mean that we have to go round every single driver that
+doesn't have physical wake support and add a setting for the wake
+registers (which seems pointless given that the core can just as well
+figure this out from the fact that it's not had any wake registers
+specified) and we then have to add special cases for this in the core
+code.  This doesn't seem like great API design, it's not conveneint for
+either side of the interface and it's error prone.
 
-Thanks!
+> Or, perhaps the IRQ core already disables all non-wake interrupts for
+> us, so the driver doesn't have to do this, and we can just drop that
+> code completely?
+
+IIRC it does actually do this, I'd need to check though.
