@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab2G3N5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 09:57:18 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62709 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754276Ab2G3N5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 09:57:16 -0400
-Message-ID: <501692B8.6050102@linaro.org>
-Date: Mon, 30 Jul 2012 14:57:12 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754408Ab2G3OAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 10:00:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47574 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754386Ab2G3OAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jul 2012 10:00:12 -0400
+Date: Mon, 30 Jul 2012 16:00:09 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, handai.szj@taobao.com, gthelen@google.com,
+        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com,
+        rientjes@google.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: + memcg-oom-clarify-some-oom-dump-messages.patch added to -mm
+ tree
+Message-ID: <20120730140009.GF12680@tiehlicka.suse.cz>
+References: <20120724203309.B04155C0050@hpza9.eem.corp.google.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 05/18] ASoC: Ux500: Enable ux500 MSP driver for Device
- Tree
-References: <1343393162-11938-1-git-send-email-lee.jones@linaro.org> <1343393162-11938-6-git-send-email-lee.jones@linaro.org> <20120729204218.GI4384@opensource.wolfsonmicro.com> <50162F70.2050900@linaro.org> <20120730133930.GB4468@opensource.wolfsonmicro.com>
-In-Reply-To: <20120730133930.GB4468@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724203309.B04155C0050@hpza9.eem.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/07/12 14:39, Mark Brown wrote:
-> On Mon, Jul 30, 2012 at 07:53:36AM +0100, Lee Jones wrote:
->> On 29/07/12 21:42, Mark Brown wrote:
->
->>>> +	if (of_get_property(np, "stericsson,use-pinctrl", NULL))
->
->>> This doesn't seem particularly sane...  why is this conditional?
->
->> It's conditional because only MSP1 and MSP3 have pinctrl support.
->
-> Why does the driver care - doesn't the pinctrl abstraction and/or
-> bindings handle this sensibly?
+On Tue 24-07-12 13:33:08, Andrew Morton wrote:
+> 
+> The patch titled
+>      Subject: memcg, oom: clarify some oom dump messages
+> has been added to the -mm tree.  Its filename is
+>      memcg-oom-clarify-some-oom-dump-messages.patch
+> 
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
+> 
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> The -mm tree is included into linux-next and is updated
+> there every 3-4 working days
+> 
+> ------------------------------------------------------
+> From: Sha Zhengju <handai.szj@taobao.com>
+> Subject: memcg, oom: clarify some oom dump messages
+> 
+> Revise some oom dump messages to avoid misleading admin.
 
-Not when I tested it. pinctrl_get() came back !IS_ERR() for MSP0, MSP2 & 
-MSP3, then when it went on to pinctrl_lookup_state(), only then did it 
-fail. Would it be more sane to retract the error messages and just let 
-it fail silently? It's either that or have lots of "could not get MSP 
-defstate" clogging up the log.
+Not that I would care much, but does this make the messages really more
+clear?
+OOM killer just sends the signal and the task dies asynchronously so
+saying that something has been killed is a bit misleading but I am
+wondering it it really confuses anybody to make a wrong conclusion from
+the message.
+
+[...]
+> diff -puN mm/oom_kill.c~memcg-oom-clarify-some-oom-dump-messages mm/oom_kill.c
+> --- a/mm/oom_kill.c~memcg-oom-clarify-some-oom-dump-messages
+> +++ a/mm/oom_kill.c
+[...]
+> @@ -509,6 +509,7 @@ void oom_kill_process(struct task_struct
+>  	if (!p) {
+>  		rcu_read_unlock();
+>  		put_task_struct(victim);
+> +		pr_err("No process has been killed!\n");
+
+Is this even true? p existed few moments ago so it could have been
+killed and exited in the mean time
+
+>  		return;
+>  	} else if (victim != p) {
+>  		get_task_struct(p);
+> @@ -540,7 +541,7 @@ void oom_kill_process(struct task_struct
+>  				continue;
+>  
+>  			task_lock(p);	/* Protect ->comm from prctl() */
+> -			pr_err("Kill process %d (%s) sharing same memory\n",
+> +			pr_err("Killed process %d (%s) sharing same memory\n",
+>  				task_pid_nr(p), p->comm);
+
+technically it hasn't been killed yet because you are sending the signal
+bellow.
+
+>  			task_unlock(p);
+>  			do_send_sig_info(SIGKILL, SEND_SIG_FORCED, p, true);
+> _
+> Subject: Subject: memcg, oom: clarify some oom dump messages
+> 
+> Patches currently in -mm which might be from handai.szj@taobao.com are
+> 
+> mm-oom-introduce-helper-function-to-process-threads-during-scan.patch
+> mm-memcg-introduce-own-oom-handler-to-iterate-only-over-its-own-threads.patch
+> memcg-oom-provide-more-info-while-memcg-oom-happening.patch
+> memcg-oom-clarify-some-oom-dump-messages.patch
+> 
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
