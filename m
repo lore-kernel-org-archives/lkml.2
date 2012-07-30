@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab2G3P16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jul 2012 11:27:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15950 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab2G3P15 (ORCPT
+	id S1753976Ab2G3P3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jul 2012 11:29:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40243 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab2G3P3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jul 2012 11:27:57 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=rLFqv8mQjsYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=g64lCfYfVIDOovzdIZUA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1343662074.27983.4.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 1/5] user_hooks: New user hooks subsystem
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 30 Jul 2012 11:27:54 -0400
-In-Reply-To: <1343660892.20897.3.camel@twins>
-References: <1343403634-31555-1-git-send-email-fweisbec@gmail.com>
-	 <1343403634-31555-2-git-send-email-fweisbec@gmail.com>
-	 <1343660892.20897.3.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jul 2012 11:29:49 -0400
+Date: Mon, 30 Jul 2012 08:29:44 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 36/40] mm: vmscan: convert global reclaim to per-memcg LRU
+ lists
+Message-ID: <20120730152944.GA21091@kroah.com>
+References: <20120726211424.GA7709@kroah.com>
+ <20120726211411.164006056@linuxfoundation.org>
+ <20120726211414.464540343@linuxfoundation.org>
+ <1343607917.4642.29.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343607917.4642.29.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-30 at 17:08 +0200, Peter Zijlstra wrote:
-> On Fri, 2012-07-27 at 17:40 +0200, Frederic Weisbecker wrote:
-> > +++ b/kernel/user_hooks.c
-> > @@ -0,0 +1,56 @@
-> > +#include <linux/user_hooks.h>
-> > +#include <linux/rcupdate.h>
-> > +#include <linux/sched.h>
-> > +#include <linux/percpu.h>
-> > +
-> > +struct user_hooks {
-> > +       bool hooking;
-> > +       bool in_user;
-> > +};
+On Mon, Jul 30, 2012 at 01:25:17AM +0100, Ben Hutchings wrote:
+> On Thu, 2012-07-26 at 14:29 -0700, Greg Kroah-Hartman wrote:
+> > From: Greg KH <gregkh@linuxfoundation.org>
+> > 
+> > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > commit b95a2f2d486d0d768a92879c023a03757b9c7e58 upstream - WARNING: this is a substitute patch.
+> > 
+> > Stable note: Not tracked in Bugzilla. This is a partial backport of an
+> > 	upstream commit addressing a completely different issue
+> > 	that accidentally contained an important fix. The workload
+> > 	this patch helps was memcached when IO is started in the
+> > 	background. memcached should stay resident but without this patch
+> > 	it gets swapped. Sometimes this manifests as a drop in throughput
+> > 	but mostly it was observed through /proc/vmstat.
+> [...]
+> > The impact of the accidental fix is to make it harder for kswapd to force
+> > scan small targets by taking zone->all_unreclaimable into account. This
+> > patch is the closest equivalent available based on what is backported.
+> > 
+> > ---
+> >  mm/vmscan.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> [...]
 > 
-> I really detest using bool in structures.. but that's just me. Also this
-> really wants a comment as to wtf 'hooking' means. in_user I can just
-> about guess.
+> This is missing sign-offs.
 
-I'm curious to what you have against bool in structures? Would you
-prefer a:
+Oops, my fault, somehow they got lost, I'll go add them back (it's just
+Mel's and mine.)
 
-struct user_hooks {
-	unsigned int hooking:1;
-	unsigned int in_user:1;
-};
-
-instead? I haven't checked, but I would hope that gcc would optimize the
-struct into a single word.
-
-But I could see that it can cause races as that would make modifying
-hooking and in_user dependent on each other. That is, if one CPU updates
-hooking as another CPU updates in_user, that could cause a
-read-modify-write race. At least in this case the modification is only
-done on local cpu variables.
-
--- Steve
-
-
+greg k-h
