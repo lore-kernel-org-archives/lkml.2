@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab2GaOiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jul 2012 10:38:08 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50179 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab2GaOiF (ORCPT
+	id S1754602Ab2GaOjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jul 2012 10:39:11 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:56411 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754304Ab2GaOjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jul 2012 10:38:05 -0400
-Message-ID: <5017EDCA.4020601@linaro.org>
-Date: Tue, 31 Jul 2012 15:38:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 31 Jul 2012 10:39:09 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Howells <dhowells@redhat.com>
+Cc: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+References: <20120731130314.24441.85882.stgit@ltc137.sdl.hitachi.co.jp>
+	<5498.1343743325@warthog.procyon.org.uk>
+Date: Tue, 31 Jul 2012 07:38:58 -0700
+In-Reply-To: <5498.1343743325@warthog.procyon.org.uk> (David Howells's message
+	of "Tue, 31 Jul 2012 15:02:05 +0100")
+Message-ID: <874nooc7wd.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, lrg@ti.com
-Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org> <1343741493-17671-3-git-send-email-lee.jones@linaro.org> <20120731134214.GK4468@opensource.wolfsonmicro.com> <5017EAC3.3080504@linaro.org> <20120731142820.GW4468@opensource.wolfsonmicro.com>
-In-Reply-To: <20120731142820.GW4468@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/otIqThw9eqa/bwdBPAW6MD3SRKMEZCo8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0076]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;David Howells <dhowells@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] sysctl: fix improper indication of integer sysctl parameter
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/07/12 15:28, Mark Brown wrote:
-> On Tue, Jul 31, 2012 at 03:25:07PM +0100, Lee Jones wrote:
->> On 31/07/12 14:42, Mark Brown wrote:
+David Howells <dhowells@redhat.com> writes:
+
+> Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com> wrote:
 >
->>> You're posting this *again* without bothering to respond to my review
->>> comments.
+>> When we read the sysctl parameter, they are always treated
+>> as signed integer, and are casted into unsigned long type
+>> in the current kernel. If we set a value equivalent to
+>> (the maximum value in signed integer + 1)
 >
->> I didn't see any comments on this.
->
-> Read your email.  <20120726115450.GE3099@opensource.wolfsonmicro.com>
-> and <20120729202510.GB4384@opensource.wolfsonmicro.com>, the second one
-> even includes a complaint about you ignoring the first mail.
+> Wouldn't it be better to return EINVAL or EDOM?
 
-Neither of those are in my Inbox. Blame Mozilla. :)
+Yes we should definitely fail the write in the case where we write an
+unsigned value and we can not fit that value in an integer.
 
-It's better because the whole audio system doesn't fail in the case of 
-minor failure. It'd be like calling off a football game (or whatever 
-you're into) because one of the substitutes ruptured an eyelash.
+There will still remain the bug of reading the integer
+where (-val == val) && val < 0.  In that case we do want to an
+(unsigned int) before storing it in an unsinged long.
 
-During start-up the ux500 has a couple of very unimportant widgets fail. 
-It's the wrong behavior to force failure on the everything audio just 
-because of that.
+The decription of the patch is confusing.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+The problem is not the cast to unsigned long, the problem is
+the implicit cast to signed long which happens before the cast
+to unsigned long.  I think this is a case where C's casting rules
+get it wrong.  If I have an explicit cast why add an implicit
+cast to do sign extension.  Sigh.
+
+Mitsuo since you are looking at this do you think you could fix the
+write side of the problem as well, and check to make cetain the
+unsigned value we write will fit in an interger.
+
+Eric
